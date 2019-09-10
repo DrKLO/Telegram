@@ -182,7 +182,7 @@ public class NewContactActivity extends BaseFragment implements AdapterView.OnIt
         });
 
         avatarDrawable = new AvatarDrawable();
-        avatarDrawable.setInfo(5, "", "", false);
+        avatarDrawable.setInfo(5, "", "");
 
         ActionBarMenu menu = actionBar.createMenu();
         editDoneItem = menu.addItemWithWidth(done_button, R.drawable.ic_done, AndroidUtilities.dp(56));
@@ -244,7 +244,7 @@ public class NewContactActivity extends BaseFragment implements AdapterView.OnIt
 
             @Override
             public void afterTextChanged(Editable editable) {
-                avatarDrawable.setInfo(5, firstNameField.getText().toString(), lastNameField.getText().toString(), false);
+                avatarDrawable.setInfo(5, firstNameField.getText().toString(), lastNameField.getText().toString());
                 avatarImage.invalidate();
             }
         });
@@ -286,7 +286,7 @@ public class NewContactActivity extends BaseFragment implements AdapterView.OnIt
 
             @Override
             public void afterTextChanged(Editable editable) {
-                avatarDrawable.setInfo(5, firstNameField.getText().toString(), lastNameField.getText().toString(), false);
+                avatarDrawable.setInfo(5, firstNameField.getText().toString(), lastNameField.getText().toString());
                 avatarImage.invalidate();
             }
         });
@@ -720,7 +720,7 @@ public class NewContactActivity extends BaseFragment implements AdapterView.OnIt
     public ThemeDescription[] getThemeDescriptions() {
         ThemeDescription.ThemeDescriptionDelegate cellDelegate = () -> {
             if (avatarImage != null) {
-                avatarDrawable.setInfo(5, firstNameField.getText().toString(), lastNameField.getText().toString(), false);
+                avatarDrawable.setInfo(5, firstNameField.getText().toString(), lastNameField.getText().toString());
                 avatarImage.invalidate();
             }
         };
@@ -762,7 +762,7 @@ public class NewContactActivity extends BaseFragment implements AdapterView.OnIt
                 new ThemeDescription(editDoneItemProgress, 0, null, null, null, null, Theme.key_contextProgressInner2),
                 new ThemeDescription(editDoneItemProgress, 0, null, null, null, null, Theme.key_contextProgressOuter2),
 
-                new ThemeDescription(null, 0, null, null, new Drawable[]{Theme.avatar_broadcastDrawable, Theme.avatar_savedDrawable}, cellDelegate, Theme.key_avatar_text),
+                new ThemeDescription(null, 0, null, null, new Drawable[]{Theme.avatar_savedDrawable}, cellDelegate, Theme.key_avatar_text),
                 new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundRed),
                 new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundOrange),
                 new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundViolet),

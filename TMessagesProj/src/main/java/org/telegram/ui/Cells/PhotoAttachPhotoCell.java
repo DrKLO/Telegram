@@ -17,6 +17,7 @@ import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Rect;
 import android.graphics.RectF;
+import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.SystemClock;
@@ -33,9 +34,13 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.FileLoader;
+import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaController;
+import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.R;
+import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.CheckBox2;
@@ -59,6 +64,10 @@ public class PhotoAttachPhotoCell extends FrameLayout {
     private boolean needCheckShow;
     private int itemSize;
     private boolean isVertical;
+    private boolean zoomOnSelect = true;
+
+    private MediaController.PhotoEntry photoEntry;
+    private MediaController.SearchImage searchEntry;
 
     private Paint backgroundPaint = new Paint();
     private AnimatorSet animator;
@@ -66,8 +75,6 @@ public class PhotoAttachPhotoCell extends FrameLayout {
     public interface PhotoAttachPhotoCellDelegate {
         void onCheckClick(PhotoAttachPhotoCell v);
     }
-
-    private MediaController.PhotoEntry photoEntry;
 
     public PhotoAttachPhotoCell(Context context) {
         super(context);
@@ -210,6 +217,37 @@ public class PhotoAttachPhotoCell extends FrameLayout {
         requestLayout();
     }
 
+    public void setPhotoEntry(MediaController.SearchImage searchImage, boolean needCheckShow, boolean last) {
+        pressed = false;
+        searchEntry = searchImage;
+        isLast = last;
+
+        Drawable thumb = zoomOnSelect ? Theme.chat_attachEmptyDrawable : getResources().getDrawable(R.drawable.nophotos);
+        if (searchImage.thumbPhotoSize != null) {
+            imageView.setImage(ImageLocation.getForPhoto(searchImage.thumbPhotoSize, searchImage.photo), null, thumb, searchImage);
+        } else if (searchImage.photoSize != null) {
+            imageView.setImage(ImageLocation.getForPhoto(searchImage.photoSize, searchImage.photo), "80_80", thumb, searchImage);
+        } else if (searchImage.thumbPath != null) {
+            imageView.setImage(searchImage.thumbPath, null, thumb);
+        } else if (searchImage.thumbUrl != null && searchImage.thumbUrl.length() > 0) {
+            imageView.setImage(searchImage.thumbUrl, null, thumb);
+        } else if (MessageObject.isDocumentHasThumb(searchImage.document)) {
+            TLRPC.PhotoSize photoSize = FileLoader.getClosestPhotoSizeWithSize(searchImage.document.thumbs, 320);
+            imageView.setImage(ImageLocation.getForDocument(photoSize, searchImage.document), null, thumb, searchImage);
+        } else {
+            imageView.setImageDrawable(thumb);
+        }
+        boolean showing = needCheckShow && PhotoViewer.isShowingImage(searchImage.getPathToAttach());
+        imageView.getImageReceiver().setVisible(!showing, true);
+        checkBox.setAlpha(showing ? 0.0f : 1.0f);
+        videoInfoContainer.setAlpha(showing ? 0.0f : 1.0f);
+        requestLayout();
+    }
+
+    public boolean isChecked() {
+        return checkBox.isChecked();
+    }
+
     public void setChecked(int num, boolean checked, boolean animated) {
         checkBox.setChecked(num, checked, animated);
         if (itemSizeChanged) {
@@ -344,7 +382,7 @@ public class PhotoAttachPhotoCell extends FrameLayout {
 
     @Override
     protected void onDraw(Canvas canvas) {
-        if (checkBox.isChecked() || container.getScaleX() != 1.0f || !imageView.getImageReceiver().hasNotThumb() || imageView.getImageReceiver().getCurrentAlpha() != 1.0f || PhotoViewer.isShowingImage(photoEntry.path)) {
+        if (checkBox.isChecked() || container.getScaleX() != 1.0f || !imageView.getImageReceiver().hasNotThumb() || imageView.getImageReceiver().getCurrentAlpha() != 1.0f || photoEntry != null && PhotoViewer.isShowingImage(photoEntry.path) || searchEntry != null && PhotoViewer.isShowingImage(searchEntry.getPathToAttach())) {
             backgroundPaint.setColor(Theme.getColor(Theme.key_chat_attachPhotoBackground));
             canvas.drawRect(0, 0, imageView.getMeasuredWidth(), imageView.getMeasuredHeight(), backgroundPaint);
         }
@@ -354,7 +392,7 @@ public class PhotoAttachPhotoCell extends FrameLayout {
     public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
         super.onInitializeAccessibilityNodeInfo(info);
         info.setEnabled(true);
-        if (photoEntry.isVideo) {
+        if (photoEntry != null && photoEntry.isVideo) {
             info.setText(LocaleController.getString("AttachVideo", R.string.AttachVideo) + ", " + LocaleController.formatCallDuration(photoEntry.duration));
         } else {
             info.setText(LocaleController.getString("AttachPhoto", R.string.AttachPhoto));

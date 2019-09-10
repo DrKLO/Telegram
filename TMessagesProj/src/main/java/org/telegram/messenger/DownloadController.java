@@ -266,7 +266,7 @@ public class DownloadController extends BaseController implements NotificationCe
         }
 
         AndroidUtilities.runOnUIThread(() -> {
-            getNotificationCenter().addObserver(DownloadController.this, NotificationCenter.fileDidFailedLoad);
+            getNotificationCenter().addObserver(DownloadController.this, NotificationCenter.fileDidFailToLoad);
             getNotificationCenter().addObserver(DownloadController.this, NotificationCenter.fileDidLoad);
             getNotificationCenter().addObserver(DownloadController.this, NotificationCenter.FileLoadProgressChanged);
             getNotificationCenter().addObserver(DownloadController.this, NotificationCenter.FileUploadProgressChanged);
@@ -892,7 +892,7 @@ public class DownloadController extends BaseController implements NotificationCe
 
     @Override
     public void didReceivedNotification(int id, int account, Object... args) {
-        if (id == NotificationCenter.fileDidFailedLoad || id == NotificationCenter.httpFileDidFailedLoad) {
+        if (id == NotificationCenter.fileDidFailToLoad || id == NotificationCenter.httpFileDidFailedLoad) {
             String fileName = (String) args[0];
             Integer canceled = (Integer) args[1];
             listenerInProgress = true;

@@ -121,7 +121,7 @@ public class ApplicationLoader extends Application {
         }
 
         try {
-            PowerManager pm = (PowerManager)ApplicationLoader.applicationContext.getSystemService(Context.POWER_SERVICE);
+            PowerManager pm = (PowerManager) ApplicationLoader.applicationContext.getSystemService(Context.POWER_SERVICE);
             isScreenOn = pm.isScreenOn();
             if (BuildVars.LOGS_ENABLED) {
                 FileLog.d("screen state = " + isScreenOn);
@@ -146,7 +146,7 @@ public class ApplicationLoader extends Application {
             }
         }
 
-        ApplicationLoader app = (ApplicationLoader)ApplicationLoader.applicationContext;
+        ApplicationLoader app = (ApplicationLoader) ApplicationLoader.applicationContext;
         app.initPlayServices();
         if (BuildVars.LOGS_ENABLED) {
             FileLog.d("app initied");

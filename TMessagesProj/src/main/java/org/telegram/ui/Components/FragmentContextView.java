@@ -206,14 +206,10 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
                             int lower_part = (int) dialog_id;
                             int high_id = (int) (dialog_id >> 32);
                             if (lower_part != 0) {
-                                if (high_id == 1) {
-                                    args.putInt("chat_id", lower_part);
-                                } else {
-                                    if (lower_part > 0) {
-                                        args.putInt("user_id", lower_part);
-                                    } else if (lower_part < 0) {
-                                        args.putInt("chat_id", -lower_part);
-                                    }
+                                if (lower_part > 0) {
+                                    args.putInt("user_id", lower_part);
+                                } else if (lower_part < 0) {
+                                    args.putInt("chat_id", -lower_part);
                                 }
                             } else {
                                 args.putInt("enc_id", high_id);
@@ -278,7 +274,7 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
         LocationActivity locationActivity = new LocationActivity(2);
         locationActivity.setMessageObject(info.messageObject);
         final long dialog_id = info.messageObject.getDialogId();
-        locationActivity.setDelegate((location, live) -> SendMessagesHelper.getInstance(info.messageObject.currentAccount).sendMessage(location, dialog_id, null, null, null));
+        locationActivity.setDelegate((location, live, notify, scheduleDate) -> SendMessagesHelper.getInstance(info.messageObject.currentAccount).sendMessage(location, dialog_id, null, null, null, notify, scheduleDate));
         launchActivity.presentFragment(locationActivity);
     }
 
@@ -614,7 +610,7 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
                 }
             }
         }
-        if (lastString != null && fullString.equals(lastString)) {
+        if (fullString.equals(lastString)) {
             return;
         }
         lastString = fullString;

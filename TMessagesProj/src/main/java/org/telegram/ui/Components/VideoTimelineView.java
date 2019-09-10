@@ -8,7 +8,6 @@
 
 package org.telegram.ui.Components;
 
-import android.annotation.TargetApi;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
@@ -24,7 +23,6 @@ import org.telegram.messenger.FileLog;
 
 import java.util.ArrayList;
 
-@TargetApi(10)
 public class VideoTimelineView extends View {
 
     private long videoLength;
@@ -192,6 +190,7 @@ public class VideoTimelineView extends View {
 
     public void setColor(int color) {
         paint.setColor(color);
+        invalidate();
     }
 
     public void setVideoPath(String path) {
@@ -209,8 +208,8 @@ public class VideoTimelineView extends View {
         invalidate();
     }
 
-    public void setDelegate(VideoTimelineViewDelegate delegate) {
-        this.delegate = delegate;
+    public void setDelegate(VideoTimelineViewDelegate videoTimelineViewDelegate) {
+        delegate = videoTimelineViewDelegate;
     }
 
     private void reloadFrames(int frameNum) {

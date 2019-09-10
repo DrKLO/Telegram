@@ -118,7 +118,7 @@ public class WallpaperUpdater {
             fragment.setAllowSearchImages(false);
             fragment.setDelegate(new PhotoAlbumPickerActivity.PhotoAlbumPickerActivityDelegate() {
                 @Override
-                public void didSelectPhotos(ArrayList<SendMessagesHelper.SendingMediaInfo> photos) {
+                public void didSelectPhotos(ArrayList<SendMessagesHelper.SendingMediaInfo> photos, boolean notify, int scheduleDate) {
                     WallpaperUpdater.this.didSelectPhotos(photos);
                 }
 

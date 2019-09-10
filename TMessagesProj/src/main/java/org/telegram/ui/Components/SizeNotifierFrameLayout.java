@@ -15,6 +15,7 @@ import android.graphics.Shader;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
+import android.graphics.drawable.GradientDrawable;
 import android.os.Build;
 import android.view.View;
 import android.widget.FrameLayout;
@@ -136,7 +137,7 @@ public class SizeNotifierFrameLayout extends FrameLayout {
     @Override
     protected void onDraw(Canvas canvas) {
         if (backgroundDrawable != null) {
-            if (backgroundDrawable instanceof ColorDrawable) {
+            if (backgroundDrawable instanceof ColorDrawable || backgroundDrawable instanceof GradientDrawable) {
                 if (bottomClip != 0) {
                     canvas.save();
                     canvas.clipRect(0, 0, getMeasuredWidth(), getMeasuredHeight() - bottomClip);

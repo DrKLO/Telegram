@@ -75,17 +75,13 @@ public class TgChooserTargetService extends ChooserTargetService {
                     int lower_id = (int) id;
                     int high_id = (int) (id >> 32);
                     if (lower_id != 0) {
-                        if (high_id == 1) {
-                            continue;
+                        if (lower_id > 0) {
+                            if (!usersToLoad.contains(lower_id)) {
+                                usersToLoad.add(lower_id);
+                            }
                         } else {
-                            if (lower_id > 0) {
-                                if (!usersToLoad.contains(lower_id)) {
-                                    usersToLoad.add(lower_id);
-                                }
-                            } else {
-                                if (!chatsToLoad.contains(-lower_id)) {
-                                    chatsToLoad.add(-lower_id);
-                                }
+                            if (!chatsToLoad.contains(-lower_id)) {
+                                chatsToLoad.add(-lower_id);
                             }
                         }
                     } else {

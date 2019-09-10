@@ -146,7 +146,7 @@ public class SecretChatHelper extends BaseController {
 
         ArrayList<TLRPC.Message> arr = new ArrayList<>();
         arr.add(newMsg);
-        getMessagesStorage().putMessages(arr, false, true, true, 0);
+        getMessagesStorage().putMessages(arr, false, true, true, 0, false);
 
         return newMsg;
     }
@@ -427,7 +427,7 @@ public class SecretChatHelper extends BaseController {
             newMsgObj.messageOwner.send_state = MessageObject.MESSAGE_SEND_STATE_SENDING;
             ArrayList<MessageObject> objArr = new ArrayList<>();
             objArr.add(newMsgObj);
-            getMessagesController().updateInterfaceWithMessages(message.dialog_id, objArr);
+            getMessagesController().updateInterfaceWithMessages(message.dialog_id, objArr, false);
             getNotificationCenter().postNotificationName(NotificationCenter.dialogsNeedReload);
         }
         reqSend.random_id = message.random_id;
@@ -456,7 +456,7 @@ public class SecretChatHelper extends BaseController {
             newMsgObj.messageOwner.send_state = MessageObject.MESSAGE_SEND_STATE_SENDING;
             ArrayList<MessageObject> objArr = new ArrayList<>();
             objArr.add(newMsgObj);
-            getMessagesController().updateInterfaceWithMessages(message.dialog_id, objArr);
+            getMessagesController().updateInterfaceWithMessages(message.dialog_id, objArr, false);
             getNotificationCenter().postNotificationName(NotificationCenter.dialogsNeedReload);
         }
         reqSend.random_id = message.random_id;
@@ -484,7 +484,7 @@ public class SecretChatHelper extends BaseController {
                 ImageLoader.getInstance().replaceImageInCache(fileName, fileName2, ImageLocation.getForPhoto(size, newMsg.media.photo), true);
                 ArrayList<TLRPC.Message> arr = new ArrayList<>();
                 arr.add(newMsg);
-                getMessagesStorage().putMessages(arr, false, true, false, 0);
+                getMessagesStorage().putMessages(arr, false, true, false, 0, false);
 
                 //getMessagesStorage().putSentFile(originalPath, newMsg.media.photo, 3);
             } else if (newMsg.media instanceof TLRPC.TL_messageMediaDocument && newMsg.media.document != null) {
@@ -518,7 +518,7 @@ public class SecretChatHelper extends BaseController {
 
                 ArrayList<TLRPC.Message> arr = new ArrayList<>();
                 arr.add(newMsg);
-                getMessagesStorage().putMessages(arr, false, true, false, 0);
+                getMessagesStorage().putMessages(arr, false, true, false, 0, false);
             }
         }
     }
@@ -541,7 +541,7 @@ public class SecretChatHelper extends BaseController {
         if (req == null || chat.auth_key == null || chat instanceof TLRPC.TL_encryptedChatRequested || chat instanceof TLRPC.TL_encryptedChatWaiting) {
             return;
         }
-        getSendMessagesHelper().putToSendingMessages(newMsgObj);
+        getSendMessagesHelper().putToSendingMessages(newMsgObj, false);
         Utilities.stageQueue.postRunnable(() -> {
             try {
                 TLObject toEncryptObject;
@@ -714,19 +714,19 @@ public class SecretChatHelper extends BaseController {
                                 if (isSecretInvisibleMessage(newMsgObj)) {
                                     res.date = 0;
                                 }
-                                getMessagesStorage().updateMessageStateAndId(newMsgObj.random_id, newMsgObj.id, newMsgObj.id, res.date, false, 0);
+                                getMessagesStorage().updateMessageStateAndId(newMsgObj.random_id, newMsgObj.id, newMsgObj.id, res.date, false, 0, 0);
                                 AndroidUtilities.runOnUIThread(() -> {
                                     newMsgObj.send_state = MessageObject.MESSAGE_SEND_STATE_SENT;
-                                    getNotificationCenter().postNotificationName(NotificationCenter.messageReceivedByServer, newMsgObj.id, newMsgObj.id, newMsgObj, newMsgObj.dialog_id, 0L, existFlags);
+                                    getNotificationCenter().postNotificationName(NotificationCenter.messageReceivedByServer, newMsgObj.id, newMsgObj.id, newMsgObj, newMsgObj.dialog_id, 0L, existFlags, false);
                                     getSendMessagesHelper().processSentMessage(newMsgObj.id);
                                     if (MessageObject.isVideoMessage(newMsgObj) || MessageObject.isNewGifMessage(newMsgObj) || MessageObject.isRoundVideoMessage(newMsgObj)) {
                                         getSendMessagesHelper().stopVideoService(attachPath);
                                     }
-                                    getSendMessagesHelper().removeFromSendingMessages(newMsgObj.id);
+                                    getSendMessagesHelper().removeFromSendingMessages(newMsgObj.id, false);
                                 });
                             });
                         } else {
-                            getMessagesStorage().markMessageAsSendError(newMsgObj);
+                            getMessagesStorage().markMessageAsSendError(newMsgObj, false);
                             AndroidUtilities.runOnUIThread(() -> {
                                 newMsgObj.send_state = MessageObject.MESSAGE_SEND_STATE_SEND_ERROR;
                                 getNotificationCenter().postNotificationName(NotificationCenter.messageSendError, newMsgObj.id);
@@ -734,7 +734,7 @@ public class SecretChatHelper extends BaseController {
                                 if (MessageObject.isVideoMessage(newMsgObj) || MessageObject.isNewGifMessage(newMsgObj) || MessageObject.isRoundVideoMessage(newMsgObj)) {
                                     getSendMessagesHelper().stopVideoService(newMsgObj.attachPath);
                                 }
-                                getSendMessagesHelper().removeFromSendingMessages(newMsgObj.id);
+                                getSendMessagesHelper().removeFromSendingMessages(newMsgObj.id, false);
                             });
                         }
                     }
@@ -1370,7 +1370,7 @@ public class SecretChatHelper extends BaseController {
                     }
                 });
 
-                getSendMessagesHelper().processUnsentMessages(messages, new ArrayList<>(), new ArrayList<>(), encryptedChats);
+                getSendMessagesHelper().processUnsentMessages(messages, null, new ArrayList<>(), new ArrayList<>(), encryptedChats);
                 getMessagesStorage().getDatabase().executeFast(String.format(Locale.US, "REPLACE INTO requested_holes VALUES(%d, %d, %d)", encryptedChat.id, sSeq, endSeq)).stepThis().dispose();
             } catch (Exception e) {
                 FileLog.e(e);

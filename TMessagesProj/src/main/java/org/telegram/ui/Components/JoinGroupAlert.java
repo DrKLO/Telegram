@@ -70,7 +70,7 @@ public class JoinGroupAlert extends BottomSheet {
             avatarImageView.setImage(ImageLocation.getForChat(invite.chat, false), "50_50", avatarDrawable, invite);
         } else {
             avatarDrawable = new AvatarDrawable();
-            avatarDrawable.setInfo(0, invite.title, null, false);
+            avatarDrawable.setInfo(0, invite.title, null);
             title = invite.title;
             participants_count = invite.participants_count;
             TLRPC.PhotoSize size = FileLoader.getClosestPhotoSizeWithSize(invite.photo.sizes, 50);

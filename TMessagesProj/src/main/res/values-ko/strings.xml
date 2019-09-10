@@ -233,7 +233,7 @@
     <string name="GroupUserAddLimit">죄송합니다, 그룹의 인원이 최대치입니다.</string>
     <string name="GroupUserLeftError">죄송합니다. 이 사용자는 스스로 그룹에서 나갔기에, 다시 초대하실 수 없습니다.</string>
     <string name="GroupUserCantAdmin">죄송합니다, 그룹에 너무 많은 관리자가 있습니다.</string>
-    <string name="PublicChannelsTooMuch">Sorry, the target user has too many public groups or channels already. Please ask them to make one of their existing groups or channels private first.</string>
+    <string name="PublicChannelsTooMuch">죄송합니다. 대상이 되는 사용자에게 너무 많은 공개 그룹과 채널이 있습니다. 먼저 기존 그룹이나 채널을 비공개로 만들도록 요청해 주세요.</string>
     <string name="LocatedChannelsTooMuch">죄송합니다. 대상이 되는 사용자가 위치 기반 그룹을 너무 많이 소유하고 있습니다. 먼저 그룹을 하나 삭제하거나 소유권을 넘기도록 요청해 주세요.</string>
     <string name="YourLocatedChannelsTooMuch">죄송합니다. 위치 기반 그룹을 너무 많이 만드셨습니다. 먼저 하나를 삭제해 주세요.</string>
     <string name="GroupUserCantBot">죄송합니다. 이 그룹에는 봇이 너무 많습니다.</string>
@@ -356,7 +356,8 @@
     <string name="ChannelUserCantAdmin">죄송합니다, 채널에 너무 많은 관리자가 있습니다.</string>
     <string name="ChannelUserCantBot">죄송합니다. 이 채널에는 봇이 너무 많습니다.</string>
     <string name="ChannelUserAddLimit">죄송합니다. 처음 200명까지만 채널에 추가하실 수 있습니다. 채널 링크로는 사람들을 무한정 들이실 수 있는 점 알아두세요.</string>
-    <string name="ChannelTooMuch">Sorry, you are a member of too many groups and channels. Please leave some before creating a new one.</string>
+    <string name="ChannelTooMuch">죄송합니다. 너무 많은 그룹과 채널에 들어가 계십니다. 몇 군데에서 나온 뒤 새로 만들어 주세요.</string>
+    <string name="ChannelTooMuchJoin">Sorry, you are a member of too many groups and channels. Please leave some before joining a new one.</string>
     <string name="ChannelAddedBy">un1 님이 회원님을 이 채널에 추가했습니다</string>
     <string name="ChannelJoined">채널에 들어오셨습니다</string>
     <string name="ChannelMegaJoined">그룹에 들어오셨습니다</string>
@@ -388,7 +389,7 @@
     <string name="ChannelSignMessages">메시지 서명</string>
     <string name="ChannelSignMessagesInfo">메시지에 게시한 관리자의 이름을 추가합니다.</string>
     <string name="EditAdmin">관리자 권한</string>
-    <string name="EditAdminRank">맞춤 제목</string>
+    <string name="EditAdminRank">맞춤 칭호</string>
     <string name="EditAdminRankInfo">맞춤 제목이 모든 참가자에게 \'%1$s\' 대신 보입니다.</string>
     <string name="EditAdminWhatCanDo">이 관리자가 할 수 있는 일</string>
     <string name="EditAdminChangeChannelInfo">채널 정보 수정</string>
@@ -508,7 +509,7 @@
     <string name="SlowmodeSeconds">%1$d초</string>
     <string name="SlowmodeMinutes">%1$d분</string>
     <string name="SlowmodeHours">%1$d시간</string>
-    <string name="SlowmodeInfoOff">Choose how long each member must wait before sending their next message.</string>
+    <string name="SlowmodeInfoOff">각 참가자가 다음 메시지를 보내기 전까지 얼마나 기다려야 할지 정하세요.</string>
     <string name="SlowmodeInfoSelected">참가자는 메시지를 %1$s초에 하나씩만 보낼 수 있습니다.</string>
     <string name="SlowmodeSendError">저속 모드가 켜져 있습니다. 한 번에 메시지를 하나 이상 보내실 수 없습니다.</string>
     <string name="SlowmodeSelectSendError">저속 모드가 켜져 있습니다. 항목을 더 선택하실 수 없습니다.</string>
@@ -580,7 +581,7 @@
     <string name="EventLogUnpinnedMessages">un1 님이 메시지를 고정했습니다.</string>
     <string name="EventLogStopPoll">un1 님이 설문을 마감했습니다:</string>
     <string name="EventLogDeletedMessages">un1 님이 아래 메시지를 삭제했습니다:</string>
-    <string name="EventLogChangedLocation">un1 님이 그룹 위치를 \"%1$s\"로 바꿨습니다</string>
+    <string name="EventLogChangedLocation">un1 님이 그룹 위치를 \"%1$s\"(으)로 바꿨습니다</string>
     <string name="EventLogRemovedLocation">un1 님이 그룹 위치를 제거했습니다</string>
     <string name="EventLogChangedOwnership">%1$s 님에게 소유권을 넘겼습니다</string>
     <string name="EventLogChangedStickersSet">un1 님이 그룹 스티커 묶음을 변경했습니다</string>
@@ -690,6 +691,7 @@
     <string name="InstantView">즉시 보기</string>
     <string name="OpenGroup">그룹 보기</string>
     <string name="OpenBackground">배경 보기</string>
+    <string name="OpenTheme">VIEW THEME</string>
     <string name="OpenChannel">채널로 이동</string>
     <string name="OpenMessage">메시지 보기</string>
     <string name="InstantViewNightMode">어두운 테마가 밤 시간에 자동으로 켜집니다</string>
@@ -711,6 +713,7 @@
     <string name="ChatDocument">파일</string>
     <string name="ChatCamera">카메라</string>
     <string name="NoMessages">메시지가 없습니다...</string>
+    <string name="NoScheduledMessages">No scheduled messages here yet...</string>
     <string name="ForwardedMessage">전달된 메시지</string>
     <string name="From">보낸 사람:</string>
     <string name="FromFormatted">%1$s 보냄</string>
@@ -718,6 +721,7 @@
     <string name="NoRecent">최근 이모지 없음</string>
     <string name="Message">메시지</string>
     <string name="TypeMessage">메시지</string>
+    <string name="TypeScheduleMessage">Schedule message</string>
     <string name="ShareMyPhone">내 전화번호 공유</string>
     <string name="ShareMyContactInfo">내 연락처 공유</string>
     <string name="AddToContacts">연락처에 추가</string>
@@ -757,7 +761,7 @@
     <string name="CancelSending">보내기 취소</string>
     <string name="BotPermissionGameAlert">%1$s이(가) 앞으로 여실 페이지로 회원님의 텔레그램 이름과 아이디(전화번호 아님)를 전달할 수 있도록 허락할까요?</string>
     <string name="ReportSpamLocation">이 장소와 관련 없는 그룹인가요?</string>
-    <string name="ReportUnrelatedGroup">상관 없는 그룹 신고</string>
+    <string name="ReportUnrelatedGroup">그룹이 관련 없음 신고</string>
     <string name="ReportUnrelatedGroupText">그룹이 이 장소와 관련 없는 경우 알려 주세요:\n\n**%1$s**</string>
     <string name="ReportUnrelatedGroupTextNoAddress">그룹이 이 장소와 관련 없는 경우 알려 주세요.</string>
     <string name="ReportSpam">스팸 신고</string>
@@ -771,7 +775,7 @@
     <string name="BlockUserAlert">텔레그램 메시지와 전화 수신에서 **%1$s** 님을 차단하시겠습니까?</string>
     <string name="ReportSpamAlert">정말 이 사용자가 보낸 스팸을 신고하시겠습니까?</string>
     <string name="ReportSpamAlertGroup">이 그룹 메시지를 스팸신고 하시겠습니까?</string>
-    <string name="ReportSpamAlertChannel">이 채널을 스팸 신고하시겠습니까?</string>
+    <string name="ReportSpamAlertChannel">정말 이 채널에 게시된 스팸 메시지를 신고하시겠습니까?</string>
     <string name="NobodyLikesSpam1">죄송합니다. 연락처를 교환한 상대에게만 메시지를 보내실 수 있습니다.</string>
     <string name="NobodyLikesSpam2">죄송합니다. 연락처를 교환한 상대만 그룹에 초대하실 수 있습니다.</string>
     <string name="NobodyLikesSpam3">죄송합니다. 현재 회원님은 공개 그룹에 게시하실 수 없습니다.</string>
@@ -879,12 +883,27 @@
     <string name="SlowModeHint">저속 모드가 켜져 있습니다. %1$s 뒤에 다음 메시지를 보내실 수 있습니다.</string>
     <string name="TapForVideo">사진은 짧게 누르고, 동영상은 꾹 누르세요</string>
     <string name="SendWithoutSound">소리 없이 보내기</string>
+    <string name="MessageScheduleSend">지금 보내기</string>>
+    <string name="MessageScheduleEditTime">시간 조정하기</string>
+    <string name="MessageScheduleToday">Today</string>
+    <string name="Schedule">Schedule</string>
+    <string name="ScheduleMessage">Schedule message</string>
+    <string name="ScheduledMessages">Scheduled messages</string>
+    <string name="Reminders">Reminders</string>
+    <string name="SetReminder">Set a reminder</string>
+    <string name="MessageScheduledOn">Scheduled for %1$s</string>
+    <string name="MessageScheduledLimitReached">Sorry, you can not schedule more than 100 messages.</string>
+    <string name="MessageScheduledBotAction">This action will become available after the message is published.</string>
+    <string name="MessageScheduledVote">Voting will become available after the message is published.</string>
+    <string name="MessageScheduledReminderNotification">&#128197; Reminder</string>
     <!--notification-->
     <string name="MessageLifetimeChanged">%1$s 님이 자동 삭제 타이머를 %2$s(으)로 맞췄습니다</string>
     <string name="MessageLifetimeChangedOutgoing">자동 삭제 타이머를 %1$s(으)로 맞추셨습니다</string>
     <string name="MessageLifetimeRemoved">%1$s 님이 자동 삭제 타이머를 껐습니다</string>
     <string name="MessageLifetimeYouRemoved">자동 삭제 타이머를 끄셨습니다</string>
     <string name="YouHaveNewMessage">새로운 메시지가 왔습니다</string>
+    <string name="NotificationMessageScheduled">&#128197; You: %1$s</string>
+    <string name="NotificationMessageScheduledName">&#128197; You</string>
     <string name="NotificationMessageText">%1$s: %2$s</string>
     <string name="NotificationMessageFew">%1$s 님이 회원님에게 %2$s을(를) 보냈습니다</string>
     <string name="NotificationMessageAlbum">%1$s 님이 나에게 앨범을 보냈습니다</string>
@@ -1045,7 +1064,7 @@
     <string name="SearchForPeopleAndGroups">사용자나 그룹을 검색하세요...</string>
     <!--group info view-->
     <string name="GroupMembers">참가자</string>
-    <string name="SharedMedia">공유된 미디어</string>
+    <string name="SharedMedia">공유한 미디어</string>
     <string name="SETTINGS">설정</string>
     <string name="AddSubscriber">구독자 추가</string>
     <string name="AddMember">참가자 추가</string>
@@ -1094,7 +1113,7 @@
     <string name="StartEncryptedChat">비밀 대화 시작</string>
     <string name="GroupsInCommon">공통 그룹</string>
     <string name="GroupsInCommonTitle">공통 그룹</string>
-    <string name="NoGroupsInCommon">공통 그룹 없음</string>
+    <string name="NoGroupsInCommon">공통 그룹이 없습니다</string>
     <string name="CreateEncryptedChatError">오류가 발생했습니다.</string>
     <string name="EncryptionKey">암호화 키</string>
     <string name="MessageLifetime">자동 삭제 타이머</string>
@@ -1212,6 +1231,8 @@
     <string name="ColorTheme">색 테마</string>
     <string name="BuiltInThemes">내장 테마</string>
     <string name="CustomThemes">맞춤 테마</string>
+    <string name="ThemeSetUrl">Set link</string>
+    <string name="ThemeUrl">Theme Link</string>
     <string name="ChatList">대화방 목록 뷰</string>
     <string name="ChatListDefault">두 줄</string>
     <string name="ChatListExpanded">세 줄</string>
@@ -1221,9 +1242,44 @@
     <string name="SelectColor">색 선택</string>
     <string name="ColorThemes">색 테마</string>
     <string name="ShowAllThemes">모든 테마 보기</string>
+    <string name="ThemeNotFound">Theme not found</string>
+    <string name="ThemeNotSupported">Sorry, this color theme doesn’t support your device yet.</string>
     <string name="CreateNewThemeMenu">새로운 테마 만들기</string>
+    <string name="NewThemeTitle">New Theme</string>
+    <string name="EditThemeTitle">Edit Theme</string>
     <string name="CreateNewThemeHelp">각 화면의 구성 요소 목록을 보려면 팔레트 아이콘을 누르세요. 이들을 수정하실 수 있습니다.</string>
     <string name="CreateNewThemeAlert">앱 안에서 색들을 바꾸어 회원님만의 테마를 만드실 수 있습니다.\n\n여기서 언제든지 기본 텔레그램 테마로 돌리실 수 있습니다.</string>
+    <string name="ThemeSetUrlHelp">You can use a-z, 0-9 and underscores.\nMinimum length is 5 characters.</string>
+    <string name="ThemeHelpLink">Your theme will be updated for all users each time you change it. Anyone can install it using this link:\n%1$s</string>
+    <string name="ThemeCreateHelp">Anyone can install your theme using this link. When you change the theme, it will be updated for all users who installed it.\n\nThe theme will be based on your currently selected theme and wallpaper.</string>
+    <string name="ThemeCreateHelp2">You can change the link of your theme.\n\nTheme links must be longer than 5 characters and can use a-z, 0-9 and underscores.</string>
+    <string name="ThemeNameInvalid">Sorry, theme name is invalid.</string>
+    <string name="SetUrlInvalid">Sorry, this link is invalid.</string>
+    <string name="SetUrlInvalidShort">A link must have at least 5 characters.</string>
+    <string name="SetUrlInvalidLong">The link must not exceed 64 characters.</string>
+    <string name="SetUrlInvalidStartNumber">Sorry, the link can\'t start with a number.</string>
+    <string name="SetUrlChecking">Checking link...</string>
+    <string name="SetUrlInUse">Sorry, this link is already taken.</string>
+    <string name="SetUrlAvailable">%1$s is available.</string>
+    <string name="SetUrlPlaceholder">Link</string>
+    <string name="ThemeNamePlaceholder">Name</string>
+    <string name="ThemePreviewTitle">Reinhardt</string>
+    <string name="ThemePreviewLine1">Reinhardt, we need to find you some new tunes &#127926;.</string>
+    <string name="ThemePreviewLine2">I can\'t even take you seriously right now.</string>
+    <string name="ThemePreviewLine3">Ah, you kids today with techno music! You should enjoy the classics, like Hasselhoff!</string>
+    <string name="ThemePreviewLine3Reply">Lucio</string>
+    <string name="ThemePreviewLine4">Bring it on! I LIVE for this!</string>
+    <string name="ThemePreviewSongTitle">True Survivor</string>
+    <string name="ThemePreviewSongPerformer">David Hasselhoff</string>
+    <string name="NewThemePreviewName">Bob Harris</string>
+    <string name="NewThemePreviewReply">Good morning! &#128075;</string>
+    <string name="NewThemePreviewLine1">Do you know what time it is?</string>
+    <string name="NewThemePreviewLine2">It\'s morning in Tokyo &#128526;</string>
+    <string name="UseDifferentTheme">Use a different theme</string>
+    <string name="UseDifferentThemeInfo">You can also use an existing custom theme as a foundation for your theme.</string>
+    <string name="ChooseTheme">Choose theme</string>
+    <string name="ExportTheme">Export</string>
+    <string name="Create">Create</string>
     <!--settings view-->
     <string name="ResetNotificationsText">모든 알림 설정이 기본으로 설정되었습니다</string>
     <string name="ResetNotificationsAlert">정말 모든 알림 설정을 기본으로 초기화하시겠습니까?</string>
@@ -1856,10 +1912,10 @@
     <string name="SharedLinksTab">링크</string>
     <string name="SharedMusicTab">오디오</string>
     <string name="SharedVoiceTab">음성</string>
-    <string name="DocumentsTitle">공유된 파일</string>
+    <string name="DocumentsTitle">공유한 파일</string>
     <string name="SharedContentTitle">공유하는 콘텐츠</string>
-    <string name="LinksTitle">공유된 링크</string>
-    <string name="AudioTitle">공유된 음악</string>
+    <string name="LinksTitle">공유한 링크</string>
+    <string name="AudioTitle">공유한 음악</string>
     <string name="NoMedia">사진과 동영상을 이 대화방에 공유하여\n어느 기기에서나 열람해 보세요.</string>
     <string name="NoSharedAudio">이 대화방에 음악을 공유해두면 회원님의 모든 기기에서 접근하실 수 있습니다.</string>
     <string name="NoSharedFiles">파일과 문서를 이 대화방에 공유하여\n어느 기기에서나 열람해 보세요.</string>
@@ -2047,7 +2103,7 @@
     <string name="RestoreEmailTrouble">%1$s 이메일에 접근하는 데 문제가 있으신가요?</string>
     <string name="RestoreEmailTroubleText">이메일에 접근하지 못한다면, 비밀번호를 기억해 내거나 계정을 초기화하시는 수밖에 없습니다.</string>
     <string name="ResetMyAccount">계정 초기화</string>
-    <string name="ResetMyAccountText">계정 초기화를 진행하시면 대화방과 메시지, 공유받은 파일 모두가 사라집니다.</string>
+    <string name="ResetMyAccountText">계정 초기화를 진행하시면, 대화방, 메시지와 더불어 공유한 미디어와 파일이 모두 사라집니다.</string>
     <string name="ResetMyAccountWarning">경고</string>
     <string name="ResetMyAccountWarningText">이 작업은 되돌릴 수 없습니다.\n\n계정을 초기화하시면, 메시지와 대화방이 모두 삭제됩니다.</string>
     <string name="ResetMyAccountWarningReset">계정 초기화</string>
@@ -2093,7 +2149,9 @@
     <string name="PrivacyProfilePhotoInfo2">앞선 설정을 무시하고 사용자나 그룹 전체를 예외로 추가하실 수 있습니다.</string>
     <string name="PrivacyPhone">전화번호</string>
     <string name="PrivacyPhoneTitle">내 전화번호를 볼 수 있는 사람</string>
-    <string name="PrivacyPhoneInfo">Users who already have your number saved in their contacts will see it on Telegram.</string>
+    <string name="PrivacyPhoneTitle2">Who can find me by my number?</string>
+    <string name="PrivacyPhoneInfo">이미 연락처에 회원님의 전화번호를 저장한 사용자는 텔레그램에서 전화번호를 볼 수 있습니다.</string>
+    <string name="PrivacyPhoneInfo3">Users who add your number to their contacts will see it on Telegram only if they are your contacts.</string>
     <string name="PrivacyPhoneInfo2">앞선 설정을 무시하고 사용자와 그룹을 예외로 추가하실 수 있습니다.</string>
     <string name="PrivacyForwards">전달된 메시지</string>
     <string name="PrivacyForwardsEverybody">회원님 계정으로 연결합니다</string>
@@ -2336,7 +2394,7 @@
     <string name="ShareYouLocationInline">봇이 요청을 받을 때마다 회원님의 위치를 확인합니다.이는 상세 위치 정보를 제공하는 데 사용됩니다.</string>
     <string name="ShareYouPhoneNumberTitle">전화번호를 공유할까요?</string>
     <string name="AreYouSureShareMyContactInfoBot">봇이 회원님의 전화번호를 감지할 것입니다. 이는 다른 서비스와 통합하는 데 도움이 됩니다.</string>
-    <string name="AreYouSureShareMyContactInfoUser">" **%2$s**님에게 %1$s번호를 공유하겠습니까?"</string>
+    <string name="AreYouSureShareMyContactInfoUser">" 정말 %1$s 번호를 %2$s 님과 공유하겠습니까?"</string>
     <string name="AreYouSureShareMyContactInfo">정말 전화번호를 공유하시겠습니까?</string>
     <string name="AreYouSureBlockContact2">정말 **%1$s** 님을 차단하시겠습니까?</string>
     <string name="AreYouSureUnblockContact">차단을 해제할까요?</string>
@@ -2373,8 +2431,8 @@
     <string name="SecretChatContextBotAlert">인라인 봇은 제3 개발자가 제공한다는 점을 유의하시기 바랍니다. 봇이 작동하는 과정에서, 봇의 사용자명 뒤에 입력하신 부호가 각 개발자에게 보내집니다</string>
     <string name="EditMessageError">죄송합니다. 메시지를 수정할 수 없습니다.</string>
     <string name="AllowReadCall">텔레그램이 전화를 수신 할 수 있도록 설정해주셔야 자동으로 코드 입력이 가능합니다.</string>
-    <string name="AllowReadCallAndLog">Please allow Telegram to receive calls and read the call log so that we can automatically enter your code for you.</string>
-    <string name="AllowReadCallLog">Please allow Telegram to read the call log so that we can automatically enter your code for you.</string>
+    <string name="AllowReadCallAndLog">텔레그램이 전화를 수신하고 통화 기록을 살필 수 있도록 허용해 주세요. 코드를 자동으로 입력해 드릴 수 있습니다.</string>
+    <string name="AllowReadCallLog">텔레그램이 통화 기록을 살필 수 있도록 허용해 주세요. 코드를 자동으로 입력해 드릴 수 있습니다.</string>
     <string name="AllowFillNumber">텔레그램이 전화를 받을 수 있도록 허용해 주셔야 회원님의 전화번호를 자동으로 확인할 수 있습니다.</string>
     <string name="UserRestricted">죄송합니다. 이 작업은 진행하실 수 없습니다.</string>
     <string name="YouBlockedUser">죄송합니다. 차단된 사용자나 봇은 그룹에 추가하실 수 없습니다. 먼저 차단을 해제해 주세요.</string>
@@ -2485,7 +2543,7 @@
     <string name="CallReportIncludeLogs">기술적 정보 포함</string>
     <string name="CallReportLogsExplain">대화 내용이 공개되지 않으며 빠른 시일 내로 문제를 해결해 드리는 데 도움이 됩니다.</string>
     <string name="CallReportSent">텔레그램 전화를 개선할 수 있도록 도와주셔서 감사합니다.</string>
-    <string name="VoipAnsweringAsAccount">%s 님으로 수신 중</string>
+    <string name="VoipAnsweringAsAccount">%s 님으로 받는 중</string>
     <string name="VoipQuickReplies">문자로 응답</string>
     <string name="VoipQuickRepliesExplain">이 빠른 응답 문구들을 전화가 걸려올 때 텔레그램 메시지로 보내실 수 있습니다. 무엇이든지 원하는 말로 바꾸세요.</string>
     <string name="QuickReplyDefault1">지금 대화할 수 없어요. 무슨 일인가요?</string>
@@ -2859,6 +2917,12 @@
     <string name="MediaSelected_few">미디어 %1$d개 선택됨</string>
     <string name="MediaSelected_many">미디어 %1$d개 선택됨</string>
     <string name="MediaSelected_other">미디어 %1$d개 선택됨</string>
+    <string name="ThemeInstallCount_zero">%1$d people are using this theme</string>
+    <string name="ThemeInstallCount_one">%1$d person is using this theme</string>
+    <string name="ThemeInstallCount_two">%1$d people are using this theme</string>
+    <string name="ThemeInstallCount_few">%1$d people are using this theme</string>
+    <string name="ThemeInstallCount_many">%1$d people are using this theme</string>
+    <string name="ThemeInstallCount_other">%1$d people are using this theme</string>
     <!--accessibility descriptions-->
     <string name="AccDescrGroup">그룹</string>
     <string name="AccDescrChannel">채널</string>
@@ -2959,5 +3023,12 @@
     <string name="formatterDay24H">HH:mm</string>
     <string name="formatterDay12H">a h:mm</string>
     <string name="formatDateAtTime">%1$s %2$s</string>
-    <string name="formatDateScheduleDay">EEE MMM d</string>
+    <string name="formatDateSchedule">MMM d</string>
+    <string name="formatDateScheduleYear">MMM d yyyy</string>
+    <string name="SendTodayAt">\'Send today at\' HH:mm</string>
+    <string name="SendDayAt">\'Send on\' MMM d \'at\' HH:mm</string>
+    <string name="SendDayYearAt">\'Send on\' MMM d yyyy \'at\' HH:mm</string>
+    <string name="RemindTodayAt">\'Remind today at\' HH:mm</string>
+    <string name="RemindDayAt">\'Remind on\' MMM d \'at\' HH:mm</string>
+    <string name="RemindDayYearAt">\'Remind on\' MMM d yyyy \'at\' HH:mm</string>
 </resources>

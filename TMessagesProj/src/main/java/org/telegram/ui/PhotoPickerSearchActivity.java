@@ -31,10 +31,11 @@ import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ActionBar.ThemeDescription;
 import org.telegram.ui.Components.EditTextBoldCursor;
+import org.telegram.ui.Components.EditTextEmoji;
 import org.telegram.ui.Components.LayoutHelper;
-import org.telegram.ui.Components.PickerBottomLayout;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.ScrollSlidingTextTabStrip;
+import org.telegram.ui.Components.SizeNotifierFrameLayout;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -60,6 +61,7 @@ public class PhotoPickerSearchActivity extends BaseFragment {
     private PhotoPickerActivity imagesSearch;
     private PhotoPickerActivity gifsSearch;
     private ActionBarMenuItem searchItem;
+    private EditTextEmoji commentTextView;
 
     private boolean sendPressed;
     private int selectPhotoType;
@@ -191,8 +193,8 @@ public class PhotoPickerSearchActivity extends BaseFragment {
         ViewConfiguration configuration = ViewConfiguration.get(context);
         maximumVelocity = configuration.getScaledMaximumFlingVelocity();
 
-        FrameLayout frameLayout;
-        fragmentView = frameLayout = new FrameLayout(context) {
+        SizeNotifierFrameLayout sizeNotifierFrameLayout;
+        fragmentView = sizeNotifierFrameLayout = new SizeNotifierFrameLayout(context) {
 
             private int startedTrackingPointerId;
             private boolean startedTracking;
@@ -238,6 +240,18 @@ public class PhotoPickerSearchActivity extends BaseFragment {
                 setMeasuredDimension(widthSize, heightSize);
 
                 measureChildWithMargins(actionBar, widthMeasureSpec, 0, heightMeasureSpec, 0);
+                int keyboardSize = getKeyboardHeight();
+                if (keyboardSize <= AndroidUtilities.dp(20)) {
+                    if (!AndroidUtilities.isInMultiwindow) {
+                        heightSize -= commentTextView.getEmojiPadding();
+                        heightMeasureSpec = MeasureSpec.makeMeasureSpec(heightSize, MeasureSpec.EXACTLY);
+                    }
+                } else {
+                    globalIgnoreLayout = true;
+                    commentTextView.hideEmojiView();
+                    globalIgnoreLayout = false;
+                }
+
                 int actionBarHeight = actionBar.getMeasuredHeight();
                 globalIgnoreLayout = true;
                 for (int a = 0; a < viewPages.length; a++) {
@@ -256,8 +270,87 @@ public class PhotoPickerSearchActivity extends BaseFragment {
                     if (child == null || child.getVisibility() == GONE || child == actionBar) {
                         continue;
                     }
-                    measureChildWithMargins(child, widthMeasureSpec, 0, heightMeasureSpec, 0);
+                    if (commentTextView != null && commentTextView.isPopupView(child)) {
+                        if (AndroidUtilities.isInMultiwindow || AndroidUtilities.isTablet()) {
+                            if (AndroidUtilities.isTablet()) {
+                                child.measure(MeasureSpec.makeMeasureSpec(widthSize, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(Math.min(AndroidUtilities.dp(AndroidUtilities.isTablet() ? 200 : 320), heightSize - AndroidUtilities.statusBarHeight + getPaddingTop()), MeasureSpec.EXACTLY));
+                            } else {
+                                child.measure(MeasureSpec.makeMeasureSpec(widthSize, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(heightSize - AndroidUtilities.statusBarHeight + getPaddingTop(), MeasureSpec.EXACTLY));
+                            }
+                        } else {
+                            child.measure(MeasureSpec.makeMeasureSpec(widthSize, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(child.getLayoutParams().height, MeasureSpec.EXACTLY));
+                        }
+                    } else {
+                        measureChildWithMargins(child, widthMeasureSpec, 0, heightMeasureSpec, 0);
+                    }
                 }
+            }
+
+            @Override
+            protected void onLayout(boolean changed, int l, int t, int r, int b) {
+                final int count = getChildCount();
+
+                int paddingBottom = getKeyboardHeight() <= AndroidUtilities.dp(20) && !AndroidUtilities.isInMultiwindow && !AndroidUtilities.isTablet() ? commentTextView.getEmojiPadding() : 0;
+                setBottomClip(paddingBottom);
+
+                for (int i = 0; i < count; i++) {
+                    final View child = getChildAt(i);
+                    if (child.getVisibility() == GONE) {
+                        continue;
+                    }
+                    final LayoutParams lp = (LayoutParams) child.getLayoutParams();
+
+                    final int width = child.getMeasuredWidth();
+                    final int height = child.getMeasuredHeight();
+
+                    int childLeft;
+                    int childTop;
+
+                    int gravity = lp.gravity;
+                    if (gravity == -1) {
+                        gravity = Gravity.TOP | Gravity.LEFT;
+                    }
+
+                    final int absoluteGravity = gravity & Gravity.HORIZONTAL_GRAVITY_MASK;
+                    final int verticalGravity = gravity & Gravity.VERTICAL_GRAVITY_MASK;
+
+                    switch (absoluteGravity & Gravity.HORIZONTAL_GRAVITY_MASK) {
+                        case Gravity.CENTER_HORIZONTAL:
+                            childLeft = (r - l - width) / 2 + lp.leftMargin - lp.rightMargin;
+                            break;
+                        case Gravity.RIGHT:
+                            childLeft = (r - l) - width - lp.rightMargin - getPaddingRight();
+                            break;
+                        case Gravity.LEFT:
+                        default:
+                            childLeft = lp.leftMargin + getPaddingLeft();
+                    }
+
+                    switch (verticalGravity) {
+                        case Gravity.TOP:
+                            childTop = lp.topMargin + getPaddingTop();
+                            break;
+                        case Gravity.CENTER_VERTICAL:
+                            childTop = ((b - paddingBottom) - t - height) / 2 + lp.topMargin - lp.bottomMargin;
+                            break;
+                        case Gravity.BOTTOM:
+                            childTop = ((b - paddingBottom) - t) - height - lp.bottomMargin;
+                            break;
+                        default:
+                            childTop = lp.topMargin;
+                    }
+
+                    if (commentTextView != null && commentTextView.isPopupView(child)) {
+                        if (AndroidUtilities.isTablet()) {
+                            childTop = getMeasuredHeight() - child.getMeasuredHeight();
+                        } else {
+                            childTop = getMeasuredHeight() + getKeyboardHeight() - child.getMeasuredHeight();
+                        }
+                    }
+                    child.layout(childLeft, childTop, childLeft + width, childTop + height);
+                }
+
+                notifyHeightChanged();
             }
 
             @Override
@@ -456,13 +549,32 @@ public class PhotoPickerSearchActivity extends BaseFragment {
                 return false;
             }
         };
-        frameLayout.setWillNotDraw(false);
+        sizeNotifierFrameLayout.setWillNotDraw(false);
 
         imagesSearch.setParentFragment(this);
-        PickerBottomLayout pickerBottomLayout = imagesSearch.getPickerBottomLayout();
-        ViewGroup parent = (ViewGroup) pickerBottomLayout.getParent();
-        parent.removeView(pickerBottomLayout);
-        gifsSearch.setPickerBottomLayout(pickerBottomLayout);
+        commentTextView = imagesSearch.commentTextView;
+        commentTextView.setSizeNotifierLayout(sizeNotifierFrameLayout);
+        for (int a = 0; a < 4; a++) {
+            View view;
+            switch (a) {
+                case 0:
+                    view = imagesSearch.frameLayout2;
+                    break;
+                case 1:
+                    view = imagesSearch.writeButtonContainer;
+                    break;
+                case 2:
+                    view = imagesSearch.selectedCountView;
+                    break;
+                case 3:
+                default:
+                    view = imagesSearch.shadow;
+                    break;
+            }
+            ViewGroup parent = (ViewGroup) view.getParent();
+            parent.removeView(view);
+        }
+        gifsSearch.setLayoutViews(imagesSearch.frameLayout2, imagesSearch.writeButtonContainer, imagesSearch.selectedCountView, imagesSearch.shadow, imagesSearch.commentTextView );
         gifsSearch.setParentFragment(this);
 
         for (int a = 0; a < viewPages.length; a++) {
@@ -478,7 +590,7 @@ public class PhotoPickerSearchActivity extends BaseFragment {
                     }
                 }
             };
-            frameLayout.addView(viewPages[a], LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+            sizeNotifierFrameLayout.addView(viewPages[a], LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
             if (a == 0) {
                 viewPages[a].parentFragment = imagesSearch;
                 viewPages[a].listView = imagesSearch.getListView();
@@ -531,13 +643,12 @@ public class PhotoPickerSearchActivity extends BaseFragment {
             });
         }
 
-        frameLayout.addView(actionBar, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+        sizeNotifierFrameLayout.addView(actionBar, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
-        View shadowView = new View(context);
-        shadowView.setBackgroundColor(Theme.getColor(Theme.key_dialogShadowLine));
-        frameLayout.addView(shadowView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 1, Gravity.LEFT | Gravity.BOTTOM, 0, 0, 0, 48));
-
-        frameLayout.addView(pickerBottomLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.LEFT | Gravity.BOTTOM));
+        sizeNotifierFrameLayout.addView(imagesSearch.shadow, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 3, Gravity.BOTTOM | Gravity.LEFT, 0, 0, 0, 48));
+        sizeNotifierFrameLayout.addView(imagesSearch.frameLayout2, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.LEFT | Gravity.BOTTOM));
+        sizeNotifierFrameLayout.addView(imagesSearch.writeButtonContainer, LayoutHelper.createFrame(60, 60, Gravity.RIGHT | Gravity.BOTTOM, 0, 0, 6, 10));
+        sizeNotifierFrameLayout.addView(imagesSearch.selectedCountView, LayoutHelper.createFrame(42, 24, Gravity.RIGHT | Gravity.BOTTOM, 0, 0, -8, 9));
 
         updateTabs();
         switchToCurrentSelectedMode(false);
@@ -551,13 +662,19 @@ public class PhotoPickerSearchActivity extends BaseFragment {
         super.onResume();
         if (searchItem != null) {
             searchItem.openSearch(true);
-            getParentActivity().getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_PAN);
+            getParentActivity().getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
         }
         if (imagesSearch != null) {
             imagesSearch.onResume();
         }
         if (gifsSearch != null) {
             gifsSearch.onResume();
+        }
+    }
+
+    public void setCaption(CharSequence text) {
+        if (imagesSearch != null) {
+            imagesSearch.setCaption(text);
         }
     }
 

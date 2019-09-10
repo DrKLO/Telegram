@@ -603,9 +603,9 @@ public class ImageLoader {
                 fileProgresses.remove(cacheImage.url);
                 AndroidUtilities.runOnUIThread(() -> {
                     if (result) {
-                        NotificationCenter.getInstance(cacheImage.currentAccount).postNotificationName(NotificationCenter.fileDidLoad, cacheImage.url);
+                        NotificationCenter.getInstance(cacheImage.currentAccount).postNotificationName(NotificationCenter.fileDidLoad, cacheImage.url, cacheImage.finalFilePath);
                     } else {
-                        NotificationCenter.getInstance(cacheImage.currentAccount).postNotificationName(NotificationCenter.fileDidFailedLoad, cacheImage.url, 2);
+                        NotificationCenter.getInstance(cacheImage.currentAccount).postNotificationName(NotificationCenter.fileDidFailToLoad, cacheImage.url, 2);
                     }
                 });
             });
@@ -617,7 +617,7 @@ public class ImageLoader {
             imageLoadQueue.postRunnable(() -> runHttpTasks(true));
             Utilities.stageQueue.postRunnable(() -> {
                 fileProgresses.remove(cacheImage.url);
-                AndroidUtilities.runOnUIThread(() -> NotificationCenter.getInstance(cacheImage.currentAccount).postNotificationName(NotificationCenter.fileDidFailedLoad, cacheImage.url, 1));
+                AndroidUtilities.runOnUIThread(() -> NotificationCenter.getInstance(cacheImage.currentAccount).postNotificationName(NotificationCenter.fileDidFailToLoad, cacheImage.url, 1));
             });
         }
     }
@@ -987,16 +987,24 @@ public class ImageLoader {
                             float photoW = opts.outWidth;
                             float photoH = opts.outHeight;
                             float scaleFactor;
-                            if (w_filter > h_filter && photoW > photoH) {
+                            if (w_filter >= h_filter && photoW > photoH) {
                                 scaleFactor = Math.max(photoW / w_filter, photoH / h_filter);
                             } else {
                                 scaleFactor = Math.min(photoW / w_filter, photoH / h_filter);
                             }
-                            if (scaleFactor < 1) {
+                            if (scaleFactor < 1.2f) {
                                 scaleFactor = 1;
                             }
                             opts.inJustDecodeBounds = false;
-                            opts.inSampleSize = (int) scaleFactor;
+                            if (scaleFactor > 1.0f && (photoW > w_filter || photoH > h_filter)) {
+                                int sample = 1;
+                                do {
+                                    sample *= 2;
+                                } while (sample * 2 < scaleFactor);
+                                opts.inSampleSize = sample;
+                            } else {
+                                opts.inSampleSize = (int) scaleFactor;
+                            }
                         }
                     } else if (mediaThumbPath != null) {
                         opts.inJustDecodeBounds = true;
@@ -1011,11 +1019,15 @@ public class ImageLoader {
                         if (scaleFactor < 1) {
                             scaleFactor = 1;
                         }
-                        int sample = 1;
-                        do {
-                            sample *= 2;
-                        } while (sample * 2 < scaleFactor);
-                        opts.inSampleSize = sample;
+                        if (scaleFactor > 1.0f) {
+                            int sample = 1;
+                            do {
+                                sample *= 2;
+                            } while (sample * 2 < scaleFactor);
+                            opts.inSampleSize = sample;
+                        } else {
+                            opts.inSampleSize = (int) scaleFactor;
+                        }
                     }
                 } catch (Throwable e) {
                     FileLog.e(e);
@@ -1370,7 +1382,9 @@ public class ImageLoader {
         protected ArrayList<Integer> imageTypes = new ArrayList<>();
 
         public void addImageReceiver(ImageReceiver imageReceiver, String key, String filter, int type, int guid) {
-            if (imageReceiverArray.contains(imageReceiver)) {
+            int index = imageReceiverArray.indexOf(imageReceiver);
+            if (index >= 0) {
+                imageReceiverGuidsArray.set(index, guid);
                 return;
             }
             imageReceiverArray.add(imageReceiver);
@@ -1413,11 +1427,7 @@ public class ImageLoader {
                     a--;
                 }
             }
-            if (imageReceiverArray.size() == 0) {
-                for (int a = 0; a < imageReceiverArray.size(); a++) {
-                    imageLoadingByTag.remove(imageReceiverArray.get(a).getTag(currentImageType));
-                }
-                imageReceiverArray.clear();
+            if (imageReceiverArray.isEmpty()) {
                 if (imageLocation != null) {
                     if (!forceLoadingImages.containsKey(key)) {
                         if (imageLocation.location != null) {
@@ -1627,7 +1637,7 @@ public class ImageLoader {
                                 AndroidUtilities.addMediaToGallery(finalFile.toString());
                             }
                         }
-                        NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.fileDidLoad, location);
+                        NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.fileDidLoad, location, finalFile);
                         ImageLoader.this.fileDidLoaded(location, finalFile, type);
                     });
                 }
@@ -1637,7 +1647,7 @@ public class ImageLoader {
                     fileProgresses.remove(location);
                     AndroidUtilities.runOnUIThread(() -> {
                         ImageLoader.this.fileDidFailedLoad(location, canceled);
-                        NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.fileDidFailedLoad, location, canceled);
+                        NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.fileDidFailToLoad, location, canceled);
                     });
                 }
 

@@ -89,7 +89,7 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
             timeItem.setContentDescription(LocaleController.getString("SetTimer", R.string.SetTimer));
         }
 
-        if (parentFragment != null) {
+        if (parentFragment != null && !parentFragment.isInScheduleMode()) {
             setOnClickListener(v -> {
                 TLRPC.User user = parentFragment.getCurrentUser();
                 TLRPC.Chat chat = parentFragment.getCurrentChat();
@@ -265,7 +265,7 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
             return;
         }
         TLRPC.User user = parentFragment.getCurrentUser();
-        if (UserObject.isUserSelf(user)) {
+        if (UserObject.isUserSelf(user) || parentFragment.isInScheduleMode()) {
             if (subtitleTextView.getVisibility() != GONE) {
                 subtitleTextView.setVisibility(GONE);
             }

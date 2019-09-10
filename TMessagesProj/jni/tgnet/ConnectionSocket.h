@@ -74,6 +74,7 @@ private:
     std::string currentSecretDomain;
 
     bool tlsHashMismatch = false;
+    bool tlsBufferSized = true;
     NativeByteBuffer *tlsBuffer = nullptr;
     ByteArray *tempBuffer = nullptr;
     size_t bytesRead = 0;

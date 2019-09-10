@@ -734,7 +734,7 @@ public class SharedConfig {
                     new File(videoPath, ".nomedia").createNewFile();
                 }
             }
-        } catch (Exception e) {
+        } catch (Throwable e) {
             FileLog.e(e);
         }
     }

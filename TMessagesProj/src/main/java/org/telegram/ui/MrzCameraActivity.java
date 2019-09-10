@@ -169,10 +169,6 @@ public class MrzCameraActivity extends BaseFragment implements Camera.PreviewCal
         backgroundHandlerThread.quitSafely();
     }
 
-    public void cancel() {
-        NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.recordStopped, 0);
-    }
-
     public void hideCamera(boolean async) {
         destroy(async, null);
     }

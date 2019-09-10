@@ -10,6 +10,7 @@ import android.app.Activity;
 import android.app.Dialog;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
@@ -67,6 +68,7 @@ import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.BuildConfig;
+import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.DownloadController;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
@@ -6277,6 +6279,12 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
         req.settings = new TLRPC.TL_codeSettings();
         req.settings.allow_flashcall = simcardAvailable && allowCall;
         req.settings.allow_app_hash = ApplicationLoader.hasPlayServices;
+        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
+        if (req.settings.allow_app_hash) {
+            preferences.edit().putString("sms_hash", BuildVars.SMS_HASH).commit();
+        } else {
+            preferences.edit().remove("sms_hash").commit();
+        }
         if (req.settings.allow_flashcall) {
             try {
                 @SuppressLint("HardwareIds")
@@ -6804,7 +6812,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
             chatAttachAlert.setDelegate(new ChatAttachAlert.ChatAttachViewDelegate() {
 
                 @Override
-                public void didPressedButton(int button, boolean arg) {
+                public void didPressedButton(int button, boolean arg, boolean notify, int scheduleDate) {
                     if (getParentActivity() == null || chatAttachAlert == null) {
                         return;
                     }
@@ -6904,7 +6912,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
             fragment.setAllowSearchImages(false);
             fragment.setDelegate(new PhotoAlbumPickerActivity.PhotoAlbumPickerActivityDelegate() {
                 @Override
-                public void didSelectPhotos(ArrayList<SendMessagesHelper.SendingMediaInfo> photos) {
+                public void didSelectPhotos(ArrayList<SendMessagesHelper.SendingMediaInfo> photos, boolean notify, int scheduleDate) {
                     processSelectedFiles(photos);
                 }
 
@@ -6930,8 +6938,9 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
             fragment.setCanSelectOnlyImageFiles(true);
             fragment.setMaxSelectedFiles(getMaxSelectedDocuments());
             fragment.setDelegate(new DocumentSelectActivity.DocumentSelectActivityDelegate() {
+
                 @Override
-                public void didSelectFiles(DocumentSelectActivity activity, ArrayList<String> files) {
+                public void didSelectFiles(DocumentSelectActivity activity, ArrayList<String> files, boolean notify, int scheduleDate) {
                     activity.finishFragment();
                     ArrayList<SendMessagesHelper.SendingMediaInfo> arrayList = new ArrayList<>();
                     for (int a = 0, count = files.size(); a < count; a++) {

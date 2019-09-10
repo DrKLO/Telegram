@@ -510,6 +510,7 @@ public class FileLoadOperation {
                 }
                 if (range.start <= offset && range.end > offset) {
                     availableLength = 0;
+                    break;
                 }
             }
             if (availableLength == 0) {
@@ -716,7 +717,12 @@ public class FileLoadOperation {
         delayedRequestInfos = new ArrayList<>(currentMaxDownloadRequests - 1);
         state = stateDownloading;
 
-        cacheFileFinal = new File(storePath, fileNameFinal);
+        if (parentObject instanceof TLRPC.TL_theme) {
+            TLRPC.TL_theme theme = (TLRPC.TL_theme) parentObject;
+            cacheFileFinal = new File(ApplicationLoader.getFilesDirFixed(), "remote" + theme.id + ".attheme");
+        } else {
+            cacheFileFinal = new File(storePath, fileNameFinal);
+        }
         boolean finalFileExist = cacheFileFinal.exists();
         if (finalFileExist && totalBytesCount != 0 && totalBytesCount != cacheFileFinal.length()) {
             cacheFileFinal.delete();
@@ -1127,7 +1133,17 @@ public class FileLoadOperation {
                     }
                 }
                 if (!ungzip) {
-                    boolean renameResult = cacheFileTemp.renameTo(cacheFileFinal);
+                    boolean renameResult;
+                    if (parentObject instanceof TLRPC.TL_theme) {
+                        try {
+                            renameResult = AndroidUtilities.copyFile(cacheFileTemp, cacheFileFinal);
+                        } catch (Exception e) {
+                            renameResult = false;
+                            FileLog.e(e);
+                        }
+                    } else {
+                        renameResult = cacheFileTemp.renameTo(cacheFileFinal);
+                    }
                     if (!renameResult) {
                         if (BuildVars.LOGS_ENABLED) {
                             FileLog.e("unable to rename temp = " + cacheFileTemp + " to final = " + cacheFileFinal + " retry = " + renameRetryCount);

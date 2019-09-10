@@ -21,15 +21,15 @@ dependencies {
 
     compileOnly 'org.checkerframework:checker-qual:2.5.2'
     compileOnly 'org.checkerframework:checker-compat-qual:2.5.0'
-    implementation 'com.google.firebase:firebase-messaging:19.0.1'
-    implementation 'com.google.firebase:firebase-config:18.0.0'
+    implementation 'com.google.firebase:firebase-messaging:20.0.0'
+    implementation 'com.google.firebase:firebase-config:19.0.0'
     implementation 'com.google.android.gms:play-services-maps:17.0.0'
     implementation 'com.google.android.gms:play-services-auth:17.0.0'
     implementation 'com.google.android.gms:play-services-vision:16.2.0'
     implementation 'com.google.android.gms:play-services-wallet:17.0.0'
     implementation 'com.google.android.gms:play-services-wearable:17.0.0'
     implementation 'com.google.android.gms:play-services-location:17.0.0'
-    implementation 'net.hockeyapp.android:HockeySDK:5.1.1'
+    implementation 'net.hockeyapp.android:HockeySDK:5.2.0'
     implementation 'com.googlecode.mp4parser:isoparser:1.0.6'
     implementation 'com.stripe:stripe-android:2.0.2'
 }
@@ -51,6 +51,7 @@ android {
     lintOptions {
         disable 'MissingTranslation'
         disable 'ExtraTranslation'
+        disable 'BlockedPrivateApi'
     }
 
     dexOptions {
@@ -242,7 +243,7 @@ android {
         }
     }
 
-    defaultConfig.versionCode = 1684
+    defaultConfig.versionCode = 1710
 
     applicationVariants.all { variant ->
         variant.outputs.all { output ->
@@ -276,7 +277,7 @@ android {
     defaultConfig {
         minSdkVersion 16
         targetSdkVersion 27
-        versionName "5.10.0"
+        versionName "5.11.0"
 
         vectorDrawables.generatedDensities = ['mdpi', 'hdpi', 'xhdpi', 'xxhdpi']
 

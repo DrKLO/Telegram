@@ -520,22 +520,22 @@ public class LoginActivity extends BaseFragment {
             doneProgressView.setTag(1);
             doneProgressView.setVisibility(View.VISIBLE);
             doneItemAnimation.playTogether(
-                    ObjectAnimator.ofFloat(doneItem.getContentView(), "scaleX", 0.1f),
-                    ObjectAnimator.ofFloat(doneItem.getContentView(), "scaleY", 0.1f),
-                    ObjectAnimator.ofFloat(doneItem.getContentView(), "alpha", 0.0f),
-                    ObjectAnimator.ofFloat(doneProgressView, "scaleX", 1.0f),
-                    ObjectAnimator.ofFloat(doneProgressView, "scaleY", 1.0f),
-                    ObjectAnimator.ofFloat(doneProgressView, "alpha", 1.0f));
+                    ObjectAnimator.ofFloat(doneItem.getContentView(), View.SCALE_X, 0.1f),
+                    ObjectAnimator.ofFloat(doneItem.getContentView(), View.SCALE_Y, 0.1f),
+                    ObjectAnimator.ofFloat(doneItem.getContentView(), View.ALPHA, 0.0f),
+                    ObjectAnimator.ofFloat(doneProgressView, View.SCALE_X, 1.0f),
+                    ObjectAnimator.ofFloat(doneProgressView, View.SCALE_Y, 1.0f),
+                    ObjectAnimator.ofFloat(doneProgressView, View.ALPHA, 1.0f));
         } else {
             doneProgressView.setTag(null);
             doneItem.getContentView().setVisibility(View.VISIBLE);
             doneItemAnimation.playTogether(
-                    ObjectAnimator.ofFloat(doneProgressView, "scaleX", 0.1f),
-                    ObjectAnimator.ofFloat(doneProgressView, "scaleY", 0.1f),
-                    ObjectAnimator.ofFloat(doneProgressView, "alpha", 0.0f),
-                    ObjectAnimator.ofFloat(doneItem.getContentView(), "scaleX", 1.0f),
-                    ObjectAnimator.ofFloat(doneItem.getContentView(), "scaleY", 1.0f),
-                    ObjectAnimator.ofFloat(doneItem.getContentView(), "alpha", 1.0f));
+                    ObjectAnimator.ofFloat(doneProgressView, View.SCALE_X, 0.1f),
+                    ObjectAnimator.ofFloat(doneProgressView, View.SCALE_Y, 0.1f),
+                    ObjectAnimator.ofFloat(doneProgressView, View.ALPHA, 0.0f),
+                    ObjectAnimator.ofFloat(doneItem.getContentView(), View.SCALE_X, 1.0f),
+                    ObjectAnimator.ofFloat(doneItem.getContentView(), View.SCALE_Y, 1.0f),
+                    ObjectAnimator.ofFloat(doneItem.getContentView(), View.ALPHA, 1.0f));
         }
         doneItemAnimation.addListener(new AnimatorListenerAdapter() {
             @Override
@@ -1247,6 +1247,12 @@ public class LoginActivity extends BaseFragment {
             req.settings = new TLRPC.TL_codeSettings();
             req.settings.allow_flashcall = simcardAvailable && allowCall && allowCancelCall && allowReadCallLog;
             req.settings.allow_app_hash = ApplicationLoader.hasPlayServices;
+            SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
+            if (req.settings.allow_app_hash) {
+                preferences.edit().putString("sms_hash", BuildVars.SMS_HASH).commit();
+            } else {
+                preferences.edit().remove("sms_hash").commit();
+            }
             if (req.settings.allow_flashcall) {
                 try {
                     String number = tm.getLine1Number();
@@ -2039,7 +2045,7 @@ public class LoginActivity extends BaseFragment {
 
         @Override
         public void onNextPressed() {
-            if (nextPressed) {
+            if (nextPressed || currentViewNum < 1 || currentViewNum > 4) {
                 return;
             }
 
@@ -2063,9 +2069,9 @@ public class LoginActivity extends BaseFragment {
             req.phone_code_hash = phoneHash;
             destroyTimer();
             int reqId = ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
-                nextPressed = false;
                 boolean ok = false;
                 if (error == null) {
+                    nextPressed = false;
                     ok = true;
                     needHideProgress(false);
                     destroyTimer();
@@ -2089,6 +2095,7 @@ public class LoginActivity extends BaseFragment {
                         ok = true;
                         TLRPC.TL_account_getPassword req2 = new TLRPC.TL_account_getPassword();
                         ConnectionsManager.getInstance(currentAccount).sendRequest(req2, (response1, error1) -> AndroidUtilities.runOnUIThread(() -> {
+                            nextPressed = false;
                             needHideProgress(false);
                             if (error1 == null) {
                                 TLRPC.TL_account_password password = (TLRPC.TL_account_password) response1;
@@ -3174,7 +3181,7 @@ public class LoginActivity extends BaseFragment {
                 }
             };
             avatarImage.setRoundRadius(AndroidUtilities.dp(32));
-            avatarDrawable.setInfo(5, null, null, false);
+            avatarDrawable.setInfo(5, null, null);
             avatarImage.setImageDrawable(avatarDrawable);
             editTextContainer.addView(avatarImage, LayoutHelper.createFrame(64, 64, Gravity.TOP | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT), 0, 16, 0, 0));
 

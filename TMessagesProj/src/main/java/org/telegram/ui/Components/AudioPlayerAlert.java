@@ -736,9 +736,9 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
                     for (int a = 0; a < dids.size(); a++) {
                         long did = dids.get(a);
                         if (message != null) {
-                            SendMessagesHelper.getInstance(currentAccount).sendMessage(message.toString(), did, null, null, true, null, null, null);
+                            SendMessagesHelper.getInstance(currentAccount).sendMessage(message.toString(), did, null, null, true, null, null, null, true, 0);
                         }
-                        SendMessagesHelper.getInstance(currentAccount).sendMessage(fmessages, did);
+                        SendMessagesHelper.getInstance(currentAccount).sendMessage(fmessages, did, true, 0);
                     }
                     fragment1.finishFragment();
                 } else {
@@ -821,19 +821,15 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
             int lower_part = (int) did;
             int high_id = (int) (did >> 32);
             if (lower_part != 0) {
-                if (high_id == 1) {
-                    args.putInt("chat_id", lower_part);
-                } else {
-                    if (lower_part > 0) {
-                        args.putInt("user_id", lower_part);
-                    } else if (lower_part < 0) {
-                        TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-lower_part);
-                        if (chat != null && chat.migrated_to != null) {
-                            args.putInt("migrated_to", lower_part);
-                            lower_part = -chat.migrated_to.channel_id;
-                        }
-                        args.putInt("chat_id", -lower_part);
+                if (lower_part > 0) {
+                    args.putInt("user_id", lower_part);
+                } else if (lower_part < 0) {
+                    TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-lower_part);
+                    if (chat != null && chat.migrated_to != null) {
+                        args.putInt("migrated_to", lower_part);
+                        lower_part = -chat.migrated_to.channel_id;
                     }
+                    args.putInt("chat_id", -lower_part);
                 }
             } else {
                 args.putInt("enc_id", high_id);

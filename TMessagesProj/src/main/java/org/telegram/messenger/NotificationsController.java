@@ -489,7 +489,7 @@ public class NotificationsController extends BaseController {
                     long messageId = inbox.get(key);
                     for (int a = 0; a < pushMessages.size(); a++) {
                         MessageObject messageObject = pushMessages.get(a);
-                        if (messageObject.getDialogId() == key && messageObject.getId() <= (int) messageId) {
+                        if (!messageObject.messageOwner.from_scheduled && messageObject.getDialogId() == key && messageObject.getId() <= (int) messageId) {
                             if (isPersonalMessage(messageObject)) {
                                 personal_count--;
                             }
@@ -599,6 +599,7 @@ public class NotificationsController extends BaseController {
             SharedPreferences preferences = getAccountInstance().getNotificationsSettings();
             boolean allowPinned = preferences.getBoolean("PinnedMessages", true);
             int popup = 0;
+            boolean hasScheduled = false;
 
             for (int a = 0; a < messageObjects.size(); a++) {
                 MessageObject messageObject = messageObjects.get(a);
@@ -683,6 +684,9 @@ public class NotificationsController extends BaseController {
                     if (!isFcm) {
                         popup = addToPopupMessages(popupArrayAdd, messageObject, lower_id, dialog_id, isChannel, preferences);
                     }
+                    if (!hasScheduled) {
+                        hasScheduled = messageObject.messageOwner.from_scheduled;
+                    }
                     delayedPushMessages.add(messageObject);
                     pushMessages.add(0, messageObject);
                     if (mid != 0) {
@@ -718,7 +722,7 @@ public class NotificationsController extends BaseController {
                     }
                 });
             }
-            if (isFcm) {
+            if (isFcm || hasScheduled) {
                 if (edited) {
                     delayedPushMessages.clear();
                     showOrUpdateNotification(notifyCheck);
@@ -823,7 +827,7 @@ public class NotificationsController extends BaseController {
                     pushDialogsOverrideMention.remove(dialog_id);
                     for (int a = 0; a < pushMessages.size(); a++) {
                         MessageObject messageObject = pushMessages.get(a);
-                        if (messageObject.getDialogId() == dialog_id) {
+                        if (!messageObject.messageOwner.from_scheduled && messageObject.getDialogId() == dialog_id) {
                             if (isPersonalMessage(messageObject)) {
                                 personal_count--;
                             }
@@ -1531,13 +1535,14 @@ public class NotificationsController extends BaseController {
             text[0] = true;
             return (String) messageObject.messageText;
         }
+        int selfUsedId = getUserConfig().getClientUserId();
         if (from_id == 0) {
             if (messageObject.isFromUser() || messageObject.getId() < 0) {
                 from_id = messageObject.messageOwner.from_id;
             } else {
                 from_id = -chat_id;
             }
-        } else if (from_id == getUserConfig().getClientUserId()) {
+        } else if (from_id == selfUsedId) {
             from_id = messageObject.messageOwner.from_id;
         }
 
@@ -1551,9 +1556,17 @@ public class NotificationsController extends BaseController {
 
         String name = null;
         if (from_id > 0) {
-            TLRPC.User user = getMessagesController().getUser(from_id);
-            if (user != null) {
-                name = UserObject.getUserName(user);
+            if (messageObject.messageOwner.from_scheduled) {
+                if (dialog_id == selfUsedId) {
+                    name = LocaleController.getString("MessageScheduledReminderNotification", R.string.MessageScheduledReminderNotification);
+                } else {
+                    name = LocaleController.getString("NotificationMessageScheduledName", R.string.NotificationMessageScheduledName);
+                }
+            } else {
+                TLRPC.User user = getMessagesController().getUser(from_id);
+                if (user != null) {
+                    name = UserObject.getUserName(user);
+                }
             }
         } else {
             TLRPC.Chat chat = getMessagesController().getChat(-from_id);
@@ -1691,7 +1704,7 @@ public class NotificationsController extends BaseController {
                                 if (messageObject.messageOwner.to_id.channel_id != 0 && !chat.megagroup) {
                                     msg = LocaleController.formatString("ChannelAddedByNotification", R.string.ChannelAddedByNotification, name, chat.title);
                                 } else {
-                                    if (singleUserId == getUserConfig().getClientUserId()) {
+                                    if (singleUserId == selfUsedId) {
                                         msg = LocaleController.formatString("NotificationInvitedToGroup", R.string.NotificationInvitedToGroup, name, chat.title);
                                     } else {
                                         TLRPC.User u2 = getMessagesController().getUser(singleUserId);
@@ -1734,7 +1747,7 @@ public class NotificationsController extends BaseController {
                                 msg = LocaleController.formatString("NotificationEditedGroupPhoto", R.string.NotificationEditedGroupPhoto, name, chat.title);
                             }
                         } else if (messageObject.messageOwner.action instanceof TLRPC.TL_messageActionChatDeleteUser) {
-                            if (messageObject.messageOwner.action.user_id == getUserConfig().getClientUserId()) {
+                            if (messageObject.messageOwner.action.user_id == selfUsedId) {
                                 msg = LocaleController.formatString("NotificationGroupKickYou", R.string.NotificationGroupKickYou, name, chat.title);
                             } else if (messageObject.messageOwner.action.user_id == from_id) {
                                 msg = LocaleController.formatString("NotificationGroupLeftMember", R.string.NotificationGroupLeftMember, name, chat.title);
@@ -2912,11 +2925,17 @@ public class NotificationsController extends BaseController {
             return;
         }
 
+        SharedPreferences preferences = getAccountInstance().getNotificationsSettings();
+
         ArrayList<Long> sortedDialogs = new ArrayList<>();
         LongSparseArray<ArrayList<MessageObject>> messagesByDialogs = new LongSparseArray<>();
         for (int a = 0; a < pushMessages.size(); a++) {
             MessageObject messageObject = pushMessages.get(a);
             long dialog_id = messageObject.getDialogId();
+            int dismissDate = preferences.getInt("dismissDate" + dialog_id, 0);
+            if (messageObject.messageOwner.date <= dismissDate) {
+                continue;
+            }
 
             ArrayList<MessageObject> arrayList = messagesByDialogs.get(dialog_id);
             if (arrayList == null) {
@@ -2957,6 +2976,8 @@ public class NotificationsController extends BaseController {
         if (useSummaryNotification && Build.VERSION.SDK_INT >= 26) {
             checkOtherNotificationsChannel();
         }
+
+        int selfUserId = getUserConfig().getClientUserId();
 
         for (int b = 0, size = sortedDialogs.size(); b < size; b++) {
             long dialog_id = sortedDialogs.get(b);
@@ -3016,6 +3037,9 @@ public class NotificationsController extends BaseController {
                         if (user.photo != null && user.photo.photo_small != null && user.photo.photo_small.volume_id != 0 && user.photo.photo_small.local_id != 0) {
                             photoPath = user.photo.photo_small;
                         }
+                    }
+                    if (lowerId == selfUserId) {
+                        name = LocaleController.getString("MessageScheduledReminderNotification", R.string.MessageScheduledReminderNotification);
                     }
                 } else {
                     chat = getMessagesController().getChat(-lowerId);
@@ -3091,7 +3115,7 @@ public class NotificationsController extends BaseController {
 
             NotificationCompat.Action wearReplyAction = null;
 
-            if ((!isChannel || isSupergroup) && canReply && !SharedConfig.isWaitingForPasscodeEnter) {
+            if ((!isChannel || isSupergroup) && canReply && !SharedConfig.isWaitingForPasscodeEnter && selfUserId != lowerId) {
                 Intent replyIntent = new Intent(ApplicationLoader.applicationContext, WearReplyReceiver.class);
                 replyIntent.putExtra("dialog_id", dialog_id);
                 replyIntent.putExtra("max_id", max_id);
@@ -3142,6 +3166,11 @@ public class NotificationsController extends BaseController {
             for (int a = messageObjects.size() - 1; a >= 0; a--) {
                 MessageObject messageObject = messageObjects.get(a);
                 String message = getShortStringForMessage(messageObject, senderName, preview);
+                if (dialog_id == selfUserId) {
+                    senderName[0] = name;
+                } else if (lowerId < 0 && messageObject.messageOwner.from_scheduled) {
+                    senderName[0] = LocaleController.getString("NotificationMessageScheduledName", R.string.NotificationMessageScheduledName);
+                }
                 if (message == null) {
                     if (BuildVars.LOGS_ENABLED) {
                         FileLog.w("message text is null for " + messageObject.getId() + " did = " + messageObject.getDialogId());
@@ -3151,10 +3180,15 @@ public class NotificationsController extends BaseController {
                 if (text.length() > 0) {
                     text.append("\n\n");
                 }
-                if (senderName[0] != null) {
-                    text.append(String.format("%1$s: %2$s", senderName[0], message));
-                } else {
+                if (dialog_id != selfUserId && messageObject.messageOwner.from_scheduled && lowerId > 0) {
+                    message = String.format("%1$s: %2$s", LocaleController.getString("NotificationMessageScheduledName", R.string.NotificationMessageScheduledName), message);
                     text.append(message);
+                } else {
+                    if (senderName[0] != null) {
+                        text.append(String.format("%1$s: %2$s", senderName[0], message));
+                    } else {
+                        text.append(message);
+                    }
                 }
 
                 //unreadConvBuilder.addMessage(message);
@@ -3332,7 +3366,7 @@ public class NotificationsController extends BaseController {
                 summaryExtender.setDismissalId("summary_" + dismissalID);
                 notificationBuilder.extend(summaryExtender);
             }
-            wearableExtender.setBridgeTag("tgaccount" + getUserConfig().getClientUserId());
+            wearableExtender.setBridgeTag("tgaccount" + selfUserId);
 
             long date = ((long) messageObjects.get(0).messageOwner.date) * 1000;
 
@@ -3352,6 +3386,12 @@ public class NotificationsController extends BaseController {
                     .extend(wearableExtender)
                     .setSortKey("" + (Long.MAX_VALUE - date))
                     .setCategory(NotificationCompat.CATEGORY_MESSAGE);
+
+            Intent dismissIntent = new Intent(ApplicationLoader.applicationContext, NotificationDismissReceiver.class);
+            dismissIntent.putExtra("messageDate", max_date);
+            dismissIntent.putExtra("dialogId", dialog_id);
+            dismissIntent.putExtra("currentAccount", currentAccount);
+            builder.setDeleteIntent(PendingIntent.getBroadcast(ApplicationLoader.applicationContext, 1, dismissIntent, PendingIntent.FLAG_UPDATE_CURRENT));
 
             if (useSummaryNotification) {
                 builder.setGroup(notificationGroup);
@@ -3457,7 +3497,7 @@ public class NotificationsController extends BaseController {
         if (serializedNotifications != null) {
             try {
                 JSONObject s = new JSONObject();
-                s.put("id", getUserConfig().getClientUserId());
+                s.put("id", selfUserId);
                 s.put("n", serializedNotifications);
                 WearDataLayerListenerService.sendMessageToWatch("/notify", s.toString().getBytes(), "remote_notifications");
             } catch (Exception ignore) {

@@ -41,8 +41,8 @@ public class Emoji {
     private static boolean inited = false;
     private static Paint placeholderPaint;
     private static final int splitCount = 4;
-    private static Bitmap emojiBmp[][] = new Bitmap[8][splitCount];
-    private static boolean loadingEmoji[][] = new boolean[8][splitCount];
+    private static Bitmap[][] emojiBmp = new Bitmap[8][splitCount];
+    private static boolean[][] loadingEmoji = new boolean[8][splitCount];
 
     public static HashMap<String, Integer> emojiUseHistory = new HashMap<>();
     public static ArrayList<String> recentEmoji = new ArrayList<>();
@@ -213,7 +213,7 @@ public class Emoji {
         return ed;
     }
 
-    public static boolean isValidEmoji(String code) {
+    public static boolean isValidEmoji(CharSequence code) {
         DrawableInfo info = rects.get(code);
         if (info == null) {
             CharSequence newCode = EmojiData.emojiAliasMap.get(code);
@@ -629,7 +629,7 @@ public class Emoji {
                         StringBuilder string = new StringBuilder();
                         for (int a = 0; a < 4; a++) {
                             char ch = (char) value;
-                            string.insert(0, String.valueOf(ch));
+                            string.insert(0, ch);
                             value >>= 16;
                             if (value == 0) {
                                 break;

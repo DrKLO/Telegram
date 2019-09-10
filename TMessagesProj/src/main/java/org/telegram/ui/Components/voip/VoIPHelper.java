@@ -79,12 +79,7 @@ public class VoIPHelper {
 			if (isAirplaneMode) {
 				final Intent settingsIntent = new Intent(Settings.ACTION_AIRPLANE_MODE_SETTINGS);
 				if (settingsIntent.resolveActivity(activity.getPackageManager()) != null) {
-					bldr.setNeutralButton(LocaleController.getString("VoipOfflineOpenSettings", R.string.VoipOfflineOpenSettings), new DialogInterface.OnClickListener() {
-						@Override
-						public void onClick(DialogInterface dialog, int which) {
-							activity.startActivity(settingsIntent);
-						}
-					});
+					bldr.setNeutralButton(LocaleController.getString("VoipOfflineOpenSettings", R.string.VoipOfflineOpenSettings), (dialog, which) -> activity.startActivity(settingsIntent));
 				}
 			}
 			bldr.show();
@@ -109,19 +104,11 @@ public class VoIPHelper {
 						.setMessage(AndroidUtilities.replaceTags(LocaleController.formatString("VoipOngoingAlert", R.string.VoipOngoingAlert,
 								ContactsController.formatName(callUser.first_name, callUser.last_name),
 								ContactsController.formatName(user.first_name, user.last_name))))
-						.setPositiveButton(LocaleController.getString("OK", R.string.OK), new DialogInterface.OnClickListener() {
-							@Override
-							public void onClick(DialogInterface dialog, int which) {
-								if (VoIPService.getSharedInstance() != null) {
-									VoIPService.getSharedInstance().hangUp(new Runnable() {
-										@Override
-										public void run() {
-											doInitiateCall(user, activity);
-										}
-									});
-								} else {
-									doInitiateCall(user, activity);
-								}
+						.setPositiveButton(LocaleController.getString("OK", R.string.OK), (dialog, which) -> {
+							if (VoIPService.getSharedInstance() != null) {
+								VoIPService.getSharedInstance().hangUp(() -> doInitiateCall(user, activity));
+							} else {
+								doInitiateCall(user, activity);
 							}
 						})
 						.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null)
@@ -160,22 +147,16 @@ public class VoIPHelper {
 					.setTitle(LocaleController.getString("AppName", R.string.AppName))
 					.setMessage(LocaleController.getString("VoipNeedMicPermission", R.string.VoipNeedMicPermission))
 					.setPositiveButton(LocaleController.getString("OK", R.string.OK), null)
-					.setNegativeButton(LocaleController.getString("Settings", R.string.Settings), new DialogInterface.OnClickListener() {
-						@Override
-						public void onClick(DialogInterface dialog, int which) {
-							Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
-							Uri uri = Uri.fromParts("package", activity.getPackageName(), null);
-							intent.setData(uri);
-							activity.startActivity(intent);
-						}
+					.setNegativeButton(LocaleController.getString("Settings", R.string.Settings), (dialog, which) -> {
+						Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+						Uri uri = Uri.fromParts("package", activity.getPackageName(), null);
+						intent.setData(uri);
+						activity.startActivity(intent);
 					})
 					.show();
-			dlg.setOnDismissListener(new DialogInterface.OnDismissListener() {
-				@Override
-				public void onDismiss(DialogInterface dialog) {
-					if (onFinish != null)
-						onFinish.run();
-				}
+			dlg.setOnDismissListener(dialog -> {
+				if (onFinish != null)
+					onFinish.run();
 			});
 		}
 	}
@@ -215,7 +196,7 @@ public class VoIPHelper {
 				try {
 					long accessHash = Long.parseLong(d[1]);
 					showRateAlert(context, null, call.call_id, accessHash, UserConfig.selectedAccount, true);
-				} catch (Exception x) {
+				} catch (Exception ignore) {
 				}
 				return;
 			}
@@ -410,7 +391,7 @@ public class VoIPHelper {
 							}
 							if (includeLogs[0] && log.exists() && req.rating < 4) {
 								AccountInstance accountInstance = AccountInstance.getInstance(UserConfig.selectedAccount);
-								SendMessagesHelper.prepareSendingDocument(accountInstance, log.getAbsolutePath(), log.getAbsolutePath(), null, TextUtils.join(" ", problemTags), "text/plain", VOIP_SUPPORT_ID, null, null, null);
+								SendMessagesHelper.prepareSendingDocument(accountInstance, log.getAbsolutePath(), log.getAbsolutePath(), null, TextUtils.join(" ", problemTags), "text/plain", VOIP_SUPPORT_ID, null, null, null, true, 0);
 								Toast.makeText(context, LocaleController.getString("CallReportSent", R.string.CallReportSent), Toast.LENGTH_LONG).show();
 							}
 						}

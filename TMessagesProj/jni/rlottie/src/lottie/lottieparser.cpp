@@ -622,6 +622,10 @@ void LottieParserImpl::parseComposition() {
         parsingError = true;
         return;
     }
+    if (comp->mVersion.empty() || !comp->mRootLayer) {
+        // don't have a valid bodymovin header
+        return;
+    }
     resolveLayerRefs();
     comp->setStatic(comp->mRootLayer->isStatic());
     comp->mRootLayer->mInFrame = comp->mStartFrame;
@@ -1969,7 +1973,7 @@ void LottieParserImpl::getValue(std::vector<VPointF> &v) {
 
 void LottieParserImpl::getValue(VPointF &pt)
 {
-    float val[4];
+    float val[4] = {0.f};
     int   i = 0;
 
     if (PeekType() == kArrayType) EnterArray();
@@ -1978,7 +1982,10 @@ void LottieParserImpl::getValue(VPointF &pt)
         if (parsingError) {
             return;
         }
-        val[i++] = GetDouble();
+        const auto value = GetDouble();
+        if (i < 4) {
+            val[i++] = value;
+        }
     }
     if (!IsValid()) {
         parsingError = true;
@@ -2014,7 +2021,7 @@ void LottieParserImpl::getValue(float &val)
 
 void LottieParserImpl::getValue(LottieColor &color)
 {
-    float val[4];
+    float val[4] = {0.f};
     int   i = 0;
     if (PeekType() == kArrayType) EnterArray();
 
@@ -2022,7 +2029,10 @@ void LottieParserImpl::getValue(LottieColor &color)
         if (parsingError) {
             return;
         }
-        val[i++] = GetDouble();
+        const auto value = GetDouble();
+        if (i < 4) {
+            val[i++] = value;
+        }
     }
     if (!IsValid()) {
         parsingError = true;

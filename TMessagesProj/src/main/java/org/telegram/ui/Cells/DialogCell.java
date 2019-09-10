@@ -316,6 +316,7 @@ public class DialogCell extends BaseCell {
         attachedToWindow = true;
         cornerProgress = 0.0f;
         setTranslationX(0);
+        setTranslationY(0);
     }
 
     @Override
@@ -1434,7 +1435,7 @@ public class DialogCell extends BaseCell {
             unreadCount = customDialog.unread_count;
             drawPin = customDialog.pinned;
             dialogMuted = customDialog.muted;
-            avatarDrawable.setInfo(customDialog.id, customDialog.name, null, false);
+            avatarDrawable.setInfo(customDialog.id, customDialog.name, null);
             avatarImage.setImage(null, "50_50", avatarDrawable, null, 0);
         } else {
             if (isDialogCell) {
@@ -1553,20 +1554,16 @@ public class DialogCell extends BaseCell {
                 int lower_id = (int) dialogId;
                 int high_id = (int) (dialogId >> 32);
                 if (lower_id != 0) {
-                    if (high_id == 1) {
-                        chat = MessagesController.getInstance(currentAccount).getChat(lower_id);
-                    } else {
-                        if (lower_id < 0) {
-                            chat = MessagesController.getInstance(currentAccount).getChat(-lower_id);
-                            if (!isDialogCell && chat != null && chat.migrated_to != null) {
-                                TLRPC.Chat chat2 = MessagesController.getInstance(currentAccount).getChat(chat.migrated_to.channel_id);
-                                if (chat2 != null) {
-                                    chat = chat2;
-                                }
+                    if (lower_id < 0) {
+                        chat = MessagesController.getInstance(currentAccount).getChat(-lower_id);
+                        if (!isDialogCell && chat != null && chat.migrated_to != null) {
+                            TLRPC.Chat chat2 = MessagesController.getInstance(currentAccount).getChat(chat.migrated_to.channel_id);
+                            if (chat2 != null) {
+                                chat = chat2;
                             }
-                        } else {
-                            user = MessagesController.getInstance(currentAccount).getUser(lower_id);
                         }
+                    } else {
+                        user = MessagesController.getInstance(currentAccount).getUser(lower_id);
                     }
                 } else {
                     encryptedChat = MessagesController.getInstance(currentAccount).getEncryptedChat(high_id);
@@ -1877,8 +1874,8 @@ public class DialogCell extends BaseCell {
                 if (drawCheck1) {
                     setDrawableBounds(Theme.dialogs_halfCheckDrawable, halfCheckDrawLeft, checkDrawTop);
                     Theme.dialogs_halfCheckDrawable.draw(canvas);
-                    setDrawableBounds(Theme.dialogs_checkDrawable, checkDrawLeft, checkDrawTop);
-                    Theme.dialogs_checkDrawable.draw(canvas);
+                    setDrawableBounds(Theme.dialogs_checkReadDrawable, checkDrawLeft, checkDrawTop);
+                    Theme.dialogs_checkReadDrawable.draw(canvas);
                 } else {
                     setDrawableBounds(Theme.dialogs_checkDrawable, checkDrawLeft, checkDrawTop);
                     Theme.dialogs_checkDrawable.draw(canvas);

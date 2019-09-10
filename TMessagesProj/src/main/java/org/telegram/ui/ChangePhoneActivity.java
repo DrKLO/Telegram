@@ -14,6 +14,7 @@ import android.animation.AnimatorListenerAdapter;
 import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
 import android.annotation.SuppressLint;
+import android.app.Activity;
 import android.app.Dialog;
 import android.content.Context;
 import android.content.Intent;
@@ -50,6 +51,7 @@ import android.widget.TextView;
 
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.MessagesStorage;
@@ -751,6 +753,12 @@ public class ChangePhoneActivity extends BaseFragment {
             req.settings = new TLRPC.TL_codeSettings();
             req.settings.allow_flashcall = simcardAvailable && allowCall;
             req.settings.allow_app_hash = ApplicationLoader.hasPlayServices;
+            SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
+            if (req.settings.allow_app_hash) {
+                preferences.edit().putString("sms_hash", BuildVars.SMS_HASH).commit();
+            } else {
+                preferences.edit().remove("sms_hash").commit();
+            }
             if (req.settings.allow_flashcall) {
                 try {
                     @SuppressLint("HardwareIds") String number = tm.getLine1Number();

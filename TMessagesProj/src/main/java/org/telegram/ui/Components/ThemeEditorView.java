@@ -97,7 +97,7 @@ public class ThemeEditorView {
     private WallpaperUpdater wallpaperUpdater;
     private EditorAlert editorAlert;
 
-    private String currentThemeName;
+    private Theme.ThemeInfo themeInfo;
 
     @SuppressLint("StaticFieldLeak")
     private static volatile ThemeEditorView Instance = null;
@@ -142,8 +142,6 @@ public class ThemeEditorView {
         private FrameLayout bottomLayout;
         private View[] shadow = new View[2];
         private AnimatorSet[] shadowAnimation = new AnimatorSet[2];
-        private TextView cancelButton;
-        private TextView defaultButtom;
         private TextView saveButton;
 
         private Drawable shadowDrawable;
@@ -160,21 +158,18 @@ public class ThemeEditorView {
 
         private class SearchField extends FrameLayout {
 
-            private View searchBackground;
-            private ImageView searchIconImageView;
             private ImageView clearSearchImageView;
-            private CloseProgressDrawable2 progressDrawable;
             private EditTextBoldCursor searchEditText;
             private View backgroundView;
 
             public SearchField(Context context) {
                 super(context);
 
-                searchBackground = new View(context);
+                View searchBackground = new View(context);
                 searchBackground.setBackgroundDrawable(Theme.createRoundRectDrawable(AndroidUtilities.dp(18), 0xfff2f4f5));
                 addView(searchBackground, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 36, Gravity.LEFT | Gravity.TOP, 14, 11, 14, 0));
 
-                searchIconImageView = new ImageView(context);
+                ImageView searchIconImageView = new ImageView(context);
                 searchIconImageView.setScaleType(ImageView.ScaleType.CENTER);
                 searchIconImageView.setImageResource(R.drawable.smiles_inputsearch);
                 searchIconImageView.setColorFilter(new PorterDuffColorFilter(0xffa1a8af, PorterDuff.Mode.MULTIPLY));
@@ -182,6 +177,7 @@ public class ThemeEditorView {
 
                 clearSearchImageView = new ImageView(context);
                 clearSearchImageView.setScaleType(ImageView.ScaleType.CENTER);
+                CloseProgressDrawable2 progressDrawable;
                 clearSearchImageView.setImageDrawable(progressDrawable = new CloseProgressDrawable2());
                 progressDrawable.setSide(AndroidUtilities.dp(7));
                 clearSearchImageView.setScaleX(0.1f);
@@ -854,7 +850,7 @@ public class ThemeEditorView {
             saveButton.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
             bottomSaveLayout.addView(saveButton, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.RIGHT));
             saveButton.setOnClickListener(v -> {
-                Theme.saveCurrentTheme(currentThemeName, true);
+                Theme.saveCurrentTheme(themeInfo, true, false, false);
                 setOnDismissListener(null);
                 dismiss();
                 close();
@@ -865,7 +861,7 @@ public class ThemeEditorView {
             bottomLayout.setBackgroundColor(0xffffffff);
             containerView.addView(bottomLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.LEFT | Gravity.BOTTOM));
 
-            cancelButton = new TextView(context);
+            TextView cancelButton = new TextView(context);
             cancelButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             cancelButton.setTextColor(0xff19a7e8);
             cancelButton.setGravity(Gravity.CENTER);
@@ -885,7 +881,7 @@ public class ThemeEditorView {
             linearLayout.setOrientation(LinearLayout.HORIZONTAL);
             bottomLayout.addView(linearLayout, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.RIGHT));
 
-            defaultButtom = new TextView(context);
+            TextView defaultButtom = new TextView(context);
             defaultButtom.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             defaultButtom.setTextColor(0xff19a7e8);
             defaultButtom.setGravity(Gravity.CENTER);
@@ -990,7 +986,7 @@ public class ThemeEditorView {
                 if (parentActivity != null) {
                     ((LaunchActivity) parentActivity).rebuildAllFragments(false);
                 }
-                Theme.saveCurrentTheme(currentThemeName, false);
+                Theme.saveCurrentTheme(themeInfo, false, false, false);
                 if (listView.getAdapter() == listAdapter) {
                     AndroidUtilities.hideKeyboard(getCurrentFocus());
                 }
@@ -1284,10 +1280,10 @@ public class ThemeEditorView {
             private Context context;
             private int currentCount;
             private ArrayList<ArrayList<ThemeDescription>> items = new ArrayList<>();
-            private HashMap<String, ArrayList<ThemeDescription>> itemsMap = new HashMap<>();
 
             public ListAdapter(Context context, ThemeDescription[] descriptions) {
                 this.context = context;
+                HashMap<String, ArrayList<ThemeDescription>> itemsMap = new HashMap<>();
                 for (int a = 0; a < descriptions.length; a++) {
                     ThemeDescription description = descriptions[a];
                     String key = description.getCurrentKey();
@@ -1360,12 +1356,12 @@ public class ThemeEditorView {
         }
     }
 
-    public void show(Activity activity, final String themeName) {
+    public void show(Activity activity, final Theme.ThemeInfo theme) {
         if (Instance != null) {
             Instance.destroy();
         }
         hidden = false;
-        currentThemeName = themeName;
+        themeInfo = theme;
         windowView = new FrameLayout(activity) {
 
             private float startX;
@@ -1504,7 +1500,7 @@ public class ThemeEditorView {
         wallpaperUpdater = new WallpaperUpdater(activity, null, new WallpaperUpdater.WallpaperUpdaterDelegate() {
             @Override
             public void didSelectWallpaper(File file, Bitmap bitmap, boolean gallery) {
-                Theme.setThemeWallpaper(themeName, bitmap, file);
+                Theme.setThemeWallpaper(themeInfo, bitmap, file);
             }
 
             @Override
@@ -1697,7 +1693,7 @@ public class ThemeEditorView {
                 animatorSet.addListener(new AnimatorListenerAdapter() {
                     @Override
                     public void onAnimationEnd(Animator animation) {
-                        Theme.saveCurrentTheme(currentThemeName, true);
+                        Theme.saveCurrentTheme(themeInfo, true, false, false);
                         destroy();
                     }
                 });

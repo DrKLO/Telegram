@@ -27,6 +27,7 @@ import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.DownloadController;
 import org.telegram.messenger.FileLoader;
+import org.telegram.messenger.MediaController;
 import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocationController;
@@ -90,6 +91,10 @@ public class BaseFragment {
 
     public int getCurrentAccount() {
         return currentAccount;
+    }
+
+    public int getClassGuid() {
+        return classGuid;
     }
 
     protected void setInPreviewMode(boolean value) {
@@ -504,6 +509,10 @@ public class BaseFragment {
 
     public NotificationCenter getNotificationCenter() {
         return getAccountInstance().getNotificationCenter();
+    }
+
+    public MediaController getMediaController() {
+        return MediaController.getInstance();
     }
 
     public UserConfig getUserConfig() {

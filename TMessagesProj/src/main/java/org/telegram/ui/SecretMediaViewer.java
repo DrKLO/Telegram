@@ -410,6 +410,10 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
     @Override
     public void didReceivedNotification(int id, int account, Object... args) {
         if (id == NotificationCenter.messagesDeleted) {
+            boolean scheduled = (Boolean) args[2];
+            if (scheduled) {
+                return;
+            }
             if (currentMessageObject == null) {
                 return;
             }

@@ -54,6 +54,7 @@ import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.ScamDrawable;
 import org.telegram.ui.Components.SeekBarView;
 import org.telegram.ui.Components.TypefaceSpan;
+import org.telegram.ui.Components.VideoTimelineView;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
@@ -330,6 +331,9 @@ public class ThemeDescription {
                 ((ActionBar) viewToInvalidate).setPopupBackgroundColor(color);
             }
         }
+        if (viewToInvalidate instanceof VideoTimelineView) {
+            ((VideoTimelineView) viewToInvalidate).setColor(color);
+        }
         if (viewToInvalidate instanceof EmptyTextProgressView) {
             if ((changeFlags & FLAG_TEXTCOLOR) != 0) {
                 ((EmptyTextProgressView) viewToInvalidate).setTextColor(color);
@@ -571,6 +575,8 @@ public class ThemeDescription {
                                     if ((changeFlags & FLAG_HINTTEXTCOLOR) != 0) {
                                         ((EditTextCaption) object).setHintColor(color);
                                         ((EditTextCaption) object).setHintTextColor(color);
+                                    } else if ((changeFlags & FLAG_CURSORCOLOR) != 0) {
+                                        ((EditTextCaption) object).setCursorColor(color);
                                     } else {
                                         ((EditTextCaption) object).setTextColor(color);
                                     }

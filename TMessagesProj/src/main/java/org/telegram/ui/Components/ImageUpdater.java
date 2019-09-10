@@ -168,12 +168,12 @@ public class ImageUpdater implements NotificationCenter.NotificationCenterDelega
 
             }
 
-            private void sendSelectedPhotos(HashMap<Object, Object> photos, ArrayList<Object> order) {
+            private void sendSelectedPhotos(HashMap<Object, Object> photos, ArrayList<Object> order, boolean notify, int scheduleDate) {
 
             }
 
             @Override
-            public void actionButtonPressed(boolean canceled) {
+            public void actionButtonPressed(boolean canceled, boolean notify, int scheduleDate) {
                 if (photos.isEmpty() || delegate == null || sendPressed || canceled) {
                     return;
                 }
@@ -198,6 +198,11 @@ public class ImageUpdater implements NotificationCenter.NotificationCenterDelega
                     }
                 }
                 didSelectPhotos(media);
+            }
+
+            @Override
+            public void onCaptionChanged(CharSequence caption) {
+
             }
         });
         fragment.setInitialSearchString(delegate.getInitialSearchString());
@@ -226,7 +231,7 @@ public class ImageUpdater implements NotificationCenter.NotificationCenterDelega
                             bitmap = ImageLoader.loadBitmap(path.getAbsolutePath(), null, 800, 800, true);
                         } else {
                             NotificationCenter.getInstance(currentAccount).addObserver(ImageUpdater.this, NotificationCenter.fileDidLoad);
-                            NotificationCenter.getInstance(currentAccount).addObserver(ImageUpdater.this, NotificationCenter.fileDidFailedLoad);
+                            NotificationCenter.getInstance(currentAccount).addObserver(ImageUpdater.this, NotificationCenter.fileDidFailToLoad);
                             uploadingImage = FileLoader.getAttachFileName(photoSize.location);
                             imageReceiver.setImage(ImageLocation.getForPhoto(photoSize, info.searchImage.photo), null, null, "jpg", null, 1);
                         }
@@ -291,7 +296,7 @@ public class ImageUpdater implements NotificationCenter.NotificationCenterDelega
         PhotoAlbumPickerActivity fragment = new PhotoAlbumPickerActivity(1, false, false, null);
         fragment.setDelegate(new PhotoAlbumPickerActivity.PhotoAlbumPickerActivityDelegate() {
             @Override
-            public void didSelectPhotos(ArrayList<SendMessagesHelper.SendingMediaInfo> photos) {
+            public void didSelectPhotos(ArrayList<SendMessagesHelper.SendingMediaInfo> photos, boolean notify, int scheduleDate) {
                 ImageUpdater.this.didSelectPhotos(photos);
             }
 
@@ -357,7 +362,7 @@ public class ImageUpdater implements NotificationCenter.NotificationCenterDelega
                 arrayList.add(new MediaController.PhotoEntry(0, 0, 0, currentPicturePath, orientation, false));
                 PhotoViewer.getInstance().openPhotoForSelect(arrayList, 0, PhotoViewer.SELECT_TYPE_AVATAR, new PhotoViewer.EmptyPhotoViewerProvider() {
                     @Override
-                    public void sendButtonPressed(int index, VideoEditedInfo videoEditedInfo) {
+                    public void sendButtonPressed(int index, VideoEditedInfo videoEditedInfo, boolean notify, int scheduleDate) {
                         String path = null;
                         MediaController.PhotoEntry photoEntry = (MediaController.PhotoEntry) arrayList.get(0);
                         if (photoEntry.imagePath != null) {
@@ -454,11 +459,11 @@ public class ImageUpdater implements NotificationCenter.NotificationCenterDelega
                     delegate = null;
                 }
             }
-        } else if (id == NotificationCenter.fileDidLoad || id == NotificationCenter.fileDidFailedLoad || id == NotificationCenter.httpFileDidLoad || id == NotificationCenter.httpFileDidFailedLoad) {
+        } else if (id == NotificationCenter.fileDidLoad || id == NotificationCenter.fileDidFailToLoad || id == NotificationCenter.httpFileDidLoad || id == NotificationCenter.httpFileDidFailedLoad) {
             String path = (String) args[0];
             if (path.equals(uploadingImage)) {
                 NotificationCenter.getInstance(currentAccount).removeObserver(ImageUpdater.this, NotificationCenter.fileDidLoad);
-                NotificationCenter.getInstance(currentAccount).removeObserver(ImageUpdater.this, NotificationCenter.fileDidFailedLoad);
+                NotificationCenter.getInstance(currentAccount).removeObserver(ImageUpdater.this, NotificationCenter.fileDidFailToLoad);
                 NotificationCenter.getInstance(currentAccount).removeObserver(ImageUpdater.this, NotificationCenter.httpFileDidLoad);
                 NotificationCenter.getInstance(currentAccount).removeObserver(ImageUpdater.this, NotificationCenter.httpFileDidFailedLoad);
 

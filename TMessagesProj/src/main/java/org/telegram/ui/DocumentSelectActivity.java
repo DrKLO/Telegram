@@ -30,6 +30,7 @@ import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
+import org.telegram.messenger.UserObject;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BackDrawable;
 import org.telegram.ui.ActionBar.Theme;
@@ -39,6 +40,7 @@ import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.Cells.GraySectionCell;
 import org.telegram.ui.Cells.SharedDocumentCell;
+import org.telegram.ui.Components.AlertsCreator;
 import org.telegram.ui.Components.EmptyTextProgressView;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.NumberTextView;
@@ -60,7 +62,7 @@ import androidx.recyclerview.widget.RecyclerView;
 public class DocumentSelectActivity extends BaseFragment {
 
     public interface DocumentSelectActivityDelegate {
-        void didSelectFiles(DocumentSelectActivity activity, ArrayList<String> files);
+        void didSelectFiles(DocumentSelectActivity activity, ArrayList<String> files, boolean notify, int scheduleDate);
         void startDocumentSelectActivity();
         default void startMusicSelectActivity(BaseFragment parentFragment) {}
     }
@@ -70,6 +72,7 @@ public class DocumentSelectActivity extends BaseFragment {
     private NumberTextView selectedMessagesCountTextView;
     private EmptyTextProgressView emptyView;
     private LinearLayoutManager layoutManager;
+    private ChatActivity parentFragment;
 
     private File currentDir;
     private ArrayList<ListItem> items = new ArrayList<>();
@@ -94,7 +97,6 @@ public class DocumentSelectActivity extends BaseFragment {
         String ext = "";
         String thumb;
         File file;
-        long date;
     }
 
     private class HistoryEntry {
@@ -189,9 +191,12 @@ public class DocumentSelectActivity extends BaseFragment {
                 } else if (id == done) {
                     if (delegate != null) {
                         ArrayList<String> files = new ArrayList<>(selectedFiles.keySet());
-                        delegate.didSelectFiles(DocumentSelectActivity.this, files);
-                        for (ListItem item : selectedFiles.values()) {
-                            item.date = System.currentTimeMillis();
+                        if (parentFragment != null && parentFragment.isInScheduleMode()) {
+                            AlertsCreator.createScheduleDatePickerDialog(getParentActivity(), UserObject.isUserSelf(parentFragment.getCurrentUser()), (notify, scheduleDate) -> {
+                                delegate.didSelectFiles(DocumentSelectActivity.this, files, notify, scheduleDate);
+                            });
+                        } else {
+                            delegate.didSelectFiles(DocumentSelectActivity.this, files, true, 0);
                         }
                     }
                 }
@@ -365,7 +370,13 @@ public class DocumentSelectActivity extends BaseFragment {
                     if (delegate != null) {
                         ArrayList<String> files = new ArrayList<>();
                         files.add(file.getAbsolutePath());
-                        delegate.didSelectFiles(DocumentSelectActivity.this, files);
+                        if (parentFragment != null && parentFragment.isInScheduleMode()) {
+                            AlertsCreator.createScheduleDatePickerDialog(getParentActivity(), UserObject.isUserSelf(parentFragment.getCurrentUser()), (notify, scheduleDate) -> {
+                                delegate.didSelectFiles(DocumentSelectActivity.this, files, notify, scheduleDate);
+                            });
+                        } else {
+                            delegate.didSelectFiles(DocumentSelectActivity.this, files, true, 0);
+                        }
                     }
                 }
             }
@@ -374,6 +385,10 @@ public class DocumentSelectActivity extends BaseFragment {
         listRoots();
 
         return fragmentView;
+    }
+
+    public void setChatActivity(ChatActivity chatActivity) {
+        parentFragment = chatActivity;
     }
 
     public void setMaxSelectedFiles(int value) {

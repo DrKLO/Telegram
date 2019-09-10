@@ -228,7 +228,7 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
 
         }
 
-        default void onStickerSelected(View view, TLRPC.Document sticker, Object parent) {
+        default void onStickerSelected(View view, TLRPC.Document sticker, Object parent, boolean notify, int scheduleDate) {
 
         }
 
@@ -240,7 +240,7 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
 
         }
 
-        default void onGifSelected(View view, Object gif, Object parent) {
+        default void onGifSelected(View view, Object gif, Object parent, boolean notify, int scheduleDate) {
 
         }
 
@@ -252,7 +252,7 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
 
         }
 
-        default void onShowStickerSet(TLRPC.StickerSet stickerSet, TLRPC.InputStickerSet inputStickerSet){
+        default void onShowStickerSet(TLRPC.StickerSet stickerSet, TLRPC.InputStickerSet inputStickerSet) {
 
         }
 
@@ -275,6 +275,14 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
         default boolean isExpanded() {
             return false;
         }
+
+        default boolean canSchedule() {
+            return false;
+        }
+
+        default boolean isInScheduleMode() {
+            return false;
+        }
     }
 
     public interface DragListener {
@@ -286,13 +294,23 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
 
     private ContentPreviewViewer.ContentPreviewViewerDelegate contentPreviewViewerDelegate = new ContentPreviewViewer.ContentPreviewViewerDelegate() {
         @Override
-        public void sendSticker(TLRPC.Document sticker, Object parent) {
-            delegate.onStickerSelected(null, sticker, parent);
+        public void sendSticker(TLRPC.Document sticker, Object parent, boolean notify, int scheduleDate) {
+            delegate.onStickerSelected(null, sticker, parent, notify, scheduleDate);
         }
 
         @Override
         public boolean needSend() {
             return true;
+        }
+
+        @Override
+        public boolean canSchedule() {
+            return delegate.canSchedule();
+        }
+
+        @Override
+        public boolean isInScheduleMode() {
+            return delegate.isInScheduleMode();
         }
 
         @Override
@@ -304,11 +322,11 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
         }
 
         @Override
-        public void sendGif(Object gif) {
+        public void sendGif(Object gif, boolean notify, int scheduleDate) {
             if (gifGridView.getAdapter() == gifAdapter) {
-                delegate.onGifSelected(null, gif, "gif");
+                delegate.onGifSelected(null, gif, "gif", notify, scheduleDate);
             } else if (gifGridView.getAdapter() == gifSearchAdapter) {
-                delegate.onGifSelected(null, gif, gifSearchAdapter.bot);
+                delegate.onGifSelected(null, gif, gifSearchAdapter.bot, notify, scheduleDate);
             }
         }
 
@@ -1264,12 +1282,12 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
                         if (position < 0 || position >= recentGifs.size()) {
                             return;
                         }
-                        delegate.onGifSelected(view, recentGifs.get(position), "gif");
+                        delegate.onGifSelected(view, recentGifs.get(position), "gif", true, 0);
                     } else if (gifGridView.getAdapter() == gifSearchAdapter) {
                         if (position < 0 || position >= gifSearchAdapter.results.size()) {
                             return;
                         }
-                        delegate.onGifSelected(view, gifSearchAdapter.results.get(position), gifSearchAdapter.bot);
+                        delegate.onGifSelected(view, gifSearchAdapter.results.get(position), gifSearchAdapter.bot, true, 0);
                         recentGifs = MediaDataController.getInstance(currentAccount).getRecentGifs();
                         if (gifAdapter != null) {
                             gifAdapter.notifyDataSetChanged();
@@ -1377,7 +1395,7 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
                     return;
                 }
                 cell.disable();
-                delegate.onStickerSelected(cell, cell.getSticker(), cell.getParentObject());
+                delegate.onStickerSelected(cell, cell.getSticker(), cell.getParentObject(), true, 0);
             };
             stickersGridView.setOnItemClickListener(stickersOnItemClickListener);
             stickersGridView.setGlowColor(Theme.getColor(Theme.key_chat_emojiPanelBackground));

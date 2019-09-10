@@ -671,17 +671,17 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
                 for (int a = 0; a < selectedDialogs.size(); a++) {
                     long key = selectedDialogs.keyAt(a);
                     if (frameLayout2.getTag() != null && commentTextView.length() > 0) {
-                        SendMessagesHelper.getInstance(currentAccount).sendMessage(commentTextView.getText().toString(), key, null, null, true, null, null, null);
+                        SendMessagesHelper.getInstance(currentAccount).sendMessage(commentTextView.getText().toString(), key, null, null, true, null, null, null, true, 0);
                     }
-                    SendMessagesHelper.getInstance(currentAccount).sendMessage(sendingMessageObjects, key);
+                    SendMessagesHelper.getInstance(currentAccount).sendMessage(sendingMessageObjects, key, true, 0);
                 }
             } else if (sendingText != null) {
                 for (int a = 0; a < selectedDialogs.size(); a++) {
                     long key = selectedDialogs.keyAt(a);
                     if (frameLayout2.getTag() != null && commentTextView.length() > 0) {
-                        SendMessagesHelper.getInstance(currentAccount).sendMessage(commentTextView.getText().toString(), key, null, null, true, null, null, null);
+                        SendMessagesHelper.getInstance(currentAccount).sendMessage(commentTextView.getText().toString(), key, null, null, true, null, null, null, true, 0);
                     }
-                    SendMessagesHelper.getInstance(currentAccount).sendMessage(sendingText, key, null, null, true, null, null, null);
+                    SendMessagesHelper.getInstance(currentAccount).sendMessage(sendingText, key, null, null, true, null, null, null, true, 0);
                 }
             }
             dismiss();
@@ -932,7 +932,7 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
             showCommentTextView(false);
         } else {
             selectedCountView.invalidate();
-            if (animated != 0 && !showCommentTextView(true)) {
+            if (!showCommentTextView(true) && animated != 0) {
                 selectedCountView.setPivotX(AndroidUtilities.dp(21));
                 selectedCountView.setPivotY(AndroidUtilities.dp(12));
                 AnimatorSet animatorSet = new AnimatorSet();

@@ -33,10 +33,10 @@ import android.view.ViewOutlineProvider;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessageObject;
@@ -53,10 +53,12 @@ import org.telegram.ui.ActionBar.BackDrawable;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.MenuDrawable;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeDescription;
 import org.telegram.ui.Cells.ChatActionCell;
 import org.telegram.ui.Cells.ChatMessageCell;
 import org.telegram.ui.Cells.DialogCell;
 import org.telegram.ui.Cells.LoadingCell;
+import org.telegram.ui.Components.ColorPicker;
 import org.telegram.ui.Components.CombinedDrawable;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RecyclerListView;
@@ -64,29 +66,63 @@ import org.telegram.ui.Components.SizeNotifierFrameLayout;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.List;
 
 public class ThemePreviewActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
+
+    public static final int SCREEN_TYPE_PREVIEW = 0;
+    public static final int SCREEN_TYPE_ACCENT_COLOR = 1;
+
+    private final int screenType;
+    private boolean useDefaultThemeForButtons = true;
+
+    private ViewPager viewPager;
 
     private FrameLayout page1;
     private RecyclerListView listView;
     private DialogsAdapter dialogsAdapter;
     private ImageView floatingButton;
-    private View dotsContainer;
-    private ActionBar actionBar2;
 
+    private ActionBar actionBar2;
     private SizeNotifierFrameLayout page2;
     private RecyclerListView listView2;
     private MessagesAdapter messagesAdapter;
 
-    private Theme.ThemeInfo applyingTheme;
-    private File themeFile;
-    private boolean applied;
+    private ColorPicker colorPicker;
+    private int lastPickedColor;
+    private Runnable applyAccentAction = () -> {
+        applyAccentScheduled = false;
+        applyAccent(lastPickedColor);
+    };
+    private boolean applyAccentScheduled;
 
-    public ThemePreviewActivity(File file, Theme.ThemeInfo themeInfo) {
+    private View dotsContainer;
+    private FrameLayout buttonsContainer;
+    private TextView doneButton;
+    private TextView cancelButton;
+
+    private Theme.ThemeInfo applyingTheme;
+    private boolean nightTheme;
+    private boolean deleteOnCancel;
+    private List<ThemeDescription> themeDescriptions;
+
+    public ThemePreviewActivity(Theme.ThemeInfo themeInfo) {
+        this(themeInfo, false, SCREEN_TYPE_PREVIEW, false);
+    }
+
+    public ThemePreviewActivity(Theme.ThemeInfo themeInfo, boolean deleteFile, int screenType, boolean night) {
         super();
+        this.screenType = screenType;
         swipeBackEnabled = false;
+        nightTheme = night;
         applyingTheme = themeInfo;
-        themeFile = file;
+        deleteOnCancel = deleteFile;
+
+        if (screenType == SCREEN_TYPE_ACCENT_COLOR) {
+            Theme.applyThemeTemporary(new Theme.ThemeInfo(applyingTheme));
+            useDefaultThemeForButtons = false;
+        }
+        NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.goingToPreviewTheme);
     }
 
     @Override
@@ -224,14 +260,32 @@ public class ThemePreviewActivity extends BaseFragment implements NotificationCe
 
         actionBar2 = createActionBar(context);
         actionBar2.setBackButtonDrawable(new BackDrawable(false));
+        page2.addView(actionBar2, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+        actionBar2.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
+            @Override
+            public void onItemClick(int id) {
+                if (id == -1) {
+                    cancelThemeApply();
+                }
+            }
+        });
+
         if (messagesAdapter.showSecretMessages) {
             actionBar2.setTitle("Telegram Beta Chat");
             actionBar2.setSubtitle(LocaleController.formatPluralString("Members", 505));
         } else {
-            actionBar2.setTitle("Reinhardt");
-            actionBar2.setSubtitle(LocaleController.formatDateOnline(System.currentTimeMillis() / 1000 - 60 * 60));
+            String name = applyingTheme.info != null ? applyingTheme.info.title : applyingTheme.getName();
+            int index = name.lastIndexOf(".attheme");
+            if (index >= 0) {
+                name = name.substring(0, index);
+            }
+            actionBar2.setTitle(name);
+            if (applyingTheme.info != null && applyingTheme.info.installs_count > 0) {
+                actionBar2.setSubtitle(LocaleController.formatPluralString("ThemeInstallCount", applyingTheme.info.installs_count));
+            } else {
+                actionBar2.setSubtitle(LocaleController.formatDateOnline(System.currentTimeMillis() / 1000 - 60 * 60));
+            }
         }
-        page2.addView(actionBar2, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
         listView2 = new RecyclerListView(context) {
             @Override
@@ -322,10 +376,11 @@ public class ThemePreviewActivity extends BaseFragment implements NotificationCe
 
         listView2.setAdapter(messagesAdapter);
 
-        fragmentView = new FrameLayout(context);
-        FrameLayout frameLayout = (FrameLayout) fragmentView;
+        LinearLayout linearLayout = new LinearLayout(context);
+        linearLayout.setOrientation(LinearLayout.VERTICAL);
+        fragmentView = linearLayout;
 
-        final ViewPager viewPager = new ViewPager(context);
+        viewPager = new ViewPager(context);
         viewPager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
             @Override
             public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
@@ -361,7 +416,7 @@ public class ThemePreviewActivity extends BaseFragment implements NotificationCe
 
             @Override
             public Object instantiateItem(ViewGroup container, int position) {
-                View view = position == 0 ? page1 : page2;
+                View view = position == 0 ? page2 : page1;
                 container.addView(view);
                 return view;
             }
@@ -379,15 +434,35 @@ public class ThemePreviewActivity extends BaseFragment implements NotificationCe
             }
         });
         AndroidUtilities.setViewPagerEdgeEffectColor(viewPager, Theme.getColor(Theme.key_actionBarDefault));
-        frameLayout.addView(viewPager, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.LEFT | Gravity.TOP, 0, 0, 0, 48));
+        linearLayout.addView(viewPager, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 0, 1f));
 
         View shadow = new View(context);
         shadow.setBackgroundResource(R.drawable.header_shadow_reverse);
-        frameLayout.addView(shadow, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 3, Gravity.LEFT | Gravity.BOTTOM, 0, 0, 0, 48));
+        linearLayout.addView(shadow, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 3, Gravity.NO_GRAVITY, 0, -3, 0, 0));
 
-        FrameLayout bottomLayout = new FrameLayout(context);
-        bottomLayout.setBackgroundColor(0xffffffff);
-        frameLayout.addView(bottomLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.LEFT | Gravity.BOTTOM));
+        if (screenType == SCREEN_TYPE_ACCENT_COLOR) {
+            FrameLayout colorPickerFrame = new FrameLayout(context);
+            linearLayout.addView(colorPickerFrame, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL));
+
+            colorPicker = new ColorPicker(context, this::scheduleApplyAccent);
+
+            if (applyingTheme.isDark()) {
+                colorPicker.setMinBrightness((r, g, b) -> 255f / (0.5f * r + 0.8f * g + 0.1f * b + 500f));
+            } else {
+                colorPicker.setMaxBrightness((r, g, b) -> 255f / (0.1f * r + 1.0f * g + 0.1f * b + 50f));
+            }
+
+            colorPicker.setColor(applyingTheme.accentColor);
+            colorPickerFrame.addView(colorPicker, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 342, Gravity.CENTER_HORIZONTAL));
+
+            View shadow2 = new View(context);
+            shadow2.setBackgroundColor(0x12000000);
+            linearLayout.addView(shadow2, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 2, Gravity.NO_GRAVITY, 0, -2, 0, 0));
+        }
+
+        buttonsContainer = new FrameLayout(context);
+        buttonsContainer.setBackgroundColor(getButtonsColor(Theme.key_windowBackgroundWhite));
+        linearLayout.addView(buttonsContainer, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48));
 
         dotsContainer = new View(context) {
 
@@ -396,44 +471,49 @@ public class ThemePreviewActivity extends BaseFragment implements NotificationCe
             @Override
             protected void onDraw(Canvas canvas) {
                 int selected = viewPager.getCurrentItem();
+                paint.setColor(getButtonsColor(Theme.key_chat_fieldOverlayText));
                 for (int a = 0; a < 2; a++) {
-                    paint.setColor(a == selected ? 0xff999999 : 0xffcccccc);
+                    paint.setAlpha(a == selected ? 255 : 127);
                     canvas.drawCircle(AndroidUtilities.dp(3 + 15 * a), AndroidUtilities.dp(4), AndroidUtilities.dp(3), paint);
                 }
             }
         };
-        bottomLayout.addView(dotsContainer, LayoutHelper.createFrame(22, 8, Gravity.CENTER));
+        buttonsContainer.addView(dotsContainer, LayoutHelper.createFrame(22, 8, Gravity.CENTER));
 
-        TextView cancelButton = new TextView(context);
+        cancelButton = new TextView(context);
         cancelButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-        cancelButton.setTextColor(0xff19a7e8);
+        cancelButton.setTextColor(getButtonsColor(Theme.key_chat_fieldOverlayText));
         cancelButton.setGravity(Gravity.CENTER);
         cancelButton.setBackgroundDrawable(Theme.createSelectorDrawable(0x2f000000, 0));
         cancelButton.setPadding(AndroidUtilities.dp(29), 0, AndroidUtilities.dp(29), 0);
         cancelButton.setText(LocaleController.getString("Cancel", R.string.Cancel).toUpperCase());
         cancelButton.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
-        bottomLayout.addView(cancelButton, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT));
-        cancelButton.setOnClickListener(v -> {
-            Theme.applyPreviousTheme();
-            parentLayout.rebuildAllFragmentViews(false, false);
-            finishFragment();
-        });
+        buttonsContainer.addView(cancelButton, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT));
+        cancelButton.setOnClickListener(v -> cancelThemeApply());
 
-        TextView doneButton = new TextView(context);
+        doneButton = new TextView(context);
         doneButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-        doneButton.setTextColor(0xff19a7e8);
+        doneButton.setTextColor(getButtonsColor(Theme.key_chat_fieldOverlayText));
         doneButton.setGravity(Gravity.CENTER);
         doneButton.setBackgroundDrawable(Theme.createSelectorDrawable(0x2f000000, 0));
         doneButton.setPadding(AndroidUtilities.dp(29), 0, AndroidUtilities.dp(29), 0);
         doneButton.setText(LocaleController.getString("ApplyTheme", R.string.ApplyTheme).toUpperCase());
         doneButton.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
-        bottomLayout.addView(doneButton, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.RIGHT));
+        buttonsContainer.addView(doneButton, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.RIGHT));
         doneButton.setOnClickListener(v -> {
-            applied = true;
-            parentLayout.rebuildAllFragmentViews(false, false);
-            Theme.applyThemeFile(themeFile, applyingTheme.name, false);
+            if (screenType == SCREEN_TYPE_PREVIEW) {
+                parentLayout.rebuildAllFragmentViews(false, false);
+                Theme.applyThemeFile(new File(applyingTheme.pathToFile), applyingTheme.name, applyingTheme.info, false);
+                getMessagesController().saveTheme(applyingTheme, false, false);
+            } else if (screenType == SCREEN_TYPE_ACCENT_COLOR) {
+                Theme.saveThemeAccent(applyingTheme, colorPicker.getColor());
+                Theme.applyPreviousTheme();
+                NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.needSetDayNightTheme, applyingTheme, nightTheme);
+            }
             finishFragment();
         });
+
+        themeDescriptions = getThemeDescriptionsInternal();
 
         return fragmentView;
     }
@@ -441,12 +521,14 @@ public class ThemePreviewActivity extends BaseFragment implements NotificationCe
     @Override
     public boolean onFragmentCreate() {
         NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.emojiDidLoad);
+        NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.didSetNewWallpapper);
         return super.onFragmentCreate();
     }
 
     @Override
     public void onFragmentDestroy() {
         NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.emojiDidLoad);
+        NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.didSetNewWallpapper);
         super.onFragmentDestroy();
     }
 
@@ -462,6 +544,8 @@ public class ThemePreviewActivity extends BaseFragment implements NotificationCe
         if (page2 != null) {
             page2.onResume();
         }
+        AndroidUtilities.requestAdjustResize(getParentActivity(), classGuid);
+        AndroidUtilities.removeAdjustResize(getParentActivity(), classGuid);
     }
 
     @Override
@@ -475,7 +559,12 @@ public class ThemePreviewActivity extends BaseFragment implements NotificationCe
     @Override
     public boolean onBackPressed() {
         Theme.applyPreviousTheme();
-        parentLayout.rebuildAllFragmentViews(false, false);
+        if (screenType != SCREEN_TYPE_ACCENT_COLOR) {
+            parentLayout.rebuildAllFragmentViews(false, false);
+        }
+        if (deleteOnCancel && applyingTheme.pathToFile != null && !Theme.isThemeInstalled(applyingTheme)) {
+            new File(applyingTheme.pathToFile).delete();
+        }
         return super.onBackPressed();
     }
 
@@ -493,7 +582,47 @@ public class ThemePreviewActivity extends BaseFragment implements NotificationCe
                     cell.update(0);
                 }
             }
+        } else if (id == NotificationCenter.didSetNewWallpapper) {
+            if (page2 != null) {
+                page2.setBackgroundImage(Theme.getCachedWallpaper(), Theme.isWallpaperMotion());
+            }
         }
+    }
+
+    private void cancelThemeApply() {
+        Theme.applyPreviousTheme();
+        if (screenType != SCREEN_TYPE_ACCENT_COLOR) {
+            parentLayout.rebuildAllFragmentViews(false, false);
+        }
+        if (deleteOnCancel && applyingTheme.pathToFile != null && !Theme.isThemeInstalled(applyingTheme)) {
+            new File(applyingTheme.pathToFile).delete();
+        }
+        finishFragment();
+    }
+
+    private int getButtonsColor(String key) {
+        return useDefaultThemeForButtons ? Theme.getDefaultColor(key) : Theme.getColor(key);
+    }
+
+    private void scheduleApplyAccent(int accent) {
+        lastPickedColor = accent;
+        if (!applyAccentScheduled) {
+            applyAccentScheduled = true;
+            fragmentView.postDelayed(applyAccentAction, 16L); // To not apply accent color too often
+        }
+    }
+
+    private void applyAccent(int accent) {
+        Theme.applyCurrentThemeAccent(accent);
+
+        for (int i = 0, size = themeDescriptions.size(); i < size; i++) {
+            ThemeDescription description = themeDescriptions.get(i);
+            description.setColor(Theme.getColor(description.getCurrentKey()), false, false);
+        }
+
+        listView.invalidateViews();
+        listView2.invalidateViews();
+        dotsContainer.invalidate();
     }
 
     public class DialogsAdapter extends RecyclerListView.SelectionAdapter {
@@ -508,8 +637,8 @@ public class ThemePreviewActivity extends BaseFragment implements NotificationCe
 
             int date = (int) (System.currentTimeMillis() / 1000);
             DialogCell.CustomDialog customDialog = new DialogCell.CustomDialog();
-            customDialog.name = "Eva Summer";
-            customDialog.message = "Reminds me of a Chinese prove...";
+            customDialog.name = LocaleController.getString("ThemePreviewDialog1", R.string.ThemePreviewDialog1);
+            customDialog.message = LocaleController.getString("ThemePreviewDialogMessage1", R.string.ThemePreviewDialogMessage1);
             customDialog.id = 0;
             customDialog.unread_count = 0;
             customDialog.pinned = true;
@@ -522,8 +651,8 @@ public class ThemePreviewActivity extends BaseFragment implements NotificationCe
             dialogs.add(customDialog);
 
             customDialog = new DialogCell.CustomDialog();
-            customDialog.name = "Your inner Competition";
-            customDialog.message = "hey, I've updated the source code.";
+            customDialog.name = LocaleController.getString("ThemePreviewDialog2", R.string.ThemePreviewDialog2);
+            customDialog.message = LocaleController.getString("ThemePreviewDialogMessage2", R.string.ThemePreviewDialogMessage2);
             customDialog.id = 1;
             customDialog.unread_count = 2;
             customDialog.pinned = false;
@@ -536,8 +665,8 @@ public class ThemePreviewActivity extends BaseFragment implements NotificationCe
             dialogs.add(customDialog);
 
             customDialog = new DialogCell.CustomDialog();
-            customDialog.name = "Mike Apple";
-            customDialog.message = "\uD83E\uDD37\u200D♂️ Sticker";
+            customDialog.name = LocaleController.getString("ThemePreviewDialog3", R.string.ThemePreviewDialog3);
+            customDialog.message = LocaleController.getString("ThemePreviewDialogMessage3", R.string.ThemePreviewDialogMessage3);
             customDialog.id = 2;
             customDialog.unread_count = 3;
             customDialog.pinned = false;
@@ -550,8 +679,8 @@ public class ThemePreviewActivity extends BaseFragment implements NotificationCe
             dialogs.add(customDialog);
 
             customDialog = new DialogCell.CustomDialog();
-            customDialog.name = "Paul Newman";
-            customDialog.message = "Any ideas?";
+            customDialog.name = LocaleController.getString("ThemePreviewDialog4", R.string.ThemePreviewDialog4);
+            customDialog.message = LocaleController.getString("ThemePreviewDialogMessage4", R.string.ThemePreviewDialogMessage4);
             customDialog.id = 3;
             customDialog.unread_count = 0;
             customDialog.pinned = false;
@@ -564,8 +693,8 @@ public class ThemePreviewActivity extends BaseFragment implements NotificationCe
             dialogs.add(customDialog);
 
             customDialog = new DialogCell.CustomDialog();
-            customDialog.name = "Old Pirates";
-            customDialog.message = "Yo-ho-ho!";
+            customDialog.name = LocaleController.getString("ThemePreviewDialog5", R.string.ThemePreviewDialog5);
+            customDialog.message = LocaleController.getString("ThemePreviewDialogMessage5", R.string.ThemePreviewDialogMessage5);
             customDialog.id = 4;
             customDialog.unread_count = 0;
             customDialog.pinned = false;
@@ -578,8 +707,8 @@ public class ThemePreviewActivity extends BaseFragment implements NotificationCe
             dialogs.add(customDialog);
 
             customDialog = new DialogCell.CustomDialog();
-            customDialog.name = "Kate Bright";
-            customDialog.message = "Hola!";
+            customDialog.name = LocaleController.getString("ThemePreviewDialog6", R.string.ThemePreviewDialog6);
+            customDialog.message = LocaleController.getString("ThemePreviewDialogMessage6", R.string.ThemePreviewDialogMessage6);
             customDialog.id = 5;
             customDialog.unread_count = 0;
             customDialog.pinned = false;
@@ -592,8 +721,8 @@ public class ThemePreviewActivity extends BaseFragment implements NotificationCe
             dialogs.add(customDialog);
 
             customDialog = new DialogCell.CustomDialog();
-            customDialog.name = "Nick K";
-            customDialog.message = "These are not the droids you are looking for";
+            customDialog.name = LocaleController.getString("ThemePreviewDialog7", R.string.ThemePreviewDialog7);
+            customDialog.message = LocaleController.getString("ThemePreviewDialogMessage7", R.string.ThemePreviewDialogMessage7);
             customDialog.id = 6;
             customDialog.unread_count = 0;
             customDialog.pinned = false;
@@ -606,8 +735,8 @@ public class ThemePreviewActivity extends BaseFragment implements NotificationCe
             dialogs.add(customDialog);
 
             customDialog = new DialogCell.CustomDialog();
-            customDialog.name = "Adler Toberg";
-            customDialog.message = "Did someone say peanut butter?";
+            customDialog.name = LocaleController.getString("ThemePreviewDialog8", R.string.ThemePreviewDialog8);
+            customDialog.message = LocaleController.getString("ThemePreviewDialogMessage8", R.string.ThemePreviewDialogMessage8);
             customDialog.id = 0;
             customDialog.unread_count = 0;
             customDialog.pinned = false;
@@ -665,7 +794,7 @@ public class ThemePreviewActivity extends BaseFragment implements NotificationCe
         private Context mContext;
 
         private ArrayList<MessageObject> messages;
-        private boolean showSecretMessages = Utilities.random.nextInt(100) <= (BuildVars.DEBUG_VERSION ? 5 : 1);
+        private boolean showSecretMessages = Utilities.random.nextInt(100) <= 1;
 
         public MessagesAdapter(Context context) {
             mContext = context;
@@ -731,7 +860,7 @@ public class ThemePreviewActivity extends BaseFragment implements NotificationCe
                 messages.add(new MessageObject(currentAccount, message, true));
             } else {
                 message = new TLRPC.TL_message();
-                message.message = "Reinhardt, we need to find you some new tunes \uD83C\uDFB6.";
+                message.message = LocaleController.getString("ThemePreviewLine1", R.string.ThemePreviewLine1);
                 message.date = date + 60;
                 message.dialog_id = 1;
                 message.flags = 259;
@@ -744,7 +873,7 @@ public class ThemePreviewActivity extends BaseFragment implements NotificationCe
                 MessageObject replyMessageObject = new MessageObject(currentAccount, message, true);
 
                 message = new TLRPC.TL_message();
-                message.message = "I can't even take you seriously right now.";
+                message.message = LocaleController.getString("ThemePreviewLine2", R.string.ThemePreviewLine2);
                 message.date = date + 960;
                 message.dialog_id = 1;
                 message.flags = 259;
@@ -769,8 +898,8 @@ public class ThemePreviewActivity extends BaseFragment implements NotificationCe
                 message.media.document.file_reference = new byte[0];
                 TLRPC.TL_documentAttributeAudio audio = new TLRPC.TL_documentAttributeAudio();
                 audio.duration = 243;
-                audio.performer = "David Hasselhoff";
-                audio.title = "True Survivor";
+                audio.performer = LocaleController.getString("ThemePreviewSongPerformer", R.string.ThemePreviewSongPerformer);
+                audio.title = LocaleController.getString("ThemePreviewSongTitle", R.string.ThemePreviewSongTitle);
                 message.media.document.attributes.add(audio);
                 message.out = false;
                 message.to_id = new TLRPC.TL_peerUser();
@@ -778,7 +907,7 @@ public class ThemePreviewActivity extends BaseFragment implements NotificationCe
                 messages.add(new MessageObject(currentAccount, message, true));
 
                 message = new TLRPC.TL_message();
-                message.message = "Ah, you kids today with techno music! You should enjoy the classics, like Hasselhoff!";
+                message.message = LocaleController.getString("ThemePreviewLine3", R.string.ThemePreviewLine3);
                 message.date = date + 60;
                 message.dialog_id = 1;
                 message.flags = 257 + 8;
@@ -790,7 +919,7 @@ public class ThemePreviewActivity extends BaseFragment implements NotificationCe
                 message.to_id = new TLRPC.TL_peerUser();
                 message.to_id.user_id = UserConfig.getInstance(currentAccount).getClientUserId();
                 messageObject = new MessageObject(currentAccount, message, true);
-                messageObject.customReplyName = "Lucio";
+                messageObject.customReplyName = LocaleController.getString("ThemePreviewLine3Reply", R.string.ThemePreviewLine3Reply);
                 messageObject.replyMessageObject = replyMessageObject;
                 messages.add(messageObject);
 
@@ -845,7 +974,7 @@ public class ThemePreviewActivity extends BaseFragment implements NotificationCe
                 photoSize.type = "s";
                 photoSize.location = new TLRPC.TL_fileLocationUnavailable();
                 message.media.photo.sizes.add(photoSize);
-                message.message = "Bring it on! I LIVE for this!";
+                message.message = LocaleController.getString("ThemePreviewLine4", R.string.ThemePreviewLine4);
                 message.out = false;
                 message.to_id = new TLRPC.TL_peerUser();
                 message.to_id.user_id = UserConfig.getInstance(currentAccount).getClientUserId();
@@ -936,4 +1065,42 @@ public class ThemePreviewActivity extends BaseFragment implements NotificationCe
             return 4;
         }
     }
+
+
+    private List<ThemeDescription> getThemeDescriptionsInternal() {
+        List<ThemeDescription> items = new ArrayList<>();
+        items.add(new ThemeDescription(fragmentView, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_windowBackgroundWhite));
+        items.add(new ThemeDescription(viewPager, ThemeDescription.FLAG_LISTGLOWCOLOR, null, null, null, null, Theme.key_actionBarDefault));
+
+        items.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_actionBarDefault));
+        items.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_SELECTORCOLOR, null, null, null, null, Theme.key_actionBarDefaultSelector));
+        items.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_TITLECOLOR, null, null, null, null, Theme.key_actionBarDefaultTitle));
+        items.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_SEARCH, null, null, null, null, Theme.key_actionBarDefaultSearch));
+        items.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_SEARCHPLACEHOLDER, null, null, null, null, Theme.key_actionBarDefaultSearchPlaceholder));
+
+        items.add(new ThemeDescription(actionBar2, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_actionBarDefault));
+        items.add(new ThemeDescription(actionBar2, ThemeDescription.FLAG_AB_TITLECOLOR, null, null, null, null, Theme.key_actionBarDefaultTitle));
+        items.add(new ThemeDescription(actionBar2, ThemeDescription.FLAG_AB_SUBTITLECOLOR, null, null, null, null, Theme.key_actionBarDefaultSubtitle));
+        items.add(new ThemeDescription(actionBar2, ThemeDescription.FLAG_AB_SELECTORCOLOR, null, null, null, null, Theme.key_actionBarDefaultSelector));
+
+        items.add(new ThemeDescription(listView, ThemeDescription.FLAG_LISTGLOWCOLOR, null, null, null, null, Theme.key_actionBarDefault));
+        items.add(new ThemeDescription(listView2, ThemeDescription.FLAG_LISTGLOWCOLOR, null, null, null, null, Theme.key_actionBarDefault));
+
+        items.add(new ThemeDescription(floatingButton, ThemeDescription.FLAG_IMAGECOLOR, null, null, null, null, Theme.key_chats_actionIcon));
+        items.add(new ThemeDescription(floatingButton, ThemeDescription.FLAG_BACKGROUNDFILTER, null, null, null, null, Theme.key_chats_actionBackground));
+        items.add(new ThemeDescription(floatingButton, ThemeDescription.FLAG_BACKGROUNDFILTER | ThemeDescription.FLAG_DRAWABLESELECTEDSTATE, null, null, null, null, Theme.key_chats_actionPressedBackground));
+
+        if (!useDefaultThemeForButtons) {
+            items.add(new ThemeDescription(buttonsContainer, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_windowBackgroundWhite));
+            items.add(new ThemeDescription(cancelButton, ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_chat_fieldOverlayText));
+            items.add(new ThemeDescription(doneButton, ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_chat_fieldOverlayText));
+        }
+
+        if (colorPicker != null) {
+            colorPicker.provideThemeDescriptions(items);
+        }
+
+        return items;
+    }
+
 }

@@ -18,6 +18,7 @@ import android.graphics.Rect;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
+import android.graphics.drawable.GradientDrawable;
 import android.os.Build;
 import android.text.TextUtils;
 import android.util.TypedValue;
@@ -113,7 +114,7 @@ public class DrawerProfileCell extends FrameLayout {
     protected void onDraw(Canvas canvas) {
         Drawable backgroundDrawable = Theme.getCachedWallpaper();
         String backgroundKey = applyBackground(false);
-        boolean useImageBackground = !backgroundKey.equals(Theme.key_chats_menuTopBackground) && Theme.isCustomTheme() && !Theme.isPatternWallpaper() && backgroundDrawable != null;
+        boolean useImageBackground = !backgroundKey.equals(Theme.key_chats_menuTopBackground) && Theme.isCustomTheme() && !Theme.isPatternWallpaper() && backgroundDrawable != null && !(backgroundDrawable instanceof ColorDrawable);
         boolean drawCatsShadow = false;
         int color;
         if (!useImageBackground && Theme.hasThemeKey(Theme.key_chats_menuTopShadowCats)) {
@@ -136,7 +137,7 @@ public class DrawerProfileCell extends FrameLayout {
             if (shadowView.getVisibility() != VISIBLE) {
                 shadowView.setVisibility(VISIBLE);
             }
-            if (backgroundDrawable instanceof ColorDrawable) {
+            if (backgroundDrawable instanceof ColorDrawable || backgroundDrawable instanceof GradientDrawable) {
                 backgroundDrawable.setBounds(0, 0, getMeasuredWidth(), getMeasuredHeight());
                 backgroundDrawable.draw(canvas);
             } else if (backgroundDrawable instanceof BitmapDrawable) {

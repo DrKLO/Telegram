@@ -60,7 +60,7 @@
     <string name="PaymentShippingMethod">Métodos de envio</string>
     <string name="PaymentNoShippingMethod">Desculpe, não é possível entregar neste endereço.</string>
     <string name="PaymentShippingInfo">Dados de Envio</string>
-    <string name="PaymentShippingAddress">Dados de envio</string>
+    <string name="PaymentShippingAddress">Endereço de envio</string>
     <string name="PaymentShippingAddress1Placeholder">Endereço 1 (Rua)</string>
     <string name="PaymentShippingAddress2Placeholder">Endereço 2 (Rua)</string>
     <string name="PaymentShippingCityPlaceholder">Cidade</string>
@@ -143,7 +143,7 @@
     <string name="EncryptedChatStartedOutgoing">%s entrou no chat secreto</string>
     <string name="EncryptedChatStartedIncoming">Você entrou no chat secreto</string>
     <string name="ClearHistory">Limpar histórico</string>
-    <string name="HistoryClearedUndo">Histórico limpo.</string>
+    <string name="HistoryClearedUndo">Histórico apagado.</string>
     <string name="ChatsMute">Silenciar</string>
     <string name="ChatsUnmute">Ativar Som</string>
     <string name="ChatDeletedUndo">Chat apagado.</string>
@@ -187,7 +187,7 @@
     <string name="ChatHintsDelete">Remover %1$s das sugestões?</string>
     <string name="LinkPreview">Prévia do link</string>
     <string name="Draft">Rascunho</string>
-    <string name="HistoryCleared">O histórico foi apagado</string>
+    <string name="HistoryCleared">O histórico foi apagado.</string>
     <string name="ArticleByAuthor">por %1$s</string>
     <string name="ArticleDateByAuthor">%1$s por %2$s</string>
     <string name="PreviewFeedback">Deixar um comentário sobre essa prévia</string>
@@ -357,6 +357,7 @@
     <string name="ChannelUserCantBot">Desculpe, há bots demais neste canal.</string>
     <string name="ChannelUserAddLimit">Desculpe, você só pode adicionar os primeiros 200 membros ao canal. Note que um número ilimitado de pessoas podem entrar via link do canal.</string>
     <string name="ChannelTooMuch">Desculpe, você é um membro de muitos grupos e canais. Por favor, saia de alguns antes de criar um novo.</string>
+    <string name="ChannelTooMuchJoin">Desculpe, você é membro de muitos grupos e canais. Por favor, saia de alguns antes de entrar em outro.</string>
     <string name="ChannelAddedBy">un1 adicionou você ao canal</string>
     <string name="ChannelJoined">Você entrou neste canal</string>
     <string name="ChannelMegaJoined">Você entrou neste grupo</string>
@@ -504,7 +505,7 @@
     <string name="ChannelDiscuss">CONVERSAR</string>
     <string name="DiscussChannel">canal</string>
     <string name="Slowmode">Modo Lento</string>
-    <string name="SlowmodeOff">Inativo</string>
+    <string name="SlowmodeOff">Não</string>
     <string name="SlowmodeSeconds">%1$ds</string>
     <string name="SlowmodeMinutes">%1$dm</string>
     <string name="SlowmodeHours">%1$dh</string>
@@ -527,7 +528,7 @@
     <string name="StopPollAlertTitle">Parar enquete?</string>
     <string name="StopPollAlertText">Se você parar esta enquete agora, ninguém poderá mais votar nela. Essa ação não pode ser desfeita.</string>
     <string name="CancelPollAlertTitle">Descartar enquete?</string>
-    <string name="CancelPollAlertText">Tem certeza de que deseja descartar esta enquete?</string>
+    <string name="CancelPollAlertText">Deseja descartar esta enquete?</string>
     <string name="Unvote">Remover Voto</string>
     <string name="FinalResults">Resultados Finais</string>
     <string name="NoVotes">Sem votos</string>
@@ -628,7 +629,7 @@
     <string name="EventLogPromotedPinMessages">Fixar mensagens</string>
     <string name="EventLogFilterAll">Todas as ações</string>
     <string name="EventLogFilterNewRestrictions">Novas exceções</string>
-    <string name="EventLogFilterNewAdmins">Novos admins</string>
+    <string name="EventLogFilterNewAdmins">Permissões de administrador</string>
     <string name="EventLogFilterNewMembers">Novos membros</string>
     <string name="EventLogFilterGroupInfo">Info do grupo</string>
     <string name="EventLogFilterChannelInfo">Info do canal</string>
@@ -690,6 +691,7 @@
     <string name="InstantView">LEITURA RÁPIDA</string>
     <string name="OpenGroup">VER GRUPO</string>
     <string name="OpenBackground">VER PAPEL DE PAREDE</string>
+    <string name="OpenTheme">VER TEMA</string>
     <string name="OpenChannel">VER CANAL</string>
     <string name="OpenMessage">VER MENSAGEM</string>
     <string name="InstantViewNightMode">O tema noturno será ativado automaticamente à noite.</string>
@@ -711,6 +713,7 @@
     <string name="ChatDocument">Arquivo</string>
     <string name="ChatCamera">Câmera</string>
     <string name="NoMessages">Ainda não há mensagens aqui...</string>
+    <string name="NoScheduledMessages">Não há mensagens agendadas aqui ainda...</string>
     <string name="ForwardedMessage">Mensagem encaminhada</string>
     <string name="From">De</string>
     <string name="FromFormatted">De %1$s</string>
@@ -718,6 +721,7 @@
     <string name="NoRecent">Nada recente</string>
     <string name="Message">Mensagem</string>
     <string name="TypeMessage">Mensagem</string>
+    <string name="TypeScheduleMessage">Agendar mensagem</string>
     <string name="ShareMyPhone">COMPARTILHAR MEU NÚMERO</string>
     <string name="ShareMyContactInfo">Compartilhar meu contato</string>
     <string name="AddToContacts">Add Contato</string>
@@ -879,12 +883,27 @@
     <string name="SlowModeHint">Modo Lento ativado. Poderá enviar\nsua próxima mensagem em %1$s.</string>
     <string name="TapForVideo">Toque para foto, segure para vídeo</string>
     <string name="SendWithoutSound">Enviar sem som</string>
+    <string name="MessageScheduleSend">Enviar Agora</string>>
+    <string name="MessageScheduleEditTime">Reagendar</string>
+    <string name="MessageScheduleToday">Hoje</string>
+    <string name="Schedule">Agendar</string>
+    <string name="ScheduleMessage">Agendar mensagem</string>
+    <string name="ScheduledMessages">Mensagens agendadas</string>
+    <string name="Reminders">Lembretes</string>
+    <string name="SetReminder">Criar Lembrete</string>
+    <string name="MessageScheduledOn">Agendada para %1$s</string>
+    <string name="MessageScheduledLimitReached">Desculpe, você não pode agendar mais de 100 mensagens.</string>
+    <string name="MessageScheduledBotAction">Esta ação vai estar disponível após a publicação da mensagem.</string>
+    <string name="MessageScheduledVote">A enquete vai estar disponível após a publicação da mensagem.</string>
+    <string name="MessageScheduledReminderNotification">&#128197; Lembrete</string>
     <!--notification-->
     <string name="MessageLifetimeChanged">"%1$s alterou o timer de autodestruição para %2$s "</string>
     <string name="MessageLifetimeChangedOutgoing">Você alterou o timer de autodestruição para %1$s</string>
     <string name="MessageLifetimeRemoved">%1$s desativou o timer de autodestruição</string>
     <string name="MessageLifetimeYouRemoved">Você desativou o timer de autodestruição</string>
     <string name="YouHaveNewMessage">Você tem uma nova mensagem</string>
+    <string name="NotificationMessageScheduled">&#128197; Você: %1$s</string>
+    <string name="NotificationMessageScheduledName">&#128197; Você</string>
     <string name="NotificationMessageText">%1$s: %2$s</string>
     <string name="NotificationMessageFew">%1$s te enviou %2$s</string>
     <string name="NotificationMessageAlbum">%1$s te enviou um álbum</string>
@@ -1201,8 +1220,8 @@
     <string name="ThemeDark">Escuro</string>
     <string name="ThemeDarkBlue">Azul Escuro</string>
     <string name="ThemeGraphite">Grafite</string>
-    <string name="ThemeArcticBlue">Azul Ártico</string>
-    <string name="ThemeBlue">Azul</string>
+    <string name="ThemeArcticBlue">Ártico</string>
+    <string name="ThemeBlue">Mono</string>
     <string name="DeleteThemeAlert">Tem certeza de que deseja apagar este tema?</string>
     <string name="IncorrectTheme">Arquivo de tema incorreto</string>
     <string name="EnterThemeName">Insira o nome do tema</string>
@@ -1212,6 +1231,8 @@
     <string name="ColorTheme">Tema de cores</string>
     <string name="BuiltInThemes">Temas padrão</string>
     <string name="CustomThemes">Temas personalizados</string>
+    <string name="ThemeSetUrl">Criar link</string>
+    <string name="ThemeUrl">Link do Tema</string>
     <string name="ChatList">Visão da Lista de Chats</string>
     <string name="ChatListDefault">Duas linhas</string>
     <string name="ChatListExpanded">Três linhas</string>
@@ -1221,9 +1242,44 @@
     <string name="SelectColor">Selecionar cor</string>
     <string name="ColorThemes">Tema de Cores</string>
     <string name="ShowAllThemes">Mostrar Todos os Temas</string>
+    <string name="ThemeNotFound">Tema não encontrado</string>
+    <string name="ThemeNotSupported">Desculpe, este tema de cores não é compatível com o seu dispositivo ainda.</string>
     <string name="CreateNewThemeMenu">Criar tema</string>
+    <string name="NewThemeTitle">Novo Tema</string>
+    <string name="EditThemeTitle">Editar Tema</string>
     <string name="CreateNewThemeHelp">Toque no ícone da paleta para visualizar a lista de elementos de cada tela - e editá-los.</string>
     <string name="CreateNewThemeAlert">Você pode criar seu próprio tema alterando as cores dentro do aplicativo.\n\nVocê sempre pode voltar para o tema padrão do Telegram aqui.</string>
+    <string name="ThemeSetUrlHelp">Você pode usar a-z, 0-9 e underline.\nO tamanho mínimo é de 5 caracteres.</string>
+    <string name="ThemeHelpLink">O seu tema será atualizado para todos sempre que você atualizar ele. Qualquer um pode instalar usando este link:\n%1$s</string>
+    <string name="ThemeCreateHelp">Qualquer pessoa pode instalar o seu tema usando este link. Quando você alterar o tema, ele será atualizado para todos os usuários que o instalaram.\n\nO tema terá como base o tema e o papel de parede selecionados atualmente.</string>
+    <string name="ThemeCreateHelp2">Você pode alterar o link do seu tema.\n\nOs links de temas devem ter mais de 5 caracteres e podem usar a-z, 0-9 e underlines.</string>
+    <string name="ThemeNameInvalid">Desculpe, o nome do tema é inválido.</string>
+    <string name="SetUrlInvalid">Desculpe, este link é inválido.</string>
+    <string name="SetUrlInvalidShort">O link tem que ter no mínimo 5 caracteres.</string>
+    <string name="SetUrlInvalidLong">O link não pode ter mais de 64 caracteres.</string>
+    <string name="SetUrlInvalidStartNumber">Desculpe, o link não pode começar com um número.</string>
+    <string name="SetUrlChecking">Verificando link...</string>
+    <string name="SetUrlInUse">Desculpe, este link já está sendo usado.</string>
+    <string name="SetUrlAvailable">%1$s está disponível.</string>
+    <string name="SetUrlPlaceholder">Link</string>
+    <string name="ThemeNamePlaceholder">Nome</string>
+    <string name="ThemePreviewTitle">Reinhardt</string>
+    <string name="ThemePreviewLine1">Reinhardt, precisamos encontrar músicas novas. &#127926;</string>
+    <string name="ThemePreviewLine2">Não consigo nem te levar a sério agora.</string>
+    <string name="ThemePreviewLine3">Ahh, vocês crianças de hoje em dia com essas músicas eletrônicas! Ouçam os clássicos, como Hasselhoff!</string>
+    <string name="ThemePreviewLine3Reply">Lúcio</string>
+    <string name="ThemePreviewLine4">Manda ver, eu vivo pra isso!</string>
+    <string name="ThemePreviewSongTitle">True Survivor</string>
+    <string name="ThemePreviewSongPerformer">David Hasselhoff</string>
+    <string name="NewThemePreviewName">Bob Harris</string>
+    <string name="NewThemePreviewReply">Bom dia! &#128075;</string>
+    <string name="NewThemePreviewLine1">Você sabe que horas são?</string>
+    <string name="NewThemePreviewLine2">É manhã em Tóquio &#128526;</string>
+    <string name="UseDifferentTheme">Use a different theme</string>
+    <string name="UseDifferentThemeInfo">Você também pode usar um tema personalizado existente como base para o seu tema.</string>
+    <string name="ChooseTheme">Choose theme</string>
+    <string name="ExportTheme">Exportar</string>
+    <string name="Create">Criar</string>
     <!--settings view-->
     <string name="ResetNotificationsText">Todas as configurações de notificação foram redefinidas</string>
     <string name="ResetNotificationsAlert">Tem certeza de que deseja restaurar todas as configurações de notificação para o padrão?</string>
@@ -1448,8 +1504,8 @@
     <string name="NotificationsPriorityUrgent">Urgente</string>
     <string name="RepeatNotificationsNever">Nunca</string>
     <string name="RepeatNotifications">Repetir Notificações</string>
-    <string name="PhoneNumberHelp">Você pode alterar seu número do Telegram aqui. Sua conta e todos os seus dados — mensagens, mídia, contatos, etc. serão movidos para o novo número.\n\n**Importante:** todos os seus contatos do Telegram terão seu **novo número** adicionado às listas de contatos deles, desde que tenham seu número antigo e você não os tenha bloqueado no Telegram.</string>
-    <string name="PhoneNumberAlert">Todos os seus contatos do Telegram terão seu novo número adicionado às listas de contatos deles, desde que tenham seu número antigo e você não os tenha bloqueado no Telegram.</string>
+    <string name="PhoneNumberHelp">Você pode alterar o seu número do Telegram aqui. Sua conta e todos os seus dados — mensagens, mídia, contatos, etc. serão movidos para o novo número.</string>
+    <string name="PhoneNumberAlert">Os usuários irão ver o seu novo número se eles tiverem salvo na agenda deles ou se as suas configurações de privacidade permitirem. Você pode alterar isso em Configurações &gt; Privacidade e Segurança &gt; Número de Telefone.</string>
     <string name="PhoneNumberChange2">Alterar Número</string>
     <string name="PhoneNumberChangeTitle">Alterar número</string>
     <string name="ChangePhoneNewNumber">Novo Número</string>
@@ -1835,7 +1891,7 @@
     <string name="FingerprintHelp">Toque no sensor.</string>
     <string name="FingerprintNotRecognized">Digital não reconhecida, tente de novo.</string>
     <string name="ScreenCapture">Mostrar Conteúdo no Multitarefas</string>
-    <string name="ScreenCaptureInfo">Se desativado você não poderá fazer capturas de tela no aplicativo, mas o conteúdo dos seus chats não será mostrado no multitarefas.</string>
+    <string name="ScreenCaptureInfo">Se desativado, você não poderá fazer capturas de tela no aplicativo – porém, o conteúdo dos seus chats não será mostrado no multitarefas.</string>
     <string name="ScreenCaptureAlert">Isso ocultará o conteúdo de seus chats ou lista de chats do multitarefas, mas você não poderá tirar capturas de tela no Telegram.\n\nPode ser necessário reiniciar o aplicativo para que isso entre em vigor.</string>
     <string name="TooManyTries">Muitas tentativas.\nPor favor, tente de novo em %1$s.</string>
     <!--media view-->
@@ -2093,14 +2149,16 @@
     <string name="PrivacyProfilePhotoInfo2">Você pode adicionar usuários ou grupos inteiros como exceções que substituirão as configurações acima.</string>
     <string name="PrivacyPhone">Número de Telefone</string>
     <string name="PrivacyPhoneTitle">Quem pode ver meu número?</string>
+    <string name="PrivacyPhoneTitle2">Quem pode me encontrar pelo meu número?</string>
     <string name="PrivacyPhoneInfo">Usuários que já tiverem o seu número salvo nos contatos também irão ver no Telegram.</string>
+    <string name="PrivacyPhoneInfo3">Usuários que adicionarem o seu número aos contatos deles irão te ver no Telegram apenas se estiverem nos seus contatos também.</string>
     <string name="PrivacyPhoneInfo2">Você pode adicionar usuários ou grupos inteiros como exceções que substituirão as configurações acima.</string>
     <string name="PrivacyForwards">Mensagens Encaminhadas</string>
     <string name="PrivacyForwardsEverybody">Link para sua conta</string>
     <string name="PrivacyForwardsContacts">É um link se permitido pelas configurações abaixo</string>
     <string name="PrivacyForwardsNobody">Não é um link para sua conta</string>
     <string name="PrivacyForwardsTitle">Quem pode adicionar um link para minha conta ao encaminhar minhas mensagens?</string>
-    <string name="PrivacyForwardsInfo">Quando encaminhadas para outros chats, as mensagens enviadas não terão um link para sua conta.</string>
+    <string name="PrivacyForwardsInfo">As mensagens que você enviar não terão um link para a sua conta quando outras pessoas encaminharem.</string>
     <string name="PrivacyForwardsInfo2">Você pode adicionar usuários ou grupos inteiros como exceções que substituirão as configurações acima.</string>
     <string name="PrivacyForwardsMessageLine">Reinhardt, precisamos encontrar músicas novas.</string>
     <string name="PrivacyP2PHeader">Ponta a Ponta</string>
@@ -2285,7 +2343,7 @@
     <string name="DeleteAll">Apagar Tudo</string>
     <string name="StopLoading">Parar de carregar?</string>
     <string name="UpdateTelegram">Atualizar Telegram</string>
-    <string name="UpdateAppAlert">Perdão, seu Telegram está desatualizado e não consegue atender a este pedido. Por favor atualize o Telegram.</string>
+    <string name="UpdateAppAlert">Desculpe, seu Telegram está desatualizado e não consegue atender a este pedido. Por favor, atualize o Telegram.</string>
     <string name="InvalidPhoneNumber">Número de telefone inválido. Por favor, verifique o número e tente de novo.</string>
     <string name="PleaseLoginPassport">Por favor, entre com sua conta do Telegram para usar o Telegram Passport.</string>
     <string name="BannedPhoneNumber">Este número de telefone está banido.</string>
@@ -2362,7 +2420,7 @@
     <string name="AreYouSureDeleteSingleMessageMega">Tem certeza de que deseja apagar essa mensagem para todos?</string>
     <string name="AreYouSureDeleteFewMessagesMega">Tem certeza de que deseja apagar essas mensagens para todos?</string>
     <string name="DeleteMessagesOption">Apagar Minhas Mensagens</string>
-    <string name="DeleteMessagesOptionAlso">Apagar também para %1$s</string>
+    <string name="DeleteMessagesOptionAlso">Apagar para %1$s também</string>
     <string name="ClearHistoryOptionAlso">Limpar também para %1$s</string>
     <string name="SendMessagesToGroup">Enviar mensagens para %1$s?</string>
     <string name="SendGameToGroup">Compartilhar jogo com %1$s?</string>
@@ -2859,6 +2917,12 @@
     <string name="MediaSelected_few">%1$d mídias selecionadas</string>
     <string name="MediaSelected_many">%1$d mídias selecionadas</string>
     <string name="MediaSelected_other">%1$d mídias selecionadas</string>
+    <string name="ThemeInstallCount_zero">%1$d pessoas estão usando este tema</string>
+    <string name="ThemeInstallCount_one">%1$d pessoa está usando este tema</string>
+    <string name="ThemeInstallCount_two">%1$d pessoas estão usando este tema</string>
+    <string name="ThemeInstallCount_few">%1$d pessoas estão usando este tema</string>
+    <string name="ThemeInstallCount_many">%1$d pessoas estão usando este tema</string>
+    <string name="ThemeInstallCount_other">%1$d pessoas estão usando este tema</string>
     <!--accessibility descriptions-->
     <string name="AccDescrGroup">Grupo</string>
     <string name="AccDescrChannel">Canal</string>
@@ -2959,5 +3023,12 @@
     <string name="formatterDay24H">HH:mm</string>
     <string name="formatterDay12H">h:mm a</string>
     <string name="formatDateAtTime">%1$s às %2$s</string>
-    <string name="formatDateScheduleDay">EEE, d \'de\' MMM</string>
+    <string name="formatDateSchedule">d \'de\' MMM</string>
+    <string name="formatDateScheduleYear">d \'de\' MMM \'de\' yyyy</string>
+    <string name="SendTodayAt">\'Enviar hoje às\' HH:mm</string>
+    <string name="SendDayAt">\'Enviar em\' d \'de\' MMM \'às\' HH:mm</string>
+    <string name="SendDayYearAt">\'Enviar em\' d \'de\' MMM \'de\' yyyy \'às\' HH:mm</string>
+    <string name="RemindTodayAt">\'Lembrar hoje às\' HH:mm</string>
+    <string name="RemindDayAt">\'Lembrar em\' d \'de\' MMM \'às\' HH:mm</string>
+    <string name="RemindDayYearAt">\'Lembrar em\' d \'de\' MMM \'de\' yyyy \'às\' HH:mm</string>
 </resources>
