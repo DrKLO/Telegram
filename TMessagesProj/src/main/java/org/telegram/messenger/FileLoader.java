@@ -479,9 +479,6 @@ public class FileLoader extends BaseController {
         if (cacheType == 0 && document.key != null) {
             cacheType = 1;
         }
-        if (cacheType == 2) {
-            FileLog.d("test");
-        }
         loadFile(document, null, null, null, null, parentObject, null, 0, priority, cacheType);
     }
 

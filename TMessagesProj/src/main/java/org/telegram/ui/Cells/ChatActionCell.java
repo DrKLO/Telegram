@@ -91,11 +91,16 @@ public class ChatActionCell extends BaseCell {
         this.delegate = delegate;
     }
 
-    public void setCustomDate(int date) {
+    public void setCustomDate(int date, boolean scheduled) {
         if (customDate == date) {
             return;
         }
-        CharSequence newText = LocaleController.formatDateChat(date);
+        CharSequence newText;
+        if (scheduled) {
+            newText = LocaleController.formatString("MessageScheduledOn", R.string.MessageScheduledOn, LocaleController.formatDateChat(date));
+        } else {
+            newText = LocaleController.formatDateChat(date);
+        }
         if (customText != null && TextUtils.equals(newText, customText)) {
             return;
         }
@@ -133,7 +138,7 @@ public class ChatActionCell extends BaseCell {
                     }
                 }
             }
-            avatarDrawable.setInfo(id, null, null, false);
+            avatarDrawable.setInfo(id, null, null);
             if (currentMessageObject.messageOwner.action instanceof TLRPC.TL_messageActionUserUpdatedPhoto) {
                 imageReceiver.setImage(null, null, avatarDrawable, null, currentMessageObject, 0);
             } else {

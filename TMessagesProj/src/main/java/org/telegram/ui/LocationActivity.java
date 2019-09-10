@@ -65,6 +65,7 @@ import org.telegram.messenger.LocationController;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.UserObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.NotificationCenter;
@@ -124,6 +125,7 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
     private LinearLayoutManager layoutManager;
     private AvatarDrawable avatarDrawable;
     private ActionBarMenuItem otherItem;
+    private ChatActivity parentFragment;
 
     private boolean checkGpsEnabled = true;
 
@@ -174,7 +176,7 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
     public final static int LOCATION_TYPE_GROUP_VIEW = 5;
 
     public interface LocationActivityDelegate {
-        void didSelectLocation(TLRPC.MessageMedia location, int live);
+        void didSelectLocation(TLRPC.MessageMedia location, int live, boolean notify, int scheduleDate);
     }
 
     public LocationActivity(int type) {
@@ -190,7 +192,6 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
         NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.locationPermissionGranted);
         if (messageObject != null && messageObject.isLiveLocation()) {
             getNotificationCenter().addObserver(this, NotificationCenter.didReceiveNewMessages);
-            getNotificationCenter().addObserver(this, NotificationCenter.messagesDeleted);
             getNotificationCenter().addObserver(this, NotificationCenter.replaceMessagesObjects);
         }
         return true;
@@ -202,7 +203,6 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
         NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.locationPermissionGranted);
         getNotificationCenter().removeObserver(this, NotificationCenter.closeChats);
         getNotificationCenter().removeObserver(this, NotificationCenter.didReceiveNewMessages);
-        getNotificationCenter().removeObserver(this, NotificationCenter.messagesDeleted);
         getNotificationCenter().removeObserver(this, NotificationCenter.replaceMessagesObjects);
         try {
             if (googleMap != null) {
@@ -442,7 +442,7 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
                         return;
                     }
                     if (dialogId == 0) {
-                        delegate.didSelectLocation(venue, LOCATION_TYPE_GROUP);
+                        delegate.didSelectLocation(venue, LOCATION_TYPE_GROUP, true, 0);
                         finishFragment();
                     } else {
                         final AlertDialog[] progressDialog = new AlertDialog[]{new AlertDialog(getParentActivity(), 3)};
@@ -459,7 +459,7 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
 
                             }
                             progressDialog[0] = null;
-                            delegate.didSelectLocation(venue, LOCATION_TYPE_GROUP);
+                            delegate.didSelectLocation(venue, LOCATION_TYPE_GROUP, true, 0);
                             finishFragment();
                         }));
                         progressDialog[0].setOnCancelListener(dialog -> getConnectionsManager().cancelRequest(requestId, true));
@@ -480,9 +480,16 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
                     location.geo = new TLRPC.TL_geoPoint();
                     location.geo.lat = AndroidUtilities.fixLocationCoord(userLocation.getLatitude());
                     location.geo._long = AndroidUtilities.fixLocationCoord(userLocation.getLongitude());
-                    delegate.didSelectLocation(location, locationType);
+                    if (parentFragment != null && parentFragment.isInScheduleMode()) {
+                        AlertsCreator.createScheduleDatePickerDialog(getParentActivity(), UserObject.isUserSelf(parentFragment.getCurrentUser()), (notify, scheduleDate) -> {
+                            delegate.didSelectLocation(location, locationType, notify, scheduleDate);
+                            finishFragment();
+                        });
+                    } else {
+                        delegate.didSelectLocation(location, locationType, true, 0);
+                        finishFragment();
+                    }
                 }
-                finishFragment();
             } else if (position == 2 && locationType == 1 || position == 1 && locationType == 2 || position == 3 && locationType == 3) {
                 if (getLocationController().isSharingLocation(dialogId)) {
                     getLocationController().removeSharingLocation(dialogId);
@@ -502,7 +509,7 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
                             location.geo.lat = AndroidUtilities.fixLocationCoord(myLocation.getLatitude());
                             location.geo._long = AndroidUtilities.fixLocationCoord(myLocation.getLongitude());
                             location.period = param;
-                            delegate.didSelectLocation(location, locationType);
+                            delegate.didSelectLocation(location, locationType, true, 0);
                             finishFragment();
                         }));
                     }
@@ -510,10 +517,15 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
             } else {
                 Object object = adapter.getItem(position);
                 if (object instanceof TLRPC.TL_messageMediaVenue) {
-                    if (object != null && delegate != null) {
-                        delegate.didSelectLocation((TLRPC.TL_messageMediaVenue) object, locationType);
+                    if (parentFragment != null && parentFragment.isInScheduleMode()) {
+                        AlertsCreator.createScheduleDatePickerDialog(getParentActivity(), UserObject.isUserSelf(parentFragment.getCurrentUser()), (notify, scheduleDate) -> {
+                            delegate.didSelectLocation((TLRPC.TL_messageMediaVenue) object, locationType, notify, scheduleDate);
+                            finishFragment();
+                        });
+                    } else {
+                        delegate.didSelectLocation((TLRPC.TL_messageMediaVenue) object, locationType, true, 0);
+                        finishFragment();
                     }
-                    finishFragment();
                 } else if (object instanceof LiveLocation) {
                     LiveLocation liveLocation = (LiveLocation) object;
                     googleMap.animateCamera(CameraUpdateFactory.newLatLngZoom(liveLocation.marker.getPosition(), googleMap.getMaxZoomLevel() - 4));
@@ -651,9 +663,16 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
             searchListView.setOnItemClickListener((view, position) -> {
                 TLRPC.TL_messageMediaVenue object = searchAdapter.getItem(position);
                 if (object != null && delegate != null) {
-                    delegate.didSelectLocation(object, locationType);
+                    if (parentFragment != null && parentFragment.isInScheduleMode()) {
+                        AlertsCreator.createScheduleDatePickerDialog(getParentActivity(), UserObject.isUserSelf(parentFragment.getCurrentUser()), (notify, scheduleDate) -> {
+                            delegate.didSelectLocation(object, locationType, notify, scheduleDate);
+                            finishFragment();
+                        });
+                    } else {
+                        delegate.didSelectLocation(object, locationType, true, 0);
+                        finishFragment();
+                    }
                 }
-                finishFragment();
             });
         } else if (messageObject != null && !messageObject.isLiveLocation() || chatLocation != null) {
             routeButton = new ImageView(context);
@@ -1279,6 +1298,10 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
                 }
             }
         } else if (id == NotificationCenter.didReceiveNewMessages) {
+            boolean scheduled = (Boolean) args[2];
+            if (scheduled) {
+                return;
+            }
             long did = (Long) args[0];
             if (did != dialogId || messageObject == null) {
                 return;
@@ -1295,8 +1318,6 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
             if (added && adapter != null) {
                 adapter.setLiveLocations(markers);
             }
-        } else if (id == NotificationCenter.messagesDeleted) {
-
         } else if (id == NotificationCenter.replaceMessagesObjects) {
             long did = (long) args[0];
             if (did != dialogId || messageObject == null) {
@@ -1381,6 +1402,10 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
         this.delegate = delegate;
     }
 
+    public void setChatActivity(ChatActivity chatActivity) {
+        parentFragment = chatActivity;
+    }
+
     private void updateSearchInterface() {
         if (adapter != null) {
             adapter.notifyDataSetChanged();
@@ -1424,7 +1449,7 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
                 new ThemeDescription(listView, 0, new Class[]{GraySectionCell.class}, new String[]{"textView"}, null, null, null, Theme.key_graySectionText),
                 new ThemeDescription(listView, ThemeDescription.FLAG_CELLBACKGROUNDCOLOR, new Class[]{GraySectionCell.class}, null, null, null, Theme.key_graySection),
 
-                new ThemeDescription(null, 0, null, null, new Drawable[]{Theme.avatar_broadcastDrawable, Theme.avatar_savedDrawable}, cellDelegate, Theme.key_avatar_text),
+                new ThemeDescription(null, 0, null, null, new Drawable[]{Theme.avatar_savedDrawable}, cellDelegate, Theme.key_avatar_text),
                 new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundRed),
                 new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundOrange),
                 new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundViolet),

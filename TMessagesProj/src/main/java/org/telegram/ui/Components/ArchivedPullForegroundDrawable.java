@@ -121,8 +121,8 @@ public class ArchivedPullForegroundDrawable {
         backgroundPaint.setColor(backgroundColor);
         arrowDrawable.setColor(backgroundColor);
 
-        pullTooltip = LocaleController.getString("SwipeForArchive", R.string.SwipeForArchive);
-        releaseTooltip = LocaleController.getString("ReleaseForArchive", R.string.ReleaseForArchive);
+        pullTooltip = LocaleController.getString("AccSwipeForArchive", R.string.AccSwipeForArchive);
+        releaseTooltip = LocaleController.getString("AccReleaseForArchive", R.string.AccReleaseForArchive);
     }
 
     public void setListView(DialogsActivity.DialogsRecyclerView listView) {

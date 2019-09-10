@@ -18,6 +18,7 @@ import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.database.Cursor;
+import android.graphics.Bitmap;
 import android.graphics.Point;
 import android.graphics.Shader;
 import android.graphics.drawable.BitmapDrawable;
@@ -79,6 +80,7 @@ import org.telegram.ui.ActionBar.DrawerLayoutContainer;
 import org.telegram.ui.Cells.DrawerAddCell;
 import org.telegram.ui.Cells.DrawerUserCell;
 import org.telegram.ui.Cells.LanguageCell;
+import org.telegram.ui.Cells.ThemesHorizontalListCell;
 import org.telegram.ui.Components.AudioPlayerAlert;
 import org.telegram.ui.Components.AlertsCreator;
 import org.telegram.ui.Components.BlockingUpdateView;
@@ -96,6 +98,7 @@ import org.telegram.ui.Components.ThemeEditorView;
 import org.telegram.ui.Components.UpdateAppAlertDialog;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -151,6 +154,12 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
     private boolean passcodeSaveIntentIsRestore;
 
     private boolean tabletFullSize;
+
+    private String loadingThemeFileName;
+    private String loadingThemeWallpaperName;
+    private Theme.ThemeInfo loadingThemeInfo;
+    private TLRPC.TL_theme loadingTheme;
+    private AlertDialog loadingThemeProgressDialog;
 
     private Runnable lockRunnable;
 
@@ -699,6 +708,8 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
             NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.openArticle);
             NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.hasNewContactsToImport);
             NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.needShowPlayServicesAlert);
+            NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.fileDidLoad);
+            NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.fileDidFailToLoad);
         }
         currentAccount = UserConfig.selectedAccount;
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.appDidLogout);
@@ -709,6 +720,8 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.openArticle);
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.hasNewContactsToImport);
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.needShowPlayServicesAlert);
+        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.fileDidLoad);
+        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.fileDidFailToLoad);
         updateCurrentConnectionState(currentAccount);
     }
 
@@ -1086,6 +1099,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                             String game = null;
                             String phoneHash = null;
                             String lang = null;
+                            String theme = null;
                             String code = null;
                             TLRPC.TL_wallPaper wallPaper = null;
                             Integer messageId = null;
@@ -1171,6 +1185,8 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                                                 phoneHash = data.getQueryParameter("hash");
                                             } else if (path.startsWith("setlanguage/")) {
                                                 lang = path.substring(12);
+                                            } else if (path.startsWith("addtheme/")) {
+                                                theme = path.substring(9);
                                             } else if (path.startsWith("c/")) {
                                                 List<String> segments = data.getPathSegments();
                                                 if (segments.size() == 3) {
@@ -1360,6 +1376,10 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                                         url = url.replace("tg:setlanguage", "tg://telegram.org").replace("tg://setlanguage", "tg://telegram.org");
                                         data = Uri.parse(url);
                                         lang = data.getQueryParameter("lang");
+                                    } else if (url.startsWith("tg:addtheme") || url.startsWith("tg://addtheme")) {
+                                        url = url.replace("tg:addtheme", "tg://telegram.org").replace("tg://addtheme", "tg://telegram.org");
+                                        data = Uri.parse(url);
+                                        theme = data.getQueryParameter("slug");
                                     } else {
                                         unsupportedUrl = url.replace("tg://", "").replace("tg:", "");
                                         int index;
@@ -1375,11 +1395,11 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                                     args.putString("phone", phone);
                                     args.putString("hash", phoneHash);
                                     AndroidUtilities.runOnUIThread(() -> presentFragment(new CancelAccountDeletionActivity(args)));
-                                } else if (username != null || group != null || sticker != null || message != null || game != null || auth != null || unsupportedUrl != null || lang != null || code != null || wallPaper != null || channelId != null) {
+                                } else if (username != null || group != null || sticker != null || message != null || game != null || auth != null || unsupportedUrl != null || lang != null || code != null || wallPaper != null || channelId != null || theme != null) {
                                     if (message != null && message.startsWith("@")) {
                                         message = " " + message;
                                     }
-                                    runLinkRequest(intentAccount[0], username, group, sticker, botUser, botChat, message, hasUrl, messageId, channelId, game, auth, lang, unsupportedUrl, code, wallPaper, 0);
+                                    runLinkRequest(intentAccount[0], username, group, sticker, botUser, botChat, message, hasUrl, messageId, channelId, game, auth, lang, unsupportedUrl, code, wallPaper, theme, 0);
                                 } else {
                                     try (Cursor cursor = getContentResolver().query(intent.getData(), null, null, null, null)) {
                                         if (cursor != null) {
@@ -1491,7 +1511,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                             LocationActivity locationActivity = new LocationActivity(2);
                             locationActivity.setMessageObject(info.messageObject);
                             final long dialog_id = info.messageObject.getDialogId();
-                            locationActivity.setDelegate((location, live) -> SendMessagesHelper.getInstance(intentAccount[0]).sendMessage(location, dialog_id, null, null, null));
+                            locationActivity.setDelegate((location, live, notify, scheduleDate) -> SendMessagesHelper.getInstance(intentAccount[0]).sendMessage(location, dialog_id, null, null, null, notify, scheduleDate));
                             presentFragment(locationActivity);
                         }));
                     }
@@ -1626,13 +1646,14 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                                 final String unsupportedUrl,
                                 final String code,
                                 final TLRPC.TL_wallPaper wallPaper,
+                                final String theme,
                                 final int state) {
         if (state == 0 && UserConfig.getActivatedAccountsCount() >= 2 && auth != null) {
             AlertsCreator.createAccountSelectDialog(this, account -> {
                 if (account != intentAccount) {
                     switchToAccount(account, true);
                 }
-                runLinkRequest(account, username, group, sticker, botUser, botChat, message, hasUrl, messageId, channelId, game, auth, lang, unsupportedUrl, code, wallPaper, 1);
+                runLinkRequest(account, username, group, sticker, botUser, botChat, message, hasUrl, messageId, channelId, game, auth, lang, unsupportedUrl, code, wallPaper, theme, 1);
             }).show();
             return;
         } else if (code != null) {
@@ -1649,6 +1670,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
         }
         final AlertDialog progressDialog = new AlertDialog(this, 3);
         final int[] requestId = new int[]{0};
+        Runnable cancelRunnable = null;
 
         if (username != null) {
             TLRPC.TL_contacts_resolveUsername req = new TLRPC.TL_contacts_resolveUsername();
@@ -1686,14 +1708,10 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                                 int lower_part = (int) did;
                                 int high_id = (int) (did >> 32);
                                 if (lower_part != 0) {
-                                    if (high_id == 1) {
-                                        args1.putInt("chat_id", lower_part);
-                                    } else {
-                                        if (lower_part > 0) {
-                                            args1.putInt("user_id", lower_part);
-                                        } else if (lower_part < 0) {
-                                            args1.putInt("chat_id", -lower_part);
-                                        }
+                                    if (lower_part > 0) {
+                                        args1.putInt("user_id", lower_part);
+                                    } else if (lower_part < 0) {
+                                        args1.putInt("chat_id", -lower_part);
                                     }
                                 } else {
                                     args1.putInt("enc_id", high_id);
@@ -1821,7 +1839,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                                     AlertDialog.Builder builder = new AlertDialog.Builder(LaunchActivity.this);
                                     builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
                                     builder.setMessage(LocaleController.formatString("ChannelJoinTo", R.string.ChannelJoinTo, invite.chat != null ? invite.chat.title : invite.title));
-                                    builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), (dialogInterface, i) -> runLinkRequest(intentAccount, username, group, sticker, botUser, botChat, message, hasUrl, messageId, channelId, game, auth, lang, unsupportedUrl, code, wallPaper, 1));
+                                    builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), (dialogInterface, i) -> runLinkRequest(intentAccount, username, group, sticker, botUser, botChat, message, hasUrl, messageId, channelId, game, auth, lang, unsupportedUrl, code, wallPaper, theme, 1));
                                     builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
                                     showAlertDialog(builder);
                                 }
@@ -1909,14 +1927,10 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                 int lower_part = (int) did;
                 int high_id = (int) (did >> 32);
                 if (lower_part != 0) {
-                    if (high_id == 1) {
-                        args13.putInt("chat_id", lower_part);
-                    } else {
-                        if (lower_part > 0) {
-                            args13.putInt("user_id", lower_part);
-                        } else if (lower_part < 0) {
-                            args13.putInt("chat_id", -lower_part);
-                        }
+                    if (lower_part > 0) {
+                        args13.putInt("user_id", lower_part);
+                    } else if (lower_part < 0) {
+                        args13.putInt("chat_id", -lower_part);
                     }
                 } else {
                     args13.putInt("enc_id", high_id);
@@ -2048,6 +2062,48 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                     }
                 }));
             }
+        } else if (theme != null) {
+            cancelRunnable = () -> {
+                loadingThemeFileName = null;
+                loadingThemeWallpaperName = null;
+                loadingThemeInfo = null;
+                loadingThemeProgressDialog = null;
+                loadingTheme = null;
+            };
+            TLRPC.TL_account_getTheme req = new TLRPC.TL_account_getTheme();
+            req.format = "android";
+            TLRPC.TL_inputThemeSlug inputThemeSlug = new TLRPC.TL_inputThemeSlug();
+            inputThemeSlug.slug = theme;
+            req.theme = inputThemeSlug;
+            requestId[0] = ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
+                int notFound = 2;
+                if (response instanceof TLRPC.TL_theme) {
+                    TLRPC.TL_theme t = (TLRPC.TL_theme) response;
+                    if (t.document != null) {
+                        loadingTheme = t;
+                        loadingThemeFileName = FileLoader.getAttachFileName(loadingTheme.document);
+                        loadingThemeProgressDialog = progressDialog;
+                        FileLoader.getInstance(currentAccount).loadFile(loadingTheme.document, t, 1, 1);
+                        notFound = 0;
+                    } else {
+                        notFound = 1;
+                    }
+                } else if (error != null && "THEME_FORMAT_INVALID".equals(error.text)) {
+                    notFound = 1;
+                }
+                if (notFound != 0) {
+                    try {
+                        progressDialog.dismiss();
+                    } catch (Exception e) {
+                        FileLog.e(e);
+                    }
+                    if (notFound == 1) {
+                        showAlertDialog(AlertsCreator.createSimpleAlert(LaunchActivity.this, LocaleController.getString("Theme", R.string.Theme), LocaleController.getString("ThemeNotSupported", R.string.ThemeNotSupported)));
+                    } else {
+                        showAlertDialog(AlertsCreator.createSimpleAlert(LaunchActivity.this, LocaleController.getString("Theme", R.string.Theme), LocaleController.getString("ThemeNotFound", R.string.ThemeNotFound)));
+                    }
+                }
+            }));
         } else if (channelId != null && messageId != null) {
             Bundle args = new Bundle();
             args.putInt("chat_id", channelId);
@@ -2088,7 +2144,13 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
         }
 
         if (requestId[0] != 0) {
-            progressDialog.setOnCancelListener(dialog -> ConnectionsManager.getInstance(intentAccount).cancelRequest(requestId[0], true));
+            final Runnable cancelRunnableFinal = cancelRunnable;
+            progressDialog.setOnCancelListener(dialog -> {
+                ConnectionsManager.getInstance(intentAccount).cancelRequest(requestId[0], true);
+                if (cancelRunnableFinal != null) {
+                    cancelRunnableFinal.run();
+                }
+            });
             try {
                 progressDialog.show();
             } catch (Exception ignore) {
@@ -2228,14 +2290,10 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
             NotificationCenter.getInstance(account).postNotificationName(NotificationCenter.closeChats);
         }
         if (lower_part != 0) {
-            if (high_id == 1) {
-                args.putInt("chat_id", lower_part);
-            } else {
-                if (lower_part > 0) {
-                    args.putInt("user_id", lower_part);
-                } else if (lower_part < 0) {
-                    args.putInt("chat_id", -lower_part);
-                }
+            if (lower_part > 0) {
+                args.putInt("user_id", lower_part);
+            } else if (lower_part < 0) {
+                args.putInt("chat_id", -lower_part);
             }
         } else {
             args.putInt("enc_id", high_id);
@@ -2247,9 +2305,9 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
         if (contactsToSend != null && contactsToSend.size() == 1) {
             if (contactsToSend.size() == 1) {
                 PhonebookShareActivity contactFragment = new PhonebookShareActivity(null, contactsToSendUri, null, null);
-                contactFragment.setDelegate(user -> {
+                contactFragment.setDelegate((user, notify, scheduleDate) -> {
                     actionBarLayout.presentFragment(fragment, true, false, true, false);
-                    SendMessagesHelper.getInstance(account).sendMessage(user, did, null, null, null);
+                    SendMessagesHelper.getInstance(account).sendMessage(user, did, null, null, null, notify, scheduleDate);
                 });
                 actionBarLayout.presentFragment(contactFragment, dialogsFragment != null, dialogsFragment == null, true, false);
             }
@@ -2265,7 +2323,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                     photoPathsArray.get(0).caption = sendingText;
                     sendingText = null;
                 }
-                SendMessagesHelper.prepareSendingMedia(accountInstance, photoPathsArray, did, null, null, false, false, null);
+                SendMessagesHelper.prepareSendingMedia(accountInstance, photoPathsArray, did, null, null, false, false, null, true, 0);
             }
             if (documentsPathsArray != null || documentsUrisArray != null) {
                 String caption = null;
@@ -2273,15 +2331,15 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                     caption = sendingText;
                     sendingText = null;
                 }
-                SendMessagesHelper.prepareSendingDocuments(accountInstance, documentsPathsArray, documentsOriginalPathsArray, documentsUrisArray, caption, documentsMimeType, did, null, null, null);
+                SendMessagesHelper.prepareSendingDocuments(accountInstance, documentsPathsArray, documentsOriginalPathsArray, documentsUrisArray, caption, documentsMimeType, did, null, null, null, true, 0);
             }
             if (sendingText != null) {
-                SendMessagesHelper.prepareSendingText(accountInstance, sendingText, did);
+                SendMessagesHelper.prepareSendingText(accountInstance, sendingText, did, true, 0);
             }
             if (contactsToSend != null && !contactsToSend.isEmpty()) {
                 for (int a = 0; a < contactsToSend.size(); a++) {
                     TLRPC.User user = contactsToSend.get(a);
-                    SendMessagesHelper.getInstance(account).sendMessage(user, did, null, null, null);
+                    SendMessagesHelper.getInstance(account).sendMessage(user, did, null, null, null, true, 0);
                 }
             }
         }
@@ -2549,11 +2607,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
 
     @Override
     protected void onResume() {
-        try {
-            super.onResume();
-        } catch (Throwable e) {
-            FileLog.e(e);
-        }
+        super.onResume();
         NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.startAllHeavyOperations, 4096);
         MediaController.getInstance().setFeedbackView(actionBarLayout, true);
         ApplicationLoader.mainInterfacePaused = false;
@@ -2709,10 +2763,10 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                     return;
                 }
                 LocationActivity fragment = new LocationActivity(0);
-                fragment.setDelegate((location, live) -> {
+                fragment.setDelegate((location, live, notify, scheduleDate) -> {
                     for (HashMap.Entry<String, MessageObject> entry : waitingForLocation.entrySet()) {
                         MessageObject messageObject = entry.getValue();
-                        SendMessagesHelper.getInstance(account).sendMessage(location, messageObject.getDialogId(), messageObject, null, null);
+                        SendMessagesHelper.getInstance(account).sendMessage(location, messageObject.getDialogId(), messageObject, null, null, notify, scheduleDate);
                     }
                 });
                 presentFragment(fragment);
@@ -2819,6 +2873,74 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
             } catch (Throwable ignore) {
 
             }
+        } else if (id == NotificationCenter.fileDidLoad) {
+            if (loadingThemeFileName != null) {
+                String path = (String) args[0];
+                if (loadingThemeFileName.equals(path)) {
+                    loadingThemeFileName = null;
+                    File locFile = new File(ApplicationLoader.getFilesDirFixed(), "remote" + loadingTheme.id + ".attheme");
+                    Theme.ThemeInfo themeInfo = Theme.fillThemeValues(locFile, loadingTheme.title, loadingTheme);
+                    if (themeInfo != null) {
+                        if (themeInfo.pathToWallpaper != null) {
+                            File file = new File(themeInfo.pathToWallpaper);
+                            if (!file.exists()) {
+                                TLRPC.TL_account_getWallPaper req = new TLRPC.TL_account_getWallPaper();
+                                TLRPC.TL_inputWallPaperSlug inputWallPaperSlug = new TLRPC.TL_inputWallPaperSlug();
+                                inputWallPaperSlug.slug = themeInfo.slug;
+                                req.wallpaper = inputWallPaperSlug;
+                                ConnectionsManager.getInstance(themeInfo.account).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
+                                    if (response instanceof TLRPC.TL_wallPaper) {
+                                        TLRPC.TL_wallPaper wallPaper = (TLRPC.TL_wallPaper) response;
+                                        loadingThemeInfo = themeInfo;
+                                        loadingThemeWallpaperName = FileLoader.getAttachFileName(wallPaper.document);
+                                        FileLoader.getInstance(themeInfo.account).loadFile(wallPaper.document, wallPaper, 1, 1);
+                                    } else {
+                                        onThemeLoadFinish();
+                                    }
+                                }));
+                                return;
+                            }
+                        }
+                        Theme.ThemeInfo finalThemeInfo = Theme.applyThemeFile(locFile, loadingTheme.title, loadingTheme, true);
+                        if (finalThemeInfo != null) {
+                            presentFragment(new ThemePreviewActivity(finalThemeInfo, true, ThemePreviewActivity.SCREEN_TYPE_PREVIEW, false));
+                        }
+                    }
+                    onThemeLoadFinish();
+                }
+            } else if (loadingThemeWallpaperName != null) {
+                String path = (String) args[0];
+                if (loadingThemeWallpaperName.equals(path)) {
+                    loadingThemeWallpaperName = null;
+                    File file = (File) args[1];
+                    Utilities.globalQueue.postRunnable(() -> {
+                        try {
+                            Bitmap bitmap = ThemesHorizontalListCell.getScaledBitmap(AndroidUtilities.dp(640), AndroidUtilities.dp(360), file.getAbsolutePath(), null, 0);
+                            if (loadingThemeInfo.isBlured) {
+                                bitmap = Utilities.blurWallpaper(bitmap);
+                            }
+                            FileOutputStream stream = new FileOutputStream(loadingThemeInfo.pathToWallpaper);
+                            bitmap.compress(Bitmap.CompressFormat.JPEG, 87, stream);
+                            stream.close();
+                        } catch (Throwable e) {
+                            FileLog.e(e);
+                        }
+                        AndroidUtilities.runOnUIThread(() -> {
+                            File locFile = new File(ApplicationLoader.getFilesDirFixed(), "remote" + loadingTheme.id + ".attheme");
+                            Theme.ThemeInfo finalThemeInfo = Theme.applyThemeFile(locFile, loadingTheme.title, loadingTheme, true);
+                            if (finalThemeInfo != null) {
+                                presentFragment(new ThemePreviewActivity(finalThemeInfo, true, ThemePreviewActivity.SCREEN_TYPE_PREVIEW, false));
+                            }
+                            onThemeLoadFinish();
+                        });
+                    });
+                }
+            }
+        } else if (id == NotificationCenter.fileDidFailToLoad) {
+            String path = (String) args[0];
+            if (path.equals(loadingThemeFileName) || path.equals(loadingThemeWallpaperName)) {
+                onThemeLoadFinish();
+            }
         }
     }
 
@@ -2828,6 +2950,20 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
             return LocaleController.getString(key, intKey);
         }
         return value;
+    }
+
+    private void onThemeLoadFinish() {
+        if (loadingThemeProgressDialog != null) {
+            try {
+                loadingThemeProgressDialog.dismiss();
+            } finally {
+                loadingThemeProgressDialog = null;
+            }
+        }
+        loadingThemeWallpaperName = null;
+        loadingThemeInfo = null;
+        loadingThemeFileName = null;
+        loadingTheme = null;
     }
 
     private void checkFreeDiscSpace() {
@@ -3352,7 +3488,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                     return false;
                 }
             }
-            if (fragment instanceof ChatActivity) {
+            if (fragment instanceof ChatActivity && !((ChatActivity) fragment).isInScheduleMode()) {
                 if (!tabletFullSize && layout == rightActionBarLayout || tabletFullSize && layout == actionBarLayout) {
                     boolean result = !(tabletFullSize && layout == actionBarLayout && actionBarLayout.fragmentsStack.size() == 1);
                     if (!layersActionBarLayout.fragmentsStack.isEmpty()) {
@@ -3450,7 +3586,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                     }
                     return false;
                 }
-            } else if (fragment instanceof ChatActivity) {
+            } else if (fragment instanceof ChatActivity && !((ChatActivity) fragment).isInScheduleMode()) {
                 if (!tabletFullSize && layout != rightActionBarLayout) {
                     rightActionBarLayout.setVisibility(View.VISIBLE);
                     backgroundTablet.setVisibility(View.GONE);

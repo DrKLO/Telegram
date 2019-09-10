@@ -102,8 +102,8 @@ public class Utilities {
                 String num = matcher.group(0);
                 val = Integer.parseInt(num);
             }
-        } catch (Exception e) {
-            FileLog.e(e);
+        } catch (Exception ignore) {
+
         }
         return val;
     }
@@ -119,8 +119,8 @@ public class Utilities {
                 String num = matcher.group(0);
                 val = Long.parseLong(num);
             }
-        } catch (Exception e) {
-            FileLog.e(e);
+        } catch (Exception ignore) {
+
         }
         return val;
     }

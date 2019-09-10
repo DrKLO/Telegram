@@ -94,6 +94,8 @@ public class NotificationCenter {
     public static final int stopAllHeavyOperations = totalEvents++;
     public static final int startAllHeavyOperations = totalEvents++;
     public static final int sendingMessagesChanged = totalEvents++;
+    public static final int didUpdateReactions = totalEvents++;
+    public static final int scheduledMessagesUpdated = totalEvents++;
 
     public static final int httpFileDidLoad = totalEvents++;
     public static final int httpFileDidFailedLoad = totalEvents++;
@@ -105,7 +107,7 @@ public class NotificationCenter {
     public static final int FileUploadProgressChanged = totalEvents++;
     public static final int FileLoadProgressChanged = totalEvents++;
     public static final int fileDidLoad = totalEvents++;
-    public static final int fileDidFailedLoad = totalEvents++;
+    public static final int fileDidFailToLoad = totalEvents++;
     public static final int filePreparingStarted = totalEvents++;
     public static final int fileNewChunkAvailable = totalEvents++;
     public static final int filePreparingFailed = totalEvents++;
@@ -140,6 +142,9 @@ public class NotificationCenter {
 
     public static final int newEmojiSuggestionsAvailable = totalEvents++;
 
+    public static final int themeUploadedToServer = totalEvents++;
+    public static final int themeUploadError = totalEvents++;
+
     //global
     public static final int pushMessagesUpdated = totalEvents++;
     public static final int stopEncodingService = totalEvents++;
@@ -154,6 +159,7 @@ public class NotificationCenter {
     public static final int didSetNewTheme = totalEvents++;
     public static final int themeListUpdated = totalEvents++;
     public static final int needSetDayNightTheme = totalEvents++;
+    public static final int goingToPreviewTheme = totalEvents++;
     public static final int locationPermissionGranted = totalEvents++;
     public static final int reloadInterface = totalEvents++;
     public static final int suggestedLangpack = totalEvents++;

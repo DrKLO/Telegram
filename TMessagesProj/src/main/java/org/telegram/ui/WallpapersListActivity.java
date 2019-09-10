@@ -379,6 +379,7 @@ public class WallpapersListActivity extends BaseFragment implements Notification
                                 SharedPreferences preferences = MessagesController.getGlobalMainSettings();
                                 SharedPreferences.Editor editor = preferences.edit();
                                 editor.putLong("selectedBackground2", selectedBackground);
+                                editor.remove("selectedBackgroundSlug");
                                 editor.putBoolean("selectedBackgroundBlurred", false);
                                 editor.putBoolean("selectedBackgroundMotion", false);
                                 editor.putInt("selectedColor", 0);
@@ -428,9 +429,9 @@ public class WallpapersListActivity extends BaseFragment implements Notification
                             for (int a = 0; a < dids.size(); a++) {
                                 long did = dids.get(a);
                                 if (message != null) {
-                                    SendMessagesHelper.getInstance(currentAccount).sendMessage(message.toString(), did, null, null, true, null, null, null);
+                                    SendMessagesHelper.getInstance(currentAccount).sendMessage(message.toString(), did, null, null, true, null, null, null, true, 0);
                                 }
-                                SendMessagesHelper.getInstance(currentAccount).sendMessage(fmessage.toString(), did, null, null, true, null, null, null);
+                                SendMessagesHelper.getInstance(currentAccount).sendMessage(fmessage.toString(), did, null, null, true, null, null, null, true, 0);
                             }
                             fragment1.finishFragment();
                         } else {
@@ -457,7 +458,7 @@ public class WallpapersListActivity extends BaseFragment implements Notification
 
                             ChatActivity chatActivity = new ChatActivity(args1);
                             presentFragment(chatActivity, true);
-                            SendMessagesHelper.getInstance(currentAccount).sendMessage(fmessage.toString(), did, null, null, true, null, null, null);
+                            SendMessagesHelper.getInstance(currentAccount).sendMessage(fmessage.toString(), did, null, null, true, null, null, null, true, 0);
                         }
                     });
                     presentFragment(fragment);
@@ -907,7 +908,7 @@ public class WallpapersListActivity extends BaseFragment implements Notification
             }
             return 0;
         });
-        if (Theme.hasWallpaperFromTheme()) {
+        if (Theme.hasWallpaperFromTheme() && !Theme.isThemeWallpaperPublic()) {
             if (themeWallpaper == null) {
                 themeWallpaper = new FileWallpaper(Theme.THEME_BACKGROUND_ID, -2, -2);
             }
@@ -1246,10 +1247,8 @@ public class WallpapersListActivity extends BaseFragment implements Notification
 
                         bingImage.id = result.id;
                         bingImage.type = 0;
-                        bingImage.localUrl = "";
 
                         searchResult.add(bingImage);
-
                         searchResultKeys.put(bingImage.id, bingImage);
                     }
                     bingSearchEndReached = oldCount == searchResult.size() || nextImagesSearchOffset == null;

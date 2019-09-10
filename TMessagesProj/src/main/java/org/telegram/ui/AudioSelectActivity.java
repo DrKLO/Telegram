@@ -26,6 +26,7 @@ import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
+import org.telegram.messenger.UserObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
@@ -34,6 +35,7 @@ import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ActionBar.ThemeDescription;
 import org.telegram.ui.Cells.AudioCell;
+import org.telegram.ui.Components.AlertsCreator;
 import org.telegram.ui.Components.EmptyTextProgressView;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.PickerBottomLayout;
@@ -52,6 +54,7 @@ public class AudioSelectActivity extends BaseFragment implements NotificationCen
     private PickerBottomLayout bottomLayout;
     private RecyclerListView listView;
     private View shadow;
+    private ChatActivity parentFragment;
 
     private boolean loadingAudio;
 
@@ -63,7 +66,12 @@ public class AudioSelectActivity extends BaseFragment implements NotificationCen
     private MessageObject playingAudio;
 
     public interface AudioSelectActivityDelegate {
-        void didSelectAudio(ArrayList<MessageObject> audios);
+        void didSelectAudio(ArrayList<MessageObject> audios, boolean notify, int scheduleDate);
+    }
+
+    public AudioSelectActivity(ChatActivity chatActivity) {
+        super();
+        parentFragment = chatActivity;
     }
 
     @Override
@@ -135,14 +143,19 @@ public class AudioSelectActivity extends BaseFragment implements NotificationCen
         frameLayout.addView(bottomLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.BOTTOM));
         bottomLayout.cancelButton.setOnClickListener(view -> finishFragment());
         bottomLayout.doneButton.setOnClickListener(view -> {
-            if (delegate != null) {
-                ArrayList<MessageObject> audios = new ArrayList<>();
-                for (int a = 0; a < selectedAudios.size(); a++) {
-                    audios.add(selectedAudios.valueAt(a).messageObject);
-                }
-                delegate.didSelectAudio(audios);
+            ArrayList<MessageObject> audios = new ArrayList<>();
+            for (int a = 0; a < selectedAudios.size(); a++) {
+                audios.add(selectedAudios.valueAt(a).messageObject);
             }
-            finishFragment();
+            if (parentFragment.isInScheduleMode()) {
+                AlertsCreator.createScheduleDatePickerDialog(getParentActivity(), UserObject.isUserSelf(parentFragment.getCurrentUser()), (notify, scheduleDate) -> {
+                    delegate.didSelectAudio(audios, notify, scheduleDate);
+                    finishFragment();
+                });
+            } else {
+                delegate.didSelectAudio(audios, true, 0);
+                finishFragment();
+            }
         });
 
         View shadow = new View(context);

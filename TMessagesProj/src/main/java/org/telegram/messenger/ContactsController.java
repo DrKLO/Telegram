@@ -63,6 +63,7 @@ public class ContactsController extends BaseController {
     private ArrayList<TLRPC.PrivacyRule> profilePhotoPrivacyRules;
     private ArrayList<TLRPC.PrivacyRule> forwardsPrivacyRules;
     private ArrayList<TLRPC.PrivacyRule> phonePrivacyRules;
+    private ArrayList<TLRPC.PrivacyRule> addedByPhonePrivacyRules;
 
     public final static int PRIVACY_RULES_TYPE_LASTSEEN = 0;
     public final static int PRIVACY_RULES_TYPE_INVITE = 1;
@@ -71,8 +72,9 @@ public class ContactsController extends BaseController {
     public final static int PRIVACY_RULES_TYPE_PHOTO = 4;
     public final static int PRIVACY_RULES_TYPE_FORWARDS = 5;
     public final static int PRIVACY_RULES_TYPE_PHONE = 6;
+    public final static int PRIVACY_RULES_TYPE_ADDED_BY_PHONE = 7;
 
-    public final static int PRIVACY_RULES_TYPE_COUNT = 7;
+    public final static int PRIVACY_RULES_TYPE_COUNT = 8;
 
     private class MyContentObserver extends ContentObserver {
 
@@ -2325,8 +2327,11 @@ public class ContactsController extends BaseController {
                     req.key = new TLRPC.TL_inputPrivacyKeyForwards();
                     break;
                 case PRIVACY_RULES_TYPE_PHONE:
-                default:
                     req.key = new TLRPC.TL_inputPrivacyKeyPhoneNumber();
+                    break;
+                case PRIVACY_RULES_TYPE_ADDED_BY_PHONE:
+                default:
+                    req.key = new TLRPC.TL_inputPrivacyKeyAddedByPhone();
                     break;
             }
 
@@ -2356,11 +2361,13 @@ public class ContactsController extends BaseController {
                             forwardsPrivacyRules = rules.rules;
                             break;
                         case PRIVACY_RULES_TYPE_PHONE:
-                        default:
                             phonePrivacyRules = rules.rules;
                             break;
+                        case PRIVACY_RULES_TYPE_ADDED_BY_PHONE:
+                        default:
+                            addedByPhonePrivacyRules = rules.rules;
+                            break;
                     }
-
                     loadingPrivacyInfo[num] = 2;
                 } else {
                     loadingPrivacyInfo[num] = 0;
@@ -2403,6 +2410,8 @@ public class ContactsController extends BaseController {
                 return forwardsPrivacyRules;
             case PRIVACY_RULES_TYPE_PHONE:
                 return phonePrivacyRules;
+            case PRIVACY_RULES_TYPE_ADDED_BY_PHONE:
+                return addedByPhonePrivacyRules;
         }
         return null;
     }
@@ -2429,6 +2438,9 @@ public class ContactsController extends BaseController {
                 break;
             case PRIVACY_RULES_TYPE_PHONE:
                 phonePrivacyRules = rules;
+                break;
+            case PRIVACY_RULES_TYPE_ADDED_BY_PHONE:
+                addedByPhonePrivacyRules = rules;
                 break;
         }
         getNotificationCenter().postNotificationName(NotificationCenter.privacyRulesUpdated);

@@ -29,12 +29,12 @@ public class AvatarDrawable extends Drawable {
 
     private TextPaint namePaint;
     private int color;
+    private boolean needApplyColorAccent;
     private StaticLayout textLayout;
     private float textWidth;
     private float textHeight;
     private float textLeft;
     private boolean isProfile;
-    private boolean drawBrodcast;
     private boolean drawDeleted;
     private int avatarType;
     private float archivedAvatarProgress;
@@ -65,7 +65,7 @@ public class AvatarDrawable extends Drawable {
         this();
         isProfile = profile;
         if (user != null) {
-            setInfo(user.id, user.first_name, user.last_name, false, null);
+            setInfo(user.id, user.first_name, user.last_name, null);
             drawDeleted = UserObject.isDeleted(user);
         }
     }
@@ -74,7 +74,7 @@ public class AvatarDrawable extends Drawable {
         this();
         isProfile = profile;
         if (chat != null) {
-            setInfo(chat.id, chat.title, null, chat.id < 0, null);
+            setInfo(chat.id, chat.title, null, null);
         }
     }
 
@@ -82,7 +82,7 @@ public class AvatarDrawable extends Drawable {
         isProfile = value;
     }
 
-    public static int getColorIndex(int id) {
+    private static int getColorIndex(int id) {
         if (id >= 0 && id < 7) {
             return id;
         }
@@ -119,7 +119,7 @@ public class AvatarDrawable extends Drawable {
 
     public void setInfo(TLRPC.User user) {
         if (user != null) {
-            setInfo(user.id, user.first_name, user.last_name, false, null);
+            setInfo(user.id, user.first_name, user.last_name, null);
             drawDeleted = UserObject.isDeleted(user);
         }
     }
@@ -131,6 +131,7 @@ public class AvatarDrawable extends Drawable {
         } else {
             color = Theme.getColor(Theme.key_avatar_backgroundSaved);
         }
+        needApplyColorAccent = false;
     }
 
     public void setArchivedAvatarHiddenProgress(float progress) {
@@ -143,34 +144,35 @@ public class AvatarDrawable extends Drawable {
 
     public void setInfo(TLRPC.Chat chat) {
         if (chat != null) {
-            setInfo(chat.id, chat.title, null, chat.id < 0, null);
+            setInfo(chat.id, chat.title, null, null);
         }
     }
 
     public void setColor(int value) {
         color = value;
+        needApplyColorAccent = false;
     }
 
     public void setTextSize(int size) {
         namePaint.setTextSize(size);
     }
 
-    public void setInfo(int id, String firstName, String lastName, boolean isBroadcast) {
-        setInfo(id, firstName, lastName, isBroadcast, null);
+    public void setInfo(int id, String firstName, String lastName) {
+        setInfo(id, firstName, lastName, null);
     }
 
     public int getColor() {
-        return color;
+        return needApplyColorAccent ? Theme.changeColorAccent(color) : color;
     }
 
-    public void setInfo(int id, String firstName, String lastName, boolean isBroadcast, String custom) {
+    public void setInfo(int id, String firstName, String lastName, String custom) {
         if (isProfile) {
             color = getProfileColorForId(id);
         } else {
             color = getColorForId(id);
         }
+        needApplyColorAccent = id == 5; // Tinting manually set blue color
 
-        drawBrodcast = isBroadcast;
         avatarType = AVATAR_TYPE_NORMAL;
         drawDeleted = false;
 
@@ -238,7 +240,7 @@ public class AvatarDrawable extends Drawable {
         }
         int size = bounds.width();
         namePaint.setColor(Theme.getColor(Theme.key_avatar_text));
-        Theme.avatar_backgroundPaint.setColor(color);
+        Theme.avatar_backgroundPaint.setColor(getColor());
         canvas.save();
         canvas.translate(bounds.left, bounds.top);
         canvas.drawCircle(size / 2.0f, size / 2.0f, size / 2.0f, Theme.avatar_backgroundPaint);
@@ -282,11 +284,6 @@ public class AvatarDrawable extends Drawable {
             int y = (size - h) / 2;
             Theme.avatar_savedDrawable.setBounds(x, y, x + w, y + h);
             Theme.avatar_savedDrawable.draw(canvas);
-        } else if (drawBrodcast && Theme.avatar_broadcastDrawable != null) {
-            int x = (size - Theme.avatar_broadcastDrawable.getIntrinsicWidth()) / 2;
-            int y = (size - Theme.avatar_broadcastDrawable.getIntrinsicHeight()) / 2;
-            Theme.avatar_broadcastDrawable.setBounds(x, y, x + Theme.avatar_broadcastDrawable.getIntrinsicWidth(), y + Theme.avatar_broadcastDrawable.getIntrinsicHeight());
-            Theme.avatar_broadcastDrawable.draw(canvas);
         } else if (drawDeleted && Theme.avatar_ghostDrawable != null) {
             int x = (size - Theme.avatar_ghostDrawable.getIntrinsicWidth()) / 2;
             int y = (size - Theme.avatar_ghostDrawable.getIntrinsicHeight()) / 2;

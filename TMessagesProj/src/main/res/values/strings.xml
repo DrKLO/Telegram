@@ -2941,6 +2941,9 @@
 	<string name="AccDescrSearchByUser">Filter by user</string>
     <string name="AccActionTakePicture">Take a picture</string>
     <string name="AccActionRecordVideo">Record video</string>
+    <string name="AccSwipeForArchive">Swipe down for archive</string>
+    <string name="AccReleaseForArchive">Release for archive</string>
+
     <!--date formatters-->
     <string name="formatterStats12H">MMM dd yyyy, h:mm a</string>
     <string name="formatterStats24H">MMM dd yyyy, HH:mm</string>
@@ -2959,7 +2962,12 @@
     <string name="formatterDay24H">HH:mm</string>
     <string name="formatterDay12H">h:mm a</string>
     <string name="formatDateAtTime">%1$s at %2$s</string>
-    <string name="formatDateScheduleDay">EEE MMM d</string>
-    <string name="SwipeForArchive">Swipe down for archive</string>
-    <string name="ReleaseForArchive">Release for archive</string>
+    <string name="formatDateSchedule">MMM d</string>
+    <string name="formatDateScheduleYear">MMM d yyyy</string>
+    <string name="SendTodayAt">\'Send today at\' HH:mm</string>
+    <string name="SendDayAt">\'Send on\' MMM d \'at\' HH:mm</string>
+    <string name="SendDayYearAt">\'Send on\' MMM d yyyy \'at\' HH:mm</string>
+    <string name="RemindTodayAt">\'Remind today at\' HH:mm</string>
+    <string name="RemindDayAt">\'Remind on\' MMM d \'at\' HH:mm</string>
+    <string name="RemindDayYearAt">\'Remind on\' MMM d yyyy \'at\' HH:mm</string>
 </resources>

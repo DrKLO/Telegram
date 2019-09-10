@@ -277,6 +277,20 @@ public:
     void serializeToStream(NativeByteBuffer *stream);
 };
 
+class TL_restrictionReason : public TLObject {
+
+public:
+    static const uint32_t constructor = 0xd072acb4;
+
+    std::string platform;
+    std::string reason;
+    std::string text;
+
+    static TL_restrictionReason *TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, int32_t instanceNum, bool &error);
+    void readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error);
+    void serializeToStream(NativeByteBuffer *stream);
+};
+
 class User : public TLObject {
 
 public:
@@ -290,7 +304,7 @@ public:
     std::unique_ptr<UserStatus> status;
     int32_t flags;
     int32_t bot_info_version;
-    std::string restriction_reason;
+    std::vector<std::unique_ptr<TL_restrictionReason>> restriction_reason;
     std::string bot_inline_placeholder;
     std::string lang_code;
 
@@ -309,7 +323,7 @@ public:
 class TL_user : public User {
 
 public:
-    static const uint32_t constructor = 0x2e13f4c3;
+    static const uint32_t constructor = 0x938458c1;
 
     void readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error);
     void serializeToStream(NativeByteBuffer *stream);

@@ -318,14 +318,14 @@ public class PopupNotificationActivity extends Activity implements NotificationC
         popupContainer.addView(chatActivityEnterView, LayoutHelper.createRelative(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, RelativeLayout.ALIGN_PARENT_BOTTOM));
         chatActivityEnterView.setDelegate(new ChatActivityEnterView.ChatActivityEnterViewDelegate() {
             @Override
-            public void onMessageSend(CharSequence message) {
+            public void onMessageSend(CharSequence message, boolean notify, int scheduleDate) {
                 if (currentMessageObject == null) {
                     return;
                 }
                 if (currentMessageNum >= 0 && currentMessageNum < popupMessages.size()) {
                     popupMessages.remove(currentMessageNum);
                 }
-                MessagesController.getInstance(currentMessageObject.currentAccount).markDialogAsRead(currentMessageObject.getDialogId(), currentMessageObject.getId(), Math.max(0, currentMessageObject.getId()), currentMessageObject.messageOwner.date, true, 0, true);
+                MessagesController.getInstance(currentMessageObject.currentAccount).markDialogAsRead(currentMessageObject.getDialogId(), currentMessageObject.getId(), Math.max(0, currentMessageObject.getId()), currentMessageObject.messageOwner.date, true, 0, true, 0);
                 currentMessageObject = null;
                 getNewMessage();
             }
@@ -398,7 +398,7 @@ public class PopupNotificationActivity extends Activity implements NotificationC
             }
 
             @Override
-            public void needStartRecordVideo(int state) {
+            public void needStartRecordVideo(int state, boolean notify, int scheduleDate) {
 
             }
 

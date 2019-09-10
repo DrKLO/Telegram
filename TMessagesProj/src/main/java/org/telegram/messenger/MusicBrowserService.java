@@ -130,6 +130,7 @@ public class MusicBrowserService extends MediaBrowserService implements Notifica
 
     @Override
     public void onDestroy() {
+        super.onDestroy();
         handleStopRequest(null);
         delayedStopHandler.removeCallbacksAndMessages(null);
         mediaSession.release();

@@ -58,6 +58,9 @@ void ByteStream::discard(uint32_t count) {
     uint32_t remaining;
     NativeByteBuffer *buffer;
     while (count > 0) {
+        if (buffersQueue.empty()) {
+            break;
+        }
         buffer = buffersQueue[0];
         remaining = buffer->remaining();
         if (count < remaining) {

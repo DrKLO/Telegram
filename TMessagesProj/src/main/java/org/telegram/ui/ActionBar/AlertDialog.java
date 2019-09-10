@@ -929,6 +929,10 @@ public class AlertDialog extends Dialog implements Drawable.Callback {
         cell.imageView.setColorFilter(new PorterDuffColorFilter(icon, PorterDuff.Mode.MULTIPLY));
     }
 
+    public int getItemsCount() {
+        return itemViews.size();
+    }
+
     public void setMessage(CharSequence text) {
         message = text;
         if (messageTextView != null) {

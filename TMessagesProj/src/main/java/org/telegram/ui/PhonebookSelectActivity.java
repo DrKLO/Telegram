@@ -44,6 +44,7 @@ public class PhonebookSelectActivity extends BaseFragment implements Notificatio
     private EmptyTextProgressView emptyView;
     private PhonebookAdapter listViewAdapter;
     private PhonebookSearchAdapter searchListViewAdapter;
+    private ChatActivity parentFragment;
 
     private boolean searchWas;
     private boolean searching;
@@ -51,12 +52,13 @@ public class PhonebookSelectActivity extends BaseFragment implements Notificatio
 
     private final static int search_button = 0;
 
-    public PhonebookSelectActivity() {
+    public PhonebookSelectActivity(ChatActivity chatActivity) {
         super();
+        parentFragment = chatActivity;
     }
 
     public interface PhonebookSelectActivityDelegate {
-        void didSelectContact(TLRPC.User user);
+        void didSelectContact(TLRPC.User user, boolean notify, int scheduleDate);
     }
 
     @Override
@@ -215,9 +217,10 @@ public class PhonebookSelectActivity extends BaseFragment implements Notificatio
                 }
 
                 PhonebookShareActivity activity = new PhonebookShareActivity(contact, null, null, name);
-                activity.setDelegate(user -> {
+                activity.setChatActivity(parentFragment);
+                activity.setDelegate((user, notify, scheduleDate) -> {
                     removeSelfFromStack();
-                    delegate.didSelectContact(user);
+                    delegate.didSelectContact(user, notify, scheduleDate);
                 });
                 presentFragment(activity);
             }
@@ -311,7 +314,7 @@ public class PhonebookSelectActivity extends BaseFragment implements Notificatio
                 new ThemeDescription(listView, 0, new Class[]{UserCell.class}, new String[]{"nameTextView"}, null, null, null, Theme.key_windowBackgroundWhiteBlackText),
                 new ThemeDescription(listView, 0, new Class[]{UserCell.class}, new String[]{"statusColor"}, null, null, cellDelegate, Theme.key_windowBackgroundWhiteGrayText),
                 new ThemeDescription(listView, 0, new Class[]{UserCell.class}, new String[]{"statusOnlineColor"}, null, null, cellDelegate, Theme.key_windowBackgroundWhiteBlueText),
-                new ThemeDescription(listView, 0, new Class[]{UserCell.class}, null, new Drawable[]{Theme.avatar_broadcastDrawable, Theme.avatar_savedDrawable}, null, Theme.key_avatar_text),
+                new ThemeDescription(listView, 0, new Class[]{UserCell.class}, null, new Drawable[]{Theme.avatar_savedDrawable}, null, Theme.key_avatar_text),
                 new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundRed),
                 new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundOrange),
                 new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundViolet),

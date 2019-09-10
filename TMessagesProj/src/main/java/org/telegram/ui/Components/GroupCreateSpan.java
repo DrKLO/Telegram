@@ -91,7 +91,7 @@ public class GroupCreateSpan extends View {
             imageLocation = ImageLocation.getForChat(chat, false);
             imageParent = chat;
         } else {
-            avatarDrawable.setInfo(0, contact.first_name, contact.last_name, false);
+            avatarDrawable.setInfo(0, contact.first_name, contact.last_name);
             uid = contact.contact_id;
             key = contact.key;
             if (!TextUtils.isEmpty(contact.first_name)) {

@@ -159,7 +159,6 @@ import org.telegram.ui.Components.TextPaintSpan;
 import org.telegram.ui.Components.TextPaintUrlSpan;
 import org.telegram.ui.Components.TextPaintWebpageUrlSpan;
 import org.telegram.ui.Components.TypefaceSpan;
-import org.telegram.ui.Components.URLSpanNoUnderline;
 import org.telegram.ui.Components.VideoPlayer;
 import org.telegram.ui.Components.WebPlayerView;
 
@@ -2750,7 +2749,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
 
     @Override
     public void didReceivedNotification(int id, int account, Object... args) {
-        if (id == NotificationCenter.fileDidFailedLoad) {
+        if (id == NotificationCenter.fileDidFailToLoad) {
             String location = (String) args[0];
             for (int a = 0; a < 3; a++) {
                 if (currentFileNames[a] != null && currentFileNames[a].equals(location)) {
@@ -6479,7 +6478,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
                     if (avatarVisible = (currentBlock.author_photo_id != 0)) {
                         TLRPC.Photo photo = getPhotoWithId(currentBlock.author_photo_id);
                         if (avatarVisible = (photo instanceof TLRPC.TL_photo)) {
-                            avatarDrawable.setInfo(0, currentBlock.author, null, false);
+                            avatarDrawable.setInfo(0, currentBlock.author, null);
                             TLRPC.PhotoSize image = FileLoader.getClosestPhotoSizeWithSize(photo.sizes, AndroidUtilities.dp(40), true);
                             avatarImageView.setImage(ImageLocation.getForPhoto(image, photo), "40_40", avatarDrawable, 0, null, currentPage, 1);
                         }
@@ -11455,7 +11454,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
             return false;
         }
 
-        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.fileDidFailedLoad);
+        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.fileDidFailToLoad);
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.fileDidLoad);
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.FileLoadProgressChanged);
         NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.emojiDidLoad);
@@ -11636,7 +11635,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
         }
 
         releasePlayer();
-        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.fileDidFailedLoad);
+        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.fileDidFailToLoad);
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.fileDidLoad);
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.FileLoadProgressChanged);
         NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.needSetDayNightTheme);

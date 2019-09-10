@@ -232,22 +232,14 @@ public class ProfileSearchCell extends BaseCell {
             nameLockTop = AndroidUtilities.dp(20.5f);
         } else {
             if (chat != null) {
-                if (chat.id < 0) {
-                    dialog_id = AndroidUtilities.makeBroadcastId(chat.id);
-                    if (SharedConfig.drawDialogIcons) {
+                dialog_id = -chat.id;
+                if (SharedConfig.drawDialogIcons) {
+                    if (ChatObject.isChannel(chat) && !chat.megagroup) {
                         drawNameBroadcast = true;
-                    }
-                    nameLockTop = AndroidUtilities.dp(22.5f);
-                } else {
-                    dialog_id = -chat.id;
-                    if (SharedConfig.drawDialogIcons) {
-                        if (ChatObject.isChannel(chat) && !chat.megagroup) {
-                            drawNameBroadcast = true;
-                            nameLockTop = AndroidUtilities.dp(22.5f);
-                        } else {
-                            drawNameGroup = true;
-                            nameLockTop = AndroidUtilities.dp(24);
-                        }
+                        nameLockTop = AndroidUtilities.dp(22.5f);
+                    } else {
+                        drawNameGroup = true;
+                        nameLockTop = AndroidUtilities.dp(24);
                     }
                 }
                 drawCheck = chat.verified;
@@ -496,7 +488,7 @@ public class ProfileSearchCell extends BaseCell {
             avatarDrawable.setInfo(chat);
             avatarImage.setImage(ImageLocation.getForChat(chat, false), "50_50", avatarDrawable, null, chat, 0);
         } else {
-            avatarDrawable.setInfo(0, null, null, false);
+            avatarDrawable.setInfo(0, null, null);
             avatarImage.setImage(null, null, avatarDrawable, null, null, 0);
         }
 

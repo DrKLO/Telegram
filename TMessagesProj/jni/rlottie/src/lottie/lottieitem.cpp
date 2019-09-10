@@ -78,6 +78,16 @@ LOTCompItem::LOTCompItem(LOTModel *model)
     mViewSize = mCompData->size();
 }
 
+static bool isGoodParentLayer(LOTLayerItem *parent, LOTLayerItem *child) {
+    do {
+        if (parent == child) {
+            return false;
+        }
+        parent = parent->resolvedParentLayer();
+    } while (parent);
+    return true;
+}
+
 void LOTCompItem::setValue(const std::string &keypath, LOTVariant &value)
 {
     LOTKeyPath key(keypath);
@@ -527,7 +537,10 @@ LOTCompLayerItem::LOTCompLayerItem(LOTLayerData *layerModel)
             auto search =
                 std::find_if(mLayers.begin(), mLayers.end(),
                              [id](const auto &val) { return val->id() == id; });
-            if (search != mLayers.end()) layer->setParentLayer((*search).get());
+            if (search != mLayers.end() &&
+                isGoodParentLayer((*search).get(), layer.get())) {
+                layer->setParentLayer((*search).get());
+            }
         }
     }
 

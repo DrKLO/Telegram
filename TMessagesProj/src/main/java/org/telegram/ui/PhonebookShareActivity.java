@@ -28,6 +28,7 @@ import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
+import org.telegram.messenger.UserObject;
 import org.telegram.messenger.browser.Browser;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
@@ -38,6 +39,7 @@ import org.telegram.ui.ActionBar.ThemeDescription;
 import org.telegram.ui.Cells.DividerCell;
 import org.telegram.ui.Cells.EmptyCell;
 import org.telegram.ui.Cells.ShadowSectionCell;
+import org.telegram.ui.Components.AlertsCreator;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.CheckBoxSquare;
@@ -155,6 +157,7 @@ public class PhonebookShareActivity extends BaseFragment {
     private View shadowView;
     private FrameLayout bottomLayout;
     private TextView shareTextView;
+    private ChatActivity parentFragment;
 
     private int extraHeight;
 
@@ -734,8 +737,8 @@ public class PhonebookShareActivity extends BaseFragment {
                 builder.show();
             } else {
                 StringBuilder builder;
-                if (currentUser.restriction_reason != null) {
-                    builder = new StringBuilder(currentUser.restriction_reason);
+                if (!currentUser.restriction_reason.isEmpty()) {
+                    builder = new StringBuilder(currentUser.restriction_reason.get(0).text);
                 } else {
                     builder = new StringBuilder(String.format(Locale.US, "BEGIN:VCARD\nVERSION:3.0\nFN:%1$s\nEND:VCARD", ContactsController.formatName(currentUser.first_name, currentUser.last_name)));
                 }
@@ -763,10 +766,21 @@ public class PhonebookShareActivity extends BaseFragment {
                             builder.insert(idx, item.vcardData.get(b) + "\n");
                         }
                     }
-                    currentUser.restriction_reason = builder.toString();
+                    TLRPC.TL_restrictionReason reason = new TLRPC.TL_restrictionReason();
+                    reason.text = builder.toString();
+                    reason.reason = "";
+                    reason.platform = "";
+                    currentUser.restriction_reason.add(reason);
                 }
-                delegate.didSelectContact(currentUser);
-                finishFragment();
+                if (parentFragment != null && parentFragment.isInScheduleMode()) {
+                    AlertsCreator.createScheduleDatePickerDialog(getParentActivity(), UserObject.isUserSelf(parentFragment.getCurrentUser()), (notify, scheduleDate) -> {
+                        delegate.didSelectContact(currentUser, notify, scheduleDate);
+                        finishFragment();
+                    });
+                } else {
+                    delegate.didSelectContact(currentUser, true, 0);
+                    finishFragment();
+                }
             }
         });
 
@@ -789,7 +803,7 @@ public class PhonebookShareActivity extends BaseFragment {
 
         AvatarDrawable avatarDrawable = new AvatarDrawable();
         avatarDrawable.setProfile(true);
-        avatarDrawable.setInfo(5, currentUser.first_name, currentUser.last_name, false);
+        avatarDrawable.setInfo(5, currentUser.first_name, currentUser.last_name);
         avatarDrawable.setColor(Theme.getColor(Theme.key_avatar_backgroundInProfileBlue));
 
         avatarImage.setImage(ImageLocation.getForUser(currentUser, false), "50_50", avatarDrawable, currentUser);
@@ -798,6 +812,9 @@ public class PhonebookShareActivity extends BaseFragment {
         return fragmentView;
     }
 
+    public void setChatActivity(ChatActivity chatActivity) {
+        parentFragment = chatActivity;
+    }
 
     @Override
     public void onResume() {

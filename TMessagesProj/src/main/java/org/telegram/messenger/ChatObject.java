@@ -13,7 +13,6 @@ import org.telegram.tgnet.TLRPC;
 public class ChatObject {
 
     public static final int CHAT_TYPE_CHAT = 0;
-    public static final int CHAT_TYPE_BROADCAST = 1;
     public static final int CHAT_TYPE_CHANNEL = 2;
     public static final int CHAT_TYPE_USER = 3;
     public static final int CHAT_TYPE_MEGAGROUP = 4;

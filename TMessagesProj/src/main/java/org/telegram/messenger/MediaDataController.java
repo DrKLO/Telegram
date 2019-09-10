@@ -188,6 +188,16 @@ public class MediaDataController extends BaseController {
         recentGifsLoaded = false;
 
         currentFetchingEmoji.clear();
+        if (Build.VERSION.SDK_INT >= 25) {
+            Utilities.globalQueue.postRunnable(() -> {
+                try {
+                    ShortcutManager shortcutManager = ApplicationLoader.applicationContext.getSystemService(ShortcutManager.class);
+                    shortcutManager.removeAllDynamicShortcuts();
+                } catch (Exception e) {
+                    FileLog.e(e);
+                }
+            });
+        }
 
         loading = false;
         loaded = false;
@@ -227,6 +237,9 @@ public class MediaDataController extends BaseController {
     }
 
     public boolean isStickerInFavorites(TLRPC.Document document) {
+        if (document == null) {
+            return false;
+        }
         for (int a = 0; a < recentStickers[TYPE_FAVE].size(); a++) {
             TLRPC.Document d = recentStickers[TYPE_FAVE].get(a);
             if (d.id == document.id && d.dc_id == document.dc_id) {
@@ -237,7 +250,7 @@ public class MediaDataController extends BaseController {
     }
 
     public void addRecentSticker(final int type, Object parentObject, TLRPC.Document document, int date, boolean remove) {
-        if (document == null) {
+        if (!MessageObject.isStickerDocument(document)) {
             return;
         }
         boolean found = false;
@@ -3264,7 +3277,7 @@ public class MediaDataController extends BaseController {
         }
     }
 
-    public void loadReplyMessagesForMessages(final ArrayList<MessageObject> messages, final long dialogId) {
+    public void loadReplyMessagesForMessages(final ArrayList<MessageObject> messages, final long dialogId, boolean scheduled) {
         if ((int) dialogId == 0) {
             final ArrayList<Long> replyMessages = new ArrayList<>();
             final LongSparseArray<ArrayList<MessageObject>> replyMessageRandomOwners = new LongSparseArray<>();
@@ -3409,7 +3422,7 @@ public class MediaDataController extends BaseController {
                                     ImageLoader.saveMessagesThumbs(messagesRes.messages);
                                     broadcastReplyMessages(messagesRes.messages, replyMessageOwners, messagesRes.users, messagesRes.chats, dialogId, false);
                                     getMessagesStorage().putUsersAndChats(messagesRes.users, messagesRes.chats, true, true);
-                                    saveReplyMessages(replyMessageOwners, messagesRes.messages);
+                                    saveReplyMessages(replyMessageOwners, messagesRes.messages, scheduled);
                                 }
                             });
                         } else {
@@ -3422,7 +3435,7 @@ public class MediaDataController extends BaseController {
                                     ImageLoader.saveMessagesThumbs(messagesRes.messages);
                                     broadcastReplyMessages(messagesRes.messages, replyMessageOwners, messagesRes.users, messagesRes.chats, dialogId, false);
                                     getMessagesStorage().putUsersAndChats(messagesRes.users, messagesRes.chats, true, true);
-                                    saveReplyMessages(replyMessageOwners, messagesRes.messages);
+                                    saveReplyMessages(replyMessageOwners, messagesRes.messages, scheduled);
                                 }
                             });
                         }
@@ -3434,11 +3447,16 @@ public class MediaDataController extends BaseController {
         }
     }
 
-    private void saveReplyMessages(final SparseArray<ArrayList<MessageObject>> replyMessageOwners, final ArrayList<TLRPC.Message> result) {
+    private void saveReplyMessages(final SparseArray<ArrayList<MessageObject>> replyMessageOwners, final ArrayList<TLRPC.Message> result, boolean scheduled) {
         getMessagesStorage().getStorageQueue().postRunnable(() -> {
             try {
                 getMessagesStorage().getDatabase().beginTransaction();
-                SQLitePreparedStatement state = getMessagesStorage().getDatabase().executeFast("UPDATE messages SET replydata = ? WHERE mid = ?");
+                SQLitePreparedStatement state;
+                if (scheduled) {
+                    state = getMessagesStorage().getDatabase().executeFast("UPDATE scheduled_messages SET replydata = ? WHERE mid = ?");
+                } else {
+                    state = getMessagesStorage().getDatabase().executeFast("UPDATE messages SET replydata = ? WHERE mid = ?");
+                }
                 for (int a = 0; a < result.size(); a++) {
                     TLRPC.Message message = result.get(a);
                     ArrayList<MessageObject> messageObjects = replyMessageOwners.get(message.id);

@@ -175,6 +175,10 @@ public class LocationController extends BaseController implements NotificationCe
     @Override
     public void didReceivedNotification(int id, int account, Object... args) {
         if (id == NotificationCenter.didReceiveNewMessages) {
+            boolean scheduled = (Boolean) args[2];
+            if (scheduled) {
+                return;
+            }
             long did = (Long) args[0];
             if (!isSharingLocation(did)) {
                 return;
@@ -206,6 +210,10 @@ public class LocationController extends BaseController implements NotificationCe
                 NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.liveLocationsCacheChanged, did, currentAccount);
             }
         } else if (id == NotificationCenter.messagesDeleted) {
+            boolean scheduled = (Boolean) args[2];
+            if (scheduled) {
+                return;
+            }
             if (!sharingLocationsUI.isEmpty()) {
                 ArrayList<Integer> markAsDeletedMessages = (ArrayList<Integer>) args[0];
                 int channelId = (Integer) args[1];

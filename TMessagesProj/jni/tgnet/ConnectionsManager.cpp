@@ -2721,6 +2721,7 @@ std::string base64UrlDecode(std::string base64) {
 
     size_t padding_length = 0;
     while (!base64.empty() && base64.back() == '=') {
+        base64.pop_back();
         padding_length++;
     }
     if (padding_length >= 3 || (padding_length > 0 && ((base64.size() + padding_length) & 3) != 0)) {
@@ -2732,10 +2733,9 @@ std::string base64UrlDecode(std::string base64) {
     }
 
     std::string output;
-    size_t size = base64.size() - padding_length;
     output.reserve(((base64.size() + 3) >> 2) * 3);
-    for (size_t i = 0; i < size;) {
-        size_t left = std::min(size - i, static_cast<size_t>(4));
+    for (size_t i = 0; i < base64.size();) {
+        size_t left = std::min(base64.size() - i, static_cast<size_t>(4));
         int c = 0;
         for (size_t t = 0; t < left; t++) {
             auto value = url_char_to_value[base64.c_str()[i++]];

@@ -70,6 +70,7 @@ import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.UserConfig;
+import org.telegram.messenger.UserObject;
 import org.telegram.messenger.Utilities;
 import org.telegram.messenger.VideoEditedInfo;
 import org.telegram.messenger.camera.CameraController;
@@ -126,6 +127,7 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
     private VideoEditedInfo videoEditedInfo;
     private VideoPlayer videoPlayer;
     private Bitmap lastBitmap;
+    private int recordingGuid;
 
     private int[] position = new int[2];
     private int[] cameraTexture = new int[1];
@@ -149,7 +151,7 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
             if (!recording) {
                 return;
             }
-            NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.recordProgressChanged, duration = System.currentTimeMillis() - recordStartTime, 0.0);
+            NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.recordProgressChanged, recordingGuid, duration = System.currentTimeMillis() - recordStartTime, 0.0);
             AndroidUtilities.runOnUIThread(timerRunnable, 50);
         }
     };
@@ -240,6 +242,7 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
         setWillNotDraw(false);
         setBackgroundColor(0xc0000000);
         baseFragment = parentFragment;
+        recordingGuid = baseFragment.getClassGuid();
         isSecretChat = baseFragment.getCurrentEncryptedChat() != null;
         paint = new Paint(Paint.ANTI_ALIAS_FLAG) {
             @Override
@@ -381,7 +384,11 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
     @Override
     public void didReceivedNotification(int id, int account, Object... args) {
         if (id == NotificationCenter.recordProgressChanged) {
-            long t = (Long) args[0];
+            int guid = (Integer) args[0];
+            if (guid != recordingGuid) {
+                return;
+            }
+            long t = (Long) args[1];
             progress = t / 60000.0f;
             recordedTime = t;
             invalidate();
@@ -610,7 +617,7 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
         }
     }
 
-    public void send(int state) {
+    public void send(int state, boolean notify, int scheduleDate) {
         if (textureView == null) {
             return;
         }
@@ -645,13 +652,16 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
             videoEditedInfo.encryptedFile = encryptedFile;
             videoEditedInfo.key = key;
             videoEditedInfo.iv = iv;
-            baseFragment.sendMedia(new MediaController.PhotoEntry(0, 0, 0, cameraFile.getAbsolutePath(), 0, true), videoEditedInfo);
+            baseFragment.sendMedia(new MediaController.PhotoEntry(0, 0, 0, cameraFile.getAbsolutePath(), 0, true), videoEditedInfo, notify, scheduleDate);
+            if (scheduleDate != 0) {
+                startAnimation(false);
+            }
         } else {
             cancelled = recordedTime < 800;
             recording = false;
             AndroidUtilities.cancelRunOnUIThread(timerRunnable);
             if (cameraThread != null) {
-                NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.recordStopped, !cancelled && state == 3 ? 2 : 0);
+                NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.recordStopped, recordingGuid, !cancelled && state == 3 ? 2 : 0);
                 int send;
                 if (cancelled) {
                     send = 0;
@@ -665,7 +675,7 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
                 cameraThread = null;
             }
             if (cancelled) {
-                NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.audioRecordTooShort, true);
+                NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.audioRecordTooShort, recordingGuid, true);
                 startAnimation(false);
             }
         }
@@ -700,7 +710,7 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
         cancelled = true;
         recording = false;
         AndroidUtilities.cancelRunOnUIThread(timerRunnable);
-        NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.recordStopped, 0);
+        NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.recordStopped, recordingGuid, 0);
         if (cameraThread != null) {
             saveLastCameraBitmap();
             cameraThread.shutdown(0);
@@ -1850,7 +1860,14 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
                     videoEditedInfo.resultHeight = videoEditedInfo.originalHeight = 240;
                     videoEditedInfo.originalPath = videoFile.getAbsolutePath();
                     if (send == 1) {
-                        baseFragment.sendMedia(new MediaController.PhotoEntry(0, 0, 0, videoFile.getAbsolutePath(), 0, true), videoEditedInfo);
+                        if (baseFragment.isInScheduleMode()) {
+                            AlertsCreator.createScheduleDatePickerDialog(baseFragment.getParentActivity(), UserObject.isUserSelf(baseFragment.getCurrentUser()), (notify, scheduleDate) -> {
+                                baseFragment.sendMedia(new MediaController.PhotoEntry(0, 0, 0, videoFile.getAbsolutePath(), 0, true), videoEditedInfo, notify, scheduleDate);
+                                startAnimation(false);
+                            });
+                        } else {
+                            baseFragment.sendMedia(new MediaController.PhotoEntry(0, 0, 0, videoFile.getAbsolutePath(), 0, true), videoEditedInfo, true, 0);
+                        }
                     } else {
                         videoPlayer = new VideoPlayer();
                         videoPlayer.setDelegate(new VideoPlayer.VideoPlayerDelegate() {
@@ -1904,7 +1921,7 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
                         animatorSet.setInterpolator(new DecelerateInterpolator());
                         animatorSet.start();
                         videoEditedInfo.estimatedDuration = duration;
-                        NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.audioDidSent, videoEditedInfo, videoFile.getAbsolutePath());
+                        NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.audioDidSent, recordingGuid, videoEditedInfo, videoFile.getAbsolutePath());
                     }
                     didWriteData(videoFile, 0, true);
                 });
@@ -2005,7 +2022,7 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
                     recording = true;
                     recordStartTime = System.currentTimeMillis();
                     AndroidUtilities.runOnUIThread(timerRunnable);
-                    NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.recordStarted);
+                    NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.recordStarted, recordingGuid);
                 });
             } catch (Exception ioe) {
                 throw new RuntimeException(ioe);

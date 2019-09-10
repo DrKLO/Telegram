@@ -51,6 +51,7 @@ import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.ContextLinkCell;
 import org.telegram.ui.Cells.StickerCell;
 import org.telegram.ui.Cells.StickerEmojiCell;
+import org.telegram.ui.Components.AlertsCreator;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RecyclerListView;
 
@@ -71,14 +72,17 @@ public class ContentPreviewViewer {
     }
 
     public interface ContentPreviewViewerDelegate {
-        void sendSticker(TLRPC.Document sticker, Object parent);
+        void sendSticker(TLRPC.Document sticker, Object parent, boolean notify, int scheduleDate);
         void openSet(TLRPC.InputStickerSet set, boolean clearInputField);
         boolean needSend();
+        boolean canSchedule();
+        boolean isInScheduleMode();
+
         default boolean needOpen() {
             return true;
         }
 
-        default void sendGif(Object gif) {
+        default void sendGif(Object gif, boolean notify, int scheduleDate) {
 
         }
 
@@ -138,10 +142,15 @@ public class ContentPreviewViewer {
                 final ArrayList<Integer> actions = new ArrayList<>();
                 ArrayList<Integer> icons = new ArrayList<>();
                 if (delegate != null) {
-                    if (delegate.needSend()) {
+                    if (delegate.needSend() && !delegate.isInScheduleMode()) {
                         items.add(LocaleController.getString("SendStickerPreview", R.string.SendStickerPreview));
                         icons.add(R.drawable.outline_send);
                         actions.add(0);
+                    }
+                    if (delegate.canSchedule()) {
+                        items.add(LocaleController.getString("Schedule", R.string.Schedule));
+                        icons.add(R.drawable.photo_timer);
+                        actions.add(3);
                     }
                     if (currentStickerSet != null && delegate.needOpen()) {
                         items.add(LocaleController.formatString("ViewPackPreview", R.string.ViewPackPreview));
@@ -167,7 +176,7 @@ public class ContentPreviewViewer {
                     }
                     if (actions.get(which) == 0) {
                         if (delegate != null) {
-                            delegate.sendSticker(currentDocument, parentObject);
+                            delegate.sendSticker(currentDocument, parentObject, true, 0);
                         }
                     } else if (actions.get(which) == 1) {
                         if (delegate != null) {
@@ -175,6 +184,11 @@ public class ContentPreviewViewer {
                         }
                     } else if (actions.get(which) == 2) {
                         MediaDataController.getInstance(currentAccount).addRecentSticker(MediaDataController.TYPE_FAVE, parentObject, currentDocument, (int) (System.currentTimeMillis() / 1000), inFavs);
+                    } else if (actions.get(which) == 3) {
+                        TLRPC.Document sticker = currentDocument;
+                        Object parent = parentObject;
+                        ContentPreviewViewerDelegate stickerPreviewViewerDelegate = delegate;
+                        AlertsCreator.createScheduleDatePickerDialog(parentActivity, false, (notify, scheduleDate) -> stickerPreviewViewerDelegate.sendSticker(sticker, parent, notify, scheduleDate));
                     }
                 });
                 builder.setDimBehind(false);
@@ -209,10 +223,15 @@ public class ContentPreviewViewer {
                 final ArrayList<Integer> actions = new ArrayList<>();
                 ArrayList<Integer> icons = new ArrayList<>();
 
-                if (delegate.needSend()) {
+                if (delegate.needSend() && !delegate.isInScheduleMode()) {
                     items.add(LocaleController.getString("SendGifPreview", R.string.SendGifPreview));
                     icons.add(R.drawable.outline_send);
                     actions.add(0);
+                }
+                if (delegate.canSchedule()) {
+                    items.add(LocaleController.getString("Schedule", R.string.Schedule));
+                    icons.add(R.drawable.photo_timer);
+                    actions.add(3);
                 }
 
                 boolean canDelete;
@@ -239,9 +258,7 @@ public class ContentPreviewViewer {
                         return;
                     }
                     if (actions.get(which) == 0) {
-                        if (delegate != null) {
-                            delegate.sendGif(currentDocument != null ? currentDocument : inlineResult);
-                        }
+                        delegate.sendGif(currentDocument != null ? currentDocument : inlineResult, true, 0);
                     } else if (actions.get(which) == 1) {
                         MediaDataController.getInstance(currentAccount).removeRecentGif(currentDocument);
                         delegate.gifAddedOrDeleted();
@@ -249,6 +266,12 @@ public class ContentPreviewViewer {
                         MediaDataController.getInstance(currentAccount).addRecentGif(currentDocument, (int) (System.currentTimeMillis() / 1000));
                         MessagesController.getInstance(currentAccount).saveGif("gif", currentDocument);
                         delegate.gifAddedOrDeleted();
+                    } else if (actions.get(which) == 3) {
+                        TLRPC.Document document = currentDocument;
+                        TLRPC.BotInlineResult result = inlineResult;
+                        Object parent = parentObject;
+                        ContentPreviewViewerDelegate stickerPreviewViewerDelegate = delegate;
+                        AlertsCreator.createScheduleDatePickerDialog(parentActivity, false, (notify, scheduleDate) -> stickerPreviewViewerDelegate.sendGif(document != null ? document : result, notify, scheduleDate));
                     }
                 });
                 visibleDialog.setDimBehind(false);

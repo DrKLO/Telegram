@@ -53,6 +53,7 @@ import android.view.accessibility.AccessibilityManager;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.view.accessibility.AccessibilityNodeProvider;
 import android.view.animation.Interpolator;
+import android.widget.Toast;
 
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.messenger.AndroidUtilities;
@@ -151,6 +152,9 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         default void didPressBotButton(ChatMessageCell cell, TLRPC.KeyboardButton button) {
         }
 
+        default void didPressReaction(ChatMessageCell cell, TLRPC.TL_reactionCount reaction) {
+        }
+
         default void didPressVoteButton(ChatMessageCell cell, TLRPC.TL_pollAnswer button) {
         }
 
@@ -192,6 +196,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
     private final static int DOCUMENT_ATTACH_TYPE_STICKER = 6;
     private final static int DOCUMENT_ATTACH_TYPE_ROUND = 7;
     private final static int DOCUMENT_ATTACH_TYPE_WALLPAPER = 8;
+    private final static int DOCUMENT_ATTACH_TYPE_THEME = 9;
 
     private class BotButton {
         private int x;
@@ -200,6 +205,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         private int height;
         private StaticLayout title;
         private TLRPC.KeyboardButton button;
+        private TLRPC.TL_reactionCount reaction;
         private int angle;
         private float progressAlpha;
         private long lastUpdateTime;
@@ -427,6 +433,8 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
     private TLRPC.TL_poll lastPoll;
     private ArrayList<TLRPC.TL_pollAnswerVoters> lastPollResults;
     private int lastPollResultsVoters;
+
+    private TLRPC.TL_messageReactions lastReactions;
 
     private boolean autoPlayingMedia;
 
@@ -1128,13 +1136,17 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                     if (Build.VERSION.SDK_INT >= 21 && selectorDrawable != null) {
                         selectorDrawable.setState(StateSet.NOTHING);
                     }
-                    pollVoteInProgressNum = pressedVoteButton;
-                    pollVoteInProgress = true;
-                    voteCurrentProgressTime = 0.0f;
-                    firstCircleLength = true;
-                    voteCurrentCircleLength = 360;
-                    voteRisingCircleLength = false;
-                    delegate.didPressVoteButton(this, pollButtons.get(pressedVoteButton).answer);
+                    if (currentMessageObject.scheduled) {
+                        Toast.makeText(getContext(), LocaleController.getString("MessageScheduledVote", R.string.MessageScheduledVote), Toast.LENGTH_LONG).show();
+                    } else {
+                        pollVoteInProgressNum = pressedVoteButton;
+                        pollVoteInProgress = true;
+                        voteCurrentProgressTime = 0.0f;
+                        firstCircleLength = true;
+                        voteCurrentCircleLength = 360;
+                        voteRisingCircleLength = false;
+                        delegate.didPressVoteButton(this, pollButtons.get(pressedVoteButton).answer);
+                    }
                     pressedVoteButton = -1;
                     invalidate();
                 }
@@ -1434,7 +1446,16 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             if (event.getAction() == MotionEvent.ACTION_UP) {
                 if (pressedBotButton != -1) {
                     playSoundEffect(SoundEffectConstants.CLICK);
-                    delegate.didPressBotButton(this, botButtons.get(pressedBotButton).button);
+                    if (currentMessageObject.scheduled) {
+                        Toast.makeText(getContext(), LocaleController.getString("MessageScheduledBotAction", R.string.MessageScheduledBotAction), Toast.LENGTH_LONG).show();
+                    } else {
+                        BotButton button = botButtons.get(pressedBotButton);
+                        if (button.button != null) {
+                            delegate.didPressBotButton(this, button.button);
+                        } else if (button.reaction != null) {
+                            delegate.didPressReaction(this, button.reaction);
+                        }
+                    }
                     pressedBotButton = -1;
                     invalidate();
                 }
@@ -1977,6 +1998,9 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         if (lastViewsCount != currentMessageObject.messageOwner.views) {
             return true;
         }
+        if (lastReactions != currentMessageObject.messageOwner.reactions) {
+            return true;
+        }
 
         updateCurrentUserAndChat();
         TLRPC.FileLocation newPhoto = null;
@@ -2284,6 +2308,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             }
             int captionNewLine = 0;
             availableTimeWidth = 0;
+            lastReactions = messageObject.messageOwner.reactions;
             photoImage.setForceLoading(false);
             photoImage.setNeedsQualityThumb(false);
             photoImage.setShouldGenerateQualityThumb(false);
@@ -2336,6 +2361,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 boolean slideshow = false;
                 String siteName = hasLinkPreview ? messageObject.messageOwner.media.webpage.site_name : null;
                 String webpageType = hasLinkPreview ? messageObject.messageOwner.media.webpage.type : null;
+                TLRPC.Document androidThemeDocument = null;
                 if (!drawInstantView) {
                     if ("telegram_channel".equals(webpageType)) {
                         drawInstantView = true;
@@ -2346,6 +2372,17 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                     } else if ("telegram_message".equals(webpageType)) {
                         drawInstantView = true;
                         drawInstantViewType = 3;
+                    } else if ("telegram_theme".equals(webpageType)) {
+                        ArrayList<TLRPC.Document> documents = messageObject.messageOwner.media.webpage.documents;
+                        for (int a = 0, N = documents.size(); a < N; a++) {
+                            TLRPC.Document document = documents.get(a);
+                            if ("application/x-tgtheme-android".equals(document.mime_type)) {
+                                drawInstantView = true;
+                                drawInstantViewType = 7;
+                                androidThemeDocument = document;
+                                break;
+                            }
+                        }
                     } else if ("telegram_background".equals(webpageType)) {
                         drawInstantView = true;
                         drawInstantViewType = 6;
@@ -2470,12 +2507,16 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                     if (hasLinkPreview) {
                         TLRPC.TL_webPage webPage = (TLRPC.TL_webPage) messageObject.messageOwner.media.webpage;
                         site_name = webPage.site_name;
-                        title = drawInstantViewType != 6 ? webPage.title : null;
-                        author = drawInstantViewType != 6 ? webPage.author : null;
-                        description = drawInstantViewType != 6 ? webPage.description : null;
+                        title = drawInstantViewType != 6 && drawInstantViewType != 7 ? webPage.title : null;
+                        author = drawInstantViewType != 6 && drawInstantViewType != 7 ? webPage.author : null;
+                        description = drawInstantViewType != 6 && drawInstantViewType != 7 ? webPage.description : null;
                         photo = webPage.photo;
                         webDocument = null;
-                        document = webPage.document;
+                        if (drawInstantViewType == 7) {
+                            document = androidThemeDocument;
+                        } else {
+                            document = webPage.document;
+                        }
                         type = webPage.type;
                         duration = webPage.duration;
                         if (site_name != null && photo != null && site_name.toLowerCase().equals("instagram")) {
@@ -2517,6 +2558,8 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                     }
                     if (drawInstantViewType == 6) {
                         site_name = LocaleController.getString("ChatBackground", R.string.ChatBackground);
+                    } else if ("telegram_theme".equals(webpageType)) {
+                        site_name = LocaleController.getString("ColorTheme", R.string.ColorTheme);
                     }
 
                     int additinalWidth = hasInvoicePreview ? 0 : AndroidUtilities.dp(10);
@@ -2808,6 +2851,25 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                             String str = AndroidUtilities.formatFileSize(documentAttach.size);
                             durationWidth = (int) Math.ceil(Theme.chat_durationPaint.measureText(str));
                             videoInfoLayout = new StaticLayout(str, Theme.chat_durationPaint, durationWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
+                        } else if (drawInstantViewType == 7) {
+                            currentPhotoObject = FileLoader.getClosestPhotoSizeWithSize(document.thumbs, 700);
+                            currentPhotoObjectThumb = FileLoader.getClosestPhotoSizeWithSize(document.thumbs, 40);
+                            photoParentObject = document;
+                            if (currentPhotoObject != null && (currentPhotoObject.w == 0 || currentPhotoObject.h == 0)) {
+                                for (int a = 0; a < document.attributes.size(); a++) {
+                                    TLRPC.DocumentAttribute attribute = document.attributes.get(a);
+                                    if (attribute instanceof TLRPC.TL_documentAttributeImageSize) {
+                                        currentPhotoObject.w = attribute.w;
+                                        currentPhotoObject.h = attribute.h;
+                                        break;
+                                    }
+                                }
+                                if (currentPhotoObject.w == 0 || currentPhotoObject.h == 0) {
+                                    currentPhotoObject.w = currentPhotoObject.h = AndroidUtilities.dp(150);
+                                }
+                            }
+                            documentAttach = document;
+                            documentAttachType = DOCUMENT_ATTACH_TYPE_THEME;
                         } else {
                             calcBackgroundWidth(maxWidth, timeMore, maxChildWidth);
                             if (backgroundWidth < maxWidth + AndroidUtilities.dp(20)) {
@@ -2890,7 +2952,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                                 maxPhotoWidth = AndroidUtilities.dp(208);
                             } else if (currentPhotoObject instanceof TLRPC.TL_photoSizeEmpty && currentPhotoObject.w != 0) {
                                 maxPhotoWidth = currentPhotoObject.w;
-                            } else if (documentAttachType == DOCUMENT_ATTACH_TYPE_STICKER || documentAttachType == DOCUMENT_ATTACH_TYPE_WALLPAPER) {
+                            } else if (documentAttachType == DOCUMENT_ATTACH_TYPE_STICKER || documentAttachType == DOCUMENT_ATTACH_TYPE_WALLPAPER || documentAttachType == DOCUMENT_ATTACH_TYPE_THEME) {
                                 if (AndroidUtilities.isTablet()) {
                                     maxPhotoWidth = (int) (AndroidUtilities.getMinTabletSide() * 0.5f);
                                 } else {
@@ -2979,6 +3041,8 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                                     } else {
                                         photoImage.setImage(null, null, ImageLocation.getForDocument(currentPhotoObject, document), "b1", 0, "jpg", messageObject, 1);
                                     }
+                                } else if (documentAttachType == DOCUMENT_ATTACH_TYPE_THEME) {
+                                    photoImage.setImage(ImageLocation.getForDocument(currentPhotoObject, document), currentPhotoFilter, ImageLocation.getForDocument(currentPhotoObjectThumb, document), "b1", 0, "jpg", messageObject, 1);
                                 } else if (documentAttachType == DOCUMENT_ATTACH_TYPE_STICKER) {
                                     boolean isWebpSticker = messageObject.isSticker();
                                     if (SharedConfig.loopStickers || isWebpSticker) {
@@ -3551,7 +3615,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                         } else {
                             locationImageReceiver.setImage(null, null, contactAvatarDrawable, null, null, 0);
                         }
-                        infoLayout = new StaticLayout(LocaleController.formatLocationUpdateDate(messageObject.messageOwner.edit_date != 0 ? messageObject.messageOwner.edit_date : messageObject.messageOwner.date), Theme.chat_locationAddressPaint, maxWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
+                        infoLayout = new StaticLayout(LocaleController.formatLocationUpdateDate(messageObject.messageOwner.edit_date != 0 && !messageObject.messageOwner.edit_hide ? messageObject.messageOwner.edit_date : messageObject.messageOwner.date), Theme.chat_locationAddressPaint, maxWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
                     } else if (!TextUtils.isEmpty(messageObject.messageOwner.media.title)) {
                         if (AndroidUtilities.isTablet()) {
                             backgroundWidth = Math.min(AndroidUtilities.getMinTabletSide() - AndroidUtilities.dp(isChat && messageObject.needDrawAvatar() && !messageObject.isOutOwner() ? 102 : 50), AndroidUtilities.dp(252 + 37));
@@ -4312,10 +4376,15 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 botButtonsByPosition.clear();
                 botButtonsLayout = null;
             }
-            if (currentPosition == null && messageObject.messageOwner.reply_markup instanceof TLRPC.TL_replyInlineMarkup) {
-                int rows = messageObject.messageOwner.reply_markup.rows.size();
-                substractBackgroundHeight = keyboardHeight = AndroidUtilities.dp(44 + 4) * rows + AndroidUtilities.dp(1);
+            if (currentPosition == null && (messageObject.messageOwner.reply_markup instanceof TLRPC.TL_replyInlineMarkup || messageObject.messageOwner.reactions != null && !messageObject.messageOwner.reactions.results.isEmpty())) {
+                int rows;
 
+                if (messageObject.messageOwner.reply_markup instanceof TLRPC.TL_replyInlineMarkup) {
+                    rows = messageObject.messageOwner.reply_markup.rows.size();
+                } else {
+                    rows = 1;
+                }
+                substractBackgroundHeight = keyboardHeight = AndroidUtilities.dp(44 + 4) * rows + AndroidUtilities.dp(1);
                 widthForButtons = backgroundWidth - AndroidUtilities.dp(mediaBackground ? 0 : 9);
                 boolean fullWidth = false;
                 if (messageObject.wantedBotKeyboardWidth > widthForButtons) {
@@ -4340,18 +4409,61 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                     oldByPosition = null;
                 }
                 botButtonsByData.clear();
-                for (int a = 0; a < rows; a++) {
-                    TLRPC.TL_keyboardButtonRow row = messageObject.messageOwner.reply_markup.rows.get(a);
-                    int buttonsCount = row.buttons.size();
-                    if (buttonsCount == 0) {
-                        continue;
+                if (messageObject.messageOwner.reply_markup instanceof TLRPC.TL_replyInlineMarkup) {
+                    for (int a = 0; a < rows; a++) {
+                        TLRPC.TL_keyboardButtonRow row = messageObject.messageOwner.reply_markup.rows.get(a);
+                        int buttonsCount = row.buttons.size();
+                        if (buttonsCount == 0) {
+                            continue;
+                        }
+                        int buttonWidth = (widthForButtons - AndroidUtilities.dp(5) * (buttonsCount - 1) - AndroidUtilities.dp(2)) / buttonsCount;
+                        for (int b = 0; b < row.buttons.size(); b++) {
+                            BotButton botButton = new BotButton();
+                            botButton.button = row.buttons.get(b);
+                            String key = Utilities.bytesToHex(botButton.button.data);
+                            String position = a + "" + b;
+                            BotButton oldButton;
+                            if (oldByPosition != null) {
+                                oldButton = oldByPosition.get(position);
+                            } else {
+                                oldButton = oldByData.get(key);
+                            }
+                            if (oldButton != null) {
+                                botButton.progressAlpha = oldButton.progressAlpha;
+                                botButton.angle = oldButton.angle;
+                                botButton.lastUpdateTime = oldButton.lastUpdateTime;
+                            } else {
+                                botButton.lastUpdateTime = System.currentTimeMillis();
+                            }
+                            botButtonsByData.put(key, botButton);
+                            botButtonsByPosition.put(position, botButton);
+                            botButton.x = b * (buttonWidth + AndroidUtilities.dp(5));
+                            botButton.y = a * AndroidUtilities.dp(44 + 4) + AndroidUtilities.dp(5);
+                            botButton.width = buttonWidth;
+                            botButton.height = AndroidUtilities.dp(44);
+                            CharSequence buttonText;
+                            if (botButton.button instanceof TLRPC.TL_keyboardButtonBuy && (messageObject.messageOwner.media.flags & 4) != 0) {
+                                buttonText = LocaleController.getString("PaymentReceipt", R.string.PaymentReceipt);
+                            } else {
+                                buttonText = Emoji.replaceEmoji(botButton.button.text, Theme.chat_botButtonPaint.getFontMetricsInt(), AndroidUtilities.dp(15), false);
+                                buttonText = TextUtils.ellipsize(buttonText, Theme.chat_botButtonPaint, buttonWidth - AndroidUtilities.dp(10), TextUtils.TruncateAt.END);
+                            }
+                            botButton.title = new StaticLayout(buttonText, Theme.chat_botButtonPaint, buttonWidth - AndroidUtilities.dp(10), Layout.Alignment.ALIGN_CENTER, 1.0f, 0.0f, false);
+                            botButtons.add(botButton);
+                            if (b == row.buttons.size() - 1) {
+                                maxButtonsWidth = Math.max(maxButtonsWidth, botButton.x + botButton.width);
+                            }
+                        }
                     }
+                } else {
+                    int buttonsCount = messageObject.messageOwner.reactions.results.size();
                     int buttonWidth = (widthForButtons - AndroidUtilities.dp(5) * (buttonsCount - 1) - AndroidUtilities.dp(2)) / buttonsCount;
-                    for (int b = 0; b < row.buttons.size(); b++) {
+                    for (int b = 0; b < buttonsCount; b++) {
+                        TLRPC.TL_reactionCount reaction = messageObject.messageOwner.reactions.results.get(b);
                         BotButton botButton = new BotButton();
-                        botButton.button = row.buttons.get(b);
-                        String key = Utilities.bytesToHex(botButton.button.data);
-                        String position = a + "" + b;
+                        botButton.reaction = reaction;
+                        String key = reaction.reaction;
+                        String position = 0 + "" + b;
                         BotButton oldButton;
                         if (oldByPosition != null) {
                             oldButton = oldByPosition.get(position);
@@ -4368,19 +4480,16 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                         botButtonsByData.put(key, botButton);
                         botButtonsByPosition.put(position, botButton);
                         botButton.x = b * (buttonWidth + AndroidUtilities.dp(5));
-                        botButton.y = a * AndroidUtilities.dp(44 + 4) + AndroidUtilities.dp(5);
+                        botButton.y = AndroidUtilities.dp(5);
                         botButton.width = buttonWidth;
                         botButton.height = AndroidUtilities.dp(44);
-                        CharSequence buttonText;
-                        if (botButton.button instanceof TLRPC.TL_keyboardButtonBuy && (messageObject.messageOwner.media.flags & 4) != 0) {
-                            buttonText = LocaleController.getString("PaymentReceipt", R.string.PaymentReceipt);
-                        } else {
-                            buttonText = Emoji.replaceEmoji(botButton.button.text, Theme.chat_botButtonPaint.getFontMetricsInt(), AndroidUtilities.dp(15), false);
-                            buttonText = TextUtils.ellipsize(buttonText, Theme.chat_botButtonPaint, buttonWidth - AndroidUtilities.dp(10), TextUtils.TruncateAt.END);
-                        }
+
+                        CharSequence buttonText = Emoji.replaceEmoji(String.format("%d %s", reaction.count, reaction.reaction), Theme.chat_botButtonPaint.getFontMetricsInt(), AndroidUtilities.dp(15), false);
+                        buttonText = TextUtils.ellipsize(buttonText, Theme.chat_botButtonPaint, buttonWidth - AndroidUtilities.dp(10), TextUtils.TruncateAt.END);
+
                         botButton.title = new StaticLayout(buttonText, Theme.chat_botButtonPaint, buttonWidth - AndroidUtilities.dp(10), Layout.Alignment.ALIGN_CENTER, 1.0f, 0.0f, false);
                         botButtons.add(botButton);
-                        if (b == row.buttons.size() - 1) {
+                        if (b == buttonsCount - 1) {
                             maxButtonsWidth = Math.max(maxButtonsWidth, botButton.x + botButton.width);
                         }
                     }
@@ -4399,6 +4508,8 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             }
             if (messageObject.isAnyKindOfSticker() && totalHeight < AndroidUtilities.dp(70)) {
                 totalHeight = AndroidUtilities.dp(70);
+            } else if (messageObject.isAnimatedEmoji()) {
+                totalHeight += AndroidUtilities.dp(16);
             }
             if (!drawPhotoImage) {
                 photoImage.setImageBitmap((Drawable) null);
@@ -4987,6 +5098,8 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 str = LocaleController.getString("ViewContact", R.string.ViewContact);
             } else if (drawInstantViewType == 6) {
                 str = LocaleController.getString("OpenBackground", R.string.OpenBackground);
+            } else if (drawInstantViewType == 7) {
+                str = LocaleController.getString("OpenTheme", R.string.OpenTheme);
             } else {
                 str = LocaleController.getString("InstantView", R.string.InstantView);
             }
@@ -6013,7 +6126,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             if (currentMessageObject.isOutOwner()) {
                 addX = getMeasuredWidth() - widthForButtons - AndroidUtilities.dp(10);
             } else {
-                addX = backgroundDrawableLeft + AndroidUtilities.dp(mediaBackground ? 1 : 7);
+                addX = backgroundDrawableLeft + AndroidUtilities.dp(mediaBackground || drawPinnedBottom ? 1 : 7);
             }
             for (int a = 0; a < botButtons.size(); a++) {
                 BotButton button = botButtons.get(a);
@@ -6314,7 +6427,13 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 }
             }
             updatePlayingMessageProgress();
-        } else if (currentMessageObject.type == 0 && documentAttachType != DOCUMENT_ATTACH_TYPE_DOCUMENT && documentAttachType != DOCUMENT_ATTACH_TYPE_GIF && documentAttachType != DOCUMENT_ATTACH_TYPE_ROUND && documentAttachType != DOCUMENT_ATTACH_TYPE_VIDEO && documentAttachType != DOCUMENT_ATTACH_TYPE_WALLPAPER) {
+        } else if (currentMessageObject.type == 0 &&
+                documentAttachType != DOCUMENT_ATTACH_TYPE_DOCUMENT &&
+                documentAttachType != DOCUMENT_ATTACH_TYPE_GIF &&
+                documentAttachType != DOCUMENT_ATTACH_TYPE_ROUND &&
+                documentAttachType != DOCUMENT_ATTACH_TYPE_VIDEO &&
+                documentAttachType != DOCUMENT_ATTACH_TYPE_WALLPAPER &&
+                documentAttachType != DOCUMENT_ATTACH_TYPE_THEME) {
             if (currentPhotoObject == null || !drawImageButton) {
                 return;
             }
@@ -6839,7 +6958,9 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
 
     private void measureTime(MessageObject messageObject) {
         CharSequence signString;
-        if (messageObject.messageOwner.post_author != null) {
+        if (messageObject.scheduled) {
+            signString = null;
+        } else if (messageObject.messageOwner.post_author != null) {
             signString = messageObject.messageOwner.post_author.replace("\n", "");
         } else if (messageObject.messageOwner.fwd_from != null && messageObject.messageOwner.fwd_from.post_author != null) {
             signString = messageObject.messageOwner.fwd_from.post_author.replace("\n", "");
@@ -6859,7 +6980,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             author = MessagesController.getInstance(currentAccount).getUser(messageObject.messageOwner.from_id);
         }
         boolean edited;
-        if (messageObject.isLiveLocation() || messageObject.getDialogId() == 777000 || messageObject.messageOwner.via_bot_id != 0 || messageObject.messageOwner.via_bot_name != null || author != null && author.bot) {
+        if (messageObject.scheduled || messageObject.isLiveLocation() || messageObject.messageOwner.edit_hide || messageObject.getDialogId() == 777000 || messageObject.messageOwner.via_bot_id != 0 || messageObject.messageOwner.via_bot_name != null || author != null && author.bot) {
             edited = false;
         } else if (currentPosition == null || currentMessagesGroup == null) {
             edited = (messageObject.messageOwner.flags & TLRPC.MESSAGE_FLAG_EDITED) != 0 || messageObject.isEditing();
@@ -6888,6 +7009,9 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             currentViewsString = String.format("%s", LocaleController.formatShortNumber(Math.max(1, messageObject.messageOwner.views), null));
             viewsTextWidth = (int) Math.ceil(Theme.chat_timePaint.measureText(currentViewsString));
             timeWidth += viewsTextWidth + Theme.chat_msgInViewsDrawable.getIntrinsicWidth() + AndroidUtilities.dp(10);
+        }
+        if (messageObject.scheduled && messageObject.isSendError()) {
+            timeWidth += AndroidUtilities.dp(18);
         }
         if (signString != null) {
             if (availableTimeWidth == 0) {
@@ -6979,7 +7103,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
     }
 
     private void setMessageObjectInternal(MessageObject messageObject) {
-        if ((messageObject.messageOwner.flags & TLRPC.MESSAGE_FLAG_HAS_VIEWS) != 0) {
+        if ((messageObject.messageOwner.flags & TLRPC.MESSAGE_FLAG_HAS_VIEWS) != 0 && !currentMessageObject.scheduled) {
             if (!currentMessageObject.viewsReloaded) {
                 MessagesController.getInstance(currentAccount).addToViewsQueue(currentMessageObject);
                 currentMessageObject.viewsReloaded = true;
@@ -7007,7 +7131,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 avatarImage.setImage(ImageLocation.getForChat(currentChat, false), "50_50", avatarDrawable, null, currentChat, 0);
             } else {
                 currentPhoto = null;
-                avatarDrawable.setInfo(messageObject.messageOwner.from_id, null, null, false);
+                avatarDrawable.setInfo(messageObject.messageOwner.from_id, null, null);
                 avatarImage.setImage(null, null, avatarDrawable, null, null, 0);
             }
         } else {
@@ -7753,7 +7877,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                     Theme.chat_namePaint.setColor(AvatarDrawable.getNameColorForId(currentUser.id));
                 } else if (currentChat != null) {
                     if (ChatObject.isChannel(currentChat) && !currentChat.megagroup) {
-                        Theme.chat_namePaint.setColor(AvatarDrawable.getNameColorForId(5));
+                        Theme.chat_namePaint.setColor(Theme.changeColorAccent(AvatarDrawable.getNameColorForId(5)));
                     } else {
                         Theme.chat_namePaint.setColor(AvatarDrawable.getNameColorForId(currentChat.id));
                     }
@@ -7999,24 +8123,24 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             paint.setAlpha(oldAlpha);
 
             int additionalX = (int) (-timeLayout.getLineLeft(0));
-            if ((currentMessageObject.messageOwner.flags & TLRPC.MESSAGE_FLAG_HAS_VIEWS) != 0) {
+            if (ChatObject.isChannel(currentChat) && !currentChat.megagroup || (currentMessageObject.messageOwner.flags & TLRPC.MESSAGE_FLAG_HAS_VIEWS) != 0) {
                 additionalX += (int) (timeWidth - timeLayout.getLineWidth(0));
 
                 if (currentMessageObject.isSending() || currentMessageObject.isEditing()) {
                     if (!currentMessageObject.isOutOwner()) {
-                        setDrawableBounds(Theme.chat_msgMediaClockDrawable, timeX + AndroidUtilities.dp(11), layoutHeight - AndroidUtilities.dp(14.0f) - Theme.chat_msgMediaClockDrawable.getIntrinsicHeight());
+                        setDrawableBounds(Theme.chat_msgMediaClockDrawable, timeX + (currentMessageObject.scheduled ? 0 : AndroidUtilities.dp(11)), layoutHeight - AndroidUtilities.dp(14.0f) - Theme.chat_msgMediaClockDrawable.getIntrinsicHeight());
                         Theme.chat_msgMediaClockDrawable.draw(canvas);
                     }
                 } else if (currentMessageObject.isSendError()) {
                     if (!currentMessageObject.isOutOwner()) {
-                        int x = timeX + AndroidUtilities.dp(11);
-                        int y = layoutHeight - AndroidUtilities.dp(27.5f);
+                        int x = timeX + (currentMessageObject.scheduled ? 0 : AndroidUtilities.dp(11));
+                        int y = layoutHeight - AndroidUtilities.dp(26.5f);
                         rect.set(x, y, x + AndroidUtilities.dp(14), y + AndroidUtilities.dp(14));
                         canvas.drawRoundRect(rect, AndroidUtilities.dp(1), AndroidUtilities.dp(1), Theme.chat_msgErrorPaint);
                         setDrawableBounds(Theme.chat_msgErrorDrawable, x + AndroidUtilities.dp(6), y + AndroidUtilities.dp(2));
                         Theme.chat_msgErrorDrawable.draw(canvas);
                     }
-                } else {
+                } else if (viewsLayout != null) {
                     Drawable viewsDrawable;
                     if (currentMessageObject.shouldDrawWithoutBackground()) {
                         viewsDrawable = Theme.chat_msgStickerViewsDrawable;
@@ -8029,12 +8153,10 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                     viewsDrawable.draw(canvas);
                     viewsDrawable.setAlpha(oldAlpha);
 
-                    if (viewsLayout != null) {
-                        canvas.save();
-                        canvas.translate(timeX + viewsDrawable.getIntrinsicWidth() + AndroidUtilities.dp(3), layoutHeight - AndroidUtilities.dp(12.3f) - timeLayout.getHeight());
-                        viewsLayout.draw(canvas);
-                        canvas.restore();
-                    }
+                    canvas.save();
+                    canvas.translate(timeX + viewsDrawable.getIntrinsicWidth() + AndroidUtilities.dp(3), layoutHeight - AndroidUtilities.dp(12.3f) - timeLayout.getHeight());
+                    viewsLayout.draw(canvas);
+                    canvas.restore();
                 }
             }
 
@@ -8045,25 +8167,25 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             Theme.chat_timePaint.setAlpha(255);
         } else {
             int additionalX = (int) (-timeLayout.getLineLeft(0));
-            if ((currentMessageObject.messageOwner.flags & TLRPC.MESSAGE_FLAG_HAS_VIEWS) != 0) {
+            if (ChatObject.isChannel(currentChat) && !currentChat.megagroup || (currentMessageObject.messageOwner.flags & TLRPC.MESSAGE_FLAG_HAS_VIEWS) != 0) {
                 additionalX += (int) (timeWidth - timeLayout.getLineWidth(0));
 
                 if (currentMessageObject.isSending() || currentMessageObject.isEditing()) {
                     if (!currentMessageObject.isOutOwner()) {
                         Drawable clockDrawable = isDrawSelectionBackground() ? Theme.chat_msgInSelectedClockDrawable : Theme.chat_msgInClockDrawable;
-                        setDrawableBounds(clockDrawable, timeX + AndroidUtilities.dp(11), layoutHeight - AndroidUtilities.dp(8.5f) - clockDrawable.getIntrinsicHeight());
+                        setDrawableBounds(clockDrawable, timeX + (currentMessageObject.scheduled ? 0 : AndroidUtilities.dp(11)), layoutHeight - AndroidUtilities.dp(8.5f) - clockDrawable.getIntrinsicHeight());
                         clockDrawable.draw(canvas);
                     }
                 } else if (currentMessageObject.isSendError()) {
                     if (!currentMessageObject.isOutOwner()) {
-                        int x = timeX + AndroidUtilities.dp(11);
+                        int x = timeX + (currentMessageObject.scheduled ? 0 : AndroidUtilities.dp(11));
                         int y = layoutHeight - AndroidUtilities.dp(20.5f);
                         rect.set(x, y, x + AndroidUtilities.dp(14), y + AndroidUtilities.dp(14));
                         canvas.drawRoundRect(rect, AndroidUtilities.dp(1), AndroidUtilities.dp(1), Theme.chat_msgErrorPaint);
                         setDrawableBounds(Theme.chat_msgErrorDrawable, x + AndroidUtilities.dp(6), y + AndroidUtilities.dp(2));
                         Theme.chat_msgErrorDrawable.draw(canvas);
                     }
-                } else {
+                } else if (viewsLayout != null) {
                     if (!currentMessageObject.isOutOwner()) {
                         Drawable viewsDrawable = isDrawSelectionBackground() ? Theme.chat_msgInViewsSelectedDrawable : Theme.chat_msgInViewsDrawable;
                         setDrawableBounds(viewsDrawable, timeX, layoutHeight - AndroidUtilities.dp(4.5f) - timeLayout.getHeight());
@@ -8074,12 +8196,10 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                         viewsDrawable.draw(canvas);
                     }
 
-                    if (viewsLayout != null) {
-                        canvas.save();
-                        canvas.translate(timeX + Theme.chat_msgInViewsDrawable.getIntrinsicWidth() + AndroidUtilities.dp(3), layoutHeight - AndroidUtilities.dp(6.5f) - timeLayout.getHeight());
-                        viewsLayout.draw(canvas);
-                        canvas.restore();
-                    }
+                    canvas.save();
+                    canvas.translate(timeX + Theme.chat_msgInViewsDrawable.getIntrinsicWidth() + AndroidUtilities.dp(3), layoutHeight - AndroidUtilities.dp(6.5f) - timeLayout.getHeight());
+                    viewsLayout.draw(canvas);
+                    canvas.restore();
                 }
             }
 
@@ -8107,7 +8227,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 drawClock = false;
                 drawError = true;
             } else if (currentMessageObject.isSent()) {
-                if (!currentMessageObject.isUnread()) {
+                if (!currentMessageObject.scheduled && !currentMessageObject.isUnread()) {
                     drawCheck1 = true;
                     drawCheck2 = true;
                 } else {
@@ -8166,10 +8286,12 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                             Theme.chat_msgMediaCheckDrawable.setAlpha(255);
                         }
                     } else {
-                        Drawable drawable = isDrawSelectionBackground() ? Theme.chat_msgOutCheckSelectedDrawable : Theme.chat_msgOutCheckDrawable;
+                        Drawable drawable;
                         if (drawCheck1) {
+                            drawable = isDrawSelectionBackground() ? Theme.chat_msgOutCheckReadSelectedDrawable : Theme.chat_msgOutCheckReadDrawable;
                             setDrawableBounds(drawable, layoutWidth - AndroidUtilities.dp(22.5f) - drawable.getIntrinsicWidth(), layoutHeight - AndroidUtilities.dp(8.0f) - drawable.getIntrinsicHeight());
                         } else {
+                            drawable = isDrawSelectionBackground() ? Theme.chat_msgOutCheckSelectedDrawable : Theme.chat_msgOutCheckDrawable;
                             setDrawableBounds(drawable, layoutWidth - AndroidUtilities.dp(18.5f) - drawable.getIntrinsicWidth(), layoutHeight - AndroidUtilities.dp(8.0f) - drawable.getIntrinsicHeight());
                         }
                         drawable.draw(canvas);
@@ -9057,7 +9179,11 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                         }
                         BotButton button = botButtons.get(buttonIndex);
                         if (delegate != null) {
-                            delegate.didPressBotButton(ChatMessageCell.this, button.button);
+                            if (button.button != null) {
+                                delegate.didPressBotButton(ChatMessageCell.this, button.button);
+                            } else if (button.reaction != null) {
+                                delegate.didPressReaction(ChatMessageCell.this, button.reaction);
+                            }
                         }
                         sendAccessibilityEventForVirtualView(virtualViewId, AccessibilityEvent.TYPE_VIEW_CLICKED);
                     } else if (virtualViewId >= POLL_BUTTONS_START) {

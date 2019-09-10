@@ -134,6 +134,17 @@ public class ArrayUtils
         return false;
     }
 
+    public static int indexOf(int[] array, int value) {
+        if (array != null) {
+            for (int a = 0; a < array.length; a++) {
+                if (array[a] == value) {
+                    return a;
+                }
+            }
+        }
+        return -1;
+    }
+
     public static long total(long[] array) {
         long total = 0;
         for (long value : array) {

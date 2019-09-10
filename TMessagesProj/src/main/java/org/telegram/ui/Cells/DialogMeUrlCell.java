@@ -161,7 +161,7 @@ public class DialogMeUrlCell extends BaseCell {
                 nameLeft = AndroidUtilities.dp(14);
             }
             nameString = recentMeUrl.set.set.title;
-            avatarDrawable.setInfo(5, recentMeUrl.set.set.title, null, false);
+            avatarDrawable.setInfo(5, recentMeUrl.set.set.title, null);
             avatarImage.setImage(ImageLocation.getForDocument(recentMeUrl.set.cover), null, avatarDrawable, null, recentMeUrl, 0);
         } else if (recentMeUrl instanceof TLRPC.TL_recentMeUrlChatInvite) {
             if (!LocaleController.isRTL) {
@@ -183,7 +183,7 @@ public class DialogMeUrlCell extends BaseCell {
                 avatarImage.setImage(ImageLocation.getForChat(recentMeUrl.chat_invite.chat, false), "50_50", avatarDrawable, null, recentMeUrl, 0);
             } else {
                 nameString = recentMeUrl.chat_invite.title;
-                avatarDrawable.setInfo(5, recentMeUrl.chat_invite.title, null, false);
+                avatarDrawable.setInfo(5, recentMeUrl.chat_invite.title, null);
                 if (recentMeUrl.chat_invite.broadcast || recentMeUrl.chat_invite.channel) {
                     drawNameBroadcast = true;
                     nameLockTop = AndroidUtilities.dp(16.5f);

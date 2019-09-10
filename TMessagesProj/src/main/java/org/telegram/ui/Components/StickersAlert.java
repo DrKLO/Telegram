@@ -67,7 +67,9 @@ import androidx.recyclerview.widget.RecyclerView;
 public class StickersAlert extends BottomSheet implements NotificationCenter.NotificationCenterDelegate {
 
     public interface StickersAlertDelegate {
-        void onStickerSelected(TLRPC.Document sticker, Object parent, boolean clearsInputField);
+        void onStickerSelected(TLRPC.Document sticker, Object parent, boolean clearsInputField, boolean notify, int scheduleDate);
+        boolean canSchedule();
+        boolean isInScheduleMode();
     }
 
     public interface StickersAlertInstallDelegate {
@@ -128,9 +130,22 @@ public class StickersAlert extends BottomSheet implements NotificationCenter.Not
 
     private ContentPreviewViewer.ContentPreviewViewerDelegate previewDelegate = new ContentPreviewViewer.ContentPreviewViewerDelegate() {
         @Override
-        public void sendSticker(TLRPC.Document sticker, Object parent) {
-            delegate.onStickerSelected(sticker, parent, clearsInputField);
+        public void sendSticker(TLRPC.Document sticker, Object parent, boolean notify, int scheduleDate) {
+            if (delegate == null) {
+                return;
+            }
+            delegate.onStickerSelected(sticker, parent, clearsInputField, notify, scheduleDate);
             dismiss();
+        }
+
+        @Override
+        public boolean canSchedule() {
+            return delegate != null && delegate.canSchedule();
+        }
+
+        @Override
+        public boolean isInScheduleMode() {
+            return delegate != null && delegate.isInScheduleMode();
         }
 
         @Override
@@ -572,7 +587,7 @@ public class StickersAlert extends BottomSheet implements NotificationCenter.Not
         previewSendButton.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
         stickerPreviewLayout.addView(previewSendButton, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.BOTTOM | Gravity.LEFT));
         previewSendButton.setOnClickListener(v -> {
-            delegate.onStickerSelected(selectedSticker, stickerSet, clearsInputField);
+            delegate.onStickerSelected(selectedSticker, stickerSet, clearsInputField, true, 0);
             dismiss();
         });
 
