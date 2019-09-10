@@ -7,7 +7,6 @@ import android.animation.ValueAnimator;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.ColorFilter;
-import android.graphics.CornerPathEffect;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.PixelFormat;
@@ -22,13 +21,12 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.graphics.ColorUtils;
 
-import com.google.android.exoplayer2.util.Log;
-
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.DialogsActivity;
 
 
 public class ArchivedPullForegroundDrawable {
@@ -74,8 +72,7 @@ public class ArchivedPullForegroundDrawable {
     private int diameter = AndroidUtilities.dp(18);
 
     private View dialogCell;
-    private View contentView;
-    private View listView;
+    private DialogsActivity.DialogsRecyclerView listView;
 
     public float pullProgress;
 
@@ -128,19 +125,18 @@ public class ArchivedPullForegroundDrawable {
         releaseTooltip = LocaleController.getString("ReleaseForArchive", R.string.ReleaseForArchive);
     }
 
-    public void setParentViews(View contentView, View listView) {
-        this.contentView = contentView;
+    public void setListView(DialogsActivity.DialogsRecyclerView listView) {
         this.listView = listView;
     }
 
     public void drawOverScroll(Canvas canvas) {
-        int overscroll = (int) listView.getTranslationY();
+        int overscroll = (int) listView.getViewOffset();
 
         float cX = outCx;
         float cY = outCy + overscroll;
 
         canvas.save();
-        canvas.clipRect(0, 0, contentView.getMeasuredWidth(), overscroll + 1);
+        canvas.clipRect(0, 0, listView.getMeasuredWidth(), overscroll + 1);
         if (outProgress == 0f) {
             canvas.drawPaint(backgroundPaint);
         } else {
@@ -176,7 +172,7 @@ public class ArchivedPullForegroundDrawable {
     public void draw(Canvas canvas) {
         if (!willDraw || isOut || dialogCell == null || listView == null) return;
 
-        int overscroll = (int) listView.getTranslationY();
+        int overscroll = (int) listView.getViewOffset();
         int visibleHeight = (int) (dialogCell.getHeight() * pullProgress);
 
         float bounceP = bounceIn ? (0.07f * bounceProgress) - 0.05f : 0.02f * bounceProgress;

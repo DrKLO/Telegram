@@ -77,9 +77,9 @@ public class RecyclerListView extends RecyclerView {
     private int sectionsType;
     private int sectionOffset;
 
-    private Drawable selectorDrawable;
-    private int selectorPosition;
-    private android.graphics.Rect selectorRect = new android.graphics.Rect();
+    protected Drawable selectorDrawable;
+    protected int selectorPosition;
+    protected android.graphics.Rect selectorRect = new android.graphics.Rect();
     private boolean isChildViewEnabled;
 
     private boolean selfOnLayout;

@@ -41,6 +41,7 @@ import android.view.Gravity;
 import android.view.HapticFeedbackConstants;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.ViewOutlineProvider;
 import android.view.ViewTreeObserver;
 import android.view.animation.AccelerateDecelerateInterpolator;
@@ -50,13 +51,11 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.LinearSmoothScrollerMiddle;
 import androidx.recyclerview.widget.RecyclerView;
 
-import org.checkerframework.checker.units.qual.A;
 import org.telegram.messenger.AccountInstance;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
@@ -138,7 +137,7 @@ import java.util.ArrayList;
 
 public class DialogsActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
 
-    private RecyclerListView listView;
+    private DialogsRecyclerView listView;
     private LinearLayoutManager layoutManager;
     private DialogsAdapter dialogsAdapter;
     private DialogsSearchAdapter dialogsSearchAdapter;
@@ -265,14 +264,6 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
 
         public ContentView(Context context) {
             super(context);
-        }
-
-        @Override
-        protected void onDraw(Canvas canvas) {
-            if (archivedPullForegroundDrawable != null && listView.getTranslationY() != 0) {
-                archivedPullForegroundDrawable.drawOverScroll(canvas);
-            }
-            super.onDraw(canvas);
         }
 
         @Override
@@ -412,6 +403,205 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 }
             }
             return super.onInterceptTouchEvent(ev);
+        }
+    }
+
+    public class DialogsRecyclerView extends RecyclerListView {
+
+        private boolean firstLayout = true;
+        private boolean ignoreLayout;
+
+        float viewOffset;
+
+        public DialogsRecyclerView(Context context) {
+            super(context);
+        }
+
+        public void setViewsOffset(float viewOffset) {
+            this.viewOffset = viewOffset;
+
+            if (selectorPosition != NO_POSITION) {
+                View v = layoutManager.findViewByPosition(selectorPosition);
+                if (v != null) {
+                    selectorRect.set(v.getLeft(), (int) (v.getTop() + viewOffset),
+                            v.getRight(), (int) (v.getBottom() + viewOffset));
+                    selectorDrawable.setBounds(selectorRect);
+                }
+            }
+
+            int n = getChildCount();
+            for (int i = 0; i < n; i++) {
+                getChildAt(i).setTranslationY(viewOffset);
+            }
+            invalidate();
+
+        }
+
+        public float getViewOffset() {
+            return viewOffset;
+        }
+
+        @Override
+        public void addView(View child, int index, ViewGroup.LayoutParams params) {
+            super.addView(child, index, params);
+            child.setTranslationY(viewOffset);
+        }
+
+        @Override
+        public void removeView(View view) {
+            super.removeView(view);
+            view.setTranslationY(0);
+        }
+
+        @Override
+        public void onDraw(Canvas canvas) {
+            if (archivedPullForegroundDrawable != null && viewOffset != 0) {
+                archivedPullForegroundDrawable.drawOverScroll(canvas);
+            }
+            super.onDraw(canvas);
+        }
+
+
+        @Override
+        protected void dispatchDraw(Canvas canvas) {
+            super.dispatchDraw(canvas);
+            if (slidingView != null && pacmanAnimation != null) {
+                pacmanAnimation.draw(canvas, slidingView.getTop() + slidingView.getMeasuredHeight() / 2);
+            }
+        }
+
+        @Override
+        public void setAdapter(RecyclerView.Adapter adapter) {
+            super.setAdapter(adapter);
+            firstLayout = true;
+        }
+
+        private void checkIfAdapterValid() {
+            if (listView != null && dialogsAdapter != null && listView.getAdapter() == dialogsAdapter && lastItemsCount != dialogsAdapter.getItemCount()) {
+                ignoreLayout = true;
+                dialogsAdapter.notifyDataSetChanged();
+                ignoreLayout = false;
+            }
+        }
+
+        @Override
+        public void setPadding(int left, int top, int right, int bottom) {
+            super.setPadding(left, top, right, bottom);
+            if (searchEmptyView != null) {
+                searchEmptyView.setPadding(left, top, right, bottom);
+            }
+        }
+
+        @Override
+        protected void onMeasure(int widthSpec, int heightSpec) {
+            if (firstLayout && getMessagesController().dialogsLoaded) {
+                if (hasHiddenArchive()) {
+                    ignoreLayout = true;
+                    layoutManager.scrollToPositionWithOffset(1, 0);
+                    ignoreLayout = false;
+                }
+                firstLayout = false;
+            }
+            checkIfAdapterValid();
+            super.onMeasure(widthSpec, heightSpec);
+        }
+
+        @Override
+        protected void onLayout(boolean changed, int l, int t, int r, int b) {
+            super.onLayout(changed, l, t, r, b);
+            if ((dialogRemoveFinished != 0 || dialogInsertFinished != 0 || dialogChangeFinished != 0) && !dialogsItemAnimator.isRunning()) {
+                onDialogAnimationFinished();
+            }
+        }
+
+        @Override
+        public void requestLayout() {
+            if (ignoreLayout) {
+                return;
+            }
+            super.requestLayout();
+        }
+
+        @Override
+        public boolean onTouchEvent(MotionEvent e) {
+            if (waitingForScrollFinished || dialogRemoveFinished != 0 || dialogInsertFinished != 0 || dialogChangeFinished != 0) {
+                return false;
+            }
+            int action = e.getAction();
+            if (action == MotionEvent.ACTION_DOWN) {
+                listView.setOverScrollMode(View.OVER_SCROLL_ALWAYS);
+            }
+            if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL) {
+                if (!itemTouchhelper.isIdle() && swipeController.swipingFolder) {
+                    swipeController.swipeFolderBack = true;
+                    if (itemTouchhelper.checkHorizontalSwipe(null, ItemTouchHelper.LEFT) != 0) {
+                        SharedConfig.toggleArchiveHidden();
+                        getUndoView().showWithAction(0, UndoView.ACTION_ARCHIVE_PINNED, null, null);
+                        archivePullViewState = SharedConfig.archiveHidden ? ARCHIVE_ITEM_STATE_HIDDEN : ARCHIVE_ITEM_STATE_PINNED;
+                        if (archivedPullForegroundDrawable != null)
+                            archivedPullForegroundDrawable.setWillDraw(archivePullViewState != ARCHIVE_ITEM_STATE_PINNED);
+                    }
+                }
+            }
+            boolean result = super.onTouchEvent(e);
+            if ((action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL) &&
+                    archivePullViewState == ARCHIVE_ITEM_STATE_HIDDEN && hasHiddenArchive()) {
+
+                int currentPosition = layoutManager.findFirstVisibleItemPosition();
+                if (currentPosition == 0) {
+                    View view = layoutManager.findViewByPosition(currentPosition);
+                    int height = (int) (AndroidUtilities.dp(SharedConfig.useThreeLinesLayout ? 78 : 72) * ArchivedPullForegroundDrawable.SNAP_HEIGHT);
+                    int diff = view.getTop() + view.getMeasuredHeight();
+                    if (view != null) {
+                        long pullingTime = System.currentTimeMillis() - startArchivePullingTime;
+                        if (diff < height || pullingTime < ArchivedPullForegroundDrawable.minPullingTime) {
+                            listView.smoothScrollBy(0, diff, CubicBezierInterpolator.EASE_OUT_QUINT);
+                            archivePullViewState = ARCHIVE_ITEM_STATE_HIDDEN;
+                        } else {
+                            if (archivePullViewState != ARCHIVE_ITEM_STATE_SHOWED) {
+                                ((DialogCell) view).startOutAnimation();
+                                listView.smoothScrollBy(0, view.getTop(), CubicBezierInterpolator.EASE_OUT_QUINT);
+                                if (!canShowHiddenArchive) {
+                                    canShowHiddenArchive = true;
+                                    listView.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
+                                }
+                                archivePullViewState = ARCHIVE_ITEM_STATE_SHOWED;
+                            }
+                        }
+
+                        if (listView.getViewOffset() != 0) {
+                            ValueAnimator valueAnimator = ValueAnimator.ofFloat(listView.getViewOffset(), 0f);
+                            valueAnimator.addUpdateListener(animation ->
+                                    listView.setViewsOffset((float) animation.getAnimatedValue()));
+
+                            valueAnimator.setDuration((long) (350f - 120f * (listView.getViewOffset() / ArchivedPullForegroundDrawable.maxOverScroll)));
+                            valueAnimator.setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT);
+                            listView.setScrollEnabled(false);
+                            valueAnimator.addListener(new AnimatorListenerAdapter() {
+                                @Override
+                                public void onAnimationEnd(Animator animation) {
+                                    super.onAnimationEnd(animation);
+                                    listView.setScrollEnabled(true);
+                                }
+                            });
+                            valueAnimator.start();
+                        }
+                    }
+                }
+            }
+            return result;
+        }
+
+        @Override
+        public boolean onInterceptTouchEvent(MotionEvent e) {
+            if (waitingForScrollFinished || dialogRemoveFinished != 0 || dialogInsertFinished != 0 || dialogChangeFinished != 0) {
+                return false;
+            }
+            if (e.getAction() == MotionEvent.ACTION_DOWN) {
+                allowSwipeDuringCurrentTouch = !actionBar.isActionModeShowed();
+                checkIfAdapterValid();
+            }
+            return super.onInterceptTouchEvent(e);
         }
     }
 
@@ -984,151 +1174,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         ContentView contentView = new ContentView(context);
         fragmentView = contentView;
 
-        listView = new RecyclerListView(context) {
-
-            private boolean firstLayout = true;
-            private boolean ignoreLayout;
-
-            @Override
-            public void setTranslationY(float translationY) {
-                contentView.invalidate();
-                super.setTranslationY(translationY);
-            }
-
-            @Override
-            protected void dispatchDraw(Canvas canvas) {
-                super.dispatchDraw(canvas);
-                if (slidingView != null && pacmanAnimation != null) {
-                    pacmanAnimation.draw(canvas, slidingView.getTop() + slidingView.getMeasuredHeight() / 2);
-                }
-            }
-
-            @Override
-            public void setAdapter(Adapter adapter) {
-                super.setAdapter(adapter);
-                firstLayout = true;
-            }
-
-            private void checkIfAdapterValid() {
-                if (listView != null && dialogsAdapter != null && listView.getAdapter() == dialogsAdapter && lastItemsCount != dialogsAdapter.getItemCount()) {
-                    ignoreLayout = true;
-                    dialogsAdapter.notifyDataSetChanged();
-                    ignoreLayout = false;
-                }
-            }
-
-            @Override
-            public void setPadding(int left, int top, int right, int bottom) {
-                super.setPadding(left, top, right, bottom);
-                if (searchEmptyView != null) {
-                    searchEmptyView.setPadding(left, top, right, bottom);
-                }
-            }
-
-            @Override
-            protected void onMeasure(int widthSpec, int heightSpec) {
-                if (firstLayout && getMessagesController().dialogsLoaded) {
-                    if (hasHiddenArchive()) {
-                        ignoreLayout = true;
-                        layoutManager.scrollToPositionWithOffset(1, 0);
-                        ignoreLayout = false;
-                    }
-                    firstLayout = false;
-                }
-                checkIfAdapterValid();
-                super.onMeasure(widthSpec, heightSpec);
-            }
-
-            @Override
-            protected void onLayout(boolean changed, int l, int t, int r, int b) {
-                super.onLayout(changed, l, t, r, b);
-                if ((dialogRemoveFinished != 0 || dialogInsertFinished != 0 || dialogChangeFinished != 0) && !dialogsItemAnimator.isRunning()) {
-                    onDialogAnimationFinished();
-                }
-            }
-
-            @Override
-            public void requestLayout() {
-                if (ignoreLayout) {
-                    return;
-                }
-                super.requestLayout();
-            }
-
-            @Override
-            public boolean onTouchEvent(MotionEvent e) {
-                if (waitingForScrollFinished || dialogRemoveFinished != 0 || dialogInsertFinished != 0 || dialogChangeFinished != 0) {
-                    return false;
-                }
-                int action = e.getAction();
-                if (action == MotionEvent.ACTION_DOWN) {
-                    listView.setOverScrollMode(View.OVER_SCROLL_ALWAYS);
-                }
-                if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL) {
-                    if (!itemTouchhelper.isIdle() && swipeController.swipingFolder) {
-                        swipeController.swipeFolderBack = true;
-                        if (itemTouchhelper.checkHorizontalSwipe(null, ItemTouchHelper.LEFT) != 0) {
-                            SharedConfig.toggleArchiveHidden();
-                            getUndoView().showWithAction(0, UndoView.ACTION_ARCHIVE_PINNED, null, null);
-                            archivePullViewState = SharedConfig.archiveHidden ? ARCHIVE_ITEM_STATE_HIDDEN : ARCHIVE_ITEM_STATE_PINNED;
-                            if (archivedPullForegroundDrawable != null)
-                                archivedPullForegroundDrawable.setWillDraw(archivePullViewState != ARCHIVE_ITEM_STATE_PINNED);
-                        }
-                    }
-                }
-                boolean result = super.onTouchEvent(e);
-                if ((action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL) &&
-                        archivePullViewState == ARCHIVE_ITEM_STATE_HIDDEN && hasHiddenArchive()) {
-
-                    int currentPosition = layoutManager.findFirstVisibleItemPosition();
-                    if (currentPosition == 0) {
-                        View view = layoutManager.findViewByPosition(currentPosition);
-                        int height = (int) (AndroidUtilities.dp(SharedConfig.useThreeLinesLayout ? 78 : 72) * ArchivedPullForegroundDrawable.SNAP_HEIGHT);
-                        int diff = view.getTop() + view.getMeasuredHeight();
-                        if (view != null) {
-                            long pullingTime = System.currentTimeMillis() - startArchivePullingTime;
-                            if (diff < height || pullingTime < ArchivedPullForegroundDrawable.minPullingTime) {
-                                listView.smoothScrollBy(0, diff, CubicBezierInterpolator.EASE_OUT_QUINT);
-                                archivePullViewState = ARCHIVE_ITEM_STATE_HIDDEN;
-                            } else {
-                                if (archivePullViewState != ARCHIVE_ITEM_STATE_SHOWED) {
-                                    ((DialogCell) view).startOutAnimation();
-                                    listView.smoothScrollBy(0, view.getTop(), CubicBezierInterpolator.EASE_OUT_QUINT);
-                                    if (!canShowHiddenArchive) {
-                                        canShowHiddenArchive = true;
-                                        listView.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
-                                    }
-                                    archivePullViewState = ARCHIVE_ITEM_STATE_SHOWED;
-                                }
-                            }
-
-                            if (listView.getTranslationY() != 0) {
-                                ValueAnimator valueAnimator = ValueAnimator.ofFloat(listView.getTranslationY(), 0f);
-                                valueAnimator.addUpdateListener(animation ->
-                                        listView.setTranslationY((float) animation.getAnimatedValue()));
-
-                                valueAnimator.setDuration((long) (350f - 120f * (listView.getTranslationY() / ArchivedPullForegroundDrawable.maxOverScroll)));
-                                valueAnimator.setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT);
-                                valueAnimator.start();
-                            }
-                        }
-                    }
-                }
-                return result;
-            }
-
-            @Override
-            public boolean onInterceptTouchEvent(MotionEvent e) {
-                if (waitingForScrollFinished || dialogRemoveFinished != 0 || dialogInsertFinished != 0 || dialogChangeFinished != 0) {
-                    return false;
-                }
-                if (e.getAction() == MotionEvent.ACTION_DOWN) {
-                    allowSwipeDuringCurrentTouch = !actionBar.isActionModeShowed();
-                    checkIfAdapterValid();
-                }
-                return super.onInterceptTouchEvent(e);
-            }
-        };
+        listView = new DialogsRecyclerView(context);
         dialogsItemAnimator = new DialogsItemAnimator() {
 
             @Override
@@ -1195,11 +1241,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             @Override
             public int scrollVerticallyBy(int dy, RecyclerView.Recycler recycler, RecyclerView.State state) {
                 boolean isDragging = listView.getScrollState() == RecyclerView.SCROLL_STATE_DRAGGING;
-                if (listView.getTranslationY() != 0 && isDragging) {
-                    //this hack needed for smooth translateY, recycler can't save translations for touches
-                    dy -= (listView.getTranslationY() - lastTranslation) * 2f;
-                }
-                lastTranslation = (int) listView.getTranslationY();
+
                 int measuredDy = dy;
                 if (listView.getAdapter() == dialogsAdapter && dialogsType == 0 && !onlySelect && folderId == 0 && dy < 0 && getMessagesController().hasHiddenArchive() && archivePullViewState == ARCHIVE_ITEM_STATE_HIDDEN) {
                     listView.setOverScrollMode(View.OVER_SCROLL_ALWAYS);
@@ -1230,16 +1272,16 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                     }
                 }
 
-                if (listView.getTranslationY() != 0 && dy > 0 && isDragging) {
-                    float ty = (int) listView.getTranslationY();
-                    ty -= dy / 2f;
+                if (listView.getViewOffset() != 0 && dy > 0 && isDragging) {
+                    float ty = (int) listView.getViewOffset();
+                    ty -= dy;
                     if (ty < 0) {
                         measuredDy = (int) ty;
                         ty = 0;
                     } else {
                         measuredDy = 0;
                     }
-                    listView.setTranslationY(ty);
+                    listView.setViewsOffset(ty);
                 }
 
 
@@ -1273,16 +1315,15 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                         if (archivePullViewState == ARCHIVE_ITEM_STATE_HIDDEN && measuredDy - usedDy != 0 && dy < 0 && isDragging) {
                             float ty;
 
-                            float tk = (listView.getTranslationY() / ArchivedPullForegroundDrawable.maxOverScroll);
+                            float tk = (listView.getViewOffset() / ArchivedPullForegroundDrawable.maxOverScroll);
                             tk = 1f - tk;
-                            ty = (listView.getTranslationY() - (dy / 2f) * ArchivedPullForegroundDrawable.startPullOverScroll * tk);
-
-                            listView.setTranslationY(ty);
+                            ty = (listView.getViewOffset() - dy * ArchivedPullForegroundDrawable.startPullOverScroll * tk);
+                            listView.setViewsOffset(ty);
                         }
 
                         if (archivedPullForegroundDrawable != null) {
                             archivedPullForegroundDrawable.pullProgress = k;
-                            archivedPullForegroundDrawable.setParentViews(contentView, listView);
+                            archivedPullForegroundDrawable.setListView(listView);
                         }
                     } else {
                         startArchivePullingTime = 0;
@@ -1292,7 +1333,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                         if (archivedPullForegroundDrawable != null) {
                             archivedPullForegroundDrawable.resetText();
                             archivedPullForegroundDrawable.pullProgress = 0f;
-                            archivedPullForegroundDrawable.setParentViews(contentView, listView);
+                            archivedPullForegroundDrawable.setListView(listView);
                         }
                     }
                     if (firstView != null) firstView.invalidate();
