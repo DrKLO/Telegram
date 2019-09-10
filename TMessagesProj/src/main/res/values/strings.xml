@@ -153,6 +153,8 @@
     <string name="ArchivePinnedInfo">Swipe left on the archive to hide it.</string>
     <string name="ArchiveHidden">Archive hidden.</string>
     <string name="ArchiveHiddenInfo">Swipe down to see the archive.</string>
+    <string name="ArchiveSwipeDown">Swipe down for Archive</string>
+    <string name="ArchiveRelease">Release for Archive</string>
     <string name="ChatArchived">Chat archived.</string>
     <string name="ChatsArchived">Chats archived.</string>
     <string name="ChatArchivedInfo">Hide the archive by swiping left on it.</string>
