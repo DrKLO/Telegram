@@ -7,6 +7,7 @@ import android.animation.ValueAnimator;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.ColorFilter;
+import android.graphics.CornerPathEffect;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.PixelFormat;
@@ -20,6 +21,8 @@ import android.view.animation.LinearInterpolator;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.graphics.ColorUtils;
+
+import com.google.android.exoplayer2.util.Log;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
@@ -35,6 +38,7 @@ public class ArchivedPullForegroundDrawable {
     public final static float endPullParallax = 0.25f;
     public final static float startPullOverScroll = 0.2f;
     public final static float maxOverScroll = AndroidUtilities.dp(72);
+    public static long minPullingTime = 200L;
     public int scrollDy;
 
 
@@ -64,7 +68,7 @@ public class ArchivedPullForegroundDrawable {
     private boolean bounceIn = false;
 
 
-    private int startPadding = AndroidUtilities.dp(27);
+    private int startPadding = AndroidUtilities.dp(28);
     private int smallMargin = AndroidUtilities.dp(8);
     private int radius = AndroidUtilities.dp(9);
     private int diameter = AndroidUtilities.dp(18);
@@ -142,7 +146,10 @@ public class ArchivedPullForegroundDrawable {
         } else {
 
 
-            float outBackgroundRadius = outRadius + (dialogCell.getWidth() - outRadius) * (1f - outProgress);
+            float bounceP = bounceIn ? (0.07f * bounceProgress) - 0.05f : 0.02f * bounceProgress;
+            bounceP += bounceP * outOverScroll;
+
+            float outBackgroundRadius = outRadius + (dialogCell.getWidth() - outRadius) * (1f - outProgress) + (outRadius * bounceP);
             canvas.drawCircle(cX, cY, outBackgroundRadius, backgroundPaint);
 
             //clip rect work faster then clip path, and in this case users see no difference
@@ -157,9 +164,8 @@ public class ArchivedPullForegroundDrawable {
         if (outProgressHalf > 1f) outProgressHalf = 1f;
 
         paintSecondary.setAlpha((int) ((1f - outProgressHalf) * 0.4f * 255));
-        rectF.set(startPadding, smallMargin , startPadding + diameter, smallMargin + overscroll + radius);
+        rectF.set(startPadding, smallMargin, startPadding + diameter, smallMargin + overscroll + radius);
         canvas.drawRoundRect(rectF, radius, radius, paintSecondary);
-
 
 
         canvas.restore();
@@ -168,11 +174,10 @@ public class ArchivedPullForegroundDrawable {
 
 
     public void draw(Canvas canvas) {
-        if (!willDraw || isOut || dialogCell == null) return;
+        if (!willDraw || isOut || dialogCell == null || listView == null) return;
 
         int overscroll = (int) listView.getTranslationY();
         int visibleHeight = (int) (dialogCell.getHeight() * pullProgress);
-        int invisibleHeight = dialogCell.getHeight() - visibleHeight;
 
         float bounceP = bounceIn ? (0.07f * bounceProgress) - 0.05f : 0.02f * bounceProgress;
         bounceP += bounceP * outOverScroll;
@@ -198,7 +203,6 @@ public class ArchivedPullForegroundDrawable {
             float outBackgroundRadius = outRadius + (dialogCell.getWidth() - outRadius) * (1f - outProgress) + (outRadius * bounceP);
             canvas.drawCircle(cX, cY, outBackgroundRadius, backgroundPaint);
 
-            //clip rect work faster then clip path, and in this case users see no difference
             canvas.clipRect(
                     cX - outBackgroundRadius, cY - outBackgroundRadius,
                     cX + outBackgroundRadius, cY + outBackgroundRadius
@@ -237,7 +241,7 @@ public class ArchivedPullForegroundDrawable {
         }
 
 
-        textIn();
+        if (pullProgress > 0f) textIn();
 
         float textY = dialogCell.getHeight() - ((diameter + smallMargin * 2) / 2f) + AndroidUtilities.dp(6);
         tooltipTextPaint.setAlpha((int) (255 * textSwappingProgress * startPullProgress * textInProgress));
@@ -342,11 +346,10 @@ public class ArchivedPullForegroundDrawable {
         }
     }
 
-    Runnable r = new Runnable() {
+    Runnable textInRunnable = new Runnable() {
         @Override
         public void run() {
             animateToTextIn = true;
-
             if (textIntAnimator != null) textIntAnimator.cancel();
             textInProgress = 0f;
             textIntAnimator = ValueAnimator.ofFloat(0f, 1f);
@@ -368,8 +371,8 @@ public class ArchivedPullForegroundDrawable {
                 }
             } else {
                 wasSendCallback = true;
-                dialogCell.removeCallbacks(r);
-                dialogCell.postDelayed(r, 120);
+                dialogCell.removeCallbacks(textInRunnable);
+                dialogCell.postDelayed(textInRunnable, 200);
             }
         }
     }
@@ -435,19 +438,25 @@ public class ArchivedPullForegroundDrawable {
 
         AnimatorSet bounce = new AnimatorSet();
         bounce.playSequentially(bounceIn, bounceOut);
-        bounce.setStartDelay(200);
+        bounce.setStartDelay(180);
 
         outAnimator.playTogether(out, bounce);
         outAnimator.start();
     }
 
     public void doNotShow() {
-        if (outAnimator != null) {
-            outAnimator.removeAllListeners();
-            outAnimator.cancel();
-        }
+        if (textSwipingAnimator != null) textSwipingAnimator.cancel();
+        if (textIntAnimator != null) textIntAnimator.cancel();
+        if(dialogCell != null) dialogCell.removeCallbacks(textInRunnable);
+        textSwappingProgress = 1f;
+        arrowRotateProgress = 1f;
+        animateToEndText = false;
+        arrowAnimateTo = false;
+        animateToTextIn = false;
+        wasSendCallback = false;
+        textInProgress = 0f;
+        isOut = true;
         outProgress = 1f;
-        animateOut = true;
     }
 
     public void showHidden() {
@@ -470,7 +479,7 @@ public class ArchivedPullForegroundDrawable {
     }
 
     public boolean isDraw() {
-        return !(!willDraw || isOut || dialogCell == null);
+        return !(!willDraw || isOut);
     }
 
 
@@ -480,6 +489,7 @@ public class ArchivedPullForegroundDrawable {
 
     public void resetText() {
         if (textIntAnimator != null) textIntAnimator.cancel();
+        if (dialogCell != null) dialogCell.removeCallbacks(textInRunnable);
         textInProgress = 0f;
         animateToTextIn = false;
         wasSendCallback = false;
@@ -492,17 +502,18 @@ public class ArchivedPullForegroundDrawable {
     private class ArrowDrawable extends Drawable {
 
         Path path = new Path();
-        Paint paint = new Paint();
+        Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
         public ArrowDrawable() {
             int h = AndroidUtilities.dp(18);
-            path.moveTo(h >> 1, AndroidUtilities.dpf2(4.58f));
-            path.lineTo(AndroidUtilities.dpf2(3.95f), AndroidUtilities.dpf2(9.66f));
-            path.lineTo(AndroidUtilities.dpf2(7.06f), AndroidUtilities.dpf2(9.66f));
-            path.lineTo(AndroidUtilities.dpf2(7.06f), AndroidUtilities.dpf2(11.6f));
-            path.lineTo(h - AndroidUtilities.dpf2(7.06f), AndroidUtilities.dpf2(11.6f));
-            path.lineTo(h - AndroidUtilities.dpf2(7.06f), AndroidUtilities.dpf2(9.66f));
-            path.lineTo(h - AndroidUtilities.dpf2(3.95f), AndroidUtilities.dpf2(9.66f));
+            path.moveTo(h >> 1, AndroidUtilities.dpf2(4.98f));
+            path.lineTo(AndroidUtilities.dpf2(4.95f), AndroidUtilities.dpf2(9f));
+            path.lineTo(h - AndroidUtilities.dpf2(4.95f), AndroidUtilities.dpf2(9f));
+            path.lineTo(h >> 1, AndroidUtilities.dpf2(4.98f));
+
+            paint.setStyle(Paint.Style.FILL_AND_STROKE);
+            paint.setStrokeJoin(Paint.Join.ROUND);
+            paint.setStrokeWidth(AndroidUtilities.dpf2(1f));
         }
 
         public void setColor(int color) {
@@ -524,6 +535,11 @@ public class ArchivedPullForegroundDrawable {
             canvas.save();
             canvas.translate(getBounds().left, getBounds().top);
             canvas.drawPath(path, paint);
+            int h = AndroidUtilities.dp(18);
+            canvas.drawRect(AndroidUtilities.dpf2(7.56f),
+                    AndroidUtilities.dpf2(8f),
+                    h - AndroidUtilities.dpf2(7.56f),
+                    AndroidUtilities.dpf2(11.1f), paint);
             canvas.restore();
         }
 

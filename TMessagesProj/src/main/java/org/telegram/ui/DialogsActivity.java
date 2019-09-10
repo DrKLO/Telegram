@@ -50,11 +50,13 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.LinearSmoothScrollerMiddle;
 import androidx.recyclerview.widget.RecyclerView;
 
+import org.checkerframework.checker.units.qual.A;
 import org.telegram.messenger.AccountInstance;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
@@ -252,8 +254,8 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
 
     private int archivePullViewState;
     private boolean scrollingManually;
-    private int totalConsumedAmount;
-    private boolean startedScrollAtTop;
+    private long startArchivePullingTime;
+    boolean canShowHiddenArchive = false;
 
     public ArchivedPullForegroundDrawable archivedPullForegroundDrawable;
 
@@ -263,7 +265,6 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
 
         public ContentView(Context context) {
             super(context);
-            setWillNotDraw(false);
         }
 
         @Override
@@ -271,7 +272,6 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             if (archivedPullForegroundDrawable != null && listView.getTranslationY() != 0) {
                 archivedPullForegroundDrawable.drawOverScroll(canvas);
             }
-
             super.onDraw(canvas);
         }
 
@@ -405,13 +405,11 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             if (action == MotionEvent.ACTION_DOWN || action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL) {
                 if (action == MotionEvent.ACTION_DOWN) {
                     int currentPosition = layoutManager.findFirstVisibleItemPosition();
-                    startedScrollAtTop = currentPosition <= 1;
                 } else {
                     if (actionBar.isActionModeShowed()) {
                         allowMoving = true;
                     }
                 }
-                totalConsumedAmount = 0;
             }
             return super.onInterceptTouchEvent(ev);
         }
@@ -512,9 +510,12 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                     slidingView = null;
                     listView.invalidate();
                     int added = getMessagesController().addDialogToFolder(dialog.id, folderId == 0 ? 1 : 0, -1, 0);
-                    if (added == 2) {
-                        dialogsAdapter.notifyItemChanged(count - 1);
+
+                    int lastItemPosition = layoutManager.findLastVisibleItemPosition();
+                    if (lastItemPosition == count - 1) {
+                        layoutManager.findViewByPosition(lastItemPosition).requestLayout();
                     }
+
                     if (added != 2 || position != 0) {
                         dialogsItemAnimator.prepareForRemove();
                         lastItemsCount--;
@@ -1085,24 +1086,28 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                         int height = (int) (AndroidUtilities.dp(SharedConfig.useThreeLinesLayout ? 78 : 72) * ArchivedPullForegroundDrawable.SNAP_HEIGHT);
                         int diff = view.getTop() + view.getMeasuredHeight();
                         if (view != null) {
-                            if (diff < height) {
+                            long pullingTime = System.currentTimeMillis() - startArchivePullingTime;
+                            if (diff < height || pullingTime < ArchivedPullForegroundDrawable.minPullingTime) {
                                 listView.smoothScrollBy(0, diff, CubicBezierInterpolator.EASE_OUT_QUINT);
                                 archivePullViewState = ARCHIVE_ITEM_STATE_HIDDEN;
                             } else {
                                 if (archivePullViewState != ARCHIVE_ITEM_STATE_SHOWED) {
                                     ((DialogCell) view).startOutAnimation();
                                     listView.smoothScrollBy(0, view.getTop(), CubicBezierInterpolator.EASE_OUT_QUINT);
+                                    if (!canShowHiddenArchive) {
+                                        canShowHiddenArchive = true;
+                                        listView.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
+                                    }
                                     archivePullViewState = ARCHIVE_ITEM_STATE_SHOWED;
                                 }
                             }
 
                             if (listView.getTranslationY() != 0) {
                                 ValueAnimator valueAnimator = ValueAnimator.ofFloat(listView.getTranslationY(), 0f);
-                                valueAnimator.addUpdateListener(animation -> {
-                                    listView.setTranslationY((float) animation.getAnimatedValue());
-                                });
+                                valueAnimator.addUpdateListener(animation ->
+                                        listView.setTranslationY((float) animation.getAnimatedValue()));
 
-                                valueAnimator.setDuration(250);
+                                valueAnimator.setDuration((long) (350f - 120f * (listView.getTranslationY() / ArchivedPullForegroundDrawable.maxOverScroll)));
                                 valueAnimator.setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT);
                                 valueAnimator.start();
                             }
@@ -1125,6 +1130,21 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             }
         };
         dialogsItemAnimator = new DialogsItemAnimator() {
+
+            @Override
+            public void onRemoveStarting(RecyclerView.ViewHolder item) {
+                super.onRemoveStarting(item);
+                if (layoutManager.findFirstVisibleItemPosition() == 0) {
+                    View v = layoutManager.findViewByPosition(0);
+                    if (v != null) v.invalidate();
+                    if (archivePullViewState == ARCHIVE_ITEM_STATE_HIDDEN) {
+                        archivePullViewState = ARCHIVE_ITEM_STATE_SHOWED;
+                    }
+                    if (archivedPullForegroundDrawable != null)
+                        archivedPullForegroundDrawable.doNotShow();
+                }
+            }
+
             @Override
             public void onRemoveFinished(RecyclerView.ViewHolder item) {
                 if (dialogRemoveFinished == 2) {
@@ -1159,8 +1179,6 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         listView.setTag(4);
         layoutManager = new LinearLayoutManager(context) {
 
-            boolean canShow = false;
-
             @Override
             public void smoothScrollToPosition(RecyclerView recyclerView, RecyclerView.State state, int position) {
                 if (hasHiddenArchive() && position == 1) {
@@ -1176,7 +1194,8 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
 
             @Override
             public int scrollVerticallyBy(int dy, RecyclerView.Recycler recycler, RecyclerView.State state) {
-                if (listView.getTranslationY() != 0) {
+                boolean isDragging = listView.getScrollState() == RecyclerView.SCROLL_STATE_DRAGGING;
+                if (listView.getTranslationY() != 0 && isDragging) {
                     //this hack needed for smooth translateY, recycler can't save translations for touches
                     dy -= (listView.getTranslationY() - lastTranslation) * 2f;
                 }
@@ -1193,27 +1212,25 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                     }
 
 
-                    if (listView.getScrollState() != RecyclerView.SCROLL_STATE_DRAGGING) {
+                    if (!isDragging) {
                         View view = layoutManager.findViewByPosition(currentPosition);
                         int dialogHeight = AndroidUtilities.dp(SharedConfig.useThreeLinesLayout ? 78 : 72) + 1;
                         int canScrollDy = -view.getTop() + (currentPosition - 1) * dialogHeight;
                         int positiveDy = Math.abs(dy);
                         if (canScrollDy < positiveDy) {
-                            totalConsumedAmount += Math.abs(dy);
                             measuredDy = -canScrollDy;
                         }
-                    } else {
-                        if (currentPosition == 0) {
-                            View v = layoutManager.findViewByPosition(currentPosition);
-                            float k = 1f + (v.getTop() / (float) v.getMeasuredHeight());
-                            if (k > 1f) k = 1f;
-                            listView.setOverScrollMode(View.OVER_SCROLL_NEVER);
-                            measuredDy *= ArchivedPullForegroundDrawable.startPullParallax - ArchivedPullForegroundDrawable.endPullParallax * k;
-                        }
+                    } else if (currentPosition == 0) {
+                        View v = layoutManager.findViewByPosition(currentPosition);
+                        float k = 1f + (v.getTop() / (float) v.getMeasuredHeight());
+                        if (k > 1f) k = 1f;
+                        listView.setOverScrollMode(View.OVER_SCROLL_NEVER);
+                        measuredDy *= ArchivedPullForegroundDrawable.startPullParallax - ArchivedPullForegroundDrawable.endPullParallax * k;
+                        if (measuredDy > -1) measuredDy = -1;
                     }
                 }
 
-                if (listView.getTranslationY() != 0 && dy > 0) {
+                if (listView.getTranslationY() != 0 && dy > 0 && isDragging) {
                     float ty = (int) listView.getTranslationY();
                     ty -= dy / 2f;
                     if (ty < 0) {
@@ -1231,44 +1248,54 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                     if (archivedPullForegroundDrawable != null)
                         archivedPullForegroundDrawable.scrollDy = usedDy;
                     int currentPosition = layoutManager.findFirstVisibleItemPosition();
+                    View firstView = null;
                     if (currentPosition == 0) {
-                        DialogCell dialogCell = (DialogCell) layoutManager.findViewByPosition(currentPosition);
+                        firstView = layoutManager.findViewByPosition(currentPosition);
+                    }
+                    if (currentPosition == 0 && firstView != null && firstView.getBottom() >= AndroidUtilities.dp(4)) {
+                        if (startArchivePullingTime == 0)
+                            startArchivePullingTime = System.currentTimeMillis();
                         if (archivePullViewState == ARCHIVE_ITEM_STATE_HIDDEN && archivedPullForegroundDrawable != null) {
                             archivedPullForegroundDrawable.showHidden();
                         }
 
-                        float k = 1f + (dialogCell.getTop() / (float) dialogCell.getMeasuredHeight());
+                        float k = 1f + (firstView.getTop() / (float) firstView.getMeasuredHeight());
                         if (k > 1f) k = 1f;
-                        boolean canShowInternal = k > ArchivedPullForegroundDrawable.SNAP_HEIGHT;
-                        if (canShow != canShowInternal) {
-                            canShow = canShowInternal;
+                        long pullingTime = System.currentTimeMillis() - startArchivePullingTime;
+                        boolean canShowInternal = k > ArchivedPullForegroundDrawable.SNAP_HEIGHT && pullingTime > ArchivedPullForegroundDrawable.minPullingTime + 20;
+                        if (canShowHiddenArchive != canShowInternal) {
+                            canShowHiddenArchive = canShowInternal;
                             if (archivePullViewState == ARCHIVE_ITEM_STATE_HIDDEN) {
                                 listView.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
                             }
                         }
 
-                        if (archivePullViewState == ARCHIVE_ITEM_STATE_HIDDEN && measuredDy - usedDy != 0 && dy < 0) {
+                        if (archivePullViewState == ARCHIVE_ITEM_STATE_HIDDEN && measuredDy - usedDy != 0 && dy < 0 && isDragging) {
                             float ty;
 
                             float tk = (listView.getTranslationY() / ArchivedPullForegroundDrawable.maxOverScroll);
                             tk = 1f - tk;
                             ty = (listView.getTranslationY() - (dy / 2f) * ArchivedPullForegroundDrawable.startPullOverScroll * tk);
 
-
                             listView.setTranslationY(ty);
-
                         }
 
                         if (archivedPullForegroundDrawable != null) {
                             archivedPullForegroundDrawable.pullProgress = k;
                             archivedPullForegroundDrawable.setParentViews(contentView, listView);
                         }
-                        dialogCell.invalidate();
                     } else {
-                        archivedPullForegroundDrawable.resetText();
-                        canShow = false;
+                        startArchivePullingTime = 0;
+                        canShowHiddenArchive = false;
                         archivePullViewState = ARCHIVE_ITEM_STATE_HIDDEN;
+
+                        if (archivedPullForegroundDrawable != null) {
+                            archivedPullForegroundDrawable.resetText();
+                            archivedPullForegroundDrawable.pullProgress = 0f;
+                            archivedPullForegroundDrawable.setParentViews(contentView, listView);
+                        }
                     }
+                    if (firstView != null) firstView.invalidate();
                     return usedDy;
                 }
                 return super.scrollVerticallyBy(measuredDy, recycler, state);
