@@ -239,10 +239,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
             SharedConfig.lastPauseTime = ConnectionsManager.getInstance(currentAccount).getCurrentTime();
         }
 
-        int resourceId = getResources().getIdentifier("status_bar_height", "dimen", "android");
-        if (resourceId > 0) {
-            AndroidUtilities.statusBarHeight = getResources().getDimensionPixelSize(resourceId);
-        }
+        AndroidUtilities.initStatusBarHeight(getResources());
 
         actionBarLayout = new ActionBarLayout(this);
 

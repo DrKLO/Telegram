@@ -89,10 +89,8 @@ public class ExternalActionActivity extends Activity implements ActionBarLayout.
             SharedConfig.lastPauseTime = ConnectionsManager.getInstance(UserConfig.selectedAccount).getCurrentTime();
         }
 
-        int resourceId = getResources().getIdentifier("status_bar_height", "dimen", "android");
-        if (resourceId > 0) {
-            AndroidUtilities.statusBarHeight = getResources().getDimensionPixelSize(resourceId);
-        }
+        AndroidUtilities.initStatusBarHeight(getResources());
+
         Theme.createDialogsResources(this);
         Theme.createChatResources(this, false);
 
