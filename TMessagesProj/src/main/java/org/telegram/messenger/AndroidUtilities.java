@@ -24,6 +24,7 @@ import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.content.res.AssetFileDescriptor;
 import android.content.res.Configuration;
+import android.content.res.Resources;
 import android.database.ContentObserver;
 import android.database.Cursor;
 import android.graphics.Bitmap;
@@ -498,6 +499,14 @@ public class AndroidUtilities {
             }
         } catch (Exception e) {
             FileLog.e(e);
+        }
+    }
+
+    public static void initStatusBarHeight(Resources resources) {
+        if(AndroidUtilities.statusBarHeight > 0) return;
+        int resourceId = resources.getIdentifier("status_bar_height", "dimen", "android");
+        if (resourceId > 0) {
+            AndroidUtilities.statusBarHeight = resources.getDimensionPixelSize(resourceId);
         }
     }
 
