@@ -36,16 +36,22 @@ public class ArchivedPullForegroundDrawable {
     public final static float endPullParallax = 0.25f;
     public final static float startPullOverScroll = 0.2f;
     public final static float maxOverScroll = AndroidUtilities.dp(72);
-    public static long minPullingTime = 200L;
+    public final static long minPullingTime = 200L;
     public int scrollDy;
 
 
-    private Paint paintSecondary = new Paint(Paint.ANTI_ALIAS_FLAG);
-    private Paint paintAccent = new Paint(Paint.ANTI_ALIAS_FLAG);
-    private Paint backgroundPaint = new Paint();
-    private RectF rectF = new RectF();
-    private Paint tooltipTextPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
+    private final static String backgroundColorKey = Theme.key_avatar_backgroundArchivedHidden;
+    private final static String backgroundActiveColorKey = Theme.key_chats_archiveBackground;
+    private final static String accentColorKey = Theme.key_avatar_backgroundSaved;
+
+    private final Paint paintSecondary = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint paintWhite = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint paintBackgroundAccent = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint backgroundPaint = new Paint();
+    private final RectF rectF = new RectF();
+    private final Paint tooltipTextPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
     private final ArrowDrawable arrowDrawable = new ArrowDrawable();
+    private final Path circleClipPath = new Path();
 
 
     private float textSwappingProgress = 1f;
@@ -53,6 +59,12 @@ public class ArchivedPullForegroundDrawable {
     private boolean animateToEndText = false;
     private boolean arrowAnimateTo = false;
     private ValueAnimator textSwipingAnimator;
+
+    private ValueAnimator accentRevalAnimatorIn;
+    private ValueAnimator accentRevalAnimatorOut;
+    private float accentRevalProgress = 1f;
+    private float accentRevalProgressOut = 1f;
+
 
     private float textInProgress = 0f;
     private boolean animateToTextIn = false;
@@ -64,6 +76,7 @@ public class ArchivedPullForegroundDrawable {
     private float bounceProgress = 0f;
     private boolean animateOut = false;
     private boolean bounceIn = false;
+    private boolean animateToColorize = false;
 
 
     private int startPadding = AndroidUtilities.dp(28);
@@ -78,8 +91,8 @@ public class ArchivedPullForegroundDrawable {
 
     public float outCy;
     public float outCx;
-    public int outRadius;
-    public AvatarDrawable outDrawable;
+    public float outRadius;
+    public float outImageSize;
     public float outOverScroll;
 
     private String pullTooltip;
@@ -113,13 +126,14 @@ public class ArchivedPullForegroundDrawable {
         dialogCell = view;
 
         int primaryColor = Color.WHITE;
-        int backgroundColor = Theme.getColor(Theme.key_avatar_backgroundArchivedHidden);
+        int backgroundColor = Theme.getColor(backgroundColorKey);
 
         tooltipTextPaint.setColor(primaryColor);
-        paintAccent.setColor(primaryColor);
+        paintWhite.setColor(primaryColor);
         paintSecondary.setColor(ColorUtils.setAlphaComponent(primaryColor, 100));
         backgroundPaint.setColor(backgroundColor);
         arrowDrawable.setColor(backgroundColor);
+        paintBackgroundAccent.setColor(Theme.getColor(accentColorKey));
 
         pullTooltip = LocaleController.getString("AccSwipeForArchive", R.string.AccSwipeForArchive);
         releaseTooltip = LocaleController.getString("AccReleaseForArchive", R.string.AccReleaseForArchive);
@@ -130,55 +144,21 @@ public class ArchivedPullForegroundDrawable {
     }
 
     public void drawOverScroll(Canvas canvas) {
-        int overscroll = (int) listView.getViewOffset();
-
-        float cX = outCx;
-        float cY = outCy + overscroll;
-
-        canvas.save();
-        canvas.clipRect(0, 0, listView.getMeasuredWidth(), overscroll + 1);
-        if (outProgress == 0f) {
-            canvas.drawPaint(backgroundPaint);
-        } else {
-
-
-            float bounceP = bounceIn ? (0.07f * bounceProgress) - 0.05f : 0.02f * bounceProgress;
-            bounceP += bounceP * outOverScroll;
-
-            float outBackgroundRadius = outRadius + (dialogCell.getWidth() - outRadius) * (1f - outProgress) + (outRadius * bounceP);
-            canvas.drawCircle(cX, cY, outBackgroundRadius, backgroundPaint);
-
-            //clip rect work faster then clip path, and in this case users see no difference
-            canvas.clipRect(
-                    cX - outBackgroundRadius, cY - outBackgroundRadius,
-                    cX + outBackgroundRadius, cY + outBackgroundRadius
-            );
-        }
-
-
-        float outProgressHalf = outProgress * 2f;
-        if (outProgressHalf > 1f) outProgressHalf = 1f;
-
-        paintSecondary.setAlpha((int) ((1f - outProgressHalf) * 0.4f * 255));
-        rectF.set(startPadding, smallMargin, startPadding + diameter, smallMargin + overscroll + radius);
-        canvas.drawRoundRect(rectF, radius, radius, paintSecondary);
-
-
-        canvas.restore();
-
+        draw(canvas, true);
     }
 
-
     public void draw(Canvas canvas) {
+        draw(canvas, false);
+    }
+
+    public void draw(Canvas canvas, boolean header) {
         if (!willDraw || isOut || dialogCell == null || listView == null) return;
 
         int overscroll = (int) listView.getViewOffset();
         int visibleHeight = (int) (dialogCell.getHeight() * pullProgress);
 
         float bounceP = bounceIn ? (0.07f * bounceProgress) - 0.05f : 0.02f * bounceProgress;
-        bounceP += bounceP * outOverScroll;
 
-        //float bounceP = (0.1f * bounceProgress) - 0.1f;
         updateTextProgress(pullProgress);
 
         float outProgressHalf = outProgress * 2f;
@@ -186,52 +166,105 @@ public class ArchivedPullForegroundDrawable {
 
         float cX = outCx;
         float cY = outCy;
+        if (header) cY += overscroll;
+
+        int smallCircleX = startPadding + radius;
+        int smallCircleY = dialogCell.getMeasuredHeight() - smallMargin - radius;
+        if (header) smallCircleY += overscroll;
 
         float startPullProgress = visibleHeight > diameter + smallMargin * 2 ? 1f :
                 (float) visibleHeight / (diameter + smallMargin * 2);
 
         canvas.save();
-        if (outProgress == 0f) {
-            canvas.drawPaint(backgroundPaint);
-        } else {
 
-
-            float outBackgroundRadius = outRadius + (dialogCell.getWidth() - outRadius) * (1f - outProgress) + (outRadius * bounceP);
-            canvas.drawCircle(cX, cY, outBackgroundRadius, backgroundPaint);
-
-            canvas.clipRect(
-                    cX - outBackgroundRadius, cY - outBackgroundRadius,
-                    cX + outBackgroundRadius, cY + outBackgroundRadius
-            );
+        if (header) {
+            canvas.clipRect(0, 0, listView.getMeasuredWidth(), overscroll + 1);
         }
+        if (outProgress == 0f) {
+            if (!(accentRevalProgress == 1f || accentRevalProgressOut == 1))
+                canvas.drawPaint(backgroundPaint);
+        } else {
+            float outBackgroundRadius = outRadius + (dialogCell.getWidth() - outRadius) * (1f - outProgress) + (outRadius * bounceP);
+
+            if (!(accentRevalProgress == 1f || accentRevalProgressOut == 1))
+                canvas.drawCircle(cX, cY, outBackgroundRadius, backgroundPaint);
+
+
+            circleClipPath.reset();
+            rectF.set(cX - outBackgroundRadius, cY - outBackgroundRadius,
+                    cX + outBackgroundRadius, cY + outBackgroundRadius);
+            circleClipPath.addOval(rectF, Path.Direction.CW);
+            canvas.clipPath(circleClipPath);
+        }
+
+        if (animateToColorize) {
+            if (accentRevalProgressOut > accentRevalProgress) {
+                canvas.save();
+                canvas.translate((cX - smallCircleX) * (outProgress), (cY - smallCircleY) * (outProgress));
+                canvas.drawCircle(smallCircleX, smallCircleY, dialogCell.getWidth() * accentRevalProgressOut, backgroundPaint);
+                canvas.restore();
+            }
+            if (accentRevalProgress > 0f) {
+                canvas.save();
+                canvas.translate((cX - smallCircleX) * (outProgress), (cY - smallCircleY) * (outProgress));
+                canvas.drawCircle(smallCircleX, smallCircleY, dialogCell.getWidth() * accentRevalProgress, paintBackgroundAccent);
+                canvas.restore();
+            }
+
+        } else {
+            if (accentRevalProgress > accentRevalProgressOut) {
+                canvas.save();
+                canvas.translate((cX - smallCircleX) * (outProgress), (cY - smallCircleY) * (outProgress));
+                canvas.drawCircle(smallCircleX, smallCircleY, dialogCell.getWidth() * accentRevalProgress, paintBackgroundAccent);
+                canvas.restore();
+            }
+
+            if (accentRevalProgressOut > 0f) {
+                canvas.save();
+                canvas.translate((cX - smallCircleX) * (outProgress), (cY - smallCircleY) * (outProgress));
+                canvas.drawCircle(smallCircleX, smallCircleY, dialogCell.getWidth() * accentRevalProgressOut, backgroundPaint);
+                canvas.restore();
+            }
+        }
+
 
         if (visibleHeight > diameter + smallMargin * 2) {
             paintSecondary.setAlpha((int) ((1f - outProgressHalf) * 0.4f * startPullProgress * 255));
-            rectF.set(startPadding, dialogCell.getHeight() - visibleHeight + smallMargin - overscroll,
-                    startPadding + diameter, dialogCell.getHeight() - smallMargin);
+            if (header) {
+                rectF.set(startPadding, smallMargin, startPadding + diameter, smallMargin + overscroll + radius);
+            } else {
+                rectF.set(startPadding, dialogCell.getHeight() - visibleHeight + smallMargin - overscroll,
+                        startPadding + diameter, dialogCell.getHeight() - smallMargin);
+            }
             canvas.drawRoundRect(rectF, radius, radius, paintSecondary);
         }
 
+        if (header) {
+            canvas.restore();
+            return;
+        }
+
         if (outProgress == 0f) {
-            int x = startPadding + radius;
-            int y = dialogCell.getMeasuredHeight() - smallMargin - radius;
-            paintAccent.setAlpha((int) (startPullProgress * 255));
-            canvas.drawCircle(x, y, radius, paintAccent);
+            paintWhite.setAlpha((int) (startPullProgress * 255));
+            canvas.drawCircle(smallCircleX, smallCircleY, radius, paintWhite);
 
             int ih = arrowDrawable.getIntrinsicHeight();
             int iw = arrowDrawable.getIntrinsicWidth();
 
             arrowDrawable.setBounds(
-                    x - (iw >> 1), y - (ih >> 1),
-                    x + (iw >> 1), y + (ih >> 1)
+                    smallCircleX - (iw >> 1), smallCircleY - (ih >> 1),
+                    smallCircleX + (iw >> 1), smallCircleY + (ih >> 1)
             );
 
             float rotateProgress = 1f - arrowRotateProgress;
             if (rotateProgress < 0) rotateProgress = 0f;
             rotateProgress = 1f - rotateProgress;
             canvas.save();
-            canvas.rotate(180 * rotateProgress, x, y);
+            canvas.rotate(180 * rotateProgress, smallCircleX, smallCircleY);
             canvas.translate(0, AndroidUtilities.dpf2(1f) * 1f - rotateProgress);
+            arrowDrawable.setColor(animateToColorize ?
+                    paintBackgroundAccent.getColor() :
+                    Theme.getColor(backgroundColorKey));
             arrowDrawable.draw(canvas);
             canvas.restore();
         }
@@ -240,6 +273,7 @@ public class ArchivedPullForegroundDrawable {
         if (pullProgress > 0f) textIn();
 
         float textY = dialogCell.getHeight() - ((diameter + smallMargin * 2) / 2f) + AndroidUtilities.dp(6);
+
         tooltipTextPaint.setAlpha((int) (255 * textSwappingProgress * startPullProgress * textInProgress));
 
         float textCx = dialogCell.getWidth() / 2f - AndroidUtilities.dp(2);
@@ -275,7 +309,6 @@ public class ArchivedPullForegroundDrawable {
 
         if (outProgress > 0) {
             canvas.save();
-            int ih = Theme.dialogs_archiveAvatarDrawable.getIntrinsicHeight();
             int iw = Theme.dialogs_archiveAvatarDrawable.getIntrinsicWidth();
 
             int startCx = startPadding + radius;
@@ -294,14 +327,15 @@ public class ArchivedPullForegroundDrawable {
             Theme.dialogs_archiveAvatarDrawable.setProgress(0f);
             if (!Theme.dialogs_archiveAvatarDrawableRecolored) {
                 Theme.dialogs_archiveAvatarDrawable.beginApplyLayerColors();
-                Theme.dialogs_archiveAvatarDrawable.setLayerColor("Arrow1.**", Theme.getColor(Theme.key_avatar_backgroundArchivedHidden));
-                Theme.dialogs_archiveAvatarDrawable.setLayerColor("Arrow2.**", Theme.getColor(Theme.key_avatar_backgroundArchivedHidden));
+                Theme.dialogs_archiveAvatarDrawable.setLayerColor("Arrow1.**", Theme.getColor(accentColorKey));
+                Theme.dialogs_archiveAvatarDrawable.setLayerColor("Arrow2.**", Theme.getColor(accentColorKey));
                 Theme.dialogs_archiveAvatarDrawable.commitApplyLayerColors();
                 Theme.dialogs_archiveAvatarDrawableRecolored = true;
             }
+
             Theme.dialogs_archiveAvatarDrawable.setBounds(
-                    x - (iw >> 1), y - (ih >> 1),
-                    x + (iw >> 1), y + (ih >> 1)
+                    (int) (cX - iw / 2f), (int) (cY - iw / 2f),
+                    (int) (cX + iw / 2f), (int) (cY + iw / 2f)
             );
             Theme.dialogs_archiveAvatarDrawable.draw(canvas);
 
@@ -327,7 +361,6 @@ public class ArchivedPullForegroundDrawable {
             }
         }
 
-
         if (endText != arrowAnimateTo) {
             arrowAnimateTo = endText;
             if (arrowRotateAnimator != null) arrowRotateAnimator.cancel();
@@ -339,6 +372,45 @@ public class ArchivedPullForegroundDrawable {
             arrowRotateAnimator.setInterpolator(CubicBezierInterpolator.EASE_BOTH);
             arrowRotateAnimator.setDuration(250);
             arrowRotateAnimator.start();
+        }
+    }
+
+    public void colorize(boolean colorize) {
+        if (this.animateToColorize != colorize) {
+            this.animateToColorize = colorize;
+            if (colorize) {
+                if (accentRevalAnimatorIn != null) {
+                    accentRevalAnimatorIn.cancel();
+                    accentRevalAnimatorIn = null;
+                }
+
+                accentRevalProgress = 0f;
+                accentRevalAnimatorIn = ValueAnimator.ofFloat(accentRevalProgress, 1f);
+                accentRevalAnimatorIn.addUpdateListener(animation -> {
+                    accentRevalProgress = (float) animation.getAnimatedValue();
+                    if (dialogCell != null) dialogCell.invalidate();
+                    if (listView != null) listView.invalidate();
+                });
+                accentRevalAnimatorIn.setInterpolator(AndroidUtilities.accelerateInterpolator);
+                accentRevalAnimatorIn.setDuration(230);
+                accentRevalAnimatorIn.start();
+            } else {
+                if (accentRevalAnimatorOut != null) {
+                    accentRevalAnimatorOut.cancel();
+                    accentRevalAnimatorOut = null;
+                }
+
+                accentRevalProgressOut = 0f;
+                accentRevalAnimatorOut = ValueAnimator.ofFloat(accentRevalProgressOut, 1f);
+                accentRevalAnimatorOut.addUpdateListener(animation -> {
+                    accentRevalProgressOut = (float) animation.getAnimatedValue();
+                    if (dialogCell != null) dialogCell.invalidate();
+                    if (listView != null) listView.invalidate();
+                });
+                accentRevalAnimatorOut.setInterpolator(AndroidUtilities.accelerateInterpolator);
+                accentRevalAnimatorOut.setDuration(230);
+                accentRevalAnimatorOut.start();
+            }
         }
     }
 
@@ -385,7 +457,7 @@ public class ArchivedPullForegroundDrawable {
         outOverScroll = listView.getTranslationY() / AndroidUtilities.dp(100);
         ValueAnimator out = ValueAnimator.ofFloat(0f, 1f);
         out.addUpdateListener(animation -> {
-            outProgress = (float) animation.getAnimatedValue();
+            setOutProgress((float) animation.getAnimatedValue());
             if (dialogCell != null) dialogCell.invalidate();
         });
 
@@ -418,17 +490,7 @@ public class ArchivedPullForegroundDrawable {
         outAnimator.addListener(new AnimatorListenerAdapter() {
             @Override
             public void onAnimationEnd(Animator animation) {
-                if (textSwipingAnimator != null) textSwipingAnimator.cancel();
-                if (textIntAnimator != null) textIntAnimator.cancel();
-                textSwappingProgress = 1f;
-                arrowRotateProgress = 1f;
-                animateToEndText = false;
-                arrowAnimateTo = false;
-                animateToTextIn = false;
-                wasSendCallback = false;
-                textInProgress = 0f;
-                isOut = true;
-
+                doNotShow();
             }
         });
 
@@ -440,10 +502,27 @@ public class ArchivedPullForegroundDrawable {
         outAnimator.start();
     }
 
+    private void setOutProgress(float value) {
+        outProgress = value;
+        int color = ColorUtils.blendARGB(
+                Theme.getColor(accentColorKey),
+                Theme.getColor(backgroundActiveColorKey),
+                1f - outProgress
+        );
+        paintBackgroundAccent.setColor(color);
+        if (isDraw()) {
+            Theme.dialogs_archiveAvatarDrawable.beginApplyLayerColors();
+            Theme.dialogs_archiveAvatarDrawable.setLayerColor("Arrow1.**", color);
+            Theme.dialogs_archiveAvatarDrawable.setLayerColor("Arrow2.**", color);
+            Theme.dialogs_archiveAvatarDrawable.commitApplyLayerColors();
+        }
+    }
+
     public void doNotShow() {
         if (textSwipingAnimator != null) textSwipingAnimator.cancel();
         if (textIntAnimator != null) textIntAnimator.cancel();
-        if(dialogCell != null) dialogCell.removeCallbacks(textInRunnable);
+        if (dialogCell != null) dialogCell.removeCallbacks(textInRunnable);
+        if (accentRevalAnimatorIn != null) accentRevalAnimatorIn.cancel();
         textSwappingProgress = 1f;
         arrowRotateProgress = 1f;
         animateToEndText = false;
@@ -452,7 +531,9 @@ public class ArchivedPullForegroundDrawable {
         wasSendCallback = false;
         textInProgress = 0f;
         isOut = true;
-        outProgress = 1f;
+        setOutProgress(1f);
+        animateToColorize = false;
+        accentRevalProgress = 0f;
     }
 
     public void showHidden() {
@@ -460,7 +541,7 @@ public class ArchivedPullForegroundDrawable {
             outAnimator.removeAllListeners();
             outAnimator.cancel();
         }
-        outProgress = 0f;
+        setOutProgress(0f);
         isOut = false;
         animateOut = false;
     }

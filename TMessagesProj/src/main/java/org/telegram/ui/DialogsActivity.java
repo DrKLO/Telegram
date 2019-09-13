@@ -51,6 +51,7 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import androidx.core.view.ViewCompat;
 import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.LinearSmoothScrollerMiddle;
@@ -406,19 +407,24 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         }
     }
 
+    public static float viewOffset = 0f;
+
     public class DialogsRecyclerView extends RecyclerListView {
 
         private boolean firstLayout = true;
         private boolean ignoreLayout;
 
-        float viewOffset;
 
         public DialogsRecyclerView(Context context) {
             super(context);
         }
 
         public void setViewsOffset(float viewOffset) {
-            this.viewOffset = viewOffset;
+            DialogsActivity.viewOffset = viewOffset;
+            int n = getChildCount();
+            for (int i = 0; i < n; i++) {
+                getChildAt(i).setTranslationY(viewOffset);
+            }
 
             if (selectorPosition != NO_POSITION) {
                 View v = layoutManager.findViewByPosition(selectorPosition);
@@ -428,13 +434,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                     selectorDrawable.setBounds(selectorRect);
                 }
             }
-
-            int n = getChildCount();
-            for (int i = 0; i < n; i++) {
-                getChildAt(i).setTranslationY(viewOffset);
-            }
             invalidate();
-
         }
 
         public float getViewOffset() {
@@ -559,12 +559,16 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                             archivePullViewState = ARCHIVE_ITEM_STATE_HIDDEN;
                         } else {
                             if (archivePullViewState != ARCHIVE_ITEM_STATE_SHOWED) {
-                                ((DialogCell) view).startOutAnimation();
-                                listView.smoothScrollBy(0, view.getTop(), CubicBezierInterpolator.EASE_OUT_QUINT);
+                                if (listView.getViewOffset() == 0) {
+                                    listView.smoothScrollBy(0, view.getTop(), CubicBezierInterpolator.EASE_OUT_QUINT);
+                                }
                                 if (!canShowHiddenArchive) {
                                     canShowHiddenArchive = true;
                                     listView.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
+                                    if (archivedPullForegroundDrawable != null)
+                                        archivedPullForegroundDrawable.colorize(true);
                                 }
+                                ((DialogCell) view).startOutAnimation();
                                 archivePullViewState = ARCHIVE_ITEM_STATE_SHOWED;
                             }
                         }
@@ -1252,7 +1256,6 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                         }
                     }
 
-
                     if (!isDragging) {
                         View view = layoutManager.findViewByPosition(currentPosition);
                         int dialogHeight = AndroidUtilities.dp(SharedConfig.useThreeLinesLayout ? 78 : 72) + 1;
@@ -1268,6 +1271,9 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                         listView.setOverScrollMode(View.OVER_SCROLL_NEVER);
                         measuredDy *= ArchivedPullForegroundDrawable.startPullParallax - ArchivedPullForegroundDrawable.endPullParallax * k;
                         if (measuredDy > -1) measuredDy = -1;
+
+                        if (undoView[0].getVisibility() == View.VISIBLE)
+                            undoView[0].hide(true, 1);
                     }
                 }
 
@@ -1296,8 +1302,8 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                     if (currentPosition == 0 && firstView != null && firstView.getBottom() >= AndroidUtilities.dp(4)) {
                         if (startArchivePullingTime == 0)
                             startArchivePullingTime = System.currentTimeMillis();
-                        if (archivePullViewState == ARCHIVE_ITEM_STATE_HIDDEN && archivedPullForegroundDrawable != null) {
-                            archivedPullForegroundDrawable.showHidden();
+                        if (archivePullViewState == ARCHIVE_ITEM_STATE_HIDDEN) {
+                            if(archivedPullForegroundDrawable != null) archivedPullForegroundDrawable.showHidden();
                         }
 
                         float k = 1f + (firstView.getTop() / (float) firstView.getMeasuredHeight());
@@ -1308,7 +1314,10 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                             canShowHiddenArchive = canShowInternal;
                             if (archivePullViewState == ARCHIVE_ITEM_STATE_HIDDEN) {
                                 listView.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
+                                if(archivedPullForegroundDrawable != null) archivedPullForegroundDrawable.colorize(canShowInternal);
                             }
+
+
                         }
 
                         if (archivePullViewState == ARCHIVE_ITEM_STATE_HIDDEN && measuredDy - usedDy != 0 && dy < 0 && isDragging) {

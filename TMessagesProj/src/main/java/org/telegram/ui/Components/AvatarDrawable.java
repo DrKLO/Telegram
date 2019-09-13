@@ -126,11 +126,7 @@ public class AvatarDrawable extends Drawable {
 
     public void setAvatarType(int value) {
         avatarType = value;
-        if (avatarType == AVATAR_TYPE_ARCHIVED) {
-            color = Theme.getColor(Theme.key_avatar_backgroundArchivedHidden);
-        } else {
-            color = Theme.getColor(Theme.key_avatar_backgroundSaved);
-        }
+        color = Theme.getColor(Theme.key_avatar_backgroundSaved);
         needApplyColorAccent = false;
     }
 
@@ -259,8 +255,8 @@ public class AvatarDrawable extends Drawable {
             } else {
                 if (!Theme.dialogs_archiveAvatarDrawableRecolored) {
                     Theme.dialogs_archiveAvatarDrawable.beginApplyLayerColors();
-                    Theme.dialogs_archiveAvatarDrawable.setLayerColor("Arrow1.**", Theme.getColor(Theme.key_avatar_backgroundArchivedHidden));
-                    Theme.dialogs_archiveAvatarDrawable.setLayerColor("Arrow2.**", Theme.getColor(Theme.key_avatar_backgroundArchivedHidden));
+                    Theme.dialogs_archiveAvatarDrawable.setLayerColor("Arrow1.**", color);
+                    Theme.dialogs_archiveAvatarDrawable.setLayerColor("Arrow2.**", color);
                     Theme.dialogs_archiveAvatarDrawable.commitApplyLayerColors();
                     Theme.dialogs_archiveAvatarDrawableRecolored = true;
                 }

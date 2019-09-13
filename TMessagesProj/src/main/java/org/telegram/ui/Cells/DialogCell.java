@@ -50,6 +50,7 @@ import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.ArchivedPullForegroundDrawable;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.CheckBox2;
+import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.RLottieDrawable;
 import org.telegram.ui.Components.StaticLayoutEx;
 import org.telegram.ui.Components.TypefaceSpan;
@@ -2063,23 +2064,23 @@ public class DialogCell extends BaseCell {
 
         if (archiveHidden) {
             if (archiveBackgroundProgress > 0.0f) {
-                archiveBackgroundProgress -= dt / 170.0f;
-                if (currentRevealBounceProgress < 0.0f) {
-                    currentRevealBounceProgress = 0.0f;
+                archiveBackgroundProgress -= dt / 230.0f;
+                if (archiveBackgroundProgress < 0.0f) {
+                    archiveBackgroundProgress = 0.0f;
                 }
                 if (avatarDrawable.getAvatarType() == AvatarDrawable.AVATAR_TYPE_ARCHIVED) {
-                    avatarDrawable.setArchivedAvatarHiddenProgress(archiveBackgroundProgress);
+                    avatarDrawable.setArchivedAvatarHiddenProgress(CubicBezierInterpolator.EASE_OUT_QUINT.getInterpolation(archiveBackgroundProgress));
                 }
                 needInvalidate = true;
             }
         } else {
             if (archiveBackgroundProgress < 1.0f) {
-                archiveBackgroundProgress += dt / 170.0f;
-                if (currentRevealBounceProgress > 1.0f) {
-                    currentRevealBounceProgress = 1.0f;
+                archiveBackgroundProgress += dt / 230.0f;
+                if (archiveBackgroundProgress > 1.0f) {
+                    archiveBackgroundProgress = 1.0f;
                 }
                 if (avatarDrawable.getAvatarType() == AvatarDrawable.AVATAR_TYPE_ARCHIVED) {
-                    avatarDrawable.setArchivedAvatarHiddenProgress(archiveBackgroundProgress);
+                    avatarDrawable.setArchivedAvatarHiddenProgress(CubicBezierInterpolator.EASE_OUT_QUINT.getInterpolation(archiveBackgroundProgress));
                 }
                 needInvalidate = true;
             }
@@ -2130,8 +2131,8 @@ public class DialogCell extends BaseCell {
         if(archivedChatsDrawable != null) {
             archivedChatsDrawable.outCy = avatarImage.getCenterY();
             archivedChatsDrawable.outCx = avatarImage.getCenterX();
-            archivedChatsDrawable.outRadius = AndroidUtilities.dp(54) >> 1;
-            archivedChatsDrawable.outDrawable = avatarDrawable;
+            archivedChatsDrawable.outRadius = avatarImage.getImageWidth() / 2f;
+            archivedChatsDrawable.outImageSize = avatarImage.getBitmapWidth();
             archivedChatsDrawable.startOutAnimation();
         }
     }
