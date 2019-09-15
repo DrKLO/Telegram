@@ -1240,6 +1240,8 @@ public class Theme {
     public static final String key_player_placeholderBackground = "player_placeholderBackground";
     public static final String key_player_button = "player_button";
     public static final String key_player_buttonActive = "player_buttonActive";
+    public static final String key_archivePullDownBackground = "archivePullDownBackground";
+    public static final String key_archivePullDownBackgroundActive= "archivePullDownBackgroundActive";
 
     private static HashMap<String, Integer> defaultColors = new HashMap<>();
     private static HashMap<String, String> fallbackKeys = new HashMap<>();
@@ -1380,7 +1382,6 @@ public class Theme {
 
         defaultColors.put(key_avatar_backgroundSaved, 0xff66bffa);
         defaultColors.put(key_avatar_backgroundArchived, 0xffa9b6c1);
-        defaultColors.put(key_avatar_backgroundArchivedHidden, 0xffc6c9cc);
         defaultColors.put(key_avatar_backgroundRed, 0xffe56555);
         defaultColors.put(key_avatar_backgroundOrange, 0xfff28c48);
         defaultColors.put(key_avatar_backgroundViolet, 0xff8e85ee);
@@ -1883,6 +1884,10 @@ public class Theme {
         defaultColors.put(key_undo_cancelColor, 0xff85caff);
         defaultColors.put(key_undo_infoColor, 0xffffffff);
 
+        defaultColors.put(key_archivePullDownBackground, 0xffc6c9cc);
+        defaultColors.put(key_archivePullDownBackgroundActive, 0xff66a9e0);
+        defaultColors.put(key_avatar_backgroundArchivedHidden, 0xff66bffa);
+
         fallbackKeys.put(key_chat_adminText, key_chat_inTimeText);
         fallbackKeys.put(key_chat_adminSelectedText, key_chat_inTimeSelectedText);
         fallbackKeys.put(key_player_progressCachedBackground, key_player_progressBackground);
@@ -1950,7 +1955,6 @@ public class Theme {
         fallbackKeys.put(key_chats_nameMessageArchived_threeLines, key_chats_nameMessage);
         fallbackKeys.put(key_chats_messageArchived, key_chats_message);
         fallbackKeys.put(key_avatar_backgroundArchived, key_chats_unreadCounterMuted);
-        fallbackKeys.put(key_avatar_backgroundArchivedHidden, key_chats_unreadCounterMuted);
         fallbackKeys.put(key_chats_archiveBackground, key_chats_actionBackground);
         fallbackKeys.put(key_chats_archivePinBackground, key_chats_unreadCounterMuted);
         fallbackKeys.put(key_chats_archiveIcon, key_chats_actionIcon);
@@ -1978,6 +1982,11 @@ public class Theme {
         fallbackKeys.put(key_chats_sentReadCheck, key_chats_sentCheck);
         fallbackKeys.put(key_chat_outSentCheckRead, key_chat_outSentCheck);
         fallbackKeys.put(key_chat_outSentCheckReadSelected, key_chat_outSentCheckSelected);
+        fallbackKeys.put(key_archivePullDownBackground, key_chats_unreadCounterMuted);
+        fallbackKeys.put(key_archivePullDownBackgroundActive, key_chats_actionBackground);
+        fallbackKeys.put(key_avatar_backgroundArchivedHidden, key_avatar_backgroundSaved);
+
+
         themeAccentExclusionKeys.addAll(Arrays.asList(keys_avatar_background));
         themeAccentExclusionKeys.addAll(Arrays.asList(keys_avatar_nameInMessage));
         themeAccentExclusionKeys.add(key_chat_attachFileBackground);

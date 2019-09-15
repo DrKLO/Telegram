@@ -40,9 +40,9 @@ public class ArchivedPullForegroundDrawable {
     public int scrollDy;
 
 
-    private final static String backgroundColorKey = Theme.key_avatar_backgroundArchivedHidden;
-    private final static String backgroundActiveColorKey = Theme.key_chats_archiveBackground;
-    private final static String accentColorKey = Theme.key_avatar_backgroundSaved;
+    private final static String backgroundColorKey = Theme.key_archivePullDownBackground;
+    private final static String backgroundActiveColorKey = Theme.key_archivePullDownBackgroundActive;
+    private final static String avatarBackgroundColorKey = Theme.key_avatar_backgroundArchivedHidden;
 
     private final Paint paintSecondary = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint paintWhite = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -120,11 +120,17 @@ public class ArchivedPullForegroundDrawable {
 
         final ViewConfiguration vc = ViewConfiguration.get(ApplicationLoader.applicationContext);
         touchSlop = vc.getScaledTouchSlop();
+
+        pullTooltip = LocaleController.getString("AccSwipeForArchive", R.string.AccSwipeForArchive);
+        releaseTooltip = LocaleController.getString("AccReleaseForArchive", R.string.AccReleaseForArchive);
     }
 
     public void setDialogCell(View view) {
         dialogCell = view;
+        updateColors();
+    }
 
+    public void updateColors() {
         int primaryColor = Color.WHITE;
         int backgroundColor = Theme.getColor(backgroundColorKey);
 
@@ -133,10 +139,7 @@ public class ArchivedPullForegroundDrawable {
         paintSecondary.setColor(ColorUtils.setAlphaComponent(primaryColor, 100));
         backgroundPaint.setColor(backgroundColor);
         arrowDrawable.setColor(backgroundColor);
-        paintBackgroundAccent.setColor(Theme.getColor(accentColorKey));
-
-        pullTooltip = LocaleController.getString("AccSwipeForArchive", R.string.AccSwipeForArchive);
-        releaseTooltip = LocaleController.getString("AccReleaseForArchive", R.string.AccReleaseForArchive);
+        paintBackgroundAccent.setColor(Theme.getColor(avatarBackgroundColorKey));
     }
 
     public void setListView(DialogsActivity.DialogsRecyclerView listView) {
@@ -327,8 +330,8 @@ public class ArchivedPullForegroundDrawable {
             Theme.dialogs_archiveAvatarDrawable.setProgress(0f);
             if (!Theme.dialogs_archiveAvatarDrawableRecolored) {
                 Theme.dialogs_archiveAvatarDrawable.beginApplyLayerColors();
-                Theme.dialogs_archiveAvatarDrawable.setLayerColor("Arrow1.**", Theme.getColor(accentColorKey));
-                Theme.dialogs_archiveAvatarDrawable.setLayerColor("Arrow2.**", Theme.getColor(accentColorKey));
+                Theme.dialogs_archiveAvatarDrawable.setLayerColor("Arrow1.**", Theme.getColor(avatarBackgroundColorKey));
+                Theme.dialogs_archiveAvatarDrawable.setLayerColor("Arrow2.**", Theme.getColor(avatarBackgroundColorKey));
                 Theme.dialogs_archiveAvatarDrawable.commitApplyLayerColors();
                 Theme.dialogs_archiveAvatarDrawableRecolored = true;
             }
@@ -505,7 +508,7 @@ public class ArchivedPullForegroundDrawable {
     private void setOutProgress(float value) {
         outProgress = value;
         int color = ColorUtils.blendARGB(
-                Theme.getColor(accentColorKey),
+                Theme.getColor(avatarBackgroundColorKey),
                 Theme.getColor(backgroundActiveColorKey),
                 1f - outProgress
         );
