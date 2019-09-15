@@ -291,14 +291,6 @@
             </intent-filter>
         </receiver>
 
-        <receiver
-            android:name=".SmsReceiver"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="com.google.android.gms.auth.api.phone.SMS_RETRIEVED"/>
-            </intent-filter>
-        </receiver>
-
         <receiver android:name=".CallReceiver">
             <intent-filter>
                 <action android:name="android.intent.action.PHONE_STATE"/>
