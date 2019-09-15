@@ -51,11 +51,12 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-import androidx.core.view.ViewCompat;
 import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.LinearSmoothScrollerMiddle;
 import androidx.recyclerview.widget.RecyclerView;
+
+import com.google.android.exoplayer2.util.Log;
 
 import org.telegram.messenger.AccountInstance;
 import org.telegram.messenger.AndroidUtilities;
@@ -179,6 +180,8 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
     private ActionBarMenuSubItem readItem;
 
     private float additionalFloatingTranslation;
+    private float floatingButtonTranslation;
+    private float floatingButtonHideProgress;
 
     //private ImageView unreadFloatingButton;
     //private FrameLayout unreadFloatingButtonContainer;
@@ -1018,7 +1021,9 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                             unreadFloatingButtonContainer.setTranslationY(AndroidUtilities.dp(74));
                         }*/
                         floatingHidden = true;
-                        floatingButtonContainer.setTranslationY(AndroidUtilities.dp(100));
+                        floatingButtonTranslation = AndroidUtilities.dp(100);
+                        floatingButtonHideProgress = 1f;
+                        updateFloatingButtonOffset();
                         hideFloatingButton(false);
                     }
                     if (listView.getAdapter() != dialogsAdapter) {
@@ -2118,7 +2123,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                     if (this == undoView[0] && undoView[1].getVisibility() != VISIBLE) {
                         float diff = getMeasuredHeight() + AndroidUtilities.dp(8) - translationY;
                         if (!floatingHidden) {
-                            floatingButtonContainer.setTranslationY(floatingButtonContainer.getTranslationY() + additionalFloatingTranslation - diff);
+                            updateFloatingButtonOffset();
                         }
                         additionalFloatingTranslation = diff;
                     }
@@ -2147,6 +2152,10 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         }
 
         return fragmentView;
+    }
+
+    private void updateFloatingButtonOffset() {
+        floatingButtonContainer.setTranslationY(floatingButtonTranslation - additionalFloatingTranslation * (1f - floatingButtonHideProgress));
     }
 
     @Override
@@ -3032,7 +3041,8 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             floatingButtonContainer.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
                 @Override
                 public void onGlobalLayout() {
-                    floatingButtonContainer.setTranslationY((floatingHidden ? AndroidUtilities.dp(100) : -additionalFloatingTranslation));
+                    floatingButtonTranslation = floatingHidden ? AndroidUtilities.dp(100) : 0;
+                    updateFloatingButtonOffset();
                     //unreadFloatingButtonContainer.setTranslationY(floatingHidden ? AndroidUtilities.dp(74) : 0);
                     floatingButtonContainer.setClickable(!floatingHidden);
                     if (floatingButtonContainer != null) {
@@ -3291,8 +3301,14 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         }
         floatingHidden = hide;
         AnimatorSet animatorSet = new AnimatorSet();
-        animatorSet.playTogether(ObjectAnimator.ofFloat(floatingButtonContainer, View.TRANSLATION_Y, (floatingHidden ? AndroidUtilities.dp(100) : -additionalFloatingTranslation))/*,
-                ObjectAnimator.ofFloat(unreadFloatingButtonContainer, View.TRANSLATION_Y, floatingHidden ? AndroidUtilities.dp(74) : 0)*/);
+        ValueAnimator valueAnimator = ValueAnimator.ofFloat(floatingButtonHideProgress,floatingHidden ? 1f : 0f);
+        valueAnimator.addUpdateListener(animation -> {
+            floatingButtonHideProgress = (float) animation.getAnimatedValue();
+            floatingButtonTranslation = AndroidUtilities.dp(100) * floatingButtonHideProgress;
+            updateFloatingButtonOffset();
+        });
+        animatorSet.playTogether(valueAnimator);/*,
+                ObjectAnimator.ofFloat(unreadFloatingButtonContainer, View.TRANSLATION_Y, floatingHidden ? AndroidUtilities.dp(74) : 0)*/
         animatorSet.setDuration(300);
         animatorSet.setInterpolator(floatingInterpolator);
         floatingButtonContainer.setClickable(!hide);
@@ -3488,6 +3504,9 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             }
         };
 
+        ThemeDescription.ThemeDescriptionDelegate archivePullDrawableDelegate = () -> {
+            if(archivedPullForegroundDrawable != null) archivedPullForegroundDrawable.updateColors();
+        };
         ArrayList<ThemeDescription> arrayList = new ArrayList<>();
 
         arrayList.add(new ThemeDescription(fragmentView, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_windowBackgroundWhite));
@@ -3770,6 +3789,8 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         arrayList.add(new ThemeDescription(null, 0, null, null, null, null, Theme.key_player_placeholderBackground));
         arrayList.add(new ThemeDescription(null, 0, null, null, null, null, Theme.key_player_button));
         arrayList.add(new ThemeDescription(null, 0, null, null, null, null, Theme.key_player_buttonActive));
+        arrayList.add(new ThemeDescription(null, 0, null, null, null, archivePullDrawableDelegate, Theme.key_archivePullDownBackground));
+        arrayList.add(new ThemeDescription(null, 0, null, null, null, archivePullDrawableDelegate, Theme.key_archivePullDownBackgroundActive));
 
         return arrayList.toArray(new ThemeDescription[0]);
     }
