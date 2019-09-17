@@ -243,7 +243,12 @@ public class AvatarDrawable extends Drawable {
         Theme.avatar_backgroundPaint.setColor(getColor());
         canvas.save();
         canvas.translate(bounds.left, bounds.top);
-        canvas.drawCircle(size / 2.0f, size / 2.0f, size / 2.0f, Theme.avatar_backgroundPaint);
+        if (avatarType == AVATAR_TYPE_ARCHIVED) {
+            if (archivedAvatarProgress != 1f)
+                canvas.drawCircle(size / 2.0f, size / 2.0f, size / 2.0f, Theme.avatar_backgroundPaint);
+        } else {
+            canvas.drawCircle(size / 2.0f, size / 2.0f, size / 2.0f, Theme.avatar_backgroundPaint);
+        }
 
         if (avatarType == AVATAR_TYPE_ARCHIVED) {
             if (archivedAvatarProgress != 0) {
@@ -259,8 +264,8 @@ public class AvatarDrawable extends Drawable {
             } else {
                 if (!Theme.dialogs_archiveAvatarDrawableRecolored) {
                     Theme.dialogs_archiveAvatarDrawable.beginApplyLayerColors();
-                    Theme.dialogs_archiveAvatarDrawable.setLayerColor("Arrow1.**", Theme.getColor(Theme.key_avatar_backgroundArchivedHidden));
-                    Theme.dialogs_archiveAvatarDrawable.setLayerColor("Arrow2.**", Theme.getColor(Theme.key_avatar_backgroundArchivedHidden));
+                    Theme.dialogs_archiveAvatarDrawable.setLayerColor("Arrow1.**", color);
+                    Theme.dialogs_archiveAvatarDrawable.setLayerColor("Arrow2.**", color);
                     Theme.dialogs_archiveAvatarDrawable.commitApplyLayerColors();
                     Theme.dialogs_archiveAvatarDrawableRecolored = true;
                 }

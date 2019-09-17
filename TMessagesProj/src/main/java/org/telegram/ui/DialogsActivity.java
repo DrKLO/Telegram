@@ -14,6 +14,7 @@ import android.animation.AnimatorListenerAdapter;
 import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
 import android.animation.StateListAnimator;
+import android.animation.ValueAnimator;
 import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.app.Activity;
@@ -35,17 +36,12 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Vibrator;
-
-import androidx.recyclerview.widget.ItemTouchHelper;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.LinearSmoothScrollerMiddle;
-import androidx.recyclerview.widget.RecyclerView;
-
 import android.text.TextUtils;
 import android.view.Gravity;
 import android.view.HapticFeedbackConstants;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.ViewOutlineProvider;
 import android.view.ViewTreeObserver;
 import android.view.animation.AccelerateDecelerateInterpolator;
@@ -55,39 +51,53 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import androidx.recyclerview.widget.ItemTouchHelper;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.LinearSmoothScrollerMiddle;
+import androidx.recyclerview.widget.RecyclerView;
+
+import com.google.android.exoplayer2.util.Log;
+
 import org.telegram.messenger.AccountInstance;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.ChatObject;
-import org.telegram.messenger.MediaDataController;
+import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.DialogObject;
+import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ImageLoader;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.MessageObject;
+import org.telegram.messenger.MessagesController;
+import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.NotificationsController;
+import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
+import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
 import org.telegram.messenger.Utilities;
 import org.telegram.messenger.XiaomiUtilities;
-import org.telegram.messenger.FileLog;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
-import org.telegram.messenger.ContactsController;
-import org.telegram.messenger.MessagesController;
-import org.telegram.messenger.NotificationCenter;
-import org.telegram.messenger.R;
-import org.telegram.messenger.UserConfig;
+import org.telegram.ui.ActionBar.ActionBar;
+import org.telegram.ui.ActionBar.ActionBarMenu;
+import org.telegram.ui.ActionBar.ActionBarMenuItem;
 import org.telegram.ui.ActionBar.ActionBarMenuSubItem;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BackDrawable;
+import org.telegram.ui.ActionBar.BaseFragment;
+import org.telegram.ui.ActionBar.MenuDrawable;
+import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ActionBar.ThemeDescription;
 import org.telegram.ui.Adapters.DialogsAdapter;
 import org.telegram.ui.Adapters.DialogsSearchAdapter;
 import org.telegram.ui.Cells.AccountSelectCell;
 import org.telegram.ui.Cells.ArchiveHintInnerCell;
+import org.telegram.ui.Cells.DialogCell;
 import org.telegram.ui.Cells.DialogsEmptyCell;
 import org.telegram.ui.Cells.DividerCell;
 import org.telegram.ui.Cells.DrawerActionCell;
@@ -102,22 +112,17 @@ import org.telegram.ui.Cells.ProfileSearchCell;
 import org.telegram.ui.Cells.ShadowSectionCell;
 import org.telegram.ui.Cells.TextCell;
 import org.telegram.ui.Cells.UserCell;
-import org.telegram.ui.Cells.DialogCell;
-import org.telegram.ui.ActionBar.ActionBar;
-import org.telegram.ui.ActionBar.ActionBarMenu;
-import org.telegram.ui.ActionBar.ActionBarMenuItem;
-import org.telegram.ui.ActionBar.BaseFragment;
-import org.telegram.ui.ActionBar.MenuDrawable;
 import org.telegram.ui.Components.AlertsCreator;
 import org.telegram.ui.Components.AnimatedArrowDrawable;
+import org.telegram.ui.Components.ArchivedPullForegroundDrawable;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.ChatActivityEnterView;
 import org.telegram.ui.Components.CombinedDrawable;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.DialogsItemAnimator;
-import org.telegram.ui.Components.FragmentContextView;
 import org.telegram.ui.Components.EmptyTextProgressView;
+import org.telegram.ui.Components.FragmentContextView;
 import org.telegram.ui.Components.JoinGroupAlert;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.NumberTextView;
@@ -126,7 +131,6 @@ import org.telegram.ui.Components.ProxyDrawable;
 import org.telegram.ui.Components.RLottieDrawable;
 import org.telegram.ui.Components.RadialProgressView;
 import org.telegram.ui.Components.RecyclerListView;
-import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.SizeNotifierFrameLayout;
 import org.telegram.ui.Components.StickersAlert;
 import org.telegram.ui.Components.UndoView;
@@ -134,8 +138,8 @@ import org.telegram.ui.Components.UndoView;
 import java.util.ArrayList;
 
 public class DialogsActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
-    
-    private RecyclerListView listView;
+
+    private DialogsRecyclerView listView;
     private LinearLayoutManager layoutManager;
     private DialogsAdapter dialogsAdapter;
     private DialogsSearchAdapter dialogsSearchAdapter;
@@ -176,6 +180,8 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
     private ActionBarMenuSubItem readItem;
 
     private float additionalFloatingTranslation;
+    private float floatingButtonTranslation;
+    private float floatingButtonHideProgress;
 
     //private ImageView unreadFloatingButton;
     //private FrameLayout unreadFloatingButtonContainer;
@@ -235,7 +241,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
     private int canMuteCount;
     private int canUnmuteCount;
     private int canClearCacheCount;
-    
+
     private int folderId;
 
     private final static int pin = 100;
@@ -245,10 +251,16 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
     private final static int mute = 104;
     private final static int archive = 105;
 
-    private boolean allowScrollToHiddenView;
+    private final static int ARCHIVE_ITEM_STATE_PINNED = 0;
+    private final static int ARCHIVE_ITEM_STATE_SHOWED = 1;
+    private final static int ARCHIVE_ITEM_STATE_HIDDEN = 2;
+
+    private int archivePullViewState;
     private boolean scrollingManually;
-    private int totalConsumedAmount;
-    private boolean startedScrollAtTop;
+    private long startArchivePullingTime;
+    boolean canShowHiddenArchive = false;
+
+    public ArchivedPullForegroundDrawable archivedPullForegroundDrawable;
 
     private class ContentView extends SizeNotifierFrameLayout {
 
@@ -388,16 +400,215 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             if (action == MotionEvent.ACTION_DOWN || action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL) {
                 if (action == MotionEvent.ACTION_DOWN) {
                     int currentPosition = layoutManager.findFirstVisibleItemPosition();
-                    startedScrollAtTop = currentPosition <= 1;
                 } else {
                     if (actionBar.isActionModeShowed()) {
                         allowMoving = true;
                     }
                 }
-                totalConsumedAmount = 0;
-                allowScrollToHiddenView = false;
             }
             return super.onInterceptTouchEvent(ev);
+        }
+    }
+
+    public static float viewOffset = 0f;
+
+    public class DialogsRecyclerView extends RecyclerListView {
+
+        private boolean firstLayout = true;
+        private boolean ignoreLayout;
+
+
+        public DialogsRecyclerView(Context context) {
+            super(context);
+        }
+
+        public void setViewsOffset(float viewOffset) {
+            DialogsActivity.viewOffset = viewOffset;
+            int n = getChildCount();
+            for (int i = 0; i < n; i++) {
+                getChildAt(i).setTranslationY(viewOffset);
+            }
+
+            if (selectorPosition != NO_POSITION) {
+                View v = layoutManager.findViewByPosition(selectorPosition);
+                if (v != null) {
+                    selectorRect.set(v.getLeft(), (int) (v.getTop() + viewOffset),
+                            v.getRight(), (int) (v.getBottom() + viewOffset));
+                    selectorDrawable.setBounds(selectorRect);
+                }
+            }
+            invalidate();
+        }
+
+        public float getViewOffset() {
+            return viewOffset;
+        }
+
+        @Override
+        public void addView(View child, int index, ViewGroup.LayoutParams params) {
+            super.addView(child, index, params);
+            child.setTranslationY(viewOffset);
+        }
+
+        @Override
+        public void removeView(View view) {
+            super.removeView(view);
+            view.setTranslationY(0);
+        }
+
+        @Override
+        public void onDraw(Canvas canvas) {
+            if (archivedPullForegroundDrawable != null && viewOffset != 0) {
+                archivedPullForegroundDrawable.drawOverScroll(canvas);
+            }
+            super.onDraw(canvas);
+        }
+
+
+        @Override
+        protected void dispatchDraw(Canvas canvas) {
+            super.dispatchDraw(canvas);
+            if (slidingView != null && pacmanAnimation != null) {
+                pacmanAnimation.draw(canvas, slidingView.getTop() + slidingView.getMeasuredHeight() / 2);
+            }
+        }
+
+        @Override
+        public void setAdapter(RecyclerView.Adapter adapter) {
+            super.setAdapter(adapter);
+            firstLayout = true;
+        }
+
+        private void checkIfAdapterValid() {
+            if (listView != null && dialogsAdapter != null && listView.getAdapter() == dialogsAdapter && lastItemsCount != dialogsAdapter.getItemCount()) {
+                ignoreLayout = true;
+                dialogsAdapter.notifyDataSetChanged();
+                ignoreLayout = false;
+            }
+        }
+
+        @Override
+        public void setPadding(int left, int top, int right, int bottom) {
+            super.setPadding(left, top, right, bottom);
+            if (searchEmptyView != null) {
+                searchEmptyView.setPadding(left, top, right, bottom);
+            }
+        }
+
+        @Override
+        protected void onMeasure(int widthSpec, int heightSpec) {
+            if (firstLayout && getMessagesController().dialogsLoaded) {
+                if (hasHiddenArchive()) {
+                    ignoreLayout = true;
+                    layoutManager.scrollToPositionWithOffset(1, 0);
+                    ignoreLayout = false;
+                }
+                firstLayout = false;
+            }
+            checkIfAdapterValid();
+            super.onMeasure(widthSpec, heightSpec);
+        }
+
+        @Override
+        protected void onLayout(boolean changed, int l, int t, int r, int b) {
+            super.onLayout(changed, l, t, r, b);
+            if ((dialogRemoveFinished != 0 || dialogInsertFinished != 0 || dialogChangeFinished != 0) && !dialogsItemAnimator.isRunning()) {
+                onDialogAnimationFinished();
+            }
+        }
+
+        @Override
+        public void requestLayout() {
+            if (ignoreLayout) {
+                return;
+            }
+            super.requestLayout();
+        }
+
+        @Override
+        public boolean onTouchEvent(MotionEvent e) {
+            if (waitingForScrollFinished || dialogRemoveFinished != 0 || dialogInsertFinished != 0 || dialogChangeFinished != 0) {
+                return false;
+            }
+            int action = e.getAction();
+            if (action == MotionEvent.ACTION_DOWN) {
+                listView.setOverScrollMode(View.OVER_SCROLL_ALWAYS);
+            }
+            if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL) {
+                if (!itemTouchhelper.isIdle() && swipeController.swipingFolder) {
+                    swipeController.swipeFolderBack = true;
+                    if (itemTouchhelper.checkHorizontalSwipe(null, ItemTouchHelper.LEFT) != 0) {
+                        SharedConfig.toggleArchiveHidden();
+                        getUndoView().showWithAction(0, UndoView.ACTION_ARCHIVE_PINNED, null, null);
+                        archivePullViewState = SharedConfig.archiveHidden ? ARCHIVE_ITEM_STATE_HIDDEN : ARCHIVE_ITEM_STATE_PINNED;
+                        if (archivedPullForegroundDrawable != null)
+                            archivedPullForegroundDrawable.setWillDraw(archivePullViewState != ARCHIVE_ITEM_STATE_PINNED);
+                    }
+                }
+            }
+            boolean result = super.onTouchEvent(e);
+            if ((action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL) &&
+                    archivePullViewState == ARCHIVE_ITEM_STATE_HIDDEN && hasHiddenArchive()) {
+
+                int currentPosition = layoutManager.findFirstVisibleItemPosition();
+                if (currentPosition == 0) {
+                    View view = layoutManager.findViewByPosition(currentPosition);
+                    int height = (int) (AndroidUtilities.dp(SharedConfig.useThreeLinesLayout ? 78 : 72) * ArchivedPullForegroundDrawable.SNAP_HEIGHT);
+                    int diff = view.getTop() + view.getMeasuredHeight();
+                    if (view != null) {
+                        long pullingTime = System.currentTimeMillis() - startArchivePullingTime;
+                        if (diff < height || pullingTime < ArchivedPullForegroundDrawable.minPullingTime) {
+                            listView.smoothScrollBy(0, diff, CubicBezierInterpolator.EASE_OUT_QUINT);
+                            archivePullViewState = ARCHIVE_ITEM_STATE_HIDDEN;
+                        } else {
+                            if (archivePullViewState != ARCHIVE_ITEM_STATE_SHOWED) {
+                                if (listView.getViewOffset() == 0) {
+                                    listView.smoothScrollBy(0, view.getTop(), CubicBezierInterpolator.EASE_OUT_QUINT);
+                                }
+                                if (!canShowHiddenArchive) {
+                                    canShowHiddenArchive = true;
+                                    listView.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
+                                    if (archivedPullForegroundDrawable != null)
+                                        archivedPullForegroundDrawable.colorize(true);
+                                }
+                                ((DialogCell) view).startOutAnimation();
+                                archivePullViewState = ARCHIVE_ITEM_STATE_SHOWED;
+                            }
+                        }
+
+                        if (listView.getViewOffset() != 0) {
+                            ValueAnimator valueAnimator = ValueAnimator.ofFloat(listView.getViewOffset(), 0f);
+                            valueAnimator.addUpdateListener(animation ->
+                                    listView.setViewsOffset((float) animation.getAnimatedValue()));
+
+                            valueAnimator.setDuration((long) (350f - 120f * (listView.getViewOffset() / ArchivedPullForegroundDrawable.maxOverScroll)));
+                            valueAnimator.setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT);
+                            listView.setScrollEnabled(false);
+                            valueAnimator.addListener(new AnimatorListenerAdapter() {
+                                @Override
+                                public void onAnimationEnd(Animator animation) {
+                                    super.onAnimationEnd(animation);
+                                    listView.setScrollEnabled(true);
+                                }
+                            });
+                            valueAnimator.start();
+                        }
+                    }
+                }
+            }
+            return result;
+        }
+
+        @Override
+        public boolean onInterceptTouchEvent(MotionEvent e) {
+            if (waitingForScrollFinished || dialogRemoveFinished != 0 || dialogInsertFinished != 0 || dialogChangeFinished != 0) {
+                return false;
+            }
+            if (e.getAction() == MotionEvent.ACTION_DOWN) {
+                allowSwipeDuringCurrentTouch = !actionBar.isActionModeShowed();
+                checkIfAdapterValid();
+            }
+            return super.onInterceptTouchEvent(e);
         }
     }
 
@@ -480,6 +691,9 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                         listView.smoothScrollBy(0, (dialogCell.getMeasuredHeight() + dialogCell.getTop()), CubicBezierInterpolator.EASE_OUT);
                         getUndoView().showWithAction(0, UndoView.ACTION_ARCHIVE_HIDDEN, null, null);
                     }
+                    archivePullViewState = SharedConfig.archiveHidden ? ARCHIVE_ITEM_STATE_HIDDEN : ARCHIVE_ITEM_STATE_PINNED;
+                    if (archivedPullForegroundDrawable != null)
+                        archivedPullForegroundDrawable.setWillDraw(archivePullViewState != ARCHIVE_ITEM_STATE_PINNED);
                     return;
                 }
 
@@ -493,9 +707,12 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                     slidingView = null;
                     listView.invalidate();
                     int added = getMessagesController().addDialogToFolder(dialog.id, folderId == 0 ? 1 : 0, -1, 0);
-                    if (added == 2) {
-                        dialogsAdapter.notifyItemChanged(count - 1);
+
+                    int lastItemPosition = layoutManager.findLastVisibleItemPosition();
+                    if (lastItemPosition == count - 1) {
+                        layoutManager.findViewByPosition(lastItemPosition).requestLayout();
                     }
+
                     if (added != 2 || position != 0) {
                         dialogsItemAnimator.prepareForRemove();
                         lastItemsCount--;
@@ -647,6 +864,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             resetDelegate = arguments.getBoolean("resetDelegate", true);
             messagesCount = arguments.getInt("messagesCount", 0);
         }
+
 
         if (dialogsType == 0) {
             askAboutContacts = MessagesController.getGlobalNotificationsSettings().getBoolean("askAboutContacts", true);
@@ -803,7 +1021,9 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                             unreadFloatingButtonContainer.setTranslationY(AndroidUtilities.dp(74));
                         }*/
                         floatingHidden = true;
-                        floatingButtonContainer.setTranslationY(AndroidUtilities.dp(100));
+                        floatingButtonTranslation = AndroidUtilities.dp(100);
+                        floatingButtonHideProgress = 1f;
+                        updateFloatingButtonOffset();
                         hideFloatingButton(false);
                     }
                     if (listView.getAdapter() != dialogsAdapter) {
@@ -962,121 +1182,23 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         ContentView contentView = new ContentView(context);
         fragmentView = contentView;
 
-        listView = new RecyclerListView(context) {
-
-            private boolean firstLayout = true;
-            private boolean ignoreLayout;
-
-            @Override
-            protected void dispatchDraw(Canvas canvas) {
-                super.dispatchDraw(canvas);
-                if (slidingView != null && pacmanAnimation != null) {
-                    pacmanAnimation.draw(canvas, slidingView.getTop() + slidingView.getMeasuredHeight() / 2);
-                }
-            }
-
-            @Override
-            public void setAdapter(Adapter adapter) {
-                super.setAdapter(adapter);
-                firstLayout = true;
-            }
-
-            private void checkIfAdapterValid() {
-                if (listView != null && dialogsAdapter != null && listView.getAdapter() == dialogsAdapter && lastItemsCount != dialogsAdapter.getItemCount()) {
-                    ignoreLayout = true;
-                    dialogsAdapter.notifyDataSetChanged();
-                    ignoreLayout = false;
-                }
-            }
-
-            @Override
-            public void setPadding(int left, int top, int right, int bottom) {
-                super.setPadding(left, top, right, bottom);
-                if (searchEmptyView != null) {
-                    searchEmptyView.setPadding(left, top, right, bottom);
-                }
-            }
-
-            @Override
-            protected void onMeasure(int widthSpec, int heightSpec) {
-                if (firstLayout && getMessagesController().dialogsLoaded) {
-                    if (hasHiddenArchive()) {
-                        ignoreLayout = true;
-                        layoutManager.scrollToPositionWithOffset(1, 0);
-                        ignoreLayout = false;
-                    }
-                    firstLayout = false;
-                }
-                checkIfAdapterValid();
-                super.onMeasure(widthSpec, heightSpec);
-            }
-
-            @Override
-            protected void onLayout(boolean changed, int l, int t, int r, int b) {
-                super.onLayout(changed, l, t, r, b);
-                if ((dialogRemoveFinished != 0 || dialogInsertFinished != 0 || dialogChangeFinished != 0) && !dialogsItemAnimator.isRunning()) {
-                    onDialogAnimationFinished();
-                }
-            }
-
-            @Override
-            public void requestLayout() {
-                if (ignoreLayout) {
-                    return;
-                }
-                super.requestLayout();
-            }
-
-            @Override
-            public boolean onTouchEvent(MotionEvent e) {
-                if (waitingForScrollFinished || dialogRemoveFinished != 0 || dialogInsertFinished != 0 || dialogChangeFinished != 0) {
-                    return false;
-                }
-                int action = e.getAction();
-                if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL) {
-                    if (!itemTouchhelper.isIdle() && swipeController.swipingFolder) {
-                        swipeController.swipeFolderBack = true;
-                        if (itemTouchhelper.checkHorizontalSwipe(null, ItemTouchHelper.LEFT) != 0) {
-                            SharedConfig.toggleArchiveHidden();
-                            getUndoView().showWithAction(0, UndoView.ACTION_ARCHIVE_PINNED, null, null);
-                        }
-                    }
-                }
-                boolean result = super.onTouchEvent(e);
-                if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL) {
-                    if (allowScrollToHiddenView) {
-                        int currentPosition = layoutManager.findFirstVisibleItemPosition();
-                        if (currentPosition == 0) {
-                            View view = layoutManager.findViewByPosition(currentPosition);
-                            int height = AndroidUtilities.dp(SharedConfig.useThreeLinesLayout ? 78 : 72) / 4 * 3;
-                            int diff = view.getTop() + view.getMeasuredHeight();
-                            if (view != null) {
-                                if (diff < height) {
-                                    listView.smoothScrollBy(0, diff, CubicBezierInterpolator.EASE_OUT_QUINT);
-                                } else {
-                                    listView.smoothScrollBy(0, view.getTop(), CubicBezierInterpolator.EASE_OUT_QUINT);
-                                }
-                            }
-                        }
-                        allowScrollToHiddenView = false;
-                    }
-                }
-                return result;
-            }
-
-            @Override
-            public boolean onInterceptTouchEvent(MotionEvent e) {
-                if (waitingForScrollFinished || dialogRemoveFinished != 0 || dialogInsertFinished != 0 || dialogChangeFinished != 0) {
-                    return false;
-                }
-                if (e.getAction() == MotionEvent.ACTION_DOWN) {
-                    allowSwipeDuringCurrentTouch = !actionBar.isActionModeShowed();
-                    checkIfAdapterValid();
-                }
-                return super.onInterceptTouchEvent(e);
-            }
-        };
+        listView = new DialogsRecyclerView(context);
         dialogsItemAnimator = new DialogsItemAnimator() {
+
+            @Override
+            public void onRemoveStarting(RecyclerView.ViewHolder item) {
+                super.onRemoveStarting(item);
+                if (layoutManager.findFirstVisibleItemPosition() == 0) {
+                    View v = layoutManager.findViewByPosition(0);
+                    if (v != null) v.invalidate();
+                    if (archivePullViewState == ARCHIVE_ITEM_STATE_HIDDEN) {
+                        archivePullViewState = ARCHIVE_ITEM_STATE_SHOWED;
+                    }
+                    if (archivedPullForegroundDrawable != null)
+                        archivedPullForegroundDrawable.doNotShow();
+                }
+            }
+
             @Override
             public void onRemoveFinished(RecyclerView.ViewHolder item) {
                 if (dialogRemoveFinished == 2) {
@@ -1110,6 +1232,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         listView.setInstantClick(true);
         listView.setTag(4);
         layoutManager = new LinearLayoutManager(context) {
+
             @Override
             public void smoothScrollToPosition(RecyclerView recyclerView, RecyclerView.State state, int position) {
                 if (hasHiddenArchive() && position == 1) {
@@ -1121,9 +1244,15 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 }
             }
 
+            int lastTranslation = 0;
+
             @Override
             public int scrollVerticallyBy(int dy, RecyclerView.Recycler recycler, RecyclerView.State state) {
-                if (listView.getAdapter() == dialogsAdapter && dialogsType == 0 && !onlySelect && !allowScrollToHiddenView && folderId == 0 && dy < 0 && getMessagesController().hasHiddenArchive()) {
+                boolean isDragging = listView.getScrollState() == RecyclerView.SCROLL_STATE_DRAGGING;
+
+                int measuredDy = dy;
+                if (listView.getAdapter() == dialogsAdapter && dialogsType == 0 && !onlySelect && folderId == 0 && dy < 0 && getMessagesController().hasHiddenArchive() && archivePullViewState == ARCHIVE_ITEM_STATE_HIDDEN) {
+                    listView.setOverScrollMode(View.OVER_SCROLL_ALWAYS);
                     int currentPosition = layoutManager.findFirstVisibleItemPosition();
                     if (currentPosition == 0) {
                         View view = layoutManager.findViewByPosition(currentPosition);
@@ -1131,28 +1260,99 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                             currentPosition = 1;
                         }
                     }
-                    if (currentPosition != 0 && currentPosition != RecyclerView.NO_POSITION) {
-                        View view = layoutManager.findViewByPosition(currentPosition);
-                        if (view != null) {
-                            int dialogHeight = AndroidUtilities.dp(SharedConfig.useThreeLinesLayout ? 78 : 72) + 1;
-                            int canScrollDy = -view.getTop() + (currentPosition - 1) * dialogHeight;
-                            int positiveDy = Math.abs(dy);
-                            if (canScrollDy < positiveDy) {
-                                totalConsumedAmount += Math.abs(dy);
-                                dy = -canScrollDy;
-                                if (startedScrollAtTop && totalConsumedAmount >= AndroidUtilities.dp(150)) {
-                                    allowScrollToHiddenView = true;
-                                    try {
-                                        listView.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
-                                    } catch (Exception ignore) {
 
-                                    }
-                                }
-                            }
+                    if (!isDragging) {
+                        View view = layoutManager.findViewByPosition(currentPosition);
+                        int dialogHeight = AndroidUtilities.dp(SharedConfig.useThreeLinesLayout ? 78 : 72) + 1;
+                        int canScrollDy = -view.getTop() + (currentPosition - 1) * dialogHeight;
+                        int positiveDy = Math.abs(dy);
+                        if (canScrollDy < positiveDy) {
+                            measuredDy = -canScrollDy;
                         }
+                    } else if (currentPosition == 0) {
+                        View v = layoutManager.findViewByPosition(currentPosition);
+                        float k = 1f + (v.getTop() / (float) v.getMeasuredHeight());
+                        if (k > 1f) k = 1f;
+                        listView.setOverScrollMode(View.OVER_SCROLL_NEVER);
+                        measuredDy *= ArchivedPullForegroundDrawable.startPullParallax - ArchivedPullForegroundDrawable.endPullParallax * k;
+                        if (measuredDy > -1) measuredDy = -1;
+
+                        if (undoView[0].getVisibility() == View.VISIBLE)
+                            undoView[0].hide(true, 1);
                     }
                 }
-                return super.scrollVerticallyBy(dy, recycler, state);
+
+                if (listView.getViewOffset() != 0 && dy > 0 && isDragging) {
+                    float ty = (int) listView.getViewOffset();
+                    ty -= dy;
+                    if (ty < 0) {
+                        measuredDy = (int) ty;
+                        ty = 0;
+                    } else {
+                        measuredDy = 0;
+                    }
+                    listView.setViewsOffset(ty);
+                }
+
+
+                if (archivePullViewState != ARCHIVE_ITEM_STATE_PINNED && hasHiddenArchive()) {
+                    int usedDy = super.scrollVerticallyBy(measuredDy, recycler, state);
+                    if (archivedPullForegroundDrawable != null)
+                        archivedPullForegroundDrawable.scrollDy = usedDy;
+                    int currentPosition = layoutManager.findFirstVisibleItemPosition();
+                    View firstView = null;
+                    if (currentPosition == 0) {
+                        firstView = layoutManager.findViewByPosition(currentPosition);
+                    }
+                    if (currentPosition == 0 && firstView != null && firstView.getBottom() >= AndroidUtilities.dp(4)) {
+                        if (startArchivePullingTime == 0)
+                            startArchivePullingTime = System.currentTimeMillis();
+                        if (archivePullViewState == ARCHIVE_ITEM_STATE_HIDDEN) {
+                            if(archivedPullForegroundDrawable != null) archivedPullForegroundDrawable.showHidden();
+                        }
+
+                        float k = 1f + (firstView.getTop() / (float) firstView.getMeasuredHeight());
+                        if (k > 1f) k = 1f;
+                        long pullingTime = System.currentTimeMillis() - startArchivePullingTime;
+                        boolean canShowInternal = k > ArchivedPullForegroundDrawable.SNAP_HEIGHT && pullingTime > ArchivedPullForegroundDrawable.minPullingTime + 20;
+                        if (canShowHiddenArchive != canShowInternal) {
+                            canShowHiddenArchive = canShowInternal;
+                            if (archivePullViewState == ARCHIVE_ITEM_STATE_HIDDEN) {
+                                listView.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
+                                if(archivedPullForegroundDrawable != null) archivedPullForegroundDrawable.colorize(canShowInternal);
+                            }
+
+
+                        }
+
+                        if (archivePullViewState == ARCHIVE_ITEM_STATE_HIDDEN && measuredDy - usedDy != 0 && dy < 0 && isDragging) {
+                            float ty;
+
+                            float tk = (listView.getViewOffset() / ArchivedPullForegroundDrawable.maxOverScroll);
+                            tk = 1f - tk;
+                            ty = (listView.getViewOffset() - dy * ArchivedPullForegroundDrawable.startPullOverScroll * tk);
+                            listView.setViewsOffset(ty);
+                        }
+
+                        if (archivedPullForegroundDrawable != null) {
+                            archivedPullForegroundDrawable.pullProgress = k;
+                            archivedPullForegroundDrawable.setListView(listView);
+                        }
+                    } else {
+                        startArchivePullingTime = 0;
+                        canShowHiddenArchive = false;
+                        archivePullViewState = ARCHIVE_ITEM_STATE_HIDDEN;
+
+                        if (archivedPullForegroundDrawable != null) {
+                            archivedPullForegroundDrawable.resetText();
+                            archivedPullForegroundDrawable.pullProgress = 0f;
+                            archivedPullForegroundDrawable.setListView(listView);
+                        }
+                    }
+                    if (firstView != null) firstView.invalidate();
+                    return usedDy;
+                }
+                return super.scrollVerticallyBy(measuredDy, recycler, state);
             }
         };
         layoutManager.setOrientation(LinearLayoutManager.VERTICAL);
@@ -1656,6 +1856,19 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             }
         });
 
+        archivePullViewState = SharedConfig.archiveHidden ? ARCHIVE_ITEM_STATE_HIDDEN : ARCHIVE_ITEM_STATE_PINNED;
+
+        if (archivedPullForegroundDrawable == null && folderId == 0) {
+            archivedPullForegroundDrawable = new ArchivedPullForegroundDrawable();
+
+            if (hasHiddenArchive()) {
+                archivedPullForegroundDrawable.showHidden();
+            } else {
+                archivedPullForegroundDrawable.doNotShow();
+            }
+            archivedPullForegroundDrawable.setWillDraw(archivePullViewState != ARCHIVE_ITEM_STATE_PINNED);
+        }
+
         if (searchString == null) {
             dialogsAdapter = new DialogsAdapter(context, dialogsType, folderId, onlySelect) {
                 @Override
@@ -1667,6 +1880,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             if (AndroidUtilities.isTablet() && openedDialogId != 0) {
                 dialogsAdapter.setOpenedDialogId(openedDialogId);
             }
+            dialogsAdapter.setArchivedPullDrawable(archivedPullForegroundDrawable);
             listView.setAdapter(dialogsAdapter);
         }
         int type = 0;
@@ -1909,7 +2123,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                     if (this == undoView[0] && undoView[1].getVisibility() != VISIBLE) {
                         float diff = getMeasuredHeight() + AndroidUtilities.dp(8) - translationY;
                         if (!floatingHidden) {
-                            floatingButtonContainer.setTranslationY(floatingButtonContainer.getTranslationY() + additionalFloatingTranslation - diff);
+                            updateFloatingButtonOffset();
                         }
                         additionalFloatingTranslation = diff;
                     }
@@ -1938,6 +2152,10 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         }
 
         return fragmentView;
+    }
+
+    private void updateFloatingButtonOffset() {
+        floatingButtonContainer.setTranslationY(floatingButtonTranslation - additionalFloatingTranslation * (1f - floatingButtonHideProgress));
     }
 
     @Override
@@ -2009,6 +2227,11 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                     .setNegativeButton(LocaleController.getString("ContactsPermissionAlertNotNow", R.string.ContactsPermissionAlertNotNow), (dialog, which) -> MessagesController.getGlobalNotificationsSettings().edit().putBoolean("askedAboutMiuiLockscreen", true).commit())
                     .create());
         }
+
+
+        if (archivePullViewState == ARCHIVE_ITEM_STATE_HIDDEN && layoutManager.findFirstVisibleItemPosition() == 0) {
+            layoutManager.scrollToPositionWithOffset(1, 0);
+        }
     }
 
     @Override
@@ -2050,6 +2273,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             undoView[0].hide(true, 0);
         }
     }
+
 
     private boolean hasHiddenArchive() {
         return listView.getAdapter() == dialogsAdapter && !onlySelect && dialogsType == 0 && folderId == 0 && getMessagesController().hasHiddenArchive();
@@ -2817,7 +3041,8 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             floatingButtonContainer.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
                 @Override
                 public void onGlobalLayout() {
-                    floatingButtonContainer.setTranslationY((floatingHidden ? AndroidUtilities.dp(100) : -additionalFloatingTranslation));
+                    floatingButtonTranslation = floatingHidden ? AndroidUtilities.dp(100) : 0;
+                    updateFloatingButtonOffset();
                     //unreadFloatingButtonContainer.setTranslationY(floatingHidden ? AndroidUtilities.dp(74) : 0);
                     floatingButtonContainer.setClickable(!floatingHidden);
                     if (floatingButtonContainer != null) {
@@ -3076,8 +3301,14 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         }
         floatingHidden = hide;
         AnimatorSet animatorSet = new AnimatorSet();
-        animatorSet.playTogether(ObjectAnimator.ofFloat(floatingButtonContainer, View.TRANSLATION_Y,  (floatingHidden ? AndroidUtilities.dp(100) : -additionalFloatingTranslation))/*,
-                ObjectAnimator.ofFloat(unreadFloatingButtonContainer, View.TRANSLATION_Y, floatingHidden ? AndroidUtilities.dp(74) : 0)*/);
+        ValueAnimator valueAnimator = ValueAnimator.ofFloat(floatingButtonHideProgress,floatingHidden ? 1f : 0f);
+        valueAnimator.addUpdateListener(animation -> {
+            floatingButtonHideProgress = (float) animation.getAnimatedValue();
+            floatingButtonTranslation = AndroidUtilities.dp(100) * floatingButtonHideProgress;
+            updateFloatingButtonOffset();
+        });
+        animatorSet.playTogether(valueAnimator);/*,
+                ObjectAnimator.ofFloat(unreadFloatingButtonContainer, View.TRANSLATION_Y, floatingHidden ? AndroidUtilities.dp(74) : 0)*/
         animatorSet.setDuration(300);
         animatorSet.setInterpolator(floatingInterpolator);
         floatingButtonContainer.setClickable(!hide);
@@ -3271,6 +3502,8 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                     profileCell.applyBackground(true);
                 }
             }
+
+            if(archivedPullForegroundDrawable != null) archivedPullForegroundDrawable.updateColors();
         };
 
         ArrayList<ThemeDescription> arrayList = new ArrayList<>();
@@ -3555,6 +3788,8 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         arrayList.add(new ThemeDescription(null, 0, null, null, null, null, Theme.key_player_placeholderBackground));
         arrayList.add(new ThemeDescription(null, 0, null, null, null, null, Theme.key_player_button));
         arrayList.add(new ThemeDescription(null, 0, null, null, null, null, Theme.key_player_buttonActive));
+        arrayList.add(new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_archivePullDownBackground));
+        arrayList.add(new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_archivePullDownBackgroundActive));
 
         return arrayList.toArray(new ThemeDescription[0]);
     }

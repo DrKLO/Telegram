@@ -47,8 +47,10 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.ImageReceiver;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Components.ArchivedPullForegroundDrawable;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.CheckBox2;
+import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.RLottieDrawable;
 import org.telegram.ui.Components.StaticLayoutEx;
 import org.telegram.ui.Components.TypefaceSpan;
@@ -116,6 +118,7 @@ public class DialogCell extends BaseCell {
     private boolean animatingArchiveAvatar;
     private float animatingArchiveAvatarProgress;
     private BounceInterpolator interpolator = new BounceInterpolator();
+    private ArchivedPullForegroundDrawable archivedChatsDrawable;
 
     private TLRPC.User user;
     private TLRPC.Chat chat;
@@ -238,6 +241,7 @@ public class DialogCell extends BaseCell {
         messageId = 0;
         update(0);
         checkOnline();
+        if (currentDialogFolderId != 0 && archivedChatsDrawable != null) archivedChatsDrawable.setDialogCell(this);
     }
 
     public void setDialogIndex(int i) {
@@ -1640,6 +1644,11 @@ public class DialogCell extends BaseCell {
             return;
         }
 
+        if (currentDialogFolderId != 0 && archivedChatsDrawable != null && archivedChatsDrawable.outProgress == 0f && translationX == 0) {
+            archivedChatsDrawable.draw(canvas);
+            return;
+        }
+
         boolean needInvalidate = false;
 
         long newTime = SystemClock.uptimeMillis();
@@ -1955,7 +1964,14 @@ public class DialogCell extends BaseCell {
             float scale = 1.0f + interpolator.getInterpolation(animatingArchiveAvatarProgress / 170.0f);
             canvas.scale(scale, scale, avatarImage.getCenterX(), avatarImage.getCenterY());
         }
-        avatarImage.draw(canvas);
+
+
+        if(currentDialogFolderId != 0){
+            if(archivedChatsDrawable == null || !archivedChatsDrawable.isDraw()) avatarImage.draw(canvas);
+        } else {
+            avatarImage.draw(canvas);
+        }
+
         if (animatingArchiveAvatar) {
             canvas.restore();
         }
@@ -1997,6 +2013,9 @@ public class DialogCell extends BaseCell {
 
         if (translationX != 0) {
             canvas.restore();
+        }
+        if (currentDialogFolderId != 0 && translationX == 0 && archivedChatsDrawable != null) {
+            archivedChatsDrawable.draw(canvas);
         }
 
         if (useSeparator) {
@@ -2045,23 +2064,23 @@ public class DialogCell extends BaseCell {
 
         if (archiveHidden) {
             if (archiveBackgroundProgress > 0.0f) {
-                archiveBackgroundProgress -= dt / 170.0f;
-                if (currentRevealBounceProgress < 0.0f) {
-                    currentRevealBounceProgress = 0.0f;
+                archiveBackgroundProgress -= dt / 230.0f;
+                if (archiveBackgroundProgress < 0.0f) {
+                    archiveBackgroundProgress = 0.0f;
                 }
                 if (avatarDrawable.getAvatarType() == AvatarDrawable.AVATAR_TYPE_ARCHIVED) {
-                    avatarDrawable.setArchivedAvatarHiddenProgress(archiveBackgroundProgress);
+                    avatarDrawable.setArchivedAvatarHiddenProgress(CubicBezierInterpolator.EASE_OUT_QUINT.getInterpolation(archiveBackgroundProgress));
                 }
                 needInvalidate = true;
             }
         } else {
             if (archiveBackgroundProgress < 1.0f) {
-                archiveBackgroundProgress += dt / 170.0f;
-                if (currentRevealBounceProgress > 1.0f) {
-                    currentRevealBounceProgress = 1.0f;
+                archiveBackgroundProgress += dt / 230.0f;
+                if (archiveBackgroundProgress > 1.0f) {
+                    archiveBackgroundProgress = 1.0f;
                 }
                 if (avatarDrawable.getAvatarType() == AvatarDrawable.AVATAR_TYPE_ARCHIVED) {
-                    avatarDrawable.setArchivedAvatarHiddenProgress(archiveBackgroundProgress);
+                    avatarDrawable.setArchivedAvatarHiddenProgress(CubicBezierInterpolator.EASE_OUT_QUINT.getInterpolation(archiveBackgroundProgress));
                 }
                 needInvalidate = true;
             }
@@ -2105,6 +2124,16 @@ public class DialogCell extends BaseCell {
         }
         if (needInvalidate) {
             invalidate();
+        }
+    }
+
+    public void startOutAnimation() {
+        if(archivedChatsDrawable != null) {
+            archivedChatsDrawable.outCy = avatarImage.getCenterY();
+            archivedChatsDrawable.outCx = avatarImage.getCenterX();
+            archivedChatsDrawable.outRadius = avatarImage.getImageWidth() / 2f;
+            archivedChatsDrawable.outImageSize = avatarImage.getBitmapWidth();
+            archivedChatsDrawable.startOutAnimation();
         }
     }
 
@@ -2236,5 +2265,9 @@ public class DialogCell extends BaseCell {
 
     public void setBottomClip(int value) {
         bottomClip = value;
+    }
+
+    public void setArchivedPullAnimation(ArchivedPullForegroundDrawable archivedPullForegroundDrawable) {
+        this.archivedChatsDrawable = archivedPullForegroundDrawable;
     }
 }
