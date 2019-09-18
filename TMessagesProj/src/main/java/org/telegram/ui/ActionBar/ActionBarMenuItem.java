@@ -470,9 +470,9 @@ public class ActionBarMenuItem extends FrameLayout {
         if (searchContainer == null) {
             return false;
         }
-        if(listener != null){
+        if (listener != null) {
             Animator animator = listener.getCustomToggleTransition();
-            if(animator != null) {
+            if (animator != null) {
                 searchField.setText("");
                 animator.start();
                 return true;
@@ -953,8 +953,8 @@ public class ActionBarMenuItem extends FrameLayout {
         }
     }
 
-    public void requestFocusOnSearchView(){
-        if(searchContainer.getWidth()!= 0 && !searchField.isFocused()){
+    public void requestFocusOnSearchView() {
+        if (searchContainer.getWidth() != 0 && !searchField.isFocused()) {
             searchField.requestFocus();
             AndroidUtilities.showKeyboard(searchField);
         }

@@ -294,7 +294,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
             @Override
             public Animator getCustomToggleTransition() {
                 searchMode = !searchMode;
-                if(searchMode) {
+                if (searchMode) {
                     searchAdapter.loadFaqWebPage();
                     fragmentView.setTag(Theme.key_windowBackgroundWhite);
                 } else {
