@@ -3502,11 +3502,10 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                     profileCell.applyBackground(true);
                 }
             }
-        };
 
-        ThemeDescription.ThemeDescriptionDelegate archivePullDrawableDelegate = () -> {
             if(archivedPullForegroundDrawable != null) archivedPullForegroundDrawable.updateColors();
         };
+
         ArrayList<ThemeDescription> arrayList = new ArrayList<>();
 
         arrayList.add(new ThemeDescription(fragmentView, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_windowBackgroundWhite));
@@ -3789,8 +3788,8 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         arrayList.add(new ThemeDescription(null, 0, null, null, null, null, Theme.key_player_placeholderBackground));
         arrayList.add(new ThemeDescription(null, 0, null, null, null, null, Theme.key_player_button));
         arrayList.add(new ThemeDescription(null, 0, null, null, null, null, Theme.key_player_buttonActive));
-        arrayList.add(new ThemeDescription(null, 0, null, null, null, archivePullDrawableDelegate, Theme.key_archivePullDownBackground));
-        arrayList.add(new ThemeDescription(null, 0, null, null, null, archivePullDrawableDelegate, Theme.key_archivePullDownBackgroundActive));
+        arrayList.add(new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_archivePullDownBackground));
+        arrayList.add(new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_archivePullDownBackgroundActive));
 
         return arrayList.toArray(new ThemeDescription[0]);
     }
