@@ -601,7 +601,7 @@ public class ActionBar extends FrameLayout {
         return actionMode != null && actionModeVisible;
     }
 
-    protected void onSearchFieldVisibilityChanged(boolean visible) {
+    public void onSearchFieldVisibilityChanged(boolean visible) {
         isSearchFieldVisible = visible;
         if (titleTextView != null) {
             titleTextView.setVisibility(visible ? INVISIBLE : VISIBLE);
