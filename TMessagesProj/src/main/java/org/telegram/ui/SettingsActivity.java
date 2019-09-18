@@ -13,6 +13,7 @@ import android.animation.AnimatorListenerAdapter;
 import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
 import android.animation.StateListAnimator;
+import android.animation.ValueAnimator;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
@@ -28,10 +29,6 @@ import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
-import androidx.core.content.FileProvider;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
-
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.TextUtils;
@@ -42,8 +39,10 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewOutlineProvider;
 import android.view.ViewTreeObserver;
+import android.view.WindowManager;
 import android.view.animation.AccelerateInterpolator;
 import android.view.animation.DecelerateInterpolator;
+import android.view.animation.Interpolator;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
@@ -51,34 +50,45 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import org.telegram.messenger.AndroidUtilities;
+import androidx.annotation.NonNull;
+import androidx.core.content.FileProvider;
+import androidx.core.graphics.ColorUtils;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
 import org.telegram.PhoneFormat.PhoneFormat;
+import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.BuildConfig;
+import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.ContactsController;
-import org.telegram.messenger.MediaDataController;
+import org.telegram.messenger.FileLoader;
+import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ImageLoader;
 import org.telegram.messenger.ImageLocation;
-import org.telegram.messenger.NotificationsController;
-import org.telegram.messenger.SharedConfig;
-import org.telegram.messenger.UserObject;
-import org.telegram.messenger.ApplicationLoader;
-import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.FileLoader;
+import org.telegram.messenger.MediaDataController;
+import org.telegram.messenger.MessageObject;
+import org.telegram.messenger.MessagesController;
+import org.telegram.messenger.MessagesStorage;
+import org.telegram.messenger.NotificationCenter;
+import org.telegram.messenger.NotificationsController;
+import org.telegram.messenger.R;
+import org.telegram.messenger.SharedConfig;
+import org.telegram.messenger.UserConfig;
+import org.telegram.messenger.UserObject;
 import org.telegram.messenger.Utilities;
 import org.telegram.messenger.browser.Browser;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.SerializedData;
 import org.telegram.tgnet.TLRPC;
-import org.telegram.messenger.FileLog;
-import org.telegram.messenger.MessagesController;
-import org.telegram.messenger.MessagesStorage;
-import org.telegram.messenger.NotificationCenter;
-import org.telegram.messenger.R;
-import org.telegram.messenger.UserConfig;
-import org.telegram.messenger.MessageObject;
+import org.telegram.ui.ActionBar.ActionBar;
+import org.telegram.ui.ActionBar.ActionBarMenu;
+import org.telegram.ui.ActionBar.ActionBarMenuItem;
 import org.telegram.ui.ActionBar.AlertDialog;
+import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.BottomSheet;
+import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ActionBar.ThemeDescription;
 import org.telegram.ui.Cells.EmptyCell;
 import org.telegram.ui.Cells.GraySectionCell;
@@ -88,18 +98,13 @@ import org.telegram.ui.Cells.ShadowSectionCell;
 import org.telegram.ui.Cells.TextCell;
 import org.telegram.ui.Cells.TextDetailCell;
 import org.telegram.ui.Cells.TextInfoPrivacyCell;
-import org.telegram.ui.ActionBar.ActionBar;
-import org.telegram.ui.ActionBar.ActionBarMenu;
-import org.telegram.ui.ActionBar.ActionBarMenuItem;
 import org.telegram.ui.Components.AlertsCreator;
 import org.telegram.ui.Components.AvatarDrawable;
+import org.telegram.ui.Components.BackupImageView;
+import org.telegram.ui.Components.CombinedDrawable;
 import org.telegram.ui.Components.EmptyTextProgressView;
 import org.telegram.ui.Components.ImageUpdater;
-import org.telegram.ui.Components.BackupImageView;
-import org.telegram.ui.ActionBar.BaseFragment;
-import org.telegram.ui.Components.CombinedDrawable;
 import org.telegram.ui.Components.LayoutHelper;
-import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.RadialProgressView;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.voip.VoIPHelper;
@@ -122,6 +127,7 @@ import java.util.zip.ZipOutputStream;
 public class SettingsActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate, ImageUpdater.ImageUpdaterDelegate {
 
     private RecyclerListView listView;
+    private RecyclerListView searchListView;
     private ListAdapter listAdapter;
     private SearchAdapter searchAdapter;
     private LinearLayoutManager layoutManager;
@@ -140,6 +146,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
     private AvatarDrawable avatarDrawable;
     private ActionBarMenuItem otherItem;
     private EmptyTextProgressView emptyView;
+    private ActionBarMenuItem searchItem;
 
     private TLRPC.FileLocation avatar;
     private TLRPC.FileLocation avatarBig;
@@ -147,6 +154,10 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
     private TLRPC.UserFull userInfo;
 
     private int extraHeight;
+    private int searchTransitionOffset;
+    private float searchTransitionProgress;
+    private Animator searchViewTransition;
+    private boolean searchMode;
 
     private int overscrollRow;
     private int numberSectionRow;
@@ -168,6 +179,8 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
     private final static int logout = 2;
     private final static int search_button = 3;
 
+    private final Interpolator transitionInterpolator = new DecelerateInterpolator();
+
     private PhotoViewer.PhotoViewerProvider provider = new PhotoViewer.EmptyPhotoViewerProvider() {
 
         @Override
@@ -176,7 +189,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                 return null;
             }
             TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(UserConfig.getInstance(currentAccount).getClientUserId());
-            if (user != null && user.photo != null && user.photo.photo_big != null) {
+            if (user != null && user.photo != null && user.photo.photo_big != null && avatarContainer.getVisibility() == View.VISIBLE) {
                 TLRPC.FileLocation photoBig = user.photo.photo_big;
                 if (photoBig.local_id == fileLocation.local_id && photoBig.volume_id == fileLocation.volume_id && photoBig.dc_id == fileLocation.dc_id) {
                     int[] coords = new int[2];
@@ -251,6 +264,9 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
 
     @Override
     public View createView(Context context) {
+        searchTransitionProgress = 1f;
+        searchMode = false;
+
         actionBar.setBackgroundColor(Theme.getColor(Theme.key_avatar_backgroundActionBarBlue));
         actionBar.setItemsBackgroundColor(Theme.getColor(Theme.key_avatar_actionBarSelectorBlue), false);
         actionBar.setItemsColor(Theme.getColor(Theme.key_avatar_actionBarIconBlue), false);
@@ -264,7 +280,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
             @Override
             public void onItemClick(int id) {
                 if (id == -1) {
-                    finishFragment();
+                    if (onBackPressed()) finishFragment();
                 } else if (id == edit_name) {
                     presentFragment(new ChangeNameActivity());
                 } else if (id == logout) {
@@ -273,41 +289,19 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
             }
         });
         ActionBarMenu menu = actionBar.createMenu();
-        ActionBarMenuItem searchItem = menu.addItem(search_button, R.drawable.ic_ab_search).setIsSearchField(true).setActionBarMenuItemSearchListener(new ActionBarMenuItem.ActionBarMenuItemSearchListener() {
-            @Override
-            public void onSearchExpand() {
-                if (otherItem != null) {
-                    otherItem.setVisibility(View.GONE);
-                }
-                searchAdapter.loadFaqWebPage();
-                listView.setAdapter(searchAdapter);
-                listView.setEmptyView(emptyView);
-                avatarContainer.setVisibility(View.GONE);
-                writeButton.setVisibility(View.GONE);
-                nameTextView.setVisibility(View.GONE);
-                onlineTextView.setVisibility(View.GONE);
-                extraHeightView.setVisibility(View.GONE);
-                fragmentView.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
-                fragmentView.setTag(Theme.key_windowBackgroundWhite);
-                needLayout();
-            }
+        searchItem = menu.addItem(search_button, R.drawable.ic_ab_search).setIsSearchField(true).setActionBarMenuItemSearchListener(new ActionBarMenuItem.ActionBarMenuItemSearchListener() {
 
             @Override
-            public void onSearchCollapse() {
-                if (otherItem != null) {
-                    otherItem.setVisibility(View.VISIBLE);
+            public Animator getCustomToggleTransition() {
+                searchMode = !searchMode;
+                if(searchMode) {
+                    searchAdapter.loadFaqWebPage();
+                    fragmentView.setTag(Theme.key_windowBackgroundWhite);
+                } else {
+                    fragmentView.setTag(Theme.key_windowBackgroundGray);
+                    searchItem.clearFocusOnSearchView();
                 }
-                listView.setAdapter(listAdapter);
-                listView.setEmptyView(null);
-                emptyView.setVisibility(View.GONE);
-                avatarContainer.setVisibility(View.VISIBLE);
-                writeButton.setVisibility(View.VISIBLE);
-                nameTextView.setVisibility(View.VISIBLE);
-                onlineTextView.setVisibility(View.VISIBLE);
-                extraHeightView.setVisibility(View.VISIBLE);
-                fragmentView.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundGray));
-                fragmentView.setTag(Theme.key_windowBackgroundGray);
-                needLayout();
+                return searchExpandTransition(searchMode);
             }
 
             @Override
@@ -361,61 +355,26 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         listView.setItemAnimator(null);
         listView.setLayoutAnimation(null);
         listView.setOnItemClickListener((view, position) -> {
-            if (listView.getAdapter() == listAdapter) {
-                if (position == notificationRow) {
-                    presentFragment(new NotificationsSettingsActivity());
-                } else if (position == privacyRow) {
-                    presentFragment(new PrivacySettingsActivity());
-                } else if (position == dataRow) {
-                    presentFragment(new DataSettingsActivity());
-                } else if (position == chatRow) {
-                    presentFragment(new ThemeActivity(ThemeActivity.THEME_TYPE_BASIC));
-                } else if (position == helpRow) {
-                    showHelpAlert();
-                } else if (position == languageRow) {
-                    presentFragment(new LanguageSelectActivity());
-                } else if (position == usernameRow) {
-                    presentFragment(new ChangeUsernameActivity());
-                } else if (position == bioRow) {
-                    if (userInfo != null) {
-                        presentFragment(new ChangeBioActivity());
-                    }
-                } else if (position == numberRow) {
-                    presentFragment(new ActionIntroActivity(ActionIntroActivity.ACTION_TYPE_CHANGE_PHONE_NUMBER));
+            if (position == notificationRow) {
+                presentFragment(new NotificationsSettingsActivity());
+            } else if (position == privacyRow) {
+                presentFragment(new PrivacySettingsActivity());
+            } else if (position == dataRow) {
+                presentFragment(new DataSettingsActivity());
+            } else if (position == chatRow) {
+                presentFragment(new ThemeActivity(ThemeActivity.THEME_TYPE_BASIC));
+            } else if (position == helpRow) {
+                showHelpAlert();
+            } else if (position == languageRow) {
+                presentFragment(new LanguageSelectActivity());
+            } else if (position == usernameRow) {
+                presentFragment(new ChangeUsernameActivity());
+            } else if (position == bioRow) {
+                if (userInfo != null) {
+                    presentFragment(new ChangeBioActivity());
                 }
-            } else {
-                if (position < 0) {
-                    return;
-                }
-                Object object = numberRow;
-                if (searchAdapter.searchWas) {
-                    if (position < searchAdapter.searchResults.size()) {
-                        object = searchAdapter.searchResults.get(position);
-                    } else {
-                        position -= searchAdapter.searchResults.size() + 1;
-                        if (position >= 0 && position < searchAdapter.faqSearchResults.size()) {
-                            object = searchAdapter.faqSearchResults.get(position);
-                        }
-                    }
-                } else {
-                    position--;
-                    if (position < 0) {
-                        return;
-                    }
-                    if (position < searchAdapter.recentSearches.size()) {
-                        object = searchAdapter.recentSearches.get(position);
-                    }
-                }
-                if (object instanceof SearchAdapter.SearchResult) {
-                    SearchAdapter.SearchResult result = (SearchAdapter.SearchResult) object;
-                    result.open();
-                } else if (object instanceof SearchAdapter.FaqSearchResult) {
-                    SearchAdapter.FaqSearchResult result = (SearchAdapter.FaqSearchResult) object;
-                    NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.openArticle, searchAdapter.faqWebPage, result.url);
-                }
-                if (object != null) {
-                    searchAdapter.addRecent(object);
-                }
+            } else if (position == numberRow) {
+                presentFragment(new ActionIntroActivity(ActionIntroActivity.ACTION_TYPE_CHANGE_PHONE_NUMBER));
             }
         });
 
@@ -425,15 +384,6 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
 
             @Override
             public boolean onItemClick(View view, int position) {
-                if (listView.getAdapter() == searchAdapter) {
-                    AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-                    builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
-                    builder.setMessage(LocaleController.getString("ClearSearch", R.string.ClearSearch));
-                    builder.setPositiveButton(LocaleController.getString("ClearButton", R.string.ClearButton).toUpperCase(), (dialogInterface, i) -> searchAdapter.clearRecent());
-                    builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
-                    showDialog(builder.create());
-                    return true;
-                }
                 if (position == versionRow) {
                     pressCount++;
                     if (pressCount >= 2 || BuildVars.DEBUG_PRIVATE_VERSION) {
@@ -499,6 +449,63 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                 return false;
             }
         });
+
+
+        searchListView = new RecyclerListView(context);
+        searchListView.setVerticalScrollBarEnabled(false);
+        searchListView.setLayoutManager(new LinearLayoutManager(context, LinearLayoutManager.VERTICAL, false));
+        searchListView.setGlowColor(Theme.getColor(Theme.key_avatar_backgroundActionBarBlue));
+        frameLayout.addView(searchListView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT));
+        searchListView.setAdapter(searchAdapter);
+        searchListView.setItemAnimator(null);
+        searchListView.setLayoutAnimation(null);
+        searchListView.setOnItemClickListener((view, position) -> {
+            if (position < 0) {
+                return;
+            }
+            Object object = numberRow;
+            if (searchAdapter.searchWas) {
+                if (position < searchAdapter.searchResults.size()) {
+                    object = searchAdapter.searchResults.get(position);
+                } else {
+                    position -= searchAdapter.searchResults.size() + 1;
+                    if (position >= 0 && position < searchAdapter.faqSearchResults.size()) {
+                        object = searchAdapter.faqSearchResults.get(position);
+                    }
+                }
+            } else {
+                position--;
+                if (position < 0) {
+                    return;
+                }
+                if (position < searchAdapter.recentSearches.size()) {
+                    object = searchAdapter.recentSearches.get(position);
+                }
+            }
+            if (object instanceof SearchAdapter.SearchResult) {
+                SearchAdapter.SearchResult result = (SearchAdapter.SearchResult) object;
+                result.open();
+            } else if (object instanceof SearchAdapter.FaqSearchResult) {
+                SearchAdapter.FaqSearchResult result = (SearchAdapter.FaqSearchResult) object;
+                NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.openArticle, searchAdapter.faqWebPage, result.url);
+            }
+            if (object != null) {
+                searchAdapter.addRecent(object);
+            }
+
+        });
+        searchListView.setOnItemLongClickListener((view, position) -> {
+            if (searchAdapter.isSearchWas()) return false;
+            AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+            builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
+            builder.setMessage(LocaleController.getString("ClearSearch", R.string.ClearSearch));
+            builder.setPositiveButton(LocaleController.getString("ClearButton", R.string.ClearButton).toUpperCase(), (dialogInterface, i) -> searchAdapter.clearRecent());
+            builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+            showDialog(builder.create());
+            return true;
+
+        });
+        searchListView.setVisibility(View.GONE);
 
         emptyView = new EmptyTextProgressView(context);
         emptyView.showTextView();
@@ -641,17 +648,16 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
 
         needLayout();
 
-        listView.setOnScrollListener(new RecyclerView.OnScrollListener() {
-
+        searchListView.setOnScrollListener(new RecyclerView.OnScrollListener() {
             @Override
-            public void onScrollStateChanged(RecyclerView recyclerView, int newState) {
+            public void onScrollStateChanged(@NonNull RecyclerView recyclerView, int newState) {
                 if (newState == RecyclerView.SCROLL_STATE_DRAGGING) {
-                    if (listView.getAdapter() == searchAdapter) {
-                        AndroidUtilities.hideKeyboard(getParentActivity().getCurrentFocus());
-                    }
+                    AndroidUtilities.hideKeyboard(getParentActivity().getCurrentFocus());
                 }
             }
+        });
 
+        listView.setOnScrollListener(new RecyclerView.OnScrollListener() {
             @Override
             public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
                 if (layoutManager.getItemCount() == 0) {
@@ -659,7 +665,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                 }
                 int height = 0;
                 View child = recyclerView.getChildAt(0);
-                if (child != null && avatarContainer.getVisibility() == View.VISIBLE) {
+                if (child != null) {
                     if (layoutManager.findFirstVisibleItemPosition() == 0) {
                         height = AndroidUtilities.dp(88) + (child.getTop() < 0 ? child.getTop() : 0);
                     }
@@ -672,6 +678,138 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         });
 
         return fragmentView;
+    }
+
+    private Animator searchExpandTransition(boolean enter) {
+        if (enter)
+            getParentActivity().getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_PAN);
+        if (searchViewTransition != null) {
+            searchViewTransition.removeAllListeners();
+            searchViewTransition.cancel();
+        }
+        ValueAnimator valueAnimator = ValueAnimator.ofFloat(searchTransitionProgress, enter ? 0f : 1f);
+        int offset = extraHeight;
+        searchListView.setTranslationY(offset);
+        searchListView.setVisibility(View.VISIBLE);
+        searchItem.setVisibility(View.VISIBLE);
+
+        listView.setVisibility(View.VISIBLE);
+
+        needLayout();
+
+        avatarContainer.setVisibility(View.VISIBLE);
+        nameTextView.setVisibility(View.VISIBLE);
+        onlineTextView.setVisibility(View.VISIBLE);
+        extraHeightView.setVisibility(View.VISIBLE);
+
+        actionBar.onSearchFieldVisibilityChanged(searchTransitionProgress > 0.5f);
+        if (otherItem != null)
+            otherItem.setVisibility(searchTransitionProgress > 0.5f ? View.VISIBLE : View.GONE);
+        searchItem.setVisibility(searchTransitionProgress > 0.5f ? View.VISIBLE : View.GONE);
+
+        searchItem.getSearchContainer().setVisibility(searchTransitionProgress > 0.5f ? View.GONE : View.VISIBLE);
+        searchListView.setEmptyView(emptyView);
+        avatarContainer.setClickable(false);
+
+        valueAnimator.addUpdateListener(animation -> {
+            searchTransitionProgress = (float) valueAnimator.getAnimatedValue();
+            float progressHalf = (searchTransitionProgress - 0.5f) / 0.5f;
+            float progressHalfEnd = (0.5f - searchTransitionProgress) / 0.5f;
+            if (progressHalf < 0) progressHalf = 0f;
+            if (progressHalfEnd < 0) progressHalfEnd = 0f;
+
+            searchTransitionOffset = (int) (-offset * (1f - searchTransitionProgress));
+            searchListView.setTranslationY(offset * searchTransitionProgress);
+            emptyView.setTranslationY(offset * searchTransitionProgress);
+            listView.setTranslationY(-offset * (1f - searchTransitionProgress));
+            needLayout();
+
+            listView.setAlpha(progressHalf);
+            searchListView.setAlpha(1f - progressHalf);
+            emptyView.setAlpha(1f - progressHalf);
+
+            avatarContainer.setAlpha(progressHalf);
+            nameTextView.setAlpha(progressHalf);
+            onlineTextView.setAlpha(progressHalf);
+
+
+            searchItem.getSearchField().setAlpha(progressHalfEnd);
+            if (enter && searchTransitionProgress < 0.5f) {
+                searchItem.requestFocusOnSearchView();
+            }
+
+            searchItem.getSearchContainer().setVisibility(searchTransitionProgress < 0.5f ? View.VISIBLE : View.GONE);
+            if (otherItem != null)
+                otherItem.setVisibility(searchTransitionProgress > 0.5f ? View.VISIBLE : View.GONE);
+            searchItem.setVisibility(searchTransitionProgress > 0.5f ? View.VISIBLE : View.GONE);
+
+            actionBar.onSearchFieldVisibilityChanged(searchTransitionProgress < 0.5f);
+
+            if (otherItem != null) otherItem.setAlpha(progressHalf);
+            searchItem.setAlpha(progressHalf);
+
+
+            fragmentView.setBackgroundColor(ColorUtils.blendARGB(
+                    Theme.getColor(Theme.key_windowBackgroundWhite),
+                    Theme.getColor(Theme.key_windowBackgroundGray),
+                    progressHalf));
+
+
+        });
+
+        valueAnimator.addListener(new AnimatorListenerAdapter() {
+            @Override
+            public void onAnimationEnd(Animator animation) {
+                updateSearchViewState(enter);
+                avatarContainer.setClickable(true);
+                if (enter) searchItem.requestFocusOnSearchView();
+                needLayout();
+            }
+        });
+
+        valueAnimator.setDuration(180);
+        valueAnimator.setInterpolator(transitionInterpolator);
+        searchViewTransition = valueAnimator;
+        return valueAnimator;
+    }
+
+    private void updateSearchViewState(boolean enter) {
+        searchTransitionOffset = 0;
+        int hide = enter ? View.GONE : View.VISIBLE;
+        listView.setVisibility(hide);
+        searchListView.setVisibility(enter ? View.VISIBLE : View.GONE);
+        searchItem.getSearchContainer().setVisibility(enter ? View.VISIBLE : View.GONE);
+
+        actionBar.onSearchFieldVisibilityChanged(enter);
+
+        avatarContainer.setVisibility(hide);
+        nameTextView.setVisibility(hide);
+        onlineTextView.setVisibility(hide);
+        extraHeightView.setVisibility(hide);
+
+        if (otherItem != null) {
+            otherItem.setAlpha(1f);
+            otherItem.setVisibility(hide);
+        }
+        searchItem.setVisibility(hide);
+
+        avatarContainer.setAlpha(1f);
+        nameTextView.setAlpha(1f);
+        onlineTextView.setAlpha(1f);
+        extraHeightView.setAlpha(1f);
+        searchItem.setAlpha(1f);
+        listView.setAlpha(1f);
+        searchListView.setAlpha(1f);
+        emptyView.setAlpha(1f);
+        if (enter) {
+            searchListView.setEmptyView(emptyView);
+        } else {
+            emptyView.setVisibility(View.GONE);
+        }
+
+        fragmentView.setBackgroundColor(enter ?
+                Theme.getColor(Theme.key_windowBackgroundWhite) :
+                Theme.getColor(Theme.key_windowBackgroundGray));
     }
 
     @Override
@@ -857,6 +995,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
             if (layoutParams.topMargin != newTop) {
                 layoutParams.topMargin = newTop;
                 listView.setLayoutParams(layoutParams);
+                searchListView.setLayoutParams(layoutParams);
                 extraHeightView.setTranslationY(newTop);
             }
             layoutParams = (FrameLayout.LayoutParams) emptyView.getLayoutParams();
@@ -867,20 +1006,20 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         }
 
         if (avatarContainer != null) {
-            int currentExtraHeight;
-            if (avatarContainer.getVisibility() == View.VISIBLE) {
-                currentExtraHeight = extraHeight;
+            float diff = extraHeight / (float) AndroidUtilities.dp(88);
+
+            if (searchTransitionProgress != 1) {
+                float transitionDiff = extraHeight * searchTransitionProgress / (float) AndroidUtilities.dp(88);
+                extraHeightView.setScaleY(transitionDiff);
+                shadowView.setTranslationY(newTop + extraHeight * searchTransitionProgress);
             } else {
-                currentExtraHeight = 0;
+                extraHeightView.setScaleY(diff);
+                shadowView.setTranslationY(newTop + extraHeight);
             }
 
-            float diff = currentExtraHeight / (float) AndroidUtilities.dp(88);
-            extraHeightView.setScaleY(diff);
-            shadowView.setTranslationY(newTop + currentExtraHeight);
+            writeButton.setTranslationY((actionBar.getOccupyStatusBar() ? AndroidUtilities.statusBarHeight : 0) + ActionBar.getCurrentActionBarHeight() + extraHeight - AndroidUtilities.dp(29.5f) + searchTransitionOffset);
 
-            writeButton.setTranslationY((actionBar.getOccupyStatusBar() ? AndroidUtilities.statusBarHeight : 0) + ActionBar.getCurrentActionBarHeight() + currentExtraHeight - AndroidUtilities.dp(29.5f));
-
-            final boolean setVisible = diff > 0.2f;
+            final boolean setVisible = diff > 0.2f && !searchMode;
             boolean currentVisible = writeButton.getTag() == null;
             if (setVisible != currentVisible) {
                 if (setVisible) {
@@ -928,9 +1067,9 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
             avatarProgressView.setSize(AndroidUtilities.dp(26 / avatarContainer.getScaleX()));
             avatarProgressView.setStrokeWidth(3 / avatarContainer.getScaleX());
             float avatarY = (actionBar.getOccupyStatusBar() ? AndroidUtilities.statusBarHeight : 0) + ActionBar.getCurrentActionBarHeight() / 2.0f * (1.0f + diff) - 21 * AndroidUtilities.density + 27 * AndroidUtilities.density * diff;
-            avatarContainer.setTranslationY((float) Math.ceil(avatarY));
-            nameTextView.setTranslationY((float) Math.floor(avatarY) - (float) Math.ceil(AndroidUtilities.density) + (float) Math.floor(7 * AndroidUtilities.density * diff));
-            onlineTextView.setTranslationY((float) Math.floor(avatarY) + AndroidUtilities.dp(22) + (float) Math.floor(11 * AndroidUtilities.density) * diff);
+            avatarContainer.setTranslationY((float) Math.ceil(avatarY) + searchTransitionOffset);
+            nameTextView.setTranslationY((float) Math.floor(avatarY) - (float) Math.ceil(AndroidUtilities.density) + (float) Math.floor(7 * AndroidUtilities.density * diff) + searchTransitionOffset);
+            onlineTextView.setTranslationY((float) Math.floor(avatarY) + AndroidUtilities.dp(22) + (float) Math.floor(11 * AndroidUtilities.density) * diff + searchTransitionOffset);
             nameTextView.setScaleX(1.0f + 0.12f * diff);
             nameTextView.setScaleY(1.0f + 0.12f * diff);
 
@@ -1772,6 +1911,10 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                 });
             }, 300);
         }
+
+        public boolean isSearchWas() {
+            return searchWas;
+        }
     }
 
     private class ListAdapter extends RecyclerListView.SelectionAdapter {
@@ -1954,6 +2097,16 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
     }
 
     @Override
+    public boolean onBackPressed() {
+        if (searchViewTransition != null && searchViewTransition.isStarted()) {
+            searchViewTransition.removeAllListeners();
+            searchViewTransition.cancel();
+            return true;
+        }
+        return super.onBackPressed();
+    }
+
+    @Override
     public ThemeDescription[] getThemeDescriptions() {
         return new ThemeDescription[]{
                 new ThemeDescription(listView, ThemeDescription.FLAG_CELLBACKGROUNDCOLOR, new Class[]{EmptyCell.class, HeaderCell.class, TextDetailCell.class, TextCell.class}, null, null, null, Theme.key_windowBackgroundWhite),
@@ -1962,6 +2115,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
 
                 new ThemeDescription(actionBar, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_avatar_backgroundActionBarBlue),
                 new ThemeDescription(listView, ThemeDescription.FLAG_LISTGLOWCOLOR, null, null, null, null, Theme.key_avatar_backgroundActionBarBlue),
+                new ThemeDescription(searchListView, ThemeDescription.FLAG_LISTGLOWCOLOR, null, null, null, null, Theme.key_avatar_backgroundActionBarBlue),
                 new ThemeDescription(extraHeightView, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_avatar_backgroundActionBarBlue),
                 new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_ITEMSCOLOR, null, null, null, null, Theme.key_avatar_actionBarIconBlue),
                 new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_TITLECOLOR, null, null, null, null, Theme.key_actionBarDefaultTitle),
@@ -1989,7 +2143,21 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
 
                 new ThemeDescription(listView, ThemeDescription.FLAG_BACKGROUNDFILTER, new Class[]{TextInfoPrivacyCell.class}, null, null, null, Theme.key_windowBackgroundGrayShadow),
                 new ThemeDescription(listView, 0, new Class[]{TextInfoPrivacyCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteGrayText3),
+                new ThemeDescription(searchListView, ThemeDescription.FLAG_SELECTOR, null, null, null, null, Theme.key_listSelector),
 
+                new ThemeDescription(searchListView, 0, new Class[]{View.class}, Theme.dividerPaint, null, null, Theme.key_divider),
+                new ThemeDescription(searchListView, ThemeDescription.FLAG_BACKGROUNDFILTER, new Class[]{ShadowSectionCell.class}, null, null, null, Theme.key_windowBackgroundGrayShadow),
+
+                new ThemeDescription(searchListView, 0, new Class[]{TextCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlackText),
+                new ThemeDescription(searchListView, 0, new Class[]{TextCell.class}, new String[]{"valueTextView"}, null, null, null, Theme.key_windowBackgroundWhiteValueText),
+                new ThemeDescription(searchListView, 0, new Class[]{TextCell.class}, new String[]{"imageView"}, null, null, null, Theme.key_windowBackgroundWhiteGrayIcon),
+                new ThemeDescription(searchListView, 0, new Class[]{HeaderCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlueHeader),
+
+                new ThemeDescription(searchListView, 0, new Class[]{TextDetailCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlackText),
+                new ThemeDescription(searchListView, 0, new Class[]{TextDetailCell.class}, new String[]{"valueTextView"}, null, null, null, Theme.key_windowBackgroundWhiteGrayText2),
+
+                new ThemeDescription(searchListView, ThemeDescription.FLAG_BACKGROUNDFILTER, new Class[]{TextInfoPrivacyCell.class}, null, null, null, Theme.key_windowBackgroundGrayShadow),
+                new ThemeDescription(searchListView, 0, new Class[]{TextInfoPrivacyCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteGrayText3),
                 new ThemeDescription(avatarImage, 0, null, null, new Drawable[]{Theme.avatar_savedDrawable}, null, Theme.key_avatar_text),
                 new ThemeDescription(avatarImage, 0, null, null, new Drawable[]{avatarDrawable}, null, Theme.key_avatar_backgroundInProfileBlue),
 
@@ -2003,6 +2171,12 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                 new ThemeDescription(listView, 0, new Class[]{SettingsSearchCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlackText),
                 new ThemeDescription(listView, 0, new Class[]{SettingsSearchCell.class}, new String[]{"valueTextView"}, null, null, null, Theme.key_windowBackgroundWhiteGrayText2),
                 new ThemeDescription(listView, 0, new Class[]{SettingsSearchCell.class}, new String[]{"imageView"}, null, null, null, Theme.key_windowBackgroundWhiteGrayIcon),
+                new ThemeDescription(searchListView, 0, new Class[]{GraySectionCell.class}, new String[]{"textView"}, null, null, null, Theme.key_graySectionText),
+                new ThemeDescription(searchListView, ThemeDescription.FLAG_CELLBACKGROUNDCOLOR, new Class[]{GraySectionCell.class}, null, null, null, Theme.key_graySection),
+
+                new ThemeDescription(searchListView, 0, new Class[]{SettingsSearchCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlackText),
+                new ThemeDescription(searchListView, 0, new Class[]{SettingsSearchCell.class}, new String[]{"valueTextView"}, null, null, null, Theme.key_windowBackgroundWhiteGrayText2),
+                new ThemeDescription(searchListView, 0, new Class[]{SettingsSearchCell.class}, new String[]{"imageView"}, null, null, null, Theme.key_windowBackgroundWhiteGrayIcon),
         };
     }
 }

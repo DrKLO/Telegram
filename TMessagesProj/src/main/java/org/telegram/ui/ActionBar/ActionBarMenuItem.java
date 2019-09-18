@@ -8,6 +8,7 @@
 
 package org.telegram.ui.ActionBar;
 
+import android.animation.Animator;
 import android.content.Context;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
@@ -67,6 +68,10 @@ public class ActionBarMenuItem extends FrameLayout {
 
         public boolean forceShowClear() {
             return false;
+        }
+
+        public Animator getCustomToggleTransition() {
+            return null;
         }
     }
 
@@ -464,6 +469,14 @@ public class ActionBarMenuItem extends FrameLayout {
     public boolean toggleSearch(boolean openKeyboard) {
         if (searchContainer == null) {
             return false;
+        }
+        if(listener != null){
+            Animator animator = listener.getCustomToggleTransition();
+            if(animator != null) {
+                searchField.setText("");
+                animator.start();
+                return true;
+            }
         }
         if (searchContainer.getVisibility() == VISIBLE) {
             if (listener == null || listener != null && listener.canCollapseSearch()) {
@@ -938,6 +951,22 @@ public class ActionBarMenuItem extends FrameLayout {
         if (view != null && view.getVisibility() != VISIBLE) {
             view.setVisibility(VISIBLE);
         }
+    }
+
+    public void requestFocusOnSearchView(){
+        if(searchContainer.getWidth()!= 0 && !searchField.isFocused()){
+            searchField.requestFocus();
+            AndroidUtilities.showKeyboard(searchField);
+        }
+    }
+
+    public void clearFocusOnSearchView() {
+        searchField.clearFocus();
+        AndroidUtilities.hideKeyboard(searchField);
+    }
+
+    public FrameLayout getSearchContainer() {
+        return searchContainer;
     }
 
     @Override
