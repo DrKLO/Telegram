@@ -227,6 +227,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     private int leaveChannelRow;
     private int joinRow;
     private int lastSectionRow;
+    private int bottomPaddingRow;
 
     private PhotoViewer.PhotoViewerProvider provider = new PhotoViewer.EmptyPhotoViewerProvider() {
 
@@ -305,6 +306,39 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             canvas.drawRect(0, 0, getMeasuredWidth(), height + extraHeight, paint);
             if (parentLayout != null) {
                 parentLayout.drawHeaderShadow(canvas, height + extraHeight);
+            }
+        }
+    }
+
+    private class BottomPaddingView extends View {
+
+        public BottomPaddingView(Context context) {
+            super(context);
+        }
+
+        int lastPaddingHeight = 0;
+        int lastListViewHeight = 0;
+
+        @Override
+        protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+            if (lastListViewHeight != listView.getMeasuredHeight()) lastPaddingHeight = 0;
+            lastListViewHeight = listView.getMeasuredHeight();
+            int n = listView.getChildCount();
+
+            if (n == listAdapter.getItemCount()) {
+                int totalHeight = 0;
+                for (int i = 0; i < n; i++) {
+                    View view = listView.getChildAt(i);
+                    if (listView.getChildAdapterPosition(view) != bottomPaddingRow)
+                        totalHeight += listView.getChildAt(i).getMeasuredHeight();
+                }
+                int paddingHeight = fragmentView.getMeasuredHeight() - ActionBar.getCurrentActionBarHeight() - AndroidUtilities.statusBarHeight - totalHeight;
+
+                if (paddingHeight > AndroidUtilities.dp(88)) paddingHeight = 0;
+                if (paddingHeight <= 0) paddingHeight = 0;
+                setMeasuredDimension(listView.getMeasuredWidth(), lastPaddingHeight = paddingHeight);
+            } else {
+                setMeasuredDimension(listView.getMeasuredWidth(), lastPaddingHeight);
             }
         }
     }
@@ -2717,6 +2751,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 addMemberRow = rowCount++;
             }
         }
+
+        bottomPaddingRow = rowCount++;
     }
 
     private Drawable getScamDrawable() {
@@ -3159,6 +3195,10 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 }
                 case 11: {
                     view = new EmptyCell(mContext, 36);
+                    break;
+                }
+                case 12: {
+                    view = new BottomPaddingView(mContext);
                 }
             }
             view.setLayoutParams(new RecyclerView.LayoutParams(RecyclerView.LayoutParams.MATCH_PARENT, RecyclerView.LayoutParams.WRAP_CONTENT));
@@ -3426,7 +3466,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         @Override
         public boolean isEnabled(RecyclerView.ViewHolder holder) {
             int type = holder.getItemViewType();
-            return type != 1 && type != 5 && type != 7 && type != 9 && type != 10 && type != 11;
+            return type != 1 && type != 5 && type != 7 && type != 9 && type != 10 && type != 11 && type != 12;
         }
 
         @Override
@@ -3457,6 +3497,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 return 8;
             } else if (i == emptyRow) {
                 return 11;
+            } else if (i == bottomPaddingRow) {
+                return 12;
             }
             return 0;
         }
