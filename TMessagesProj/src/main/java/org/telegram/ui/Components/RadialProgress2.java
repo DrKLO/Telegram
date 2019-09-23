@@ -232,6 +232,10 @@ public class RadialProgress2 {
         overrideAlpha = alpha;
     }
 
+    public float getOverrideAlpha() {
+        return overrideAlpha;
+    }
+
     public void draw(Canvas canvas) {
         if (mediaActionDrawable.getCurrentIcon() == MediaActionDrawable.ICON_NONE && mediaActionDrawable.getTransitionProgress() >= 1.0f) {
             return;

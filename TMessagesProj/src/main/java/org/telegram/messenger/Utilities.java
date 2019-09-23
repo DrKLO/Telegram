@@ -378,4 +378,12 @@ public class Utilities {
         }
         return null;
     }
+
+    public static float lerp(float a, float b, float f) {
+        return a + f * (b - a);
+    }
+
+    public static float lerp(float[] ab, float f) {
+        return lerp(ab[0], ab[1], f);
+    }
 }

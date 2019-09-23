@@ -912,29 +912,33 @@ public class ActionBar extends FrameLayout {
 
     public void setItemsColor(int color, boolean isActionMode) {
         if (isActionMode) {
-            itemsActionModeColor = color;
-            if (actionMode != null) {
-                actionMode.updateItemsColor();
-            }
-            if (backButtonImageView != null) {
-                Drawable drawable = backButtonImageView.getDrawable();
-                if (drawable instanceof BackDrawable) {
-                    ((BackDrawable) drawable).setRotatedColor(color);
+            if (itemsActionModeColor != color) {
+                itemsActionModeColor = color;
+                if (actionMode != null) {
+                    actionMode.updateItemsColor();
                 }
-            }
-        } else {
-            itemsColor = color;
-            if (backButtonImageView != null) {
-                if (itemsColor != 0) {
-                    backButtonImageView.setColorFilter(new PorterDuffColorFilter(itemsColor, PorterDuff.Mode.MULTIPLY));
+                if (backButtonImageView != null) {
                     Drawable drawable = backButtonImageView.getDrawable();
                     if (drawable instanceof BackDrawable) {
-                        ((BackDrawable) drawable).setColor(color);
+                        ((BackDrawable) drawable).setRotatedColor(color);
                     }
                 }
             }
-            if (menu != null) {
-                menu.updateItemsColor();
+        } else {
+            if (itemsColor != color) {
+                itemsColor = color;
+                if (backButtonImageView != null) {
+                    if (itemsColor != 0) {
+                        backButtonImageView.setColorFilter(new PorterDuffColorFilter(itemsColor, PorterDuff.Mode.MULTIPLY));
+                        Drawable drawable = backButtonImageView.getDrawable();
+                        if (drawable instanceof BackDrawable) {
+                            ((BackDrawable) drawable).setColor(color);
+                        }
+                    }
+                }
+                if (menu != null) {
+                    menu.updateItemsColor();
+                }
             }
         }
     }
