@@ -2324,24 +2324,13 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                         } else {
                             expandAnimator.setDuration(0);
                         }
-                        expandAnimator.addListener(new AnimatorListenerAdapter() {
-                            @Override
-                            public void onAnimationStart(Animator animation) {
-                                topView.setBackgroundColor(Theme.getColor(Theme.key_avatar_backgroundActionBarBlue));
-                                avatarImage.setVisibility(View.VISIBLE);
-                                avatarsViewPager.setVisibility(View.GONE);
-                                avatarImage.setForegroundAlpha(1f);
-                                final BackupImageView imageView = avatarsViewPager.findViewWithTag(avatarsViewPager.getCurrentItem());
-                                final Drawable drawable = imageView.getImageReceiver().getDrawable();
-                                avatarImage.setForegroundImageDrawable(drawable);
-                            }
-
-                            @Override
-                            public void onAnimationEnd(Animator animation) {
-                                expandAnimator.removeListener(this);
-                                avatarsViewPager.setCurrentItem(0);
-                            }
-                        });
+                        topView.setBackgroundColor(Theme.getColor(Theme.key_avatar_backgroundActionBarBlue));
+                        final BackupImageView imageView = avatarsViewPager.findViewWithTag(avatarsViewPager.getCurrentItem());
+                        avatarImage.setForegroundImageDrawable(imageView.getImageReceiver().getDrawable());
+                        avatarImage.setForegroundAlpha(1f);
+                        avatarImage.setVisibility(View.VISIBLE);
+                        avatarsViewPager.setVisibility(View.GONE);
+                        avatarsViewPager.setCurrentItem(0, false);
                         expandAnimator.start();
                     }
 
