@@ -25,6 +25,10 @@ import org.telegram.messenger.SecureDocument;
 public class BackupImageView extends View {
 
     private ImageReceiver imageReceiver;
+    private ImageReceiver foregroundImageReceiver;
+
+    private float foregroundAlpha;
+
     private int width = -1;
     private int height = -1;
 
@@ -45,10 +49,12 @@ public class BackupImageView extends View {
 
     private void init() {
         imageReceiver = new ImageReceiver(this);
+        foregroundImageReceiver = new ImageReceiver(this);
     }
 
     public void setOrientation(int angle, boolean center) {
         imageReceiver.setOrientation(angle, center);
+        foregroundImageReceiver.setOrientation(angle, center);
     }
 
     public void setImage(SecureDocument secureDocument, String filter) {
@@ -121,6 +127,29 @@ public class BackupImageView extends View {
         imageReceiver.setImageBitmap(drawable);
     }
 
+    public void setForegroundImage(ImageLocation imageLocation, String imageFilter, ImageLocation thumbLocation, String thumbFilter, Drawable thumb) {
+        foregroundImageReceiver.setImage(imageLocation, imageFilter, thumbLocation, thumbFilter, thumb, 0, null, null, 0);
+    }
+
+    public void setForegroundImageDrawable(Drawable drawable) {
+        foregroundImageReceiver.setImageBitmap(drawable);
+    }
+
+    public float getForegroundAlpha() {
+        return foregroundAlpha;
+    }
+
+    public void setForegroundAlpha(float foregroundAlpha) {
+        this.foregroundAlpha = foregroundAlpha;
+        invalidate();
+    }
+
+    public void clearForeground() {
+        foregroundImageReceiver.clearImage();
+        foregroundAlpha = 0f;
+        invalidate();
+    }
+
     public void setLayerNum(int value) {
         imageReceiver.setLayerNum(value);
     }
@@ -142,6 +171,10 @@ public class BackupImageView extends View {
         return imageReceiver;
     }
 
+    public ImageReceiver getForegroundImageReceiver() {
+        return foregroundImageReceiver;
+    }
+
     public void setSize(int w, int h) {
         width = w;
         height = h;
@@ -151,21 +184,45 @@ public class BackupImageView extends View {
     protected void onDetachedFromWindow() {
         super.onDetachedFromWindow();
         imageReceiver.onDetachedFromWindow();
+        foregroundImageReceiver.onDetachedFromWindow();
     }
 
     @Override
     protected void onAttachedToWindow() {
         super.onAttachedToWindow();
         imageReceiver.onAttachedToWindow();
+        foregroundImageReceiver.onAttachedToWindow();
     }
 
     @Override
     protected void onDraw(Canvas canvas) {
+        final boolean drawImage = foregroundAlpha < 1f;
+        final boolean drawForeground = foregroundAlpha > 0f;
         if (width != -1 && height != -1) {
-            imageReceiver.setImageCoords((getWidth() - width) / 2, (getHeight() - height) / 2, width, height);
+            if (drawImage) {
+                imageReceiver.setImageCoords((getWidth() - width) / 2,
+                        (getHeight() - height) / 2, width, height);
+            }
+            if (drawForeground) {
+                foregroundImageReceiver.setImageCoords((getWidth() - width) / 2,
+                        (getHeight() - height) / 2, width, height);
+            }
         } else {
-            imageReceiver.setImageCoords(0, 0, getWidth(), getHeight());
+            if (drawImage) {
+                imageReceiver.setImageCoords(0, 0, getWidth(), getHeight());
+            }
+            if (drawForeground) {
+                foregroundImageReceiver.setImageCoords(0, 0, getWidth(), getHeight());
+            }
         }
-        imageReceiver.draw(canvas);
+        if (drawImage) {
+            imageReceiver.draw(canvas);
+        }
+        if (drawForeground) {
+            foregroundImageReceiver.setAspectFit(imageReceiver.isAspectFit());
+            foregroundImageReceiver.setRoundRadius(imageReceiver.getRoundRadius());
+            foregroundImageReceiver.setAlpha(foregroundAlpha);
+            foregroundImageReceiver.draw(canvas);
+        }
     }
 }

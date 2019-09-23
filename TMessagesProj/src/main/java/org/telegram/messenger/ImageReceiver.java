@@ -542,18 +542,7 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
             fileDrawable.setAllowDecodeSingleFrame(true);
         }
         staticThumbDrawable = bitmap;
-        if (roundRadius != 0 && bitmap instanceof BitmapDrawable) {
-            if (bitmap instanceof RLottieDrawable) {
-
-            } else if (bitmap instanceof AnimatedFileDrawable) {
-                ((AnimatedFileDrawable) bitmap).setRoundRadius(roundRadius);
-            } else {
-                Bitmap object = ((BitmapDrawable) bitmap).getBitmap();
-                thumbShader = new BitmapShader(object, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP);
-            }
-        } else {
-            thumbShader = null;
-        }
+        updateStaticThumbDrawableRadius();
         currentMediaLocation = null;
         currentMediaFilter = null;
         currentMediaDrawable = null;
@@ -597,6 +586,69 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
             currentAlpha = 0.0f;
             lastUpdateAlphaTime = System.currentTimeMillis();
             crossfadeWithThumb = currentThumbDrawable != null || staticThumbDrawable != null;
+        }
+    }
+
+    private void updateCurrentMediaDrawableRadius() {
+        if (roundRadius != 0 && currentMediaDrawable instanceof BitmapDrawable) {
+            if (currentMediaDrawable instanceof RLottieDrawable) {
+
+            } else if (currentMediaDrawable instanceof AnimatedFileDrawable) {
+                AnimatedFileDrawable animatedFileDrawable = (AnimatedFileDrawable) currentMediaDrawable;
+                animatedFileDrawable.setRoundRadius(roundRadius);
+            } else {
+                BitmapDrawable bitmapDrawable = (BitmapDrawable) currentMediaDrawable;
+                mediaShader = new BitmapShader(bitmapDrawable.getBitmap(), Shader.TileMode.CLAMP, Shader.TileMode.CLAMP);
+            }
+        } else {
+            mediaShader = null;
+        }
+    }
+
+    private void updateCurrentThumbDrawableRadius() {
+        if (roundRadius != 0 && currentThumbDrawable instanceof BitmapDrawable) {
+            if (currentThumbDrawable instanceof RLottieDrawable) {
+
+            } else if (currentThumbDrawable instanceof AnimatedFileDrawable) {
+                AnimatedFileDrawable animatedFileDrawable = (AnimatedFileDrawable) currentThumbDrawable;
+                animatedFileDrawable.setRoundRadius(roundRadius);
+            } else {
+                BitmapDrawable bitmapDrawable = (BitmapDrawable) currentThumbDrawable;
+                thumbShader = new BitmapShader(bitmapDrawable.getBitmap(), Shader.TileMode.CLAMP, Shader.TileMode.CLAMP);
+            }
+        } else {
+            thumbShader = null;
+        }
+    }
+
+    private void updateCurrentImageDrawableRadius() {
+        if (roundRadius != 0 && currentImageDrawable instanceof BitmapDrawable) {
+            if (currentImageDrawable instanceof RLottieDrawable) {
+
+            } else if (currentImageDrawable instanceof AnimatedFileDrawable) {
+                AnimatedFileDrawable animatedFileDrawable = (AnimatedFileDrawable) currentImageDrawable;
+                animatedFileDrawable.setRoundRadius(roundRadius);
+            } else {
+                BitmapDrawable bitmapDrawable = (BitmapDrawable) currentImageDrawable;
+                imageShader = new BitmapShader(bitmapDrawable.getBitmap(), Shader.TileMode.CLAMP, Shader.TileMode.CLAMP);
+            }
+        } else {
+            imageShader = null;
+        }
+    }
+
+    private void updateStaticThumbDrawableRadius() {
+        if (roundRadius != 0 && staticThumbDrawable instanceof BitmapDrawable) {
+            if (staticThumbDrawable instanceof RLottieDrawable) {
+
+            } else if (staticThumbDrawable instanceof AnimatedFileDrawable) {
+                ((AnimatedFileDrawable) staticThumbDrawable).setRoundRadius(roundRadius);
+            } else {
+                Bitmap object = ((BitmapDrawable) staticThumbDrawable).getBitmap();
+                thumbShader = new BitmapShader(object, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP);
+            }
+        } else {
+            thumbShader = null;
         }
     }
 
@@ -961,12 +1013,12 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
                 drawable = crossfadeImage;
                 shaderToUse = crossfadeShader;
                 orientation = imageOrientation;
-            } else if (staticThumbDrawable instanceof BitmapDrawable) {
-                drawable = staticThumbDrawable;
-                shaderToUse = thumbShader;
-                orientation = thumbOrientation;
             } else if (currentThumbDrawable != null) {
                 drawable = currentThumbDrawable;
+                shaderToUse = thumbShader;
+                orientation = thumbOrientation;
+            } else if (staticThumbDrawable instanceof BitmapDrawable) {
+                drawable = staticThumbDrawable;
                 shaderToUse = thumbShader;
                 orientation = thumbOrientation;
             }
@@ -1350,7 +1402,16 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
     }
 
     public void setRoundRadius(int value) {
-        roundRadius = value;
+        if (roundRadius != value) {
+            roundRadius = value;
+            if (currentThumbDrawable != null) {
+                updateCurrentThumbDrawableRadius();
+            } else {
+                updateStaticThumbDrawableRadius();
+            }
+            updateCurrentMediaDrawableRadius();
+            updateCurrentImageDrawableRadius();
+        }
     }
 
     public void setCurrentAccount(int value) {
@@ -1516,19 +1577,7 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
             if (drawable instanceof ExtendedBitmapDrawable) {
                 imageOrientation = ((ExtendedBitmapDrawable) drawable).getOrientation();
             }
-            if (roundRadius != 0 && drawable instanceof BitmapDrawable) {
-                if (drawable instanceof RLottieDrawable) {
-
-                } else if (drawable instanceof AnimatedFileDrawable) {
-                    AnimatedFileDrawable animatedFileDrawable = (AnimatedFileDrawable) drawable;
-                    animatedFileDrawable.setRoundRadius(roundRadius);
-                } else {
-                    BitmapDrawable bitmapDrawable = (BitmapDrawable) drawable;
-                    imageShader = new BitmapShader(bitmapDrawable.getBitmap(), Shader.TileMode.CLAMP, Shader.TileMode.CLAMP);
-                }
-            } else {
-                imageShader = null;
-            }
+            updateCurrentImageDrawableRadius();
 
             if (!memCache && !forcePreview || forceCrossfade) {
                 boolean allowCorssfade = true;
@@ -1553,19 +1602,7 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
                 ImageLoader.getInstance().incrementUseCount(currentMediaKey);
             }
             currentMediaDrawable = drawable;
-            if (roundRadius != 0 && drawable instanceof BitmapDrawable) {
-                if (drawable instanceof RLottieDrawable) {
-
-                } else if (drawable instanceof AnimatedFileDrawable) {
-                    AnimatedFileDrawable animatedFileDrawable = (AnimatedFileDrawable) drawable;
-                    animatedFileDrawable.setRoundRadius(roundRadius);
-                } else {
-                    BitmapDrawable bitmapDrawable = (BitmapDrawable) drawable;
-                    mediaShader = new BitmapShader(bitmapDrawable.getBitmap(), Shader.TileMode.CLAMP, Shader.TileMode.CLAMP);
-                }
-            } else {
-                mediaShader = null;
-            }
+            updateCurrentMediaDrawableRadius();
 
             if (currentImageDrawable == null) {
                 boolean allowCorssfade = true;
@@ -1602,19 +1639,7 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
                 thumbOrientation = ((ExtendedBitmapDrawable) drawable).getOrientation();
             }
 
-            if (roundRadius != 0 && drawable instanceof BitmapDrawable) {
-                if (drawable instanceof RLottieDrawable) {
-
-                } else if (drawable instanceof AnimatedFileDrawable) {
-                    AnimatedFileDrawable animatedFileDrawable = (AnimatedFileDrawable) drawable;
-                    animatedFileDrawable.setRoundRadius(roundRadius);
-                } else {
-                    BitmapDrawable bitmapDrawable = (BitmapDrawable) drawable;
-                    thumbShader = new BitmapShader(bitmapDrawable.getBitmap(), Shader.TileMode.CLAMP, Shader.TileMode.CLAMP);
-                }
-            } else {
-                thumbShader = null;
-            }
+            updateCurrentThumbDrawableRadius();
 
             if (!memCache && crossfadeAlpha != 2) {
                 if (currentParentObject instanceof MessageObject && ((MessageObject) currentParentObject).isRoundVideo() && ((MessageObject) currentParentObject).isSending()) {
