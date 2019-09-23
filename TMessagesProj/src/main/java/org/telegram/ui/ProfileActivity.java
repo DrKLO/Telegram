@@ -1498,9 +1498,15 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                             final int itemsCount = avatarsViewPager.getAdapter().getCount();
                             int currentItem = avatarsViewPager.getCurrentItem();
                             if (itemsCount > 1) {
-                                if (currentItem == itemsCount - 1) {
-                                    currentItem = 0;
-                                } else currentItem += 1;
+                                if (e.getX() > getWidth() / 3) {
+                                    if (++currentItem >= itemsCount) {
+                                        currentItem = 0;
+                                    }
+                                } else {
+                                    if (--currentItem < 0) {
+                                        currentItem = itemsCount - 1;
+                                    }
+                                }
                                 avatarsViewPager.setCurrentItem(currentItem, false);
                                 return true;
                             } else return false;
