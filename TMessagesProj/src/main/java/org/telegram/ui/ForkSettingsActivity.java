@@ -54,6 +54,7 @@ public class ForkSettingsActivity extends BaseFragment {
     private int unmutedOnTopRow;
     private int rearVideoMessages;
     private int replaceForward;
+    private int mentionByName;
 
     private ArrayList<Integer> emptyRows = new ArrayList<Integer>();
     private int syncPinsRow;
@@ -93,6 +94,7 @@ public class ForkSettingsActivity extends BaseFragment {
         unmutedOnTopRow = rowCount++;
         rearVideoMessages = rowCount++;
         replaceForward = rowCount++;
+        mentionByName = rowCount++;
     
         emptyRows.add(rowCount++);
         sectionRows.add(rowCount++);
@@ -186,6 +188,8 @@ public class ForkSettingsActivity extends BaseFragment {
                 toggleGlobalMainSetting("rearVideoMessages", view, false);
             } else if (position == replaceForward) {
                 toggleGlobalMainSetting("replaceForward", view, true);
+            } else if (position == mentionByName) {
+                toggleGlobalMainSetting("mentionByName", view, false);
             } else if (position == syncPinsRow) {
                 toggleGlobalMainSetting("syncPins", view, true);
             } else if (position == hideSensitiveDataRow) {
@@ -254,6 +258,9 @@ public class ForkSettingsActivity extends BaseFragment {
                     } else if (position == replaceForward) {
                         String t = LocaleController.getString("ReplaceForward", R.string.ReplaceForward);
                         textCell.setTextAndCheck(t, preferences.getBoolean("replaceForward", true), false);
+                    } else if (position == mentionByName) {
+                        String t = LocaleController.getString("MentionByName", R.string.MentionByName);
+                        textCell.setTextAndCheck(t, preferences.getBoolean("mentionByName", false), false);
                     } else if (position == syncPinsRow) {
                         String t = LocaleController.getString("SyncPins", R.string.SyncPins);
                         String info = LocaleController.getString("SyncPinsInfo", R.string.SyncPinsInfo);
@@ -287,6 +294,7 @@ public class ForkSettingsActivity extends BaseFragment {
                         || position == unmutedOnTopRow
                         || position == rearVideoMessages
                         || position == replaceForward
+                        || position == mentionByName
                         || position == syncPinsRow
                         || position == photoHasStickerRow;
             return fork;
@@ -338,6 +346,7 @@ public class ForkSettingsActivity extends BaseFragment {
                 || position == syncPinsRow
                 || position == rearVideoMessages
                 || position == replaceForward
+                || position == mentionByName
                 || position == photoHasStickerRow) {
                 return 3;
             } else if (sectionRows.contains(position)) {

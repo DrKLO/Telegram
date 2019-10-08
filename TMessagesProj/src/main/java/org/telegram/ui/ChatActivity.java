@@ -6663,7 +6663,9 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 if (searchingForUser && searchContainer != null && searchContainer.getVisibility() == View.VISIBLE) {
                     searchUserMessages(user, null);
                 } else {
-                    if (UserObject.getPublicUsername(user) != null) {
+                    SharedPreferences preferences = MessagesController.getGlobalMainSettings();
+                    final boolean mentionByName = !user.bot && preferences.getBoolean("mentionByName", false);
+                    if (UserObject.getPublicUsername(user) != null && !mentionByName) {
                         chatActivityEnterView.replaceWithText(start, len, "@" + UserObject.getPublicUsername(user) + " ", false);
                     } else {
                         String name = UserObject.getFirstName(user, false);
