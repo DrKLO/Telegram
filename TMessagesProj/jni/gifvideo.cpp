@@ -260,7 +260,9 @@ enum PARAM_NUM {
     PARAM_NUM_VIDEO_FRAME_SIZE = 6,
     PARAM_NUM_FRAMERATE = 7,
     PARAM_NUM_ROTATION = 8,
-    PARAM_NUM_COUNT = 9
+    PARAM_NUM_AUDIO_SUPPORTED_CODEC = 9,
+    PARAM_NUM_HAS_AUDIO = 10,
+    PARAM_NUM_COUNT = 11,
 };
 
 void Java_org_telegram_ui_Components_AnimatedFileDrawable_getVideoInfo(JNIEnv *env, jclass clazz, jstring src, jintArray data) {
@@ -312,7 +314,12 @@ void Java_org_telegram_ui_Components_AnimatedFileDrawable_getVideoInfo(JNIEnv *e
             if (info->audio_stream != nullptr) {
                 mov = (MOVStreamContext *) info->audio_stream->priv_data;
                 dataArr[PARAM_NUM_AUDIO_FRAME_SIZE] = (jint) mov->data_size;
+                dataArr[PARAM_NUM_AUDIO_SUPPORTED_CODEC] =
+                        info->audio_stream->codecpar->codec_id == AV_CODEC_ID_AAC ||
+                        info->audio_stream->codecpar->codec_id == AV_CODEC_ID_AAC_LATM;
             }
+
+            dataArr[PARAM_NUM_HAS_AUDIO] = info->audio_stream != nullptr;
         }
         dataArr[PARAM_NUM_BITRATE] = (jint) info->video_stream->codecpar->bit_rate;
         dataArr[PARAM_NUM_WIDTH] = info->video_stream->codecpar->width;

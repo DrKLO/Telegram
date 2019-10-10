@@ -34,6 +34,7 @@ import android.media.MediaCodecInfo;
 import android.media.MediaCodecList;
 import android.media.MediaExtractor;
 import android.media.MediaFormat;
+import android.media.MediaMetadataRetriever;
 import android.media.MediaRecorder;
 import android.net.Uri;
 import android.os.Build;
@@ -90,10 +91,15 @@ import java.util.TimerTask;
 public class MediaController implements AudioManager.OnAudioFocusChangeListener, NotificationCenter.NotificationCenterDelegate, SensorEventListener {
 
     private native int startRecord(String path);
+
     private native int writeFrame(ByteBuffer frame, int len);
+
     private native void stopRecord();
+
     public static native int isOpusFile(String path);
+
     public native byte[] getWaveform(String path);
+
     public native byte[] getWaveform2(short[] array, int length);
 
     private class AudioBuffer {
@@ -337,7 +343,10 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
     private static final float VOLUME_NORMAL = 1.0f;
     private static final int AUDIO_NO_FOCUS_NO_DUCK = 0;
     private static final int AUDIO_NO_FOCUS_CAN_DUCK = 1;
-    private static final int AUDIO_FOCUSED  = 2;
+    private static final int AUDIO_FOCUSED = 2;
+
+    private static final int MEDIACODEC_TIMEOUT_DEFAULT = 2500;
+    private static final int MEDIACODEC_TIMEOUT_INCREASED = 22000;
 
     private ArrayList<MessageObject> videoConvertQueue = new ArrayList<>();
     private final Object videoQueueSync = new Object();
@@ -3747,7 +3756,11 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
         }
     }
 
-    private boolean convertVideo(final MessageObject messageObject) {
+    private boolean convertVideo(MessageObject messageObject) {
+        return convertVideo(messageObject, MEDIACODEC_TIMEOUT_DEFAULT);
+    }
+
+    private boolean convertVideo(final MessageObject messageObject, int timoutUsec) {
         if (messageObject == null || messageObject.videoEditedInfo == null) {
             return false;
         }
@@ -3767,6 +3780,14 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
         if (videoPath == null) {
             videoPath = "";
         }
+
+        if (framerate == 0) {
+            framerate = 25;
+        } else if (framerate > 59) {
+            framerate = 59;
+        }
+
+        if(bitrate <= 0) bitrate = 921600;
 
         if (Build.VERSION.SDK_INT < 18 && resultHeight > resultWidth && resultWidth != originalWidth && resultHeight != originalHeight) {
             int temp = resultHeight;
@@ -3795,7 +3816,8 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
 
         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("videoconvert", Activity.MODE_PRIVATE);
         File inputFile = new File(videoPath);
-        if (messageObject.getId() != 0) {
+
+        if (messageObject.getId() != 0 && timoutUsec == MEDIACODEC_TIMEOUT_DEFAULT) {
             boolean isPreviousOk = preferences.getBoolean("isPreviousOk", true);
             preferences.edit().putBoolean("isPreviousOk", false).commit();
             if (!inputFile.canRead() || !isPreviousOk) {
@@ -3813,6 +3835,8 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
         if (resultWidth != 0 && resultHeight != 0) {
             MP4Builder mediaMuxer = null;
             MediaExtractor extractor = null;
+
+            boolean repeatWithIncreasedTimeout = false;
 
             try {
                 MediaCodec.BufferInfo info = new MediaCodec.BufferInfo();
@@ -3929,9 +3953,58 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
 
                             MediaFormat outputFormat = MediaFormat.createVideoFormat(MIME_TYPE, resultWidth, resultHeight);
                             outputFormat.setInteger(MediaFormat.KEY_COLOR_FORMAT, colorFormat);
-                            outputFormat.setInteger(MediaFormat.KEY_BIT_RATE, bitrate > 0 ? bitrate : 921600);
-                            outputFormat.setInteger(MediaFormat.KEY_FRAME_RATE, framerate != 0 ? framerate : 25);
+                            outputFormat.setInteger(MediaFormat.KEY_BIT_RATE, bitrate);
+                            outputFormat.setInteger(MediaFormat.KEY_FRAME_RATE, framerate);
                             outputFormat.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, 2);
+
+                            if (Build.VERSION.SDK_INT >= 23) {
+                                int profile;
+                                int level;
+
+                                if (Math.min(resultHeight, resultWidth) >= 1080) {
+                                    profile = MediaCodecInfo.CodecProfileLevel.AVCProfileHigh;
+                                    level = MediaCodecInfo.CodecProfileLevel.AVCLevel41;
+                                } else if (Math.min(resultHeight, resultWidth) >= 720) {
+                                    profile = MediaCodecInfo.CodecProfileLevel.AVCProfileHigh;
+                                    level = MediaCodecInfo.CodecProfileLevel.AVCLevel4;
+                                } else if (Math.min(resultHeight, resultWidth) >= 480) {
+                                    profile = MediaCodecInfo.CodecProfileLevel.AVCProfileBaseline;
+                                    level = MediaCodecInfo.CodecProfileLevel.AVCLevel31;
+                                } else {
+                                    profile = MediaCodecInfo.CodecProfileLevel.AVCProfileBaseline;
+                                    level = MediaCodecInfo.CodecProfileLevel.AVCLevel3;
+                                }
+
+                                MediaCodecInfo.CodecCapabilities capabilities = MediaCodecInfo.CodecCapabilities.createFromProfileLevel(MIME_TYPE, profile, level);
+
+                                if(capabilities == null && profile == MediaCodecInfo.CodecProfileLevel.AVCProfileHigh){
+                                    profile = MediaCodecInfo.CodecProfileLevel.AVCProfileBaseline;
+                                    capabilities = MediaCodecInfo.CodecCapabilities.createFromProfileLevel(MIME_TYPE, profile, level);
+                                }
+                                if (capabilities.getEncoderCapabilities() != null) {
+                                    outputFormat.setInteger(MediaFormat.KEY_PROFILE, profile);
+                                    outputFormat.setInteger(MediaFormat.KEY_LEVEL, level);
+
+                                    int maxBitrate = capabilities.getVideoCapabilities().getBitrateRange().getUpper();
+                                    if (bitrate > maxBitrate) {
+                                        bitrate = maxBitrate;
+                                        outputFormat.setInteger(MediaFormat.KEY_BIT_RATE, bitrate);
+                                    }
+
+                                    int maxFramerate = capabilities.getVideoCapabilities().getSupportedFrameRates().getUpper();
+                                    if (framerate > maxFramerate) {
+                                        framerate = maxFramerate;
+                                        outputFormat.setInteger(MediaFormat.KEY_FRAME_RATE, framerate);
+                                    }
+                                }
+                            } else {
+                                if (Math.min(resultHeight, resultWidth) <= 480) {
+                                    if(bitrate < 921600)
+                                    bitrate = 921600;
+                                    outputFormat.setInteger(MediaFormat.KEY_BIT_RATE, bitrate);
+                                }
+                            }
+
                             if (Build.VERSION.SDK_INT < 18) {
                                 outputFormat.setInteger("stride", resultWidth + 32);
                                 outputFormat.setInteger("slice-height", resultHeight);
@@ -3954,7 +4027,6 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                             decoder.configure(videoFormat, outputSurface.getSurface(), null, 0);
                             decoder.start();
 
-                            final int TIMEOUT_USEC = 2500;
                             ByteBuffer[] decoderInputBuffers = null;
                             ByteBuffer[] encoderOutputBuffers = null;
                             ByteBuffer[] encoderInputBuffers = null;
@@ -3974,7 +4046,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                                     boolean eof = false;
                                     int index = extractor.getSampleTrackIndex();
                                     if (index == videoIndex) {
-                                        int inputBufIndex = decoder.dequeueInputBuffer(TIMEOUT_USEC);
+                                        int inputBufIndex = decoder.dequeueInputBuffer(MEDIACODEC_TIMEOUT_DEFAULT);
                                         if (inputBufIndex >= 0) {
                                             ByteBuffer inputBuf;
                                             if (Build.VERSION.SDK_INT < 21) {
@@ -4016,7 +4088,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                                         eof = true;
                                     }
                                     if (eof) {
-                                        int inputBufIndex = decoder.dequeueInputBuffer(TIMEOUT_USEC);
+                                        int inputBufIndex = decoder.dequeueInputBuffer(MEDIACODEC_TIMEOUT_DEFAULT);
                                         if (inputBufIndex >= 0) {
                                             decoder.queueInputBuffer(inputBufIndex, 0, 0, 0L, MediaCodec.BUFFER_FLAG_END_OF_STREAM);
                                             inputDone = true;
@@ -4028,7 +4100,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                                 boolean encoderOutputAvailable = true;
                                 while (decoderOutputAvailable || encoderOutputAvailable) {
                                     checkConversionCanceled();
-                                    int encoderStatus = encoder.dequeueOutputBuffer(info, TIMEOUT_USEC);
+                                    int encoderStatus = encoder.dequeueOutputBuffer(info, timoutUsec);
                                     if (encoderStatus == MediaCodec.INFO_TRY_AGAIN_LATER) {
                                         encoderOutputAvailable = false;
                                     } else if (encoderStatus == MediaCodec.INFO_OUTPUT_BUFFERS_CHANGED) {
@@ -4095,7 +4167,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                                     }
 
                                     if (!decoderDone) {
-                                        int decoderStatus = decoder.dequeueOutputBuffer(info, TIMEOUT_USEC);
+                                        int decoderStatus = decoder.dequeueOutputBuffer(info, MEDIACODEC_TIMEOUT_DEFAULT);
                                         if (decoderStatus == MediaCodec.INFO_TRY_AGAIN_LATER) {
                                             decoderOutputAvailable = false;
                                         } else if (decoderStatus == MediaCodec.INFO_OUTPUT_BUFFERS_CHANGED) {
@@ -4145,7 +4217,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                                                         inputSurface.setPresentationTime(info.presentationTimeUs * 1000);
                                                         inputSurface.swapBuffers();
                                                     } else {
-                                                        int inputBufIndex = encoder.dequeueInputBuffer(TIMEOUT_USEC);
+                                                        int inputBufIndex = encoder.dequeueInputBuffer(MEDIACODEC_TIMEOUT_DEFAULT);
                                                         if (inputBufIndex >= 0) {
                                                             outputSurface.drawImage(true);
                                                             ByteBuffer rgbBuf = outputSurface.getFrame();
@@ -4169,7 +4241,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                                                 if (Build.VERSION.SDK_INT >= 18) {
                                                     encoder.signalEndOfInputStream();
                                                 } else {
-                                                    int inputBufIndex = encoder.dequeueInputBuffer(TIMEOUT_USEC);
+                                                    int inputBufIndex = encoder.dequeueInputBuffer(MEDIACODEC_TIMEOUT_DEFAULT);
                                                     if (inputBufIndex >= 0) {
                                                         encoder.queueInputBuffer(inputBufIndex, 0, 1, info.presentationTimeUs, MediaCodec.BUFFER_FLAG_END_OF_STREAM);
                                                     }
@@ -4180,6 +4252,13 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                                 }
                             }
                         } catch (Exception e) {
+                            // in some case encoder.dequeueOutputBuffer return IllegalStateException
+                            // stable reproduced on xiaomi
+                            // fix it by increasing timeout
+                            if (e instanceof IllegalStateException && timoutUsec != MEDIACODEC_TIMEOUT_INCREASED) {
+                                repeatWithIncreasedTimeout = true;
+                            }
+                            FileLog.e("bitrate: " + bitrate + " framerate: " + framerate + " size: " + resultHeight + "x" + resultWidth);
                             FileLog.e(e);
                             error = true;
                         }
@@ -4208,6 +4287,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                 }
             } catch (Exception e) {
                 error = true;
+                FileLog.e("bitrate: " + bitrate + " framerate: " + framerate + " size: " + resultHeight + "x" + resultWidth);
                 FileLog.e(e);
             } finally {
                 if (extractor != null) {
@@ -4224,6 +4304,12 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                     FileLog.d("time = " + (System.currentTimeMillis() - time));
                 }
             }
+
+            if (repeatWithIncreasedTimeout) {
+                preferences.edit().putBoolean("isPreviousOk", false).commit();
+                return convertVideo(messageObject, MEDIACODEC_TIMEOUT_INCREASED);
+            }
+
         } else {
             preferences.edit().putBoolean("isPreviousOk", true).commit();
             didWriteData(messageObject, cacheFile, true, 0, true);
@@ -4232,5 +4318,44 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
         preferences.edit().putBoolean("isPreviousOk", true).commit();
         didWriteData(messageObject, cacheFile, true, 0, error);
         return true;
+    }
+
+    public static int getVideoBitrate(String path) {
+        MediaMetadataRetriever retriever = new MediaMetadataRetriever();
+        int bitrate = 0;
+        try {
+            retriever.setDataSource(path);
+            bitrate = Integer.parseInt(retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_BITRATE));
+        } catch (Exception e) {
+            e.printStackTrace();
+            FileLog.e(e);
+        }
+
+        retriever.release();
+        return bitrate;
+    }
+
+    public static int makeVideoBitrate(int originalHeight, int originalWidth, int originalBitrate, int height, int width) {
+        float compressFactor;
+        float minCompressFactor;
+        if (Math.min(height, width) > 1080) {
+            compressFactor = 1f;
+            minCompressFactor = 1f;
+        } else if (Math.min(height, width) > 720) {
+            compressFactor = 0.6f;
+            minCompressFactor = 0.9f;
+        } else {
+            compressFactor = 0.4f;
+            minCompressFactor = 0.7f;
+        }
+        int remeasuredBitrate = (int) (originalBitrate / (originalHeight * originalWidth / (float) (width * height)) * compressFactor);
+        int minBitrate = (int) (getVideoBitrateWithFactor(minCompressFactor) / (1280f * 720f / (width * height)));
+        if (originalBitrate < minBitrate) return remeasuredBitrate;
+        if (remeasuredBitrate < minBitrate) return minBitrate;
+        return remeasuredBitrate;
+    }
+
+    private static int getVideoBitrateWithFactor(float f) {
+        return (int) (f * 2000f * 1000f * 1.13f);
     }
 }

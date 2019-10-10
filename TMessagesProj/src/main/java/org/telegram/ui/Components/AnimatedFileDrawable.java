@@ -54,7 +54,9 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable {
     public final static int PARAM_NUM_VIDEO_FRAME_SIZE = 6;
     public final static int PARAM_NUM_FRAMERATE = 7;
     public final static int PARAM_NUM_ROTATION = 8;
-    public final static int PARAM_NUM_COUNT = 9;
+    public final static int PARAM_NUM_AUDIO_IS_AAC = 9;
+    public final static int PARAM_NUM_HAS_AUDIO = 10;
+    public final static int PARAM_NUM_COUNT = 11;
 
     private long lastFrameTime;
     private int lastTimeStamp;
