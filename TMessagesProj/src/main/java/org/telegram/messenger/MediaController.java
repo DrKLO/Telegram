@@ -55,6 +55,7 @@ import android.widget.FrameLayout;
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.ExoPlayer;
 import com.google.android.exoplayer2.ui.AspectRatioFrameLayout;
+import com.google.android.exoplayer2.util.Log;
 
 import org.telegram.messenger.audioinfo.AudioInfo;
 import org.telegram.messenger.video.InputSurface;
@@ -296,7 +297,8 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
         }
     }
 
-    public final static String MIME_TYPE = "video/avc";
+    public final static String VIDEO_MIME_TYPE = "video/avc";
+    public final static String AUIDO_MIME_TYPE = "audio/mp4a-latm";
     private final static int PROCESSOR_TYPE_OTHER = 0;
     private final static int PROCESSOR_TYPE_QCOM = 1;
     private final static int PROCESSOR_TYPE_INTEL = 2;
@@ -3853,6 +3855,11 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                 if (resultWidth != originalWidth || resultHeight != originalHeight || rotateRender != 0 || messageObject.videoEditedInfo.roundVideo || Build.VERSION.SDK_INT >= 18 && startTime != -1) {
                     int videoIndex = findTrack(extractor, false);
                     int audioIndex = bitrate != -1 ? findTrack(extractor, true) : -1;
+
+                    AudioTranscoder audioTranscoder = null;
+                    ByteBuffer audioBuffer = null;
+                    boolean copyAudioBuffer = true;
+
                     if (videoIndex >= 0) {
                         MediaCodec decoder = null;
                         MediaCodec encoder = null;
@@ -3872,8 +3879,8 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                             int processorType = PROCESSOR_TYPE_OTHER;
                             String manufacturer = Build.MANUFACTURER.toLowerCase();
                             if (Build.VERSION.SDK_INT < 18) {
-                                MediaCodecInfo codecInfo = selectCodec(MIME_TYPE);
-                                colorFormat = selectColorFormat(codecInfo, MIME_TYPE);
+                                MediaCodecInfo codecInfo = selectCodec(VIDEO_MIME_TYPE);
+                                colorFormat = selectColorFormat(codecInfo, VIDEO_MIME_TYPE);
                                 if (colorFormat == 0) {
                                     throw new RuntimeException("no supported color format");
                                 }
@@ -3936,14 +3943,6 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
 
                             extractor.selectTrack(videoIndex);
                             MediaFormat videoFormat = extractor.getTrackFormat(videoIndex);
-                            ByteBuffer audioBuffer = null;
-                            if (audioIndex >= 0) {
-                                extractor.selectTrack(audioIndex);
-                                MediaFormat audioFormat = extractor.getTrackFormat(audioIndex);
-                                int maxBufferSize = audioFormat.getInteger(MediaFormat.KEY_MAX_INPUT_SIZE);
-                                audioBuffer = ByteBuffer.allocateDirect(maxBufferSize);
-                                audioTrackIndex = mediaMuxer.addTrack(audioFormat, true);
-                            }
 
                             if (startTime > 0) {
                                 extractor.seekTo(startTime, MediaExtractor.SEEK_TO_PREVIOUS_SYNC);
@@ -3951,7 +3950,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                                 extractor.seekTo(0, MediaExtractor.SEEK_TO_PREVIOUS_SYNC);
                             }
 
-                            MediaFormat outputFormat = MediaFormat.createVideoFormat(MIME_TYPE, resultWidth, resultHeight);
+                            MediaFormat outputFormat = MediaFormat.createVideoFormat(VIDEO_MIME_TYPE, resultWidth, resultHeight);
                             outputFormat.setInteger(MediaFormat.KEY_COLOR_FORMAT, colorFormat);
                             outputFormat.setInteger(MediaFormat.KEY_BIT_RATE, bitrate);
                             outputFormat.setInteger(MediaFormat.KEY_FRAME_RATE, framerate);
@@ -3975,11 +3974,11 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                                     level = MediaCodecInfo.CodecProfileLevel.AVCLevel3;
                                 }
 
-                                MediaCodecInfo.CodecCapabilities capabilities = MediaCodecInfo.CodecCapabilities.createFromProfileLevel(MIME_TYPE, profile, level);
+                                MediaCodecInfo.CodecCapabilities capabilities = MediaCodecInfo.CodecCapabilities.createFromProfileLevel(VIDEO_MIME_TYPE, profile, level);
 
                                 if(capabilities == null && profile == MediaCodecInfo.CodecProfileLevel.AVCProfileHigh){
                                     profile = MediaCodecInfo.CodecProfileLevel.AVCProfileBaseline;
-                                    capabilities = MediaCodecInfo.CodecCapabilities.createFromProfileLevel(MIME_TYPE, profile, level);
+                                    capabilities = MediaCodecInfo.CodecCapabilities.createFromProfileLevel(VIDEO_MIME_TYPE, profile, level);
                                 }
                                 if (capabilities.getEncoderCapabilities() != null) {
                                     outputFormat.setInteger(MediaFormat.KEY_PROFILE, profile);
@@ -4010,7 +4009,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                                 outputFormat.setInteger("slice-height", resultHeight);
                             }
 
-                            encoder = MediaCodec.createEncoderByType(MIME_TYPE);
+                            encoder = MediaCodec.createEncoderByType(VIDEO_MIME_TYPE);
                             encoder.configure(outputFormat, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE);
                             if (Build.VERSION.SDK_INT >= 18) {
                                 inputSurface = new InputSurface(encoder.createInputSurface());
@@ -4038,10 +4037,43 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                                 }
                             }
 
+                            if (audioIndex >= 0) {
+                                MediaFormat audioFormat = extractor.getTrackFormat(audioIndex);
+                                copyAudioBuffer = audioFormat.getString(MediaFormat.KEY_MIME).equals(AUIDO_MIME_TYPE);
+                                audioTrackIndex = mediaMuxer.addTrack(audioFormat, true);
+
+                                if(copyAudioBuffer) {
+                                    extractor.selectTrack(audioIndex);
+                                    int maxBufferSize = audioFormat.getInteger(MediaFormat.KEY_MAX_INPUT_SIZE);
+                                    audioBuffer = ByteBuffer.allocateDirect(maxBufferSize);
+                                } else {
+
+                                    MediaExtractor audioExtractor = new MediaExtractor();
+                                    audioExtractor.setDataSource(videoPath);
+                                    audioExtractor.selectTrack(audioIndex);
+
+                                    if (startTime > 0) {
+                                        audioExtractor.seekTo(startTime, MediaExtractor.SEEK_TO_PREVIOUS_SYNC);
+                                    } else {
+                                        audioExtractor.seekTo(0, MediaExtractor.SEEK_TO_PREVIOUS_SYNC);
+                                    }
+
+                                    audioTranscoder = new AudioTranscoder(audioFormat, audioExtractor, audioIndex);
+                                    audioTranscoder.startTime = startTime;
+                                    audioTranscoder.endTime = endTime;
+                                }
+                            }
+                            boolean audioEncoderDone = false;
+
                             checkConversionCanceled();
 
-                            while (!outputDone) {
+                            while (!outputDone || (!copyAudioBuffer && !audioEncoderDone)) {
                                 checkConversionCanceled();
+
+                                if(!copyAudioBuffer && audioTranscoder != null){
+                                    audioEncoderDone = audioTranscoder.step(mediaMuxer,audioTrackIndex);
+                                }
+
                                 if (!inputDone) {
                                     boolean eof = false;
                                     int index = extractor.getSampleTrackIndex();
@@ -4063,7 +4095,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                                                 extractor.advance();
                                             }
                                         }
-                                    } else if (audioIndex != -1 && index == audioIndex) {
+                                    } else if (copyAudioBuffer && audioIndex != -1 && index == audioIndex) {
                                         info.size = extractor.readSampleData(audioBuffer, 0);
                                         if (Build.VERSION.SDK_INT < 21) {
                                             audioBuffer.position(0);
@@ -4151,7 +4183,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                                                     }
                                                 }
 
-                                                MediaFormat newFormat = MediaFormat.createVideoFormat(MIME_TYPE, resultWidth, resultHeight);
+                                                MediaFormat newFormat = MediaFormat.createVideoFormat(VIDEO_MIME_TYPE, resultWidth, resultHeight);
                                                 if (sps != null && pps != null) {
                                                     newFormat.setByteBuffer("csd-0", sps);
                                                     newFormat.setByteBuffer("csd-1", pps);
@@ -4260,6 +4292,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                             }
                             FileLog.e("bitrate: " + bitrate + " framerate: " + framerate + " size: " + resultHeight + "x" + resultWidth);
                             FileLog.e(e);
+                            e.printStackTrace();
                             error = true;
                         }
 
@@ -4280,6 +4313,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                             encoder.release();
                         }
 
+                        if(audioTranscoder != null) audioTranscoder.release();
                         checkConversionCanceled();
                     }
                 } else {
@@ -4327,7 +4361,6 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
             retriever.setDataSource(path);
             bitrate = Integer.parseInt(retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_BITRATE));
         } catch (Exception e) {
-            e.printStackTrace();
             FileLog.e(e);
         }
 

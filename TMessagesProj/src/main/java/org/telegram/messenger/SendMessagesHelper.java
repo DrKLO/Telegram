@@ -6171,7 +6171,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
         int[] params = new int[AnimatedFileDrawable.PARAM_NUM_COUNT];
         AnimatedFileDrawable.getVideoInfo(videoPath, params);
 
-        if (params[AnimatedFileDrawable.PARAM_NUM_IS_AVC] == 0) {
+        if (params[AnimatedFileDrawable.PARAM_NUM_SUPPORTED_VIDEO_CODEC] == 0) {
             if (BuildVars.LOGS_ENABLED) {
                 FileLog.d("video hasn't avc1 atom");
             }
@@ -6191,10 +6191,10 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
 
         if (Build.VERSION.SDK_INT < 18) {
             try {
-                MediaCodecInfo codecInfo = MediaController.selectCodec(MediaController.MIME_TYPE);
+                MediaCodecInfo codecInfo = MediaController.selectCodec(MediaController.VIDEO_MIME_TYPE);
                 if (codecInfo == null) {
                     if (BuildVars.LOGS_ENABLED) {
-                        FileLog.d("no codec info for " + MediaController.MIME_TYPE);
+                        FileLog.d("no codec info for " + MediaController.VIDEO_MIME_TYPE);
                     }
                     return null;
                 } else {
@@ -6211,9 +6211,9 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                         }
                         return null;
                     } else {
-                        if (MediaController.selectColorFormat(codecInfo, MediaController.MIME_TYPE) == 0) {
+                        if (MediaController.selectColorFormat(codecInfo, MediaController.VIDEO_MIME_TYPE) == 0) {
                             if (BuildVars.LOGS_ENABLED) {
-                                FileLog.d("no color format for " + MediaController.MIME_TYPE);
+                                FileLog.d("no color format for " + MediaController.VIDEO_MIME_TYPE);
                             }
                             return null;
                         }

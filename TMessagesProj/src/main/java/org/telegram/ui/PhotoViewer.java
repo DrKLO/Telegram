@@ -8514,7 +8514,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
     private int originalBitrate;
     private float videoDuration;
     private int videoFramerate;
-    private boolean videoCompressSupported;
+    private boolean videoConvertSupported;
     private long startTime;
     private long endTime;
     private float videoCutStart;
@@ -8652,7 +8652,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         if (videoPlayer != null) {
             videoPlayer.setMute(muteVideo);
         }
-        if (!videoCompressSupported) {
+        if (!videoConvertSupported) {
             muteItem.setEnabled(false);
             muteItem.setClickable(false);
             muteItem.setAlpha(0.5f);
@@ -8989,16 +8989,17 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                     if (parentActivity == null) {
                         return;
                     }
+
                     boolean hasAudio = params[AnimatedFileDrawable.PARAM_NUM_HAS_AUDIO] != 0;
-                    videoCompressSupported = params[AnimatedFileDrawable.PARAM_NUM_IS_AVC] != 0 &&
-                            (!hasAudio || params[AnimatedFileDrawable.PARAM_NUM_AUDIO_IS_AAC] != 0);
+                    videoConvertSupported = params[AnimatedFileDrawable.PARAM_NUM_SUPPORTED_VIDEO_CODEC] != 0 &&
+                            (!hasAudio || params[AnimatedFileDrawable.PARAM_NUM_SUPPORTED_AUDIO_CODEC] != 0);
                     audioFramesSize = params[AnimatedFileDrawable.PARAM_NUM_AUDIO_FRAME_SIZE];
                     videoDuration = params[AnimatedFileDrawable.PARAM_NUM_DURATION];
                     originalBitrate = bitrate = videoBitrate;
                     videoFramerate = params[AnimatedFileDrawable.PARAM_NUM_FRAMERATE];
                     videoFramesSize = (long) (bitrate / 8 * videoDuration / 1000);
 
-                    if (videoCompressSupported) {
+                    if (videoConvertSupported) {
                         rotationValue = params[AnimatedFileDrawable.PARAM_NUM_ROTATION];
                         resultWidth = originalWidth = params[AnimatedFileDrawable.PARAM_NUM_WIDTH];
                         resultHeight = originalHeight = params[AnimatedFileDrawable.PARAM_NUM_HEIGHT];
@@ -9017,11 +9018,12 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                         }
                         if (Build.VERSION.SDK_INT < 18 && compressItem.getTag() != null) {
                             try {
-                                MediaCodecInfo codecInfo = MediaController.selectCodec(MediaController.MIME_TYPE);
+                                MediaCodecInfo codecInfo = MediaController.selectCodec(MediaController.VIDEO_MIME_TYPE);
                                 if (codecInfo == null) {
                                     if (BuildVars.LOGS_ENABLED) {
-                                        FileLog.d("no codec info for " + MediaController.MIME_TYPE);
+                                        FileLog.d("no codec info for " + MediaController.VIDEO_MIME_TYPE);
                                     }
+                                    videoConvertSupported = false;
                                     setCompressItemEnabled(false, true);
                                 } else {
                                     String name = codecInfo.getName();
@@ -9035,11 +9037,12 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                                         if (BuildVars.LOGS_ENABLED) {
                                             FileLog.d("unsupported encoder = " + name);
                                         }
+                                        videoConvertSupported = false;
                                         setCompressItemEnabled(false, true);
                                     } else {
-                                        if (MediaController.selectColorFormat(codecInfo, MediaController.MIME_TYPE) == 0) {
+                                        if (MediaController.selectColorFormat(codecInfo, MediaController.VIDEO_MIME_TYPE) == 0) {
                                             if (BuildVars.LOGS_ENABLED) {
-                                                FileLog.d("no color format for " + MediaController.MIME_TYPE);
+                                                FileLog.d("no color format for " + MediaController.VIDEO_MIME_TYPE);
                                             }
                                             setCompressItemEnabled(false, true);
                                         }
