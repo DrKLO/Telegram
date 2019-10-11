@@ -206,7 +206,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
 
     private ArrayList<ChatMessageCell> chatMessageCellsCache = new ArrayList<>();
 
-    private HashMap<MessageObject, Boolean> alredyPlayedStickers = new HashMap<>();
+    private HashMap<MessageObject, Boolean> alreadyPlayedStickers = new HashMap<>();
 
     private Dialog closeChatDialog;
     private FrameLayout progressView;
@@ -8344,7 +8344,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         if (id == NotificationCenter.messagesDidLoad) {
             int guid = (Integer) args[10];
             if (guid == classGuid) {
-            	setItemAnimationsEnabled(false);
+                setItemAnimationsEnabled(false);
                 if (!openAnimationEnded) {
                     getNotificationCenter().setAllowedNotificationsDutingAnimation(new int[]{NotificationCenter.chatInfoDidLoad, NotificationCenter.dialogsNeedReload, NotificationCenter.scheduledMessagesUpdated,
                             NotificationCenter.closeChats, NotificationCenter.botKeyboardDidLoad, NotificationCenter.userInfoDidLoad, NotificationCenter.needDeleteDialog/*, NotificationCenter.botInfoDidLoad*/});
@@ -14892,12 +14892,12 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
 
                     @Override
                     public boolean shouldRepeatSticker(MessageObject message) {
-                        return !alredyPlayedStickers.containsKey(message);
+                        return !alreadyPlayedStickers.containsKey(message);
                     }
 
                     @Override
                     public void setShouldNotRepeatSticker(MessageObject message) {
-                        alredyPlayedStickers.put(message, true);
+                        alreadyPlayedStickers.put(message, true);
                     }
                 });
                 if (currentEncryptedChat == null) {
