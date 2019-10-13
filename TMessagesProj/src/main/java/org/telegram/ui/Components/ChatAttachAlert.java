@@ -223,7 +223,6 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
     private TextView tooltipTextView;
     private ImageView switchCameraButton;
     private boolean takingPhoto;
-    private boolean mediaCaptured;
     private static boolean mediaFromExternalCamera;
     private static ArrayList<Object> cameraPhotos = new ArrayList<>();
     private static HashMap<Object, Object> selectedPhotos = new HashMap<>();
@@ -1589,7 +1588,7 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
 
             @Override
             public boolean shutterLongPressed() {
-                if (!(baseFragment instanceof ChatActivity) || mediaCaptured || takingPhoto || baseFragment == null || baseFragment.getParentActivity() == null || cameraView == null) {
+                if (!(baseFragment instanceof ChatActivity) || takingPhoto || baseFragment == null || baseFragment.getParentActivity() == null || cameraView == null) {
                     return false;
                 }
                 if (Build.VERSION.SDK_INT >= 23) {
@@ -1633,9 +1632,6 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
 
             @Override
             public void shutterCancel() {
-                if (mediaCaptured) {
-                    return;
-                }
                 if (outputFile != null) {
                     outputFile.delete();
                     outputFile = null;
@@ -1646,10 +1642,9 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
 
             @Override
             public void shutterReleased() {
-                if (takingPhoto || cameraView == null || mediaCaptured || cameraView.getCameraSession() == null) {
+                if (takingPhoto || cameraView == null || cameraView.getCameraSession() == null) {
                     return;
                 }
-                mediaCaptured = true;
                 if (shutterButton.getState() == ShutterButton.State.RECORDING) {
                     resetRecordState();
                     CameraController.getInstance().stopVideoRecording(cameraView.getCameraSession(), false);
@@ -2069,7 +2064,6 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
                 cameraView.setZoom(0.0f);
                 CameraController.getInstance().startPreview(cameraView.getCameraSession());
             }
-            mediaCaptured = false;
             return;
         }
         if (cameraPhotos.isEmpty()) {
@@ -2184,7 +2178,6 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
 
             @Override
             public void willHidePhotoViewer() {
-                mediaCaptured = false;
                 int count = gridView.getChildCount();
                 for (int a = 0; a < count; a++) {
                     View view = gridView.getChildAt(a);

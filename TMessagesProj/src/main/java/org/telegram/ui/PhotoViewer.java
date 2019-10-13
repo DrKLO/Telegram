@@ -8655,11 +8655,11 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         if (!videoConvertSupported) {
             muteItem.setEnabled(false);
             muteItem.setClickable(false);
-            muteItem.setAlpha(0.5f);
+            muteItem.animate().alpha(0.5f).setDuration(180).start();
         } else {
             muteItem.setEnabled(true);
             muteItem.setClickable(true);
-            muteItem.setAlpha(1.0f);
+            muteItem.animate().alpha(1f).setDuration(180).start();
             if (muteVideo) {
                 actionBar.setSubtitle(null);
                 muteItem.setImageResource(R.drawable.volume_off);
@@ -8837,7 +8837,6 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                 maxSize = 854.0f;
                 break;
             case 2:
-                //720
                 maxSize = 1280.0f;
                 break;
             case 3:
@@ -8849,8 +8848,11 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         resultWidth = Math.round(originalWidth * scale / 2) * 2;
         resultHeight = Math.round(originalHeight * scale / 2) * 2;
         if (bitrate != 0) {
-            int b = MediaController.makeVideoBitrate(originalHeight, originalWidth, originalBitrate, resultHeight, resultWidth);
-            bitrate = b;
+            if (selectedCompression == compressionsCount - 1) {
+                bitrate = originalBitrate;
+            } else {
+                bitrate = MediaController.makeVideoBitrate(originalHeight, originalWidth, originalBitrate, resultHeight, resultWidth);
+            }
             videoFramesSize = (long) (bitrate / 8 * videoDuration / 1000);
         }
     }
@@ -8958,7 +8960,8 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         }
         videoTimelineView.setVideoPath(videoPath, start, end);
         videoPreviewMessageObject = null;
-        setCompressItemEnabled(false, true);
+        compressItem.setEnabled(false);
+        compressItem.setClickable(false);
         muteVideo = muted;
         Object object = imagesArrLocals.get(currentIndex);
         if (object instanceof MediaController.PhotoEntry) {
@@ -9055,6 +9058,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                         }
                         qualityChooseView.invalidate();
                     } else {
+                        setCompressItemEnabled(false, true);
                         compressionsCount = 0;
                     }
 
