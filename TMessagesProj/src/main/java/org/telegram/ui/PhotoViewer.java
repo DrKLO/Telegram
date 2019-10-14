@@ -2513,7 +2513,15 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         pickerView.setBackgroundColor(0x7f000000);
         containerView.addView(pickerView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.BOTTOM | Gravity.LEFT));
 
-        videoTimelineView = new VideoTimelinePlayView(parentActivity);
+        videoTimelineView = new VideoTimelinePlayView(parentActivity) {
+            @Override
+            public boolean onTouchEvent(MotionEvent event) {
+                if (event == null) return false;
+                super.onTouchEvent(event);
+                return true;
+            }
+        };
+        
         videoTimelineView.setDelegate(new VideoTimelinePlayView.VideoTimelineViewDelegate() {
             @Override
             public void onLeftProgressChanged(float progress) {
@@ -2540,8 +2548,8 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                     containerView.invalidate();
                 }
                 videoPlayer.seekTo((int) (videoDuration * progress));
-                videoPlayerSeekbar.setProgress(0);
-                videoTimelineView.setProgress(0);
+                videoPlayerSeekbar.setProgress(1f);
+                videoTimelineView.setProgress(1f);
                 updateVideoInfo();
             }
 
