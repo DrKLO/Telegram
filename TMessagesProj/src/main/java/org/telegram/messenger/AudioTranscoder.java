@@ -44,8 +44,8 @@ public class AudioTranscoder {
         decoder.start();
 
 
-        encoder = MediaCodec.createEncoderByType(MediaController.AUIDO_MIME_TYPE);
-        MediaFormat Format = MediaFormat.createAudioFormat(MediaController.AUIDO_MIME_TYPE,
+        encoder = MediaCodec.createEncoderByType(MediaController.AUDIO_MIME_TYPE);
+        MediaFormat Format = MediaFormat.createAudioFormat(MediaController.AUDIO_MIME_TYPE,
                 inputAudioFormat.getInteger(MediaFormat.KEY_SAMPLE_RATE),
                 inputAudioFormat.getInteger(MediaFormat.KEY_CHANNEL_COUNT)
         );

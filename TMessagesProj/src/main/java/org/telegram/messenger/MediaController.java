@@ -55,7 +55,6 @@ import android.widget.FrameLayout;
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.ExoPlayer;
 import com.google.android.exoplayer2.ui.AspectRatioFrameLayout;
-import com.google.android.exoplayer2.util.Log;
 
 import org.telegram.messenger.audioinfo.AudioInfo;
 import org.telegram.messenger.video.InputSurface;
@@ -298,7 +297,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
     }
 
     public final static String VIDEO_MIME_TYPE = "video/avc";
-    public final static String AUIDO_MIME_TYPE = "audio/mp4a-latm";
+    public final static String AUDIO_MIME_TYPE = "audio/mp4a-latm";
     private final static int PROCESSOR_TYPE_OTHER = 0;
     private final static int PROCESSOR_TYPE_QCOM = 1;
     private final static int PROCESSOR_TYPE_INTEL = 2;
@@ -4039,7 +4038,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
 
                             if (audioIndex >= 0) {
                                 MediaFormat audioFormat = extractor.getTrackFormat(audioIndex);
-                                copyAudioBuffer = audioFormat.getString(MediaFormat.KEY_MIME).equals(AUIDO_MIME_TYPE);
+                                copyAudioBuffer = audioFormat.getString(MediaFormat.KEY_MIME).equals(AUDIO_MIME_TYPE);
                                 audioTrackIndex = mediaMuxer.addTrack(audioFormat, true);
 
                                 if(copyAudioBuffer) {
