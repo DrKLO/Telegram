@@ -8845,7 +8845,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                 break;
         }
         float scale = originalWidth > originalHeight ? maxSize / originalWidth : maxSize / originalHeight;
-        if (selectedCompression == compressionsCount - 1 && scale > 1f) {
+        if (selectedCompression == compressionsCount - 1 && scale >= 1f) {
             resultWidth = originalWidth;
             resultHeight = originalHeight;
         } else {
@@ -8853,7 +8853,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             resultHeight = Math.round(originalHeight * scale / 2) * 2;
         }
         if (bitrate != 0) {
-            if (selectedCompression == compressionsCount - 1) {
+            if (resultWidth == originalWidth && resultHeight == originalHeight) {
                 bitrate = originalBitrate;
             } else {
                 bitrate = MediaController.makeVideoBitrate(originalHeight, originalWidth, originalBitrate, resultHeight, resultWidth);
