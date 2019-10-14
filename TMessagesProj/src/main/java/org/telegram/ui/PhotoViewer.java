@@ -8845,8 +8845,13 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                 break;
         }
         float scale = originalWidth > originalHeight ? maxSize / originalWidth : maxSize / originalHeight;
-        resultWidth = Math.round(originalWidth * scale / 2) * 2;
-        resultHeight = Math.round(originalHeight * scale / 2) * 2;
+        if (selectedCompression == compressionsCount - 1 && scale > 1f) {
+            resultWidth = originalWidth;
+            resultHeight = originalHeight;
+        } else {
+            resultWidth = Math.round(originalWidth * scale / 2) * 2;
+            resultHeight = Math.round(originalHeight * scale / 2) * 2;
+        }
         if (bitrate != 0) {
             if (selectedCompression == compressionsCount - 1) {
                 bitrate = originalBitrate;
