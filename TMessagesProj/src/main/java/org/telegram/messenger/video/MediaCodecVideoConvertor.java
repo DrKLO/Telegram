@@ -40,9 +40,21 @@ public class MediaCodecVideoConvertor {
                                 int framerate, int bitrate,
                                 long startTime, long endTime,
                                 boolean needCompress,
-                                MediaController.VideoConvertorListener callback){
+                                MediaController.VideoConvertorListener callback) {
         this.callback = callback;
+        return convertVideoInternal(videoPath, cacheFile, rotationValue, isSecret,
+                resultWidth, resultHeight, framerate, bitrate, startTime, endTime, needCompress, false);
+    }
+
+    private boolean convertVideoInternal(String videoPath, File cacheFile,
+                                         int rotationValue, boolean isSecret,
+                                         int resultWidth, int resultHeight,
+                                         int framerate, int bitrate,
+                                         long startTime, long endTime,
+                                         boolean needCompress, boolean increaseTimeout) {
+
         boolean error = false;
+        boolean repeatWithIncreasedTimeout = false;
 
         try {
             MediaCodec.BufferInfo info = new MediaCodec.BufferInfo();
@@ -53,7 +65,6 @@ public class MediaCodecVideoConvertor {
             mediaMuxer = new MP4Builder().createMovie(movie, isSecret);
             extractor = new MediaExtractor();
             extractor.setDataSource(videoPath);
-
 
 
             checkConversionCanceled();
@@ -226,7 +237,7 @@ public class MediaCodecVideoConvertor {
                         if (Build.VERSION.SDK_INT >= 18) {
                             outputSurface = new OutputSurface();
                         } else {
-                            outputSurface = new OutputSurface(resultWidth, resultHeight, rotationValue,false);
+                            outputSurface = new OutputSurface(resultWidth, resultHeight, rotationValue, false);
                         }
                         decoder.configure(videoFormat, outputSurface.getSurface(), null, 0);
                         decoder.start();
@@ -318,7 +329,8 @@ public class MediaCodecVideoConvertor {
                                         info.flags = extractor.getSampleFlags();
                                         long availableSize = mediaMuxer.writeSampleData(audioTrackIndex, audioBuffer, info, false);
                                         if (availableSize != 0) {
-                                            if(callback != null) callback.didWriteData(availableSize);
+                                            if (callback != null)
+                                                callback.didWriteData(availableSize);
                                         }
                                     }
                                 } else if (index == -1) {
@@ -337,7 +349,7 @@ public class MediaCodecVideoConvertor {
                             boolean encoderOutputAvailable = true;
                             while (decoderOutputAvailable || encoderOutputAvailable) {
                                 checkConversionCanceled();
-                                int encoderStatus = encoder.dequeueOutputBuffer(info, 2500);
+                                int encoderStatus = encoder.dequeueOutputBuffer(info, increaseTimeout ? MEDIACODEC_TIMEOUT_INCREASED : MEDIACODEC_TIMEOUT_DEFAULT);
                                 if (encoderStatus == MediaCodec.INFO_TRY_AGAIN_LATER) {
                                     encoderOutputAvailable = false;
                                 } else if (encoderStatus == MediaCodec.INFO_OUTPUT_BUFFERS_CHANGED) {
@@ -365,7 +377,8 @@ public class MediaCodecVideoConvertor {
                                         if ((info.flags & MediaCodec.BUFFER_FLAG_CODEC_CONFIG) == 0) {
                                             long availableSize = mediaMuxer.writeSampleData(videoTrackIndex, encodedData, info, true);
                                             if (availableSize != 0) {
-                                                if(callback != null) callback.didWriteData(availableSize);
+                                                if (callback != null)
+                                                    callback.didWriteData(availableSize);
                                             }
                                         } else if (videoTrackIndex == -5) {
                                             byte[] csd = new byte[info.size];
@@ -492,9 +505,9 @@ public class MediaCodecVideoConvertor {
                         // in some case encoder.dequeueOutputBuffer return IllegalStateException
                         // stable reproduced on xiaomi
                         // fix it by increasing timeout
-//                        if (e instanceof IllegalStateException && timoutUsec != MEDIACODEC_TIMEOUT_INCREASED) {
-//                            repeatWithIncreasedTimeout = true;
-//                        }
+                        if (e instanceof IllegalStateException && !increaseTimeout) {
+                            repeatWithIncreasedTimeout = true;
+                        }
                         e.printStackTrace();
                         FileLog.e("bitrate: " + bitrate + " framerate: " + framerate + " size: " + resultHeight + "x" + resultWidth);
                         FileLog.e(e);
@@ -541,9 +554,11 @@ public class MediaCodecVideoConvertor {
                     FileLog.e(e);
                 }
             }
-            if (BuildVars.LOGS_ENABLED) {
-               // FileLog.d("time = " + (System.currentTimeMillis() - time));
-            }
+        }
+
+        if (repeatWithIncreasedTimeout) {
+            return convertVideoInternal(videoPath, cacheFile, rotationValue, isSecret,
+                    resultWidth, resultHeight, framerate, bitrate, startTime, endTime, needCompress, true);
         }
 
         return error;
@@ -639,7 +654,7 @@ public class MediaCodecVideoConvertor {
                             info.flags = extractor.getSampleFlags();
                             long availableSize = mediaMuxer.writeSampleData(muxerTrackIndex, buffer, info, false);
                             if (availableSize != 0) {
-                                if(callback != null) callback.didWriteData(availableSize);
+                                if (callback != null) callback.didWriteData(availableSize);
                             }
                         } else {
                             eof = true;
@@ -669,6 +684,7 @@ public class MediaCodecVideoConvertor {
     }
 
     private void checkConversionCanceled() {
-        if(callback != null && callback.checkConversionCanceled())  throw new RuntimeException("canceled conversion");
+        if (callback != null && callback.checkConversionCanceled())
+            throw new RuntimeException("canceled conversion");
     }
 }

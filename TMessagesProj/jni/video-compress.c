@@ -372,6 +372,12 @@ int compress_video(const char *src_in, const char *src_out, struct Context *cont
                     break;
                 }
 
+                if (dataBufSize == 3 && dataBuf[0] == 0x00 && dataBuf[1] == 0x00 &&
+                    dataBuf[2] == 0x12) {
+                    ret = -1;
+                    goto end;
+                }
+
                 AVPacket enc_pkt;
                 av_init_packet(&enc_pkt);
                 enc_pkt.data = NULL;

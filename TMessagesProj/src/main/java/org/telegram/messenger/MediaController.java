@@ -3619,11 +3619,8 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
         }
     }
 
-    private boolean convertVideo(MessageObject messageObject) {
-        return convertVideo(messageObject, 2500);
-    }
 
-    private boolean convertVideo(final MessageObject messageObject, int timoutUsec) {
+    private boolean convertVideo(final MessageObject messageObject) {
         if (messageObject == null || messageObject.videoEditedInfo == null) {
             return false;
         }
@@ -3704,7 +3701,6 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                 long availableSize = cacheFile.length();
                 if(availableSize > lastLength) {
                     lastLength = availableSize;
-                    Log.d("kek","ffmpeg " + availableSize);
                     MediaController.this.didWriteData(messageObject, cacheFile, false, availableSize, false);
                 }
             }
@@ -3712,14 +3708,12 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
             @Override
             public void didWriteData(long availableSize) {
                 if (messageObject.videoEditedInfo.canceled) return;
-                Log.d("kek","mediacodec " + availableSize);
                 MediaController.this.didWriteData(messageObject, cacheFile, false, availableSize, false);
             }
         };
 
         messageObject.videoEditedInfo.videoConvertFirstWrite = true;
         boolean error = false;
-        boolean mediacodec = true;
 
         MediaExtractor extractor = new MediaExtractor();
 
@@ -3742,7 +3736,6 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
 
         if(needCompress && duration < 25_000000 && !isSecret && copyAudioStream) {
             try {
-                mediacodec = false;
                 FfmpegVideoConvertor convertor = new FfmpegVideoConvertor();
                 error = convertor.convertVideo(videoPath, cacheFile.getAbsolutePath(),
                         rotationValue,
@@ -3772,13 +3765,9 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
             }
         }
 
-        int p = Math.min(resultHeight, resultWidth);
-
-        Log.d("kek", "mediacodec " + mediacodec +
-                " " + p + "p " +
-                " bitrate: " + bitrate +
-                " convert time: " + ((System.currentTimeMillis() - time) / 1000f) + "s " +
-                " file size= " + (cacheFile.length() / (1024 * 1024)) + "mb");
+        if (BuildVars.LOGS_ENABLED) {
+            FileLog.d("time = " + (System.currentTimeMillis() - time) + " canceled = " + canceled);
+        }
 
         preferences.edit().putBoolean("isPreviousOk", true).apply();
         didWriteData(messageObject, cacheFile, true, cacheFile.length(), error || canceled);
