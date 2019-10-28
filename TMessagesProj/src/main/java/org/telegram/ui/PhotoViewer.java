@@ -2749,15 +2749,19 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         compressItem.setBackgroundDrawable(Theme.createSelectorDrawable(Theme.ACTION_BAR_WHITE_SELECTOR_COLOR));
         SharedPreferences preferences = MessagesController.getGlobalMainSettings();
         selectedCompression = preferences.getInt("compress_video2", 1);
+        int compressIconWidth;
         if (selectedCompression <= 0) {
             compressItem.setImageResource(R.drawable.video_quality1);
+            compressIconWidth = 48;
         } else if (selectedCompression == 2) {
             compressItem.setImageResource(R.drawable.video_quality2);
+            compressIconWidth = 64;
         } else {
             selectedCompression = compressionsCount - 1;
             compressItem.setImageResource(R.drawable.video_quality3);
+            compressIconWidth = 64;
         }
-        itemsLayout.addView(compressItem, LayoutHelper.createLinear(70, 48));
+        itemsLayout.addView(compressItem, LayoutHelper.createLinear(compressIconWidth, 48));
         compressItem.setOnClickListener(v -> {
             if (captionEditText.getTag() != null) {
                 return;
@@ -6380,7 +6384,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                     if (botInlineResult.document != null) {
                         f = FileLoader.getPathToAttach(botInlineResult.document);
                     } else if (botInlineResult.content instanceof TLRPC.TL_webDocument) {
-                        f = new File(FileLoader.getDirectory(FileLoader.MEDIA_DIR_CACHE), Utilities.MD5(botInlineResult.content.url) + "." + ImageLoader.getHttpUrlExtension(botInlineResult.content.url, "mp4"));
+                        f = new File(FileLoader.getDirectory(FileLoader.MEDIA_DIR_CACHE), Utilities.MD5(botInlineResult.content.url) + "." + ImageLoader.getHttpUrlExtension(botInlineResult.content.url, "mp4muxer"));
                     }
                     isVideo = true;
                 } else if (botInlineResult.document != null) {
@@ -6771,7 +6775,8 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             }
             pickerViewSendButton.setLayoutParams(layoutParams2);
         }
-        return openPhoto(null, null, null, null, null, photos, index, provider, chatActivity, 0, 0, true);
+        long dialogId = chatActivity != null ? chatActivity.getDialogId() : 0;
+        return openPhoto(null, null, null, null, null, photos, index, provider, chatActivity, dialogId, 0, true);
     }
 
     private boolean checkAnimation() {
@@ -8297,7 +8302,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                     file = null;
                 }
             } else if (currentBotInlineResult.content instanceof TLRPC.TL_webDocument) {
-                file = new File(FileLoader.getDirectory(FileLoader.MEDIA_DIR_CACHE), Utilities.MD5(currentBotInlineResult.content.url) + "." + ImageLoader.getHttpUrlExtension(currentBotInlineResult.content.url, "mp4"));
+                file = new File(FileLoader.getDirectory(FileLoader.MEDIA_DIR_CACHE), Utilities.MD5(currentBotInlineResult.content.url) + "." + ImageLoader.getHttpUrlExtension(currentBotInlineResult.content.url, "mp4muxer"));
                 if (!file.exists()) {
                     file = null;
                 }
@@ -8323,7 +8328,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                         }
                     } else if (currentBotInlineResult.content instanceof TLRPC.TL_webDocument) {
                         if (!ImageLoader.getInstance().isLoadingHttpFile(currentBotInlineResult.content.url)) {
-                            ImageLoader.getInstance().loadHttpFile(currentBotInlineResult.content.url, "mp4", currentAccount);
+                            ImageLoader.getInstance().loadHttpFile(currentBotInlineResult.content.url, "mp4muxer", currentAccount);
                         } else {
                             ImageLoader.getInstance().cancelLoadHttpFile(currentBotInlineResult.content.url);
                         }
@@ -8553,10 +8558,6 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         private int sideSide;
         private int lineSize;
 
-        private boolean moving;
-        private boolean startMoving;
-        private float startX;
-
         private String lowQualityDescription;
         private String hightQualityDescription;
 
@@ -8578,17 +8579,10 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         public boolean onTouchEvent(MotionEvent event) {
             float x = event.getX();
             if (event.getAction() == MotionEvent.ACTION_DOWN) {
+                startMovingQuality = selectedCompression;
                 getParent().requestDisallowInterceptTouchEvent(true);
-                for (int a = 0; a < compressionsCount; a++) {
-                    int cx = sideSide + (lineSize + gapSize * 2 + circleSize) * a + circleSize / 2;
-                    if (x > cx - AndroidUtilities.dp(15) && x < cx + AndroidUtilities.dp(15)) {
-                        startMoving = a == selectedCompression;
-                        startX = x;
-                        startMovingQuality = selectedCompression;
-                        break;
-                    }
-                }
-            } else if (event.getAction() == MotionEvent.ACTION_MOVE) {
+            }
+            if (event.getAction() == MotionEvent.ACTION_DOWN || event.getAction() == MotionEvent.ACTION_MOVE) {
 
                 for (int a = 0; a < compressionsCount; a++) {
                     int cx = sideSide + (lineSize + gapSize * 2 + circleSize) * a + circleSize / 2;
@@ -8604,12 +8598,9 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                 }
 
             } else if (event.getAction() == MotionEvent.ACTION_UP || event.getAction() == MotionEvent.ACTION_CANCEL) {
-
                 if (selectedCompression != startMovingQuality) {
                     requestVideoPreview(1);
                 }
-
-                startMoving = false;
                 moving = false;
             }
             return true;
@@ -8715,13 +8706,19 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             return;
         }
 
+        int compressIconWidth = 64;
         if (selectedCompression < 2) {
             compressItem.setImageResource(R.drawable.video_quality1);
+            compressIconWidth = 48;
         } else if (selectedCompression == 2) {
             compressItem.setImageResource(R.drawable.video_quality2);
+            compressIconWidth = 64;
         } else if (selectedCompression == 3) {
             compressItem.setImageResource(R.drawable.video_quality3);
+            compressIconWidth = 64;
         }
+        compressItem.getLayoutParams().width = AndroidUtilities.dp(compressIconWidth);
+        compressItem.requestLayout();
         String[] compressionStrings = {"360", "480", "720", "1080"};
         compressItem.setContentDescription(LocaleController.getString("AccDescrVideoQuality", R.string.AccDescrVideoQuality) + ", " + compressionStrings[Math.max(0, selectedCompression)]);
 
@@ -8790,6 +8787,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                     message.message = "";
                     message.media = new TLRPC.TL_messageMediaEmpty();
                     message.action = new TLRPC.TL_messageActionEmpty();
+                    message.dialog_id = currentDialogId;
                     videoPreviewMessageObject = new MessageObject(UserConfig.selectedAccount, message, false);
                     videoPreviewMessageObject.messageOwner.attachPath = new File(FileLoader.getDirectory(FileLoader.MEDIA_DIR_CACHE), "video_preview.mp4").getAbsolutePath();
                     videoPreviewMessageObject.videoEditedInfo = new VideoEditedInfo();

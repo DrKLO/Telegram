@@ -102,11 +102,12 @@ public class AudioTranscoder {
 
             extractorDone = !extractor.advance();
             if (extractorDone) {
+                decoderInputBufferIndex = decoder.dequeueInputBuffer(TIMEOUT_USEC);
                 decoder.queueInputBuffer(
                         decoderInputBufferIndex,
                         0,
                         0,
-                        0,
+                        0L,
                         MediaCodec.BUFFER_FLAG_END_OF_STREAM);
             }
             break;

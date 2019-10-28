@@ -81,6 +81,22 @@ include $(PREBUILT_STATIC_LIBRARY)
 
 include $(CLEAR_VARS)
 
+LOCAL_MODULE    := x264
+
+ifeq ($(TARGET_ARCH_ABI),armeabi-v7a)
+    LOCAL_SRC_FILES := ./ffmpeg/armv7-a/libx264.a
+else ifeq ($(TARGET_ARCH_ABI),arm64-v8a)
+    LOCAL_SRC_FILES := ./ffmpeg/arm64/libx264.a
+else ifeq ($(TARGET_ARCH_ABI),x86)
+    LOCAL_SRC_FILES := ./ffmpeg/i686/libx264.a
+else ifeq ($(TARGET_ARCH_ABI),x86_64)
+    LOCAL_SRC_FILES := ./ffmpeg/x86_64/libx264.a
+endif
+
+include $(PREBUILT_STATIC_LIBRARY)
+
+include $(CLEAR_VARS)
+
 LOCAL_MODULE    := crypto
 
 ifeq ($(TARGET_ARCH_ABI),armeabi-v7a)
@@ -353,7 +369,7 @@ LOCAL_CFLAGS 	+= -Drestrict='' -D__EMX__ -DOPUS_BUILD -DFIXED_POINT -DUSE_ALLOCA
 LOCAL_CFLAGS 	+= -DANDROID_NDK -DDISABLE_IMPORTGL -fno-strict-aliasing -fprefetch-loop-arrays -DAVOID_TABLES -DANDROID_TILE_BASED_DECODE -DANDROID_ARMV6_IDCT -ffast-math -D__STDC_CONSTANT_MACROS
 LOCAL_CPPFLAGS 	:= -DBSD=1 -ffast-math -Os -funroll-loops -std=c++14
 LOCAL_LDLIBS 	:= -ljnigraphics -llog -lz -lEGL -lGLESv2 -landroid
-LOCAL_STATIC_LIBRARIES := webp sqlite lz4 rlottie tgnet swscale avformat avcodec avresample avutil voip flac
+LOCAL_STATIC_LIBRARIES := webp sqlite lz4 rlottie tgnet swscale avformat avcodec avresample avutil voip flac x264
 
 LOCAL_SRC_FILES     := \
 ./opus/src/opus.c \
@@ -632,7 +648,8 @@ LOCAL_SRC_FILES     += \
 ./exoplayer/ffmpeg_jni.cc \
 ./fast-edge.cpp \
 ./genann.c \
-./secureid_ocr.cpp
+./secureid_ocr.cpp \
+./video-compress.c
 
 include $(BUILD_SHARED_LIBRARY)
 

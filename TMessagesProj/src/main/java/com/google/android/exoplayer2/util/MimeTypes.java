@@ -30,7 +30,7 @@ public final class MimeTypes {
   public static final String BASE_TYPE_TEXT = "text";
   public static final String BASE_TYPE_APPLICATION = "application";
 
-  public static final String VIDEO_MP4 = BASE_TYPE_VIDEO + "/mp4";
+  public static final String VIDEO_MP4 = BASE_TYPE_VIDEO + "/mp4muxer";
   public static final String VIDEO_WEBM = BASE_TYPE_VIDEO + "/webm";
   public static final String VIDEO_H263 = BASE_TYPE_VIDEO + "/3gpp";
   public static final String VIDEO_H264 = BASE_TYPE_VIDEO + "/avc";
@@ -43,7 +43,7 @@ public final class MimeTypes {
   public static final String VIDEO_VC1 = BASE_TYPE_VIDEO + "/wvc1";
   public static final String VIDEO_UNKNOWN = BASE_TYPE_VIDEO + "/x-unknown";
 
-  public static final String AUDIO_MP4 = BASE_TYPE_AUDIO + "/mp4";
+  public static final String AUDIO_MP4 = BASE_TYPE_AUDIO + "/mp4muxer";
   public static final String AUDIO_AAC = BASE_TYPE_AUDIO + "/mp4a-latm";
   public static final String AUDIO_WEBM = BASE_TYPE_AUDIO + "/webm";
   public static final String AUDIO_MPEG = BASE_TYPE_AUDIO + "/mpeg";
@@ -71,7 +71,7 @@ public final class MimeTypes {
   public static final String TEXT_VTT = BASE_TYPE_TEXT + "/vtt";
   public static final String TEXT_SSA = BASE_TYPE_TEXT + "/x-ssa";
 
-  public static final String APPLICATION_MP4 = BASE_TYPE_APPLICATION + "/mp4";
+  public static final String APPLICATION_MP4 = BASE_TYPE_APPLICATION + "/mp4muxer";
   public static final String APPLICATION_WEBM = BASE_TYPE_APPLICATION + "/webm";
   public static final String APPLICATION_MPD = BASE_TYPE_APPLICATION + "/dash+xml";
   public static final String APPLICATION_M3U8 = BASE_TYPE_APPLICATION + "/x-mpegURL";
