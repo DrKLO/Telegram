@@ -25,7 +25,6 @@ public class CircleBezierDrawable {
         L = (float) ((4.0 / 3.0) * Math.tan(Math.PI / (2 * N)));
     }
 
-
     protected void draw(float cX, float cY, Canvas canvas, Paint paint) {
         float r1 = radius - idleStateDiff / 2f - radiusDiff / 2f;
         float r2 = radius + radiusDiff / 2 + idleStateDiff / 2f;
@@ -49,7 +48,6 @@ public class CircleBezierDrawable {
             if (j >= N) j = 0;
 
             r = (j % 2 == 0 ? r1 : r2);
-
 
             pointEnd[0] = cX;
             pointEnd[1] = cY - r;
