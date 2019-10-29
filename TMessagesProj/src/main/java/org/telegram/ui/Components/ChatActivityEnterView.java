@@ -554,6 +554,8 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
     private Drawable lockShadowDrawable;
     private RectF rect = new RectF();
 
+    private final static float MAX_AMPLITUDE = 1800f;
+
     private class RecordCircle extends View {
 
         private float scale;
@@ -565,13 +567,18 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
         private float startTranslation;
         private boolean sendButtonVisible;
         private boolean pressed;
+        private WaveDrawable bigWaveDrawable;
+        private WaveDrawable tinyWaveDrawable;
+
+        private float circleRadius = AndroidUtilities.dp(34);
+        private float circleRadiusAmplitude = AndroidUtilities.dp(30);
 
         private VirtualViewHelper virtualViewHelper;
 
         public RecordCircle(Context context) {
             super(context);
             paint.setColor(Theme.getColor(Theme.key_chat_messagePanelVoiceBackground));
-            paintRecord.setColor(Theme.getColor(Theme.key_chat_messagePanelVoiceShadow));
+            paintRecord.setColor(Theme.getColor(Theme.key_chat_messagePanelVoiceBackground));
 
             lockDrawable = getResources().getDrawable(R.drawable.lock_middle);
             lockDrawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_chat_messagePanelVoiceLock), PorterDuff.Mode.MULTIPLY));
@@ -595,11 +602,19 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
 
             virtualViewHelper = new VirtualViewHelper(this);
             ViewCompat.setAccessibilityDelegate(this, virtualViewHelper);
+
+            bigWaveDrawable = new WaveDrawable(12, 0.03f, AndroidUtilities.dp(40), true);
+            bigWaveDrawable.rotation = 36f;
+            tinyWaveDrawable = new WaveDrawable(12, -0.05f, AndroidUtilities.dp(35), false);
+            tinyWaveDrawable.waveDif = 0.5f;
         }
 
         public void setAmplitude(double value) {
-            animateToAmplitude = (float) Math.min(100, value) / 100.0f;
-            animateAmplitudeDiff = (animateToAmplitude - amplitude) / 150.0f;
+            bigWaveDrawable.setValue((float) (Math.min(MAX_AMPLITUDE, value) / MAX_AMPLITUDE));
+            tinyWaveDrawable.setValue((float) (Math.min(MAX_AMPLITUDE, value) / MAX_AMPLITUDE));
+
+            animateToAmplitude = (float) (Math.min(MAX_AMPLITUDE, value) / MAX_AMPLITUDE);
+            animateAmplitudeDiff = (animateToAmplitude - amplitude) / 200.0f;
             lastUpdateTime = System.currentTimeMillis();
             invalidate();
         }
@@ -683,7 +698,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
 
         @Override
         protected void onDraw(Canvas canvas) {
-            int cx = getMeasuredWidth() / 2;
+            int cx = AndroidUtilities.dp(132);
             int cy = AndroidUtilities.dp(170);
             float yAdd = 0;
 
@@ -720,11 +735,22 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                 }
                 invalidate();
             }
-            lastUpdateTime = System.currentTimeMillis();
-            if (amplitude != 0) {
-                canvas.drawCircle(getMeasuredWidth() / 2.0f, cy, (AndroidUtilities.dp(42) + AndroidUtilities.dp(20) * amplitude) * scale, paintRecord);
+
+            float radius = (circleRadius + circleRadiusAmplitude * amplitude) * sc;
+
+            if (!isInVideoMode()) {
+                bigWaveDrawable.tick(radius);
+                tinyWaveDrawable.tick(radius);
             }
-            canvas.drawCircle(getMeasuredWidth() / 2.0f, cy, AndroidUtilities.dp(42) * sc, paint);
+
+            lastUpdateTime = System.currentTimeMillis();
+
+            if (!isInVideoMode()) {
+                bigWaveDrawable.draw(cx, cy, canvas);
+                tinyWaveDrawable.draw(cx, cy, canvas);
+            }
+
+            canvas.drawCircle(cx, cy, radius, paint);
             Drawable drawable;
             if (isSendButtonVisible()) {
                 drawable = sendDrawable;
@@ -832,6 +858,190 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
             @Override
             protected boolean onPerformActionForVirtualView(int id, int action, @Nullable Bundle args) {
                 return true;
+            }
+        }
+
+        private class WaveDrawable {
+
+            private float animateToAmplitude;
+            private float amplitude;
+            private float slowAmplitude;
+            private float animateAmplitudeDiff;
+            private float animateAmplitudeSlowDiff;
+            float lastRadius = 0f;
+            float radiusDiff = 0f;
+            float waveDif = 0f;
+            double waveAngle = 0f;
+
+            float rotation = 0f;
+            private float rotateDif;
+            private final CircleBezierDrawable circleBezierDrawable;
+            private float amplitudeRadius;
+            private float idleRadius = 0;
+            private boolean expandIdleRadius = false;
+            private boolean isBig;
+
+
+            public WaveDrawable(int n,
+                                float rotateDif,
+                                float amplitudeRadius,
+                                boolean isFrequncy) {
+                circleBezierDrawable = new CircleBezierDrawable(n);
+                this.rotateDif = rotateDif;
+                this.amplitudeRadius = amplitudeRadius;
+                this.isBig = isFrequncy;
+            }
+
+            public void setValue(float value) {
+                animateToAmplitude = value;
+
+                if (isBig) {
+                    if(animateToAmplitude > amplitude) {
+                        animateAmplitudeDiff = (animateToAmplitude - amplitude) / 500f;
+                        animateAmplitudeSlowDiff = (animateToAmplitude - slowAmplitude) / 600f;
+                    } else  {
+                        animateAmplitudeDiff = (animateToAmplitude - amplitude) / 250f;
+                        animateAmplitudeSlowDiff = (animateToAmplitude - slowAmplitude) / 400f;
+                    }
+
+                } else {
+                    if(animateToAmplitude > amplitude) {
+                        animateAmplitudeDiff = (animateToAmplitude - amplitude) / 250f;
+                        animateAmplitudeSlowDiff = (animateToAmplitude - slowAmplitude) / 400f;
+                    } else  {
+                        animateAmplitudeDiff = (animateToAmplitude - amplitude) / 500f;
+                        animateAmplitudeSlowDiff = (animateToAmplitude - slowAmplitude) / 600f;
+                    }
+                }
+
+                lastUpdateTime = System.currentTimeMillis();
+                invalidate();
+            }
+
+            public void tick(float circleRadius) {
+                long dt = System.currentTimeMillis() - lastUpdateTime;
+
+                if (animateToAmplitude != amplitude) {
+                    amplitude += animateAmplitudeDiff * dt;
+                    if (animateAmplitudeDiff > 0) {
+                        if (amplitude > animateToAmplitude) {
+                            amplitude = animateToAmplitude;
+                        }
+                    } else {
+                        if (amplitude < animateToAmplitude) {
+                            amplitude = animateToAmplitude;
+                        }
+                    }
+                }
+
+                if (animateToAmplitude != slowAmplitude) {
+                    slowAmplitude += animateAmplitudeSlowDiff * dt;
+                    if (Math.abs(slowAmplitude - amplitude) > 0.2f) {
+                        slowAmplitude = amplitude + (slowAmplitude > amplitude ?
+                                0.2f : -0.2f);
+                    }
+                    if (animateAmplitudeSlowDiff > 0) {
+                        if (slowAmplitude > animateToAmplitude) {
+                            slowAmplitude = animateToAmplitude;
+                        }
+                    } else {
+                        if (slowAmplitude < animateToAmplitude) {
+                            slowAmplitude = animateToAmplitude;
+                        }
+                    }
+                }
+
+                if (expandIdleRadius) {
+                    idleRadius += circleRadius * 0.0002f * dt;
+                    if (idleRadius >= circleRadius * 0.08f) {
+                        idleRadius = circleRadius * 0.08f;
+                        expandIdleRadius = false;
+                    }
+                } else {
+                    idleRadius -= circleRadius * 0.0002f * dt;
+                    if (idleRadius < circleRadius * -0.08f) {
+                        idleRadius = circleRadius * -0.08f;
+                        expandIdleRadius = true;
+                    }
+                }
+
+
+                float a = animateToAmplitude;
+                rotation += (rotateDif * 0.5f + rotateDif * 4f * (a > 0.5f ? 1 : a / 0.5f)) * dt;
+                if (rotation > 360) rotation %= 360;
+
+
+                lastRadius = circleRadius;
+                if (lastRadius < circleRadius) {
+                    radiusDiff = circleRadius * 0.1f / 500f;
+                } else {
+                    lastRadius -= radiusDiff * dt;
+
+                }
+
+
+                waveAngle += (0.002 + 0.003 * a) * dt;
+                waveDif = (float) Math.cos(waveAngle);
+
+                invalidate();
+            }
+
+            public void draw(float cx, float cy, Canvas canvas) {
+                float radiusDiff = AndroidUtilities.dp(20);
+                float additionalR;
+                if (isBig) {
+                    additionalR = AndroidUtilities.dp(5f);
+                    float waveAmplitude = amplitude < 0.3f ? amplitude / 0.3f : 1f;
+
+                    //float amplitude = tinyWaveDrawable.amplitude;
+                    circleBezierDrawable.idleStateDiff = (idleRadius + AndroidUtilities.dp(2)) *
+                            (1f - waveAmplitude);
+
+
+                    float kDiff = 0.3f * waveAmplitude * waveDif;
+                    circleBezierDrawable.radiusDiff = radiusDiff * kDiff;
+                    circleBezierDrawable.cubicBezierK = 1f + Math.abs(kDiff);
+
+                    circleBezierDrawable.globalRotate = rotation;
+                } else {
+                    additionalR = AndroidUtilities.dp(4f) + AndroidUtilities.dp(10f) * waveDif * amplitude;
+                    float waveAmplitude = amplitude < 0.3f ? amplitude / 0.3f : 1f;
+
+                    circleBezierDrawable.idleStateDiff = idleRadius * (1f - waveAmplitude);
+
+                    float kDiff = 0.3f * waveAmplitude * waveDif;
+
+                    if(amplitude < 0.1f){
+                        kDiff *= 0.5f;
+                    } else if(amplitude < 0.2f && amplitude < 0.3f){
+                        kDiff *= 0.5f + (amplitude - 0.2f) / 0.3f;
+                    }
+
+                    circleBezierDrawable.radiusDiff = -radiusDiff * kDiff;
+                    circleBezierDrawable.cubicBezierK = 1f + Math.abs(kDiff);
+
+                    circleBezierDrawable.globalRotate = rotation;
+                }
+
+                circleBezierDrawable.radius = (lastRadius + amplitudeRadius * amplitude) * scale + additionalR;
+
+                if (circleBezierDrawable.radius + circleBezierDrawable.radiusDiff < circleRadius + AndroidUtilities.dp(2) && scale == 1f) {
+                    circleBezierDrawable.radiusDiff = (circleRadius + AndroidUtilities.dp(2)) - circleBezierDrawable.radius;
+                }
+
+                if (isBig) {
+                    paintRecord.setAlpha(102);
+                } else {
+                    paintRecord.setAlpha(76);
+                }
+
+                circleBezierDrawable.draw(cx, cy, canvas, paintRecord);
+
+
+            }
+
+            public float getAmplitude() {
+                return amplitude;
             }
         }
     }
@@ -1555,7 +1765,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
 
         recordCircle = new RecordCircle(context);
         recordCircle.setVisibility(GONE);
-        sizeNotifierLayout.addView(recordCircle, LayoutHelper.createFrame(124, 194, Gravity.BOTTOM | Gravity.RIGHT, 0, 0, -36, 0));
+        sizeNotifierLayout.addView(recordCircle, LayoutHelper.createFrame(194, 194, Gravity.BOTTOM | Gravity.RIGHT, 0, 0, -36, 0));
 
         cancelBotButton = new ImageView(context);
         cancelBotButton.setVisibility(INVISIBLE);
