@@ -2927,7 +2927,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                                 newMsg.ttl = uploadedMedia.ttl_seconds = ttl;
                                 uploadedMedia.flags |= 2;
                             }
-                            if (!TextUtils.isEmpty(path) && path.toLowerCase().endsWith("mp4") && (params == null || params.containsKey("forceDocument"))) {
+                            if (!TextUtils.isEmpty(path) && path.toLowerCase().endsWith("mp4muxer") && (params == null || params.containsKey("forceDocument"))) {
                                 uploadedMedia.nosound_video = true;
                             }
                             uploadedMedia.mime_type = document.mime_type;
@@ -5094,7 +5094,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                             switch (result.type) {
                                 case "gif": {
                                     fileName.file_name = "animation.gif";
-                                    if (finalPath.endsWith("mp4")) {
+                                    if (finalPath.endsWith("mp4muxer")) {
                                         document.mime_type = "video/mp4";
                                         document.attributes.add(new TLRPC.TL_documentAttributeAnimated());
                                     } else {
@@ -5103,7 +5103,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                                     try {
                                         int side = isEncrypted ? 90 : 320;
                                         Bitmap bitmap;
-                                        if (finalPath.endsWith("mp4")) {
+                                        if (finalPath.endsWith("mp4muxer")) {
                                             bitmap = ThumbnailUtils.createVideoThumbnail(finalPath, MediaStore.Video.Thumbnails.MINI_KIND);
                                         } else {
                                             bitmap = ImageLoader.loadBitmap(finalPath, null, side, side, true);
@@ -5624,7 +5624,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                             document.attributes.add(fileName);
                             document.size = info.searchImage.size;
                             document.dc_id = 0;
-                            if (cacheFile.toString().endsWith("mp4")) {
+                            if (cacheFile.toString().endsWith("mp4muxer")) {
                                 document.mime_type = "video/mp4";
                                 document.attributes.add(new TLRPC.TL_documentAttributeAnimated());
                             } else {
@@ -5646,7 +5646,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                                 try {
                                     int side = isEncrypted || info.ttl != 0 ? 90 : 320;
                                     Bitmap bitmap;
-                                    if (thumbFile.getAbsolutePath().endsWith("mp4")) {
+                                    if (thumbFile.getAbsolutePath().endsWith("mp4muxer")) {
                                         bitmap = ThumbnailUtils.createVideoThumbnail(thumbFile.getAbsolutePath(), MediaStore.Video.Thumbnails.MINI_KIND);
                                     } else {
                                         bitmap = ImageLoader.loadBitmap(thumbFile.getAbsolutePath(), null, side, side, true);
@@ -5770,7 +5770,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                             videoEditedInfo = info.videoEditedInfo != null ? info.videoEditedInfo : createCompressionSettings(info.path);
                         }
 
-                        if (!forceDocument && (videoEditedInfo != null || info.path.endsWith("mp4"))) {
+                        if (!forceDocument && (videoEditedInfo != null || info.path.endsWith("mp4muxer"))) {
                             String path = info.path;
                             String originalPath = info.path;
                             File temp = new File(originalPath);
@@ -6104,6 +6104,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
             String duration = mediaMetadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION);
             if (duration != null) {
                 attributeVideo.duration = (int) Math.ceil(Long.parseLong(duration) / 1000.0f);
+                videoEditedInfo.originalDuration = attributeVideo.duration;
             }
             if (Build.VERSION.SDK_INT >= 17) {
                 String rotation = mediaMetadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_ROTATION);
@@ -6171,7 +6172,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
         int[] params = new int[AnimatedFileDrawable.PARAM_NUM_COUNT];
         AnimatedFileDrawable.getVideoInfo(videoPath, params);
 
-        if (params[AnimatedFileDrawable.PARAM_NUM_IS_AVC] == 0) {
+        if (params[AnimatedFileDrawable.PARAM_NUM_SUPPORTED_VIDEO_CODEC] == 0) {
             if (BuildVars.LOGS_ENABLED) {
                 FileLog.d("video hasn't avc1 atom");
             }
@@ -6191,10 +6192,10 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
 
         if (Build.VERSION.SDK_INT < 18) {
             try {
-                MediaCodecInfo codecInfo = MediaController.selectCodec(MediaController.MIME_TYPE);
+                MediaCodecInfo codecInfo = MediaController.selectCodec(MediaController.VIDEO_MIME_TYPE);
                 if (codecInfo == null) {
                     if (BuildVars.LOGS_ENABLED) {
-                        FileLog.d("no codec info for " + MediaController.MIME_TYPE);
+                        FileLog.d("no codec info for " + MediaController.VIDEO_MIME_TYPE);
                     }
                     return null;
                 } else {
@@ -6211,9 +6212,9 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                         }
                         return null;
                     } else {
-                        if (MediaController.selectColorFormat(codecInfo, MediaController.MIME_TYPE) == 0) {
+                        if (MediaController.selectColorFormat(codecInfo, MediaController.VIDEO_MIME_TYPE) == 0) {
                             if (BuildVars.LOGS_ENABLED) {
-                                FileLog.d("no color format for " + MediaController.MIME_TYPE);
+                                FileLog.d("no color format for " + MediaController.VIDEO_MIME_TYPE);
                             }
                             return null;
                         }
@@ -6316,7 +6317,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
             Bitmap thumb = null;
             String thumbKey = null;
 
-            if (videoEditedInfo != null || videoPath.endsWith("mp4") || isRound) {
+            if (videoEditedInfo != null || videoPath.endsWith("mp4muxer") || isRound) {
                 String path = videoPath;
                 String originalPath = videoPath;
                 File temp = new File(originalPath);

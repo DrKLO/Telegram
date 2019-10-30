@@ -663,7 +663,7 @@ public class ImageLoader {
                     originalBitmap = ThumbnailUtils.createVideoThumbnail(originalPath.toString(), info.big ? MediaStore.Video.Thumbnails.FULL_SCREEN_KIND : MediaStore.Video.Thumbnails.MINI_KIND);
                 } else if (mediaType == FileLoader.MEDIA_DIR_DOCUMENT) {
                     String path = originalPath.toString().toLowerCase();
-                    if (path.endsWith("mp4")) {
+                    if (path.endsWith("mp4muxer")) {
                         originalBitmap = ThumbnailUtils.createVideoThumbnail(originalPath.toString(), info.big ? MediaStore.Video.Thumbnails.FULL_SCREEN_KIND : MediaStore.Video.Thumbnails.MINI_KIND);
                     } else if (path.endsWith(".jpg") || path.endsWith(".jpeg") || path.endsWith(".png") || path.endsWith(".gif")) {
                         originalBitmap = ImageLoader.loadBitmap(path, null, size, size, false);
@@ -2242,7 +2242,7 @@ public class ImageLoader {
                             String location = imageLocation.path;
                             if (!location.startsWith("vthumb") && !location.startsWith("thumb")) {
                                 String trueExt = getHttpUrlExtension(location, "jpg");
-                                if (trueExt.equals("mp4") || trueExt.equals("gif")) {
+                                if (trueExt.equals("mp4muxer") || trueExt.equals("gif")) {
                                     img.animatedFile = true;
                                 }
                             }

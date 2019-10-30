@@ -3021,6 +3021,8 @@
 	<string name="AccDescrSearchByUser">Filter by user</string>
     <string name="AccActionTakePicture">Take a picture</string>
     <string name="AccActionRecordVideo">Record video</string>
+    <string name="AccDescrVideoCompressLow">Smaller size</string>
+    <string name="AccDescrVideoCompressHigh">Higher quality</string>
     <!--date formatters-->
     <string name="formatterStats12H">MMM dd yyyy, h:mm a</string>
     <string name="formatterStats24H">MMM dd yyyy, HH:mm</string>

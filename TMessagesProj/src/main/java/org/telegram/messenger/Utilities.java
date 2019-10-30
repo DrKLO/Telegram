@@ -14,6 +14,8 @@ import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Rect;
 
+import org.telegram.messenger.video.FfmpegVideoConvertor;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.math.BigInteger;
@@ -65,6 +67,7 @@ public class Utilities {
     public native static void clearDir(String path, int docType, long time);
     private native static int pbkdf2(byte[] password, byte[] salt, byte[] dst, int iterations);
     public static native void stackBlurBitmap(Bitmap bitmap, int radius);
+    public static native int compressVideo(FfmpegVideoConvertor controller, String scrIn, String srcOut, int width, int height, int framerate, int bitrate, float startTime, float endTime);
 
     public static Bitmap blurWallpaper(Bitmap src) {
         if (src == null) {

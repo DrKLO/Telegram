@@ -195,7 +195,7 @@ public class FileLoader extends BaseController {
         });
     }
 
-    public void checkUploadNewDataAvailable(final String location, final boolean encrypted, final long newAvailableSize, final long finalSize) {
+    public void  checkUploadNewDataAvailable(final String location, final boolean encrypted, final long newAvailableSize, final long finalSize) {
         fileLoaderQueue.postRunnable(() -> {
             FileUploadOperation operation;
             if (encrypted) {

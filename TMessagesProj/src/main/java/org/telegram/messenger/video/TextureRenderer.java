@@ -53,6 +53,31 @@ public class TextureRenderer {
             "  gl_FragColor = texture2D(sTexture, vTextureCoord);\n" +
             "}\n";
 
+    private static final String FRAGMENT_SHADER_YUV =
+            "#extension GL_OES_EGL_image_external : require\n" +
+                    "precision highp float;\n" +
+                    "varying vec2 vTextureCoord;\n" +
+                    "uniform samplerExternalOES sTexture;\n" +
+                    "const float RGB2YUV_SHIFT = 32768.0;\n" +
+                    "const float BY =  (0.114 * 219.0 / 255.0 * RGB2YUV_SHIFT);\n" +
+                    "const float BV = -(0.081 * 224.0 / 255.0 * RGB2YUV_SHIFT);\n" +
+                    "const float BU =  (0.500 * 224.0 / 255.0 * RGB2YUV_SHIFT);\n" +
+                    "const float GY =  (0.587 * 219.0 / 255.0 * RGB2YUV_SHIFT);\n" +
+                    "const float GV = -(0.419 * 224.0 / 255.0 * RGB2YUV_SHIFT);\n" +
+                    "const float GU = -(0.331 * 224.0 / 255.0 * RGB2YUV_SHIFT);\n" +
+                    "const float RY =  (0.299 * 219.0 / 255.0 * RGB2YUV_SHIFT);\n" +
+                    "const float RV =  (0.500 * 224.0 / 255.0 * RGB2YUV_SHIFT);\n" +
+                    "const float RU = -(0.169 * 224.0 / 255.0 * RGB2YUV_SHIFT);\n" +
+                    "void main() {\n" +
+                    "vec4 rgb = texture2D(sTexture, vTextureCoord);\n" +
+                    "vec4 yuv = vec4(0.0);\n" +
+
+                    "yuv.x = ((RY * rgb.x + GY * rgb.y + BY * rgb.z + 2120.282) / RGB2YUV_SHIFT);\n" +
+                    "yuv.y = ((RU * rgb.x + GU * rgb.y + BU * rgb.z + 16512.5019) / RGB2YUV_SHIFT);\n" +
+                    "yuv.z = ((RV * rgb.x + GV * rgb.y + BV * rgb.z + 16512.5019) / RGB2YUV_SHIFT);" +
+                    "gl_FragColor = yuv;\n" +
+                    "}\n";
+
     private float[] mMVPMatrix = new float[16];
     private float[] mSTMatrix = new float[16];
     private int mTextureID = -12345;
@@ -63,8 +88,14 @@ public class TextureRenderer {
     private int maTextureHandle;
 
     private int rotationAngle;
+    private boolean yuv;
 
     public TextureRenderer(int rotation) {
+        this(rotation, false);
+    }
+
+    public TextureRenderer(int rotation, boolean useYuv) {
+        this.yuv = useYuv;
         rotationAngle = rotation;
         float[] mTriangleVerticesData = {
                 -1.0f, -1.0f, 0, 0.f, 0.f,
@@ -113,7 +144,7 @@ public class TextureRenderer {
     }
 
     public void surfaceCreated() {
-        mProgram = createProgram(VERTEX_SHADER, FRAGMENT_SHADER);
+        mProgram = createProgram(VERTEX_SHADER, yuv ? FRAGMENT_SHADER_YUV : FRAGMENT_SHADER);
         if (mProgram == 0) {
             throw new RuntimeException("failed creating program");
         }
@@ -149,8 +180,17 @@ public class TextureRenderer {
         checkGlError("glTexParameter");
 
         Matrix.setIdentityM(mMVPMatrix, 0);
+
         if (rotationAngle != 0) {
             Matrix.rotateM(mMVPMatrix, 0, rotationAngle, 0, 0, 1);
+        }
+
+        if(yuv) {
+            if (rotationAngle == 180) {
+                Matrix.rotateM(mMVPMatrix, 0, 180, 0, 1, 0);
+            } else {
+                Matrix.rotateM(mMVPMatrix, 0, 180, 1, 0, 0);
+            }
         }
     }
 
