@@ -39,11 +39,11 @@ public class MediaCodecVideoConvertor {
                                 int resultWidth, int resultHeight,
                                 int framerate, int bitrate,
                                 long startTime, long endTime,
-                                boolean needCompress,
+                                boolean needCompress, long duration,
                                 MediaController.VideoConvertorListener callback) {
         this.callback = callback;
         return convertVideoInternal(videoPath, cacheFile, rotationValue, isSecret,
-                resultWidth, resultHeight, framerate, bitrate, startTime, endTime, needCompress, false);
+                resultWidth, resultHeight, framerate, bitrate, startTime, endTime, duration, needCompress, false);
     }
 
     private boolean convertVideoInternal(String videoPath, File cacheFile,
@@ -51,6 +51,7 @@ public class MediaCodecVideoConvertor {
                                          int resultWidth, int resultHeight,
                                          int framerate, int bitrate,
                                          long startTime, long endTime,
+                                         long duration,
                                          boolean needCompress, boolean increaseTimeout) {
 
         boolean error = false;
@@ -66,6 +67,9 @@ public class MediaCodecVideoConvertor {
             extractor = new MediaExtractor();
             extractor.setDataSource(videoPath);
 
+
+            long currentPts = 0;
+            float durationS = duration / 1000f;
 
             checkConversionCanceled();
 
@@ -329,8 +333,12 @@ public class MediaCodecVideoConvertor {
                                         info.flags = extractor.getSampleFlags();
                                         long availableSize = mediaMuxer.writeSampleData(audioTrackIndex, audioBuffer, info, false);
                                         if (availableSize != 0) {
-                                            if (callback != null)
-                                                callback.didWriteData(availableSize);
+                                            if (callback != null) {
+                                                if (info.presentationTimeUs - startTime > currentPts) {
+                                                    currentPts = info.presentationTimeUs - startTime;
+                                                }
+                                                callback.didWriteData(availableSize, (currentPts / 1000f) / durationS);
+                                            }
                                         }
                                     }
                                 } else if (index == -1) {
@@ -377,8 +385,12 @@ public class MediaCodecVideoConvertor {
                                         if ((info.flags & MediaCodec.BUFFER_FLAG_CODEC_CONFIG) == 0) {
                                             long availableSize = mediaMuxer.writeSampleData(videoTrackIndex, encodedData, info, true);
                                             if (availableSize != 0) {
-                                                if (callback != null)
-                                                    callback.didWriteData(availableSize);
+                                                if (callback != null) {
+                                                    if (info.presentationTimeUs - startTime > currentPts) {
+                                                        currentPts = info.presentationTimeUs - startTime;
+                                                    }
+                                                    callback.didWriteData(availableSize, (currentPts / 1000f) / durationS);
+                                                }
                                             }
                                         } else if (videoTrackIndex == -5) {
                                             byte[] csd = new byte[info.size];
@@ -536,7 +548,7 @@ public class MediaCodecVideoConvertor {
                     checkConversionCanceled();
                 }
             } else {
-                readAndWriteTracks(extractor, mediaMuxer, info, startTime, endTime, cacheFile, bitrate != -1);
+                readAndWriteTracks(extractor, mediaMuxer, info, startTime, endTime, duration, cacheFile, bitrate != -1);
             }
         } catch (Exception e) {
             error = true;
@@ -558,19 +570,23 @@ public class MediaCodecVideoConvertor {
 
         if (repeatWithIncreasedTimeout) {
             return convertVideoInternal(videoPath, cacheFile, rotationValue, isSecret,
-                    resultWidth, resultHeight, framerate, bitrate, startTime, endTime, needCompress, true);
+                    resultWidth, resultHeight, framerate, bitrate, startTime, endTime, duration, needCompress, true);
         }
 
         return error;
     }
 
     private long readAndWriteTracks(MediaExtractor extractor, MP4Builder mediaMuxer,
-                                    MediaCodec.BufferInfo info, long start, long end, File file, boolean needAudio) throws Exception {
+                                    MediaCodec.BufferInfo info, long start, long end, long duration, File file, boolean needAudio) throws Exception {
         int videoTrackIndex = MediaController.findTrack(extractor, false);
         int audioTrackIndex = needAudio ? MediaController.findTrack(extractor, true) : -1;
         int muxerVideoTrackIndex = -1;
         int muxerAudioTrackIndex = -1;
         boolean inputDone = false;
+
+        long currentPts = 0;
+        float durationS = duration / 1000f;
+
         int maxBufferSize = 0;
         if (videoTrackIndex >= 0) {
             extractor.selectTrack(videoTrackIndex);
@@ -654,7 +670,12 @@ public class MediaCodecVideoConvertor {
                             info.flags = extractor.getSampleFlags();
                             long availableSize = mediaMuxer.writeSampleData(muxerTrackIndex, buffer, info, false);
                             if (availableSize != 0) {
-                                if (callback != null) callback.didWriteData(availableSize);
+                                if (callback != null) {
+                                    if (info.presentationTimeUs - startTime > currentPts) {
+                                        currentPts = info.presentationTimeUs - startTime;
+                                    }
+                                    callback.didWriteData(availableSize, (currentPts / 1000f) / durationS);
+                                }
                             }
                         } else {
                             eof = true;

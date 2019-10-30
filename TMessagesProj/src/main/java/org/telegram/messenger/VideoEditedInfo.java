@@ -29,6 +29,7 @@ public class VideoEditedInfo {
     public long estimatedDuration;
     public boolean roundVideo;
     public boolean muted;
+    public long originalDuration;
     public TLRPC.InputFile file;
     public TLRPC.InputEncryptedFile encryptedFile;
     public byte[] key;
@@ -36,7 +37,8 @@ public class VideoEditedInfo {
 
     public boolean canceled;
     public boolean videoConvertFirstWrite;
-    public long originalDuration;
+    public boolean needUpdateProgress = false;
+
 
     public String getString() {
         return String.format(Locale.US, "-1_%d_%d_%d_%d_%d_%d_%d_%d_%d_%s", startTime, endTime, rotationValue, originalWidth, originalHeight, bitrate, resultWidth, resultHeight, framerate, originalPath);

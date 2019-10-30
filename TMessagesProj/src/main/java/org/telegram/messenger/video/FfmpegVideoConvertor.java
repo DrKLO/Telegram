@@ -178,7 +178,6 @@ public class FfmpegVideoConvertor {
     }
 
     public void updateProgress(float progress) {
-        if (callback != null) callback.updateProgress(progress);
+        if (callback != null) callback.didWriteData(-1, progress);
     }
-
 }

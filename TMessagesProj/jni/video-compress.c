@@ -5,6 +5,9 @@
 #include <jni.h>
 #include <malloc.h>
 
+
+#define UPDATE_PROGRESS_FRAME_INTERVAL 5
+
 typedef struct StreamContext {
     AVCodecContext *dec_ctx;
     AVCodecContext *enc_ctx;
@@ -328,15 +331,15 @@ int compress_video(const char *src_in, const char *src_out, struct Context *cont
     }
 
 
-//    float duration_sec;
-//    float pts2sec = (float) av_q2d(context->video_enc_ctx->time_base);
-//
-//    if (context->videoConfig.end_time > 0) {
-//        duration_sec = context->videoConfig.end_time - context->videoConfig.start_time;
-//    } else {
-//        duration_sec = (float) (av_q2d(context->ifmt_ctx->streams[0]->time_base) *
-//                                context->ifmt_ctx->streams[0]->duration) - context->videoConfig.start_time;
-//    }
+    float duration_sec;
+    float pts2sec = (float) av_q2d(context->video_enc_ctx->time_base);
+
+    if (context->videoConfig.end_time > 0) {
+        duration_sec = context->videoConfig.end_time - context->videoConfig.start_time;
+    } else {
+        duration_sec = (float) (av_q2d(context->ifmt_ctx->streams[0]->time_base) *
+                                context->ifmt_ctx->streams[0]->duration) - context->videoConfig.start_time;
+    }
 
 
     /* read audio stream packets */
@@ -417,9 +420,9 @@ int compress_video(const char *src_in, const char *src_out, struct Context *cont
 
                 if (got_frame) {
                     encoded_frame_count++;
-                    if (encoded_frame_count % 20 == 0) {
-                        // float progress =(enc_pkt.pts * pts2sec - context->videoConfig.start_time) /duration_sec;
-                        (*env)->CallVoidMethod(env, convertorObject, updateProgress, 0.0);
+                    if (encoded_frame_count % UPDATE_PROGRESS_FRAME_INTERVAL == 0) {
+                         float progress =(enc_pkt.pts * pts2sec - context->videoConfig.start_time) /duration_sec;
+                        (*env)->CallVoidMethod(env, convertorObject, updateProgress, progress);
                     }
 
                     av_packet_rescale_ts(&enc_pkt,
@@ -563,14 +566,15 @@ int compress_video(const char *src_in, const char *src_out, struct Context *cont
 
         if (got_frame) {
             encoded_frame_count++;
-            if (encoded_frame_count % 20 == 0) {
-                //     float progress =(enc_pkt.pts * pts2sec - context->videoConfig.start_time) / duration_sec;
-                (*env)->CallVoidMethod(env, convertorObject, updateProgress, 0.0);
+            if (encoded_frame_count % UPDATE_PROGRESS_FRAME_INTERVAL == 0) {
+                float progress =(enc_pkt.pts * pts2sec - context->videoConfig.start_time) /duration_sec;
+                (*env)->CallVoidMethod(env, convertorObject, updateProgress, progress);
             }
 
             av_packet_rescale_ts(&enc_pkt,
                                  context->video_enc_ctx->time_base,
                                  context->ofmt_ctx->streams[context->videoStreamIndex]->time_base);
+            enc_pkt.stream_index = context->videoStreamIndex;
 
             av_interleaved_write_frame(context->ofmt_ctx, &enc_pkt);
         }

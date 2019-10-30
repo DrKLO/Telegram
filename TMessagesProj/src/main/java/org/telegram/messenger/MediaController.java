@@ -3568,7 +3568,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
         return -5;
     }
 
-    private void didWriteData(final MessageObject messageObject, final File file, final boolean last, long availableSize, final boolean error) {
+    private void didWriteData(final MessageObject messageObject, final File file, final boolean last, long availableSize, final boolean error, final float progress) {
         final boolean firstWrite = messageObject.videoEditedInfo.videoConvertFirstWrite;
         if (firstWrite) {
             messageObject.videoEditedInfo.videoConvertFirstWrite = false;
@@ -3582,12 +3582,12 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                 startVideoConvertFromQueue();
             }
             if (error) {
-                NotificationCenter.getInstance(messageObject.currentAccount).postNotificationName(NotificationCenter.filePreparingFailed, messageObject, file.toString());
+                NotificationCenter.getInstance(messageObject.currentAccount).postNotificationName(NotificationCenter.filePreparingFailed, messageObject, file.toString(), progress);
             } else {
                 if (firstWrite) {
-                    NotificationCenter.getInstance(messageObject.currentAccount).postNotificationName(NotificationCenter.filePreparingStarted, messageObject, file.toString());
+                    NotificationCenter.getInstance(messageObject.currentAccount).postNotificationName(NotificationCenter.filePreparingStarted, messageObject, file.toString(), progress);
                 }
-                NotificationCenter.getInstance(messageObject.currentAccount).postNotificationName(NotificationCenter.fileNewChunkAvailable, messageObject, file.toString(), availableSize, last ? file.length() : 0);
+                NotificationCenter.getInstance(messageObject.currentAccount).postNotificationName(NotificationCenter.fileNewChunkAvailable, messageObject, file.toString(), availableSize, last ? file.length() : 0, progress);
             }
         });
     }
@@ -3689,26 +3689,27 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
         long time = System.currentTimeMillis();
 
         VideoConvertorListener callback = new VideoConvertorListener() {
+
+            long lastAvailableSize = 0;
+
             @Override
             public boolean checkConversionCanceled() {
                 return messageObject.videoEditedInfo.canceled;
             }
 
-            long lastLength = 0;
             @Override
-            public void updateProgress(float progress) {
+            public void didWriteData(long availableSize, float progress) {
                 if (messageObject.videoEditedInfo.canceled) return;
-                long availableSize = cacheFile.length();
-                if(availableSize > lastLength) {
-                    lastLength = availableSize;
-                    MediaController.this.didWriteData(messageObject, cacheFile, false, availableSize, false);
+                if (availableSize < 0) {
+                    availableSize = cacheFile.length();
                 }
-            }
 
-            @Override
-            public void didWriteData(long availableSize) {
-                if (messageObject.videoEditedInfo.canceled) return;
-                MediaController.this.didWriteData(messageObject, cacheFile, false, availableSize, false);
+                if(!messageObject.videoEditedInfo.needUpdateProgress && lastAvailableSize == availableSize) {
+                    return;
+                }
+
+                lastAvailableSize = availableSize;
+                MediaController.this.didWriteData(messageObject, cacheFile, false, availableSize, false, progress);
             }
         };
 
@@ -3734,7 +3735,10 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
 
         extractor.release();
 
+        boolean ffmpeg = false;
+
         if(needCompress && duration < 25_000000 && !isSecret && copyAudioStream) {
+            ffmpeg = true;
             try {
                 FfmpegVideoConvertor convertor = new FfmpegVideoConvertor();
                 error = convertor.convertVideo(videoPath, cacheFile.getAbsolutePath(),
@@ -3754,7 +3758,8 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                     resultWidth, resultHeight,
                     framerate, bitrate,
                     startTime, endTime,
-                    needCompress, callback);
+                    needCompress, duration,
+                    callback);
         }
 
 
@@ -3766,11 +3771,11 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
         }
 
         if (BuildVars.LOGS_ENABLED) {
-            FileLog.d("time = " + (System.currentTimeMillis() - time) + " canceled = " + canceled);
+            FileLog.d("ffmpeg=" + ffmpeg + " time=" + (System.currentTimeMillis() - time) + " canceled=" + canceled);
         }
 
         preferences.edit().putBoolean("isPreviousOk", true).apply();
-        didWriteData(messageObject, cacheFile, true, cacheFile.length(), error || canceled);
+        didWriteData(messageObject, cacheFile, true, cacheFile.length(), error || canceled, 1f);
 
         return true;
     }
@@ -3815,7 +3820,6 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
 
     public interface VideoConvertorListener {
         boolean checkConversionCanceled();
-        void updateProgress(float progress);
-        void didWriteData(long availableSize);
+        void didWriteData(long availableSize,float progress);
     }
 }
