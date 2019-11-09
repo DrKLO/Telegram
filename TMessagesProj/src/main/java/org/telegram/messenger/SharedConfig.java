@@ -86,6 +86,7 @@ public class SharedConfig {
     public static boolean playOrderReversed;
     public static boolean hasCameraCache;
     public static boolean showNotificationsForAllAccounts = true;
+    public static boolean sortMusicsByName = true;
     public static int repeatMode;
     public static boolean allowBigEmoji;
     public static boolean useSystemEmoji;
@@ -251,6 +252,7 @@ public class SharedConfig {
             distanceSystemType = preferences.getInt("distanceSystemType", 0);
             devicePerformanceClass = preferences.getInt("devicePerformanceClass", -1);
             loopStickers = preferences.getBoolean("loopStickers", true);
+            sortMusicsByName = preferences.getBoolean("sort_musics_by_name", true);
             keepMedia = preferences.getInt("keep_media", 2);
             lastKeepMediaCheckTime = preferences.getInt("lastKeepMediaCheckTime", 0);
 
@@ -615,6 +617,14 @@ public class SharedConfig {
         editor.putInt("distanceSystemType", distanceSystemType);
         editor.commit();
         LocaleController.resetImperialSystemType();
+    }
+
+    public static void toggleSortMusicsByName() {
+        sortMusicsByName = !sortMusicsByName;
+        SharedPreferences preferences = MessagesController.getGlobalMainSettings();
+        SharedPreferences.Editor editor = preferences.edit();
+        editor.putBoolean("sort_musics_by_name", sortMusicsByName);
+        editor.commit();
     }
 
     public static void loadProxyList() {
