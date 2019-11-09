@@ -26,11 +26,14 @@ import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
+import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.UserObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.ui.ActionBar.ActionBar;
+import org.telegram.ui.ActionBar.ActionBarMenu;
+import org.telegram.ui.ActionBar.ActionBarMenuItem;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ActionBar.ThemeDescription;
@@ -43,6 +46,8 @@ import org.telegram.ui.Components.RecyclerListView;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -57,6 +62,10 @@ public class AudioSelectActivity extends BaseFragment implements NotificationCen
     private ChatActivity parentFragment;
 
     private boolean loadingAudio;
+
+    private ActionBarMenuItem sortItem;
+    private final static int sort_button = 1;
+    private boolean sortByName;
 
     private ArrayList<MediaController.AudioEntry> audioEntries = new ArrayList<>();
     private LongSparseArray<MediaController.AudioEntry> selectedAudios = new LongSparseArray<>();
@@ -107,9 +116,21 @@ public class AudioSelectActivity extends BaseFragment implements NotificationCen
             public void onItemClick(int id) {
                 if (id == -1) {
                     finishFragment();
+                } else if (id == sort_button) {
+                    SharedConfig.toggleSortMusicsByName();
+                    sortByName = SharedConfig.sortMusicsByName;
+//                    listViewAdapter.setSortType(sortByName ? 1 : 2);
+                    sortMusics(audioEntries);
+                    sortItem.setIcon(sortByName ? R.drawable.contacts_sort_name : R.drawable.contacts_sort_time);
+                    listViewAdapter.notifyDataSetChanged();
                 }
             }
         });
+        sortByName = SharedConfig.sortMusicsByName;
+        ActionBarMenu menu = actionBar.createMenu();
+        sortItem = menu.addItem(sort_button, sortByName ? R.drawable.contacts_sort_name : R.drawable.contacts_sort_time);
+        sortItem.setContentDescription(LocaleController.getString("AccDescrContactSorting", R.string.AccDescrContactSorting));
+
 
         fragmentView = new FrameLayout(context);
         FrameLayout frameLayout = (FrameLayout) fragmentView;
@@ -263,10 +284,31 @@ public class AudioSelectActivity extends BaseFragment implements NotificationCen
             }
             AndroidUtilities.runOnUIThread(() -> {
                 audioEntries = newAudioEntries;
+                sortMusics(audioEntries);
                 progressView.showTextView();
                 listViewAdapter.notifyDataSetChanged();
             });
         });
+    }
+
+    private void sortMusics(ArrayList<MediaController.AudioEntry> newAudioEntries) {
+        if (newAudioEntries.size() > 0) {
+
+            Collections.sort(newAudioEntries, new Comparator<MediaController.AudioEntry>() {
+                @Override
+                public int compare(final MediaController.AudioEntry object1, final MediaController.AudioEntry object2) {
+
+                    if (sortByName){
+                        return object1.title.compareTo(object2.title);
+                    } else {
+                        return Integer.compare(object2.duration, object1.duration);
+                    }
+
+                }
+            });
+        }
+
+        audioEntries = newAudioEntries;
     }
 
     private class ListAdapter extends RecyclerListView.SelectionAdapter {
