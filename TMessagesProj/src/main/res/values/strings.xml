@@ -8471,4 +8471,5 @@
     <string name="SystemCamera">Use System Camera for Photo</string>
     <string name="SystemCameraInfo">Only in Attachment Dialog</string>
     <string name="MentionByName">Mention User by Name</string>
+    <string name="HideBottomButton">Hide Bottom Button</string>
 </resources>
