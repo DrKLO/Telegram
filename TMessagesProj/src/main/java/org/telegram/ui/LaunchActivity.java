@@ -1180,6 +1180,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                                                 while (message.endsWith("\n")) {
                                                     message = message.substring(0, message.length() - 1);
                                                 }
+                                                username = data.getQueryParameter("domain");
                                             } else if (path.startsWith("confirmphone")) {
                                                 phone = data.getQueryParameter("phone");
                                                 phoneHash = data.getQueryParameter("hash");
@@ -1323,6 +1324,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                                         while (message.endsWith("\n")) {
                                             message = message.substring(0, message.length() - 1);
                                         }
+                                        username = data.getQueryParameter("domain");
                                     } else if (url.startsWith("tg:confirmphone") || url.startsWith("tg://confirmphone")) {
                                         url = url.replace("tg:confirmphone", "tg://telegram.org").replace("tg://confirmphone", "tg://telegram.org");
                                         data = Uri.parse(url);
