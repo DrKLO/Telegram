@@ -1440,10 +1440,11 @@ void ConnectionsManager::processServerResponse(TLObject *message, int64_t messag
             TL_bad_server_salt *response = (TL_bad_server_salt *) message;
             int64_t resultMid = response->bad_msg_id;
             if (resultMid != 0) {
+                bool beginHandshake = false;
                 for (requestsIter iter = runningRequests.begin(); iter != runningRequests.end(); iter++) {
                     Request *request = iter->get();
-                    if (request->datacenterId == datacenter->datacenterId && typeid(*request->rawRequest) == typeid(TL_auth_bindTempAuthKey) && request->respondsToMessageId(response->bad_msg_id)) {
-                        datacenter->beginHandshake(HandshakeTypeCurrent, false);
+                    if (!beginHandshake && request->datacenterId == datacenter->datacenterId && typeid(*request->rawRequest) == typeid(TL_auth_bindTempAuthKey) && request->respondsToMessageId(response->bad_msg_id)) {
+                        beginHandshake = true;
                     }
                     if ((request->connectionType & ConnectionTypeDownload) == 0) {
                         continue;
@@ -1453,6 +1454,9 @@ void ConnectionsManager::processServerResponse(TLObject *message, int64_t messag
                         request->retryCount = 0;
                         request->failedBySalt = true;
                     }
+                }
+                if (beginHandshake) {
+                    datacenter->beginHandshake(HandshakeTypeCurrent, false);
                 }
             }
 

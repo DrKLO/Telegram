@@ -985,6 +985,8 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
                                         layoutManager[0] = layoutManagerToUpdate;
                                         pagesStack.remove(pagesStack.size() - 1);
                                         currentPage = pagesStack.get(pagesStack.size() - 1);
+
+                                        titleTextView.setText(currentPage.site_name == null ? "" : currentPage.site_name);
                                     }
                                     listView[1].setVisibility(GONE);
                                     headerView.invalidate();
@@ -1923,7 +1925,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
                 boolean extraSpace = maxWidth >= 0 && innerRichText instanceof TLRPC.TL_textUrl && ((TLRPC.TL_textUrl) innerRichText).webpage_id != 0;
                 if (extraSpace && spannableStringBuilder.length() != 0 && spannableStringBuilder.charAt(spannableStringBuilder.length() - 1) != '\n') {
                     spannableStringBuilder.append(" ");
-                    spannableStringBuilder.setSpan(new TextSelectionHelper.IngnoreCopySpanable(), spannableStringBuilder.length() - 1, spannableStringBuilder.length(), 0);
+                    spannableStringBuilder.setSpan(new TextSelectionHelper.IgnoreCopySpannable(), spannableStringBuilder.length() - 1, spannableStringBuilder.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                 }
 
                 CharSequence innerText = getText(parentView, parentRichText, innerRichText, parentBlock, maxWidth);
@@ -1943,17 +1945,17 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
                             span = new TextPaintUrlSpan(getTextPaint(parentRichText, lastRichText, parentBlock), url);
                         }
                         if (startLength != spannableStringBuilder.length()) {
-                            spannableStringBuilder.setSpan(span, startLength, spannableStringBuilder.length(), Spanned.SPAN_INCLUSIVE_INCLUSIVE);
+                            spannableStringBuilder.setSpan(span, startLength, spannableStringBuilder.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                         }
                     } else {
                         if (startLength != spannableStringBuilder.length()) {
-                            spannableStringBuilder.setSpan(new TextPaintSpan(getTextPaint(parentRichText, lastRichText, parentBlock)), startLength, spannableStringBuilder.length(), Spanned.SPAN_INCLUSIVE_INCLUSIVE);
+                            spannableStringBuilder.setSpan(new TextPaintSpan(getTextPaint(parentRichText, lastRichText, parentBlock)), startLength, spannableStringBuilder.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                         }
                     }
                 }
                 if (extraSpace && a != count - 1) {
                     spannableStringBuilder.append(" ");
-                    spannableStringBuilder.setSpan(new TextSelectionHelper.IngnoreCopySpanable(), spannableStringBuilder.length() - 1, spannableStringBuilder.length(), 0);
+                    spannableStringBuilder.setSpan(new TextSelectionHelper.IgnoreCopySpannable(), spannableStringBuilder.length() - 1, spannableStringBuilder.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                 }
             }
             return spannableStringBuilder;

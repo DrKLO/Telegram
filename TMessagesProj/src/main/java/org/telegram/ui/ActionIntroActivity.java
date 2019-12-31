@@ -671,6 +671,9 @@ public class ActionIntroActivity extends BaseFragment implements LocationControl
     }
 
     private void updateColors() {
+        if (colors == null || imageView == null) {
+            return;
+        }
         colors[0] = 0x333333;
         colors[1] = Theme.getColor(Theme.key_windowBackgroundWhiteBlackText);
 

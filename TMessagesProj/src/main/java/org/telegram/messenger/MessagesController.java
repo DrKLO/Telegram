@@ -841,13 +841,14 @@ public class MessagesController extends BaseController implements NotificationCe
                 TLRPC.TL_account_uploadWallPaper req = new TLRPC.TL_account_uploadWallPaper();
                 req.file = file;
                 req.mime_type = "image/jpeg";
+                Theme.OverrideWallpaperInfo overrideWallpaperInfo = uploadingWallpaperInfo;
                 final TLRPC.TL_wallPaperSettings settings = new TLRPC.TL_wallPaperSettings();
-                settings.blur = uploadingWallpaperInfo.isBlurred;
-                settings.motion = uploadingWallpaperInfo.isMotion;
+                settings.blur = overrideWallpaperInfo.isBlurred;
+                settings.motion = overrideWallpaperInfo.isMotion;
                 req.settings = settings;
                 getConnectionsManager().sendRequest(req, (response, error) -> {
                     TLRPC.TL_wallPaper wallPaper = (TLRPC.TL_wallPaper) response;
-                    File path = new File(ApplicationLoader.getFilesDirFixed(), uploadingWallpaperInfo.originalFileName);
+                    File path = new File(ApplicationLoader.getFilesDirFixed(), overrideWallpaperInfo.originalFileName);
                     if (wallPaper != null) {
                         try {
                             AndroidUtilities.copyFile(path, FileLoader.getPathToAttach(wallPaper.document, true));
@@ -859,8 +860,8 @@ public class MessagesController extends BaseController implements NotificationCe
                         if (uploadingWallpaper != null && wallPaper != null) {
                             wallPaper.settings = settings;
                             wallPaper.flags |= 4;
-                            uploadingWallpaperInfo.slug = wallPaper.slug;
-                            uploadingWallpaperInfo.saveOverrideWallpaper();
+                            overrideWallpaperInfo.slug = wallPaper.slug;
+                            overrideWallpaperInfo.saveOverrideWallpaper();
                             ArrayList<TLRPC.WallPaper> wallpapers = new ArrayList<>();
                             wallpapers.add(wallPaper);
                             getMessagesStorage().putWallpapers(wallpapers, 2);

@@ -177,51 +177,9 @@ public class MediaCodecVideoConvertor {
                         outputFormat.setInteger(MediaFormat.KEY_FRAME_RATE, framerate);
                         outputFormat.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, 2);
 
-                        if (Build.VERSION.SDK_INT >= 23) {
-                            int profile;
-                            int level;
-
-                            if (Math.min(resultHeight, resultWidth) >= 1080) {
-                                profile = MediaCodecInfo.CodecProfileLevel.AVCProfileHigh;
-                                level = MediaCodecInfo.CodecProfileLevel.AVCLevel41;
-                            } else if (Math.min(resultHeight, resultWidth) >= 720) {
-                                profile = MediaCodecInfo.CodecProfileLevel.AVCProfileHigh;
-                                level = MediaCodecInfo.CodecProfileLevel.AVCLevel4;
-                            } else if (Math.min(resultHeight, resultWidth) >= 480) {
-                                profile = MediaCodecInfo.CodecProfileLevel.AVCProfileBaseline;
-                                level = MediaCodecInfo.CodecProfileLevel.AVCLevel31;
-                            } else {
-                                profile = MediaCodecInfo.CodecProfileLevel.AVCProfileBaseline;
-                                level = MediaCodecInfo.CodecProfileLevel.AVCLevel3;
-                            }
-
-                            MediaCodecInfo.CodecCapabilities capabilities = MediaCodecInfo.CodecCapabilities.createFromProfileLevel(MediaController.VIDEO_MIME_TYPE, profile, level);
-
-                            if (capabilities == null && profile == MediaCodecInfo.CodecProfileLevel.AVCProfileHigh) {
-                                profile = MediaCodecInfo.CodecProfileLevel.AVCProfileBaseline;
-                                capabilities = MediaCodecInfo.CodecCapabilities.createFromProfileLevel(MediaController.VIDEO_MIME_TYPE, profile, level);
-                            }
-                            if (capabilities.getEncoderCapabilities() != null) {
-                                outputFormat.setInteger(MediaFormat.KEY_PROFILE, profile);
-                                outputFormat.setInteger(MediaFormat.KEY_LEVEL, level);
-
-                                int maxBitrate = capabilities.getVideoCapabilities().getBitrateRange().getUpper();
-                                if (bitrate > maxBitrate) {
-                                    bitrate = maxBitrate;
-                                    outputFormat.setInteger(MediaFormat.KEY_BIT_RATE, bitrate);
-                                }
-
-                                int maxFramerate = capabilities.getVideoCapabilities().getSupportedFrameRates().getUpper();
-                                if (framerate > maxFramerate) {
-                                    framerate = maxFramerate;
-                                    outputFormat.setInteger(MediaFormat.KEY_FRAME_RATE, framerate);
-                                }
-                            }
-                        } else {
-                            if (Math.min(resultHeight, resultWidth) <= 480) {
-                                if (bitrate > 921600) bitrate = 921600;
-                                outputFormat.setInteger(MediaFormat.KEY_BIT_RATE, bitrate);
-                            }
+                        if (Build.VERSION.SDK_INT < 23 && Math.min(resultHeight, resultWidth) <= 480) {
+                            if (bitrate > 921600) bitrate = 921600;
+                            outputFormat.setInteger(MediaFormat.KEY_BIT_RATE, bitrate);
                         }
 
                         if (Build.VERSION.SDK_INT < 18) {

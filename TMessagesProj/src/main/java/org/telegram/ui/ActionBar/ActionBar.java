@@ -30,7 +30,6 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.ui.Components.FireworksEffect;
@@ -172,7 +171,7 @@ public class ActionBar extends FrameLayout {
                     snowflakesEffect = new SnowflakesEffect();
                     titleTextView.invalidate();
                     invalidate();
-                } else if (BuildVars.DEBUG_PRIVATE_VERSION) {
+                } else {
                     snowflakesEffect = null;
                     fireworksEffect = new FireworksEffect();
                     titleTextView.invalidate();

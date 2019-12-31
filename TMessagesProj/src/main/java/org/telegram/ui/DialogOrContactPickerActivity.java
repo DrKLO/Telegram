@@ -518,10 +518,14 @@ public class DialogOrContactPickerActivity extends BaseFragment {
                             if (scrollY != 0 && scrollY != actionBarHeight) {
                                 if (scrollY < actionBarHeight / 2) {
                                     viewPages[0].listView.smoothScrollBy(0, -scrollY);
-                                    viewPages[0].listView2.smoothScrollBy(0, -scrollY);
+                                    if (viewPages[0].listView2 != null) {
+                                        viewPages[0].listView2.smoothScrollBy(0, -scrollY);
+                                    }
                                 } else {
                                     viewPages[0].listView.smoothScrollBy(0, actionBarHeight - scrollY);
-                                    viewPages[0].listView2.smoothScrollBy(0, actionBarHeight - scrollY);
+                                    if (viewPages[0].listView2 != null) {
+                                        viewPages[0].listView2.smoothScrollBy(0, actionBarHeight - scrollY);
+                                    }
                                 }
                             }
                         }

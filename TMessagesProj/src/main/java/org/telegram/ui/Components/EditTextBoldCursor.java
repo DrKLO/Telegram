@@ -667,7 +667,9 @@ public class EditTextBoldCursor extends EditText {
             floatingToolbar = new FloatingToolbar(getContext(), windowView != null ? windowView : attachedToWindow, getActionModeStyle());
             floatingActionMode = new FloatingActionMode(getContext(), new ActionModeCallback2Wrapper(callback), this, floatingToolbar);
             floatingToolbarPreDrawListener = () -> {
-                floatingActionMode.updateViewLocationInWindow();
+                if (floatingActionMode != null) {
+                    floatingActionMode.updateViewLocationInWindow();
+                }
                 return true;
             };
             callback.onCreateActionMode(floatingActionMode, floatingActionMode.getMenu());

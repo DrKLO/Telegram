@@ -3760,7 +3760,7 @@ public class Theme {
                 OverrideWallpaperInfo overrideWallpaper = new OverrideWallpaperInfo();
                 overrideWallpaper.color = preferences.getInt("selectedColor", 0);
                 overrideWallpaper.slug = preferences.getString("selectedBackgroundSlug", "");
-                if (id == -1 && TextUtils.isEmpty(overrideWallpaper.slug)) {
+                if (id >= -100 && id <= -1 && TextUtils.isEmpty(overrideWallpaper.slug)) {
                     overrideWallpaper.slug = COLOR_BACKGROUND_SLUG;
                     overrideWallpaper.fileName = "";
                     overrideWallpaper.originalFileName = "";
@@ -4714,7 +4714,7 @@ public class Theme {
     }
 
     public static boolean deleteThemeAccent(ThemeInfo theme, ThemeAccent accent, boolean save) {
-        if (accent == null) {
+        if (accent == null || theme == null || theme.themeAccents == null) {
             return false;
         }
         boolean current = accent.id == theme.currentAccentId;
@@ -5335,7 +5335,7 @@ public class Theme {
                 boolean changed = false;
                 if (response instanceof TLRPC.TL_theme) {
                     TLRPC.TL_theme theme = (TLRPC.TL_theme) response;
-                    if (theme.settings != null) {
+                    if (accent != null && theme.settings != null) {
                         if (!ThemeInfo.accentEquals(accent, theme.settings)) {
                             File file = accent.getPathToWallpaper();
                             if (file != null) {
@@ -5347,6 +5347,7 @@ public class Theme {
                                 NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.needSetDayNightTheme, currentTheme, currentNightTheme == currentTheme, null, -1);
                             }
                             PatternsLoader.createLoader(true);
+                            changed = true;
                         }
                         accent.patternMotion = theme.settings.wallpaper != null && theme.settings.wallpaper.settings != null && theme.settings.wallpaper.settings.motion;
                     } else if (theme.document != null && theme.document.id != info.document.id) {
@@ -6835,6 +6836,9 @@ public class Theme {
         Integer color = currentColorsNoAccent.get(key);
         if (color != null) {
             ThemeAccent accent = currentTheme.getAccent(false);
+            if (accent == null) {
+                return 0;
+            }
             float[] hsvTemp1 = getTempHsv(1);
             float[] hsvTemp2 = getTempHsv(2);
             Color.colorToHSV(currentTheme.accentBaseColor, hsvTemp1);

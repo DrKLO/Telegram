@@ -2051,16 +2051,18 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
             shadowDrawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_dialogBackground), PorterDuff.Mode.MULTIPLY));
             shadow.invalidate();
 
-            if (Theme.getCurrentTheme().isDark() || Theme.isCurrentThemeNight()) {
-                if (!currentMapStyleDark) {
-                    currentMapStyleDark = true;
-                    MapStyleOptions style = MapStyleOptions.loadRawResourceStyle(ApplicationLoader.applicationContext, R.raw.mapstyle_night);
-                    googleMap.setMapStyle(style);
-                }
-            } else {
-                if (currentMapStyleDark) {
-                    currentMapStyleDark = false;
-                    googleMap.setMapStyle(null);
+            if (googleMap != null) {
+                if (Theme.getCurrentTheme().isDark() || Theme.isCurrentThemeNight()) {
+                    if (!currentMapStyleDark) {
+                        currentMapStyleDark = true;
+                        MapStyleOptions style = MapStyleOptions.loadRawResourceStyle(ApplicationLoader.applicationContext, R.raw.mapstyle_night);
+                        googleMap.setMapStyle(style);
+                    }
+                } else {
+                    if (currentMapStyleDark) {
+                        currentMapStyleDark = false;
+                        googleMap.setMapStyle(null);
+                    }
                 }
             }
         };

@@ -1388,7 +1388,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
             countLess = 0;
         } else if (proximityTouched) {
             if (playingMessageObject != null && !ApplicationLoader.mainInterfacePaused && (playingMessageObject.isVoice() || playingMessageObject.isRoundVideo())) {
-                if (!useFrontSpeaker && NotificationsController.audioManager.isWiredHeadsetOn()) {
+                if (!useFrontSpeaker && !NotificationsController.audioManager.isWiredHeadsetOn()) {
                     if (BuildVars.LOGS_ENABLED) {
                         FileLog.d("start listen by proximity only");
                     }
@@ -3521,7 +3521,9 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
         if (!videoConvertQueue.isEmpty()) {
             MessageObject messageObject = videoConvertQueue.get(0);
             synchronized (videoConvertSync) {
-                messageObject.videoEditedInfo.canceled = false;
+                if (messageObject != null && messageObject.videoEditedInfo != null) {
+                    messageObject.videoEditedInfo.canceled = false;
+                }
             }
             Intent intent = new Intent(ApplicationLoader.applicationContext, VideoEncodingService.class);
             intent.putExtra("path", messageObject.messageOwner.attachPath);
@@ -3675,19 +3677,20 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
 
 
     private boolean convertVideo(final MessageObject messageObject) {
-        if (messageObject == null || messageObject.videoEditedInfo == null) {
+        VideoEditedInfo info = messageObject.videoEditedInfo;
+        if (messageObject == null || info == null) {
             return false;
         }
-        String videoPath = messageObject.videoEditedInfo.originalPath;
-        long startTime = messageObject.videoEditedInfo.startTime;
-        long endTime = messageObject.videoEditedInfo.endTime;
-        int resultWidth = messageObject.videoEditedInfo.resultWidth;
-        int resultHeight = messageObject.videoEditedInfo.resultHeight;
-        int rotationValue = messageObject.videoEditedInfo.rotationValue;
-        int originalWidth = messageObject.videoEditedInfo.originalWidth;
-        int originalHeight = messageObject.videoEditedInfo.originalHeight;
-        int framerate = messageObject.videoEditedInfo.framerate;
-        int bitrate = messageObject.videoEditedInfo.bitrate;
+        String videoPath = info.originalPath;
+        long startTime = info.startTime;
+        long endTime = info.endTime;
+        int resultWidth = info.resultWidth;
+        int resultHeight = info.resultHeight;
+        int rotationValue = info.rotationValue;
+        int originalWidth = info.originalWidth;
+        int originalHeight = info.originalHeight;
+        int framerate = info.framerate;
+        int bitrate = info.bitrate;
         int rotateRender = 0;
         boolean isSecret = ((int) messageObject.getDialogId()) == 0;
         final File cacheFile = new File(messageObject.messageOwner.attachPath);
@@ -3705,9 +3708,9 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
         } else if (endTime > 0) {
             duration = endTime;
         } else if (startTime > 0) {
-            duration = messageObject.videoEditedInfo.originalDuration - startTime;
+            duration = info.originalDuration - startTime;
         } else {
-            duration = messageObject.videoEditedInfo.originalDuration;
+            duration = info.originalDuration;
         }
 
         if (framerate == 0) {
@@ -3734,7 +3737,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
         }
 
         boolean needCompress = resultWidth != originalWidth || resultHeight != originalHeight || rotateRender != 0
-                || messageObject.videoEditedInfo.roundVideo || Build.VERSION.SDK_INT >= 18 && startTime != -1;
+                || info.roundVideo || Build.VERSION.SDK_INT >= 18 && startTime != -1;
 
 
         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("videoconvert", Activity.MODE_PRIVATE);
@@ -3747,17 +3750,19 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
 
             @Override
             public boolean checkConversionCanceled() {
-                return messageObject.videoEditedInfo.canceled;
+                return info.canceled;
             }
 
             @Override
             public void didWriteData(long availableSize, float progress) {
-                if (messageObject.videoEditedInfo.canceled) return;
+                if (info.canceled) {
+                    return;
+                }
                 if (availableSize < 0) {
                     availableSize = cacheFile.length();
                 }
 
-                if (!messageObject.videoEditedInfo.needUpdateProgress && lastAvailableSize == availableSize) {
+                if (!info.needUpdateProgress && lastAvailableSize == availableSize) {
                     return;
                 }
 
@@ -3766,7 +3771,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
             }
         };
 
-        messageObject.videoEditedInfo.videoConvertFirstWrite = true;
+        info.videoConvertFirstWrite = true;
 
         MediaCodecVideoConvertor videoConvertor = new MediaCodecVideoConvertor();
         boolean error = videoConvertor.convertVideo(videoPath, cacheFile,
@@ -3778,10 +3783,10 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                 callback);
 
 
-        boolean canceled = messageObject.videoEditedInfo.canceled;
+        boolean canceled = info.canceled;
         if (!canceled) {
             synchronized (videoConvertSync) {
-                canceled = messageObject.videoEditedInfo.canceled;
+                canceled = info.canceled;
             }
         }
 

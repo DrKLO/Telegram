@@ -569,9 +569,13 @@ public class ProxySettingsActivity extends BaseFragment {
     private void updatePasteCell() {
         final ClipData clip = clipboardManager.getPrimaryClip();
 
-        final String clipText;
+        String clipText;
         if (clip != null && clip.getItemCount() > 0) {
-            clipText = clip.getItemAt(0).coerceToText(fragmentView.getContext()).toString();
+            try {
+                clipText = clip.getItemAt(0).coerceToText(fragmentView.getContext()).toString();
+            } catch (Exception e) {
+                clipText = null;
+            }
         } else {
             clipText = null;
         }

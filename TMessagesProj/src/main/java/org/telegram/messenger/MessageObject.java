@@ -3081,7 +3081,7 @@ public class MessageObject {
         }
     }
 
-    private static void addUrlsByPattern(boolean isOut, CharSequence charSequence, boolean botCommands, int patternType, int duration) {
+    public static void addUrlsByPattern(boolean isOut, CharSequence charSequence, boolean botCommands, int patternType, int duration) {
         try {
             Matcher matcher;
             if (patternType == 3 || patternType == 4) {

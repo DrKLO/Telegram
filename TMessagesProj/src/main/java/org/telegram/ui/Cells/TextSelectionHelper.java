@@ -70,7 +70,7 @@ public abstract class TextSelectionHelper<Cell extends TextSelectionHelper.Selec
 
     private int longpressDelay;
     private int touchSlop;
-    protected Path path = new Path();
+    protected PathWithSavedBottom path = new PathWithSavedBottom();
 
     protected Paint selectionPaint = new Paint();
 
@@ -1334,7 +1334,7 @@ public abstract class TextSelectionHelper<Cell extends TextSelectionHelper.Selec
         fillLayoutForOffset(offset, layoutBlock);
 
         StaticLayout layout = layoutBlock.layout;
-        if (layout == null || offset >= layout.getText().length()) {
+        if (layout == null || offset > layout.getText().length()) {
             return tmpCoord;
         }
         int line = layout.getLineForOffset(offset);
@@ -1387,12 +1387,11 @@ public abstract class TextSelectionHelper<Cell extends TextSelectionHelper.Selec
 
     private void drawLine(Canvas canvas, StaticLayout layout, int line, int start, int end) {
         layout.getSelectionPath(start, end, path);
-        boolean rtl = layout.getParagraphDirection(line) == StaticLayout.DIR_RIGHT_TO_LEFT;
-        if (!rtl && layout.getSpacingAdd() > 0 && line < layout.getLineCount() - 1) {
+        if (path.lastBottom < layout.getLineBottom(line)) {
             int lineBottom = layout.getLineBottom(line);
             int lineTop = layout.getLineTop(line);
             float lineH = lineBottom - lineTop;
-            float lineHWithoutSpaсing = (lineBottom - layout.getSpacingAdd()) - lineTop;
+            float lineHWithoutSpaсing = path.lastBottom - lineTop;
             canvas.save();
             canvas.scale(1f, lineH / lineHWithoutSpaсing, 0, lineTop);
             canvas.drawPath(path, selectionPaint);
@@ -2322,11 +2321,28 @@ public abstract class TextSelectionHelper<Cell extends TextSelectionHelper.Selec
                     for (int k = startViewChildPosition; k <= n; k++) {
                         CharSequence text = textByPosition.get(i + (k << 16));
                         if (startViewPosition == endViewPosition && k == endViewChildPosition && k == startViewChildPosition) {
-                            stringBuilder.append(text.subSequence(startViewOffset, endViewOffset));
+                            int e = endViewOffset;
+                            int s = startViewOffset;
+                            if (s < text.length()) {
+                                if (e > text.length()) e = text.length();
+                                stringBuilder.append(text.subSequence(s, e));
+                                stringBuilder.append('\n');
+                            }
+                        } else if (startViewPosition == endViewPosition && k == endViewChildPosition) {
+                            CharSequence prefix = prefixTextByPosition.get(i + (k << 16));
+                            if (prefix != null) {
+                                stringBuilder.append(prefix).append(' ');
+                            }
+                            int e = endViewOffset;
+                            if (e > text.length()) e = text.length();
+                            stringBuilder.append(text.subSequence(0, e));
                             stringBuilder.append('\n');
                         } else if (k == startViewChildPosition) {
-                            stringBuilder.append(text.subSequence(startViewOffset, text.length()));
-                            stringBuilder.append('\n');
+                            int s = startViewOffset;
+                            if (s < text.length()) {
+                                stringBuilder.append(text.subSequence(s, text.length()));
+                                stringBuilder.append('\n');
+                            }
                         } else {
                             CharSequence prefix = prefixTextByPosition.get(i + (k << 16));
                             if (prefix != null) {
@@ -2340,14 +2356,21 @@ public abstract class TextSelectionHelper<Cell extends TextSelectionHelper.Selec
                     for (int k = 0; k <= endViewChildPosition; k++) {
                         CharSequence text = textByPosition.get(i + (k << 16));
                         if (startViewPosition == endViewPosition && k == endViewChildPosition && k == startViewChildPosition) {
-                            stringBuilder.append(text.subSequence(startViewOffset, endViewOffset));
-                            stringBuilder.append('\n');
+                            int e = endViewOffset;
+                            int s = startViewOffset;
+                            if (s < text.length()) {
+                                if (e > text.length()) e = text.length();
+                                stringBuilder.append(text.subSequence(s, e));
+                                stringBuilder.append('\n');
+                            }
                         } else if (k == endViewChildPosition) {
                             CharSequence prefix = prefixTextByPosition.get(i + (k << 16));
                             if (prefix != null) {
                                 stringBuilder.append(prefix).append(' ');
                             }
-                            stringBuilder.append(text.subSequence(0, endViewOffset));
+                            int e = endViewOffset;
+                            if (e > text.length()) e = text.length();
+                            stringBuilder.append(text.subSequence(0, e));
                             stringBuilder.append('\n');
                         } else {
                             CharSequence prefix = prefixTextByPosition.get(i + (k << 16));
@@ -2372,8 +2395,8 @@ public abstract class TextSelectionHelper<Cell extends TextSelectionHelper.Selec
             }
 
             if (stringBuilder.length() > 0) {
-                IngnoreCopySpanable[] spans = stringBuilder.getSpans(0, stringBuilder.length() - 1, IngnoreCopySpanable.class);
-                for (IngnoreCopySpanable span : spans) {
+                IgnoreCopySpannable[] spans = stringBuilder.getSpans(0, stringBuilder.length() - 1, IgnoreCopySpannable.class);
+                for (IgnoreCopySpannable span : spans) {
                     int end = stringBuilder.getSpanEnd(span);
                     int start = stringBuilder.getSpanStart(span);
                     stringBuilder.delete(start, end);
@@ -2484,7 +2507,26 @@ public abstract class TextSelectionHelper<Cell extends TextSelectionHelper.Selec
         }
     }
 
-    public static class IngnoreCopySpanable {
+    public static class IgnoreCopySpannable {
 
+    }
+
+    private static class PathWithSavedBottom extends Path {
+
+        float lastBottom = 0;
+
+        @Override
+        public void reset() {
+            super.reset();
+            lastBottom = 0;
+        }
+
+        @Override
+        public void addRect(float left, float top, float right, float bottom, Direction dir) {
+            super.addRect(left, top, right, bottom, dir);
+            if (bottom > lastBottom) {
+                lastBottom = bottom;
+            }
+        }
     }
 }

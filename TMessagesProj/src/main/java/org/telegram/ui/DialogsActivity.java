@@ -727,6 +727,9 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 int dialogIndex = dialogsAdapter.fixPosition(position);
                 int count = dialogsAdapter.getItemCount();
                 Runnable finishRunnable = () -> {
+                    if (frozenDialogsList == null) {
+                        return;
+                    }
                     TLRPC.Dialog dialog = frozenDialogsList.remove(dialogIndex);
                     int pinnedNum = dialog.pinnedNum;
                     slidingView = null;
@@ -1097,7 +1100,9 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                     actionBar.setTitle(LocaleController.getString("AppName", R.string.AppName));
                 }
             }
-            actionBar.setSupportsHolidayImage(true);
+            if (folderId == 0) {
+                actionBar.setSupportsHolidayImage(true);
+            }
         }
         actionBar.setTitleActionRunnable(() -> {
             hideFloatingButton(false);

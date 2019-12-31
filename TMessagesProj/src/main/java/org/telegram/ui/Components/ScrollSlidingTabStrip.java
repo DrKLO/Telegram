@@ -99,6 +99,9 @@ public class ScrollSlidingTabStrip extends HorizontalScrollView {
         layoutTransition.setAnimateParentHierarchy(false);
         layoutTransition.setDuration(250);
         layoutTransition.addTransitionListener(new LayoutTransition.TransitionListener() {
+
+            private boolean inTransition;
+
             @Override
             public void startTransition(LayoutTransition transition, ViewGroup container, View view, int transitionType) {
 
@@ -106,7 +109,12 @@ public class ScrollSlidingTabStrip extends HorizontalScrollView {
 
             @Override
             public void endTransition(LayoutTransition transition, ViewGroup container, View view, int transitionType) {
+                if (inTransition) {
+                    return;
+                }
+                inTransition = true;
                 tabsContainer.setLayoutTransition(null);
+                inTransition = false;
             }
         });
     }

@@ -2827,6 +2827,9 @@ public class AlertsCreator {
     }
 
     private static void processCreate(EditTextBoldCursor editText, AlertDialog alertDialog, BaseFragment fragment) {
+        if (fragment == null || fragment.getParentActivity() == null) {
+            return;
+        }
         AndroidUtilities.hideKeyboard(editText);
         Theme.ThemeInfo themeInfo = Theme.createNewTheme(editText.getText().toString());
         NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.themeListUpdated);
