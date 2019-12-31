@@ -62,17 +62,30 @@
 int i2d_ASN1_BOOLEAN(int a, unsigned char **pp)
 {
     int r;
-    unsigned char *p;
+    unsigned char *p, *allocated = NULL;
 
     r = ASN1_object_size(0, 1, V_ASN1_BOOLEAN);
     if (pp == NULL)
         return (r);
-    p = *pp;
+
+    if (*pp == NULL) {
+        if ((p = allocated = OPENSSL_malloc(r)) == NULL) {
+            OPENSSL_PUT_ERROR(ASN1, ERR_R_MALLOC_FAILURE);
+            return 0;
+        }
+    } else {
+        p = *pp;
+    }
 
     ASN1_put_object(&p, 0, 1, V_ASN1_BOOLEAN, V_ASN1_UNIVERSAL);
-    *(p++) = (unsigned char)a;
-    *pp = p;
-    return (r);
+    *p = (unsigned char)a;
+
+    /*
+     * If a new buffer was allocated, just return it back.
+     * If not, return the incremented buffer pointer.
+     */
+    *pp = allocated != NULL ? allocated : p + 1;
+    return r;
 }
 
 int d2i_ASN1_BOOLEAN(int *a, const unsigned char **pp, long length)

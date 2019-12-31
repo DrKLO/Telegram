@@ -49,9 +49,11 @@ if ($flavour && $flavour ne "void") {
     ( $xlate="${dir}../../../perlasm/arm-xlate.pl" and -f $xlate) or
     die "can't locate arm-xlate.pl";
 
-    open STDOUT,"| \"$^X\" $xlate $flavour $output";
+    open OUT,"| \"$^X\" $xlate $flavour $output";
+    *STDOUT=*OUT;
 } else {
-    open STDOUT,">$output";
+    open OUT,">$output";
+    *STDOUT=*OUT;
 }
 
 $s0="r0";
@@ -196,22 +198,22 @@ AES_Te:
 .word	0x1B000000, 0x36000000, 0, 0, 0, 0, 0, 0
 .size	AES_Te,.-AES_Te
 
-@ void asm_AES_encrypt(const unsigned char *in, unsigned char *out,
-@ 		       const AES_KEY *key) {
-.global asm_AES_encrypt
-.type   asm_AES_encrypt,%function
+@ void aes_nohw_encrypt(const unsigned char *in, unsigned char *out,
+@ 		                  const AES_KEY *key) {
+.global aes_nohw_encrypt
+.type   aes_nohw_encrypt,%function
 .align	5
-asm_AES_encrypt:
+aes_nohw_encrypt:
 #ifndef	__thumb2__
-	sub	r3,pc,#8		@ asm_AES_encrypt
+	sub	r3,pc,#8		@ aes_nohw_encrypt
 #else
 	adr	r3,.
 #endif
 	stmdb   sp!,{r1,r4-r12,lr}
-#ifdef	__APPLE__
+#if defined(__thumb2__) || defined(__APPLE__)
 	adr	$tbl,AES_Te
 #else
-	sub	$tbl,r3,#asm_AES_encrypt-AES_Te	@ Te
+	sub	$tbl,r3,#aes_nohw_encrypt-AES_Te	@ Te
 #endif
 	mov	$rounds,r0		@ inp
 	mov	$key,r2
@@ -308,7 +310,7 @@ asm_AES_encrypt:
 	moveq	pc,lr			@ be binary compatible with V4, yet
 	bx	lr			@ interoperable with Thumb ISA:-)
 #endif
-.size	asm_AES_encrypt,.-asm_AES_encrypt
+.size	aes_nohw_encrypt,.-aes_nohw_encrypt
 
 .type   _armv4_AES_encrypt,%function
 .align	2
@@ -447,13 +449,13 @@ _armv4_AES_encrypt:
 	ldr	pc,[sp],#4		@ pop and return
 .size	_armv4_AES_encrypt,.-_armv4_AES_encrypt
 
-.global asm_AES_set_encrypt_key
-.type   asm_AES_set_encrypt_key,%function
+.global aes_nohw_set_encrypt_key
+.type   aes_nohw_set_encrypt_key,%function
 .align	5
-asm_AES_set_encrypt_key:
+aes_nohw_set_encrypt_key:
 _armv4_AES_set_encrypt_key:
 #ifndef	__thumb2__
-	sub	r3,pc,#8		@ asm_AES_set_encrypt_key
+	sub	r3,pc,#8		@ aes_nohw_set_encrypt_key
 #else
 	adr	r3,.
 #endif
@@ -486,7 +488,7 @@ _armv4_AES_set_encrypt_key:
 	mov	lr,r1			@ bits
 	mov	$key,r2			@ key
 
-#ifdef	__APPLE__
+#if defined(__thumb2__) || defined(__APPLE__)
 	adr	$tbl,AES_Te+1024				@ Te4
 #else
 	sub	$tbl,r3,#_armv4_AES_set_encrypt_key-AES_Te-1024	@ Te4
@@ -751,22 +753,22 @@ _armv4_AES_set_encrypt_key:
 	moveq	pc,lr			@ be binary compatible with V4, yet
 	bx	lr			@ interoperable with Thumb ISA:-)
 #endif
-.size	asm_AES_set_encrypt_key,.-asm_AES_set_encrypt_key
+.size	aes_nohw_set_encrypt_key,.-aes_nohw_set_encrypt_key
 
-.global asm_AES_set_decrypt_key
-.type   asm_AES_set_decrypt_key,%function
+.global aes_nohw_set_decrypt_key
+.type   aes_nohw_set_decrypt_key,%function
 .align	5
-asm_AES_set_decrypt_key:
+aes_nohw_set_decrypt_key:
 	str	lr,[sp,#-4]!            @ push lr
 	bl	_armv4_AES_set_encrypt_key
 	teq	r0,#0
 	ldr	lr,[sp],#4              @ pop lr
 	bne	.Labrt
 
-	mov	r0,r2			@ asm_AES_set_encrypt_key preserves r2,
+	mov	r0,r2			@ aes_nohw_set_encrypt_key preserves r2,
 	mov	r1,r2			@ which is AES_KEY *key
 	b	_armv4_AES_set_enc2dec_key
-.size	asm_AES_set_decrypt_key,.-asm_AES_set_decrypt_key
+.size	aes_nohw_set_decrypt_key,.-aes_nohw_set_decrypt_key
 
 @ void AES_set_enc2dec_key(const AES_KEY *inp,AES_KEY *out)
 .global	AES_set_enc2dec_key
@@ -972,22 +974,22 @@ AES_Td:
 .byte	0xe1, 0x69, 0x14, 0x63, 0x55, 0x21, 0x0c, 0x7d
 .size	AES_Td,.-AES_Td
 
-@ void asm_AES_decrypt(const unsigned char *in, unsigned char *out,
-@ 		       const AES_KEY *key) {
-.global asm_AES_decrypt
-.type   asm_AES_decrypt,%function
+@ void aes_nohw_decrypt(const unsigned char *in, unsigned char *out,
+@ 		                  const AES_KEY *key) {
+.global aes_nohw_decrypt
+.type   aes_nohw_decrypt,%function
 .align	5
-asm_AES_decrypt:
+aes_nohw_decrypt:
 #ifndef	__thumb2__
-	sub	r3,pc,#8		@ asm_AES_decrypt
+	sub	r3,pc,#8		@ aes_nohw_decrypt
 #else
 	adr	r3,.
 #endif
 	stmdb   sp!,{r1,r4-r12,lr}
-#ifdef	__APPLE__
+#if defined(__thumb2__) || defined(__APPLE__)
 	adr	$tbl,AES_Td
 #else
-	sub	$tbl,r3,#asm_AES_decrypt-AES_Td	@ Td
+	sub	$tbl,r3,#aes_nohw_decrypt-AES_Td	@ Td
 #endif
 	mov	$rounds,r0		@ inp
 	mov	$key,r2
@@ -1084,7 +1086,7 @@ asm_AES_decrypt:
 	moveq	pc,lr			@ be binary compatible with V4, yet
 	bx	lr			@ interoperable with Thumb ISA:-)
 #endif
-.size	asm_AES_decrypt,.-asm_AES_decrypt
+.size	aes_nohw_decrypt,.-aes_nohw_decrypt
 
 .type   _armv4_AES_decrypt,%function
 .align	2
@@ -1247,4 +1249,4 @@ while(<SELF>) {
 close SELF;
 
 print $code;
-close STDOUT;	# enforce flush
+close STDOUT or die "error closing STDOUT";	# enforce flush

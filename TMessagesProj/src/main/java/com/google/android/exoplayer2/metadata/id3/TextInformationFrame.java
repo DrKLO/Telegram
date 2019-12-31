@@ -66,7 +66,7 @@ public final class TextInformationFrame extends Id3Frame {
 
   @Override
   public String toString() {
-    return id + ": value=" + value;
+    return id + ": description=" + description + ": value=" + value;
   }
 
   // Parcelable implementation.

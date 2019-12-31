@@ -30,6 +30,7 @@ import java.util.Arrays;
   private static final int MINIMUM_PITCH = 65;
   private static final int MAXIMUM_PITCH = 400;
   private static final int AMDF_FREQUENCY = 4000;
+  private static final int BYTES_PER_SAMPLE = 2;
 
   private final int inputSampleRateHz;
   private final int channelCount;
@@ -157,9 +158,9 @@ import java.util.Arrays;
     maxDiff = 0;
   }
 
-  /** Returns the number of output frames that can be read with {@link #getOutput(ShortBuffer)}. */
-  public int getFramesAvailable() {
-    return outputFrameCount;
+  /** Returns the size of output that can be read with {@link #getOutput(ShortBuffer)}, in bytes. */
+  public int getOutputSize() {
+    return outputFrameCount * channelCount * BYTES_PER_SAMPLE;
   }
 
   // Internal methods.

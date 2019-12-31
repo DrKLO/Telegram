@@ -42,7 +42,9 @@ public class LibflacAudioRenderer extends SimpleDecoderAudioRenderer {
    * @param eventListener A listener of events. May be null if delivery of events is not required.
    * @param audioProcessors Optional {@link AudioProcessor}s that will process audio before output.
    */
-  public LibflacAudioRenderer(Handler eventHandler, AudioRendererEventListener eventListener,
+  public LibflacAudioRenderer(
+      Handler eventHandler,
+      AudioRendererEventListener eventListener,
       AudioProcessor... audioProcessors) {
     super(eventHandler, eventListener, audioProcessors);
   }

@@ -763,17 +763,7 @@ public class DataUsageActivity extends BaseFragment {
                         } else if (position == callsReceivedRow) {
                             textCell.setTextAndValue(LocaleController.getString("IncomingCalls", R.string.IncomingCalls), String.format("%d", StatsController.getInstance(currentAccount).getRecivedItemsCount(currentType, type)), true);
                         } else if (position == callsTotalTimeRow) {
-                            int total = StatsController.getInstance(currentAccount).getCallsTotalTime(currentType);
-                            int hours = total / 3600;
-                            total -= hours * 3600;
-                            int minutes = total / 60;
-                            total -= minutes * 60;
-                            String time;
-                            if (hours != 0) {
-                                time = String.format("%d:%02d:%02d", hours, minutes, total);
-                            } else {
-                                time = String.format("%d:%02d", minutes, total);
-                            }
+                            String time = AndroidUtilities.formatShortDuration(StatsController.getInstance(currentAccount).getCallsTotalTime(currentType));
                             textCell.setTextAndValue(LocaleController.getString("CallsTotalTime", R.string.CallsTotalTime), time, false);
                         } else if (position == messagesSentRow || position == photosSentRow || position == videosSentRow || position == audiosSentRow || position == filesSentRow) {
                             textCell.setTextAndValue(LocaleController.getString("CountSent", R.string.CountSent), String.format("%d", StatsController.getInstance(currentAccount).getSentItemsCount(currentType, type)), true);

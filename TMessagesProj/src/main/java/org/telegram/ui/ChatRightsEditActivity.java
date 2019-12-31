@@ -598,9 +598,11 @@ public class ChatRightsEditActivity extends BaseFragment {
         }
         if (srp != null && !ChatObject.isChannel(currentChat)) {
             MessagesController.getInstance(currentAccount).convertToMegaGroup(getParentActivity(), chatId, this, param -> {
-                chatId = param;
-                currentChat = MessagesController.getInstance(currentAccount).getChat(param);
-                initTransfer(srp, passwordFragment);
+                if (param != 0) {
+                    chatId = param;
+                    currentChat = MessagesController.getInstance(currentAccount).getChat(param);
+                    initTransfer(srp, passwordFragment);
+                }
             });
             return;
         }
@@ -727,6 +729,8 @@ public class ChatRightsEditActivity extends BaseFragment {
                             initTransfer(passwordFragment.getNewSrpPassword(), passwordFragment);
                         }
                     }), ConnectionsManager.RequestFlagWithoutLogin);
+                } else if (error.text.equals("CHANNELS_TOO_MUCH")) {
+                    presentFragment(new TooManyCommunitiesActivity(TooManyCommunitiesActivity.TYPE_EDIT));
                 } else {
                     if (passwordFragment != null) {
                         passwordFragment.needHideProgress();
@@ -853,9 +857,11 @@ public class ChatRightsEditActivity extends BaseFragment {
     private void onDonePressed() {
         if (!ChatObject.isChannel(currentChat) && (currentType == TYPE_BANNED || currentType == TYPE_ADMIN && (!isDefaultAdminRights() || rankRow != -1 && currentRank.codePointCount(0, currentRank.length()) > MAX_RANK_LENGTH))) {
             MessagesController.getInstance(currentAccount).convertToMegaGroup(getParentActivity(), chatId, this, param -> {
-                chatId = param;
-                currentChat = MessagesController.getInstance(currentAccount).getChat(param);
-                onDonePressed();
+                if (param != 0) {
+                    chatId = param;
+                    currentChat = MessagesController.getInstance(currentAccount).getChat(param);
+                    onDonePressed();
+                }
             });
             return;
         }

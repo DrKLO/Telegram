@@ -29,7 +29,6 @@ import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
-import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -77,7 +76,7 @@ public class GroupStickersActivity extends BaseFragment implements NotificationC
     private ContextProgressView progressView;
     private AnimatorSet doneItemAnimation;
     private LinearLayout nameContainer;
-    private EditText editText;
+    private EditTextBoldCursor editText;
     private EditTextBoldCursor usernameTextView;
     private LinearLayoutManager layoutManager;
     private ImageView eraseImageView;
@@ -185,7 +184,7 @@ public class GroupStickersActivity extends BaseFragment implements NotificationC
         nameContainer.setOrientation(LinearLayout.HORIZONTAL);
         nameContainer.setPadding(AndroidUtilities.dp(17), 0, AndroidUtilities.dp(14), 0);
 
-        editText = new EditText(context);
+        editText = new EditTextBoldCursor(context);
         editText.setText(MessagesController.getInstance(currentAccount).linkPrefix + "/addstickers/");
         editText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 17);
         editText.setHintTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteHintText));

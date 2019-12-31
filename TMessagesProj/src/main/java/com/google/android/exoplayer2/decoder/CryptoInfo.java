@@ -62,7 +62,7 @@ public final class CryptoInfo {
   private final PatternHolderV24 patternHolder;
 
   public CryptoInfo() {
-    frameworkCryptoInfo = Util.SDK_INT >= 16 ? newFrameworkCryptoInfoV16() : null;
+    frameworkCryptoInfo = new android.media.MediaCodec.CryptoInfo();
     patternHolder = Util.SDK_INT >= 24 ? new PatternHolderV24(frameworkCryptoInfo) : null;
   }
 
@@ -79,34 +79,8 @@ public final class CryptoInfo {
     this.mode = mode;
     this.encryptedBlocks = encryptedBlocks;
     this.clearBlocks = clearBlocks;
-    if (Util.SDK_INT >= 16) {
-      updateFrameworkCryptoInfoV16();
-    }
-  }
-
-  /**
-   * Returns an equivalent {@link android.media.MediaCodec.CryptoInfo} instance.
-   * <p>
-   * Successive calls to this method on a single {@link CryptoInfo} will return the same instance.
-   * Changes to the {@link CryptoInfo} will be reflected in the returned object. The return object
-   * should not be modified directly.
-   *
-   * @return The equivalent {@link android.media.MediaCodec.CryptoInfo} instance.
-   */
-  @TargetApi(16)
-  public android.media.MediaCodec.CryptoInfo getFrameworkCryptoInfoV16() {
-    return frameworkCryptoInfo;
-  }
-
-  @TargetApi(16)
-  private android.media.MediaCodec.CryptoInfo newFrameworkCryptoInfoV16() {
-    return new android.media.MediaCodec.CryptoInfo();
-  }
-
-  @TargetApi(16)
-  private void updateFrameworkCryptoInfoV16() {
-    // Update fields directly because the framework's CryptoInfo.set performs an unnecessary object
-    // allocation on Android N.
+    // Update frameworkCryptoInfo fields directly because CryptoInfo.set performs an unnecessary
+    // object allocation on Android N.
     frameworkCryptoInfo.numSubSamples = numSubSamples;
     frameworkCryptoInfo.numBytesOfClearData = numBytesOfClearData;
     frameworkCryptoInfo.numBytesOfEncryptedData = numBytesOfEncryptedData;
@@ -116,6 +90,25 @@ public final class CryptoInfo {
     if (Util.SDK_INT >= 24) {
       patternHolder.set(encryptedBlocks, clearBlocks);
     }
+  }
+
+  /**
+   * Returns an equivalent {@link android.media.MediaCodec.CryptoInfo} instance.
+   *
+   * <p>Successive calls to this method on a single {@link CryptoInfo} will return the same
+   * instance. Changes to the {@link CryptoInfo} will be reflected in the returned object. The
+   * return object should not be modified directly.
+   *
+   * @return The equivalent {@link android.media.MediaCodec.CryptoInfo} instance.
+   */
+  public android.media.MediaCodec.CryptoInfo getFrameworkCryptoInfo() {
+    return frameworkCryptoInfo;
+  }
+
+  /** @deprecated Use {@link #getFrameworkCryptoInfo()}. */
+  @Deprecated
+  public android.media.MediaCodec.CryptoInfo getFrameworkCryptoInfoV16() {
+    return getFrameworkCryptoInfo();
   }
 
   @TargetApi(24)

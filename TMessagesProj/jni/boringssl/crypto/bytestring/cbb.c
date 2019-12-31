@@ -44,7 +44,7 @@ static int cbb_init(CBB *cbb, uint8_t *buf, size_t cap) {
   base->error = 0;
 
   cbb->base = base;
-  cbb->is_top_level = 1;
+  cbb->is_child = 0;
   return 1;
 }
 
@@ -76,11 +76,14 @@ int CBB_init_fixed(CBB *cbb, uint8_t *buf, size_t len) {
 }
 
 void CBB_cleanup(CBB *cbb) {
-  if (cbb->base) {
-    // Only top-level |CBB|s are cleaned up. Child |CBB|s are non-owning. They
-    // are implicitly discarded when the parent is flushed or cleaned up.
-    assert(cbb->is_top_level);
+  // Child |CBB|s are non-owning. They are implicitly discarded and should not
+  // be used with |CBB_cleanup| or |ScopedCBB|.
+  assert(!cbb->is_child);
+  if (cbb->is_child) {
+    return;
+  }
 
+  if (cbb->base) {
     if (cbb->base->can_resize) {
       OPENSSL_free(cbb->base->buf);
     }
@@ -144,7 +147,7 @@ static int cbb_buffer_add(struct cbb_buffer_st *base, uint8_t **out,
   return 1;
 }
 
-static int cbb_buffer_add_u(struct cbb_buffer_st *base, uint32_t v,
+static int cbb_buffer_add_u(struct cbb_buffer_st *base, uint64_t v,
                             size_t len_len) {
   if (len_len == 0) {
     return 1;
@@ -169,7 +172,7 @@ static int cbb_buffer_add_u(struct cbb_buffer_st *base, uint32_t v,
 }
 
 int CBB_finish(CBB *cbb, uint8_t **out_data, size_t *out_len) {
-  if (!cbb->is_top_level) {
+  if (cbb->is_child) {
     return 0;
   }
 
@@ -310,6 +313,7 @@ static int cbb_add_length_prefixed(CBB *cbb, CBB *out_contents,
   OPENSSL_memset(prefix_bytes, 0, len_len);
   OPENSSL_memset(out_contents, 0, sizeof(CBB));
   out_contents->base = cbb->base;
+  out_contents->is_child = 1;
   cbb->child = out_contents;
   cbb->child->offset = offset;
   cbb->child->pending_len_len = len_len;
@@ -381,6 +385,7 @@ int CBB_add_asn1(CBB *cbb, CBB *out_contents, unsigned tag) {
 
   OPENSSL_memset(out_contents, 0, sizeof(CBB));
   out_contents->base = cbb->base;
+  out_contents->is_child = 1;
   cbb->child = out_contents;
   cbb->child->offset = offset;
   cbb->child->pending_len_len = 1;
@@ -459,6 +464,13 @@ int CBB_add_u32(CBB *cbb, uint32_t value) {
   return cbb_buffer_add_u(cbb->base, value, 4);
 }
 
+int CBB_add_u64(CBB *cbb, uint64_t value) {
+  if (!CBB_flush(cbb)) {
+    return 0;
+  }
+  return cbb_buffer_add_u(cbb->base, value, 8);
+}
+
 void CBB_discard_child(CBB *cbb) {
   if (cbb->child == NULL) {
     return;
@@ -503,6 +515,28 @@ int CBB_add_asn1_uint64(CBB *cbb, uint64_t value) {
   }
 
   return CBB_flush(cbb);
+}
+
+int CBB_add_asn1_octet_string(CBB *cbb, const uint8_t *data, size_t data_len) {
+  CBB child;
+  if (!CBB_add_asn1(cbb, &child, CBS_ASN1_OCTETSTRING) ||
+      !CBB_add_bytes(&child, data, data_len) ||
+      !CBB_flush(cbb)) {
+    return 0;
+  }
+
+  return 1;
+}
+
+int CBB_add_asn1_bool(CBB *cbb, int value) {
+  CBB child;
+  if (!CBB_add_asn1(cbb, &child, CBS_ASN1_BOOLEAN) ||
+      !CBB_add_u8(&child, value != 0 ? 0xff : 0) ||
+      !CBB_flush(cbb)) {
+    return 0;
+  }
+
+  return 1;
 }
 
 // parse_dotted_decimal parses one decimal component from |cbs|, where |cbs| is

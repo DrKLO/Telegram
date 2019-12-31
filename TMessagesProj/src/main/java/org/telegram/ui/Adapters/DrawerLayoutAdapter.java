@@ -9,6 +9,8 @@
 package org.telegram.ui.Adapters;
 
 import android.content.Context;
+import android.os.Build;
+import android.text.TextUtils;
 import android.view.View;
 import android.view.ViewGroup;
 
@@ -38,9 +40,11 @@ public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter {
     private ArrayList<Integer> accountNumbers = new ArrayList<>();
     private boolean accountsShowed;
     private DrawerProfileCell profileCell;
+    private RecyclerView.ItemAnimator itemAnimator;
 
-    public DrawerLayoutAdapter(Context context) {
+    public DrawerLayoutAdapter(Context context, RecyclerView.ItemAnimator animator) {
         mContext = context;
+        itemAnimator = animator;
         accountsShowed = UserConfig.getActivatedAccountsCount() > 1 && MessagesController.getGlobalMainSettings().getBoolean("accountsShowed", true);
         Theme.createDialogsResources(context);
         resetItems();
@@ -64,12 +68,12 @@ public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter {
     }
 
     public void setAccountsShowed(boolean value, boolean animated) {
-        if (accountsShowed == value) {
+        if (accountsShowed == value || itemAnimator.isRunning()) {
             return;
         }
         accountsShowed = value;
         if (profileCell != null) {
-            profileCell.setAccountsShowed(accountsShowed);
+            profileCell.setAccountsShowed(accountsShowed, animated);
         }
         MessagesController.getGlobalMainSettings().edit().putBoolean("accountsShowed", accountsShowed).commit();
         if (animated) {
@@ -104,16 +108,7 @@ public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter {
         View view;
         switch (viewType) {
             case 0:
-                profileCell = new DrawerProfileCell(mContext);
-                profileCell.setOnArrowClickListener(v -> {
-                    DrawerProfileCell drawerProfileCell = (DrawerProfileCell) v;
-                    setAccountsShowed(drawerProfileCell.isAccountsShowed(), true);
-                });
-                view = profileCell;
-                break;
-            case 1:
-            default:
-                view = new EmptyCell(mContext, AndroidUtilities.dp(8));
+                view = profileCell = new DrawerProfileCell(mContext);
                 break;
             case 2:
                 view = new DividerCell(mContext);
@@ -126,6 +121,10 @@ public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter {
                 break;
             case 5:
                 view = new DrawerAddCell(mContext);
+                break;
+            case 1:
+            default:
+                view = new EmptyCell(mContext, AndroidUtilities.dp(8));
                 break;
         }
         view.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
@@ -184,7 +183,7 @@ public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter {
             }
             i -= getAccountRowsCount();
         }
-        if (i == 3) {
+        if (items.get(i) == null) {
             return 2;
         }
         return 3;
@@ -212,28 +211,39 @@ public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter {
         if (!UserConfig.getInstance(UserConfig.selectedAccount).isClientActivated()) {
             return;
         }
+        boolean hasWallet = Build.VERSION.SDK_INT >= 18 && !TextUtils.isEmpty(UserConfig.getInstance(UserConfig.selectedAccount).walletConfig) && !TextUtils.isEmpty(UserConfig.getInstance(UserConfig.selectedAccount).walletBlockchainName);
         int eventType = Theme.getEventType();
         if (eventType == 0) {
             items.add(new Item(2, LocaleController.getString("NewGroup", R.string.NewGroup), R.drawable.menu_groups_ny));
-            items.add(new Item(3, LocaleController.getString("NewSecretChat", R.string.NewSecretChat), R.drawable.menu_secret_ny));
-            items.add(new Item(4, LocaleController.getString("NewChannel", R.string.NewChannel), R.drawable.menu_channel_ny));
-            items.add(null); // divider
+            if (!hasWallet) {
+                items.add(new Item(3, LocaleController.getString("NewSecretChat", R.string.NewSecretChat), R.drawable.menu_secret_ny));
+                items.add(new Item(4, LocaleController.getString("NewChannel", R.string.NewChannel), R.drawable.menu_channel_ny));
+            }
             items.add(new Item(6, LocaleController.getString("Contacts", R.string.Contacts), R.drawable.menu_contacts_ny));
-            items.add(new Item(11, LocaleController.getString("SavedMessages", R.string.SavedMessages), R.drawable.menu_bookmarks_ny));
             items.add(new Item(10, LocaleController.getString("Calls", R.string.Calls), R.drawable.menu_calls_ny));
-            items.add(new Item(7, LocaleController.getString("InviteFriends", R.string.InviteFriends), R.drawable.menu_invite_ny));
+            items.add(new Item(11, LocaleController.getString("SavedMessages", R.string.SavedMessages), R.drawable.menu_bookmarks_ny));
             items.add(new Item(8, LocaleController.getString("Settings", R.string.Settings), R.drawable.menu_settings_ny));
+            if (hasWallet) {
+                items.add(new Item(12, LocaleController.getString("Wallet", R.string.Wallet), R.drawable.menu_wallet_ny));
+            }
+            items.add(null); // divider
+            items.add(new Item(7, LocaleController.getString("InviteFriends", R.string.InviteFriends), R.drawable.menu_invite_ny));
             items.add(new Item(9, LocaleController.getString("TelegramFAQ", R.string.TelegramFAQ), R.drawable.menu_help_ny));
         } else {
             items.add(new Item(2, LocaleController.getString("NewGroup", R.string.NewGroup), R.drawable.menu_groups));
-            items.add(new Item(3, LocaleController.getString("NewSecretChat", R.string.NewSecretChat), R.drawable.menu_secret));
-            items.add(new Item(4, LocaleController.getString("NewChannel", R.string.NewChannel), R.drawable.menu_broadcast));
-            items.add(null); // divider
+            if (!hasWallet) {
+                items.add(new Item(3, LocaleController.getString("NewSecretChat", R.string.NewSecretChat), R.drawable.menu_secret));
+                items.add(new Item(4, LocaleController.getString("NewChannel", R.string.NewChannel), R.drawable.menu_broadcast));
+            }
             items.add(new Item(6, LocaleController.getString("Contacts", R.string.Contacts), R.drawable.menu_contacts));
-            items.add(new Item(11, LocaleController.getString("SavedMessages", R.string.SavedMessages), R.drawable.menu_saved));
             items.add(new Item(10, LocaleController.getString("Calls", R.string.Calls), R.drawable.menu_calls));
-            items.add(new Item(7, LocaleController.getString("InviteFriends", R.string.InviteFriends), R.drawable.menu_invite));
+            items.add(new Item(11, LocaleController.getString("SavedMessages", R.string.SavedMessages), R.drawable.menu_saved));
+            if (hasWallet) {
+                items.add(new Item(12, LocaleController.getString("Wallet", R.string.Wallet), R.drawable.menu_wallet));
+            }
             items.add(new Item(8, LocaleController.getString("Settings", R.string.Settings), R.drawable.menu_settings));
+            items.add(null); // divider
+            items.add(new Item(7, LocaleController.getString("InviteFriends", R.string.InviteFriends), R.drawable.menu_invite));
             items.add(new Item(9, LocaleController.getString("TelegramFAQ", R.string.TelegramFAQ), R.drawable.menu_help));
         }
     }

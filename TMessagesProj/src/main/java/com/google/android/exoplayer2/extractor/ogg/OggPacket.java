@@ -15,7 +15,6 @@
  */
 package com.google.android.exoplayer2.extractor.ogg;
 
-import androidx.annotation.VisibleForTesting;
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.extractor.ExtractorInput;
 import com.google.android.exoplayer2.util.Assertions;
@@ -111,7 +110,6 @@ import java.util.Arrays;
    * @return the {@code PageHeader} of the last page read or an empty header if the packet has yet
    *     to be populated.
    */
-  @VisibleForTesting
   public OggPageHeader getPageHeader() {
     return pageHeader;
   }

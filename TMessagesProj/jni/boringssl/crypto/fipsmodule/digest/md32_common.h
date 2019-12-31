@@ -223,12 +223,12 @@ int HASH_UPDATE(HASH_CTX *c, const void *data_, size_t len) {
 }
 
 
-void HASH_TRANSFORM(HASH_CTX *c, const uint8_t *data) {
+void HASH_TRANSFORM(HASH_CTX *c, const uint8_t data[HASH_CBLOCK]) {
   HASH_BLOCK_DATA_ORDER(c->h, data, 1);
 }
 
 
-int HASH_FINAL(uint8_t *md, HASH_CTX *c) {
+int HASH_FINAL(uint8_t out[HASH_DIGEST_LENGTH], HASH_CTX *c) {
   // |c->data| always has room for at least one byte. A full block would have
   // been consumed.
   size_t n = c->num;
@@ -258,7 +258,7 @@ int HASH_FINAL(uint8_t *md, HASH_CTX *c) {
   c->num = 0;
   OPENSSL_memset(c->data, 0, HASH_CBLOCK);
 
-  HASH_MAKE_STRING(c, md);
+  HASH_MAKE_STRING(c, out);
   return 1;
 }
 

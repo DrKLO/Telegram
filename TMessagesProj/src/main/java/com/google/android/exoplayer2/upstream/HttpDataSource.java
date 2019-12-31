@@ -354,6 +354,12 @@ public interface HttpDataSource extends DataSource {
    */
   void clearAllRequestProperties();
 
+  /**
+   * When the source is open, returns the HTTP response status code associated with the last {@link
+   * #open} call. Otherwise, returns a negative value.
+   */
+  int getResponseCode();
+
   @Override
   Map<String, List<String>> getResponseHeaders();
 }

@@ -91,13 +91,17 @@ public class ChatActionCell extends BaseCell {
         this.delegate = delegate;
     }
 
-    public void setCustomDate(int date, boolean scheduled) {
+    public void setCustomDate(int date, boolean scheduled, boolean inLayout) {
         if (customDate == date) {
             return;
         }
         CharSequence newText;
         if (scheduled) {
-            newText = LocaleController.formatString("MessageScheduledOn", R.string.MessageScheduledOn, LocaleController.formatDateChat(date));
+            if (date == 0x7ffffffe) {
+                newText = LocaleController.getString("MessageScheduledUntilOnline", R.string.MessageScheduledUntilOnline);
+            } else {
+                newText = LocaleController.formatString("MessageScheduledOn", R.string.MessageScheduledOn, LocaleController.formatDateChat(date));
+            }
         } else {
             newText = LocaleController.formatDateChat(date);
         }
@@ -111,7 +115,11 @@ public class ChatActionCell extends BaseCell {
             invalidate();
         }
         if (!wasLayout) {
-            AndroidUtilities.runOnUIThread(this::requestLayout);
+            if (inLayout) {
+                AndroidUtilities.runOnUIThread(this::requestLayout);
+            } else {
+                requestLayout();
+            }
         } else {
             buildLayout();
         }

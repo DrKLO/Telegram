@@ -73,6 +73,10 @@ extern "C" {
 
 // DSA contains functions for signing and verifying with the Digital Signature
 // Algorithm.
+//
+// This module is deprecated and retained for legacy reasons only. It is not
+// considered a priority for performance or hardening work. Do not use it in
+// new code. Use Ed25519, ECDSA with P-256, or RSA instead.
 
 
 // Allocation and destruction.
@@ -413,12 +417,13 @@ struct dsa_st {
 
 extern "C++" {
 
-namespace bssl {
+BSSL_NAMESPACE_BEGIN
 
 BORINGSSL_MAKE_DELETER(DSA, DSA_free)
+BORINGSSL_MAKE_UP_REF(DSA, DSA_up_ref)
 BORINGSSL_MAKE_DELETER(DSA_SIG, DSA_SIG_free)
 
-}  // namespace bssl
+BSSL_NAMESPACE_END
 
 }  // extern C++
 
@@ -431,5 +436,6 @@ BORINGSSL_MAKE_DELETER(DSA_SIG, DSA_SIG_free)
 #define DSA_R_BAD_VERSION 104
 #define DSA_R_DECODE_ERROR 105
 #define DSA_R_ENCODE_ERROR 106
+#define DSA_R_INVALID_PARAMETERS 107
 
 #endif  // OPENSSL_HEADER_DSA_H

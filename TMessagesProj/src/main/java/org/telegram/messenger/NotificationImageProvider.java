@@ -129,6 +129,9 @@ public class NotificationImageProvider extends ContentProvider implements Notifi
 						}
 					}
 				}
+				if (AndroidUtilities.isInternalUri(Uri.fromFile(finalFile))) {
+					throw new SecurityException("trying to read internal file");
+				}
 				return ParcelFileDescriptor.open(finalFile, ParcelFileDescriptor.MODE_READ_ONLY);
 			}
 		}

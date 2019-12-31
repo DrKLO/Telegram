@@ -30,7 +30,6 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
-import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -77,7 +76,7 @@ public class ThemeSetUrlActivity extends BaseFragment implements NotificationCen
 
     private View divider;
     private HeaderCell headerCell;
-    private EditText editText;
+    private EditTextBoldCursor editText;
     private LinearLayout linearLayoutTypeContainer;
 
     private int checkReqId;
@@ -89,6 +88,8 @@ public class ThemeSetUrlActivity extends BaseFragment implements NotificationCen
     private boolean creatingNewTheme;
 
     private Theme.ThemeInfo themeInfo;
+    private Theme.ThemeAccent themeAccent;
+    private TLRPC.TL_theme info;
 
     private final static int done_button = 1;
 
@@ -135,9 +136,12 @@ public class ThemeSetUrlActivity extends BaseFragment implements NotificationCen
         }
     }
 
-    public ThemeSetUrlActivity(Theme.ThemeInfo theme, boolean newTheme) {
+    public ThemeSetUrlActivity(Theme.ThemeInfo theme, Theme.ThemeAccent accent, boolean newTheme) {
         super();
         themeInfo = theme;
+        themeAccent = accent;
+        info = accent != null ? accent.info : theme.info;
+        currentAccount = accent != null ? accent.account : theme.account;
         creatingNewTheme = newTheme;
     }
 
@@ -234,7 +238,7 @@ public class ThemeSetUrlActivity extends BaseFragment implements NotificationCen
         linkContainer.setOrientation(LinearLayout.HORIZONTAL);
         linearLayoutTypeContainer.addView(linkContainer, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 50, 23, 0, 23, 0));
 
-        editText = new EditText(context);
+        editText = new EditTextBoldCursor(context);
         editText.setText(getMessagesController().linkPrefix + "/addtheme/");
         editText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
         editText.setHintTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteHintText));
@@ -292,7 +296,7 @@ public class ThemeSetUrlActivity extends BaseFragment implements NotificationCen
                     return;
                 }
                 if (linkField.length() > 0) {
-                    String url = "https://" + MessagesController.getInstance(themeInfo.account).linkPrefix + "/addtheme/" + linkField.getText();
+                    String url = "https://" + getMessagesController().linkPrefix + "/addtheme/" + linkField.getText();
                     String text = LocaleController.formatString("ThemeHelpLink", R.string.ThemeHelpLink, url);
                     int index = text.indexOf(url);
                     SpannableStringBuilder textSpan = new SpannableStringBuilder(text);
@@ -344,7 +348,7 @@ public class ThemeSetUrlActivity extends BaseFragment implements NotificationCen
                 if (getParentActivity() == null) {
                     return;
                 }
-                BottomSheet.Builder builder = new BottomSheet.Builder(getParentActivity(), false, 1);
+                BottomSheet.Builder builder = new BottomSheet.Builder(getParentActivity(), false);
                 builder.setApplyBottomPadding(false);
 
                 LinearLayout container = new LinearLayout(context);
@@ -386,11 +390,11 @@ public class ThemeSetUrlActivity extends BaseFragment implements NotificationCen
             helpInfoCell.setBackgroundDrawable(Theme.getThemedDrawable(context, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
         }
 
-        if (themeInfo != null) {
+        if (info != null) {
             ignoreCheck = true;
-            nameField.setText(themeInfo.name);
+            nameField.setText(info.title);
             nameField.setSelection(nameField.length());
-            linkField.setText(themeInfo.info.slug);
+            linkField.setText(info.slug);
             linkField.setSelection(linkField.length());
             ignoreCheck = false;
         }
@@ -415,7 +419,8 @@ public class ThemeSetUrlActivity extends BaseFragment implements NotificationCen
     public void didReceivedNotification(int id, int account, Object... args) {
         if (id == NotificationCenter.themeUploadedToServer) {
             Theme.ThemeInfo theme = (Theme.ThemeInfo) args[0];
-            if (theme == themeInfo && progressDialog != null) {
+            Theme.ThemeAccent accent = (Theme.ThemeAccent) args[1];
+            if (theme == themeInfo && accent == themeAccent && progressDialog != null) {
                 try {
                     progressDialog.dismiss();
                     progressDialog = null;
@@ -427,7 +432,8 @@ public class ThemeSetUrlActivity extends BaseFragment implements NotificationCen
             }
         } else if (id == NotificationCenter.themeUploadError) {
             Theme.ThemeInfo theme = (Theme.ThemeInfo) args[0];
-            if (theme == themeInfo && progressDialog != null) {
+            Theme.ThemeAccent accent = (Theme.ThemeAccent) args[1];
+            if (theme == themeInfo && accent == themeAccent && progressDialog != null) {
                 try {
                     progressDialog.dismiss();
                     progressDialog = null;
@@ -444,7 +450,7 @@ public class ThemeSetUrlActivity extends BaseFragment implements NotificationCen
             checkRunnable = null;
             lastCheckName = null;
             if (checkReqId != 0) {
-                ConnectionsManager.getInstance(themeInfo.account).cancelRequest(checkReqId, true);
+                ConnectionsManager.getInstance(currentAccount).cancelRequest(checkReqId, true);
             }
         }
         lastNameAvailable = false;
@@ -491,7 +497,7 @@ public class ThemeSetUrlActivity extends BaseFragment implements NotificationCen
         }
 
         if (!alert) {
-            String currentUrl = themeInfo != null && themeInfo.info.slug != null ? themeInfo.info.slug : "";
+            String currentUrl = info != null && info.slug != null ? info.slug : "";
             if (url.equals(currentUrl)) {
                 setCheckText(LocaleController.formatString("SetUrlAvailable", R.string.SetUrlAvailable, url), Theme.key_windowBackgroundWhiteGreenText);
                 return true;
@@ -504,7 +510,7 @@ public class ThemeSetUrlActivity extends BaseFragment implements NotificationCen
                 req.slug = url;
                 req.title = "";
                 req.document = new TLRPC.TL_inputDocumentEmpty();
-                checkReqId = ConnectionsManager.getInstance(themeInfo.account).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
+                checkReqId = ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
                     checkReqId = 0;
                     if (lastCheckName != null && lastCheckName.equals(url)) {
                         if (error == null || !"THEME_SLUG_INVALID".equals(error.text) && !"THEME_SLUG_OCCUPIED".equals(error.text)) {
@@ -555,20 +561,20 @@ public class ThemeSetUrlActivity extends BaseFragment implements NotificationCen
             return;
         }
         if (creatingNewTheme) {
-            String oldName = themeInfo.name;
-            String oldSlug = themeInfo.info.slug;
+            String oldName = info.title;
+            String oldSlug = info.slug;
             progressDialog = new AlertDialog(getParentActivity(), 3);
             progressDialog.setOnCancelListener(dialog -> {
 
             });
             progressDialog.show();
-            themeInfo.name = themeInfo.info.title = nameField.getText().toString();
+            themeInfo.name = info.title = nameField.getText().toString();
             themeInfo.info.slug = linkField.getText().toString();
             Theme.saveCurrentTheme(themeInfo, true, true, true);
             return;
         }
-        String currentUrl = themeInfo.info.slug == null ? "" : themeInfo.info.slug;
-        String currentName = themeInfo.name == null ? "" : themeInfo.name;
+        String currentUrl = info.slug == null ? "" : info.slug;
+        String currentName = info.title == null ? "" : info.title;
         String newUrl = linkField.getText().toString();
         String newName = nameField.getText().toString();
         if (currentUrl.equals(newUrl) && currentName.equals(newName)) {
@@ -580,8 +586,8 @@ public class ThemeSetUrlActivity extends BaseFragment implements NotificationCen
 
         final TLRPC.TL_account_updateTheme req = new TLRPC.TL_account_updateTheme();
         TLRPC.TL_inputTheme inputTheme = new TLRPC.TL_inputTheme();
-        inputTheme.id = themeInfo.info.id;
-        inputTheme.access_hash = themeInfo.info.access_hash;
+        inputTheme.id = info.id;
+        inputTheme.access_hash = info.access_hash;
         req.theme = inputTheme;
         req.format = "android";
         req.slug = newUrl;
@@ -590,7 +596,7 @@ public class ThemeSetUrlActivity extends BaseFragment implements NotificationCen
         req.title = newName;
         req.flags |= 2;
 
-        final int reqId = ConnectionsManager.getInstance(themeInfo.account).sendRequest(req, (response, error) -> {
+        final int reqId = ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> {
             if (response instanceof TLRPC.TL_theme) {
                 TLRPC.TL_theme theme = (TLRPC.TL_theme) response;
                 AndroidUtilities.runOnUIThread(() -> {
@@ -600,7 +606,7 @@ public class ThemeSetUrlActivity extends BaseFragment implements NotificationCen
                     } catch (Exception e) {
                         FileLog.e(e);
                     }
-                    Theme.setThemeUploadInfo(themeInfo, theme, false);
+                    Theme.setThemeUploadInfo(themeInfo, themeAccent, theme, currentAccount, false);
                     finishFragment();
                 });
             } else {
@@ -611,13 +617,13 @@ public class ThemeSetUrlActivity extends BaseFragment implements NotificationCen
                     } catch (Exception e) {
                         FileLog.e(e);
                     }
-                    AlertsCreator.processError(themeInfo.account, error, ThemeSetUrlActivity.this, req);
+                    AlertsCreator.processError(currentAccount, error, ThemeSetUrlActivity.this, req);
                 });
             }
         }, ConnectionsManager.RequestFlagFailOnServerErrors);
-        ConnectionsManager.getInstance(themeInfo.account).bindRequestToGuid(reqId, classGuid);
+        ConnectionsManager.getInstance(currentAccount).bindRequestToGuid(reqId, classGuid);
 
-        progressDialog.setOnCancelListener(dialog -> ConnectionsManager.getInstance(themeInfo.account).cancelRequest(reqId, true));
+        progressDialog.setOnCancelListener(dialog -> ConnectionsManager.getInstance(currentAccount).cancelRequest(reqId, true));
         progressDialog.show();
     }
 
@@ -679,6 +685,7 @@ public class ThemeSetUrlActivity extends BaseFragment implements NotificationCen
                 new ThemeDescription(messagesCell, 0, null, null, new Drawable[]{Theme.chat_msgInSelectedDrawable, Theme.chat_msgInMediaSelectedDrawable}, null, Theme.key_chat_inBubbleSelected),
                 new ThemeDescription(messagesCell, 0, null, null, new Drawable[]{Theme.chat_msgInShadowDrawable, Theme.chat_msgInMediaShadowDrawable}, null, Theme.key_chat_inBubbleShadow),
                 new ThemeDescription(messagesCell, 0, null, null, new Drawable[]{Theme.chat_msgOutDrawable, Theme.chat_msgOutMediaDrawable}, null, Theme.key_chat_outBubble),
+                new ThemeDescription(messagesCell, 0, null, null, new Drawable[]{Theme.chat_msgOutDrawable, Theme.chat_msgOutMediaDrawable}, null, Theme.key_chat_outBubbleGradient),
                 new ThemeDescription(messagesCell, 0, null, null, new Drawable[]{Theme.chat_msgOutSelectedDrawable, Theme.chat_msgOutMediaSelectedDrawable}, null, Theme.key_chat_outBubbleSelected),
                 new ThemeDescription(messagesCell, 0, null, null, new Drawable[]{Theme.chat_msgOutShadowDrawable, Theme.chat_msgOutMediaShadowDrawable}, null, Theme.key_chat_outBubbleShadow),
                 new ThemeDescription(messagesCell, 0, null, null, null, null, Theme.key_chat_messageTextIn),

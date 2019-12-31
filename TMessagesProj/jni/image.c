@@ -7,6 +7,7 @@
 #include <android/bitmap.h>
 #include <libwebp/webp/decode.h>
 #include <libwebp/webp/encode.h>
+#include <malloc.h>
 #include "c_utils.h"
 #include "image.h"
 
@@ -933,4 +934,105 @@ JNIEXPORT void Java_org_telegram_messenger_Utilities_stackBlurBitmap(JNIEnv* env
     free(b);
     free(dv);
     AndroidBitmap_unlockPixels(env, bitmap);
+}
+
+JNIEXPORT void Java_org_telegram_messenger_Utilities_drawDitheredGradient(JNIEnv* env, jclass class, jobject bitmap, jintArray colors, jint startX, jint startY, jint endX, jint endY) {
+    AndroidBitmapInfo info;
+    void* pixelsBuffer;
+    int reason;
+
+    if ((reason = AndroidBitmap_getInfo(env, bitmap, &info)) != ANDROID_BITMAP_RESULT_SUCCESS) {
+        (*env)->ThrowNew(env, jclass_RuntimeException, "AndroidBitmap_getInfo failed with a reason: " + reason);
+        return;
+    }
+
+    if (info.format != ANDROID_BITMAP_FORMAT_RGBA_8888) {
+        (*env)->ThrowNew(env, jclass_RuntimeException, "Bitmap must be in ARGB_8888 format");
+        return;
+    }
+
+    if ((reason = AndroidBitmap_lockPixels(env, bitmap, &pixelsBuffer)) != ANDROID_BITMAP_RESULT_SUCCESS) {
+        (*env)->ThrowNew(env, jclass_RuntimeException, "AndroidBitmap_lockPixels failed with a reason: " + reason);
+        return;
+    }
+
+    uint8_t i, j, n;
+
+    // gradient colors extracting
+    jint *colorsBuffer = (*env)->GetIntArrayElements(env, colors, 0);
+    uint8_t *colorsComponents = (uint8_t *) colorsBuffer;
+    float colorsF[4][2];
+    for (i = 0; i < 4; i++) {
+        // swap red and green channels
+        n = (uint8_t) (i == 0 ? 2 : (i == 2 ? 0 : i));
+        for (j = 0; j < 2; j++) {
+            colorsF[n][j] = colorsComponents[j * 4 + i] / 255.F;
+        }
+    }
+    (*env)->ReleaseIntArrayElements(env, colors, colorsBuffer, JNI_ABORT);
+
+    // gradient vector
+    const int32_t vx = endX - startX;
+    const int32_t vy = endY - startY;
+    const float vSquaredMag = vx * vx + vy * vy;
+
+    float noise, fraction, error, componentF;
+    float *pixelsComponentsF = malloc(info.height * info.stride * 4 * sizeof(float));
+    memset(pixelsComponentsF, 0, info.height * info.stride * 4 * sizeof(float));
+    uint8_t *bitmapPixelsComponents = (uint8_t *) pixelsBuffer;
+
+    int32_t x, y;
+    int32_t offset;
+    int32_t position;
+    for (y = 0; y < info.height; y++) {
+        offset = y * info.stride;
+        for (x = 0; x < info.width; x++) {
+            // triangular probability density function dither noise
+            noise = (rand() - rand()) / 255.F / RAND_MAX;
+
+            // alpha channel
+            bitmapPixelsComponents[offset + x * 4 + 3] = 255;
+
+            for (i = 0; i < 3; i++) {
+                position = offset + x * 4 + i;
+                fraction = (vx * (x - startX) + vy * (y - startY)) / vSquaredMag;
+
+                // gradient interpolation and noise
+                pixelsComponentsF[position] += colorsF[i][0] + fraction * (colorsF[i][1] - colorsF[i][0]) + noise;
+
+                // clamp
+                if (pixelsComponentsF[position] > 1.F) {
+                    pixelsComponentsF[position] = 1.F;
+                } else if (pixelsComponentsF[position] < 0.F) {
+                    pixelsComponentsF[position] = 0.F;
+                }
+
+                // draw
+                componentF = roundf(pixelsComponentsF[position] * 255.F);
+                bitmapPixelsComponents[position] = (uint8_t) componentF;
+
+                // floyd-steinberg dithering
+                error = pixelsComponentsF[position] - componentF / 255.F;
+                if (x + 1 < info.width) {
+                    pixelsComponentsF[position + 4] += error * 7.F / 16.F;
+                    if (y + 1 < info.height) {
+                        pixelsComponentsF[position + info.height + 4] += error * 1.F / 16.F;
+                    }
+                }
+                if (y + 1 < info.height) {
+                    pixelsComponentsF[position + info.height] += error * 5.F / 16.F;
+                    if (x - 1 >= 0) {
+                        pixelsComponentsF[position + info.height - 4] += error * 3.F / 16.F;
+                    }
+                }
+            }
+        }
+    }
+
+    free(pixelsComponentsF);
+
+    if ((reason = AndroidBitmap_unlockPixels(env, bitmap)) != ANDROID_BITMAP_RESULT_SUCCESS) {
+        (*env)->ThrowNew(env, jclass_RuntimeException, "AndroidBitmap_unlockPixels failed with a reason: " + reason);
+        return;
+    }
 }

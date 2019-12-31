@@ -57,6 +57,8 @@
 #include <openssl/cipher.h>
 #include <openssl/nid.h>
 
+#include "../internal.h"
+
 
 #define c2l(c, l)                         \
   do {                                    \

@@ -129,9 +129,7 @@ public class PhotoPickerPhotoCell extends FrameLayout {
             imageView.setOrientation(photoEntry.orientation, true);
             if (photoEntry.isVideo) {
                 videoInfoContainer.setVisibility(View.VISIBLE);
-                int minutes = photoEntry.duration / 60;
-                int seconds = photoEntry.duration - minutes * 60;
-                videoTextView.setText(String.format("%d:%02d", minutes, seconds));
+                videoTextView.setText(AndroidUtilities.formatShortDuration(photoEntry.duration));
                 setContentDescription(LocaleController.getString("AttachVideo", R.string.AttachVideo) + ", " + LocaleController.formatCallDuration(photoEntry.duration));
                 imageView.setImage("vthumb://" + photoEntry.imageId + ":" + photoEntry.path, null, thumb);
             } else {

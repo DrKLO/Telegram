@@ -170,7 +170,7 @@ int RSA_padding_add_PKCS1_type_2(uint8_t *to, size_t to_len,
   }
 
   if (from_len > to_len - RSA_PKCS1_PADDING_SIZE) {
-    OPENSSL_PUT_ERROR(RSA, RSA_R_DATA_TOO_LARGE);
+    OPENSSL_PUT_ERROR(RSA, RSA_R_DATA_TOO_LARGE_FOR_KEY_SIZE);
     return 0;
   }
 
@@ -233,6 +233,9 @@ int RSA_padding_check_PKCS1_type_2(uint8_t *out, size_t *out_len,
   // impossible to completely avoid Bleichenbacher's attack. Consumers should
   // use |RSA_PADDING_NONE| and perform the padding check in constant-time
   // combined with a swap to a random session key or other mitigation.
+  CONSTTIME_DECLASSIFY(&valid_index, sizeof(valid_index));
+  CONSTTIME_DECLASSIFY(&zero_index, sizeof(zero_index));
+
   if (!valid_index) {
     OPENSSL_PUT_ERROR(RSA, RSA_R_PKCS_DECODING_ERROR);
     return 0;
@@ -254,7 +257,7 @@ int RSA_padding_check_PKCS1_type_2(uint8_t *out, size_t *out_len,
 int RSA_padding_add_none(uint8_t *to, size_t to_len, const uint8_t *from,
                          size_t from_len) {
   if (from_len > to_len) {
-    OPENSSL_PUT_ERROR(RSA, RSA_R_DATA_TOO_LARGE);
+    OPENSSL_PUT_ERROR(RSA, RSA_R_DATA_TOO_LARGE_FOR_KEY_SIZE);
     return 0;
   }
 
@@ -330,7 +333,7 @@ int RSA_padding_add_PKCS1_OAEP_mgf1(uint8_t *to, size_t to_len,
 
   size_t emlen = to_len - 1;
   if (from_len > emlen - 2 * mdlen - 1) {
-    OPENSSL_PUT_ERROR(RSA, RSA_R_DATA_TOO_LARGE);
+    OPENSSL_PUT_ERROR(RSA, RSA_R_DATA_TOO_LARGE_FOR_KEY_SIZE);
     return 0;
   }
 
@@ -480,7 +483,7 @@ decoding_err:
 
 static const uint8_t kPSSZeroes[] = {0, 0, 0, 0, 0, 0, 0, 0};
 
-int RSA_verify_PKCS1_PSS_mgf1(RSA *rsa, const uint8_t *mHash,
+int RSA_verify_PKCS1_PSS_mgf1(const RSA *rsa, const uint8_t *mHash,
                               const EVP_MD *Hash, const EVP_MD *mgf1Hash,
                               const uint8_t *EM, int sLen) {
   int i;
@@ -579,7 +582,7 @@ err:
   return ret;
 }
 
-int RSA_padding_add_PKCS1_PSS_mgf1(RSA *rsa, unsigned char *EM,
+int RSA_padding_add_PKCS1_PSS_mgf1(const RSA *rsa, unsigned char *EM,
                                    const unsigned char *mHash,
                                    const EVP_MD *Hash, const EVP_MD *mgf1Hash,
                                    int sLenRequested) {
@@ -608,7 +611,7 @@ int RSA_padding_add_PKCS1_PSS_mgf1(RSA *rsa, unsigned char *EM,
   }
 
   if (emLen < hLen + 2) {
-    OPENSSL_PUT_ERROR(RSA, RSA_R_DATA_TOO_LARGE);
+    OPENSSL_PUT_ERROR(RSA, RSA_R_DATA_TOO_LARGE_FOR_KEY_SIZE);
     goto err;
   }
 
@@ -629,7 +632,7 @@ int RSA_padding_add_PKCS1_PSS_mgf1(RSA *rsa, unsigned char *EM,
   }
 
   if (emLen - hLen - 2 < sLen) {
-    OPENSSL_PUT_ERROR(RSA, RSA_R_DATA_TOO_LARGE);
+    OPENSSL_PUT_ERROR(RSA, RSA_R_DATA_TOO_LARGE_FOR_KEY_SIZE);
     goto err;
   }
 

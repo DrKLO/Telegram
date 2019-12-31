@@ -17,7 +17,6 @@ package com.google.android.exoplayer2.audio;
 
 import androidx.annotation.Nullable;
 import com.google.android.exoplayer2.C;
-import com.google.android.exoplayer2.Format;
 import com.google.android.exoplayer2.util.Assertions;
 import com.google.android.exoplayer2.util.Log;
 import com.google.android.exoplayer2.util.Util;
@@ -36,13 +35,13 @@ import java.nio.ByteOrder;
  * custom {@link com.google.android.exoplayer2.audio.DefaultAudioSink.AudioProcessorChain} when
  * creating the audio sink, and include this audio processor after all other audio processors.
  */
-public final class TeeAudioProcessor implements AudioProcessor {
+public final class TeeAudioProcessor extends BaseAudioProcessor {
 
   /** A sink for audio buffers handled by the audio processor. */
   public interface AudioBufferSink {
 
     /** Called when the audio processor is flushed with a format of subsequent input. */
-    void flush(int sampleRateHz, int channelCount, @C.Encoding int encoding);
+    void flush(int sampleRateHz, int channelCount, @C.PcmEncoding int encoding);
 
     /**
      * Called when data is written to the audio processor.
@@ -54,15 +53,6 @@ public final class TeeAudioProcessor implements AudioProcessor {
 
   private final AudioBufferSink audioBufferSink;
 
-  private int sampleRateHz;
-  private int channelCount;
-  private @C.Encoding int encoding;
-  private boolean isActive;
-
-  private ByteBuffer buffer;
-  private ByteBuffer outputBuffer;
-  private boolean inputEnded;
-
   /**
    * Creates a new tee audio processor, sending incoming data to the given {@link AudioBufferSink}.
    *
@@ -71,98 +61,28 @@ public final class TeeAudioProcessor implements AudioProcessor {
    */
   public TeeAudioProcessor(AudioBufferSink audioBufferSink) {
     this.audioBufferSink = Assertions.checkNotNull(audioBufferSink);
-
-    buffer = EMPTY_BUFFER;
-    outputBuffer = EMPTY_BUFFER;
-    channelCount = Format.NO_VALUE;
-    sampleRateHz = Format.NO_VALUE;
   }
 
   @Override
-  public boolean configure(int sampleRateHz, int channelCount, @C.Encoding int encoding)
-      throws UnhandledFormatException {
-    this.sampleRateHz = sampleRateHz;
-    this.channelCount = channelCount;
-    this.encoding = encoding;
-    boolean wasActive = isActive;
-    isActive = true;
-    return !wasActive;
+  public boolean configure(int sampleRateHz, int channelCount, @C.PcmEncoding int encoding) {
+    return setInputFormat(sampleRateHz, channelCount, encoding);
   }
 
   @Override
-  public boolean isActive() {
-    return isActive;
-  }
-
-  @Override
-  public int getOutputChannelCount() {
-    return channelCount;
-  }
-
-  @Override
-  public int getOutputEncoding() {
-    return encoding;
-  }
-
-  @Override
-  public int getOutputSampleRateHz() {
-    return sampleRateHz;
-  }
-
-  @Override
-  public void queueInput(ByteBuffer buffer) {
-    int remaining = buffer.remaining();
+  public void queueInput(ByteBuffer inputBuffer) {
+    int remaining = inputBuffer.remaining();
     if (remaining == 0) {
       return;
     }
+    audioBufferSink.handleBuffer(inputBuffer.asReadOnlyBuffer());
+    replaceOutputBuffer(remaining).put(inputBuffer).flip();
+  }
 
-    audioBufferSink.handleBuffer(buffer.asReadOnlyBuffer());
-
-    if (this.buffer.capacity() < remaining) {
-      this.buffer = ByteBuffer.allocateDirect(remaining).order(ByteOrder.nativeOrder());
-    } else {
-      this.buffer.clear();
+  @Override
+  protected void onFlush() {
+    if (isActive()) {
+      audioBufferSink.flush(sampleRateHz, channelCount, encoding);
     }
-
-    this.buffer.put(buffer);
-
-    this.buffer.flip();
-    outputBuffer = this.buffer;
-  }
-
-  @Override
-  public void queueEndOfStream() {
-    inputEnded = true;
-  }
-
-  @Override
-  public ByteBuffer getOutput() {
-    ByteBuffer outputBuffer = this.outputBuffer;
-    this.outputBuffer = EMPTY_BUFFER;
-    return outputBuffer;
-  }
-
-  @SuppressWarnings("ReferenceEquality")
-  @Override
-  public boolean isEnded() {
-    return inputEnded && buffer == EMPTY_BUFFER;
-  }
-
-  @Override
-  public void flush() {
-    outputBuffer = EMPTY_BUFFER;
-    inputEnded = false;
-
-    audioBufferSink.flush(sampleRateHz, channelCount, encoding);
-  }
-
-  @Override
-  public void reset() {
-    flush();
-    buffer = EMPTY_BUFFER;
-    sampleRateHz = Format.NO_VALUE;
-    channelCount = Format.NO_VALUE;
-    encoding = Format.NO_VALUE;
   }
 
   /**
@@ -187,8 +107,8 @@ public final class TeeAudioProcessor implements AudioProcessor {
 
     private int sampleRateHz;
     private int channelCount;
-    private @C.Encoding int encoding;
-    private @Nullable RandomAccessFile randomAccessFile;
+    @C.PcmEncoding private int encoding;
+    @Nullable private RandomAccessFile randomAccessFile;
     private int counter;
     private int bytesWritten;
 
@@ -204,7 +124,7 @@ public final class TeeAudioProcessor implements AudioProcessor {
     }
 
     @Override
-    public void flush(int sampleRateHz, int channelCount, int encoding) {
+    public void flush(int sampleRateHz, int channelCount, @C.PcmEncoding int encoding) {
       try {
         reset();
       } catch (IOException e) {

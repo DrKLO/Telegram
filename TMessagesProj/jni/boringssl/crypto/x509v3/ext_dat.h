@@ -107,19 +107,17 @@ static const X509V3_EXT_METHOD *const standard_exts[] = {
     &v3_ext_ku,
     &v3_delta_crl,
     &v3_crl_reason,
-#ifndef OPENSSL_NO_OCSP
     &v3_crl_invdate,
-#endif
     &v3_sxnet,
     &v3_info,
 #ifndef OPENSSL_NO_OCSP
     &v3_ocsp_nonce,
     &v3_ocsp_crlid,
     &v3_ocsp_accresp,
-    &v3_ocsp_nocheck,
     &v3_ocsp_acutoff,
     &v3_ocsp_serviceloc,
 #endif
+    &v3_ocsp_nocheck,
     &v3_sinfo,
     &v3_policy_constraints,
 #ifndef OPENSSL_NO_OCSP

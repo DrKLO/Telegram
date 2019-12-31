@@ -16,8 +16,8 @@
 package com.google.android.exoplayer2.source.hls;
 
 import android.net.Uri;
+import androidx.annotation.Nullable;
 import android.text.TextUtils;
-import android.util.Pair;
 import com.google.android.exoplayer2.Format;
 import com.google.android.exoplayer2.drm.DrmInitData;
 import com.google.android.exoplayer2.extractor.Extractor;
@@ -25,9 +25,11 @@ import com.google.android.exoplayer2.extractor.ExtractorInput;
 import com.google.android.exoplayer2.extractor.mp3.Mp3Extractor;
 import com.google.android.exoplayer2.extractor.mp4.FragmentedMp4Extractor;
 import com.google.android.exoplayer2.extractor.ts.Ac3Extractor;
+import com.google.android.exoplayer2.extractor.ts.Ac4Extractor;
 import com.google.android.exoplayer2.extractor.ts.AdtsExtractor;
 import com.google.android.exoplayer2.extractor.ts.DefaultTsPayloadReaderFactory;
 import com.google.android.exoplayer2.extractor.ts.TsExtractor;
+import com.google.android.exoplayer2.metadata.Metadata;
 import com.google.android.exoplayer2.util.MimeTypes;
 import com.google.android.exoplayer2.util.TimestampAdjuster;
 import java.io.EOFException;
@@ -44,6 +46,7 @@ public final class DefaultHlsExtractorFactory implements HlsExtractorFactory {
   public static final String AAC_FILE_EXTENSION = ".aac";
   public static final String AC3_FILE_EXTENSION = ".ac3";
   public static final String EC3_FILE_EXTENSION = ".ec3";
+  public static final String AC4_FILE_EXTENSION = ".ac4";
   public static final String MP3_FILE_EXTENSION = ".mp3";
   public static final String MP4_FILE_EXTENSION = ".mp4";
   public static final String M4_FILE_EXTENSION_PREFIX = ".m4";
@@ -53,10 +56,15 @@ public final class DefaultHlsExtractorFactory implements HlsExtractorFactory {
   public static final String WEBVTT_FILE_EXTENSION = ".webvtt";
 
   @DefaultTsPayloadReaderFactory.Flags private final int payloadReaderFactoryFlags;
+  private final boolean exposeCea608WhenMissingDeclarations;
 
-  /** Creates a factory for HLS segment extractors. */
+  /**
+   * Equivalent to {@link #DefaultHlsExtractorFactory(int, boolean) new
+   * DefaultHlsExtractorFactory(payloadReaderFactoryFlags = 0, exposeCea608WhenMissingDeclarations =
+   * true)}
+   */
   public DefaultHlsExtractorFactory() {
-    this(/* payloadReaderFactoryFlags= */ 0);
+    this(/* payloadReaderFactoryFlags= */ 0, /* exposeCea608WhenMissingDeclarations */ true);
   }
 
   /**
@@ -65,13 +73,18 @@ public final class DefaultHlsExtractorFactory implements HlsExtractorFactory {
    * @param payloadReaderFactoryFlags Flags to add when constructing any {@link
    *     DefaultTsPayloadReaderFactory} instances. Other flags may be added on top of {@code
    *     payloadReaderFactoryFlags} when creating {@link DefaultTsPayloadReaderFactory}.
+   * @param exposeCea608WhenMissingDeclarations Whether created {@link TsExtractor} instances should
+   *     expose a CEA-608 track should the master playlist contain no Closed Captions declarations.
+   *     If the master playlist contains any Closed Captions declarations, this flag is ignored.
    */
-  public DefaultHlsExtractorFactory(int payloadReaderFactoryFlags) {
+  public DefaultHlsExtractorFactory(
+      int payloadReaderFactoryFlags, boolean exposeCea608WhenMissingDeclarations) {
     this.payloadReaderFactoryFlags = payloadReaderFactoryFlags;
+    this.exposeCea608WhenMissingDeclarations = exposeCea608WhenMissingDeclarations;
   }
 
   @Override
-  public Pair<Extractor, Boolean> createExtractor(
+  public Result createExtractor(
       Extractor previousExtractor,
       Uri uri,
       Format format,
@@ -84,21 +97,15 @@ public final class DefaultHlsExtractorFactory implements HlsExtractorFactory {
 
     if (previousExtractor != null) {
       // A extractor has already been successfully used. Return one of the same type.
-      if (previousExtractor instanceof TsExtractor
-          || previousExtractor instanceof FragmentedMp4Extractor) {
-        // TS and fMP4 extractors can be reused.
+      if (isReusable(previousExtractor)) {
         return buildResult(previousExtractor);
-      } else if (previousExtractor instanceof WebvttExtractor) {
-        return buildResult(new WebvttExtractor(format.language, timestampAdjuster));
-      } else if (previousExtractor instanceof AdtsExtractor) {
-        return buildResult(new AdtsExtractor());
-      } else if (previousExtractor instanceof Ac3Extractor) {
-        return buildResult(new Ac3Extractor());
-      } else if (previousExtractor instanceof Mp3Extractor) {
-        return buildResult(new Mp3Extractor());
       } else {
-        throw new IllegalArgumentException(
-            "Unexpected previousExtractor type: " + previousExtractor.getClass().getSimpleName());
+        Result result =
+            buildResultForSameExtractorType(previousExtractor, format, timestampAdjuster);
+        if (result == null) {
+          throw new IllegalArgumentException(
+              "Unexpected previousExtractor type: " + previousExtractor.getClass().getSimpleName());
+        }
       }
     }
 
@@ -135,6 +142,13 @@ public final class DefaultHlsExtractorFactory implements HlsExtractorFactory {
       }
     }
 
+    if (!(extractorByFileExtension instanceof Ac4Extractor)) {
+      Ac4Extractor ac4Extractor = new Ac4Extractor();
+      if (sniffQuietly(ac4Extractor, extractorInput)) {
+        return buildResult(ac4Extractor);
+      }
+    }
+
     if (!(extractorByFileExtension instanceof Mp3Extractor)) {
       Mp3Extractor mp3Extractor =
           new Mp3Extractor(/* flags= */ 0, /* forcedFirstSampleTimestampUs= */ 0);
@@ -145,12 +159,7 @@ public final class DefaultHlsExtractorFactory implements HlsExtractorFactory {
 
     if (!(extractorByFileExtension instanceof FragmentedMp4Extractor)) {
       FragmentedMp4Extractor fragmentedMp4Extractor =
-          new FragmentedMp4Extractor(
-              /* flags= */ 0,
-              timestampAdjuster,
-              /* sideloadedTrack= */ null,
-              drmInitData,
-              muxedCaptionFormats != null ? muxedCaptionFormats : Collections.emptyList());
+          createFragmentedMp4Extractor(timestampAdjuster, format, drmInitData, muxedCaptionFormats);
       if (sniffQuietly(fragmentedMp4Extractor, extractorInput)) {
         return buildResult(fragmentedMp4Extractor);
       }
@@ -159,7 +168,11 @@ public final class DefaultHlsExtractorFactory implements HlsExtractorFactory {
     if (!(extractorByFileExtension instanceof TsExtractor)) {
       TsExtractor tsExtractor =
           createTsExtractor(
-              payloadReaderFactoryFlags, format, muxedCaptionFormats, timestampAdjuster);
+              payloadReaderFactoryFlags,
+              exposeCea608WhenMissingDeclarations,
+              format,
+              muxedCaptionFormats,
+              timestampAdjuster);
       if (sniffQuietly(tsExtractor, extractorInput)) {
         return buildResult(tsExtractor);
       }
@@ -188,27 +201,30 @@ public final class DefaultHlsExtractorFactory implements HlsExtractorFactory {
     } else if (lastPathSegment.endsWith(AC3_FILE_EXTENSION)
         || lastPathSegment.endsWith(EC3_FILE_EXTENSION)) {
       return new Ac3Extractor();
+    } else if (lastPathSegment.endsWith(AC4_FILE_EXTENSION)) {
+      return new Ac4Extractor();
     } else if (lastPathSegment.endsWith(MP3_FILE_EXTENSION)) {
       return new Mp3Extractor(/* flags= */ 0, /* forcedFirstSampleTimestampUs= */ 0);
     } else if (lastPathSegment.endsWith(MP4_FILE_EXTENSION)
         || lastPathSegment.startsWith(M4_FILE_EXTENSION_PREFIX, lastPathSegment.length() - 4)
         || lastPathSegment.startsWith(MP4_FILE_EXTENSION_PREFIX, lastPathSegment.length() - 5)
         || lastPathSegment.startsWith(CMF_FILE_EXTENSION_PREFIX, lastPathSegment.length() - 5)) {
-      return new FragmentedMp4Extractor(
-          /* flags= */ 0,
-          timestampAdjuster,
-          /* sideloadedTrack= */ null,
-          drmInitData,
-          muxedCaptionFormats != null ? muxedCaptionFormats : Collections.emptyList());
+      return createFragmentedMp4Extractor(
+          timestampAdjuster, format, drmInitData, muxedCaptionFormats);
     } else {
       // For any other file extension, we assume TS format.
       return createTsExtractor(
-          payloadReaderFactoryFlags, format, muxedCaptionFormats, timestampAdjuster);
+          payloadReaderFactoryFlags,
+          exposeCea608WhenMissingDeclarations,
+          format,
+          muxedCaptionFormats,
+          timestampAdjuster);
     }
   }
 
   private static TsExtractor createTsExtractor(
       @DefaultTsPayloadReaderFactory.Flags int userProvidedPayloadReaderFactoryFlags,
+      boolean exposeCea608WhenMissingDeclarations,
       Format format,
       List<Format> muxedCaptionFormats,
       TimestampAdjuster timestampAdjuster) {
@@ -219,7 +235,7 @@ public final class DefaultHlsExtractorFactory implements HlsExtractorFactory {
     if (muxedCaptionFormats != null) {
       // The playlist declares closed caption renditions, we should ignore descriptors.
       payloadReaderFactoryFlags |= DefaultTsPayloadReaderFactory.FLAG_OVERRIDE_CAPTION_DESCRIPTORS;
-    } else {
+    } else if (exposeCea608WhenMissingDeclarations) {
       // The playlist does not provide any closed caption information. We preemptively declare a
       // closed caption track on channel 0.
       muxedCaptionFormats =
@@ -229,6 +245,8 @@ public final class DefaultHlsExtractorFactory implements HlsExtractorFactory {
                   MimeTypes.APPLICATION_CEA608,
                   /* selectionFlags= */ 0,
                   /* language= */ null));
+    } else {
+      muxedCaptionFormats = Collections.emptyList();
     }
     String codecs = format.codecs;
     if (!TextUtils.isEmpty(codecs)) {
@@ -249,12 +267,54 @@ public final class DefaultHlsExtractorFactory implements HlsExtractorFactory {
         new DefaultTsPayloadReaderFactory(payloadReaderFactoryFlags, muxedCaptionFormats));
   }
 
-  private static Pair<Extractor, Boolean> buildResult(Extractor extractor) {
-    return new Pair<>(
+  private static FragmentedMp4Extractor createFragmentedMp4Extractor(
+      TimestampAdjuster timestampAdjuster,
+      Format format,
+      DrmInitData drmInitData,
+      @Nullable List<Format> muxedCaptionFormats) {
+    boolean isVariant = false;
+    for (int i = 0; i < format.metadata.length(); i++) {
+      Metadata.Entry entry = format.metadata.get(i);
+      if (entry instanceof HlsTrackMetadataEntry) {
+        isVariant = !((HlsTrackMetadataEntry) entry).variantInfos.isEmpty();
+        break;
+      }
+    }
+    // Only enable the EMSG TrackOutput if this is the 'variant' track (i.e. the main one) to avoid
+    // creating a separate EMSG track for every audio track in a video stream.
+    return new FragmentedMp4Extractor(
+        /* flags= */ isVariant ? FragmentedMp4Extractor.FLAG_ENABLE_EMSG_TRACK : 0,
+        timestampAdjuster,
+        /* sideloadedTrack= */ null,
+        drmInitData,
+        muxedCaptionFormats != null ? muxedCaptionFormats : Collections.emptyList());
+  }
+
+  private static Result buildResultForSameExtractorType(
+      Extractor previousExtractor, Format format, TimestampAdjuster timestampAdjuster) {
+    if (previousExtractor instanceof WebvttExtractor) {
+      return buildResult(new WebvttExtractor(format.language, timestampAdjuster));
+    } else if (previousExtractor instanceof AdtsExtractor) {
+      return buildResult(new AdtsExtractor());
+    } else if (previousExtractor instanceof Ac3Extractor) {
+      return buildResult(new Ac3Extractor());
+    } else if (previousExtractor instanceof Ac4Extractor) {
+      return buildResult(new Ac4Extractor());
+    } else if (previousExtractor instanceof Mp3Extractor) {
+      return buildResult(new Mp3Extractor());
+    } else {
+      return null;
+    }
+  }
+
+  private static Result buildResult(Extractor extractor) {
+    return new Result(
         extractor,
         extractor instanceof AdtsExtractor
             || extractor instanceof Ac3Extractor
-            || extractor instanceof Mp3Extractor);
+            || extractor instanceof Ac4Extractor
+            || extractor instanceof Mp3Extractor,
+        isReusable(extractor));
   }
 
   private static boolean sniffQuietly(Extractor extractor, ExtractorInput input)
@@ -270,4 +330,8 @@ public final class DefaultHlsExtractorFactory implements HlsExtractorFactory {
     return result;
   }
 
+  private static boolean isReusable(Extractor previousExtractor) {
+    return previousExtractor instanceof TsExtractor
+        || previousExtractor instanceof FragmentedMp4Extractor;
+  }
 }

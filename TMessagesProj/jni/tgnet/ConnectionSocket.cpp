@@ -1021,7 +1021,7 @@ void ConnectionSocket::onHostNameResolved(std::string host, std::string ip, bool
                 closeSocket(1, -1);
                 return;
             }
-            if (LOGS_ENABLED) DEBUG_D("connection(%p) resolved host %s address %x via delegate", this, ip.c_str(), socketAddress.sin_addr.s_addr);
+            if (LOGS_ENABLED) DEBUG_D("connection(%p) resolved host %s address %s via delegate", this, host.c_str(), ip.c_str());
             openConnectionInternal(ipv6);
         }
     });

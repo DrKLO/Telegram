@@ -36,6 +36,11 @@ public final class LeastRecentlyUsedCacheEvictor implements CacheEvictor, Compar
   }
 
   @Override
+  public boolean requiresCacheSpanTouches() {
+    return true;
+  }
+
+  @Override
   public void onCacheInitialized() {
     // Do nothing.
   }
@@ -68,12 +73,12 @@ public final class LeastRecentlyUsedCacheEvictor implements CacheEvictor, Compar
 
   @Override
   public int compare(CacheSpan lhs, CacheSpan rhs) {
-    long lastAccessTimestampDelta = lhs.lastAccessTimestamp - rhs.lastAccessTimestamp;
-    if (lastAccessTimestampDelta == 0) {
+    long lastTouchTimestampDelta = lhs.lastTouchTimestamp - rhs.lastTouchTimestamp;
+    if (lastTouchTimestampDelta == 0) {
       // Use the standard compareTo method as a tie-break.
       return lhs.compareTo(rhs);
     }
-    return lhs.lastAccessTimestamp < rhs.lastAccessTimestamp ? -1 : 1;
+    return lhs.lastTouchTimestamp < rhs.lastTouchTimestamp ? -1 : 1;
   }
 
   private void evictCache(Cache cache, long requiredSpace) {

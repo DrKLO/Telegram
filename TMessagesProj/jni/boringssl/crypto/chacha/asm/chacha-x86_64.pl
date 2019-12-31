@@ -228,6 +228,7 @@ $code.=<<___;
 .type	ChaCha20_ctr32,\@function,5
 .align	64
 ChaCha20_ctr32:
+.cfi_startproc
 	cmp	\$0,$len
 	je	.Lno_data
 	mov	OPENSSL_ia32cap_P+4(%rip),%r10
@@ -241,12 +242,19 @@ $code.=<<___;
 	jnz	.LChaCha20_ssse3
 
 	push	%rbx
+.cfi_push	rbx
 	push	%rbp
+.cfi_push	rbp
 	push	%r12
+.cfi_push	r12
 	push	%r13
+.cfi_push	r13
 	push	%r14
+.cfi_push	r14
 	push	%r15
+.cfi_push	r15
 	sub	\$64+24,%rsp
+.cfi_adjust_cfa_offset	`64+24`
 .Lctr32_body:
 
 	#movdqa	.Lsigma(%rip),%xmm0
@@ -388,14 +396,22 @@ $code.=<<___;
 .Ldone:
 	lea	64+24+48(%rsp),%rsi
 	mov	-48(%rsi),%r15
+.cfi_restore	r15
 	mov	-40(%rsi),%r14
+.cfi_restore	r14
 	mov	-32(%rsi),%r13
+.cfi_restore	r13
 	mov	-24(%rsi),%r12
+.cfi_restore	r12
 	mov	-16(%rsi),%rbp
+.cfi_restore	rbp
 	mov	-8(%rsi),%rbx
+.cfi_restore	rbx
 	lea	(%rsi),%rsp
+.cfi_adjust_cfa_offset	`-64-24-48`
 .Lno_data:
 	ret
+.cfi_endproc
 .size	ChaCha20_ctr32,.-ChaCha20_ctr32
 ___
 
@@ -435,7 +451,9 @@ $code.=<<___;
 .align	32
 ChaCha20_ssse3:
 .LChaCha20_ssse3:
+.cfi_startproc
 	mov	%rsp,%r9		# frame pointer
+.cfi_def_cfa_register	r9
 ___
 $code.=<<___;
 	cmp	\$128,$len		# we might throw away some data,
@@ -547,8 +565,10 @@ $code.=<<___	if ($win64);
 ___
 $code.=<<___;
 	lea	(%r9),%rsp
+.cfi_def_cfa_register	rsp
 .Lssse3_epilogue:
 	ret
+.cfi_endproc
 .size	ChaCha20_ssse3,.-ChaCha20_ssse3
 ___
 }
@@ -691,7 +711,9 @@ $code.=<<___;
 .align	32
 ChaCha20_4x:
 .LChaCha20_4x:
+.cfi_startproc
 	mov		%rsp,%r9		# frame pointer
+.cfi_def_cfa_register	r9
 	mov		%r10,%r11
 ___
 $code.=<<___	if ($avx>1);
@@ -1131,8 +1153,10 @@ $code.=<<___	if ($win64);
 ___
 $code.=<<___;
 	lea		(%r9),%rsp
+.cfi_def_cfa_register	rsp
 .L4x_epilogue:
 	ret
+.cfi_endproc
 .size	ChaCha20_4x,.-ChaCha20_4x
 ___
 }
@@ -1266,7 +1290,9 @@ $code.=<<___;
 .align	32
 ChaCha20_8x:
 .LChaCha20_8x:
+.cfi_startproc
 	mov		%rsp,%r9		# frame register
+.cfi_def_cfa_register	r9
 	sub		\$0x280+$xframe,%rsp
 	and		\$-32,%rsp
 ___
@@ -1772,8 +1798,10 @@ $code.=<<___	if ($win64);
 ___
 $code.=<<___;
 	lea		(%r9),%rsp
+.cfi_def_cfa_register	rsp
 .L8x_epilogue:
 	ret
+.cfi_endproc
 .size	ChaCha20_8x,.-ChaCha20_8x
 ___
 }
@@ -1811,7 +1839,9 @@ $code.=<<___;
 .align	32
 ChaCha20_avx512:
 .LChaCha20_avx512:
+.cfi_startproc
 	mov	%rsp,%r9		# frame pointer
+.cfi_def_cfa_register	r9
 	cmp	\$512,$len
 	ja	.LChaCha20_16x
 
@@ -1991,8 +2021,10 @@ $code.=<<___	if ($win64);
 ___
 $code.=<<___;
 	lea	(%r9),%rsp
+.cfi_def_cfa_register	rsp
 .Lavx512_epilogue:
 	ret
+.cfi_endproc
 .size	ChaCha20_avx512,.-ChaCha20_avx512
 ___
 }
@@ -2075,7 +2107,9 @@ $code.=<<___;
 .align	32
 ChaCha20_16x:
 .LChaCha20_16x:
+.cfi_startproc
 	mov		%rsp,%r9		# frame register
+.cfi_def_cfa_register	r9
 	sub		\$64+$xframe,%rsp
 	and		\$-64,%rsp
 ___
@@ -2493,8 +2527,10 @@ $code.=<<___	if ($win64);
 ___
 $code.=<<___;
 	lea		(%r9),%rsp
+.cfi_def_cfa_register	rsp
 .L16x_epilogue:
 	ret
+.cfi_endproc
 .size	ChaCha20_16x,.-ChaCha20_16x
 ___
 }
@@ -2746,4 +2782,4 @@ foreach (split("\n",$code)) {
 	print $_,"\n";
 }
 
-close STDOUT;
+close STDOUT or die "error closing STDOUT";

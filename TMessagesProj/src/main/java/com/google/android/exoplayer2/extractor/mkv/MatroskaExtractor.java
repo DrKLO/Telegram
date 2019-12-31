@@ -15,6 +15,7 @@
  */
 package com.google.android.exoplayer2.extractor.mkv;
 
+import androidx.annotation.CallSuper;
 import androidx.annotation.IntDef;
 import androidx.annotation.Nullable;
 import android.util.Pair;
@@ -57,10 +58,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
 
-/**
- * Extracts data from the Matroska and WebM container formats.
- */
-public final class MatroskaExtractor implements Extractor {
+/** Extracts data from the Matroska and WebM container formats. */
+public class MatroskaExtractor implements Extractor {
 
   /** Factory for {@link MatroskaExtractor} instances. */
   public static final ExtractorsFactory FACTORY = () -> new Extractor[] {new MatroskaExtractor()};
@@ -97,6 +96,7 @@ public final class MatroskaExtractor implements Extractor {
   private static final String DOC_TYPE_WEBM = "webm";
   private static final String CODEC_ID_VP8 = "V_VP8";
   private static final String CODEC_ID_VP9 = "V_VP9";
+  private static final String CODEC_ID_AV1 = "V_AV1";
   private static final String CODEC_ID_MPEG2 = "V_MPEG2";
   private static final String CODEC_ID_MPEG4_SP = "V_MPEG4/ISO/SP";
   private static final String CODEC_ID_MPEG4_ASP = "V_MPEG4/ISO/ASP";
@@ -220,8 +220,9 @@ public final class MatroskaExtractor implements Extractor {
   private static final int LACING_FIXED_SIZE = 2;
   private static final int LACING_EBML = 3;
 
-  private static final int FOURCC_COMPRESSION_VC1 = 0x31435657;
   private static final int FOURCC_COMPRESSION_DIVX = 0x58564944;
+  private static final int FOURCC_COMPRESSION_H263 = 0x33363248;
+  private static final int FOURCC_COMPRESSION_VC1 = 0x31435657;
 
   /**
    * A template for the prefix that must be added to each subrip sample. The 12 byte end timecode
@@ -387,7 +388,7 @@ public final class MatroskaExtractor implements Extractor {
 
   /* package */ MatroskaExtractor(EbmlReader reader, @Flags int flags) {
     this.reader = reader;
-    this.reader.init(new InnerEbmlReaderOutput());
+    this.reader.init(new InnerEbmlProcessor());
     seekForCuesEnabled = (flags & FLAG_DISABLE_SEEK_FOR_CUES) == 0;
     varintReader = new VarintReader();
     tracks = new SparseArray<>();
@@ -403,15 +404,16 @@ public final class MatroskaExtractor implements Extractor {
   }
 
   @Override
-  public boolean sniff(ExtractorInput input) throws IOException, InterruptedException {
+  public final boolean sniff(ExtractorInput input) throws IOException, InterruptedException {
     return new Sniffer().sniff(input);
   }
 
   @Override
-  public void init(ExtractorOutput output) {
+  public final void init(ExtractorOutput output) {
     extractorOutput = output;
   }
 
+  @CallSuper
   @Override
   public void seek(long position, long timeUs) {
     clusterTimecodeUs = C.TIME_UNSET;
@@ -425,13 +427,13 @@ public final class MatroskaExtractor implements Extractor {
   }
 
   @Override
-  public void release() {
+  public final void release() {
     // Do nothing
   }
 
   @Override
-  public int read(ExtractorInput input, PositionHolder seekPosition) throws IOException,
-      InterruptedException {
+  public final int read(ExtractorInput input, PositionHolder seekPosition)
+      throws IOException, InterruptedException {
     sampleRead = false;
     boolean continueReading = true;
     while (continueReading && !sampleRead) {
@@ -449,7 +451,125 @@ public final class MatroskaExtractor implements Extractor {
     return Extractor.RESULT_CONTINUE;
   }
 
-  /* package */ void startMasterElement(int id, long contentPosition, long contentSize)
+  /**
+   * Maps an element ID to a corresponding type.
+   *
+   * @see EbmlProcessor#getElementType(int)
+   */
+  @CallSuper
+  @EbmlProcessor.ElementType
+  protected int getElementType(int id) {
+    switch (id) {
+      case ID_EBML:
+      case ID_SEGMENT:
+      case ID_SEEK_HEAD:
+      case ID_SEEK:
+      case ID_INFO:
+      case ID_CLUSTER:
+      case ID_TRACKS:
+      case ID_TRACK_ENTRY:
+      case ID_AUDIO:
+      case ID_VIDEO:
+      case ID_CONTENT_ENCODINGS:
+      case ID_CONTENT_ENCODING:
+      case ID_CONTENT_COMPRESSION:
+      case ID_CONTENT_ENCRYPTION:
+      case ID_CONTENT_ENCRYPTION_AES_SETTINGS:
+      case ID_CUES:
+      case ID_CUE_POINT:
+      case ID_CUE_TRACK_POSITIONS:
+      case ID_BLOCK_GROUP:
+      case ID_PROJECTION:
+      case ID_COLOUR:
+      case ID_MASTERING_METADATA:
+        return EbmlProcessor.ELEMENT_TYPE_MASTER;
+      case ID_EBML_READ_VERSION:
+      case ID_DOC_TYPE_READ_VERSION:
+      case ID_SEEK_POSITION:
+      case ID_TIMECODE_SCALE:
+      case ID_TIME_CODE:
+      case ID_BLOCK_DURATION:
+      case ID_PIXEL_WIDTH:
+      case ID_PIXEL_HEIGHT:
+      case ID_DISPLAY_WIDTH:
+      case ID_DISPLAY_HEIGHT:
+      case ID_DISPLAY_UNIT:
+      case ID_TRACK_NUMBER:
+      case ID_TRACK_TYPE:
+      case ID_FLAG_DEFAULT:
+      case ID_FLAG_FORCED:
+      case ID_DEFAULT_DURATION:
+      case ID_CODEC_DELAY:
+      case ID_SEEK_PRE_ROLL:
+      case ID_CHANNELS:
+      case ID_AUDIO_BIT_DEPTH:
+      case ID_CONTENT_ENCODING_ORDER:
+      case ID_CONTENT_ENCODING_SCOPE:
+      case ID_CONTENT_COMPRESSION_ALGORITHM:
+      case ID_CONTENT_ENCRYPTION_ALGORITHM:
+      case ID_CONTENT_ENCRYPTION_AES_SETTINGS_CIPHER_MODE:
+      case ID_CUE_TIME:
+      case ID_CUE_CLUSTER_POSITION:
+      case ID_REFERENCE_BLOCK:
+      case ID_STEREO_MODE:
+      case ID_COLOUR_RANGE:
+      case ID_COLOUR_TRANSFER:
+      case ID_COLOUR_PRIMARIES:
+      case ID_MAX_CLL:
+      case ID_MAX_FALL:
+      case ID_PROJECTION_TYPE:
+        return EbmlProcessor.ELEMENT_TYPE_UNSIGNED_INT;
+      case ID_DOC_TYPE:
+      case ID_NAME:
+      case ID_CODEC_ID:
+      case ID_LANGUAGE:
+        return EbmlProcessor.ELEMENT_TYPE_STRING;
+      case ID_SEEK_ID:
+      case ID_CONTENT_COMPRESSION_SETTINGS:
+      case ID_CONTENT_ENCRYPTION_KEY_ID:
+      case ID_SIMPLE_BLOCK:
+      case ID_BLOCK:
+      case ID_CODEC_PRIVATE:
+      case ID_PROJECTION_PRIVATE:
+        return EbmlProcessor.ELEMENT_TYPE_BINARY;
+      case ID_DURATION:
+      case ID_SAMPLING_FREQUENCY:
+      case ID_PRIMARY_R_CHROMATICITY_X:
+      case ID_PRIMARY_R_CHROMATICITY_Y:
+      case ID_PRIMARY_G_CHROMATICITY_X:
+      case ID_PRIMARY_G_CHROMATICITY_Y:
+      case ID_PRIMARY_B_CHROMATICITY_X:
+      case ID_PRIMARY_B_CHROMATICITY_Y:
+      case ID_WHITE_POINT_CHROMATICITY_X:
+      case ID_WHITE_POINT_CHROMATICITY_Y:
+      case ID_LUMNINANCE_MAX:
+      case ID_LUMNINANCE_MIN:
+      case ID_PROJECTION_POSE_YAW:
+      case ID_PROJECTION_POSE_PITCH:
+      case ID_PROJECTION_POSE_ROLL:
+        return EbmlProcessor.ELEMENT_TYPE_FLOAT;
+      default:
+        return EbmlProcessor.ELEMENT_TYPE_UNKNOWN;
+    }
+  }
+
+  /**
+   * Checks if the given id is that of a level 1 element.
+   *
+   * @see EbmlProcessor#isLevel1Element(int)
+   */
+  @CallSuper
+  protected boolean isLevel1Element(int id) {
+    return id == ID_SEGMENT_INFO || id == ID_CLUSTER || id == ID_CUES || id == ID_TRACKS;
+  }
+
+  /**
+   * Called when the start of a master element is encountered.
+   *
+   * @see EbmlProcessor#startMasterElement(int, long, long)
+   */
+  @CallSuper
+  protected void startMasterElement(int id, long contentPosition, long contentSize)
       throws ParserException {
     switch (id) {
       case ID_SEGMENT:
@@ -505,7 +625,13 @@ public final class MatroskaExtractor implements Extractor {
     }
   }
 
-  /* package */ void endMasterElement(int id) throws ParserException {
+  /**
+   * Called when the end of a master element is encountered.
+   *
+   * @see EbmlProcessor#endMasterElement(int)
+   */
+  @CallSuper
+  protected void endMasterElement(int id) throws ParserException {
     switch (id) {
       case ID_SEGMENT_INFO:
         if (timecodeScale == C.TIME_UNSET) {
@@ -576,7 +702,13 @@ public final class MatroskaExtractor implements Extractor {
     }
   }
 
-  /* package */ void integerElement(int id, long value) throws ParserException {
+  /**
+   * Called when an integer element is encountered.
+   *
+   * @see EbmlProcessor#integerElement(int, long)
+   */
+  @CallSuper
+  protected void integerElement(int id, long value) throws ParserException {
     switch (id) {
       case ID_EBML_READ_VERSION:
         // Validate that EBMLReadVersion is supported. This extractor only supports v1.
@@ -787,7 +919,13 @@ public final class MatroskaExtractor implements Extractor {
     }
   }
 
-  /* package */ void floatElement(int id, double value) {
+  /**
+   * Called when a float element is encountered.
+   *
+   * @see EbmlProcessor#floatElement(int, double)
+   */
+  @CallSuper
+  protected void floatElement(int id, double value) throws ParserException {
     switch (id) {
       case ID_DURATION:
         durationTimecode = (long) value;
@@ -839,7 +977,13 @@ public final class MatroskaExtractor implements Extractor {
     }
   }
 
-  /* package */ void stringElement(int id, String value) throws ParserException {
+  /**
+   * Called when a string element is encountered.
+   *
+   * @see EbmlProcessor#stringElement(int, String)
+   */
+  @CallSuper
+  protected void stringElement(int id, String value) throws ParserException {
     switch (id) {
       case ID_DOC_TYPE:
         // Validate that DocType is supported.
@@ -861,7 +1005,13 @@ public final class MatroskaExtractor implements Extractor {
     }
   }
 
-  /* package */ void binaryElement(int id, int contentSize, ExtractorInput input)
+  /**
+   * Called when a binary element is encountered.
+   *
+   * @see EbmlProcessor#binaryElement(int, int, ExtractorInput)
+   */
+  @CallSuper
+  protected void binaryElement(int id, int contentSize, ExtractorInput input)
       throws IOException, InterruptedException {
     switch (id) {
       case ID_SEEK_ID:
@@ -1387,6 +1537,7 @@ public final class MatroskaExtractor implements Extractor {
   private static boolean isCodecSupported(String codecId) {
     return CODEC_ID_VP8.equals(codecId)
         || CODEC_ID_VP9.equals(codecId)
+        || CODEC_ID_AV1.equals(codecId)
         || CODEC_ID_MPEG2.equals(codecId)
         || CODEC_ID_MPEG4_SP.equals(codecId)
         || CODEC_ID_MPEG4_ASP.equals(codecId)
@@ -1431,110 +1582,18 @@ public final class MatroskaExtractor implements Extractor {
     }
   }
 
-  /**
-   * Passes events through to the outer {@link MatroskaExtractor}.
-   */
-  private final class InnerEbmlReaderOutput implements EbmlReaderOutput {
+  /** Passes events through to the outer {@link MatroskaExtractor}. */
+  private final class InnerEbmlProcessor implements EbmlProcessor {
 
     @Override
+    @ElementType
     public int getElementType(int id) {
-      switch (id) {
-        case ID_EBML:
-        case ID_SEGMENT:
-        case ID_SEEK_HEAD:
-        case ID_SEEK:
-        case ID_INFO:
-        case ID_CLUSTER:
-        case ID_TRACKS:
-        case ID_TRACK_ENTRY:
-        case ID_AUDIO:
-        case ID_VIDEO:
-        case ID_CONTENT_ENCODINGS:
-        case ID_CONTENT_ENCODING:
-        case ID_CONTENT_COMPRESSION:
-        case ID_CONTENT_ENCRYPTION:
-        case ID_CONTENT_ENCRYPTION_AES_SETTINGS:
-        case ID_CUES:
-        case ID_CUE_POINT:
-        case ID_CUE_TRACK_POSITIONS:
-        case ID_BLOCK_GROUP:
-        case ID_PROJECTION:
-        case ID_COLOUR:
-        case ID_MASTERING_METADATA:
-          return TYPE_MASTER;
-        case ID_EBML_READ_VERSION:
-        case ID_DOC_TYPE_READ_VERSION:
-        case ID_SEEK_POSITION:
-        case ID_TIMECODE_SCALE:
-        case ID_TIME_CODE:
-        case ID_BLOCK_DURATION:
-        case ID_PIXEL_WIDTH:
-        case ID_PIXEL_HEIGHT:
-        case ID_DISPLAY_WIDTH:
-        case ID_DISPLAY_HEIGHT:
-        case ID_DISPLAY_UNIT:
-        case ID_TRACK_NUMBER:
-        case ID_TRACK_TYPE:
-        case ID_FLAG_DEFAULT:
-        case ID_FLAG_FORCED:
-        case ID_DEFAULT_DURATION:
-        case ID_CODEC_DELAY:
-        case ID_SEEK_PRE_ROLL:
-        case ID_CHANNELS:
-        case ID_AUDIO_BIT_DEPTH:
-        case ID_CONTENT_ENCODING_ORDER:
-        case ID_CONTENT_ENCODING_SCOPE:
-        case ID_CONTENT_COMPRESSION_ALGORITHM:
-        case ID_CONTENT_ENCRYPTION_ALGORITHM:
-        case ID_CONTENT_ENCRYPTION_AES_SETTINGS_CIPHER_MODE:
-        case ID_CUE_TIME:
-        case ID_CUE_CLUSTER_POSITION:
-        case ID_REFERENCE_BLOCK:
-        case ID_STEREO_MODE:
-        case ID_COLOUR_RANGE:
-        case ID_COLOUR_TRANSFER:
-        case ID_COLOUR_PRIMARIES:
-        case ID_MAX_CLL:
-        case ID_MAX_FALL:
-        case ID_PROJECTION_TYPE:
-          return TYPE_UNSIGNED_INT;
-        case ID_DOC_TYPE:
-        case ID_NAME:
-        case ID_CODEC_ID:
-        case ID_LANGUAGE:
-          return TYPE_STRING;
-        case ID_SEEK_ID:
-        case ID_CONTENT_COMPRESSION_SETTINGS:
-        case ID_CONTENT_ENCRYPTION_KEY_ID:
-        case ID_SIMPLE_BLOCK:
-        case ID_BLOCK:
-        case ID_CODEC_PRIVATE:
-        case ID_PROJECTION_PRIVATE:
-          return TYPE_BINARY;
-        case ID_DURATION:
-        case ID_SAMPLING_FREQUENCY:
-        case ID_PRIMARY_R_CHROMATICITY_X:
-        case ID_PRIMARY_R_CHROMATICITY_Y:
-        case ID_PRIMARY_G_CHROMATICITY_X:
-        case ID_PRIMARY_G_CHROMATICITY_Y:
-        case ID_PRIMARY_B_CHROMATICITY_X:
-        case ID_PRIMARY_B_CHROMATICITY_Y:
-        case ID_WHITE_POINT_CHROMATICITY_X:
-        case ID_WHITE_POINT_CHROMATICITY_Y:
-        case ID_LUMNINANCE_MAX:
-        case ID_LUMNINANCE_MIN:
-        case ID_PROJECTION_POSE_YAW:
-        case ID_PROJECTION_POSE_PITCH:
-        case ID_PROJECTION_POSE_ROLL:
-          return TYPE_FLOAT;
-        default:
-          return TYPE_UNKNOWN;
-      }
+      return MatroskaExtractor.this.getElementType(id);
     }
 
     @Override
     public boolean isLevel1Element(int id) {
-      return id == ID_SEGMENT_INFO || id == ID_CLUSTER || id == ID_CUES || id == ID_TRACKS;
+      return MatroskaExtractor.this.isLevel1Element(id);
     }
 
     @Override
@@ -1722,6 +1781,9 @@ public final class MatroskaExtractor implements Extractor {
           break;
         case CODEC_ID_VP9:
           mimeType = MimeTypes.VIDEO_VP9;
+          break;
+        case CODEC_ID_AV1:
+          mimeType = MimeTypes.VIDEO_AV1;
           break;
         case CODEC_ID_MPEG2:
           mimeType = MimeTypes.VIDEO_MPEG2;
@@ -2002,8 +2064,6 @@ public final class MatroskaExtractor implements Extractor {
     /**
      * Builds initialization data for a {@link Format} from FourCC codec private data.
      *
-     * <p>VC1 and H263 are the only supported compression types.
-     *
      * @return The codec mime type and initialization data. If the compression type is not supported
      *     then the mime type is set to {@link MimeTypes#VIDEO_UNKNOWN} and the initialization data
      *     is {@code null}.
@@ -2015,6 +2075,8 @@ public final class MatroskaExtractor implements Extractor {
         buffer.skipBytes(16); // size(4), width(4), height(4), planes(2), bitcount(2).
         long compression = buffer.readLittleEndianUnsignedInt();
         if (compression == FOURCC_COMPRESSION_DIVX) {
+          return new Pair<>(MimeTypes.VIDEO_DIVX, null);
+        } else if (compression == FOURCC_COMPRESSION_H263) {
           return new Pair<>(MimeTypes.VIDEO_H263, null);
         } else if (compression == FOURCC_COMPRESSION_VC1) {
           // Search for the initialization data from the end of the BITMAPINFOHEADER. The last 20

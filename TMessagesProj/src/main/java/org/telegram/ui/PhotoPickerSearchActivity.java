@@ -22,7 +22,6 @@ import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.MediaController;
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
@@ -82,11 +81,11 @@ public class PhotoPickerSearchActivity extends BaseFragment {
         return t * t * t * t * t + 1.0F;
     };
 
-    public PhotoPickerSearchActivity(HashMap<Object, Object> selectedPhotos, ArrayList<Object> selectedPhotosOrder, ArrayList<MediaController.SearchImage> recentImages, int selectPhotoType, boolean allowCaption, ChatActivity chatActivity) {
+    public PhotoPickerSearchActivity(HashMap<Object, Object> selectedPhotos, ArrayList<Object> selectedPhotosOrder, int selectPhotoType, boolean allowCaption, ChatActivity chatActivity) {
         super();
 
-        imagesSearch = new PhotoPickerActivity(0, null, selectedPhotos, selectedPhotosOrder, recentImages, selectPhotoType, allowCaption, chatActivity);
-        gifsSearch = new PhotoPickerActivity(1, null, selectedPhotos, selectedPhotosOrder, recentImages, selectPhotoType, allowCaption, chatActivity);
+        imagesSearch = new PhotoPickerActivity(0, null, selectedPhotos, selectedPhotosOrder, selectPhotoType, allowCaption, chatActivity);
+        gifsSearch = new PhotoPickerActivity(1, null, selectedPhotos, selectedPhotosOrder, selectPhotoType, allowCaption, chatActivity);
     }
 
     @Override
@@ -647,8 +646,8 @@ public class PhotoPickerSearchActivity extends BaseFragment {
 
         sizeNotifierFrameLayout.addView(imagesSearch.shadow, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 3, Gravity.BOTTOM | Gravity.LEFT, 0, 0, 0, 48));
         sizeNotifierFrameLayout.addView(imagesSearch.frameLayout2, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.LEFT | Gravity.BOTTOM));
-        sizeNotifierFrameLayout.addView(imagesSearch.writeButtonContainer, LayoutHelper.createFrame(60, 60, Gravity.RIGHT | Gravity.BOTTOM, 0, 0, 6, 10));
-        sizeNotifierFrameLayout.addView(imagesSearch.selectedCountView, LayoutHelper.createFrame(42, 24, Gravity.RIGHT | Gravity.BOTTOM, 0, 0, -8, 9));
+        sizeNotifierFrameLayout.addView(imagesSearch.writeButtonContainer, LayoutHelper.createFrame(60, 60, Gravity.RIGHT | Gravity.BOTTOM, 0, 0, 12, 10));
+        sizeNotifierFrameLayout.addView(imagesSearch.selectedCountView, LayoutHelper.createFrame(42, 24, Gravity.RIGHT | Gravity.BOTTOM, 0, 0, -2, 9));
 
         updateTabs();
         switchToCurrentSelectedMode(false);
@@ -719,9 +718,39 @@ public class PhotoPickerSearchActivity extends BaseFragment {
         fragmentView.invalidate();
     }
 
+    private void searchText(String text) {
+        searchItem.getSearchField().setText(text);
+        searchItem.getSearchField().setSelection(text.length());
+        actionBar.onSearchPressed();
+    }
+
     public void setDelegate(PhotoPickerActivity.PhotoPickerActivityDelegate delegate) {
         imagesSearch.setDelegate(delegate);
         gifsSearch.setDelegate(delegate);
+        imagesSearch.setSearchDelegate(new PhotoPickerActivity.PhotoPickerActivitySearchDelegate() {
+            @Override
+            public void shouldSearchText(String text) {
+                searchText(text);
+            }
+
+            @Override
+            public void shouldClearRecentSearch() {
+                imagesSearch.clearRecentSearch();
+                gifsSearch.clearRecentSearch();
+            }
+        });
+        gifsSearch.setSearchDelegate(new PhotoPickerActivity.PhotoPickerActivitySearchDelegate() {
+            @Override
+            public void shouldSearchText(String text) {
+                searchText(text);
+            }
+
+            @Override
+            public void shouldClearRecentSearch() {
+                imagesSearch.clearRecentSearch();
+                gifsSearch.clearRecentSearch();
+            }
+        });
     }
 
     public void setMaxSelectedPhotos(int value, boolean order) {

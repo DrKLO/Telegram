@@ -8,8 +8,6 @@
 
 package org.telegram.ui;
 
-import android.animation.ObjectAnimator;
-import android.animation.StateListAnimator;
 import android.app.Activity;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -22,7 +20,6 @@ import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.opengl.GLES20;
 import android.opengl.GLUtils;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.Looper;
 import android.os.Parcelable;
@@ -51,6 +48,7 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.BottomPagesView;
 import org.telegram.ui.Components.LayoutHelper;
 
@@ -69,6 +67,9 @@ public class IntroActivity extends Activity implements NotificationCenter.Notifi
     private ViewPager viewPager;
     private BottomPagesView bottomPages;
     private TextView textView;
+    private TextView startMessagingButton;
+    private FrameLayout frameLayout2;
+
     private int lastPage = 0;
     private boolean justCreated = false;
     private boolean startPressed = false;
@@ -113,11 +114,33 @@ public class IntroActivity extends Activity implements NotificationCenter.Notifi
         ScrollView scrollView = new ScrollView(this);
         scrollView.setFillViewport(true);
 
-        FrameLayout frameLayout = new FrameLayout(this);
+        FrameLayout frameLayout = new FrameLayout(this) {
+
+            @Override
+            protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
+                super.onLayout(changed, left, top, right, bottom);
+
+                int oneFourth = (bottom - top) / 4;
+
+                int y = (oneFourth * 3 - AndroidUtilities.dp(275)) / 2;
+                frameLayout2.layout(0, y, frameLayout2.getMeasuredWidth(), y + frameLayout2.getMeasuredHeight());
+                y += AndroidUtilities.dp(272);
+                int x = (getMeasuredWidth() - bottomPages.getMeasuredWidth()) / 2;
+                bottomPages.layout(x, y, x + bottomPages.getMeasuredWidth(), y + bottomPages.getMeasuredHeight());
+                viewPager.layout(0, 0, viewPager.getMeasuredWidth(), viewPager.getMeasuredHeight());
+
+                y = oneFourth * 3 + (oneFourth - startMessagingButton.getMeasuredHeight()) / 2;
+                x = (getMeasuredWidth() - startMessagingButton.getMeasuredWidth()) / 2;
+                startMessagingButton.layout(x, y, x + startMessagingButton.getMeasuredWidth(), y + startMessagingButton.getMeasuredHeight());
+                y -= AndroidUtilities.dp(30);
+                x = (getMeasuredWidth() - textView.getMeasuredWidth()) / 2;
+                textView.layout(x, y - textView.getMeasuredHeight(), x + textView.getMeasuredWidth(), y);
+            }
+        };
         frameLayout.setBackgroundColor(0xffffffff);
         scrollView.addView(frameLayout, LayoutHelper.createScroll(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP));
 
-        FrameLayout frameLayout2 = new FrameLayout(this);
+        frameLayout2 = new FrameLayout(this);
         frameLayout.addView(frameLayout2, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 0, 78, 0, 0));
 
         TextureView textureView = new TextureView(this);
@@ -194,20 +217,15 @@ public class IntroActivity extends Activity implements NotificationCenter.Notifi
             }
         });
 
-        TextView startMessagingButton = new TextView(this);
-        startMessagingButton.setText(LocaleController.getString("StartMessaging", R.string.StartMessaging).toUpperCase());
+        startMessagingButton = new TextView(this);
+        startMessagingButton.setText(LocaleController.getString("StartMessaging", R.string.StartMessaging));
         startMessagingButton.setGravity(Gravity.CENTER);
         startMessagingButton.setTextColor(0xffffffff);
-        startMessagingButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
-        startMessagingButton.setBackgroundResource(R.drawable.regbtn_states);
-        if (Build.VERSION.SDK_INT >= 21) {
-            StateListAnimator animator = new StateListAnimator();
-            animator.addState(new int[]{android.R.attr.state_pressed}, ObjectAnimator.ofFloat(startMessagingButton, "translationZ", AndroidUtilities.dp(2), AndroidUtilities.dp(4)).setDuration(200));
-            animator.addState(new int[]{}, ObjectAnimator.ofFloat(startMessagingButton, "translationZ", AndroidUtilities.dp(4), AndroidUtilities.dp(2)).setDuration(200));
-            startMessagingButton.setStateListAnimator(animator);
-        }
-        startMessagingButton.setPadding(AndroidUtilities.dp(20), AndroidUtilities.dp(10), AndroidUtilities.dp(20), AndroidUtilities.dp(10));
-        frameLayout.addView(startMessagingButton, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL | Gravity.BOTTOM, 10, 0, 10, 76));
+        startMessagingButton.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        startMessagingButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+        startMessagingButton.setBackgroundDrawable(Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(4), 0xff50a8eb, 0xff439bde));
+        startMessagingButton.setPadding(AndroidUtilities.dp(34), 0, AndroidUtilities.dp(34), 0);
+        frameLayout.addView(startMessagingButton, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 42, Gravity.CENTER_HORIZONTAL | Gravity.BOTTOM, 10, 0, 10, 76));
         startMessagingButton.setOnClickListener(view -> {
             if (startPressed) {
                 return;
@@ -374,15 +392,29 @@ public class IntroActivity extends Activity implements NotificationCenter.Notifi
 
         @Override
         public Object instantiateItem(ViewGroup container, int position) {
-            FrameLayout frameLayout = new FrameLayout(container.getContext());
-
             TextView headerTextView = new TextView(container.getContext());
+            TextView messageTextView = new TextView(container.getContext());
+
+            FrameLayout frameLayout = new FrameLayout(container.getContext()) {
+                @Override
+                protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
+                    int oneFourth = (bottom - top) / 4;
+                    int y = (oneFourth * 3 - AndroidUtilities.dp(275)) / 2;
+                    y += AndroidUtilities.dp(166);
+                    int x = AndroidUtilities.dp(18);
+                    headerTextView.layout(x, y, x + headerTextView.getMeasuredWidth(), y + headerTextView.getMeasuredHeight());
+
+                    y += AndroidUtilities.dp(42);
+                    x = AndroidUtilities.dp(16);
+                    messageTextView.layout(x, y, x + messageTextView.getMeasuredWidth(), y + messageTextView.getMeasuredHeight());
+                }
+            };
+
             headerTextView.setTextColor(0xff212121);
             headerTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 26);
             headerTextView.setGravity(Gravity.CENTER);
             frameLayout.addView(headerTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.LEFT, 18, 244, 18, 0));
 
-            TextView messageTextView = new TextView(container.getContext());
             messageTextView.setTextColor(0xff808080);
             messageTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
             messageTextView.setGravity(Gravity.CENTER);
@@ -432,8 +464,8 @@ public class IntroActivity extends Activity implements NotificationCenter.Notifi
 
     public class EGLThread extends DispatchQueue {
 
-        private final int EGL_CONTEXT_CLIENT_VERSION = 0x3098;
-        private final int EGL_OPENGL_ES2_BIT = 4;
+        private final static int EGL_CONTEXT_CLIENT_VERSION = 0x3098;
+        private final static int EGL_OPENGL_ES2_BIT = 4;
         private SurfaceTexture surfaceTexture;
         private EGL10 egl10;
         private EGLDisplay eglDisplay;
@@ -443,9 +475,6 @@ public class IntroActivity extends Activity implements NotificationCenter.Notifi
         private GL gl;
         private boolean initied;
         private int[] textures = new int[23];
-
-        private int surfaceWidth;
-        private int surfaceHeight;
 
         private long lastRenderCallTime;
 
@@ -640,9 +669,7 @@ public class IntroActivity extends Activity implements NotificationCenter.Notifi
         }
 
         public void setSurfaceTextureSize(int width, int height) {
-            surfaceWidth = width;
-            surfaceHeight = height;
-            Intro.onSurfaceChanged(width, height, Math.min(surfaceWidth / 150.0f, surfaceHeight / 150.0f), 0);
+            Intro.onSurfaceChanged(width, height, Math.min(width / 150.0f, height / 150.0f), 0);
         }
 
         @Override

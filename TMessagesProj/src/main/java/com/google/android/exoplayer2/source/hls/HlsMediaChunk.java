@@ -15,7 +15,8 @@
  */
 package com.google.android.exoplayer2.source.hls;
 
-import android.util.Pair;
+import android.net.Uri;
+import androidx.annotation.Nullable;
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.Format;
 import com.google.android.exoplayer2.drm.DrmInitData;
@@ -26,14 +27,16 @@ import com.google.android.exoplayer2.metadata.Metadata;
 import com.google.android.exoplayer2.metadata.id3.Id3Decoder;
 import com.google.android.exoplayer2.metadata.id3.PrivFrame;
 import com.google.android.exoplayer2.source.chunk.MediaChunk;
-import com.google.android.exoplayer2.source.hls.playlist.HlsMasterPlaylist.HlsUrl;
+import com.google.android.exoplayer2.source.hls.playlist.HlsMediaPlaylist;
 import com.google.android.exoplayer2.upstream.DataSource;
 import com.google.android.exoplayer2.upstream.DataSpec;
 import com.google.android.exoplayer2.util.ParsableByteArray;
 import com.google.android.exoplayer2.util.TimestampAdjuster;
+import com.google.android.exoplayer2.util.UriUtil;
 import com.google.android.exoplayer2.util.Util;
 import java.io.EOFException;
 import java.io.IOException;
+import java.math.BigInteger;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -41,6 +44,129 @@ import java.util.concurrent.atomic.AtomicInteger;
  * An HLS {@link MediaChunk}.
  */
 /* package */ final class HlsMediaChunk extends MediaChunk {
+
+  /**
+   * Creates a new instance.
+   *
+   * @param extractorFactory A {@link HlsExtractorFactory} from which the HLS media chunk extractor
+   *     is obtained.
+   * @param dataSource The source from which the data should be loaded.
+   * @param format The chunk format.
+   * @param startOfPlaylistInPeriodUs The position of the playlist in the period in microseconds.
+   * @param mediaPlaylist The media playlist from which this chunk was obtained.
+   * @param playlistUrl The url of the playlist from which this chunk was obtained.
+   * @param muxedCaptionFormats List of muxed caption {@link Format}s. Null if no closed caption
+   *     information is available in the master playlist.
+   * @param trackSelectionReason See {@link #trackSelectionReason}.
+   * @param trackSelectionData See {@link #trackSelectionData}.
+   * @param isMasterTimestampSource True if the chunk can initialize the timestamp adjuster.
+   * @param timestampAdjusterProvider The provider from which to obtain the {@link
+   *     TimestampAdjuster}.
+   * @param previousChunk The {@link HlsMediaChunk} that preceded this one. May be null.
+   * @param mediaSegmentKey The media segment decryption key, if fully encrypted. Null otherwise.
+   * @param initSegmentKey The initialization segment decryption key, if fully encrypted. Null
+   *     otherwise.
+   */
+  public static HlsMediaChunk createInstance(
+      HlsExtractorFactory extractorFactory,
+      DataSource dataSource,
+      Format format,
+      long startOfPlaylistInPeriodUs,
+      HlsMediaPlaylist mediaPlaylist,
+      int segmentIndexInPlaylist,
+      Uri playlistUrl,
+      @Nullable List<Format> muxedCaptionFormats,
+      int trackSelectionReason,
+      @Nullable Object trackSelectionData,
+      boolean isMasterTimestampSource,
+      TimestampAdjusterProvider timestampAdjusterProvider,
+      @Nullable HlsMediaChunk previousChunk,
+      @Nullable byte[] mediaSegmentKey,
+      @Nullable byte[] initSegmentKey) {
+    // Media segment.
+    HlsMediaPlaylist.Segment mediaSegment = mediaPlaylist.segments.get(segmentIndexInPlaylist);
+    DataSpec dataSpec =
+        new DataSpec(
+            UriUtil.resolveToUri(mediaPlaylist.baseUri, mediaSegment.url),
+            mediaSegment.byterangeOffset,
+            mediaSegment.byterangeLength,
+            /* key= */ null);
+    boolean mediaSegmentEncrypted = mediaSegmentKey != null;
+    byte[] mediaSegmentIv =
+        mediaSegmentEncrypted ? getEncryptionIvArray(mediaSegment.encryptionIV) : null;
+    DataSource mediaDataSource = buildDataSource(dataSource, mediaSegmentKey, mediaSegmentIv);
+
+    // Init segment.
+    HlsMediaPlaylist.Segment initSegment = mediaSegment.initializationSegment;
+    DataSpec initDataSpec = null;
+    boolean initSegmentEncrypted = false;
+    DataSource initDataSource = null;
+    if (initSegment != null) {
+      initSegmentEncrypted = initSegmentKey != null;
+      byte[] initSegmentIv =
+          initSegmentEncrypted ? getEncryptionIvArray(initSegment.encryptionIV) : null;
+      Uri initSegmentUri = UriUtil.resolveToUri(mediaPlaylist.baseUri, initSegment.url);
+      initDataSpec =
+          new DataSpec(
+              initSegmentUri,
+              initSegment.byterangeOffset,
+              initSegment.byterangeLength,
+              /* key= */ null);
+      initDataSource = buildDataSource(dataSource, initSegmentKey, initSegmentIv);
+    }
+
+    long segmentStartTimeInPeriodUs = startOfPlaylistInPeriodUs + mediaSegment.relativeStartTimeUs;
+    long segmentEndTimeInPeriodUs = segmentStartTimeInPeriodUs + mediaSegment.durationUs;
+    int discontinuitySequenceNumber =
+        mediaPlaylist.discontinuitySequence + mediaSegment.relativeDiscontinuitySequence;
+
+    Extractor previousExtractor = null;
+    Id3Decoder id3Decoder;
+    ParsableByteArray scratchId3Data;
+    boolean shouldSpliceIn;
+    if (previousChunk != null) {
+      id3Decoder = previousChunk.id3Decoder;
+      scratchId3Data = previousChunk.scratchId3Data;
+      shouldSpliceIn =
+          !playlistUrl.equals(previousChunk.playlistUrl) || !previousChunk.loadCompleted;
+      previousExtractor =
+          previousChunk.isExtractorReusable
+                  && previousChunk.discontinuitySequenceNumber == discontinuitySequenceNumber
+                  && !shouldSpliceIn
+              ? previousChunk.extractor
+              : null;
+    } else {
+      id3Decoder = new Id3Decoder();
+      scratchId3Data = new ParsableByteArray(Id3Decoder.ID3_HEADER_LENGTH);
+      shouldSpliceIn = false;
+    }
+
+    return new HlsMediaChunk(
+        extractorFactory,
+        mediaDataSource,
+        dataSpec,
+        format,
+        mediaSegmentEncrypted,
+        initDataSource,
+        initDataSpec,
+        initSegmentEncrypted,
+        playlistUrl,
+        muxedCaptionFormats,
+        trackSelectionReason,
+        trackSelectionData,
+        segmentStartTimeInPeriodUs,
+        segmentEndTimeInPeriodUs,
+        /* chunkMediaSequence= */ mediaPlaylist.mediaSequence + segmentIndexInPlaylist,
+        discontinuitySequenceNumber,
+        mediaSegment.hasGapTag,
+        isMasterTimestampSource,
+        /* timestampAdjuster= */ timestampAdjusterProvider.getAdjuster(discontinuitySequenceNumber),
+        mediaSegment.drmInitData,
+        previousExtractor,
+        id3Decoder,
+        scratchId3Data,
+        shouldSpliceIn);
+  }
 
   public static final String PRIV_TIMESTAMP_FRAME_OWNER =
       "com.apple.streaming.transportStreamTimestamp";
@@ -57,65 +183,45 @@ import java.util.concurrent.atomic.AtomicInteger;
    */
   public final int discontinuitySequenceNumber;
 
-  /**
-   * The url of the playlist from which this chunk was obtained.
-   */
-  public final HlsUrl hlsUrl;
+  /** The url of the playlist from which this chunk was obtained. */
+  public final Uri playlistUrl;
 
-  private final DataSource initDataSource;
-  private final DataSpec initDataSpec;
-  private final boolean isEncrypted;
+  @Nullable private final DataSource initDataSource;
+  @Nullable private final DataSpec initDataSpec;
   private final boolean isMasterTimestampSource;
   private final boolean hasGapTag;
   private final TimestampAdjuster timestampAdjuster;
   private final boolean shouldSpliceIn;
   private final HlsExtractorFactory extractorFactory;
-  private final List<Format> muxedCaptionFormats;
-  private final DrmInitData drmInitData;
-  private final Extractor previousExtractor;
+  @Nullable private final List<Format> muxedCaptionFormats;
+  @Nullable private final DrmInitData drmInitData;
+  @Nullable private final Extractor previousExtractor;
   private final Id3Decoder id3Decoder;
-  private final ParsableByteArray id3Data;
+  private final ParsableByteArray scratchId3Data;
+  private final boolean mediaSegmentEncrypted;
+  private final boolean initSegmentEncrypted;
 
   private Extractor extractor;
+  private boolean isExtractorReusable;
   private HlsSampleStreamWrapper output;
-  private int initSegmentBytesLoaded;
+  // nextLoadPosition refers to the init segment if initDataLoadRequired is true.
+  // Otherwise, nextLoadPosition refers to the media segment.
   private int nextLoadPosition;
-  private boolean initLoadCompleted;
+  private boolean initDataLoadRequired;
   private volatile boolean loadCanceled;
   private boolean loadCompleted;
 
-  /**
-   * @param extractorFactory A {@link HlsExtractorFactory} from which the HLS media chunk extractor
-   *     is obtained.
-   * @param dataSource The source from which the data should be loaded.
-   * @param dataSpec Defines the data to be loaded.
-   * @param initDataSpec Defines the initialization data to be fed to new extractors. May be null.
-   * @param hlsUrl The url of the playlist from which this chunk was obtained.
-   * @param muxedCaptionFormats List of muxed caption {@link Format}s. Null if no closed caption
-   *     information is available in the master playlist.
-   * @param trackSelectionReason See {@link #trackSelectionReason}.
-   * @param trackSelectionData See {@link #trackSelectionData}.
-   * @param startTimeUs The start time of the chunk in microseconds.
-   * @param endTimeUs The end time of the chunk in microseconds.
-   * @param chunkMediaSequence The media sequence number of the chunk.
-   * @param discontinuitySequenceNumber The discontinuity sequence number of the chunk.
-   * @param hasGapTag Whether the chunk is tagged with EXT-X-GAP.
-   * @param isMasterTimestampSource True if the chunk can initialize the timestamp adjuster.
-   * @param timestampAdjuster Adjuster corresponding to the provided discontinuity sequence number.
-   * @param previousChunk The {@link HlsMediaChunk} that preceded this one. May be null.
-   * @param drmInitData A {@link DrmInitData} to sideload to the extractor.
-   * @param fullSegmentEncryptionKey The key to decrypt the full segment, or null if the segment is
-   *     not fully encrypted.
-   * @param encryptionIv The AES initialization vector, or null if the segment is not fully
-   *     encrypted.
-   */
-  public HlsMediaChunk(
+  private HlsMediaChunk(
       HlsExtractorFactory extractorFactory,
-      DataSource dataSource,
+      DataSource mediaDataSource,
       DataSpec dataSpec,
-      DataSpec initDataSpec,
-      HlsUrl hlsUrl,
-      List<Format> muxedCaptionFormats,
+      Format format,
+      boolean mediaSegmentEncrypted,
+      DataSource initDataSource,
+      @Nullable DataSpec initDataSpec,
+      boolean initSegmentEncrypted,
+      Uri playlistUrl,
+      @Nullable List<Format> muxedCaptionFormats,
       int trackSelectionReason,
       Object trackSelectionData,
       long startTimeUs,
@@ -125,43 +231,37 @@ import java.util.concurrent.atomic.AtomicInteger;
       boolean hasGapTag,
       boolean isMasterTimestampSource,
       TimestampAdjuster timestampAdjuster,
-      HlsMediaChunk previousChunk,
-      DrmInitData drmInitData,
-      byte[] fullSegmentEncryptionKey,
-      byte[] encryptionIv) {
+      @Nullable DrmInitData drmInitData,
+      @Nullable Extractor previousExtractor,
+      Id3Decoder id3Decoder,
+      ParsableByteArray scratchId3Data,
+      boolean shouldSpliceIn) {
     super(
-        buildDataSource(dataSource, fullSegmentEncryptionKey, encryptionIv),
+        mediaDataSource,
         dataSpec,
-        hlsUrl.format,
+        format,
         trackSelectionReason,
         trackSelectionData,
         startTimeUs,
         endTimeUs,
         chunkMediaSequence);
+    this.mediaSegmentEncrypted = mediaSegmentEncrypted;
     this.discontinuitySequenceNumber = discontinuitySequenceNumber;
+    this.initDataSource = initDataSource;
     this.initDataSpec = initDataSpec;
-    this.hlsUrl = hlsUrl;
+    this.initSegmentEncrypted = initSegmentEncrypted;
+    this.playlistUrl = playlistUrl;
     this.isMasterTimestampSource = isMasterTimestampSource;
     this.timestampAdjuster = timestampAdjuster;
-    this.isEncrypted = fullSegmentEncryptionKey != null;
     this.hasGapTag = hasGapTag;
     this.extractorFactory = extractorFactory;
     this.muxedCaptionFormats = muxedCaptionFormats;
     this.drmInitData = drmInitData;
-    Extractor previousExtractor = null;
-    if (previousChunk != null) {
-      id3Decoder = previousChunk.id3Decoder;
-      id3Data = previousChunk.id3Data;
-      shouldSpliceIn = previousChunk.hlsUrl != hlsUrl || !previousChunk.loadCompleted;
-      previousExtractor = previousChunk.discontinuitySequenceNumber != discontinuitySequenceNumber
-          || shouldSpliceIn ? null : previousChunk.extractor;
-    } else {
-      id3Decoder = new Id3Decoder();
-      id3Data = new ParsableByteArray(Id3Decoder.ID3_HEADER_LENGTH);
-      shouldSpliceIn = false;
-    }
     this.previousExtractor = previousExtractor;
-    initDataSource = dataSource;
+    this.id3Decoder = id3Decoder;
+    this.scratchId3Data = scratchId3Data;
+    this.shouldSpliceIn = shouldSpliceIn;
+    initDataLoadRequired = initDataSpec != null;
     uid = uidSource.getAndIncrement();
   }
 
@@ -189,6 +289,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 
   @Override
   public void load() throws IOException, InterruptedException {
+    if (extractor == null && previousExtractor != null) {
+      extractor = previousExtractor;
+      isExtractorReusable = true;
+      initDataLoadRequired = false;
+      output.init(uid, shouldSpliceIn, /* reusingExtractor= */ true);
+    }
     maybeLoadInitData();
     if (!loadCanceled) {
       if (!hasGapTag) {
@@ -201,46 +307,44 @@ import java.util.concurrent.atomic.AtomicInteger;
   // Internal methods.
 
   private void maybeLoadInitData() throws IOException, InterruptedException {
-    if (initLoadCompleted || initDataSpec == null) {
-      // Note: The HLS spec forbids initialization segments for packed audio.
+    if (!initDataLoadRequired) {
       return;
     }
-    DataSpec initSegmentDataSpec = initDataSpec.subrange(initSegmentBytesLoaded);
-    try {
-      DefaultExtractorInput input = prepareExtraction(initDataSource, initSegmentDataSpec);
-      try {
-        int result = Extractor.RESULT_CONTINUE;
-        while (result == Extractor.RESULT_CONTINUE && !loadCanceled) {
-          result = extractor.read(input, null);
-        }
-      } finally {
-        initSegmentBytesLoaded = (int) (input.getPosition() - initDataSpec.absoluteStreamPosition);
-      }
-    } finally {
-      Util.closeQuietly(initDataSource);
-    }
-    initLoadCompleted = true;
+    feedDataToExtractor(initDataSource, initDataSpec, initSegmentEncrypted);
+    nextLoadPosition = 0;
+    initDataLoadRequired = false;
   }
 
   private void loadMedia() throws IOException, InterruptedException {
+    if (!isMasterTimestampSource) {
+      timestampAdjuster.waitUntilInitialized();
+    } else if (timestampAdjuster.getFirstSampleTimestampUs() == TimestampAdjuster.DO_NOT_OFFSET) {
+      // We're the master and we haven't set the desired first sample timestamp yet.
+      timestampAdjuster.setFirstSampleTimestampUs(startTimeUs);
+    }
+    feedDataToExtractor(dataSource, dataSpec, mediaSegmentEncrypted);
+  }
+
+  /**
+   * Attempts to feed the given {@code dataSpec} to {@code this.extractor}. Whenever the operation
+   * concludes (because of a thrown exception or because the operation finishes), the number of fed
+   * bytes is written to {@code nextLoadPosition}.
+   */
+  private void feedDataToExtractor(
+      DataSource dataSource, DataSpec dataSpec, boolean dataIsEncrypted)
+      throws IOException, InterruptedException {
     // If we previously fed part of this chunk to the extractor, we need to skip it this time. For
     // encrypted content we need to skip the data by reading it through the source, so as to ensure
     // correct decryption of the remainder of the chunk. For clear content, we can request the
     // remainder of the chunk directly.
     DataSpec loadDataSpec;
     boolean skipLoadedBytes;
-    if (isEncrypted) {
+    if (dataIsEncrypted) {
       loadDataSpec = dataSpec;
       skipLoadedBytes = nextLoadPosition != 0;
     } else {
       loadDataSpec = dataSpec.subrange(nextLoadPosition);
       skipLoadedBytes = false;
-    }
-    if (!isMasterTimestampSource) {
-      timestampAdjuster.waitUntilInitialized();
-    } else if (timestampAdjuster.getFirstSampleTimestampUs() == TimestampAdjuster.DO_NOT_OFFSET) {
-      // We're the master and we haven't set the desired first sample timestamp yet.
-      timestampAdjuster.setFirstSampleTimestampUs(startTimeUs);
     }
     try {
       ExtractorInput input = prepareExtraction(dataSource, loadDataSpec);
@@ -250,7 +354,7 @@ import java.util.concurrent.atomic.AtomicInteger;
       try {
         int result = Extractor.RESULT_CONTINUE;
         while (result == Extractor.RESULT_CONTINUE && !loadCanceled) {
-          result = extractor.read(input, null);
+          result = extractor.read(input, /* seekPosition= */ null);
         }
       } finally {
         nextLoadPosition = (int) (input.getPosition() - dataSpec.absoluteStreamPosition);
@@ -271,7 +375,7 @@ import java.util.concurrent.atomic.AtomicInteger;
       long id3Timestamp = peekId3PrivTimestamp(extractorInput);
       extractorInput.resetPeekPosition();
 
-      Pair<Extractor, Boolean> extractorData =
+      HlsExtractorFactory.Result result =
           extractorFactory.createExtractor(
               previousExtractor,
               dataSpec.uri,
@@ -281,21 +385,20 @@ import java.util.concurrent.atomic.AtomicInteger;
               timestampAdjuster,
               dataSource.getResponseHeaders(),
               extractorInput);
-      extractor = extractorData.first;
-      boolean reusingExtractor = extractor == previousExtractor;
-      boolean isPackedAudioExtractor = extractorData.second;
-      if (isPackedAudioExtractor) {
+      extractor = result.extractor;
+      isExtractorReusable = result.isReusable;
+      if (result.isPackedAudioExtractor) {
         output.setSampleOffsetUs(
             id3Timestamp != C.TIME_UNSET
                 ? timestampAdjuster.adjustTsTimestamp(id3Timestamp)
                 : startTimeUs);
+      } else {
+        // In case the container format changes mid-stream to non-packed-audio, we need to reset
+        // the timestamp offset.
+        output.setSampleOffsetUs(/* sampleOffsetUs= */ 0L);
       }
-      initLoadCompleted = reusingExtractor && initDataSpec != null;
-
-      output.init(uid, shouldSpliceIn, reusingExtractor);
-      if (!reusingExtractor) {
-        extractor.init(output);
-      }
+      output.init(uid, shouldSpliceIn, /* reusingExtractor= */ false);
+      extractor.init(output);
     }
 
     return extractorInput;
@@ -314,26 +417,26 @@ import java.util.concurrent.atomic.AtomicInteger;
   private long peekId3PrivTimestamp(ExtractorInput input) throws IOException, InterruptedException {
     input.resetPeekPosition();
     try {
-      input.peekFully(id3Data.data, 0, Id3Decoder.ID3_HEADER_LENGTH);
+      input.peekFully(scratchId3Data.data, 0, Id3Decoder.ID3_HEADER_LENGTH);
     } catch (EOFException e) {
       // The input isn't long enough for there to be any ID3 data.
       return C.TIME_UNSET;
     }
-    id3Data.reset(Id3Decoder.ID3_HEADER_LENGTH);
-    int id = id3Data.readUnsignedInt24();
+    scratchId3Data.reset(Id3Decoder.ID3_HEADER_LENGTH);
+    int id = scratchId3Data.readUnsignedInt24();
     if (id != Id3Decoder.ID3_TAG) {
       return C.TIME_UNSET;
     }
-    id3Data.skipBytes(3); // version(2), flags(1).
-    int id3Size = id3Data.readSynchSafeInt();
+    scratchId3Data.skipBytes(3); // version(2), flags(1).
+    int id3Size = scratchId3Data.readSynchSafeInt();
     int requiredCapacity = id3Size + Id3Decoder.ID3_HEADER_LENGTH;
-    if (requiredCapacity > id3Data.capacity()) {
-      byte[] data = id3Data.data;
-      id3Data.reset(requiredCapacity);
-      System.arraycopy(data, 0, id3Data.data, 0, Id3Decoder.ID3_HEADER_LENGTH);
+    if (requiredCapacity > scratchId3Data.capacity()) {
+      byte[] data = scratchId3Data.data;
+      scratchId3Data.reset(requiredCapacity);
+      System.arraycopy(data, 0, scratchId3Data.data, 0, Id3Decoder.ID3_HEADER_LENGTH);
     }
-    input.peekFully(id3Data.data, Id3Decoder.ID3_HEADER_LENGTH, id3Size);
-    Metadata metadata = id3Decoder.decode(id3Data.data, id3Size);
+    input.peekFully(scratchId3Data.data, Id3Decoder.ID3_HEADER_LENGTH, id3Size);
+    Metadata metadata = id3Decoder.decode(scratchId3Data.data, id3Size);
     if (metadata == null) {
       return C.TIME_UNSET;
     }
@@ -343,18 +446,39 @@ import java.util.concurrent.atomic.AtomicInteger;
       if (frame instanceof PrivFrame) {
         PrivFrame privFrame = (PrivFrame) frame;
         if (PRIV_TIMESTAMP_FRAME_OWNER.equals(privFrame.owner)) {
-          System.arraycopy(privFrame.privateData, 0, id3Data.data, 0, 8 /* timestamp size */);
-          id3Data.reset(8);
+          System.arraycopy(
+              privFrame.privateData, 0, scratchId3Data.data, 0, 8 /* timestamp size */);
+          scratchId3Data.reset(8);
           // The top 31 bits should be zeros, but explicitly zero them to wrap in the case that the
           // streaming provider forgot. See: https://github.com/google/ExoPlayer/pull/3495.
-          return id3Data.readLong() & 0x1FFFFFFFFL;
+          return scratchId3Data.readLong() & 0x1FFFFFFFFL;
         }
       }
     }
     return C.TIME_UNSET;
   }
 
-  // Internal factory methods.
+  // Internal methods.
+
+  private static byte[] getEncryptionIvArray(String ivString) {
+    String trimmedIv;
+    if (Util.toLowerInvariant(ivString).startsWith("0x")) {
+      trimmedIv = ivString.substring(2);
+    } else {
+      trimmedIv = ivString;
+    }
+
+    byte[] ivData = new BigInteger(trimmedIv, /* radix= */ 16).toByteArray();
+    byte[] ivDataWithPadding = new byte[16];
+    int offset = ivData.length > 16 ? ivData.length - 16 : 0;
+    System.arraycopy(
+        ivData,
+        offset,
+        ivDataWithPadding,
+        ivDataWithPadding.length - ivData.length + offset,
+        ivData.length - offset);
+    return ivDataWithPadding;
+  }
 
   /**
    * If the segment is fully encrypted, returns an {@link Aes128DataSource} that wraps the original

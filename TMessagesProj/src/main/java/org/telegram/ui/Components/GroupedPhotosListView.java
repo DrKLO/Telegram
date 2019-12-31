@@ -176,6 +176,7 @@ public class GroupedPhotosListView extends View implements GestureDetector.OnGes
             }
         }
         if (changed) {
+            int oldCount = currentPhotos.size();
             animateAllLine = false;
             currentPhotos.clear();
             currentObjects.clear();
@@ -238,6 +239,9 @@ public class GroupedPhotosListView extends View implements GestureDetector.OnGes
             if (currentPhotos.size() == 1) {
                 currentPhotos.clear();
                 currentObjects.clear();
+            }
+            if (currentPhotos.size() != oldCount) {
+                requestLayout();
             }
             fillImages(false, 0);
         }

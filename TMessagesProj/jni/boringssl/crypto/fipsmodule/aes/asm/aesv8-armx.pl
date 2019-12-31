@@ -77,12 +77,17 @@ my ($zero,$rcon,$mask,$in0,$in1,$tmp,$key)=
 	$flavour=~/64/? map("q$_",(0..6)) : map("q$_",(0..3,8..10));
 
 
+# On AArch64, put the data .rodata and use adrp + add for compatibility with
+# execute-only memory. On AArch32, put it in .text and use adr.
+$code.= ".section .rodata\n" if ($flavour =~ /64/);
 $code.=<<___;
 .align	5
 .Lrcon:
 .long	0x01,0x01,0x01,0x01
 .long	0x0c0f0e0d,0x0c0f0e0d,0x0c0f0e0d,0x0c0f0e0d	// rotate-n-splat
 .long	0x1b,0x1b,0x1b,0x1b
+
+.text
 
 .globl	${prefix}_set_encrypt_key
 .type	${prefix}_set_encrypt_key,%function
@@ -108,7 +113,15 @@ $code.=<<___;
 	tst	$bits,#0x3f
 	b.ne	.Lenc_key_abort
 
+___
+$code.=<<___	if ($flavour =~ /64/);
+	adrp	$ptr,:pg_hi21:.Lrcon
+	add	$ptr,$ptr,:lo12:.Lrcon
+___
+$code.=<<___	if ($flavour !~ /64/);
 	adr	$ptr,.Lrcon
+___
+$code.=<<___;
 	cmp	$bits,#192
 
 	veor	$zero,$zero,$zero
@@ -929,7 +942,7 @@ if ($flavour =~ /64/) {			######## 64-bit code
 	s/^(\s+)v/$1/o		or	# strip off v prefix
 	s/\bbx\s+lr\b/ret/o;
 
-	# fix up remainig legacy suffixes
+	# fix up remaining legacy suffixes
 	s/\.[ui]?8//o;
 	m/\],#8/o and s/\.16b/\.8b/go;
 	s/\.[ui]?32//o and s/\.16b/\.4s/go;
@@ -988,7 +1001,7 @@ if ($flavour =~ /64/) {			######## 64-bit code
 	s/\bv([0-9])\.[12468]+[bsd]\b/q$1/go;	# new->old registers
 	s/\/\/\s?/@ /o;				# new->old style commentary
 
-	# fix up remainig new-style suffixes
+	# fix up remaining new-style suffixes
 	s/\{q([0-9]+)\},\s*\[(.+)\],#8/sprintf "{d%d},[$2]!",2*$1/eo	or
 	s/\],#[0-9]+/]!/o;
 
@@ -1005,4 +1018,4 @@ if ($flavour =~ /64/) {			######## 64-bit code
     }
 }
 
-close STDOUT;
+close STDOUT or die "error closing STDOUT";

@@ -68,6 +68,10 @@ import java.io.IOException;
 
   @Override
   public int readData(FormatHolder formatHolder, DecoderInputBuffer buffer, boolean requireFormat) {
+    if (sampleQueueIndex == HlsSampleStreamWrapper.SAMPLE_QUEUE_INDEX_NO_MAPPING_NON_FATAL) {
+      buffer.addFlag(C.BUFFER_FLAG_END_OF_STREAM);
+      return C.RESULT_BUFFER_READ;
+    }
     return hasValidSampleQueueIndex()
         ? sampleStreamWrapper.readData(sampleQueueIndex, formatHolder, buffer, requireFormat)
         : C.RESULT_NOTHING_READ;

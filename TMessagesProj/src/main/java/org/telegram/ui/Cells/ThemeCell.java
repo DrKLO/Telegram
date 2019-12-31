@@ -126,8 +126,9 @@ public class ThemeCell extends FrameLayout {
         updateCurrentThemeCheck();
 
         boolean finished = false;
-        if (Theme.isThemeDefault(themeInfo) || themeInfo.assetName != null) {
-            paint.setColor(Theme.changeColorAccent(themeInfo, themeInfo.accentColor, themeInfo.previewBackgroundColor));
+        Theme.ThemeAccent accent = themeInfo.getAccent(false);
+        if (themeInfo.assetName != null) {
+            paint.setColor(Theme.changeColorAccent(themeInfo, accent != null ? accent.accentColor : 0, themeInfo.getPreviewBackgroundColor()));
             finished = true;
         } else if (themeInfo.pathToFile != null) {
             FileInputStream stream = null;
@@ -196,8 +197,8 @@ public class ThemeCell extends FrameLayout {
         if (!finished) {
             paint.setColor(Theme.getDefaultColor(Theme.key_actionBarDefault));
         }
-        paintStroke.setColor(themeInfo.accentColor);
-        if (themeInfo.accentColor != 0) {
+        paintStroke.setColor(accent != null ? accent.accentColor : null);
+        if (accent != null && accent.accentColor != 0) {
             paintStroke.setAlpha(180);
         }
     }

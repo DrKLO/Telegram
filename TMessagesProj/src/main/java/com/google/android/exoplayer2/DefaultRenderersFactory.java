@@ -16,6 +16,7 @@
 package com.google.android.exoplayer2;
 
 import android.content.Context;
+import android.media.MediaCodec;
 import android.os.Handler;
 import android.os.Looper;
 import androidx.annotation.IntDef;
@@ -23,6 +24,7 @@ import androidx.annotation.Nullable;
 import com.google.android.exoplayer2.audio.AudioCapabilities;
 import com.google.android.exoplayer2.audio.AudioProcessor;
 import com.google.android.exoplayer2.audio.AudioRendererEventListener;
+import com.google.android.exoplayer2.audio.DefaultAudioSink;
 import com.google.android.exoplayer2.audio.MediaCodecAudioRenderer;
 import com.google.android.exoplayer2.drm.DrmSessionManager;
 import com.google.android.exoplayer2.drm.FrameworkMediaCrypto;
@@ -85,15 +87,19 @@ public class DefaultRenderersFactory implements RenderersFactory {
   protected static final int MAX_DROPPED_VIDEO_FRAME_COUNT_TO_NOTIFY = 50;
 
   private final Context context;
-  private final @Nullable DrmSessionManager<FrameworkMediaCrypto> drmSessionManager;
-  private final @ExtensionRendererMode int extensionRendererMode;
-  private final long allowedVideoJoiningTimeMs;
+  @Nullable private DrmSessionManager<FrameworkMediaCrypto> drmSessionManager;
+  @ExtensionRendererMode private int extensionRendererMode;
+  private long allowedVideoJoiningTimeMs;
+  private boolean playClearSamplesWithoutKeys;
+  private boolean enableDecoderFallback;
+  private MediaCodecSelector mediaCodecSelector;
 
-  /**
-   * @param context A {@link Context}.
-   */
+  /** @param context A {@link Context}. */
   public DefaultRenderersFactory(Context context) {
-    this(context, EXTENSION_RENDERER_MODE_OFF);
+    this.context = context;
+    extensionRendererMode = EXTENSION_RENDERER_MODE_OFF;
+    allowedVideoJoiningTimeMs = DEFAULT_ALLOWED_VIDEO_JOINING_TIME_MS;
+    mediaCodecSelector = MediaCodecSelector.DEFAULT;
   }
 
   /**
@@ -108,19 +114,20 @@ public class DefaultRenderersFactory implements RenderersFactory {
   }
 
   /**
-   * @param context A {@link Context}.
-   * @param extensionRendererMode The extension renderer mode, which determines if and how available
-   *     extension renderers are used. Note that extensions must be included in the application
-   *     build for them to be considered available.
+   * @deprecated Use {@link #DefaultRenderersFactory(Context)} and {@link
+   *     #setExtensionRendererMode(int)}.
    */
+  @Deprecated
+  @SuppressWarnings("deprecation")
   public DefaultRenderersFactory(
       Context context, @ExtensionRendererMode int extensionRendererMode) {
     this(context, extensionRendererMode, DEFAULT_ALLOWED_VIDEO_JOINING_TIME_MS);
   }
 
   /**
-   * @deprecated Use {@link #DefaultRenderersFactory(Context, int)} and pass {@link
-   *     DrmSessionManager} directly to {@link SimpleExoPlayer} or {@link ExoPlayerFactory}.
+   * @deprecated Use {@link #DefaultRenderersFactory(Context)} and {@link
+   *     #setExtensionRendererMode(int)}, and pass {@link DrmSessionManager} directly to {@link
+   *     SimpleExoPlayer} or {@link ExoPlayerFactory}.
    */
   @Deprecated
   @SuppressWarnings("deprecation")
@@ -132,26 +139,22 @@ public class DefaultRenderersFactory implements RenderersFactory {
   }
 
   /**
-   * @param context A {@link Context}.
-   * @param extensionRendererMode The extension renderer mode, which determines if and how available
-   *     extension renderers are used. Note that extensions must be included in the application
-   *     build for them to be considered available.
-   * @param allowedVideoJoiningTimeMs The maximum duration for which video renderers can attempt to
-   *     seamlessly join an ongoing playback.
+   * @deprecated Use {@link #DefaultRenderersFactory(Context)}, {@link
+   *     #setExtensionRendererMode(int)} and {@link #setAllowedVideoJoiningTimeMs(long)}.
    */
+  @Deprecated
+  @SuppressWarnings("deprecation")
   public DefaultRenderersFactory(
       Context context,
       @ExtensionRendererMode int extensionRendererMode,
       long allowedVideoJoiningTimeMs) {
-    this.context = context;
-    this.extensionRendererMode = extensionRendererMode;
-    this.allowedVideoJoiningTimeMs = allowedVideoJoiningTimeMs;
-    this.drmSessionManager = null;
+    this(context, null, extensionRendererMode, allowedVideoJoiningTimeMs);
   }
 
   /**
-   * @deprecated Use {@link #DefaultRenderersFactory(Context, int, long)} and pass {@link
-   *     DrmSessionManager} directly to {@link SimpleExoPlayer} or {@link ExoPlayerFactory}.
+   * @deprecated Use {@link #DefaultRenderersFactory(Context)}, {@link
+   *     #setExtensionRendererMode(int)} and {@link #setAllowedVideoJoiningTimeMs(long)}, and pass
+   *     {@link DrmSessionManager} directly to {@link SimpleExoPlayer} or {@link ExoPlayerFactory}.
    */
   @Deprecated
   public DefaultRenderersFactory(
@@ -163,6 +166,83 @@ public class DefaultRenderersFactory implements RenderersFactory {
     this.extensionRendererMode = extensionRendererMode;
     this.allowedVideoJoiningTimeMs = allowedVideoJoiningTimeMs;
     this.drmSessionManager = drmSessionManager;
+    mediaCodecSelector = MediaCodecSelector.DEFAULT;
+  }
+
+  /**
+   * Sets the extension renderer mode, which determines if and how available extension renderers are
+   * used. Note that extensions must be included in the application build for them to be considered
+   * available.
+   *
+   * <p>The default value is {@link #EXTENSION_RENDERER_MODE_OFF}.
+   *
+   * @param extensionRendererMode The extension renderer mode.
+   * @return This factory, for convenience.
+   */
+  public DefaultRenderersFactory setExtensionRendererMode(
+      @ExtensionRendererMode int extensionRendererMode) {
+    this.extensionRendererMode = extensionRendererMode;
+    return this;
+  }
+
+  /**
+   * Sets whether renderers are permitted to play clear regions of encrypted media prior to having
+   * obtained the keys necessary to decrypt encrypted regions of the media. For encrypted media that
+   * starts with a short clear region, this allows playback to begin in parallel with key
+   * acquisition, which can reduce startup latency.
+   *
+   * <p>The default value is {@code false}.
+   *
+   * @param playClearSamplesWithoutKeys Whether renderers are permitted to play clear regions of
+   *     encrypted media prior to having obtained the keys necessary to decrypt encrypted regions of
+   *     the media.
+   * @return This factory, for convenience.
+   */
+  public DefaultRenderersFactory setPlayClearSamplesWithoutKeys(
+      boolean playClearSamplesWithoutKeys) {
+    this.playClearSamplesWithoutKeys = playClearSamplesWithoutKeys;
+    return this;
+  }
+
+  /**
+   * Sets whether to enable fallback to lower-priority decoders if decoder initialization fails.
+   * This may result in using a decoder that is less efficient or slower than the primary decoder.
+   *
+   * @param enableDecoderFallback Whether to enable fallback to lower-priority decoders if decoder
+   *     initialization fails.
+   * @return This factory, for convenience.
+   */
+  public DefaultRenderersFactory setEnableDecoderFallback(boolean enableDecoderFallback) {
+    this.enableDecoderFallback = enableDecoderFallback;
+    return this;
+  }
+
+  /**
+   * Sets a {@link MediaCodecSelector} for use by {@link MediaCodec} based renderers.
+   *
+   * <p>The default value is {@link MediaCodecSelector#DEFAULT}.
+   *
+   * @param mediaCodecSelector The {@link MediaCodecSelector}.
+   * @return This factory, for convenience.
+   */
+  public DefaultRenderersFactory setMediaCodecSelector(MediaCodecSelector mediaCodecSelector) {
+    this.mediaCodecSelector = mediaCodecSelector;
+    return this;
+  }
+
+  /**
+   * Sets the maximum duration for which video renderers can attempt to seamlessly join an ongoing
+   * playback.
+   *
+   * <p>The default value is {@link #DEFAULT_ALLOWED_VIDEO_JOINING_TIME_MS}.
+   *
+   * @param allowedVideoJoiningTimeMs The maximum duration for which video renderers can attempt to
+   *     seamlessly join an ongoing playback, in milliseconds.
+   * @return This factory, for convenience.
+   */
+  public DefaultRenderersFactory setAllowedVideoJoiningTimeMs(long allowedVideoJoiningTimeMs) {
+    this.allowedVideoJoiningTimeMs = allowedVideoJoiningTimeMs;
+    return this;
   }
 
   @Override
@@ -177,10 +257,28 @@ public class DefaultRenderersFactory implements RenderersFactory {
       drmSessionManager = this.drmSessionManager;
     }
     ArrayList<Renderer> renderersList = new ArrayList<>();
-    buildVideoRenderers(context, drmSessionManager, allowedVideoJoiningTimeMs,
-        eventHandler, videoRendererEventListener, extensionRendererMode, renderersList);
-    buildAudioRenderers(context, drmSessionManager, buildAudioProcessors(),
-        eventHandler, audioRendererEventListener, extensionRendererMode, renderersList);
+    buildVideoRenderers(
+        context,
+        extensionRendererMode,
+        mediaCodecSelector,
+        drmSessionManager,
+        playClearSamplesWithoutKeys,
+        enableDecoderFallback,
+        eventHandler,
+        videoRendererEventListener,
+        allowedVideoJoiningTimeMs,
+        renderersList);
+    buildAudioRenderers(
+        context,
+        extensionRendererMode,
+        mediaCodecSelector,
+        drmSessionManager,
+        playClearSamplesWithoutKeys,
+        enableDecoderFallback,
+        buildAudioProcessors(),
+        eventHandler,
+        audioRendererEventListener,
+        renderersList);
     buildTextRenderers(context, textRendererOutput, eventHandler.getLooper(),
         extensionRendererMode, renderersList);
     buildMetadataRenderers(context, metadataRendererOutput, eventHandler.getLooper(),
@@ -194,27 +292,41 @@ public class DefaultRenderersFactory implements RenderersFactory {
    * Builds video renderers for use by the player.
    *
    * @param context The {@link Context} associated with the player.
-   * @param drmSessionManager An optional {@link DrmSessionManager}. May be null if the player
-   *     will not be used for DRM protected playbacks.
-   * @param allowedVideoJoiningTimeMs The maximum duration in milliseconds for which video
-   *     renderers can attempt to seamlessly join an ongoing playback.
+   * @param extensionRendererMode The extension renderer mode.
+   * @param mediaCodecSelector A decoder selector.
+   * @param drmSessionManager An optional {@link DrmSessionManager}. May be null if the player will
+   *     not be used for DRM protected playbacks.
+   * @param playClearSamplesWithoutKeys Whether renderers are permitted to play clear regions of
+   *     encrypted media prior to having obtained the keys necessary to decrypt encrypted regions of
+   *     the media.
+   * @param enableDecoderFallback Whether to enable fallback to lower-priority decoders if decoder
+   *     initialization fails. This may result in using a decoder that is slower/less efficient than
+   *     the primary decoder.
    * @param eventHandler A handler associated with the main thread's looper.
    * @param eventListener An event listener.
-   * @param extensionRendererMode The extension renderer mode.
+   * @param allowedVideoJoiningTimeMs The maximum duration for which video renderers can attempt to
+   *     seamlessly join an ongoing playback, in milliseconds.
    * @param out An array to which the built renderers should be appended.
    */
-  protected void buildVideoRenderers(Context context,
+  protected void buildVideoRenderers(
+      Context context,
+      @ExtensionRendererMode int extensionRendererMode,
+      MediaCodecSelector mediaCodecSelector,
       @Nullable DrmSessionManager<FrameworkMediaCrypto> drmSessionManager,
-      long allowedVideoJoiningTimeMs, Handler eventHandler,
-      VideoRendererEventListener eventListener, @ExtensionRendererMode int extensionRendererMode,
+      boolean playClearSamplesWithoutKeys,
+      boolean enableDecoderFallback,
+      Handler eventHandler,
+      VideoRendererEventListener eventListener,
+      long allowedVideoJoiningTimeMs,
       ArrayList<Renderer> out) {
     out.add(
         new MediaCodecVideoRenderer(
             context,
-            MediaCodecSelector.DEFAULT,
+            mediaCodecSelector,
             allowedVideoJoiningTimeMs,
             drmSessionManager,
-            /* playClearSamplesWithoutKeys= */ false,
+            playClearSamplesWithoutKeys,
+            enableDecoderFallback,
             eventHandler,
             eventListener,
             MAX_DROPPED_VIDEO_FRAME_COUNT_TO_NOTIFY));
@@ -233,7 +345,6 @@ public class DefaultRenderersFactory implements RenderersFactory {
       Class<?> clazz = Class.forName("com.google.android.exoplayer2.ext.vp9.LibvpxVideoRenderer");
       Constructor<?> constructor =
           clazz.getConstructor(
-              boolean.class,
               long.class,
               android.os.Handler.class,
               com.google.android.exoplayer2.video.VideoRendererEventListener.class,
@@ -242,7 +353,6 @@ public class DefaultRenderersFactory implements RenderersFactory {
       Renderer renderer =
           (Renderer)
               constructor.newInstance(
-                  true,
                   allowedVideoJoiningTimeMs,
                   eventHandler,
                   eventListener,
@@ -261,30 +371,43 @@ public class DefaultRenderersFactory implements RenderersFactory {
    * Builds audio renderers for use by the player.
    *
    * @param context The {@link Context} associated with the player.
-   * @param drmSessionManager An optional {@link DrmSessionManager}. May be null if the player
-   *     will not be used for DRM protected playbacks.
-   * @param audioProcessors An array of {@link AudioProcessor}s that will process PCM audio
-   *     buffers before output. May be empty.
+   * @param extensionRendererMode The extension renderer mode.
+   * @param mediaCodecSelector A decoder selector.
+   * @param drmSessionManager An optional {@link DrmSessionManager}. May be null if the player will
+   *     not be used for DRM protected playbacks.
+   * @param playClearSamplesWithoutKeys Whether renderers are permitted to play clear regions of
+   *     encrypted media prior to having obtained the keys necessary to decrypt encrypted regions of
+   *     the media.
+   * @param enableDecoderFallback Whether to enable fallback to lower-priority decoders if decoder
+   *     initialization fails. This may result in using a decoder that is slower/less efficient than
+   *     the primary decoder.
+   * @param audioProcessors An array of {@link AudioProcessor}s that will process PCM audio buffers
+   *     before output. May be empty.
    * @param eventHandler A handler to use when invoking event listeners and outputs.
    * @param eventListener An event listener.
-   * @param extensionRendererMode The extension renderer mode.
    * @param out An array to which the built renderers should be appended.
    */
-  protected void buildAudioRenderers(Context context,
+  protected void buildAudioRenderers(
+      Context context,
+      @ExtensionRendererMode int extensionRendererMode,
+      MediaCodecSelector mediaCodecSelector,
       @Nullable DrmSessionManager<FrameworkMediaCrypto> drmSessionManager,
-      AudioProcessor[] audioProcessors, Handler eventHandler,
-      AudioRendererEventListener eventListener, @ExtensionRendererMode int extensionRendererMode,
+      boolean playClearSamplesWithoutKeys,
+      boolean enableDecoderFallback,
+      AudioProcessor[] audioProcessors,
+      Handler eventHandler,
+      AudioRendererEventListener eventListener,
       ArrayList<Renderer> out) {
     out.add(
         new MediaCodecAudioRenderer(
             context,
-            MediaCodecSelector.DEFAULT,
+            mediaCodecSelector,
             drmSessionManager,
-            /* playClearSamplesWithoutKeys= */ false,
+            playClearSamplesWithoutKeys,
+            enableDecoderFallback,
             eventHandler,
             eventListener,
-            AudioCapabilities.getCapabilities(context),
-            audioProcessors));
+            new DefaultAudioSink(AudioCapabilities.getCapabilities(context), audioProcessors)));
 
     if (extensionRendererMode == EXTENSION_RENDERER_MODE_OFF) {
       return;

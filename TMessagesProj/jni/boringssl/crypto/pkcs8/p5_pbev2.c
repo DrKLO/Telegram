@@ -81,6 +81,10 @@ static const uint8_t kPBES2[] = {0x2a, 0x86, 0x48, 0x86, 0xf7,
 static const uint8_t kHMACWithSHA1[] = {0x2a, 0x86, 0x48, 0x86,
                                         0xf7, 0x0d, 0x02, 0x07};
 
+// 1.2.840.113549.2.9
+static const uint8_t kHMACWithSHA256[] = {0x2a, 0x86, 0x48, 0x86,
+                                          0xf7, 0x0d, 0x02, 0x09};
+
 static const struct {
   uint8_t oid[9];
   uint8_t oid_len;
@@ -140,18 +144,18 @@ static int add_cipher_oid(CBB *out, int nid) {
 }
 
 static int pkcs5_pbe2_cipher_init(EVP_CIPHER_CTX *ctx, const EVP_CIPHER *cipher,
-                                  unsigned iterations, const char *pass,
-                                  size_t pass_len, const uint8_t *salt,
-                                  size_t salt_len, const uint8_t *iv,
-                                  size_t iv_len, int enc) {
+                                  const EVP_MD *pbkdf2_md, unsigned iterations,
+                                  const char *pass, size_t pass_len,
+                                  const uint8_t *salt, size_t salt_len,
+                                  const uint8_t *iv, size_t iv_len, int enc) {
   if (iv_len != EVP_CIPHER_iv_length(cipher)) {
     OPENSSL_PUT_ERROR(PKCS8, PKCS8_R_ERROR_SETTING_CIPHER_PARAMS);
     return 0;
   }
 
   uint8_t key[EVP_MAX_KEY_LENGTH];
-  int ret = PKCS5_PBKDF2_HMAC_SHA1(pass, pass_len, salt, salt_len, iterations,
-                                   EVP_CIPHER_key_length(cipher), key) &&
+  int ret = PKCS5_PBKDF2_HMAC(pass, pass_len, salt, salt_len, iterations,
+                              pbkdf2_md, EVP_CIPHER_key_length(cipher), key) &&
             EVP_CipherInit_ex(ctx, cipher, NULL /* engine */, key, iv, enc);
   OPENSSL_cleanse(key, EVP_MAX_KEY_LENGTH);
   return ret;
@@ -201,9 +205,9 @@ int PKCS5_pbe2_encrypt_init(CBB *out, EVP_CIPHER_CTX *ctx,
     return 0;
   }
 
-  return pkcs5_pbe2_cipher_init(ctx, cipher, iterations, pass, pass_len, salt,
-                                salt_len, iv, EVP_CIPHER_iv_length(cipher),
-                                1 /* encrypt */);
+  return pkcs5_pbe2_cipher_init(ctx, cipher, EVP_sha1(), iterations, pass,
+                                pass_len, salt, salt_len, iv,
+                                EVP_CIPHER_iv_length(cipher), 1 /* encrypt */);
 }
 
 int PKCS5_pbe2_decrypt_init(const struct pbe_suite *suite, EVP_CIPHER_CTX *ctx,
@@ -244,7 +248,7 @@ int PKCS5_pbe2_decrypt_init(const struct pbe_suite *suite, EVP_CIPHER_CTX *ctx,
     return 0;
   }
 
-  if (iterations == 0 || iterations > UINT_MAX) {
+  if (!pkcs12_iterations_acceptable(iterations)) {
     OPENSSL_PUT_ERROR(PKCS8, PKCS8_R_BAD_ITERATION_COUNT);
     return 0;
   }
@@ -264,6 +268,7 @@ int PKCS5_pbe2_decrypt_init(const struct pbe_suite *suite, EVP_CIPHER_CTX *ctx,
     }
   }
 
+  const EVP_MD *md = EVP_sha1();
   if (CBS_len(&pbkdf2_params) != 0) {
     CBS alg_id, prf;
     if (!CBS_get_asn1(&pbkdf2_params, &alg_id, CBS_ASN1_SEQUENCE) ||
@@ -273,14 +278,18 @@ int PKCS5_pbe2_decrypt_init(const struct pbe_suite *suite, EVP_CIPHER_CTX *ctx,
       return 0;
     }
 
-    // We only support hmacWithSHA1. It is the DEFAULT, so DER requires it be
-    // omitted, but we match OpenSSL in tolerating it being present.
-    if (!CBS_mem_equal(&prf, kHMACWithSHA1, sizeof(kHMACWithSHA1))) {
+    if (CBS_mem_equal(&prf, kHMACWithSHA1, sizeof(kHMACWithSHA1))) {
+      // hmacWithSHA1 is the DEFAULT, so DER requires it be omitted, but we
+      // match OpenSSL in tolerating it being present.
+      md = EVP_sha1();
+    } else if (CBS_mem_equal(&prf, kHMACWithSHA256, sizeof(kHMACWithSHA256))) {
+      md = EVP_sha256();
+    } else {
       OPENSSL_PUT_ERROR(PKCS8, PKCS8_R_UNSUPPORTED_PRF);
       return 0;
     }
 
-    // hmacWithSHA1 has a NULL parameter.
+    // All supported PRFs use a NULL parameter.
     CBS null;
     if (!CBS_get_asn1(&alg_id, &null, CBS_ASN1_NULL) ||
         CBS_len(&null) != 0 ||
@@ -301,7 +310,7 @@ int PKCS5_pbe2_decrypt_init(const struct pbe_suite *suite, EVP_CIPHER_CTX *ctx,
     return 0;
   }
 
-  return pkcs5_pbe2_cipher_init(ctx, cipher, (unsigned)iterations, pass,
+  return pkcs5_pbe2_cipher_init(ctx, cipher, md, (unsigned)iterations, pass,
                                 pass_len, CBS_data(&salt), CBS_len(&salt),
                                 CBS_data(&iv), CBS_len(&iv), 0 /* decrypt */);
 }

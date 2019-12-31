@@ -72,6 +72,7 @@ public:
    const LOTLayerNode * renderTree()const;
    bool render(const rlottie::Surface &surface);
    void setValue(const std::string &keypath, LOTVariant &value);
+   void resetCurrentFrame();
 private:
    VMatrix                                    mScaleMatrix;
    VSize                                      mViewSize;

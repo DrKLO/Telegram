@@ -68,7 +68,7 @@ public final class DataSpec {
    * setting this flag may also enable more concurrent access to the data (e.g. reading one fragment
    * whilst writing another).
    */
-  public static final int FLAG_ALLOW_CACHE_FRAGMENTATION = 1 << 4; // 8
+  public static final int FLAG_ALLOW_CACHE_FRAGMENTATION = 1 << 3; // 8
 
   /**
    * The set of HTTP methods that are supported by ExoPlayer {@link HttpDataSource}s. One of {@link
@@ -119,14 +119,14 @@ public final class DataSpec {
   public final long length;
   /**
    * A key that uniquely identifies the original stream. Used for cache indexing. May be null if the
-   * {@link DataSpec} is not intended to be used in conjunction with a cache.
+   * data spec is not intended to be used in conjunction with a cache.
    */
   public final @Nullable String key;
   /** Request {@link Flags flags}. */
   public final @Flags int flags;
 
   /**
-   * Construct a {@link DataSpec} for the given uri and with {@link #key} set to null.
+   * Construct a data spec for the given uri and with {@link #key} set to null.
    *
    * @param uri {@link #uri}.
    */
@@ -135,7 +135,7 @@ public final class DataSpec {
   }
 
   /**
-   * Construct a {@link DataSpec} for the given uri and with {@link #key} set to null.
+   * Construct a data spec for the given uri and with {@link #key} set to null.
    *
    * @param uri {@link #uri}.
    * @param flags {@link #flags}.
@@ -145,7 +145,7 @@ public final class DataSpec {
   }
 
   /**
-   * Construct a {@link DataSpec} where {@link #position} equals {@link #absoluteStreamPosition}.
+   * Construct a data spec where {@link #position} equals {@link #absoluteStreamPosition}.
    *
    * @param uri {@link #uri}.
    * @param absoluteStreamPosition {@link #absoluteStreamPosition}, equal to {@link #position}.
@@ -157,7 +157,7 @@ public final class DataSpec {
   }
 
   /**
-   * Construct a {@link DataSpec} where {@link #position} equals {@link #absoluteStreamPosition}.
+   * Construct a data spec where {@link #position} equals {@link #absoluteStreamPosition}.
    *
    * @param uri {@link #uri}.
    * @param absoluteStreamPosition {@link #absoluteStreamPosition}, equal to {@link #position}.
@@ -171,8 +171,7 @@ public final class DataSpec {
   }
 
   /**
-   * Construct a {@link DataSpec} where {@link #position} may differ from
-   * {@link #absoluteStreamPosition}.
+   * Construct a data spec where {@link #position} may differ from {@link #absoluteStreamPosition}.
    *
    * @param uri {@link #uri}.
    * @param absoluteStreamPosition {@link #absoluteStreamPosition}.
@@ -192,7 +191,7 @@ public final class DataSpec {
   }
 
   /**
-   * Construct a {@link DataSpec} by inferring the {@link #httpMethod} based on the {@code postBody}
+   * Construct a data spec by inferring the {@link #httpMethod} based on the {@code postBody}
    * parameter. If postBody is non-null, then httpMethod is set to {@link #HTTP_METHOD_POST}. If
    * postBody is null, then httpMethod is set to {@link #HTTP_METHOD_GET}.
    *
@@ -225,8 +224,7 @@ public final class DataSpec {
   }
 
   /**
-   * Construct a {@link DataSpec} where {@link #position} may differ from {@link
-   * #absoluteStreamPosition}.
+   * Construct a data spec where {@link #position} may differ from {@link #absoluteStreamPosition}.
    *
    * @param uri {@link #uri}.
    * @param httpMethod {@link #httpMethod}.
@@ -317,22 +315,22 @@ public final class DataSpec {
   }
 
   /**
-   * Returns a {@link DataSpec} that represents a subrange of the data defined by this DataSpec. The
+   * Returns a data spec that represents a subrange of the data defined by this DataSpec. The
    * subrange includes data from the offset up to the end of this DataSpec.
    *
    * @param offset The offset of the subrange.
-   * @return A {@link DataSpec} that represents a subrange of the data defined by this DataSpec.
+   * @return A data spec that represents a subrange of the data defined by this DataSpec.
    */
   public DataSpec subrange(long offset) {
     return subrange(offset, length == C.LENGTH_UNSET ? C.LENGTH_UNSET : length - offset);
   }
 
   /**
-   * Returns a {@link DataSpec} that represents a subrange of the data defined by this DataSpec.
+   * Returns a data spec that represents a subrange of the data defined by this DataSpec.
    *
    * @param offset The offset of the subrange.
    * @param length The length of the subrange.
-   * @return A {@link DataSpec} that represents a subrange of the data defined by this DataSpec.
+   * @return A data spec that represents a subrange of the data defined by this DataSpec.
    */
   public DataSpec subrange(long offset, long length) {
     if (offset == 0 && this.length == length) {
@@ -351,10 +349,10 @@ public final class DataSpec {
   }
 
   /**
-   * Returns a copy of this {@link DataSpec} with the specified Uri.
+   * Returns a copy of this data spec with the specified Uri.
    *
    * @param uri The new source {@link Uri}.
-   * @return The copied {@link DataSpec} with the specified Uri.
+   * @return The copied data spec with the specified Uri.
    */
   public DataSpec withUri(Uri uri) {
     return new DataSpec(

@@ -66,7 +66,7 @@ extern "C" {
 #endif
 
 
-#if defined(OPENSSL_NO_THREADS)
+#if !defined(OPENSSL_THREADS)
 typedef struct crypto_mutex_st {
   char padding;  // Empty structs have different sizes in C and C++.
 } CRYPTO_MUTEX;

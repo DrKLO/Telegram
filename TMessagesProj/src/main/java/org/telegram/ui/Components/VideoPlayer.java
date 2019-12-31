@@ -214,7 +214,7 @@ public class VideoPlayer implements ExoPlayer.EventListener, SimpleExoPlayer.Vid
                     mediaSource = new DashMediaSource(uri, mediaDataSourceFactory, new DefaultDashChunkSource.Factory(mediaDataSourceFactory), mainHandler, null);
                     break;
                 case "hls":
-                    mediaSource = new HlsMediaSource(uri, mediaDataSourceFactory, mainHandler, null);
+                    mediaSource = new HlsMediaSource.Factory(mediaDataSourceFactory).createMediaSource(uri);
                     break;
                 case "ss":
                     mediaSource = new SsMediaSource(uri, mediaDataSourceFactory, new DefaultSsChunkSource.Factory(mediaDataSourceFactory), mainHandler, null);
@@ -247,7 +247,7 @@ public class VideoPlayer implements ExoPlayer.EventListener, SimpleExoPlayer.Vid
                 mediaSource = new DashMediaSource(uri, mediaDataSourceFactory, new DefaultDashChunkSource.Factory(mediaDataSourceFactory), mainHandler, null);
                 break;
             case "hls":
-                mediaSource = new HlsMediaSource(uri, mediaDataSourceFactory, mainHandler, null);
+                mediaSource = new HlsMediaSource.Factory(mediaDataSourceFactory).createMediaSource(uri);
                 break;
             case "ss":
                 mediaSource = new SsMediaSource(uri, mediaDataSourceFactory, new DefaultSsChunkSource.Factory(mediaDataSourceFactory), mainHandler, null);

@@ -74,6 +74,7 @@ public final class FlvExtractor implements Extractor {
 
   private ExtractorOutput extractorOutput;
   private @States int state;
+  private boolean outputFirstSample;
   private long mediaTagTimestampOffsetUs;
   private int bytesToNextTagHeader;
   private int tagType;
@@ -90,7 +91,6 @@ public final class FlvExtractor implements Extractor {
     tagData = new ParsableByteArray();
     metadataReader = new ScriptTagPayloadReader();
     state = STATE_READING_FLV_HEADER;
-    mediaTagTimestampOffsetUs = C.TIME_UNSET;
   }
 
   @Override
@@ -132,7 +132,7 @@ public final class FlvExtractor implements Extractor {
   @Override
   public void seek(long position, long timeUs) {
     state = STATE_READING_FLV_HEADER;
-    mediaTagTimestampOffsetUs = C.TIME_UNSET;
+    outputFirstSample = false;
     bytesToNextTagHeader = 0;
   }
 
@@ -253,14 +253,16 @@ public final class FlvExtractor implements Extractor {
    */
   private boolean readTagData(ExtractorInput input) throws IOException, InterruptedException {
     boolean wasConsumed = true;
+    boolean wasSampleOutput = false;
+    long timestampUs = getCurrentTimestampUs();
     if (tagType == TAG_TYPE_AUDIO && audioReader != null) {
       ensureReadyForMediaOutput();
-      audioReader.consume(prepareTagData(input), mediaTagTimestampOffsetUs + tagTimestampUs);
+      wasSampleOutput = audioReader.consume(prepareTagData(input), timestampUs);
     } else if (tagType == TAG_TYPE_VIDEO && videoReader != null) {
       ensureReadyForMediaOutput();
-      videoReader.consume(prepareTagData(input), mediaTagTimestampOffsetUs + tagTimestampUs);
+      wasSampleOutput = videoReader.consume(prepareTagData(input), timestampUs);
     } else if (tagType == TAG_TYPE_SCRIPT_DATA && !outputSeekMap) {
-      metadataReader.consume(prepareTagData(input), tagTimestampUs);
+      wasSampleOutput = metadataReader.consume(prepareTagData(input), timestampUs);
       long durationUs = metadataReader.getDurationUs();
       if (durationUs != C.TIME_UNSET) {
         extractorOutput.seekMap(new SeekMap.Unseekable(durationUs));
@@ -269,6 +271,11 @@ public final class FlvExtractor implements Extractor {
     } else {
       input.skipFully(tagDataSize);
       wasConsumed = false;
+    }
+    if (!outputFirstSample && wasSampleOutput) {
+      outputFirstSample = true;
+      mediaTagTimestampOffsetUs =
+          metadataReader.getDurationUs() == C.TIME_UNSET ? -tagTimestampUs : 0;
     }
     bytesToNextTagHeader = 4; // There's a 4 byte previous tag size before the next header.
     state = STATE_SKIPPING_TO_TAG_HEADER;
@@ -292,10 +299,11 @@ public final class FlvExtractor implements Extractor {
       extractorOutput.seekMap(new SeekMap.Unseekable(C.TIME_UNSET));
       outputSeekMap = true;
     }
-    if (mediaTagTimestampOffsetUs == C.TIME_UNSET) {
-      mediaTagTimestampOffsetUs =
-          metadataReader.getDurationUs() == C.TIME_UNSET ? -tagTimestampUs : 0;
-    }
   }
 
+  private long getCurrentTimestampUs() {
+    return outputFirstSample
+        ? (mediaTagTimestampOffsetUs + tagTimestampUs)
+        : (metadataReader.getDurationUs() == C.TIME_UNSET ? 0 : tagTimestampUs);
+  }
 }

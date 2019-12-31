@@ -161,6 +161,16 @@ public interface Renderer extends PlayerMessage.Target {
   boolean hasReadStreamToEnd();
 
   /**
+   * Returns the playback position up to which the renderer has read samples from the current {@link
+   * SampleStream}, in microseconds, or {@link C#TIME_END_OF_SOURCE} if the renderer has read the
+   * current {@link SampleStream} to the end.
+   *
+   * <p>This method may be called when the renderer is in the following states: {@link
+   * #STATE_ENABLED}, {@link #STATE_STARTED}.
+   */
+  long getReadingPositionUs();
+
+  /**
    * Signals to the renderer that the current {@link SampleStream} will be the final one supplied
    * before it is next disabled or reset.
    * <p>

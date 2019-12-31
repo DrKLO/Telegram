@@ -14,10 +14,12 @@ import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
 import android.content.Context;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
+
 import androidx.annotation.Keep;
 import android.view.KeyEvent;
 import android.view.View;
@@ -86,13 +88,14 @@ public class ActionBarPopupWindow extends PopupWindow {
         private ScrollView scrollView;
         protected LinearLayout linearLayout;
 
+        private int backgroundColor = Color.WHITE;
         protected Drawable backgroundDrawable;
 
         public ActionBarPopupWindowLayout(Context context) {
             super(context);
 
             backgroundDrawable = getResources().getDrawable(R.drawable.popup_fixed_alert2).mutate();
-            backgroundDrawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_actionBarDefaultSubmenuBackground), PorterDuff.Mode.MULTIPLY));
+            setBackgroundColor(Theme.getColor(Theme.key_actionBarDefaultSubmenuBackground));
 
             setPadding(AndroidUtilities.dp(8), AndroidUtilities.dp(8), AndroidUtilities.dp(8), AndroidUtilities.dp(8));
             setWillNotDraw(false);
@@ -104,7 +107,6 @@ public class ActionBarPopupWindow extends PopupWindow {
             } catch (Throwable e) {
                 FileLog.e(e);
             }
-
 
             linearLayout = new LinearLayout(context);
             linearLayout.setOrientation(LinearLayout.VERTICAL);
@@ -121,6 +123,16 @@ public class ActionBarPopupWindow extends PopupWindow {
 
         public void setDispatchKeyEventListener(OnDispatchKeyEventListener listener) {
             mOnDispatchKeyEventListener = listener;
+        }
+
+        public int getBackgroundColor() {
+            return backgroundColor;
+        }
+
+        public void setBackgroundColor(int color) {
+            if (backgroundColor != color) {
+                backgroundDrawable.setColorFilter(new PorterDuffColorFilter(backgroundColor = color, PorterDuff.Mode.MULTIPLY));
+            }
         }
 
         @Keep
@@ -177,6 +189,7 @@ public class ActionBarPopupWindow extends PopupWindow {
         }
 
         public void setBackgroundDrawable(Drawable drawable) {
+            backgroundColor = Color.WHITE;
             backgroundDrawable = drawable;
         }
 
@@ -235,9 +248,9 @@ public class ActionBarPopupWindow extends PopupWindow {
         protected void onDraw(Canvas canvas) {
             if (backgroundDrawable != null) {
                 backgroundDrawable.setAlpha(backAlpha);
-                int height = getMeasuredHeight();
                 if (showedFromBotton) {
-                    backgroundDrawable.setBounds(0, (int) (getMeasuredHeight() * (1.0f - backScaleY)), (int) (getMeasuredWidth() * backScaleX), getMeasuredHeight());
+                    final int height = getMeasuredHeight();
+                    backgroundDrawable.setBounds(0, (int) (height * (1.0f - backScaleY)), (int) (getMeasuredWidth() * backScaleX), height);
                 } else {
                     backgroundDrawable.setBounds(0, 0, (int) (getMeasuredWidth() * backScaleX), (int) (getMeasuredHeight() * backScaleY));
                 }
@@ -462,9 +475,11 @@ public class ActionBarPopupWindow extends PopupWindow {
                 windowAnimatorSet.cancel();
             }
             ActionBarPopupWindowLayout content = (ActionBarPopupWindowLayout) getContentView();
-            if (content.itemAnimators != null && content.itemAnimators.isEmpty()) {
+            if (content.itemAnimators != null && !content.itemAnimators.isEmpty()) {
                 for (int a = 0, N = content.itemAnimators.size(); a < N; a++) {
-                    content.itemAnimators.get(a).cancel();
+                    AnimatorSet animatorSet = content.itemAnimators.get(a);
+                    animatorSet.removeAllListeners();
+                    animatorSet.cancel();
                 }
                 content.itemAnimators.clear();
             }

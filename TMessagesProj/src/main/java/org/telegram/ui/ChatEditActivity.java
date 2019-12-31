@@ -453,7 +453,7 @@ public class ChatEditActivity extends BaseFragment implements ImageUpdater.Image
         nameTextView.setEnabled(ChatObject.canChangeChatInfo(currentChat));
         nameTextView.setFocusable(nameTextView.isEnabled());
         InputFilter[] inputFilters = new InputFilter[1];
-        inputFilters[0] = new InputFilter.LengthFilter(100);
+        inputFilters[0] = new InputFilter.LengthFilter(128);
         nameTextView.setFilters(inputFilters);
         frameLayout.addView(nameTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL, LocaleController.isRTL ? 5 : 96, 0, LocaleController.isRTL ? 96 : 5, 0));
 
@@ -884,6 +884,10 @@ public class ChatEditActivity extends BaseFragment implements ImageUpdater.Image
         donePressed = true;
         if (!ChatObject.isChannel(currentChat) && !historyHidden) {
             MessagesController.getInstance(currentAccount).convertToMegaGroup(getParentActivity(), chatId, this, param -> {
+                if (param == 0) {
+                    donePressed = false;
+                    return;
+                }
                 chatId = param;
                 currentChat = MessagesController.getInstance(currentAccount).getChat(param);
                 donePressed = false;

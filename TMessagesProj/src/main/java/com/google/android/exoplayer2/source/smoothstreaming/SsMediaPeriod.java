@@ -126,6 +126,7 @@ import java.util.List;
           stream.release();
           streams[i] = null;
         } else {
+          stream.getChunkSource().updateTrackSelection(selections[i]);
           sampleStreamsList.add(stream);
         }
       }
@@ -144,11 +145,14 @@ import java.util.List;
   }
 
   @Override
-  public List<StreamKey> getStreamKeys(TrackSelection trackSelection) {
-    List<StreamKey> streamKeys = new ArrayList<>(trackSelection.length());
-    int streamElementIndex = trackGroups.indexOf(trackSelection.getTrackGroup());
-    for (int i = 0; i < trackSelection.length(); i++) {
-      streamKeys.add(new StreamKey(streamElementIndex, trackSelection.getIndexInTrackGroup(i)));
+  public List<StreamKey> getStreamKeys(List<TrackSelection> trackSelections) {
+    List<StreamKey> streamKeys = new ArrayList<>();
+    for (int selectionIndex = 0; selectionIndex < trackSelections.size(); selectionIndex++) {
+      TrackSelection trackSelection = trackSelections.get(selectionIndex);
+      int streamElementIndex = trackGroups.indexOf(trackSelection.getTrackGroup());
+      for (int i = 0; i < trackSelection.length(); i++) {
+        streamKeys.add(new StreamKey(streamElementIndex, trackSelection.getIndexInTrackGroup(i)));
+      }
     }
     return streamKeys;
   }

@@ -17,6 +17,8 @@ import android.animation.ObjectAnimator;
 import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.app.Activity;
+import android.app.KeyguardManager;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -60,7 +62,6 @@ import android.view.accessibility.AccessibilityManager;
 import android.view.animation.DecelerateInterpolator;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
-import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -80,6 +81,7 @@ import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SendMessagesHelper;
+import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.messenger.voip.EncryptionKeyEmojifier;
@@ -94,6 +96,7 @@ import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.CorrectlyMeasuringTextView;
 import org.telegram.ui.Components.CubicBezierInterpolator;
+import org.telegram.ui.Components.EditTextBoldCursor;
 import org.telegram.ui.Components.IdenticonDrawable;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.voip.CallSwipeView;
@@ -274,6 +277,17 @@ public class VoIPActivity extends Activity implements VoIPService.StateListener,
         });
         chatBtn.setOnClickListener(v -> {
             if (isIncomingWaiting) {
+                if (SharedConfig.passcodeHash.length() > 0) {
+                    return;
+                }
+                try {
+                    KeyguardManager myKM = (KeyguardManager) ApplicationLoader.applicationContext.getSystemService(Context.KEYGUARD_SERVICE);
+                    if (myKM.inKeyguardRestrictedInputMode()) {
+                        return;
+                    }
+                } catch (Exception ignore) {
+                    return;
+                }
                 showMessagesSheet();
                 return;
             }
@@ -573,14 +587,14 @@ public class VoIPActivity extends Activity implements VoIPService.StateListener,
         wrap.addView(micToggle = mic, LayoutHelper.createFrame(38, 38, Gravity.CENTER_HORIZONTAL | Gravity.BOTTOM, 0, 0, 0, 10));
         buttons.addView(wrap, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1f));
 
-        ImageView chat = new ImageView(this);
+        chatBtn = new ImageView(this);
         Drawable chatIcon = getResources().getDrawable(R.drawable.ic_chat_bubble_white_24dp).mutate();
         chatIcon.setAlpha(204);
-        chat.setImageDrawable(chatIcon);
-        chat.setScaleType(ImageView.ScaleType.CENTER);
-        chat.setContentDescription(LocaleController.getString("AccDescrOpenChat", R.string.AccDescrOpenChat));
+        chatBtn.setImageDrawable(chatIcon);
+        chatBtn.setScaleType(ImageView.ScaleType.CENTER);
+        chatBtn.setContentDescription(LocaleController.getString("AccDescrOpenChat", R.string.AccDescrOpenChat));
         wrap = new FrameLayout(this);
-        wrap.addView(chatBtn = chat, LayoutHelper.createFrame(38, 38, Gravity.CENTER_HORIZONTAL | Gravity.BOTTOM, 0, 0, 0, 10));
+        wrap.addView(chatBtn, LayoutHelper.createFrame(38, 38, Gravity.CENTER_HORIZONTAL | Gravity.BOTTOM, 0, 0, 0, 10));
         buttons.addView(wrap, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1f));
 
         /*ImageView addMember=new ImageView(this);
@@ -987,8 +1001,7 @@ public class VoIPActivity extends Activity implements VoIPService.StateListener,
                     return;
                 }
                 if (callState == VoIPService.STATE_ESTABLISHED || callState == VoIPService.STATE_RECONNECTING) {
-                    long duration = VoIPService.getSharedInstance().getCallDuration() / 1000;
-                    durationText.setText(duration > 3600 ? String.format("%d:%02d:%02d", duration / 3600, duration % 3600 / 60, duration % 60) : String.format("%d:%02d", duration / 60, duration % 60));
+                    durationText.setText(AndroidUtilities.formatShortDuration((int) (VoIPService.getSharedInstance().getCallDuration() / 1000)));
                     durationText.postDelayed(this, 500);
                 }
             }
@@ -1559,7 +1572,7 @@ public class VoIPActivity extends Activity implements VoIPService.StateListener,
                 prefs.getString("quick_reply_msg4", LocaleController.getString("QuickReplyDefault4", R.string.QuickReplyDefault4))};
         LinearLayout sheetView = new LinearLayout(this);
         sheetView.setOrientation(LinearLayout.VERTICAL);
-        final BottomSheet sheet = new BottomSheet(this, true, 0);
+        final BottomSheet sheet = new BottomSheet(this, true);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             getWindow().setNavigationBarColor(0xff2b2b2b);
             sheet.setOnDismissListener(dialog -> getWindow().setNavigationBarColor(0));
@@ -1584,7 +1597,7 @@ public class VoIPActivity extends Activity implements VoIPService.StateListener,
         customWrap.addView(cell);
 
         final FrameLayout editor = new FrameLayout(this);
-        final EditText field = new EditText(this);
+        final EditTextBoldCursor field = new EditTextBoldCursor(this);
         field.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
         field.setTextColor(0xFFFFFFFF);
         field.setHintTextColor(DarkTheme.getColor(Theme.key_chat_messagePanelHint));

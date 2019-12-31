@@ -70,33 +70,41 @@ public class MaxFileSizeCell extends FrameLayout {
             }
         };
         seekBarView.setReportChanges(true);
-        seekBarView.setDelegate(progress -> {
-            int size = 500 * 1024;
-            if (progress <= 0.25f) {
-                size += 524 * 1024 * (progress / 0.25f);
-            } else {
-                progress -= 0.25f;
-                size += 524 * 1024;
-
-                if (progress < 0.25f) {
-                    size += 9 * 1024 * 1024 * (progress / 0.25f);
+        seekBarView.setDelegate(new SeekBarView.SeekBarViewDelegate() {
+            @Override
+            public void onSeekBarDrag(boolean stop, float progress) {
+                int size = 500 * 1024;
+                if (progress <= 0.25f) {
+                    size += 524 * 1024 * (progress / 0.25f);
                 } else {
                     progress -= 0.25f;
-                    size += 9 * 1024 * 1024;
+                    size += 524 * 1024;
 
-                    if (progress <= 0.25f) {
-                        size += 90 * 1024 * 1024 * (progress / 0.25f);
+                    if (progress < 0.25f) {
+                        size += 9 * 1024 * 1024 * (progress / 0.25f);
                     } else {
                         progress -= 0.25f;
-                        size += 90 * 1024 * 1024;
+                        size += 9 * 1024 * 1024;
 
-                        size += 1436 * 1024 * 1024 * (progress / 0.25f);
+                        if (progress <= 0.25f) {
+                            size += 90 * 1024 * 1024 * (progress / 0.25f);
+                        } else {
+                            progress -= 0.25f;
+                            size += 90 * 1024 * 1024;
+
+                            size += 1436 * 1024 * 1024 * (progress / 0.25f);
+                        }
                     }
                 }
+                sizeTextView.setText(LocaleController.formatString("AutodownloadSizeLimitUpTo", R.string.AutodownloadSizeLimitUpTo, AndroidUtilities.formatFileSize(size)));
+                currentSize = size;
+                didChangedSizeValue(size);
             }
-            sizeTextView.setText(LocaleController.formatString("AutodownloadSizeLimitUpTo", R.string.AutodownloadSizeLimitUpTo, AndroidUtilities.formatFileSize(size)));
-            currentSize = size;
-            didChangedSizeValue(size);
+
+            @Override
+            public void onSeekBarPressed(boolean pressed) {
+
+            }
         });
         addView(seekBarView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 30, Gravity.TOP | Gravity.LEFT, 10, 40, 10, 0));
     }

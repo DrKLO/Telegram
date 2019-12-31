@@ -187,6 +187,12 @@ public class GcmPushListenerService extends FirebaseMessagingService {
                                     MessagesController.getInstance(accountFinal).performLogout(0);
                                 }
                             });
+                            countDownLatch.countDown();
+                            return;
+                        }
+                        case "GEO_LIVE_PENDING": {
+                            Utilities.stageQueue.postRunnable(() -> LocationController.getInstance(accountFinal).setNewLocationEndWatchTime());
+                            countDownLatch.countDown();
                             return;
                         }
                     }
@@ -225,6 +231,7 @@ public class GcmPushListenerService extends FirebaseMessagingService {
                     if (dialog_id == 0 && "ENCRYPTED_MESSAGE".equals(loc_key)) {
                         dialog_id = -(1L << 32);
                     }
+                    boolean canRelease = true;
                     if (dialog_id != 0) {
                         if ("READ_HISTORY".equals(loc_key)) {
                             int max_id = custom.getInt("max_id");
@@ -250,7 +257,6 @@ public class GcmPushListenerService extends FirebaseMessagingService {
                                 updates.add(update);
                             }
                             MessagesController.getInstance(accountFinal).processUpdateArray(updates, null, null, false, 0);
-                            countDownLatch.countDown();
                         } else if ("MESSAGE_DELETED".equals(loc_key)) {
                             String messages = custom.getString("messages");
                             String[] messagesArgs = messages.split(",");
@@ -263,6 +269,9 @@ public class GcmPushListenerService extends FirebaseMessagingService {
                             NotificationsController.getInstance(currentAccount).removeDeletedMessagesFromNotifications(deletedMessages);
 
                             MessagesController.getInstance(currentAccount).deleteMessagesByPush(dialog_id, ids, channel_id);
+                            if (BuildVars.LOGS_ENABLED) {
+                                FileLog.d("GCM received " + loc_key + " for dialogId = " + dialog_id + " mids = " + TextUtils.join(",", ids));
+                            }
                         } else if (!TextUtils.isEmpty(loc_key)) {
                             int msg_id;
                             if (custom.has("msg_id")) {
@@ -881,15 +890,15 @@ public class GcmPushListenerService extends FirebaseMessagingService {
 
                                     MessageObject messageObject = new MessageObject(currentAccount, messageOwner, messageText, name, userName, localMessage, channel, edited);
                                     ArrayList<MessageObject> arrayList = new ArrayList<>();
-                                    arrayList.add(messageObject);//TODO
+                                    arrayList.add(messageObject);
+                                    canRelease = false;
                                     NotificationsController.getInstance(currentAccount).processNewMessages(arrayList, true, true, countDownLatch);
-                                } else {
-                                    countDownLatch.countDown();
                                 }
-                            } else {
-                                countDownLatch.countDown();
                             }
                         }
+                    }
+                    if (canRelease) {
+                        countDownLatch.countDown();
                     }
 
                     ConnectionsManager.onInternalPushReceived(currentAccount);

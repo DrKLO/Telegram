@@ -58,7 +58,7 @@ public class WallpaperUpdater {
 
     public void showAlert(final boolean fromTheme) {
         BottomSheet.Builder builder = new BottomSheet.Builder(parentActivity);
-        builder.setTitle(LocaleController.getString("ChoosePhoto", R.string.ChoosePhoto));
+        builder.setTitle(LocaleController.getString("ChoosePhoto", R.string.ChoosePhoto), true);
 
         CharSequence[] items;
         int[] icons;

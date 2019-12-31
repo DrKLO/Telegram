@@ -22,19 +22,49 @@
 #include <openssl/cpu.h>
 
 #include "../internal.h"
+#include "internal.h"
 
 
 #define U8TO32_LITTLE(p)                              \
   (((uint32_t)((p)[0])) | ((uint32_t)((p)[1]) << 8) | \
    ((uint32_t)((p)[2]) << 16) | ((uint32_t)((p)[3]) << 24))
 
-#if !defined(OPENSSL_NO_ASM) &&                         \
-    (defined(OPENSSL_X86) || defined(OPENSSL_X86_64) || \
-     defined(OPENSSL_ARM) || defined(OPENSSL_AARCH64))
+// sigma contains the ChaCha constants, which happen to be an ASCII string.
+static const uint8_t sigma[16] = { 'e', 'x', 'p', 'a', 'n', 'd', ' ', '3',
+                                   '2', '-', 'b', 'y', 't', 'e', ' ', 'k' };
 
-// ChaCha20_ctr32 is defined in asm/chacha-*.pl.
-void ChaCha20_ctr32(uint8_t *out, const uint8_t *in, size_t in_len,
-                    const uint32_t key[8], const uint32_t counter[4]);
+#define ROTATE(v, n) (((v) << (n)) | ((v) >> (32 - (n))))
+
+// QUARTERROUND updates a, b, c, d with a ChaCha "quarter" round.
+#define QUARTERROUND(a, b, c, d)                \
+  x[a] += x[b]; x[d] = ROTATE(x[d] ^ x[a], 16); \
+  x[c] += x[d]; x[b] = ROTATE(x[b] ^ x[c], 12); \
+  x[a] += x[b]; x[d] = ROTATE(x[d] ^ x[a],  8); \
+  x[c] += x[d]; x[b] = ROTATE(x[b] ^ x[c],  7);
+
+void CRYPTO_hchacha20(uint8_t out[32], const uint8_t key[32],
+                      const uint8_t nonce[16]) {
+  uint32_t x[16];
+  OPENSSL_memcpy(x, sigma, sizeof(sigma));
+  OPENSSL_memcpy(&x[4], key, 32);
+  OPENSSL_memcpy(&x[12], nonce, 16);
+
+  for (size_t i = 0; i < 20; i += 2) {
+    QUARTERROUND(0, 4, 8, 12)
+    QUARTERROUND(1, 5, 9, 13)
+    QUARTERROUND(2, 6, 10, 14)
+    QUARTERROUND(3, 7, 11, 15)
+    QUARTERROUND(0, 5, 10, 15)
+    QUARTERROUND(1, 6, 11, 12)
+    QUARTERROUND(2, 7, 8, 13)
+    QUARTERROUND(3, 4, 9, 14)
+  }
+
+  OPENSSL_memcpy(out, &x[0], sizeof(uint32_t) * 4);
+  OPENSSL_memcpy(&out[16], &x[12], sizeof(uint32_t) * 4);
+}
+
+#if defined(CHACHA20_ASM)
 
 void CRYPTO_chacha_20(uint8_t *out, const uint8_t *in, size_t in_len,
                       const uint8_t key[32], const uint8_t nonce[12],
@@ -69,12 +99,6 @@ void CRYPTO_chacha_20(uint8_t *out, const uint8_t *in, size_t in_len,
 
 #else
 
-// sigma contains the ChaCha constants, which happen to be an ASCII string.
-static const uint8_t sigma[16] = { 'e', 'x', 'p', 'a', 'n', 'd', ' ', '3',
-                                   '2', '-', 'b', 'y', 't', 'e', ' ', 'k' };
-
-#define ROTATE(v, n) (((v) << (n)) | ((v) >> (32 - (n))))
-
 #define U32TO8_LITTLE(p, v)    \
   {                            \
     (p)[0] = (v >> 0) & 0xff;  \
@@ -82,13 +106,6 @@ static const uint8_t sigma[16] = { 'e', 'x', 'p', 'a', 'n', 'd', ' ', '3',
     (p)[2] = (v >> 16) & 0xff; \
     (p)[3] = (v >> 24) & 0xff; \
   }
-
-// QUARTERROUND updates a, b, c, d with a ChaCha "quarter" round.
-#define QUARTERROUND(a, b, c, d)                \
-  x[a] += x[b]; x[d] = ROTATE(x[d] ^ x[a], 16); \
-  x[c] += x[d]; x[b] = ROTATE(x[b] ^ x[c], 12); \
-  x[a] += x[b]; x[d] = ROTATE(x[d] ^ x[a],  8); \
-  x[c] += x[d]; x[b] = ROTATE(x[b] ^ x[c],  7);
 
 // chacha_core performs 20 rounds of ChaCha on the input words in
 // |input| and writes the 64 output bytes to |output|.

@@ -56,23 +56,16 @@
 
 #include <openssl/asn1.h>
 
+#include <limits.h>
 #include <string.h>
 
+#include <openssl/bytestring.h>
 #include <openssl/err.h>
 #include <openssl/mem.h>
 
 #include "asn1_locl.h"
+#include "../bytestring/internal.h"
 
-static int traverse_string(const unsigned char *p, int len, int inform,
-                           int (*rfunc) (uint32_t value, void *in),
-                           void *arg);
-static int in_utf8(uint32_t value, void *arg);
-static int out_utf8(uint32_t value, void *arg);
-static int type_str(uint32_t value, void *arg);
-static int cpy_asc(uint32_t value, void *arg);
-static int cpy_bmp(uint32_t value, void *arg);
-static int cpy_univ(uint32_t value, void *arg);
-static int cpy_utf8(uint32_t value, void *arg);
 static int is_printable(uint32_t value);
 
 /*
@@ -90,55 +83,45 @@ int ASN1_mbstring_copy(ASN1_STRING **out, const unsigned char *in, int len,
     return ASN1_mbstring_ncopy(out, in, len, inform, mask, 0, 0);
 }
 
+OPENSSL_DECLARE_ERROR_REASON(ASN1, INVALID_BMPSTRING)
+OPENSSL_DECLARE_ERROR_REASON(ASN1, INVALID_UNIVERSALSTRING)
+OPENSSL_DECLARE_ERROR_REASON(ASN1, INVALID_UTF8STRING)
+
 int ASN1_mbstring_ncopy(ASN1_STRING **out, const unsigned char *in, int len,
                         int inform, unsigned long mask,
                         long minsize, long maxsize)
 {
     int str_type;
-    int ret;
     char free_out;
-    int outform, outlen = 0;
     ASN1_STRING *dest;
-    unsigned char *p;
-    int nchar;
+    size_t nchar = 0;
     char strbuf[32];
-    int (*cpyfunc) (uint32_t, void *) = NULL;
     if (len == -1)
         len = strlen((const char *)in);
     if (!mask)
         mask = DIRSTRING_TYPE;
 
-    /* First do a string check and work out the number of characters */
+    int (*decode_func)(CBS *, uint32_t*);
+    int error;
     switch (inform) {
-
     case MBSTRING_BMP:
-        if (len & 1) {
-            OPENSSL_PUT_ERROR(ASN1, ASN1_R_INVALID_BMPSTRING_LENGTH);
-            return -1;
-        }
-        nchar = len >> 1;
+        decode_func = cbs_get_ucs2_be;
+        error = ASN1_R_INVALID_BMPSTRING;
         break;
 
     case MBSTRING_UNIV:
-        if (len & 3) {
-            OPENSSL_PUT_ERROR(ASN1, ASN1_R_INVALID_UNIVERSALSTRING_LENGTH);
-            return -1;
-        }
-        nchar = len >> 2;
+        decode_func = cbs_get_utf32_be;
+        error = ASN1_R_INVALID_UNIVERSALSTRING;
         break;
 
     case MBSTRING_UTF8:
-        nchar = 0;
-        /* This counts the characters and does utf8 syntax checking */
-        ret = traverse_string(in, len, MBSTRING_UTF8, in_utf8, &nchar);
-        if (ret < 0) {
-            OPENSSL_PUT_ERROR(ASN1, ASN1_R_INVALID_UTF8STRING);
-            return -1;
-        }
+        decode_func = cbs_get_utf8;
+        error = ASN1_R_INVALID_UTF8STRING;
         break;
 
     case MBSTRING_ASC:
-        nchar = len;
+        decode_func = cbs_get_latin1;
+        error = ERR_R_INTERNAL_ERROR;  // Latin-1 inputs are never invalid.
         break;
 
     default:
@@ -146,44 +129,92 @@ int ASN1_mbstring_ncopy(ASN1_STRING **out, const unsigned char *in, int len,
         return -1;
     }
 
-    if ((minsize > 0) && (nchar < minsize)) {
+    /* Check |minsize| and |maxsize| and work out the minimal type, if any. */
+    CBS cbs;
+    CBS_init(&cbs, in, len);
+    size_t utf8_len = 0;
+    while (CBS_len(&cbs) != 0) {
+        uint32_t c;
+        if (!decode_func(&cbs, &c)) {
+            OPENSSL_PUT_ERROR(ASN1, error);
+            return -1;
+        }
+        if (nchar == 0 &&
+            (inform == MBSTRING_BMP || inform == MBSTRING_UNIV) &&
+            c == 0xfeff) {
+            /* Reject byte-order mark. We could drop it but that would mean
+             * adding ambiguity around whether a BOM was included or not when
+             * matching strings.
+             *
+             * For a little-endian UCS-2 string, the BOM will appear as 0xfffe
+             * and will be rejected as noncharacter, below. */
+            OPENSSL_PUT_ERROR(ASN1, ASN1_R_ILLEGAL_CHARACTERS);
+            return -1;
+        }
+
+        /* Update which output formats are still possible. */
+        if ((mask & B_ASN1_PRINTABLESTRING) && !is_printable(c)) {
+            mask &= ~B_ASN1_PRINTABLESTRING;
+        }
+        if ((mask & B_ASN1_IA5STRING) && (c > 127)) {
+            mask &= ~B_ASN1_IA5STRING;
+        }
+        if ((mask & B_ASN1_T61STRING) && (c > 0xff)) {
+            mask &= ~B_ASN1_T61STRING;
+        }
+        if ((mask & B_ASN1_BMPSTRING) && (c > 0xffff)) {
+            mask &= ~B_ASN1_BMPSTRING;
+        }
+        if (!mask) {
+            OPENSSL_PUT_ERROR(ASN1, ASN1_R_ILLEGAL_CHARACTERS);
+            return -1;
+        }
+
+        nchar++;
+        utf8_len += cbb_get_utf8_len(c);
+    }
+
+    if (minsize > 0 && nchar < (size_t)minsize) {
         OPENSSL_PUT_ERROR(ASN1, ASN1_R_STRING_TOO_SHORT);
         BIO_snprintf(strbuf, sizeof strbuf, "%ld", minsize);
         ERR_add_error_data(2, "minsize=", strbuf);
         return -1;
     }
 
-    if ((maxsize > 0) && (nchar > maxsize)) {
+    if (maxsize > 0 && nchar > (size_t)maxsize) {
         OPENSSL_PUT_ERROR(ASN1, ASN1_R_STRING_TOO_LONG);
         BIO_snprintf(strbuf, sizeof strbuf, "%ld", maxsize);
         ERR_add_error_data(2, "maxsize=", strbuf);
         return -1;
     }
 
-    /* Now work out minimal type (if any) */
-    if (traverse_string(in, len, inform, type_str, &mask) < 0) {
-        OPENSSL_PUT_ERROR(ASN1, ASN1_R_ILLEGAL_CHARACTERS);
-        return -1;
-    }
-
     /* Now work out output format and string type */
-    outform = MBSTRING_ASC;
-    if (mask & B_ASN1_PRINTABLESTRING)
+    int (*encode_func)(CBB *, uint32_t) = cbb_add_latin1;
+    size_t size_estimate = nchar;
+    int outform = MBSTRING_ASC;
+    if (mask & B_ASN1_PRINTABLESTRING) {
         str_type = V_ASN1_PRINTABLESTRING;
-    else if (mask & B_ASN1_IA5STRING)
+    } else if (mask & B_ASN1_IA5STRING) {
         str_type = V_ASN1_IA5STRING;
-    else if (mask & B_ASN1_T61STRING)
+    } else if (mask & B_ASN1_T61STRING) {
         str_type = V_ASN1_T61STRING;
-    else if (mask & B_ASN1_BMPSTRING) {
+    } else if (mask & B_ASN1_BMPSTRING) {
         str_type = V_ASN1_BMPSTRING;
         outform = MBSTRING_BMP;
+        encode_func = cbb_add_ucs2_be;
+        size_estimate = 2 * nchar;
     } else if (mask & B_ASN1_UNIVERSALSTRING) {
         str_type = V_ASN1_UNIVERSALSTRING;
+        encode_func = cbb_add_utf32_be;
+        size_estimate = 4 * nchar;
         outform = MBSTRING_UNIV;
     } else {
         str_type = V_ASN1_UTF8STRING;
         outform = MBSTRING_UTF8;
+        encode_func = cbb_add_utf8;
+        size_estimate = utf8_len;
     }
+
     if (!out)
         return str_type;
     if (*out) {
@@ -204,6 +235,7 @@ int ASN1_mbstring_ncopy(ASN1_STRING **out, const unsigned char *in, int len,
         }
         *out = dest;
     }
+
     /* If both the same type just copy across */
     if (inform == outform) {
         if (!ASN1_STRING_set(dest, in, len)) {
@@ -213,179 +245,41 @@ int ASN1_mbstring_ncopy(ASN1_STRING **out, const unsigned char *in, int len,
         return str_type;
     }
 
-    /* Work out how much space the destination will need */
-    switch (outform) {
-    case MBSTRING_ASC:
-        outlen = nchar;
-        cpyfunc = cpy_asc;
-        break;
-
-    case MBSTRING_BMP:
-        outlen = nchar << 1;
-        cpyfunc = cpy_bmp;
-        break;
-
-    case MBSTRING_UNIV:
-        outlen = nchar << 2;
-        cpyfunc = cpy_univ;
-        break;
-
-    case MBSTRING_UTF8:
-        outlen = 0;
-        traverse_string(in, len, inform, out_utf8, &outlen);
-        cpyfunc = cpy_utf8;
-        break;
-    }
-    if (!(p = OPENSSL_malloc(outlen + 1))) {
-        if (free_out)
-            ASN1_STRING_free(dest);
+    CBB cbb;
+    if (!CBB_init(&cbb, size_estimate + 1)) {
         OPENSSL_PUT_ERROR(ASN1, ERR_R_MALLOC_FAILURE);
-        return -1;
+        goto err;
     }
-    dest->length = outlen;
-    dest->data = p;
-    p[outlen] = 0;
-    traverse_string(in, len, inform, cpyfunc, &p);
+    CBS_init(&cbs, in, len);
+    while (CBS_len(&cbs) != 0) {
+        uint32_t c;
+        if (!decode_func(&cbs, &c) ||
+            !encode_func(&cbb, c)) {
+            OPENSSL_PUT_ERROR(ASN1, ERR_R_INTERNAL_ERROR);
+            goto err;
+        }
+    }
+    uint8_t *data = NULL;
+    size_t data_len;
+    if (/* OpenSSL historically NUL-terminated this value with a single byte,
+         * even for |MBSTRING_BMP| and |MBSTRING_UNIV|. */
+        !CBB_add_u8(&cbb, 0) ||
+        !CBB_finish(&cbb, &data, &data_len) ||
+        data_len < 1 ||
+        data_len > INT_MAX) {
+        OPENSSL_PUT_ERROR(ASN1, ERR_R_INTERNAL_ERROR);
+        OPENSSL_free(data);
+        goto err;
+    }
+    dest->length = (int)(data_len - 1);
+    dest->data = data;
     return str_type;
-}
 
-/*
- * This function traverses a string and passes the value of each character to
- * an optional function along with a void * argument.
- */
-
-static int traverse_string(const unsigned char *p, int len, int inform,
-                           int (*rfunc) (uint32_t value, void *in),
-                           void *arg)
-{
-    uint32_t value;
-    int ret;
-    while (len) {
-        if (inform == MBSTRING_ASC) {
-            value = *p++;
-            len--;
-        } else if (inform == MBSTRING_BMP) {
-            value = *p++ << 8;
-            value |= *p++;
-            len -= 2;
-        } else if (inform == MBSTRING_UNIV) {
-            value = ((uint32_t)*p++) << 24;
-            value |= ((uint32_t)*p++) << 16;
-            value |= *p++ << 8;
-            value |= *p++;
-            len -= 4;
-        } else {
-            ret = UTF8_getc(p, len, &value);
-            if (ret < 0)
-                return -1;
-            len -= ret;
-            p += ret;
-        }
-        if (rfunc) {
-            ret = rfunc(value, arg);
-            if (ret <= 0)
-                return ret;
-        }
-    }
-    return 1;
-}
-
-/* Various utility functions for traverse_string */
-
-/* Just count number of characters */
-
-static int in_utf8(uint32_t value, void *arg)
-{
-    int *nchar;
-    nchar = arg;
-    (*nchar)++;
-    return 1;
-}
-
-/* Determine size of output as a UTF8 String */
-
-static int out_utf8(uint32_t value, void *arg)
-{
-    int *outlen;
-    outlen = arg;
-    *outlen += UTF8_putc(NULL, -1, value);
-    return 1;
-}
-
-/*
- * Determine the "type" of a string: check each character against a supplied
- * "mask".
- */
-
-static int type_str(uint32_t value, void *arg)
-{
-    unsigned long types;
-    types = *((unsigned long *)arg);
-    if ((types & B_ASN1_PRINTABLESTRING) && !is_printable(value))
-        types &= ~B_ASN1_PRINTABLESTRING;
-    if ((types & B_ASN1_IA5STRING) && (value > 127))
-        types &= ~B_ASN1_IA5STRING;
-    if ((types & B_ASN1_T61STRING) && (value > 0xff))
-        types &= ~B_ASN1_T61STRING;
-    if ((types & B_ASN1_BMPSTRING) && (value > 0xffff))
-        types &= ~B_ASN1_BMPSTRING;
-    if (!types)
-        return -1;
-    *((unsigned long *)arg) = types;
-    return 1;
-}
-
-/* Copy one byte per character ASCII like strings */
-
-static int cpy_asc(uint32_t value, void *arg)
-{
-    unsigned char **p, *q;
-    p = arg;
-    q = *p;
-    *q = (unsigned char)value;
-    (*p)++;
-    return 1;
-}
-
-/* Copy two byte per character BMPStrings */
-
-static int cpy_bmp(uint32_t value, void *arg)
-{
-    unsigned char **p, *q;
-    p = arg;
-    q = *p;
-    *q++ = (unsigned char)((value >> 8) & 0xff);
-    *q = (unsigned char)(value & 0xff);
-    *p += 2;
-    return 1;
-}
-
-/* Copy four byte per character UniversalStrings */
-
-static int cpy_univ(uint32_t value, void *arg)
-{
-    unsigned char **p, *q;
-    p = arg;
-    q = *p;
-    *q++ = (unsigned char)((value >> 24) & 0xff);
-    *q++ = (unsigned char)((value >> 16) & 0xff);
-    *q++ = (unsigned char)((value >> 8) & 0xff);
-    *q = (unsigned char)(value & 0xff);
-    *p += 4;
-    return 1;
-}
-
-/* Copy to a UTF8String */
-
-static int cpy_utf8(uint32_t value, void *arg)
-{
-    unsigned char **p;
-    int ret;
-    p = arg;
-    /* We already know there is enough room so pass 0xff as the length */
-    ret = UTF8_putc(*p, 0xff, value);
-    *p += ret;
-    return 1;
+ err:
+    if (free_out)
+        ASN1_STRING_free(dest);
+    CBB_cleanup(&cbb);
+    return -1;
 }
 
 /* Return 1 if the character is permitted in a PrintableString */

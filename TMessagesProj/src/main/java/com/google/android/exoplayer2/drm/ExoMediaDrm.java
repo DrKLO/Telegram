@@ -80,7 +80,7 @@ public interface ExoMediaDrm<T extends ExoMediaCrypto> {
      */
     void onEvent(
         ExoMediaDrm<? extends T> mediaDrm,
-        byte[] sessionId,
+        @Nullable byte[] sessionId,
         int event,
         int extra,
         @Nullable byte[] data);
@@ -215,6 +215,7 @@ public interface ExoMediaDrm<T extends ExoMediaCrypto> {
       throws NotProvisionedException;
 
   /** @see MediaDrm#provideKeyResponse(byte[], byte[]) */
+  @Nullable
   byte[] provideKeyResponse(byte[] scope, byte[] response)
       throws NotProvisionedException, DeniedByServerException;
 

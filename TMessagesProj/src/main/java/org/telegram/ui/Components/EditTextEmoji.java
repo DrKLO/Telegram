@@ -3,6 +3,7 @@ package org.telegram.ui.Components;
 import android.content.Context;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
+import android.os.Build;
 import android.text.Editable;
 import android.text.InputFilter;
 import android.text.InputType;
@@ -127,12 +128,14 @@ public class EditTextEmoji extends FrameLayout implements NotificationCenter.Not
         emojiButton.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_chat_messagePanelIcons), PorterDuff.Mode.MULTIPLY));
         emojiButton.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
         if (style == STYLE_FRAGMENT) {
-            emojiButton.setPadding(0, 0, 0, AndroidUtilities.dp(7));
             emojiButton.setImageResource(R.drawable.smiles_tab_smiles);
-            addView(emojiButton, LayoutHelper.createFrame(48, 48, Gravity.CENTER_VERTICAL | (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT), 0, 0, 0, 0));
+            addView(emojiButton, LayoutHelper.createFrame(48, 48, Gravity.CENTER_VERTICAL | (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT), 0, 0, 0, 7));
         } else {
             emojiButton.setImageResource(R.drawable.input_smile);
             addView(emojiButton, LayoutHelper.createFrame(48, 48, Gravity.CENTER_VERTICAL | Gravity.LEFT, 0, 0, 0, 0));
+        }
+        if (Build.VERSION.SDK_INT >= 21) {
+            emojiButton.setBackgroundDrawable(Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector)));
         }
         emojiButton.setOnClickListener(view -> {
             if (!emojiButton.isEnabled()) {

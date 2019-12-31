@@ -241,7 +241,7 @@ public:
     {
         rlottie::FrameInfo info(frame);
         rlottie::Color col = data(prop).color()(info);
-        return LottieColor(col.r(), col.g(), col.b());
+        return LottieColor(col.r(), col.g(), col.b(), nullptr);
     }
     float opacity(rlottie::Property prop, int frame) const
     {

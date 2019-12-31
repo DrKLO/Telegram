@@ -977,6 +977,36 @@ public class LocaleController {
         return formatString(param, resourceId, plural);
     }
 
+    public static String formatPluralStringComma(String key, int plural) {
+        try {
+            if (key == null || key.length() == 0 || getInstance().currentPluralRules == null) {
+                return "LOC_ERR:" + key;
+            }
+            String param = getInstance().stringForQuantity(getInstance().currentPluralRules.quantityForNumber(plural));
+            param = key + "_" + param;
+            StringBuilder stringBuilder = new StringBuilder(String.format(Locale.US, "%d", plural));
+            for (int a = stringBuilder.length() - 3; a > 0; a -= 3) {
+                stringBuilder.insert(a, ',');
+            }
+
+            String value = BuildVars.USE_CLOUD_STRINGS ? getInstance().localeValues.get(param) : null;
+            if (value == null) {
+                int resourceId = ApplicationLoader.applicationContext.getResources().getIdentifier(param, "string", ApplicationLoader.applicationContext.getPackageName());
+                value = ApplicationLoader.applicationContext.getString(resourceId);
+            }
+            value = value.replace("%1$d", "%1$s");
+
+            if (getInstance().currentLocale != null) {
+                return String.format(getInstance().currentLocale, value, stringBuilder);
+            } else {
+                return String.format(value, stringBuilder);
+            }
+        } catch (Exception e) {
+            FileLog.e(e);
+            return "LOC_ERR: " + key;
+        }
+    }
+
     public static String formatString(String key, int res, Object... args) {
         try {
             String value = BuildVars.USE_CLOUD_STRINGS ? getInstance().localeValues.get(key) : null;

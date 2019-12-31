@@ -9,9 +9,10 @@
 package org.telegram.ui;
 
 import android.Manifest;
+import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
 import android.app.Activity;
 import android.app.ActivityManager;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
@@ -19,6 +20,8 @@ import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.database.Cursor;
 import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Point;
 import android.graphics.Shader;
 import android.graphics.drawable.BitmapDrawable;
@@ -27,6 +30,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Parcelable;
 import android.os.StatFs;
+import android.os.SystemClock;
 import android.provider.ContactsContract;
 import android.text.TextUtils;
 import android.view.ActionMode;
@@ -34,11 +38,13 @@ import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewAnimationUtils;
 import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.FrameLayout;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.Toast;
@@ -80,31 +86,34 @@ import org.telegram.ui.ActionBar.DrawerLayoutContainer;
 import org.telegram.ui.Cells.DrawerAddCell;
 import org.telegram.ui.Cells.DrawerUserCell;
 import org.telegram.ui.Cells.LanguageCell;
-import org.telegram.ui.Cells.ThemesHorizontalListCell;
 import org.telegram.ui.Components.AudioPlayerAlert;
 import org.telegram.ui.Components.AlertsCreator;
 import org.telegram.ui.Components.BlockingUpdateView;
+import org.telegram.ui.Components.ChatActivityEnterView;
+import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.EmbedBottomSheet;
 import org.telegram.ui.Components.JoinGroupAlert;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.PasscodeView;
+import org.telegram.ui.Components.PhonebookShareAlert;
 import org.telegram.ui.Components.PipRoundVideoView;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.SharingLocationsAlert;
+import org.telegram.ui.Components.SideMenultItemAnimator;
 import org.telegram.ui.Components.StickersAlert;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.TermsOfServiceView;
 import org.telegram.ui.Components.ThemeEditorView;
 import org.telegram.ui.Components.UpdateAppAlertDialog;
+import org.telegram.ui.Wallet.WalletActivity;
+import org.telegram.ui.Wallet.WalletCreateActivity;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import androidx.recyclerview.widget.DefaultItemAnimator;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
 public class LaunchActivity extends Activity implements ActionBarLayout.ActionBarLayoutDelegate, NotificationCenter.NotificationCenterDelegate, DialogsActivity.DialogsActivityDelegate {
@@ -127,6 +136,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
 
     private ActionMode visibleActionMode;
 
+    private ImageView themeSwitchImageView;
     private ActionBarLayout actionBarLayout;
     private ActionBarLayout layersActionBarLayout;
     private ActionBarLayout rightActionBarLayout;
@@ -157,8 +167,10 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
 
     private String loadingThemeFileName;
     private String loadingThemeWallpaperName;
+    private TLRPC.TL_wallPaper loadingThemeWallpaper;
     private Theme.ThemeInfo loadingThemeInfo;
     private TLRPC.TL_theme loadingTheme;
+    private boolean loadingThemeAccent;
     private AlertDialog loadingThemeProgressDialog;
 
     private Runnable lockRunnable;
@@ -236,19 +248,32 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
         }
         Theme.createChatResources(this, false);
         if (SharedConfig.passcodeHash.length() != 0 && SharedConfig.appLocked) {
-            SharedConfig.lastPauseTime = ConnectionsManager.getInstance(currentAccount).getCurrentTime();
+            SharedConfig.lastPauseTime = (int) (SystemClock.uptimeMillis() / 1000);
         }
 
-        int resourceId = getResources().getIdentifier("status_bar_height", "dimen", "android");
-        if (resourceId > 0) {
-            AndroidUtilities.statusBarHeight = getResources().getDimensionPixelSize(resourceId);
-        }
+        AndroidUtilities.fillStatusBarHeight(this);
+        actionBarLayout = new ActionBarLayout(this) {
+            @Override
+            public void setThemeAnimationValue(float value) {
+                super.setThemeAnimationValue(value);
+                if (ArticleViewer.hasInstance() && ArticleViewer.getInstance().isVisible()) {
+                    ArticleViewer.getInstance().updateThemeColors(value);
+                }
+                drawerLayoutContainer.setBehindKeyboardColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+            }
+        };
 
-        actionBarLayout = new ActionBarLayout(this);
+        FrameLayout frameLayout = new FrameLayout(this);
+        setContentView(frameLayout, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        if (Build.VERSION.SDK_INT >= 21) {
+            themeSwitchImageView = new ImageView(this);
+            themeSwitchImageView.setVisibility(View.GONE);
+            frameLayout.addView(themeSwitchImageView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+        }
 
         drawerLayoutContainer = new DrawerLayoutContainer(this);
         drawerLayoutContainer.setBehindKeyboardColor(Theme.getColor(Theme.key_windowBackgroundWhite));
-        setContentView(drawerLayoutContainer, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        frameLayout.addView(drawerLayoutContainer, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
 
         if (AndroidUtilities.isTablet()) {
             getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
@@ -382,10 +407,11 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
         }
 
         sideMenu = new RecyclerListView(this);
-        ((DefaultItemAnimator) sideMenu.getItemAnimator()).setDelayAnimations(false);
+        sideMenu.setItemAnimator(new SideMenultItemAnimator(sideMenu));
         sideMenu.setBackgroundColor(Theme.getColor(Theme.key_chats_menuBackground));
         sideMenu.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false));
-        sideMenu.setAdapter(drawerLayoutAdapter = new DrawerLayoutAdapter(this));
+        sideMenu.setAllowItemsInteractionDuringAnimation(false);
+        sideMenu.setAdapter(drawerLayoutAdapter = new DrawerLayoutAdapter(this, sideMenu.getItemAnimator()));
         drawerLayoutContainer.setDrawerLayout(sideMenu);
         FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) sideMenu.getLayoutParams();
         Point screenSize = AndroidUtilities.getRealScreenSize();
@@ -422,6 +448,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                     args.putBoolean("destroyAfterSelect", true);
                     args.putBoolean("createSecretChat", true);
                     args.putBoolean("allowBots", false);
+                    args.putBoolean("allowSelf", false);
                     presentFragment(new ContactsActivity(args));
                     drawerLayoutContainer.closeDrawer(false);
                 } else if (id == 4) {
@@ -442,7 +469,8 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                     presentFragment(new InviteContactsActivity());
                     drawerLayoutContainer.closeDrawer(false);
                 } else if (id == 8) {
-                    presentFragment(new SettingsActivity());
+                    SettingsActivity fragment = new SettingsActivity();
+                    presentFragment(fragment);
                     drawerLayoutContainer.closeDrawer(false);
                 } else if (id == 9) {
                     Browser.openUrl(LaunchActivity.this, LocaleController.getString("TelegramFaqUrl", R.string.TelegramFaqUrl));
@@ -454,6 +482,9 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                     Bundle args = new Bundle();
                     args.putInt("user_id", UserConfig.getInstance(currentAccount).getClientUserId());
                     presentFragment(new ChatActivity(args));
+                    drawerLayoutContainer.closeDrawer(false);
+                } else if (id == 12) {
+                    presentFragment(getCurrentWalletFragment(null));
                     drawerLayoutContainer.closeDrawer(false);
                 }
             }
@@ -480,10 +511,12 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
         NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.suggestedLangpack);
         NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.didSetNewTheme);
         NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.needSetDayNightTheme);
+        NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.needCheckSystemBarColors);
         NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.closeOtherAppActivities);
         NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.didSetPasscode);
         NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.didSetNewWallpapper);
         NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.notificationsCountUpdated);
+        NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.screenStateChanged);
 
         if (actionBarLayout.fragmentsStack.isEmpty()) {
             if (!UserConfig.getInstance(currentAccount).isClientActivated()) {
@@ -570,6 +603,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
             drawerLayoutContainer.setAllowOpenDrawer(allowOpen, false);
         }
         checkLayout();
+        checkSystemBarColors();
 
         handleIntent(getIntent(), false, savedInstanceState != null, false);
 
@@ -610,6 +644,22 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
             FileLog.e(e);
         }
         MediaController.getInstance().setBaseActivity(this, true);
+    }
+
+    private void checkSystemBarColors() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            int color = Theme.getColor(Theme.key_actionBarDefault, null, true);
+            AndroidUtilities.setLightStatusBar(getWindow(), color == Color.WHITE);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                final Window window = getWindow();
+                color = Theme.getColor(Theme.key_windowBackgroundGray, null, true);
+                if (window.getNavigationBarColor() != color) {
+                    window.setNavigationBarColor(color);
+                    final float brightness = AndroidUtilities.computePerceivedBrightness(color);
+                    AndroidUtilities.setLightNavigationBar(getWindow(), brightness >= 0.721f);
+                }
+            }
+        }
     }
 
     public void switchToAccount(int account, boolean removeAll) {
@@ -692,6 +742,33 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
             onFinish();
             finish();
         }
+    }
+
+    private BaseFragment getCurrentWalletFragment(String transferWalletUrl) {
+        BaseFragment fragment;
+        UserConfig userConfig = UserConfig.getInstance(currentAccount);
+        if (TextUtils.isEmpty(userConfig.tonEncryptedData)) {
+            if (!TextUtils.isEmpty(transferWalletUrl)) {
+                AlertDialog.Builder builder = new AlertDialog.Builder(this);
+                builder.setTitle(LocaleController.getString("Wallet", R.string.Wallet));
+                builder.setMessage(LocaleController.getString("WalletTonLinkNoWalletText", R.string.WalletTonLinkNoWalletText));
+                builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+                builder.setPositiveButton(LocaleController.getString("WalletTonLinkNoWalletCreateWallet", R.string.WalletTonLinkNoWalletCreateWallet), (dialog, which) -> presentFragment(new WalletCreateActivity(WalletCreateActivity.TYPE_CREATE)));
+                builder.show();
+                fragment = null;
+            } else {
+                fragment = new WalletCreateActivity(WalletCreateActivity.TYPE_CREATE);
+            }
+        } else if (!userConfig.tonCreationFinished) {
+            WalletCreateActivity activity = new WalletCreateActivity(WalletCreateActivity.TYPE_KEY_GENERATED);
+            activity.setResumeCreation();
+            fragment = activity;
+        } else if (!TextUtils.isEmpty(transferWalletUrl)) {
+            fragment = new WalletActivity(transferWalletUrl);
+        } else {
+            fragment = new WalletActivity();
+        }
+        return fragment;
     }
 
     public int getMainFragmentsCount() {
@@ -794,6 +871,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
     private void showTosActivity(int account, TLRPC.TL_help_termsOfService tos) {
         if (termsOfServiceView == null) {
             termsOfServiceView = new TermsOfServiceView(this);
+            termsOfServiceView.setAlpha(0f);
             drawerLayoutContainer.addView(termsOfServiceView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
             termsOfServiceView.setDelegate(new TermsOfServiceView.TermsOfServiceViewDelegate() {
                 @Override
@@ -801,7 +879,15 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                     UserConfig.getInstance(account).unacceptedTermsOfService = null;
                     UserConfig.getInstance(account).saveConfig(false);
                     drawerLayoutContainer.setAllowOpenDrawer(true, false);
-                    termsOfServiceView.setVisibility(View.GONE);
+                    if (mainFragmentsStack.size() > 0) {
+                        mainFragmentsStack.get(mainFragmentsStack.size() - 1).onResume();
+                    }
+                    termsOfServiceView.animate()
+                            .alpha(0f)
+                            .setDuration(150)
+                            .setInterpolator(AndroidUtilities.accelerateInterpolator)
+                            .withEndAction(() -> termsOfServiceView.setVisibility(View.GONE))
+                            .start();
                 }
 
                 @Override
@@ -818,6 +904,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
         }
         termsOfServiceView.show(account, tos);
         drawerLayoutContainer.setAllowOpenDrawer(false, false);
+        termsOfServiceView.animate().alpha(1f).setDuration(150).setInterpolator(AndroidUtilities.decelerateInterpolator).setListener(null).start();
     }
 
     private void showPasscodeActivity() {
@@ -895,6 +982,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
             int open_settings = 0;
             int open_new_dialog = 0;
             long dialogId = 0;
+            String transferWalletUrl = null;
             if (SharedConfig.directShare && intent != null && intent.getExtras() != null) {
                 dialogId = intent.getExtras().getLong("dialogId", 0);
                 long hash = intent.getExtras().getLong("hash", 0);
@@ -1088,6 +1176,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                         Uri data = intent.getData();
                         if (data != null) {
                             String username = null;
+                            String login = null;
                             String group = null;
                             String sticker = null;
                             HashMap<String, String> auth = null;
@@ -1107,124 +1196,331 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                             boolean hasUrl = false;
                             String scheme = data.getScheme();
                             if (scheme != null) {
-                                if ((scheme.equals("http") || scheme.equals("https"))) {
-                                    String host = data.getHost().toLowerCase();
-                                    if (host.equals("telegram.me") || host.equals("t.me") || host.equals("telegram.dog")) {
-                                        String path = data.getPath();
-                                        if (path != null && path.length() > 1) {
-                                            path = path.substring(1);
-                                            if (path.startsWith("bg/")) {
-                                                wallPaper = new TLRPC.TL_wallPaper();
-                                                wallPaper.settings = new TLRPC.TL_wallPaperSettings();
-                                                wallPaper.slug = path.replace("bg/", "");
-                                                if (wallPaper.slug != null && wallPaper.slug.length() == 6) {
-                                                    try {
-                                                        wallPaper.settings.background_color = Integer.parseInt(wallPaper.slug, 16) | 0xff000000;
-                                                    } catch (Exception ignore) {
+                                switch (scheme) {
+                                    case "http":
+                                    case "https": {
+                                        String host = data.getHost().toLowerCase();
+                                        if (host.equals("telegram.me") || host.equals("t.me") || host.equals("telegram.dog")) {
+                                            String path = data.getPath();
+                                            if (path != null && path.length() > 1) {
+                                                path = path.substring(1);
+                                                if (path.startsWith("bg/")) {
+                                                    wallPaper = new TLRPC.TL_wallPaper();
+                                                    wallPaper.settings = new TLRPC.TL_wallPaperSettings();
+                                                    wallPaper.slug = path.replace("bg/", "");
+                                                    if (wallPaper.slug != null && wallPaper.slug.length() == 6) {
+                                                        try {
+                                                            wallPaper.settings.background_color = Integer.parseInt(wallPaper.slug, 16) | 0xff000000;
+                                                        } catch (Exception ignore) {
 
-                                                    }
-                                                    wallPaper.slug = null;
-                                                } else {
-                                                    String mode = data.getQueryParameter("mode");
-                                                    if (mode != null) {
-                                                        mode = mode.toLowerCase();
-                                                        String[] modes = mode.split(" ");
-                                                        if (modes != null && modes.length > 0) {
-                                                            for (int a = 0; a < modes.length; a++) {
-                                                                if ("blur".equals(modes[a])) {
-                                                                    wallPaper.settings.blur = true;
-                                                                } else if ("motion".equals(modes[a])) {
-                                                                    wallPaper.settings.motion = true;
+                                                        }
+                                                        wallPaper.slug = null;
+                                                    } else if (wallPaper.slug != null && wallPaper.slug.length() == 13 && wallPaper.slug.charAt(6) == '-') {
+                                                        try {
+                                                            wallPaper.settings.background_color = Integer.parseInt(wallPaper.slug.substring(0, 6), 16) | 0xff000000;
+                                                            wallPaper.settings.second_background_color = Integer.parseInt(wallPaper.slug.substring(7), 16) | 0xff000000;
+                                                            wallPaper.settings.rotation = 45;
+                                                        } catch (Exception ignore) {
+
+                                                        }
+                                                        try {
+                                                            String rotation = data.getQueryParameter("rotation");
+                                                            if (!TextUtils.isEmpty(rotation)) {
+                                                                wallPaper.settings.rotation = Utilities.parseInt(rotation);
+                                                            }
+                                                        } catch (Exception ignore) {
+
+                                                        }
+                                                        wallPaper.slug = null;
+                                                    } else {
+                                                        String mode = data.getQueryParameter("mode");
+                                                        if (mode != null) {
+                                                            mode = mode.toLowerCase();
+                                                            String[] modes = mode.split(" ");
+                                                            if (modes != null && modes.length > 0) {
+                                                                for (int a = 0; a < modes.length; a++) {
+                                                                    if ("blur".equals(modes[a])) {
+                                                                        wallPaper.settings.blur = true;
+                                                                    } else if ("motion".equals(modes[a])) {
+                                                                        wallPaper.settings.motion = true;
+                                                                    }
                                                                 }
                                                             }
                                                         }
-                                                    }
-                                                    String intensity = data.getQueryParameter("intensity");
-                                                    if (!TextUtils.isEmpty(intensity)) {
-                                                        wallPaper.settings.intensity = Utilities.parseInt(intensity);
-                                                    } else {
-                                                        wallPaper.settings.intensity = 50;
-                                                    }
-                                                    try {
-                                                        String bgColor = data.getQueryParameter("bg_color");
-                                                        if (!TextUtils.isEmpty(bgColor)) {
-                                                            wallPaper.settings.background_color = Integer.parseInt(bgColor, 16) | 0xff000000;
+                                                        String intensity = data.getQueryParameter("intensity");
+                                                        if (!TextUtils.isEmpty(intensity)) {
+                                                            wallPaper.settings.intensity = Utilities.parseInt(intensity);
                                                         } else {
-                                                            wallPaper.settings.background_color = 0xffffffff;
+                                                            wallPaper.settings.intensity = 50;
                                                         }
-                                                    } catch (Exception ignore) {
+                                                        try {
+                                                            String bgColor = data.getQueryParameter("bg_color");
+                                                            if (!TextUtils.isEmpty(bgColor)) {
+                                                                wallPaper.settings.background_color = Integer.parseInt(bgColor.substring(0, 6), 16) | 0xff000000;
+                                                                if (bgColor.length() > 6) {
+                                                                    wallPaper.settings.second_background_color = Integer.parseInt(bgColor.substring(7), 16) | 0xff000000;
+                                                                    wallPaper.settings.rotation = 45;
+                                                                }
+                                                            } else {
+                                                                wallPaper.settings.background_color = 0xffffffff;
+                                                            }
+                                                        } catch (Exception ignore) {
 
-                                                    }
-                                                }
-                                            } else if (path.startsWith("login/")) {
-                                                code = path.replace("login/", "");
-                                            } else if (path.startsWith("joinchat/")) {
-                                                group = path.replace("joinchat/", "");
-                                            } else if (path.startsWith("addstickers/")) {
-                                                sticker = path.replace("addstickers/", "");
-                                            } else if (path.startsWith("msg/") || path.startsWith("share/")) {
-                                                message = data.getQueryParameter("url");
-                                                if (message == null) {
-                                                    message = "";
-                                                }
-                                                if (data.getQueryParameter("text") != null) {
-                                                    if (message.length() > 0) {
-                                                        hasUrl = true;
-                                                        message += "\n";
-                                                    }
-                                                    message += data.getQueryParameter("text");
-                                                }
-                                                if (message.length() > 4096 * 4) {
-                                                    message = message.substring(0, 4096 * 4);
-                                                }
-                                                while (message.endsWith("\n")) {
-                                                    message = message.substring(0, message.length() - 1);
-                                                }
-                                            } else if (path.startsWith("confirmphone")) {
-                                                phone = data.getQueryParameter("phone");
-                                                phoneHash = data.getQueryParameter("hash");
-                                            } else if (path.startsWith("setlanguage/")) {
-                                                lang = path.substring(12);
-                                            } else if (path.startsWith("addtheme/")) {
-                                                theme = path.substring(9);
-                                            } else if (path.startsWith("c/")) {
-                                                List<String> segments = data.getPathSegments();
-                                                if (segments.size() == 3) {
-                                                    channelId = Utilities.parseInt(segments.get(1));
-                                                    messageId = Utilities.parseInt(segments.get(2));
-                                                    if (messageId == 0 || channelId == 0) {
-                                                        messageId = null;
-                                                        channelId = null;
-                                                    }
-                                                }
-                                            } else if (path.length() >= 1) {
-                                                ArrayList<String> segments = new ArrayList<>(data.getPathSegments());
-                                                if (segments.size() > 0 && segments.get(0).equals("s")) {
-                                                    segments.remove(0);
-                                                }
-                                                if (segments.size() > 0) {
-                                                    username = segments.get(0);
-                                                    if (segments.size() > 1) {
-                                                        messageId = Utilities.parseInt(segments.get(1));
-                                                        if (messageId == 0) {
-                                                            messageId = null;
+                                                        }
+                                                        try {
+                                                            String rotation = data.getQueryParameter("rotation");
+                                                            if (!TextUtils.isEmpty(rotation)) {
+                                                                wallPaper.settings.rotation = Utilities.parseInt(rotation);
+                                                            }
+                                                        } catch (Exception ignore) {
+
                                                         }
                                                     }
+                                                } else if (path.startsWith("login/")) {
+                                                    code = path.replace("login/", "");
+                                                } else if (path.startsWith("joinchat/")) {
+                                                    group = path.replace("joinchat/", "");
+                                                } else if (path.startsWith("addstickers/")) {
+                                                    sticker = path.replace("addstickers/", "");
+                                                } else if (path.startsWith("msg/") || path.startsWith("share/")) {
+                                                    message = data.getQueryParameter("url");
+                                                    if (message == null) {
+                                                        message = "";
+                                                    }
+                                                    if (data.getQueryParameter("text") != null) {
+                                                        if (message.length() > 0) {
+                                                            hasUrl = true;
+                                                            message += "\n";
+                                                        }
+                                                        message += data.getQueryParameter("text");
+                                                    }
+                                                    if (message.length() > 4096 * 4) {
+                                                        message = message.substring(0, 4096 * 4);
+                                                    }
+                                                    while (message.endsWith("\n")) {
+                                                        message = message.substring(0, message.length() - 1);
+                                                    }
+                                                } else if (path.startsWith("confirmphone")) {
+                                                    phone = data.getQueryParameter("phone");
+                                                    phoneHash = data.getQueryParameter("hash");
+                                                } else if (path.startsWith("setlanguage/")) {
+                                                    lang = path.substring(12);
+                                                } else if (path.startsWith("addtheme/")) {
+                                                    theme = path.substring(9);
+                                                } else if (path.startsWith("c/")) {
+                                                    List<String> segments = data.getPathSegments();
+                                                    if (segments.size() == 3) {
+                                                        channelId = Utilities.parseInt(segments.get(1));
+                                                        messageId = Utilities.parseInt(segments.get(2));
+                                                        if (messageId == 0 || channelId == 0) {
+                                                            messageId = null;
+                                                            channelId = null;
+                                                        }
+                                                    }
+                                                } else if (path.length() >= 1) {
+                                                    ArrayList<String> segments = new ArrayList<>(data.getPathSegments());
+                                                    if (segments.size() > 0 && segments.get(0).equals("s")) {
+                                                        segments.remove(0);
+                                                    }
+                                                    if (segments.size() > 0) {
+                                                        username = segments.get(0);
+                                                        if (segments.size() > 1) {
+                                                            messageId = Utilities.parseInt(segments.get(1));
+                                                            if (messageId == 0) {
+                                                                messageId = null;
+                                                            }
+                                                        }
+                                                    }
+                                                    botUser = data.getQueryParameter("start");
+                                                    botChat = data.getQueryParameter("startgroup");
+                                                    game = data.getQueryParameter("game");
                                                 }
+                                            }
+                                        }
+                                        break;
+                                    }
+                                    case "ton": {
+                                        if (Build.VERSION.SDK_INT >= 18 && !TextUtils.isEmpty(UserConfig.getInstance(UserConfig.selectedAccount).walletConfig) && !TextUtils.isEmpty(UserConfig.getInstance(UserConfig.selectedAccount).walletBlockchainName)) {
+                                            String url = data.toString();
+                                            if (url.startsWith("ton:transfer") || url.startsWith("ton://transfer")) {
+                                                transferWalletUrl = url.replace("ton:transfer", "ton://transfer");
+                                            }
+                                        }
+                                        break;
+                                    }
+                                    case "tg": {
+                                        String url = data.toString();
+                                        if (url.startsWith("tg:resolve") || url.startsWith("tg://resolve")) {
+                                            url = url.replace("tg:resolve", "tg://telegram.org").replace("tg://resolve", "tg://telegram.org");
+                                            data = Uri.parse(url);
+                                            username = data.getQueryParameter("domain");
+                                            if ("telegrampassport".equals(username)) {
+                                                username = null;
+                                                auth = new HashMap<>();
+                                                String scope = data.getQueryParameter("scope");
+                                                if (!TextUtils.isEmpty(scope) && scope.startsWith("{") && scope.endsWith("}")) {
+                                                    auth.put("nonce", data.getQueryParameter("nonce"));
+                                                } else {
+                                                    auth.put("payload", data.getQueryParameter("payload"));
+                                                }
+                                                auth.put("bot_id", data.getQueryParameter("bot_id"));
+                                                auth.put("scope", scope);
+                                                auth.put("public_key", data.getQueryParameter("public_key"));
+                                                auth.put("callback_url", data.getQueryParameter("callback_url"));
+                                            } else {
                                                 botUser = data.getQueryParameter("start");
                                                 botChat = data.getQueryParameter("startgroup");
                                                 game = data.getQueryParameter("game");
+                                                messageId = Utilities.parseInt(data.getQueryParameter("post"));
+                                                if (messageId == 0) {
+                                                    messageId = null;
+                                                }
                                             }
-                                        }
-                                    }
-                                } else if (scheme.equals("tg")) {
-                                    String url = data.toString();
-                                    if (url.startsWith("tg:resolve") || url.startsWith("tg://resolve")) {
-                                        url = url.replace("tg:resolve", "tg://telegram.org").replace("tg://resolve", "tg://telegram.org");
-                                        data = Uri.parse(url);
-                                        username = data.getQueryParameter("domain");
-                                        if ("telegrampassport".equals(username)) {
-                                            username = null;
+                                        } else if (url.startsWith("tg:privatepost") || url.startsWith("tg://privatepost")) {
+                                            url = url.replace("tg:privatepost", "tg://telegram.org").replace("tg://privatepost", "tg://telegram.org");
+                                            data = Uri.parse(url);
+                                            messageId = Utilities.parseInt(data.getQueryParameter("post"));
+                                            channelId = Utilities.parseInt(data.getQueryParameter("channel"));
+                                            if (messageId == 0 || channelId == 0) {
+                                                messageId = null;
+                                                channelId = null;
+                                            }
+                                        } else if (url.startsWith("tg:bg") || url.startsWith("tg://bg")) {
+                                            url = url.replace("tg:bg", "tg://telegram.org").replace("tg://bg", "tg://telegram.org");
+                                            data = Uri.parse(url);
+                                            wallPaper = new TLRPC.TL_wallPaper();
+                                            wallPaper.settings = new TLRPC.TL_wallPaperSettings();
+                                            wallPaper.slug = data.getQueryParameter("slug");
+                                            if (wallPaper.slug == null) {
+                                                wallPaper.slug = data.getQueryParameter("color");
+                                            }
+                                            if (wallPaper.slug != null && wallPaper.slug.length() == 6) {
+                                                try {
+                                                    wallPaper.settings.background_color = Integer.parseInt(wallPaper.slug, 16) | 0xff000000;
+                                                } catch (Exception ignore) {
+
+                                                }
+                                                wallPaper.slug = null;
+                                            } else if (wallPaper.slug != null && wallPaper.slug.length() == 13 && wallPaper.slug.charAt(6) == '-') {
+                                                try {
+                                                    wallPaper.settings.background_color = Integer.parseInt(wallPaper.slug.substring(0, 6), 16) | 0xff000000;
+                                                    wallPaper.settings.second_background_color = Integer.parseInt(wallPaper.slug.substring(7), 16) | 0xff000000;
+                                                    wallPaper.settings.rotation = 45;
+                                                } catch (Exception ignore) {
+
+                                                }
+                                                try {
+                                                    String rotation = data.getQueryParameter("rotation");
+                                                    if (!TextUtils.isEmpty(rotation)) {
+                                                        wallPaper.settings.rotation = Utilities.parseInt(rotation);
+                                                    }
+                                                } catch (Exception ignore) {
+
+                                                }
+                                                wallPaper.slug = null;
+                                            } else {
+                                                String mode = data.getQueryParameter("mode");
+                                                if (mode != null) {
+                                                    mode = mode.toLowerCase();
+                                                    String[] modes = mode.split(" ");
+                                                    if (modes != null && modes.length > 0) {
+                                                        for (int a = 0; a < modes.length; a++) {
+                                                            if ("blur".equals(modes[a])) {
+                                                                wallPaper.settings.blur = true;
+                                                            } else if ("motion".equals(modes[a])) {
+                                                                wallPaper.settings.motion = true;
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                                wallPaper.settings.intensity = Utilities.parseInt(data.getQueryParameter("intensity"));
+                                                try {
+                                                    String bgColor = data.getQueryParameter("bg_color");
+                                                    if (!TextUtils.isEmpty(bgColor)) {
+                                                        wallPaper.settings.background_color = Integer.parseInt(bgColor.substring(0, 6), 16) | 0xff000000;
+                                                        if (bgColor.length() > 6) {
+                                                            wallPaper.settings.second_background_color = Integer.parseInt(bgColor.substring(7), 16) | 0xff000000;
+                                                            wallPaper.settings.rotation = 45;
+                                                        }
+                                                    }
+                                                } catch (Exception ignore) {
+
+                                                }
+                                                try {
+                                                    String rotation = data.getQueryParameter("rotation");
+                                                    if (!TextUtils.isEmpty(rotation)) {
+                                                        wallPaper.settings.rotation = Utilities.parseInt(rotation);
+                                                    }
+                                                } catch (Exception ignore) {
+
+                                                }
+                                            }
+                                        } else if (url.startsWith("tg:join") || url.startsWith("tg://join")) {
+                                            url = url.replace("tg:join", "tg://telegram.org").replace("tg://join", "tg://telegram.org");
+                                            data = Uri.parse(url);
+                                            group = data.getQueryParameter("invite");
+                                        } else if (url.startsWith("tg:addstickers") || url.startsWith("tg://addstickers")) {
+                                            url = url.replace("tg:addstickers", "tg://telegram.org").replace("tg://addstickers", "tg://telegram.org");
+                                            data = Uri.parse(url);
+                                            sticker = data.getQueryParameter("set");
+                                        } else if (url.startsWith("tg:msg") || url.startsWith("tg://msg") || url.startsWith("tg://share") || url.startsWith("tg:share")) {
+                                            url = url.replace("tg:msg", "tg://telegram.org").replace("tg://msg", "tg://telegram.org").replace("tg://share", "tg://telegram.org").replace("tg:share", "tg://telegram.org");
+                                            data = Uri.parse(url);
+                                            message = data.getQueryParameter("url");
+                                            if (message == null) {
+                                                message = "";
+                                            }
+                                            if (data.getQueryParameter("text") != null) {
+                                                if (message.length() > 0) {
+                                                    hasUrl = true;
+                                                    message += "\n";
+                                                }
+                                                message += data.getQueryParameter("text");
+                                            }
+                                            if (message.length() > 4096 * 4) {
+                                                message = message.substring(0, 4096 * 4);
+                                            }
+                                            while (message.endsWith("\n")) {
+                                                message = message.substring(0, message.length() - 1);
+                                            }
+                                        } else if (url.startsWith("tg:confirmphone") || url.startsWith("tg://confirmphone")) {
+                                            url = url.replace("tg:confirmphone", "tg://telegram.org").replace("tg://confirmphone", "tg://telegram.org");
+                                            data = Uri.parse(url);
+
+                                            phone = data.getQueryParameter("phone");
+                                            phoneHash = data.getQueryParameter("hash");
+                                        } else if (url.startsWith("tg:login") || url.startsWith("tg://login")) {
+                                            url = url.replace("tg:login", "tg://telegram.org").replace("tg://login", "tg://telegram.org");
+                                            data = Uri.parse(url);
+                                            login = data.getQueryParameter("token");
+                                            code = data.getQueryParameter("code");
+                                        } else if (url.startsWith("tg:openmessage") || url.startsWith("tg://openmessage")) {
+                                            url = url.replace("tg:openmessage", "tg://telegram.org").replace("tg://openmessage", "tg://telegram.org");
+                                            data = Uri.parse(url);
+
+                                            String userID = data.getQueryParameter("user_id");
+                                            String chatID = data.getQueryParameter("chat_id");
+                                            String msgID = data.getQueryParameter("message_id");
+                                            if (userID != null) {
+                                                try {
+                                                    push_user_id = Integer.parseInt(userID);
+                                                } catch (NumberFormatException ignore) {
+                                                }
+                                            } else if (chatID != null) {
+                                                try {
+                                                    push_chat_id = Integer.parseInt(chatID);
+                                                } catch (NumberFormatException ignore) {
+                                                }
+                                            }
+                                            if (msgID != null) {
+                                                try {
+                                                    push_msg_id = Integer.parseInt(msgID);
+                                                } catch (NumberFormatException ignore) {
+                                                }
+                                            }
+                                        } else if (url.startsWith("tg:passport") || url.startsWith("tg://passport") || url.startsWith("tg:secureid")) {
+                                            url = url.replace("tg:passport", "tg://telegram.org").replace("tg://passport", "tg://telegram.org").replace("tg:secureid", "tg://telegram.org");
+                                            data = Uri.parse(url);
                                             auth = new HashMap<>();
                                             String scope = data.getQueryParameter("scope");
                                             if (!TextUtils.isEmpty(scope) && scope.startsWith("{") && scope.endsWith("}")) {
@@ -1236,156 +1532,28 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                                             auth.put("scope", scope);
                                             auth.put("public_key", data.getQueryParameter("public_key"));
                                             auth.put("callback_url", data.getQueryParameter("callback_url"));
+                                        } else if (url.startsWith("tg:setlanguage") || url.startsWith("tg://setlanguage")) {
+                                            url = url.replace("tg:setlanguage", "tg://telegram.org").replace("tg://setlanguage", "tg://telegram.org");
+                                            data = Uri.parse(url);
+                                            lang = data.getQueryParameter("lang");
+                                        } else if (url.startsWith("tg:addtheme") || url.startsWith("tg://addtheme")) {
+                                            url = url.replace("tg:addtheme", "tg://telegram.org").replace("tg://addtheme", "tg://telegram.org");
+                                            data = Uri.parse(url);
+                                            theme = data.getQueryParameter("slug");
+                                        } else if (url.startsWith("tg:settings") || url.startsWith("tg://settings")) {
+                                            if (url.contains("themes")) {
+                                                open_settings = 2;
+                                            } else if (url.contains("devices")) {
+                                                open_settings = 3;
+                                            }
                                         } else {
-                                            botUser = data.getQueryParameter("start");
-                                            botChat = data.getQueryParameter("startgroup");
-                                            game = data.getQueryParameter("game");
-                                            messageId = Utilities.parseInt(data.getQueryParameter("post"));
-                                            if (messageId == 0) {
-                                                messageId = null;
+                                            unsupportedUrl = url.replace("tg://", "").replace("tg:", "");
+                                            int index;
+                                            if ((index = unsupportedUrl.indexOf('?')) >= 0) {
+                                                unsupportedUrl = unsupportedUrl.substring(0, index);
                                             }
                                         }
-                                    } else if (url.startsWith("tg:privatepost") || url.startsWith("tg://privatepost")) {
-                                        url = url.replace("tg:privatepost", "tg://telegram.org").replace("tg://privatepost", "tg://telegram.org");
-                                        data = Uri.parse(url);
-                                        messageId = Utilities.parseInt(data.getQueryParameter("post"));
-                                        channelId = Utilities.parseInt(data.getQueryParameter("channel"));
-                                        if (messageId == 0 || channelId == 0) {
-                                            messageId = null;
-                                            channelId = null;
-                                        }
-                                    } else if (url.startsWith("tg:bg") || url.startsWith("tg://bg")) {
-                                        url = url.replace("tg:bg", "tg://telegram.org").replace("tg://bg", "tg://telegram.org");
-                                        data = Uri.parse(url);
-                                        wallPaper = new TLRPC.TL_wallPaper();
-                                        wallPaper.settings = new TLRPC.TL_wallPaperSettings();
-                                        wallPaper.slug = data.getQueryParameter("slug");
-                                        if (wallPaper.slug == null) {
-                                            wallPaper.slug = data.getQueryParameter("color");
-                                        }
-                                        if (wallPaper.slug != null && wallPaper.slug.length() == 6) {
-                                            try {
-                                                wallPaper.settings.background_color = Integer.parseInt(wallPaper.slug, 16) | 0xff000000;
-                                            } catch (Exception ignore) {
-
-                                            }
-                                            wallPaper.slug = null;
-                                        } else {
-                                            String mode = data.getQueryParameter("mode");
-                                            if (mode != null) {
-                                                mode = mode.toLowerCase();
-                                                String[] modes = mode.split(" ");
-                                                if (modes != null && modes.length > 0) {
-                                                    for (int a = 0; a < modes.length; a++) {
-                                                        if ("blur".equals(modes[a])) {
-                                                            wallPaper.settings.blur = true;
-                                                        } else if ("motion".equals(modes[a])) {
-                                                            wallPaper.settings.motion = true;
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                            wallPaper.settings.intensity = Utilities.parseInt(data.getQueryParameter("intensity"));
-                                            try {
-                                                String bgColor = data.getQueryParameter("bg_color");
-                                                if (!TextUtils.isEmpty(bgColor)) {
-                                                    wallPaper.settings.background_color = Integer.parseInt(bgColor, 16) | 0xff000000;
-                                                }
-                                            } catch (Exception ignore) {
-
-                                            }
-                                        }
-                                    } else if (url.startsWith("tg:join") || url.startsWith("tg://join")) {
-                                        url = url.replace("tg:join", "tg://telegram.org").replace("tg://join", "tg://telegram.org");
-                                        data = Uri.parse(url);
-                                        group = data.getQueryParameter("invite");
-                                    } else if (url.startsWith("tg:addstickers") || url.startsWith("tg://addstickers")) {
-                                        url = url.replace("tg:addstickers", "tg://telegram.org").replace("tg://addstickers", "tg://telegram.org");
-                                        data = Uri.parse(url);
-                                        sticker = data.getQueryParameter("set");
-                                    } else if (url.startsWith("tg:msg") || url.startsWith("tg://msg") || url.startsWith("tg://share") || url.startsWith("tg:share")) {
-                                        url = url.replace("tg:msg", "tg://telegram.org").replace("tg://msg", "tg://telegram.org").replace("tg://share", "tg://telegram.org").replace("tg:share", "tg://telegram.org");
-                                        data = Uri.parse(url);
-                                        message = data.getQueryParameter("url");
-                                        if (message == null) {
-                                            message = "";
-                                        }
-                                        if (data.getQueryParameter("text") != null) {
-                                            if (message.length() > 0) {
-                                                hasUrl = true;
-                                                message += "\n";
-                                            }
-                                            message += data.getQueryParameter("text");
-                                        }
-                                        if (message.length() > 4096 * 4) {
-                                            message = message.substring(0, 4096 * 4);
-                                        }
-                                        while (message.endsWith("\n")) {
-                                            message = message.substring(0, message.length() - 1);
-                                        }
-                                    } else if (url.startsWith("tg:confirmphone") || url.startsWith("tg://confirmphone")) {
-                                        url = url.replace("tg:confirmphone", "tg://telegram.org").replace("tg://confirmphone", "tg://telegram.org");
-                                        data = Uri.parse(url);
-
-                                        phone = data.getQueryParameter("phone");
-                                        phoneHash = data.getQueryParameter("hash");
-                                    } else if (url.startsWith("tg:login") || url.startsWith("tg://login")) {
-                                        url = url.replace("tg:login", "tg://telegram.org").replace("tg://login", "tg://telegram.org");
-                                        data = Uri.parse(url);
-
-                                        code = data.getQueryParameter("code");
-                                    } else if (url.startsWith("tg:openmessage") || url.startsWith("tg://openmessage")) {
-                                        url = url.replace("tg:openmessage", "tg://telegram.org").replace("tg://openmessage", "tg://telegram.org");
-                                        data = Uri.parse(url);
-
-                                        String userID = data.getQueryParameter("user_id");
-                                        String chatID = data.getQueryParameter("chat_id");
-                                        String msgID = data.getQueryParameter("message_id");
-                                        if (userID != null) {
-                                            try {
-                                                push_user_id = Integer.parseInt(userID);
-                                            } catch (NumberFormatException ignore) {
-                                            }
-                                        } else if (chatID != null) {
-                                            try {
-                                                push_chat_id = Integer.parseInt(chatID);
-                                            } catch (NumberFormatException ignore) {
-                                            }
-                                        }
-                                        if (msgID != null) {
-                                            try {
-                                                push_msg_id = Integer.parseInt(msgID);
-                                            } catch (NumberFormatException ignore) {
-                                            }
-                                        }
-                                    } else if (url.startsWith("tg:passport") || url.startsWith("tg://passport") || url.startsWith("tg:secureid")) {
-                                        url = url.replace("tg:passport", "tg://telegram.org").replace("tg://passport", "tg://telegram.org").replace("tg:secureid", "tg://telegram.org");
-                                        data = Uri.parse(url);
-                                        auth = new HashMap<>();
-                                        String scope = data.getQueryParameter("scope");
-                                        if (!TextUtils.isEmpty(scope) && scope.startsWith("{") && scope.endsWith("}")) {
-                                            auth.put("nonce", data.getQueryParameter("nonce"));
-                                        } else {
-                                            auth.put("payload", data.getQueryParameter("payload"));
-                                        }
-                                        auth.put("bot_id", data.getQueryParameter("bot_id"));
-                                        auth.put("scope", scope);
-                                        auth.put("public_key", data.getQueryParameter("public_key"));
-                                        auth.put("callback_url", data.getQueryParameter("callback_url"));
-                                    } else if (url.startsWith("tg:setlanguage") || url.startsWith("tg://setlanguage")) {
-                                        url = url.replace("tg:setlanguage", "tg://telegram.org").replace("tg://setlanguage", "tg://telegram.org");
-                                        data = Uri.parse(url);
-                                        lang = data.getQueryParameter("lang");
-                                    } else if (url.startsWith("tg:addtheme") || url.startsWith("tg://addtheme")) {
-                                        url = url.replace("tg:addtheme", "tg://telegram.org").replace("tg://addtheme", "tg://telegram.org");
-                                        data = Uri.parse(url);
-                                        theme = data.getQueryParameter("slug");
-                                    } else {
-                                        unsupportedUrl = url.replace("tg://", "").replace("tg:", "");
-                                        int index;
-                                        if ((index = unsupportedUrl.indexOf('?')) >= 0) {
-                                            unsupportedUrl = unsupportedUrl.substring(0, index);
-                                        }
+                                        break;
                                     }
                                 }
                             }
@@ -1395,11 +1563,11 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                                     args.putString("phone", phone);
                                     args.putString("hash", phoneHash);
                                     AndroidUtilities.runOnUIThread(() -> presentFragment(new CancelAccountDeletionActivity(args)));
-                                } else if (username != null || group != null || sticker != null || message != null || game != null || auth != null || unsupportedUrl != null || lang != null || code != null || wallPaper != null || channelId != null || theme != null) {
+                                } else if (username != null || group != null || sticker != null || message != null || game != null || auth != null || unsupportedUrl != null || lang != null || code != null || wallPaper != null || channelId != null || theme != null || login != null) {
                                     if (message != null && message.startsWith("@")) {
                                         message = " " + message;
                                     }
-                                    runLinkRequest(intentAccount[0], username, group, sticker, botUser, botChat, message, hasUrl, messageId, channelId, game, auth, lang, unsupportedUrl, code, wallPaper, theme, 0);
+                                    runLinkRequest(intentAccount[0], username, group, sticker, botUser, botChat, message, hasUrl, messageId, channelId, game, auth, lang, unsupportedUrl, code, login, wallPaper, theme, 0);
                                 } else {
                                     try (Cursor cursor = getContentResolver().query(intent.getData(), null, null, null, null)) {
                                         if (cursor != null) {
@@ -1495,6 +1663,19 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                     }
                     pushOpened = false;
                     isNew = false;
+                } else if (transferWalletUrl != null) {
+                    BaseFragment fragment = getCurrentWalletFragment(transferWalletUrl);
+                    if (fragment != null) {
+                        AndroidUtilities.runOnUIThread(() -> presentFragment(fragment));
+                    }
+                    if (AndroidUtilities.isTablet()) {
+                        actionBarLayout.showLastFragment();
+                        rightActionBarLayout.showLastFragment();
+                        drawerLayoutContainer.setAllowOpenDrawer(false, false);
+                    } else {
+                        drawerLayoutContainer.setAllowOpenDrawer(true, false);
+                    }
+                    pushOpened = true;
                 } else if (showPlayer) {
                     if (!actionBarLayout.fragmentsStack.isEmpty()) {
                         BaseFragment fragment = actionBarLayout.fragmentsStack.get(0);
@@ -1527,12 +1708,12 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                         args.putBoolean("allowSwitchAccount", true);
                         if (contactsToSend != null) {
                             if (contactsToSend.size() != 1) {
-                                args.putString("selectAlertString", LocaleController.getString("SendContactTo", R.string.SendMessagesTo));
-                                args.putString("selectAlertStringGroup", LocaleController.getString("SendContactToGroup", R.string.SendContactToGroup));
+                                args.putString("selectAlertString", LocaleController.getString("SendContactToText", R.string.SendMessagesToText));
+                                args.putString("selectAlertStringGroup", LocaleController.getString("SendContactToGroupText", R.string.SendContactToGroupText));
                             }
                         } else {
-                            args.putString("selectAlertString", LocaleController.getString("SendMessagesTo", R.string.SendMessagesTo));
-                            args.putString("selectAlertStringGroup", LocaleController.getString("SendMessagesToGroup", R.string.SendMessagesToGroup));
+                            args.putString("selectAlertString", LocaleController.getString("SendMessagesToText", R.string.SendMessagesToText));
+                            args.putString("selectAlertStringGroup", LocaleController.getString("SendMessagesToGroupText", R.string.SendMessagesToGroupText));
                         }
                         DialogsActivity fragment = new DialogsActivity(args);
                         fragment.setDelegate(this);
@@ -1565,7 +1746,17 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                         didSelectDialogs(null, dids, null, false);
                     }
                 } else if (open_settings != 0) {
-                    actionBarLayout.presentFragment(new SettingsActivity(), false, true, true, false);
+                    BaseFragment fragment;
+                    if (open_settings == 1) {
+                        fragment = new SettingsActivity();
+                    } else if (open_settings == 2) {
+                        fragment = new ThemeActivity(ThemeActivity.THEME_TYPE_BASIC);
+                    } else if (open_settings == 3) {
+                        fragment = new SessionsActivity(0);
+                    } else {
+                        fragment = null;
+                    }
+                    AndroidUtilities.runOnUIThread(() -> presentFragment(fragment));
                     if (AndroidUtilities.isTablet()) {
                         actionBarLayout.showLastFragment();
                         rightActionBarLayout.showLastFragment();
@@ -1645,6 +1836,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                                 final String lang,
                                 final String unsupportedUrl,
                                 final String code,
+                                final String loginToken,
                                 final TLRPC.TL_wallPaper wallPaper,
                                 final String theme,
                                 final int state) {
@@ -1653,7 +1845,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                 if (account != intentAccount) {
                     switchToAccount(account, true);
                 }
-                runLinkRequest(account, username, group, sticker, botUser, botChat, message, hasUrl, messageId, channelId, game, auth, lang, unsupportedUrl, code, wallPaper, theme, 1);
+                runLinkRequest(account, username, group, sticker, botUser, botChat, message, hasUrl, messageId, channelId, game, auth, lang, unsupportedUrl, code, loginToken, wallPaper, theme, 1);
             }).show();
             return;
         } else if (code != null) {
@@ -1667,6 +1859,13 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                 showAlertDialog(builder);
             }
             return;
+        } else if (loginToken != null) {
+            AlertDialog.Builder builder = new AlertDialog.Builder(LaunchActivity.this);
+            builder.setTitle(LocaleController.getString("AuthAnotherClient", R.string.AuthAnotherClient));
+            builder.setMessage(LocaleController.getString("AuthAnotherClientUrl", R.string.AuthAnotherClientUrl));
+            builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), null);
+            showAlertDialog(builder);
+            return;
         }
         final AlertDialog progressDialog = new AlertDialog(this, 3);
         final int[] requestId = new int[]{0};
@@ -1677,11 +1876,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
             req.username = username;
             requestId[0] = ConnectionsManager.getInstance(intentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
                 if (!LaunchActivity.this.isFinishing()) {
-                    try {
-                        progressDialog.dismiss();
-                    } catch (Exception e) {
-                        FileLog.e(e);
-                    }
+                    boolean hideProgressDialog = true;
                     final TLRPC.TL_contacts_resolvedPeer res = (TLRPC.TL_contacts_resolvedPeer) response;
                     if (error == null && actionBarLayout != null && (game == null || game != null && !res.users.isEmpty())) {
                         MessagesController.getInstance(intentAccount).putUsers(res.users, false);
@@ -1692,8 +1887,8 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                             args.putBoolean("onlySelect", true);
                             args.putBoolean("cantSendToChannels", true);
                             args.putInt("dialogsType", 1);
-                            args.putString("selectAlertString", LocaleController.getString("SendGameTo", R.string.SendGameTo));
-                            args.putString("selectAlertStringGroup", LocaleController.getString("SendGameToGroup", R.string.SendGameToGroup));
+                            args.putString("selectAlertString", LocaleController.getString("SendGameToText", R.string.SendGameToText));
+                            args.putString("selectAlertStringGroup", LocaleController.getString("SendGameToGroupText", R.string.SendGameToGroupText));
                             DialogsActivity fragment = new DialogsActivity(args);
                             fragment.setDelegate((fragment1, dids, message1, param) -> {
                                 long did = dids.get(0);
@@ -1755,7 +1950,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                             Bundle args = new Bundle();
                             args.putBoolean("onlySelect", true);
                             args.putInt("dialogsType", 2);
-                            args.putString("addToGroupAlertString", LocaleController.formatString("AddToTheGroupTitle", R.string.AddToTheGroupTitle, UserObject.getUserName(user), "%1$s"));
+                            args.putString("addToGroupAlertString", LocaleController.formatString("AddToTheGroupAlertText", R.string.AddToTheGroupAlertText, UserObject.getUserName(user), "%1$s"));
                             DialogsActivity fragment = new DialogsActivity(args);
                             fragment.setDelegate((fragment12, dids, message1, param) -> {
                                 long did = dids.get(0);
@@ -1773,12 +1968,15 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                             long dialog_id;
                             boolean isBot = false;
                             Bundle args = new Bundle();
+                            final TLRPC.Chat chat;
                             if (!res.chats.isEmpty()) {
                                 args.putInt("chat_id", res.chats.get(0).id);
                                 dialog_id = -res.chats.get(0).id;
+                                chat = res.chats.get(0);
                             } else {
                                 args.putInt("user_id", res.users.get(0).id);
                                 dialog_id = res.users.get(0).id;
+                                chat = null;
                             }
                             if (botUser != null && res.users.size() > 0 && res.users.get(0).bot) {
                                 args.putString("botUser", botUser);
@@ -1792,14 +1990,32 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                                 if (isBot && lastFragment instanceof ChatActivity && ((ChatActivity) lastFragment).getDialogId() == dialog_id) {
                                     ((ChatActivity) lastFragment).setBotUser(botUser);
                                 } else {
-                                    ChatActivity fragment = new ChatActivity(args);
-                                    actionBarLayout.presentFragment(fragment);
+                                    MessagesController.getInstance(intentAccount).ensureMessagesLoaded(dialog_id, ChatObject.isChannel(chat), messageId == null ? 0 : messageId, () -> {
+                                        try {
+                                            progressDialog.dismiss();
+                                        } catch (Exception e) {
+                                            FileLog.e(e);
+                                        }
+                                        if (!LaunchActivity.this.isFinishing()) {
+                                            ChatActivity fragment = new ChatActivity(args);
+                                            actionBarLayout.presentFragment(fragment);
+                                        }
+                                    });
+                                    hideProgressDialog = false;
                                 }
                             }
                         }
                     } else {
                         try {
                             Toast.makeText(LaunchActivity.this, LocaleController.getString("NoUsernameFound", R.string.NoUsernameFound), Toast.LENGTH_SHORT).show();
+                        } catch (Exception e) {
+                            FileLog.e(e);
+                        }
+                    }
+
+                    if (hideProgressDialog) {
+                        try {
+                            progressDialog.dismiss();
                         } catch (Exception e) {
                             FileLog.e(e);
                         }
@@ -1812,11 +2028,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                 req.hash = group;
                 requestId[0] = ConnectionsManager.getInstance(intentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
                     if (!LaunchActivity.this.isFinishing()) {
-                        try {
-                            progressDialog.dismiss();
-                        } catch (Exception e) {
-                            FileLog.e(e);
-                        }
+                        boolean hideProgressDialog = true;
                         if (error == null && actionBarLayout != null) {
                             TLRPC.ChatInvite invite = (TLRPC.ChatInvite) response;
                             if (invite.chat != null && (!ChatObject.isLeftFromChat(invite.chat) || !invite.chat.kicked && !TextUtils.isEmpty(invite.chat.username))) {
@@ -1827,22 +2039,22 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                                 Bundle args = new Bundle();
                                 args.putInt("chat_id", invite.chat.id);
                                 if (mainFragmentsStack.isEmpty() || MessagesController.getInstance(intentAccount).checkCanOpenChat(args, mainFragmentsStack.get(mainFragmentsStack.size() - 1))) {
-                                    ChatActivity fragment = new ChatActivity(args);
-                                    NotificationCenter.getInstance(intentAccount).postNotificationName(NotificationCenter.closeChats);
-                                    actionBarLayout.presentFragment(fragment, false, true, true, false);
+                                    boolean[] canceled = new boolean[1];
+                                    progressDialog.setOnCancelListener(dialog -> canceled[0] = true);
+
+                                    MessagesController.getInstance(intentAccount).ensureMessagesLoaded(-invite.chat.id, ChatObject.isChannel(invite.chat), 0, () -> {
+                                        progressDialog.hide();
+                                        if (canceled[0]) {
+                                            return;
+                                        }
+                                        ChatActivity fragment = new ChatActivity(args);
+                                        actionBarLayout.presentFragment(fragment);
+                                    });
+                                    hideProgressDialog = false;
                                 }
                             } else {
-                                if ((invite.chat == null && (!invite.channel || invite.megagroup) || invite.chat != null && (!ChatObject.isChannel(invite.chat) || invite.chat.megagroup)) && !mainFragmentsStack.isEmpty()) {
-                                    BaseFragment fragment = mainFragmentsStack.get(mainFragmentsStack.size() - 1);
-                                    fragment.showDialog(new JoinGroupAlert(LaunchActivity.this, invite, group, fragment));
-                                } else {
-                                    AlertDialog.Builder builder = new AlertDialog.Builder(LaunchActivity.this);
-                                    builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
-                                    builder.setMessage(LocaleController.formatString("ChannelJoinTo", R.string.ChannelJoinTo, invite.chat != null ? invite.chat.title : invite.title));
-                                    builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), (dialogInterface, i) -> runLinkRequest(intentAccount, username, group, sticker, botUser, botChat, message, hasUrl, messageId, channelId, game, auth, lang, unsupportedUrl, code, wallPaper, theme, 1));
-                                    builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
-                                    showAlertDialog(builder);
-                                }
+                                BaseFragment fragment = mainFragmentsStack.get(mainFragmentsStack.size() - 1);
+                                fragment.showDialog(new JoinGroupAlert(LaunchActivity.this, invite, group, fragment));
                             }
                         } else {
                             AlertDialog.Builder builder = new AlertDialog.Builder(LaunchActivity.this);
@@ -1854,6 +2066,14 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                             }
                             builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), null);
                             showAlertDialog(builder);
+                        }
+
+                        try {
+                            if (hideProgressDialog) {
+                                progressDialog.dismiss();
+                            }
+                        } catch (Exception e) {
+                            FileLog.e(e);
                         }
                     }
                 }), ConnectionsManager.RequestFlagFailOnServerErrors);
@@ -1912,7 +2132,13 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                 TLRPC.TL_inputStickerSetShortName stickerset = new TLRPC.TL_inputStickerSetShortName();
                 stickerset.short_name = sticker;
                 BaseFragment fragment = mainFragmentsStack.get(mainFragmentsStack.size() - 1);
-                fragment.showDialog(new StickersAlert(LaunchActivity.this, fragment, stickerset, null, null));
+                ChatActivityEnterView delegate;
+                if (fragment instanceof ChatActivity) {
+                    delegate = ((ChatActivity) fragment).getChatActivityEnterView();
+                } else {
+                    delegate = null;
+                }
+                fragment.showDialog(new StickersAlert(LaunchActivity.this, fragment, stickerset, null, delegate));
             }
             return;
         } else if (message != null) {
@@ -2025,8 +2251,8 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
             boolean ok = false;
             if (TextUtils.isEmpty(wallPaper.slug)) {
                 try {
-                    WallpapersListActivity.ColorWallpaper colorWallpaper = new WallpapersListActivity.ColorWallpaper(-100, wallPaper.settings.background_color);
-                    WallpaperActivity wallpaperActivity = new WallpaperActivity(colorWallpaper, null);
+                    WallpapersListActivity.ColorWallpaper colorWallpaper = new WallpapersListActivity.ColorWallpaper(Theme.COLOR_BACKGROUND_SLUG, wallPaper.settings.background_color, wallPaper.settings.second_background_color, AndroidUtilities.getWallpaperRotation(wallPaper.settings.rotation, false));
+                    ThemePreviewActivity wallpaperActivity = new ThemePreviewActivity(colorWallpaper, null);
                     AndroidUtilities.runOnUIThread(() -> presentFragment(wallpaperActivity));
                     ok = true;
                 } catch (Exception e) {
@@ -2048,13 +2274,13 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                         TLRPC.TL_wallPaper res = (TLRPC.TL_wallPaper) response;
                         Object object;
                         if (res.pattern) {
-                            WallpapersListActivity.ColorWallpaper colorWallpaper = new WallpapersListActivity.ColorWallpaper(-1, wallPaper.settings.background_color, res.id, wallPaper.settings.intensity / 100.0f, wallPaper.settings.motion, null);
+                            WallpapersListActivity.ColorWallpaper colorWallpaper = new WallpapersListActivity.ColorWallpaper(res.slug, wallPaper.settings.background_color, wallPaper.settings.second_background_color, AndroidUtilities.getWallpaperRotation(wallPaper.settings.rotation, false), wallPaper.settings.intensity / 100.0f, wallPaper.settings.motion, null);
                             colorWallpaper.pattern = res;
                             object = colorWallpaper;
                         } else {
                             object = res;
                         }
-                        WallpaperActivity wallpaperActivity = new WallpaperActivity(object, null);
+                        ThemePreviewActivity wallpaperActivity = new ThemePreviewActivity(object, null);
                         wallpaperActivity.setInitialModes(wallPaper.settings.blur, wallPaper.settings.motion);
                         presentFragment(wallpaperActivity);
                     } else {
@@ -2066,6 +2292,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
             cancelRunnable = () -> {
                 loadingThemeFileName = null;
                 loadingThemeWallpaperName = null;
+                loadingThemeWallpaper = null;
                 loadingThemeInfo = null;
                 loadingThemeProgressDialog = null;
                 loadingTheme = null;
@@ -2079,7 +2306,39 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                 int notFound = 2;
                 if (response instanceof TLRPC.TL_theme) {
                     TLRPC.TL_theme t = (TLRPC.TL_theme) response;
-                    if (t.document != null) {
+                    if (t.settings != null) {
+                        String key = Theme.getBaseThemeKey(t.settings);
+                        Theme.ThemeInfo info = Theme.getTheme(key);
+                        if (info != null) {
+                            TLRPC.TL_wallPaper object;
+                            if (t.settings.wallpaper instanceof TLRPC.TL_wallPaper) {
+                                object = (TLRPC.TL_wallPaper) t.settings.wallpaper;
+                                File path = FileLoader.getPathToAttach(object.document, true);
+                                if (!path.exists()) {
+                                    loadingThemeProgressDialog = progressDialog;
+                                    loadingThemeAccent = true;
+                                    loadingThemeInfo = info;
+                                    loadingTheme = t;
+                                    loadingThemeWallpaper = object;
+                                    loadingThemeWallpaperName = FileLoader.getAttachFileName(object.document);
+                                    FileLoader.getInstance(currentAccount).loadFile(object.document, object, 1, 1);
+                                    return;
+                                }
+                            } else {
+                                object = null;
+                            }
+                            try {
+                                progressDialog.dismiss();
+                            } catch (Exception e) {
+                                FileLog.e(e);
+                            }
+                            notFound = 0;
+                            openThemeAccentPreview(t, object, info);
+                        } else {
+                            notFound = 1;
+                        }
+                    } else if (t.document != null) {
+                        loadingThemeAccent = false;
                         loadingTheme = t;
                         loadingThemeFileName = FileLoader.getAttachFileName(loadingTheme.document);
                         loadingThemeProgressDialog = progressDialog;
@@ -2152,7 +2411,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                 }
             });
             try {
-                progressDialog.show();
+                progressDialog.showDelayed(3);
             } catch (Exception ignore) {
 
             }
@@ -2214,32 +2473,28 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
         try {
             visibleDialog = builder.show();
             visibleDialog.setCanceledOnTouchOutside(true);
-            visibleDialog.setOnDismissListener(new DialogInterface.OnDismissListener() {
-                @Override
-                public void onDismiss(DialogInterface dialog) {
-                    if (visibleDialog != null) {
-                        if (visibleDialog == localeDialog) {
-                            try {
-                                String shorname = LocaleController.getInstance().getCurrentLocaleInfo().shortName;
-                                Toast.makeText(LaunchActivity.this, getStringForLanguageAlert(shorname.equals("en") ? englishLocaleStrings : systemLocaleStrings, "ChangeLanguageLater", R.string.ChangeLanguageLater), Toast.LENGTH_LONG).show();
-                            } catch (Exception e) {
-                                FileLog.e(e);
-                            }
-                            localeDialog = null;
-                        } else if (visibleDialog == proxyErrorDialog) {
-                            SharedPreferences preferences = MessagesController.getGlobalMainSettings();
-                            SharedPreferences.Editor editor = MessagesController.getGlobalMainSettings().edit();
-                            editor.putBoolean("proxy_enabled", false);
-                            editor.putBoolean("proxy_enabled_calls", false);
-                            editor.commit();
-                            NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.proxySettingsChanged);
-                            ConnectionsManager.setProxySettings(false, "", 1080, "", "", "");
-                            NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.proxySettingsChanged);
-                            proxyErrorDialog = null;
+            visibleDialog.setOnDismissListener(dialog -> {
+                if (visibleDialog != null) {
+                    if (visibleDialog == localeDialog) {
+                        try {
+                            String shorname = LocaleController.getInstance().getCurrentLocaleInfo().shortName;
+                            Toast.makeText(LaunchActivity.this, getStringForLanguageAlert(shorname.equals("en") ? englishLocaleStrings : systemLocaleStrings, "ChangeLanguageLater", R.string.ChangeLanguageLater), Toast.LENGTH_LONG).show();
+                        } catch (Exception e) {
+                            FileLog.e(e);
                         }
+                        localeDialog = null;
+                    } else if (visibleDialog == proxyErrorDialog) {
+                        SharedPreferences preferences = MessagesController.getGlobalMainSettings();
+                        SharedPreferences.Editor editor = MessagesController.getGlobalMainSettings().edit();
+                        editor.putBoolean("proxy_enabled", false);
+                        editor.putBoolean("proxy_enabled_calls", false);
+                        editor.commit();
+                        ConnectionsManager.setProxySettings(false, "", 1080, "", "", "");
+                        NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.proxySettingsChanged);
+                        proxyErrorDialog = null;
                     }
-                    visibleDialog = null;
                 }
+                visibleDialog = null;
             });
             return visibleDialog;
         } catch (Exception e) {
@@ -2256,10 +2511,6 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
 
     @Override
     public void didSelectDialogs(DialogsActivity dialogsFragment, ArrayList<Long> dids, CharSequence message, boolean param) {
-        final long did = dids.get(0);
-        int lower_part = (int) did;
-        int high_id = (int) (did >> 32);
-
         int attachesCount = 0;
         if (contactsToSend != null) {
             attachesCount += contactsToSend.size();
@@ -2279,69 +2530,101 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
         if (videoPath == null && photoPathsArray == null && documentsPathsArray == null && documentsUrisArray == null && sendingText != null) {
             attachesCount++;
         }
-        if (AlertsCreator.checkSlowMode(this, currentAccount, did, attachesCount > 1)) {
-            return;
+
+        for (int i = 0; i < dids.size(); i++) {
+            final long did = dids.get(i);
+            if (AlertsCreator.checkSlowMode(this, currentAccount, did, attachesCount > 1)) {
+                return;
+            }
         }
 
-        Bundle args = new Bundle();
         final int account = dialogsFragment != null ? dialogsFragment.getCurrentAccount() : currentAccount;
-        args.putBoolean("scrollToTopOnResume", true);
-        if (!AndroidUtilities.isTablet()) {
-            NotificationCenter.getInstance(account).postNotificationName(NotificationCenter.closeChats);
-        }
-        if (lower_part != 0) {
-            if (lower_part > 0) {
-                args.putInt("user_id", lower_part);
-            } else if (lower_part < 0) {
-                args.putInt("chat_id", -lower_part);
+        final ChatActivity fragment;
+        if (dids.size() <= 1) {
+            final long did = dids.get(0);
+            int lower_part = (int) did;
+            int high_id = (int) (did >> 32);
+
+            Bundle args = new Bundle();
+            args.putBoolean("scrollToTopOnResume", true);
+            if (!AndroidUtilities.isTablet()) {
+                NotificationCenter.getInstance(account).postNotificationName(NotificationCenter.closeChats);
             }
+            if (lower_part != 0) {
+                if (lower_part > 0) {
+                    args.putInt("user_id", lower_part);
+                } else if (lower_part < 0) {
+                    args.putInt("chat_id", -lower_part);
+                }
+            } else {
+                args.putInt("enc_id", high_id);
+            }
+            if (!MessagesController.getInstance(account).checkCanOpenChat(args, dialogsFragment)) {
+                return;
+            }
+            fragment = new ChatActivity(args);
         } else {
-            args.putInt("enc_id", high_id);
+            fragment = null;
         }
-        if (!MessagesController.getInstance(account).checkCanOpenChat(args, dialogsFragment)) {
-            return;
-        }
-        final ChatActivity fragment = new ChatActivity(args);
+
         if (contactsToSend != null && contactsToSend.size() == 1) {
-            if (contactsToSend.size() == 1) {
-                PhonebookShareActivity contactFragment = new PhonebookShareActivity(null, contactsToSendUri, null, null);
-                contactFragment.setDelegate((user, notify, scheduleDate) -> {
+            PhonebookShareAlert alert = new PhonebookShareAlert(mainFragmentsStack.get(mainFragmentsStack.size() - 1), null, null, contactsToSendUri, null, null);
+            alert.setDelegate((user, notify, scheduleDate) -> {
+                if (fragment != null) {
                     actionBarLayout.presentFragment(fragment, true, false, true, false);
-                    SendMessagesHelper.getInstance(account).sendMessage(user, did, null, null, null, notify, scheduleDate);
-                });
-                actionBarLayout.presentFragment(contactFragment, dialogsFragment != null, dialogsFragment == null, true, false);
-            }
+                }
+                for (int i = 0; i < dids.size(); i++) {
+                    SendMessagesHelper.getInstance(account).sendMessage(user, dids.get(i), null, null, null, notify, scheduleDate);
+                }
+            });
+            mainFragmentsStack.get(mainFragmentsStack.size() - 1).showDialog(alert);
         } else {
-            AccountInstance accountInstance = AccountInstance.getInstance(UserConfig.selectedAccount);
-            actionBarLayout.presentFragment(fragment, dialogsFragment != null, dialogsFragment == null, true, false);
-            if (videoPath != null) {
-                fragment.openVideoEditor(videoPath, sendingText);
-                sendingText = null;
-            }
-            if (photoPathsArray != null) {
-                if (sendingText != null && sendingText.length() <= 1024 && photoPathsArray.size() == 1) {
-                    photoPathsArray.get(0).caption = sendingText;
-                    sendingText = null;
+            for (int i = 0; i < dids.size(); i++) {
+                final long did = dids.get(i);
+                int lower_part = (int) did;
+                int high_id = (int) (did >> 32);
+
+                AccountInstance accountInstance = AccountInstance.getInstance(UserConfig.selectedAccount);
+                if (fragment != null) {
+                    actionBarLayout.presentFragment(fragment, dialogsFragment != null, dialogsFragment == null, true, false);
+                    if (videoPath != null) {
+                        fragment.openVideoEditor(videoPath, sendingText);
+                        sendingText = null;
+                    }
+                } else {
+
                 }
-                SendMessagesHelper.prepareSendingMedia(accountInstance, photoPathsArray, did, null, null, false, false, null, true, 0);
-            }
-            if (documentsPathsArray != null || documentsUrisArray != null) {
-                String caption = null;
-                if (sendingText != null && sendingText.length() <= 1024 && ((documentsPathsArray != null ? documentsPathsArray.size() : 0) + (documentsUrisArray != null ? documentsUrisArray.size() : 0)) == 1) {
-                    caption = sendingText;
-                    sendingText = null;
+                if (photoPathsArray != null) {
+                    if (sendingText != null && sendingText.length() <= 1024 && photoPathsArray.size() == 1) {
+                        photoPathsArray.get(0).caption = sendingText;
+                        sendingText = null;
+                    }
+                    SendMessagesHelper.prepareSendingMedia(accountInstance, photoPathsArray, did, null, null, false, false, null, true, 0);
                 }
-                SendMessagesHelper.prepareSendingDocuments(accountInstance, documentsPathsArray, documentsOriginalPathsArray, documentsUrisArray, caption, documentsMimeType, did, null, null, null, true, 0);
-            }
-            if (sendingText != null) {
-                SendMessagesHelper.prepareSendingText(accountInstance, sendingText, did, true, 0);
-            }
-            if (contactsToSend != null && !contactsToSend.isEmpty()) {
-                for (int a = 0; a < contactsToSend.size(); a++) {
-                    TLRPC.User user = contactsToSend.get(a);
-                    SendMessagesHelper.getInstance(account).sendMessage(user, did, null, null, null, true, 0);
+                if (documentsPathsArray != null || documentsUrisArray != null) {
+                    String caption = null;
+                    if (sendingText != null && sendingText.length() <= 1024 && ((documentsPathsArray != null ? documentsPathsArray.size() : 0) + (documentsUrisArray != null ? documentsUrisArray.size() : 0)) == 1) {
+                        caption = sendingText;
+                        sendingText = null;
+                    }
+                    SendMessagesHelper.prepareSendingDocuments(accountInstance, documentsPathsArray, documentsOriginalPathsArray, documentsUrisArray, caption, documentsMimeType, did, null, null, null, true, 0);
+                }
+                if (sendingText != null) {
+                    SendMessagesHelper.prepareSendingText(accountInstance, sendingText, did, true, 0);
+                }
+                if (contactsToSend != null && !contactsToSend.isEmpty()) {
+                    for (int a = 0; a < contactsToSend.size(); a++) {
+                        TLRPC.User user = contactsToSend.get(a);
+                        SendMessagesHelper.getInstance(account).sendMessage(user, did, null, null, null, true, 0);
+                    }
+                }
+                if (!TextUtils.isEmpty(message)) {
+                    SendMessagesHelper.prepareSendingText(accountInstance, message.toString(), did, true, 0);
                 }
             }
+        }
+        if (dialogsFragment != null && fragment == null) {
+            dialogsFragment.finishFragment();
         }
 
         photoPathsArray = null;
@@ -2378,9 +2661,11 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
         NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.reloadInterface);
         NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.didSetNewTheme);
         NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.needSetDayNightTheme);
+        NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.needCheckSystemBarColors);
         NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.closeOtherAppActivities);
         NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.didSetPasscode);
         NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.notificationsCountUpdated);
+        NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.screenStateChanged);
     }
 
     public void presentFragment(BaseFragment fragment) {
@@ -2437,6 +2722,12 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
     @Override
     public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (grantResults == null) {
+            grantResults = new int[0];
+        }
+        if (permissions == null) {
+            permissions = new String[0];
+        }
 
         boolean granted = grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED;
 
@@ -2448,15 +2739,15 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
             }
         } else if (requestCode == 5) {
             if (!granted) {
-                ContactsController.getInstance(currentAccount).forceImportContacts();
-            } else {
                 showPermissionErrorAlert(LocaleController.getString("PermissionContacts", R.string.PermissionContacts));
                 return;
+            } else {
+                ContactsController.getInstance(currentAccount).forceImportContacts();
             }
         } else if (requestCode == 3) {
             boolean audioGranted = true;
             boolean cameraGranted = true;
-            for (int i = 0, size = permissions.length; i < size; i++) {
+            for (int i = 0, size = Math.min(permissions.length, grantResults.length); i < size; i++) {
                 if (Manifest.permission.RECORD_AUDIO.equals(permissions[i])) {
                     audioGranted = grantResults[i] == PackageManager.PERMISSION_GRANTED;
                 } else if (Manifest.permission.CAMERA.equals(permissions[i])) {
@@ -2519,7 +2810,6 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
     protected void onPause() {
         super.onPause();
         NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.stopAllHeavyOperations, 4096);
-        SharedConfig.lastAppPauseTime = System.currentTimeMillis();
         ApplicationLoader.mainInterfacePaused = true;
         Utilities.stageQueue.postRunnable(() -> {
             ApplicationLoader.mainInterfacePausedStageQueue = true;
@@ -2676,6 +2966,9 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
         if (editorView != null) {
             editorView.onConfigurationChanged();
         }
+        if (Theme.selectedAutoNightType == Theme.AUTO_NIGHT_TYPE_SYSTEM) {
+            Theme.checkAutoNightThemeConditions();
+        }
     }
 
     @Override
@@ -2741,6 +3034,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                     builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), null);
                 }
             } else if (reason == 3) {
+                builder.setTitle(LocaleController.getString("Proxy", R.string.Proxy));
                 builder.setMessage(LocaleController.getString("UseProxyTelegramError", R.string.UseProxyTelegramError));
                 builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), null);
                 proxyErrorDialog = showAlertDialog(builder);
@@ -2789,7 +3083,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                 } catch (Exception e) {
                     FileLog.e(e);
                 }
-            } else if (!MediaController.getInstance().hasFlagSecureFragment()) {
+            } else if (!AndroidUtilities.hasFlagSecureFragment()) {
                 try {
                     getWindow().clearFlags(WindowManager.LayoutParams.FLAG_SECURE);
                 } catch (Exception e) {
@@ -2844,13 +3138,46 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                 }
             }
             drawerLayoutContainer.setBehindKeyboardColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+            checkSystemBarColors();
         } else if (id == NotificationCenter.needSetDayNightTheme) {
+            boolean instant = false;
+            if (Build.VERSION.SDK_INT >= 21 && args[2] != null) {
+                if (themeSwitchImageView.getVisibility() == View.VISIBLE) {
+                    return;
+                }
+                try {
+                    int[] pos = (int[]) args[2];
+                    int w = drawerLayoutContainer.getMeasuredWidth();
+                    int h = drawerLayoutContainer.getMeasuredHeight();
+                    Bitmap bitmap = Bitmap.createBitmap(drawerLayoutContainer.getMeasuredWidth(), drawerLayoutContainer.getMeasuredHeight(), Bitmap.Config.ARGB_8888);
+                    Canvas canvas = new Canvas(bitmap);
+                    drawerLayoutContainer.draw(canvas);
+                    themeSwitchImageView.setImageBitmap(bitmap);
+                    themeSwitchImageView.setVisibility(View.VISIBLE);
+                    float finalRadius = (float) Math.max(Math.sqrt((w - pos[0]) * (w - pos[0]) + (h - pos[1]) * (h - pos[1])), Math.sqrt(pos[0] * pos[0] + (h - pos[1]) * (h - pos[1])));
+                    Animator anim = ViewAnimationUtils.createCircularReveal(drawerLayoutContainer, pos[0], pos[1], 0, finalRadius);
+                    anim.setDuration(400);
+                    anim.setInterpolator(CubicBezierInterpolator.EASE_IN_OUT_QUAD);
+                    anim.addListener(new AnimatorListenerAdapter() {
+                        @Override
+                        public void onAnimationEnd(Animator animation) {
+                            themeSwitchImageView.setImageDrawable(null);
+                            themeSwitchImageView.setVisibility(View.GONE);
+                        }
+                    });
+                    anim.start();
+                    instant = true;
+                } catch (Throwable ignore) {
+
+                }
+            }
             Theme.ThemeInfo theme = (Theme.ThemeInfo) args[0];
             boolean nigthTheme = (Boolean) args[1];
-            actionBarLayout.animateThemedValues(theme, nigthTheme);
+            int accentId = (Integer) args[3];
+            actionBarLayout.animateThemedValues(theme, accentId, nigthTheme, instant);
             if (AndroidUtilities.isTablet()) {
-                layersActionBarLayout.animateThemedValues(theme, nigthTheme);
-                rightActionBarLayout.animateThemedValues(theme, nigthTheme);
+                layersActionBarLayout.animateThemedValues(theme, accentId, nigthTheme, instant);
+                rightActionBarLayout.animateThemedValues(theme, accentId, nigthTheme, instant);
             }
         } else if (id == NotificationCenter.notificationsCountUpdated) {
             if (sideMenu != null) {
@@ -2893,6 +3220,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                                         TLRPC.TL_wallPaper wallPaper = (TLRPC.TL_wallPaper) response;
                                         loadingThemeInfo = themeInfo;
                                         loadingThemeWallpaperName = FileLoader.getAttachFileName(wallPaper.document);
+                                        loadingThemeWallpaper = wallPaper;
                                         FileLoader.getInstance(themeInfo.account).loadFile(wallPaper.document, wallPaper, 1, 1);
                                     } else {
                                         onThemeLoadFinish();
@@ -2903,7 +3231,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                         }
                         Theme.ThemeInfo finalThemeInfo = Theme.applyThemeFile(locFile, loadingTheme.title, loadingTheme, true);
                         if (finalThemeInfo != null) {
-                            presentFragment(new ThemePreviewActivity(finalThemeInfo, true, ThemePreviewActivity.SCREEN_TYPE_PREVIEW, false));
+                            presentFragment(new ThemePreviewActivity(finalThemeInfo, true, ThemePreviewActivity.SCREEN_TYPE_PREVIEW, false, false));
                         }
                     }
                     onThemeLoadFinish();
@@ -2913,27 +3241,22 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                 if (loadingThemeWallpaperName.equals(path)) {
                     loadingThemeWallpaperName = null;
                     File file = (File) args[1];
-                    Utilities.globalQueue.postRunnable(() -> {
-                        try {
-                            Bitmap bitmap = ThemesHorizontalListCell.getScaledBitmap(AndroidUtilities.dp(640), AndroidUtilities.dp(360), file.getAbsolutePath(), null, 0);
-                            if (loadingThemeInfo.isBlured) {
-                                bitmap = Utilities.blurWallpaper(bitmap);
-                            }
-                            FileOutputStream stream = new FileOutputStream(loadingThemeInfo.pathToWallpaper);
-                            bitmap.compress(Bitmap.CompressFormat.JPEG, 87, stream);
-                            stream.close();
-                        } catch (Throwable e) {
-                            FileLog.e(e);
-                        }
-                        AndroidUtilities.runOnUIThread(() -> {
-                            File locFile = new File(ApplicationLoader.getFilesDirFixed(), "remote" + loadingTheme.id + ".attheme");
-                            Theme.ThemeInfo finalThemeInfo = Theme.applyThemeFile(locFile, loadingTheme.title, loadingTheme, true);
-                            if (finalThemeInfo != null) {
-                                presentFragment(new ThemePreviewActivity(finalThemeInfo, true, ThemePreviewActivity.SCREEN_TYPE_PREVIEW, false));
-                            }
-                            onThemeLoadFinish();
+                    if (loadingThemeAccent) {
+                        openThemeAccentPreview(loadingTheme, loadingThemeWallpaper, loadingThemeInfo);
+                        onThemeLoadFinish();
+                    } else {
+                        Utilities.globalQueue.postRunnable(() -> {
+                            loadingThemeInfo.createBackground(file, loadingThemeInfo.pathToWallpaper);
+                            AndroidUtilities.runOnUIThread(() -> {
+                                File locFile = new File(ApplicationLoader.getFilesDirFixed(), "remote" + loadingTheme.id + ".attheme");
+                                Theme.ThemeInfo finalThemeInfo = Theme.applyThemeFile(locFile, loadingTheme.title, loadingTheme, true);
+                                if (finalThemeInfo != null) {
+                                    presentFragment(new ThemePreviewActivity(finalThemeInfo, true, ThemePreviewActivity.SCREEN_TYPE_PREVIEW, false, false));
+                                }
+                                onThemeLoadFinish();
+                            });
                         });
-                    });
+                    }
                 }
             }
         } else if (id == NotificationCenter.fileDidFailToLoad) {
@@ -2941,6 +3264,17 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
             if (path.equals(loadingThemeFileName) || path.equals(loadingThemeWallpaperName)) {
                 onThemeLoadFinish();
             }
+        } else if (id == NotificationCenter.screenStateChanged) {
+            if (ApplicationLoader.mainInterfacePaused) {
+                return;
+            }
+            if (ApplicationLoader.isScreenOn) {
+                onPasscodeResume();
+            } else {
+                onPasscodePause();
+            }
+        } else if (id == NotificationCenter.needCheckSystemBarColors) {
+            checkSystemBarColors();
         }
     }
 
@@ -2952,6 +3286,15 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
         return value;
     }
 
+    private void openThemeAccentPreview(TLRPC.TL_theme t, TLRPC.TL_wallPaper wallPaper, Theme.ThemeInfo info) {
+        int lastId = info.lastAccentId;
+        Theme.ThemeAccent accent = info.createNewAccent(t, currentAccount);
+        info.prevAccentId = info.currentAccentId;
+        info.setCurrentAccentId(accent.id);
+        accent.pattern = wallPaper;
+        presentFragment(new ThemePreviewActivity(info, lastId != info.lastAccentId, ThemePreviewActivity.SCREEN_TYPE_PREVIEW, false, false));
+    }
+
     private void onThemeLoadFinish() {
         if (loadingThemeProgressDialog != null) {
             try {
@@ -2961,6 +3304,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
             }
         }
         loadingThemeWallpaperName = null;
+        loadingThemeWallpaper = null;
         loadingThemeInfo = null;
         loadingThemeFileName = null;
         loadingTheme = null;
@@ -3169,7 +3513,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
             lockRunnable = null;
         }
         if (SharedConfig.passcodeHash.length() != 0) {
-            SharedConfig.lastPauseTime = ConnectionsManager.getInstance(currentAccount).getCurrentTime();
+            SharedConfig.lastPauseTime = (int) (SystemClock.uptimeMillis() / 1000);
             lockRunnable = new Runnable() {
                 @Override
                 public void run() {
@@ -3342,10 +3686,12 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
     @Override
     public void onLowMemory() {
         super.onLowMemory();
-        actionBarLayout.onLowMemory();
-        if (AndroidUtilities.isTablet()) {
-            rightActionBarLayout.onLowMemory();
-            layersActionBarLayout.onLowMemory();
+        if (actionBarLayout != null) {
+            actionBarLayout.onLowMemory();
+            if (AndroidUtilities.isTablet()) {
+                rightActionBarLayout.onLowMemory();
+                layersActionBarLayout.onLowMemory();
+            }
         }
     }
 

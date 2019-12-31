@@ -156,6 +156,11 @@ public class ScrollSlidingTextTabStrip extends HorizontalScrollView {
         TextView prevTab = (TextView) tabsContainer.getChildAt(previousPosition);
         setAnimationProgressInernal(newTab, prevTab, value);
 
+        if (value >= 1f) {
+            prevTab.setTag(unactiveTextColorKey);
+            newTab.setTag(activeTextColorKey);
+        }
+
         if (delegate != null) {
             delegate.onPageScrolled(value);
         }
@@ -394,6 +399,10 @@ public class ScrollSlidingTextTabStrip extends HorizontalScrollView {
             animateIndicatorToWidth = getChildWidth(nextChild);
             animateIndicatorToX = nextChild.getLeft() + (nextChild.getMeasuredWidth() - animateIndicatorToWidth) / 2;
             setAnimationProgressInernal(nextChild, child, progress);
+            if (progress >= 1f) {
+                child.setTag(unactiveTextColorKey);
+                nextChild.setTag(activeTextColorKey);
+            }
         }
         if (progress >= 1.0f) {
             currentPosition = position;

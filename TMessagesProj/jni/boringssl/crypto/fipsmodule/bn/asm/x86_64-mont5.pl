@@ -1,4 +1,11 @@
-#!/usr/bin/env perl
+#! /usr/bin/env perl
+# Copyright 2011-2016 The OpenSSL Project Authors. All Rights Reserved.
+#
+# Licensed under the OpenSSL license (the "License").  You may not use
+# this file except in compliance with the License.  You can obtain a copy
+# in the file LICENSE in the source distribution or at
+# https://www.openssl.org/source/license.html
+
 
 # ====================================================================
 # Written by Andy Polyakov <appro@openssl.org> for the OpenSSL
@@ -41,9 +48,7 @@ open OUT,"| \"$^X\" \"$xlate\" $flavour \"$output\"";
 # In upstream, this is controlled by shelling out to the compiler to check
 # versions, but BoringSSL is intended to be used with pre-generated perlasm
 # output, so this isn't useful anyway.
-#
-# TODO(davidben): Set $addx to one once build problems are resolved.
-$addx = 0;
+$addx = 1;
 
 # int bn_mul_mont_gather5(
 $rp="%rdi";	# BN_ULONG *rp,
@@ -396,27 +401,27 @@ $code.=<<___;
 	mov	$num,$j			# j=num
 	jmp	.Lsub
 .align	16
-.Lsub:
-	sbb	($np,$i,8),%rax
+.Lsub:	sbb	($np,$i,8),%rax
 	mov	%rax,($rp,$i,8)		# rp[i]=tp[i]-np[i]
 	mov	8($ap,$i,8),%rax	# tp[i+1]
 	lea	1($i),$i		# i++
-	dec	$j			# doesnn't affect CF!
+	dec	$j			# doesn't affect CF!
 	jnz	.Lsub
 
 	sbb	\$0,%rax		# handle upmost overflow bit
+	mov	\$-1,%rbx
+	xor	%rax,%rbx
 	xor	$i,$i
-	and	%rax,$ap
-	not	%rax
-	mov	$rp,$np
-	and	%rax,$np
 	mov	$num,$j			# j=num
-	or	$np,$ap			# ap=borrow?tp:rp
-.align	16
-.Lcopy:					# copy or in-place refresh
-	mov	($ap,$i,8),%rax
+
+.Lcopy:					# conditional copy
+	mov	($rp,$i,8),%rcx
+	mov	(%rsp,$i,8),%rdx
+	and	%rbx,%rcx
+	and	%rax,%rdx
 	mov	$i,(%rsp,$i,8)		# zap temporary vector
-	mov	%rax,($rp,$i,8)		# rp[i]=tp[i]
+	or	%rcx,%rdx
+	mov	%rdx,($rp,$i,8)		# rp[i]=tp[i]
 	lea	1($i),$i
 	sub	\$1,$j
 	jnz	.Lcopy
@@ -561,6 +566,7 @@ $code.=<<___;
 .type	mul4x_internal,\@abi-omnipotent
 .align	32
 mul4x_internal:
+.cfi_startproc
 	shl	\$5,$num		# $num was in bytes
 	movd	`($win64?56:8)`(%rax),%xmm5	# load 7th argument, index
 	lea	.Linc(%rip),%rax
@@ -1055,6 +1061,7 @@ $code.=<<___
 ___
 }
 $code.=<<___;
+.cfi_endproc
 .size	mul4x_internal,.-mul4x_internal
 ___
 }}}
@@ -1063,7 +1070,7 @@ ___
 # void bn_power5(
 my $rptr="%rdi";	# BN_ULONG *rptr,
 my $aptr="%rsi";	# const BN_ULONG *aptr,
-my $bptr="%rdx";	# const void *table,
+my $bptr="%rdx";	# const BN_ULONG *table,
 my $nptr="%rcx";	# const BN_ULONG *nptr,
 my $n0  ="%r8";		# const BN_ULONG *n0);
 my $num ="%r9";		# int num, has to be divisible by 8
@@ -1221,6 +1228,7 @@ $code.=<<___;
 .align	32
 bn_sqr8x_internal:
 __bn_sqr8x_internal:
+.cfi_startproc
 	##############################################################
 	# Squaring part:
 	#
@@ -2012,6 +2020,7 @@ __bn_sqr8x_reduction:
 	cmp	%rdx,$tptr		# end of t[]?
 	jb	.L8x_reduction_loop
 	ret
+.cfi_endproc
 .size	bn_sqr8x_internal,.-bn_sqr8x_internal
 ___
 }
@@ -2024,6 +2033,7 @@ $code.=<<___;
 .type	__bn_post4x_internal,\@abi-omnipotent
 .align	32
 __bn_post4x_internal:
+.cfi_startproc
 	mov	8*0($nptr),%r12
 	lea	(%rdi,$num),$tptr	# %rdi was $tptr above
 	mov	$num,%rcx
@@ -2074,6 +2084,7 @@ __bn_post4x_internal:
 	mov	$num,%r10		# prepare for back-to-back call
 	neg	$num			# restore $num
 	ret
+.cfi_endproc
 .size	__bn_post4x_internal,.-__bn_post4x_internal
 ___
 }
@@ -2083,10 +2094,12 @@ $code.=<<___;
 .type	bn_from_montgomery,\@abi-omnipotent
 .align	32
 bn_from_montgomery:
+.cfi_startproc
 	testl	\$7,`($win64?"48(%rsp)":"%r9d")`
 	jz	bn_from_mont8x
 	xor	%eax,%eax
 	ret
+.cfi_endproc
 .size	bn_from_montgomery,.-bn_from_montgomery
 
 .type	bn_from_mont8x,\@function,6
@@ -2383,6 +2396,7 @@ bn_mulx4x_mont_gather5:
 .type	mulx4x_internal,\@abi-omnipotent
 .align	32
 mulx4x_internal:
+.cfi_startproc
 	mov	$num,8(%rsp)		# save -$num (it was in bytes)
 	mov	$num,%r10
 	neg	$num			# restore $num
@@ -2405,7 +2419,7 @@ my $N=$STRIDE/4;		# should match cache line size
 $code.=<<___;
 	movdqa	0(%rax),%xmm0		# 00000001000000010000000000000000
 	movdqa	16(%rax),%xmm1		# 00000002000000020000000200000002
-	lea	88-112(%rsp,%r10),%r10	# place the mask after tp[num+1] (+ICache optimizaton)
+	lea	88-112(%rsp,%r10),%r10	# place the mask after tp[num+1] (+ICache optimization)
 	lea	128($bp),$bptr		# size optimization
 
 	pshufd	\$0,%xmm5,%xmm5		# broadcast index
@@ -2733,6 +2747,7 @@ $code.=<<___;
 	mov	8*2(%rbp),%r14
 	mov	8*3(%rbp),%r15
 	jmp	.Lsqrx4x_sub_entry	# common post-condition
+.cfi_endproc
 .size	mulx4x_internal,.-mulx4x_internal
 ___
 }{
@@ -2740,7 +2755,7 @@ ___
 # void bn_power5(
 my $rptr="%rdi";	# BN_ULONG *rptr,
 my $aptr="%rsi";	# const BN_ULONG *aptr,
-my $bptr="%rdx";	# const void *table,
+my $bptr="%rdx";	# const BN_ULONG *table,
 my $nptr="%rcx";	# const BN_ULONG *nptr,
 my $n0  ="%r8";		# const BN_ULONG *n0);
 my $num ="%r9";		# int num, has to be divisible by 8
@@ -2893,6 +2908,7 @@ bn_powerx5:
 .align	32
 bn_sqrx8x_internal:
 __bn_sqrx8x_internal:
+.cfi_startproc
 	##################################################################
 	# Squaring part:
 	#
@@ -3525,6 +3541,7 @@ __bn_sqrx8x_reduction:
 	cmp	8+8(%rsp),%r8		# end of t[]?
 	jb	.Lsqrx8x_reduction_loop
 	ret
+.cfi_endproc
 .size	bn_sqrx8x_internal,.-bn_sqrx8x_internal
 ___
 }
@@ -3535,7 +3552,9 @@ ___
 my ($rptr,$nptr)=("%rdx","%rbp");
 $code.=<<___;
 .align	32
+.type	__bn_postx4x_internal,\@abi-omnipotent
 __bn_postx4x_internal:
+.cfi_startproc
 	mov	8*0($nptr),%r12
 	mov	%rcx,%r10		# -$num
 	mov	%rcx,%r9		# -$num
@@ -3583,6 +3602,7 @@ __bn_postx4x_internal:
 	neg	%r9			# restore $num
 
 	ret
+.cfi_endproc
 .size	__bn_postx4x_internal,.-__bn_postx4x_internal
 ___
 }
@@ -3599,6 +3619,7 @@ $code.=<<___;
 .type	bn_scatter5,\@abi-omnipotent
 .align	16
 bn_scatter5:
+.cfi_startproc
 	cmp	\$0, $num
 	jz	.Lscatter_epilogue
 	lea	($tbl,$idx,8),$tbl
@@ -3611,15 +3632,18 @@ bn_scatter5:
 	jnz	.Lscatter
 .Lscatter_epilogue:
 	ret
+.cfi_endproc
 .size	bn_scatter5,.-bn_scatter5
 
 .globl	bn_gather5
 .type	bn_gather5,\@abi-omnipotent
 .align	32
 bn_gather5:
+.cfi_startproc
 .LSEH_begin_bn_gather5:			# Win64 thing, but harmless in other cases
 	# I can't trust assembler to use specific encoding:-(
 	.byte	0x4c,0x8d,0x14,0x24			#lea    (%rsp),%r10
+.cfi_def_cfa_register	%r10
 	.byte	0x48,0x81,0xec,0x08,0x01,0x00,0x00	#sub	$0x108,%rsp
 	lea	.Linc(%rip),%rax
 	and	\$-16,%rsp		# shouldn't be formally required
@@ -3700,8 +3724,10 @@ $code.=<<___;
 	jnz	.Lgather
 
 	lea	(%r10),%rsp
+.cfi_def_cfa_register	%rsp
 	ret
 .LSEH_end_bn_gather5:
+.cfi_endproc
 .size	bn_gather5,.-bn_gather5
 ___
 }
@@ -3904,4 +3930,4 @@ ___
 $code =~ s/\`([^\`]*)\`/eval($1)/gem;
 
 print $code;
-close STDOUT;
+close STDOUT or die "error closing STDOUT";

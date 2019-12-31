@@ -2,7 +2,9 @@ package org.telegram.ui.Cells;
 
 import android.animation.ArgbEvaluator;
 import android.animation.ObjectAnimator;
+import android.app.Activity;
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.BitmapShader;
@@ -41,7 +43,6 @@ import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Components.BackgroundGradientDrawable;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RadioButton;
 import org.telegram.ui.Components.RecyclerListView;
@@ -50,7 +51,6 @@ import org.telegram.ui.ThemeSetUrlActivity;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 
@@ -127,8 +127,17 @@ public class ThemesHorizontalListCell extends RecyclerListView implements Notifi
 
         private float placeholderAlpha;
 
-        private int accentColor;
-        private int oldAccentColor;
+        private int inColor;
+        private int outColor;
+        private int backColor;
+        private int checkColor;
+        private int accentId;
+
+        private int oldInColor;
+        private int oldOutColor;
+        private int oldBackColor;
+        private int oldCheckColor;
+
         private boolean accentColorChanged;
 
         private ObjectAnimator accentAnimator;
@@ -157,13 +166,7 @@ public class ThemesHorizontalListCell extends RecyclerListView implements Notifi
 
             textPaint.setTextSize(AndroidUtilities.dp(13));
 
-            button = new RadioButton(context) {
-                @Override
-                public void invalidate() {
-                    super.invalidate();
-                    //ListView.this.invalidate();
-                }
-            };
+            button = new RadioButton(context);
             button.setSize(AndroidUtilities.dp(20));
             addView(button, LayoutHelper.createFrame(22, 22, Gravity.LEFT | Gravity.TOP, 27, 75, 0, 0));
         }
@@ -231,6 +234,35 @@ public class ThemesHorizontalListCell extends RecyclerListView implements Notifi
                                         }
                                     }
                                 }
+                                String pattern = uri.getQueryParameter("pattern");
+                                if (!TextUtils.isEmpty(pattern)) {
+                                    try {
+                                        String bgColor = uri.getQueryParameter("bg_color");
+                                        if (!TextUtils.isEmpty(bgColor)) {
+                                            themeInfo.patternBgColor = Integer.parseInt(bgColor.substring(0, 6), 16) | 0xff000000;
+                                            if (bgColor.length() > 6) {
+                                                themeInfo.patternBgGradientColor = Integer.parseInt(bgColor.substring(7), 16) | 0xff000000;
+                                            }
+                                        }
+                                    } catch (Exception ignore) {
+
+                                    }
+                                    try {
+                                        String rotation = uri.getQueryParameter("rotation");
+                                        if (!TextUtils.isEmpty(rotation)) {
+                                            themeInfo.patternBgGradientRotation = Utilities.parseInt(rotation);
+                                        }
+                                    } catch (Exception ignore) {
+
+                                    }
+                                    String intensity = uri.getQueryParameter("intensity");
+                                    if (!TextUtils.isEmpty(intensity)) {
+                                        themeInfo.patternIntensity = Utilities.parseInt(intensity);
+                                    }
+                                    if (themeInfo.patternIntensity == 0) {
+                                        themeInfo.patternIntensity = 50;
+                                    }
+                                }
                             } else if (line.startsWith("WPS")) {
                                 themeInfo.previewWallpaperOffset = currentPosition + len;
                                 finished = true;
@@ -252,13 +284,13 @@ public class ThemesHorizontalListCell extends RecyclerListView implements Notifi
                                         }
                                         switch (key) {
                                             case Theme.key_chat_inBubble:
-                                                themeInfo.previewInColor = value;
+                                                themeInfo.setPreviewInColor(value);
                                                 break;
                                             case Theme.key_chat_outBubble:
-                                                themeInfo.previewOutColor = value;
+                                                themeInfo.setPreviewOutColor(value);
                                                 break;
                                             case Theme.key_chat_wallpaper:
-                                                themeInfo.previewBackgroundColor = value;
+                                                themeInfo.setPreviewBackgroundColor(value);
                                                 break;
                                             case Theme.key_chat_wallpaper_gradient_to:
                                                 themeInfo.previewBackgroundGradientColor = value;
@@ -310,23 +342,24 @@ public class ThemesHorizontalListCell extends RecyclerListView implements Notifi
         }
 
         private void applyTheme() {
-            inDrawable.setColorFilter(new PorterDuffColorFilter(themeInfo.previewInColor, PorterDuff.Mode.MULTIPLY));
-            outDrawable.setColorFilter(new PorterDuffColorFilter(themeInfo.previewOutColor, PorterDuff.Mode.MULTIPLY));
+            inDrawable.setColorFilter(new PorterDuffColorFilter(themeInfo.getPreviewInColor(), PorterDuff.Mode.MULTIPLY));
+            outDrawable.setColorFilter(new PorterDuffColorFilter(themeInfo.getPreviewOutColor(), PorterDuff.Mode.MULTIPLY));
             if (themeInfo.pathToFile == null) {
-                updateAccentColor(themeInfo.accentColor, false);
+                updateColors(false);
                 optionsDrawable = null;
             } else {
                 optionsDrawable = getResources().getDrawable(R.drawable.preview_dots).mutate();
+                oldBackColor = backColor = themeInfo.getPreviewBackgroundColor();
             }
 
             bitmapShader = null;
             backgroundDrawable = null;
             double[] hsv = null;
             if (themeInfo.previewBackgroundGradientColor != 0) {
-                BackgroundGradientDrawable drawable = new BackgroundGradientDrawable(GradientDrawable.Orientation.BL_TR, new int[]{themeInfo.previewBackgroundColor, themeInfo.previewBackgroundGradientColor});
+                final GradientDrawable drawable = new GradientDrawable(GradientDrawable.Orientation.BL_TR, new int[]{themeInfo.getPreviewBackgroundColor(), themeInfo.previewBackgroundGradientColor});
                 drawable.setCornerRadius(AndroidUtilities.dp(6));
                 backgroundDrawable = drawable;
-                hsv = AndroidUtilities.rgbToHsv(Color.red(themeInfo.previewBackgroundColor), Color.green(themeInfo.previewBackgroundColor), Color.blue(themeInfo.previewBackgroundColor));
+                hsv = AndroidUtilities.rgbToHsv(Color.red(themeInfo.getPreviewBackgroundColor()), Color.green(themeInfo.getPreviewBackgroundColor()), Color.blue(themeInfo.getPreviewBackgroundColor()));
             } else if (themeInfo.previewWallpaperOffset > 0 || themeInfo.pathToWallpaper != null) {
                 Bitmap wallpaper = getScaledBitmap(AndroidUtilities.dp(76), AndroidUtilities.dp(97), themeInfo.pathToWallpaper, themeInfo.pathToFile, themeInfo.previewWallpaperOffset);
                 if (wallpaper != null) {
@@ -336,15 +369,15 @@ public class ThemesHorizontalListCell extends RecyclerListView implements Notifi
                     int[] colors = AndroidUtilities.calcDrawableColor(backgroundDrawable);
                     hsv = AndroidUtilities.rgbToHsv(Color.red(colors[0]), Color.green(colors[0]), Color.blue(colors[0]));
                 }
-            } else if (themeInfo.previewBackgroundColor != 0) {
-                hsv = AndroidUtilities.rgbToHsv(Color.red(themeInfo.previewBackgroundColor), Color.green(themeInfo.previewBackgroundColor), Color.blue(themeInfo.previewBackgroundColor));
+            } else if (themeInfo.getPreviewBackgroundColor() != 0) {
+                hsv = AndroidUtilities.rgbToHsv(Color.red(themeInfo.getPreviewBackgroundColor()), Color.green(themeInfo.getPreviewBackgroundColor()), Color.blue(themeInfo.getPreviewBackgroundColor()));
             }
             if (hsv != null && hsv[1] <= 0.1f && hsv[2] >= 0.96f) {
                 hasWhiteBackground = true;
             } else {
                 hasWhiteBackground = false;
             }
-            if (themeInfo.previewBackgroundColor == 0 && themeInfo.previewParsed && backgroundDrawable == null) {
+            if (themeInfo.getPreviewBackgroundColor() == 0 && themeInfo.previewParsed && backgroundDrawable == null) {
                 BitmapDrawable drawable = (BitmapDrawable) getResources().getDrawable(R.drawable.catstile).mutate();
                 bitmapShader = new BitmapShader(drawable.getBitmap(), Shader.TileMode.REPEAT, Shader.TileMode.REPEAT);
                 bitmapPaint.setShader(bitmapShader);
@@ -363,8 +396,8 @@ public class ThemesHorizontalListCell extends RecyclerListView implements Notifi
             placeholderAlpha = 0.0f;
 
             if (themeInfo.pathToFile != null && !themeInfo.previewParsed) {
-                themeInfo.previewInColor = Theme.getDefaultColor(Theme.key_chat_inBubble);
-                themeInfo.previewOutColor = Theme.getDefaultColor(Theme.key_chat_outBubble);
+                themeInfo.setPreviewInColor(Theme.getDefaultColor(Theme.key_chat_inBubble));
+                themeInfo.setPreviewOutColor(Theme.getDefaultColor(Theme.key_chat_outBubble));
                 File file = new File(themeInfo.pathToFile);
                 boolean fileExists = file.exists();
                 boolean parsed = fileExists && parseTheme();
@@ -411,9 +444,32 @@ public class ThemesHorizontalListCell extends RecyclerListView implements Notifi
             button.setChecked(themeInfo == t, true);
         }
 
-        void updateAccentColor(int accent, boolean animate) {
-            oldAccentColor = accentColor;
-            accentColor = accent;
+        void updateColors(boolean animate) {
+            oldInColor = inColor;
+            oldOutColor = outColor;
+            oldBackColor = backColor;
+            oldCheckColor = checkColor;
+
+            Theme.ThemeAccent accent = themeInfo.getAccent(false);
+
+            int accentColor;
+            int myAccentColor;
+            int backAccent;
+            if (accent != null) {
+                accentColor = accent.accentColor;
+                myAccentColor = accent.myMessagesAccentColor != 0 ? accent.myMessagesAccentColor : accentColor;
+                int backgroundOverrideColor = (int) accent.backgroundOverrideColor;
+                backAccent = backgroundOverrideColor != 0 ? backgroundOverrideColor : accentColor;
+            } else {
+                accentColor = 0;
+                myAccentColor = 0;
+                backAccent = 0;
+            }
+            inColor = Theme.changeColorAccent(themeInfo, accentColor, themeInfo.getPreviewInColor());
+            outColor = Theme.changeColorAccent(themeInfo, myAccentColor, themeInfo.getPreviewOutColor());
+            backColor = Theme.changeColorAccent(themeInfo, backAccent, themeInfo.getPreviewBackgroundColor());
+            checkColor = outColor;
+            accentId = themeInfo.currentAccentId;
 
             if (accentAnimator != null) {
                 accentAnimator.cancel();
@@ -430,7 +486,7 @@ public class ThemesHorizontalListCell extends RecyclerListView implements Notifi
 
         @Keep
         public float getAccentState() {
-            return accentColor;
+            return accentState;
         }
 
         @Keep
@@ -442,8 +498,8 @@ public class ThemesHorizontalListCell extends RecyclerListView implements Notifi
 
         @Override
         protected void onDraw(Canvas canvas) {
-            if (accentColor != themeInfo.accentColor) {
-                updateAccentColor(themeInfo.accentColor, true);
+            if (accentId != themeInfo.currentAccentId) {
+                updateColors(true);
             }
 
             int x = isFirst ? AndroidUtilities.dp(22) : 0;
@@ -463,11 +519,11 @@ public class ThemesHorizontalListCell extends RecyclerListView implements Notifi
             boolean drawContent = themeInfo.info == null || themeInfo.info.document != null && themeInfo.themeLoaded;
 
             if (drawContent) {
-                paint.setColor(tint(themeInfo.previewBackgroundColor));
+                paint.setColor(blend(oldBackColor, backColor));
 
                 if (accentColorChanged) {
-                    inDrawable.setColorFilter(new PorterDuffColorFilter(tint(themeInfo.previewInColor), PorterDuff.Mode.MULTIPLY));
-                    outDrawable.setColorFilter(new PorterDuffColorFilter(tint(themeInfo.previewOutColor), PorterDuff.Mode.MULTIPLY));
+                    inDrawable.setColorFilter(new PorterDuffColorFilter(blend(oldInColor, inColor), PorterDuff.Mode.MULTIPLY));
+                    outDrawable.setColorFilter(new PorterDuffColorFilter(blend(oldOutColor, outColor), PorterDuff.Mode.MULTIPLY));
                     accentColorChanged = false;
                 }
 
@@ -502,13 +558,13 @@ public class ThemesHorizontalListCell extends RecyclerListView implements Notifi
                 button.setColor(0x66ffffff, 0xffffffff);
 
                 if (themeInfo.accentBaseColor != 0) {
-                    if ("Arctic Blue".equals(themeInfo.name)) {
-                        button.setColor(0xffb3b3b3, tint(themeInfo.accentBaseColor));
+                    if ("Day".equals(themeInfo.name) || "Arctic Blue".equals(themeInfo.name)) {
+                        button.setColor(0xffb3b3b3, blend(oldCheckColor, checkColor));
                         Theme.chat_instantViewRectPaint.setColor(0x2bb0b5ba);
                         canvas.drawRoundRect(rect, AndroidUtilities.dp(6), AndroidUtilities.dp(6), Theme.chat_instantViewRectPaint);
                     }
                 } else if (hasWhiteBackground) {
-                    button.setColor(0xffb3b3b3, themeInfo.previewOutColor);
+                    button.setColor(0xffb3b3b3, themeInfo.getPreviewOutColor());
                     Theme.chat_instantViewRectPaint.setColor(0x2bb0b5ba);
                     canvas.drawRoundRect(rect, AndroidUtilities.dp(6), AndroidUtilities.dp(6), Theme.chat_instantViewRectPaint);
                 }
@@ -572,13 +628,11 @@ public class ThemesHorizontalListCell extends RecyclerListView implements Notifi
             }
         }
 
-        private int tint(int color) {
+        private int blend(int color1, int color2) {
             if (accentState == 1.0f) {
-                return Theme.changeColorAccent(themeInfo, accentColor, color);
+                return color2;
             } else {
-                int oldColor = Theme.changeColorAccent(themeInfo, oldAccentColor, color);
-                int newColor = Theme.changeColorAccent(themeInfo, accentColor, color);
-                return (int) evaluator.evaluate(accentState, oldColor, newColor);
+                return (int) evaluator.evaluate(accentState, color1, color2);
             }
         }
     }
@@ -609,30 +663,7 @@ public class ThemesHorizontalListCell extends RecyclerListView implements Notifi
         setLayoutManager(horizontalLayoutManager);
         setAdapter(adapter = new ThemesListAdapter(context));
         setOnItemClickListener((view1, position) -> {
-            InnerThemeView innerThemeView = (InnerThemeView) view1;
-            Theme.ThemeInfo themeInfo = innerThemeView.themeInfo;
-            if (themeInfo.info != null) {
-                if (!themeInfo.themeLoaded) {
-                    return;
-                }
-                if (themeInfo.info.document == null) {
-                    presentFragment(new ThemeSetUrlActivity(themeInfo, true));
-                    return;
-                }
-            }
-            if (currentType == ThemeActivity.THEME_TYPE_NIGHT) {
-                if (themeInfo == Theme.getCurrentNightTheme()) {
-                    return;
-                }
-                Theme.setCurrentNightTheme(themeInfo);
-            } else {
-                if (themeInfo == Theme.getCurrentTheme()) {
-                    return;
-                }
-                NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.needSetDayNightTheme, themeInfo, false);
-            }
-            updateRows();
-
+            selectTheme(((InnerThemeView) view1).themeInfo);
             int left = view1.getLeft();
             int right = view1.getRight();
             if (left < 0) {
@@ -640,20 +671,52 @@ public class ThemesHorizontalListCell extends RecyclerListView implements Notifi
             } else if (right > getMeasuredWidth()) {
                 smoothScrollBy(right - getMeasuredWidth(), 0);
             }
-
-            int count = getChildCount();
-            for (int a = 0; a < count; a++) {
-                View child = getChildAt(a);
-                if (child instanceof InnerThemeView) {
-                    ((InnerThemeView) child).updateCurrentThemeCheck();
-                }
-            }
         });
         setOnItemLongClickListener((view12, position) -> {
             InnerThemeView innerThemeView = (InnerThemeView) view12;
             showOptionsForTheme(innerThemeView.themeInfo);
             return true;
         });
+    }
+
+    public void selectTheme(Theme.ThemeInfo themeInfo) {
+        if (themeInfo.info != null) {
+            if (!themeInfo.themeLoaded) {
+                return;
+            }
+            if (themeInfo.info.document == null) {
+                presentFragment(new ThemeSetUrlActivity(themeInfo, null, true));
+                return;
+            }
+        }
+        if (!TextUtils.isEmpty(themeInfo.assetName)) {
+            Theme.PatternsLoader.createLoader(false);
+        }
+        if (currentType != ThemeActivity.THEME_TYPE_OTHER) {
+            SharedPreferences.Editor editor = ApplicationLoader.applicationContext.getSharedPreferences("themeconfig", Activity.MODE_PRIVATE).edit();
+            editor.putString(currentType == ThemeActivity.THEME_TYPE_NIGHT || themeInfo.isDark() ? "lastDarkTheme" : "lastDayTheme", themeInfo.getKey());
+            editor.commit();
+        }
+        if (currentType == ThemeActivity.THEME_TYPE_NIGHT) {
+            if (themeInfo == Theme.getCurrentNightTheme()) {
+                return;
+            }
+            Theme.setCurrentNightTheme(themeInfo);
+        } else {
+            if (themeInfo == Theme.getCurrentTheme()) {
+                return;
+            }
+            NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.needSetDayNightTheme, themeInfo, false, null, -1);
+        }
+        updateRows();
+
+        int count = getChildCount();
+        for (int a = 0; a < count; a++) {
+            View child = getChildAt(a);
+            if (child instanceof InnerThemeView) {
+                ((InnerThemeView) child).updateCurrentThemeCheck();
+            }
+        }
     }
 
     public void setDrawDivider(boolean draw) {
@@ -768,18 +831,7 @@ public class ThemesHorizontalListCell extends RecyclerListView implements Notifi
                 loadingThemes.remove(fileName);
                 if (loadingWallpapers.remove(info) != null) {
                     Utilities.globalQueue.postRunnable(() -> {
-                        try {
-                            Bitmap bitmap = getScaledBitmap(AndroidUtilities.dp(640), AndroidUtilities.dp(360), file.getAbsolutePath(), null, 0);
-                            if (info.isBlured) {
-                                bitmap = Utilities.blurWallpaper(bitmap);
-                            }
-                            FileOutputStream stream = new FileOutputStream(info.pathToWallpaper);
-                            bitmap.compress(Bitmap.CompressFormat.JPEG, 87, stream);
-                            stream.close();
-                        } catch (Throwable e) {
-                            FileLog.e(e);
-                            info.badWallpaper = true;
-                        }
+                        info.badWallpaper = !info.createBackground(file, info.pathToWallpaper);
                         AndroidUtilities.runOnUIThread(() -> checkVisibleTheme(info));
                     });
                 } else {

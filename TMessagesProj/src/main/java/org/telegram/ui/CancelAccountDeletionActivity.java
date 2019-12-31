@@ -933,7 +933,7 @@ public class CancelAccountDeletionActivity extends BaseFragment {
                                 destroyTimer();
                                 if (currentType == 3) {
                                     AndroidUtilities.setWaitingForCall(false);
-                                    NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.didReceiveCall);
+                                    NotificationCenter.getGlobalInstance().removeObserver(LoginActivitySmsView.this, NotificationCenter.didReceiveCall);
                                     waitingForEvent = false;
                                     destroyCodeTimer();
                                     resendCode();
@@ -955,7 +955,7 @@ public class CancelAccountDeletionActivity extends BaseFragment {
                                         }, ConnectionsManager.RequestFlagFailOnServerErrors);
                                     } else if (nextType == 3) {
                                         AndroidUtilities.setWaitingForSms(false);
-                                        NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.didReceiveSmsCode);
+                                        NotificationCenter.getGlobalInstance().removeObserver(LoginActivitySmsView.this, NotificationCenter.didReceiveSmsCode);
                                         waitingForEvent = false;
                                         destroyCodeTimer();
                                         resendCode();

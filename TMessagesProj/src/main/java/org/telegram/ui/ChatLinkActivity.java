@@ -445,8 +445,10 @@ public class ChatLinkActivity extends BaseFragment implements NotificationCenter
         }
         if (!ChatObject.isChannel(chat)) {
             MessagesController.getInstance(currentAccount).convertToMegaGroup(getParentActivity(), chat.id, this, param -> {
-                MessagesController.getInstance(currentAccount).toogleChannelInvitesHistory(param, false);
-                linkChat(getMessagesController().getChat(param), createFragment);
+                if (param != 0) {
+                    MessagesController.getInstance(currentAccount).toogleChannelInvitesHistory(param, false);
+                    linkChat(getMessagesController().getChat(param), createFragment);
+                }
             });
             return;
         }
@@ -644,6 +646,9 @@ public class ChatLinkActivity extends BaseFragment implements NotificationCenter
 
         private void updateSearchResults(final ArrayList<TLRPC.Chat> chats, final ArrayList<CharSequence> names) {
             AndroidUtilities.runOnUIThread(() -> {
+                if (!searching) {
+                    return;
+                }
                 searchResult = chats;
                 searchResultNames = names;
                 if (listView.getAdapter() == searchAdapter) {

@@ -35,7 +35,6 @@ import android.widget.Toast;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ChatObject;
-import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
@@ -146,7 +145,6 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
 
     private boolean needOpenSearch;
 
-    private boolean searchWas;
     private boolean searching;
 
     private int selectedSlowmode;
@@ -526,7 +524,6 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
     @Override
     public View createView(Context context) {
         searching = false;
-        searchWas = false;
 
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
         actionBar.setAllowOverlayTitle(true);
@@ -580,9 +577,8 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
 
                 @Override
                 public void onSearchCollapse() {
-                    searchListViewAdapter.searchDialogs(null);
+                    searchListViewAdapter.searchUsers(null);
                     searching = false;
-                    searchWas = false;
                     listView.setAdapter(listViewAdapter);
                     listViewAdapter.notifyDataSetChanged();
                     listView.setFastScrollVisible(true);
@@ -599,16 +595,7 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
                         return;
                     }
                     String text = editText.getText().toString();
-                    if (text.length() != 0) {
-                        searchWas = true;
-                        if (listView != null && listView.getAdapter() != searchListViewAdapter) {
-                            listView.setAdapter(searchListViewAdapter);
-                            searchListViewAdapter.notifyDataSetChanged();
-                            listView.setFastScrollVisible(false);
-                            listView.setVerticalScrollBarEnabled(true);
-                        }
-                    }
-                    searchListViewAdapter.searchDialogs(text);
+                    searchListViewAdapter.searchUsers(text);
                 }
             });
             if (type == TYPE_KICKED) {
@@ -886,7 +873,7 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
                             final String rankFinal = rank;
                             AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
                             builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
-                            builder.setMessage(LocaleController.formatString("AdminWillBeRemoved", R.string.AdminWillBeRemoved, ContactsController.formatName(user.first_name, user.last_name)));
+                            builder.setMessage(LocaleController.formatString("AdminWillBeRemoved", R.string.AdminWillBeRemoved, UserObject.getUserName(user)));
                             builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), (dialog, which) -> openRightsEdit(user.id, participant, ar, br, rankFinal, canEdit, selectType == 1 ? 0 : 1, false));
                             builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
                             showDialog(builder.create());
@@ -1126,6 +1113,11 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
         presentFragment(fragment);
     }
 
+    @Override
+    public boolean canBeginSlide() {
+        return checkDiscard();
+    }
+
     private void openRightsEdit(int user_id, TLObject participant, TLRPC.TL_chatAdminRights adminRights, TLRPC.TL_chatBannedRights bannedRights, String rank, boolean canEditAdmin, int type, boolean removeFragment) {
         ChatRightsEditActivity fragment = new ChatRightsEditActivity(user_id, chatId, adminRights, defaultBannedRights, bannedRights, rank, type, canEditAdmin, participant == null);
         fragment.setDelegate(new ChatRightsEditActivity.ChatRightsEditActivityDelegate() {
@@ -1214,6 +1206,9 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
             updateRows();
             listViewAdapter.notifyDataSetChanged();
         }
+        if (listView.getAdapter() == searchListViewAdapter) {
+            searchListViewAdapter.removeUserId(userId);
+        }
     }
 
     private void updateParticipantWithRights(TLRPC.ChannelParticipant channelParticipant, TLRPC.TL_chatAdminRights rightsAdmin, TLRPC.TL_chatBannedRights rightsBanned, int user_id, boolean withDelegate) {
@@ -1286,6 +1281,10 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
             boolean canEditAdmin = !(participant instanceof TLRPC.TL_channelParticipantAdmin || participant instanceof TLRPC.TL_channelParticipantCreator || participant instanceof TLRPC.TL_chatParticipantCreator || participant instanceof TLRPC.TL_chatParticipantAdmin) || canEdit;
             boolean editingAdmin = participant instanceof TLRPC.TL_channelParticipantAdmin || participant instanceof TLRPC.TL_chatParticipantAdmin;
 
+            if (selectType == 0) {
+                allowSetAdmin &= !UserObject.isDeleted(user);
+            }
+
             final ArrayList<String> items;
             final ArrayList<Integer> actions;
             final ArrayList<Integer> icons;
@@ -1337,14 +1336,11 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
                 if (actions.get(i) == 2) {
                     getMessagesController().deleteUserFromChat(chatId, user, null);
                     removeParticipants(userId);
-                    if (searchItem != null && actionBar.isSearchFieldVisible()) {
-                        actionBar.closeSearchField();
-                    }
                 } else {
                     if (actions.get(i) == 1 && canEditAdmin && (participant instanceof TLRPC.TL_channelParticipantAdmin || participant instanceof TLRPC.TL_chatParticipantAdmin)) {
                         AlertDialog.Builder builder2 = new AlertDialog.Builder(getParentActivity());
                         builder2.setTitle(LocaleController.getString("AppName", R.string.AppName));
-                        builder2.setMessage(LocaleController.formatString("AdminWillBeRemoved", R.string.AdminWillBeRemoved, ContactsController.formatName(user.first_name, user.last_name)));
+                        builder2.setMessage(LocaleController.formatString("AdminWillBeRemoved", R.string.AdminWillBeRemoved, UserObject.getUserName(user)));
                         builder2.setPositiveButton(LocaleController.getString("OK", R.string.OK), (dialog, which) -> openRightsEdit2(userId, date, participant, adminRights, bannedRights, rank, canEditAdmin, actions.get(i), false));
                         builder2.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
                         showDialog(builder2.create());
@@ -1475,9 +1471,6 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
                                 }
                             }
                         });
-                        if (searchItem != null && actionBar.isSearchFieldVisible()) {
-                            actionBar.closeSearchField();
-                        }
                     }
                     if (i == 0 && type == TYPE_BANNED || i == 1) {
                         removeParticipants(participant);
@@ -1649,9 +1642,11 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
         }
         if (!ChatObject.isChannel(currentChat) && selectedSlowmode != initialSlowmode && info != null) {
             MessagesController.getInstance(currentAccount).convertToMegaGroup(getParentActivity(), chatId, this, param -> {
-                chatId = param;
-                currentChat = MessagesController.getInstance(currentAccount).getChat(param);
-                processDone();
+                if (param != 0) {
+                    chatId = param;
+                    currentChat = MessagesController.getInstance(currentAccount).getChat(param);
+                    processDone();
+                }
             });
             return;
         }
@@ -1726,7 +1721,7 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
                             if (getContactsController().isContact(participant.user_id)) {
                                 contacts.add(participant);
                                 contactsMap.put(participant.user_id, participant);
-                            } else {
+                            } else if (!UserObject.isDeleted(getMessagesController().getUser(participant.user_id))) {
                                 participants.add(participant);
                                 participantsMap.put(participant.user_id, participant);
                             }
@@ -1855,8 +1850,13 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
                     if (type == TYPE_USERS) {
                         for (int a = 0, N = participants.size(); a < N; a++) {
                             TLRPC.ChannelParticipant participant = (TLRPC.ChannelParticipant) participants.get(a);
-                            if (contactsMap.get(participant.user_id) != null ||
-                                    botsMap.get(participant.user_id) != null) {
+                            boolean remove = false;
+                            if (contactsMap.get(participant.user_id) != null || botsMap.get(participant.user_id) != null) {
+                                remove = true;
+                            } else if (selectType == 1 && UserObject.isDeleted(getMessagesController().getUser(participant.user_id))) {
+                                remove = true;
+                            }
+                            if (remove) {
                                 participants.remove(a);
                                 participantsMap.remove(participant.user_id);
                                 a--;
@@ -1974,14 +1974,15 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
 
         private Context mContext;
         private ArrayList<TLObject> searchResult = new ArrayList<>();
+        private SparseArray<TLObject> searchResultMap = new SparseArray<>();
         private ArrayList<CharSequence> searchResultNames = new ArrayList<>();
         private SearchAdapterHelper searchAdapterHelper;
         private Runnable searchRunnable;
+        private int totalCount = 0;
 
         private int groupStartRow;
         private int contactsStartRow;
         private int globalStartRow;
-        private int totalCount;
 
         public SearchAdapter(Context context) {
             mContext = context;
@@ -1999,13 +2000,14 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
             });
         }
 
-        public void searchDialogs(final String query) {
+        public void searchUsers(final String query) {
             if (searchRunnable != null) {
                 Utilities.searchQueue.cancelRunnable(searchRunnable);
                 searchRunnable = null;
             }
             if (TextUtils.isEmpty(query)) {
                 searchResult.clear();
+                searchResultMap.clear();
                 searchResultNames.clear();
                 searchAdapterHelper.mergeResults(null);
                 searchAdapterHelper.queryServerSearch(null, type != 0, false, true, false, ChatObject.isChannel(currentChat) ? chatId : 0, false, type);
@@ -2020,7 +2022,7 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
                 searchRunnable = null;
 
                 int kickedType;
-                final ArrayList<TLRPC.ChatParticipant> participantsCopy = !ChatObject.isChannel(currentChat) && info != null ? new ArrayList<>(info.participants.participants) : null;
+                final ArrayList<TLObject> participantsCopy = !ChatObject.isChannel(currentChat) && info != null ? new ArrayList<>(info.participants.participants) : null;
                 final ArrayList<TLRPC.TL_contact> contactsCopy = selectType == 1 ? new ArrayList<>(getContactsController().contacts) : null;
 
                 searchAdapterHelper.queryServerSearch(query, selectType != 0, false, true, false, ChatObject.isChannel(currentChat) ? chatId : 0, false, type);
@@ -2028,7 +2030,7 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
                     Utilities.searchQueue.postRunnable(() -> {
                         String search1 = query.trim().toLowerCase();
                         if (search1.length() == 0) {
-                            updateSearchResults(new ArrayList<>(), new ArrayList<>(), new ArrayList<>());
+                            updateSearchResults(new ArrayList<>(), new SparseArray<>(), new ArrayList<>(), new ArrayList<>());
                             return;
                         }
                         String search2 = LocaleController.getInstance().getTranslitString(search1);
@@ -2041,18 +2043,27 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
                             search[1] = search2;
                         }
                         ArrayList<TLObject> resultArray = new ArrayList<>();
+                        SparseArray<TLObject> resultMap = new SparseArray<>();
                         ArrayList<CharSequence> resultArrayNames = new ArrayList<>();
                         ArrayList<TLObject> resultArray2 = new ArrayList<>();
 
                         if (participantsCopy != null) {
-                            for (int a = 0; a < participantsCopy.size(); a++) {
-                                TLRPC.ChatParticipant participant = participantsCopy.get(a);
-                                TLRPC.User user = getMessagesController().getUser(participant.user_id);
+                            for (int a = 0, N = participantsCopy.size(); a < N; a++) {
+                                int userId;
+                                TLObject o = participantsCopy.get(a);
+                                if (o instanceof TLRPC.ChatParticipant) {
+                                    userId = ((TLRPC.ChatParticipant) o).user_id;
+                                } else if (o instanceof TLRPC.ChannelParticipant) {
+                                    userId = ((TLRPC.ChannelParticipant) o).user_id;
+                                } else {
+                                    continue;
+                                }
+                                TLRPC.User user = getMessagesController().getUser(userId);
                                 if (user.id == getUserConfig().getClientUserId()) {
                                     continue;
                                 }
 
-                                String name = ContactsController.formatName(user.first_name, user.last_name).toLowerCase();
+                                String name = UserObject.getUserName(user).toLowerCase();
                                 String tName = LocaleController.getInstance().getTranslitString(name);
                                 if (name.equals(tName)) {
                                     tName = null;
@@ -2072,7 +2083,7 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
                                         } else {
                                             resultArrayNames.add(AndroidUtilities.generateSearchName("@" + user.username, null, "@" + q));
                                         }
-                                        resultArray2.add(participant);
+                                        resultArray2.add(o);
                                         break;
                                     }
                                 }
@@ -2087,7 +2098,7 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
                                     continue;
                                 }
 
-                                String name = ContactsController.formatName(user.first_name, user.last_name).toLowerCase();
+                                String name = UserObject.getUserName(user).toLowerCase();
                                 String tName = LocaleController.getInstance().getTranslitString(name);
                                 if (name.equals(tName)) {
                                     tName = null;
@@ -2108,20 +2119,25 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
                                             resultArrayNames.add(AndroidUtilities.generateSearchName("@" + user.username, null, "@" + q));
                                         }
                                         resultArray.add(user);
+                                        resultMap.put(user.id, user);
                                         break;
                                     }
                                 }
                             }
                         }
-                        updateSearchResults(resultArray, resultArrayNames, resultArray2);
+                        updateSearchResults(resultArray, resultMap, resultArrayNames, resultArray2);
                     });
                 }
             });
         }
 
-        private void updateSearchResults(final ArrayList<TLObject> users, final ArrayList<CharSequence> names, final ArrayList<TLObject> participants) {
+        private void updateSearchResults(final ArrayList<TLObject> users, final SparseArray<TLObject> usersMap, final ArrayList<CharSequence> names, final ArrayList<TLObject> participants) {
             AndroidUtilities.runOnUIThread(() -> {
+                if (!searching) {
+                    return;
+                }
                 searchResult = users;
+                searchResultMap = usersMap;
                 searchResultNames = names;
                 searchAdapterHelper.mergeResults(searchResult);
                 if (!ChatObject.isChannel(currentChat)) {
@@ -2140,20 +2156,7 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
 
         @Override
         public int getItemCount() {
-            int contactsCount = searchResult.size();
-            int globalCount = searchAdapterHelper.getGlobalSearch().size();
-            int groupsCount = searchAdapterHelper.getGroupSearch().size();
-            int count = 0;
-            if (contactsCount != 0) {
-                count += contactsCount + 1;
-            }
-            if (globalCount != 0) {
-                count += globalCount + 1;
-            }
-            if (groupsCount != 0) {
-                count += groupsCount + 1;
-            }
-            return count;
+            return totalCount;
         }
 
         @Override
@@ -2180,7 +2183,21 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
             } else {
                 globalStartRow = -1;
             }
+            if (searching && listView != null && listView.getAdapter() != searchListViewAdapter) {
+                listView.setAdapter(searchListViewAdapter);
+                listView.setFastScrollVisible(false);
+                listView.setVerticalScrollBarEnabled(true);
+            }
             super.notifyDataSetChanged();
+        }
+
+        public void removeUserId(int userId) {
+            searchAdapterHelper.removeUserId(userId);
+            Object object = searchResultMap.get(userId);
+            if (object != null) {
+                searchResult.remove(object);
+            }
+            notifyDataSetChanged();
         }
 
         public TLObject getItem(int i) {
@@ -2231,7 +2248,7 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
                     ((ManageChatUserCell) view).setDelegate((cell, click) -> {
                         TLObject object = getItem((Integer) cell.getTag());
                         if (object instanceof TLRPC.ChannelParticipant) {
-                            TLRPC.ChannelParticipant participant = (TLRPC.ChannelParticipant) getItem((Integer) cell.getTag());
+                            TLRPC.ChannelParticipant participant = (TLRPC.ChannelParticipant) object;
                             return createMenuForParticipant(participant, !click);
                         } else {
                             return false;
@@ -2556,7 +2573,7 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
                             if (banned) {
                                 TLRPC.User user1 = getMessagesController().getUser(kickedBy);
                                 if (user1 != null) {
-                                    role = LocaleController.formatString("UserRemovedBy", R.string.UserRemovedBy, ContactsController.formatName(user1.first_name, user1.last_name));
+                                    role = LocaleController.formatString("UserRemovedBy", R.string.UserRemovedBy, UserObject.getUserName(user1));
                                 }
                             }
                             userCell.setData(user, null, role, position != lastRow - 1);
@@ -2570,7 +2587,7 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
                                     if (user1.id == user.id) {
                                         role = LocaleController.getString("ChannelAdministrator", R.string.ChannelAdministrator);
                                     } else {
-                                        role = LocaleController.formatString("EditAdminPromotedBy", R.string.EditAdminPromotedBy, ContactsController.formatName(user1.first_name, user1.last_name));
+                                        role = LocaleController.formatString("EditAdminPromotedBy", R.string.EditAdminPromotedBy, UserObject.getUserName(user1));
                                     }
                                 }
                             }
@@ -2854,7 +2871,7 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
                 new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundBlue),
                 new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundPink),
 
-                new ThemeDescription(undoView, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_undo_background),
+                new ThemeDescription(undoView, ThemeDescription.FLAG_BACKGROUNDFILTER, null, null, null, null, Theme.key_undo_background),
                 new ThemeDescription(undoView, 0, new Class[]{UndoView.class}, new String[]{"undoImageView"}, null, null, null, Theme.key_undo_cancelColor),
                 new ThemeDescription(undoView, 0, new Class[]{UndoView.class}, new String[]{"undoTextView"}, null, null, null, Theme.key_undo_cancelColor),
                 new ThemeDescription(undoView, 0, new Class[]{UndoView.class}, new String[]{"infoTextView"}, null, null, null, Theme.key_undo_infoColor),

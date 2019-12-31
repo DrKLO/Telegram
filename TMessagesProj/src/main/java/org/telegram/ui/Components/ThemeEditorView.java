@@ -631,7 +631,7 @@ public class ThemeEditorView {
         }
 
         public EditorAlert(final Context context, ThemeDescription[] items) {
-            super(context, true, 1);
+            super(context, true);
 
             shadowDrawable = context.getResources().getDrawable(R.drawable.sheet_shadow_round).mutate();
 
@@ -1295,6 +1295,11 @@ public class ThemeEditorView {
                     }
                     arrayList.add(description);
                 }
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && !itemsMap.containsKey(Theme.key_windowBackgroundGray)) {
+                    final ArrayList<ThemeDescription> arrayList = new ArrayList<>();
+                    arrayList.add(new ThemeDescription(null, 0, null, null, null, null, Theme.key_windowBackgroundGray));
+                    items.add(arrayList);
+                }
             }
 
             @Override
@@ -1472,7 +1477,6 @@ public class ThemeEditorView {
                 return true;
             }
         };
-        windowView.setBackgroundResource(R.drawable.theme_picker);
         windowManager = (WindowManager) activity.getSystemService(Context.WINDOW_SERVICE);
 
         preferences = ApplicationLoader.applicationContext.getSharedPreferences("themeconfig", Context.MODE_PRIVATE);
@@ -1521,10 +1525,11 @@ public class ThemeEditorView {
     }
 
     private void showWithAnimation() {
+        windowView.setBackgroundResource(R.drawable.theme_picker);
         AnimatorSet animatorSet = new AnimatorSet();
         animatorSet.playTogether(ObjectAnimator.ofFloat(windowView, View.ALPHA, 0.0f, 1.0f),
-                ObjectAnimator.ofFloat(windowView, "scaleX", 0.0f, 1.0f),
-                ObjectAnimator.ofFloat(windowView, "scaleY", 0.0f, 1.0f));
+                ObjectAnimator.ofFloat(windowView, View.SCALE_X, 0.0f, 1.0f),
+                ObjectAnimator.ofFloat(windowView, View.SCALE_Y, 0.0f, 1.0f));
         animatorSet.setInterpolator(decelerateInterpolator);
         animatorSet.setDuration(150);
         animatorSet.start();
@@ -1558,14 +1563,15 @@ public class ThemeEditorView {
         try {
             AnimatorSet animatorSet = new AnimatorSet();
             animatorSet.playTogether(ObjectAnimator.ofFloat(windowView, View.ALPHA, 1.0f, 0.0f),
-                    ObjectAnimator.ofFloat(windowView, "scaleX", 1.0f, 0.0f),
-                    ObjectAnimator.ofFloat(windowView, "scaleY", 1.0f, 0.0f));
+                    ObjectAnimator.ofFloat(windowView, View.SCALE_X, 1.0f, 0.0f),
+                    ObjectAnimator.ofFloat(windowView, View.SCALE_Y, 1.0f, 0.0f));
             animatorSet.setInterpolator(decelerateInterpolator);
             animatorSet.setDuration(150);
             animatorSet.addListener(new AnimatorListenerAdapter() {
                 @Override
                 public void onAnimationEnd(Animator animation) {
                     if (windowView != null) {
+                        windowView.setBackground(null);
                         windowManager.removeView(windowView);
                     }
                 }

@@ -100,8 +100,8 @@ public class DialogMeUrlCell extends BaseCell {
     public void buildLayout() {
         String nameString = "";
         CharSequence messageString;
-        TextPaint currentNamePaint = Theme.dialogs_namePaint;
-        TextPaint currentMessagePaint = Theme.dialogs_messagePaint;
+        TextPaint currentNamePaint = Theme.dialogs_namePaint[0];
+        TextPaint currentMessagePaint = Theme.dialogs_messagePaint[0];
 
         drawNameGroup = false;
         drawNameBroadcast = false;

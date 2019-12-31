@@ -60,7 +60,7 @@
 /* TODO(fork): cleanup */
 
 #if defined(OPENSSL_FUCHSIA)
-#define OPENSSLDIR "/system/data/boringssl"
+#define OPENSSLDIR "/config/ssl"
 #else
 #define OPENSSLDIR "/etc/ssl"
 #endif

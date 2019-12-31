@@ -43,6 +43,10 @@ public interface TrackSelection {
     public final TrackGroup group;
     /** The indices of the selected tracks in {@link #group}. */
     public final int[] tracks;
+    /** The track selection reason. One of the {@link C} SELECTION_REASON_ constants. */
+    public final int reason;
+    /** Optional data associated with this selection of tracks. */
+    @Nullable public final Object data;
 
     /**
      * @param group The {@link TrackGroup}. Must not be null.
@@ -50,8 +54,20 @@ public interface TrackSelection {
      *     null or empty. May be in any order.
      */
     public Definition(TrackGroup group, int... tracks) {
+      this(group, tracks, C.SELECTION_REASON_UNKNOWN, /* data= */ null);
+    }
+
+    /**
+     * @param group The {@link TrackGroup}. Must not be null.
+     * @param tracks The indices of the selected tracks within the {@link TrackGroup}. Must not be
+     * @param reason The track selection reason. One of the {@link C} SELECTION_REASON_ constants.
+     * @param data Optional data associated with this selection of tracks.
+     */
+    public Definition(TrackGroup group, int[] tracks, int reason, @Nullable Object data) {
       this.group = group;
       this.tracks = tracks;
+      this.reason = reason;
+      this.data = data;
     }
   }
 

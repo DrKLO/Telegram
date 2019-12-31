@@ -12,10 +12,6 @@
  * OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN
  * CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE. */
 
-#if !defined(__STDC_FORMAT_MACROS)
-#define __STDC_FORMAT_MACROS
-#endif
-
 #include <openssl/buf.h>
 #include <openssl/mem.h>
 #include <openssl/bytestring.h>
@@ -92,8 +88,8 @@ int CBS_mem_equal(const CBS *cbs, const uint8_t *data, size_t len) {
   return CRYPTO_memcmp(cbs->data, data, len) == 0;
 }
 
-static int cbs_get_u(CBS *cbs, uint32_t *out, size_t len) {
-  uint32_t result = 0;
+static int cbs_get_u(CBS *cbs, uint64_t *out, size_t len) {
+  uint64_t result = 0;
   const uint8_t *data;
 
   if (!cbs_get(cbs, &data, len)) {
@@ -117,7 +113,7 @@ int CBS_get_u8(CBS *cbs, uint8_t *out) {
 }
 
 int CBS_get_u16(CBS *cbs, uint16_t *out) {
-  uint32_t v;
+  uint64_t v;
   if (!cbs_get_u(cbs, &v, 2)) {
     return 0;
   }
@@ -126,11 +122,25 @@ int CBS_get_u16(CBS *cbs, uint16_t *out) {
 }
 
 int CBS_get_u24(CBS *cbs, uint32_t *out) {
-  return cbs_get_u(cbs, out, 3);
+  uint64_t v;
+  if (!cbs_get_u(cbs, &v, 3)) {
+    return 0;
+  }
+  *out = v;
+  return 1;
 }
 
 int CBS_get_u32(CBS *cbs, uint32_t *out) {
-  return cbs_get_u(cbs, out, 4);
+  uint64_t v;
+  if (!cbs_get_u(cbs, &v, 4)) {
+    return 0;
+  }
+  *out = v;
+  return 1;
+}
+
+int CBS_get_u64(CBS *cbs, uint64_t *out) {
+  return cbs_get_u(cbs, out, 8);
 }
 
 int CBS_get_last_u8(CBS *cbs, uint8_t *out) {
@@ -161,10 +171,13 @@ int CBS_copy_bytes(CBS *cbs, uint8_t *out, size_t len) {
 }
 
 static int cbs_get_length_prefixed(CBS *cbs, CBS *out, size_t len_len) {
-  uint32_t len;
+  uint64_t len;
   if (!cbs_get_u(cbs, &len, len_len)) {
     return 0;
   }
+  // If |len_len| <= 3 then we know that |len| will fit into a |size_t|, even on
+  // 32-bit systems.
+  assert(len_len <= 3);
   return CBS_get_bytes(cbs, out, len);
 }
 
@@ -278,7 +291,7 @@ static int cbs_get_any_asn1_element(CBS *cbs, CBS *out, unsigned *out_tag,
     // encode the number of subsequent octets used to encode the length (ITU-T
     // X.690 clause 8.1.3.5.b).
     const size_t num_bytes = length_byte & 0x7f;
-    uint32_t len32;
+    uint64_t len64;
 
     if (ber_ok && (tag & CBS_ASN1_CONSTRUCTED) != 0 && num_bytes == 0) {
       // indefinite length
@@ -294,20 +307,20 @@ static int cbs_get_any_asn1_element(CBS *cbs, CBS *out, unsigned *out_tag,
     if (num_bytes == 0 || num_bytes > 4) {
       return 0;
     }
-    if (!cbs_get_u(&header, &len32, num_bytes)) {
+    if (!cbs_get_u(&header, &len64, num_bytes)) {
       return 0;
     }
     // ITU-T X.690 section 10.1 (DER length forms) requires encoding the length
     // with the minimum number of octets.
-    if (len32 < 128) {
+    if (len64 < 128) {
       // Length should have used short-form encoding.
       return 0;
     }
-    if ((len32 >> ((num_bytes-1)*8)) == 0) {
+    if ((len64 >> ((num_bytes-1)*8)) == 0) {
       // Length should have been at least one byte shorter.
       return 0;
     }
-    len = len32;
+    len = len64;
     if (len + header_len + num_bytes < len) {
       // Overflow.
       return 0;
@@ -425,6 +438,22 @@ int CBS_get_asn1_uint64(CBS *cbs, uint64_t *out) {
   return 1;
 }
 
+int CBS_get_asn1_bool(CBS *cbs, int *out) {
+  CBS bytes;
+  if (!CBS_get_asn1(cbs, &bytes, CBS_ASN1_BOOLEAN) ||
+      CBS_len(&bytes) != 1) {
+    return 0;
+  }
+
+  const uint8_t value = *CBS_data(&bytes);
+  if (value != 0 && value != 0xff) {
+    return 0;
+  }
+
+  *out = !!value;
+  return 1;
+}
+
 int CBS_get_optional_asn1(CBS *cbs, CBS *out, int *out_present, unsigned tag) {
   int present = 0;
 
@@ -450,6 +479,7 @@ int CBS_get_optional_asn1_octet_string(CBS *cbs, CBS *out, int *out_present,
     return 0;
   }
   if (present) {
+    assert(out);
     if (!CBS_get_asn1(&child, out, CBS_ASN1_OCTETSTRING) ||
         CBS_len(&child) != 0) {
       return 0;

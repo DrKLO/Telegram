@@ -124,6 +124,9 @@ my %globals;
 		$self->{sz} = "";
 	    } elsif ($self->{op} =~ /mov[dq]/ && $$line =~ /%xmm/) {
 		$self->{sz} = "";
+	    } elsif ($self->{op} =~ /^or([qlwb])$/) {
+		$self->{op} = "or";
+		$self->{sz} = $1;
 	    } elsif ($self->{op} =~ /([a-z]{3,})([qlwb])$/) {
 		$self->{op} = $1;
 		$self->{sz} = $2;
@@ -526,7 +529,7 @@ my %globals;
 	);
 
     # Following constants are defined in x86_64 ABI supplement, for
-    # example avaiable at https://www.uclibc.org/docs/psABI-x86_64.pdf,
+    # example available at https://www.uclibc.org/docs/psABI-x86_64.pdf,
     # see section 3.7 "Stack Unwind Algorithm".
     my %DW_reg_idx = (
 	"%rax"=>0,  "%rdx"=>1,  "%rcx"=>2,  "%rbx"=>3,
@@ -536,10 +539,11 @@ my %globals;
 	);
 
     my ($cfa_reg, $cfa_rsp);
+    my @cfa_stack;
 
     # [us]leb128 format is variable-length integer representation base
     # 2^128, with most significant bit of each byte being 0 denoting
-    # *last* most significat digit. See "Variable Length Data" in the
+    # *last* most significant digit. See "Variable Length Data" in the
     # DWARF specification, numbered 7.6 at least in versions 3 and 4.
     sub sleb128 {
 	use integer;	# get right shift extend sign
@@ -683,6 +687,14 @@ my %globals;
 						      cfa_expression($$line)));
 				last;
 			      };
+	    /remember_state/
+			&& do {	push @cfa_stack, [$cfa_reg, $cfa_rsp];
+				last;
+			      };
+	    /restore_state/
+			&& do {	($cfa_reg, $cfa_rsp) = @{pop @cfa_stack};
+				last;
+			      };
 	    }
 
 	    $self->{value} = ".cfi_$dir\t$$line" if ($dir);
@@ -720,7 +732,7 @@ my %globals;
 				    $$line = $globals{$$line} if ($prefix);
 				    last;
 				  };
-		/\.type/    && do { my ($sym,$type,$narg) = split(',',$$line);
+		/\.type/    && do { my ($sym,$type,$narg) = split(/\s*,\s*/,$$line);
 				    if ($type eq "\@function") {
 					undef $current_function;
 					$current_function->{name} = $sym;
@@ -742,7 +754,7 @@ my %globals;
 				    }
 				    last;
 				  };
-		/\.rva|\.long|\.quad/
+		/\.rva|\.long|\.quad|\.byte/
 			    && do { $$line =~ s/([_a-z][_a-z0-9]*)/$globals{$1} or $1/gei;
 				    $$line =~ s/\.L/$decor/g;
 				    last;
@@ -882,7 +894,7 @@ my %globals;
 							$var=~s/^(0b[0-1]+)/oct($1)/eig;
 							$var=~s/^0x([0-9a-f]+)/0$1h/ig if ($masm);
 							if ($sz eq "D" && ($current_segment=~/.[px]data/ || $dir eq ".rva"))
-							{ $var=~s/([_a-z\$\@][_a-z0-9\$\@]*)/$nasm?"$1 wrt ..imagebase":"imagerel $1"/egi; }
+							{ $var=~s/^([_a-z\$\@][_a-z0-9\$\@]*)/$nasm?"$1 wrt ..imagebase":"imagerel $1"/egi; }
 							$var;
 						    };
 
@@ -1123,25 +1135,66 @@ my $endbranch = sub {
 
 ########################################################################
 
+{
+  my $comment = "#";
+  $comment = ";" if ($masm || $nasm);
+  print <<___;
+$comment This file is generated from a similarly-named Perl script in the BoringSSL
+$comment source tree. Do not edit by hand.
+
+___
+}
+
 if ($nasm) {
     print <<___;
 default	rel
 %define XMMWORD
 %define YMMWORD
 %define ZMMWORD
+
+%ifdef BORINGSSL_PREFIX
+%include "boringssl_prefix_symbols_nasm.inc"
+%endif
 ___
 } elsif ($masm) {
     print <<___;
 OPTION	DOTNAME
 ___
 }
-print STDOUT "#if defined(__x86_64__) && !defined(OPENSSL_NO_ASM)\n" if ($gas);
+
+if ($gas) {
+	print <<___;
+#if defined(__has_feature)
+#if __has_feature(memory_sanitizer) && !defined(OPENSSL_NO_ASM)
+#define OPENSSL_NO_ASM
+#endif
+#endif
+
+#if defined(__x86_64__) && !defined(OPENSSL_NO_ASM)
+#if defined(BORINGSSL_PREFIX)
+#include <boringssl_prefix_symbols_asm.h>
+#endif
+___
+}
 
 while(defined(my $line=<>)) {
 
     $line =~ s|\R$||;           # Better chomp
 
-    $line =~ s|[#!].*$||;	# get rid of asm-style comments...
+    if ($nasm) {
+	$line =~ s|^#ifdef |%ifdef |;
+	$line =~ s|^#ifndef |%ifndef |;
+	$line =~ s|^#endif|%endif|;
+	$line =~ s|[#!].*$||;	# get rid of asm-style comments...
+    } else {
+	# Get rid of asm-style comments but not preprocessor directives. The
+	# former are identified by having a letter after the '#' and starting in
+	# the first column.
+	$line =~ s|!.*$||;
+	$line =~ s|(?<=.)#.*$||;
+	$line =~ s|^#([^a-z].*)?$||;
+    }
+
     $line =~ s|/\*.*\*/||;	# ... and C-style comments...
     $line =~ s|^\s+||;		# ... and skip white spaces in beginning
     $line =~ s|\s+$||;		# ... and at the end
@@ -1436,6 +1489,6 @@ close STDOUT;
 #
 # (*)	Note that we're talking about run-time, not debug-time. Lack of
 #	unwind information makes debugging hard on both Windows and
-#	Unix. "Unlike" referes to the fact that on Unix signal handler
+#	Unix. "Unlike" refers to the fact that on Unix signal handler
 #	will always be invoked, core dumped and appropriate exit code
 #	returned to parent (for user notification).

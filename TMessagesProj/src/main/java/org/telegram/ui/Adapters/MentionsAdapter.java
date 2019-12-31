@@ -621,7 +621,7 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter {
                     continue;
                 }
                 char ch = text.charAt(a);
-                if (a == 0 || text.charAt(a - 1) == ' ' || text.charAt(a - 1) == '\n') {
+                if (a == 0 || text.charAt(a - 1) == ' ' || text.charAt(a - 1) == '\n' || ch == ':') {
                     if (ch == '@') {
                         if (needUsernames || needBotContext && a == 0) {
                             if (info == null && a != 0) {

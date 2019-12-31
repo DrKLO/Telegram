@@ -61,7 +61,7 @@ $ap="x1";	# const BN_ULONG *ap,
 $bp="x2";	# const BN_ULONG *bp,
 $np="x3";	# const BN_ULONG *np,
 $n0="x4";	# const BN_ULONG *n0,
-$num="x5";	# int num);
+$num="x5";	# size_t num);
 
 $code.=<<___;
 .text
@@ -1507,4 +1507,4 @@ ___
 
 print $code;
 
-close STDOUT;
+close STDOUT or die "error closing STDOUT";

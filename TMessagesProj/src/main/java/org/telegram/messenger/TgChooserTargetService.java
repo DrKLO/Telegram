@@ -30,6 +30,7 @@ import android.text.TextUtils;
 
 import org.telegram.SQLite.SQLiteCursor;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.LaunchActivity;
 
 import java.io.File;
@@ -117,10 +118,15 @@ public class TgChooserTargetService extends ChooserTargetService {
                             if (!user.bot) {
                                 extras.putLong("dialogId", (long) id);
                                 extras.putLong("hash", SharedConfig.directShareHash);
-                                if (user.photo != null && user.photo.photo_small != null) {
-                                    icon = createRoundBitmap(FileLoader.getPathToAttach(user.photo.photo_small, true));
+                                if (UserObject.isUserSelf(user)) {
+                                    name = LocaleController.getString("SavedMessages", R.string.SavedMessages);
+                                    icon = createSavedMessagesIcon();
+                                } else {
+                                    name = ContactsController.formatName(user.first_name, user.last_name);
+                                    if (user.photo != null && user.photo.photo_small != null) {
+                                        icon = createRoundBitmap(FileLoader.getPathToAttach(user.photo.photo_small, true));
+                                    }
                                 }
-                                name = ContactsController.formatName(user.first_name, user.last_name);
                             }
                             break;
                         }
@@ -175,6 +181,20 @@ public class TgChooserTargetService extends ChooserTargetService {
                 canvas.drawRoundRect(bitmapRect, bitmap.getWidth(), bitmap.getHeight(), roundPaint);
                 return Icon.createWithBitmap(result);
             }
+        } catch (Throwable e) {
+            FileLog.e(e);
+        }
+        return null;
+    }
+
+    private Icon createSavedMessagesIcon() {
+        try {
+            final Bitmap bitmap = Bitmap.createBitmap(AndroidUtilities.dp(56f), AndroidUtilities.dp(56f), Bitmap.Config.ARGB_8888);
+            final AvatarDrawable avatarDrawable = new AvatarDrawable();
+            avatarDrawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_SAVED);
+            avatarDrawable.setBounds(0, 0, bitmap.getWidth(), bitmap.getHeight());
+            avatarDrawable.draw(new Canvas(bitmap));
+            return Icon.createWithBitmap(bitmap);
         } catch (Throwable e) {
             FileLog.e(e);
         }

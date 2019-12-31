@@ -19,6 +19,7 @@ import android.graphics.RectF;
 import android.graphics.Shader;
 import android.graphics.drawable.Animatable;
 import android.graphics.drawable.BitmapDrawable;
+import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
 import android.view.View;
@@ -43,9 +44,9 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable {
     private static native int getVideoFrame(long ptr, Bitmap bitmap, int[] params, int stride, boolean preview);
     private static native void seekToMs(long ptr, long ms, boolean precise);
     private static native void prepareToSeek(long ptr);
-    public static native void getVideoInfo(String src, int[] params);
+    private static native void getVideoInfo(int sdkVersion, String src, int[] params);
 
-    public final static int PARAM_NUM_IS_AVC = 0;
+    public final static int PARAM_NUM_SUPPORTED_VIDEO_CODEC = 0;
     public final static int PARAM_NUM_WIDTH = 1;
     public final static int PARAM_NUM_HEIGHT = 2;
     public final static int PARAM_NUM_BITRATE = 3;
@@ -54,7 +55,9 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable {
     public final static int PARAM_NUM_VIDEO_FRAME_SIZE = 6;
     public final static int PARAM_NUM_FRAMERATE = 7;
     public final static int PARAM_NUM_ROTATION = 8;
-    public final static int PARAM_NUM_COUNT = 9;
+    public final static int PARAM_NUM_SUPPORTED_AUDIO_CODEC = 9;
+    public final static int PARAM_NUM_HAS_AUDIO = 10;
+    public final static int PARAM_NUM_COUNT = 11;
 
     private long lastFrameTime;
     private int lastTimeStamp;
@@ -642,5 +645,9 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable {
         drawable.metaData[0] = metaData[0];
         drawable.metaData[1] = metaData[1];
         return drawable;
+    }
+
+    public static void getVideoInfo(String src, int[] params) {
+        getVideoInfo(Build.VERSION.SDK_INT, src,  params);
     }
 }

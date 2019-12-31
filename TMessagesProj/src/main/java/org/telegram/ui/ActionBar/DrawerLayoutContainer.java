@@ -142,6 +142,7 @@ public class DrawerLayoutContainer extends FrameLayout {
     public void setDrawerLayout(ViewGroup layout) {
         drawerLayout = layout;
         addView(drawerLayout);
+        drawerLayout.setVisibility(INVISIBLE);
         if (Build.VERSION.SDK_INT >= 21) {
             drawerLayout.setFitsSystemWindows(true);
         }
@@ -161,7 +162,7 @@ public class DrawerLayoutContainer extends FrameLayout {
         }
         drawerLayout.setTranslationX(drawerPosition);
 
-        final int newVisibility = drawerPosition > 0 ? VISIBLE : GONE;
+        final int newVisibility = drawerPosition > 0 ? VISIBLE : INVISIBLE;
         if (drawerLayout.getVisibility() != newVisibility) {
             drawerLayout.setVisibility(newVisibility);
         }
@@ -193,7 +194,7 @@ public class DrawerLayoutContainer extends FrameLayout {
         if (fast) {
             animatorSet.setDuration(Math.max((int) (200.0f / drawerLayout.getMeasuredWidth() * (drawerLayout.getMeasuredWidth() - drawerPosition)), 50));
         } else {
-            animatorSet.setDuration(300);
+            animatorSet.setDuration(250);
         }
         animatorSet.addListener(new AnimatorListenerAdapter() {
             @Override
@@ -215,7 +216,7 @@ public class DrawerLayoutContainer extends FrameLayout {
         if (fast) {
             animatorSet.setDuration(Math.max((int) (200.0f / drawerLayout.getMeasuredWidth() * drawerPosition), 50));
         } else {
-            animatorSet.setDuration(300);
+            animatorSet.setDuration(250);
         }
         animatorSet.addListener(new AnimatorListenerAdapter() {
             @Override

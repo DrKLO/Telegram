@@ -72,6 +72,7 @@
 
 #include "../conf/internal.h"
 #include "../internal.h"
+#include "internal.h"
 
 
 static char *strip_spaces(char *name);
@@ -446,7 +447,7 @@ static char *strip_spaces(char *name)
  * on EBCDIC machines)
  */
 
-char *hex_to_string(const unsigned char *buffer, long len)
+char *x509v3_bytes_to_hex(const unsigned char *buffer, long len)
 {
     char *tmp, *q;
     const unsigned char *p;
@@ -469,11 +470,7 @@ char *hex_to_string(const unsigned char *buffer, long len)
     return tmp;
 }
 
-/*
- * Give a string of hex digits convert to a buffer
- */
-
-unsigned char *string_to_hex(const char *str, long *len)
+unsigned char *x509v3_hex_to_bytes(const char *str, long *len)
 {
     unsigned char *hexbuf, *q;
     unsigned char ch, cl, *p;
@@ -533,11 +530,7 @@ unsigned char *string_to_hex(const char *str, long *len)
 
 }
 
-/*
- * V2I name comparison function: returns zero if 'name' matches cmp or cmp.*
- */
-
-int name_cmp(const char *name, const char *cmp)
+int x509v3_name_cmp(const char *name, const char *cmp)
 {
     int len, ret;
     char c;
@@ -650,6 +643,7 @@ static int append_ia5(STACK_OF(OPENSSL_STRING) **sk, ASN1_IA5STRING *email)
     if (!*sk)
         return 0;
     /* Don't add duplicates */
+    sk_OPENSSL_STRING_sort(*sk);
     if (sk_OPENSSL_STRING_find(*sk, NULL, (char *)email->data))
         return 1;
     emtmp = BUF_strdup((char *)email->data);
@@ -915,6 +909,53 @@ static int equal_wildcard(const unsigned char *pattern, size_t pattern_len,
                           subject, subject_len, flags);
 }
 
+int x509v3_looks_like_dns_name(const unsigned char *in, size_t len) {
+    /* This function is used as a heuristic for whether a common name is a
+     * hostname to be matched, or merely a decorative name to describe the
+     * subject. This heuristic must be applied to both name constraints and the
+     * common name fallback, so it must be loose enough to accept hostname
+     * common names, and tight enough to reject decorative common names. */
+
+    if (len > 0 && in[len - 1] == '.') {
+        len--;
+    }
+
+    /* Wildcards are allowed in front. */
+    if (len >= 2 && in[0] == '*' && in[1] == '.') {
+        in += 2;
+        len -= 2;
+    }
+
+    if (len == 0) {
+        return 0;
+    }
+
+    size_t label_start = 0;
+    for (size_t i = 0; i < len; i++) {
+        unsigned char c = in[i];
+        if ((c >= 'a' && c <= 'z') ||
+            (c >= '0' && c <= '9') ||
+            (c >= 'A' && c <= 'Z') ||
+            (c == '-' && i > label_start) ||
+            /* These are not valid characters in hostnames, but commonly found
+             * in deployments outside the Web PKI. */
+            c == '_' ||
+            c == ':') {
+            continue;
+        }
+
+        /* Labels must not be empty. */
+        if (c == '.' && i > label_start && i < len - 1) {
+            label_start = i + 1;
+            continue;
+        }
+
+        return 0;
+    }
+
+    return 1;
+}
+
 /*
  * Compare an ASN1_STRING to a supplied string. If they match return 1. If
  * cmp_type > 0 only compare if string matches the type, otherwise convert it
@@ -922,8 +963,8 @@ static int equal_wildcard(const unsigned char *pattern, size_t pattern_len,
  */
 
 static int do_check_string(ASN1_STRING *a, int cmp_type, equal_fn equal,
-                           unsigned int flags, const char *b, size_t blen,
-                           char **peername)
+                           unsigned int flags, int check_type, const char *b,
+                           size_t blen, char **peername)
 {
     int rv = 0;
 
@@ -944,7 +985,17 @@ static int do_check_string(ASN1_STRING *a, int cmp_type, equal_fn equal,
         astrlen = ASN1_STRING_to_UTF8(&astr, a);
         if (astrlen < 0)
             return -1;
-        rv = equal(astr, astrlen, (unsigned char *)b, blen, flags);
+        /*
+         * We check the common name against DNS name constraints if it passes
+         * |x509v3_looks_like_dns_name|. Thus we must not consider common names
+         * for DNS fallbacks if they fail this check.
+         */
+        if (check_type == GEN_DNS &&
+            !x509v3_looks_like_dns_name(astr, astrlen)) {
+            rv = 0;
+        } else {
+            rv = equal(astr, astrlen, (unsigned char *)b, blen, flags);
+        }
         if (rv > 0 && peername)
             *peername = BUF_strndup((char *)astr, astrlen);
         OPENSSL_free(astr);
@@ -961,7 +1012,6 @@ static int do_x509_check(X509 *x, const char *chk, size_t chklen,
     int j;
     int cnid = NID_undef;
     int alt_type;
-    int san_present = 0;
     int rv = 0;
     equal_fn equal;
 
@@ -994,7 +1044,6 @@ static int do_x509_check(X509 *x, const char *chk, size_t chklen,
             gen = sk_GENERAL_NAME_value(gens, i);
             if (gen->type != check_type)
                 continue;
-            san_present = 1;
             if (check_type == GEN_EMAIL)
                 cstr = gen->d.rfc822Name;
             else if (check_type == GEN_DNS)
@@ -1002,21 +1051,16 @@ static int do_x509_check(X509 *x, const char *chk, size_t chklen,
             else
                 cstr = gen->d.iPAddress;
             /* Positive on success, negative on error! */
-            if ((rv = do_check_string(cstr, alt_type, equal, flags,
+            if ((rv = do_check_string(cstr, alt_type, equal, flags, check_type,
                                       chk, chklen, peername)) != 0)
                 break;
         }
         GENERAL_NAMES_free(gens);
-        if (rv != 0)
-            return rv;
-        if (cnid == NID_undef
-            || (san_present
-                && !(flags & X509_CHECK_FLAG_ALWAYS_CHECK_SUBJECT)))
-            return 0;
+        return rv;
     }
 
     /* We're done if CN-ID is not pertinent */
-    if (cnid == NID_undef)
+    if (cnid == NID_undef || (flags & X509_CHECK_FLAG_NEVER_CHECK_SUBJECT))
         return 0;
 
     j = -1;
@@ -1027,7 +1071,7 @@ static int do_x509_check(X509 *x, const char *chk, size_t chklen,
         ne = X509_NAME_get_entry(name, j);
         str = X509_NAME_ENTRY_get_data(ne);
         /* Positive on success, negative on error! */
-        if ((rv = do_check_string(str, -1, equal, flags,
+        if ((rv = do_check_string(str, -1, equal, flags, check_type,
                                   chk, chklen, peername)) != 0)
             return rv;
     }

@@ -105,7 +105,7 @@ OPENSSL_EXPORT void HMAC_CTX_free(HMAC_CTX *ctx);
 // function and |key| as the key. For a non-initial call, |md| may be NULL, in
 // which case the previous hash function will be used. If the hash function has
 // not changed and |key| is NULL, |ctx| reuses the previous key. It returns one
-// on success or zero otherwise.
+// on success or zero on allocation failure.
 //
 // WARNING: NULL and empty keys are ambiguous on non-initial calls. Passing NULL
 // |key| but repeating the previous |md| reuses the previous key rather than the
@@ -122,7 +122,7 @@ OPENSSL_EXPORT int HMAC_Update(HMAC_CTX *ctx, const uint8_t *data,
 // |out| and the sets |*out_len| to the length of the result. On entry, |out|
 // must contain at least |HMAC_size| bytes of space. An output size of
 // |EVP_MAX_MD_SIZE| will always be large enough. It returns one on success or
-// zero on error.
+// zero on allocation failure.
 OPENSSL_EXPORT int HMAC_Final(HMAC_CTX *ctx, uint8_t *out,
                               unsigned int *out_len);
 
@@ -169,14 +169,14 @@ struct hmac_ctx_st {
 #if !defined(BORINGSSL_NO_CXX)
 extern "C++" {
 
-namespace bssl {
+BSSL_NAMESPACE_BEGIN
 
 BORINGSSL_MAKE_DELETER(HMAC_CTX, HMAC_CTX_free)
 
 using ScopedHMAC_CTX =
     internal::StackAllocated<HMAC_CTX, void, HMAC_CTX_init, HMAC_CTX_cleanup>;
 
-}  // namespace bssl
+BSSL_NAMESPACE_END
 
 }  // extern C++
 #endif

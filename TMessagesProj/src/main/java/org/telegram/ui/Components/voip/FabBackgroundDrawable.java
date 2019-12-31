@@ -27,11 +27,11 @@ public class FabBackgroundDrawable extends Drawable {
 
     @Override
     public void draw(Canvas canvas) {
-        if(shadowBitmap==null)
+        if (shadowBitmap == null)
             onBoundsChange(getBounds());
         int size = Math.min(getBounds().width(), getBounds().height());
-        if(shadowBitmap!=null)
-			canvas.drawBitmap(shadowBitmap, getBounds().centerX() - shadowBitmap.getWidth() / 2, getBounds().centerY() - shadowBitmap.getHeight() / 2, shadowPaint);
+        if (shadowBitmap != null)
+            canvas.drawBitmap(shadowBitmap, getBounds().centerX() - shadowBitmap.getWidth() / 2, getBounds().centerY() - shadowBitmap.getHeight() / 2, shadowPaint);
         canvas.drawCircle(size / 2, size / 2, size / 2 - AndroidUtilities.dp(4), bgPaint);
     }
 
@@ -53,8 +53,8 @@ public class FabBackgroundDrawable extends Drawable {
     @Override
     protected void onBoundsChange(Rect bounds) {
         int size = Math.min(bounds.width(), bounds.height());
-        if(size<=0){
-            shadowBitmap=null;
+        if (size <= 0) {
+            shadowBitmap = null;
             return;
         }
         shadowBitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ALPHA_8);

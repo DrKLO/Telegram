@@ -33,16 +33,14 @@ import java.io.IOException;
   SeekMap createSeekMap();
 
   /**
-   * Initializes a seek operation.
+   * Starts a seek operation.
    *
-   * @param timeUs The seek position in microseconds.
-   * @return The granule position targeted by the seek.
+   * @param targetGranule The target granule position.
    */
-  long startSeek(long timeUs);
+  void startSeek(long targetGranule);
 
   /**
-   * Reads data from the {@link ExtractorInput} to build the {@link SeekMap} or to continue a
-   * progressive seek.
+   * Reads data from the {@link ExtractorInput} to build the {@link SeekMap} or to continue a seek.
    * <p/>
    * If more data is required or if the position of the input needs to be modified then a position
    * from which data should be provided is returned. Else a negative value is returned. If a seek

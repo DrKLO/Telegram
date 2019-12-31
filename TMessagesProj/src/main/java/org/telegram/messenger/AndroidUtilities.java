@@ -21,7 +21,9 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
+import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
+import android.content.pm.Signature;
 import android.content.res.AssetFileDescriptor;
 import android.content.res.Configuration;
 import android.database.ContentObserver;
@@ -41,12 +43,17 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
 import android.os.PowerManager;
+import android.os.SystemClock;
 import android.provider.CallLog;
 import android.provider.DocumentsContract;
 import android.provider.MediaStore;
 import android.provider.Settings;
+
 import androidx.core.content.FileProvider;
 import androidx.viewpager.widget.ViewPager;
+import drinkless.org.ton.Client;
+import drinkless.org.ton.TonApi;
+
 import android.telephony.TelephonyManager;
 import android.text.Selection;
 import android.text.Spannable;
@@ -56,6 +63,8 @@ import android.text.SpannedString;
 import android.text.TextUtils;
 import android.text.method.LinkMovementMethod;
 import android.text.style.ForegroundColorSpan;
+import android.text.style.URLSpan;
+import android.text.util.Linkify;
 import android.util.DisplayMetrics;
 import android.util.StateSet;
 import android.util.TypedValue;
@@ -65,6 +74,7 @@ import android.view.Gravity;
 import android.view.Surface;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.Window;
 import android.view.WindowManager;
 import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityManager;
@@ -103,11 +113,13 @@ import org.telegram.ui.Components.BackgroundGradientDrawable;
 import org.telegram.ui.Components.ForegroundDetector;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.PickerBottomLayout;
+import org.telegram.ui.Components.ShareAlert;
 import org.telegram.ui.Components.TypefaceSpan;
 import org.telegram.ui.ThemePreviewActivity;
 import org.telegram.ui.WallpapersListActivity;
 
 import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -116,15 +128,22 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.lang.ref.WeakReference;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.security.cert.CertificateFactory;
+import java.security.cert.X509Certificate;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.List;
 import java.util.Locale;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class AndroidUtilities {
@@ -140,7 +159,9 @@ public class AndroidUtilities {
     public static boolean firstConfigurationWas;
     public static float density = 1;
     public static Point displaySize = new Point();
+    public static float screenRefreshRate = 60;
     public static int roundMessageSize;
+    public static int roundMessageInset;
     public static boolean incorrectDisplaySizeFix;
     public static Integer photoSize = null;
     public static DisplayMetrics displayMetrics = new DisplayMetrics();
@@ -174,7 +195,7 @@ public class AndroidUtilities {
             final String HOST_NAME = "(" + IRI + "\\.)+" + GTLD;
             final Pattern DOMAIN_NAME = Pattern.compile("(" + HOST_NAME + "|" + IP_ADDRESS + ")");
             WEB_URL = Pattern.compile(
-                    "((?:(http|https|Http|Https):\\/\\/(?:(?:[a-zA-Z0-9\\$\\-\\_\\.\\+\\!\\*\\'\\(\\)"
+                    "((?:(http|https|Http|Https|ton|tg):\\/\\/(?:(?:[a-zA-Z0-9\\$\\-\\_\\.\\+\\!\\*\\'\\(\\)"
                             + "\\,\\;\\?\\&\\=]|(?:\\%[a-fA-F0-9]{2})){1,64}(?:\\:(?:[a-zA-Z0-9\\$\\-\\_"
                             + "\\.\\+\\!\\*\\'\\(\\)\\,\\;\\?\\&\\=]|(?:\\%[a-fA-F0-9]{2})){1,25})?\\@)?)?"
                             + "(?:" + DOMAIN_NAME + ")"
@@ -205,6 +226,150 @@ public class AndroidUtilities {
             R.drawable.media_doc_red_b,
             R.drawable.media_doc_yellow_b
     };
+
+    private static boolean containsUnsupportedCharacters(String text) {
+        if (text.contains("\u202C")) {
+            return true;
+        }
+        if (text.contains("\u202D")) {
+            return true;
+        }
+        if (text.contains("\u202E")) {
+            return true;
+        }
+        return false;
+    }
+
+    private static class LinkSpec {
+        String url;
+        int start;
+        int end;
+    }
+
+    private static String makeUrl(String url, String[] prefixes, Matcher matcher) {
+        boolean hasPrefix = false;
+        for (int i = 0; i < prefixes.length; i++) {
+            if (url.regionMatches(true, 0, prefixes[i], 0, prefixes[i].length())) {
+                hasPrefix = true;
+                if (!url.regionMatches(false, 0, prefixes[i], 0, prefixes[i].length())) {
+                    url = prefixes[i] + url.substring(prefixes[i].length());
+                }
+                break;
+            }
+        }
+        if (!hasPrefix && prefixes.length > 0) {
+            url = prefixes[0] + url;
+        }
+        return url;
+    }
+
+    private static void gatherLinks(ArrayList<LinkSpec> links, Spannable s, Pattern pattern, String[] schemes, Linkify.MatchFilter matchFilter) {
+        Matcher m = pattern.matcher(s);
+        while (m.find()) {
+            int start = m.start();
+            int end = m.end();
+
+            if (matchFilter == null || matchFilter.acceptMatch(s, start, end)) {
+                LinkSpec spec = new LinkSpec();
+
+                spec.url = makeUrl(m.group(0), schemes, m);
+                spec.start = start;
+                spec.end = end;
+
+                links.add(spec);
+            }
+        }
+    }
+
+    public static final Linkify.MatchFilter sUrlMatchFilter = (s, start, end) -> {
+        if (start == 0) {
+            return true;
+        }
+        if (s.charAt(start - 1) == '@') {
+            return false;
+        }
+        return true;
+    };
+
+    public static boolean addLinks(Spannable text, int mask) {
+        if (text != null && containsUnsupportedCharacters(text.toString()) || mask == 0) {
+            return false;
+        }
+        final URLSpan[] old = text.getSpans(0, text.length(), URLSpan.class);
+        for (int i = old.length - 1; i >= 0; i--) {
+            text.removeSpan(old[i]);
+        }
+        final ArrayList<LinkSpec> links = new ArrayList<>();
+        if ((mask & Linkify.PHONE_NUMBERS) != 0) {
+            Linkify.addLinks(text, Linkify.PHONE_NUMBERS);
+        }
+        if ((mask & Linkify.WEB_URLS) != 0) {
+            gatherLinks(links, text, LinkifyPort.WEB_URL, new String[]{"http://", "https://", "ton://", "tg://"}, sUrlMatchFilter);
+        }
+        pruneOverlaps(links);
+        if (links.size() == 0) {
+            return false;
+        }
+        for (LinkSpec link : links) {
+            text.setSpan(new URLSpan(link.url), link.start, link.end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        }
+        return true;
+    }
+
+    private static void pruneOverlaps(ArrayList<LinkSpec> links) {
+        Comparator<LinkSpec> c = (a, b) -> {
+            if (a.start < b.start) {
+                return -1;
+            }
+            if (a.start > b.start) {
+                return 1;
+            }
+            if (a.end < b.end) {
+                return 1;
+            }
+            if (a.end > b.end) {
+                return -1;
+            }
+            return 0;
+        };
+
+        Collections.sort(links, c);
+
+        int len = links.size();
+        int i = 0;
+
+        while (i < len - 1) {
+            LinkSpec a = links.get(i);
+            LinkSpec b = links.get(i + 1);
+            int remove = -1;
+
+            if ((a.start <= b.start) && (a.end > b.start)) {
+                if (b.end <= a.end) {
+                    remove = i + 1;
+                } else if ((a.end - a.start) > (b.end - b.start)) {
+                    remove = i + 1;
+                } else if ((a.end - a.start) < (b.end - b.start)) {
+                    remove = i;
+                }
+                if (remove != -1) {
+                    links.remove(remove);
+                    len--;
+                    continue;
+                }
+            }
+            i++;
+        }
+    }
+
+    public static void fillStatusBarHeight(Context context) {
+        if (context == null || AndroidUtilities.statusBarHeight > 0) {
+            return;
+        }
+        int resourceId = context.getResources().getIdentifier("status_bar_height", "dimen", "android");
+        if (resourceId > 0) {
+            AndroidUtilities.statusBarHeight = context.getResources().getDimensionPixelSize(resourceId);
+        }
+    }
 
     public static int getThumbForNameOrMime(String name, String mime, boolean media) {
         if (name != null && name.length() != 0) {
@@ -251,8 +416,12 @@ public class AndroidUtilities {
                 bitmapColor = ((ColorDrawable) drawable).getColor();
             } else if (drawable instanceof BackgroundGradientDrawable) {
                 int[] colors = ((BackgroundGradientDrawable) drawable).getColorsList();
-                if (colors != null && colors.length > 0) {
-                    bitmapColor = colors[0];
+                if (colors != null) {
+                    if (colors.length > 1) {
+                        bitmapColor = getAverageColor(colors[0], colors[1]);
+                    } else if (colors.length > 0) {
+                        bitmapColor = colors[0];
+                    }
                 }
             }
         } catch (Exception e) {
@@ -271,6 +440,10 @@ public class AndroidUtilities {
         result[2] = Color.argb(0x66, rgb[0], rgb[1], rgb[2]);
         result[3] = Color.argb(0x88, rgb[0], rgb[1], rgb[2]);
         return result;
+    }
+
+    public static double[] rgbToHsv(int color) {
+        return rgbToHsv(Color.red(color), Color.green(color), Color.blue(color));
     }
 
     public static double[] rgbToHsv(int r, int g, int b) {
@@ -297,7 +470,12 @@ public class AndroidUtilities {
         return new double[]{h, s, max};
     }
 
-    private static int[] hsvToRgb(double h, double s, double v) {
+    public static int hsvToColor(double h, double s, double v) {
+        int[] rgb = hsvToRgb(h, s, v);
+        return Color.argb(0xff, rgb[0], rgb[1], rgb[2]);
+    }
+
+    public static int[] hsvToRgb(double h, double s, double v) {
         double r = 0, g = 0, b = 0;
         double i = (int) Math.floor(h * 6);
         double f = h * 6 - i;
@@ -1175,6 +1353,7 @@ public class AndroidUtilities {
                 if (display != null) {
                     display.getMetrics(displayMetrics);
                     display.getSize(displaySize);
+                    screenRefreshRate = display.getRefreshRate();
                 }
             }
             if (configuration.screenWidthDp != Configuration.SCREEN_WIDTH_DP_UNDEFINED) {
@@ -1195,6 +1374,7 @@ public class AndroidUtilities {
                 } else {
                     roundMessageSize = (int) (Math.min(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y) * 0.6f);
                 }
+                roundMessageInset = dp(2);
             }
             if (BuildVars.LOGS_ENABLED) {
                 FileLog.e("display size = " + displaySize.x + " " + displaySize.y + " " + displayMetrics.xdpi + "x" + displayMetrics.ydpi);
@@ -1208,9 +1388,11 @@ public class AndroidUtilities {
         return ((long) (value * 1000000)) / 1000000.0;
     }
 
-    public static String formapMapUrl(int account, double lat, double lon, int width, int height, boolean marker, int zoom) {
+    public static String formapMapUrl(int account, double lat, double lon, int width, int height, boolean marker, int zoom, int provider) {
         int scale = Math.min(2, (int) Math.ceil(AndroidUtilities.density));
-        int provider = MessagesController.getInstance(account).mapProvider;
+        if (provider == -1) {
+            provider = MessagesController.getInstance(account).mapProvider;
+        }
         if (provider == 1 || provider == 3) {
             String lang = null;
             String[] availableLangs = new String[]{"ru_RU", "tr_TR"};
@@ -1654,9 +1836,10 @@ public class AndroidUtilities {
         if (reset) {
             ForegroundDetector.getInstance().resetBackgroundVar();
         }
+        int uptime = (int) (SystemClock.uptimeMillis() / 1000);
         return SharedConfig.passcodeHash.length() > 0 && wasInBackground &&
                 (SharedConfig.appLocked || SharedConfig.autoLockIn != 0 && SharedConfig.lastPauseTime != 0 && !SharedConfig.appLocked &&
-                        (SharedConfig.lastPauseTime + SharedConfig.autoLockIn) <= ConnectionsManager.getInstance(UserConfig.selectedAccount).getCurrentTime() || ConnectionsManager.getInstance(UserConfig.selectedAccount).getCurrentTime() + 5 < SharedConfig.lastPauseTime);
+                        (SharedConfig.lastPauseTime + SharedConfig.autoLockIn) <= uptime || uptime + 5 < SharedConfig.lastPauseTime);
     }
 
     public static void shakeView(final View view, final float x, final int num) {
@@ -1895,16 +2078,16 @@ public class AndroidUtilities {
     }
 
     public static File generatePicturePath() {
-        return generatePicturePath(false);
+        return generatePicturePath(false, null);
     }
 
-    public static File generatePicturePath(boolean secretChat) {
+    public static File generatePicturePath(boolean secretChat, String ext) {
         try {
             File storageDir = getAlbumDir(secretChat);
             Date date = new Date();
             date.setTime(System.currentTimeMillis() + Utilities.random.nextInt(1000) + 1);
             String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss_SSS", Locale.US).format(date);
-            return new File(storageDir, "IMG_" + timeStamp + ".jpg");
+            return new File(storageDir, "IMG_" + timeStamp + "." + (TextUtils.isEmpty(ext) ? "jpg" : ext));
         } catch (Exception e) {
             FileLog.e(e);
         }
@@ -2009,6 +2192,92 @@ public class AndroidUtilities {
                 return String.format("%d GB", (int) value);
             } else {
                 return String.format("%.1f GB", value);
+            }
+        }
+    }
+
+    public static String formatShortDuration(int duration) {
+        return formatDuration(duration, false);
+    }
+
+    public static String formatLongDuration(int duration) {
+        return formatDuration(duration, true);
+    }
+
+    public static String formatDuration(int duration, boolean isLong) {
+        int h = duration / 3600;
+        int m = duration / 60 % 60;
+        int s = duration % 60;
+        if (h == 0) {
+            if (isLong) {
+                return String.format(Locale.US, "%02d:%02d", m, s);
+            } else {
+                return String.format(Locale.US, "%d:%02d", m, s);
+            }
+        } else {
+            return String.format(Locale.US, "%d:%02d:%02d", h, m, s);
+        }
+    }
+
+    public static String formatShortDuration(int progress, int duration) {
+        return formatDuration(progress, duration, false);
+    }
+
+    public static String formatLongDuration(int progress, int duration) {
+        return formatDuration(progress, duration, true);
+    }
+
+    public static String formatDuration(int progress, int duration, boolean isLong) {
+        int h = duration / 3600;
+        int m = duration / 60 % 60;
+        int s = duration % 60;
+
+        int ph = progress / 3600;
+        int pm = progress / 60 % 60;
+        int ps = progress % 60;
+
+        if (duration == 0) {
+            if (ph == 0) {
+                if (isLong) {
+                    return String.format(Locale.US, "%02d:%02d / -:--", pm, ps);
+                } else {
+                    return String.format(Locale.US, "%d:%02d / -:--", pm, ps);
+                }
+            } else {
+                return String.format(Locale.US, "%d:%02d:%02d / -:--", ph, pm, ps);
+            }
+        } else {
+            if (ph == 0 && h == 0) {
+                if (isLong) {
+                    return String.format(Locale.US, "%02d:%02d / %02d:%02d", pm, ps, m, s);
+                } else {
+                    return String.format(Locale.US, "%d:%02d / %d:%02d", pm, ps, m, s);
+                }
+            } else {
+                return String.format(Locale.US, "%d:%02d:%02d / %d:%02d:%02d", ph, pm, ps, h, m, s);
+            }
+        }
+    }
+
+    public static String formatVideoDuration(int progress, int duration) {
+        int h = duration / 3600;
+        int m = duration / 60 % 60;
+        int s = duration % 60;
+
+        int ph = progress / 3600;
+        int pm = progress / 60 % 60;
+        int ps = progress % 60;
+
+        if (ph == 0 && h == 0) {
+            return String.format(Locale.US, "%02d:%02d / %02d:%02d", pm, ps, m, s);
+        } else {
+            if (h == 0) {
+                return String.format(Locale.US, "%d:%02d:%02d / %02d:%02d", ph, pm, ps, m, s);
+            } else if (ph == 0) {
+                return String.format(Locale.US, "%02d:%02d / %d:%02d:%02d", pm, ps, h, m, s);
+            }
+            else {
+                return String.format(Locale.US, "%d:%02d:%02d / %d:%02d:%02d", ph, pm, ps, h, m, s);
             }
         }
     }
@@ -2645,6 +2914,10 @@ public class AndroidUtilities {
         return 0xff000000 | ((r & 0xff) << 16) | ((g & 0xff) << 8) | (b & 0xff);
     }
 
+    public static float computePerceivedBrightness(int color) {
+        return (Color.red(color) * 0.2126f + Color.green(color) * 0.7152f + Color.blue(color) * 0.0722f) / 255f;
+    }
+
     public static int getPatternColor(int color) {
         float[] hsb = RGBtoHSB(Color.red(color), Color.green(color), Color.blue(color));
         if (hsb[1] > 0.0f || (hsb[2] < 1.0f && hsb[2] > 0.0f)) {
@@ -2669,11 +2942,26 @@ public class AndroidUtilities {
         return HSBtoRGB(hsb[0], hsb[1], hsb[2]) | 0xff000000;
     }
 
-    public static String getWallPaperUrl(Object object, int currentAccount) {
+    public static int getWallpaperRotation(int angle, boolean iOS) {
+        if (iOS) {
+            angle += 180;
+        } else {
+            angle -= 180;
+        }
+        while (angle >= 360) {
+            angle -= 360;
+        }
+        while (angle < 0) {
+            angle += 360;
+        }
+        return angle;
+    }
+
+    public static String getWallPaperUrl(Object object) {
         String link;
         if (object instanceof TLRPC.TL_wallPaper) {
             TLRPC.TL_wallPaper wallPaper = (TLRPC.TL_wallPaper) object;
-            link = "https://" + MessagesController.getInstance(currentAccount).linkPrefix + "/bg/" + wallPaper.slug;
+            link = "https://" + MessagesController.getInstance(UserConfig.selectedAccount).linkPrefix + "/bg/" + wallPaper.slug;
             StringBuilder modes = new StringBuilder();
             if (wallPaper.settings != null) {
                 if (wallPaper.settings.blur) {
@@ -2691,12 +2979,7 @@ public class AndroidUtilities {
             }
         } else if (object instanceof WallpapersListActivity.ColorWallpaper) {
             WallpapersListActivity.ColorWallpaper wallPaper = (WallpapersListActivity.ColorWallpaper) object;
-            String color = String.format("%02x%02x%02x", (byte) (wallPaper.color >> 16) & 0xff, (byte) (wallPaper.color >> 8) & 0xff, (byte) (wallPaper.color & 0xff)).toLowerCase();
-            if (wallPaper.pattern != null) {
-                link = "https://" + MessagesController.getInstance(currentAccount).linkPrefix + "/bg/" + wallPaper.pattern.slug + "?intensity=" + (int) (wallPaper.intensity * 100) + "&bg_color=" + color;
-            } else {
-                link = "https://" + MessagesController.getInstance(currentAccount).linkPrefix + "/bg/" + color;
-            }
+            link = wallPaper.getUrl();
         } else {
             link = null;
         }
@@ -2757,5 +3040,174 @@ public class AndroidUtilities {
         }
 
         return -1;
+    }
+
+    public static float lerp(float a, float b, float f) {
+        return a + f * (b - a);
+    }
+
+    public static float lerp(float[] ab, float f) {
+        return lerp(ab[0], ab[1], f);
+    }
+
+    private static WeakReference<BaseFragment> flagSecureFragment;
+
+    public static boolean hasFlagSecureFragment() {
+        return flagSecureFragment != null;
+    }
+
+    public static void setFlagSecure(BaseFragment parentFragment, boolean set) {
+        if (parentFragment == null || parentFragment.getParentActivity() == null) {
+            return;
+        }
+        if (set) {
+            try {
+                parentFragment.getParentActivity().getWindow().setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE);
+                flagSecureFragment = new WeakReference<>(parentFragment);
+            } catch (Exception ignore) {
+
+            }
+        } else if (flagSecureFragment != null && flagSecureFragment.get() == parentFragment) {
+            try {
+                parentFragment.getParentActivity().getWindow().clearFlags(WindowManager.LayoutParams.FLAG_SECURE);
+            } catch (Exception ignore) {
+
+            }
+            flagSecureFragment = null;
+        }
+    }
+
+    public static void openSharing(BaseFragment fragment, String url) {
+        if (fragment == null || fragment.getParentActivity() == null) {
+            return;
+        }
+        fragment.showDialog(new ShareAlert(fragment.getParentActivity(), null, url, false, url, false));
+    }
+
+    public static boolean allowScreenCapture() {
+        return SharedConfig.passcodeHash.length() == 0 || SharedConfig.allowScreenCapture;
+    }
+
+    public static void getTonWalletSalt(int account, TonController.BytesCallback callback) {
+        TLRPC.TL_wallet_getKeySecretSalt req = new TLRPC.TL_wallet_getKeySecretSalt();
+        ConnectionsManager.getInstance(account).sendRequest(req, (response, error) -> {
+            if (response instanceof TLRPC.TL_wallet_secretSalt) {
+                callback.run(((TLRPC.TL_wallet_secretSalt) response).salt);
+            } else {
+                callback.run(null);
+            }
+        });
+    }
+
+    public static void processTonUpdate(int account, Client client, TonApi.Object object) {
+        if (object instanceof TonApi.UpdateSendLiteServerQuery) {
+            TonApi.UpdateSendLiteServerQuery query = (TonApi.UpdateSendLiteServerQuery) object;
+            long id = query.id;
+            TLRPC.TL_wallet_sendLiteRequest req = new TLRPC.TL_wallet_sendLiteRequest();
+            req.body = query.data;
+            ConnectionsManager.getInstance(account).sendRequest(req, (response, error) -> {
+                if (response instanceof TLRPC.TL_wallet_liteResponse) {
+                    TLRPC.TL_wallet_liteResponse res = (TLRPC.TL_wallet_liteResponse) response;
+                    client.send(new TonApi.OnLiteServerQueryResult(id, res.response), null);
+                } else if (error != null) {
+                    client.send(new TonApi.OnLiteServerQueryError(id, new TonApi.Error(error.code, error.text)), null);
+                }
+            }, ConnectionsManager.RequestFlagWithoutLogin);
+        }
+    }
+
+    public static File getSharingDirectory() {
+        return new File(FileLoader.getDirectory(FileLoader.MEDIA_DIR_CACHE), "sharing/");
+    }
+
+    public static String getCertificateSHA256Fingerprint() {
+        PackageManager pm = ApplicationLoader.applicationContext.getPackageManager();
+        String packageName = ApplicationLoader.applicationContext.getPackageName();
+        try {
+            PackageInfo packageInfo = pm.getPackageInfo(packageName, PackageManager.GET_SIGNATURES);
+            Signature[] signatures = packageInfo.signatures;
+            byte[] cert = signatures[0].toByteArray();
+            InputStream input = new ByteArrayInputStream(cert);
+            CertificateFactory cf = CertificateFactory.getInstance("X509");
+            X509Certificate c = (X509Certificate) cf.generateCertificate(input);
+            return Utilities.bytesToHex(Utilities.computeSHA256(c.getEncoded()));
+        } catch (Throwable ignore) {
+
+        }
+        return "";
+    }
+
+    private static char[] characters = new char[] {' ', '!', '"', '#', '%', '&', '\'', '(', ')', '*', ',', '-', '.', '/', ':', ';', '?', '@', '[', '\\', ']', '_', '{', '}', '¡', '§', '«', '¶', '·', '»', '¿', ';', '·', '՚', '՛', '՜', '՝', '՞', '՟', '։', '֊', '־', '׀', '׃', '׆', '׳', '״', '؉', '؊', '،', '؍', '؛', '؞', '؟', '٪', '٫', '٬', '٭', '۔', '܀', '܁', '܂', '܃', '܄', '܅', '܆', '܇', '܈', '܉', '܊', '܋', '܌', '܍', '߷', '߸', '߹', '࠰', '࠱', '࠲', '࠳', '࠴', '࠵', '࠶', '࠷', '࠸', '࠹', '࠺', '࠻', '࠼', '࠽', '࠾', '࡞', '।', '॥', '॰', '৽', '੶', '૰', '౷', '಄', '෴', '๏', '๚', '๛', '༄', '༅', '༆', '༇', '༈', '༉', '༊', '་', '༌', '།', '༎', '༏', '༐', '༑', '༒', '༔', '༺', '༻', '༼', '༽', '྅', '࿐', '࿑', '࿒', '࿓', '࿔', '࿙', '࿚', '၊', '။', '၌', '၍', '၎', '၏', '჻', '፠', '፡', '።', '፣', '፤', '፥', '፦', '፧', '፨', '᐀', '᙮', '᚛', '᚜', '᛫', '᛬', '᛭', '᜵', '᜶', '។', '៕', '៖', '៘', '៙', '៚', '᠀', '᠁', '᠂', '᠃', '᠄', '᠅', '᠆', '᠇', '᠈', '᠉', '᠊', '᥄', '᥅', '᨞', '᨟', '᪠', '᪡', '᪢', '᪣', '᪤', '᪥', '᪦', '᪨', '᪩', '᪪', '᪫', '᪬', '᪭', '᭚', '᭛', '᭜', '᭝', '᭞', '᭟', '᭠', '᯼', '᯽', '᯾', '᯿', '᰻', '᰼', '᰽', '᰾', '᰿', '᱾', '᱿', '᳀', '᳁', '᳂', '᳃', '᳄', '᳅', '᳆', '᳇', '᳓', '‐', '‑', '‒', '–', '—', '―', '‖', '‗', '‘', '’', '‚', '‛', '“', '”', '„', '‟', '†', '‡', '•', '‣', '․', '‥', '…', '‧', '‰', '‱', '′', '″', '‴', '‵', '‶', '‷', '‸', '‹', '›', '※', '‼', '‽', '‾', '‿', '⁀', '⁁', '⁂', '⁃', '⁅', '⁆', '⁇', '⁈', '⁉', '⁊', '⁋', '⁌', '⁍', '⁎', '⁏', '⁐', '⁑', '⁓', '⁔', '⁕', '⁖', '⁗', '⁘', '⁙', '⁚', '⁛', '⁜', '⁝', '⁞', '⁽', '⁾', '₍', '₎', '⌈', '⌉', '⌊', '⌋', '〈', '〉', '❨', '❩', '❪', '❫', '❬', '❭', '❮', '❯', '❰', '❱', '❲', '❳', '❴', '❵', '⟅', '⟆', '⟦', '⟧', '⟨', '⟩', '⟪', '⟫', '⟬', '⟭', '⟮', '⟯', '⦃', '⦄', '⦅', '⦆', '⦇', '⦈', '⦉', '⦊', '⦋', '⦌', '⦍', '⦎', '⦏', '⦐', '⦑', '⦒', '⦓', '⦔', '⦕', '⦖', '⦗', '⦘', '⧘', '⧙', '⧚', '⧛', '⧼', '⧽', '⳹', '⳺', '⳻', '⳼', '⳾', '⳿', '⵰', '⸀', '⸁', '⸂', '⸃', '⸄', '⸅', '⸆', '⸇', '⸈', '⸉', '⸊', '⸋', '⸌', '⸍', '⸎', '⸏', '⸐', '⸑', '⸒', '⸓', '⸔', '⸕', '⸖', '⸗', '⸘', '⸙', '⸚', '⸛', '⸜', '⸝', '⸞', '⸟', '⸠', '⸡', '⸢', '⸣', '⸤', '⸥', '⸦', '⸧', '⸨', '⸩', '⸪', '⸫', '⸬', '⸭', '⸮', '⸰', '⸱', '⸲', '⸳', '⸴', '⸵', '⸶', '⸷', '⸸', '⸹', '⸺', '⸻', '⸼', '⸽', '⸾', '⸿', '⹀', '⹁', '⹂', '⹃', '⹄', '⹅', '⹆', '⹇', '⹈', '⹉', '⹊', '⹋', '⹌', '⹍', '⹎', '⹏', '、', '。', '〃', '〈', '〉', '《', '》', '「', '」', '『', '』', '【', '】', '〔', '〕', '〖', '〗', '〘', '〙', '〚', '〛', '〜', '〝', '〞', '〟', '〰', '〽', '゠', '・', '꓾', '꓿', '꘍', '꘎', '꘏', '꙳', '꙾', '꛲', '꛳', '꛴', '꛵', '꛶', '꛷', '꡴', '꡵', '꡶', '꡷', '꣎', '꣏', '꣸', '꣹', '꣺', '꣼', '꤮', '꤯', '꥟', '꧁', '꧂', '꧃', '꧄', '꧅', '꧆', '꧇', '꧈', '꧉', '꧊', '꧋', '꧌', '꧍', '꧞', '꧟', '꩜', '꩝', '꩞', '꩟', '꫞', '꫟', '꫰', '꫱', '꯫', '﴾', '﴿', '︐', '︑', '︒', '︓', '︔', '︕', '︖', '︗', '︘', '︙', '︰', '︱', '︲', '︳', '︴', '︵', '︶', '︷', '︸', '︹', '︺', '︻', '︼', '︽', '︾', '︿', '﹀', '﹁', '﹂', '﹃', '﹄', '﹅', '﹆', '﹇', '﹈', '﹉', '﹊', '﹋', '﹌', '﹍', '﹎', '﹏', '﹐', '﹑', '﹒', '﹔', '﹕', '﹖', '﹗', '﹘', '﹙', '﹚', '﹛', '﹜', '﹝', '﹞', '﹟', '﹠', '﹡', '﹣', '﹨', '﹪', '﹫', '！', '＂', '＃', '％', '＆', '＇', '（', '）', '＊', '，', '－', '．', '／', '：', '；', '？', '＠', '［', '＼', '］', '＿', '｛', '｝', '｟', '｠', '｡', '｢', '｣', '､', '･'};
+    //private static String[] longCharacters = new String[] {"𐄀", "𐄁", "𐄂", "𐎟", "𐏐", "𐕯", "𐡗", "𐤟", "𐤿", "𐩐", "𐩑", "𐩒", "𐩓", "𐩔", "𐩕", "𐩖", "𐩗", "𐩘", "𐩿", "𐫰", "𐫱", "𐫲", "𐫳", "𐫴", "𐫵", "𐫶", "𐬹", "𐬺", "𐬻", "𐬼", "𐬽", "𐬾", "𐬿", "𐮙", "𐮚", "𐮛", "𐮜", "𐽕", "𐽖", "𐽗", "𐽘", "𐽙", "𑁇", "𑁈", "𑁉", "𑁊", "𑁋", "𑁌", "𑁍", "𑂻", "𑂼", "𑂾", "𑂿", "𑃀", "𑃁", "𑅀", "𑅁", "𑅂", "𑅃", "𑅴", "𑅵", "𑇅", "𑇆", "𑇇", "𑇈", "𑇍", "𑇛", "𑇝", "𑇞", "𑇟", "𑈸", "𑈹", "𑈺", "𑈻", "𑈼", "𑈽", "𑊩", "𑑋", "𑑌", "𑑍", "𑑎", "𑑏", "𑑛", "𑑝", "𑓆", "𑗁", "𑗂", "𑗃", "𑗄", "𑗅", "𑗆", "𑗇", "𑗈", "𑗉", "𑗊", "𑗋", "𑗌", "𑗍", "𑗎", "𑗏", "𑗐", "𑗑", "𑗒", "𑗓", "𑗔", "𑗕", "𑗖", "𑗗", "𑙁", "𑙂", "𑙃", "𑙠", "𑙡", "𑙢", "𑙣", "𑙤", "𑙥", "𑙦", "𑙧", "𑙨", "𑙩", "𑙪", "𑙫", "𑙬", "𑜼", "𑜽", "𑜾", "𑠻", "𑧢", "𑨿", "𑩀", "𑩁", "𑩂", "𑩃", "𑩄", "𑩅", "𑩆", "𑪚", "𑪛", "𑪜", "𑪞", "𑪟", "𑪠", "𑪡", "𑪢", "𑱁", "𑱂", "𑱃", "𑱄", "𑱅", "𑱰", "𑱱", "𑻷", "𑻸", "𑿿", "𒑰", "𒑱", "𒑲", "𒑳", "𒑴", "𖩮", "𖩯", "𖫵", "𖬷", "𖬸", "𖬹", "𖬺", "𖬻", "𖭄", "𖺗", "𖺘", "𖺙", "𖺚", "𖿢", "𛲟", "𝪇", "𝪈", "𝪉", "𝪊", "𝪋", "𞥞", "𞥟"};
+    private static HashSet<Character> charactersMap;
+
+    public static boolean isPunctuationCharacter(char ch) {
+        if (charactersMap == null) {
+            charactersMap = new HashSet<>();
+            for (int a = 0; a < characters.length; a++) {
+                charactersMap.add(characters[a]);
+            }
+        }
+        //int len = longCharacters[0].length();
+        return charactersMap.contains(ch);
+    }
+
+    public static int getColorDistance(int color1, int color2) {
+        int r1 = Color.red(color1);
+        int g1 = Color.green(color1);
+        int b1 = Color.blue(color1);
+
+        int r2 = Color.red(color2);
+        int g2 = Color.green(color2);
+        int b2 = Color.blue(color2);
+
+        int rMean = (r1 + r2) / 2;
+        int r = r1 - r2;
+        int g = g1 - g2;
+        int b = b1 - b2;
+        return (((512 + rMean) * r * r) >> 8) + (4 * g * g) + (((767 - rMean) * b * b) >> 8);
+    }
+
+    public static int getAverageColor(int color1, int color2) {
+        int r1 = Color.red(color1);
+        int r2 = Color.red(color2);
+        int g1 = Color.green(color1);
+        int g2 = Color.green(color2);
+        int b1 = Color.blue(color1);
+        int b2 = Color.blue(color2);
+        return Color.argb(255, (r1 / 2 + r2 / 2), (g1 / 2 + g2 / 2), (b1 / 2 + b2 / 2));
+    }
+
+    public static void setLightStatusBar(Window window, boolean enable) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            final View decorView = window.getDecorView();
+            int flags = decorView.getSystemUiVisibility();
+            if (enable) {
+                if ((flags & View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR) == 0) {
+                    flags |= View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
+                    decorView.setSystemUiVisibility(flags);
+                    window.setStatusBarColor(0x0f000000);
+                }
+            } else {
+                if ((flags & View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR) != 0) {
+                    flags &= ~View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
+                    decorView.setSystemUiVisibility(flags);
+                    window.setStatusBarColor(0x33000000);
+                }
+            }
+        }
+    }
+
+    public static void setLightNavigationBar(Window window, boolean enable) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            final View decorView = window.getDecorView();
+            int flags = decorView.getSystemUiVisibility();
+            if (enable) {
+                flags |= View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR;
+            } else {
+                flags &= ~View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR;
+            }
+            decorView.setSystemUiVisibility(flags);
+        }
     }
 }

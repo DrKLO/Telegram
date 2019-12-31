@@ -33,6 +33,14 @@ public class StaticLayoutEx {
     private static Object[] sConstructorArgs;
     private static Object sTextDirection;
 
+    public static Layout.Alignment[] alignments = Layout.Alignment.values();
+    public static Layout.Alignment ALIGN_RIGHT() {
+        return alignments.length >= 5 ? alignments[4] : Layout.Alignment.ALIGN_OPPOSITE;
+    }
+    public static Layout.Alignment ALIGN_LEFT() {
+        return alignments.length >= 5 ? alignments[3] : Layout.Alignment.ALIGN_NORMAL;
+    }
+
     public static void init() {
         if (initialized) {
             return;

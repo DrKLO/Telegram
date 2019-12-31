@@ -15,6 +15,7 @@ import android.graphics.Canvas;
 import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
+import android.view.View;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.FrameLayout;
 import android.widget.TextView;
@@ -95,8 +96,8 @@ public class RadioCell extends FrameLayout {
     public void setEnabled(boolean value, ArrayList<Animator> animators) {
         super.setEnabled(value);
         if (animators != null) {
-            animators.add(ObjectAnimator.ofFloat(textView, "alpha", value ? 1.0f : 0.5f));
-            animators.add(ObjectAnimator.ofFloat(radioButton, "alpha", value ? 1.0f : 0.5f));
+            animators.add(ObjectAnimator.ofFloat(textView, View.ALPHA, value ? 1.0f : 0.5f));
+            animators.add(ObjectAnimator.ofFloat(radioButton, View.ALPHA, value ? 1.0f : 0.5f));
         } else {
             textView.setAlpha(value ? 1.0f : 0.5f);
             radioButton.setAlpha(value ? 1.0f : 0.5f);

@@ -15,10 +15,14 @@
  */
 package com.google.android.exoplayer2.util;
 
+import java.util.Arrays;
+
 /**
  * Configurable loader for native libraries.
  */
 public final class LibraryLoader {
+
+  private static final String TAG = "LibraryLoader";
 
   private String[] nativeLibraries;
   private boolean loadAttempted;
@@ -54,7 +58,9 @@ public final class LibraryLoader {
       }
       isAvailable = true;
     } catch (UnsatisfiedLinkError exception) {
-      // Do nothing.
+      // Log a warning as an attempt to check for the library indicates that the app depends on an
+      // extension and generally would expect its native libraries to be available.
+      Log.w(TAG, "Failed to load " + Arrays.toString(nativeLibraries));
     }
     return isAvailable;
   }

@@ -42,6 +42,12 @@ public class FileLoader extends BaseController {
     public static final int MEDIA_DIR_DOCUMENT = 3;
     public static final int MEDIA_DIR_CACHE = 4;
 
+    public static final int IMAGE_TYPE_LOTTIE = 1;
+    public static final int IMAGE_TYPE_ANIMATION = 2;
+    public static final int IMAGE_TYPE_SVG = 3;
+    public static final int IMAGE_TYPE_SVG_WHITE = 4;
+    public static final int IMAGE_TYPE_THEME_PREVIEW = 5;
+
     private volatile static DispatchQueue fileLoaderQueue = new DispatchQueue("fileUploadQueue");
 
     private LinkedList<FileUploadOperation> uploadOperationQueue = new LinkedList<>();

@@ -434,7 +434,7 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
                 return;
             }
             SparseArray<ArrayList<Long>> mids = (SparseArray<ArrayList<Long>>)args[0];
-            for(int i = 0; i < mids.size(); i++) {
+            for (int i = 0; i < mids.size(); i++) {
                 int key = mids.keyAt(i);
                 ArrayList<Long> arr = mids.get(key);
                 for (int a = 0; a < arr.size(); a++) {
@@ -647,6 +647,19 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
                         translationY = 0;
                     }
                     updateMinMax(scale);
+                }
+            }
+
+            @Override
+            protected void onDraw(Canvas canvas) {
+                if (Build.VERSION.SDK_INT >= 21 && isVisible && lastInsets != null) {
+                    WindowInsets insets = (WindowInsets) lastInsets;
+                    if (photoAnimationInProgress != 0) {
+                        blackPaint.setAlpha(photoBackgroundDrawable.getAlpha());
+                    } else {
+                        blackPaint.setAlpha(255);
+                    }
+                    canvas.drawRect(0, getMeasuredHeight(), getMeasuredWidth(), getMeasuredHeight() + insets.getSystemWindowInsetBottom(), blackPaint);
                 }
             }
         };

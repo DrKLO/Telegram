@@ -52,7 +52,7 @@ import java.util.ArrayDeque;
   private final ArrayDeque<MasterElement> masterElementsStack;
   private final VarintReader varintReader;
 
-  private EbmlReaderOutput output;
+  private EbmlProcessor processor;
   private @ElementState int elementState;
   private int elementId;
   private long elementContentSize;
@@ -64,8 +64,8 @@ import java.util.ArrayDeque;
   }
 
   @Override
-  public void init(EbmlReaderOutput eventHandler) {
-    this.output = eventHandler;
+  public void init(EbmlProcessor processor) {
+    this.processor = processor;
   }
 
   @Override
@@ -77,11 +77,11 @@ import java.util.ArrayDeque;
 
   @Override
   public boolean read(ExtractorInput input) throws IOException, InterruptedException {
-    Assertions.checkState(output != null);
+    Assertions.checkNotNull(processor);
     while (true) {
       if (!masterElementsStack.isEmpty()
           && input.getPosition() >= masterElementsStack.peek().elementEndPosition) {
-        output.endMasterElement(masterElementsStack.pop().elementId);
+        processor.endMasterElement(masterElementsStack.pop().elementId);
         return true;
       }
 
@@ -103,42 +103,42 @@ import java.util.ArrayDeque;
         elementState = ELEMENT_STATE_READ_CONTENT;
       }
 
-      @EbmlReaderOutput.ElementType int type = output.getElementType(elementId);
+      @EbmlProcessor.ElementType int type = processor.getElementType(elementId);
       switch (type) {
-        case EbmlReaderOutput.TYPE_MASTER:
+        case EbmlProcessor.ELEMENT_TYPE_MASTER:
           long elementContentPosition = input.getPosition();
           long elementEndPosition = elementContentPosition + elementContentSize;
           masterElementsStack.push(new MasterElement(elementId, elementEndPosition));
-          output.startMasterElement(elementId, elementContentPosition, elementContentSize);
+          processor.startMasterElement(elementId, elementContentPosition, elementContentSize);
           elementState = ELEMENT_STATE_READ_ID;
           return true;
-        case EbmlReaderOutput.TYPE_UNSIGNED_INT:
+        case EbmlProcessor.ELEMENT_TYPE_UNSIGNED_INT:
           if (elementContentSize > MAX_INTEGER_ELEMENT_SIZE_BYTES) {
             throw new ParserException("Invalid integer size: " + elementContentSize);
           }
-          output.integerElement(elementId, readInteger(input, (int) elementContentSize));
+          processor.integerElement(elementId, readInteger(input, (int) elementContentSize));
           elementState = ELEMENT_STATE_READ_ID;
           return true;
-        case EbmlReaderOutput.TYPE_FLOAT:
+        case EbmlProcessor.ELEMENT_TYPE_FLOAT:
           if (elementContentSize != VALID_FLOAT32_ELEMENT_SIZE_BYTES
               && elementContentSize != VALID_FLOAT64_ELEMENT_SIZE_BYTES) {
             throw new ParserException("Invalid float size: " + elementContentSize);
           }
-          output.floatElement(elementId, readFloat(input, (int) elementContentSize));
+          processor.floatElement(elementId, readFloat(input, (int) elementContentSize));
           elementState = ELEMENT_STATE_READ_ID;
           return true;
-        case EbmlReaderOutput.TYPE_STRING:
+        case EbmlProcessor.ELEMENT_TYPE_STRING:
           if (elementContentSize > Integer.MAX_VALUE) {
             throw new ParserException("String element size: " + elementContentSize);
           }
-          output.stringElement(elementId, readString(input, (int) elementContentSize));
+          processor.stringElement(elementId, readString(input, (int) elementContentSize));
           elementState = ELEMENT_STATE_READ_ID;
           return true;
-        case EbmlReaderOutput.TYPE_BINARY:
-          output.binaryElement(elementId, (int) elementContentSize, input);
+        case EbmlProcessor.ELEMENT_TYPE_BINARY:
+          processor.binaryElement(elementId, (int) elementContentSize, input);
           elementState = ELEMENT_STATE_READ_ID;
           return true;
-        case EbmlReaderOutput.TYPE_UNKNOWN:
+        case EbmlProcessor.ELEMENT_TYPE_UNKNOWN:
           input.skipFully((int) elementContentSize);
           elementState = ELEMENT_STATE_READ_ID;
           break;
@@ -167,7 +167,7 @@ import java.util.ArrayDeque;
       int varintLength = VarintReader.parseUnsignedVarintLength(scratch[0]);
       if (varintLength != C.LENGTH_UNSET && varintLength <= MAX_ID_BYTES) {
         int potentialId = (int) VarintReader.assembleVarint(scratch, varintLength, false);
-        if (output.isLevel1Element(potentialId)) {
+        if (processor.isLevel1Element(potentialId)) {
           input.skipFully(varintLength);
           return potentialId;
         }
@@ -243,7 +243,7 @@ import java.util.ArrayDeque;
 
   /**
    * Used in {@link #masterElementsStack} to track when the current master element ends, so that
-   * {@link EbmlReaderOutput#endMasterElement(int)} can be called.
+   * {@link EbmlProcessor#endMasterElement(int)} can be called.
    */
   private static final class MasterElement {
 

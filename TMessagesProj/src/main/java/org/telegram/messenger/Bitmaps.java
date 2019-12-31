@@ -18,6 +18,9 @@ import android.graphics.Rect;
 import android.graphics.RectF;
 import android.os.Build;
 
+import java.util.ArrayList;
+import java.util.Collections;
+
 public class Bitmaps {
 
     private static volatile Matrix sScaleMatrix;

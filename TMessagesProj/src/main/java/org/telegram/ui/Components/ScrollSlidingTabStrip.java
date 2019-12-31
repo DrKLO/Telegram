@@ -8,12 +8,14 @@
 
 package org.telegram.ui.Components;
 
+import android.animation.LayoutTransition;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Paint.Style;
 import android.graphics.drawable.Drawable;
 import android.os.SystemClock;
+import android.util.SparseArray;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
@@ -33,6 +35,8 @@ import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
 
+import java.util.HashMap;
+
 public class ScrollSlidingTabStrip extends HorizontalScrollView {
 
     public interface ScrollSlidingTabStripDelegate {
@@ -43,6 +47,9 @@ public class ScrollSlidingTabStrip extends HorizontalScrollView {
     private LinearLayout.LayoutParams defaultExpandLayoutParams;
     private LinearLayout tabsContainer;
     private ScrollSlidingTabStripDelegate delegate;
+    private HashMap<String, View> tabTypes = new HashMap<>();
+    private HashMap<String, View> prevTypes = new HashMap<>();
+    private SparseArray<View> futureTabsPositions = new SparseArray<>();
 
     private boolean shouldExpand;
 
@@ -67,6 +74,8 @@ public class ScrollSlidingTabStrip extends HorizontalScrollView {
 
     private int lastScrollX = 0;
 
+    private LayoutTransition layoutTransition;
+
     public ScrollSlidingTabStrip(Context context) {
         super(context);
 
@@ -85,6 +94,21 @@ public class ScrollSlidingTabStrip extends HorizontalScrollView {
 
         defaultTabLayoutParams = new LinearLayout.LayoutParams(AndroidUtilities.dp(52), LayoutHelper.MATCH_PARENT);
         defaultExpandLayoutParams = new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, 1.0F);
+
+        layoutTransition = new LayoutTransition();
+        layoutTransition.setAnimateParentHierarchy(false);
+        layoutTransition.setDuration(250);
+        layoutTransition.addTransitionListener(new LayoutTransition.TransitionListener() {
+            @Override
+            public void startTransition(LayoutTransition transition, ViewGroup container, View view, int transitionType) {
+
+            }
+
+            @Override
+            public void endTransition(LayoutTransition transition, ViewGroup container, View view, int transitionType) {
+                tabsContainer.setLayoutTransition(null);
+            }
+        });
     }
 
     public void setDelegate(ScrollSlidingTabStripDelegate scrollSlidingTabStripDelegate) {
@@ -93,9 +117,41 @@ public class ScrollSlidingTabStrip extends HorizontalScrollView {
 
     public void removeTabs() {
         tabsContainer.removeAllViews();
+        tabTypes.clear();
+        prevTypes.clear();
+        futureTabsPositions.clear();
         tabCount = 0;
         currentPosition = 0;
         animateFromPosition = false;
+    }
+
+    public void beginUpdate(boolean animated) {
+        prevTypes = tabTypes;
+        tabTypes = new HashMap<>();
+        futureTabsPositions.clear();
+        tabCount = 0;
+        if (animated) {
+            tabsContainer.setLayoutTransition(layoutTransition);
+        }
+    }
+
+    public void commitUpdate() {
+        if (prevTypes != null) {
+            for (HashMap.Entry<String, View> entry : prevTypes.entrySet()) {
+                tabsContainer.removeView(entry.getValue());
+            }
+            prevTypes.clear();
+        }
+        for (int a = 0, N = futureTabsPositions.size(); a < N; a++) {
+            int index = futureTabsPositions.keyAt(a);
+            View view = futureTabsPositions.valueAt(a);
+            int currentIndex = tabsContainer.indexOfChild(view);
+            if (currentIndex != index) {
+                tabsContainer.removeView(view);
+                tabsContainer.addView(view, index);
+            }
+        }
+        futureTabsPositions.clear();
     }
 
     public void selectTab(int num) {
@@ -106,81 +162,127 @@ public class ScrollSlidingTabStrip extends HorizontalScrollView {
         tab.performClick();
     }
 
-    public TextView addIconTabWithCounter(Drawable drawable) {
+    private void checkViewIndex(String key, View view, int index) {
+        if (prevTypes != null) {
+            prevTypes.remove(key);
+        }
+        futureTabsPositions.put(index, view);
+    }
+
+    public TextView addIconTabWithCounter(int id, Drawable drawable) {
+        String key = "textTab" + id;
         final int position = tabCount++;
-        FrameLayout tab = new FrameLayout(getContext());
-        tab.setFocusable(true);
-        tabsContainer.addView(tab);
 
-        ImageView imageView = new ImageView(getContext());
-        imageView.setImageDrawable(drawable);
-        imageView.setScaleType(ImageView.ScaleType.CENTER);
-        tab.setOnClickListener(v -> delegate.onPageSelected(position));
-        tab.addView(imageView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+        FrameLayout tab = (FrameLayout) prevTypes.get(key);
+        TextView textView;
+        if (tab != null) {
+            textView = (TextView) tab.getChildAt(1);
+            checkViewIndex(key, tab, position);
+        } else {
+            tab = new FrameLayout(getContext());
+            tab.setFocusable(true);
+            tabsContainer.addView(tab, position);
 
+            ImageView imageView = new ImageView(getContext());
+            imageView.setImageDrawable(drawable);
+            imageView.setScaleType(ImageView.ScaleType.CENTER);
+            tab.setOnClickListener(v -> delegate.onPageSelected((Integer) v.getTag(R.id.index_tag)));
+            tab.addView(imageView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+
+            textView = new TextView(getContext());
+            textView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
+            textView.setTextColor(Theme.getColor(Theme.key_chat_emojiPanelBadgeText));
+            textView.setGravity(Gravity.CENTER);
+            textView.setBackgroundDrawable(Theme.createRoundRectDrawable(AndroidUtilities.dp(9), Theme.getColor(Theme.key_chat_emojiPanelBadgeBackground)));
+            textView.setMinWidth(AndroidUtilities.dp(18));
+            textView.setPadding(AndroidUtilities.dp(5), 0, AndroidUtilities.dp(5), AndroidUtilities.dp(1));
+            tab.addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 18, Gravity.TOP | Gravity.LEFT, 26, 6, 0, 0));
+        }
+        tab.setTag(R.id.index_tag, position);
         tab.setSelected(position == currentPosition);
 
-        TextView textView = new TextView(getContext());
-        textView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
-        textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
-        textView.setTextColor(Theme.getColor(Theme.key_chat_emojiPanelBadgeText));
-        textView.setGravity(Gravity.CENTER);
-        textView.setBackgroundDrawable(Theme.createRoundRectDrawable(AndroidUtilities.dp(9), Theme.getColor(Theme.key_chat_emojiPanelBadgeBackground)));
-        textView.setMinWidth(AndroidUtilities.dp(18));
-        textView.setPadding(AndroidUtilities.dp(5), 0, AndroidUtilities.dp(5), AndroidUtilities.dp(1));
-        tab.addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 18, Gravity.TOP | Gravity.LEFT, 26, 6, 0, 0));
-
+        tabTypes.put(key, tab);
         return textView;
     }
 
-    public ImageView addIconTab(Drawable drawable) {
+    public ImageView addIconTab(int id, Drawable drawable) {
+        String key = "tab" + id;
         final int position = tabCount++;
-        ImageView tab = new ImageView(getContext());
-        tab.setFocusable(true);
-        tab.setImageDrawable(drawable);
-        tab.setScaleType(ImageView.ScaleType.CENTER);
-        tab.setOnClickListener(v -> delegate.onPageSelected(position));
-        tabsContainer.addView(tab);
+
+        ImageView tab = (ImageView) prevTypes.get(key);
+        if (tab != null) {
+            checkViewIndex(key, tab, position);
+        } else {
+            tab = new ImageView(getContext());
+            tab.setFocusable(true);
+            tab.setImageDrawable(drawable);
+            tab.setScaleType(ImageView.ScaleType.CENTER);
+            tab.setOnClickListener(v -> delegate.onPageSelected((Integer) v.getTag(R.id.index_tag)));
+            tabsContainer.addView(tab, position);
+        }
+        tab.setTag(R.id.index_tag, position);
         tab.setSelected(position == currentPosition);
 
+        tabTypes.put(key, tab);
         return tab;
     }
 
     public void addStickerTab(TLRPC.Chat chat) {
+        String key = "chat" + chat.id;
         final int position = tabCount++;
-        FrameLayout tab = new FrameLayout(getContext());
-        tab.setFocusable(true);
-        tab.setOnClickListener(v -> delegate.onPageSelected(position));
-        tabsContainer.addView(tab);
+
+        FrameLayout tab = (FrameLayout) prevTypes.get(key);
+        if (tab != null) {
+            checkViewIndex(key, tab, position);
+        } else {
+            tab = new FrameLayout(getContext());
+            tab.setFocusable(true);
+            tab.setOnClickListener(v -> delegate.onPageSelected((Integer) v.getTag(R.id.index_tag)));
+            tabsContainer.addView(tab, position);
+
+            AvatarDrawable avatarDrawable = new AvatarDrawable();
+            avatarDrawable.setTextSize(AndroidUtilities.dp(14));
+            avatarDrawable.setInfo(chat);
+
+            BackupImageView imageView = new BackupImageView(getContext());
+            imageView.setLayerNum(1);
+            imageView.setRoundRadius(AndroidUtilities.dp(15));
+            imageView.setImage(ImageLocation.getForChat(chat, false), "50_50", avatarDrawable, chat);
+            imageView.setAspectFit(true);
+            tab.addView(imageView, LayoutHelper.createFrame(30, 30, Gravity.CENTER));
+        }
+        tab.setTag(R.id.index_tag, position);
         tab.setSelected(position == currentPosition);
-        BackupImageView imageView = new BackupImageView(getContext());
-        imageView.setLayerNum(1);
-        imageView.setRoundRadius(AndroidUtilities.dp(15));
 
-        AvatarDrawable avatarDrawable = new AvatarDrawable();
-        avatarDrawable.setTextSize(AndroidUtilities.dp(14));
-        avatarDrawable.setInfo(chat);
-        imageView.setImage(ImageLocation.getForChat(chat, false), "50_50", avatarDrawable, chat);
-
-        imageView.setAspectFit(true);
-        tab.addView(imageView, LayoutHelper.createFrame(30, 30, Gravity.CENTER));
+        tabTypes.put(key, tab);
     }
 
-    public View addStickerTab(TLObject thumb, TLRPC.Document sticker, Object parentObject) {
+    public View addStickerTab(TLObject thumb, TLRPC.Document sticker, TLRPC.TL_messages_stickerSet parentObject) {
+        String key = "set" + parentObject.set.id;
         final int position = tabCount++;
-        FrameLayout tab = new FrameLayout(getContext());
+
+        FrameLayout tab = (FrameLayout) prevTypes.get(key);
+        if (tab != null) {
+            checkViewIndex(key, tab, position);
+        } else {
+            tab = new FrameLayout(getContext());
+            tab.setFocusable(true);
+            tab.setOnClickListener(v -> delegate.onPageSelected((Integer) v.getTag(R.id.index_tag)));
+            tabsContainer.addView(tab, position);
+
+            BackupImageView imageView = new BackupImageView(getContext());
+            imageView.setLayerNum(1);
+            imageView.setAspectFit(true);
+            tab.addView(imageView, LayoutHelper.createFrame(30, 30, Gravity.CENTER));
+        }
         tab.setTag(thumb);
+        tab.setTag(R.id.index_tag, position);
         tab.setTag(R.id.parent_tag, parentObject);
         tab.setTag(R.id.object_tag, sticker);
-        tab.setFocusable(true);
-        tab.setOnClickListener(v -> delegate.onPageSelected(position));
-        tabsContainer.addView(tab);
         tab.setSelected(position == currentPosition);
-        BackupImageView imageView = new BackupImageView(getContext());
-        imageView.setLayerNum(1);
-        imageView.setAspectFit(true);
-        tab.addView(imageView, LayoutHelper.createFrame(30, 30, Gravity.CENTER));
 
+        tabTypes.put(key, tab);
         return tab;
     }
 
@@ -246,9 +348,9 @@ public class ScrollSlidingTabStrip extends HorizontalScrollView {
                 continue;
             }
             BackupImageView imageView = (BackupImageView) ((FrameLayout) child).getChildAt(0);
-            if (object instanceof TLRPC.Document && MessageObject.isAnimatedStickerDocument(sticker)) {
+            if (object instanceof TLRPC.Document && MessageObject.isAnimatedStickerDocument(sticker, true)) {
                 imageView.setImage(ImageLocation.getForDocument(sticker), "30_30", imageLocation, null, 0, parentObject);
-            } else if (imageLocation.lottieAnimation) {
+            } else if (imageLocation.imageType == FileLoader.IMAGE_TYPE_LOTTIE) {
                 imageView.setImage(imageLocation, "30_30", "tgs", null, parentObject);
             } else {
                 imageView.setImage(imageLocation, null, "webp", null, parentObject);
@@ -293,9 +395,9 @@ public class ScrollSlidingTabStrip extends HorizontalScrollView {
             if (a < newStart || a >= newStart + count) {
                 imageView.setImageDrawable(null);
             } else {
-                if (object instanceof TLRPC.Document && MessageObject.isAnimatedStickerDocument(sticker)) {
+                if (object instanceof TLRPC.Document && MessageObject.isAnimatedStickerDocument(sticker, true)) {
                     imageView.setImage(ImageLocation.getForDocument(sticker), "30_30", imageLocation, null, 0, parentObject);
-                } else if (imageLocation.lottieAnimation) {
+                } else if (imageLocation.imageType == FileLoader.IMAGE_TYPE_LOTTIE) {
                     imageView.setImage(imageLocation, "30_30", "tgs", null, parentObject);
                 } else {
                     imageView.setImage(imageLocation, null, "webp", null, parentObject);

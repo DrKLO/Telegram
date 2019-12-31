@@ -652,7 +652,7 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
             videoEditedInfo.encryptedFile = encryptedFile;
             videoEditedInfo.key = key;
             videoEditedInfo.iv = iv;
-            baseFragment.sendMedia(new MediaController.PhotoEntry(0, 0, 0, cameraFile.getAbsolutePath(), 0, true), videoEditedInfo, notify, scheduleDate);
+            baseFragment.sendMedia(new MediaController.PhotoEntry(0, 0, 0, cameraFile.getAbsolutePath(), 0, true, 0, 0, 0), videoEditedInfo, notify, scheduleDate);
             if (scheduleDate != 0) {
                 startAnimation(false);
             }
@@ -1399,6 +1399,9 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
         private MediaCodec videoEncoder;
         private MediaCodec audioEncoder;
 
+        private int prependHeaderSize;
+        private boolean firstEncode;
+
         private MediaCodec.BufferInfo videoBufferInfo;
         private MediaCodec.BufferInfo audioBufferInfo;
         private MP4Builder mediaMuxer;
@@ -1861,12 +1864,12 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
                     videoEditedInfo.originalPath = videoFile.getAbsolutePath();
                     if (send == 1) {
                         if (baseFragment.isInScheduleMode()) {
-                            AlertsCreator.createScheduleDatePickerDialog(baseFragment.getParentActivity(), UserObject.isUserSelf(baseFragment.getCurrentUser()), (notify, scheduleDate) -> {
-                                baseFragment.sendMedia(new MediaController.PhotoEntry(0, 0, 0, videoFile.getAbsolutePath(), 0, true), videoEditedInfo, notify, scheduleDate);
+                            AlertsCreator.createScheduleDatePickerDialog(baseFragment.getParentActivity(), baseFragment.getDialogId(), (notify, scheduleDate) -> {
+                                baseFragment.sendMedia(new MediaController.PhotoEntry(0, 0, 0, videoFile.getAbsolutePath(), 0, true, 0, 0, 0), videoEditedInfo, notify, scheduleDate);
                                 startAnimation(false);
                             });
                         } else {
-                            baseFragment.sendMedia(new MediaController.PhotoEntry(0, 0, 0, videoFile.getAbsolutePath(), 0, true), videoEditedInfo, true, 0);
+                            baseFragment.sendMedia(new MediaController.PhotoEntry(0, 0, 0, videoFile.getAbsolutePath(), 0, true, 0, 0, 0), videoEditedInfo, true, 0);
                         }
                     } else {
                         videoPlayer = new VideoPlayer();
@@ -1985,6 +1988,7 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
                 audioEncoder.start();
 
                 videoEncoder = MediaCodec.createEncoderByType(VIDEO_MIME_TYPE);
+                firstEncode = true;
 
                 MediaFormat format = MediaFormat.createVideoFormat(VIDEO_MIME_TYPE, videoWidth, videoHeight);
 
@@ -2154,6 +2158,11 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
                     MediaFormat newFormat = videoEncoder.getOutputFormat();
                     if (videoTrackIndex == -5) {
                         videoTrackIndex = mediaMuxer.addTrack(newFormat, false);
+                        if (newFormat.containsKey(MediaFormat.KEY_PREPEND_HEADER_TO_SYNC_FRAMES) && newFormat.getInteger(MediaFormat.KEY_PREPEND_HEADER_TO_SYNC_FRAMES) == 1) {
+                            ByteBuffer spsBuff = newFormat.getByteBuffer("csd-0");
+                            ByteBuffer ppsBuff = newFormat.getByteBuffer("csd-1");
+                            prependHeaderSize = spsBuff.limit() + ppsBuff.limit();
+                        }
                     }
                 } else if (encoderStatus >= 0) {
                     ByteBuffer encodedData;
@@ -2167,6 +2176,29 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
                     }
                     if (videoBufferInfo.size > 1) {
                         if ((videoBufferInfo.flags & MediaCodec.BUFFER_FLAG_CODEC_CONFIG) == 0) {
+                            if (prependHeaderSize != 0 && (videoBufferInfo.flags & MediaCodec.BUFFER_FLAG_KEY_FRAME) != 0) {
+                                videoBufferInfo.offset += prependHeaderSize;
+                                videoBufferInfo.size -= prependHeaderSize;
+                            }
+                            if (firstEncode && (videoBufferInfo.flags & MediaCodec.BUFFER_FLAG_KEY_FRAME) != 0) {
+                                if (videoBufferInfo.size > 100) {
+                                    encodedData.position(videoBufferInfo.offset);
+                                    byte[] temp = new byte[100];
+                                    encodedData.get(temp);
+                                    int nalCount = 0;
+                                    for (int a = 0; a < temp.length - 4; a++) {
+                                        if (temp[a] == 0 && temp[a + 1] == 0 && temp[a + 2] == 0 && temp[a + 3] == 1) {
+                                            nalCount++;
+                                            if (nalCount > 1) {
+                                                videoBufferInfo.offset += a;
+                                                videoBufferInfo.size -= a;
+                                                break;
+                                            }
+                                        }
+                                    }
+                                }
+                                firstEncode = false;
+                            }
                             long availableSize = mediaMuxer.writeSampleData(videoTrackIndex, encodedData, videoBufferInfo, true);
                             if (availableSize != 0) {
                                 didWriteData(videoFile, availableSize, false);

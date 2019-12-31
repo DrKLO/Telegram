@@ -74,8 +74,9 @@ public class DownloadController extends BaseController implements NotificationCe
         public boolean preloadMusic;
         public boolean lessCallData;
         public boolean enabled;
+        public int maxVideoBitrate;
 
-        public Preset(int[] m, int p, int v, int f, boolean pv, boolean pm, boolean e, boolean l) {
+        public Preset(int[] m, int p, int v, int f, boolean pv, boolean pm, boolean e, boolean l, int bitrate) {
             System.arraycopy(m, 0, mask, 0, mask.length);
             sizes[PRESET_SIZE_NUM_PHOTO] = p;
             sizes[PRESET_SIZE_NUM_VIDEO] = v;
@@ -84,11 +85,13 @@ public class DownloadController extends BaseController implements NotificationCe
             preloadVideo = pv;
             preloadMusic = pm;
             lessCallData = l;
+            maxVideoBitrate = bitrate;
             enabled = e;
         }
 
-        public Preset(String str) {
+        public Preset(String str, String deafultValue) {
             String[] args = str.split("_");
+            String[] defaultArgs = null;
             if (args.length >= 11) {
                 mask[0] = Utilities.parseInt(args[0]);
                 mask[1] = Utilities.parseInt(args[1]);
@@ -103,6 +106,18 @@ public class DownloadController extends BaseController implements NotificationCe
                 enabled = Utilities.parseInt(args[10]) == 1;
                 if (args.length >= 12) {
                     lessCallData = Utilities.parseInt(args[11]) == 1;
+                } else {
+                    defaultArgs = deafultValue.split("_");
+                    lessCallData = Utilities.parseInt(defaultArgs[11]) == 1;
+                }
+
+                if (args.length >= 13) {
+                    maxVideoBitrate = Utilities.parseInt(args[12]);
+                } else {
+                    if (defaultArgs == null) {
+                        defaultArgs = deafultValue.split("_");
+                    }
+                    maxVideoBitrate = Utilities.parseInt(defaultArgs[12]);
                 }
             }
         }
@@ -113,14 +128,14 @@ public class DownloadController extends BaseController implements NotificationCe
             preloadVideo = preset.preloadVideo;
             preloadMusic = preset.preloadMusic;
             lessCallData = preset.lessCallData;
-            //enabled = preset.enabled;
+            maxVideoBitrate = preset.maxVideoBitrate;
         }
 
         public void set(TLRPC.TL_autoDownloadSettings settings) {
             preloadMusic = settings.audio_preload_next;
             preloadVideo = settings.video_preload_large;
             lessCallData = settings.phonecalls_less_data;
-            //enabled = !settings.disabled;
+            maxVideoBitrate = settings.video_upload_maxbitrate;
             sizes[PRESET_SIZE_NUM_PHOTO] = Math.max(500 * 1024, settings.photo_size_max);
             sizes[PRESET_SIZE_NUM_VIDEO] = Math.max(500 * 1024, settings.video_size_max);
             sizes[PRESET_SIZE_NUM_DOCUMENT] = Math.max(500 * 1024, settings.file_size_max);
@@ -153,7 +168,8 @@ public class DownloadController extends BaseController implements NotificationCe
                     "_" + (preloadVideo ? 1 : 0) +
                     "_" + (preloadMusic ? 1 : 0) +
                     "_" + (enabled ? 1 : 0) +
-                    "_" + (lessCallData ? 1 : 0);
+                    "_" + (lessCallData ? 1 : 0) +
+                    "_" + maxVideoBitrate;
         }
 
         public boolean equals(Preset obj) {
@@ -166,7 +182,8 @@ public class DownloadController extends BaseController implements NotificationCe
                     sizes[2] == obj.sizes[2] &&
                     sizes[3] == obj.sizes[3] &&
                     preloadVideo == obj.preloadVideo &&
-                    preloadMusic == obj.preloadMusic;
+                    preloadMusic == obj.preloadMusic &&
+                    maxVideoBitrate == obj.maxVideoBitrate;
         }
 
         public boolean isEnabled() {
@@ -207,14 +224,17 @@ public class DownloadController extends BaseController implements NotificationCe
     public DownloadController(int instance) {
         super(instance);
         SharedPreferences preferences = MessagesController.getMainSettings(currentAccount);
-        lowPreset = new Preset(preferences.getString("preset0", "1_1_1_1_1048576_512000_512000_524288_0_0_1_1"));
-        mediumPreset = new Preset(preferences.getString("preset1", "13_13_13_13_1048576_10485760_1048576_524288_1_1_1_0"));
-        highPreset = new Preset(preferences.getString("preset2", "13_13_13_13_1048576_15728640_3145728_524288_1_1_1_0"));
+        String defaultLow = "1_1_1_1_1048576_512000_512000_524288_0_0_1_1_50";
+        String defaultMedium = "13_13_13_13_1048576_10485760_1048576_524288_1_1_1_0_100";
+        String defaultHigh = "13_13_13_13_1048576_15728640_3145728_524288_1_1_1_0_100";
+        lowPreset = new Preset(preferences.getString("preset0", defaultLow), defaultLow);
+        mediumPreset = new Preset(preferences.getString("preset1", defaultMedium), defaultMedium);
+        highPreset = new Preset(preferences.getString("preset2", defaultHigh), defaultHigh);
         boolean newConfig;
         if ((newConfig = preferences.contains("newConfig")) || !getUserConfig().isClientActivated()) {
-            mobilePreset = new Preset(preferences.getString("mobilePreset", mediumPreset.toString()));
-            wifiPreset = new Preset(preferences.getString("wifiPreset", highPreset.toString()));
-            roamingPreset = new Preset(preferences.getString("roamingPreset", lowPreset.toString()));
+            mobilePreset = new Preset(preferences.getString("mobilePreset", defaultMedium), defaultMedium);
+            wifiPreset = new Preset(preferences.getString("wifiPreset", defaultHigh), defaultHigh);
+            roamingPreset = new Preset(preferences.getString("roamingPreset", defaultLow), defaultLow);
             currentMobilePreset = preferences.getInt("currentMobilePreset", 3);
             currentWifiPreset = preferences.getInt("currentWifiPreset", 3);
             currentRoamingPreset = preferences.getInt("currentRoamingPreset", 3);
@@ -250,9 +270,9 @@ public class DownloadController extends BaseController implements NotificationCe
             roamingMaxFileSize[3] = preferences.getInt("roamingMaxDownloadSize" + 3, lowPreset.sizes[PRESET_SIZE_NUM_DOCUMENT]);
 
             boolean globalAutodownloadEnabled = preferences.getBoolean("globalAutodownloadEnabled", true);
-            mobilePreset = new Preset(mobileDataDownloadMask, mediumPreset.sizes[PRESET_SIZE_NUM_PHOTO], mobileMaxFileSize[2], mobileMaxFileSize[3], true, true, globalAutodownloadEnabled, false);
-            wifiPreset = new Preset(wifiDownloadMask, highPreset.sizes[PRESET_SIZE_NUM_PHOTO], wifiMaxFileSize[2], wifiMaxFileSize[3], true, true, globalAutodownloadEnabled, false);
-            roamingPreset = new Preset(roamingDownloadMask, lowPreset.sizes[PRESET_SIZE_NUM_PHOTO], roamingMaxFileSize[2], roamingMaxFileSize[3], false, false, globalAutodownloadEnabled, true);
+            mobilePreset = new Preset(mobileDataDownloadMask, mediumPreset.sizes[PRESET_SIZE_NUM_PHOTO], mobileMaxFileSize[2], mobileMaxFileSize[3], true, true, globalAutodownloadEnabled, false, 100);
+            wifiPreset = new Preset(wifiDownloadMask, highPreset.sizes[PRESET_SIZE_NUM_PHOTO], wifiMaxFileSize[2], wifiMaxFileSize[3], true, true, globalAutodownloadEnabled, false, 100);
+            roamingPreset = new Preset(roamingDownloadMask, lowPreset.sizes[PRESET_SIZE_NUM_PHOTO], roamingMaxFileSize[2], roamingMaxFileSize[3], false, false, globalAutodownloadEnabled, true, 50);
 
             SharedPreferences.Editor editor = preferences.edit();
             editor.putBoolean("newConfig", true);
@@ -396,15 +416,27 @@ public class DownloadController extends BaseController implements NotificationCe
         typingTimes.clear();
     }
 
+    public int getMaxVideoBitrate() {
+        int networkType = ApplicationLoader.getAutodownloadNetworkType();
+        if (networkType == StatsController.TYPE_WIFI) {
+            return getCurrentWiFiPreset().maxVideoBitrate;
+        } else if (networkType == StatsController.TYPE_ROAMING) {
+            return getCurrentRoamingPreset().maxVideoBitrate;
+        } else {
+            return getCurrentMobilePreset().maxVideoBitrate;
+        }
+    }
+
     public int getAutodownloadMask() {
         int result = 0;
         int[] masksArray;
-        if (ApplicationLoader.isConnectedToWiFi()) {
+        int networkType = ApplicationLoader.getAutodownloadNetworkType();
+        if (networkType == StatsController.TYPE_WIFI) {
             if (!wifiPreset.enabled) {
                 return 0;
             }
             masksArray = getCurrentWiFiPreset().mask;
-        } else if (ApplicationLoader.isRoaming()) {
+        } else if (networkType == StatsController.TYPE_ROAMING) {
             if (!roamingPreset.enabled) {
                 return 0;
             }
@@ -538,13 +570,14 @@ public class DownloadController extends BaseController implements NotificationCe
 
     public boolean canDownloadMedia(int type, int size) {
         Preset preset;
-        if (ApplicationLoader.isConnectedToWiFi()) {
+        int networkType = ApplicationLoader.getAutodownloadNetworkType();
+        if (networkType == StatsController.TYPE_WIFI) {
             if (!wifiPreset.enabled) {
                 return false;
             }
             preset = getCurrentWiFiPreset();
 
-        } else if (ApplicationLoader.isRoaming()) {
+        } else if (networkType == StatsController.TYPE_ROAMING) {
             if (!roamingPreset.enabled) {
                 return false;
             }
@@ -607,13 +640,14 @@ public class DownloadController extends BaseController implements NotificationCe
             index = 1;
         }
         Preset preset;
-        if (ApplicationLoader.isConnectedToWiFi()) {
+        int networkType = ApplicationLoader.getAutodownloadNetworkType();
+        if (networkType == StatsController.TYPE_WIFI) {
             if (!wifiPreset.enabled) {
                 return 0;
             }
             preset = getCurrentWiFiPreset();
 
-        } else if (ApplicationLoader.isRoaming()) {
+        } else if (networkType == StatsController.TYPE_ROAMING) {
             if (!roamingPreset.enabled) {
                 return 0;
             }
@@ -635,9 +669,10 @@ public class DownloadController extends BaseController implements NotificationCe
     }
 
     protected boolean canDownloadNextTrack() {
-        if (ApplicationLoader.isConnectedToWiFi()) {
+        int networkType = ApplicationLoader.getAutodownloadNetworkType();
+        if (networkType == StatsController.TYPE_WIFI) {
             return wifiPreset.enabled && getCurrentWiFiPreset().preloadMusic;
-        } else if (ApplicationLoader.isRoaming()) {
+        } else if (networkType == StatsController.TYPE_ROAMING) {
             return roamingPreset.enabled && getCurrentRoamingPreset().preloadMusic;
         } else {
             return mobilePreset.enabled && getCurrentMobilePreset().preloadMusic;
@@ -645,7 +680,8 @@ public class DownloadController extends BaseController implements NotificationCe
     }
 
     public int getCurrentDownloadMask() {
-        if (ApplicationLoader.isConnectedToWiFi()) {
+        int networkType = ApplicationLoader.getAutodownloadNetworkType();
+        if (networkType == StatsController.TYPE_WIFI) {
             if (!wifiPreset.enabled) {
                 return 0;
             }
@@ -654,7 +690,7 @@ public class DownloadController extends BaseController implements NotificationCe
                 mask |= getCurrentWiFiPreset().mask[a];
             }
             return mask;
-        } else if (ApplicationLoader.isRoaming()) {
+        } else if (networkType == StatsController.TYPE_ROAMING) {
             if (!roamingPreset.enabled) {
                 return 0;
             }
@@ -693,6 +729,7 @@ public class DownloadController extends BaseController implements NotificationCe
         req.settings.audio_preload_next = preset.preloadMusic;
         req.settings.video_preload_large = preset.preloadVideo;
         req.settings.phonecalls_less_data = preset.lessCallData;
+        req.settings.video_upload_maxbitrate = preset.maxVideoBitrate;
         req.settings.disabled = !enabled;
         boolean photo = false;
         boolean video = false;
@@ -741,9 +778,9 @@ public class DownloadController extends BaseController implements NotificationCe
                 TLRPC.Document document = (TLRPC.Document) downloadObject.object;
                 path = FileLoader.getAttachFileName(document);
             } else if (downloadObject.object instanceof TLRPC.Photo) {
-                path = FileLoader.getAttachFileName(downloadObject.object);
                 TLRPC.Photo photo = (TLRPC.Photo) downloadObject.object;
                 photoSize = FileLoader.getClosestPhotoSizeWithSize(photo.sizes, AndroidUtilities.getPhotoSize());
+                path = FileLoader.getAttachFileName(photoSize);
             } else {
                 path = null;
             }

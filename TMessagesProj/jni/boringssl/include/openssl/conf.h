@@ -85,11 +85,8 @@ struct conf_value_st {
   char *value;
 };
 
-struct conf_st {
-  LHASH_OF(CONF_VALUE) *data;
-};
-
 DEFINE_STACK_OF(CONF_VALUE)
+DECLARE_LHASH_OF(CONF_VALUE)
 
 
 // NCONF_new returns a fresh, empty |CONF|, or NULL on error. The |method|
@@ -162,11 +159,11 @@ OPENSSL_EXPORT void OPENSSL_no_config(void);
 
 extern "C++" {
 
-namespace bssl {
+BSSL_NAMESPACE_BEGIN
 
 BORINGSSL_MAKE_DELETER(CONF, NCONF_free)
 
-}  // namespace bssl
+BSSL_NAMESPACE_END
 
 }  // extern C++
 

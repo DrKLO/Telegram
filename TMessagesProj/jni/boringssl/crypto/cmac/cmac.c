@@ -124,12 +124,22 @@ void CMAC_CTX_free(CMAC_CTX *ctx) {
   OPENSSL_free(ctx);
 }
 
-// binary_field_mul_x treats the 128 bits at |in| as an element of GF(2¹²⁸)
-// with a hard-coded reduction polynomial and sets |out| as x times the
-// input.
+int CMAC_CTX_copy(CMAC_CTX *out, const CMAC_CTX *in) {
+  if (!EVP_CIPHER_CTX_copy(&out->cipher_ctx, &in->cipher_ctx)) {
+    return 0;
+  }
+  OPENSSL_memcpy(out->k1, in->k1, AES_BLOCK_SIZE);
+  OPENSSL_memcpy(out->k2, in->k2, AES_BLOCK_SIZE);
+  OPENSSL_memcpy(out->block, in->block, AES_BLOCK_SIZE);
+  out->block_used = in->block_used;
+  return 1;
+}
+
+// binary_field_mul_x_128 treats the 128 bits at |in| as an element of GF(2¹²⁸)
+// with a hard-coded reduction polynomial and sets |out| as x times the input.
 //
 // See https://tools.ietf.org/html/rfc4493#section-2.3
-static void binary_field_mul_x(uint8_t out[16], const uint8_t in[16]) {
+static void binary_field_mul_x_128(uint8_t out[16], const uint8_t in[16]) {
   unsigned i;
 
   // Shift |in| to left, including carry.
@@ -142,23 +152,46 @@ static void binary_field_mul_x(uint8_t out[16], const uint8_t in[16]) {
   out[i] = (in[i] << 1) ^ ((0 - carry) & 0x87);
 }
 
+// binary_field_mul_x_64 behaves like |binary_field_mul_x_128| but acts on an
+// element of GF(2⁶⁴).
+//
+// See https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-38b.pdf
+static void binary_field_mul_x_64(uint8_t out[8], const uint8_t in[8]) {
+  unsigned i;
+
+  // Shift |in| to left, including carry.
+  for (i = 0; i < 7; i++) {
+    out[i] = (in[i] << 1) | (in[i+1] >> 7);
+  }
+
+  // If MSB set fixup with R.
+  const uint8_t carry = in[0] >> 7;
+  out[i] = (in[i] << 1) ^ ((0 - carry) & 0x1b);
+}
+
 static const uint8_t kZeroIV[AES_BLOCK_SIZE] = {0};
 
 int CMAC_Init(CMAC_CTX *ctx, const void *key, size_t key_len,
               const EVP_CIPHER *cipher, ENGINE *engine) {
   uint8_t scratch[AES_BLOCK_SIZE];
 
-  if (EVP_CIPHER_block_size(cipher) != AES_BLOCK_SIZE ||
+  size_t block_size = EVP_CIPHER_block_size(cipher);
+  if ((block_size != AES_BLOCK_SIZE && block_size != 8 /* 3-DES */) ||
       EVP_CIPHER_key_length(cipher) != key_len ||
       !EVP_EncryptInit_ex(&ctx->cipher_ctx, cipher, NULL, key, kZeroIV) ||
-      !EVP_Cipher(&ctx->cipher_ctx, scratch, kZeroIV, AES_BLOCK_SIZE) ||
+      !EVP_Cipher(&ctx->cipher_ctx, scratch, kZeroIV, block_size) ||
       // Reset context again ready for first data.
       !EVP_EncryptInit_ex(&ctx->cipher_ctx, NULL, NULL, NULL, kZeroIV)) {
     return 0;
   }
 
-  binary_field_mul_x(ctx->k1, scratch);
-  binary_field_mul_x(ctx->k2, ctx->k1);
+  if (block_size == AES_BLOCK_SIZE) {
+    binary_field_mul_x_128(ctx->k1, scratch);
+    binary_field_mul_x_128(ctx->k2, ctx->k1);
+  } else {
+    binary_field_mul_x_64(ctx->k1, scratch);
+    binary_field_mul_x_64(ctx->k2, ctx->k1);
+  }
   ctx->block_used = 0;
 
   return 1;
@@ -170,10 +203,12 @@ int CMAC_Reset(CMAC_CTX *ctx) {
 }
 
 int CMAC_Update(CMAC_CTX *ctx, const uint8_t *in, size_t in_len) {
+  size_t block_size = EVP_CIPHER_CTX_block_size(&ctx->cipher_ctx);
+  assert(block_size <= AES_BLOCK_SIZE);
   uint8_t scratch[AES_BLOCK_SIZE];
 
   if (ctx->block_used > 0) {
-    size_t todo = AES_BLOCK_SIZE - ctx->block_used;
+    size_t todo = block_size - ctx->block_used;
     if (in_len < todo) {
       todo = in_len;
     }
@@ -184,28 +219,28 @@ int CMAC_Update(CMAC_CTX *ctx, const uint8_t *in, size_t in_len) {
     ctx->block_used += todo;
 
     // If |in_len| is zero then either |ctx->block_used| is less than
-    // |AES_BLOCK_SIZE|, in which case we can stop here, or |ctx->block_used|
-    // is exactly |AES_BLOCK_SIZE| but there's no more data to process. In the
-    // latter case we don't want to process this block now because it might be
-    // the last block and that block is treated specially.
+    // |block_size|, in which case we can stop here, or |ctx->block_used| is
+    // exactly |block_size| but there's no more data to process. In the latter
+    // case we don't want to process this block now because it might be the last
+    // block and that block is treated specially.
     if (in_len == 0) {
       return 1;
     }
 
-    assert(ctx->block_used == AES_BLOCK_SIZE);
+    assert(ctx->block_used == block_size);
 
-    if (!EVP_Cipher(&ctx->cipher_ctx, scratch, ctx->block, AES_BLOCK_SIZE)) {
+    if (!EVP_Cipher(&ctx->cipher_ctx, scratch, ctx->block, block_size)) {
       return 0;
     }
   }
 
   // Encrypt all but one of the remaining blocks.
-  while (in_len > AES_BLOCK_SIZE) {
-    if (!EVP_Cipher(&ctx->cipher_ctx, scratch, in, AES_BLOCK_SIZE)) {
+  while (in_len > block_size) {
+    if (!EVP_Cipher(&ctx->cipher_ctx, scratch, in, block_size)) {
       return 0;
     }
-    in += AES_BLOCK_SIZE;
-    in_len -= AES_BLOCK_SIZE;
+    in += block_size;
+    in_len -= block_size;
   }
 
   OPENSSL_memcpy(ctx->block, in, in_len);
@@ -215,27 +250,29 @@ int CMAC_Update(CMAC_CTX *ctx, const uint8_t *in, size_t in_len) {
 }
 
 int CMAC_Final(CMAC_CTX *ctx, uint8_t *out, size_t *out_len) {
-  *out_len = AES_BLOCK_SIZE;
+  size_t block_size = EVP_CIPHER_CTX_block_size(&ctx->cipher_ctx);
+  assert(block_size <= AES_BLOCK_SIZE);
+
+  *out_len = block_size;
   if (out == NULL) {
     return 1;
   }
 
   const uint8_t *mask = ctx->k1;
 
-  if (ctx->block_used != AES_BLOCK_SIZE) {
+  if (ctx->block_used != block_size) {
     // If the last block is incomplete, terminate it with a single 'one' bit
     // followed by zeros.
     ctx->block[ctx->block_used] = 0x80;
     OPENSSL_memset(ctx->block + ctx->block_used + 1, 0,
-                   AES_BLOCK_SIZE - (ctx->block_used + 1));
+                   block_size - (ctx->block_used + 1));
 
     mask = ctx->k2;
   }
 
-  unsigned i;
-  for (i = 0; i < AES_BLOCK_SIZE; i++) {
+  for (unsigned i = 0; i < block_size; i++) {
     out[i] = ctx->block[i] ^ mask[i];
   }
 
-  return EVP_Cipher(&ctx->cipher_ctx, out, out, AES_BLOCK_SIZE);
+  return EVP_Cipher(&ctx->cipher_ctx, out, out, block_size);
 }

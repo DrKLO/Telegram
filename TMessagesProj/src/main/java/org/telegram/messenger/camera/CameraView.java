@@ -22,10 +22,12 @@ import android.hardware.Camera;
 import android.view.Surface;
 import android.view.TextureView;
 import android.view.View;
+import android.view.WindowManager;
 import android.view.animation.DecelerateInterpolator;
 import android.widget.FrameLayout;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ApplicationLoader;
 
 import java.util.ArrayList;
 import java.util.concurrent.CountDownLatch;
@@ -46,6 +48,8 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
     private Matrix matrix = new Matrix();
     private int focusAreaSize;
 
+    private boolean useMaxPreview;
+
     private long lastDrawTime;
     private float focusProgress = 1.0f;
     private float innerAlpha;
@@ -55,6 +59,7 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
     private int cy;
     private Paint outerPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private Paint innerPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private boolean optimizeForBarcode;
 
     private DecelerateInterpolator interpolator = new DecelerateInterpolator();
 
@@ -76,6 +81,13 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
         innerPaint.setColor(0x7fffffff);
     }
 
+    public void setOptimizeForBarcode(boolean value) {
+        optimizeForBarcode = value;
+        if (cameraSession != null) {
+            cameraSession.setOptimizeForBarcode(true);
+        }
+    }
+
     @Override
     protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
         super.onLayout(changed, left, top, right, bottom);
@@ -92,6 +104,10 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
 
     public TextureView getTextureView() {
         return textureView;
+    }
+
+    public void setUseMaxPreview(boolean value) {
+        useMaxPreview = value;
     }
 
     public boolean hasFrontFaceCamera() {
@@ -114,7 +130,7 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
         initCamera();
     }
 
-    private void initCamera() {
+    public void initCamera() {
         CameraInfo info = null;
         ArrayList<CameraInfo> cameraInfos = CameraController.getInstance().getCameras();
         if (cameraInfos == null) {
@@ -152,7 +168,12 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
             }
         }
         if (textureView.getWidth() > 0 && textureView.getHeight() > 0) {
-            int width = Math.min(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y);
+            int width;
+            if (useMaxPreview) {
+                width = Math.max(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y);
+            } else {
+                width = Math.min(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y);
+            }
             int height = width * aspectRatio.getHeight() / aspectRatio.getWidth();
             previewSize = CameraController.chooseOptimalSize(info.getPreviewSizes(), width, height, aspectRatio);
         }
@@ -172,6 +193,9 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
         if (previewSize != null && surfaceTexture != null) {
             surfaceTexture.setDefaultBufferSize(previewSize.getWidth(), previewSize.getHeight());
             cameraSession = new CameraSession(info, previewSize, pictureSize, ImageFormat.JPEG);
+            if (optimizeForBarcode) {
+                cameraSession.setOptimizeForBarcode(optimizeForBarcode);
+            }
             CameraController.getInstance().open(cameraSession, surfaceTexture, () -> {
                 if (cameraSession != null) {
                     cameraSession.setInitied();
@@ -229,7 +253,8 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
         if (previewSize == null) {
             return;
         }
-        adjustAspectRatio(previewSize.getWidth(), previewSize.getHeight(), ((Activity) getContext()).getWindowManager().getDefaultDisplay().getRotation());
+        WindowManager manager = (WindowManager) ApplicationLoader.applicationContext.getSystemService(Activity.WINDOW_SERVICE);
+        adjustAspectRatio(previewSize.getWidth(), previewSize.getHeight(), manager.getDefaultDisplay().getRotation());
     }
 
     private void adjustAspectRatio(int previewWidth, int previewHeight, int rotation) {
@@ -275,7 +300,9 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
         textureView.setTransform(txform);
 
         Matrix matrix = new Matrix();
-        matrix.postRotate(cameraSession.getDisplayOrientation());
+        if (cameraSession != null) {
+            matrix.postRotate(cameraSession.getDisplayOrientation());
+        }
         matrix.postScale(viewWidth / 2000f, viewHeight / 2000f);
         matrix.postTranslate(viewWidth / 2f, viewHeight / 2f);
         matrix.invert(this.matrix);

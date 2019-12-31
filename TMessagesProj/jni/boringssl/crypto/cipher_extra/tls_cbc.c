@@ -271,7 +271,7 @@ int EVP_tls_cbc_digest_record(const EVP_MD *md, uint8_t *md_out,
   HASH_CTX md_state;
   void (*md_final_raw)(HASH_CTX *ctx, uint8_t *md_out);
   void (*md_transform)(HASH_CTX *ctx, const uint8_t *block);
-  unsigned md_size, md_block_size = 64;
+  unsigned md_size, md_block_size = 64, md_block_shift = 6;
   // md_length_size is the number of bytes in the length field that terminates
   // the hash.
   unsigned md_length_size = 8;
@@ -305,6 +305,7 @@ int EVP_tls_cbc_digest_record(const EVP_MD *md, uint8_t *md_out,
       md_transform = tls1_sha512_transform;
       md_size = SHA384_DIGEST_LENGTH;
       md_block_size = 128;
+      md_block_shift = 7;
       md_length_size = 16;
       break;
 
@@ -318,6 +319,7 @@ int EVP_tls_cbc_digest_record(const EVP_MD *md, uint8_t *md_out,
 
   assert(md_length_size <= MAX_HASH_BIT_COUNT_BYTES);
   assert(md_block_size <= MAX_HASH_BLOCK_SIZE);
+  assert(md_block_size == (1u << md_block_shift));
   assert(md_size <= EVP_MAX_MD_SIZE);
 
   static const size_t kHeaderLength = 13;
@@ -327,9 +329,18 @@ int EVP_tls_cbc_digest_record(const EVP_MD *md, uint8_t *md_out,
   // padding value.
   //
   // TLSv1 has MACs up to 48 bytes long (SHA-384) and the padding is not
-  // required to be minimal. Therefore we say that the final six blocks
-  // can vary based on the padding.
-  static const size_t kVarianceBlocks = 6;
+  // required to be minimal. Therefore we say that the final |kVarianceBlocks|
+  // blocks can vary based on the padding and on the hash used. This value
+  // must be derived from public information.
+  const size_t kVarianceBlocks =
+     ( 255 + 1 + // maximum padding bytes + padding length
+       md_size + // length of hash's output
+       md_block_size - 1 // ceiling
+     ) / md_block_size
+     + 1; // the 0x80 marker and the encoded message length could or not
+          // require an extra block; since the exact value depends on the
+          // message length; thus, one extra block is always added to run
+          // in constant time.
 
   // From now on we're dealing with the MAC, which conceptually has 13
   // bytes of `header' before the start of the data.
@@ -350,18 +361,16 @@ int EVP_tls_cbc_digest_record(const EVP_MD *md, uint8_t *md_out,
   // k is the starting byte offset into the conceptual header||data where
   // we start processing.
   size_t k = 0;
-  // mac_end_offset is the index just past the end of the data to be
-  // MACed.
+  // mac_end_offset is the index just past the end of the data to be MACed.
   size_t mac_end_offset = data_plus_mac_size + kHeaderLength - md_size;
-  // c is the index of the 0x80 byte in the final hash block that
-  // contains application data.
-  size_t c = mac_end_offset % md_block_size;
-  // index_a is the hash block number that contains the 0x80 terminating
-  // value.
-  size_t index_a = mac_end_offset / md_block_size;
-  // index_b is the hash block number that contains the 64-bit hash
-  // length, in bits.
-  size_t index_b = (mac_end_offset + md_length_size) / md_block_size;
+  // c is the index of the 0x80 byte in the final hash block that contains
+  // application data.
+  size_t c = mac_end_offset & (md_block_size - 1);
+  // index_a is the hash block number that contains the 0x80 terminating value.
+  size_t index_a = mac_end_offset >> md_block_shift;
+  // index_b is the hash block number that contains the 64-bit hash length, in
+  // bits.
+  size_t index_b = (mac_end_offset + md_length_size) >> md_block_shift;
 
   if (num_blocks > kVarianceBlocks) {
     num_starting_blocks = num_blocks - kVarianceBlocks;

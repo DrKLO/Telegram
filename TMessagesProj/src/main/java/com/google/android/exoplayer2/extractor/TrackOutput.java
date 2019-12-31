@@ -119,7 +119,7 @@ public interface TrackOutput {
    * Called to write sample data to the output.
    *
    * @param data A {@link ParsableByteArray} from which to read the sample data.
-   * @param length The number of bytes to read.
+   * @param length The number of bytes to read, starting from {@code data.getPosition()}.
    */
   void sampleData(ParsableByteArray data, int length);
 

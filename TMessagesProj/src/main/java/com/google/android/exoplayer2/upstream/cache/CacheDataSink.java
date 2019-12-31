@@ -49,13 +49,10 @@ public final class CacheDataSink implements DataSink {
   private final long fragmentSize;
   private final int bufferSize;
 
-  private boolean syncFileDescriptor;
-  private boolean respectCacheFragmentationFlag;
   private DataSpec dataSpec;
   private long dataSpecFragmentSize;
   private File file;
   private OutputStream outputStream;
-  private FileOutputStream underlyingFileOutputStream;
   private long outputStreamBytesWritten;
   private long dataSpecBytesWritten;
   private ReusableBufferedOutputStream bufferedOutputStream;
@@ -109,32 +106,6 @@ public final class CacheDataSink implements DataSink {
     this.cache = Assertions.checkNotNull(cache);
     this.fragmentSize = fragmentSize == C.LENGTH_UNSET ? Long.MAX_VALUE : fragmentSize;
     this.bufferSize = bufferSize;
-    syncFileDescriptor = true;
-  }
-
-  /**
-   * Sets whether file descriptors are synced when closing output streams.
-   *
-   * <p>This method is experimental, and will be renamed or removed in a future release.
-   *
-   * @param syncFileDescriptor Whether file descriptors are synced when closing output streams.
-   */
-  public void experimental_setSyncFileDescriptor(boolean syncFileDescriptor) {
-    this.syncFileDescriptor = syncFileDescriptor;
-  }
-
-  /**
-   * Sets whether this instance respects the {@link DataSpec#FLAG_ALLOW_CACHE_FRAGMENTATION} flag.
-   * If set to {@code false} requests will always be fragmented. If set to {@code true} requests
-   * will be fragmented only if the flag is set.
-   *
-   * <p>This method is experimental, and will be renamed or removed in a future release.
-   *
-   * @param respectCacheFragmentationFlag Whether to respect the {@link
-   *     DataSpec#FLAG_ALLOW_CACHE_FRAGMENTATION} flag.
-   */
-  public void experimental_setRespectCacheFragmentationFlag(boolean respectCacheFragmentationFlag) {
-    this.respectCacheFragmentationFlag = respectCacheFragmentationFlag;
   }
 
   @Override
@@ -146,10 +117,7 @@ public final class CacheDataSink implements DataSink {
     }
     this.dataSpec = dataSpec;
     this.dataSpecFragmentSize =
-        !respectCacheFragmentationFlag
-                || dataSpec.isFlagSet(DataSpec.FLAG_ALLOW_CACHE_FRAGMENTATION)
-            ? fragmentSize
-            : Long.MAX_VALUE;
+        dataSpec.isFlagSet(DataSpec.FLAG_ALLOW_CACHE_FRAGMENTATION) ? fragmentSize : Long.MAX_VALUE;
     dataSpecBytesWritten = 0;
     try {
       openNextOutputStream();
@@ -202,7 +170,7 @@ public final class CacheDataSink implements DataSink {
     file =
         cache.startFile(
             dataSpec.key, dataSpec.absoluteStreamPosition + dataSpecBytesWritten, length);
-    underlyingFileOutputStream = new FileOutputStream(file);
+    FileOutputStream underlyingFileOutputStream = new FileOutputStream(file);
     if (bufferSize > 0) {
       if (bufferedOutputStream == null) {
         bufferedOutputStream = new ReusableBufferedOutputStream(underlyingFileOutputStream,
@@ -226,9 +194,6 @@ public final class CacheDataSink implements DataSink {
     boolean success = false;
     try {
       outputStream.flush();
-      if (syncFileDescriptor) {
-        underlyingFileOutputStream.getFD().sync();
-      }
       success = true;
     } finally {
       Util.closeQuietly(outputStream);

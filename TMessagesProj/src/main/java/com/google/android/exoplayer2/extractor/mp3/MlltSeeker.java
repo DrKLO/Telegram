@@ -22,7 +22,7 @@ import com.google.android.exoplayer2.metadata.id3.MlltFrame;
 import com.google.android.exoplayer2.util.Util;
 
 /** MP3 seeker that uses metadata from an {@link MlltFrame}. */
-/* package */ final class MlltSeeker implements Mp3Extractor.Seeker {
+/* package */ final class MlltSeeker implements Seeker {
 
   /**
    * Returns an {@link MlltSeeker} for seeking in the stream.

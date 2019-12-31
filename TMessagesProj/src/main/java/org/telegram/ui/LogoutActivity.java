@@ -11,10 +11,13 @@ package org.telegram.ui;
 import android.animation.AnimatorSet;
 import android.app.Dialog;
 import android.content.Context;
+import android.content.DialogInterface;
+import android.text.TextUtils;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
+import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.DownloadController;
@@ -136,11 +139,21 @@ public class LogoutActivity extends BaseFragment {
                     return;
                 }
                 AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-                builder.setMessage(LocaleController.getString("AreYouSureLogout", R.string.AreYouSureLogout));
-                builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
-                builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), (dialogInterface, i) -> MessagesController.getInstance(currentAccount).performLogout(1));
+                UserConfig userConfig = getUserConfig();
+                if (!TextUtils.isEmpty(userConfig.tonEncryptedData) && userConfig.tonCreationFinished) {
+                    builder.setMessage(AndroidUtilities.replaceTags(LocaleController.getString("WalletTelegramLogout", R.string.WalletTelegramLogout)));
+                } else {
+                    builder.setMessage(LocaleController.getString("AreYouSureLogout", R.string.AreYouSureLogout));
+                }
+                builder.setTitle(LocaleController.getString("LogOut", R.string.LogOut));
+                builder.setPositiveButton(LocaleController.getString("LogOut", R.string.LogOut), (dialogInterface, i) -> MessagesController.getInstance(currentAccount).performLogout(1));
                 builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
-                showDialog(builder.create());
+                AlertDialog alertDialog = builder.create();
+                showDialog(alertDialog);
+                TextView button = (TextView) alertDialog.getButton(DialogInterface.BUTTON_POSITIVE);
+                if (button != null) {
+                    button.setTextColor(Theme.getColor(Theme.key_dialogTextRed2));
+                }
             }
         });
 

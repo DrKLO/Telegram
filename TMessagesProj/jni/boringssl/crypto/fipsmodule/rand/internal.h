@@ -16,6 +16,7 @@
 #define OPENSSL_HEADER_CRYPTO_RAND_INTERNAL_H
 
 #include <openssl/aes.h>
+#include <openssl/cpu.h>
 
 #include "../../internal.h"
 #include "../modes/internal.h"
@@ -83,6 +84,22 @@ OPENSSL_EXPORT int CTR_DRBG_generate(CTR_DRBG_STATE *drbg, uint8_t *out,
 
 // CTR_DRBG_clear zeroises the state of |drbg|.
 OPENSSL_EXPORT void CTR_DRBG_clear(CTR_DRBG_STATE *drbg);
+
+
+#if defined(OPENSSL_X86_64) && !defined(OPENSSL_NO_ASM)
+OPENSSL_INLINE int have_rdrand(void) {
+  return (OPENSSL_ia32cap_get()[1] & (1u << 30)) != 0;
+}
+
+// CRYPTO_rdrand writes eight bytes of random data from the hardware RNG to
+// |out|. It returns one on success or zero on hardware failure.
+int CRYPTO_rdrand(uint8_t out[8]);
+
+// CRYPTO_rdrand_multiple8_buf fills |len| bytes at |buf| with random data from
+// the hardware RNG. The |len| argument must be a multiple of eight. It returns
+// one on success and zero on hardware failure.
+int CRYPTO_rdrand_multiple8_buf(uint8_t *buf, size_t len);
+#endif  // OPENSSL_X86_64 && !OPENSSL_NO_ASM
 
 
 #if defined(__cplusplus)

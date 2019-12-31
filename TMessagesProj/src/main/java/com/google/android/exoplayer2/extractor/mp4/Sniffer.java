@@ -30,32 +30,35 @@ import java.io.IOException;
   /** The maximum number of bytes to peek when sniffing. */
   private static final int SEARCH_LENGTH = 4 * 1024;
 
-  private static final int[] COMPATIBLE_BRANDS = new int[] {
-      Util.getIntegerCodeForString("isom"),
-      Util.getIntegerCodeForString("iso2"),
-      Util.getIntegerCodeForString("iso3"),
-      Util.getIntegerCodeForString("iso4"),
-      Util.getIntegerCodeForString("iso5"),
-      Util.getIntegerCodeForString("iso6"),
-      Util.getIntegerCodeForString("avc1"),
-      Util.getIntegerCodeForString("hvc1"),
-      Util.getIntegerCodeForString("hev1"),
-      Util.getIntegerCodeForString("mp41"),
-      Util.getIntegerCodeForString("mp42"),
-      Util.getIntegerCodeForString("3g2a"),
-      Util.getIntegerCodeForString("3g2b"),
-      Util.getIntegerCodeForString("3gr6"),
-      Util.getIntegerCodeForString("3gs6"),
-      Util.getIntegerCodeForString("3ge6"),
-      Util.getIntegerCodeForString("3gg6"),
-      Util.getIntegerCodeForString("M4V "),
-      Util.getIntegerCodeForString("M4A "),
-      Util.getIntegerCodeForString("f4v "),
-      Util.getIntegerCodeForString("kddi"),
-      Util.getIntegerCodeForString("M4VP"),
-      Util.getIntegerCodeForString("qt  "), // Apple QuickTime
-      Util.getIntegerCodeForString("MSNV"), // Sony PSP
-  };
+  private static final int[] COMPATIBLE_BRANDS =
+      new int[] {
+        Util.getIntegerCodeForString("isom"),
+        Util.getIntegerCodeForString("iso2"),
+        Util.getIntegerCodeForString("iso3"),
+        Util.getIntegerCodeForString("iso4"),
+        Util.getIntegerCodeForString("iso5"),
+        Util.getIntegerCodeForString("iso6"),
+        Util.getIntegerCodeForString("avc1"),
+        Util.getIntegerCodeForString("hvc1"),
+        Util.getIntegerCodeForString("hev1"),
+        Util.getIntegerCodeForString("av01"),
+        Util.getIntegerCodeForString("mp41"),
+        Util.getIntegerCodeForString("mp42"),
+        Util.getIntegerCodeForString("3g2a"),
+        Util.getIntegerCodeForString("3g2b"),
+        Util.getIntegerCodeForString("3gr6"),
+        Util.getIntegerCodeForString("3gs6"),
+        Util.getIntegerCodeForString("3ge6"),
+        Util.getIntegerCodeForString("3gg6"),
+        Util.getIntegerCodeForString("M4V "),
+        Util.getIntegerCodeForString("M4A "),
+        Util.getIntegerCodeForString("f4v "),
+        Util.getIntegerCodeForString("kddi"),
+        Util.getIntegerCodeForString("M4VP"),
+        Util.getIntegerCodeForString("qt  "), // Apple QuickTime
+        Util.getIntegerCodeForString("MSNV"), // Sony PSP
+        Util.getIntegerCodeForString("dby1"), // Dolby Vision
+      };
 
   /**
    * Returns whether data peeked from the current position in {@code input} is consistent with the
@@ -116,7 +119,7 @@ import java.io.IOException;
         }
       }
 
-      if (inputLength != C.LENGTH_UNSET && bytesSearched + atomSize > inputLength) {
+      if (inputLength != C.LENGTH_UNSET && bytesSearched + atomSize > inputLength + 10) { //added small trashhold for buggy files
         // The file is invalid because the atom extends past the end of the file.
         return false;
       }

@@ -31,7 +31,7 @@ import java.util.Map;
  * Loops a {@link MediaSource} a specified number of times.
  *
  * <p>Note: To loop a {@link MediaSource} indefinitely, it is usually better to use {@link
- * ExoPlayer#setRepeatMode(int)}.
+ * ExoPlayer#setRepeatMode(int)} instead of this class.
  */
 public final class LoopingMediaSource extends CompositeMediaSource<Void> {
 

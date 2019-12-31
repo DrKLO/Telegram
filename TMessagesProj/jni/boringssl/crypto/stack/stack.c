@@ -56,6 +56,7 @@
 
 #include <openssl/stack.h>
 
+#include <assert.h>
 #include <string.h>
 
 #include <openssl/mem.h>
@@ -133,17 +134,29 @@ void sk_free(_STACK *sk) {
   OPENSSL_free(sk);
 }
 
-void sk_pop_free(_STACK *sk, void (*func)(void *)) {
+void sk_pop_free_ex(_STACK *sk, void (*call_free_func)(stack_free_func, void *),
+                    stack_free_func free_func) {
   if (sk == NULL) {
     return;
   }
 
   for (size_t i = 0; i < sk->num; i++) {
     if (sk->data[i] != NULL) {
-      func(sk->data[i]);
+      call_free_func(free_func, sk->data[i]);
     }
   }
   sk_free(sk);
+}
+
+// Historically, |sk_pop_free| called the function as |stack_free_func|
+// directly. This is undefined in C. Some callers called |sk_pop_free| directly,
+// so we must maintain a compatibility version for now.
+static void call_free_func_legacy(stack_free_func func, void *ptr) {
+  func(ptr);
+}
+
+void sk_pop_free(_STACK *sk, stack_free_func free_func) {
+  sk_pop_free_ex(sk, call_free_func_legacy, free_func);
 }
 
 size_t sk_insert(_STACK *sk, void *p, size_t where) {
@@ -209,7 +222,7 @@ void *sk_delete(_STACK *sk, size_t where) {
   return ret;
 }
 
-void *sk_delete_ptr(_STACK *sk, void *p) {
+void *sk_delete_ptr(_STACK *sk, const void *p) {
   if (sk == NULL) {
     return NULL;
   }
@@ -223,7 +236,9 @@ void *sk_delete_ptr(_STACK *sk, void *p) {
   return NULL;
 }
 
-int sk_find(_STACK *sk, size_t *out_index, void *p) {
+int sk_find(const _STACK *sk, size_t *out_index, const void *p,
+            int (*call_cmp_func)(stack_cmp_func, const void **,
+                                 const void **)) {
   if (sk == NULL) {
     return 0;
   }
@@ -245,28 +260,52 @@ int sk_find(_STACK *sk, size_t *out_index, void *p) {
     return 0;
   }
 
-  sk_sort(sk);
-
-  // sk->comp is a function that takes pointers to pointers to elements, but
-  // qsort and bsearch take a comparison function that just takes pointers to
-  // elements. However, since we're passing an array of pointers to
-  // qsort/bsearch, we can just cast the comparison function and everything
-  // works.
-  const void *const *r = bsearch(&p, sk->data, sk->num, sizeof(void *),
-                                 (int (*)(const void *, const void *))sk->comp);
-  if (r == NULL) {
+  if (!sk_is_sorted(sk)) {
+    for (size_t i = 0; i < sk->num; i++) {
+      const void *elem = sk->data[i];
+      if (call_cmp_func(sk->comp, &p, &elem) == 0) {
+        if (out_index) {
+          *out_index = i;
+        }
+        return 1;
+      }
+    }
     return 0;
   }
-  size_t idx = ((void **)r) - sk->data;
-  // This function always returns the first result.
-  while (idx > 0 &&
-         sk->comp((const void **)&p, (const void **)&sk->data[idx - 1]) == 0) {
-    idx--;
+
+  // The stack is sorted, so binary search to find the element.
+  //
+  // |lo| and |hi| maintain a half-open interval of where the answer may be. All
+  // indices such that |lo <= idx < hi| are candidates.
+  size_t lo = 0, hi = sk->num;
+  while (lo < hi) {
+    // Bias |mid| towards |lo|. See the |r == 0| case below.
+    size_t mid = lo + (hi - lo - 1) / 2;
+    assert(lo <= mid && mid < hi);
+    const void *elem = sk->data[mid];
+    int r = call_cmp_func(sk->comp, &p, &elem);
+    if (r > 0) {
+      lo = mid + 1;  // |mid| is too low.
+    } else if (r < 0) {
+      hi = mid;  // |mid| is too high.
+    } else {
+      // |mid| matches. However, this function returns the earliest match, so we
+      // can only return if the range has size one.
+      if (hi - lo == 1) {
+        if (out_index != NULL) {
+          *out_index = mid;
+        }
+        return 1;
+      }
+      // The sample is biased towards |lo|. |mid| can only be |hi - 1| if
+      // |hi - lo| was one, so this makes forward progress.
+      assert(mid + 1 < hi);
+      hi = mid + 1;
+    }
   }
-  if (out_index) {
-    *out_index = idx;
-  }
-  return 1;
+
+  assert(lo == hi);
+  return 0;  // Not found.
 }
 
 void *sk_shift(_STACK *sk) {
@@ -323,15 +362,24 @@ err:
 }
 
 void sk_sort(_STACK *sk) {
-  int (*comp_func)(const void *,const void *);
-
   if (sk == NULL || sk->comp == NULL || sk->sorted) {
     return;
   }
 
-  // See the comment in sk_find about this cast.
-  comp_func = (int (*)(const void *, const void *))(sk->comp);
-  qsort(sk->data, sk->num, sizeof(void *), comp_func);
+  // sk->comp is a function that takes pointers to pointers to elements, but
+  // qsort take a comparison function that just takes pointers to elements.
+  // However, since we're passing an array of pointers to qsort, we can just
+  // cast the comparison function and everything works.
+  //
+  // TODO(davidben): This is undefined behavior, but the call is in libc so,
+  // e.g., CFI does not notice. Unfortunately, |qsort| is missing a void*
+  // parameter in its callback and |qsort_s| / |qsort_r| are a mess of
+  // incompatibility.
+  if (sk->num >= 2) {
+    int (*comp_func)(const void *, const void *) =
+        (int (*)(const void *, const void *))(sk->comp);
+    qsort(sk->data, sk->num, sizeof(void *), comp_func);
+  }
   sk->sorted = 1;
 }
 
@@ -353,8 +401,11 @@ stack_cmp_func sk_set_cmp_func(_STACK *sk, stack_cmp_func comp) {
   return old;
 }
 
-_STACK *sk_deep_copy(const _STACK *sk, void *(*copy_func)(void *),
-                     void (*free_func)(void *)) {
+_STACK *sk_deep_copy(const _STACK *sk,
+                     void *(*call_copy_func)(stack_copy_func, void *),
+                     stack_copy_func copy_func,
+                     void (*call_free_func)(stack_free_func, void *),
+                     stack_free_func free_func) {
   _STACK *ret = sk_dup(sk);
   if (ret == NULL) {
     return NULL;
@@ -364,11 +415,11 @@ _STACK *sk_deep_copy(const _STACK *sk, void *(*copy_func)(void *),
     if (ret->data[i] == NULL) {
       continue;
     }
-    ret->data[i] = copy_func(ret->data[i]);
+    ret->data[i] = call_copy_func(copy_func, ret->data[i]);
     if (ret->data[i] == NULL) {
       for (size_t j = 0; j < i; j++) {
         if (ret->data[j] != NULL) {
-          free_func(ret->data[j]);
+          call_free_func(free_func, ret->data[j]);
         }
       }
       sk_free(ret);

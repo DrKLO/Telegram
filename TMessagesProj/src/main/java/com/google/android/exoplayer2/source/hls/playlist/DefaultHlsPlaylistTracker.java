@@ -23,7 +23,7 @@ import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.ParserException;
 import com.google.android.exoplayer2.source.MediaSourceEventListener.EventDispatcher;
 import com.google.android.exoplayer2.source.hls.HlsDataSourceFactory;
-import com.google.android.exoplayer2.source.hls.playlist.HlsMasterPlaylist.HlsUrl;
+import com.google.android.exoplayer2.source.hls.playlist.HlsMasterPlaylist.Variant;
 import com.google.android.exoplayer2.source.hls.playlist.HlsMediaPlaylist.Segment;
 import com.google.android.exoplayer2.upstream.DataSource;
 import com.google.android.exoplayer2.upstream.LoadErrorHandlingPolicy;
@@ -31,10 +31,9 @@ import com.google.android.exoplayer2.upstream.Loader;
 import com.google.android.exoplayer2.upstream.Loader.LoadErrorAction;
 import com.google.android.exoplayer2.upstream.ParsingLoadable;
 import com.google.android.exoplayer2.util.Assertions;
-import com.google.android.exoplayer2.util.UriUtil;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.IdentityHashMap;
+import java.util.HashMap;
 import java.util.List;
 
 /** Default implementation for {@link HlsPlaylistTracker}. */
@@ -45,46 +44,32 @@ public final class DefaultHlsPlaylistTracker
   public static final Factory FACTORY = DefaultHlsPlaylistTracker::new;
 
   /**
-   * Coefficient applied on the target duration of a playlist to determine the amount of time after
-   * which an unchanging playlist is considered stuck.
+   * Default coefficient applied on the target duration of a playlist to determine the amount of
+   * time after which an unchanging playlist is considered stuck.
    */
-  private static final double PLAYLIST_STUCK_TARGET_DURATION_COEFFICIENT = 3.5;
+  public static final double DEFAULT_PLAYLIST_STUCK_TARGET_DURATION_COEFFICIENT = 3.5;
 
   private final HlsDataSourceFactory dataSourceFactory;
   private final HlsPlaylistParserFactory playlistParserFactory;
   private final LoadErrorHandlingPolicy loadErrorHandlingPolicy;
-  private final IdentityHashMap<HlsUrl, MediaPlaylistBundle> playlistBundles;
+  private final HashMap<Uri, MediaPlaylistBundle> playlistBundles;
   private final List<PlaylistEventListener> listeners;
+  private final double playlistStuckTargetDurationCoefficient;
 
-  private @Nullable ParsingLoadable.Parser<HlsPlaylist> mediaPlaylistParser;
-  private @Nullable EventDispatcher eventDispatcher;
-  private @Nullable Loader initialPlaylistLoader;
-  private @Nullable Handler playlistRefreshHandler;
-  private @Nullable PrimaryPlaylistListener primaryPlaylistListener;
-  private @Nullable HlsMasterPlaylist masterPlaylist;
-  private @Nullable HlsUrl primaryHlsUrl;
-  private @Nullable HlsMediaPlaylist primaryUrlSnapshot;
+  @Nullable private ParsingLoadable.Parser<HlsPlaylist> mediaPlaylistParser;
+  @Nullable private EventDispatcher eventDispatcher;
+  @Nullable private Loader initialPlaylistLoader;
+  @Nullable private Handler playlistRefreshHandler;
+  @Nullable private PrimaryPlaylistListener primaryPlaylistListener;
+  @Nullable private HlsMasterPlaylist masterPlaylist;
+  @Nullable private Uri primaryMediaPlaylistUrl;
+  @Nullable private HlsMediaPlaylist primaryMediaPlaylistSnapshot;
   private boolean isLive;
   private long initialStartTimeUs;
 
   /**
-   * @param dataSourceFactory A factory for {@link DataSource} instances.
-   * @param loadErrorHandlingPolicy The {@link LoadErrorHandlingPolicy}.
-   * @param playlistParser A {@link ParsingLoadable.Parser} for HLS playlists.
-   * @deprecated Use {@link #DefaultHlsPlaylistTracker(HlsDataSourceFactory,
-   *     LoadErrorHandlingPolicy, HlsPlaylistParserFactory)} instead. Using this constructor
-   *     prevents support for attributes that are carried over from the master playlist to the media
-   *     playlists.
-   */
-  @Deprecated
-  public DefaultHlsPlaylistTracker(
-      HlsDataSourceFactory dataSourceFactory,
-      LoadErrorHandlingPolicy loadErrorHandlingPolicy,
-      ParsingLoadable.Parser<HlsPlaylist> playlistParser) {
-    this(dataSourceFactory, loadErrorHandlingPolicy, createFixedFactory(playlistParser));
-  }
-
-  /**
+   * Creates an instance.
+   *
    * @param dataSourceFactory A factory for {@link DataSource} instances.
    * @param loadErrorHandlingPolicy The {@link LoadErrorHandlingPolicy}.
    * @param playlistParserFactory An {@link HlsPlaylistParserFactory}.
@@ -93,11 +78,35 @@ public final class DefaultHlsPlaylistTracker
       HlsDataSourceFactory dataSourceFactory,
       LoadErrorHandlingPolicy loadErrorHandlingPolicy,
       HlsPlaylistParserFactory playlistParserFactory) {
+    this(
+        dataSourceFactory,
+        loadErrorHandlingPolicy,
+        playlistParserFactory,
+        DEFAULT_PLAYLIST_STUCK_TARGET_DURATION_COEFFICIENT);
+  }
+
+  /**
+   * Creates an instance.
+   *
+   * @param dataSourceFactory A factory for {@link DataSource} instances.
+   * @param loadErrorHandlingPolicy The {@link LoadErrorHandlingPolicy}.
+   * @param playlistParserFactory An {@link HlsPlaylistParserFactory}.
+   * @param playlistStuckTargetDurationCoefficient A coefficient to apply to the target duration of
+   *     media playlists in order to determine that a non-changing playlist is stuck. Once a
+   *     playlist is deemed stuck, a {@link PlaylistStuckException} is thrown via {@link
+   *     #maybeThrowPlaylistRefreshError(Uri)}.
+   */
+  public DefaultHlsPlaylistTracker(
+      HlsDataSourceFactory dataSourceFactory,
+      LoadErrorHandlingPolicy loadErrorHandlingPolicy,
+      HlsPlaylistParserFactory playlistParserFactory,
+      double playlistStuckTargetDurationCoefficient) {
     this.dataSourceFactory = dataSourceFactory;
     this.playlistParserFactory = playlistParserFactory;
     this.loadErrorHandlingPolicy = loadErrorHandlingPolicy;
+    this.playlistStuckTargetDurationCoefficient = playlistStuckTargetDurationCoefficient;
     listeners = new ArrayList<>();
-    playlistBundles = new IdentityHashMap<>();
+    playlistBundles = new HashMap<>();
     initialStartTimeUs = C.TIME_UNSET;
   }
 
@@ -132,8 +141,8 @@ public final class DefaultHlsPlaylistTracker
 
   @Override
   public void stop() {
-    primaryHlsUrl = null;
-    primaryUrlSnapshot = null;
+    primaryMediaPlaylistUrl = null;
+    primaryMediaPlaylistSnapshot = null;
     masterPlaylist = null;
     initialStartTimeUs = C.TIME_UNSET;
     initialPlaylistLoader.release();
@@ -162,7 +171,7 @@ public final class DefaultHlsPlaylistTracker
   }
 
   @Override
-  public HlsMediaPlaylist getPlaylistSnapshot(HlsUrl url, boolean isForPlayback) {
+  public HlsMediaPlaylist getPlaylistSnapshot(Uri url, boolean isForPlayback) {
     HlsMediaPlaylist snapshot = playlistBundles.get(url).getPlaylistSnapshot();
     if (snapshot != null && isForPlayback) {
       maybeSetPrimaryUrl(url);
@@ -176,7 +185,7 @@ public final class DefaultHlsPlaylistTracker
   }
 
   @Override
-  public boolean isSnapshotValid(HlsUrl url) {
+  public boolean isSnapshotValid(Uri url) {
     return playlistBundles.get(url).isSnapshotValid();
   }
 
@@ -185,18 +194,18 @@ public final class DefaultHlsPlaylistTracker
     if (initialPlaylistLoader != null) {
       initialPlaylistLoader.maybeThrowError();
     }
-    if (primaryHlsUrl != null) {
-      maybeThrowPlaylistRefreshError(primaryHlsUrl);
+    if (primaryMediaPlaylistUrl != null) {
+      maybeThrowPlaylistRefreshError(primaryMediaPlaylistUrl);
     }
   }
 
   @Override
-  public void maybeThrowPlaylistRefreshError(HlsUrl url) throws IOException {
+  public void maybeThrowPlaylistRefreshError(Uri url) throws IOException {
     playlistBundles.get(url).maybeThrowPlaylistRefreshError();
   }
 
   @Override
-  public void refreshPlaylist(HlsUrl url) {
+  public void refreshPlaylist(Uri url) {
     playlistBundles.get(url).loadPlaylist();
   }
 
@@ -220,13 +229,9 @@ public final class DefaultHlsPlaylistTracker
     }
     this.masterPlaylist = masterPlaylist;
     mediaPlaylistParser = playlistParserFactory.createPlaylistParser(masterPlaylist);
-    primaryHlsUrl = masterPlaylist.variants.get(0);
-    ArrayList<HlsUrl> urls = new ArrayList<>();
-    urls.addAll(masterPlaylist.variants);
-    urls.addAll(masterPlaylist.audios);
-    urls.addAll(masterPlaylist.subtitles);
-    createBundles(urls);
-    MediaPlaylistBundle primaryBundle = playlistBundles.get(primaryHlsUrl);
+    primaryMediaPlaylistUrl = masterPlaylist.variants.get(0).url;
+    createBundles(masterPlaylist.mediaPlaylistUrls);
+    MediaPlaylistBundle primaryBundle = playlistBundles.get(primaryMediaPlaylistUrl);
     if (isMediaPlaylist) {
       // We don't need to load the playlist again. We can use the same result.
       primaryBundle.processLoadedPlaylist((HlsMediaPlaylist) result, loadDurationMs);
@@ -288,13 +293,13 @@ public final class DefaultHlsPlaylistTracker
   // Internal methods.
 
   private boolean maybeSelectNewPrimaryUrl() {
-    List<HlsUrl> variants = masterPlaylist.variants;
+    List<Variant> variants = masterPlaylist.variants;
     int variantsSize = variants.size();
     long currentTimeMs = SystemClock.elapsedRealtime();
     for (int i = 0; i < variantsSize; i++) {
-      MediaPlaylistBundle bundle = playlistBundles.get(variants.get(i));
+      MediaPlaylistBundle bundle = playlistBundles.get(variants.get(i).url);
       if (currentTimeMs > bundle.blacklistUntilMs) {
-        primaryHlsUrl = bundle.playlistUrl;
+        primaryMediaPlaylistUrl = bundle.playlistUrl;
         bundle.loadPlaylist();
         return true;
       }
@@ -302,22 +307,33 @@ public final class DefaultHlsPlaylistTracker
     return false;
   }
 
-  private void maybeSetPrimaryUrl(HlsUrl url) {
-    if (url == primaryHlsUrl
-        || !masterPlaylist.variants.contains(url)
-        || (primaryUrlSnapshot != null && primaryUrlSnapshot.hasEndTag)) {
-      // Ignore if the primary url is unchanged, if the url is not a variant url, or if the last
-      // primary snapshot contains an end tag.
+  private void maybeSetPrimaryUrl(Uri url) {
+    if (url.equals(primaryMediaPlaylistUrl)
+        || !isVariantUrl(url)
+        || (primaryMediaPlaylistSnapshot != null && primaryMediaPlaylistSnapshot.hasEndTag)) {
+      // Ignore if the primary media playlist URL is unchanged, if the media playlist is not
+      // referenced directly by a variant, or it the last primary snapshot contains an end tag.
       return;
     }
-    primaryHlsUrl = url;
-    playlistBundles.get(primaryHlsUrl).loadPlaylist();
+    primaryMediaPlaylistUrl = url;
+    playlistBundles.get(primaryMediaPlaylistUrl).loadPlaylist();
   }
 
-  private void createBundles(List<HlsUrl> urls) {
+  /** Returns whether any of the variants in the master playlist have the specified playlist URL. */
+  private boolean isVariantUrl(Uri playlistUrl) {
+    List<Variant> variants = masterPlaylist.variants;
+    for (int i = 0; i < variants.size(); i++) {
+      if (playlistUrl.equals(variants.get(i).url)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  private void createBundles(List<Uri> urls) {
     int listSize = urls.size();
     for (int i = 0; i < listSize; i++) {
-      HlsUrl url = urls.get(i);
+      Uri url = urls.get(i);
       MediaPlaylistBundle bundle = new MediaPlaylistBundle(url);
       playlistBundles.put(url, bundle);
     }
@@ -329,14 +345,14 @@ public final class DefaultHlsPlaylistTracker
    * @param url The url of the playlist.
    * @param newSnapshot The new snapshot.
    */
-  private void onPlaylistUpdated(HlsUrl url, HlsMediaPlaylist newSnapshot) {
-    if (url == primaryHlsUrl) {
-      if (primaryUrlSnapshot == null) {
+  private void onPlaylistUpdated(Uri url, HlsMediaPlaylist newSnapshot) {
+    if (url.equals(primaryMediaPlaylistUrl)) {
+      if (primaryMediaPlaylistSnapshot == null) {
         // This is the first primary url snapshot.
         isLive = !newSnapshot.hasEndTag;
         initialStartTimeUs = newSnapshot.startTimeUs;
       }
-      primaryUrlSnapshot = newSnapshot;
+      primaryMediaPlaylistSnapshot = newSnapshot;
       primaryPlaylistListener.onPrimaryPlaylistRefreshed(newSnapshot);
     }
     int listenersSize = listeners.size();
@@ -345,7 +361,7 @@ public final class DefaultHlsPlaylistTracker
     }
   }
 
-  private boolean notifyPlaylistError(HlsUrl playlistUrl, long blacklistDurationMs) {
+  private boolean notifyPlaylistError(Uri playlistUrl, long blacklistDurationMs) {
     int listenersSize = listeners.size();
     boolean anyBlacklistingFailed = false;
     for (int i = 0; i < listenersSize; i++) {
@@ -378,7 +394,7 @@ public final class DefaultHlsPlaylistTracker
       return loadedPlaylist.startTimeUs;
     }
     long primarySnapshotStartTimeUs =
-        primaryUrlSnapshot != null ? primaryUrlSnapshot.startTimeUs : 0;
+        primaryMediaPlaylistSnapshot != null ? primaryMediaPlaylistSnapshot.startTimeUs : 0;
     if (oldPlaylist == null) {
       return primarySnapshotStartTimeUs;
     }
@@ -401,7 +417,9 @@ public final class DefaultHlsPlaylistTracker
     }
     // TODO: Improve cross-playlist discontinuity adjustment.
     int primaryUrlDiscontinuitySequence =
-        primaryUrlSnapshot != null ? primaryUrlSnapshot.discontinuitySequence : 0;
+        primaryMediaPlaylistSnapshot != null
+            ? primaryMediaPlaylistSnapshot.discontinuitySequence
+            : 0;
     if (oldPlaylist == null) {
       return primaryUrlDiscontinuitySequence;
     }
@@ -425,7 +443,7 @@ public final class DefaultHlsPlaylistTracker
   private final class MediaPlaylistBundle
       implements Loader.Callback<ParsingLoadable<HlsPlaylist>>, Runnable {
 
-    private final HlsUrl playlistUrl;
+    private final Uri playlistUrl;
     private final Loader mediaPlaylistLoader;
     private final ParsingLoadable<HlsPlaylist> mediaPlaylistLoadable;
 
@@ -437,13 +455,13 @@ public final class DefaultHlsPlaylistTracker
     private boolean loadPending;
     private IOException playlistError;
 
-    public MediaPlaylistBundle(HlsUrl playlistUrl) {
+    public MediaPlaylistBundle(Uri playlistUrl) {
       this.playlistUrl = playlistUrl;
       mediaPlaylistLoader = new Loader("DefaultHlsPlaylistTracker:MediaPlaylist");
       mediaPlaylistLoadable =
           new ParsingLoadable<>(
               dataSourceFactory.createDataSource(C.DATA_TYPE_MANIFEST),
-              UriUtil.resolveToUri(masterPlaylist.baseUri, playlistUrl.url),
+              playlistUrl,
               C.DATA_TYPE_MANIFEST,
               mediaPlaylistParser);
     }
@@ -470,8 +488,8 @@ public final class DefaultHlsPlaylistTracker
 
     public void loadPlaylist() {
       blacklistUntilMs = 0;
-      if (loadPending || mediaPlaylistLoader.isLoading()) {
-        // Load already pending or in progress. Do nothing.
+      if (loadPending || mediaPlaylistLoader.isLoading() || mediaPlaylistLoader.hasFatalError()) {
+        // Load already pending, in progress, or a fatal error has been encountered. Do nothing.
         return;
       }
       long currentTimeMs = SystemClock.elapsedRealtime();
@@ -610,13 +628,13 @@ public final class DefaultHlsPlaylistTracker
           // TODO: Allow customization of playlist resets handling.
           // The media sequence jumped backwards. The server has probably reset. We do not try
           // blacklisting in this case.
-          playlistError = new PlaylistResetException(playlistUrl.url);
+          playlistError = new PlaylistResetException(playlistUrl);
           notifyPlaylistError(playlistUrl, C.TIME_UNSET);
         } else if (currentTimeMs - lastSnapshotChangeMs
             > C.usToMs(playlistSnapshot.targetDurationUs)
-                * PLAYLIST_STUCK_TARGET_DURATION_COEFFICIENT) {
+                * playlistStuckTargetDurationCoefficient) {
           // TODO: Allow customization of stuck playlists handling.
-          playlistError = new PlaylistStuckException(playlistUrl.url);
+          playlistError = new PlaylistStuckException(playlistUrl);
           long blacklistDurationMs =
               loadErrorHandlingPolicy.getBlacklistDurationMsFor(
                   C.DATA_TYPE_MANIFEST, loadDurationMs, playlistError, /* errorCount= */ 1);
@@ -637,7 +655,7 @@ public final class DefaultHlsPlaylistTracker
       // Schedule a load if this is the primary playlist and it doesn't have an end tag. Else the
       // next load will be scheduled when refreshPlaylist is called, or when this playlist becomes
       // the primary.
-      if (playlistUrl == primaryHlsUrl && !playlistSnapshot.hasEndTag) {
+      if (playlistUrl.equals(primaryMediaPlaylistUrl) && !playlistSnapshot.hasEndTag) {
         loadPlaylist();
       }
     }
@@ -651,29 +669,7 @@ public final class DefaultHlsPlaylistTracker
      */
     private boolean blacklistPlaylist(long blacklistDurationMs) {
       blacklistUntilMs = SystemClock.elapsedRealtime() + blacklistDurationMs;
-      return primaryHlsUrl == playlistUrl && !maybeSelectNewPrimaryUrl();
+      return playlistUrl.equals(primaryMediaPlaylistUrl) && !maybeSelectNewPrimaryUrl();
     }
-  }
-
-  /**
-   * Creates a factory which always returns the given playlist parser.
-   *
-   * @param playlistParser The parser to return.
-   * @return A factory which always returns the given playlist parser.
-   */
-  private static HlsPlaylistParserFactory createFixedFactory(
-      ParsingLoadable.Parser<HlsPlaylist> playlistParser) {
-    return new HlsPlaylistParserFactory() {
-      @Override
-      public ParsingLoadable.Parser<HlsPlaylist> createPlaylistParser() {
-        return playlistParser;
-      }
-
-      @Override
-      public ParsingLoadable.Parser<HlsPlaylist> createPlaylistParser(
-          HlsMasterPlaylist masterPlaylist) {
-        return playlistParser;
-      }
-    };
   }
 }

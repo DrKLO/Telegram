@@ -837,8 +837,8 @@ public class NumberPicker extends LinearLayout {
         }
         if (scrollState == OnScrollListener.SCROLL_STATE_IDLE) {
             AccessibilityManager am = (AccessibilityManager) getContext().getSystemService(Context.ACCESSIBILITY_SERVICE);
-            if(am.isTouchExplorationEnabled()){
-                String text=(mDisplayedValues==null) ? formatNumber(mValue) : mDisplayedValues[mValue-mMinValue];
+            if (am.isTouchExplorationEnabled()) {
+                String text = (mDisplayedValues == null) ? formatNumber(mValue) : mDisplayedValues[mValue - mMinValue];
                 AccessibilityEvent event = AccessibilityEvent.obtain();
                 event.setEventType(AccessibilityEvent.TYPE_ANNOUNCEMENT);
                 event.getText().add(text);

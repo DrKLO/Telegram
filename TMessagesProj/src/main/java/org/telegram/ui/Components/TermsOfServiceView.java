@@ -1,16 +1,16 @@
 package org.telegram.ui.Components;
 
-import android.animation.ObjectAnimator;
-import android.animation.StateListAnimator;
 import android.content.Context;
 import android.os.Build;
 import android.text.SpannableStringBuilder;
+import android.text.Spanned;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
 
@@ -30,7 +30,9 @@ public class TermsOfServiceView extends FrameLayout {
     private TextView textView;
     private TermsOfServiceViewDelegate delegate;
     private TLRPC.TL_help_termsOfService currentTos;
+    @SuppressWarnings("FieldCanBeLocal")
     private TextView titleTextView;
+    @SuppressWarnings("FieldCanBeLocal")
     private ScrollView scrollView;
     private int currentAccount;
 
@@ -43,28 +45,27 @@ public class TermsOfServiceView extends FrameLayout {
         super(context);
         setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
 
-        int top = Build.VERSION.SDK_INT >= 21 ? (int) (AndroidUtilities.statusBarHeight / AndroidUtilities.density) : 0;
-        if (Build.VERSION.SDK_INT >= 21) {
+        final int top = Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP ? AndroidUtilities.statusBarHeight : 0;
+
+        if (top > 0) {
             View view = new View(context);
             view.setBackgroundColor(0xff000000);
-            addView(view, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, AndroidUtilities.statusBarHeight));
+            addView(view, new FrameLayout.LayoutParams(LayoutParams.MATCH_PARENT, top));
         }
+
+        final LinearLayout linearLayout = new LinearLayout(context);
+        linearLayout.setOrientation(LinearLayout.VERTICAL);
 
         ImageView imageView = new ImageView(context);
         imageView.setImageResource(R.drawable.logo_middle);
-        addView(imageView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 0, 30 + top, 0, 0));
+        linearLayout.addView(imageView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT, 0, 28, 0, 0));
 
         titleTextView = new TextView(context);
         titleTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
         titleTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 17);
-        titleTextView.setGravity(Gravity.LEFT | Gravity.TOP);
         titleTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
         titleTextView.setText(LocaleController.getString("PrivacyPolicyAndTerms", R.string.PrivacyPolicyAndTerms));
-        addView(titleTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 27, 126 + top, 27, 75));
-
-        scrollView = new ScrollView(context);
-        AndroidUtilities.setScrollViewEdgeEffectColor(scrollView, Theme.getColor(Theme.key_actionBarDefault));
-        addView(scrollView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, Gravity.LEFT | Gravity.TOP, 27, 160 + top, 27, 75));
+        linearLayout.addView(titleTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT, 0, 20, 0, 0));
 
         textView = new TextView(context);
         textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
@@ -73,14 +74,22 @@ public class TermsOfServiceView extends FrameLayout {
         textView.setMovementMethod(new AndroidUtilities.LinkMovementMethodMy());
         textView.setGravity(Gravity.LEFT | Gravity.TOP);
         textView.setLineSpacing(AndroidUtilities.dp(2), 1.0f);
-        scrollView.addView(textView, new ScrollView.LayoutParams(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
+        linearLayout.addView(textView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT, 0, 15, 0, 15));
+
+        scrollView = new ScrollView(context);
+        scrollView.setVerticalScrollBarEnabled(false);
+        scrollView.setOverScrollMode(OVER_SCROLL_NEVER);
+        scrollView.setPadding(AndroidUtilities.dp(24f), top, AndroidUtilities.dp(24f), AndroidUtilities.dp(75f));
+        scrollView.addView(linearLayout, new LayoutParams(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+        addView(scrollView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
         TextView declineTextView = new TextView(context);
         declineTextView.setText(LocaleController.getString("Decline", R.string.Decline).toUpperCase());
         declineTextView.setGravity(Gravity.CENTER);
         declineTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
         declineTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
-        declineTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
+        declineTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+        declineTextView.setBackground(Theme.getRoundRectSelectorDrawable(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText)));
         declineTextView.setPadding(AndroidUtilities.dp(20), AndroidUtilities.dp(10), AndroidUtilities.dp(20), AndroidUtilities.dp(10));
         addView(declineTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.BOTTOM, 16, 0, 16, 16));
         declineTextView.setOnClickListener(view -> {
@@ -127,20 +136,14 @@ public class TermsOfServiceView extends FrameLayout {
         });
 
         TextView acceptTextView = new TextView(context);
-        acceptTextView.setText(LocaleController.getString("Accept", R.string.Accept).toUpperCase());
+        acceptTextView.setText(LocaleController.getString("Accept", R.string.Accept));
         acceptTextView.setGravity(Gravity.CENTER);
         acceptTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
         acceptTextView.setTextColor(0xffffffff);
-        acceptTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
-        acceptTextView.setBackgroundResource(R.drawable.regbtn_states);
-        if (Build.VERSION.SDK_INT >= 21) {
-            StateListAnimator animator = new StateListAnimator();
-            animator.addState(new int[]{android.R.attr.state_pressed}, ObjectAnimator.ofFloat(acceptTextView, "translationZ", AndroidUtilities.dp(2), AndroidUtilities.dp(4)).setDuration(200));
-            animator.addState(new int[]{}, ObjectAnimator.ofFloat(acceptTextView, "translationZ", AndroidUtilities.dp(4), AndroidUtilities.dp(2)).setDuration(200));
-            acceptTextView.setStateListAnimator(animator);
-        }
-        acceptTextView.setPadding(AndroidUtilities.dp(20), AndroidUtilities.dp(10), AndroidUtilities.dp(20), AndroidUtilities.dp(10));
-        addView(acceptTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.RIGHT | Gravity.BOTTOM, 16, 0, 16, 16));
+        acceptTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+        acceptTextView.setBackgroundDrawable(Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(4), 0xff50a8eb, 0xff439bde));
+        acceptTextView.setPadding(AndroidUtilities.dp(34), 0, AndroidUtilities.dp(34), 0);
+        addView(acceptTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 42, Gravity.RIGHT | Gravity.BOTTOM, 16, 0, 16, 16));
         acceptTextView.setOnClickListener(view -> {
             if (currentTos.min_age_confirm != 0) {
                 AlertDialog.Builder builder = new AlertDialog.Builder(view.getContext());
@@ -153,6 +156,13 @@ public class TermsOfServiceView extends FrameLayout {
                 accept();
             }
         });
+
+        final View lineView = new View(context);
+        lineView.setBackgroundColor(Theme.getColor(Theme.key_divider));
+        final LayoutParams params = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 1);
+        params.bottomMargin = AndroidUtilities.dp(75f);
+        params.gravity = Gravity.BOTTOM;
+        addView(lineView, params);
     }
 
     private void accept() {
@@ -170,20 +180,23 @@ public class TermsOfServiceView extends FrameLayout {
         }
         SpannableStringBuilder builder = new SpannableStringBuilder(tos.text);
         MessageObject.addEntitiesToText(builder, tos.entities, false, 0, false, false, false);
+        addBulletsToText(builder, '-', AndroidUtilities.dp(10f), 0xff50a8eb, AndroidUtilities.dp(4f));
         textView.setText(builder);
         currentTos = tos;
         currentAccount = account;
     }
 
-    @Override
-    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        measureChildWithMargins(titleTextView, widthMeasureSpec, 0, heightMeasureSpec, 0);
-        FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) scrollView.getLayoutParams();
-        layoutParams.topMargin = AndroidUtilities.dp(126 + 30) + titleTextView.getMeasuredHeight();
-        super.onMeasure(widthMeasureSpec, heightMeasureSpec);
-    }
-
     public void setDelegate(TermsOfServiceViewDelegate termsOfServiceViewDelegate) {
         delegate = termsOfServiceViewDelegate;
+    }
+
+    private static void addBulletsToText(SpannableStringBuilder builder, char bulletChar, int gapWidth, int color, int radius) {
+        for (int i = 0, until = builder.length() - 2; i < until; i++) {
+            if (builder.charAt(i) == '\n' && builder.charAt(i + 1) == bulletChar && builder.charAt(i + 2) == ' ') {
+                final BulletSpan span = new BulletSpan(gapWidth, color, radius);
+                builder.replace(i + 1, i + 3, "\0\0");
+                builder.setSpan(span, i + 1, i + 2, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            }
+        }
     }
 }

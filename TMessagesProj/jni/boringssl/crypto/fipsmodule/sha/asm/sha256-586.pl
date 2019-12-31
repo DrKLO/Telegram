@@ -1,4 +1,11 @@
-#!/usr/bin/env perl
+#! /usr/bin/env perl
+# Copyright 2007-2016 The OpenSSL Project Authors. All Rights Reserved.
+#
+# Licensed under the OpenSSL license (the "License").  You may not use
+# this file except in compliance with the License.  You can obtain a copy
+# in the file LICENSE in the source distribution or at
+# https://www.openssl.org/source/license.html
+
 #
 # ====================================================================
 # Written by Andy Polyakov <appro@openssl.org> for the OpenSSL
@@ -11,7 +18,7 @@
 #
 # Performance improvement over compiler generated code varies from
 # 10% to 40% [see below]. Not very impressive on some µ-archs, but
-# it's 5 times smaller and optimizies amount of writes.
+# it's 5 times smaller and optimizes amount of writes.
 #
 # May 2012.
 #
@@ -1280,4 +1287,4 @@ sub bodyx_00_15 () {			# +10%
 
 &asm_finish();
 
-close STDOUT;
+close STDOUT or die "error closing STDOUT";

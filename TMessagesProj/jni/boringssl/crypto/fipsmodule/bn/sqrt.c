@@ -184,7 +184,7 @@ BIGNUM *BN_mod_sqrt(BIGNUM *in, const BIGNUM *a, const BIGNUM *p, BN_CTX *ctx) {
     // November 1992.)
 
     // t := 2*a
-    if (!BN_mod_lshift1_quick(t, A, p)) {
+    if (!bn_mod_lshift1_consttime(t, A, p, ctx)) {
       goto end;
     }
 

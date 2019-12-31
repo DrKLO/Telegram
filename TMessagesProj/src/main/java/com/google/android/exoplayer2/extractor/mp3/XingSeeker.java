@@ -24,10 +24,8 @@ import com.google.android.exoplayer2.util.Log;
 import com.google.android.exoplayer2.util.ParsableByteArray;
 import com.google.android.exoplayer2.util.Util;
 
-/**
- * MP3 seeker that uses metadata from a Xing header.
- */
-/* package */ final class XingSeeker implements Mp3Extractor.Seeker {
+/** MP3 seeker that uses metadata from a Xing header. */
+/* package */ final class XingSeeker implements Seeker {
 
   private static final String TAG = "XingSeeker";
 

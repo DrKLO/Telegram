@@ -1415,6 +1415,9 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
 
         private void updateSearchResults(final ArrayList<TLObject> users, final ArrayList<CharSequence> names) {
             AndroidUtilities.runOnUIThread(() -> {
+                if (!searching) {
+                    return;
+                }
                 searchRunnable = null;
                 searchResult = users;
                 searchResultNames = names;

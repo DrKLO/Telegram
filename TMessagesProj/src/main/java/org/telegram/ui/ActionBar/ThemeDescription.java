@@ -325,10 +325,10 @@ public class ThemeDescription {
                 ((ActionBar) viewToInvalidate).setSearchTextColor(color, false);
             }
             if ((changeFlags & FLAG_AB_SUBMENUITEM) != 0) {
-                ((ActionBar) viewToInvalidate).setPopupItemsColor(color, (changeFlags & FLAG_IMAGECOLOR) != 0);
+                ((ActionBar) viewToInvalidate).setPopupItemsColor(color, (changeFlags & FLAG_IMAGECOLOR) != 0, false);
             }
             if ((changeFlags & FLAG_AB_SUBMENUBACKGROUND) != 0) {
-                ((ActionBar) viewToInvalidate).setPopupBackgroundColor(color);
+                ((ActionBar) viewToInvalidate).setPopupBackgroundColor(color, false);
             }
         }
         if (viewToInvalidate instanceof VideoTimelineView) {
@@ -403,6 +403,15 @@ public class ThemeDescription {
                 } else if (viewToInvalidate instanceof SimpleTextView) {
                     SimpleTextView textView = (SimpleTextView) viewToInvalidate;
                     textView.setSideDrawablesColor(color);
+                } else if (viewToInvalidate instanceof TextView) {
+                    Drawable[] drawables = ((TextView) viewToInvalidate).getCompoundDrawables();
+                    if (drawables != null) {
+                        for (int a = 0; a < drawables.length; a++) {
+                            if (drawables[a] != null) {
+                                drawables[a].setColorFilter(new PorterDuffColorFilter(color, PorterDuff.Mode.MULTIPLY));
+                            }
+                        }
+                    }
                 }
             }
         }

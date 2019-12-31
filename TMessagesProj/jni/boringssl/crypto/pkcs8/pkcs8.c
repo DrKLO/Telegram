@@ -68,32 +68,42 @@
 #include <openssl/rand.h>
 
 #include "internal.h"
+#include "../bytestring/internal.h"
 #include "../internal.h"
 
 
-static int ascii_to_ucs2(const char *ascii, size_t ascii_len,
-                         uint8_t **out, size_t *out_len) {
-  size_t ulen = ascii_len * 2 + 2;
-  if (ascii_len * 2 < ascii_len || ulen < ascii_len * 2) {
-    return 0;
-  }
-
-  uint8_t *unitmp = OPENSSL_malloc(ulen);
-  if (unitmp == NULL) {
+static int pkcs12_encode_password(const char *in, size_t in_len, uint8_t **out,
+                                  size_t *out_len) {
+  CBB cbb;
+  if (!CBB_init(&cbb, in_len * 2)) {
     OPENSSL_PUT_ERROR(PKCS8, ERR_R_MALLOC_FAILURE);
     return 0;
   }
-  for (size_t i = 0; i < ulen - 2; i += 2) {
-    unitmp[i] = 0;
-    unitmp[i + 1] = ascii[i >> 1];
+
+  // Convert the password to BMPString, or UCS-2. See
+  // https://tools.ietf.org/html/rfc7292#appendix-B.1.
+  CBS cbs;
+  CBS_init(&cbs, (const uint8_t *)in, in_len);
+  while (CBS_len(&cbs) != 0) {
+    uint32_t c;
+    if (!cbs_get_utf8(&cbs, &c) ||
+        !cbb_add_ucs2_be(&cbb, c)) {
+      OPENSSL_PUT_ERROR(PKCS8, PKCS8_R_INVALID_CHARACTERS);
+      goto err;
+    }
   }
 
   // Terminate the result with a UCS-2 NUL.
-  unitmp[ulen - 2] = 0;
-  unitmp[ulen - 1] = 0;
-  *out_len = ulen;
-  *out = unitmp;
+  if (!cbb_add_ucs2_be(&cbb, 0) ||
+      !CBB_finish(&cbb, out, out_len)) {
+    goto err;
+  }
+
   return 1;
+
+err:
+  CBB_cleanup(&cbb);
+  return 0;
 }
 
 int pkcs12_key_gen(const char *pass, size_t pass_len, const uint8_t *salt,
@@ -115,7 +125,7 @@ int pkcs12_key_gen(const char *pass, size_t pass_len, const uint8_t *salt,
   // If |pass| is NULL, we use the empty string rather than {0, 0} as the raw
   // password.
   if (pass != NULL &&
-      !ascii_to_ucs2(pass, pass_len, &pass_raw, &pass_raw_len)) {
+      !pkcs12_encode_password(pass, pass_len, &pass_raw, &pass_raw_len)) {
     goto err;
   }
 
@@ -258,7 +268,7 @@ static int pkcs12_pbe_decrypt_init(const struct pbe_suite *suite,
     return 0;
   }
 
-  if (iterations == 0 || iterations > UINT_MAX) {
+  if (!pkcs12_iterations_acceptable(iterations)) {
     OPENSSL_PUT_ERROR(PKCS8, PKCS8_R_BAD_ITERATION_COUNT);
     return 0;
   }
@@ -307,9 +317,12 @@ static const struct pbe_suite kBuiltinPBE[] = {
     },
 };
 
-static const struct pbe_suite *get_pbe_suite(int pbe_nid) {
+static const struct pbe_suite *get_pkcs12_pbe_suite(int pbe_nid) {
   for (unsigned i = 0; i < OPENSSL_ARRAY_SIZE(kBuiltinPBE); i++) {
-    if (kBuiltinPBE[i].pbe_nid == pbe_nid) {
+    if (kBuiltinPBE[i].pbe_nid == pbe_nid &&
+        // If |cipher_func| or |md_func| are missing, this is a PBES2 scheme.
+        kBuiltinPBE[i].cipher_func != NULL &&
+        kBuiltinPBE[i].md_func != NULL) {
       return &kBuiltinPBE[i];
     }
   }
@@ -317,11 +330,11 @@ static const struct pbe_suite *get_pbe_suite(int pbe_nid) {
   return NULL;
 }
 
-static int pkcs12_pbe_encrypt_init(CBB *out, EVP_CIPHER_CTX *ctx, int alg,
-                                   unsigned iterations, const char *pass,
-                                   size_t pass_len, const uint8_t *salt,
-                                   size_t salt_len) {
-  const struct pbe_suite *suite = get_pbe_suite(alg);
+int pkcs12_pbe_encrypt_init(CBB *out, EVP_CIPHER_CTX *ctx, int alg,
+                            unsigned iterations, const char *pass,
+                            size_t pass_len, const uint8_t *salt,
+                            size_t salt_len) {
+  const struct pbe_suite *suite = get_pkcs12_pbe_suite(alg);
   if (suite == NULL) {
     OPENSSL_PUT_ERROR(PKCS8, PKCS8_R_UNKNOWN_ALGORITHM);
     return 0;
@@ -473,6 +486,10 @@ int PKCS8_marshal_encrypted_private_key(CBB *out, int pbe_nid,
     goto err;
   }
 
+  // TODO(davidben): OpenSSL has since extended |pbe_nid| to control either the
+  // PBES1 scheme or the PBES2 PRF. E.g. passing |NID_hmacWithSHA256| will
+  // select PBES2 with HMAC-SHA256 as the PRF. Implement this if anything uses
+  // it. See 5693a30813a031d3921a016a870420e7eb93ec90 in OpenSSL.
   int alg_ok;
   if (pbe_nid == -1) {
     alg_ok = PKCS5_pbe2_encrypt_init(&epki, &ctx, cipher, (unsigned)iterations,

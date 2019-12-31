@@ -23,6 +23,7 @@ public class FileLog {
     private DispatchQueue logQueue = null;
     private File currentFile = null;
     private File networkFile = null;
+    private File tonlibFile = null;
     private boolean initied;
 
     private final static String tag = "tmessages";
@@ -94,6 +95,25 @@ public class FileLog {
             dir.mkdirs();
             getInstance().networkFile = new File(dir, getInstance().dateFormat.format(System.currentTimeMillis()) + "_net.txt");
             return getInstance().networkFile.getAbsolutePath();
+        } catch (Throwable e) {
+            e.printStackTrace();
+        }
+        return "";
+    }
+
+    public static String getTonlibLogPath() {
+        if (!BuildVars.LOGS_ENABLED) {
+            return "";
+        }
+        try {
+            File sdCard = ApplicationLoader.applicationContext.getExternalFilesDir(null);
+            if (sdCard == null) {
+                return "";
+            }
+            File dir = new File(sdCard.getAbsolutePath() + "/logs");
+            dir.mkdirs();
+            getInstance().tonlibFile = new File(dir, getInstance().dateFormat.format(System.currentTimeMillis()) + "_tonlib.txt");
+            return getInstance().tonlibFile.getAbsolutePath();
         } catch (Throwable e) {
             e.printStackTrace();
         }
@@ -212,6 +232,9 @@ public class FileLog {
                     continue;
                 }
                 if (getInstance().networkFile != null && file.getAbsolutePath().equals(getInstance().networkFile.getAbsolutePath())) {
+                    continue;
+                }
+                if (getInstance().tonlibFile != null && file.getAbsolutePath().equals(getInstance().tonlibFile.getAbsolutePath())) {
                     continue;
                 }
                 file.delete();

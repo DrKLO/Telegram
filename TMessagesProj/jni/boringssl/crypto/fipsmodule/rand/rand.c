@@ -125,15 +125,6 @@ static void rand_thread_state_free(void *state_in) {
 
 #if defined(OPENSSL_X86_64) && !defined(OPENSSL_NO_ASM) && \
     !defined(BORINGSSL_UNSAFE_DETERMINISTIC_MODE)
-
-// These functions are defined in asm/rdrand-x86_64.pl
-extern int CRYPTO_rdrand(uint8_t out[8]);
-extern int CRYPTO_rdrand_multiple8_buf(uint8_t *buf, size_t len);
-
-static int have_rdrand(void) {
-  return (OPENSSL_ia32cap_get()[1] & (1u << 30)) != 0;
-}
-
 static int hwrand(uint8_t *buf, const size_t len) {
   if (!have_rdrand()) {
     return 0;
@@ -196,7 +187,7 @@ static void rand_get_seed(struct rand_thread_state *state,
   // generator test” which causes the program to randomly abort. Hopefully the
   // rate of failure is small enough not to be a problem in practice.
   if (CRYPTO_memcmp(state->last_block, entropy, CRNGT_BLOCK_SIZE) == 0) {
-    printf("CRNGT failed.\n");
+    fprintf(stderr, "CRNGT failed.\n");
     BORINGSSL_FIPS_abort();
   }
 
@@ -204,7 +195,7 @@ static void rand_get_seed(struct rand_thread_state *state,
        i += CRNGT_BLOCK_SIZE) {
     if (CRYPTO_memcmp(entropy + i - CRNGT_BLOCK_SIZE, entropy + i,
                       CRNGT_BLOCK_SIZE) == 0) {
-      printf("CRNGT failed.\n");
+      fprintf(stderr, "CRNGT failed.\n");
       BORINGSSL_FIPS_abort();
     }
   }
@@ -334,6 +325,8 @@ void RAND_bytes_with_additional_data(uint8_t *out, size_t out_len,
 
     out += todo;
     out_len -= todo;
+    // Though we only check before entering the loop, this cannot add enough to
+    // overflow a |size_t|.
     state->calls++;
     first_call = 0;
   }

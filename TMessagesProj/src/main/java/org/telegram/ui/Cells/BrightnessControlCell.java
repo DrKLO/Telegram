@@ -45,7 +45,17 @@ public class BrightnessControlCell extends FrameLayout {
             }
         };
         seekBarView.setReportChanges(true);
-        seekBarView.setDelegate(this::didChangedValue);
+        seekBarView.setDelegate(new SeekBarView.SeekBarViewDelegate() {
+            @Override
+            public void onSeekBarDrag(boolean stop, float progress) {
+                didChangedValue(progress);
+            }
+
+            @Override
+            public void onSeekBarPressed(boolean pressed) {
+
+            }
+        });
         addView(seekBarView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 30, Gravity.TOP | Gravity.LEFT, 58, 9, 58, 0));
 
         rightImageView = new ImageView(context);
@@ -56,8 +66,8 @@ public class BrightnessControlCell extends FrameLayout {
     @Override
     protected void onAttachedToWindow() {
         super.onAttachedToWindow();
-        leftImageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_profile_actionIcon), PorterDuff.Mode.MULTIPLY));
-        rightImageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_profile_actionIcon), PorterDuff.Mode.MULTIPLY));
+        leftImageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteGrayIcon), PorterDuff.Mode.MULTIPLY));
+        rightImageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteGrayIcon), PorterDuff.Mode.MULTIPLY));
     }
 
     protected void didChangedValue(float value) {

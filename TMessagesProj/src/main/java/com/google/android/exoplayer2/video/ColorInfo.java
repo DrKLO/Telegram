@@ -135,16 +135,16 @@ public final class ColorInfo implements Parcelable {
     }
   }
 
-  public static final Parcelable.Creator<ColorInfo> CREATOR = new Parcelable.Creator<ColorInfo>() {
-    @Override
-    public ColorInfo createFromParcel(Parcel in) {
-      return new ColorInfo(in);
-    }
+  public static final Parcelable.Creator<ColorInfo> CREATOR =
+      new Parcelable.Creator<ColorInfo>() {
+        @Override
+        public ColorInfo createFromParcel(Parcel in) {
+          return new ColorInfo(in);
+        }
 
-    @Override
-    public ColorInfo[] newArray(int size) {
-      return new ColorInfo[0];
-    }
-  };
-
+        @Override
+        public ColorInfo[] newArray(int size) {
+          return new ColorInfo[size];
+        }
+      };
 }

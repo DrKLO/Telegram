@@ -336,14 +336,27 @@ public class CheckBoxBase {
                         textPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
                         textPaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
                     }
-                    int color = Theme.getColor(checkColorKey);
-                    int alpha = Color.alpha(color);
-                    textPaint.setColor(color);
-                    textPaint.setTextSize(AndroidUtilities.dp(14));
-                    int w = (int) Math.ceil(textPaint.measureText(checkedText));
+                    final float textSize, y;
+                    switch (checkedText.length()) {
+                        case 0:
+                        case 1:
+                        case 2:
+                            textSize = 14f;
+                            y = 18f;
+                            break;
+                        case 3:
+                            textSize = 10f;
+                            y = 16.5f;
+                            break;
+                        default:
+                            textSize = 8f;
+                            y = 15.75f;
+                    }
+                    textPaint.setTextSize(AndroidUtilities.dp(textSize));
+                    textPaint.setColor(Theme.getColor(checkColorKey));
                     canvas.save();
                     canvas.scale(checkProgress, 1.0f, cx, cy);
-                    canvas.drawText(checkedText, cx - w / 2, AndroidUtilities.dp(18), textPaint);
+                    canvas.drawText(checkedText, cx - textPaint.measureText(checkedText) / 2f, AndroidUtilities.dp(y), textPaint);
                     canvas.restore();
                 } else {
                     path.reset();

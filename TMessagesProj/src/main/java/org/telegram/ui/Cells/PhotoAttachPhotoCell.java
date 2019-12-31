@@ -192,9 +192,7 @@ public class PhotoAttachPhotoCell extends FrameLayout {
         if (photoEntry.isVideo) {
             imageView.setOrientation(0, true);
             videoInfoContainer.setVisibility(VISIBLE);
-            int minutes = photoEntry.duration / 60;
-            int seconds = photoEntry.duration - minutes * 60;
-            videoTextView.setText(String.format("%d:%02d", minutes, seconds));
+            videoTextView.setText(AndroidUtilities.formatShortDuration(photoEntry.duration));
         } else {
             videoInfoContainer.setVisibility(INVISIBLE);
         }

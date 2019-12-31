@@ -12,67 +12,71 @@ public class BaseController {
         currentAccount = num;
     }
 
-    protected AccountInstance getAccountInstance() {
+    protected final AccountInstance getAccountInstance() {
         return parentAccountInstance;
     }
 
-    protected MessagesController getMessagesController() {
+    protected final MessagesController getMessagesController() {
         return parentAccountInstance.getMessagesController();
     }
 
-    protected ContactsController getContactsController() {
+    protected final ContactsController getContactsController() {
         return parentAccountInstance.getContactsController();
     }
 
-    protected MediaDataController getMediaDataController() {
+    protected final MediaDataController getMediaDataController() {
         return parentAccountInstance.getMediaDataController();
     }
 
-    protected ConnectionsManager getConnectionsManager() {
+    protected final ConnectionsManager getConnectionsManager() {
         return parentAccountInstance.getConnectionsManager();
     }
 
-    protected LocationController getLocationController() {
+    protected final LocationController getLocationController() {
         return parentAccountInstance.getLocationController();
     }
 
-    protected NotificationsController getNotificationsController() {
+    protected final NotificationsController getNotificationsController() {
         return parentAccountInstance.getNotificationsController();
     }
 
-    protected NotificationCenter getNotificationCenter() {
+    protected final NotificationCenter getNotificationCenter() {
         return parentAccountInstance.getNotificationCenter();
     }
 
-    protected UserConfig getUserConfig() {
+    protected final UserConfig getUserConfig() {
         return parentAccountInstance.getUserConfig();
     }
 
-    protected MessagesStorage getMessagesStorage() {
+    protected final MessagesStorage getMessagesStorage() {
         return parentAccountInstance.getMessagesStorage();
     }
 
-    protected DownloadController getDownloadController() {
+    protected final DownloadController getDownloadController() {
         return parentAccountInstance.getDownloadController();
     }
 
-    protected SendMessagesHelper getSendMessagesHelper() {
+    protected final SendMessagesHelper getSendMessagesHelper() {
         return parentAccountInstance.getSendMessagesHelper();
     }
 
-    protected SecretChatHelper getSecretChatHelper() {
+    protected final SecretChatHelper getSecretChatHelper() {
         return parentAccountInstance.getSecretChatHelper();
     }
 
-    protected StatsController getStatsController() {
+    protected final StatsController getStatsController() {
         return parentAccountInstance.getStatsController();
     }
 
-    protected FileLoader getFileLoader() {
+    protected final FileLoader getFileLoader() {
         return parentAccountInstance.getFileLoader();
     }
 
-    protected FileRefController getFileRefController() {
+    protected final FileRefController getFileRefController() {
         return parentAccountInstance.getFileRefController();
+    }
+
+    protected final TonController getTonController() {
+        return parentAccountInstance.getTonController();
     }
 }

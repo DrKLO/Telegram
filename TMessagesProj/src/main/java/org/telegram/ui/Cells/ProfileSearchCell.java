@@ -229,7 +229,7 @@ public class ProfileSearchCell extends BaseCell {
                 nameLockLeft = getMeasuredWidth() - AndroidUtilities.dp(AndroidUtilities.leftBaseline + 2) - Theme.dialogs_lockDrawable.getIntrinsicWidth();
                 nameLeft = AndroidUtilities.dp(11);
             }
-            nameLockTop = AndroidUtilities.dp(20.5f);
+            nameLockTop = AndroidUtilities.dp(22.0f);
         } else {
             if (chat != null) {
                 dialog_id = -chat.id;
@@ -385,18 +385,26 @@ public class ProfileSearchCell extends BaseCell {
         } else {
             if (chat != null) {
                 if (ChatObject.isChannel(chat) && !chat.megagroup) {
-                    if (TextUtils.isEmpty(chat.username)) {
-                        statusString = LocaleController.getString("ChannelPrivate", R.string.ChannelPrivate).toLowerCase();
+                    if (chat.participants_count != 0) {
+                        statusString = LocaleController.formatPluralString("Subscribers", chat.participants_count);
                     } else {
-                        statusString = LocaleController.getString("ChannelPublic", R.string.ChannelPublic).toLowerCase();
+                        if (TextUtils.isEmpty(chat.username)) {
+                            statusString = LocaleController.getString("ChannelPrivate", R.string.ChannelPrivate).toLowerCase();
+                        } else {
+                            statusString = LocaleController.getString("ChannelPublic", R.string.ChannelPublic).toLowerCase();
+                        }
                     }
                 } else {
-                    if (chat.has_geo) {
-                        statusString = LocaleController.getString("MegaLocation", R.string.MegaLocation);
-                    } else if (TextUtils.isEmpty(chat.username)) {
-                        statusString = LocaleController.getString("MegaPrivate", R.string.MegaPrivate).toLowerCase();
+                    if (chat.participants_count != 0) {
+                        statusString = LocaleController.formatPluralString("Members", chat.participants_count);
                     } else {
-                        statusString = LocaleController.getString("MegaPublic", R.string.MegaPublic).toLowerCase();
+                        if (chat.has_geo) {
+                            statusString = LocaleController.getString("MegaLocation", R.string.MegaLocation);
+                        } else if (TextUtils.isEmpty(chat.username)) {
+                            statusString = LocaleController.getString("MegaPrivate", R.string.MegaPrivate).toLowerCase();
+                        } else {
+                            statusString = LocaleController.getString("MegaPublic", R.string.MegaPublic).toLowerCase();
+                        }
                     }
                 }
             }

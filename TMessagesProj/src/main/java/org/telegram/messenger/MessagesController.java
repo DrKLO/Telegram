@@ -24,6 +24,8 @@ import android.util.SparseBooleanArray;
 import android.util.SparseIntArray;
 import android.widget.Toast;
 
+import androidx.core.app.NotificationManagerCompat;
+
 import org.telegram.SQLite.SQLiteCursor;
 import org.telegram.messenger.support.SparseLongArray;
 import org.telegram.messenger.voip.VoIPService;
@@ -48,8 +50,6 @@ import java.util.HashMap;
 import java.util.Locale;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
-
-import androidx.core.app.NotificationManagerCompat;
 
 public class MessagesController extends BaseController implements NotificationCenter.NotificationCenterDelegate {
 
@@ -209,11 +209,10 @@ public class MessagesController extends BaseController implements NotificationCe
     private boolean offlineSent;
     private String uploadingAvatar;
 
-    private HashMap<String, Theme.ThemeInfo> uploadingThemes = new HashMap<>();
+    private HashMap<String, Object> uploadingThemes = new HashMap<>();
 
     private String uploadingWallpaper;
-    private boolean uploadingWallpaperBlurred;
-    private boolean uploadingWallpaperMotion;
+    private Theme.OverrideWallpaperInfo uploadingWallpaperInfo;
 
     private boolean loadingAppConfig;
 
@@ -243,8 +242,10 @@ public class MessagesController extends BaseController implements NotificationCe
     public int maxMessageLength;
     public int maxCaptionLength;
     public boolean blockedCountry;
-    public boolean defaultP2pContacts;
     public boolean preloadFeaturedStickers;
+    public String youtubePipType;
+    public boolean keepAliveService;
+    public boolean backgroundConnection;
     public float animatedEmojisZoom;
     public String venueSearchBot;
     public String gifSearchBot;
@@ -252,6 +253,7 @@ public class MessagesController extends BaseController implements NotificationCe
     public String dcDomainName;
     public int webFileDatacenterId;
     public String suggestedLangCode;
+    public boolean qrLoginCamera;
     private String installReferer;
 
     private SharedPreferences notificationsPreferences;
@@ -317,10 +319,9 @@ public class MessagesController extends BaseController implements NotificationCe
                 return 0;
             }
         }
-        TLRPC.DraftMessage draftMessage = getMediaDataController().getDraft(dialog1.id);
-        int date1 = draftMessage != null && draftMessage.date >= dialog1.last_message_date ? draftMessage.date : dialog1.last_message_date;
-        draftMessage = getMediaDataController().getDraft(dialog2.id);
-        int date2 = draftMessage != null && draftMessage.date >= dialog2.last_message_date ? draftMessage.date : dialog2.last_message_date;
+        final MediaDataController mediaDataController = getMediaDataController();
+        final long date1 = DialogObject.getLastMessageOrDraftDate(dialog1, mediaDataController.getDraft(dialog1.id));
+        final long date2 = DialogObject.getLastMessageOrDraftDate(dialog2, mediaDataController.getDraft(dialog2.id));
         if (date1 < date2) {
             return 1;
         } else if (date1 > date2) {
@@ -436,11 +437,13 @@ public class MessagesController extends BaseController implements NotificationCe
         availableMapProviders = mainPreferences.getInt("availableMapProviders", 3);
         mapKey = mainPreferences.getString("pk", null);
         installReferer = mainPreferences.getString("installReferer", null);
-        defaultP2pContacts = mainPreferences.getBoolean("defaultP2pContacts", false);
         revokeTimeLimit = mainPreferences.getInt("revokeTimeLimit", revokeTimeLimit);
         revokeTimePmLimit = mainPreferences.getInt("revokeTimePmLimit", revokeTimePmLimit);
         canRevokePmInbox = mainPreferences.getBoolean("canRevokePmInbox", canRevokePmInbox);
         preloadFeaturedStickers = mainPreferences.getBoolean("preloadFeaturedStickers", false);
+        youtubePipType = mainPreferences.getString("youtubePipType", "disabled");
+        keepAliveService = mainPreferences.getBoolean("keepAliveService", false);
+        backgroundConnection = mainPreferences.getBoolean("keepAliveService", false);
         proxyDialogId = mainPreferences.getLong("proxy_dialog", 0);
         proxyDialogAddress = mainPreferences.getString("proxyDialogAddress", null);
         nextTosCheckTime = notificationsPreferences.getInt("nextTosCheckTime", 0);
@@ -452,6 +455,7 @@ public class MessagesController extends BaseController implements NotificationCe
         webFileDatacenterId = mainPreferences.getInt("webFileDatacenterId", ConnectionsManager.native_isTestBackend(currentAccount) != 0 ? 2 : 4);
         suggestedLangCode = mainPreferences.getString("suggestedLangCode", "en");
         animatedEmojisZoom = mainPreferences.getFloat("animatedEmojisZoom", 0.625f);
+        qrLoginCamera = mainPreferences.getBoolean("qrLoginCamera", false);
     }
 
     private void loadAppConfig() {
@@ -464,20 +468,90 @@ public class MessagesController extends BaseController implements NotificationCe
             if (response instanceof TLRPC.TL_jsonObject) {
                 SharedPreferences.Editor editor = mainPreferences.edit();
                 boolean changed = false;
+                boolean keelAliveChanged = false;
+                boolean walletConfigUpdated = false;
                 TLRPC.TL_jsonObject object = (TLRPC.TL_jsonObject) response;
                 for (int a = 0, N = object.value.size(); a < N; a++) {
                     TLRPC.TL_jsonObjectValue value = object.value.get(a);
-                    if ("emojies_animated_zoom".equals(value.key) && value.value instanceof TLRPC.TL_jsonNumber) {
-                        TLRPC.TL_jsonNumber number = (TLRPC.TL_jsonNumber) value.value;
-                        if (animatedEmojisZoom != number.value) {
-                            animatedEmojisZoom = (float) number.value;
-                            editor.putFloat("animatedEmojisZoom", animatedEmojisZoom);
-                            changed = true;
+                    if ("emojies_animated_zoom".equals(value.key)) {
+                        if (value.value instanceof TLRPC.TL_jsonNumber) {
+                            TLRPC.TL_jsonNumber number = (TLRPC.TL_jsonNumber) value.value;
+                            if (animatedEmojisZoom != number.value) {
+                                animatedEmojisZoom = (float) number.value;
+                                editor.putFloat("animatedEmojisZoom", animatedEmojisZoom);
+                                changed = true;
+                            }
+                        }
+                    } /*else if ("wallet_config".equals(value.key)) {
+                        if (value.value instanceof TLRPC.TL_jsonString) {
+                            UserConfig userConfig = getUserConfig();
+                            TLRPC.TL_jsonString string = (TLRPC.TL_jsonString) value.value;
+                            if (!string.value.equals(userConfig.walletConfig)) {
+                                userConfig.walletConfig = string.value;
+                                walletConfigUpdated = true;
+                            }
+                        }
+                    } else if ("wallet_blockchain_name".equals(value.key)) {
+                        if (value.value instanceof TLRPC.TL_jsonString) {
+                            UserConfig userConfig = getUserConfig();
+                            TLRPC.TL_jsonString string = (TLRPC.TL_jsonString) value.value;
+                            if (!string.value.equals(userConfig.walletBlockchainName)) {
+                                userConfig.walletBlockchainName = string.value;
+                                walletConfigUpdated = true;
+                            }
+                        }
+                    } */else if ("youtube_pip".equals(value.key)) {
+                        if (value.value instanceof TLRPC.TL_jsonString) {
+                            TLRPC.TL_jsonString string = (TLRPC.TL_jsonString) value.value;
+                            if (!string.value.equals(youtubePipType)) {
+                                youtubePipType = string.value;
+                                editor.putString("youtubePipType", youtubePipType);
+                                changed = true;
+                            }
+                        }
+                    } else if ("background_connection".equals(value.key)) {
+                        if (value.value instanceof TLRPC.TL_jsonBool) {
+                            TLRPC.TL_jsonBool bool = (TLRPC.TL_jsonBool) value.value;
+                            if (bool.value != backgroundConnection) {
+                                backgroundConnection = bool.value;
+                                editor.putBoolean("backgroundConnection", backgroundConnection);
+                                changed = true;
+                                keelAliveChanged = true;
+                            }
+                        }
+                    } else if ("keep_alive_service".equals(value.key)) {
+                        if (value.value instanceof TLRPC.TL_jsonBool) {
+                            TLRPC.TL_jsonBool bool = (TLRPC.TL_jsonBool) value.value;
+                            if (bool.value != keepAliveService) {
+                                keepAliveService = bool.value;
+                                editor.putBoolean("keepAliveService", keepAliveService);
+                                changed = true;
+                                keelAliveChanged = true;
+                            }
+                        }
+                    } else if ("qr_login_camera".equals(value.key)) {
+                        if (value.value instanceof TLRPC.TL_jsonBool) {
+                            TLRPC.TL_jsonBool bool = (TLRPC.TL_jsonBool) value.value;
+                            if (bool.value != qrLoginCamera) {
+                                qrLoginCamera = bool.value;
+                                editor.putBoolean("qrLoginCamera", qrLoginCamera);
+                                changed = true;
+                            }
                         }
                     }
                 }
                 if (changed) {
                     editor.commit();
+                }
+                if (walletConfigUpdated) {
+                    getTonController().onTonConfigUpdated();
+                    getUserConfig().saveConfig(false);
+                    getNotificationCenter().postNotificationName(NotificationCenter.mainUserInfoChanged);
+                }
+                if (keelAliveChanged) {
+                    ApplicationLoader.startPushService();
+                    ConnectionsManager connectionsManager = getConnectionsManager();
+                    connectionsManager.setPushConnectionEnabled(connectionsManager.isPushConnectionEnabled());
                 }
             }
             loadingAppConfig = false;
@@ -515,7 +589,6 @@ public class MessagesController extends BaseController implements NotificationCe
             maxFolderPinnedDialogsCount = config.pinned_infolder_count_max;
             maxMessageLength = config.message_length_max;
             maxCaptionLength = config.caption_length_max;
-            defaultP2pContacts = config.default_p2p_contacts;
             preloadFeaturedStickers = config.preload_featured_stickers;
             if (config.venue_search_username != null) {
                 venueSearchBot = config.venue_search_username;
@@ -529,7 +602,7 @@ public class MessagesController extends BaseController implements NotificationCe
             blockedCountry = config.blocked_mode;
             dcDomainName = config.dc_txt_domain_name;
             webFileDatacenterId = config.webfile_dc_id;
-            if (suggestedLangCode == null || !suggestedLangCode.equals(config.suggested_lang_code)) {
+            if (config.suggested_lang_code != null && (suggestedLangCode == null || !suggestedLangCode.equals(config.suggested_lang_code))) {
                 suggestedLangCode = config.suggested_lang_code;
                 LocaleController.getInstance().loadRemoteLanguages(currentAccount);
             }
@@ -537,12 +610,13 @@ public class MessagesController extends BaseController implements NotificationCe
             Theme.checkCurrentRemoteTheme(false);
 
             if (config.static_maps_provider == null) {
-                config.static_maps_provider = "google";
+                config.static_maps_provider = "telegram";
             }
 
             mapKey = null;
-            mapProvider = 0;
+            mapProvider = 2;
             availableMapProviders = 0;
+            FileLog.d("map providers = " + config.static_maps_provider);
             String[] providers = config.static_maps_provider.split(",");
             for (int a = 0; a < providers.length; a++) {
                 String[] mapArgs = providers[a].split("\\+");
@@ -595,7 +669,6 @@ public class MessagesController extends BaseController implements NotificationCe
             editor.putInt("maxFolderPinnedDialogsCount", maxFolderPinnedDialogsCount);
             editor.putInt("maxMessageLength", maxMessageLength);
             editor.putInt("maxCaptionLength", maxCaptionLength);
-            editor.putBoolean("defaultP2pContacts", defaultP2pContacts);
             editor.putBoolean("preloadFeaturedStickers", preloadFeaturedStickers);
             editor.putInt("revokeTimeLimit", revokeTimeLimit);
             editor.putInt("revokeTimePmLimit", revokeTimePmLimit);
@@ -769,12 +842,12 @@ public class MessagesController extends BaseController implements NotificationCe
                 req.file = file;
                 req.mime_type = "image/jpeg";
                 final TLRPC.TL_wallPaperSettings settings = new TLRPC.TL_wallPaperSettings();
-                settings.blur = uploadingWallpaperBlurred;
-                settings.motion = uploadingWallpaperMotion;
+                settings.blur = uploadingWallpaperInfo.isBlurred;
+                settings.motion = uploadingWallpaperInfo.isMotion;
                 req.settings = settings;
                 getConnectionsManager().sendRequest(req, (response, error) -> {
                     TLRPC.TL_wallPaper wallPaper = (TLRPC.TL_wallPaper) response;
-                    File path = new File(ApplicationLoader.getFilesDirFixed(), uploadingWallpaperBlurred ? "wallpaper_original.jpg" : "wallpaper.jpg");
+                    File path = new File(ApplicationLoader.getFilesDirFixed(), uploadingWallpaperInfo.originalFileName);
                     if (wallPaper != null) {
                         try {
                             AndroidUtilities.copyFile(path, FileLoader.getPathToAttach(wallPaper.document, true));
@@ -786,11 +859,8 @@ public class MessagesController extends BaseController implements NotificationCe
                         if (uploadingWallpaper != null && wallPaper != null) {
                             wallPaper.settings = settings;
                             wallPaper.flags |= 4;
-                            SharedPreferences preferences = getGlobalMainSettings();
-                            SharedPreferences.Editor editor = preferences.edit();
-                            editor.putLong("selectedBackground2", wallPaper.id);
-                            editor.putString("selectedBackgroundSlug", wallPaper.slug);
-                            editor.commit();
+                            uploadingWallpaperInfo.slug = wallPaper.slug;
+                            uploadingWallpaperInfo.saveOverrideWallpaper();
                             ArrayList<TLRPC.WallPaper> wallpapers = new ArrayList<>();
                             wallpapers.add(wallPaper);
                             getMessagesStorage().putWallpapers(wallpapers, 2);
@@ -800,13 +870,20 @@ public class MessagesController extends BaseController implements NotificationCe
                                 String oldKey = Utilities.MD5(path.getAbsolutePath()) + "@100_100";
                                 ImageLoader.getInstance().replaceImageInCache(oldKey, newKey, ImageLocation.getForDocument(image, wallPaper.document), false);
                             }
-                            NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.wallpapersNeedReload, wallPaper.id);
+                            NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.wallpapersNeedReload, wallPaper.slug);
                         }
                     });
                 });
             } else {
-                Theme.ThemeInfo themeInfo = uploadingThemes.get(location);
-                if (themeInfo != null) {
+                Object object = uploadingThemes.get(location);
+                Theme.ThemeInfo themeInfo;
+                Theme.ThemeAccent accent;
+
+                TLRPC.InputFile uploadedThumb;
+                TLRPC.InputFile uploadedFile;
+                if (object instanceof Theme.ThemeInfo) {
+                    themeInfo = (Theme.ThemeInfo) object;
+                    accent = null;
                     if (location.equals(themeInfo.uploadingThumb)) {
                         themeInfo.uploadedThumb = file;
                         themeInfo.uploadingThumb = null;
@@ -814,74 +891,148 @@ public class MessagesController extends BaseController implements NotificationCe
                         themeInfo.uploadedFile = file;
                         themeInfo.uploadingFile = null;
                     }
+                    uploadedThumb = themeInfo.uploadedThumb;
+                    uploadedFile = themeInfo.uploadedFile;
+                } else if (object instanceof Theme.ThemeAccent) {
+                    accent = (Theme.ThemeAccent) object;
+                    if (location.equals(accent.uploadingThumb)) {
+                        accent.uploadedThumb = file;
+                        accent.uploadingThumb = null;
+                    } else if (location.equals(accent.uploadingFile)) {
+                        accent.uploadedFile = file;
+                        accent.uploadingFile = null;
+                    }
+                    themeInfo = accent.parentTheme;
+                    uploadedThumb = accent.uploadedThumb;
+                    uploadedFile = accent.uploadedFile;
+                } else {
+                    themeInfo = null;
+                    accent = null;
+                    uploadedThumb = null;
+                    uploadedFile = null;
+                }
+                uploadingThemes.remove(location);
 
-                    if (themeInfo.uploadedFile != null && themeInfo.uploadedThumb != null) {
-                        File f = new File(location);
-                        TLRPC.TL_account_uploadTheme req = new TLRPC.TL_account_uploadTheme();
-                        req.mime_type = "application/x-tgtheme-android";
-                        req.file_name = "theme.attheme";
-                        req.file = themeInfo.uploadedFile;
-                        req.file.name = "theme.attheme";
-                        req.thumb = themeInfo.uploadedThumb;
-                        req.thumb.name = "theme-preview.jpg";
-                        req.flags |= 1;
+                if (uploadedFile != null && uploadedThumb != null) {
+                    File f = new File(location);
+                    TLRPC.TL_account_uploadTheme req = new TLRPC.TL_account_uploadTheme();
+                    req.mime_type = "application/x-tgtheme-android";
+                    req.file_name = "theme.attheme";
+                    req.file = uploadedFile;
+                    req.file.name = "theme.attheme";
+                    req.thumb = uploadedThumb;
+                    req.thumb.name = "theme-preview.jpg";
+                    req.flags |= 1;
+                    TLRPC.TL_theme info;
+                    TLRPC.TL_inputThemeSettings settings;
+                    if (accent != null) {
+                        accent.uploadedFile = null;
+                        accent.uploadedThumb = null;
+                        info = accent.info;
+                        settings = new TLRPC.TL_inputThemeSettings();
+                        settings.base_theme = Theme.getBaseThemeByKey(themeInfo.name);
+                        settings.accent_color = accent.accentColor;
+                        if (accent.myMessagesAccentColor != 0) {
+                            settings.message_bottom_color = accent.myMessagesAccentColor;
+                            settings.flags |= 1;
+                        }
+                        if (accent.myMessagesGradientAccentColor != 0) {
+                            settings.message_top_color = accent.myMessagesGradientAccentColor;
+                            settings.flags |= 1;
+                        } else if (settings.message_bottom_color != 0) {
+                            settings.message_top_color = settings.message_bottom_color;
+                        }
+                        settings.flags |= 2;
+                        settings.wallpaper_settings = new TLRPC.TL_wallPaperSettings();
+                        if (!TextUtils.isEmpty(accent.patternSlug)) {
+                            TLRPC.TL_inputWallPaperSlug inputWallPaperSlug = new TLRPC.TL_inputWallPaperSlug();
+                            inputWallPaperSlug.slug = accent.patternSlug;
+                            settings.wallpaper = inputWallPaperSlug;
+                            settings.wallpaper_settings.intensity = (int) (accent.patternIntensity * 100);
+                            settings.wallpaper_settings.flags |= 8;
+                        } else {
+                            settings.wallpaper = new TLRPC.TL_inputWallPaperNoFile();
+                        }
+                        settings.wallpaper_settings.motion = accent.patternMotion;
+                        if (accent.backgroundOverrideColor != 0) {
+                            settings.wallpaper_settings.background_color = (int) accent.backgroundOverrideColor;
+                            settings.wallpaper_settings.flags |= 1;
+                        }
+                        if (accent.backgroundGradientOverrideColor != 0) {
+                            settings.wallpaper_settings.second_background_color = (int) accent.backgroundGradientOverrideColor;
+                            settings.wallpaper_settings.flags |= 16;
+                            settings.wallpaper_settings.rotation = AndroidUtilities.getWallpaperRotation(accent.backgroundRotation, true);
+                        }
+                    } else {
                         themeInfo.uploadedFile = null;
                         themeInfo.uploadedThumb = null;
-                        getConnectionsManager().sendRequest(req, (response, error) -> {
-                            int index = themeInfo.name.lastIndexOf(".attheme");
-                            String n = index > 0 ? themeInfo.name.substring(0, index) : themeInfo.name;
-                            if (response != null) {
-                                TLRPC.Document document = (TLRPC.Document) response;
-                                TLRPC.TL_inputDocument inputDocument = new TLRPC.TL_inputDocument();
-                                inputDocument.access_hash = document.access_hash;
-                                inputDocument.id = document.id;
-                                inputDocument.file_reference = document.file_reference;
-                                if (themeInfo.info == null || !themeInfo.info.creator) {
-                                    TLRPC.TL_account_createTheme req2 = new TLRPC.TL_account_createTheme();
-                                    req2.document = inputDocument;
-                                    req2.slug = themeInfo.info != null && !TextUtils.isEmpty(themeInfo.info.slug) ? themeInfo.info.slug : "";
-                                    req2.title = n;
-                                    getConnectionsManager().sendRequest(req2, (response1, error1) -> AndroidUtilities.runOnUIThread(() -> {
-                                        if (response1 instanceof TLRPC.TL_theme) {
-                                            Theme.setThemeUploadInfo(themeInfo, (TLRPC.TL_theme) response1, false);
-                                            installTheme(themeInfo, themeInfo == Theme.getCurrentNightTheme());
-                                            getNotificationCenter().postNotificationName(NotificationCenter.themeUploadedToServer, themeInfo);
-                                        } else {
-                                            getNotificationCenter().postNotificationName(NotificationCenter.themeUploadError, themeInfo);
-                                        }
-                                    }));
-                                } else {
-                                    TLRPC.TL_account_updateTheme req2 = new TLRPC.TL_account_updateTheme();
-                                    TLRPC.TL_inputTheme inputTheme = new TLRPC.TL_inputTheme();
-                                    inputTheme.id = themeInfo.info.id;
-                                    inputTheme.access_hash = themeInfo.info.access_hash;
-                                    req2.theme = inputTheme;
-
-                                    req2.slug = themeInfo.info.slug;
-                                    req2.flags |= 1;
-
-                                    req2.title = n;
-                                    req2.flags |= 2;
-
-                                    req2.document = inputDocument;
-                                    req2.flags |= 4;
-
-                                    req2.format = "android";
-                                    getConnectionsManager().sendRequest(req2, (response1, error1) -> AndroidUtilities.runOnUIThread(() -> {
-                                        if (response1 instanceof TLRPC.TL_theme) {
-                                            Theme.setThemeUploadInfo(themeInfo, (TLRPC.TL_theme) response1, false);
-                                            getNotificationCenter().postNotificationName(NotificationCenter.themeUploadedToServer, themeInfo);
-                                        } else {
-                                            getNotificationCenter().postNotificationName(NotificationCenter.themeUploadError, themeInfo);
-                                        }
-                                    }));
-                                }
-                            } else {
-                                AndroidUtilities.runOnUIThread(() -> getNotificationCenter().postNotificationName(NotificationCenter.themeUploadError, themeInfo));
-                            }
-                        });
+                        info = themeInfo.info;
+                        settings = null;
                     }
-                    uploadingThemes.remove(location);
+                    getConnectionsManager().sendRequest(req, (response, error) -> {
+                        String title = info != null ? info.title : themeInfo.getName();
+                        int index = title.lastIndexOf(".attheme");
+                        String n = index > 0 ? title.substring(0, index) : title;
+                        if (response != null) {
+                            TLRPC.Document document = (TLRPC.Document) response;
+                            TLRPC.TL_inputDocument inputDocument = new TLRPC.TL_inputDocument();
+                            inputDocument.access_hash = document.access_hash;
+                            inputDocument.id = document.id;
+                            inputDocument.file_reference = document.file_reference;
+                            if (info == null || !info.creator) {
+                                TLRPC.TL_account_createTheme req2 = new TLRPC.TL_account_createTheme();
+                                req2.document = inputDocument;
+                                req2.flags |= 4;
+                                req2.slug = info != null && !TextUtils.isEmpty(info.slug) ? info.slug : "";
+                                req2.title = n;
+                                if (settings != null) {
+                                    req2.settings = settings;
+                                    req2.flags |= 8;
+                                }
+                                getConnectionsManager().sendRequest(req2, (response1, error1) -> AndroidUtilities.runOnUIThread(() -> {
+                                    if (response1 instanceof TLRPC.TL_theme) {
+                                        Theme.setThemeUploadInfo(themeInfo, accent, (TLRPC.TL_theme) response1, currentAccount, false);
+                                        installTheme(themeInfo, accent, themeInfo == Theme.getCurrentNightTheme());
+                                        getNotificationCenter().postNotificationName(NotificationCenter.themeUploadedToServer, themeInfo, accent);
+                                    } else {
+                                        getNotificationCenter().postNotificationName(NotificationCenter.themeUploadError, themeInfo, accent);
+                                    }
+                                }));
+                            } else {
+                                TLRPC.TL_account_updateTheme req2 = new TLRPC.TL_account_updateTheme();
+                                TLRPC.TL_inputTheme inputTheme = new TLRPC.TL_inputTheme();
+                                inputTheme.id = info.id;
+                                inputTheme.access_hash = info.access_hash;
+                                req2.theme = inputTheme;
+
+                                req2.slug = info.slug;
+                                req2.flags |= 1;
+
+                                req2.title = n;
+                                req2.flags |= 2;
+
+                                req2.document = inputDocument;
+                                req2.flags |= 4;
+
+                                if (settings != null) {
+                                    req2.settings = settings;
+                                    req2.flags |= 8;
+                                }
+
+                                req2.format = "android";
+                                getConnectionsManager().sendRequest(req2, (response1, error1) -> AndroidUtilities.runOnUIThread(() -> {
+                                    if (response1 instanceof TLRPC.TL_theme) {
+                                        Theme.setThemeUploadInfo(themeInfo, accent, (TLRPC.TL_theme) response1, currentAccount, false);
+                                        getNotificationCenter().postNotificationName(NotificationCenter.themeUploadedToServer, themeInfo, accent);
+                                    } else {
+                                        getNotificationCenter().postNotificationName(NotificationCenter.themeUploadError, themeInfo, accent);
+                                    }
+                                }));
+                            }
+                        } else {
+                            AndroidUtilities.runOnUIThread(() -> getNotificationCenter().postNotificationName(NotificationCenter.themeUploadError, themeInfo, accent));
+                        }
+                    });
                 }
             }
         } else if (id == NotificationCenter.FileDidFailUpload) {
@@ -890,11 +1041,18 @@ public class MessagesController extends BaseController implements NotificationCe
                 uploadingAvatar = null;
             } else if (uploadingWallpaper != null && uploadingWallpaper.equals(location)) {
                 uploadingWallpaper = null;
+                uploadingWallpaperInfo = null;
             } else {
-                Theme.ThemeInfo themeInfo = uploadingThemes.remove(location);
-                if (themeInfo != null) {
+                Object object = uploadingThemes.remove(location);
+                if (object instanceof Theme.ThemeInfo) {
+                    Theme.ThemeInfo themeInfo = (Theme.ThemeInfo) object;
                     themeInfo.uploadedFile = null;
                     themeInfo.uploadedThumb = null;
+                    getNotificationCenter().postNotificationName(NotificationCenter.themeUploadError, themeInfo, null);
+                } else if (object instanceof Theme.ThemeAccent) {
+                    Theme.ThemeAccent accent = (Theme.ThemeAccent) object;
+                    accent.uploadingThumb = null;
+                    getNotificationCenter().postNotificationName(NotificationCenter.themeUploadError, accent.parentTheme, accent);
                 }
             }
         } else if (id == NotificationCenter.messageReceivedByServer) {
@@ -951,6 +1109,7 @@ public class MessagesController extends BaseController implements NotificationCe
         getSecretChatHelper().cleanup();
         getLocationController().cleanup();
         getMediaDataController().cleanup();
+        getTonController().cleanup();
 
         DialogsActivity.dialogsLoaded[currentAccount] = false;
 
@@ -959,7 +1118,7 @@ public class MessagesController extends BaseController implements NotificationCe
         editor = emojiPreferences.edit();
         editor.putLong("lastGifLoadTime", 0).putLong("lastStickersLoadTime", 0).putLong("lastStickersLoadTimeMask", 0).putLong("lastStickersLoadTimeFavs", 0).commit();
         editor = mainPreferences.edit();
-        editor.remove("archivehint").remove("archivehint_l").remove("gifhint").remove("soundHint").remove("dcDomainName2").remove("webFileDatacenterId").commit();
+        editor.remove("archivehint").remove("archivehint_l").remove("gifhint").remove("soundHint").remove("dcDomainName2").remove("webFileDatacenterId").remove("themehint").commit();
 
         lastScheduledServerQueryTime.clear();
         reloadingWebpages.clear();
@@ -1065,6 +1224,7 @@ public class MessagesController extends BaseController implements NotificationCe
         getDifferenceFirstSync = true;
         uploadingAvatar = null;
         uploadingWallpaper = null;
+        uploadingWallpaperInfo = null;
         uploadingThemes.clear();
         statusRequest = 0;
         statusSettingState = 0;
@@ -2220,6 +2380,9 @@ public class MessagesController extends BaseController implements NotificationCe
         } else {
             getMediaDataController().removePeer(user_id);
         }
+        if (totalBlockedCount >= 0) {
+            totalBlockedCount++;
+        }
         getNotificationCenter().postNotificationName(NotificationCenter.blockedUsersDidLoad);
         TLRPC.TL_contacts_block req = new TLRPC.TL_contacts_block();
         req.id = getInputUser(user);
@@ -2320,6 +2483,7 @@ public class MessagesController extends BaseController implements NotificationCe
         if (user == null) {
             return;
         }
+        totalBlockedCount--;
         blockedUsers.delete(user.id);
         req.id = getInputUser(user);
         getNotificationCenter().postNotificationName(NotificationCenter.blockedUsersDidLoad);
@@ -2426,31 +2590,38 @@ public class MessagesController extends BaseController implements NotificationCe
         getFileLoader().uploadFile(uploadingAvatar, false, true, ConnectionsManager.FileTypePhoto);
     }
 
-    public void saveTheme(Theme.ThemeInfo themeInfo, boolean night, boolean unsave) {
-        if (themeInfo.info != null) {
+    public void saveTheme(Theme.ThemeInfo themeInfo, Theme.ThemeAccent accent, boolean night, boolean unsave) {
+        TLRPC.TL_theme info = accent != null ? accent.info : themeInfo.info;
+        if (info != null) {
             TLRPC.TL_account_saveTheme req = new TLRPC.TL_account_saveTheme();
             TLRPC.TL_inputTheme inputTheme = new TLRPC.TL_inputTheme();
-            inputTheme.id = themeInfo.info.id;
-            inputTheme.access_hash = themeInfo.info.access_hash;
+            inputTheme.id = info.id;
+            inputTheme.access_hash = info.access_hash;
             req.theme = inputTheme;
             req.unsave = unsave;
             getConnectionsManager().sendRequest(req, (response, error) -> {
 
             });
+            getConnectionsManager().resumeNetworkMaybe();
         }
         if (!unsave) {
-            installTheme(themeInfo, night);
+            installTheme(themeInfo, accent, night);
         }
     }
 
-    public void installTheme(Theme.ThemeInfo themeInfo, boolean night) {
+    public void installTheme(Theme.ThemeInfo themeInfo, Theme.ThemeAccent accent, boolean night) {
+        TLRPC.TL_theme info = accent != null ? accent.info : themeInfo.info;
+        String slug = accent != null ? accent.patternSlug : themeInfo.slug;
+        boolean isBlured = accent == null && themeInfo.isBlured;
+        boolean isMotion = accent != null ? accent.patternMotion : themeInfo.isMotion;
+
         TLRPC.TL_account_installTheme req = new TLRPC.TL_account_installTheme();
         req.dark = night;
-        if (themeInfo.info != null) {
+        if (info != null) {
             req.format = "android";
             TLRPC.TL_inputTheme inputTheme = new TLRPC.TL_inputTheme();
-            inputTheme.id = themeInfo.info.id;
-            inputTheme.access_hash = themeInfo.info.access_hash;
+            inputTheme.id = info.id;
+            inputTheme.access_hash = info.access_hash;
             req.theme = inputTheme;
             req.flags |= 2;
         }
@@ -2458,77 +2629,93 @@ public class MessagesController extends BaseController implements NotificationCe
 
         });
 
-        if (!TextUtils.isEmpty(themeInfo.slug)) {
+        if (!TextUtils.isEmpty(slug)) {
             TLRPC.TL_account_installWallPaper req2 = new TLRPC.TL_account_installWallPaper();
             TLRPC.TL_inputWallPaperSlug inputWallPaperSlug = new TLRPC.TL_inputWallPaperSlug();
-            inputWallPaperSlug.slug = themeInfo.slug;
+            inputWallPaperSlug.slug = slug;
             req2.wallpaper = inputWallPaperSlug;
             req2.settings = new TLRPC.TL_wallPaperSettings();
-            req2.settings.blur = themeInfo.isBlured;
-            req2.settings.motion = themeInfo.isMotion;
+            req2.settings.blur = isBlured;
+            req2.settings.motion = isMotion;
             getConnectionsManager().sendRequest(req2, (response, error) -> {
 
             });
         }
     }
 
-    public void saveThemeToServer(Theme.ThemeInfo themeInfo) {
+    public void saveThemeToServer(Theme.ThemeInfo themeInfo, Theme.ThemeAccent accent) {
         if (themeInfo == null) {
             return;
         }
-        if (uploadingThemes.containsKey(themeInfo.pathToFile)) {
+        String key;
+        File pathToWallpaper;
+        if (accent != null) {
+            key = accent.saveToFile().getAbsolutePath();
+            pathToWallpaper = accent.getPathToWallpaper();
+        } else {
+            key = themeInfo.pathToFile;
+            pathToWallpaper = null;
+        }
+        if (key == null) {
             return;
         }
-        uploadingThemes.put(themeInfo.pathToFile, themeInfo);
+        if (uploadingThemes.containsKey(key)) {
+            return;
+        }
+        uploadingThemes.put(key, accent != null ? accent : themeInfo);
         Utilities.globalQueue.postRunnable(() -> {
-            String thumbPath = Theme.createThemePreviewImage(themeInfo);
+            String thumbPath = Theme.createThemePreviewImage(key, pathToWallpaper != null ? pathToWallpaper.getAbsolutePath() : null);
             AndroidUtilities.runOnUIThread(() -> {
                 if (thumbPath == null) {
-                    uploadingThemes.remove(themeInfo.pathToFile);
+                    uploadingThemes.remove(key);
                     return;
                 }
-                themeInfo.uploadingFile = themeInfo.pathToFile;
-                themeInfo.uploadingThumb = thumbPath;
-                uploadingThemes.put(thumbPath, themeInfo);
-                File f = new File(themeInfo.pathToFile);
-                long l = f.length();
-                File f2 = new File(thumbPath);
-                long l2 = f2.length();
-                getFileLoader().uploadFile(themeInfo.pathToFile, false, true, ConnectionsManager.FileTypeFile);
+                uploadingThemes.put(thumbPath, accent != null ? accent : themeInfo);
+                if (accent == null) {
+                    themeInfo.uploadingFile = key;
+                    themeInfo.uploadingThumb = thumbPath;
+                } else {
+                    accent.uploadingFile = key;
+                    accent.uploadingThumb = thumbPath;
+                }
+                getFileLoader().uploadFile(key, false, true, ConnectionsManager.FileTypeFile);
                 getFileLoader().uploadFile(thumbPath, false, true, ConnectionsManager.FileTypePhoto);
             });
         });
     }
 
-    public void saveWallpaperToServer(File path, long wallPaperId, String slug, long accessHash, boolean isBlurred, boolean isMotion, int backgroundColor, float intesity, boolean install, long taskId) {
+    public void saveWallpaperToServer(File path, Theme.OverrideWallpaperInfo info, boolean install, long taskId) {
         if (uploadingWallpaper != null) {
-            File finalPath = new File(ApplicationLoader.getFilesDirFixed(), uploadingWallpaperBlurred ? "wallpaper_original.jpg" : "wallpaper.jpg");
+            File finalPath = new File(ApplicationLoader.getFilesDirFixed(), info.originalFileName);
             if (path != null && (path.getAbsolutePath().equals(uploadingWallpaper) || path.equals(finalPath))) {
-                uploadingWallpaperMotion = isMotion;
-                uploadingWallpaperBlurred = isBlurred;
+                uploadingWallpaperInfo = info;
                 return;
             }
             getFileLoader().cancelUploadFile(uploadingWallpaper, false);
             uploadingWallpaper = null;
+            uploadingWallpaperInfo = null;
         }
         if (path != null) {
             uploadingWallpaper = path.getAbsolutePath();
-            uploadingWallpaperMotion = isMotion;
-            uploadingWallpaperBlurred = isBlurred;
+            uploadingWallpaperInfo = info;
             getFileLoader().uploadFile(uploadingWallpaper, false, true, ConnectionsManager.FileTypePhoto);
-        } else if (accessHash != 0) {
-            TLRPC.TL_inputWallPaper inputWallPaper = new TLRPC.TL_inputWallPaper();
-            inputWallPaper.id = wallPaperId;
-            inputWallPaper.access_hash = accessHash;
+        } else if (!info.isDefault() && !info.isColor() && !info.isTheme()) {
+            TLRPC.TL_inputWallPaperSlug inputWallPaper = new TLRPC.TL_inputWallPaperSlug();
+            inputWallPaper.slug = info.slug;
 
             TLRPC.TL_wallPaperSettings settings = new TLRPC.TL_wallPaperSettings();
-            settings.blur = isBlurred;
-            settings.motion = isMotion;
-            if (backgroundColor != 0) {
-                settings.background_color = backgroundColor;
+            settings.blur = info.isBlurred;
+            settings.motion = info.isMotion;
+            if (info.color != 0) {
+                settings.background_color = info.color;
                 settings.flags |= 1;
-                settings.intensity = (int) (intesity * 100);
+                settings.intensity = (int) (info.intensity * 100);
                 settings.flags |= 8;
+            }
+            if (info.gradientColor != 0) {
+                settings.second_background_color = info.gradientColor;
+                settings.rotation = AndroidUtilities.getWallpaperRotation(info.rotation, true);
+                settings.flags |= 16;
             }
 
             TLObject req;
@@ -2551,19 +2738,16 @@ public class MessagesController extends BaseController implements NotificationCe
                 NativeByteBuffer data = null;
                 try {
                     data = new NativeByteBuffer(1024);
-                    data.writeInt32(19);
-                    data.writeInt64(wallPaperId);
-                    data.writeInt64(accessHash);
-                    data.writeBool(isBlurred);
-                    data.writeBool(isMotion);
-                    data.writeInt32(backgroundColor);
-                    data.writeDouble(intesity);
+                    data.writeInt32(21);
+                    data.writeBool(info.isBlurred);
+                    data.writeBool(info.isMotion);
+                    data.writeInt32(info.color);
+                    data.writeInt32(info.gradientColor);
+                    data.writeInt32(info.rotation);
+                    data.writeDouble(info.intensity);
                     data.writeBool(install);
-                    if (slug != null) {
-                        data.writeString(slug);
-                    } else {
-                        data.writeString("");
-                    }
+                    data.writeString(info.slug);
+                    data.writeString(info.originalFileName);
                     data.limit(data.position());
                 } catch (Exception e) {
                     FileLog.e(e);
@@ -2571,20 +2755,7 @@ public class MessagesController extends BaseController implements NotificationCe
                 newTaskId = getMessagesStorage().createPendingTask(data);
             }
 
-            getConnectionsManager().sendRequest(req, (response, error) -> {
-                getMessagesStorage().removePendingTask(newTaskId);
-                if (!install && uploadingWallpaper != null) {
-                    SharedPreferences preferences = getGlobalMainSettings();
-                    SharedPreferences.Editor editor = preferences.edit();
-                    editor.putLong("selectedBackground2", wallPaperId);
-                    if (!TextUtils.isEmpty(slug)) {
-                        editor.putString("selectedBackgroundSlug", slug);
-                    } else {
-                        editor.remove("selectedBackgroundSlug");
-                    }
-                    editor.commit();
-                }
-            });
+            getConnectionsManager().sendRequest(req, (response, error) -> getMessagesStorage().removePendingTask(newTaskId));
         }
     }
 
@@ -2800,6 +2971,43 @@ public class MessagesController extends BaseController implements NotificationCe
             return new ArrayList<>();
         }
         return dialogs;
+    }
+
+    public void putAllNeededDraftDialogs() {
+        final LongSparseArray<TLRPC.DraftMessage> drafts = getMediaDataController().getDrafts();
+        for (int i = 0, size = drafts.size(); i < size; i++) {
+            putDraftDialogIfNeed(drafts.keyAt(i), drafts.valueAt(i));
+        }
+    }
+
+    public void putDraftDialogIfNeed(long dialogId, TLRPC.DraftMessage draftMessage) {
+        if (dialogs_dict.indexOfKey(dialogId) < 0) {
+            final MediaDataController mediaDataController = getMediaDataController();
+            final int dialogsCount = allDialogs.size();
+            if (dialogsCount > 0) {
+                final TLRPC.Dialog dialog = allDialogs.get(dialogsCount - 1);
+                final long minDate = DialogObject.getLastMessageOrDraftDate(dialog, mediaDataController.getDraft(dialog.id));
+                if (draftMessage.date < minDate) {
+                    return;
+                }
+            }
+            final TLRPC.TL_dialog dialog = new TLRPC.TL_dialog();
+            dialog.id = dialogId;
+            dialog.draft = draftMessage;
+            dialog.folder_id = mediaDataController.getDraftFolderId(dialogId);
+            dialog.flags = dialogId < 0 && ChatObject.isChannel(getChat((int) -dialogId)) ? 1 : 0;
+            dialogs_dict.put(dialogId, dialog);
+            allDialogs.add(dialog);
+            sortDialogs(null);
+        }
+    }
+
+    public void removeDraftDialogIfNeed(long dialogId) {
+        final TLRPC.Dialog dialog = dialogs_dict.get(dialogId);
+        if (dialog != null && dialog.top_message == 0) {
+            dialogs_dict.remove(dialog.id);
+            allDialogs.remove(dialog);
+        }
     }
 
     private void removeDialog(TLRPC.Dialog dialog) {
@@ -4245,7 +4453,14 @@ public class MessagesController extends BaseController implements NotificationCe
                 if (scheduled && count == 1) {
                     getNotificationCenter().postNotificationName(NotificationCenter.scheduledMessagesUpdated, dialog_id, objects.size());
                 }
-                getNotificationCenter().postNotificationName(NotificationCenter.messagesDidLoad, dialog_id, count, objects, isCache, first_unread_final, last_message_id, unread_count, last_date, load_type, isEnd, classGuid, loadIndex, max_id, mentionsCount, scheduled);
+
+                if ((int) dialog_id != 0) {
+                    int finalFirst_unread_final = first_unread_final;
+                    getMediaDataController().loadReplyMessagesForMessages(objects, dialog_id, scheduled, () -> getNotificationCenter().postNotificationName(NotificationCenter.messagesDidLoad, dialog_id, count, objects, isCache, finalFirst_unread_final, last_message_id, unread_count, last_date, load_type, isEnd, classGuid, loadIndex, max_id, mentionsCount, scheduled));
+                } else {
+                    getNotificationCenter().postNotificationName(NotificationCenter.messagesDidLoad, dialog_id, count, objects, isCache, first_unread_final, last_message_id, unread_count, last_date, load_type, isEnd, classGuid, loadIndex, max_id, mentionsCount, scheduled);
+                }
+
                 if (!messagesToReload.isEmpty()) {
                     reloadMessages(messagesToReload, dialog_id, scheduled);
                 }
@@ -4456,7 +4671,7 @@ public class MessagesController extends BaseController implements NotificationCe
             FileLog.d("folderId = " + folderId + " load cacheOffset = " + offset + " count = " + count + " cache = " + fromCache);
         }
         if (fromCache) {
-            getMessagesStorage().getDialogs(folderId, offset == 0 ? 0 : nextDialogsCacheOffset.get(folderId, 0), count);
+            getMessagesStorage().getDialogs(folderId, offset == 0 ? 0 : nextDialogsCacheOffset.get(folderId, 0), count, offset == 0);
         } else {
             TLRPC.TL_messages_getDialogs req = new TLRPC.TL_messages_getDialogs();
             req.limit = count;
@@ -4923,9 +5138,10 @@ public class MessagesController extends BaseController implements NotificationCe
             AndroidUtilities.runOnUIThread(() -> {
                 resetingDialogs = false;
                 applyDialogsNotificationsSettings(dialogsRes.dialogs);
-                if (!getUserConfig().draftsLoaded) {
-                    getMediaDataController().loadDrafts();
-                }
+
+                final MediaDataController mediaDataController = getMediaDataController();
+                mediaDataController.clearAllDrafts(false);
+                mediaDataController.loadDraftsIfNeed();
 
                 putUsers(dialogsRes.users, false);
                 putChats(dialogsRes.chats, false);
@@ -4949,7 +5165,7 @@ public class MessagesController extends BaseController implements NotificationCe
                     long key = new_dialogs_dict.keyAt(a);
                     TLRPC.Dialog value = new_dialogs_dict.valueAt(a);
                     if (value.draft instanceof TLRPC.TL_draftMessage) {
-                        getMediaDataController().saveDraft(value.id, value.draft, null, false);
+                        mediaDataController.saveDraft(value.id, value.draft, null, false);
                     }
                     dialogs_dict.put(key, value);
                     MessageObject messageObject = new_dialogMessage.get(value.id);
@@ -4976,7 +5192,7 @@ public class MessagesController extends BaseController implements NotificationCe
                 int totalDialogsLoadCount = getUserConfig().getTotalDialogsCount(0);
                 int[] dialogsLoadOffset = getUserConfig().getDialogLoadOffsets(0);
                 if (totalDialogsLoadCount < 400 && dialogsLoadOffset[UserConfig.i_dialogsLoadOffsetId] != -1 && dialogsLoadOffset[UserConfig.i_dialogsLoadOffsetId] != Integer.MAX_VALUE) {
-                    loadDialogs(0, 100, 0, false);
+                    loadDialogs(0, 0, 100, false);
                 }
                 getNotificationCenter().postNotificationName(NotificationCenter.dialogsNeedReload);
             });
@@ -5429,9 +5645,7 @@ public class MessagesController extends BaseController implements NotificationCe
             AndroidUtilities.runOnUIThread(() -> {
                 if (loadType != DIALOGS_LOAD_TYPE_CACHE) {
                     applyDialogsNotificationsSettings(dialogsRes.dialogs);
-                    if (!getUserConfig().draftsLoaded) {
-                        getMediaDataController().loadDrafts();
-                    }
+                    getMediaDataController().loadDraftsIfNeed();
                 }
                 putUsers(dialogsRes.users, loadType == DIALOGS_LOAD_TYPE_CACHE);
                 putChats(dialogsRes.chats, loadType == DIALOGS_LOAD_TYPE_CACHE);
@@ -5534,6 +5748,8 @@ public class MessagesController extends BaseController implements NotificationCe
                     allDialogs.add(dialogs_dict.valueAt(a));
                 }
                 sortDialogs(migrate ? chatsDict : null);
+                
+                putAllNeededDraftDialogs();
 
                 if (loadType != DIALOGS_LOAD_TYPE_CHANNEL && loadType != DIALOGS_LOAD_TYPE_UNKNOWN) {
                     if (!migrate) {
@@ -5553,7 +5769,7 @@ public class MessagesController extends BaseController implements NotificationCe
                 int totalDialogsLoadCount = getUserConfig().getTotalDialogsCount(folderId);
                 int[] dialogsLoadOffset2 = getUserConfig().getDialogLoadOffsets(folderId);
                 if (!fromCache && !migrate && totalDialogsLoadCount < 400 && dialogsLoadOffset2[UserConfig.i_dialogsLoadOffsetId] != -1 && dialogsLoadOffset2[UserConfig.i_dialogsLoadOffsetId] != Integer.MAX_VALUE) {
-                    loadDialogs(0, 100, folderId, false);
+                    loadDialogs(folderId, 0, 100, false);
                 }
                 getNotificationCenter().postNotificationName(NotificationCenter.dialogsNeedReload);
 
@@ -5712,6 +5928,7 @@ public class MessagesController extends BaseController implements NotificationCe
 
     public void processDialogsUpdateRead(final LongSparseArray<Integer> dialogsToUpdate, final LongSparseArray<Integer> dialogsMentionsToUpdate) {
         AndroidUtilities.runOnUIThread(() -> {
+            boolean updateFolder = false;
             if (dialogsToUpdate != null) {
                 for (int a = 0; a < dialogsToUpdate.size(); a++) {
                     long dialogId = dialogsToUpdate.keyAt(a);
@@ -5723,6 +5940,9 @@ public class MessagesController extends BaseController implements NotificationCe
                             unreadUnmutedDialogs--;
                         } else if (prevCount == 0 && !currentDialog.unread_mark && currentDialog.unread_count != 0 && !isDialogMuted(dialogId)) {
                             unreadUnmutedDialogs++;
+                        }
+                        if (currentDialog.folder_id == 1) {
+                            updateFolder = true;
                         }
                     }
                 }
@@ -5739,11 +5959,42 @@ public class MessagesController extends BaseController implements NotificationCe
                     }
                 }
             }
+            if (updateFolder) {
+                updateFolderUnreadCounter();
+            }
             getNotificationCenter().postNotificationName(NotificationCenter.updateInterfaces, UPDATE_MASK_READ_DIALOG_MESSAGE);
             if (dialogsToUpdate != null) {
                 getNotificationsController().processDialogsUpdateRead(dialogsToUpdate);
             }
         });
+    }
+
+    private void updateFolderUnreadCounter() {
+        TLRPC.Dialog folder = dialogs_dict.get(DialogObject.makeFolderDialogId(1));
+        if (folder instanceof TLRPC.TL_dialogFolder) {
+            folder.unread_count = 0;
+            folder.unread_mentions_count = 0;
+            ArrayList<TLRPC.Dialog> dialogs = dialogsByFolder.get(1);
+            if (dialogs != null) {
+                boolean countMessages = getNotificationsController().showBadgeMessages;
+                for (int a = 0, N = dialogs.size(); a < N; a++) {
+                    TLRPC.Dialog dialog = dialogs.get(a);
+                    if (countMessages) {
+                        if (isDialogMuted(dialog.id)) {
+                            folder.unread_count += dialog.unread_count;
+                        } else {
+                            folder.unread_mentions_count += dialog.unread_count;
+                        }
+                    } else {
+                        if (isDialogMuted(dialog.id)) {
+                            folder.unread_count++;
+                        } else {
+                            folder.unread_mentions_count++;
+                        }
+                    }
+                }
+            }
+        }
     }
 
     protected void checkLastDialogMessage(final TLRPC.Dialog dialog, final TLRPC.InputPeer peer, long taskId) {
@@ -5778,7 +6029,7 @@ public class MessagesController extends BaseController implements NotificationCe
                 data.writeInt32(dialog.unread_mentions_count);
                 data.writeBool(dialog.unread_mark);
                 data.writeInt32(dialog.folder_id);
-                peer.serializeToStream(data);
+                req.peer.serializeToStream(data);
             } catch (Exception e) {
                 FileLog.e(e);
             }
@@ -5819,7 +6070,7 @@ public class MessagesController extends BaseController implements NotificationCe
                 } else {
                     AndroidUtilities.runOnUIThread(() -> {
                         TLRPC.Dialog currentDialog = dialogs_dict.get(dialog.id);
-                        if (currentDialog != null && currentDialog.top_message == 0) {
+                        if (currentDialog != null && currentDialog.top_message == 0 && getMediaDataController().getDraft(dialog.id) == null) {
                             deleteDialog(dialog.id, 3);
                         }
                     });
@@ -6386,7 +6637,7 @@ public class MessagesController extends BaseController implements NotificationCe
 
             if (chat != null && chat.ttl > 0) {
                 int serverTime = Math.max(getConnectionsManager().getCurrentTime(), maxDate);
-                getMessagesStorage().createTaskForSecretChat(chat.id, serverTime, serverTime, 0, null);
+                getMessagesStorage().createTaskForSecretChat(chat.id, maxDate, serverTime, 0, null);
             }
         }
 
@@ -6512,6 +6763,9 @@ public class MessagesController extends BaseController implements NotificationCe
                 });
             } else {
                 AndroidUtilities.runOnUIThread(() -> {
+                    if (convertRunnable != null) {
+                        convertRunnable.run(0);
+                    }
                     if (!((Activity) context).isFinishing()) {
                         try {
                             progressDialog.dismiss();
@@ -8548,7 +8802,7 @@ public class MessagesController extends BaseController implements NotificationCe
                     }
                 }
             }
-            if (user != null && user.status != null && user.status.expires <= 0 && Math.abs(getConnectionsManager().getCurrentTime() - updates.date) < 30) {
+            if (!updates.out && user != null && user.status != null && user.status.expires <= 0 && Math.abs(getConnectionsManager().getCurrentTime() - updates.date) < 30) {
                 onlinePrivacy.put(user.id, updates.date);
                 updateStatus = true;
             }
@@ -8993,6 +9247,7 @@ public class MessagesController extends BaseController implements NotificationCe
         ArrayList<TLRPC.Update> updatesOnMainThread = null;
         ArrayList<TLRPC.TL_updateEncryptedMessagesRead> tasks = null;
         ArrayList<Integer> contactsIds = null;
+        ArrayList<ImageLoader.MessageThumb> messageThumbs = null;
 
         boolean checkForUsers = true;
         ConcurrentHashMap<Integer, TLRPC.User> usersDict;
@@ -9114,7 +9369,7 @@ public class MessagesController extends BaseController implements NotificationCe
                                 }
                                 return false;
                             }
-                            if (a == 1 && user.status != null && user.status.expires <= 0 && Math.abs(getConnectionsManager().getCurrentTime() - message.date) < 30) {
+                            if (!message.out && a == 1 && user.status != null && user.status.expires <= 0 && Math.abs(getConnectionsManager().getCurrentTime() - message.date) < 30) {
                                 onlinePrivacy.put(user_id, message.date);
                                 interfaceUpdateMask |= UPDATE_MASK_STATUS;
                             }
@@ -9147,6 +9402,16 @@ public class MessagesController extends BaseController implements NotificationCe
                         message.to_id.user_id = message.from_id;
                     }
                     message.dialog_id = message.to_id.user_id;
+                }
+
+                if (createdDialogIds.contains(message.dialog_id) && message.grouped_id == 0) {
+                    ImageLoader.MessageThumb messageThumb = ImageLoader.generateMessageThumb(message);
+                    if (messageThumb != null) {
+                        if (messageThumbs == null) {
+                            messageThumbs = new ArrayList<>();
+                        }
+                        messageThumbs.add(messageThumb);
+                    }
                 }
 
                 if (baseUpdate instanceof TLRPC.TL_updateNewScheduledMessage) {
@@ -9924,6 +10189,8 @@ public class MessagesController extends BaseController implements NotificationCe
                     updatesOnMainThread = new ArrayList<>();
                 }
                 updatesOnMainThread.add(baseUpdate);
+            } else if (baseUpdate instanceof TLRPC.TL_updateGeoLiveViewed) {
+                getLocationController().setNewLocationEndWatchTime();
             }
         }
         if (messages != null) {
@@ -9983,6 +10250,8 @@ public class MessagesController extends BaseController implements NotificationCe
         final ArrayList<TLRPC.ChatParticipants> chatInfoToUpdateFinal = chatInfoToUpdate;
         final ArrayList<Integer> contactsIdsFinal = contactsIds;
         final ArrayList<TLRPC.Update> updatesOnMainThreadFinal = updatesOnMainThread;
+        final ArrayList<ImageLoader.MessageThumb> updateMessageThumbs = messageThumbs;
+
         AndroidUtilities.runOnUIThread(() -> {
             int updateMask = interfaceUpdateMaskFinal;
             boolean forceDialogsUpdate = false;
@@ -10427,7 +10696,7 @@ public class MessagesController extends BaseController implements NotificationCe
                     } else if (baseUpdate instanceof TLRPC.TL_updateTheme) {
                         TLRPC.TL_updateTheme update = (TLRPC.TL_updateTheme) baseUpdate;
                         TLRPC.TL_theme theme = (TLRPC.TL_theme) update.theme;
-                        Theme.setThemeUploadInfo(null, theme, true);
+                        Theme.setThemeUploadInfo(null, null, theme, currentAccount, true);
                     }
                 }
                 if (editor != null) {
@@ -10515,7 +10784,7 @@ public class MessagesController extends BaseController implements NotificationCe
                             }
                         }
                     }
-                    getMediaDataController().loadReplyMessagesForMessages(arrayList, dialog_id, false);
+                    getMediaDataController().loadReplyMessagesForMessages(arrayList, dialog_id, false, null);
                     getNotificationCenter().postNotificationName(NotificationCenter.replaceMessagesObjects, dialog_id, arrayList, false);
                 }
             }
@@ -10541,6 +10810,10 @@ public class MessagesController extends BaseController implements NotificationCe
             }
             if (updateMask != 0) {
                 getNotificationCenter().postNotificationName(NotificationCenter.updateInterfaces, updateMask);
+            }
+
+            if (updateMessageThumbs != null) {
+                ImageLoader.getInstance().putThumbsToCache(updateMessageThumbs);
             }
         });
 
@@ -10807,7 +11080,7 @@ public class MessagesController extends BaseController implements NotificationCe
                 }
             }
         }
-        getMediaDataController().loadReplyMessagesForMessages(messages, uid, scheduled);
+        getMediaDataController().loadReplyMessagesForMessages(messages, uid, scheduled, null);
         getNotificationCenter().postNotificationName(NotificationCenter.didReceiveNewMessages, uid, messages, scheduled);
 
         if (lastMessage == null || scheduled) {
@@ -10859,7 +11132,6 @@ public class MessagesController extends BaseController implements NotificationCe
             }
             dialog = new TLRPC.TL_dialog();
             dialog.id = uid;
-            dialog.unread_count = 0;
             dialog.top_message = lastMessage.getId();
             dialog.last_message_date = lastMessage.messageOwner.date;
             dialog.flags = ChatObject.isChannel(chat) ? 1 : 0;
@@ -11320,5 +11592,35 @@ public class MessagesController extends BaseController implements NotificationCe
                 fragment.showDialog(progressDialog[0]);
             }, 500);
         }
+    }
+
+    public void ensureMessagesLoaded(long dialog_id, boolean isChannel, int messageId, Runnable callback) {
+        SharedPreferences sharedPreferences = MessagesController.getNotificationsSettings(currentAccount);
+        if (messageId == 0) {
+            messageId = sharedPreferences.getInt("diditem" + dialog_id, 0);
+        }
+        if (messageId != 0 && MessagesStorage.getInstance(currentAccount).checkMessageId(dialog_id, isChannel, messageId)) {
+            callback.run();
+            return;
+        }
+        int finalMessageId = messageId;
+        final int classGuid = ConnectionsManager.generateClassGuid();
+        getNotificationCenter().addObserver(new NotificationCenter.NotificationCenterDelegate() {
+            @SuppressWarnings("unchecked")
+            @Override
+            public void didReceivedNotification(int id, int account, Object... args) {
+                if (id == NotificationCenter.messagesDidLoad && (Integer) args[10] == classGuid) {
+                    ArrayList<MessageObject> messArr = (ArrayList<MessageObject>) args[2];
+                    boolean isCache = (Boolean) args[3];
+                    if (messArr.isEmpty() && isCache) {
+                        loadMessages(dialog_id, 20, 3, 0, false, 0, classGuid, 3, 0, false, false, 0);
+                    } else {
+                        getNotificationCenter().removeObserver(this, NotificationCenter.didReceiveNewMessages);
+                        callback.run();
+                    }
+                }
+            }
+        }, NotificationCenter.messagesDidLoad);
+        loadMessages(dialog_id, 1, finalMessageId, 0, true, 0, classGuid, 3, 0, false, false, 0);
     }
 }

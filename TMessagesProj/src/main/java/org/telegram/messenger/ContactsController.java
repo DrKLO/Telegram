@@ -1583,11 +1583,11 @@ public class ContactsController extends BaseController {
         return contactsDict.get(uid) != null;
     }
 
-    private void reloadContactsStatusesMaybe() {
+    public void reloadContactsStatusesMaybe() {
         try {
             SharedPreferences preferences = MessagesController.getMainSettings(currentAccount);
             long lastReloadStatusTime = preferences.getLong("lastReloadStatusTime", 0);
-            if (lastReloadStatusTime < System.currentTimeMillis() - 1000 * 60 * 60 * 24) {
+            if (lastReloadStatusTime < System.currentTimeMillis() - 1000 * 60 * 60 * 3) {
                 reloadContactsStatuses();
             }
         } catch (Exception e) {
@@ -2239,7 +2239,7 @@ public class ContactsController extends BaseController {
         });
     }
 
-    public void reloadContactsStatuses() {
+    private void reloadContactsStatuses() {
         saveContactsLoadTime();
         getMessagesController().clearFullUsers();
         SharedPreferences preferences = MessagesController.getMainSettings(currentAccount);

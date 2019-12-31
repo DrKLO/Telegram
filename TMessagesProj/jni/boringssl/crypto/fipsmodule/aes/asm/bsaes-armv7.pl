@@ -14,8 +14,7 @@
 # details see http://www.openssl.org/~appro/cryptogams/.
 #
 # Specific modes and adaptation for Linux kernel by Ard Biesheuvel
-# <ard.biesheuvel@linaro.org>. Permission to use under GPL terms is
-# granted.
+# of Linaro. Permission to use under GPL terms is granted.
 # ====================================================================
 
 # Bit-sliced AES for ARM NEON
@@ -49,10 +48,7 @@
 #						<appro@openssl.org>
 
 # April-August 2013
-#
-# Add CBC, CTR and XTS subroutines, adapt for kernel use.
-#
-#					<ard.biesheuvel@linaro.org>
+# Add CBC, CTR and XTS subroutines and adapt for kernel use; courtesy of Ard.
 
 $flavour = shift;
 if ($flavour=~/\w[\w\-]*\.\w+$/) { $output=$flavour; undef $flavour; }
@@ -64,9 +60,11 @@ if ($flavour && $flavour ne "void") {
     ( $xlate="${dir}../../../perlasm/arm-xlate.pl" and -f $xlate) or
     die "can't locate arm-xlate.pl";
 
-    open STDOUT,"| \"$^X\" $xlate $flavour $output";
+    open OUT,"| \"$^X\" $xlate $flavour $output";
+    *STDOUT=*OUT;
 } else {
-    open STDOUT,">$output";
+    open OUT,">$output";
+    *STDOUT=*OUT;
 }
 
 my ($inp,$out,$len,$key)=("r0","r1","r2","r3");
@@ -746,7 +744,7 @@ $code.=<<___;
 _bsaes_decrypt8:
 	adr	$const,.
 	vldmia	$key!, {@XMM[9]}		@ round 0 key
-#ifdef	__APPLE__
+#if defined(__thumb2__) || defined(__APPLE__)
 	adr	$const,.LM0ISR
 #else
 	add	$const,$const,#.LM0ISR-_bsaes_decrypt8
@@ -845,7 +843,7 @@ _bsaes_const:
 _bsaes_encrypt8:
 	adr	$const,.
 	vldmia	$key!, {@XMM[9]}		@ round 0 key
-#ifdef	__APPLE__
+#if defined(__thumb2__) || defined(__APPLE__)
 	adr	$const,.LM0SR
 #else
 	sub	$const,$const,#_bsaes_encrypt8-.LM0SR
@@ -953,7 +951,7 @@ $code.=<<___;
 _bsaes_key_convert:
 	adr	$const,.
 	vld1.8	{@XMM[7]},  [$inp]!		@ load round 0 key
-#ifdef	__APPLE__
+#if defined(__thumb2__) || defined(__APPLE__)
 	adr	$const,.LM0
 #else
 	sub	$const,$const,#_bsaes_key_convert-.LM0
@@ -1117,23 +1115,12 @@ my ($inp,$out,$len,$key, $ivp,$fp,$rounds)=map("r$_",(0..3,8..10));
 my ($keysched)=("sp");
 
 $code.=<<___;
-.extern AES_cbc_encrypt
-.extern AES_decrypt
-
 .global	bsaes_cbc_encrypt
 .type	bsaes_cbc_encrypt,%function
 .align	5
 bsaes_cbc_encrypt:
-#ifndef	__KERNEL__
-	cmp	$len, #128
-#ifndef	__thumb__
-	blo	AES_cbc_encrypt
-#else
-	bhs	1f
-	b	AES_cbc_encrypt
-1:
-#endif
-#endif
+	@ In OpenSSL, this function had a fallback to aes_nohw_cbc_encrypt for
+	@ short inputs. We patch this out, using bsaes for all input sizes.
 
 	@ it is up to the caller to make sure we are called with enc == 0
 
@@ -1231,10 +1218,7 @@ bsaes_cbc_encrypt:
 	adds	$len, $len, #8
 	beq	.Lcbc_dec_done
 
-	vld1.8	{@XMM[0]}, [$inp]!		@ load input
-	cmp	$len, #2
-	blo	.Lcbc_dec_one
-	vld1.8	{@XMM[1]}, [$inp]!
+	@ Set up most parameters for the _bsaes_decrypt8 call.
 #ifndef	BSAES_ASM_EXTENDED_KEY
 	mov	r4, $keysched			@ pass the key
 #else
@@ -1242,6 +1226,11 @@ bsaes_cbc_encrypt:
 #endif
 	mov	r5, $rounds
 	vstmia	$fp, {@XMM[15]}			@ put aside IV
+
+	vld1.8	{@XMM[0]}, [$inp]!		@ load input
+	cmp	$len, #2
+	blo	.Lcbc_dec_one
+	vld1.8	{@XMM[1]}, [$inp]!
 	beq	.Lcbc_dec_two
 	vld1.8	{@XMM[2]}, [$inp]!
 	cmp	$len, #4
@@ -1359,16 +1348,11 @@ bsaes_cbc_encrypt:
 .align	4
 .Lcbc_dec_one:
 	sub	$inp, $inp, #0x10
-	mov	$rounds, $out			@ save original out pointer
-	mov	$out, $fp			@ use the iv scratch space as out buffer
-	mov	r2, $key
-	vmov	@XMM[4],@XMM[15]		@ just in case ensure that IV
-	vmov	@XMM[5],@XMM[0]			@ and input are preserved
-	bl	AES_decrypt
-	vld1.8	{@XMM[0]}, [$fp]		@ load result
-	veor	@XMM[0], @XMM[0], @XMM[4]	@ ^= IV
-	vmov	@XMM[15], @XMM[5]		@ @XMM[5] holds input
-	vst1.8	{@XMM[0]}, [$rounds]		@ write output
+	bl	_bsaes_decrypt8
+	vldmia	$fp, {@XMM[14]}			@ reload IV
+	vld1.8	{@XMM[15]}, [$inp]!		@ reload input
+	veor	@XMM[0], @XMM[0], @XMM[14]	@ ^= IV
+	vst1.8	{@XMM[0]}, [$out]!		@ write output
 
 .Lcbc_dec_done:
 #ifndef	BSAES_ASM_EXTENDED_KEY
@@ -1394,14 +1378,12 @@ my $const = "r6";	# shared with _bsaes_encrypt8_alt
 my $keysched = "sp";
 
 $code.=<<___;
-.extern	AES_encrypt
 .global	bsaes_ctr32_encrypt_blocks
 .type	bsaes_ctr32_encrypt_blocks,%function
 .align	5
 bsaes_ctr32_encrypt_blocks:
-	cmp	$len, #8			@ use plain AES for
-	blo	.Lctr_enc_short			@ small sizes
-
+	@ In OpenSSL, short inputs fall back to aes_nohw_* here. We patch this
+	@ out to retain a constant-time implementation.
 	mov	ip, sp
 	stmdb	sp!, {r4-r10, lr}
 	VFP_ABI_PUSH
@@ -1577,54 +1559,13 @@ bsaes_ctr32_encrypt_blocks:
 	VFP_ABI_POP
 	ldmia	sp!, {r4-r10, pc}	@ return
 
-.align	4
-.Lctr_enc_short:
-	ldr	ip, [sp]		@ ctr pointer is passed on stack
-	stmdb	sp!, {r4-r8, lr}
-
-	mov	r4, $inp		@ copy arguments
-	mov	r5, $out
-	mov	r6, $len
-	mov	r7, $key
-	ldr	r8, [ip, #12]		@ load counter LSW
-	vld1.8	{@XMM[1]}, [ip]		@ load whole counter value
-#ifdef __ARMEL__
-	rev	r8, r8
-#endif
-	sub	sp, sp, #0x10
-	vst1.8	{@XMM[1]}, [sp]		@ copy counter value
-	sub	sp, sp, #0x10
-
-.Lctr_enc_short_loop:
-	add	r0, sp, #0x10		@ input counter value
-	mov	r1, sp			@ output on the stack
-	mov	r2, r7			@ key
-
-	bl	AES_encrypt
-
-	vld1.8	{@XMM[0]}, [r4]!	@ load input
-	vld1.8	{@XMM[1]}, [sp]		@ load encrypted counter
-	add	r8, r8, #1
-#ifdef __ARMEL__
-	rev	r0, r8
-	str	r0, [sp, #0x1c]		@ next counter value
-#else
-	str	r8, [sp, #0x1c]		@ next counter value
-#endif
-	veor	@XMM[0],@XMM[0],@XMM[1]
-	vst1.8	{@XMM[0]}, [r5]!	@ store output
-	subs	r6, r6, #1
-	bne	.Lctr_enc_short_loop
-
-	vmov.i32	q0, #0
-	vmov.i32	q1, #0
-	vstmia		sp!, {q0-q1}
-
-	ldmia	sp!, {r4-r8, pc}
+	@ OpenSSL contains aes_nohw_* fallback code here. We patch this
+	@ out to retain a constant-time implementation.
 .size	bsaes_ctr32_encrypt_blocks,.-bsaes_ctr32_encrypt_blocks
 ___
 }
-{
+# In BorinSSL, we patch XTS support out.
+if (0) {
 ######################################################################
 # void bsaes_xts_[en|de]crypt(const char *inp,char *out,size_t len,
 #	const AES_KEY *key1, const AES_KEY *key2,
@@ -1661,7 +1602,7 @@ bsaes_xts_encrypt:
 	ldr	r0, [ip, #4]			@ iv[]
 	mov	r1, sp
 	ldr	r2, [ip, #0]			@ key2
-	bl	AES_encrypt
+	bl	aes_nohw_encrypt
 	mov	r0,sp				@ pointer to initial tweak
 #endif
 
@@ -1979,7 +1920,7 @@ $code.=<<___;
 	mov		r2, $key
 	mov		r4, $fp				@ preserve fp
 
-	bl		AES_encrypt
+	bl		aes_nohw_encrypt
 
 	vld1.8		{@XMM[0]}, [sp,:128]
 	veor		@XMM[0], @XMM[0], @XMM[8]
@@ -2011,7 +1952,7 @@ $code.=<<___;
 	mov		r2, $key
 	mov		r4, $fp			@ preserve fp
 
-	bl		AES_encrypt
+	bl		aes_nohw_encrypt
 
 	vld1.8		{@XMM[0]}, [sp,:128]
 	veor		@XMM[0], @XMM[0], @XMM[8]
@@ -2065,7 +2006,7 @@ bsaes_xts_decrypt:
 	ldr	r0, [ip, #4]			@ iv[]
 	mov	r1, sp
 	ldr	r2, [ip, #0]			@ key2
-	bl	AES_encrypt
+	bl	aes_nohw_encrypt
 	mov	r0, sp				@ pointer to initial tweak
 #endif
 
@@ -2391,7 +2332,7 @@ $code.=<<___;
 	mov		r2, $key
 	mov		r4, $fp				@ preserve fp
 
-	bl		AES_decrypt
+	bl		aes_nohw_decrypt
 
 	vld1.8		{@XMM[0]}, [sp,:128]
 	veor		@XMM[0], @XMM[0], @XMM[8]
@@ -2423,7 +2364,7 @@ $code.=<<___;
 	mov		r2, $key
 	mov		r4, $fp			@ preserve fp
 
-	bl		AES_decrypt
+	bl		aes_nohw_decrypt
 
 	vld1.8		{@XMM[0]}, [sp,:128]
 	veor		@XMM[0], @XMM[0], @XMM[9]
@@ -2446,7 +2387,7 @@ $code.=<<___;
 	vst1.8		{@XMM[0]}, [sp,:128]
 	mov		r2, $key
 
-	bl		AES_decrypt
+	bl		aes_nohw_decrypt
 
 	vld1.8		{@XMM[0]}, [sp,:128]
 	veor		@XMM[0], @XMM[0], @XMM[8]
@@ -2492,4 +2433,4 @@ close SELF;
 
 print $code;
 
-close STDOUT;
+close STDOUT or die "error closing STDOUT";

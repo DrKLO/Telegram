@@ -49,48 +49,48 @@ public class AudioRecordJNI {
 			throw new IllegalStateException("already inited");
 		}
 		this.bufferSize = bufferSize;
-		boolean res=tryInit(MediaRecorder.AudioSource.VOICE_COMMUNICATION, 48000);
-		if(!res)
-			res=tryInit(MediaRecorder.AudioSource.MIC, 48000);
-		if(!res)
-			res=tryInit(MediaRecorder.AudioSource.VOICE_COMMUNICATION, 44100);
-		if(!res)
-			res=tryInit(MediaRecorder.AudioSource.MIC, 44100);
-		if(!res)
+		boolean res = tryInit(MediaRecorder.AudioSource.VOICE_COMMUNICATION, 48000);
+		if (!res)
+			res = tryInit(MediaRecorder.AudioSource.MIC, 48000);
+		if (!res)
+			res = tryInit(MediaRecorder.AudioSource.VOICE_COMMUNICATION, 44100);
+		if (!res)
+			res = tryInit(MediaRecorder.AudioSource.MIC, 44100);
+		if (!res)
 			return;
 
-		if(Build.VERSION.SDK_INT>=Build.VERSION_CODES.JELLY_BEAN){
-			try{
-				if(AutomaticGainControl.isAvailable()){
-					agc=AutomaticGainControl.create(audioRecord.getAudioSessionId());
-					if(agc!=null)
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
+			try {
+				if (AutomaticGainControl.isAvailable()) {
+					agc = AutomaticGainControl.create(audioRecord.getAudioSessionId());
+					if (agc != null)
 						agc.setEnabled(false);
-				}else{
+				} else {
 					VLog.w("AutomaticGainControl is not available on this device :(");
 				}
-			}catch(Throwable x){
+			} catch (Throwable x) {
 				VLog.e("error creating AutomaticGainControl", x);
 			}
-			try{
-				if(NoiseSuppressor.isAvailable()){
-					ns=NoiseSuppressor.create(audioRecord.getAudioSessionId());
-					if(ns!=null)
+			try {
+				if (NoiseSuppressor.isAvailable()) {
+					ns = NoiseSuppressor.create(audioRecord.getAudioSessionId());
+					if (ns != null)
 						ns.setEnabled(VoIPServerConfig.getBoolean("use_system_ns", true) && isGoodAudioEffect(ns));
-				}else{
+				} else {
 					VLog.w("NoiseSuppressor is not available on this device :(");
 				}
-			}catch(Throwable x){
+			} catch (Throwable x) {
 				VLog.e("error creating NoiseSuppressor", x);
 			}
-			try{
-				if(AcousticEchoCanceler.isAvailable()){
-					aec=AcousticEchoCanceler.create(audioRecord.getAudioSessionId());
-					if(aec!=null)
+			try {
+				if (AcousticEchoCanceler.isAvailable()) {
+					aec = AcousticEchoCanceler.create(audioRecord.getAudioSessionId());
+					if (aec != null)
 						aec.setEnabled(VoIPServerConfig.getBoolean("use_system_aec", true) && isGoodAudioEffect(aec));
-				}else{
+				} else {
 					VLog.w("AcousticEchoCanceler is not available on this device");
 				}
-			}catch(Throwable x){
+			} catch (Throwable x) {
 				VLog.e("error creating AcousticEchoCanceler", x);
 			}
 		}

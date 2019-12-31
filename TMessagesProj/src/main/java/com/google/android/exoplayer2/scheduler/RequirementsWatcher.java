@@ -29,7 +29,6 @@ import android.os.Looper;
 import android.os.PowerManager;
 import androidx.annotation.RequiresApi;
 import com.google.android.exoplayer2.util.Assertions;
-import com.google.android.exoplayer2.util.Log;
 import com.google.android.exoplayer2.util.Util;
 
 /**
@@ -42,37 +41,27 @@ public final class RequirementsWatcher {
    * Requirements} are met.
    */
   public interface Listener {
-
     /**
-     * Called when all of the requirements are met.
-     *
-     * @param requirementsWatcher Calling instance.
-     */
-    void requirementsMet(RequirementsWatcher requirementsWatcher);
-
-    /**
-     * Called when there is at least one not met requirement and there is a change on which of the
-     * requirements are not met.
+     * Called when there is a change on the met requirements.
      *
      * @param requirementsWatcher Calling instance.
      * @param notMetRequirements {@link Requirements.RequirementFlags RequirementFlags} that are not
      *     met, or 0.
      */
-    void requirementsNotMet(
+    void onRequirementsStateChanged(
         RequirementsWatcher requirementsWatcher,
         @Requirements.RequirementFlags int notMetRequirements);
   }
 
-  private static final String TAG = "RequirementsWatcher";
-
   private final Context context;
   private final Listener listener;
   private final Requirements requirements;
+  private final Handler handler;
+
   private DeviceStatusChangeReceiver receiver;
 
   @Requirements.RequirementFlags private int notMetRequirements;
   private CapabilityValidatedCallback networkCallback;
-  private Handler handler;
 
   /**
    * @param context Any context.
@@ -80,10 +69,10 @@ public final class RequirementsWatcher {
    * @param requirements The requirements to watch.
    */
   public RequirementsWatcher(Context context, Listener listener, Requirements requirements) {
-    this.requirements = requirements;
-    this.listener = listener;
     this.context = context.getApplicationContext();
-    logd(this + " created");
+    this.listener = listener;
+    this.requirements = requirements;
+    handler = new Handler(Util.getLooper());
   }
 
   /**
@@ -94,13 +83,10 @@ public final class RequirementsWatcher {
    */
   @Requirements.RequirementFlags
   public int start() {
-    Assertions.checkNotNull(Looper.myLooper());
-    handler = new Handler();
-
     notMetRequirements = requirements.getNotMetRequirements(context);
 
     IntentFilter filter = new IntentFilter();
-    if (requirements.getRequiredNetworkType() != Requirements.NETWORK_TYPE_NONE) {
+    if (requirements.isNetworkRequired()) {
       if (Util.SDK_INT >= 23) {
         registerNetworkCallbackV23();
       } else {
@@ -121,7 +107,6 @@ public final class RequirementsWatcher {
     }
     receiver = new DeviceStatusChangeReceiver();
     context.registerReceiver(receiver, filter, null, handler);
-    logd(this + " started");
     return notMetRequirements;
   }
 
@@ -132,7 +117,6 @@ public final class RequirementsWatcher {
     if (networkCallback != null) {
       unregisterNetworkCallback();
     }
-    logd(this + " stopped");
   }
 
   /** Returns watched {@link Requirements}. */
@@ -140,18 +124,11 @@ public final class RequirementsWatcher {
     return requirements;
   }
 
-  @Override
-  public String toString() {
-    if (!Scheduler.DEBUG) {
-      return super.toString();
-    }
-    return "RequirementsWatcher{" + requirements + '}';
-  }
-
   @TargetApi(23)
   private void registerNetworkCallbackV23() {
     ConnectivityManager connectivityManager =
-        (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
+        Assertions.checkNotNull(
+            (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE));
     NetworkRequest request =
         new NetworkRequest.Builder()
             .addCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
@@ -172,23 +149,9 @@ public final class RequirementsWatcher {
   private void checkRequirements() {
     @Requirements.RequirementFlags
     int notMetRequirements = requirements.getNotMetRequirements(context);
-    if (this.notMetRequirements == notMetRequirements) {
-      logd("notMetRequirements hasn't changed: " + notMetRequirements);
-      return;
-    }
-    this.notMetRequirements = notMetRequirements;
-    if (notMetRequirements == 0) {
-      logd("start job");
-      listener.requirementsMet(this);
-    } else {
-      logd("stop job");
-      listener.requirementsNotMet(this, notMetRequirements);
-    }
-  }
-
-  private static void logd(String message) {
-    if (Scheduler.DEBUG) {
-      Log.d(TAG, message);
+    if (this.notMetRequirements != notMetRequirements) {
+      this.notMetRequirements = notMetRequirements;
+      listener.onRequirementsStateChanged(this, notMetRequirements);
     }
   }
 
@@ -196,7 +159,6 @@ public final class RequirementsWatcher {
     @Override
     public void onReceive(Context context, Intent intent) {
       if (!isInitialStickyBroadcast()) {
-        logd(RequirementsWatcher.this + " received " + intent.getAction());
         checkRequirements();
       }
     }
@@ -218,7 +180,6 @@ public final class RequirementsWatcher {
       handler.post(
           () -> {
             if (networkCallback != null) {
-              logd(RequirementsWatcher.this + " NetworkCallback");
               checkRequirements();
             }
           });

@@ -9,25 +9,24 @@
 package org.telegram.ui.Adapters;
 
 import android.location.Location;
+import android.os.Build;
 
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.FileLog;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.MessagesStorage;
 import org.telegram.messenger.UserConfig;
+import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.Components.RecyclerListView;
 
 import java.util.ArrayList;
-import java.util.Timer;
-import java.util.TimerTask;
 
 public abstract class BaseLocationAdapter extends RecyclerListView.SelectionAdapter {
 
     public interface BaseLocationAdapterDelegate {
-        void didLoadedSearchResult(ArrayList<TLRPC.TL_messageMediaVenue> places);
+        void didLoadSearchResult(ArrayList<TLRPC.TL_messageMediaVenue> places);
     }
 
     protected boolean searching;
@@ -35,12 +34,14 @@ public abstract class BaseLocationAdapter extends RecyclerListView.SelectionAdap
     protected ArrayList<String> iconUrls = new ArrayList<>();
     private Location lastSearchLocation;
     private String lastSearchQuery;
+    private String lastFoundQuery;
     private BaseLocationAdapterDelegate delegate;
-    private Timer searchTimer;
+    private Runnable searchRunnable;
     private int currentRequestNum;
     private int currentAccount = UserConfig.selectedAccount;
     private long dialogId;
     private boolean searchingUser;
+    private boolean searchInProgress;
 
     public void destroy() {
         if (currentRequestNum != 0) {
@@ -57,31 +58,19 @@ public abstract class BaseLocationAdapter extends RecyclerListView.SelectionAdap
     public void searchDelayed(final String query, final Location coordinate) {
         if (query == null || query.length() == 0) {
             places.clear();
+            searchInProgress = false;
             notifyDataSetChanged();
         } else {
-            try {
-                if (searchTimer != null) {
-                    searchTimer.cancel();
-                }
-            } catch (Exception e) {
-                FileLog.e(e);
+            if (searchRunnable != null) {
+                Utilities.searchQueue.cancelRunnable(searchRunnable);
+                searchRunnable = null;
             }
-            searchTimer = new Timer();
-            searchTimer.schedule(new TimerTask() {
-                @Override
-                public void run() {
-                    try {
-                        searchTimer.cancel();
-                        searchTimer = null;
-                    } catch (Exception e) {
-                        FileLog.e(e);
-                    }
-                    AndroidUtilities.runOnUIThread(() -> {
-                        lastSearchLocation = null;
-                        searchPlacesWithQuery(query, coordinate, true);
-                    });
-                }
-            }, 200, 500);
+            searchInProgress = true;
+            Utilities.searchQueue.postRunnable(searchRunnable = () -> AndroidUtilities.runOnUIThread(() -> {
+                searchRunnable = null;
+                lastSearchLocation = null;
+                searchPlacesWithQuery(query, coordinate, true);
+            }), 400);
         }
     }
 
@@ -107,11 +96,23 @@ public abstract class BaseLocationAdapter extends RecyclerListView.SelectionAdap
         });
     }
 
+    public boolean isSearching() {
+        return searchInProgress;
+    }
+
+    public String getLastSearchString() {
+        return lastFoundQuery;
+    }
+
     public void searchPlacesWithQuery(final String query, final Location coordinate, boolean searchUser) {
+        searchPlacesWithQuery(query, coordinate, searchUser, false);
+    }
+
+    public void searchPlacesWithQuery(final String query, final Location coordinate, boolean searchUser, boolean animated) {
         if (coordinate == null || lastSearchLocation != null && coordinate.distanceTo(lastSearchLocation) < 200) {
             return;
         }
-        lastSearchLocation = coordinate;
+        lastSearchLocation = new Location(coordinate);
         lastSearchQuery = query;
         if (searching) {
             searching = false;
@@ -120,6 +121,8 @@ public abstract class BaseLocationAdapter extends RecyclerListView.SelectionAdap
                 currentRequestNum = 0;
             }
         }
+        int oldItemCount = getItemCount();
+        boolean wasSearching = searching;
         searching = true;
 
         TLObject object = MessagesController.getInstance(currentAccount).getUserOrChat(MessagesController.getInstance(currentAccount).venueSearchBot);
@@ -154,12 +157,10 @@ public abstract class BaseLocationAdapter extends RecyclerListView.SelectionAdap
             searching = false;
             places.clear();
             iconUrls.clear();
+            searchInProgress = false;
+            lastFoundQuery = query;
 
-            if (error != null) {
-                if (delegate != null) {
-                    delegate.didLoadedSearchResult(places);
-                }
-            } else {
+            if (error == null) {
                 TLRPC.messages_BotResults res = (TLRPC.messages_BotResults) response;
                 for (int a = 0, size = res.results.size(); a < size; a++) {
                     TLRPC.BotInlineResult result = res.results.get(a);
@@ -178,8 +179,24 @@ public abstract class BaseLocationAdapter extends RecyclerListView.SelectionAdap
                     places.add(venue);
                 }
             }
+            if (delegate != null) {
+                delegate.didLoadSearchResult(places);
+            }
             notifyDataSetChanged();
         }));
-        notifyDataSetChanged();
+        if (animated && Build.VERSION.SDK_INT >= 19) {
+            if (places.isEmpty() || wasSearching) {
+                if (!wasSearching) {
+                    notifyItemChanged(getItemCount() - 1);
+                }
+            } else {
+                int placesCount = places.size() + 1;
+                int offset = oldItemCount - placesCount;
+                notifyItemInserted(offset);
+                notifyItemRangeRemoved(offset, placesCount);
+            }
+        } else {
+            notifyDataSetChanged();
+        }
     }
 }

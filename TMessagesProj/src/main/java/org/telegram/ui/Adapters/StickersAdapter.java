@@ -247,7 +247,7 @@ public class StickersAdapter extends RecyclerListView.SelectionAdapter implement
             }
         }
         if (emojiOnly || SharedConfig.suggestStickers == 2 || !isValidEmoji) {
-            if (visible && (keywordResults == null || keywordResults.isEmpty())) {
+            if (visible && (emojiOnly || SharedConfig.suggestStickers == 2 || keywordResults == null || keywordResults.isEmpty())) {
                 visible = false;
                 delegate.needChangePanelVisibility(false);
                 notifyDataSetChanged();
@@ -309,8 +309,8 @@ public class StickersAdapter extends RecyclerListView.SelectionAdapter implement
 
                 @Override
                 public int compare(StickerResult lhs, StickerResult rhs) {
-                    boolean isAnimated1 = MessageObject.isAnimatedStickerDocument(lhs.sticker);
-                    boolean isAnimated2 = MessageObject.isAnimatedStickerDocument(rhs.sticker);
+                    boolean isAnimated1 = MessageObject.isAnimatedStickerDocument(lhs.sticker, true);
+                    boolean isAnimated2 = MessageObject.isAnimatedStickerDocument(rhs.sticker, true);
                     if (isAnimated1 == isAnimated2) {
                         int idx1 = getIndex(lhs.sticker.id);
                         int idx2 = getIndex(rhs.sticker.id);

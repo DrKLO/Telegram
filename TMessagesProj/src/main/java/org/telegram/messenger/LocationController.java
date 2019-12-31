@@ -36,6 +36,7 @@ import com.google.android.gms.location.LocationSettingsStatusCodes;
 import org.telegram.SQLite.SQLiteCursor;
 import org.telegram.SQLite.SQLitePreparedStatement;
 import org.telegram.tgnet.NativeByteBuffer;
+import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 
 import java.util.ArrayList;
@@ -48,6 +49,7 @@ public class LocationController extends BaseController implements NotificationCe
     private LongSparseArray<SharingLocationInfo> sharingLocationsMap = new LongSparseArray<>();
     private ArrayList<SharingLocationInfo> sharingLocations = new ArrayList<>();
     public LongSparseArray<ArrayList<TLRPC.Message>> locationsCache = new LongSparseArray<>();
+    private LongSparseArray<Integer> lastReadLocationTime = new LongSparseArray<>();
     private LocationManager locationManager;
     private GpsLocationListener gpsLocationListener = new GpsLocationListener();
     private GpsLocationListener networkLocationListener = new GpsLocationListener();
@@ -61,6 +63,7 @@ public class LocationController extends BaseController implements NotificationCe
     private boolean lastLocationByGoogleMaps;
     private SparseIntArray requests = new SparseIntArray();
     private LongSparseArray<Boolean> cacheRequests = new LongSparseArray<>();
+    private long locationEndWatchTime;
 
     private boolean lookingForPeopleNearby;
 
@@ -75,6 +78,8 @@ public class LocationController extends BaseController implements NotificationCe
     private final static int BACKGROUD_UPDATE_TIME = 30 * 1000;
     private final static int LOCATION_ACQUIRE_TIME = 10 * 1000;
     private final static int FOREGROUND_UPDATE_TIME = 20 * 1000;
+    private final static int WATCH_LOCATION_TIMEOUT = 65 * 1000;
+    private final static int SEND_NEW_LOCATION_TIME = 2 * 1000;
 
     private ArrayList<TLRPC.TL_peerLocated> cachedNearbyUsers = new ArrayList<>();
     private ArrayList<TLRPC.TL_peerLocated> cachedNearbyChats = new ArrayList<>();
@@ -101,6 +106,7 @@ public class LocationController extends BaseController implements NotificationCe
         public int mid;
         public int stopTime;
         public int period;
+        public int account;
         public MessageObject messageObject;
     }
 
@@ -351,13 +357,15 @@ public class LocationController extends BaseController implements NotificationCe
         return playServicesAvailable;
     }
 
-    private void broadcastLastKnownLocation() {
+    private void broadcastLastKnownLocation(boolean cancelCurrent) {
         if (lastKnownLocation == null) {
             return;
         }
         if (requests.size() != 0) {
-            for (int a = 0; a < requests.size(); a++) {
-                getConnectionsManager().cancelRequest(requests.keyAt(a), false);
+            if (cancelCurrent) {
+                for (int a = 0; a < requests.size(); a++) {
+                    getConnectionsManager().cancelRequest(requests.keyAt(a), false);
+                }
             }
             requests.clear();
         }
@@ -423,7 +431,21 @@ public class LocationController extends BaseController implements NotificationCe
             requests.put(reqId[0], 0);
         }
         getConnectionsManager().resumeNetworkMaybe();
-        stop(false);
+        if (shouldStopGps()) {
+            stop(false);
+        }
+    }
+
+    private boolean shouldStopGps() {
+        return SystemClock.uptimeMillis() > locationEndWatchTime;
+    }
+
+    protected void setNewLocationEndWatchTime() {
+        if (sharingLocations.isEmpty()) {
+            return;
+        }
+        locationEndWatchTime = SystemClock.uptimeMillis() + WATCH_LOCATION_TIMEOUT;
+        start();
     }
 
     protected void update() {
@@ -448,19 +470,32 @@ public class LocationController extends BaseController implements NotificationCe
                 a--;
             }
         }
-        if (!started) {
+        if (started) {
+            long newTime = SystemClock.uptimeMillis();
+            if (lastLocationByGoogleMaps || Math.abs(lastLocationStartTime - newTime) > LOCATION_ACQUIRE_TIME || shouldSendLocationNow()) {
+                lastLocationByGoogleMaps = false;
+                locationSentSinceLastGoogleMapUpdate = true;
+                boolean cancelAll = (SystemClock.uptimeMillis() - lastLocationSendTime) > 2 * 1000;
+                lastLocationStartTime = newTime;
+                lastLocationSendTime = SystemClock.uptimeMillis();
+                broadcastLastKnownLocation(cancelAll);
+            }
+        } else {
             if (Math.abs(lastLocationSendTime - SystemClock.uptimeMillis()) > BACKGROUD_UPDATE_TIME) {
                 lastLocationStartTime = SystemClock.uptimeMillis();
                 start();
             }
-        } else {
-            if (lastLocationByGoogleMaps || Math.abs(lastLocationStartTime - SystemClock.uptimeMillis()) > LOCATION_ACQUIRE_TIME) {
-                lastLocationByGoogleMaps = false;
-                locationSentSinceLastGoogleMapUpdate = true;
-                lastLocationSendTime = SystemClock.uptimeMillis();
-                broadcastLastKnownLocation();
-            }
         }
+    }
+
+    private boolean shouldSendLocationNow() {
+        if (!shouldStopGps()) {
+            return false;
+        }
+        if (Math.abs(lastLocationSendTime - SystemClock.uptimeMillis()) >= SEND_NEW_LOCATION_TIME) {
+            return true;
+        }
+        return false;
     }
 
     public void cleanup() {
@@ -470,8 +505,10 @@ public class LocationController extends BaseController implements NotificationCe
         cacheRequests.clear();
         cachedNearbyUsers.clear();
         cachedNearbyChats.clear();
+        lastReadLocationTime.clear();
         stopService();
         Utilities.stageQueue.postRunnable(() -> {
+            locationEndWatchTime = 0;
             requests.clear();
             sharingLocationsMap.clear();
             sharingLocations.clear();
@@ -505,6 +542,7 @@ public class LocationController extends BaseController implements NotificationCe
         info.did = did;
         info.mid = mid;
         info.period = period;
+        info.account = currentAccount;
         info.messageObject = new MessageObject(currentAccount, message, false);
         info.stopTime = getConnectionsManager().getCurrentTime() + period;
         final SharingLocationInfo old = sharingLocationsMap.get(did);
@@ -549,6 +587,7 @@ public class LocationController extends BaseController implements NotificationCe
                     info.mid = cursor.intValue(1);
                     info.stopTime = cursor.intValue(2);
                     info.period = cursor.intValue(3);
+                    info.account = currentAccount;
                     NativeByteBuffer data = cursor.byteBufferValue(4);
                     if (data != null) {
                         info.messageObject = new MessageObject(currentAccount, TLRPC.Message.TLdeserialize(data, data.readInt32(false), false), false);
@@ -848,6 +887,44 @@ public class LocationController extends BaseController implements NotificationCe
                 locationsCache.put(did, res.messages);
                 NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.liveLocationsCacheChanged, did, currentAccount);
             });
+        });
+    }
+
+    public void markLiveLoactionsAsRead(long dialogId) {
+        int lowerId = (int) dialogId;
+        if (lowerId == 0) {
+            return;
+        }
+        ArrayList<TLRPC.Message> messages = locationsCache.get(dialogId);
+        if (messages.isEmpty() || messages == null) {
+            return;
+        }
+        Integer date = lastReadLocationTime.get(dialogId);
+        int currentDate = (int) (SystemClock.uptimeMillis() / 1000);
+        if (date != null && date + 60 > currentDate) {
+            return;
+        }
+        lastReadLocationTime.put(dialogId, currentDate);
+        TLObject request;
+        if (lowerId < 0 && ChatObject.isChannel(-lowerId, currentAccount)) {
+            TLRPC.TL_channels_readMessageContents req = new TLRPC.TL_channels_readMessageContents();
+            for (int a = 0, N = messages.size(); a < N; a++) {
+                req.id.add(messages.get(a).id);
+            }
+            req.channel = getMessagesController().getInputChannel(-lowerId);
+            request = req;
+        } else {
+            TLRPC.TL_messages_readMessageContents req = new TLRPC.TL_messages_readMessageContents();
+            for (int a = 0, N = messages.size(); a < N; a++) {
+                req.id.add(messages.get(a).id);
+            }
+            request = req;
+        }
+        getConnectionsManager().sendRequest(request, (response, error) -> {
+            if (response instanceof TLRPC.TL_messages_affectedMessages) {
+                TLRPC.TL_messages_affectedMessages res = (TLRPC.TL_messages_affectedMessages) response;
+                getMessagesController().processNewDifferenceParams(-1, res.pts, -1, res.pts_count);
+            }
         });
     }
 

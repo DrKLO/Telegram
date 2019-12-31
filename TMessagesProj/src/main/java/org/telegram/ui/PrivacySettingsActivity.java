@@ -9,10 +9,12 @@
 package org.telegram.ui;
 
 import android.content.Context;
+import android.content.DialogInterface;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import org.telegram.messenger.AccountInstance;
@@ -29,11 +31,11 @@ import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
-import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ActionBar.ThemeDescription;
 import org.telegram.ui.Cells.CheckBoxCell;
 import org.telegram.ui.Cells.HeaderCell;
+import org.telegram.ui.Cells.RadioColorCell;
 import org.telegram.ui.Cells.TextCheckCell;
 import org.telegram.ui.Cells.TextInfoPrivacyCell;
 import org.telegram.ui.Cells.TextSettingsCell;
@@ -64,8 +66,8 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
     private int groupsRow;
     private int groupsDetailRow;
     private int securitySectionRow;
-    private int sessionsRow;
     private int passwordRow;
+    private int sessionsRow;
     private int passcodeRow;
     private int sessionsDetailRow;
     private int advancedSectionRow;
@@ -186,55 +188,87 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
                 presentFragment(new SessionsActivity(1));
             } else if (position == clearDraftsRow) {
                 AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-                builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
+                builder.setTitle(LocaleController.getString("AreYouSureClearDraftsTitle", R.string.AreYouSureClearDraftsTitle));
                 builder.setMessage(LocaleController.getString("AreYouSureClearDrafts", R.string.AreYouSureClearDrafts));
                 builder.setPositiveButton(LocaleController.getString("Delete", R.string.Delete), (dialogInterface, i) -> {
                     TLRPC.TL_messages_clearAllDrafts req = new TLRPC.TL_messages_clearAllDrafts();
-                    getConnectionsManager().sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> getMediaDataController().clearAllDrafts()));
+                    getConnectionsManager().sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> getMediaDataController().clearAllDrafts(true)));
                 });
                 builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
-                showDialog(builder.create());
+                AlertDialog alertDialog = builder.create();
+                showDialog(alertDialog);
+                TextView button = (TextView) alertDialog.getButton(DialogInterface.BUTTON_POSITIVE);
+                if (button != null) {
+                    button.setTextColor(Theme.getColor(Theme.key_dialogTextRed2));
+                }
             } else if (position == deleteAccountRow) {
                 if (getParentActivity() == null) {
                     return;
                 }
+                int ttl = getContactsController().getDeleteAccountTTL();
+                int selected;
+                if (ttl <= 31) {
+                    selected = 0;
+                } else if (ttl <= 93) {
+                    selected = 1;
+                } else if (ttl <= 182) {
+                    selected = 2;
+                } else {
+                    selected = 3;
+                }
                 AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
                 builder.setTitle(LocaleController.getString("DeleteAccountTitle", R.string.DeleteAccountTitle));
-                builder.setItems(new CharSequence[]{
+                String[] items = new String[]{
                         LocaleController.formatPluralString("Months", 1),
                         LocaleController.formatPluralString("Months", 3),
                         LocaleController.formatPluralString("Months", 6),
                         LocaleController.formatPluralString("Years", 1)
-                }, (dialog, which) -> {
-                    int value = 0;
-                    if (which == 0) {
-                        value = 30;
-                    } else if (which == 1) {
-                        value = 90;
-                    } else if (which == 2) {
-                        value = 182;
-                    } else if (which == 3) {
-                        value = 365;
-                    }
-                    final AlertDialog progressDialog = new AlertDialog(getParentActivity(), 3);
-                    progressDialog.setCanCacnel(false);
-                    progressDialog.show();
+                };
+                final LinearLayout linearLayout = new LinearLayout(getParentActivity());
+                linearLayout.setOrientation(LinearLayout.VERTICAL);
+                builder.setView(linearLayout);
 
-                    final TLRPC.TL_account_setAccountTTL req = new TLRPC.TL_account_setAccountTTL();
-                    req.ttl = new TLRPC.TL_accountDaysTTL();
-                    req.ttl.days = value;
-                    getConnectionsManager().sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
-                        try {
-                            progressDialog.dismiss();
-                        } catch (Exception e) {
-                            FileLog.e(e);
+                for (int a = 0; a < items.length; a++) {
+                    RadioColorCell cell = new RadioColorCell(getParentActivity());
+                    cell.setPadding(AndroidUtilities.dp(4), 0, AndroidUtilities.dp(4), 0);
+                    cell.setTag(a);
+                    cell.setCheckColor(Theme.getColor(Theme.key_radioBackground), Theme.getColor(Theme.key_dialogRadioBackgroundChecked));
+                    cell.setTextAndValue(items[a], selected == a);
+                    linearLayout.addView(cell);
+                    cell.setOnClickListener(v -> {
+                        builder.getDismissRunnable().run();
+                        Integer which = (Integer) v.getTag();
+
+                        int value = 0;
+                        if (which == 0) {
+                            value = 30;
+                        } else if (which == 1) {
+                            value = 90;
+                        } else if (which == 2) {
+                            value = 182;
+                        } else if (which == 3) {
+                            value = 365;
                         }
-                        if (response instanceof TLRPC.TL_boolTrue) {
-                            getContactsController().setDeleteAccountTTL(req.ttl.days);
-                            listAdapter.notifyDataSetChanged();
-                        }
-                    }));
-                });
+                        final AlertDialog progressDialog = new AlertDialog(getParentActivity(), 3);
+                        progressDialog.setCanCacnel(false);
+                        progressDialog.show();
+
+                        final TLRPC.TL_account_setAccountTTL req = new TLRPC.TL_account_setAccountTTL();
+                        req.ttl = new TLRPC.TL_accountDaysTTL();
+                        req.ttl.days = value;
+                        getConnectionsManager().sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
+                            try {
+                                progressDialog.dismiss();
+                            } catch (Exception e) {
+                                FileLog.e(e);
+                            }
+                            if (response instanceof TLRPC.TL_boolTrue) {
+                                getContactsController().setDeleteAccountTTL(req.ttl.days);
+                                listAdapter.notifyDataSetChanged();
+                            }
+                        }));
+                    });
+                }
                 builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
                 showDialog(builder.create());
             } else if (position == lastSeenRow) {
@@ -272,10 +306,10 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
                     return;
                 }
                 AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-                builder.setTitle(LocaleController.getString("Contacts", R.string.Contacts));
-                builder.setMessage(LocaleController.getString("SyncContactsDeleteInfo", R.string.SyncContactsDeleteInfo));
-                builder.setPositiveButton(LocaleController.getString("Cancel", R.string.Cancel), null);
-                builder.setNegativeButton(LocaleController.getString("OK", R.string.OK), (dialogInterface, i) -> {
+                builder.setTitle(LocaleController.getString("SyncContactsDeleteTitle", R.string.SyncContactsDeleteTitle));
+                builder.setMessage(AndroidUtilities.replaceTags(LocaleController.getString("SyncContactsDeleteText", R.string.SyncContactsDeleteText)));
+                builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+                builder.setPositiveButton(LocaleController.getString("Delete", R.string.Delete), (dialogInterface, i) -> {
                     AlertDialog.Builder builder12 = new AlertDialog.Builder(getParentActivity(), 3);
                     progressDialog = builder12.show();
                     progressDialog.setCanCacnel(false);
@@ -286,12 +320,17 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
                     }
                     getContactsController().deleteAllContacts(() -> progressDialog.dismiss());
                 });
-                showDialog(builder.create());
+                AlertDialog alertDialog = builder.create();
+                showDialog(alertDialog);
+                TextView button = (TextView) alertDialog.getButton(DialogInterface.BUTTON_POSITIVE);
+                if (button != null) {
+                    button.setTextColor(Theme.getColor(Theme.key_dialogTextRed2));
+                }
             } else if (position == contactsSuggestRow) {
                 final TextCheckCell cell = (TextCheckCell) view;
                 if (newSuggest) {
                     AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-                    builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
+                    builder.setTitle(LocaleController.getString("SuggestContactsTitle", R.string.SuggestContactsTitle));
                     builder.setMessage(LocaleController.getString("SuggestContactsAlert", R.string.SuggestContactsAlert));
                     builder.setPositiveButton(LocaleController.getString("MuteDisable", R.string.MuteDisable), (dialogInterface, i) -> {
                         TLRPC.TL_payments_clearSavedInfo req = new TLRPC.TL_payments_clearSavedInfo();
@@ -305,7 +344,12 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
                         }));
                     });
                     builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
-                    showDialog(builder.create());
+                    AlertDialog alertDialog = builder.create();
+                    showDialog(alertDialog);
+                    TextView button = (TextView) alertDialog.getButton(DialogInterface.BUTTON_POSITIVE);
+                    if (button != null) {
+                        button.setTextColor(Theme.getColor(Theme.key_dialogTextRed2));
+                    }
                 } else {
                     newSuggest = !newSuggest;
                     cell.setChecked(newSuggest);
@@ -318,11 +362,14 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
             } else if (position == secretMapRow) {
                 AlertsCreator.showSecretLocationAlert(getParentActivity(), currentAccount, () -> listAdapter.notifyDataSetChanged(), false);
             } else if (position == paymentsClearRow) {
-                BottomSheet.Builder builder = new BottomSheet.Builder(getParentActivity());
-                builder.setApplyTopPadding(false);
-                builder.setApplyBottomPadding(false);
+                AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+                builder.setTitle(LocaleController.getString("PrivacyPaymentsClearAlertTitle", R.string.PrivacyPaymentsClearAlertTitle));
+                builder.setMessage(LocaleController.getString("PrivacyPaymentsClearAlertText", R.string.PrivacyPaymentsClearAlertText));
+
                 LinearLayout linearLayout = new LinearLayout(getParentActivity());
                 linearLayout.setOrientation(LinearLayout.VERTICAL);
+                builder.setView(linearLayout);
+
                 for (int a = 0; a < 2; a++) {
                     String name = null;
                     if (a == 0) {
@@ -334,8 +381,9 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
                     CheckBoxCell checkBoxCell = new CheckBoxCell(getParentActivity(), 1, 21);
                     checkBoxCell.setTag(a);
                     checkBoxCell.setBackgroundDrawable(Theme.getSelectorDrawable(false));
+                    checkBoxCell.setPadding(AndroidUtilities.dp(4), 0, AndroidUtilities.dp(4), 0);
                     linearLayout.addView(checkBoxCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 50));
-                    checkBoxCell.setText(name, null, true, true);
+                    checkBoxCell.setText(name, null, true, false);
                     checkBoxCell.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
                     checkBoxCell.setOnClickListener(v -> {
                         CheckBoxCell cell = (CheckBoxCell) v;
@@ -344,11 +392,7 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
                         cell.setChecked(clear[num], true);
                     });
                 }
-                BottomSheet.BottomSheetCell cell = new BottomSheet.BottomSheetCell(getParentActivity(), 1);
-                cell.setBackgroundDrawable(Theme.getSelectorDrawable(false));
-                cell.setTextAndIcon(LocaleController.getString("ClearButton", R.string.ClearButton).toUpperCase(), 0);
-                cell.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteRedText));
-                cell.setOnClickListener(v -> {
+                builder.setPositiveButton(LocaleController.getString("ClearButton", R.string.ClearButton), (dialogInterface, i) -> {
                     try {
                         if (visibleDialog != null) {
                             visibleDialog.dismiss();
@@ -357,9 +401,9 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
                         FileLog.e(e);
                     }
                     AlertDialog.Builder builder1 = new AlertDialog.Builder(getParentActivity());
-                    builder1.setTitle(LocaleController.getString("AppName", R.string.AppName));
+                    builder1.setTitle(LocaleController.getString("PrivacyPaymentsClearAlertTitle", R.string.PrivacyPaymentsClearAlertTitle));
                     builder1.setMessage(LocaleController.getString("PrivacyPaymentsClearAlert", R.string.PrivacyPaymentsClearAlert));
-                    builder1.setPositiveButton(LocaleController.getString("OK", R.string.OK), (dialogInterface, i) -> {
+                    builder1.setPositiveButton(LocaleController.getString("ClearButton", R.string.ClearButton), (dialogInterface2, i2) -> {
                         TLRPC.TL_payments_clearSavedInfo req = new TLRPC.TL_payments_clearSavedInfo();
                         req.credentials = clear[1];
                         req.info = clear[0];
@@ -371,10 +415,22 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
                     });
                     builder1.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
                     showDialog(builder1.create());
+                    AlertDialog alertDialog = builder1.create();
+                    showDialog(alertDialog);
+                    TextView button = (TextView) alertDialog.getButton(DialogInterface.BUTTON_POSITIVE);
+                    if (button != null) {
+                        button.setTextColor(Theme.getColor(Theme.key_dialogTextRed2));
+                    }
                 });
-                linearLayout.addView(cell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 50));
-                builder.setCustomView(linearLayout);
+                builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+
                 showDialog(builder.create());
+                AlertDialog alertDialog = builder.create();
+                showDialog(alertDialog);
+                TextView button = (TextView) alertDialog.getButton(DialogInterface.BUTTON_POSITIVE);
+                if (button != null) {
+                    button.setTextColor(Theme.getColor(Theme.key_dialogTextRed2));
+                }
             } else if (position == passportRow) {
                 presentFragment(new PassportActivity(PassportActivity.TYPE_PASSWORD, 0, "", "", null, null, null, null, null));
             }
@@ -722,8 +778,11 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
                                 value = LocaleController.getString("MapPreviewProviderGoogle", R.string.MapPreviewProviderGoogle);
                                 break;
                             case 2:
-                            default:
                                 value = LocaleController.getString("MapPreviewProviderNobody", R.string.MapPreviewProviderNobody);
+                                break;
+                            case 3:
+                            default:
+                                value = LocaleController.getString("MapPreviewProviderYandex", R.string.MapPreviewProviderYandex);
                                 break;
                         }
                         textCell.setTextAndValue(LocaleController.getString("MapPreviewProvider", R.string.MapPreviewProvider), value, true);

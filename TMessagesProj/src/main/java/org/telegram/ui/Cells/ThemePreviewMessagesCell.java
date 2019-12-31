@@ -18,9 +18,15 @@ import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBarLayout;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Components.BackgroundGradientDrawable;
 import org.telegram.ui.Components.LayoutHelper;
 
 public class ThemePreviewMessagesCell extends LinearLayout {
+
+    private final Runnable invalidateRunnable = this::invalidate;
+
+    private BackgroundGradientDrawable.Disposable backgroundGradientDisposable;
+    private BackgroundGradientDrawable.Disposable oldBackgroundGradientDisposable;
 
     private Drawable backgroundDrawable;
     private Drawable oldBackgroundDrawable;
@@ -61,7 +67,20 @@ public class ThemePreviewMessagesCell extends LinearLayout {
         if (type == 0) {
             message.message = LocaleController.getString("FontSizePreviewLine2", R.string.FontSizePreviewLine2);
         } else {
-            message.message = LocaleController.getString("NewThemePreviewLine2", R.string.NewThemePreviewLine2);
+            String text = LocaleController.getString("NewThemePreviewLine3", R.string.NewThemePreviewLine3);
+            StringBuilder builder = new StringBuilder(text);
+            int index1 = text.indexOf('*');
+            int index2 = text.lastIndexOf('*');
+            if (index1 != -1 && index2 != -1) {
+                builder.replace(index2, index2 + 1, "");
+                builder.replace(index1, index1 + 1, "");
+                TLRPC.TL_messageEntityTextUrl entityUrl = new TLRPC.TL_messageEntityTextUrl();
+                entityUrl.offset = index1;
+                entityUrl.length = index2 - index1 - 1;
+                entityUrl.url = "https://telegram.org";
+                message.entities.add(entityUrl);
+            }
+            message.message = builder.toString();
         }
         message.date = date + 960;
         message.dialog_id = 1;
@@ -132,6 +151,10 @@ public class ThemePreviewMessagesCell extends LinearLayout {
         if (newDrawable != backgroundDrawable && newDrawable != null) {
             if (Theme.isAnimatingColor()) {
                 oldBackgroundDrawable = backgroundDrawable;
+                oldBackgroundGradientDisposable = backgroundGradientDisposable;
+            } else if (backgroundGradientDisposable != null) {
+                backgroundGradientDisposable.dispose();
+                backgroundGradientDisposable = null;
             }
             backgroundDrawable = newDrawable;
         }
@@ -148,7 +171,12 @@ public class ThemePreviewMessagesCell extends LinearLayout {
             }
             if (drawable instanceof ColorDrawable || drawable instanceof GradientDrawable) {
                 drawable.setBounds(0, 0, getMeasuredWidth(), getMeasuredHeight());
-                drawable.draw(canvas);
+                if (drawable instanceof BackgroundGradientDrawable) {
+                    final BackgroundGradientDrawable backgroundGradientDrawable = (BackgroundGradientDrawable) drawable;
+                    backgroundGradientDisposable = backgroundGradientDrawable.drawExactBoundsSize(canvas, this);
+                } else {
+                    drawable.draw(canvas);
+                }
             } else if (drawable instanceof BitmapDrawable) {
                 BitmapDrawable bitmapDrawable = (BitmapDrawable) drawable;
                 if (bitmapDrawable.getTileModeX() == Shader.TileMode.REPEAT) {
@@ -175,11 +203,29 @@ public class ThemePreviewMessagesCell extends LinearLayout {
                 }
             }
             if (a == 0 && oldBackgroundDrawable != null && themeAnimationValue >= 1.0f) {
+                if (oldBackgroundGradientDisposable != null) {
+                    oldBackgroundGradientDisposable.dispose();
+                    oldBackgroundGradientDisposable = null;
+                }
                 oldBackgroundDrawable = null;
+                invalidate();
             }
         }
         shadowDrawable.setBounds(0, 0, getMeasuredWidth(), getMeasuredHeight());
         shadowDrawable.draw(canvas);
+    }
+
+    @Override
+    protected void onDetachedFromWindow() {
+        super.onDetachedFromWindow();
+        if (backgroundGradientDisposable != null) {
+            backgroundGradientDisposable.dispose();
+            backgroundGradientDisposable = null;
+        }
+        if (oldBackgroundGradientDisposable != null) {
+            oldBackgroundGradientDisposable.dispose();
+            oldBackgroundGradientDisposable = null;
+        }
     }
 
     @Override

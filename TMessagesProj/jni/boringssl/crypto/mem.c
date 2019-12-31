@@ -59,14 +59,11 @@
 #include <assert.h>
 #include <stdarg.h>
 #include <stdio.h>
-#include <string.h>
 
 #if defined(OPENSSL_WINDOWS)
 OPENSSL_MSVC_PRAGMA(warning(push, 3))
 #include <windows.h>
 OPENSSL_MSVC_PRAGMA(warning(pop))
-#else
-#include <strings.h>
 #endif
 
 #include "internal.h"
@@ -74,6 +71,36 @@ OPENSSL_MSVC_PRAGMA(warning(pop))
 
 #define OPENSSL_MALLOC_PREFIX 8
 
+#if defined(OPENSSL_ASAN)
+void __asan_poison_memory_region(const volatile void *addr, size_t size);
+void __asan_unpoison_memory_region(const volatile void *addr, size_t size);
+#else
+static void __asan_poison_memory_region(const void *addr, size_t size) {}
+static void __asan_unpoison_memory_region(const void *addr, size_t size) {}
+#endif
+
+// Windows doesn't really support weak symbols as of May 2019, and Clang on
+// Windows will emit strong symbols instead. See
+// https://bugs.llvm.org/show_bug.cgi?id=37598
+#if defined(__GNUC__) || (defined(__clang__) && !defined(_MSC_VER))
+// sdallocx is a sized |free| function. By passing the size (which we happen to
+// always know in BoringSSL), the malloc implementation can save work. We cannot
+// depend on |sdallocx| being available so we declare a wrapper that falls back
+// to |free| as a weak symbol.
+//
+// This will always be safe, but will only be overridden if the malloc
+// implementation is statically linked with BoringSSL. So, if |sdallocx| is
+// provided in, say, libc.so, we still won't use it because that's dynamically
+// linked. This isn't an ideal result, but its helps in some cases.
+void sdallocx(void *ptr, size_t size, int flags);
+
+__attribute((weak, noinline))
+#else
+static
+#endif
+void sdallocx(void *ptr, size_t size, int flags) {
+  free(ptr);
+}
 
 void *OPENSSL_malloc(size_t size) {
   void *ptr = malloc(size + OPENSSL_MALLOC_PREFIX);
@@ -83,6 +110,7 @@ void *OPENSSL_malloc(size_t size) {
 
   *(size_t *)ptr = size;
 
+  __asan_poison_memory_region(ptr, OPENSSL_MALLOC_PREFIX);
   return ((uint8_t *)ptr) + OPENSSL_MALLOC_PREFIX;
 }
 
@@ -92,10 +120,11 @@ void OPENSSL_free(void *orig_ptr) {
   }
 
   void *ptr = ((uint8_t *)orig_ptr) - OPENSSL_MALLOC_PREFIX;
+  __asan_unpoison_memory_region(ptr, OPENSSL_MALLOC_PREFIX);
 
   size_t size = *(size_t *)ptr;
   OPENSSL_cleanse(ptr, size + OPENSSL_MALLOC_PREFIX);
-  free(ptr);
+  sdallocx(ptr, size + OPENSSL_MALLOC_PREFIX, 0 /* flags */);
 }
 
 void *OPENSSL_realloc(void *orig_ptr, size_t new_size) {
@@ -104,7 +133,9 @@ void *OPENSSL_realloc(void *orig_ptr, size_t new_size) {
   }
 
   void *ptr = ((uint8_t *)orig_ptr) - OPENSSL_MALLOC_PREFIX;
+  __asan_unpoison_memory_region(ptr, OPENSSL_MALLOC_PREFIX);
   size_t old_size = *(size_t *)ptr;
+  __asan_poison_memory_region(ptr, OPENSSL_MALLOC_PREFIX);
 
   void *ret = OPENSSL_malloc(new_size);
   if (ret == NULL) {
@@ -135,6 +166,10 @@ void OPENSSL_cleanse(void *ptr, size_t len) {
   __asm__ __volatile__("" : : "r"(ptr) : "memory");
 #endif
 #endif  // !OPENSSL_NO_ASM
+}
+
+void OPENSSL_clear_free(void *ptr, size_t unused) {
+  OPENSSL_free(ptr);
 }
 
 int CRYPTO_memcmp(const void *in_a, const void *in_b, size_t len) {

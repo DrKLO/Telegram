@@ -429,6 +429,7 @@ public final class TtmlDecoder extends SimpleSubtitleDecoder {
         /* lineType= */ Cue.LINE_TYPE_FRACTION,
         lineAnchor,
         width,
+        height,
         /* textSizeType= */ Cue.TEXT_SIZE_TYPE_FRACTIONAL_IGNORE_PADDING,
         /* textSize= */ regionTextHeight);
   }

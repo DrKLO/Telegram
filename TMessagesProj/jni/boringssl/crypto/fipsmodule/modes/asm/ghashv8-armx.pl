@@ -17,14 +17,11 @@
 # GHASH for ARMv8 Crypto Extension, 64-bit polynomial multiplication.
 #
 # June 2014
-#
-# Initial version was developed in tight cooperation with Ard
-# Biesheuvel <ard.biesheuvel@linaro.org> from bits-n-pieces from
-# other assembly modules. Just like aesv8-armx.pl this module
-# supports both AArch32 and AArch64 execution modes.
+# Initial version was developed in tight cooperation with Ard Biesheuvel
+# of Linaro from bits-n-pieces from other assembly modules. Just like
+# aesv8-armx.pl this module supports both AArch32 and AArch64 execution modes.
 #
 # July 2014
-#
 # Implement 2x aggregated reduction [see ghash-x86.pl for background
 # information].
 #
@@ -36,6 +33,7 @@
 # Cortex-A57	1.17		7.61
 # Denver	0.71		6.02
 # Mongoose	1.10		8.06
+# Kryo		1.16		8.00
 #
 # (*)	presented for reference/comparison purposes;
 
@@ -209,13 +207,13 @@ $code.=<<___;
 						@ loaded value would have
 						@ to be rotated in order to
 						@ make it appear as in
-						@ alorithm specification
+						@ algorithm specification
 	subs		$len,$len,#32		@ see if $len is 32 or larger
 	mov		$inc,#16		@ $inc is used as post-
 						@ increment for input pointer;
 						@ as loop is modulo-scheduled
 						@ $inc is zeroed just in time
-						@ to preclude oversteping
+						@ to preclude overstepping
 						@ inp[len], which means that
 						@ last block[s] are actually
 						@ loaded twice, but last
@@ -373,7 +371,7 @@ if ($flavour =~ /64/) {			######## 64-bit code
 	s/\bq([0-9]+)\b/"v".($1<8?$1:$1+8).".16b"/geo;	# old->new registers
 	s/@\s/\/\//o;				# old->new style commentary
 
-	# fix up remainig legacy suffixes
+	# fix up remaining legacy suffixes
 	s/\.[ui]?8(\s)/$1/o;
 	s/\.[uis]?32//o and s/\.16b/\.4s/go;
 	m/\.p64/o and s/\.16b/\.1q/o;		# 1st pmull argument
@@ -413,7 +411,7 @@ if ($flavour =~ /64/) {			######## 64-bit code
 	s/\bv([0-9])\.[12468]+[bsd]\b/q$1/go;	# new->old registers
 	s/\/\/\s?/@ /o;				# new->old style commentary
 
-	# fix up remainig new-style suffixes
+	# fix up remaining new-style suffixes
 	s/\],#[0-9]+/]!/o;
 
 	s/cclr\s+([^,]+),\s*([a-z]+)/mov$2	$1,#0/o			or
@@ -427,4 +425,4 @@ if ($flavour =~ /64/) {			######## 64-bit code
     }
 }
 
-close STDOUT; # enforce flush
+close STDOUT or die "error closing STDOUT"; # enforce flush

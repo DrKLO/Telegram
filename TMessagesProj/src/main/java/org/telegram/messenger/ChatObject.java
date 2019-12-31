@@ -98,6 +98,10 @@ public class ChatObject {
         return getBannedRight(chat.default_banned_rights, action);
     }
 
+    public static boolean isActionBanned(TLRPC.Chat chat, int action) {
+        return chat != null && (getBannedRight(chat.banned_rights, action) || getBannedRight(chat.default_banned_rights, action));
+    }
+
     public static boolean canUserDoAdminAction(TLRPC.Chat chat, int action) {
         if (chat == null) {
             return false;

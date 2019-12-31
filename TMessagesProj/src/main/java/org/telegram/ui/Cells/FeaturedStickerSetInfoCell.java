@@ -8,10 +8,13 @@
 
 package org.telegram.ui.Cells;
 
+import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
+import android.animation.AnimatorSet;
+import android.animation.ObjectAnimator;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
-import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
@@ -19,6 +22,8 @@ import android.text.TextUtils;
 import android.text.style.ForegroundColorSpan;
 import android.util.TypedValue;
 import android.view.Gravity;
+import android.view.View;
+import android.view.animation.OvershootInterpolator;
 import android.widget.FrameLayout;
 import android.widget.TextView;
 
@@ -30,6 +35,7 @@ import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.ColorSpanUnderline;
+import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LayoutHelper;
 
 public class FeaturedStickerSetInfoCell extends FrameLayout {
@@ -37,16 +43,12 @@ public class FeaturedStickerSetInfoCell extends FrameLayout {
     private TextView nameTextView;
     private TextView infoTextView;
     private TextView addButton;
-    private TLRPC.StickerSetCovered set;
+    private TextView delButton;
     private Drawable addDrawable;
-    private Drawable delDrawable;
+    private TLRPC.StickerSetCovered set;
 
-    private boolean drawProgress;
-    private float progressAlpha;
-    private RectF rect = new RectF();
-    private long lastUpdateTime;
-    private Paint botProgressPaint;
-    private int angle;
+    private AnimatorSet animatorSet;
+
     private boolean isInstalled;
     private boolean hasOnClick;
     private boolean isUnread;
@@ -57,14 +59,7 @@ public class FeaturedStickerSetInfoCell extends FrameLayout {
     public FeaturedStickerSetInfoCell(Context context, int left) {
         super(context);
 
-        delDrawable = Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(4), Theme.getColor(Theme.key_featuredStickers_delButton), Theme.getColor(Theme.key_featuredStickers_delButtonPressed));
         addDrawable = Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(4), Theme.getColor(Theme.key_featuredStickers_addButton), Theme.getColor(Theme.key_featuredStickers_addButtonPressed));
-
-        botProgressPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        botProgressPaint.setColor(Theme.getColor(Theme.key_featuredStickers_buttonProgress));
-        botProgressPaint.setStrokeCap(Paint.Cap.ROUND);
-        botProgressPaint.setStyle(Paint.Style.STROKE);
-        botProgressPaint.setStrokeWidth(AndroidUtilities.dp(2));
 
         nameTextView = new TextView(context);
         nameTextView.setTextColor(Theme.getColor(Theme.key_chat_emojiPanelTrendingTitle));
@@ -81,48 +76,23 @@ public class FeaturedStickerSetInfoCell extends FrameLayout {
         infoTextView.setSingleLine(true);
         addView(infoTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.LEFT, left, 30, 100, 0));
 
-        addButton = new TextView(context) {
-            @Override
-            protected void onDraw(Canvas canvas) {
-                super.onDraw(canvas);
-                if (drawProgress || !drawProgress && progressAlpha != 0) {
-                    botProgressPaint.setAlpha(Math.min(255, (int) (progressAlpha * 255)));
-                    int x = getMeasuredWidth() - AndroidUtilities.dp(11);
-                    rect.set(x, AndroidUtilities.dp(3), x + AndroidUtilities.dp(8), AndroidUtilities.dp(8 + 3));
-                    canvas.drawArc(rect, angle, 220, false, botProgressPaint);
-                    invalidate((int) rect.left - AndroidUtilities.dp(2), (int) rect.top - AndroidUtilities.dp(2), (int) rect.right + AndroidUtilities.dp(2), (int) rect.bottom + AndroidUtilities.dp(2));
-                    long newTime = System.currentTimeMillis();
-                    if (Math.abs(lastUpdateTime - System.currentTimeMillis()) < 1000) {
-                        long delta = (newTime - lastUpdateTime);
-                        float dt = 360 * delta / 2000.0f;
-                        angle += dt;
-                        angle -= 360 * (angle / 360);
-                        if (drawProgress) {
-                            if (progressAlpha < 1.0f) {
-                                progressAlpha += delta / 200.0f;
-                                if (progressAlpha > 1.0f) {
-                                    progressAlpha = 1.0f;
-                                }
-                            }
-                        } else {
-                            if (progressAlpha > 0.0f) {
-                                progressAlpha -= delta / 200.0f;
-                                if (progressAlpha < 0.0f) {
-                                    progressAlpha = 0.0f;
-                                }
-                            }
-                        }
-                    }
-                    lastUpdateTime = newTime;
-                    invalidate();
-                }
-            }
-        };
+        addButton = new TextView(context);
         addButton.setGravity(Gravity.CENTER);
         addButton.setTextColor(Theme.getColor(Theme.key_featuredStickers_buttonText));
         addButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         addButton.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        addButton.setBackgroundDrawable(addDrawable);
+        addButton.setPadding(AndroidUtilities.dp(17), 0, AndroidUtilities.dp(17), 0);
+        addButton.setText(LocaleController.getString("Add", R.string.Add));
         addView(addButton, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 28, Gravity.TOP | Gravity.RIGHT, 0, 16, 14, 0));
+
+        delButton = new TextView(context);
+        delButton.setGravity(Gravity.CENTER);
+        delButton.setTextColor(Theme.getColor(Theme.key_featuredStickers_removeButtonText));
+        delButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+        delButton.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        delButton.setText(LocaleController.getString("StickersRemove", R.string.StickersRemove));
+        addView(delButton, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 28, Gravity.TOP | Gravity.RIGHT, 0, 16, 14, 0));
 
         setWillNotDraw(false);
     }
@@ -131,20 +101,37 @@ public class FeaturedStickerSetInfoCell extends FrameLayout {
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         super.onMeasure(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(60), MeasureSpec.EXACTLY));
 
-        measureChildWithMargins(nameTextView, widthMeasureSpec, addButton.getMeasuredWidth(), heightMeasureSpec, 0);
+        int width = addButton.getMeasuredWidth();
+        int width2 = delButton.getMeasuredWidth();
+        FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) delButton.getLayoutParams();
+        if (width2 < width) {
+            layoutParams.rightMargin = AndroidUtilities.dp(14) + (width - width2) / 2;
+        } else {
+            layoutParams.rightMargin = AndroidUtilities.dp(14);
+        }
+
+        measureChildWithMargins(nameTextView, widthMeasureSpec, width, heightMeasureSpec, 0);
     }
 
     public void setAddOnClickListener(OnClickListener onClickListener) {
         hasOnClick = true;
         addButton.setOnClickListener(onClickListener);
+        delButton.setOnClickListener(onClickListener);
     }
 
     public void setStickerSet(TLRPC.StickerSetCovered stickerSet, boolean unread) {
-        setStickerSet(stickerSet, unread, 0, 0);
+        setStickerSet(stickerSet, unread, false, 0, 0);
     }
 
-    public void setStickerSet(TLRPC.StickerSetCovered stickerSet, boolean unread, int index, int searchLength) {
-        lastUpdateTime = System.currentTimeMillis();
+    public void setStickerSet(TLRPC.StickerSetCovered stickerSet, boolean unread, boolean animated) {
+        setStickerSet(stickerSet, unread, animated, 0, 0);
+    }
+
+    public void setStickerSet(TLRPC.StickerSetCovered stickerSet, boolean unread, boolean animated, int index, int searchLength) {
+        if (animatorSet != null) {
+            animatorSet.cancel();
+            animatorSet = null;
+        }
         if (searchLength != 0) {
             SpannableStringBuilder builder = new SpannableStringBuilder(stickerSet.set.title);
             try {
@@ -160,14 +147,55 @@ public class FeaturedStickerSetInfoCell extends FrameLayout {
         isUnread = unread;
         if (hasOnClick) {
             addButton.setVisibility(VISIBLE);
-            if (isInstalled = MediaDataController.getInstance(currentAccount).isStickerPackInstalled(stickerSet.set.id)) {
-                addButton.setBackgroundDrawable(delDrawable);
-                addButton.setText(LocaleController.getString("StickersRemove", R.string.StickersRemove));
+            isInstalled = MediaDataController.getInstance(currentAccount).isStickerPackInstalled(stickerSet.set.id);
+            if (animated) {
+                if (isInstalled) {
+                    delButton.setVisibility(VISIBLE);
+                } else {
+                    addButton.setVisibility(VISIBLE);
+                }
+                animatorSet = new AnimatorSet();
+                animatorSet.setDuration(250);
+                animatorSet.playTogether(
+                        ObjectAnimator.ofFloat(delButton, View.ALPHA, isInstalled ? 1.0f : 0.0f),
+                        ObjectAnimator.ofFloat(delButton, View.SCALE_X, isInstalled ? 1.0f : 0.0f),
+                        ObjectAnimator.ofFloat(delButton, View.SCALE_Y, isInstalled ? 1.0f : 0.0f),
+                        ObjectAnimator.ofFloat(addButton, View.ALPHA, isInstalled ? 0.0f : 1.0f),
+                        ObjectAnimator.ofFloat(addButton, View.SCALE_X, isInstalled ? 0.0f : 1.0f),
+                        ObjectAnimator.ofFloat(addButton, View.SCALE_Y, isInstalled ? 0.0f : 1.0f));
+                animatorSet.addListener(new AnimatorListenerAdapter() {
+                    @Override
+                    public void onAnimationEnd(Animator animation) {
+                        if (isInstalled) {
+                            addButton.setVisibility(INVISIBLE);
+                        } else {
+                            delButton.setVisibility(INVISIBLE);
+                        }
+                    }
+                });
+                animatorSet.setInterpolator(new OvershootInterpolator(1.02f));
+                animatorSet.start();
             } else {
-                addButton.setBackgroundDrawable(addDrawable);
-                addButton.setText(LocaleController.getString("Add", R.string.Add));
+                if (isInstalled) {
+                    delButton.setVisibility(VISIBLE);
+                    delButton.setAlpha(1.0f);
+                    delButton.setScaleX(1.0f);
+                    delButton.setScaleY(1.0f);
+                    addButton.setVisibility(INVISIBLE);
+                    addButton.setAlpha(0.0f);
+                    addButton.setScaleX(0.0f);
+                    addButton.setScaleY(0.0f);
+                } else {
+                    addButton.setVisibility(VISIBLE);
+                    addButton.setAlpha(1.0f);
+                    addButton.setScaleX(1.0f);
+                    addButton.setScaleY(1.0f);
+                    delButton.setVisibility(INVISIBLE);
+                    delButton.setAlpha(0.0f);
+                    delButton.setScaleX(0.0f);
+                    delButton.setScaleY(0.0f);
+                }
             }
-            addButton.setPadding(AndroidUtilities.dp(17), 0, AndroidUtilities.dp(17), 0);
         } else {
             addButton.setVisibility(GONE);
         }
@@ -190,12 +218,6 @@ public class FeaturedStickerSetInfoCell extends FrameLayout {
 
     public boolean isInstalled() {
         return isInstalled;
-    }
-
-    public void setDrawProgress(boolean value) {
-        drawProgress = value;
-        lastUpdateTime = System.currentTimeMillis();
-        addButton.invalidate();
     }
 
     public TLRPC.StickerSetCovered getStickerSet() {

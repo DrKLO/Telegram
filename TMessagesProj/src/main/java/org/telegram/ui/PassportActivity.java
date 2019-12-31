@@ -9,6 +9,7 @@ import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.Dialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
@@ -1638,7 +1639,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
                         final TLRPC.TL_auth_passwordRecovery res = (TLRPC.TL_auth_passwordRecovery) response;
                         AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
                         builder.setMessage(LocaleController.formatString("RestoreEmailSent", R.string.RestoreEmailSent, res.email_pattern));
-                        builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
+                        builder.setTitle(LocaleController.getString("RestoreEmailSentTitle", R.string.RestoreEmailSentTitle));
                         builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), (dialogInterface, i) -> {
                             TwoStepVerificationActivity fragment = new TwoStepVerificationActivity(currentAccount, 1);
                             fragment.setRecoveryParams(currentPassword);
@@ -2375,7 +2376,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
                 X509EncodedKeySpec keySpecX509 = new X509EncodedKeySpec(Base64.decode(key, Base64.DEFAULT));
                 RSAPublicKey pubKey = (RSAPublicKey) kf.generatePublic(keySpecX509);
 
-                Cipher c = Cipher.getInstance("RSA/NONE/OAEPWithSHA1AndMGF1Padding", "BC");
+                Cipher c = Cipher.getInstance("RSA/NONE/OAEPWithSHA1AndMGF1Padding");
                 c.init(Cipher.ENCRYPT_MODE, pubKey);
                 req.credentials.secret = c.doFinal(encryptionResult.decrypyedFileSecret);
             } catch (Exception e) {
@@ -2446,7 +2447,9 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
         linearLayout2.addView(deletePassportCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
         deletePassportCell.setOnClickListener(v -> {
             AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-            builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), (dialog, which) -> {
+            builder.setTitle(LocaleController.getString("TelegramPassportDeleteTitle", R.string.TelegramPassportDeleteTitle));
+            builder.setMessage(LocaleController.getString("TelegramPassportDeleteAlert", R.string.TelegramPassportDeleteAlert));
+            builder.setPositiveButton(LocaleController.getString("Delete", R.string.Delete), (dialog, which) -> {
                 TLRPC.TL_account_deleteSecureValue req = new TLRPC.TL_account_deleteSecureValue();
                 for (int a = 0; a < currentForm.values.size(); a++) {
                     req.types.add(currentForm.values.get(a).type);
@@ -2468,9 +2471,12 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
                 }));
             });
             builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
-            builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
-            builder.setMessage(LocaleController.getString("TelegramPassportDeleteAlert", R.string.TelegramPassportDeleteAlert));
-            showDialog(builder.create());
+            AlertDialog alertDialog = builder.create();
+            showDialog(alertDialog);
+            TextView button = (TextView) alertDialog.getButton(DialogInterface.BUTTON_POSITIVE);
+            if (button != null) {
+                button.setTextColor(Theme.getColor(Theme.key_dialogTextRed2));
+            }
         });
 
         addDocumentSectionCell = new ShadowSectionCell(context);
@@ -4000,45 +4006,48 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
                     getParentActivity().requestPermissions(new String[]{Manifest.permission.CAMERA}, 22);
                     return;
                 }
-                MrzCameraActivity fragment = new MrzCameraActivity();
-                fragment.setDelegate(result -> {
-                    if (!TextUtils.isEmpty(result.firstName)) {
-                        inputFields[FIELD_NAME].setText(result.firstName);
-                    }
-                    if (!TextUtils.isEmpty(result.middleName)) {
-                        inputFields[FIELD_MIDNAME].setText(result.middleName);
-                    }
-                    if (!TextUtils.isEmpty(result.lastName)) {
-                        inputFields[FIELD_SURNAME].setText(result.lastName);
-                    }
-                    if (result.gender != MrzRecognizer.Result.GENDER_UNKNOWN) {
-                        switch (result.gender) {
-                            case MrzRecognizer.Result.GENDER_MALE:
-                                currentGender = "male";
-                                inputFields[FIELD_GENDER].setText(LocaleController.getString("PassportMale", R.string.PassportMale));
-                                break;
-                            case MrzRecognizer.Result.GENDER_FEMALE:
-                                currentGender = "female";
-                                inputFields[FIELD_GENDER].setText(LocaleController.getString("PassportFemale", R.string.PassportFemale));
-                                break;
+                CameraScanActivity fragment = new CameraScanActivity(org.telegram.ui.CameraScanActivity.TYPE_MRZ);
+                fragment.setDelegate(new CameraScanActivity.CameraScanActivityDelegate() {
+                    @Override
+                    public void didFindMrzInfo(MrzRecognizer.Result result) {
+                        if (!TextUtils.isEmpty(result.firstName)) {
+                            inputFields[FIELD_NAME].setText(result.firstName);
                         }
-                    }
-                    if (!TextUtils.isEmpty(result.nationality)) {
-                        currentCitizeship = result.nationality;
-                        String country = languageMap.get(currentCitizeship);
-                        if (country != null) {
-                            inputFields[FIELD_CITIZENSHIP].setText(country);
+                        if (!TextUtils.isEmpty(result.middleName)) {
+                            inputFields[FIELD_MIDNAME].setText(result.middleName);
                         }
-                    }
-                    if (!TextUtils.isEmpty(result.issuingCountry)) {
-                        currentResidence = result.issuingCountry;
-                        String country = languageMap.get(currentResidence);
-                        if (country != null) {
-                            inputFields[FIELD_RESIDENCE].setText(country);
+                        if (!TextUtils.isEmpty(result.lastName)) {
+                            inputFields[FIELD_SURNAME].setText(result.lastName);
                         }
-                    }
-                    if (result.birthDay > 0 && result.birthMonth > 0 && result.birthYear > 0) {
-                        inputFields[FIELD_BIRTHDAY].setText(String.format(Locale.US, "%02d.%02d.%d", result.birthDay, result.birthMonth, result.birthYear));
+                        if (result.gender != MrzRecognizer.Result.GENDER_UNKNOWN) {
+                            switch (result.gender) {
+                                case MrzRecognizer.Result.GENDER_MALE:
+                                    currentGender = "male";
+                                    inputFields[FIELD_GENDER].setText(LocaleController.getString("PassportMale", R.string.PassportMale));
+                                    break;
+                                case MrzRecognizer.Result.GENDER_FEMALE:
+                                    currentGender = "female";
+                                    inputFields[FIELD_GENDER].setText(LocaleController.getString("PassportFemale", R.string.PassportFemale));
+                                    break;
+                            }
+                        }
+                        if (!TextUtils.isEmpty(result.nationality)) {
+                            currentCitizeship = result.nationality;
+                            String country = languageMap.get(currentCitizeship);
+                            if (country != null) {
+                                inputFields[FIELD_CITIZENSHIP].setText(country);
+                            }
+                        }
+                        if (!TextUtils.isEmpty(result.issuingCountry)) {
+                            currentResidence = result.issuingCountry;
+                            String country = languageMap.get(currentResidence);
+                            if (country != null) {
+                                inputFields[FIELD_RESIDENCE].setText(country);
+                            }
+                        }
+                        if (result.birthDay > 0 && result.birthMonth > 0 && result.birthYear > 0) {
+                            inputFields[FIELD_BIRTHDAY].setText(String.format(Locale.US, "%02d.%02d.%d", result.birthDay, result.birthMonth, result.birthYear));
+                        }
                     }
                 });
                 presentFragment(fragment);
@@ -6940,7 +6949,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
             fragment.setDelegate(new DocumentSelectActivity.DocumentSelectActivityDelegate() {
 
                 @Override
-                public void didSelectFiles(DocumentSelectActivity activity, ArrayList<String> files, boolean notify, int scheduleDate) {
+                public void didSelectFiles(DocumentSelectActivity activity, ArrayList<String> files, String caption, boolean notify, int scheduleDate) {
                     activity.finishFragment();
                     ArrayList<SendMessagesHelper.SendingMediaInfo> arrayList = new ArrayList<>();
                     for (int a = 0, count = files.size(); a < count; a++) {
@@ -6949,6 +6958,11 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
                         arrayList.add(info);
                     }
                     processSelectedFiles(arrayList);
+                }
+
+                @Override
+                public void didSelectPhotos(ArrayList<SendMessagesHelper.SendingMediaInfo> photos, boolean notify, int scheduleDate) {
+                    processSelectedFiles(photos);
                 }
 
                 @Override
@@ -7264,7 +7278,6 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
 
         private Timer timeTimer;
         private Timer codeTimer;
-        private int openTime;
         private final Object timerSync = new Object();
         private int time = 60000;
         private int codeTime = 15000;
@@ -7513,7 +7526,6 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
             phone = params.getString("phone");
             phoneHash = params.getString("phoneHash");
             timeout = time = params.getInt("timeout");
-            openTime = (int) (System.currentTimeMillis() / 1000);
             nextType = params.getInt("nextType");
             pattern = params.getString("pattern");
             length = params.getInt("length");
@@ -7723,54 +7735,51 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
                     double diff = currentTime - lastCurrentTime;
                     time -= diff;
                     lastCurrentTime = currentTime;
-                    AndroidUtilities.runOnUIThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            if (time >= 1000) {
-                                int minutes = time / 1000 / 60;
-                                int seconds = time / 1000 - minutes * 60;
-                                if (nextType == 4 || nextType == 3) {
-                                    timeText.setText(LocaleController.formatString("CallText", R.string.CallText, minutes, seconds));
-                                } else if (nextType == 2) {
-                                    timeText.setText(LocaleController.formatString("SmsText", R.string.SmsText, minutes, seconds));
-                                }
-                                if (progressView != null) {
-                                    progressView.setProgress(1.0f - (float) time / (float) timeout);
-                                }
-                            } else {
-                                if (progressView != null) {
-                                    progressView.setProgress(1.0f);
-                                }
-                                destroyTimer();
-                                if (verificationType == 3) {
-                                    AndroidUtilities.setWaitingForCall(false);
-                                    NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.didReceiveCall);
+                    AndroidUtilities.runOnUIThread(() -> {
+                        if (time >= 1000) {
+                            int minutes = time / 1000 / 60;
+                            int seconds = time / 1000 - minutes * 60;
+                            if (nextType == 4 || nextType == 3) {
+                                timeText.setText(LocaleController.formatString("CallText", R.string.CallText, minutes, seconds));
+                            } else if (nextType == 2) {
+                                timeText.setText(LocaleController.formatString("SmsText", R.string.SmsText, minutes, seconds));
+                            }
+                            if (progressView != null) {
+                                progressView.setProgress(1.0f - (float) time / (float) timeout);
+                            }
+                        } else {
+                            if (progressView != null) {
+                                progressView.setProgress(1.0f);
+                            }
+                            destroyTimer();
+                            if (verificationType == 3) {
+                                AndroidUtilities.setWaitingForCall(false);
+                                NotificationCenter.getGlobalInstance().removeObserver(PhoneConfirmationView.this, NotificationCenter.didReceiveCall);
+                                waitingForEvent = false;
+                                destroyCodeTimer();
+                                resendCode();
+                            } else if (verificationType == 2 || verificationType == 4) {
+                                if (nextType == 4 || nextType == 2) {
+                                    if (nextType == 4) {
+                                        timeText.setText(LocaleController.getString("Calling", R.string.Calling));
+                                    } else {
+                                        timeText.setText(LocaleController.getString("SendingSms", R.string.SendingSms));
+                                    }
+                                    createCodeTimer();
+                                    TLRPC.TL_auth_resendCode req = new TLRPC.TL_auth_resendCode();
+                                    req.phone_number = phone;
+                                    req.phone_code_hash = phoneHash;
+                                    ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> {
+                                        if (error != null && error.text != null) {
+                                            AndroidUtilities.runOnUIThread(() -> lastError = error.text);
+                                        }
+                                    }, ConnectionsManager.RequestFlagFailOnServerErrors);
+                                } else if (nextType == 3) {
+                                    AndroidUtilities.setWaitingForSms(false);
+                                    NotificationCenter.getGlobalInstance().removeObserver(PhoneConfirmationView.this, NotificationCenter.didReceiveSmsCode);
                                     waitingForEvent = false;
                                     destroyCodeTimer();
                                     resendCode();
-                                } else if (verificationType == 2 || verificationType == 4) {
-                                    if (nextType == 4 || nextType == 2) {
-                                        if (nextType == 4) {
-                                            timeText.setText(LocaleController.getString("Calling", R.string.Calling));
-                                        } else {
-                                            timeText.setText(LocaleController.getString("SendingSms", R.string.SendingSms));
-                                        }
-                                        createCodeTimer();
-                                        TLRPC.TL_auth_resendCode req = new TLRPC.TL_auth_resendCode();
-                                        req.phone_number = phone;
-                                        req.phone_code_hash = phoneHash;
-                                        ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> {
-                                            if (error != null && error.text != null) {
-                                                AndroidUtilities.runOnUIThread(() -> lastError = error.text);
-                                            }
-                                        }, ConnectionsManager.RequestFlagFailOnServerErrors);
-                                    } else if (nextType == 3) {
-                                        AndroidUtilities.setWaitingForSms(false);
-                                        NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.didReceiveSmsCode);
-                                        waitingForEvent = false;
-                                        destroyCodeTimer();
-                                        resendCode();
-                                    }
                                 }
                             }
                         }

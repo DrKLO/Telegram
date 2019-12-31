@@ -87,6 +87,7 @@ public final class TsExtractor implements Extractor {
   public static final int TS_STREAM_TYPE_DTS = 0x8A;
   public static final int TS_STREAM_TYPE_HDMV_DTS = 0x82;
   public static final int TS_STREAM_TYPE_E_AC3 = 0x87;
+  public static final int TS_STREAM_TYPE_AC4 = 0xAC; // DVB/ATSC AC-4 Descriptor
   public static final int TS_STREAM_TYPE_H262 = 0x02;
   public static final int TS_STREAM_TYPE_H264 = 0x1B;
   public static final int TS_STREAM_TYPE_H265 = 0x24;
@@ -102,6 +103,7 @@ public final class TsExtractor implements Extractor {
 
   private static final long AC3_FORMAT_IDENTIFIER = Util.getIntegerCodeForString("AC-3");
   private static final long E_AC3_FORMAT_IDENTIFIER = Util.getIntegerCodeForString("EAC3");
+  private static final long AC4_FORMAT_IDENTIFIER = Util.getIntegerCodeForString("AC-4");
   private static final long HEVC_FORMAT_IDENTIFIER = Util.getIntegerCodeForString("HEVC");
 
   private static final int BUFFER_SIZE = TS_PACKET_SIZE * 50;
@@ -494,7 +496,10 @@ public final class TsExtractor implements Extractor {
     private static final int TS_PMT_DESC_AC3 = 0x6A;
     private static final int TS_PMT_DESC_EAC3 = 0x7A;
     private static final int TS_PMT_DESC_DTS = 0x7B;
+    private static final int TS_PMT_DESC_DVB_EXT = 0x7F;
     private static final int TS_PMT_DESC_DVBSUBS = 0x59;
+
+    private static final int TS_PMT_DESC_DVB_EXT_AC4 = 0x15;
 
     private final ParsableBitArray pmtScratch;
     private final SparseArray<TsPayloadReader> trackIdToReaderScratch;
@@ -648,6 +653,8 @@ public final class TsExtractor implements Extractor {
             streamType = TS_STREAM_TYPE_AC3;
           } else if (formatIdentifier == E_AC3_FORMAT_IDENTIFIER) {
             streamType = TS_STREAM_TYPE_E_AC3;
+          } else if (formatIdentifier == AC4_FORMAT_IDENTIFIER) {
+            streamType = TS_STREAM_TYPE_AC4;
           } else if (formatIdentifier == HEVC_FORMAT_IDENTIFIER) {
             streamType = TS_STREAM_TYPE_H265;
           }
@@ -655,6 +662,13 @@ public final class TsExtractor implements Extractor {
           streamType = TS_STREAM_TYPE_AC3;
         } else if (descriptorTag == TS_PMT_DESC_EAC3) { // enhanced_AC-3_descriptor
           streamType = TS_STREAM_TYPE_E_AC3;
+        } else if (descriptorTag == TS_PMT_DESC_DVB_EXT) {
+          // Extension descriptor in DVB (ETSI EN 300 468).
+          int descriptorTagExt = data.readUnsignedByte();
+          if (descriptorTagExt == TS_PMT_DESC_DVB_EXT_AC4) {
+            // AC-4_descriptor in DVB (ETSI EN 300 468).
+            streamType = TS_STREAM_TYPE_AC4;
+          }
         } else if (descriptorTag == TS_PMT_DESC_DTS) { // DTS_descriptor
           streamType = TS_STREAM_TYPE_DTS;
         } else if (descriptorTag == TS_PMT_DESC_ISO639_LANG) {

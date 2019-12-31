@@ -174,7 +174,7 @@ public class PollCreateActivity extends BaseFragment {
                     }
                     poll.results = new TLRPC.TL_pollResults();
                     if (parentFragment.isInScheduleMode()) {
-                        AlertsCreator.createScheduleDatePickerDialog(getParentActivity(), UserObject.isUserSelf(parentFragment.getCurrentUser()), (notify, scheduleDate) -> {
+                        AlertsCreator.createScheduleDatePickerDialog(getParentActivity(), parentFragment.getDialogId(), (notify, scheduleDate) -> {
                             delegate.sendPoll(poll, notify, scheduleDate);
                             finishFragment();
                         });

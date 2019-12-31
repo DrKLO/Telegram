@@ -86,11 +86,12 @@ import java.util.Collections;
   }
 
   @Override
-  protected void parsePayload(ParsableByteArray data, long timeUs) throws ParserException {
+  protected boolean parsePayload(ParsableByteArray data, long timeUs) throws ParserException {
     if (audioFormat == AUDIO_FORMAT_MP3) {
       int sampleSize = data.bytesLeft();
       output.sampleData(data, sampleSize);
       output.sampleMetadata(timeUs, C.BUFFER_FLAG_KEY_FRAME, sampleSize, 0, null);
+      return true;
     } else {
       int packetType = data.readUnsignedByte();
       if (packetType == AAC_PACKET_TYPE_SEQUENCE_HEADER && !hasOutputFormat) {
@@ -104,12 +105,15 @@ import java.util.Collections;
             Collections.singletonList(audioSpecificConfig), null, 0, null);
         output.format(format);
         hasOutputFormat = true;
+        return false;
       } else if (audioFormat != AUDIO_FORMAT_AAC || packetType == AAC_PACKET_TYPE_AAC_RAW) {
         int sampleSize = data.bytesLeft();
         output.sampleData(data, sampleSize);
         output.sampleMetadata(timeUs, C.BUFFER_FLAG_KEY_FRAME, sampleSize, 0, null);
+        return true;
+      } else {
+        return false;
       }
     }
   }
-
 }

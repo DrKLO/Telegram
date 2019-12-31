@@ -19,6 +19,7 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.LocaleController;
@@ -42,7 +43,7 @@ public class JoinGroupAlert extends BottomSheet {
     private BaseFragment fragment;
 
     public JoinGroupAlert(final Context context, TLRPC.ChatInvite invite, String group, BaseFragment parentFragment) {
-        super(context, false, 0);
+        super(context, false);
         setApplyBottomPadding(false);
         setApplyTopPadding(false);
 
@@ -61,7 +62,7 @@ public class JoinGroupAlert extends BottomSheet {
 
         BackupImageView avatarImageView = new BackupImageView(context);
         avatarImageView.setRoundRadius(AndroidUtilities.dp(35));
-        linearLayout.addView(avatarImageView, LayoutHelper.createLinear(70, 70, Gravity.TOP | Gravity.CENTER_HORIZONTAL, 0, 12, 0, 0));
+        linearLayout.addView(avatarImageView, LayoutHelper.createLinear(70, 70, Gravity.TOP | Gravity.CENTER_HORIZONTAL, 0, 29, 0, 0));
 
         if (invite.chat != null) {
             avatarDrawable = new AvatarDrawable(invite.chat);
@@ -84,7 +85,7 @@ public class JoinGroupAlert extends BottomSheet {
         textView.setText(title);
         textView.setSingleLine(true);
         textView.setEllipsize(TextUtils.TruncateAt.END);
-        linearLayout.addView(textView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.CENTER_HORIZONTAL, 10, 10, 10, participants_count > 0 ? 0 : 10));
+        linearLayout.addView(textView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.CENTER_HORIZONTAL, 10, 9, 10, participants_count > 0 ? 0 : 20));
 
         if (participants_count > 0) {
             textView = new TextView(context);
@@ -93,7 +94,7 @@ public class JoinGroupAlert extends BottomSheet {
             textView.setSingleLine(true);
             textView.setEllipsize(TextUtils.TruncateAt.END);
             textView.setText(LocaleController.formatPluralString("Members", participants_count));
-            linearLayout.addView(textView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.CENTER_HORIZONTAL, 10, 4, 10, 10));
+            linearLayout.addView(textView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.CENTER_HORIZONTAL, 10, 3, 10, 20));
         }
 
         if (!invite.participants.isEmpty()) {
@@ -106,7 +107,7 @@ public class JoinGroupAlert extends BottomSheet {
             listView.setVerticalScrollBarEnabled(false);
             listView.setAdapter(new UsersAdapter(context));
             listView.setGlowColor(Theme.getColor(Theme.key_dialogScrollGlow));
-            linearLayout.addView(listView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, 90, Gravity.TOP | Gravity.CENTER_HORIZONTAL, 0, 0, 0, 0));
+            linearLayout.addView(listView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, 90, Gravity.TOP | Gravity.CENTER_HORIZONTAL, 0, 0, 0, 7));
         }
 
         View shadow = new View(context);
@@ -123,7 +124,11 @@ public class JoinGroupAlert extends BottomSheet {
         pickerBottomLayout.doneButton.setVisibility(View.VISIBLE);
         pickerBottomLayout.doneButtonBadgeTextView.setVisibility(View.GONE);
         pickerBottomLayout.doneButtonTextView.setTextColor(Theme.getColor(Theme.key_dialogTextBlue2));
-        pickerBottomLayout.doneButtonTextView.setText(LocaleController.getString("JoinGroup", R.string.JoinGroup));
+        if (invite.channel && !invite.megagroup || ChatObject.isChannel(invite.chat) && !invite.chat.megagroup) {
+            pickerBottomLayout.doneButtonTextView.setText(LocaleController.getString("ProfileJoinChannel", R.string.ProfileJoinChannel).toUpperCase());
+        } else {
+            pickerBottomLayout.doneButtonTextView.setText(LocaleController.getString("JoinGroup", R.string.JoinGroup));
+        }
         pickerBottomLayout.doneButton.setOnClickListener(v -> {
             dismiss();
             final TLRPC.TL_messages_importChatInvite req = new TLRPC.TL_messages_importChatInvite();

@@ -24,6 +24,13 @@ import com.google.android.exoplayer2.C;
 public interface CacheEvictor extends Cache.Listener {
 
   /**
+   * Returns whether the evictor requires the {@link Cache} to touch {@link CacheSpan CacheSpans}
+   * when it accesses them. Implementations that do not use {@link CacheSpan#lastTouchTimestamp}
+   * should return {@code false}.
+   */
+  boolean requiresCacheSpanTouches();
+
+  /**
    * Called when cache has been initialized.
    */
   void onCacheInitialized();

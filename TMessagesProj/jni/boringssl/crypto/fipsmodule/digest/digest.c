@@ -115,8 +115,17 @@ void EVP_MD_CTX_free(EVP_MD_CTX *ctx) {
 
 void EVP_MD_CTX_destroy(EVP_MD_CTX *ctx) { EVP_MD_CTX_free(ctx); }
 
+int EVP_DigestFinalXOF(EVP_MD_CTX *ctx, uint8_t *out, size_t len) {
+  OPENSSL_PUT_ERROR(DIGEST, ERR_R_SHOULD_NOT_HAVE_BEEN_CALLED);
+  return 0;
+}
+
+uint32_t EVP_MD_meth_get_flags(const EVP_MD *md) { return EVP_MD_flags(md); }
+
 int EVP_MD_CTX_copy_ex(EVP_MD_CTX *out, const EVP_MD_CTX *in) {
-  if (in == NULL || in->digest == NULL) {
+  // |in->digest| may be NULL if this is a signing |EVP_MD_CTX| for, e.g.,
+  // Ed25519 which does not hash with |EVP_MD_CTX|.
+  if (in == NULL || (in->pctx == NULL && in->digest == NULL)) {
     OPENSSL_PUT_ERROR(DIGEST, DIGEST_R_INPUT_NOT_INITIALIZED);
     return 0;
   }
@@ -131,29 +140,34 @@ int EVP_MD_CTX_copy_ex(EVP_MD_CTX *out, const EVP_MD_CTX *in) {
     }
   }
 
-  uint8_t *tmp_buf;
-  if (out->digest != in->digest) {
-    assert(in->digest->ctx_size != 0);
-    tmp_buf = OPENSSL_malloc(in->digest->ctx_size);
-    if (tmp_buf == NULL) {
-      if (pctx) {
-        in->pctx_ops->free(pctx);
+  uint8_t *tmp_buf = NULL;
+  if (in->digest != NULL) {
+    if (out->digest != in->digest) {
+      assert(in->digest->ctx_size != 0);
+      tmp_buf = OPENSSL_malloc(in->digest->ctx_size);
+      if (tmp_buf == NULL) {
+        if (pctx) {
+          in->pctx_ops->free(pctx);
+        }
+        OPENSSL_PUT_ERROR(DIGEST, ERR_R_MALLOC_FAILURE);
+        return 0;
       }
-      OPENSSL_PUT_ERROR(DIGEST, ERR_R_MALLOC_FAILURE);
-      return 0;
+    } else {
+      // |md_data| will be the correct size in this case. It's removed from
+      // |out| so that |EVP_MD_CTX_cleanup| doesn't free it, and then it's
+      // reused.
+      tmp_buf = out->md_data;
+      out->md_data = NULL;
     }
-  } else {
-    // |md_data| will be the correct size in this case. It's removed from |out|
-    // so that |EVP_MD_CTX_cleanup| doesn't free it, and then it's reused.
-    tmp_buf = out->md_data;
-    out->md_data = NULL;
   }
 
   EVP_MD_CTX_cleanup(out);
 
   out->digest = in->digest;
   out->md_data = tmp_buf;
-  OPENSSL_memcpy(out->md_data, in->md_data, in->digest->ctx_size);
+  if (in->digest != NULL) {
+    OPENSSL_memcpy(out->md_data, in->md_data, in->digest->ctx_size);
+  }
   out->pctx = pctx;
   out->pctx_ops = in->pctx_ops;
   assert(out->pctx == NULL || out->pctx_ops != NULL);
@@ -166,9 +180,10 @@ int EVP_MD_CTX_copy(EVP_MD_CTX *out, const EVP_MD_CTX *in) {
   return EVP_MD_CTX_copy_ex(out, in);
 }
 
-void EVP_MD_CTX_reset(EVP_MD_CTX *ctx) {
+int EVP_MD_CTX_reset(EVP_MD_CTX *ctx) {
   EVP_MD_CTX_cleanup(ctx);
   EVP_MD_CTX_init(ctx);
+  return 1;
 }
 
 int EVP_DigestInit_ex(EVP_MD_CTX *ctx, const EVP_MD *type, ENGINE *engine) {

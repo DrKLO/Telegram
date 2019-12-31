@@ -100,6 +100,7 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
     private LineProgressView progressView;
     private SeekBarView seekBarView;
     private SimpleTextView timeTextView;
+    private ImageView playbackSpeedButton;
     private TextView durationTextView;
     private ActionBarMenuItem shuffleButton;
     private ImageView playButton;
@@ -107,6 +108,8 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
     private View[] buttons = new View[5];
     private Drawable[] playOrderButtons = new Drawable[2];
     private boolean hasOptions = true;
+
+    private boolean draggingSeekBar;
 
     private boolean scrollToSong = true;
 
@@ -145,7 +148,7 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
     private LaunchActivity parentActivity;
 
     public AudioPlayerAlert(final Context context) {
-        super(context, true, 0);
+        super(context, true);
 
         MessageObject messageObject = MediaController.getInstance().getPlayingMessageObject();
         if (messageObject != null) {
@@ -377,7 +380,16 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
         shadow2.setAlpha(0.0f);
         shadow2.setBackgroundResource(R.drawable.header_shadow);
 
-        playerLayout = new FrameLayout(context);
+        playerLayout = new FrameLayout(context) {
+            @Override
+            protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
+                super.onLayout(changed, left, top, right, bottom);
+                if (playbackSpeedButton != null && durationTextView != null) {
+                    int x = durationTextView.getLeft() - AndroidUtilities.dp(4) - playbackSpeedButton.getMeasuredWidth();
+                    playbackSpeedButton.layout(x, playbackSpeedButton.getTop(), x + playbackSpeedButton.getMeasuredWidth(), playbackSpeedButton.getBottom());
+                }
+            }
+        };
         playerLayout.setBackgroundColor(Theme.getColor(Theme.key_player_background));
 
         placeholderImageView = new BackupImageView(context) {
@@ -483,7 +495,24 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
         optionsButton.setContentDescription(LocaleController.getString("AccDescrMoreOptions", R.string.AccDescrMoreOptions));
 
         seekBarView = new SeekBarView(context);
-        seekBarView.setDelegate(progress -> MediaController.getInstance().seekToProgress(MediaController.getInstance().getPlayingMessageObject(), progress));
+        seekBarView.setDelegate(new SeekBarView.SeekBarViewDelegate() {
+            @Override
+            public void onSeekBarDrag(boolean stop, float progress) {
+                if (stop) {
+                    MediaController.getInstance().seekToProgress(MediaController.getInstance().getPlayingMessageObject(), progress);
+                }
+                MessageObject messageObject = MediaController.getInstance().getPlayingMessageObject();
+                if (messageObject != null && messageObject.isMusic()) {
+                    updateProgress(messageObject);
+                }
+            }
+
+            @Override
+            public void onSeekBarPressed(boolean pressed) {
+                draggingSeekBar = pressed;
+            }
+        });
+        seekBarView.setReportChanges(true);
         playerLayout.addView(seekBarView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 30, Gravity.TOP | Gravity.LEFT, 8, 62, 8, 0));
 
         progressView = new LineProgressView(context);
@@ -503,6 +532,25 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
         durationTextView.setTextColor(Theme.getColor(Theme.key_player_time));
         durationTextView.setGravity(Gravity.CENTER);
         playerLayout.addView(durationTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.RIGHT, 0, 90, 20, 0));
+
+        playbackSpeedButton = new ImageView(context);
+        playbackSpeedButton.setScaleType(ImageView.ScaleType.CENTER);
+        playbackSpeedButton.setImageResource(R.drawable.voice2x);
+        playbackSpeedButton.setContentDescription(LocaleController.getString("AccDescrPlayerSpeed", R.string.AccDescrPlayerSpeed));
+        if (AndroidUtilities.density >= 3.0f) {
+            playbackSpeedButton.setPadding(0, 1, 0, 0);
+        }
+        playerLayout.addView(playbackSpeedButton, LayoutHelper.createFrame(36, 36, Gravity.TOP | Gravity.RIGHT, 0, 80, 20, 0));
+        playbackSpeedButton.setOnClickListener(v -> {
+            float currentPlaybackSpeed = MediaController.getInstance().getPlaybackSpeed(true);
+            if (currentPlaybackSpeed > 1) {
+                MediaController.getInstance().setPlaybackSpeed(true, 1.0f);
+            } else {
+                MediaController.getInstance().setPlaybackSpeed(true, 1.8f);
+            }
+            updatePlaybackButton();
+        });
+        updatePlaybackButton();
 
         FrameLayout bottomView = new FrameLayout(context) {
             @Override
@@ -714,6 +762,15 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
     @Keep
     public float getFullAnimationProgress() {
         return fullAnimationProgress;
+    }
+
+    private void updatePlaybackButton() {
+        float currentPlaybackSpeed = MediaController.getInstance().getPlaybackSpeed(true);
+        if (currentPlaybackSpeed > 1) {
+            playbackSpeedButton.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_inappPlayerPlayPause), PorterDuff.Mode.MULTIPLY));
+        } else {
+            playbackSpeedButton.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_inappPlayerClose), PorterDuff.Mode.MULTIPLY));
+        }
     }
 
     private void onSubItemClick(int id) {
@@ -1042,13 +1099,17 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
 
     private void updateProgress(MessageObject messageObject) {
         if (seekBarView != null) {
-            if (!seekBarView.isDragging()) {
+            int newTime;
+            if (seekBarView.isDragging()) {
+                newTime = (int) (messageObject.getDuration() * seekBarView.getProgress());
+            } else {
                 seekBarView.setProgress(messageObject.audioProgress);
                 seekBarView.setBufferedProgress(messageObject.bufferedProgress);
+                newTime = messageObject.audioProgressSec;
             }
-            if (lastTime != messageObject.audioProgressSec) {
-                lastTime = messageObject.audioProgressSec;
-                timeTextView.setText(String.format("%d:%02d", messageObject.audioProgressSec / 60, messageObject.audioProgressSec % 60));
+            if (lastTime != newTime) {
+                lastTime = newTime;
+                timeTextView.setText(AndroidUtilities.formatShortDuration(newTime));
             }
         }
     }
@@ -1134,9 +1195,15 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
                 placeholderImageView.invalidate();
             }
 
+            int duration = messageObject.getDuration();
             if (durationTextView != null) {
-                int duration = messageObject.getDuration();
-                durationTextView.setText(duration != 0 ? String.format("%d:%02d", duration / 60, duration % 60) : "-:--");
+                durationTextView.setText(duration != 0 ? AndroidUtilities.formatShortDuration(duration) : "-:--");
+            }
+
+            if (duration > 60 * 20) {
+                playbackSpeedButton.setVisibility(View.VISIBLE);
+            } else {
+                playbackSpeedButton.setVisibility(View.GONE);
             }
         }
     }
@@ -1310,6 +1377,9 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
 
         private void updateSearchResults(final ArrayList<MessageObject> documents) {
             AndroidUtilities.runOnUIThread(() -> {
+                if (!searching) {
+                    return;
+                }
                 searchWas = true;
                 searchResult = documents;
                 notifyDataSetChanged();

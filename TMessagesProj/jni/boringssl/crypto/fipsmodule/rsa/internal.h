@@ -114,14 +114,9 @@ int RSA_private_transform(RSA *rsa, uint8_t *out, const uint8_t *in,
                           size_t len);
 
 
-// The following utility functions are exported for test purposes.
-
+// This constant is exported for test purposes.
 extern const BN_ULONG kBoringSSLRSASqrtTwo[];
 extern const size_t kBoringSSLRSASqrtTwoLen;
-
-// rsa_greater_than_pow2 returns one if |b| is greater than 2^|n| and zero
-// otherwise.
-int rsa_greater_than_pow2(const BIGNUM *b, int n);
 
 
 #if defined(__cplusplus)

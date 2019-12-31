@@ -132,9 +132,9 @@ public class VideoTimelinePlayView extends View {
             if (mediaMetadataRetriever == null) {
                 return false;
             }
-            int additionWidth = AndroidUtilities.dp(12);
+            int additionWidth = AndroidUtilities.dp(16);
             int additionWidthPlay = AndroidUtilities.dp(8);
-            if (playX - additionWidthPlay <= x && x <= playX + additionWidthPlay && y >= 0 && y <= getMeasuredHeight()) {
+            if (endX != startX && playX - additionWidthPlay <= x && x <= playX + additionWidthPlay && y >= 0 && y <= getMeasuredHeight()) {
                 if (delegate != null) {
                     delegate.didStartDragging();
                 }
@@ -142,7 +142,7 @@ public class VideoTimelinePlayView extends View {
                 pressDx = (int) (x - playX);
                 invalidate();
                 return true;
-            } else if (startX - additionWidth <= x && x <= startX + additionWidth && y >= 0 && y <= getMeasuredHeight()) {
+            } else if (startX - additionWidth <= x && x <= Math.min(startX + additionWidth,endX) && y >= 0 && y <= getMeasuredHeight()) {
                 if (delegate != null) {
                     delegate.didStartDragging();
                 }
@@ -156,6 +156,16 @@ public class VideoTimelinePlayView extends View {
                 }
                 pressedRight = true;
                 pressDx = (int) (x - endX);
+                invalidate();
+                return true;
+            } else if (startX <= x && x <= endX && y >= 0 && y <= getMeasuredHeight()) {
+                if (delegate != null) {
+                    delegate.didStartDragging();
+                }
+                pressedPlay = true;
+                playX = (int) x;
+                playProgress = (playX - startX) / (float) (endX - startX);
+                pressDx = 0;
                 invalidate();
                 return true;
             }

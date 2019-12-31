@@ -46,6 +46,17 @@ public class DispatchQueue extends Thread {
         }
     }
 
+    public void cancelRunnables(Runnable[] runnables) {
+        try {
+            syncLatch.await();
+            for (int i = 0; i < runnables.length; i++) {
+                handler.removeCallbacks(runnables[i]);
+            }
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+    }
+
     public void postRunnable(Runnable runnable) {
         postRunnable(runnable, 0);
     }

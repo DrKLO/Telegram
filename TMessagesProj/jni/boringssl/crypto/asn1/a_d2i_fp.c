@@ -58,240 +58,36 @@
 
 #include <limits.h>
 
-#include <openssl/buf.h>
+#include <openssl/bio.h>
 #include <openssl/err.h>
 #include <openssl/mem.h>
 
-static int asn1_d2i_read_bio(BIO *in, BUF_MEM **pb);
-
-#ifndef NO_OLD_ASN1
-# ifndef OPENSSL_NO_FP_API
-
-void *ASN1_d2i_fp(void *(*xnew) (void), d2i_of_void *d2i, FILE *in, void **x)
-{
-    BIO *b;
-    void *ret;
-
-    if ((b = BIO_new(BIO_s_file())) == NULL) {
-        OPENSSL_PUT_ERROR(ASN1, ERR_R_BUF_LIB);
-        return (NULL);
-    }
-    BIO_set_fp(b, in, BIO_NOCLOSE);
-    ret = ASN1_d2i_bio(xnew, d2i, b, x);
-    BIO_free(b);
-    return (ret);
-}
-# endif
-
-void *ASN1_d2i_bio(void *(*xnew) (void), d2i_of_void *d2i, BIO *in, void **x)
-{
-    BUF_MEM *b = NULL;
-    const unsigned char *p;
-    void *ret = NULL;
-    int len;
-
-    len = asn1_d2i_read_bio(in, &b);
-    if (len < 0)
-        goto err;
-
-    p = (unsigned char *)b->data;
-    ret = d2i(x, &p, len);
- err:
-    if (b != NULL)
-        BUF_MEM_free(b);
-    return (ret);
-}
-
-#endif
 
 void *ASN1_item_d2i_bio(const ASN1_ITEM *it, BIO *in, void *x)
 {
-    BUF_MEM *b = NULL;
-    const unsigned char *p;
-    void *ret = NULL;
-    int len;
-
-    len = asn1_d2i_read_bio(in, &b);
-    if (len < 0)
-        goto err;
-
-    p = (const unsigned char *)b->data;
-    ret = ASN1_item_d2i(x, &p, len, it);
- err:
-    if (b != NULL)
-        BUF_MEM_free(b);
-    return (ret);
+    uint8_t *data;
+    size_t len;
+    // Historically, this function did not impose a limit in OpenSSL and is used
+    // to read CRLs, so we leave this without an external bound.
+    if (!BIO_read_asn1(in, &data, &len, INT_MAX)) {
+        return NULL;
+    }
+    const uint8_t *ptr = data;
+    void *ret = ASN1_item_d2i(x, &ptr, len, it);
+    OPENSSL_free(data);
+    return ret;
 }
 
 #ifndef OPENSSL_NO_FP_API
 void *ASN1_item_d2i_fp(const ASN1_ITEM *it, FILE *in, void *x)
 {
-    BIO *b;
-    char *ret;
-
-    if ((b = BIO_new(BIO_s_file())) == NULL) {
+    BIO *b = BIO_new_fp(in, BIO_NOCLOSE);
+    if (b == NULL) {
         OPENSSL_PUT_ERROR(ASN1, ERR_R_BUF_LIB);
-        return (NULL);
+        return NULL;
     }
-    BIO_set_fp(b, in, BIO_NOCLOSE);
-    ret = ASN1_item_d2i_bio(it, b, x);
+    void *ret = ASN1_item_d2i_bio(it, b, x);
     BIO_free(b);
-    return (ret);
+    return ret;
 }
 #endif
-
-typedef struct asn1_const_ctx_st
-    {
-    const unsigned char *p;/* work char pointer */
-    int eos;    /* end of sequence read for indefinite encoding */
-    int error;  /* error code to use when returning an error */
-    int inf;    /* constructed if 0x20, indefinite is 0x21 */
-    int tag;    /* tag from last 'get object' */
-    int xclass; /* class from last 'get object' */
-    long slen;  /* length of last 'get object' */
-    const unsigned char *max; /* largest value of p allowed */
-    const unsigned char *q;/* temporary variable */
-    const unsigned char **pp;/* variable */
-    int line;   /* used in error processing */
-    } ASN1_const_CTX;
-
-#define HEADER_SIZE   8
-#define ASN1_CHUNK_INITIAL_SIZE (16 * 1024)
-static int asn1_d2i_read_bio(BIO *in, BUF_MEM **pb)
-{
-    BUF_MEM *b;
-    unsigned char *p;
-    int i;
-    ASN1_const_CTX c;
-    size_t want = HEADER_SIZE;
-    int eos = 0;
-    size_t off = 0;
-    size_t len = 0;
-
-    b = BUF_MEM_new();
-    if (b == NULL) {
-        OPENSSL_PUT_ERROR(ASN1, ERR_R_MALLOC_FAILURE);
-        return -1;
-    }
-
-    ERR_clear_error();
-    for (;;) {
-        if (want >= (len - off)) {
-            want -= (len - off);
-
-            if (len + want < len || !BUF_MEM_grow_clean(b, len + want)) {
-                OPENSSL_PUT_ERROR(ASN1, ERR_R_MALLOC_FAILURE);
-                goto err;
-            }
-            i = BIO_read(in, &(b->data[len]), want);
-            if ((i < 0) && ((len - off) == 0)) {
-                OPENSSL_PUT_ERROR(ASN1, ASN1_R_NOT_ENOUGH_DATA);
-                goto err;
-            }
-            if (i > 0) {
-                if (len + i < len) {
-                    OPENSSL_PUT_ERROR(ASN1, ASN1_R_TOO_LONG);
-                    goto err;
-                }
-                len += i;
-            }
-        }
-        /* else data already loaded */
-
-        p = (unsigned char *)&(b->data[off]);
-        c.p = p;
-        c.inf = ASN1_get_object(&(c.p), &(c.slen), &(c.tag), &(c.xclass),
-                                len - off);
-        if (c.inf & 0x80) {
-            uint32_t e;
-
-            e = ERR_GET_REASON(ERR_peek_error());
-            if (e != ASN1_R_TOO_LONG)
-                goto err;
-            else
-                ERR_clear_error(); /* clear error */
-        }
-        i = c.p - p;            /* header length */
-        off += i;               /* end of data */
-
-        if (c.inf & 1) {
-            /* no data body so go round again */
-            eos++;
-            if (eos < 0) {
-                OPENSSL_PUT_ERROR(ASN1, ASN1_R_HEADER_TOO_LONG);
-                goto err;
-            }
-            want = HEADER_SIZE;
-        } else if (eos && (c.slen == 0) && (c.tag == V_ASN1_EOC)) {
-            /* eos value, so go back and read another header */
-            eos--;
-            if (eos <= 0)
-                break;
-            else
-                want = HEADER_SIZE;
-        } else {
-            /* suck in c.slen bytes of data */
-            want = c.slen;
-            if (want > (len - off)) {
-                size_t chunk_max = ASN1_CHUNK_INITIAL_SIZE;
-                want -= (len - off);
-                if (want > INT_MAX /* BIO_read takes an int length */  ||
-                    len + want < len) {
-                    OPENSSL_PUT_ERROR(ASN1, ASN1_R_TOO_LONG);
-                    goto err;
-                }
-                while (want > 0) {
-                    /*
-                     * Read content in chunks of increasing size
-                     * so we can return an error for EOF without
-                     * having to allocate the entire content length
-                     * in one go.
-                     */
-                    size_t chunk = want > chunk_max ? chunk_max : want;
-
-                    if (!BUF_MEM_grow_clean(b, len + chunk)) {
-                        OPENSSL_PUT_ERROR(ASN1, ERR_R_MALLOC_FAILURE);
-                        goto err;
-                    }
-                    want -= chunk;
-                    while (chunk > 0) {
-                        i = BIO_read(in, &(b->data[len]), chunk);
-                        if (i <= 0) {
-                            OPENSSL_PUT_ERROR(ASN1, ASN1_R_NOT_ENOUGH_DATA);
-                            goto err;
-                        }
-                        /*
-                         * This can't overflow because |len+want| didn't
-                         * overflow.
-                         */
-                        len += i;
-                        chunk -= i;
-                    }
-                    if (chunk_max < INT_MAX/2)
-                        chunk_max *= 2;
-                }
-            }
-            if (off + c.slen < off) {
-                OPENSSL_PUT_ERROR(ASN1, ASN1_R_TOO_LONG);
-                goto err;
-            }
-            off += c.slen;
-            if (eos <= 0) {
-                break;
-            } else
-                want = HEADER_SIZE;
-        }
-    }
-
-    if (off > INT_MAX) {
-        OPENSSL_PUT_ERROR(ASN1, ASN1_R_TOO_LONG);
-        goto err;
-    }
-
-    *pb = b;
-    return off;
- err:
-    if (b != NULL)
-        BUF_MEM_free(b);
-    return -1;
-}

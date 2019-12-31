@@ -43,6 +43,7 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.LineProgressView;
+import org.telegram.ui.Components.RLottieImageView;
 import org.telegram.ui.Components.RadialProgressView;
 
 import java.util.ArrayList;
@@ -50,6 +51,7 @@ import java.util.ArrayList;
 public class AlertDialog extends Dialog implements Drawable.Callback {
 
     private View customView;
+    private int customViewHeight = LayoutHelper.WRAP_CONTENT;
     private TextView titleTextView;
     private TextView secondTitleTextView;
     private TextView subtitleTextView;
@@ -81,6 +83,7 @@ public class AlertDialog extends Dialog implements Drawable.Callback {
     private CharSequence subtitle;
     private CharSequence message;
     private int topResId;
+    private int topAnimationId;
     private int topHeight = 132;
     private Drawable topDrawable;
     private int topBackgroundColor;
@@ -93,7 +96,7 @@ public class AlertDialog extends Dialog implements Drawable.Callback {
 
     private boolean dismissDialogByButtons = true;
 
-    private ImageView topImageView;
+    private RLottieImageView topImageView;
     private CharSequence positiveButtonText;
     private OnClickListener positiveButtonListener;
     private CharSequence negativeButtonText;
@@ -109,6 +112,7 @@ public class AlertDialog extends Dialog implements Drawable.Callback {
     private Rect backgroundPaddings;
 
     private Runnable dismissRunnable = this::dismiss;
+    private Runnable showRunnable = this::show;
 
     private ArrayList<AlertDialogCell> itemViews = new ArrayList<>();
 
@@ -369,12 +373,16 @@ public class AlertDialog extends Dialog implements Drawable.Callback {
 
         final boolean hasButtons = positiveButtonText != null || negativeButtonText != null || neutralButtonText != null;
 
-        if (topResId != 0 || topDrawable != null) {
-            topImageView = new ImageView(getContext());
+        if (topResId != 0 || topAnimationId != 0 || topDrawable != null) {
+            topImageView = new RLottieImageView(getContext());
             if (topDrawable != null) {
                 topImageView.setImageDrawable(topDrawable);
-            } else {
+            } else if (topResId != 0) {
                 topImageView.setImageResource(topResId);
+            } else {
+                topImageView.setAutoRepeat(true);
+                topImageView.setAnimation(topAnimationId, 94, 94);
+                topImageView.playAnimation();
             }
             topImageView.setScaleType(ImageView.ScaleType.CENTER);
             topImageView.setBackgroundDrawable(getContext().getResources().getDrawable(R.drawable.popup_fixed_top));
@@ -529,7 +537,7 @@ public class AlertDialog extends Dialog implements Drawable.Callback {
                 ViewGroup viewGroup = (ViewGroup) customView.getParent();
                 viewGroup.removeView(customView);
             }
-            scrollContainer.addView(customView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+            scrollContainer.addView(customView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, customViewHeight));
         }
         if (hasButtons) {
             buttonsLayout = new FrameLayout(getContext()) {
@@ -782,7 +790,11 @@ public class AlertDialog extends Dialog implements Drawable.Callback {
             dismiss();
         });
         builder.setOnDismissListener(dialog -> cancelDialog = null);
-        cancelDialog = builder.show();
+        try {
+            cancelDialog = builder.show();
+        } catch (Exception ignore) {
+
+        }
     }
 
     private void runShadowAnimation(final int num, final boolean show) {
@@ -873,6 +885,7 @@ public class AlertDialog extends Dialog implements Drawable.Callback {
         } catch (Throwable ignore) {
 
         }
+        AndroidUtilities.cancelRunOnUIThread(showRunnable);
     }
 
     @Override
@@ -882,6 +895,11 @@ public class AlertDialog extends Dialog implements Drawable.Callback {
 
     public void setTopImage(int resId, int backgroundColor) {
         topResId = resId;
+        topBackgroundColor = backgroundColor;
+    }
+
+    public void setTopAnimation(int resId, int backgroundColor) {
+        topAnimationId = resId;
         topBackgroundColor = backgroundColor;
     }
 
@@ -1007,6 +1025,10 @@ public class AlertDialog extends Dialog implements Drawable.Callback {
         return Theme.getColor(key);
     }
 
+    public void showDelayed(long delay) {
+        AndroidUtilities.runOnUIThread(showRunnable, delay);
+    }
+
     public static class Builder {
 
         private AlertDialog alertDialog;
@@ -1041,7 +1063,12 @@ public class AlertDialog extends Dialog implements Drawable.Callback {
         }
 
         public Builder setView(View view) {
+            return setView(view, LayoutHelper.WRAP_CONTENT);
+        }
+
+        public Builder setView(View view, int height) {
             alertDialog.customView = view;
+            alertDialog.customViewHeight = height;
             return this;
         }
 
@@ -1057,6 +1084,12 @@ public class AlertDialog extends Dialog implements Drawable.Callback {
 
         public Builder setTopImage(int resId, int backgroundColor) {
             alertDialog.topResId = resId;
+            alertDialog.topBackgroundColor = backgroundColor;
+            return this;
+        }
+
+        public Builder setTopAnimation(int resId, int backgroundColor) {
+            alertDialog.topAnimationId = resId;
             alertDialog.topBackgroundColor = backgroundColor;
             return this;
         }

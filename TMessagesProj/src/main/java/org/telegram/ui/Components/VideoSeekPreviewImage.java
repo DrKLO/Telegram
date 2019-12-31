@@ -76,9 +76,7 @@ public class VideoSeekPreviewImage extends View {
             currentPixel = pixel;
         }
         long time = (long) (duration * progress);
-        int minutes = (int) (time / 60 / 1000);
-        int seconds = (int) (time - minutes * 60 * 1000) / 1000;
-        frameTime = String.format("%d:%02d", minutes, seconds);
+        frameTime = AndroidUtilities.formatShortDuration((int) (time / 1000));
         timeWidth = (int) Math.ceil(textPaint.measureText(frameTime));
         invalidate();
 

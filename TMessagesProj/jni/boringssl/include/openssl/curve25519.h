@@ -65,7 +65,7 @@ OPENSSL_EXPORT void X25519_public_from_private(uint8_t out_public_value[32],
 //
 // Note that, unlike RFC 8032's formulation, our private key representation
 // includes a public key suffix to make multiple key signing operations with the
-// same key more efficient. The RFC 8032 key private key is referred to in this
+// same key more efficient. The RFC 8032 private key is referred to in this
 // implementation as the "seed" and is the first 32 bytes of our private key.
 
 #define ED25519_PRIVATE_KEY_LEN 64
@@ -79,7 +79,7 @@ OPENSSL_EXPORT void ED25519_keypair(uint8_t out_public_key[32],
 
 // ED25519_sign sets |out_sig| to be a signature of |message_len| bytes from
 // |message| using |private_key|. It returns one on success or zero on
-// error.
+// allocation failure.
 OPENSSL_EXPORT int ED25519_sign(uint8_t out_sig[64], const uint8_t *message,
                                 size_t message_len,
                                 const uint8_t private_key[64]);
@@ -188,11 +188,11 @@ OPENSSL_EXPORT int SPAKE2_process_msg(SPAKE2_CTX *ctx, uint8_t *out_key,
 
 extern "C++" {
 
-namespace bssl {
+BSSL_NAMESPACE_BEGIN
 
 BORINGSSL_MAKE_DELETER(SPAKE2_CTX, SPAKE2_CTX_free)
 
-}  // namespace bssl
+BSSL_NAMESPACE_END
 
 }  // extern C++
 

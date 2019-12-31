@@ -71,9 +71,10 @@ public final class C {
   /** Represents an unset or unknown percentage. */
   public static final int PERCENTAGE_UNSET = -1;
 
-  /**
-   * The number of microseconds in one second.
-   */
+  /** The number of milliseconds in one second. */
+  public static final long MILLIS_PER_SECOND = 1000L;
+
+  /** The number of microseconds in one second. */
   public static final long MICROS_PER_SECOND = 1000000L;
 
   /**
@@ -100,6 +101,9 @@ public final class C {
    * The name of the UTF-16 charset.
    */
   public static final String UTF16_NAME = "UTF-16";
+
+  /** The name of the UTF-16 little-endian charset. */
+  public static final String UTF16LE_NAME = "UTF-16LE";
 
   /**
    * The name of the serif font family.
@@ -143,8 +147,8 @@ public final class C {
    * {@link #ENCODING_INVALID}, {@link #ENCODING_PCM_8BIT}, {@link #ENCODING_PCM_16BIT}, {@link
    * #ENCODING_PCM_24BIT}, {@link #ENCODING_PCM_32BIT}, {@link #ENCODING_PCM_FLOAT}, {@link
    * #ENCODING_PCM_MU_LAW}, {@link #ENCODING_PCM_A_LAW}, {@link #ENCODING_AC3}, {@link
-   * #ENCODING_E_AC3}, {@link #ENCODING_DTS}, {@link #ENCODING_DTS_HD} or {@link
-   * #ENCODING_DOLBY_TRUEHD}.
+   * #ENCODING_E_AC3}, {@link #ENCODING_E_AC3_JOC}, {@link #ENCODING_AC4}, {@link #ENCODING_DTS},
+   * {@link #ENCODING_DTS_HD} or {@link #ENCODING_DOLBY_TRUEHD}.
    */
   @Documented
   @Retention(RetentionPolicy.SOURCE)
@@ -160,9 +164,11 @@ public final class C {
     ENCODING_PCM_A_LAW,
     ENCODING_AC3,
     ENCODING_E_AC3,
+    ENCODING_E_AC3_JOC,
+    ENCODING_AC4,
     ENCODING_DTS,
     ENCODING_DTS_HD,
-    ENCODING_DOLBY_TRUEHD
+    ENCODING_DOLBY_TRUEHD,
   })
   public @interface Encoding {}
 
@@ -206,6 +212,10 @@ public final class C {
   public static final int ENCODING_AC3 = AudioFormat.ENCODING_AC3;
   /** @see AudioFormat#ENCODING_E_AC3 */
   public static final int ENCODING_E_AC3 = AudioFormat.ENCODING_E_AC3;
+  /** @see AudioFormat#ENCODING_E_AC3_JOC */
+  public static final int ENCODING_E_AC3_JOC = AudioFormat.ENCODING_E_AC3_JOC;
+  /** @see AudioFormat#ENCODING_AC4 */
+  public static final int ENCODING_AC4 = AudioFormat.ENCODING_AC4;
   /** @see AudioFormat#ENCODING_DTS */
   public static final int ENCODING_DTS = AudioFormat.ENCODING_DTS;
   /** @see AudioFormat#ENCODING_DTS_HD */
@@ -536,9 +546,7 @@ public final class C {
    */
   public static final int SELECTION_FLAG_AUTOSELECT = 1 << 2; // 4
 
-  /**
-   * Represents an undetermined language as an ISO 639 alpha-3 language code.
-   */
+  /** Represents an undetermined language as an ISO 639-2 language code. */
   public static final String LANGUAGE_UNDETERMINED = "und";
 
   /**
@@ -662,25 +670,6 @@ public final class C {
 
   /** A default size in bytes for an individual allocation that forms part of a larger buffer. */
   public static final int DEFAULT_BUFFER_SEGMENT_SIZE = 64 * 1024;
-
-  /** A default size in bytes for a video buffer. */
-  public static final int DEFAULT_VIDEO_BUFFER_SIZE = 200 * DEFAULT_BUFFER_SEGMENT_SIZE;
-
-  /** A default size in bytes for an audio buffer. */
-  public static final int DEFAULT_AUDIO_BUFFER_SIZE = 54 * DEFAULT_BUFFER_SEGMENT_SIZE;
-
-  /** A default size in bytes for a text buffer. */
-  public static final int DEFAULT_TEXT_BUFFER_SIZE = 2 * DEFAULT_BUFFER_SEGMENT_SIZE;
-
-  /** A default size in bytes for a metadata buffer. */
-  public static final int DEFAULT_METADATA_BUFFER_SIZE = 2 * DEFAULT_BUFFER_SEGMENT_SIZE;
-
-  /** A default size in bytes for a camera motion buffer. */
-  public static final int DEFAULT_CAMERA_MOTION_BUFFER_SIZE = 2 * DEFAULT_BUFFER_SEGMENT_SIZE;
-
-  /** A default size in bytes for a muxed buffer (e.g. containing video, audio and text). */
-  public static final int DEFAULT_MUXED_BUFFER_SIZE =
-      DEFAULT_VIDEO_BUFFER_SIZE + DEFAULT_AUDIO_BUFFER_SIZE + DEFAULT_TEXT_BUFFER_SIZE;
 
   /** "cenc" scheme type name as defined in ISO/IEC 23001-7:2016. */
   @SuppressWarnings("ConstantField")
@@ -977,6 +966,79 @@ public final class C {
    * Bluetooth).
    */
   public static final int NETWORK_TYPE_OTHER = 8;
+
+  /**
+   * Track role flags. Possible flag values are {@link #ROLE_FLAG_MAIN}, {@link
+   * #ROLE_FLAG_ALTERNATE}, {@link #ROLE_FLAG_SUPPLEMENTARY}, {@link #ROLE_FLAG_COMMENTARY}, {@link
+   * #ROLE_FLAG_DUB}, {@link #ROLE_FLAG_EMERGENCY}, {@link #ROLE_FLAG_CAPTION}, {@link
+   * #ROLE_FLAG_SUBTITLE}, {@link #ROLE_FLAG_SIGN}, {@link #ROLE_FLAG_DESCRIBES_VIDEO}, {@link
+   * #ROLE_FLAG_DESCRIBES_MUSIC_AND_SOUND}, {@link #ROLE_FLAG_ENHANCED_DIALOG_INTELLIGIBILITY},
+   * {@link #ROLE_FLAG_TRANSCRIBES_DIALOG} and {@link #ROLE_FLAG_EASY_TO_READ}.
+   */
+  @Documented
+  @Retention(RetentionPolicy.SOURCE)
+  @IntDef(
+      flag = true,
+      value = {
+        ROLE_FLAG_MAIN,
+        ROLE_FLAG_ALTERNATE,
+        ROLE_FLAG_SUPPLEMENTARY,
+        ROLE_FLAG_COMMENTARY,
+        ROLE_FLAG_DUB,
+        ROLE_FLAG_EMERGENCY,
+        ROLE_FLAG_CAPTION,
+        ROLE_FLAG_SUBTITLE,
+        ROLE_FLAG_SIGN,
+        ROLE_FLAG_DESCRIBES_VIDEO,
+        ROLE_FLAG_DESCRIBES_MUSIC_AND_SOUND,
+        ROLE_FLAG_ENHANCED_DIALOG_INTELLIGIBILITY,
+        ROLE_FLAG_TRANSCRIBES_DIALOG,
+        ROLE_FLAG_EASY_TO_READ
+      })
+  public @interface RoleFlags {}
+  /** Indicates a main track. */
+  public static final int ROLE_FLAG_MAIN = 1;
+  /**
+   * Indicates an alternate track. For example a video track recorded from an different view point
+   * than the main track(s).
+   */
+  public static final int ROLE_FLAG_ALTERNATE = 1 << 1;
+  /**
+   * Indicates a supplementary track, meaning the track has lower importance than the main track(s).
+   * For example a video track that provides a visual accompaniment to a main audio track.
+   */
+  public static final int ROLE_FLAG_SUPPLEMENTARY = 1 << 2;
+  /** Indicates the track contains commentary, for example from the director. */
+  public static final int ROLE_FLAG_COMMENTARY = 1 << 3;
+  /**
+   * Indicates the track is in a different language from the original, for example dubbed audio or
+   * translated captions.
+   */
+  public static final int ROLE_FLAG_DUB = 1 << 4;
+  /** Indicates the track contains information about a current emergency. */
+  public static final int ROLE_FLAG_EMERGENCY = 1 << 5;
+  /**
+   * Indicates the track contains captions. This flag may be set on video tracks to indicate the
+   * presence of burned in captions.
+   */
+  public static final int ROLE_FLAG_CAPTION = 1 << 6;
+  /**
+   * Indicates the track contains subtitles. This flag may be set on video tracks to indicate the
+   * presence of burned in subtitles.
+   */
+  public static final int ROLE_FLAG_SUBTITLE = 1 << 7;
+  /** Indicates the track contains a visual sign-language interpretation of an audio track. */
+  public static final int ROLE_FLAG_SIGN = 1 << 8;
+  /** Indicates the track contains an audio or textual description of a video track. */
+  public static final int ROLE_FLAG_DESCRIBES_VIDEO = 1 << 9;
+  /** Indicates the track contains a textual description of music and sound. */
+  public static final int ROLE_FLAG_DESCRIBES_MUSIC_AND_SOUND = 1 << 10;
+  /** Indicates the track is designed for improved intelligibility of dialogue. */
+  public static final int ROLE_FLAG_ENHANCED_DIALOG_INTELLIGIBILITY = 1 << 11;
+  /** Indicates the track contains a transcription of spoken dialog. */
+  public static final int ROLE_FLAG_TRANSCRIBES_DIALOG = 1 << 12;
+  /** Indicates the track contains a text that has been edited for ease of reading. */
+  public static final int ROLE_FLAG_EASY_TO_READ = 1 << 13;
 
   /**
    * Converts a time in microseconds to the corresponding time in milliseconds, preserving

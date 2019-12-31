@@ -1001,6 +1001,9 @@ public class NotificationsCustomSettingsActivity extends BaseFragment {
 
         private void updateSearchResults(final ArrayList<TLObject> result, final ArrayList<NotificationsSettingsActivity.NotificationException> exceptions, final ArrayList<CharSequence> names) {
             AndroidUtilities.runOnUIThread(() -> {
+                if (!searching) {
+                    return;
+                }
                 searchRunnable = null;
                 searchResult = exceptions;
                 searchResultNames = names;

@@ -239,11 +239,6 @@ int DSA_generate_parameters_ex(DSA *dsa, unsigned bits, const uint8_t *seed_in,
   }
   BN_CTX_start(ctx);
 
-  mont = BN_MONT_CTX_new();
-  if (mont == NULL) {
-    goto err;
-  }
-
   r0 = BN_CTX_get(ctx);
   g = BN_CTX_get(ctx);
   W = BN_CTX_get(ctx);
@@ -401,8 +396,9 @@ end:
     goto err;
   }
 
-  if (!BN_set_word(test, h) ||
-      !BN_MONT_CTX_set(mont, p, ctx)) {
+  mont = BN_MONT_CTX_new_for_modulus(p, ctx);
+  if (mont == NULL ||
+      !BN_set_word(test, h)) {
     goto err;
   }
 
@@ -545,22 +541,51 @@ void DSA_SIG_free(DSA_SIG *sig) {
   OPENSSL_free(sig);
 }
 
+// mod_mul_consttime sets |r| to |a| * |b| modulo |mont->N|, treating |a| and
+// |b| as secret. This function internally uses Montgomery reduction, but
+// neither inputs nor outputs are in Montgomery form.
+static int mod_mul_consttime(BIGNUM *r, const BIGNUM *a, const BIGNUM *b,
+                             const BN_MONT_CTX *mont, BN_CTX *ctx) {
+  BN_CTX_start(ctx);
+  BIGNUM *tmp = BN_CTX_get(ctx);
+  // |BN_mod_mul_montgomery| removes a factor of R, so we cancel it with a
+  // single |BN_to_montgomery| which adds one factor of R.
+  int ok = tmp != NULL &&
+           BN_to_montgomery(tmp, a, mont, ctx) &&
+           BN_mod_mul_montgomery(r, tmp, b, mont, ctx);
+  BN_CTX_end(ctx);
+  return ok;
+}
+
 DSA_SIG *DSA_do_sign(const uint8_t *digest, size_t digest_len, const DSA *dsa) {
+  if (!dsa->p || !dsa->q || !dsa->g) {
+    OPENSSL_PUT_ERROR(DSA, DSA_R_MISSING_PARAMETERS);
+    return NULL;
+  }
+
+  // Reject invalid parameters. In particular, the algorithm will infinite loop
+  // if |g| is zero.
+  if (BN_is_zero(dsa->p) || BN_is_zero(dsa->q) || BN_is_zero(dsa->g)) {
+    OPENSSL_PUT_ERROR(DSA, DSA_R_INVALID_PARAMETERS);
+    return NULL;
+  }
+
+  // We only support DSA keys that are a multiple of 8 bits. (This is a weaker
+  // check than the one in |DSA_do_check_signature|, which only allows 160-,
+  // 224-, and 256-bit keys.
+  if (BN_num_bits(dsa->q) % 8 != 0) {
+    OPENSSL_PUT_ERROR(DSA, DSA_R_BAD_Q_VALUE);
+    return NULL;
+  }
+
   BIGNUM *kinv = NULL, *r = NULL, *s = NULL;
   BIGNUM m;
   BIGNUM xr;
   BN_CTX *ctx = NULL;
-  int reason = ERR_R_BN_LIB;
   DSA_SIG *ret = NULL;
 
   BN_init(&m);
   BN_init(&xr);
-
-  if (!dsa->p || !dsa->q || !dsa->g) {
-    reason = DSA_R_MISSING_PARAMETERS;
-    goto err;
-  }
-
   s = BN_new();
   if (s == NULL) {
     goto err;
@@ -576,9 +601,9 @@ redo:
   }
 
   if (digest_len > BN_num_bytes(dsa->q)) {
-    // if the digest length is greater than the size of q use the
-    // BN_num_bits(dsa->q) leftmost bits of the digest, see
-    // fips 186-3, 4.2
+    // If the digest length is greater than the size of |dsa->q| use the
+    // BN_num_bits(dsa->q) leftmost bits of the digest, see FIPS 186-3, 4.2.
+    // Note the above check that |dsa->q| is a multiple of 8 bits.
     digest_len = BN_num_bytes(dsa->q);
   }
 
@@ -586,19 +611,23 @@ redo:
     goto err;
   }
 
-  // Compute  s = inv(k) (m + xr) mod q
-  if (!BN_mod_mul(&xr, dsa->priv_key, r, dsa->q, ctx)) {
-    goto err;  // s = xr
+  // |m| is bounded by 2^(num_bits(q)), which is slightly looser than q. This
+  // violates |bn_mod_add_consttime| and |mod_mul_consttime|'s preconditions.
+  // (The underlying algorithms could accept looser bounds, but we reduce for
+  // simplicity.)
+  size_t q_width = bn_minimal_width(dsa->q);
+  if (!bn_resize_words(&m, q_width) ||
+      !bn_resize_words(&xr, q_width)) {
+    goto err;
   }
-  if (!BN_add(s, &xr, &m)) {
-    goto err;  // s = m + xr
-  }
-  if (BN_cmp(s, dsa->q) > 0) {
-    if (!BN_sub(s, s, dsa->q)) {
-      goto err;
-    }
-  }
-  if (!BN_mod_mul(s, s, kinv, dsa->q, ctx)) {
+  bn_reduce_once_in_place(m.d, 0 /* no carry word */, dsa->q->d,
+                          xr.d /* scratch space */, q_width);
+
+  // Compute s = inv(k) (m + xr) mod q. Note |dsa->method_mont_q| is
+  // initialized by |dsa_sign_setup|.
+  if (!mod_mul_consttime(&xr, dsa->priv_key, r, dsa->method_mont_q, ctx) ||
+      !bn_mod_add_consttime(s, &xr, &m, dsa->q, ctx) ||
+      !mod_mul_consttime(s, s, kinv, dsa->method_mont_q, ctx)) {
     goto err;
   }
 
@@ -616,7 +645,7 @@ redo:
 
 err:
   if (ret == NULL) {
-    OPENSSL_PUT_ERROR(DSA, reason);
+    OPENSSL_PUT_ERROR(DSA, ERR_R_BN_LIB);
     BN_free(r);
     BN_free(s);
   }
@@ -652,7 +681,7 @@ int DSA_do_check_signature(int *out_valid, const uint8_t *digest,
   }
 
   i = BN_num_bits(dsa->q);
-  // fips 186-3 allows only different sizes for q
+  // FIPS 186-3 allows only different sizes for q.
   if (i != 160 && i != 224 && i != 256) {
     OPENSSL_PUT_ERROR(DSA, DSA_R_BAD_Q_VALUE);
     return 0;
@@ -836,101 +865,58 @@ int DSA_size(const DSA *dsa) {
   return ret;
 }
 
-static int dsa_sign_setup(const DSA *dsa, BN_CTX *ctx_in, BIGNUM **out_kinv,
+static int dsa_sign_setup(const DSA *dsa, BN_CTX *ctx, BIGNUM **out_kinv,
                           BIGNUM **out_r) {
-  BN_CTX *ctx;
-  BIGNUM k, kq, *kinv = NULL, *r = NULL;
-  int ret = 0;
-
   if (!dsa->p || !dsa->q || !dsa->g) {
     OPENSSL_PUT_ERROR(DSA, DSA_R_MISSING_PARAMETERS);
     return 0;
   }
 
+  int ret = 0;
+  BIGNUM k;
   BN_init(&k);
-  BN_init(&kq);
-
-  ctx = ctx_in;
-  if (ctx == NULL) {
-    ctx = BN_CTX_new();
-    if (ctx == NULL) {
-      goto err;
-    }
-  }
-
-  r = BN_new();
-  if (r == NULL) {
-    goto err;
-  }
-
-  // Get random k
-  if (!BN_rand_range_ex(&k, 1, dsa->q)) {
-    goto err;
-  }
-
-  if (!BN_MONT_CTX_set_locked((BN_MONT_CTX **)&dsa->method_mont_p,
+  BIGNUM *r = BN_new();
+  BIGNUM *kinv = BN_new();
+  if (r == NULL || kinv == NULL ||
+      // Get random k
+      !BN_rand_range_ex(&k, 1, dsa->q) ||
+      !BN_MONT_CTX_set_locked((BN_MONT_CTX **)&dsa->method_mont_p,
                               (CRYPTO_MUTEX *)&dsa->method_mont_lock, dsa->p,
                               ctx) ||
       !BN_MONT_CTX_set_locked((BN_MONT_CTX **)&dsa->method_mont_q,
                               (CRYPTO_MUTEX *)&dsa->method_mont_lock, dsa->q,
-                              ctx)) {
-    goto err;
-  }
-
-  // Compute r = (g^k mod p) mod q
-  if (!BN_copy(&kq, &k)) {
-    goto err;
-  }
-
-  // We do not want timing information to leak the length of k,
-  // so we compute g^k using an equivalent exponent of fixed length.
-  //
-  // (This is a kludge that we need because the BN_mod_exp_mont()
-  // does not let us specify the desired timing behaviour.)
-
-  if (!BN_add(&kq, &kq, dsa->q)) {
-    goto err;
-  }
-  if (BN_num_bits(&kq) <= BN_num_bits(dsa->q) && !BN_add(&kq, &kq, dsa->q)) {
-    goto err;
-  }
-
-  if (!BN_mod_exp_mont_consttime(r, dsa->g, &kq, dsa->p, ctx,
-                                 dsa->method_mont_p)) {
-    goto err;
-  }
-  if (!BN_mod(r, r, dsa->q, ctx)) {
-    goto err;
-  }
-
-  // Compute part of 's = inv(k) (m + xr) mod q' using Fermat's Little
-  // Theorem.
-  kinv = BN_new();
-  if (kinv == NULL ||
+                              ctx) ||
+      // Compute r = (g^k mod p) mod q
+      !BN_mod_exp_mont_consttime(r, dsa->g, &k, dsa->p, ctx,
+                                 dsa->method_mont_p) ||
+      // Note |BN_mod| below is not constant-time and may leak information about
+      // |r|. |dsa->p| may be significantly larger than |dsa->q|, so this is not
+      // easily performed in constant-time with Montgomery reduction.
+      //
+      // However, |r| at this point is g^k (mod p). It is almost the value of
+      // |r| revealed in the signature anyway (g^k (mod p) (mod q)), going from
+      // it to |k| would require computing a discrete log.
+      !BN_mod(r, r, dsa->q, ctx) ||
+      // Compute part of 's = inv(k) (m + xr) mod q' using Fermat's Little
+      // Theorem.
       !bn_mod_inverse_prime(kinv, &k, dsa->q, ctx, dsa->method_mont_q)) {
+    OPENSSL_PUT_ERROR(DSA, ERR_R_BN_LIB);
     goto err;
   }
 
   BN_clear_free(*out_kinv);
   *out_kinv = kinv;
   kinv = NULL;
+
   BN_clear_free(*out_r);
   *out_r = r;
+  r = NULL;
+
   ret = 1;
 
 err:
-  if (!ret) {
-    OPENSSL_PUT_ERROR(DSA, ERR_R_BN_LIB);
-    if (r != NULL) {
-      BN_clear_free(r);
-    }
-  }
-
-  if (ctx_in == NULL) {
-    BN_CTX_free(ctx);
-  }
   BN_clear_free(&k);
-  BN_clear_free(&kq);
+  BN_clear_free(r);
   BN_clear_free(kinv);
   return ret;
 }

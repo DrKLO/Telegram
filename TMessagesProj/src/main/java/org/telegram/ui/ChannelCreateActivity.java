@@ -28,7 +28,6 @@ import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
-import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -89,7 +88,8 @@ public class ChannelCreateActivity extends BaseFragment implements NotificationC
     private TLRPC.FileLocation avatarBig;
     private String nameToSet;
     private LinearLayout linearLayout2;
-    private EditText editText;
+    private HeaderCell headerCell2;
+    private EditTextBoldCursor editText;
 
     private LinearLayout linearLayout;
     private LinearLayout adminnedChannelsLayout;
@@ -252,7 +252,7 @@ public class ChannelCreateActivity extends BaseFragment implements NotificationC
                         if (!isPrivate) {
                             if (descriptionTextView.length() == 0) {
                                 AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-                                builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
+                                builder.setTitle(LocaleController.getString("ChannelPublicEmptyUsernameTitle", R.string.ChannelPublicEmptyUsernameTitle));
                                 builder.setMessage(LocaleController.getString("ChannelPublicEmptyUsername", R.string.ChannelPublicEmptyUsername));
                                 builder.setPositiveButton(LocaleController.getString("Close", R.string.Close), null);
                                 showDialog(builder.create());
@@ -551,9 +551,15 @@ public class ChannelCreateActivity extends BaseFragment implements NotificationC
             linearLayout.setOrientation(LinearLayout.VERTICAL);
             scrollView.addView(linearLayout, new ScrollView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
-            actionBar.setTitle(LocaleController.getString("ChannelSettings", R.string.ChannelSettings));
+            actionBar.setTitle(LocaleController.getString("ChannelSettingsTitle", R.string.ChannelSettingsTitle));
             fragmentView.setTag(Theme.key_windowBackgroundGray);
             fragmentView.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundGray));
+
+            headerCell2 = new HeaderCell(context, 23);
+            headerCell2.setHeight(46);
+            headerCell2.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+            headerCell2.setText(LocaleController.getString("ChannelTypeHeader", R.string.ChannelTypeHeader));
+            linearLayout.addView(headerCell2);
 
             linearLayout2 = new LinearLayout(context);
             linearLayout2.setOrientation(LinearLayout.VERTICAL);
@@ -599,7 +605,7 @@ public class ChannelCreateActivity extends BaseFragment implements NotificationC
             publicContainer.setOrientation(LinearLayout.HORIZONTAL);
             linkContainer.addView(publicContainer, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 36, 17, 7, 17, 0));
 
-            editText = new EditText(context);
+            editText = new EditTextBoldCursor(context);
             editText.setText(MessagesController.getInstance(currentAccount).linkPrefix + "/");
             editText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
             editText.setHintTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteHintText));
@@ -1117,6 +1123,7 @@ public class ChannelCreateActivity extends BaseFragment implements NotificationC
                 new ThemeDescription(linkContainer, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_windowBackgroundWhite),
                 new ThemeDescription(sectionCell, ThemeDescription.FLAG_BACKGROUNDFILTER, null, null, null, null, Theme.key_windowBackgroundGrayShadow),
                 new ThemeDescription(headerCell, 0, new Class[]{HeaderCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlueHeader),
+                new ThemeDescription(headerCell2, 0, new Class[]{HeaderCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlueHeader),
                 new ThemeDescription(editText, ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteBlackText),
                 new ThemeDescription(editText, ThemeDescription.FLAG_HINTTEXTCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteHintText),
                 new ThemeDescription(checkTextView, ThemeDescription.FLAG_TEXTCOLOR | ThemeDescription.FLAG_CHECKTAG, null, null, null, null, Theme.key_windowBackgroundWhiteRedText4),

@@ -75,7 +75,7 @@ public class AdminLogFilterAlert extends BottomSheet {
     private int allAdminsRow;
 
     public AdminLogFilterAlert(Context context, TLRPC.TL_channelAdminLogEventsFilter filter, SparseArray<TLRPC.User> admins, boolean megagroup) {
-        super(context, false, 0);
+        super(context, false);
         if (filter != null) {
             currentFilter = new TLRPC.TL_channelAdminLogEventsFilter();
             currentFilter.join = filter.join;
@@ -118,7 +118,7 @@ public class AdminLogFilterAlert extends BottomSheet {
         rowCount += 2;
         allAdminsRow = rowCount;
 
-        shadowDrawable = context.getResources().getDrawable(R.drawable.sheet_shadow).mutate();
+        shadowDrawable = context.getResources().getDrawable(R.drawable.sheet_shadow_round).mutate();
         shadowDrawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_dialogBackground), PorterDuff.Mode.MULTIPLY));
 
         containerView = new FrameLayout(context) {

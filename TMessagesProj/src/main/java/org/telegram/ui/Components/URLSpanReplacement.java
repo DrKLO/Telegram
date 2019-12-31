@@ -40,9 +40,11 @@ public class URLSpanReplacement extends URLSpan {
 
     @Override
     public void updateDrawState(TextPaint p) {
+        int color = p.getColor();
         super.updateDrawState(p);
         if (style != null) {
             style.applyStyle(p);
+            p.setUnderlineText(p.linkColor == color);
         }
     }
 }

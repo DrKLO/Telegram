@@ -1,4 +1,11 @@
-#!/usr/bin/env perl
+#! /usr/bin/env perl
+# Copyright 2009-2016 The OpenSSL Project Authors. All Rights Reserved.
+#
+# Licensed under the OpenSSL license (the "License").  You may not use
+# this file except in compliance with the License.  You can obtain a copy
+# in the file LICENSE in the source distribution or at
+# https://www.openssl.org/source/license.html
+
 
 # ====================================================================
 # Written by Andy Polyakov <appro@openssl.org> for the OpenSSL
@@ -43,22 +50,27 @@
 # Add aesni_xts_[en|de]crypt. Westmere spends 1.50 cycles processing
 # one byte out of 8KB with 128-bit key, Sandy Bridge - 1.09.
 
+# November 2015
+#
+# Add aesni_ocb_[en|de]crypt. [Removed in BoringSSL]
+
 ######################################################################
 # Current large-block performance in cycles per byte processed with
 # 128-bit key (less is better).
 #
-#		CBC en-/decrypt	CTR	XTS	ECB
+#		CBC en-/decrypt	CTR	XTS	ECB	OCB
 # Westmere	3.77/1.37	1.37	1.52	1.27
-# * Bridge	5.07/0.98	0.99	1.09	0.91
-# Haswell	4.44/0.80	0.97	1.03	0.72
-# Skylake	2.68/0.65	0.65	0.66	0.64
-# Silvermont	5.77/3.56	3.67	4.03	3.46
-# Goldmont	3.84/1.39	1.39	1.63	1.31
-# Bulldozer	5.80/0.98	1.05	1.24	0.93
+# * Bridge	5.07/0.98	0.99	1.09	0.91	1.10
+# Haswell	4.44/0.80	0.97	1.03	0.72	0.76
+# Skylake	2.68/0.65	0.65	0.66	0.64	0.66
+# Silvermont	5.77/3.56	3.67	4.03	3.46	4.03
+# Goldmont	3.84/1.39	1.39	1.63	1.31	1.70
+# Bulldozer	5.80/0.98	1.05	1.24	0.93	1.23
 
-$PREFIX="aesni";	# if $PREFIX is set to "AES", the script
+$PREFIX="aes_hw";	# if $PREFIX is set to "AES", the script
 			# generates drop-in replacement for
 			# crypto/aes/asm/aes-586.pl:-)
+$AESNI_PREFIX="aes_hw";
 $inline=1;		# inline _aesni_[en|de]crypt
 
 $0 =~ m/(.*[\/\\])[^\/\\]+$/; $dir=$1;
@@ -72,9 +84,12 @@ open OUT,">$output";
 &asm_init($ARGV[0]);
 
 &external_label("OPENSSL_ia32cap_P");
+&preprocessor_ifndef("NDEBUG")
+&external_label("BORINGSSL_function_hit");
+&preprocessor_endif();
 &static_label("key_const");
 
-if ($PREFIX eq "aesni")	{ $movekey=\&movups; }
+if ($PREFIX eq $AESNI_PREFIX)	{ $movekey=\&movups; }
 else			{ $movekey=\&movups; }
 
 $len="eax";
@@ -181,6 +196,8 @@ sub aesni_generate1	# fully unrolled loop
 # void $PREFIX_encrypt (const void *inp,void *out,const AES_KEY *key);
 &aesni_generate1("enc") if (!$inline);
 &function_begin_B("${PREFIX}_encrypt");
+	&record_function_hit(1);
+
 	&mov	("eax",&wparam(0));
 	&mov	($key,&wparam(2));
 	&movups	($inout0,&QWP(0,"eax"));
@@ -228,7 +245,7 @@ sub aesni_generate1	# fully unrolled loop
 # can schedule aes[enc|dec] every cycle optimal interleave factor
 # equals to corresponding instructions latency. 8x is optimal for
 # * Bridge, but it's unfeasible to accommodate such implementation
-# in XMM registers addreassable in 32-bit mode and therefore maximum
+# in XMM registers addressable in 32-bit mode and therefore maximum
 # of 6x is used instead...
 
 sub aesni_generate2
@@ -403,21 +420,21 @@ sub aesni_generate6
     &ret();
     &function_end_B("_aesni_${p}rypt6");
 }
-&aesni_generate2("enc") if ($PREFIX eq "aesni");
+&aesni_generate2("enc") if ($PREFIX eq $AESNI_PREFIX);
 &aesni_generate2("dec");
-&aesni_generate3("enc") if ($PREFIX eq "aesni");
+&aesni_generate3("enc") if ($PREFIX eq $AESNI_PREFIX);
 &aesni_generate3("dec");
-&aesni_generate4("enc") if ($PREFIX eq "aesni");
+&aesni_generate4("enc") if ($PREFIX eq $AESNI_PREFIX);
 &aesni_generate4("dec");
-&aesni_generate6("enc") if ($PREFIX eq "aesni");
+&aesni_generate6("enc") if ($PREFIX eq $AESNI_PREFIX);
 &aesni_generate6("dec");
 
-if ($PREFIX eq "aesni") {
+if ($PREFIX eq $AESNI_PREFIX) {
 ######################################################################
-# void aesni_ecb_encrypt (const void *in, void *out,
+# void aes_hw_ecb_encrypt (const void *in, void *out,
 #                         size_t length, const AES_KEY *key,
 #                         int enc);
-&function_begin("aesni_ecb_encrypt");
+&function_begin("${PREFIX}_ecb_encrypt");
 	&mov	($inp,&wparam(0));
 	&mov	($out,&wparam(1));
 	&mov	($len,&wparam(2));
@@ -636,10 +653,10 @@ if ($PREFIX eq "aesni") {
 	&pxor	("xmm5","xmm5");
 	&pxor	("xmm6","xmm6");
 	&pxor	("xmm7","xmm7");
-&function_end("aesni_ecb_encrypt");
+&function_end("${PREFIX}_ecb_encrypt");
 
 ######################################################################
-# void aesni_ccm64_[en|de]crypt_blocks (const void *in, void *out,
+# void aes_hw_ccm64_[en|de]crypt_blocks (const void *in, void *out,
 #                         size_t blocks, const AES_KEY *key,
 #                         const char *ivec,char *cmac);
 #
@@ -648,7 +665,7 @@ if ($PREFIX eq "aesni") {
 # (see engine/eng_aesni.c for details)
 #
 { my $cmac=$inout1;
-&function_begin("aesni_ccm64_encrypt_blocks");
+&function_begin("${PREFIX}_ccm64_encrypt_blocks");
 	&mov	($inp,&wparam(0));
 	&mov	($out,&wparam(1));
 	&mov	($len,&wparam(2));
@@ -734,9 +751,9 @@ if ($PREFIX eq "aesni") {
 	&pxor	("xmm5","xmm5");
 	&pxor	("xmm6","xmm6");
 	&pxor	("xmm7","xmm7");
-&function_end("aesni_ccm64_encrypt_blocks");
+&function_end("${PREFIX}_ccm64_encrypt_blocks");
 
-&function_begin("aesni_ccm64_decrypt_blocks");
+&function_begin("${PREFIX}_ccm64_decrypt_blocks");
 	&mov	($inp,&wparam(0));
 	&mov	($out,&wparam(1));
 	&mov	($len,&wparam(2));
@@ -843,11 +860,11 @@ if ($PREFIX eq "aesni") {
 	&pxor	("xmm5","xmm5");
 	&pxor	("xmm6","xmm6");
 	&pxor	("xmm7","xmm7");
-&function_end("aesni_ccm64_decrypt_blocks");
+&function_end("${PREFIX}_ccm64_decrypt_blocks");
 }
 
 ######################################################################
-# void aesni_ctr32_encrypt_blocks (const void *in, void *out,
+# void aes_hw_ctr32_encrypt_blocks (const void *in, void *out,
 #                         size_t blocks, const AES_KEY *key,
 #                         const char *ivec);
 #
@@ -862,7 +879,9 @@ if ($PREFIX eq "aesni") {
 #	64	2nd triplet of counter vector
 #	80	saved %esp
 
-&function_begin("aesni_ctr32_encrypt_blocks");
+&function_begin("${PREFIX}_ctr32_encrypt_blocks");
+	&record_function_hit(0);
+
 	&mov	($inp,&wparam(0));
 	&mov	($out,&wparam(1));
 	&mov	($len,&wparam(2));
@@ -1104,16 +1123,16 @@ if ($PREFIX eq "aesni") {
 	&movdqa	(&QWP(64,"esp"),"xmm0");
 	&pxor	("xmm7","xmm7");
 	&mov	("esp",&DWP(80,"esp"));
-&function_end("aesni_ctr32_encrypt_blocks");
+&function_end("${PREFIX}_ctr32_encrypt_blocks");
 
 ######################################################################
-# void aesni_xts_[en|de]crypt(const char *inp,char *out,size_t len,
+# void aes_hw_xts_[en|de]crypt(const char *inp,char *out,size_t len,
 #	const AES_KEY *key1, const AES_KEY *key2
 #	const unsigned char iv[16]);
 #
 { my ($tweak,$twtmp,$twres,$twmask)=($rndkey1,$rndkey0,$inout0,$inout1);
 
-&function_begin("aesni_xts_encrypt");
+&function_begin("${PREFIX}_xts_encrypt");
 	&mov	($key,&wparam(4));		# key2
 	&mov	($inp,&wparam(5));		# clear-text tweak
 
@@ -1459,9 +1478,9 @@ if ($PREFIX eq "aesni") {
 	&pxor	("xmm7","xmm7");
 	&movdqa	(&QWP(16*5,"esp"),"xmm0");
 	&mov	("esp",&DWP(16*7+4,"esp"));	# restore %esp
-&function_end("aesni_xts_encrypt");
+&function_end("${PREFIX}_xts_encrypt");
 
-&function_begin("aesni_xts_decrypt");
+&function_begin("${PREFIX}_xts_decrypt");
 	&mov	($key,&wparam(4));		# key2
 	&mov	($inp,&wparam(5));		# clear-text tweak
 
@@ -1835,7 +1854,7 @@ if ($PREFIX eq "aesni") {
 	&pxor	("xmm7","xmm7");
 	&movdqa	(&QWP(16*5,"esp"),"xmm0");
 	&mov	("esp",&DWP(16*7+4,"esp"));	# restore %esp
-&function_end("aesni_xts_decrypt");
+&function_end("${PREFIX}_xts_decrypt");
 }
 }
 
@@ -2425,7 +2444,7 @@ if ($PREFIX eq "aesni") {
 	&pxor		("xmm3","xmm3");
 	&aesenclast	("xmm2","xmm3");
 
-	&movdqa		("xmm3","xmm1")
+	&movdqa		("xmm3","xmm1");
 	&pslldq		("xmm1",4);
 	&pxor		("xmm3","xmm1");
 	&pslldq		("xmm1",4);
@@ -2471,6 +2490,8 @@ if ($PREFIX eq "aesni") {
 # int $PREFIX_set_encrypt_key (const unsigned char *userKey, int bits,
 #                              AES_KEY *key)
 &function_begin_B("${PREFIX}_set_encrypt_key");
+	&record_function_hit(3);
+
 	&mov	("eax",&wparam(0));
 	&mov	($rounds,&wparam(1));
 	&mov	($key,&wparam(2));
@@ -2530,4 +2551,4 @@ if ($PREFIX eq "aesni") {
 
 &asm_finish();
 
-close STDOUT;
+close STDOUT or die "error closing STDOUT";

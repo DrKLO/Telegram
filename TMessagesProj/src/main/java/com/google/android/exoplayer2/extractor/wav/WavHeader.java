@@ -33,23 +33,29 @@ import com.google.android.exoplayer2.util.Util;
   private final int blockAlignment;
   /** Bits per sample for the audio data. */
   private final int bitsPerSample;
-  /** The PCM encoding */
-  @C.PcmEncoding
-  private final int encoding;
+  /** The PCM encoding. */
+  @C.PcmEncoding private final int encoding;
 
-  /** Offset to the start of sample data. */
-  private long dataStartPosition;
-  /** Total size in bytes of the sample data. */
-  private long dataSize;
+  /** Position of the start of the sample data, in bytes. */
+  private int dataStartPosition;
+  /** Position of the end of the sample data (exclusive), in bytes. */
+  private long dataEndPosition;
 
-  public WavHeader(int numChannels, int sampleRateHz, int averageBytesPerSecond, int blockAlignment,
-      int bitsPerSample, @C.PcmEncoding int encoding) {
+  public WavHeader(
+      int numChannels,
+      int sampleRateHz,
+      int averageBytesPerSecond,
+      int blockAlignment,
+      int bitsPerSample,
+      @C.PcmEncoding int encoding) {
     this.numChannels = numChannels;
     this.sampleRateHz = sampleRateHz;
     this.averageBytesPerSecond = averageBytesPerSecond;
     this.blockAlignment = blockAlignment;
     this.bitsPerSample = bitsPerSample;
     this.encoding = encoding;
+    dataStartPosition = C.POSITION_UNSET;
+    dataEndPosition = C.POSITION_UNSET;
   }
 
   // Data bounds.
@@ -57,22 +63,33 @@ import com.google.android.exoplayer2.util.Util;
   /**
    * Sets the data start position and size in bytes of sample data in this WAV.
    *
-   * @param dataStartPosition The data start position in bytes.
-   * @param dataSize The data size in bytes.
+   * @param dataStartPosition The position of the start of the sample data, in bytes.
+   * @param dataEndPosition The position of the end of the sample data (exclusive), in bytes.
    */
-  public void setDataBounds(long dataStartPosition, long dataSize) {
+  public void setDataBounds(int dataStartPosition, long dataEndPosition) {
     this.dataStartPosition = dataStartPosition;
-    this.dataSize = dataSize;
+    this.dataEndPosition = dataEndPosition;
   }
 
-  /** Returns the data limit, or {@link C#POSITION_UNSET} if the data bounds have not been set. */
-  public long getDataLimit() {
-    return hasDataBounds() ? (dataStartPosition + dataSize) : C.POSITION_UNSET;
+  /**
+   * Returns the position of the start of the sample data, in bytes, or {@link C#POSITION_UNSET} if
+   * the data bounds have not been set.
+   */
+  public int getDataStartPosition() {
+    return dataStartPosition;
+  }
+
+  /**
+   * Returns the position of the end of the sample data (exclusive), in bytes, or {@link
+   * C#POSITION_UNSET} if the data bounds have not been set.
+   */
+  public long getDataEndPosition() {
+    return dataEndPosition;
   }
 
   /** Returns whether the data start position and size have been set. */
   public boolean hasDataBounds() {
-    return dataStartPosition != 0 && dataSize != 0;
+    return dataStartPosition != C.POSITION_UNSET;
   }
 
   // SeekMap implementation.
@@ -84,12 +101,13 @@ import com.google.android.exoplayer2.util.Util;
 
   @Override
   public long getDurationUs() {
-    long numFrames = dataSize / blockAlignment;
+    long numFrames = (dataEndPosition - dataStartPosition) / blockAlignment;
     return (numFrames * C.MICROS_PER_SECOND) / sampleRateHz;
   }
 
   @Override
   public SeekPoints getSeekPoints(long timeUs) {
+    long dataSize = dataEndPosition - dataStartPosition;
     long positionOffset = (timeUs * averageBytesPerSecond) / C.MICROS_PER_SECOND;
     // Constrain to nearest preceding frame offset.
     positionOffset = (positionOffset / blockAlignment) * blockAlignment;

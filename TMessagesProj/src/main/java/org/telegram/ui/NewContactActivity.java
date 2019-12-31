@@ -42,6 +42,7 @@ import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
+import org.telegram.messenger.SharedConfig;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
@@ -69,6 +70,7 @@ import static android.widget.LinearLayout.HORIZONTAL;
 
 public class NewContactActivity extends BaseFragment implements AdapterView.OnItemSelectedListener {
 
+    private LinearLayout contentLayout;
     private ActionBarMenuItem editDoneItem;
     private ContextProgressView editDoneItemProgress;
     private EditTextBoldCursor firstNameField;
@@ -156,7 +158,7 @@ public class NewContactActivity extends BaseFragment implements AdapterView.OnIt
                                     }
                                     showEditDoneProgress(false, true);
                                     AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-                                    builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
+                                    builder.setTitle(LocaleController.getString("ContactNotRegisteredTitle", R.string.ContactNotRegisteredTitle));
                                     builder.setMessage(LocaleController.formatString("ContactNotRegistered", R.string.ContactNotRegistered, ContactsController.formatName(inputPhoneContact.first_name, inputPhoneContact.last_name)));
                                     builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
                                     builder.setPositiveButton(LocaleController.getString("Invite", R.string.Invite), (dialog, which) -> {
@@ -194,14 +196,14 @@ public class NewContactActivity extends BaseFragment implements AdapterView.OnIt
 
         fragmentView = new ScrollView(context);
 
-        LinearLayout linearLayout = new LinearLayout(context);
-        linearLayout.setPadding(AndroidUtilities.dp(24), 0, AndroidUtilities.dp(24), 0);
-        linearLayout.setOrientation(LinearLayout.VERTICAL);
-        ((ScrollView) fragmentView).addView(linearLayout, LayoutHelper.createScroll(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP));
-        linearLayout.setOnTouchListener((v, event) -> true);
+        contentLayout = new LinearLayout(context);
+        contentLayout.setPadding(AndroidUtilities.dp(24), 0, AndroidUtilities.dp(24), 0);
+        contentLayout.setOrientation(LinearLayout.VERTICAL);
+        ((ScrollView) fragmentView).addView(contentLayout, LayoutHelper.createScroll(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP));
+        contentLayout.setOnTouchListener((v, event) -> true);
 
         FrameLayout frameLayout = new FrameLayout(context);
-        linearLayout.addView(frameLayout, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 24, 0, 0));
+        contentLayout.addView(frameLayout, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 24, 0, 0));
 
         avatarImage = new BackupImageView(context);
         avatarImage.setImageDrawable(avatarDrawable);
@@ -293,19 +295,18 @@ public class NewContactActivity extends BaseFragment implements AdapterView.OnIt
 
         countryButton = new TextView(context);
         countryButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
-        countryButton.setPadding(AndroidUtilities.dp(6), AndroidUtilities.dp(10), AndroidUtilities.dp(6), 0);
+        countryButton.setPadding(0, AndroidUtilities.dp(4), 0, AndroidUtilities.dp(4));
         countryButton.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
         countryButton.setMaxLines(1);
         countryButton.setSingleLine(true);
         countryButton.setEllipsize(TextUtils.TruncateAt.END);
         countryButton.setGravity(Gravity.LEFT | Gravity.CENTER_HORIZONTAL);
-        countryButton.setBackgroundResource(R.drawable.spinner_states);
-        linearLayout.addView(countryButton, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 36, 0, 24, 0, 14));
+        countryButton.setBackground(Theme.getSelectorDrawable(true));
+        contentLayout.addView(countryButton, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 36, 0, 24, 0, 14));
         countryButton.setOnClickListener(view -> {
             CountrySelectActivity fragment = new CountrySelectActivity(true);
             fragment.setCountrySelectActivityDelegate((name, shortName) -> {
                 selectCountry(name);
-                AndroidUtilities.runOnUIThread(() -> AndroidUtilities.showKeyboard(phoneField), 300);
                 phoneField.requestFocus();
                 phoneField.setSelection(phoneField.length());
             });
@@ -315,11 +316,11 @@ public class NewContactActivity extends BaseFragment implements AdapterView.OnIt
         lineView = new View(context);
         lineView.setPadding(AndroidUtilities.dp(8), 0, AndroidUtilities.dp(8), 0);
         lineView.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayLine));
-        linearLayout.addView(lineView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 1, 0, -17.5f, 0, 0));
+        contentLayout.addView(lineView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 1, 0, -17.5f, 0, 0));
 
         LinearLayout linearLayout2 = new LinearLayout(context);
         linearLayout2.setOrientation(HORIZONTAL);
-        linearLayout.addView(linearLayout2, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 20, 0, 0));
+        contentLayout.addView(linearLayout2, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 20, 0, 0));
 
         textView = new TextView(context);
         textView.setText("+");
@@ -589,21 +590,14 @@ public class NewContactActivity extends BaseFragment implements AdapterView.OnIt
     }
 
     @Override
-    public void onResume() {
-        super.onResume();
-        SharedPreferences preferences = MessagesController.getGlobalMainSettings();
-        boolean animations = preferences.getBoolean("view_animations", true);
-        if (!animations) {
-            firstNameField.requestFocus();
-            AndroidUtilities.showKeyboard(firstNameField);
-        }
-    }
-
-    @Override
     public void onTransitionAnimationEnd(boolean isOpen, boolean backward) {
         if (isOpen) {
-            firstNameField.requestFocus();
-            AndroidUtilities.showKeyboard(firstNameField);
+            View focusedView = contentLayout.findFocus();
+            if (focusedView == null) {
+                firstNameField.requestFocus();
+                focusedView = firstNameField;
+            }
+            AndroidUtilities.showKeyboard(focusedView);
         }
     }
 
@@ -758,6 +752,8 @@ public class NewContactActivity extends BaseFragment implements AdapterView.OnIt
                 new ThemeDescription(lineView, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_windowBackgroundWhiteGrayLine),
 
                 new ThemeDescription(countryButton, ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteBlackText),
+                new ThemeDescription(countryButton, ThemeDescription.FLAG_SELECTORWHITE, null, null, null, null, Theme.key_windowBackgroundWhite),
+                new ThemeDescription(countryButton, ThemeDescription.FLAG_SELECTORWHITE, null, null, null, null, Theme.key_listSelector),
 
                 new ThemeDescription(editDoneItemProgress, 0, null, null, null, null, Theme.key_contextProgressInner2),
                 new ThemeDescription(editDoneItemProgress, 0, null, null, null, null, Theme.key_contextProgressOuter2),

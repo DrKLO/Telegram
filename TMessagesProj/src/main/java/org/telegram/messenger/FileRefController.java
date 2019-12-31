@@ -963,7 +963,18 @@ public class FileRefController extends BaseController {
         if (result != null) {
             return result;
         }
-        if (result == null && webpage.cached_page != null) {
+        if (!webpage.attributes.isEmpty()) {
+            for (int a = 0, size1 = webpage.attributes.size(); a < size1; a++) {
+                TLRPC.TL_webPageAttributeTheme attribute = webpage.attributes.get(a);
+                for (int b = 0, size2 = attribute.documents.size(); b < size2; b++) {
+                    result = getFileReference(attribute.documents.get(b), location, needReplacement, replacement);
+                    if (result != null) {
+                        return result;
+                    }
+                }
+            }
+        }
+        if (webpage.cached_page != null) {
             for (int b = 0, size2 = webpage.cached_page.documents.size(); b < size2; b++) {
                 result = getFileReference(webpage.cached_page.documents.get(b), location, needReplacement, replacement);
                 if (result != null) {

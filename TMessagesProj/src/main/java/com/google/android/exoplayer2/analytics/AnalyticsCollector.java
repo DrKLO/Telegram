@@ -15,14 +15,16 @@
  */
 package com.google.android.exoplayer2.analytics;
 
-import android.graphics.SurfaceTexture;
 import androidx.annotation.Nullable;
+
+import android.graphics.SurfaceTexture;
 import android.view.Surface;
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.ExoPlaybackException;
 import com.google.android.exoplayer2.Format;
 import com.google.android.exoplayer2.PlaybackParameters;
 import com.google.android.exoplayer2.Player;
+import com.google.android.exoplayer2.Player.PlaybackSuppressionReason;
 import com.google.android.exoplayer2.Timeline;
 import com.google.android.exoplayer2.Timeline.Period;
 import com.google.android.exoplayer2.Timeline.Window;
@@ -130,12 +132,13 @@ public class AnalyticsCollector
 
   /**
    * Sets the player for which data will be collected. Must only be called if no player has been set
-   * yet.
+   * yet or the current player is idle.
    *
    * @param player The {@link Player} for which data will be collected.
    */
   public void setPlayer(Player player) {
-    Assertions.checkState(this.player == null);
+    Assertions.checkState(
+        this.player == null || mediaPeriodQueueTracker.mediaPeriodInfoQueue.isEmpty());
     this.player = Assertions.checkNotNull(player);
   }
 
@@ -310,16 +313,6 @@ public class AnalyticsCollector
   // VideoListener implementation.
 
   @Override
-  public boolean onSurfaceDestroyed(SurfaceTexture surfaceTexture) {
-    return false;
-  }
-
-  @Override
-  public void onSurfaceTextureUpdated(SurfaceTexture surfaceTexture) {
-
-  }
-
-  @Override
   public final void onRenderedFirstFrame() {
     // Do nothing. Already reported in VideoRendererEventListener.onRenderedFirstFrame.
   }
@@ -340,6 +333,16 @@ public class AnalyticsCollector
     for (AnalyticsListener listener : listeners) {
       listener.onSurfaceSizeChanged(eventTime, width, height);
     }
+  }
+
+  @Override
+  public boolean onSurfaceDestroyed(SurfaceTexture surfaceTexture) {
+    return false;
+  }
+
+  @Override
+  public void onSurfaceTextureUpdated(SurfaceTexture surfaceTexture) {
+
   }
 
   // MediaSourceEventListener implementation.
@@ -482,6 +485,23 @@ public class AnalyticsCollector
   }
 
   @Override
+  public void onPlaybackSuppressionReasonChanged(
+      @PlaybackSuppressionReason int playbackSuppressionReason) {
+    EventTime eventTime = generatePlayingMediaPeriodEventTime();
+    for (AnalyticsListener listener : listeners) {
+      listener.onPlaybackSuppressionReasonChanged(eventTime, playbackSuppressionReason);
+    }
+  }
+
+  @Override
+  public void onIsPlayingChanged(boolean isPlaying) {
+    EventTime eventTime = generatePlayingMediaPeriodEventTime();
+    for (AnalyticsListener listener : listeners) {
+      listener.onIsPlayingChanged(eventTime, isPlaying);
+    }
+  }
+
+  @Override
   public final void onRepeatModeChanged(@Player.RepeatMode int repeatMode) {
     EventTime eventTime = generatePlayingMediaPeriodEventTime();
     for (AnalyticsListener listener : listeners) {
@@ -499,7 +519,10 @@ public class AnalyticsCollector
 
   @Override
   public final void onPlayerError(ExoPlaybackException error) {
-    EventTime eventTime = generatePlayingMediaPeriodEventTime();
+    EventTime eventTime =
+        error.type == ExoPlaybackException.TYPE_SOURCE
+            ? generateLoadingMediaPeriodEventTime()
+            : generatePlayingMediaPeriodEventTime();
     for (AnalyticsListener listener : listeners) {
       listener.onPlayerError(eventTime, error);
     }

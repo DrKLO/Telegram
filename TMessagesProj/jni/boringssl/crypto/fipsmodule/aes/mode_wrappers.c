@@ -6,7 +6,7 @@
  * are met:
  *
  * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer. 
+ *    notice, this list of conditions and the following disclaimer.
  *
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in
@@ -50,14 +50,14 @@
 
 #include <assert.h>
 
+#include "../aes/internal.h"
 #include "../modes/internal.h"
 
 
 void AES_ctr128_encrypt(const uint8_t *in, uint8_t *out, size_t len,
                         const AES_KEY *key, uint8_t ivec[AES_BLOCK_SIZE],
                         uint8_t ecount_buf[AES_BLOCK_SIZE], unsigned int *num) {
-  CRYPTO_ctr128_encrypt(in, out, len, key, ivec, ecount_buf, num,
-                        (block128_f)AES_encrypt);
+  CRYPTO_ctr128_encrypt(in, out, len, key, ivec, ecount_buf, num, AES_encrypt);
 }
 
 void AES_ecb_encrypt(const uint8_t *in, uint8_t *out, const AES_KEY *key,
@@ -72,33 +72,30 @@ void AES_ecb_encrypt(const uint8_t *in, uint8_t *out, const AES_KEY *key,
   }
 }
 
-#if defined(OPENSSL_NO_ASM) || \
-    (!defined(OPENSSL_X86_64) && !defined(OPENSSL_X86))
 void AES_cbc_encrypt(const uint8_t *in, uint8_t *out, size_t len,
                      const AES_KEY *key, uint8_t *ivec, const int enc) {
+  if (hwaes_capable()) {
+    aes_hw_cbc_encrypt(in, out, len, key, ivec, enc);
+    return;
+  }
 
+#if defined(AES_NOHW_CBC)
+  if (!vpaes_capable()) {
+    aes_nohw_cbc_encrypt(in, out, len, key, ivec, enc);
+    return;
+  }
+#endif
   if (enc) {
-    CRYPTO_cbc128_encrypt(in, out, len, key, ivec, (block128_f)AES_encrypt);
+    CRYPTO_cbc128_encrypt(in, out, len, key, ivec, AES_encrypt);
   } else {
-    CRYPTO_cbc128_decrypt(in, out, len, key, ivec, (block128_f)AES_decrypt);
+    CRYPTO_cbc128_decrypt(in, out, len, key, ivec, AES_decrypt);
   }
 }
-#else
-
-void asm_AES_cbc_encrypt(const uint8_t *in, uint8_t *out, size_t len,
-                         const AES_KEY *key, uint8_t *ivec, const int enc);
-void AES_cbc_encrypt(const uint8_t *in, uint8_t *out, size_t len,
-                     const AES_KEY *key, uint8_t *ivec, const int enc) {
-  asm_AES_cbc_encrypt(in, out, len, key, ivec, enc);
-}
-
-#endif  // OPENSSL_NO_ASM || (!OPENSSL_X86_64 && !OPENSSL_X86)
 
 void AES_ofb128_encrypt(const uint8_t *in, uint8_t *out, size_t length,
                         const AES_KEY *key, uint8_t *ivec, int *num) {
   unsigned num_u = (unsigned)(*num);
-  CRYPTO_ofb128_encrypt(in, out, length, key, ivec, &num_u,
-                        (block128_f)AES_encrypt);
+  CRYPTO_ofb128_encrypt(in, out, length, key, ivec, &num_u, AES_encrypt);
   *num = (int)num_u;
 }
 
@@ -106,7 +103,6 @@ void AES_cfb128_encrypt(const uint8_t *in, uint8_t *out, size_t length,
                         const AES_KEY *key, uint8_t *ivec, int *num,
                         int enc) {
   unsigned num_u = (unsigned)(*num);
-  CRYPTO_cfb128_encrypt(in, out, length, key, ivec, &num_u, enc,
-                        (block128_f)AES_encrypt);
+  CRYPTO_cfb128_encrypt(in, out, length, key, ivec, &num_u, enc, AES_encrypt);
   *num = (int)num_u;
 }

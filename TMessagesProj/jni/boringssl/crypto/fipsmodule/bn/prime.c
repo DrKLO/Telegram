@@ -112,15 +112,15 @@
 #include <openssl/mem.h>
 
 #include "internal.h"
+#include "../../internal.h"
+
 
 // The quick sieve algorithm approach to weeding out primes is Philip
 // Zimmermann's, as implemented in PGP.  I have had a read of his comments and
 // implemented my own version.
 
-#define NUMPRIMES 2048
-
-// primes contains all the primes that fit into a uint16_t.
-static const uint16_t primes[NUMPRIMES] = {
+// kPrimes contains the first 2048 primes.
+static const uint16_t kPrimes[] = {
     2,     3,     5,     7,     11,    13,    17,    19,    23,    29,    31,
     37,    41,    43,    47,    53,    59,    61,    67,    71,    73,    79,
     83,    89,    97,    101,   103,   107,   109,   113,   127,   131,   137,
@@ -311,11 +311,57 @@ static const uint16_t primes[NUMPRIMES] = {
 };
 
 // BN_prime_checks_for_size returns the number of Miller-Rabin iterations
-// necessary for a 'bits'-bit prime, in order to maintain an error rate greater
-// than the security level for an RSA prime of that many bits (calculated using
-// the FIPS SP 800-57 security level and 186-4 Section F.1; original paper:
-// Damgaard, Landrock, Pomerance: Average case error estimates for the strong
-// probable prime test. -- Math. Comp. 61 (1993) 177-194)
+// necessary for a 'bits'-bit prime.
+//
+//
+// This table is generated using the algorithm of FIPS PUB 186-4
+// Digital Signature Standard (DSS), section F.1, page 117.
+// (https://doi.org/10.6028/NIST.FIPS.186-4)
+// The following magma script was used to generate the output:
+// securitybits:=125;
+// k:=1024;
+// for t:=1 to 65 do
+//   for M:=3 to Floor(2*Sqrt(k-1)-1) do
+//     S:=0;
+//     // Sum over m
+//     for m:=3 to M do
+//       s:=0;
+//       // Sum over j
+//       for j:=2 to m do
+//         s+:=(RealField(32)!2)^-(j+(k-1)/j);
+//       end for;
+//       S+:=2^(m-(m-1)*t)*s;
+//     end for;
+//     A:=2^(k-2-M*t);
+//     B:=8*(Pi(RealField(32))^2-6)/3*2^(k-2)*S;
+//     pkt:=2.00743*Log(2)*k*2^-k*(A+B);
+//     seclevel:=Floor(-Log(2,pkt));
+//     if seclevel ge securitybits then
+//       printf "k: %5o, security: %o bits  (t: %o, M: %o)\n",k,seclevel,t,M;
+//       break;
+//     end if;
+//   end for;
+//   if seclevel ge securitybits then break; end if;
+// end for;
+//
+// It can be run online at: http://magma.maths.usyd.edu.au/calc
+// And will output:
+// k:  1024, security: 129 bits  (t: 6, M: 23)
+// k is the number of bits of the prime, securitybits is the level we want to
+// reach.
+// prime length | RSA key size | # MR tests | security level
+// -------------+--------------|------------+---------------
+//  (b) >= 6394 |     >= 12788 |          3 |        256 bit
+//  (b) >= 3747 |     >=  7494 |          3 |        192 bit
+//  (b) >= 1345 |     >=  2690 |          4 |        128 bit
+//  (b) >= 1080 |     >=  2160 |          5 |        128 bit
+//  (b) >=  852 |     >=  1704 |          5 |        112 bit
+//  (b) >=  476 |     >=   952 |          5 |         80 bit
+//  (b) >=  400 |     >=   800 |          6 |         80 bit
+//  (b) >=  347 |     >=   694 |          7 |         80 bit
+//  (b) >=  308 |     >=   616 |          8 |         80 bit
+//  (b) >=   55 |     >=   110 |         27 |         64 bit
+//  (b) >=    6 |     >=    12 |         34 |         64 bit
 static int BN_prime_checks_for_size(int bits) {
   if (bits >= 3747) {
     return 3;
@@ -329,17 +375,88 @@ static int BN_prime_checks_for_size(int bits) {
   if (bits >= 400) {
     return 6;
   }
+  if (bits >= 347) {
+    return 7;
+  }
   if (bits >= 308) {
     return 8;
   }
-  if (bits >= 205) {
-    return 13;
+  if (bits >= 55) {
+    return 27;
   }
-  if (bits >= 155) {
-    return 19;
-  }
-  return 28;
+  return 34;
 }
+
+// num_trial_division_primes returns the number of primes to try with trial
+// division before using more expensive checks. For larger numbers, the value
+// of excluding a candidate with trial division is larger.
+static size_t num_trial_division_primes(const BIGNUM *n) {
+  if (n->width * BN_BITS2 > 1024) {
+    return OPENSSL_ARRAY_SIZE(kPrimes);
+  }
+  return OPENSSL_ARRAY_SIZE(kPrimes) / 4;
+}
+
+// BN_PRIME_CHECKS_BLINDED is the iteration count for blinding the constant-time
+// primality test. See |BN_primality_test| for details. This number is selected
+// so that, for a candidate N-bit RSA prime, picking |BN_PRIME_CHECKS_BLINDED|
+// random N-bit numbers will have at least |BN_prime_checks_for_size(N)| values
+// in range with high probability.
+//
+// The following Python script computes the blinding factor needed for the
+// corresponding iteration count.
+/*
+import math
+
+# We choose candidate RSA primes between sqrt(2)/2 * 2^N and 2^N and select
+# witnesses by generating random N-bit numbers. Thus the probability of
+# selecting one in range is at least sqrt(2)/2.
+p = math.sqrt(2) / 2
+
+# Target around 2^-8 probability of the blinding being insufficient given that
+# key generation is a one-time, noisy operation.
+epsilon = 2**-8
+
+def choose(a, b):
+  r = 1
+  for i in xrange(b):
+    r *= a - i
+    r /= (i + 1)
+  return r
+
+def failure_rate(min_uniform, iterations):
+  """ Returns the probability that, for |iterations| candidate witnesses, fewer
+      than |min_uniform| of them will be uniform. """
+  prob = 0.0
+  for i in xrange(min_uniform):
+    prob += (choose(iterations, i) *
+             p**i * (1-p)**(iterations - i))
+  return prob
+
+for min_uniform in (3, 4, 5, 6, 8, 13, 19, 28):
+  # Find the smallest number of iterations under the target failure rate.
+  iterations = min_uniform
+  while True:
+    prob = failure_rate(min_uniform, iterations)
+    if prob < epsilon:
+      print min_uniform, iterations, prob
+      break
+    iterations += 1
+
+Output:
+  3 9 0.00368894873911
+  4 11 0.00363319494662
+  5 13 0.00336215573898
+  6 15 0.00300145783158
+  8 19 0.00225214119331
+  13 27 0.00385610026955
+  19 38 0.0021410539126
+  28 52 0.00325405801769
+
+16 iterations suffices for 400-bit primes and larger (6 uniform samples needed),
+which is already well below the minimum acceptable key size for RSA.
+*/
+#define BN_PRIME_CHECKS_BLINDED 16
 
 static int probable_prime(BIGNUM *rnd, int bits);
 static int probable_prime_dh(BIGNUM *rnd, int bits, const BIGNUM *add,
@@ -461,79 +578,234 @@ err:
   return found;
 }
 
-int BN_primality_test(int *is_probably_prime, const BIGNUM *candidate,
-                      int checks, BN_CTX *ctx, int do_trial_division,
-                      BN_GENCB *cb) {
-  switch (BN_is_prime_fasttest_ex(candidate, checks, ctx, do_trial_division, cb)) {
-    case 1:
-      *is_probably_prime = 1;
+static int bn_trial_division(uint16_t *out, const BIGNUM *bn) {
+  const size_t num_primes = num_trial_division_primes(bn);
+  for (size_t i = 1; i < num_primes; i++) {
+    if (bn_mod_u16_consttime(bn, kPrimes[i]) == 0) {
+      *out = kPrimes[i];
       return 1;
-    case 0:
-      *is_probably_prime = 0;
-      return 1;
-    default:
-      *is_probably_prime = 0;
-      return 0;
+    }
   }
+  return 0;
 }
 
-int BN_is_prime_ex(const BIGNUM *candidate, int checks, BN_CTX *ctx, BN_GENCB *cb) {
+int bn_odd_number_is_obviously_composite(const BIGNUM *bn) {
+  uint16_t prime;
+  return bn_trial_division(&prime, bn) && !BN_is_word(bn, prime);
+}
+
+int BN_primality_test(int *is_probably_prime, const BIGNUM *w,
+                      int iterations, BN_CTX *ctx, int do_trial_division,
+                      BN_GENCB *cb) {
+  *is_probably_prime = 0;
+
+  // To support RSA key generation, this function should treat |w| as secret if
+  // it is a large prime. Composite numbers are discarded, so they may return
+  // early.
+
+  if (BN_cmp(w, BN_value_one()) <= 0) {
+    return 1;
+  }
+
+  if (!BN_is_odd(w)) {
+    // The only even prime is two.
+    *is_probably_prime = BN_is_word(w, 2);
+    return 1;
+  }
+
+  // Miller-Rabin does not work for three.
+  if (BN_is_word(w, 3)) {
+    *is_probably_prime = 1;
+    return 1;
+  }
+
+  if (do_trial_division) {
+    // Perform additional trial division checks to discard small primes.
+    uint16_t prime;
+    if (bn_trial_division(&prime, w)) {
+      *is_probably_prime = BN_is_word(w, prime);
+      return 1;
+    }
+    if (!BN_GENCB_call(cb, 1, -1)) {
+      return 0;
+    }
+  }
+
+  if (iterations == BN_prime_checks) {
+    iterations = BN_prime_checks_for_size(BN_num_bits(w));
+  }
+
+  BN_CTX *new_ctx = NULL;
+  if (ctx == NULL) {
+    new_ctx = BN_CTX_new();
+    if (new_ctx == NULL) {
+      return 0;
+    }
+    ctx = new_ctx;
+  }
+
+  // See C.3.1 from FIPS 186-4.
+  int ret = 0;
+  BN_MONT_CTX *mont = NULL;
+  BN_CTX_start(ctx);
+  BIGNUM *w1 = BN_CTX_get(ctx);
+  if (w1 == NULL ||
+      !bn_usub_consttime(w1, w, BN_value_one())) {
+    goto err;
+  }
+
+  // Write w1 as m * 2^a (Steps 1 and 2).
+  int w_len = BN_num_bits(w);
+  int a = BN_count_low_zero_bits(w1);
+  BIGNUM *m = BN_CTX_get(ctx);
+  if (m == NULL ||
+      !bn_rshift_secret_shift(m, w1, a, ctx)) {
+    goto err;
+  }
+
+  // Montgomery setup for computations mod w. Additionally, compute 1 and w - 1
+  // in the Montgomery domain for later comparisons.
+  BIGNUM *b = BN_CTX_get(ctx);
+  BIGNUM *z = BN_CTX_get(ctx);
+  BIGNUM *one_mont = BN_CTX_get(ctx);
+  BIGNUM *w1_mont = BN_CTX_get(ctx);
+  mont = BN_MONT_CTX_new_consttime(w, ctx);
+  if (b == NULL || z == NULL || one_mont == NULL || w1_mont == NULL ||
+      mont == NULL ||
+      !bn_one_to_montgomery(one_mont, mont, ctx) ||
+      // w - 1 is -1 mod w, so we can compute it in the Montgomery domain, -R,
+      // with a subtraction. (|one_mont| cannot be zero.)
+      !bn_usub_consttime(w1_mont, w, one_mont)) {
+    goto err;
+  }
+
+  // The following loop performs in inner iteration of the Miller-Rabin
+  // Primality test (Step 4).
+  //
+  // The algorithm as specified in FIPS 186-4 leaks information on |w|, the RSA
+  // private key. Instead, we run through each iteration unconditionally,
+  // performing modular multiplications, masking off any effects to behave
+  // equivalently to the specified algorithm.
+  //
+  // We also blind the number of values of |b| we try. Steps 4.1–4.2 say to
+  // discard out-of-range values. To avoid leaking information on |w|, we use
+  // |bn_rand_secret_range| which, rather than discarding bad values, adjusts
+  // them to be in range. Though not uniformly selected, these adjusted values
+  // are still usable as Rabin-Miller checks.
+  //
+  // Rabin-Miller is already probabilistic, so we could reach the desired
+  // confidence levels by just suitably increasing the iteration count. However,
+  // to align with FIPS 186-4, we use a more pessimal analysis: we do not count
+  // the non-uniform values towards the iteration count. As a result, this
+  // function is more complex and has more timing risk than necessary.
+  //
+  // We count both total iterations and uniform ones and iterate until we've
+  // reached at least |BN_PRIME_CHECKS_BLINDED| and |iterations|, respectively.
+  // If the latter is large enough, it will be the limiting factor with high
+  // probability and we won't leak information.
+  //
+  // Note this blinding does not impact most calls when picking primes because
+  // composites are rejected early. Only the two secret primes see extra work.
+
+  crypto_word_t uniform_iterations = 0;
+  // Using |constant_time_lt_w| seems to prevent the compiler from optimizing
+  // this into two jumps.
+  for (int i = 1; (i <= BN_PRIME_CHECKS_BLINDED) |
+                  constant_time_lt_w(uniform_iterations, iterations);
+       i++) {
+    int is_uniform;
+    if (// Step 4.1-4.2
+        !bn_rand_secret_range(b, &is_uniform, 2, w1) ||
+        // Step 4.3
+        !BN_mod_exp_mont_consttime(z, b, m, w, ctx, mont)) {
+      goto err;
+    }
+    uniform_iterations += is_uniform;
+
+    // loop_done is all ones if the loop has completed and all zeros otherwise.
+    crypto_word_t loop_done = 0;
+    // next_iteration is all ones if we should continue to the next iteration
+    // (|b| is not a composite witness for |w|). This is equivalent to going to
+    // step 4.7 in the original algorithm.
+    crypto_word_t next_iteration = 0;
+
+    // Step 4.4. If z = 1 or z = w-1, mask off the loop and continue to the next
+    // iteration (go to step 4.7).
+    loop_done = BN_equal_consttime(z, BN_value_one()) |
+                BN_equal_consttime(z, w1);
+    loop_done = 0 - loop_done;   // Make it all zeros or all ones.
+    next_iteration = loop_done;  // Go to step 4.7 if |loop_done|.
+
+    // Step 4.5. We use Montgomery-encoding for better performance and to avoid
+    // timing leaks.
+    if (!BN_to_montgomery(z, z, mont, ctx)) {
+      goto err;
+    }
+
+    // To avoid leaking |a|, we run the loop to |w_len| and mask off all
+    // iterations once |j| = |a|.
+    for (int j = 1; j < w_len; j++) {
+      loop_done |= constant_time_eq_int(j, a);
+
+      // Step 4.5.1.
+      if (!BN_mod_mul_montgomery(z, z, z, mont, ctx)) {
+        goto err;
+      }
+
+      // Step 4.5.2. If z = w-1 and the loop is not done, run through the next
+      // iteration.
+      crypto_word_t z_is_w1_mont = BN_equal_consttime(z, w1_mont) & ~loop_done;
+      z_is_w1_mont = 0 - z_is_w1_mont;  // Make it all zeros or all ones.
+      loop_done |= z_is_w1_mont;
+      next_iteration |= z_is_w1_mont;  // Go to step 4.7 if |z_is_w1_mont|.
+
+      // Step 4.5.3. If z = 1 and the loop is not done, w is composite and we
+      // may exit in variable time.
+      if (BN_equal_consttime(z, one_mont) & ~loop_done) {
+        assert(!next_iteration);
+        break;
+      }
+    }
+
+    if (!next_iteration) {
+      // Step 4.6. We did not see z = w-1 before z = 1, so w must be composite.
+      // (For any prime, the value of z immediately preceding 1 must be -1.
+      // There are no non-trivial square roots of 1 modulo a prime.)
+      *is_probably_prime = 0;
+      ret = 1;
+      goto err;
+    }
+
+    // Step 4.7
+    if (!BN_GENCB_call(cb, 1, i)) {
+      goto err;
+    }
+  }
+
+  assert(uniform_iterations >= (crypto_word_t)iterations);
+  *is_probably_prime = 1;
+  ret = 1;
+
+err:
+  BN_MONT_CTX_free(mont);
+  BN_CTX_end(ctx);
+  BN_CTX_free(new_ctx);
+  return ret;
+}
+
+int BN_is_prime_ex(const BIGNUM *candidate, int checks, BN_CTX *ctx,
+                   BN_GENCB *cb) {
   return BN_is_prime_fasttest_ex(candidate, checks, ctx, 0, cb);
 }
 
 int BN_is_prime_fasttest_ex(const BIGNUM *a, int checks, BN_CTX *ctx,
                             int do_trial_division, BN_GENCB *cb) {
-  if (BN_cmp(a, BN_value_one()) <= 0) {
-    return 0;
+  int is_probably_prime;
+  if (!BN_primality_test(&is_probably_prime, a, checks, ctx, do_trial_division,
+                         cb)) {
+    return -1;
   }
-
-  // first look for small factors
-  if (!BN_is_odd(a)) {
-    // a is even => a is prime if and only if a == 2
-    return BN_is_word(a, 2);
-  }
-
-  // Enhanced Miller-Rabin does not work for three.
-  if (BN_is_word(a, 3)) {
-    return 1;
-  }
-
-  if (do_trial_division) {
-    for (int i = 1; i < NUMPRIMES; i++) {
-      BN_ULONG mod = BN_mod_word(a, primes[i]);
-      if (mod == (BN_ULONG)-1) {
-        return -1;
-      }
-      if (mod == 0) {
-        return BN_is_word(a, primes[i]);
-      }
-    }
-
-    if (!BN_GENCB_call(cb, 1, -1)) {
-      return -1;
-    }
-  }
-
-  int ret = -1;
-  BN_CTX *ctx_allocated = NULL;
-  if (ctx == NULL) {
-    ctx_allocated = BN_CTX_new();
-    if (ctx_allocated == NULL) {
-      return -1;
-    }
-    ctx = ctx_allocated;
-  }
-
-  enum bn_primality_result_t result;
-  if (!BN_enhanced_miller_rabin_primality_test(&result, a, checks, ctx, cb)) {
-    goto err;
-  }
-
-  ret = (result == bn_probably_prime);
-
-err:
-  BN_CTX_free(ctx_allocated);
-  return ret;
+  return is_probably_prime;
 }
 
 int BN_enhanced_miller_rabin_primality_test(
@@ -585,10 +857,9 @@ int BN_enhanced_miller_rabin_primality_test(
     goto err;
   }
 
-  // Montgomery setup for computations mod A
-  mont = BN_MONT_CTX_new();
-  if (mont == NULL ||
-      !BN_MONT_CTX_set(mont, w, ctx)) {
+  // Montgomery setup for computations mod w
+  mont = BN_MONT_CTX_new_for_modulus(w, ctx);
+  if (mont == NULL) {
     goto err;
   }
 
@@ -677,10 +948,10 @@ err:
 }
 
 static int probable_prime(BIGNUM *rnd, int bits) {
-  int i;
-  uint16_t mods[NUMPRIMES];
+  uint16_t mods[OPENSSL_ARRAY_SIZE(kPrimes)];
+  const size_t num_primes = num_trial_division_primes(rnd);
   BN_ULONG delta;
-  BN_ULONG maxdelta = BN_MASK2 - primes[NUMPRIMES - 1];
+  BN_ULONG maxdelta = BN_MASK2 - kPrimes[num_primes - 1];
   char is_single_word = bits <= BN_BITS2;
 
 again:
@@ -689,12 +960,8 @@ again:
   }
 
   // we now have a random number 'rnd' to test.
-  for (i = 1; i < NUMPRIMES; i++) {
-    BN_ULONG mod = BN_mod_word(rnd, (BN_ULONG)primes[i]);
-    if (mod == (BN_ULONG)-1) {
-      return 0;
-    }
-    mods[i] = (uint16_t)mod;
+  for (size_t i = 1; i < num_primes; i++) {
+    mods[i] = bn_mod_u16_consttime(rnd, kPrimes[i]);
   }
   // If bits is so small that it fits into a single word then we
   // additionally don't want to exceed that many bits.
@@ -718,15 +985,15 @@ loop:
 
     // In the case that the candidate prime is a single word then
     // we check that:
-    //   1) It's greater than primes[i] because we shouldn't reject
+    //   1) It's greater than kPrimes[i] because we shouldn't reject
     //      3 as being a prime number because it's a multiple of
     //      three.
     //   2) That it's not a multiple of a known prime. We don't
     //      check that rnd-1 is also coprime to all the known
     //      primes because there aren't many small primes where
     //      that's true.
-    for (i = 1; i < NUMPRIMES && primes[i] < rnd_word; i++) {
-      if ((mods[i] + delta) % primes[i] == 0) {
+    for (size_t i = 1; i < num_primes && kPrimes[i] < rnd_word; i++) {
+      if ((mods[i] + delta) % kPrimes[i] == 0) {
         delta += 2;
         if (delta > maxdelta) {
           goto again;
@@ -735,10 +1002,10 @@ loop:
       }
     }
   } else {
-    for (i = 1; i < NUMPRIMES; i++) {
+    for (size_t i = 1; i < num_primes; i++) {
       // check that rnd is not a prime and also
       // that gcd(rnd-1,primes) == 1 (except for 2)
-      if (((mods[i] + delta) % primes[i]) <= 1) {
+      if (((mods[i] + delta) % kPrimes[i]) <= 1) {
         delta += 2;
         if (delta > maxdelta) {
           goto again;
@@ -760,7 +1027,7 @@ loop:
 
 static int probable_prime_dh(BIGNUM *rnd, int bits, const BIGNUM *add,
                              const BIGNUM *rem, BN_CTX *ctx) {
-  int i, ret = 0;
+  int ret = 0;
   BIGNUM *t1;
 
   BN_CTX_start(ctx);
@@ -791,14 +1058,11 @@ static int probable_prime_dh(BIGNUM *rnd, int bits, const BIGNUM *add,
   }
   // we now have a random number 'rand' to test.
 
+  const size_t num_primes = num_trial_division_primes(rnd);
 loop:
-  for (i = 1; i < NUMPRIMES; i++) {
+  for (size_t i = 1; i < num_primes; i++) {
     // check that rnd is a prime
-    BN_ULONG mod = BN_mod_word(rnd, (BN_ULONG)primes[i]);
-    if (mod == (BN_ULONG)-1) {
-      goto err;
-    }
-    if (mod <= 1) {
+    if (bn_mod_u16_consttime(rnd, kPrimes[i]) <= 1) {
       if (!BN_add(rnd, rnd, add)) {
         goto err;
       }
@@ -815,7 +1079,7 @@ err:
 
 static int probable_prime_dh_safe(BIGNUM *p, int bits, const BIGNUM *padd,
                                   const BIGNUM *rem, BN_CTX *ctx) {
-  int i, ret = 0;
+  int ret = 0;
   BIGNUM *t1, *qadd, *q;
 
   bits--;
@@ -865,17 +1129,14 @@ static int probable_prime_dh_safe(BIGNUM *p, int bits, const BIGNUM *padd,
     goto err;
   }
 
+  const size_t num_primes = num_trial_division_primes(p);
 loop:
-  for (i = 1; i < NUMPRIMES; i++) {
+  for (size_t i = 1; i < num_primes; i++) {
     // check that p and q are prime
     // check that for p and q
     // gcd(p-1,primes) == 1 (except for 2)
-    BN_ULONG pmod = BN_mod_word(p, (BN_ULONG)primes[i]);
-    BN_ULONG qmod = BN_mod_word(q, (BN_ULONG)primes[i]);
-    if (pmod == (BN_ULONG)-1 || qmod == (BN_ULONG)-1) {
-      goto err;
-    }
-    if (pmod == 0 || qmod == 0) {
+    if (bn_mod_u16_consttime(p, kPrimes[i]) == 0 ||
+        bn_mod_u16_consttime(q, kPrimes[i]) == 0) {
       if (!BN_add(p, p, padd)) {
         goto err;
       }

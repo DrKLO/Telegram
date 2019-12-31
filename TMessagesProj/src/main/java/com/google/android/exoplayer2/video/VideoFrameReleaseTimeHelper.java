@@ -32,7 +32,6 @@ import com.google.android.exoplayer2.util.Util;
 /**
  * Makes a best effort to adjust frame release timestamps for a smoother visual result.
  */
-@TargetApi(16)
 public final class VideoFrameReleaseTimeHelper {
 
   private static final long CHOREOGRAPHER_SAMPLE_DELAY_MILLIS = 500;

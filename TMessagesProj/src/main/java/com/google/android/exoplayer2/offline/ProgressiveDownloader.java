@@ -23,7 +23,6 @@ import com.google.android.exoplayer2.upstream.cache.Cache;
 import com.google.android.exoplayer2.upstream.cache.CacheDataSource;
 import com.google.android.exoplayer2.upstream.cache.CacheKeyFactory;
 import com.google.android.exoplayer2.upstream.cache.CacheUtil;
-import com.google.android.exoplayer2.upstream.cache.CacheUtil.CachingCounters;
 import com.google.android.exoplayer2.util.PriorityTaskManager;
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -40,7 +39,6 @@ public final class ProgressiveDownloader implements Downloader {
   private final CacheDataSource dataSource;
   private final CacheKeyFactory cacheKeyFactory;
   private final PriorityTaskManager priorityTaskManager;
-  private final CacheUtil.CachingCounters cachingCounters;
   private final AtomicBoolean isCanceled;
 
   /**
@@ -62,12 +60,12 @@ public final class ProgressiveDownloader implements Downloader {
     this.dataSource = constructorHelper.createCacheDataSource();
     this.cacheKeyFactory = constructorHelper.getCacheKeyFactory();
     this.priorityTaskManager = constructorHelper.getPriorityTaskManager();
-    cachingCounters = new CachingCounters();
     isCanceled = new AtomicBoolean();
   }
 
   @Override
-  public void download() throws InterruptedException, IOException {
+  public void download(@Nullable ProgressListener progressListener)
+      throws InterruptedException, IOException {
     priorityTaskManager.add(C.PRIORITY_DOWNLOAD);
     try {
       CacheUtil.cache(
@@ -78,7 +76,7 @@ public final class ProgressiveDownloader implements Downloader {
           new byte[BUFFER_SIZE_BYTES],
           priorityTaskManager,
           C.PRIORITY_DOWNLOAD,
-          cachingCounters,
+          progressListener == null ? null : new ProgressForwarder(progressListener),
           isCanceled,
           /* enableEOFException= */ true);
     } finally {
@@ -92,25 +90,25 @@ public final class ProgressiveDownloader implements Downloader {
   }
 
   @Override
-  public long getDownloadedBytes() {
-    return cachingCounters.totalCachedBytes();
-  }
-
-  @Override
-  public long getTotalBytes() {
-    return cachingCounters.contentLength;
-  }
-
-  @Override
-  public float getDownloadPercentage() {
-    long contentLength = cachingCounters.contentLength;
-    return contentLength == C.LENGTH_UNSET
-        ? C.PERCENTAGE_UNSET
-        : ((cachingCounters.totalCachedBytes() * 100f) / contentLength);
-  }
-
-  @Override
   public void remove() {
     CacheUtil.remove(dataSpec, cache, cacheKeyFactory);
+  }
+
+  private static final class ProgressForwarder implements CacheUtil.ProgressListener {
+
+    private final ProgressListener progessListener;
+
+    public ProgressForwarder(ProgressListener progressListener) {
+      this.progessListener = progressListener;
+    }
+
+    @Override
+    public void onProgress(long contentLength, long bytesCached, long newBytesCached) {
+      float percentDownloaded =
+          contentLength == C.LENGTH_UNSET || contentLength == 0
+              ? C.PERCENTAGE_UNSET
+              : ((bytesCached * 100f) / contentLength);
+      progessListener.onProgress(contentLength, bytesCached, percentDownloaded);
+    }
   }
 }

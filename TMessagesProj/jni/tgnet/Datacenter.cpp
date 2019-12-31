@@ -136,6 +136,13 @@ Datacenter::Datacenter(int32_t instance, NativeByteBuffer *data) {
             }
             authKeyTempId = data->readInt64(nullptr);
         }
+        if (currentVersion >= 12) {
+            len = data->readUint32(nullptr);
+            if (len != 0) {
+                authKeyMediaTemp = data->readBytes(len, nullptr);
+            }
+            authKeyMediaTempId = data->readInt64(nullptr);
+        }
         authorized = data->readInt32(nullptr) != 0;
         len = data->readUint32(nullptr);
         for (uint32_t a = 0; a < len; a++) {
@@ -144,6 +151,16 @@ Datacenter::Datacenter(int32_t instance, NativeByteBuffer *data) {
             salt->valid_until = data->readInt32(nullptr);
             salt->salt = data->readInt64(nullptr);
             serverSalts.push_back(std::unique_ptr<TL_future_salt>(salt));
+        }
+        if (currentVersion >= 13) {
+            len = data->readUint32(nullptr);
+            for (uint32_t a = 0; a < len; a++) {
+                TL_future_salt *salt = new TL_future_salt();
+                salt->valid_since = data->readInt32(nullptr);
+                salt->valid_until = data->readInt32(nullptr);
+                salt->salt = data->readInt64(nullptr);
+                mediaServerSalts.push_back(std::unique_ptr<TL_future_salt>(salt));
+            }
         }
     }
 
@@ -179,7 +196,7 @@ Datacenter::Datacenter(int32_t instance, NativeByteBuffer *data) {
 TcpAddress *Datacenter::getCurrentAddress(uint32_t flags) {
     uint32_t currentAddressNum;
     std::vector<TcpAddress> *addresses;
-    if (flags == 0 && authKeyPerm == nullptr && !addressesIpv4Temp.empty()) {
+    if (flags == 0 && (authKeyPerm == nullptr || PFS_ENABLED && authKeyTemp == nullptr) && !addressesIpv4Temp.empty()) {
         flags = TcpAddressFlagTemp;
     }
     if ((flags & TcpAddressFlagTemp) != 0) {
@@ -237,7 +254,7 @@ int32_t Datacenter::getCurrentPort(uint32_t flags) {
     uint32_t currentAddressNum;
     uint32_t currentPortNum;
     std::vector<TcpAddress> *addresses;
-    if (flags == 0 && authKeyPerm == nullptr && !addressesIpv4Temp.empty()) {
+    if (flags == 0 && (authKeyPerm == nullptr || PFS_ENABLED && authKeyTemp == nullptr) && !addressesIpv4Temp.empty()) {
         flags = TcpAddressFlagTemp;
     }
     if ((flags & TcpAddressFlagTemp) != 0) {
@@ -357,7 +374,7 @@ void Datacenter::nextAddressOrPort(uint32_t flags) {
     uint32_t currentPortNum;
     uint32_t currentAddressNum;
     std::vector<TcpAddress> *addresses;
-    if (flags == 0 && authKeyPerm == nullptr && !addressesIpv4Temp.empty()) {
+    if (flags == 0 && (authKeyPerm == nullptr || PFS_ENABLED && authKeyTemp == nullptr) && !addressesIpv4Temp.empty()) {
         flags = TcpAddressFlagTemp;
     }
     if ((flags & TcpAddressFlagTemp) != 0) {
@@ -425,7 +442,7 @@ void Datacenter::nextAddressOrPort(uint32_t flags) {
 
 bool Datacenter::isCustomPort(uint32_t flags) {
     uint32_t currentPortNum;
-    if (flags == 0 && authKeyPerm == nullptr && !addressesIpv4Temp.empty()) {
+    if (flags == 0 && (authKeyPerm == nullptr || PFS_ENABLED && authKeyTemp == nullptr) && !addressesIpv4Temp.empty()) {
         flags = TcpAddressFlagTemp;
     }
     if ((flags & TcpAddressFlagTemp) != 0) {
@@ -567,12 +584,25 @@ void Datacenter::serializeToStream(NativeByteBuffer *stream) {
         stream->writeInt32(0);
     }
     stream->writeInt64(authKeyTempId);
+    if (authKeyMediaTemp != nullptr) {
+        stream->writeInt32(authKeyMediaTemp->length);
+        stream->writeBytes(authKeyMediaTemp);
+    } else {
+        stream->writeInt32(0);
+    }
+    stream->writeInt64(authKeyMediaTempId);
     stream->writeInt32(authorized ? 1 : 0);
     stream->writeInt32((int32_t) (size = serverSalts.size()));
     for (uint32_t a = 0; a < size; a++) {
         stream->writeInt32(serverSalts[a]->valid_since);
         stream->writeInt32(serverSalts[a]->valid_until);
         stream->writeInt64(serverSalts[a]->salt);
+    }
+    stream->writeInt32((int32_t) (size = mediaServerSalts.size()));
+    for (uint32_t a = 0; a < size; a++) {
+        stream->writeInt32(mediaServerSalts[a]->valid_since);
+        stream->writeInt32(mediaServerSalts[a]->valid_until);
+        stream->writeInt64(mediaServerSalts[a]->salt);
     }
 }
 
@@ -592,6 +622,7 @@ void Datacenter::clearAuthKey(HandshakeType type) {
         }
         authKeyMediaTempId = 0;
         lastInitMediaVersion = 0;
+        mediaServerSalts.clear();
     }
     if (type == HandshakeTypeTemp || type == HandshakeTypeAll) {
         if (authKeyTemp != nullptr) {
@@ -604,11 +635,12 @@ void Datacenter::clearAuthKey(HandshakeType type) {
     handshakes.clear();
 }
 
-void Datacenter::clearServerSalts() {
-    serverSalts.clear();
+void Datacenter::clearServerSalts(bool media) {
+    std::vector<std::unique_ptr<TL_future_salt>> &salts = media ? mediaServerSalts : serverSalts;
+    salts.clear();
 }
 
-int64_t Datacenter::getServerSalt() {
+int64_t Datacenter::getServerSalt(bool media) {
     int32_t date = ConnectionsManager::getInstance(instanceNum).getCurrentTime();
 
     bool cleanupNeeded = false;
@@ -616,9 +648,11 @@ int64_t Datacenter::getServerSalt() {
     int64_t result = 0;
     int32_t maxRemainingInterval = 0;
 
-    size_t size = serverSalts.size();
+    std::vector<std::unique_ptr<TL_future_salt>> &salts = media ? mediaServerSalts : serverSalts;
+
+    size_t size = salts.size();
     for (uint32_t a = 0; a < size; a++) {
-        TL_future_salt *salt = serverSalts[a].get();
+        TL_future_salt *salt = salts[a].get();
         if (salt->valid_until < date) {
             cleanupNeeded = true;
         } else if (salt->valid_since <= date && salt->valid_until > date) {
@@ -630,10 +664,10 @@ int64_t Datacenter::getServerSalt() {
     }
 
     if (cleanupNeeded) {
-        size = serverSalts.size();
+        size = salts.size();
         for (uint32_t i = 0; i < size; i++) {
-            if (serverSalts[i]->valid_until < date) {
-                serverSalts.erase(serverSalts.begin() + i);
+            if (salts[i]->valid_until < date) {
+                salts.erase(salts.begin() + i);
                 size--;
                 i--;
             }
@@ -647,45 +681,51 @@ int64_t Datacenter::getServerSalt() {
     return result;
 }
 
-void Datacenter::mergeServerSalts(std::vector<std::unique_ptr<TL_future_salt>> &salts) {
-    if (salts.empty()) {
+void Datacenter::mergeServerSalts(std::vector<std::unique_ptr<TL_future_salt>> &newSalts, bool media) {
+    if (newSalts.empty()) {
         return;
     }
+    std::vector<std::unique_ptr<TL_future_salt>> &salts = media ? mediaServerSalts : serverSalts;
+
     int32_t date = ConnectionsManager::getInstance(instanceNum).getCurrentTime();
-    std::vector<int64_t> existingSalts(serverSalts.size());
-    size_t size = serverSalts.size();
+    std::vector<int64_t> existingSalts(salts.size());
+    size_t size = salts.size();
     for (uint32_t a = 0; a < size; a++) {
-        existingSalts.push_back(serverSalts[a]->salt);
+        existingSalts.push_back(salts[a]->salt);
     }
     bool added = false;
-    size = salts.size();
+    size = newSalts.size();
     for (uint32_t a = 0; a < size; a++) {
-        int64_t value = salts[a]->salt;
-        if (std::find(existingSalts.begin(), existingSalts.end(), value) == existingSalts.end() && salts[a]->valid_until > date) {
-            serverSalts.push_back(std::unique_ptr<TL_future_salt>(std::move(salts[a])));
+        int64_t value = newSalts[a]->salt;
+        if (std::find(existingSalts.begin(), existingSalts.end(), value) == existingSalts.end() && newSalts[a]->valid_until > date) {
+            salts.push_back(std::unique_ptr<TL_future_salt>(std::move(newSalts[a])));
             added = true;
         }
     }
     if (added) {
-        std::sort(serverSalts.begin(), serverSalts.end(), [](const std::unique_ptr<TL_future_salt> &x, const std::unique_ptr<TL_future_salt> &y) { return x->valid_since < y->valid_since; });
+        std::sort(salts.begin(), salts.end(), [](const std::unique_ptr<TL_future_salt> &x, const std::unique_ptr<TL_future_salt> &y) { return x->valid_since < y->valid_since; });
     }
 }
 
-void Datacenter::addServerSalt(std::unique_ptr<TL_future_salt> &serverSalt) {
-    size_t size = serverSalts.size();
+void Datacenter::addServerSalt(std::unique_ptr<TL_future_salt> &serverSalt, bool media) {
+    std::vector<std::unique_ptr<TL_future_salt>> &salts = media ? mediaServerSalts : serverSalts;
+
+    size_t size = salts.size();
     for (uint32_t a = 0; a < size; a++) {
-        if (serverSalts[a]->salt == serverSalt->salt) {
+        if (salts[a]->salt == serverSalt->salt) {
             return;
         }
     }
-    serverSalts.push_back(std::move(serverSalt));
-    std::sort(serverSalts.begin(), serverSalts.end(), [](const std::unique_ptr<TL_future_salt> &x, const std::unique_ptr<TL_future_salt> &y) { return x->valid_since < y->valid_since; });
+    salts.push_back(std::move(serverSalt));
+    std::sort(salts.begin(), salts.end(), [](const std::unique_ptr<TL_future_salt> &x, const std::unique_ptr<TL_future_salt> &y) { return x->valid_since < y->valid_since; });
 }
 
-bool Datacenter::containsServerSalt(int64_t value) {
-    size_t size = serverSalts.size();
+bool Datacenter::containsServerSalt(int64_t value, bool media) {
+    std::vector<std::unique_ptr<TL_future_salt>> &salts = media ? mediaServerSalts : serverSalts;
+
+    size_t size = salts.size();
     for (uint32_t a = 0; a < size; a++) {
-        if (serverSalts[a]->salt == value) {
+        if (salts[a]->salt == value) {
             return true;
         }
     }
@@ -881,7 +921,8 @@ void Datacenter::beginHandshake(HandshakeType handshakeType, bool reconnect) {
                     handshakes.push_back(std::unique_ptr<Handshake>(handshake));
                     handshake->beginHandshake(reconnect);
                 }
-            } else if ((handshakeType == HandshakeTypeAll || handshakeType == HandshakeTypeMediaTemp) && hasMediaAddress()) {
+            }
+            if ((handshakeType == HandshakeTypeAll || handshakeType == HandshakeTypeMediaTemp) && hasMediaAddress()) {
                 if (!isHandshaking(HandshakeTypeMediaTemp)) {
                     Handshake *handshake = new Handshake(this, HandshakeTypeMediaTemp, this);
                     handshakes.push_back(std::unique_ptr<Handshake>(handshake));
@@ -1022,21 +1063,26 @@ ByteArray *Datacenter::getAuthKey(ConnectionType connectionType, bool perm, int6
         return authKeyPerm;
     } else {
         bool media = Connection::isMediaConnectionType(connectionType) && hasMediaAddress();
-        ByteArray *authKeyTempPending = nullptr;
-        int64_t authKeyTempPendingId = 0;
+        ByteArray *authKeyPending = nullptr;
+        int64_t authKeyPendingId = 0;
         for (std::vector<std::unique_ptr<Handshake>>::iterator iter = handshakes.begin(); iter != handshakes.end(); iter++) {
             Handshake *handshake = iter->get();
             if (media && handshake->getType() == HandshakeTypeMediaTemp || !media && handshake->getType() == HandshakeTypeTemp) {
-                authKeyTempPending = handshake->getAuthKeyTempPending();
-                authKeyTempPendingId = handshake->getAuthKeyTempPendingId();
+                authKeyPending = handshake->getPendingAuthKey();
+                authKeyPendingId = handshake->getPendingAuthKeyId();
                 break;
             }
         }
-        if ((allowPendingKey & 1) != 0 && authKeyTempPending != nullptr) {
+        if ((allowPendingKey & 1) != 0 && authKeyPending != nullptr) {
             if (authKeyId != nullptr) {
-                *authKeyId = authKeyTempPendingId;
+                *authKeyId = authKeyPendingId;
             }
-            return authKeyTempPending;
+            return authKeyPending;
+        } else if (media) {
+            if (authKeyId != nullptr) {
+                *authKeyId = authKeyMediaTempId;
+            }
+            return authKeyMediaTemp;
         } else {
             if (authKeyId != nullptr) {
                 *authKeyId = authKeyTempId;
@@ -1049,7 +1095,7 @@ ByteArray *Datacenter::getAuthKey(ConnectionType connectionType, bool perm, int6
 NativeByteBuffer *Datacenter::createRequestsData(std::vector<std::unique_ptr<NetworkMessage>> &requests, int32_t *quickAckId, Connection *connection, bool pfsInit) {
     int64_t authKeyId;
     ByteArray *authKey = getAuthKey(connection->getConnectionType(), pfsInit, &authKeyId, 1);
-    if (authKey == nullptr || connection == nullptr) {
+    if (authKey == nullptr) {
         return nullptr;
     }
 
@@ -1131,7 +1177,7 @@ NativeByteBuffer *Datacenter::createRequestsData(std::vector<std::unique_ptr<Net
         RAND_bytes((uint8_t *) &value, 8);
         buffer->writeInt64(value);
     } else {
-        buffer->writeInt64(getServerSalt());
+        buffer->writeInt64(getServerSalt(Connection::isMediaConnectionType(connection->getConnectionType())));
         buffer->writeInt64(connection->getSessionId());
     }
     buffer->writeInt64(messageId);

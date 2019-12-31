@@ -28,6 +28,7 @@ import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.CombinedDrawable;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.ActionBar.SimpleTextView;
+import org.telegram.ui.Components.ShareLocationDrawable;
 
 public class SendLocationCell extends FrameLayout {
 
@@ -53,13 +54,13 @@ public class SendLocationCell extends FrameLayout {
         imageView = new ImageView(context);
 
         imageView.setTag(live ? Theme.key_location_sendLiveLocationBackground + Theme.key_location_sendLiveLocationIcon : Theme.key_location_sendLocationBackground + Theme.key_location_sendLocationIcon);
-        Drawable circle = Theme.createSimpleSelectorCircleDrawable(AndroidUtilities.dp(40), Theme.getColor(live ? Theme.key_location_sendLiveLocationBackground : Theme.key_location_sendLocationBackground), Theme.getColor(live ? Theme.key_location_sendLiveLocationBackground : Theme.key_location_sendLocationBackground));
+        Drawable circle = Theme.createSimpleSelectorCircleDrawable(AndroidUtilities.dp(42), Theme.getColor(live ? Theme.key_location_sendLiveLocationBackground : Theme.key_location_sendLocationBackground), Theme.getColor(live ? Theme.key_location_sendLiveLocationBackground : Theme.key_location_sendLocationBackground));
         if (live) {
             rect = new RectF();
-            Drawable drawable = getResources().getDrawable(R.drawable.livelocationpin);
+            Drawable drawable = new ShareLocationDrawable(context, 4);
             drawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_location_sendLiveLocationIcon), PorterDuff.Mode.MULTIPLY));
             CombinedDrawable combinedDrawable = new CombinedDrawable(circle, drawable);
-            combinedDrawable.setCustomSize(AndroidUtilities.dp(40), AndroidUtilities.dp(40));
+            combinedDrawable.setCustomSize(AndroidUtilities.dp(42), AndroidUtilities.dp(42));
             imageView.setBackgroundDrawable(combinedDrawable);
             AndroidUtilities.runOnUIThread(invalidateRunnable, 1000);
             setWillNotDraw(false);
@@ -67,16 +68,16 @@ public class SendLocationCell extends FrameLayout {
             Drawable drawable = getResources().getDrawable(R.drawable.pin);
             drawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_location_sendLocationIcon), PorterDuff.Mode.MULTIPLY));
             CombinedDrawable combinedDrawable = new CombinedDrawable(circle, drawable);
-            combinedDrawable.setCustomSize(AndroidUtilities.dp(40), AndroidUtilities.dp(40));
+            combinedDrawable.setCustomSize(AndroidUtilities.dp(42), AndroidUtilities.dp(42));
             combinedDrawable.setIconSize(AndroidUtilities.dp(24), AndroidUtilities.dp(24));
             imageView.setBackgroundDrawable(combinedDrawable);
         }
-        addView(imageView, LayoutHelper.createFrame(40, 40, Gravity.TOP | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT), LocaleController.isRTL ? 0 : 17, 13, LocaleController.isRTL ? 17 : 0, 0));
+        addView(imageView, LayoutHelper.createFrame(42, 42, Gravity.TOP | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT), LocaleController.isRTL ? 0 : 15, 12, LocaleController.isRTL ? 15 : 0, 0));
 
         titleTextView = new SimpleTextView(context);
         titleTextView.setTextSize(16);
-        titleTextView.setTag(live ? Theme.key_windowBackgroundWhiteRedText2 : Theme.key_windowBackgroundWhiteBlueText7);
-        titleTextView.setTextColor(Theme.getColor(live ? Theme.key_windowBackgroundWhiteRedText2 : Theme.key_windowBackgroundWhiteBlueText7));
+        titleTextView.setTag(live ? Theme.key_location_sendLiveLocationText : Theme.key_location_sendLocationText);
+        titleTextView.setTextColor(Theme.getColor(live ? Theme.key_location_sendLiveLocationText : Theme.key_location_sendLocationText));
         titleTextView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
         titleTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
         addView(titleTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 20, Gravity.TOP | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT), LocaleController.isRTL ? 16 : 73, 12, LocaleController.isRTL ? 73 : 16, 0));

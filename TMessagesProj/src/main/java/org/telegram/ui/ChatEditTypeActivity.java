@@ -59,7 +59,7 @@ import java.util.concurrent.CountDownLatch;
 public class ChatEditTypeActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
 
     private EditTextBoldCursor usernameTextView;
-    private EditText editText;
+    private EditTextBoldCursor editText;
 
     private TextInfoPrivacyCell typeInfoCell;
     private HeaderCell headerCell;
@@ -287,7 +287,7 @@ public class ChatEditTypeActivity extends BaseFragment implements NotificationCe
         publicContainer.setOrientation(LinearLayout.HORIZONTAL);
         linkContainer.addView(publicContainer, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 36, 23, 7, 23, 0));
 
-        editText = new EditText(context);
+        editText = new EditTextBoldCursor(context);
         editText.setText(getMessagesController().linkPrefix + "/");
         editText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
         editText.setHintTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteHintText));
@@ -484,9 +484,11 @@ public class ChatEditTypeActivity extends BaseFragment implements NotificationCe
         if (!oldUserName.equals(newUserName)) {
             if (!ChatObject.isChannel(currentChat)) {
                 getMessagesController().convertToMegaGroup(getParentActivity(), chatId, this, param -> {
-                    chatId = param;
-                    currentChat = getMessagesController().getChat(param);
-                    processDone();
+                    if (param != 0) {
+                        chatId = param;
+                        currentChat = getMessagesController().getChat(param);
+                        processDone();
+                    }
                 });
                 return false;
             } else {
