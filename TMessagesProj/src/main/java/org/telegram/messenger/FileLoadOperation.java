@@ -1601,7 +1601,7 @@ public class FileLoadOperation {
     }
 
     protected void startDownloadRequest() {
-        if (paused ||
+        if (paused || reuploadingCdn ||
                 state != stateDownloading ||
                 streamPriorityStartOffset == 0 && (
                         !nextPartWasPreloaded && (requestInfos.size() + delayedRequestInfos.size() >= currentMaxDownloadRequests) ||

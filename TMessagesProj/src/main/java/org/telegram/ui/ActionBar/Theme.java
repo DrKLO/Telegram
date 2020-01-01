@@ -171,7 +171,6 @@ public class Theme {
             if (gradientColor != 0 && (gradientShader == null || backgroundHeight != currentBackgroundHeight || currentColor != color || currentGradientColor != gradientColor)) {
                 gradientShader = new LinearGradient(0, 0, 0, backgroundHeight, new int[]{gradientColor, color}, null, Shader.TileMode.CLAMP);
                 paint.setShader(gradientShader);
-                currentBackgroundHeight = backgroundHeight;
                 currentColor = color;
                 currentGradientColor = gradientColor;
                 paint.setColor(0xffffffff);
@@ -182,6 +181,7 @@ public class Theme {
                 }
                 paint.setColor(color);
             }
+            currentBackgroundHeight = backgroundHeight;
 
             topY = top;
         }
@@ -215,19 +215,33 @@ public class Theme {
                 }
             } else {
                 path.reset();
-                path.moveTo(bounds.right - dp(2.6f), bounds.bottom - padding);
-                path.lineTo(bounds.left + padding + rad, bounds.bottom - padding);
-                rect.set(bounds.left + padding, bounds.bottom - padding - rad * 2, bounds.left + padding + rad * 2, bounds.bottom - padding);
-                path.arcTo(rect, 90, 90, false);
-                path.lineTo(bounds.left + padding, bounds.top + padding + rad);
-                rect.set(bounds.left + padding, bounds.top + padding, bounds.left + padding + rad * 2, bounds.top + padding + rad * 2);
-                path.arcTo(rect, 180, 90, false);
-                path.lineTo(bounds.right - dp(8) - rad, bounds.top + padding);
-                rect.set(bounds.right - dp(8) - rad * 2, bounds.top + padding, bounds.right - dp(8), bounds.top + padding + rad * 2);
-                path.arcTo(rect, 270, 90, false);
-                path.lineTo(bounds.right - dp(8), bounds.bottom - padding - rad - dp(1));
-                rect.set(bounds.right - dp(8), bounds.bottom - padding - rad * 2 - dp(9), bounds.right - dp(7) + rad * 2, bounds.bottom - padding - dp(1));
-                path.arcTo(rect, 180, -83, false);
+                if (topY + bounds.bottom - rad < currentBackgroundHeight) {
+                    path.moveTo(bounds.right - dp(2.6f), bounds.bottom - padding);
+                    path.lineTo(bounds.left + padding + rad, bounds.bottom - padding);
+                    rect.set(bounds.left + padding, bounds.bottom - padding - rad * 2, bounds.left + padding + rad * 2, bounds.bottom - padding);
+                    path.arcTo(rect, 90, 90, false);
+                } else {
+                    path.moveTo(bounds.right - dp(8), bounds.top - topY + currentBackgroundHeight);
+                    path.lineTo(bounds.left + padding, bounds.top - topY + currentBackgroundHeight);
+                }
+                if (topY + rad * 2 >= 0) {
+                    path.lineTo(bounds.left + padding, bounds.top + padding + rad);
+                    rect.set(bounds.left + padding, bounds.top + padding, bounds.left + padding + rad * 2, bounds.top + padding + rad * 2);
+                    path.arcTo(rect, 180, 90, false);
+                    path.lineTo(bounds.right - dp(8) - rad, bounds.top + padding);
+                    rect.set(bounds.right - dp(8) - rad * 2, bounds.top + padding, bounds.right - dp(8), bounds.top + padding + rad * 2);
+                    path.arcTo(rect, 270, 90, false);
+                } else {
+                    path.lineTo(bounds.left + padding, bounds.top - topY);
+                    path.lineTo(bounds.right - dp(8), bounds.top - topY);
+                }
+                if (topY + bounds.bottom - rad * 2 < currentBackgroundHeight) {
+                    path.lineTo(bounds.right - dp(8), bounds.bottom - padding - rad - dp(1));
+                    rect.set(bounds.right - dp(8), bounds.bottom - padding - rad * 2 - dp(9), bounds.right - dp(7) + rad * 2, bounds.bottom - padding - dp(1));
+                    path.arcTo(rect, 180, -83, false);
+                } else {
+                    path.lineTo(bounds.right - dp(8), bounds.top - topY + currentBackgroundHeight);
+                }
                 path.close();
 
                 canvas.drawPath(path, paint);
@@ -3756,11 +3770,11 @@ public class Theme {
         if (preferences.contains("overrideThemeWallpaper") || preferences.contains("selectedBackground2")) {
             boolean override = preferences.getBoolean("overrideThemeWallpaper", false);
             long id = preferences.getLong("selectedBackground2", 1000001);
-            if (id != -2 && (override || id != 1000001)) {
+            if (id == -1 || override && id != -2 && id != 1000001) {
                 OverrideWallpaperInfo overrideWallpaper = new OverrideWallpaperInfo();
                 overrideWallpaper.color = preferences.getInt("selectedColor", 0);
                 overrideWallpaper.slug = preferences.getString("selectedBackgroundSlug", "");
-                if (id >= -100 && id <= -1 && TextUtils.isEmpty(overrideWallpaper.slug)) {
+                if (id >= -100 && id <= -1 && overrideWallpaper.color != 0) {
                     overrideWallpaper.slug = COLOR_BACKGROUND_SLUG;
                     overrideWallpaper.fileName = "";
                     overrideWallpaper.originalFileName = "";

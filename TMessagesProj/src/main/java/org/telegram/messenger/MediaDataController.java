@@ -1781,9 +1781,11 @@ public class MediaDataController extends BaseController {
                         searchResultMessagesMap[0].clear();
                         searchResultMessagesMap[1].clear();
                         messagesSearchCount[0] = 0;
+                        getNotificationCenter().postNotificationName(NotificationCenter.chatSearchResultsLoading, guid);
                     }
                     boolean added = false;
-                    for (int a = 0; a < Math.min(res.messages.size(), 20); a++) {
+                    int N = Math.min(res.messages.size(), 20);
+                    for (int a = 0; a < N; a++) {
                         TLRPC.Message message = res.messages.get(a);
                         added = true;
                         MessageObject messageObject = new MessageObject(currentAccount, message, false);

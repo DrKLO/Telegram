@@ -17,16 +17,18 @@ import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.RectF;
-import android.os.Bundle;
 import android.view.MotionEvent;
 import android.view.View;
-import android.view.accessibility.AccessibilityNodeInfo;
+import android.view.accessibility.AccessibilityEvent;
+import android.view.accessibility.AccessibilityManager;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.FileLog;
 
 import java.util.ArrayList;
+
+import androidx.annotation.Keep;
 
 public class CallSwipeView extends View {
 
@@ -48,6 +50,7 @@ public class CallSwipeView extends View {
 	}
 
 	private void init() {
+		setClickable(true);
 		arrowsPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
 		arrowsPaint.setColor(0xFFFFFFFF);
 		arrowsPaint.setStyle(Paint.Style.STROKE);
@@ -131,8 +134,10 @@ public class CallSwipeView extends View {
 
 	@Override
 	public boolean onTouchEvent(MotionEvent ev) {
-		if (!isEnabled())
-			return false;
+		AccessibilityManager am = (AccessibilityManager) getContext().getSystemService(Context.ACCESSIBILITY_SERVICE);
+		if (!isEnabled() || am.isTouchExplorationEnabled()) {
+			return super.onTouchEvent(ev);
+		}
 		if (ev.getAction() == MotionEvent.ACTION_DOWN) {
 			if ((!dragFromRight && ev.getX() < getDraggedViewWidth()) || (dragFromRight && ev.getX() > getWidth() - getDraggedViewWidth())) {
 				dragging = true;
@@ -163,8 +168,9 @@ public class CallSwipeView extends View {
 	}
 
 	public void startAnimatingArrows() {
-		if (animatingArrows || arrowAnim == null)
+		if (animatingArrows || arrowAnim == null) {
 			return;
+		}
 		animatingArrows = true;
 		if (arrowAnim != null) {
 			arrowAnim.start();
@@ -227,17 +233,11 @@ public class CallSwipeView extends View {
 	}
 
 	@Override
-	public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info){
-		super.onInitializeAccessibilityNodeInfo(info);
-		info.addAction(AccessibilityNodeInfo.ACTION_CLICK);
-	}
-
-	@Override
-	public boolean performAccessibilityAction(int action, Bundle arguments){
-		if(action==AccessibilityNodeInfo.ACTION_CLICK && isEnabled()){
+	public void onPopulateAccessibilityEvent(AccessibilityEvent ev) {
+		if (isEnabled() && ev.getEventType() == AccessibilityEvent.TYPE_VIEW_CLICKED) {
 			listener.onDragComplete();
 		}
-		return super.performAccessibilityAction(action, arguments);
+		super.onPopulateAccessibilityEvent(ev);
 	}
 
 	public interface Listener {
@@ -254,10 +254,12 @@ public class CallSwipeView extends View {
 			index = value;
 		}
 
+		@Keep
 		public int getArrowAlpha() {
 			return arrowAlphas[index];
 		}
 
+		@Keep
 		public void setArrowAlpha(int value) {
 			arrowAlphas[index] = value;
 		}

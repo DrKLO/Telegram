@@ -18,6 +18,7 @@ class TL_future_salt;
 class Connection;
 class NativeByteBuffer;
 class TL_future_salt;
+class TL_future_salts;
 class TL_help_configSimple;
 class ByteArray;
 class TLObject;
@@ -41,7 +42,7 @@ public:
     void clearAuthKey(HandshakeType type);
     void clearServerSalts(bool media);
     int64_t getServerSalt(bool media);
-    void mergeServerSalts(std::vector<std::unique_ptr<TL_future_salt>> &newSalts, bool media);
+    void mergeServerSalts(TL_future_salts *newSalts, bool media);
     void addServerSalt(std::unique_ptr<TL_future_salt> &serverSalt, bool media);
     bool containsServerSalt(int64_t value, bool media);
     void suspendConnections(bool suspendPush);

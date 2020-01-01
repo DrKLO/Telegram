@@ -2018,9 +2018,8 @@ void ConnectionsManager::requestSaltsForDatacenter(Datacenter *datacenter, bool 
         if (iter != requestingSaltsForDc.end()) {
             requestingSaltsForDc.erase(iter);
         }
-        if (error == nullptr) {
-            TL_future_salts *res = (TL_future_salts *) response;
-            datacenter->mergeServerSalts(res->salts, media);
+        if (response != nullptr) {
+            datacenter->mergeServerSalts((TL_future_salts *) response, media);
             saveConfig();
         }
     }, nullptr, RequestFlagWithoutLogin | RequestFlagEnableUnauthorized | RequestFlagUseUnboundKey, datacenter->getDatacenterId(), connectionType, true);

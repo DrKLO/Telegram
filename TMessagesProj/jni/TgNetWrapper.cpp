@@ -57,6 +57,9 @@ void reuse(JNIEnv *env, jclass c, jlong address) {
 
 jobject getJavaByteBuffer(JNIEnv *env, jclass c, jlong address) {
     NativeByteBuffer *buffer = (NativeByteBuffer *) (intptr_t) address;
+    if (buffer == nullptr) {
+        return nullptr;
+    }
     return buffer->getJavaByteBuffer();
 }
 

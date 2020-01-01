@@ -2771,6 +2771,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         int voiceRowPrev = voiceRow;
         int groupsInCommonRowPrev = groupsInCommonRow;
         int sharedSectionRowPrev = sharedSectionRow;
+        int itemsCount = rowCount;
         updateRowsIds();
         if (sharedHeaderRowPrev == -1 && sharedHeaderRow != -1) {
             int newRowsCount = 2;
@@ -2839,6 +2840,27 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             } else if (groupsInCommonRowPrev != -1 && groupsInCommonRow == -1) {
                 listAdapter.notifyItemRemoved(groupsInCommonRowPrev);
             }
+        } else if (sharedHeaderRowPrev != -1 && sharedHeaderRow == -1) {
+            int newRowsCountPrev = 2;
+            if (photosRowPrev != -1) {
+                newRowsCountPrev++;
+            }
+            if (filesRowPrev != -1) {
+                newRowsCountPrev++;
+            }
+            if (linksRowPrev != -1) {
+                newRowsCountPrev++;
+            }
+            if (audioRowPrev != -1) {
+                newRowsCountPrev++;
+            }
+            if (voiceRowPrev != -1) {
+                newRowsCountPrev++;
+            }
+            if (groupsInCommonRowPrev != -1) {
+                newRowsCountPrev++;
+            }
+            listAdapter.notifyItemRangeChanged(sharedHeaderRowPrev, newRowsCountPrev);
         }
     }
 

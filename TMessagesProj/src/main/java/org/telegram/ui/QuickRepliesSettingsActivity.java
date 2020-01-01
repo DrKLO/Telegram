@@ -165,7 +165,7 @@ public class QuickRepliesSettingsActivity extends BaseFragment {
 						settingsKey = "quick_reply_msg4";
 						defValue = LocaleController.getString("QuickReplyDefault4", R.string.QuickReplyDefault4);
 					}
-					textCell.setTextAndHint(getParentActivity().getSharedPreferences("mainconfig", Context.MODE_PRIVATE).getString(settingsKey, ""), defValue, true);
+					textCell.setTextAndHint(getParentActivity().getSharedPreferences("mainconfig", Context.MODE_PRIVATE).getString(settingsKey, ""), defValue, position != reply4Row);
 
 					break;
 				}

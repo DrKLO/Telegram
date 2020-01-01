@@ -849,7 +849,9 @@ public class ChannelCreateActivity extends BaseFragment implements NotificationC
 
     @Override
     public void onActivityResultFragment(int requestCode, int resultCode, Intent data) {
-        imageUpdater.onActivityResult(requestCode, resultCode, data);
+        if (imageUpdater != null) {
+            imageUpdater.onActivityResult(requestCode, resultCode, data);
+        }
     }
 
     @Override

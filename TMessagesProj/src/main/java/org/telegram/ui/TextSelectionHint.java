@@ -76,7 +76,7 @@ class TextSelectionHint extends View {
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         super.onMeasure(widthMeasureSpec, heightMeasureSpec);
-        if (getMeasuredWidth() != lastW) {
+        if (getMeasuredWidth() != lastW || textLayout == null) {
             if (a != null) {
                 a.removeAllListeners();
                 a.cancel();
@@ -144,6 +144,9 @@ class TextSelectionHint extends View {
 
     @Override
     protected void onDraw(Canvas canvas) {
+        if (textLayout == null) {
+            return;
+        }
         super.onDraw(canvas);
 
         canvas.save();

@@ -5520,10 +5520,10 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
     }
 
     public static String getKeyForPhotoSize(TLRPC.PhotoSize photoSize, Bitmap[] bitmap, boolean blur, boolean forceCache) {
-        if (photoSize == null) {
+        if (photoSize == null || photoSize.location == null) {
             return null;
         }
-        Point point = ChatMessageCell.getMessageSize(photoSize.w,photoSize.h);
+        Point point = ChatMessageCell.getMessageSize(photoSize.w, photoSize.h);
 
         if (bitmap != null) {
             try {

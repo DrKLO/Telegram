@@ -772,7 +772,7 @@ public class DataUsageActivity extends BaseFragment {
                         } else if (position == messagesBytesSentRow || position == photosBytesSentRow || position == videosBytesSentRow || position == audiosBytesSentRow || position == filesBytesSentRow || position == callsBytesSentRow || position == totalBytesSentRow) {
                             textCell.setTextAndValue(LocaleController.getString("BytesSent", R.string.BytesSent), AndroidUtilities.formatFileSize(StatsController.getInstance(currentAccount).getSentBytesCount(currentType, type)), true);
                         } else if (position == messagesBytesReceivedRow || position == photosBytesReceivedRow || position == videosBytesReceivedRow || position == audiosBytesReceivedRow || position == filesBytesReceivedRow || position == callsBytesReceivedRow || position == totalBytesReceivedRow) {
-                            textCell.setTextAndValue(LocaleController.getString("BytesReceived", R.string.BytesReceived), AndroidUtilities.formatFileSize(StatsController.getInstance(currentAccount).getReceivedBytesCount(currentType, type)), position != totalBytesReceivedRow);
+                            textCell.setTextAndValue(LocaleController.getString("BytesReceived", R.string.BytesReceived), AndroidUtilities.formatFileSize(StatsController.getInstance(currentAccount).getReceivedBytesCount(currentType, type)), position == callsBytesReceivedRow);
                         }
                     }
                     break;

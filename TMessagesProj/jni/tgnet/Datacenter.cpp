@@ -681,8 +681,8 @@ int64_t Datacenter::getServerSalt(bool media) {
     return result;
 }
 
-void Datacenter::mergeServerSalts(std::vector<std::unique_ptr<TL_future_salt>> &newSalts, bool media) {
-    if (newSalts.empty()) {
+void Datacenter::mergeServerSalts(TL_future_salts *futureSalts, bool media) {
+    if (futureSalts->salts.empty()) {
         return;
     }
     std::vector<std::unique_ptr<TL_future_salt>> &salts = media ? mediaServerSalts : serverSalts;
@@ -694,11 +694,11 @@ void Datacenter::mergeServerSalts(std::vector<std::unique_ptr<TL_future_salt>> &
         existingSalts.push_back(salts[a]->salt);
     }
     bool added = false;
-    size = newSalts.size();
+    size = futureSalts->salts.size();
     for (uint32_t a = 0; a < size; a++) {
-        int64_t value = newSalts[a]->salt;
-        if (std::find(existingSalts.begin(), existingSalts.end(), value) == existingSalts.end() && newSalts[a]->valid_until > date) {
-            salts.push_back(std::unique_ptr<TL_future_salt>(std::move(newSalts[a])));
+        int64_t value = futureSalts->salts[a]->salt;
+        if (std::find(existingSalts.begin(), existingSalts.end(), value) == existingSalts.end() && futureSalts->salts[a]->valid_until > date) {
+            salts.push_back(std::unique_ptr<TL_future_salt>(std::move(futureSalts->salts[a])));
             added = true;
         }
     }

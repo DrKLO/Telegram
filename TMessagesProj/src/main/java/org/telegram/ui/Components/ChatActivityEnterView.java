@@ -1732,7 +1732,12 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
             sendButton.setBackgroundDrawable(Theme.createSelectorDrawable(Color.argb(24, Color.red(color), Color.green(color), Color.blue(color)), 1));
         }
         sendButtonContainer.addView(sendButton, LayoutHelper.createFrame(48, 48));
-        sendButton.setOnClickListener(view -> sendMessage());
+        sendButton.setOnClickListener(view -> {
+            if (sendPopupWindow != null && sendPopupWindow.isShowing()) {
+                return;
+            }
+            sendMessage();
+        });
         sendButton.setOnLongClickListener(this::onSendLongClick);
 
         slowModeButton = new SimpleTextView(context);

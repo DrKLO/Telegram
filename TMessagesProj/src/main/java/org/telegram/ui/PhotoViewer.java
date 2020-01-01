@@ -7198,11 +7198,11 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             final ViewGroup.LayoutParams layoutParams = animatingImageView.getLayoutParams();
             layoutParams.width = (int) drawRegion.width();
             layoutParams.height = (int) drawRegion.height();
-            if (layoutParams.width == 0) {
-                layoutParams.width = 1;
+            if (layoutParams.width <= 0) {
+                layoutParams.width = 100;
             }
-            if (layoutParams.height == 0) {
-                layoutParams.height = 1;
+            if (layoutParams.height <= 0) {
+                layoutParams.height = 100;
             }
 
             for (int i = 0; i < animatingImageViews.length; i++) {
@@ -7570,11 +7570,11 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                         animatingImageViews[i].setImageBitmap(centerImage.getBitmapSafe());
                     }
                 }
-                if (layoutParams.width == 0) {
-                    layoutParams.width = 1;
+                if (layoutParams.width <= 0) {
+                    layoutParams.width = 100;
                 }
-                if (layoutParams.height == 0) {
-                    layoutParams.height = 1;
+                if (layoutParams.height <= 0) {
+                    layoutParams.height = 100;
                 }
 
                 float scaleX = (float) windowView.getMeasuredWidth() / layoutParams.width;

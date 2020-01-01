@@ -2269,18 +2269,20 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
                             zoomWas = true;
                         }
                     } else {
-                        float diff = (newDistance - pinchStartDistance) / AndroidUtilities.dp(100);
-                        pinchStartDistance = newDistance;
-                        cameraZoom += diff;
-                        if (cameraZoom < 0.0f) {
-                            cameraZoom = 0.0f;
-                        } else if (cameraZoom > 1.0f) {
-                            cameraZoom = 1.0f;
+                        if (cameraView != null) {
+                            float diff = (newDistance - pinchStartDistance) / AndroidUtilities.dp(100);
+                            pinchStartDistance = newDistance;
+                            cameraZoom += diff;
+                            if (cameraZoom < 0.0f) {
+                                cameraZoom = 0.0f;
+                            } else if (cameraZoom > 1.0f) {
+                                cameraZoom = 1.0f;
+                            }
+                            zoomControlView.setZoom(cameraZoom, false);
+                            containerView.invalidate();
+                            cameraView.setZoom(cameraZoom);
+                            showZoomControls(true, true);
                         }
-                        zoomControlView.setZoom(cameraZoom, false);
-                        containerView.invalidate();
-                        cameraView.setZoom(cameraZoom);
-                        showZoomControls(true, true);
                     }
                 } else {
                     float newY = event.getY();

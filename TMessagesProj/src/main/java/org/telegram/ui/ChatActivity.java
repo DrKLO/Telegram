@@ -1520,6 +1520,9 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     }
                     searchItem.setVisibility(View.GONE);
                     getMediaDataController().clearFoundMessageObjects();
+                    if (messagesSearchAdapter != null) {
+                        messagesSearchAdapter.notifyDataSetChanged();
+                    }
                     removeSelectedMessageHighlight();
                     updateBottomOverlay();
                     updatePinnedMessageView(true);
@@ -6010,6 +6013,9 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
     }
 
     private void showTextSelectionHint(MessageObject messageObject) {
+        if (getParentActivity() == null) {
+            return;
+        }
         CharSequence text;
         boolean canShowText = false;
         if (messageObject.textLayoutBlocks != null && !messageObject.textLayoutBlocks.isEmpty()) {
@@ -11308,8 +11314,10 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 }
             }
         } else if (id == NotificationCenter.chatSearchResultsLoading) {
-            if (classGuid == (Integer) args[0] && searchItem != null) {
-                searchItem.setShowSearchProgress(true);
+            if (classGuid == (Integer) args[0]) {
+                if (searchItem != null) {
+                    searchItem.setShowSearchProgress(true);
+                }
                 if (messagesSearchAdapter != null) {
                     messagesSearchAdapter.notifyDataSetChanged();
                 }

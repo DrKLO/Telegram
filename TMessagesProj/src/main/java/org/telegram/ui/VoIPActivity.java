@@ -1245,6 +1245,7 @@ public class VoIPActivity extends Activity implements VoIPService.StateListener,
                         }
                     }, 200);
                 } else if (state == VoIPService.STATE_BUSY) {
+                    endBtn.setContentDescription(LocaleController.getString("CallAgain", R.string.CallAgain));
                     //endBtn.setEnabled(false);
                     setStateTextAnimated(LocaleController.getString("VoipBusy", R.string.VoipBusy), false);
                     /*stateText.postDelayed(new Runnable() {

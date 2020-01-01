@@ -2567,7 +2567,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
             fragment = null;
         }
 
-        if (contactsToSend != null && contactsToSend.size() == 1) {
+        if (contactsToSend != null && contactsToSend.size() == 1 && !mainFragmentsStack.isEmpty()) {
             PhonebookShareAlert alert = new PhonebookShareAlert(mainFragmentsStack.get(mainFragmentsStack.size() - 1), null, null, contactsToSendUri, null, null);
             alert.setDelegate((user, notify, scheduleDate) -> {
                 if (fragment != null) {
