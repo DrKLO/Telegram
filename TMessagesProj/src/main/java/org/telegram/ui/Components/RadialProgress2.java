@@ -330,8 +330,8 @@ public class RadialProgress2 {
         int centerX;
         int centerY;
         if (drawMiniIcon && miniDrawCanvas != null) {
-            centerX = (int) (progressRect.width() / 2);
-            centerY = (int) (progressRect.height() / 2);
+            centerX = (int) Math.ceil(progressRect.width() / 2);
+            centerY = (int) Math.ceil(progressRect.height() / 2);
         } else {
             centerX = (int) progressRect.centerX();
             centerY = (int) progressRect.centerY();

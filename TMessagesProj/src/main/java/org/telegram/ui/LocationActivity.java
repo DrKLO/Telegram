@@ -962,7 +962,8 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
             public boolean dispatchTouchEvent(MotionEvent ev) {
                 MotionEvent eventToRecycle = null;
                 if (yOffset != 0) {
-                    ev = eventToRecycle = MotionEvent.obtain(ev.getDownTime(), ev.getEventTime(), ev.getAction(), ev.getX(), ev.getY() - yOffset / 2, ev.getMetaState());
+                    ev = eventToRecycle = MotionEvent.obtain(ev);
+                    eventToRecycle.offsetLocation(0, -yOffset / 2);
                 }
                 boolean result = super.dispatchTouchEvent(ev);
                 if (eventToRecycle != null) {
@@ -1008,7 +1009,6 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
                         adapter.setCustomLocation(userLocation);
                     }
                 }
-                //FileLog.d("evY = " + ev.getY());
                 return super.onInterceptTouchEvent(ev);
             }
         };

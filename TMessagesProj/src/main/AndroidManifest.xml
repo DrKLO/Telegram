@@ -385,8 +385,6 @@
             android:name=".voip.CallNotificationSoundProvider"
             android:exported="true"/>
 
-        <uses-library android:name="org.apache.http.legacy" android:required="false"/>
-
         <uses-library android:name="com.sec.android.app.multiwindow" android:required="false" />
         <meta-data android:name="com.sec.android.support.multiwindow" android:value="true" />
         <meta-data android:name="com.sec.android.multiwindow.DEFAULT_SIZE_W" android:value="632dp" />
