@@ -1026,7 +1026,7 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
                         MapsInitializer.initialize(ApplicationLoader.applicationContext);
                         mapView.getMapAsync(map1 -> {
                             googleMap = map1;
-                            if (Theme.getCurrentTheme().isDark() || Theme.isCurrentThemeNight()) {
+                            if (isActiveThemeDark()) {
                                 currentMapStyleDark = true;
                                 MapStyleOptions style = MapStyleOptions.loadRawResourceStyle(ApplicationLoader.applicationContext, R.raw.mapstyle_night);
                                 googleMap.setMapStyle(style);
@@ -1152,6 +1152,15 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
         updateEmptyView();
 
         return fragmentView;
+    }
+
+    private boolean isActiveThemeDark() {
+        Theme.ThemeInfo info = Theme.getActiveTheme();
+        if (info.isDark()) {
+            return true;
+        }
+        int color = Theme.getColor(Theme.key_windowBackgroundWhite);
+        return AndroidUtilities.computePerceivedBrightness(color) < 0.721f;
     }
 
     private void updateEmptyView() {
@@ -2052,7 +2061,7 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
             shadow.invalidate();
 
             if (googleMap != null) {
-                if (Theme.getCurrentTheme().isDark() || Theme.isCurrentThemeNight()) {
+                if (isActiveThemeDark()) {
                     if (!currentMapStyleDark) {
                         currentMapStyleDark = true;
                         MapStyleOptions style = MapStyleOptions.loadRawResourceStyle(ApplicationLoader.applicationContext, R.raw.mapstyle_night);

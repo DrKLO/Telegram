@@ -1442,13 +1442,16 @@ public abstract class TextSelectionHelper<Cell extends TextSelectionHelper.Selec
         protected int getLineHeight() {
             if (selectedView != null && selectedView.getMessageObject() != null) {
                 MessageObject object = selectedView.getMessageObject();
-                StaticLayout layout;
+                StaticLayout layout = null;
                 if (isDescription) {
                     layout = selectedView.getDescriptionlayout();
                 } else if (selectedView.hasCaptionLayout()) {
                     layout = selectedView.getCaptionLayout();
-                } else {
+                } else if (object.textLayoutBlocks != null) {
                     layout = object.textLayoutBlocks.get(0).textLayout;
+                }
+                if (layout == null) {
+                    return 0;
                 }
                 int lineHeight = layout.getLineBottom(0) - layout.getLineTop(0);
                 return lineHeight;
@@ -1461,7 +1464,7 @@ public abstract class TextSelectionHelper<Cell extends TextSelectionHelper.Selec
             this.maybeSelectedView = chatMessageCell;
             MessageObject messageObject = chatMessageCell.getMessageObject();
 
-            if (maybeIsDescription) {
+            if (maybeIsDescription && chatMessageCell.getDescriptionlayout() != null) {
                 textArea.set(
                         maybeTextX, maybeTextY,
                         maybeTextX + chatMessageCell.getDescriptionlayout().getWidth(),
@@ -1673,6 +1676,11 @@ public abstract class TextSelectionHelper<Cell extends TextSelectionHelper.Selec
                 return;
             }
 
+            if (messageObject.textLayoutBlocks == null) {
+                layoutBlock.layout = null;
+                return;
+            }
+
             if (messageObject.textLayoutBlocks.size() == 1) {
                 layoutBlock.layout = messageObject.textLayoutBlocks.get(0).textLayout;
                 layoutBlock.yOffset = 0;
@@ -1800,6 +1808,12 @@ public abstract class TextSelectionHelper<Cell extends TextSelectionHelper.Selec
                 this.textX = textX;
                 this.textY = textY;
                 invalidate();
+            }
+        }
+
+        public void checkDataChanged(MessageObject messageObject) {
+            if (selectedCellId == messageObject.getId()) {
+                clear(true);
             }
         }
     }

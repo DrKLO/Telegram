@@ -486,34 +486,7 @@ public class Theme {
                     if (svg) {
                         patternBitmap = SvgHelper.getBitmap(patternPath, AndroidUtilities.dp(360), AndroidUtilities.dp(640), false);
                     } else {
-                        BitmapFactory.Options opts = new BitmapFactory.Options();
-                        opts.inSampleSize = 1;
-                        opts.inJustDecodeBounds = true;
-                        BitmapFactory.decodeFile(patternPath.getAbsolutePath(), opts);
-                        float photoW = opts.outWidth;
-                        float photoH = opts.outHeight;
-                        float scaleFactor;
-                        int w_filter = AndroidUtilities.dp(360);
-                        int h_filter = AndroidUtilities.dp(640);
-                        if (w_filter >= h_filter && photoW > photoH) {
-                            scaleFactor = Math.max(photoW / w_filter, photoH / h_filter);
-                        } else {
-                            scaleFactor = Math.min(photoW / w_filter, photoH / h_filter);
-                        }
-                        if (scaleFactor < 1.2f) {
-                            scaleFactor = 1;
-                        }
-                        opts.inJustDecodeBounds = false;
-                        if (scaleFactor > 1.0f && (photoW > w_filter || photoH > h_filter)) {
-                            int sample = 1;
-                            do {
-                                sample *= 2;
-                            } while (sample * 2 < scaleFactor);
-                            opts.inSampleSize = sample;
-                        } else {
-                            opts.inSampleSize = (int) scaleFactor;
-                        }
-                        patternBitmap = BitmapFactory.decodeFile(patternPath.getAbsolutePath(), opts);
+                        patternBitmap = loadScreenSizedBitmap(new FileInputStream(patternPath), 0);
                     }
                 }
 
@@ -7180,14 +7153,17 @@ public class Theme {
                         }
                         isCustomTheme = true;
                     } else if (themedWallpaperLink != null) {
-                        File pathToWallpaper = new File(ApplicationLoader.getFilesDirFixed(), Utilities.MD5(themedWallpaperLink) + ".wp");
-                        Bitmap bitmap = BitmapFactory.decodeFile(pathToWallpaper.getAbsolutePath());
-                        if (bitmap != null) {
-                            themedWallpaper = wallpaper = new BitmapDrawable(bitmap);
-                            isCustomTheme = true;
+                        try {
+                            File pathToWallpaper = new File(ApplicationLoader.getFilesDirFixed(), Utilities.MD5(themedWallpaperLink) + ".wp");
+                            Bitmap bitmap = loadScreenSizedBitmap(new FileInputStream(pathToWallpaper), 0);
+                            if (bitmap != null) {
+                                themedWallpaper = wallpaper = new BitmapDrawable(bitmap);
+                                isCustomTheme = true;
+                            }
+                        } catch (Exception e) {
+                            FileLog.e(e);
                         }
                     } else if (themedWallpaperFileOffset > 0 && (currentTheme.pathToFile != null || currentTheme.assetName != null)) {
-                        FileInputStream stream = null;
                         try {
                             File file;
                             if (currentTheme.assetName != null) {
@@ -7195,23 +7171,13 @@ public class Theme {
                             } else {
                                 file = new File(currentTheme.pathToFile);
                             }
-                            stream = new FileInputStream(file);
-                            stream.getChannel().position(themedWallpaperFileOffset);
-                            Bitmap bitmap = BitmapFactory.decodeStream(stream);
+                            Bitmap bitmap = loadScreenSizedBitmap(new FileInputStream(file), themedWallpaperFileOffset);
                             if (bitmap != null) {
                                 themedWallpaper = wallpaper = new BitmapDrawable(bitmap);
                                 isCustomTheme = true;
                             }
                         } catch (Throwable e) {
                             FileLog.e(e);
-                        } finally {
-                            try {
-                                if (stream != null) {
-                                    stream.close();
-                                }
-                            } catch (Exception e) {
-                                FileLog.e(e);
-                            }
                         }
                     }
                 }
@@ -7244,11 +7210,14 @@ public class Theme {
                                 }
                             } else {
                                 File toFile = new File(ApplicationLoader.getFilesDirFixed(), overrideWallpaper.fileName);
-                                long len = toFile.length();
                                 if (toFile.exists()) {
-                                    wallpaper = Drawable.createFromPath(toFile.getAbsolutePath());
-                                    isCustomTheme = true;
-                                } else {
+                                    Bitmap bitmap = loadScreenSizedBitmap(new FileInputStream(toFile), 0);
+                                    if (bitmap != null) {
+                                        wallpaper = new BitmapDrawable(bitmap);
+                                        isCustomTheme = true;
+                                    }
+                                }
+                                if (wallpaper == null) {
                                     wallpaper = ApplicationLoader.applicationContext.getResources().getDrawable(R.drawable.background_hd);
                                     isCustomTheme = false;
                                 }
@@ -7271,6 +7240,52 @@ public class Theme {
                 });
             }
         });
+    }
+
+    private static Bitmap loadScreenSizedBitmap(FileInputStream stream, int offset) {
+        try {
+            BitmapFactory.Options opts = new BitmapFactory.Options();
+            opts.inSampleSize = 1;
+            opts.inJustDecodeBounds = true;
+            stream.getChannel().position(offset);
+            BitmapFactory.decodeStream(stream, null, opts);
+            float photoW = opts.outWidth;
+            float photoH = opts.outHeight;
+            float scaleFactor;
+            int w_filter = AndroidUtilities.dp(360);
+            int h_filter = AndroidUtilities.dp(640);
+            if (w_filter >= h_filter && photoW > photoH) {
+                scaleFactor = Math.max(photoW / w_filter, photoH / h_filter);
+            } else {
+                scaleFactor = Math.min(photoW / w_filter, photoH / h_filter);
+            }
+            if (scaleFactor < 1.2f) {
+                scaleFactor = 1;
+            }
+            opts.inJustDecodeBounds = false;
+            if (scaleFactor > 1.0f && (photoW > w_filter || photoH > h_filter)) {
+                int sample = 1;
+                do {
+                    sample *= 2;
+                } while (sample * 2 < scaleFactor);
+                opts.inSampleSize = sample;
+            } else {
+                opts.inSampleSize = (int) scaleFactor;
+            }
+            stream.getChannel().position(offset);
+            return BitmapFactory.decodeStream(stream, null, opts);
+        } catch (Exception e) {
+            FileLog.e(e);
+        } finally {
+            try {
+                if (stream != null) {
+                    stream.close();
+                }
+            } catch (Exception ignore) {
+
+            }
+        }
+        return null;
     }
 
     public static Drawable getThemedWallpaper(boolean thumb, View ownerView) {

@@ -688,7 +688,8 @@ void Datacenter::mergeServerSalts(TL_future_salts *futureSalts, bool media) {
     std::vector<std::unique_ptr<TL_future_salt>> &salts = media ? mediaServerSalts : serverSalts;
 
     int32_t date = ConnectionsManager::getInstance(instanceNum).getCurrentTime();
-    std::vector<int64_t> existingSalts(salts.size());
+    std::vector<int64_t> existingSalts;
+    existingSalts.reserve(salts.size());
     size_t size = salts.size();
     for (uint32_t a = 0; a < size; a++) {
         existingSalts.push_back(salts[a]->salt);

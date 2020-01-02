@@ -68,6 +68,7 @@ import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.MessagesStorage;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
+import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.ConnectionsManager;
@@ -865,15 +866,34 @@ public class ThemePreviewActivity extends BaseFragment implements DownloadContro
                     String fileName = isBlurred ? theme.generateWallpaperName(null, false) : originalFileName;
                     File toFile = new File(ApplicationLoader.getFilesDirFixed(), originalFileName);
                     if (currentWallpaper instanceof TLRPC.TL_wallPaper) {
-                        try {
-                            FileOutputStream stream = new FileOutputStream(toFile);
-                            originalBitmap.compress(Bitmap.CompressFormat.JPEG, 87, stream);
-                            stream.close();
-                            done = true;
-                        } catch (Exception e) {
-                            done = false;
-                            FileLog.e(e);
+                        if (originalBitmap != null) {
+                            try {
+                                FileOutputStream stream = new FileOutputStream(toFile);
+                                originalBitmap.compress(Bitmap.CompressFormat.JPEG, 87, stream);
+                                stream.close();
+                                done = true;
+                            } catch (Exception e) {
+                                done = false;
+                                FileLog.e(e);
+                            }
+                        } else {
+                            ImageReceiver imageReceiver = backgroundImage.getImageReceiver();
+                            if (imageReceiver.hasNotThumb() || imageReceiver.hasStaticThumb()) {
+                                Bitmap bitmap = imageReceiver.getBitmap();
+                                try {
+                                    FileOutputStream stream = new FileOutputStream(toFile);
+                                    bitmap.compress(Bitmap.CompressFormat.JPEG, 87, stream);
+                                    stream.close();
+                                    done = true;
+                                } catch (Exception e) {
+                                    done = false;
+                                    FileLog.e(e);
+                                }
+                            } else {
+                                done = false;
+                            }
                         }
+
                         if (!done) {
                             TLRPC.TL_wallPaper wallPaper = (TLRPC.TL_wallPaper) currentWallpaper;
                             File f = FileLoader.getPathToAttach(wallPaper.document, true);
@@ -1865,7 +1885,13 @@ public class ThemePreviewActivity extends BaseFragment implements DownloadContro
             NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.didSetNewWallpapper);
         }
         if (screenType != SCREEN_TYPE_PREVIEW || accent != null) {
-            imageFilter = (int) (1080 / AndroidUtilities.density) + "_" + (int) (1920 / AndroidUtilities.density) + "_f";
+            if (SharedConfig.getDevicePerfomanceClass() == SharedConfig.PERFORMANCE_CLASS_LOW) {
+                int w = Math.min(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y);
+                int h = Math.max(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y);
+                imageFilter = (int) (w / AndroidUtilities.density) + "_" + (int) (h / AndroidUtilities.density) + "_f";
+            } else {
+                imageFilter = (int) (1080 / AndroidUtilities.density) + "_" + (int) (1920 / AndroidUtilities.density) + "_f";
+            }
             maxWallpaperSize = Math.min(1920, Math.max(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y));
 
             NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.wallpapersNeedReload);

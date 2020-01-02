@@ -4746,6 +4746,9 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             radialProgress.setIcon(getIconForCurrentState(), false, false);
         }
 
+        if (delegate != null && delegate.getTextSelectionHelper() != null && !messageIdChanged && messageChanged && messageObject != null) {
+            delegate.getTextSelectionHelper().checkDataChanged(messageObject);
+        }
         accessibilityVirtualViewBounds.clear();
     }
 

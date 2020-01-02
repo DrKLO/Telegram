@@ -7261,16 +7261,14 @@ public class MessagesStorage extends BaseController {
                                         message.attachPath = oldMessage.attachPath;
                                         message.ttl = cursor.intValue(2);
                                     }
-                                    if (!message.out) {
-                                        boolean sameMedia = false; //TODO check
-                                        if (oldMessage.media instanceof TLRPC.TL_messageMediaPhoto && message.media instanceof TLRPC.TL_messageMediaPhoto && oldMessage.media.photo != null && message.media.photo != null) {
-                                            sameMedia = oldMessage.media.photo.id == message.media.photo.id;
-                                        } else if (oldMessage.media instanceof TLRPC.TL_messageMediaDocument && message.media instanceof TLRPC.TL_messageMediaDocument && oldMessage.media.document != null && message.media.document != null) {
-                                            sameMedia = oldMessage.media.document.id == message.media.document.id;
-                                        }
-                                        if (!sameMedia) {
-                                            addFilesToDelete(oldMessage, filesToDelete, false);
-                                        }
+                                    boolean sameMedia = false;
+                                    if (oldMessage.media instanceof TLRPC.TL_messageMediaPhoto && message.media instanceof TLRPC.TL_messageMediaPhoto && oldMessage.media.photo != null && message.media.photo != null) {
+                                        sameMedia = oldMessage.media.photo.id == message.media.photo.id;
+                                    } else if (oldMessage.media instanceof TLRPC.TL_messageMediaDocument && message.media instanceof TLRPC.TL_messageMediaDocument && oldMessage.media.document != null && message.media.document != null) {
+                                        sameMedia = oldMessage.media.document.id == message.media.document.id;
+                                    }
+                                    if (!sameMedia) {
+                                        addFilesToDelete(oldMessage, filesToDelete, false);
                                     }
                                 }
                                 boolean oldMention = cursor.intValue(3) != 0;

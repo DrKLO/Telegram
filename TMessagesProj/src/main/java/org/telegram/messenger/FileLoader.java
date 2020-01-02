@@ -446,7 +446,7 @@ public class FileLoader extends BaseController {
     }
 
     public boolean isLoadingFile(final String fileName) {
-        return loadOperationPathsUI.containsKey(fileName);
+        return fileName != null && loadOperationPathsUI.containsKey(fileName);
     }
 
     public float getBufferedProgressFromPosition(final float position, final String fileName) {

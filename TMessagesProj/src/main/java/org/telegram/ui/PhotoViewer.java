@@ -8920,7 +8920,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                 }
             }
 
-            canvas.drawText(lowQualityDescription, sideSide, cy - AndroidUtilities.dp(20), textPaint);
+            canvas.drawText(lowQualityDescription, sideSide, cy - AndroidUtilities.dp(16), textPaint);
             float width = textPaint.measureText(hightQualityDescription);
             canvas.drawText(hightQualityDescription, getMeasuredWidth() - sideSide - width, cy - AndroidUtilities.dp(16), textPaint);
         }
