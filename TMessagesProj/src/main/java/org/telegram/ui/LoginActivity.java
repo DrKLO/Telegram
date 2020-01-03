@@ -1429,6 +1429,24 @@ public class LoginActivity extends BaseFragment {
             textView2.setLineSpacing(AndroidUtilities.dp(2), 1.0f);
             addView(textView2, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT, 0, 28, 0, 10));
 
+            TextView textViewProxy = new TextView(context);
+            textViewProxy.setText("You may need to set up a proxy before you login, in case your country or ISP blocks Telegram");
+            textViewProxy.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText6));
+            textViewProxy.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+            textViewProxy.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
+            textViewProxy.setLineSpacing(AndroidUtilities.dp(2), 1.0f);
+            addView(textViewProxy, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT, 0, 28, 0, 10));
+            TextView addProxyButton = new TextView(context);
+            addProxyButton.setText("SET A PROXY");
+            addProxyButton.setGravity(Gravity.CENTER);
+            addProxyButton.setTextColor(0xffffffff);
+            addProxyButton.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            addProxyButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+            addProxyButton.setBackgroundDrawable(Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(4), 0xff50a8eb, 0xff439bde));
+            addProxyButton.setPadding(AndroidUtilities.dp(34), 0, AndroidUtilities.dp(34), 0);
+            addView(addProxyButton, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 42, Gravity.CENTER_HORIZONTAL | Gravity.BOTTOM, 10, 0, 10, 10));
+            addProxyButton.setOnClickListener(view -> presentFragment(new ProxyListActivity()));
+
             if (newAccount) {
                 checkBoxCell = new CheckBoxCell(context, 2);
                 checkBoxCell.setText(LocaleController.getString("SyncContacts", R.string.SyncContacts), "", syncContacts, false);
