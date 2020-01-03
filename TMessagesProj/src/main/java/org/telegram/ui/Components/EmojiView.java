@@ -943,7 +943,7 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
         emojiGridView.setLayoutManager(emojiLayoutManager = new GridLayoutManager(context, 8));
         emojiGridView.setTopGlowOffset(AndroidUtilities.dp(38));
         emojiGridView.setBottomGlowOffset(AndroidUtilities.dp(48));
-        emojiGridView.setPadding(0, AndroidUtilities.dp(38), 0, 0);
+        emojiGridView.setPadding(0, AndroidUtilities.dp(38), 0, AndroidUtilities.dp(44));
         emojiGridView.setGlowColor(Theme.getColor(Theme.key_chat_emojiPanelBackground));
         emojiGridView.setClipToPadding(false);
         emojiLayoutManager.setSpanSizeLookup(new GridLayoutManager.SpanSizeLookup() {
@@ -1268,6 +1268,7 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
                         }
                     }
                 });
+                gifGridView.setPadding(0, 0, 0, AndroidUtilities.dp(44));
                 gifGridView.setOverScrollMode(RecyclerListView.OVER_SCROLL_NEVER);
                 gifGridView.setAdapter(gifAdapter = new GifAdapter(context));
                 gifSearchAdapter = new GifSearchAdapter(context);
@@ -1387,7 +1388,7 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
                     }
                 }
             });
-            stickersGridView.setPadding(0, AndroidUtilities.dp(4 + 48), 0, 0);
+            stickersGridView.setPadding(0, AndroidUtilities.dp(4 + 48), 0, AndroidUtilities.dp(44));
             stickersGridView.setClipToPadding(false);
             views.add(stickersContainer);
             stickersSearchGridAdapter = new StickersSearchGridAdapter(context);
@@ -1571,7 +1572,7 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
                 }
             });
             trendingGridView.setClipToPadding(false);
-            trendingGridView.setPadding(0, AndroidUtilities.dp(48), 0, 0);
+            trendingGridView.setPadding(0, AndroidUtilities.dp(48), 0, AndroidUtilities.dp(44));
             trendingGridView.setAdapter(trendingGridAdapter = new TrendingGridAdapter(context));
             trendingGridView.setOnItemClickListener((view, position) -> {
                 TLRPC.StickerSetCovered pack = trendingGridAdapter.positionsToSets.get(position);
@@ -2236,9 +2237,9 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
                             }
                             gridView.setTranslationY(0);
                             if (gridView == stickersGridView) {
-                                gridView.setPadding(0, AndroidUtilities.dp(48 + 4), 0, 0);
+                                gridView.setPadding(0, AndroidUtilities.dp(48 + 4), 0, AndroidUtilities.dp(44));
                             } else if (gridView == emojiGridView) {
-                                gridView.setPadding(0, AndroidUtilities.dp(38), 0, 0);
+                                gridView.setPadding(0, AndroidUtilities.dp(38), 0, AndroidUtilities.dp(44));
                             }
                             if (gridView == gifGridView) {
                                 layoutManager.scrollToPositionWithOffset(1, 0);
@@ -2266,9 +2267,9 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
                     tabStrip.setTranslationY(0);
                 }
                 if (gridView == stickersGridView) {
-                    gridView.setPadding(0, AndroidUtilities.dp(48 + 4), 0, 0);
+                    gridView.setPadding(0, AndroidUtilities.dp(48 + 4), 0, AndroidUtilities.dp(44));
                 } else if (gridView == emojiGridView) {
-                    gridView.setPadding(0, AndroidUtilities.dp(38), 0, 0);
+                    gridView.setPadding(0, AndroidUtilities.dp(38), 0, AndroidUtilities.dp(44));
                 }
             }
         }
