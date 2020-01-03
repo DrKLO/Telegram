@@ -3320,10 +3320,11 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             if (user != null && !isBot && currentEncryptedChat == null && user.id != UserConfig.getInstance(currentAccount).getClientUserId()) {
                 if (userBlocked) {
                     unblockRow = rowCount++;
-                } else {
+                    lastSectionRow = rowCount++;
+                } else if (user.id != 333000 && user.id != 777000 && user.id != 42777) {
                     startSecretChatRow = rowCount++;
+                    lastSectionRow = rowCount++;
                 }
-                lastSectionRow = rowCount++;
             }
         } else if (chat_id != 0) {
             if (chat_id > 0) {
@@ -3603,14 +3604,20 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     }
                 }
             } else {
-                int count = chat.participants_count;
-                if (chatInfo != null) {
-                    count = chatInfo.participants.participants.size();
-                }
-                if (count != 0 && onlineCount > 1) {
-                    statusString = profileStatusString = String.format("%s, %s", LocaleController.formatPluralString("Members", count), LocaleController.formatPluralString("OnlineCount", onlineCount));
+                if (ChatObject.isKickedFromChat(chat)) {
+                    statusString = profileStatusString = LocaleController.getString("YouWereKicked", R.string.YouWereKicked);
+                } else if (ChatObject.isLeftFromChat(chat)) {
+                    statusString = profileStatusString = LocaleController.getString("YouLeft", R.string.YouLeft);
                 } else {
-                    statusString = profileStatusString = LocaleController.formatPluralString("Members", count);
+                    int count = chat.participants_count;
+                    if (chatInfo != null) {
+                        count = chatInfo.participants.participants.size();
+                    }
+                    if (count != 0 && onlineCount > 1) {
+                        statusString = profileStatusString = String.format("%s, %s", LocaleController.formatPluralString("Members", count), LocaleController.formatPluralString("OnlineCount", onlineCount));
+                    } else {
+                        statusString = profileStatusString = LocaleController.formatPluralString("Members", count);
+                    }
                 }
             }
 
@@ -3772,7 +3779,9 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                         editItem = menu.addItem(edit_channel, R.drawable.group_edit_profile);
                     }
                     item = menu.addItem(10, R.drawable.ic_ab_other);
-                    item.addSubItem(search_members, R.drawable.msg_search, LocaleController.getString("SearchMembers", R.string.SearchMembers));
+                    if (!ChatObject.isKickedFromChat(chat) && !ChatObject.isLeftFromChat(chat)) {
+                        item.addSubItem(search_members, R.drawable.msg_search, LocaleController.getString("SearchMembers", R.string.SearchMembers));
+                    }
                     item.addSubItem(leave_group, R.drawable.msg_leave, LocaleController.getString("DeleteAndExit", R.string.DeleteAndExit));
                 }
             }

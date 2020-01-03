@@ -32,8 +32,8 @@ public class DispatchQueue extends Thread {
             } else {
                 handler.sendMessageDelayed(msg, delay);
             }
-        } catch (Exception e) {
-            FileLog.e(e);
+        } catch (Exception ignore) {
+
         }
     }
 

@@ -55,6 +55,7 @@ import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.EmptyCell;
 import org.telegram.ui.Cells.FeaturedStickerSetInfoCell;
 import org.telegram.ui.Cells.StickerEmojiCell;
+import org.telegram.ui.ChatActivity;
 import org.telegram.ui.ContentPreviewViewer;
 
 import java.util.ArrayList;
@@ -161,6 +162,14 @@ public class StickersAlert extends BottomSheet implements NotificationCenter.Not
         @Override
         public boolean needOpen() {
             return false;
+        }
+
+        @Override
+        public long getDialogId() {
+            if (parentFragment instanceof ChatActivity) {
+                return ((ChatActivity) parentFragment).getDialogId();
+            }
+            return 0;
         }
     };
 

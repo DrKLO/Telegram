@@ -3806,7 +3806,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                         } else {
                             backgroundWidth -= AndroidUtilities.dp(9);
                         }
-                        docTitleLayout = new StaticLayout(TextUtils.ellipsize(LocaleController.getString("AttachLiveLocation", R.string.AttachLiveLocation), Theme.chat_locationTitlePaint, maxWidth, TextUtils.TruncateAt.END), Theme.chat_locationTitlePaint, maxWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
+                        docTitleLayout = new StaticLayout(TextUtils.ellipsize(LocaleController.getString("AttachLiveLocation", R.string.AttachLiveLocation), Theme.chat_locationTitlePaint, maxWidth, TextUtils.TruncateAt.END), Theme.chat_locationTitlePaint, maxWidth + AndroidUtilities.dp(2), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
 
                         updateCurrentUserAndChat();
                         if (currentUser != null) {
@@ -3821,7 +3821,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                         } else {
                             locationImageReceiver.setImage(null, null, contactAvatarDrawable, null, null, 0);
                         }
-                        infoLayout = new StaticLayout(LocaleController.formatLocationUpdateDate(messageObject.messageOwner.edit_date != 0 ? messageObject.messageOwner.edit_date : messageObject.messageOwner.date), Theme.chat_locationAddressPaint, maxWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
+                        infoLayout = new StaticLayout(TextUtils.ellipsize(LocaleController.formatLocationUpdateDate(messageObject.messageOwner.edit_date != 0 ? messageObject.messageOwner.edit_date : messageObject.messageOwner.date), Theme.chat_locationAddressPaint, maxWidth + AndroidUtilities.dp(2), TextUtils.TruncateAt.END), Theme.chat_locationAddressPaint, maxWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
                     } else if (!TextUtils.isEmpty(messageObject.messageOwner.media.title)) {
                         if (AndroidUtilities.isTablet()) {
                             backgroundWidth = Math.min(AndroidUtilities.getMinTabletSide() - AndroidUtilities.dp(isChat && messageObject.needDrawAvatar() && !messageObject.isOutOwner() ? 102 : 50), AndroidUtilities.dp(252 + 37));
@@ -4850,6 +4850,10 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 parent.invalidate();
             }
         }
+    }
+
+    public boolean isHighlightedAnimated() {
+        return isHighlightedAnimated;
     }
 
     public void setHighlightedAnimated() {
@@ -9251,6 +9255,10 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 object.type == MessageObject.TYPE_ROUND_VIDEO) {
             return object.getApproximateHeight();
         }
+        photoImage.setIgnoreImageSet(true);
+        avatarImage.setIgnoreImageSet(true);
+        replyImageReceiver.setIgnoreImageSet(true);
+        locationImageReceiver.setIgnoreImageSet(true);
 
         if (groupedMessages != null) {
             int h = 0;
@@ -9266,6 +9274,10 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         }
 
         setMessageContent(object, groupedMessages, false, false);
+        photoImage.setIgnoreImageSet(false);
+        avatarImage.setIgnoreImageSet(false);
+        replyImageReceiver.setIgnoreImageSet(false);
+        locationImageReceiver.setIgnoreImageSet(false);
         return totalHeight + keyboardHeight;
     }
 

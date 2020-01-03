@@ -284,6 +284,10 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
         default boolean isInScheduleMode() {
             return false;
         }
+
+        default long getDialogId() {
+            return 0;
+        }
     }
 
     public interface DragListener {
@@ -337,6 +341,11 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
             if (gifAdapter != null) {
                 gifAdapter.notifyDataSetChanged();
             }
+        }
+
+        @Override
+        public long getDialogId() {
+            return delegate.getDialogId();
         }
     };
 
@@ -695,6 +704,8 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
 
             backgroundDrawable = getResources().getDrawable(R.drawable.stickers_back_all);
             arrowDrawable = getResources().getDrawable(R.drawable.stickers_back_arrow);
+            Theme.setDrawableColor(backgroundDrawable, Theme.getColor(Theme.key_dialogBackground));
+            Theme.setDrawableColor(arrowDrawable, Theme.getColor(Theme.key_dialogBackground));
         }
 
         @Override
@@ -2837,6 +2848,10 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
             emojiTabs.setBackgroundColor(Theme.getColor(Theme.key_chat_emojiPanelBackground));
             emojiTabsShadow.setBackgroundColor(Theme.getColor(Theme.key_chat_emojiPanelShadowLine));
         }
+        if (pickerView != null) {
+            Theme.setDrawableColor(pickerView.backgroundDrawable, Theme.getColor(Theme.key_dialogBackground));
+            Theme.setDrawableColor(pickerView.arrowDrawable, Theme.getColor(Theme.key_dialogBackground));
+        }
         for (int a = 0; a < 3; a++) {
             SearchField searchField;
             if (a == 0) {
@@ -3337,6 +3352,9 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
                         child.invalidate();
                     }
                 }
+            }
+            if (pickerView != null) {
+                pickerView.invalidate();
             }
         } else if (id == NotificationCenter.newEmojiSuggestionsAvailable) {
             if (emojiGridView != null && needEmojiSearch && (emojiSearchField.progressDrawable.isAnimating() || emojiGridView.getAdapter() == emojiSearchAdapter) && !TextUtils.isEmpty(emojiSearchAdapter.lastSearchEmojiString)) {

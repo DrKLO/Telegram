@@ -77,6 +77,7 @@ public class ContentPreviewViewer {
         boolean needSend();
         boolean canSchedule();
         boolean isInScheduleMode();
+        long getDialogId();
 
         default boolean needOpen() {
             return true;
@@ -188,7 +189,7 @@ public class ContentPreviewViewer {
                         TLRPC.Document sticker = currentDocument;
                         Object parent = parentObject;
                         ContentPreviewViewerDelegate stickerPreviewViewerDelegate = delegate;
-                        AlertsCreator.createScheduleDatePickerDialog(parentActivity, 0, (notify, scheduleDate) -> stickerPreviewViewerDelegate.sendSticker(sticker, parent, notify, scheduleDate));
+                        AlertsCreator.createScheduleDatePickerDialog(parentActivity, stickerPreviewViewerDelegate.getDialogId(), (notify, scheduleDate) -> stickerPreviewViewerDelegate.sendSticker(sticker, parent, notify, scheduleDate));
                     }
                 });
                 builder.setDimBehind(false);
@@ -271,7 +272,7 @@ public class ContentPreviewViewer {
                         TLRPC.BotInlineResult result = inlineResult;
                         Object parent = parentObject;
                         ContentPreviewViewerDelegate stickerPreviewViewerDelegate = delegate;
-                        AlertsCreator.createScheduleDatePickerDialog(parentActivity, 0, (notify, scheduleDate) -> stickerPreviewViewerDelegate.sendGif(document != null ? document : result, notify, scheduleDate));
+                        AlertsCreator.createScheduleDatePickerDialog(parentActivity, stickerPreviewViewerDelegate.getDialogId(), (notify, scheduleDate) -> stickerPreviewViewerDelegate.sendGif(document != null ? document : result, notify, scheduleDate));
                     }
                 });
                 visibleDialog.setDimBehind(false);

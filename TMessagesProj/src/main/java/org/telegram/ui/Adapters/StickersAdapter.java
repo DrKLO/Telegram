@@ -223,11 +223,13 @@ public class StickersAdapter extends RecyclerListView.SelectionAdapter implement
         String originalEmoji = emoji.toString();
         int length = emoji.length();
         for (int a = 0; a < length; a++) {
-            if (a < length - 1 && (emoji.charAt(a) == 0xD83C && emoji.charAt(a + 1) >= 0xDFFB && emoji.charAt(a + 1) <= 0xDFFF || emoji.charAt(a) == 0x200D && (emoji.charAt(a + 1) == 0x2640 || emoji.charAt(a + 1) == 0x2642))) {
+            char ch = emoji.charAt(a);
+            char nch = a < length - 1 ? emoji.charAt(a + 1) : 0;
+            if (a < length - 1 && ch == 0xD83C && nch >= 0xDFFB && nch <= 0xDFFF) {
                 emoji = TextUtils.concat(emoji.subSequence(0, a), emoji.subSequence(a + 2, emoji.length()));
                 length -= 2;
                 a--;
-            } else if (emoji.charAt(a) == 0xfe0f) {
+            } else if (ch == 0xfe0f) {
                 emoji = TextUtils.concat(emoji.subSequence(0, a), emoji.subSequence(a + 1, emoji.length()));
                 length--;
                 a--;

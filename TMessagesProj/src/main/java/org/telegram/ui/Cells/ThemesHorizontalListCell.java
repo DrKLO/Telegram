@@ -201,6 +201,9 @@ public class ThemesHorizontalListCell extends RecyclerListView implements Notifi
         }
 
         private boolean parseTheme() {
+            if (themeInfo == null || themeInfo.pathToFile == null) {
+                return false;
+            }
             boolean finished = false;
             File file = new File(themeInfo.pathToFile);
             try (FileInputStream stream = new FileInputStream(file)) {

@@ -2836,18 +2836,29 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
         recordReplyingMessageObject = reply_to_msg;
     }
 
+    public void requestAudioFocus(boolean request) {
+        if (request) {
+            if (!hasRecordAudioFocus) {
+                int result = NotificationsController.audioManager.requestAudioFocus(audioRecordFocusChangedListener, AudioManager.STREAM_MUSIC, AudioManager.AUDIOFOCUS_GAIN_TRANSIENT);
+                if (result == AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
+                    hasRecordAudioFocus = true;
+                }
+            }
+        } else {
+            if (hasRecordAudioFocus) {
+                NotificationsController.audioManager.abandonAudioFocus(audioRecordFocusChangedListener);
+                hasRecordAudioFocus = false;
+            }
+        }
+    }
+
     public void startRecording(final int currentAccount, final long dialog_id, final MessageObject reply_to_msg, int guid) {
         boolean paused = false;
         if (playingMessageObject != null && isPlayingMessage(playingMessageObject) && !isMessagePaused()) {
             paused = true;
         }
 
-        if (!hasRecordAudioFocus) {
-            int result = NotificationsController.audioManager.requestAudioFocus(audioRecordFocusChangedListener, AudioManager.STREAM_MUSIC, AudioManager.AUDIOFOCUS_GAIN_TRANSIENT);
-            if (result == AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
-                hasRecordAudioFocus = true;
-            }
-        }
+        requestAudioFocus(true);
 
         try {
             feedbackView.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
@@ -2985,20 +2996,14 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                         NotificationCenter.getInstance(recordingCurrentAccount).postNotificationName(NotificationCenter.audioRecordTooShort, recordingGuid, false);
                         recordingAudioFileToSend.delete();
                     }
-                    if (hasRecordAudioFocus) {
-                        NotificationsController.audioManager.abandonAudioFocus(audioRecordFocusChangedListener);
-                        hasRecordAudioFocus = false;
-                    }
+                    requestAudioFocus(false);
                 });
             });
         } else {
             if (recordingAudioFile != null) {
                 recordingAudioFile.delete();
             }
-            if (hasRecordAudioFocus) {
-                NotificationsController.audioManager.abandonAudioFocus(audioRecordFocusChangedListener);
-                hasRecordAudioFocus = false;
-            }
+            requestAudioFocus(false);
         }
         try {
             if (audioRecorder != null) {

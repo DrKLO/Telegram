@@ -55,6 +55,7 @@ jlong Java_org_telegram_ui_Components_RLottieDrawable_create(JNIEnv *env, jclass
     LottieInfo *info = new LottieInfo();
 
     std::map<int32_t, int32_t> *colors = nullptr;
+    int color = 0;
     if (colorReplacement != nullptr) {
         jint *arr = env->GetIntArrayElements(colorReplacement, 0);
         if (arr != nullptr) {
@@ -62,6 +63,9 @@ jlong Java_org_telegram_ui_Components_RLottieDrawable_create(JNIEnv *env, jclass
             colors = new std::map<int32_t, int32_t>();
             for (int32_t a = 0; a < len / 2; a++) {
                 (*colors)[arr[a * 2]] = arr[a * 2 + 1];
+                if (color == 0) {
+                    color = arr[a * 2 + 1];
+                }
             }
             env->ReleaseIntArrayElements(colorReplacement, arr, 0);
         }
@@ -93,10 +97,14 @@ jlong Java_org_telegram_ui_Components_RLottieDrawable_create(JNIEnv *env, jclass
             mkdir(dir.c_str(), 0777);
             info->cacheFile.insert(index, "/acache");
         }
+        info->cacheFile += std::to_string(w) + "_" + std::to_string(h);
+        if (color != 0) {
+            info->cacheFile += "_" + std::to_string(color);
+        }
         if (limitFps) {
-            info->cacheFile += std::to_string(w) + "_" + std::to_string(h) + ".s.cache";
+            info->cacheFile += ".s.cache";
         } else {
-            info->cacheFile += std::to_string(w) + "_" + std::to_string(h) + ".cache";
+            info->cacheFile += ".cache";
         }
         FILE *precacheFile = fopen(info->cacheFile.c_str(), "r+");
         if (precacheFile == nullptr) {

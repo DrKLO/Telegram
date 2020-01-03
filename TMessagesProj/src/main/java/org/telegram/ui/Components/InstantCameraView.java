@@ -70,7 +70,6 @@ import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.UserConfig;
-import org.telegram.messenger.UserObject;
 import org.telegram.messenger.Utilities;
 import org.telegram.messenger.VideoEditedInfo;
 import org.telegram.messenger.camera.CameraController;
@@ -219,9 +218,9 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
                     }
                     muteAnimation = new AnimatorSet();
                     muteAnimation.playTogether(
-                            ObjectAnimator.ofFloat(muteImageView, "alpha", mute ? 1.0f : 0.0f),
-                            ObjectAnimator.ofFloat(muteImageView, "scaleX", mute ? 1.0f : 0.5f),
-                            ObjectAnimator.ofFloat(muteImageView, "scaleY", mute ? 1.0f : 0.5f));
+                            ObjectAnimator.ofFloat(muteImageView, View.ALPHA, mute ? 1.0f : 0.0f),
+                            ObjectAnimator.ofFloat(muteImageView, View.SCALE_X, mute ? 1.0f : 0.5f),
+                            ObjectAnimator.ofFloat(muteImageView, View.SCALE_Y, mute ? 1.0f : 0.5f));
                     muteAnimation.addListener(new AnimatorListenerAdapter() {
                         @Override
                         public void onAnimationEnd(Animator animation) {
@@ -327,12 +326,12 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
                 return;
             }
             switchCamera();
-            ObjectAnimator animator = ObjectAnimator.ofFloat(switchCameraButton, "scaleX", 0.0f).setDuration(100);
+            ObjectAnimator animator = ObjectAnimator.ofFloat(switchCameraButton, View.SCALE_X, 0.0f).setDuration(100);
             animator.addListener(new AnimatorListenerAdapter() {
                 @Override
                 public void onAnimationEnd(Animator animator) {
                     switchCameraButton.setImageResource(isFrontface ? R.drawable.camera_revert1 : R.drawable.camera_revert2);
-                    ObjectAnimator.ofFloat(switchCameraButton, "scaleX", 1.0f).setDuration(100).start();
+                    ObjectAnimator.ofFloat(switchCameraButton, View.SCALE_X, 1.0f).setDuration(100).start();
                 }
             });
             animator.start();
@@ -552,6 +551,7 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
         setVisibility(VISIBLE);
 
         startAnimation(true);
+        MediaController.getInstance().requestAudioFocus(true);
     }
 
     public FrameLayout getCameraContainer() {
@@ -568,18 +568,18 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
         }
         animatorSet = new AnimatorSet();
         animatorSet.playTogether(
-                ObjectAnimator.ofFloat(this, "alpha", open ? 1.0f : 0.0f),
-                ObjectAnimator.ofFloat(switchCameraButton, "alpha", open ? 1.0f : 0.0f),
-                ObjectAnimator.ofFloat(muteImageView, "alpha", 0.0f),
+                ObjectAnimator.ofFloat(this, View.ALPHA, open ? 1.0f : 0.0f),
+                ObjectAnimator.ofFloat(switchCameraButton, View.ALPHA, open ? 1.0f : 0.0f),
+                ObjectAnimator.ofFloat(muteImageView, View.ALPHA, 0.0f),
                 ObjectAnimator.ofInt(paint, "alpha", open ? 255 : 0),
-                ObjectAnimator.ofFloat(cameraContainer, "alpha", open ? 1.0f : 0.0f),
-                ObjectAnimator.ofFloat(cameraContainer, "scaleX", open ? 1.0f : 0.1f),
-                ObjectAnimator.ofFloat(cameraContainer, "scaleY", open ? 1.0f : 0.1f),
-                ObjectAnimator.ofFloat(cameraContainer, "translationY", open ? getMeasuredHeight() / 2 : 0, open ? 0 : getMeasuredHeight() / 2),
-                ObjectAnimator.ofFloat(textureOverlayView, "alpha", open ? 1.0f : 0.0f),
-                ObjectAnimator.ofFloat(textureOverlayView, "scaleX", open ? 1.0f : 0.1f),
-                ObjectAnimator.ofFloat(textureOverlayView, "scaleY", open ? 1.0f : 0.1f),
-                ObjectAnimator.ofFloat(textureOverlayView, "translationY", open ? getMeasuredHeight() / 2 : 0, open ? 0 : getMeasuredHeight() / 2)
+                ObjectAnimator.ofFloat(cameraContainer, View.ALPHA, open ? 1.0f : 0.0f),
+                ObjectAnimator.ofFloat(cameraContainer, View.SCALE_X, open ? 1.0f : 0.1f),
+                ObjectAnimator.ofFloat(cameraContainer, View.SCALE_Y, open ? 1.0f : 0.1f),
+                ObjectAnimator.ofFloat(cameraContainer, View.TRANSLATION_Y, open ? getMeasuredHeight() / 2 : 0, open ? 0 : getMeasuredHeight() / 2),
+                ObjectAnimator.ofFloat(textureOverlayView, View.ALPHA, open ? 1.0f : 0.0f),
+                ObjectAnimator.ofFloat(textureOverlayView, View.SCALE_X, open ? 1.0f : 0.1f),
+                ObjectAnimator.ofFloat(textureOverlayView, View.SCALE_Y, open ? 1.0f : 0.1f),
+                ObjectAnimator.ofFloat(textureOverlayView, View.TRANSLATION_Y, open ? getMeasuredHeight() / 2 : 0, open ? 0 : getMeasuredHeight() / 2)
         );
         if (!open) {
             animatorSet.addListener(new AnimatorListenerAdapter() {
@@ -656,6 +656,7 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
             if (scheduleDate != 0) {
                 startAnimation(false);
             }
+            MediaController.getInstance().requestAudioFocus(false);
         } else {
             cancelled = recordedTime < 800;
             recording = false;
@@ -677,6 +678,7 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
             if (cancelled) {
                 NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.audioRecordTooShort, recordingGuid, true);
                 startAnimation(false);
+                MediaController.getInstance().requestAudioFocus(false);
             }
         }
     }
@@ -720,6 +722,7 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
             cameraFile.delete();
             cameraFile = null;
         }
+        MediaController.getInstance().requestAudioFocus(false);
         startAnimation(false);
     }
 
@@ -921,15 +924,13 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
 
     public class CameraGLThread extends DispatchQueue {
 
-        private final int EGL_CONTEXT_CLIENT_VERSION = 0x3098;
-        private final int EGL_OPENGL_ES2_BIT = 4;
+        private final static int EGL_CONTEXT_CLIENT_VERSION = 0x3098;
+        private final static int EGL_OPENGL_ES2_BIT = 4;
         private SurfaceTexture surfaceTexture;
         private EGL10 egl10;
         private EGLDisplay eglDisplay;
-        private EGLConfig eglConfig;
         private EGLContext eglContext;
         private EGLSurface eglSurface;
-        private GL gl;
         private boolean initied;
 
         private CameraSession currentSession;
@@ -946,8 +947,6 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
         private int textureMatrixHandle;
         private int positionHandle;
         private int textureHandle;
-
-        private int rotationAngle;
 
         private boolean recording;
 
@@ -1011,6 +1010,7 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
                     EGL10.EGL_STENCIL_SIZE, 0,
                     EGL10.EGL_NONE
             };
+            EGLConfig eglConfig;
             if (!egl10.eglChooseConfig(eglDisplay, configSpec, configs, 1, configsCount)) {
                 if (BuildVars.LOGS_ENABLED) {
                     FileLog.e("eglChooseConfig failed " + GLUtils.getEGLErrorString(egl10.eglGetError()));
@@ -1058,7 +1058,7 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
                 finish();
                 return false;
             }
-            gl = eglContext.getGL();
+            GL gl = eglContext.getGL();
 
             float tX = 1.0f / scaleX / 2.0f;
             float tY = 1.0f / scaleY / 2.0f;
@@ -1277,7 +1277,7 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
                     }
                     CameraSession newSession = (CameraSession) inputMessage.obj;
                     if (currentSession == newSession) {
-                        rotationAngle = currentSession.getWorldAngle();
+                        int rotationAngle = currentSession.getWorldAngle();
                         android.opengl.Matrix.setIdentityM(mMVPMatrix, 0);
                         if (rotationAngle != 0) {
                             android.opengl.Matrix.rotateM(mMVPMatrix, 0, rotationAngle, 0, 0, 1);
@@ -1917,9 +1917,9 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
 
                         AnimatorSet animatorSet = new AnimatorSet();
                         animatorSet.playTogether(
-                                ObjectAnimator.ofFloat(switchCameraButton, "alpha", 0.0f),
+                                ObjectAnimator.ofFloat(switchCameraButton, View.ALPHA, 0.0f),
                                 ObjectAnimator.ofInt(paint, "alpha", 0),
-                                ObjectAnimator.ofFloat(muteImageView, "alpha", 1.0f));
+                                ObjectAnimator.ofFloat(muteImageView, View.ALPHA, 1.0f));
                         animatorSet.setDuration(180);
                         animatorSet.setInterpolator(new DecelerateInterpolator());
                         animatorSet.start();
@@ -1927,6 +1927,7 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
                         NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.audioDidSent, recordingGuid, videoEditedInfo, videoFile.getAbsolutePath());
                     }
                     didWriteData(videoFile, 0, true);
+                    MediaController.getInstance().requestAudioFocus(false);
                 });
             } else {
                 FileLoader.getInstance(currentAccount).cancelUploadFile(videoFile.getAbsolutePath(), false);

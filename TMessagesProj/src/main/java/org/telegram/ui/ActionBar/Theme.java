@@ -3495,7 +3495,7 @@ public class Theme {
                 new int[]    {                            34,                            47,                            52,                            48,                            54,          0,          0,          0,          0,          0,          0,          0,          0,          0 }
                 );
         themes.add(themeInfo);
-        themesDict.put("Night", currentNightTheme = themeInfo);
+        themesDict.put("Night", themeInfo);
 
         String themesString = themeConfig.getString("themes2", null);
 
@@ -3710,7 +3710,7 @@ public class Theme {
                 oldEditorNew.commit();
             }
 
-            selectedAutoNightType = preferences.getInt("selectedAutoNightType", AUTO_NIGHT_TYPE_NONE);
+            selectedAutoNightType = preferences.getInt("selectedAutoNightType", Build.VERSION.SDK_INT >= 29 ? AUTO_NIGHT_TYPE_SYSTEM : AUTO_NIGHT_TYPE_NONE);
             autoNightScheduleByLocation = preferences.getBoolean("autoNightScheduleByLocation", false);
             autoNightBrighnessThreshold = preferences.getFloat("autoNightBrighnessThreshold", 0.25f);
             autoNightDayStartTime = preferences.getInt("autoNightDayStartTime", 22 * 60);

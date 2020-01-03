@@ -164,6 +164,8 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
 
     private String currentExt;
 
+    private boolean ignoreImageSet;
+
     private int currentGuid;
 
     private int currentSize;
@@ -239,6 +241,10 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
         strippedLocation = location;
     }
 
+    public void setIgnoreImageSet(boolean value) {
+        ignoreImageSet = value;
+    }
+
     public ImageLocation getStrippedLocation() {
         return strippedLocation;
     }
@@ -268,6 +274,9 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
     }
 
     public void setImage(ImageLocation mediaLocation, String mediaFilter, ImageLocation imageLocation, String imageFilter, ImageLocation thumbLocation, String thumbFilter, Drawable thumb, int size, String ext, Object parentObject, int cacheType) {
+        if (ignoreImageSet) {
+            return;
+        }
         if (crossfadeWithOldImage && setImageBackup != null && setImageBackup.isWebfileSet()) {
             setBackupImage();
         }

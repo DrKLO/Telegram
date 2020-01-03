@@ -837,7 +837,11 @@ public class ChatRightsEditActivity extends BaseFragment {
                     rightsShadowRow = rowCount++;
                     rankHeaderRow = rowCount++;
                     rankRow = rowCount++;
-                    rankInfoRow = rowCount++;
+                    if (currentChat.creator && UserObject.isUserSelf(currentUser)) {
+                        rankInfoRow = rowCount++;
+                    } else {
+                        cantEditInfoRow = rowCount++;
+                    }
                 } else {
                     cantEditInfoRow = rowCount++;
                 }

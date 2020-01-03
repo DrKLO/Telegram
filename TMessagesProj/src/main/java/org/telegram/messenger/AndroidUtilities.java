@@ -1335,10 +1335,10 @@ public class AndroidUtilities {
 
     public static void checkDisplaySize(Context context, Configuration newConfiguration) {
         try {
-            int oldDensity = (int) density;
+            float oldDensity = density;
             density = context.getResources().getDisplayMetrics().density;
-            int newDensity = (int) density;
-            if (firstConfigurationWas && oldDensity != newDensity) {
+            float newDensity = density;
+            if (firstConfigurationWas && Math.abs(oldDensity - newDensity) > 0.001) {
                 Theme.reloadAllResources(context);
             }
             firstConfigurationWas = true;
@@ -2216,6 +2216,16 @@ public class AndroidUtilities {
             }
         } else {
             return String.format(Locale.US, "%d:%02d:%02d", h, m, s);
+        }
+    }
+
+    public static String formatDurationNoHours(int duration, boolean isLong) {
+        int m = duration / 60;
+        int s = duration % 60;
+        if (isLong) {
+            return String.format(Locale.US, "%02d:%02d", m, s);
+        } else {
+            return String.format(Locale.US, "%d:%02d", m, s);
         }
     }
 

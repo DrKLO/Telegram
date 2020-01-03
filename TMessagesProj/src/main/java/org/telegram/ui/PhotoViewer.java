@@ -2531,6 +2531,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         qualityPicker.updateSelectedCount(0, false);
         qualityPicker.setTranslationY(AndroidUtilities.dp(120));
         qualityPicker.doneButton.setText(LocaleController.getString("Done", R.string.Done).toUpperCase());
+        qualityPicker.doneButton.setTextColor(Theme.getColor(Theme.key_dialogFloatingButton));
         containerView.addView(qualityPicker, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.BOTTOM | Gravity.LEFT));
         qualityPicker.cancelButton.setOnClickListener(view -> {
             selectedCompression = previousCompression;
@@ -2664,7 +2665,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             }
         };
         pickerViewSendButton.setScaleType(ImageView.ScaleType.CENTER);
-        Drawable drawable = Theme.createSimpleSelectorCircleDrawable(AndroidUtilities.dp(56), 0xff66bffa, 0xff66bffa);
+        Drawable drawable = Theme.createSimpleSelectorCircleDrawable(AndroidUtilities.dp(56), Theme.getColor(Theme.key_dialogFloatingButton), Theme.getColor(Build.VERSION.SDK_INT >= 21 ? Theme.key_dialogFloatingButtonPressed : Theme.key_dialogFloatingButton));
         pickerViewSendButton.setBackgroundDrawable(drawable);
         pickerViewSendButton.setColorFilter(new PorterDuffColorFilter(0xffffffff, PorterDuff.Mode.MULTIPLY));
         pickerViewSendButton.setImageResource(R.drawable.attach_send);
@@ -3023,7 +3024,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             textView.setMinWidth(AndroidUtilities.dp(64));
             textView.setTag(Dialog.BUTTON_POSITIVE);
             textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-            textView.setTextColor(0xff49bcf2);
+            textView.setTextColor(Theme.getColor(Theme.key_dialogFloatingButton));
             textView.setGravity(Gravity.CENTER);
             textView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
             textView.setText(LocaleController.getString("Done", R.string.Done).toUpperCase());
@@ -3049,7 +3050,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                 } else if (object1 instanceof MediaController.SearchImage) {
                     ((MediaController.SearchImage) object1).ttl = seconds;
                 }
-                timeItem.setColorFilter(seconds != 0 ? new PorterDuffColorFilter(0xff3dadee, PorterDuff.Mode.MULTIPLY) : null);
+                timeItem.setColorFilter(seconds != 0 ? new PorterDuffColorFilter(Theme.getColor(Theme.key_dialogFloatingButton), PorterDuff.Mode.MULTIPLY) : null);
                 if (!checkImageView.isChecked()) {
                     checkImageView.callOnClick();
                 }
@@ -3059,7 +3060,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             textView.setMinWidth(AndroidUtilities.dp(64));
             textView.setTag(Dialog.BUTTON_NEGATIVE);
             textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-            textView.setTextColor(0xff49bcf2);
+            textView.setTextColor(Theme.getColor(Theme.key_dialogFloatingButton));
             textView.setGravity(Gravity.CENTER);
             textView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
             textView.setText(LocaleController.getString("Cancel", R.string.Cancel).toUpperCase());
@@ -3142,7 +3143,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         checkImageView.setHasBorder(true);
         checkImageView.setSize(40);
         checkImageView.setCheckOffset(AndroidUtilities.dp(1));
-        checkImageView.setColor(0xff66bffa, 0xffffffff);
+        checkImageView.setColor(Theme.getColor(Theme.key_dialogFloatingButton), 0xffffffff);
         checkImageView.setVisibility(View.GONE);
         containerView.addView(checkImageView, LayoutHelper.createFrame(40, 40, Gravity.RIGHT | Gravity.TOP, 0, rotation == Surface.ROTATION_270 || rotation == Surface.ROTATION_90 ? 58 : 68, 10, 0));
         if (Build.VERSION.SDK_INT >= 21) {
@@ -3187,7 +3188,6 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         selectedPhotosListView.setBackgroundColor(0x7f000000);
         selectedPhotosListView.setPadding(0, AndroidUtilities.dp(3), 0, AndroidUtilities.dp(3));
         selectedPhotosListView.setLayoutManager(new LinearLayoutManager(parentActivity, LinearLayoutManager.HORIZONTAL, false) {
-
             @Override
             public void smoothScrollToPosition(RecyclerView recyclerView, RecyclerView.State state, int position) {
                 LinearSmoothScrollerEnd linearSmoothScroller = new LinearSmoothScrollerEnd(recyclerView.getContext());
@@ -4012,6 +4012,55 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         }
     }
 
+    public void updateColors() {
+        int color = Theme.getColor(Theme.key_dialogFloatingButton);
+        if (pickerViewSendButton != null) {
+            Drawable drawable = pickerViewSendButton.getBackground();
+            Theme.setSelectorDrawableColor(drawable, color, false);
+            Theme.setSelectorDrawableColor(drawable, Theme.getColor(Build.VERSION.SDK_INT >= 21 ? Theme.key_dialogFloatingButtonPressed : Theme.key_dialogFloatingButton), true);
+        }
+        if (checkImageView != null) {
+            checkImageView.setColor(Theme.getColor(Theme.key_dialogFloatingButton), 0xffffffff);
+        }
+        PorterDuffColorFilter filter = new PorterDuffColorFilter(color, PorterDuff.Mode.MULTIPLY);
+        if (timeItem != null && timeItem.getColorFilter() != null) {
+            timeItem.setColorFilter(filter);
+        }
+        if (paintItem != null && paintItem.getColorFilter() != null) {
+            paintItem.setColorFilter(filter);
+        }
+        if (cropItem != null && cropItem.getColorFilter() != null) {
+            cropItem.setColorFilter(filter);
+        }
+        if (tuneItem != null && tuneItem.getColorFilter() != null) {
+            tuneItem.setColorFilter(filter);
+        }
+        if (muteItem != null && muteItem.getColorFilter() != null) {
+            muteItem.setColorFilter(filter);
+        }
+        if (editorDoneLayout != null) {
+            editorDoneLayout.doneButton.setTextColor(color);
+        }
+        if (qualityPicker != null) {
+            qualityPicker.doneButton.setTextColor(color);
+        }
+        if (photoPaintView != null) {
+            photoPaintView.updateColors();
+        }
+        if (photoFilterView != null) {
+            photoFilterView.updateColors();
+        }
+        if (selectedPhotosListView != null) {
+            int count = selectedPhotosListView.getChildCount();
+            for (int a = 0; a < count; a++) {
+                View view = selectedPhotosListView.getChildAt(a);
+                if (view instanceof PhotoPickerPhotoCell) {
+                    ((PhotoPickerPhotoCell) view).updateColors();
+                }
+            }
+        }
+    }
+
     public void injectVideoPlayer(VideoPlayer player) {
         injectingVideoPlayer = player;
     }
@@ -4492,13 +4541,13 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                         entry.stickers.addAll(stickers);
                     }
                     if (currentEditMode == 1) {
-                        cropItem.setColorFilter(new PorterDuffColorFilter(0xff3dadee, PorterDuff.Mode.MULTIPLY));
+                        cropItem.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_dialogFloatingButton), PorterDuff.Mode.MULTIPLY));
                         entry.isCropped = true;
                     } else if (currentEditMode == 2) {
-                        tuneItem.setColorFilter(new PorterDuffColorFilter(0xff3dadee, PorterDuff.Mode.MULTIPLY));
+                        tuneItem.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_dialogFloatingButton), PorterDuff.Mode.MULTIPLY));
                         entry.isFiltered = true;
                     } else if (currentEditMode == 3) {
-                        paintItem.setColorFilter(new PorterDuffColorFilter(0xff3dadee, PorterDuff.Mode.MULTIPLY));
+                        paintItem.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_dialogFloatingButton), PorterDuff.Mode.MULTIPLY));
                         entry.isPainted = true;
                     }
                     if (savedFilterState != null) {
@@ -4517,13 +4566,13 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                         entry.stickers.addAll(stickers);
                     }
                     if (currentEditMode == 1) {
-                        cropItem.setColorFilter(new PorterDuffColorFilter(0xff3dadee, PorterDuff.Mode.MULTIPLY));
+                        cropItem.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_dialogFloatingButton), PorterDuff.Mode.MULTIPLY));
                         entry.isCropped = true;
                     } else if (currentEditMode == 2) {
-                        tuneItem.setColorFilter(new PorterDuffColorFilter(0xff3dadee, PorterDuff.Mode.MULTIPLY));
+                        tuneItem.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_dialogFloatingButton), PorterDuff.Mode.MULTIPLY));
                         entry.isFiltered = true;
                     } else if (currentEditMode == 3) {
-                        paintItem.setColorFilter(new PorterDuffColorFilter(0xff3dadee, PorterDuff.Mode.MULTIPLY));
+                        paintItem.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_dialogFloatingButton), PorterDuff.Mode.MULTIPLY));
                         entry.isPainted = true;
                     }
                     if (savedFilterState != null) {
@@ -4729,7 +4778,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             photoCropView.onAppear();
 
             editorDoneLayout.doneButton.setText(LocaleController.getString("Crop", R.string.Crop));
-            editorDoneLayout.doneButton.setTextColor(0xff51bdf3);
+            editorDoneLayout.doneButton.setTextColor(Theme.getColor(Theme.key_dialogFloatingButton));
 
             changeModeAnimation = new AnimatorSet();
             ArrayList<Animator> arrayList = new ArrayList<>();
@@ -6169,7 +6218,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             }
 
             updateCaptionTextForCurrentPhoto(object);
-            PorterDuffColorFilter filter = new PorterDuffColorFilter(0xff3dadee, PorterDuff.Mode.MULTIPLY);
+            PorterDuffColorFilter filter = new PorterDuffColorFilter(Theme.getColor(Theme.key_dialogFloatingButton), PorterDuff.Mode.MULTIPLY);
             timeItem.setColorFilter(ttl != 0 ?  filter : null);
             paintItem.setColorFilter(isPainted ? filter : null);
             cropItem.setColorFilter(isCropped ? filter : null);
@@ -8941,7 +8990,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             if (muteVideo) {
                 actionBar.setSubtitle(null);
                 muteItem.setImageResource(R.drawable.volume_off);
-                muteItem.setColorFilter(new PorterDuffColorFilter(0xff3dadee, PorterDuff.Mode.MULTIPLY));
+                muteItem.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_dialogFloatingButton), PorterDuff.Mode.MULTIPLY));
                 if (compressItem.getTag() != null) {
                     compressItem.setAlpha(0.5f);
                 }

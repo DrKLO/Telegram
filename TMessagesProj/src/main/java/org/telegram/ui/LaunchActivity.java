@@ -260,6 +260,9 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                     ArticleViewer.getInstance().updateThemeColors(value);
                 }
                 drawerLayoutContainer.setBehindKeyboardColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+                if (PhotoViewer.hasInstance()) {
+                    PhotoViewer.getInstance().updateColors();
+                }
             }
         };
 
@@ -1014,7 +1017,14 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                                 Uri uri = (Uri) intent.getExtras().get(Intent.EXTRA_STREAM);
                                 if (uri != null) {
                                     contactsToSend = AndroidUtilities.loadVCardFromStream(uri, currentAccount, false, null, null);
-                                    contactsToSendUri = uri;
+                                    if (contactsToSend.size() > 5) {
+                                        contactsToSend = null;
+                                        documentsUrisArray = new ArrayList<>();
+                                        documentsUrisArray.add(uri);
+                                        documentsMimeType = type;
+                                    } else {
+                                        contactsToSendUri = uri;
+                                    }
                                 } else {
                                     error = true;
                                 }
