@@ -6070,7 +6070,7 @@ public class MessagesController extends BaseController implements NotificationCe
                     dialogs.messages.addAll(res.messages);
                     dialogs.count = 1;
                     processDialogsUpdate(dialogs, null);
-                    getMessagesStorage().putMessages(res.messages, true, true, false, getDownloadController().getAutodownloadMask(), true);
+                    getMessagesStorage().putMessages(res.messages, true, true, false, getDownloadController().getAutodownloadMask(), true, false);
                 } else {
                     AndroidUtilities.runOnUIThread(() -> {
                         TLRPC.Dialog currentDialog = dialogs_dict.get(dialog.id);
