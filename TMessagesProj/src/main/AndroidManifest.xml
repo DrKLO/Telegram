@@ -247,15 +247,6 @@
             android:resizeableActivity="false"
             android:windowSoftInputMode="adjustResize|stateHidden">
         </activity>
-        <activity
-            android:name=".GoogleVoiceClientActivity"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="com.google.android.voicesearch.SEND_MESSAGE_TO_CONTACTS" />
-                <category android:name="android.intent.category.DEFAULT" />
-                <data android:mimeType="text/plain" />
-            </intent-filter>
-        </activity>
         <activity android:name="org.telegram.ui.VoIPPermissionActivity"
                   android:configChanges="keyboard|keyboardHidden|orientation|screenSize|uiMode"
                   android:taskAffinity="${applicationId}.voip"
@@ -327,7 +318,6 @@
             android:foregroundServiceType="location"
             android:enabled="true"/>
         <service android:name=".voip.VoIPService" android:enabled="true" android:foregroundServiceType="mediaProjection|camera|microphone|mediaPlayback"/>
-        <service android:name=".GoogleVoiceClientService"/>
         <service android:name=".MusicPlayerService" android:exported="true" android:enabled="true" android:foregroundServiceType="mediaPlayback"/>
         <service android:name=".MusicBrowserService" android:exported="true">
             <intent-filter>
