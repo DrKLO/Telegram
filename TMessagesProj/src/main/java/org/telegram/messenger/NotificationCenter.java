@@ -133,7 +133,7 @@ public class NotificationCenter {
     public static final int audioRouteChanged = totalEvents++;
 
     public static final int didStartedCall = totalEvents++;
-    public static final int didEndedCall = totalEvents++;
+    public static final int didEndCall = totalEvents++;
     public static final int closeInCallActivity = totalEvents++;
 
     public static final int appDidLogout = totalEvents++;

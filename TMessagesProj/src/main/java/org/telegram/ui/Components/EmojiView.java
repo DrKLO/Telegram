@@ -830,7 +830,7 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
             protected void onMeasure(int widthSpec, int heightSpec) {
                 ignoreLayout = true;
                 int width = MeasureSpec.getSize(widthSpec);
-                emojiLayoutManager.setSpanCount(width / AndroidUtilities.dp(AndroidUtilities.isTablet() ? 60 : 45));
+                emojiLayoutManager.setSpanCount(Math.max(1, width / AndroidUtilities.dp(AndroidUtilities.isTablet() ? 60 : 45)));
                 ignoreLayout = false;
                 super.onMeasure(widthSpec, heightSpec);
             }

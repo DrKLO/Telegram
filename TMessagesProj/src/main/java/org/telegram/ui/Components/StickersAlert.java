@@ -809,6 +809,7 @@ public class StickersAlert extends BottomSheet implements NotificationCenter.Not
             @Override
             public void onAnimationEnd(Animator animation) {
                 stickerPreviewLayout.setVisibility(View.GONE);
+                stickerImageView.setImageDrawable(null);
             }
         });
         animatorSet.start();

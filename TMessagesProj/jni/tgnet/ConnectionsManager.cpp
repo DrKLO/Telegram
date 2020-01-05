@@ -197,9 +197,12 @@ void ConnectionsManager::select() {
         EventObject *eventObject = (EventObject *) epollEvents[a].data.ptr;
         eventObject->onEvent(epollEvents[a].events);
     }
-    size_t count = activeConnections.size();
-    for (uint32_t a = 0; a < count; a++) {
-        activeConnections[a]->checkTimeout(now);
+    for (std::vector<ConnectionSocket *>::iterator iter = activeConnections.begin(); iter != activeConnections.end();) {
+        if ((*iter)->checkTimeout(now)) {
+            iter = activeConnections.erase(iter);
+        } else {
+            iter++;
+        }
     }
 
     Datacenter *datacenter = getDatacenterWithId(currentDatacenterId);
@@ -2225,7 +2228,7 @@ void ConnectionsManager::processRequestQueue(uint32_t connectionTypes, uint32_t 
                     uint32_t retryMax = 10;
                     if (!(request->requestFlags & RequestFlagForceDownload)) {
                         if (request->failedByFloodWait) {
-                            retryMax = 1;
+                            retryMax = 2;
                         } else {
                             retryMax = 6;
                         }

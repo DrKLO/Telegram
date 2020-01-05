@@ -431,9 +431,8 @@ bool LOTLayerItem::resolveKeyPath(LOTKeyPath &keyPath, uint depth,
     }
 
     if (!keyPath.skip(name())) {
-        if (keyPath.fullyResolvesTo(name(), depth) &&
-            transformProp(value.property())) {
-            //@TODO handle propery update.
+        if (keyPath.fullyResolvesTo(name(), depth) && transformProp(value.property())) {
+            mDirtyFlag = DirtyFlagBit::All;
         }
     }
     return true;
@@ -445,7 +444,9 @@ bool LOTShapeLayerItem::resolveKeyPath(LOTKeyPath &keyPath, uint depth,
     if (LOTLayerItem::resolveKeyPath(keyPath, depth, value)) {
         if (keyPath.propagate(name(), depth)) {
             uint newDepth = keyPath.nextDepth(name(), depth);
-            mRoot->resolveKeyPath(keyPath, newDepth, value);
+            if (mRoot->resolveKeyPath(keyPath, newDepth, value)) {
+                mDirtyFlag = DirtyFlagBit::All;
+            }
         }
         return true;
     }
@@ -459,7 +460,9 @@ bool LOTCompLayerItem::resolveKeyPath(LOTKeyPath &keyPath, uint depth,
         if (keyPath.propagate(name(), depth)) {
             uint newDepth = keyPath.nextDepth(name(), depth);
             for (const auto &layer : mLayers) {
-                layer->resolveKeyPath(keyPath, newDepth, value);
+                if (layer->resolveKeyPath(keyPath, newDepth, value)) {
+                    mDirtyFlag = DirtyFlagBit::All;
+                }
             }
         }
         return true;

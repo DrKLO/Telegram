@@ -1821,8 +1821,11 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
 
     private void setScaleToFill() {
         float bitmapWidth = centerImage.getBitmapWidth();
-        float containerWidth = getContainerViewWidth();
         float bitmapHeight = centerImage.getBitmapHeight();
+        if (bitmapWidth == 0 || bitmapHeight == 0) {
+            return;
+        }
+        float containerWidth = getContainerViewWidth();
         float containerHeight = getContainerViewHeight();
         float scaleFit = Math.min(containerHeight / bitmapHeight, containerWidth / bitmapWidth);
         float width = (int) (bitmapWidth * scaleFit);
@@ -2002,7 +2005,9 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                         animatingImageView.setTranslationX(animatingImageView.getTranslationX() - getLeftInset());
                         animationValues[0][2] = animatingImageView.getTranslationX();
                     }
-                    windowView.requestLayout();
+                    if (windowView != null) {
+                        windowView.requestLayout();
+                    }
                 }
                 containerView.setPadding(insets.getSystemWindowInsetLeft(), 0, insets.getSystemWindowInsetRight(), 0);
                 return insets.consumeSystemWindowInsets();
@@ -2669,6 +2674,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         pickerViewSendButton.setBackgroundDrawable(drawable);
         pickerViewSendButton.setColorFilter(new PorterDuffColorFilter(0xffffffff, PorterDuff.Mode.MULTIPLY));
         pickerViewSendButton.setImageResource(R.drawable.attach_send);
+        pickerViewSendButton.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_dialogFloatingIcon), PorterDuff.Mode.MULTIPLY));
         containerView.addView(pickerViewSendButton, LayoutHelper.createFrame(56, 56, Gravity.RIGHT | Gravity.BOTTOM, 0, 0, 14, 14));
         pickerViewSendButton.setContentDescription(LocaleController.getString("Send", R.string.Send));
         pickerViewSendButton.setOnClickListener(v -> {
@@ -4018,6 +4024,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             Drawable drawable = pickerViewSendButton.getBackground();
             Theme.setSelectorDrawableColor(drawable, color, false);
             Theme.setSelectorDrawableColor(drawable, Theme.getColor(Build.VERSION.SDK_INT >= 21 ? Theme.key_dialogFloatingButtonPressed : Theme.key_dialogFloatingButton), true);
+            pickerViewSendButton.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_dialogFloatingIcon), PorterDuff.Mode.MULTIPLY));
         }
         if (checkImageView != null) {
             checkImageView.setColor(Theme.getColor(Theme.key_dialogFloatingButton), 0xffffffff);

@@ -2774,6 +2774,9 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                         });
                         runningAnimation2.start();
                         updateFieldRight(0);
+                        if (delegate != null && getVisibility() == VISIBLE) {
+                            delegate.onAttachButtonHidden();
+                        }
                     }
 
                     runningAnimationType = 5;
@@ -2856,6 +2859,9 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                     }
                     if (attachLayout != null) {
                         attachLayout.setVisibility(GONE);
+                        if (delegate != null && getVisibility() == VISIBLE) {
+                            delegate.onAttachButtonHidden();
+                        }
                         updateFieldRight(0);
                     }
                     scheduleButtonHidden = false;

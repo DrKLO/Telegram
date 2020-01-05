@@ -38,7 +38,7 @@ public:
 protected:
     int32_t instanceNum;
     void onEvent(uint32_t events);
-    void checkTimeout(int64_t now);
+    bool checkTimeout(int64_t now);
     void resetLastEventTime();
     bool hasTlsHashMismatch();
     virtual void onReceivedData(NativeByteBuffer *buffer) = 0;

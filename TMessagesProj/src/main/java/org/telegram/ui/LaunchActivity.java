@@ -2421,7 +2421,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                 }
             });
             try {
-                progressDialog.showDelayed(3);
+                progressDialog.showDelayed(300);
             } catch (Exception ignore) {
 
             }
@@ -3255,9 +3255,13 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                         openThemeAccentPreview(loadingTheme, loadingThemeWallpaper, loadingThemeInfo);
                         onThemeLoadFinish();
                     } else {
+                        Theme.ThemeInfo info = loadingThemeInfo;
                         Utilities.globalQueue.postRunnable(() -> {
-                            loadingThemeInfo.createBackground(file, loadingThemeInfo.pathToWallpaper);
+                            info.createBackground(file, info.pathToWallpaper);
                             AndroidUtilities.runOnUIThread(() -> {
+                                if (loadingTheme == null) {
+                                    return;
+                                }
                                 File locFile = new File(ApplicationLoader.getFilesDirFixed(), "remote" + loadingTheme.id + ".attheme");
                                 Theme.ThemeInfo finalThemeInfo = Theme.applyThemeFile(locFile, loadingTheme.title, loadingTheme, true);
                                 if (finalThemeInfo != null) {

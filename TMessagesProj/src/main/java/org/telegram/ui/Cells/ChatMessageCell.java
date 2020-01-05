@@ -5629,6 +5629,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             needNewVisiblePart = false;
         }
         forceNotDrawTime = currentMessagesGroup != null;
+        photoImage.setPressed((isHighlightedAnimated || isHighlighted) && currentPosition != null ? 2 : 0);
         photoImage.setVisible(!PhotoViewer.isShowingImage(currentMessageObject) && !SecretMediaViewer.getInstance().isShowingImage(currentMessageObject), false);
         if (!photoImage.getVisible()) {
             mediaWasInvisible = true;
@@ -6540,6 +6541,9 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
     }
 
     public void updateButtonState(boolean ifSame, boolean animated, boolean fromSet) {
+        if (currentMessageObject == null) {
+            return;
+        }
         if (animated && (PhotoViewer.isShowingImage(currentMessageObject) || !attachedToWindow)) {
             animated = false;
         }
@@ -7964,14 +7968,15 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 Drawable drawable = a == 0 ? currentBackgroundDrawable : currentBackgroundSelectedDrawable;
                 if (drawable instanceof Theme.MessageDrawable) {
                     Theme.MessageDrawable messageDrawable = (Theme.MessageDrawable) drawable;
-                    if (parentHeight == 0) {
-                        parentHeight = AndroidUtilities.displaySize.y;
+                    int h = parentHeight;
+                    if (h == 0) {
+                        h = AndroidUtilities.displaySize.y;
                         if (getParent() instanceof View) {
                             View view = (View) getParent();
-                            parentHeight = view.getMeasuredHeight();
+                            h = view.getMeasuredHeight();
                         }
                     }
-                    messageDrawable.setTop(getTop(), parentHeight);
+                    messageDrawable.setTop(getTop(), h);
                 }
             }
             if (isHighlightedAnimated) {
@@ -9186,7 +9191,9 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             AccessibilityEvent event = AccessibilityEvent.obtain(eventType);
             event.setPackageName(getContext().getPackageName());
             event.setSource(ChatMessageCell.this, viewId);
-            getParent().requestSendAccessibilityEvent(ChatMessageCell.this, event);
+            if (getParent() != null) {
+                getParent().requestSendAccessibilityEvent(ChatMessageCell.this, event);
+            }
         }
     }
 

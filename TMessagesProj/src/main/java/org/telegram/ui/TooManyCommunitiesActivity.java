@@ -287,12 +287,8 @@ public class TooManyCommunitiesActivity extends BaseFragment {
             }).start();
 
             RecyclerListView list = searchViewContainer.getVisibility() == View.VISIBLE ? searchListView : listView;
-            //ValueAnimator listPaddingAnimator = ValueAnimator.ofFloat(listView.getPaddingBottom(), 0);
             list.hideSelector(false);
-//            listPaddingAnimator.addUpdateListener(animation -> {
-//                float v = (float) animation.getAnimatedValue();
-//
-//            });
+
             int last = ((LinearLayoutManager) list.getLayoutManager()).findLastVisibleItemPosition();
             if (last == list.getAdapter().getItemCount() - 1 || (last == list.getAdapter().getItemCount() - 2 && list == listView)) {
                 RecyclerView.ViewHolder holder = list.findViewHolderForAdapterPosition(last);

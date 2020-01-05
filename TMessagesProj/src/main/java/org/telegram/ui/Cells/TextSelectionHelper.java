@@ -1315,7 +1315,9 @@ public abstract class TextSelectionHelper<Cell extends TextSelectionHelper.Selec
             return;
         }
         CharSequence str = getTextForCopy();
-
+        if (str == null) {
+            return;
+        }
         android.content.ClipboardManager clipboard = (android.content.ClipboardManager) ApplicationLoader.applicationContext.getSystemService(Context.CLIPBOARD_SERVICE);
         android.content.ClipData clip = android.content.ClipData.newPlainText("label", str);
         clipboard.setPrimaryClip(clip);
@@ -1327,7 +1329,11 @@ public abstract class TextSelectionHelper<Cell extends TextSelectionHelper.Selec
     }
 
     protected CharSequence getTextForCopy() {
-        return getText(selectedView, false).subSequence(selectionStart, selectionEnd);
+        CharSequence text = getText(selectedView, false);
+        if (text != null) {
+            return text.subSequence(selectionStart, selectionEnd);
+        }
+        return null;
     }
 
     protected int[] offsetToCord(int offset) {
@@ -1540,14 +1546,14 @@ public abstract class TextSelectionHelper<Cell extends TextSelectionHelper.Selec
             }
 
             MessageObject selectedMessageObject = selectedView.getMessageObject();
-            if (selectedMessageObject == null) {
+            if (selectedMessageObject == null || selectedMessageObject.textLayoutBlocks == null) {
                 return;
             }
 
             if (messageObject.getId() == selectedCellId) {
                 int selectionStart = this.selectionStart;
                 int selectionEnd = this.selectionEnd;
-                if (selectedView.getMessageObject().textLayoutBlocks.size() > 1) {
+                if (selectedMessageObject.textLayoutBlocks.size() > 1) {
                     if (selectionStart < block.charactersOffset) {
                         selectionStart = block.charactersOffset;
                     }
@@ -2334,9 +2340,17 @@ public abstract class TextSelectionHelper<Cell extends TextSelectionHelper.Selec
                     int n = startViewPosition == endViewPosition ? endViewChildPosition : childCountByPosition.get(i) - 1;
                     for (int k = startViewChildPosition; k <= n; k++) {
                         CharSequence text = textByPosition.get(i + (k << 16));
+                        if (text == null) {
+                            continue;
+                        }
                         if (startViewPosition == endViewPosition && k == endViewChildPosition && k == startViewChildPosition) {
                             int e = endViewOffset;
                             int s = startViewOffset;
+                            if (e < s) {
+                                int tmp = s;
+                                s = e;
+                                e = tmp;
+                            }
                             if (s < text.length()) {
                                 if (e > text.length()) e = text.length();
                                 stringBuilder.append(text.subSequence(s, e));
@@ -2369,6 +2383,9 @@ public abstract class TextSelectionHelper<Cell extends TextSelectionHelper.Selec
                 } else if (i == endViewPosition) {
                     for (int k = 0; k <= endViewChildPosition; k++) {
                         CharSequence text = textByPosition.get(i + (k << 16));
+                        if (text == null) {
+                            continue;
+                        }
                         if (startViewPosition == endViewPosition && k == endViewChildPosition && k == startViewChildPosition) {
                             int e = endViewOffset;
                             int s = startViewOffset;

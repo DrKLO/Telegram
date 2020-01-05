@@ -3495,6 +3495,9 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
     }
 
     public void init() {
+        if (baseFragment == null) {
+            return;
+        }
         if (baseFragment instanceof ChatActivity) {
             galleryAlbumEntry = MediaController.allMediaAlbumEntry;
             TLRPC.Chat chat = ((ChatActivity) baseFragment).getCurrentChat();

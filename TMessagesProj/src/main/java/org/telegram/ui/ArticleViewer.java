@@ -884,7 +884,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
                 listView[1].setAlpha(1.0f);
                 listView[1].setTranslationX(0.0f);
                 listView[0].setBackgroundColor(backgroundPaint.getColor());
-                updateInterfaceForCurrentPage(true, 0);
+                updateInterfaceForCurrentPage(true, -1);
             } else {
                 movingPage = false;
             }

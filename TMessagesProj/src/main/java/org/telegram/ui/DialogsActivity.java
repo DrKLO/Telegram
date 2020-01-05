@@ -2535,7 +2535,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         dialogInsertFinished = 0;
         dialogChangeFinished = 0;
         AndroidUtilities.runOnUIThread(() -> {
-            if (folderId != 0 && frozenDialogsList.isEmpty()) {
+            if (folderId != 0 && (frozenDialogsList == null || frozenDialogsList.isEmpty())) {
                 listView.setEmptyView(null);
                 progressView.setVisibility(View.INVISIBLE);
                 finishFragment();

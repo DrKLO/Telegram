@@ -390,7 +390,7 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
             }
             NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.messagePlayingSpeedChanged);
             NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.didStartedCall);
-            NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.didEndedCall);
+            NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.didEndCall);
         }
     }
 
@@ -412,7 +412,7 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
             }
             NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.messagePlayingSpeedChanged);
             NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.didStartedCall);
-            NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.didEndedCall);
+            NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.didEndCall);
             if (additionalContextView != null) {
                 additionalContextView.checkVisibility();
             }
@@ -441,14 +441,12 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
                     checkLocationString();
                 }
             }
-        } else if (id == NotificationCenter.messagePlayingDidStart || id == NotificationCenter.messagePlayingPlayStateChanged || id == NotificationCenter.messagePlayingDidReset || id == NotificationCenter.didEndedCall) {
+        } else if (id == NotificationCenter.messagePlayingDidStart || id == NotificationCenter.messagePlayingPlayStateChanged || id == NotificationCenter.messagePlayingDidReset || id == NotificationCenter.didEndCall) {
             checkPlayer(false);
         } else if (id == NotificationCenter.didStartedCall) {
             checkCall(false);
         } else if (id == NotificationCenter.messagePlayingSpeedChanged) {
             updatePlaybackButton();
-        } else {
-            checkPlayer(false);
         }
     }
 

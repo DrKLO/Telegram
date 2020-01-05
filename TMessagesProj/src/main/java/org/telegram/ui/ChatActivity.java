@@ -2628,14 +2628,16 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                         MessageBackgroundDrawable backgroundDrawable = cell.getBackgroundDrawable();
                         if ((backgroundDrawable.isAnimationInProgress() || cell.isDrawingSelectionBackground()) && (position == null || (position.flags & MessageObject.POSITION_FLAG_RIGHT) != 0)) {
                             if (cell.isHighlighted() || cell.isHighlightedAnimated()) {
-                                int color = Theme.getColor(Theme.key_chat_selectedBackground);
-                                int alpha = Color.alpha(color);
-                                canvas.save();
-                                canvas.translate(0, cell.getTranslationY());
-                                Theme.chat_replyLinePaint.setColor(Theme.getColor(Theme.key_chat_selectedBackground));
-                                Theme.chat_replyLinePaint.setAlpha((int) (alpha * cell.getHightlightAlpha()));
-                                canvas.drawRect(0, cell.getTop(), getMeasuredWidth(), cell.getBottom(), Theme.chat_replyLinePaint);
-                                canvas.restore();
+                                if (position == null) {
+                                    int color = Theme.getColor(Theme.key_chat_selectedBackground);
+                                    int alpha = Color.alpha(color);
+                                    canvas.save();
+                                    canvas.translate(0, cell.getTranslationY());
+                                    Theme.chat_replyLinePaint.setColor(Theme.getColor(Theme.key_chat_selectedBackground));
+                                    Theme.chat_replyLinePaint.setAlpha((int) (alpha * cell.getHightlightAlpha()));
+                                    canvas.drawRect(0, cell.getTop(), getMeasuredWidth(), cell.getBottom(), Theme.chat_replyLinePaint);
+                                    canvas.restore();
+                                }
                             } else {
                                 backgroundDrawable.setColor(Theme.getColor(Theme.key_chat_selectedBackground));
                                 int y = (int) cell.getY();
@@ -5358,9 +5360,10 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             }
             chatScrollHelper.setScrollDirection(scrollDirection);
 
-            if (progressDialog == null) {
-                progressDialog = new AlertDialog(getParentActivity(), 3);
+            if (progressDialog != null) {
+                progressDialog.dismiss();
             }
+            progressDialog = new AlertDialog(getParentActivity(), 3);
             progressDialog.setOnCancelListener(dialog -> postponedScrollIsCanceled = true);
             progressDialog.showDelayed(400);
 
@@ -7264,7 +7267,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             if (forwardingMessages != null) {
                 ArrayList<MessageObject> messagesToForward = forwardingMessages;
                 forwardingMessages = null;
-                forwardMessages(messagesToForward, false, notify, scheduleDate != 0 && scheduleDate != 0x7ffffffe ? scheduleDate + 1 : 0);
+                forwardMessages(messagesToForward, false, notify, scheduleDate != 0 && scheduleDate != 0x7ffffffe ? scheduleDate + 1 : scheduleDate);
             }
             chatActivityEnterView.setForceShowSendButton(false, false);
             chatActivityEnterView.hideTopView(animated);
@@ -7370,9 +7373,10 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             }
         } else {
             if (pagedown) {
-                if (progressDialog == null) {
-                    progressDialog = new AlertDialog(getParentActivity(), 3);
+                if (progressDialog != null) {
+                    progressDialog.dismiss();
                 }
+                progressDialog = new AlertDialog(getParentActivity(), 3);
                 progressDialog.setOnCancelListener(dialog -> postponedScrollIsCanceled = true);
                 progressDialog.showDelayed(400);
 
@@ -7763,8 +7767,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
 
     private AlertDialog progressDialog;
 
-    public void
-    scrollToMessageId(int id, int fromMessageId, boolean select, int loadIndex, boolean forceScroll) {
+    public void scrollToMessageId(int id, int fromMessageId, boolean select, int loadIndex, boolean forceScroll) {
         if (chatListView.animationRunning || getParentActivity() == null) {
             return;
         }
@@ -7804,7 +7807,6 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 MessageObject primary = groupedMessages.findPrimaryMessageObject();
                 if (primary != null) {
                     object = primary;
-                    id = object.getId();
                 }
             }
 
@@ -7841,7 +7843,15 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
 
                     if (found) {
                         int yOffset = getScrollOffsetForMessage(object);
-                        chatListView.smoothScrollBy(0,view.getTop() - chatListView.getPaddingTop() - yOffset);
+                        int scrollY = view.getTop() - chatListView.getPaddingTop() - yOffset;
+                        int maxScrollOffset = chatListView.computeVerticalScrollRange() - chatListView.computeVerticalScrollOffset() - chatListView.computeVerticalScrollExtent();
+                        if (maxScrollOffset < 0) maxScrollOffset = 0;
+                        if (scrollY > maxScrollOffset) {
+                            scrollY = maxScrollOffset;
+                        }
+                        if (scrollY != 0) {
+                            chatListView.smoothScrollBy(0, scrollY);
+                        }
                         break;
                     }
                 }
@@ -7887,13 +7897,22 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     if (h < maxH) {
                         int yOffset = getScrollOffsetForMessage(object);
                         if (view != null) {
+                            int scrollY;
                             if (scrollDirection == RecyclerAnimationScrollHelper.SCROLL_DIRECTION_UP) {
-                                chatListView.smoothScrollBy(0, view.getTop() - chatListView.getPaddingTop() - h - yOffset);
+                                scrollY= view.getTop() - chatListView.getPaddingTop() - h - yOffset;
                             } else {
                                 MessageObject messageObject = messages.get(position - chatAdapter.messagesStartRow);
                                 int scrollToHeight = dummyMessageCell.computeHeight(messageObject, groupedMessagesMap.get(messageObject.getGroupId()));
                                 int t = chatListView.getMeasuredHeight() - scrollToHeight;
-                                chatListView.smoothScrollBy(0, -(chatListView.getMeasuredHeight() - view.getBottom()) + t + h - yOffset);
+                                scrollY= -(chatListView.getMeasuredHeight() - view.getBottom()) + t + h - yOffset;
+                            }
+                            int maxScrollOffset = chatListView.computeVerticalScrollRange() - chatListView.computeVerticalScrollOffset() - chatListView.computeVerticalScrollExtent();
+                            if (maxScrollOffset < 0) maxScrollOffset = 0;
+                            if (scrollY > maxScrollOffset) {
+                                scrollY = maxScrollOffset;
+                            }
+                            if (scrollY != 0) {
+                                chatListView.smoothScrollBy(0, scrollY);
                             }
                         } else {
                             chatListView.smoothScrollToPosition(position);
@@ -7916,9 +7935,10 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         }
 
         if (query) {
-            if (progressDialog == null) {
-                progressDialog = new AlertDialog(getParentActivity(), 3);
+            if (progressDialog != null) {
+                progressDialog.dismiss();
             }
+            progressDialog = new AlertDialog(getParentActivity(), 3);
             progressDialog.setOnCancelListener(dialog -> postponedScrollIsCanceled = true);
             progressDialog.showDelayed(400);
 
