@@ -996,7 +996,6 @@ public class ConnectionsManager extends BaseController {
         protected NativeByteBuffer doInBackground(Void... voids) {
             ByteArrayOutputStream outbuf = null;
             InputStream httpConnectionStream = null;
-            //curl -s  "https://dns.google.com/resolve?name=apv2.stel.com&type=ANY&random_padding=askdkadaas3232dskdKFKDs"
             try {
                 String domain = native_isTestBackend(currentAccount) != 0 ? "tapv3.stel.com" : AccountInstance.getInstance(currentAccount).getMessagesController().dcDomainName;
                 int len = Utilities.random.nextInt(116) + 13;

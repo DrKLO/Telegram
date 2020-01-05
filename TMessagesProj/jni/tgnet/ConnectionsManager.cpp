@@ -377,8 +377,8 @@ void ConnectionsManager::loadConfig() {
                 if (version >= 5) {
                     int32_t lastServerTime = buffer->readInt32(nullptr);
                     int32_t currentTime = getCurrentTime();
-                    if (currentTime < lastServerTime) {
-                        timeDifference = lastServerTime - currentTime;
+                    if (currentTime > timeDifference && currentTime < lastServerTime) {
+                        timeDifference += (lastServerTime - currentTime);
                     }
                 }
 
@@ -659,7 +659,11 @@ void ConnectionsManager::onConnectionClosed(Connection *connection, int reason) 
                     if (!connection->hasUsefullData()) {
                         if (LOGS_ENABLED) DEBUG_D("start requesting new address and port due to timeout reach");
                         requestingSecondAddressByTlsHashMismatch = connection->hasTlsHashMismatch();
-                        requestingSecondAddress = 0;
+                        if (requestingSecondAddressByTlsHashMismatch) {
+                            requestingSecondAddress = 1;
+                        } else {
+                            requestingSecondAddress = 0;
+                        }
                         delegate->onRequestNewServerIpAndPort(requestingSecondAddress, instanceNum);
                     } else {
                         if (LOGS_ENABLED) DEBUG_D("connection has usefull data, don't request anything");
@@ -3097,7 +3101,7 @@ void ConnectionsManager::applyDnsConfig(NativeByteBuffer *buffer, std::string ph
         int currentDate = getCurrentTime();
         if (config != nullptr && config->date <= currentDate && currentDate <= config->expires) {
             if (realDate > 0 && requestingSecondAddressByTlsHashMismatch) {
-                timeDifference = realDate - currentDate;
+                timeDifference += (realDate - currentDate);
                 requestingSecondAddressByTlsHashMismatch = false;
             }
             for (std::vector<std::unique_ptr<TL_accessPointRule>>::iterator iter = config->rules.begin(); iter != config->rules.end(); iter++) {
