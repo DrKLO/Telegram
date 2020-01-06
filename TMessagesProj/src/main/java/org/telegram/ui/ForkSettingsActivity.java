@@ -55,6 +55,7 @@ public class ForkSettingsActivity extends BaseFragment {
     private int rearVideoMessages;
     private int replaceForward;
     private int mentionByName;
+    private int openArchiveOnPull;
     private int hideBottomButton;
 
     private ArrayList<Integer> emptyRows = new ArrayList<Integer>();
@@ -96,6 +97,7 @@ public class ForkSettingsActivity extends BaseFragment {
         rearVideoMessages = rowCount++;
         replaceForward = rowCount++;
         mentionByName = rowCount++;
+        openArchiveOnPull = rowCount++;
         hideBottomButton = SharedConfig.isUserOwner() ? rowCount++ : -1;
     
         emptyRows.add(rowCount++);
@@ -192,6 +194,8 @@ public class ForkSettingsActivity extends BaseFragment {
                 toggleGlobalMainSetting("replaceForward", view, true);
             } else if (position == mentionByName) {
                 toggleGlobalMainSetting("mentionByName", view, false);
+            } else if (position == openArchiveOnPull) {
+                toggleGlobalMainSetting("openArchiveOnPull", view, false);
             } else if (position == hideBottomButton) {
                 toggleGlobalMainSetting("hideBottomButton", view, false);
             } else if (position == syncPinsRow) {
@@ -265,6 +269,9 @@ public class ForkSettingsActivity extends BaseFragment {
                     } else if (position == mentionByName) {
                         String t = LocaleController.getString("MentionByName", R.string.MentionByName);
                         textCell.setTextAndCheck(t, preferences.getBoolean("mentionByName", false), false);
+                    } else if (position == openArchiveOnPull) {
+                        String t = LocaleController.getString("OpenArchiveOnPull", R.string.OpenArchiveOnPull);
+                        textCell.setTextAndCheck(t, preferences.getBoolean("openArchiveOnPull", true), false);
                     } else if (position == hideBottomButton) {
                         String t = LocaleController.getString("HideBottomButton", R.string.HideBottomButton);
                         textCell.setTextAndCheck(t, preferences.getBoolean("hideBottomButton", false), false);
@@ -302,6 +309,7 @@ public class ForkSettingsActivity extends BaseFragment {
                         || position == rearVideoMessages
                         || position == replaceForward
                         || position == mentionByName
+                        || position == openArchiveOnPull
                         || position == hideBottomButton
                         || position == syncPinsRow
                         || position == photoHasStickerRow;
@@ -355,6 +363,7 @@ public class ForkSettingsActivity extends BaseFragment {
                 || position == rearVideoMessages
                 || position == replaceForward
                 || position == mentionByName
+                || position == openArchiveOnPull
                 || position == hideBottomButton
                 || position == photoHasStickerRow) {
                 return 3;
