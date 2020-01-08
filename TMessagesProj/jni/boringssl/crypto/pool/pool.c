@@ -26,6 +26,8 @@
 #include "internal.h"
 
 
+DEFINE_LHASH_OF(CRYPTO_BUFFER)
+
 static uint32_t CRYPTO_BUFFER_hash(const CRYPTO_BUFFER *buf) {
   return OPENSSL_hash32(buf->data, buf->len);
 }
@@ -132,6 +134,25 @@ CRYPTO_BUFFER *CRYPTO_BUFFER_new(const uint8_t *data, size_t len,
     return duplicate;
   }
 
+  return buf;
+}
+
+CRYPTO_BUFFER *CRYPTO_BUFFER_alloc(uint8_t **out_data, size_t len) {
+  CRYPTO_BUFFER *const buf = OPENSSL_malloc(sizeof(CRYPTO_BUFFER));
+  if (buf == NULL) {
+    return NULL;
+  }
+  OPENSSL_memset(buf, 0, sizeof(CRYPTO_BUFFER));
+
+  buf->data = OPENSSL_malloc(len);
+  if (len != 0 && buf->data == NULL) {
+    OPENSSL_free(buf);
+    return NULL;
+  }
+  buf->len = len;
+  buf->references = 1;
+
+  *out_data = buf->data;
   return buf;
 }
 

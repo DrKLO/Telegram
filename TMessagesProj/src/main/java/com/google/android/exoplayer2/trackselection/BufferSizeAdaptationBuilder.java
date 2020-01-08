@@ -29,7 +29,6 @@ import com.google.android.exoplayer2.upstream.BandwidthMeter;
 import com.google.android.exoplayer2.upstream.DefaultAllocator;
 import com.google.android.exoplayer2.util.Assertions;
 import com.google.android.exoplayer2.util.Clock;
-import com.google.android.exoplayer2.util.PriorityTaskManager;
 import java.util.List;
 import org.checkerframework.checker.nullness.compatqual.NullableType;
 
@@ -43,7 +42,7 @@ public final class BufferSizeAdaptationBuilder {
   public interface DynamicFormatFilter {
 
     /** Filter which allows all formats. */
-    DynamicFormatFilter NO_FILTER = (format, trackBitrate) -> true;
+    DynamicFormatFilter NO_FILTER = (format, trackBitrate, isInitialSelection) -> true;
 
     /**
      * Called when updating the selected track to determine whether a candidate track is allowed. If
@@ -52,8 +51,9 @@ public final class BufferSizeAdaptationBuilder {
      * @param format The {@link Format} of the candidate track.
      * @param trackBitrate The estimated bitrate of the track. May differ from {@link
      *     Format#bitrate} if a more accurate estimate of the current track bitrate is available.
+     * @param isInitialSelection Whether this is for the initial track selection.
      */
-    boolean isFormatAllowed(Format format, int trackBitrate);
+    boolean isFormatAllowed(Format format, int trackBitrate, boolean isInitialSelection);
   }
 
   /**
@@ -111,9 +111,8 @@ public final class BufferSizeAdaptationBuilder {
   private int hysteresisBufferMs;
   private float startUpBandwidthFraction;
   private int startUpMinBufferForQualityIncreaseMs;
-  @Nullable private PriorityTaskManager priorityTaskManager;
   private DynamicFormatFilter dynamicFormatFilter;
-  boolean buildCalled;
+  private boolean buildCalled;
 
   /** Creates builder with default values. */
   public BufferSizeAdaptationBuilder() {
@@ -219,20 +218,6 @@ public final class BufferSizeAdaptationBuilder {
   }
 
   /**
-   * Sets the {@link PriorityTaskManager} to use.
-   *
-   * @param priorityTaskManager The {@link PriorityTaskManager}.
-   * @return This builder, for convenience.
-   * @throws IllegalStateException If {@link #buildPlayerComponents()} has already been called.
-   */
-  public BufferSizeAdaptationBuilder setPriorityTaskManager(
-      PriorityTaskManager priorityTaskManager) {
-    Assertions.checkState(!buildCalled);
-    this.priorityTaskManager = priorityTaskManager;
-    return this;
-  }
-
-  /**
    * Sets the {@link DynamicFormatFilter} to use when updating the selected track.
    *
    * @param dynamicFormatFilter The {@link DynamicFormatFilter}.
@@ -265,9 +250,6 @@ public final class BufferSizeAdaptationBuilder {
                 maxBufferMs,
                 bufferForPlaybackMs,
                 bufferForPlaybackAfterRebufferMs);
-    if (priorityTaskManager != null) {
-      loadControlBuilder.setPriorityTaskManager(priorityTaskManager);
-    }
     if (allocator != null) {
       loadControlBuilder.setAllocator(allocator);
     }
@@ -344,19 +326,17 @@ public final class BufferSizeAdaptationBuilder {
       formatBitrates = new int[length];
       maxBitrate = getFormat(/* index= */ 0).bitrate;
       minBitrate = getFormat(/* index= */ length - 1).bitrate;
-      selectionReason = C.SELECTION_REASON_INITIAL;
+      selectionReason = C.SELECTION_REASON_UNKNOWN;
       playbackSpeed = 1.0f;
 
       // We use a log-linear function to map from bitrate to buffer size:
       // buffer = slope * ln(bitrate) + intercept,
       // with buffer(minBitrate) = minBuffer and buffer(maxBitrate) = maxBuffer - hysteresisBuffer.
       bitrateToBufferFunctionSlope =
-          (maxBufferUs - hysteresisBufferUs - minBufferUs) / Math.log(maxBitrate / minBitrate);
+          (maxBufferUs - hysteresisBufferUs - minBufferUs)
+              / Math.log((double) maxBitrate / minBitrate);
       bitrateToBufferFunctionIntercept =
           minBufferUs - bitrateToBufferFunctionSlope * Math.log(minBitrate);
-
-      updateFormatBitrates(/* nowMs= */ Long.MIN_VALUE);
-      selectedIndex = selectIdealIndexUsingBandwidth();
     }
 
     @Override
@@ -393,6 +373,14 @@ public final class BufferSizeAdaptationBuilder {
         List<? extends MediaChunk> queue,
         MediaChunkIterator[] mediaChunkIterators) {
       updateFormatBitrates(/* nowMs= */ clock.elapsedRealtime());
+
+      // Make initial selection
+      if (selectionReason == C.SELECTION_REASON_UNKNOWN) {
+        selectionReason = C.SELECTION_REASON_INITIAL;
+        selectedIndex = selectIdealIndexUsingBandwidth(/* isInitialSelection= */ true);
+        return;
+      }
+
       long bufferUs = getCurrentPeriodBufferedDurationUs(playbackPositionUs, bufferedDurationUs);
       int oldSelectedIndex = selectedIndex;
       if (isInSteadyState) {
@@ -427,8 +415,9 @@ public final class BufferSizeAdaptationBuilder {
       int lowestBitrateNonBlacklistedIndex = 0;
       for (int i = 0; i < formatBitrates.length; i++) {
         if (formatBitrates[i] != BITRATE_BLACKLISTED) {
-          if (getTargetBufferForBitrateUs(formatBitrates[i]) < bufferUs
-              && dynamicFormatFilter.isFormatAllowed(getFormat(i), formatBitrates[i])) {
+          if (getTargetBufferForBitrateUs(formatBitrates[i]) <= bufferUs
+              && dynamicFormatFilter.isFormatAllowed(
+                  getFormat(i), formatBitrates[i], /* isInitialSelection= */ false)) {
             return i;
           }
           lowestBitrateNonBlacklistedIndex = i;
@@ -440,7 +429,7 @@ public final class BufferSizeAdaptationBuilder {
     // Startup.
 
     private void selectIndexStartUpPhase(long bufferUs) {
-      int startUpSelectedIndex = selectIdealIndexUsingBandwidth();
+      int startUpSelectedIndex = selectIdealIndexUsingBandwidth(/* isInitialSelection= */ false);
       int steadyStateSelectedIndex = selectIdealIndexUsingBufferSize(bufferUs);
       if (steadyStateSelectedIndex <= selectedIndex) {
         // Switch to steady state if we have enough buffer to maintain current selection.
@@ -457,14 +446,15 @@ public final class BufferSizeAdaptationBuilder {
       }
     }
 
-    private int selectIdealIndexUsingBandwidth() {
+    private int selectIdealIndexUsingBandwidth(boolean isInitialSelection) {
       long effectiveBitrate =
           (long) (bandwidthMeter.getBitrateEstimate() * startUpBandwidthFraction);
       int lowestBitrateNonBlacklistedIndex = 0;
       for (int i = 0; i < formatBitrates.length; i++) {
         if (formatBitrates[i] != BITRATE_BLACKLISTED) {
           if (Math.round(formatBitrates[i] * playbackSpeed) <= effectiveBitrate
-              && dynamicFormatFilter.isFormatAllowed(getFormat(i), formatBitrates[i])) {
+              && dynamicFormatFilter.isFormatAllowed(
+                  getFormat(i), formatBitrates[i], isInitialSelection)) {
             return i;
           }
           lowestBitrateNonBlacklistedIndex = i;

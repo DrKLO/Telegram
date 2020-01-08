@@ -42,6 +42,12 @@ public class FileLoader extends BaseController {
     public static final int MEDIA_DIR_DOCUMENT = 3;
     public static final int MEDIA_DIR_CACHE = 4;
 
+    public static final int IMAGE_TYPE_LOTTIE = 1;
+    public static final int IMAGE_TYPE_ANIMATION = 2;
+    public static final int IMAGE_TYPE_SVG = 3;
+    public static final int IMAGE_TYPE_SVG_WHITE = 4;
+    public static final int IMAGE_TYPE_THEME_PREVIEW = 5;
+
     private volatile static DispatchQueue fileLoaderQueue = new DispatchQueue("fileUploadQueue");
 
     private LinkedList<FileUploadOperation> uploadOperationQueue = new LinkedList<>();
@@ -440,7 +446,7 @@ public class FileLoader extends BaseController {
     }
 
     public boolean isLoadingFile(final String fileName) {
-        return loadOperationPathsUI.containsKey(fileName);
+        return fileName != null && loadOperationPathsUI.containsKey(fileName);
     }
 
     public float getBufferedProgressFromPosition(final float position, final String fileName) {
@@ -478,9 +484,6 @@ public class FileLoader extends BaseController {
         }
         if (cacheType == 0 && document.key != null) {
             cacheType = 1;
-        }
-        if (cacheType == 2) {
-            FileLog.d("test");
         }
         loadFile(document, null, null, null, null, parentObject, null, 0, priority, cacheType);
     }

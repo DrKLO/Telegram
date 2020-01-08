@@ -231,3 +231,7 @@ DEFINE_METHOD_FUNCTION(EVP_CIPHER, EVP_des_ede3) {
   out->init = des_ede3_init_key;
   out->cipher = des_ede_ecb_cipher;
 }
+
+const EVP_CIPHER* EVP_des_ede3_ecb(void) {
+  return EVP_des_ede3();
+}

@@ -19,9 +19,11 @@ import androidx.annotation.Nullable;
 import androidx.annotation.VisibleForTesting;
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.Format;
+import com.google.android.exoplayer2.source.TrackGroupArray;
 import com.google.android.exoplayer2.source.chunk.MediaChunk;
 import com.google.android.exoplayer2.source.chunk.MediaChunkIterator;
 import com.google.android.exoplayer2.source.chunk.MediaChunkListIterator;
+import com.google.android.exoplayer2.trackselection.DefaultTrackSelector.SelectionOverride;
 import com.google.android.exoplayer2.trackselection.TrackSelection.Definition;
 import com.google.android.exoplayer2.util.Assertions;
 import java.util.Arrays;
@@ -69,10 +71,40 @@ public final class TrackSelectionUtil {
         createdAdaptiveTrackSelection = true;
         selections[i] = adaptiveTrackSelectionFactory.createAdaptiveTrackSelection(definition);
       } else {
-        selections[i] = new FixedTrackSelection(definition.group, definition.tracks[0]);
+        selections[i] =
+            new FixedTrackSelection(
+                definition.group, definition.tracks[0], definition.reason, definition.data);
       }
     }
     return selections;
+  }
+
+  /**
+   * Updates {@link DefaultTrackSelector.Parameters} with an override.
+   *
+   * @param parameters The current {@link DefaultTrackSelector.Parameters} to build upon.
+   * @param rendererIndex The renderer index to update.
+   * @param trackGroupArray The {@link TrackGroupArray} of the renderer.
+   * @param isDisabled Whether the renderer should be set disabled.
+   * @param override An optional override for the renderer. If null, no override will be set and an
+   *     existing override for this renderer will be cleared.
+   * @return The updated {@link DefaultTrackSelector.Parameters}.
+   */
+  public static DefaultTrackSelector.Parameters updateParametersWithOverride(
+      DefaultTrackSelector.Parameters parameters,
+      int rendererIndex,
+      TrackGroupArray trackGroupArray,
+      boolean isDisabled,
+      @Nullable SelectionOverride override) {
+    DefaultTrackSelector.ParametersBuilder builder =
+        parameters
+            .buildUpon()
+            .clearSelectionOverrides(rendererIndex)
+            .setRendererDisabled(rendererIndex, isDisabled);
+    if (override != null) {
+      builder.setSelectionOverride(rendererIndex, trackGroupArray, override);
+    }
+    return builder.build();
   }
 
   /**

@@ -1,4 +1,11 @@
-#!/usr/bin/env perl
+#! /usr/bin/env perl
+# Copyright 2010-2016 The OpenSSL Project Authors. All Rights Reserved.
+#
+# Licensed under the OpenSSL license (the "License").  You may not use
+# this file except in compliance with the License.  You can obtain a copy
+# in the file LICENSE in the source distribution or at
+# https://www.openssl.org/source/license.html
+
 #
 # ====================================================================
 # Written by Andy Polyakov <appro@openssl.org> for the OpenSSL
@@ -96,14 +103,13 @@
 #
 # Does it make sense to increase Naggr? To start with it's virtually
 # impossible in 32-bit mode, because of limited register bank
-# capacity. Otherwise improvement has to be weighed agiainst slower
+# capacity. Otherwise improvement has to be weighed against slower
 # setup, as well as code size and complexity increase. As even
 # optimistic estimate doesn't promise 30% performance improvement,
 # there are currently no plans to increase Naggr.
 #
-# Special thanks to David Woodhouse <dwmw2@infradead.org> for
-# providing access to a Westmere-based system on behalf of Intel
-# Open Source Technology Centre.
+# Special thanks to David Woodhouse for providing access to a
+# Westmere-based system on behalf of Intel Open Source Technology Centre.
 
 # January 2010
 #
@@ -1144,7 +1150,7 @@ my ($Xhi,$Xi)=@_;
 &asciz("GHASH for x86, CRYPTOGAMS by <appro\@openssl.org>");
 &asm_finish();
 
-close STDOUT;
+close STDOUT or die "error closing STDOUT";
 
 # A question was risen about choice of vanilla MMX. Or rather why wasn't
 # SSE2 chosen instead? In addition to the fact that MMX runs on legacy

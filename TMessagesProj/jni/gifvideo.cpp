@@ -251,7 +251,7 @@ int64_t seekCallback(void *opaque, int64_t offset, int whence) {
 }
 
 enum PARAM_NUM {
-    PARAM_NUM_IS_AVC = 0,
+    PARAM_NUM_SUPPORTED_VIDEO_CODEC = 0,
     PARAM_NUM_WIDTH = 1,
     PARAM_NUM_HEIGHT = 2,
     PARAM_NUM_BITRATE = 3,
@@ -260,10 +260,12 @@ enum PARAM_NUM {
     PARAM_NUM_VIDEO_FRAME_SIZE = 6,
     PARAM_NUM_FRAMERATE = 7,
     PARAM_NUM_ROTATION = 8,
-    PARAM_NUM_COUNT = 9
+    PARAM_NUM_SUPPORTED_AUDIO_CODEC = 9,
+    PARAM_NUM_HAS_AUDIO = 10,
+    PARAM_NUM_COUNT = 11,
 };
 
-void Java_org_telegram_ui_Components_AnimatedFileDrawable_getVideoInfo(JNIEnv *env, jclass clazz, jstring src, jintArray data) {
+void Java_org_telegram_ui_Components_AnimatedFileDrawable_getVideoInfo(JNIEnv *env, jclass clazz,jint sdkVersion, jstring src, jintArray data) {
     VideoInfo *info = new VideoInfo();
 
     char const *srcString = env->GetStringUTFChars(src, 0);
@@ -304,8 +306,16 @@ void Java_org_telegram_ui_Components_AnimatedFileDrawable_getVideoInfo(JNIEnv *e
 
     jint *dataArr = env->GetIntArrayElements(data, 0);
     if (dataArr != nullptr) {
-        dataArr[PARAM_NUM_IS_AVC] = info->video_stream->codecpar->codec_id == AV_CODEC_ID_H264;
-        if (strstr(info->fmt_ctx->iformat->name, "mov") != 0 && dataArr[PARAM_NUM_IS_AVC]) {
+        //https://developer.android.com/guide/topics/media/media-formats
+        dataArr[PARAM_NUM_SUPPORTED_VIDEO_CODEC] =
+                info->video_stream->codecpar->codec_id == AV_CODEC_ID_H264 ||
+                info->video_stream->codecpar->codec_id == AV_CODEC_ID_H263 ||
+                info->video_stream->codecpar->codec_id == AV_CODEC_ID_MPEG4 ||
+                info->video_stream->codecpar->codec_id == AV_CODEC_ID_VP8 ||
+                info->video_stream->codecpar->codec_id == AV_CODEC_ID_VP9 ||
+                (sdkVersion > 21 && info->video_stream->codecpar->codec_id == AV_CODEC_ID_HEVC);
+
+        if (strstr(info->fmt_ctx->iformat->name, "mov") != 0 && dataArr[PARAM_NUM_SUPPORTED_VIDEO_CODEC]) {
             MOVStreamContext *mov = (MOVStreamContext *) info->video_stream->priv_data;
             dataArr[PARAM_NUM_VIDEO_FRAME_SIZE] = (jint) mov->data_size;
 
@@ -314,6 +324,23 @@ void Java_org_telegram_ui_Components_AnimatedFileDrawable_getVideoInfo(JNIEnv *e
                 dataArr[PARAM_NUM_AUDIO_FRAME_SIZE] = (jint) mov->data_size;
             }
         }
+
+        if (info->audio_stream != nullptr) {
+            //https://developer.android.com/guide/topics/media/media-formats
+            dataArr[PARAM_NUM_SUPPORTED_AUDIO_CODEC] =
+                    info->audio_stream->codecpar->codec_id == AV_CODEC_ID_AAC ||
+                    info->audio_stream->codecpar->codec_id == AV_CODEC_ID_AAC_LATM ||
+                    info->audio_stream->codecpar->codec_id == AV_CODEC_ID_VORBIS ||
+                    info->audio_stream->codecpar->codec_id == AV_CODEC_ID_AMR_NB ||
+                    info->audio_stream->codecpar->codec_id == AV_CODEC_ID_AMR_WB ||
+                    info->audio_stream->codecpar->codec_id == AV_CODEC_ID_FLAC ||
+                    info->audio_stream->codecpar->codec_id == AV_CODEC_ID_MP3 ||
+                    (sdkVersion > 21 && info->audio_stream->codecpar->codec_id == AV_CODEC_ID_OPUS);
+            dataArr[PARAM_NUM_HAS_AUDIO] = 1;
+        } else {
+            dataArr[PARAM_NUM_HAS_AUDIO] = 0;
+        }
+
         dataArr[PARAM_NUM_BITRATE] = (jint) info->video_stream->codecpar->bit_rate;
         dataArr[PARAM_NUM_WIDTH] = info->video_stream->codecpar->width;
         dataArr[PARAM_NUM_HEIGHT] = info->video_stream->codecpar->height;

@@ -19,7 +19,7 @@ import com.google.android.exoplayer2.Format;
 import com.google.android.exoplayer2.extractor.ExtractorInput;
 import com.google.android.exoplayer2.extractor.SeekMap;
 import com.google.android.exoplayer2.extractor.SeekPoint;
-import com.google.android.exoplayer2.util.FlacStreamInfo;
+import com.google.android.exoplayer2.util.FlacStreamMetadata;
 import com.google.android.exoplayer2.util.MimeTypes;
 import com.google.android.exoplayer2.util.ParsableByteArray;
 import com.google.android.exoplayer2.util.Util;
@@ -38,7 +38,7 @@ import java.util.List;
 
   private static final int FRAME_HEADER_SAMPLE_NUMBER_OFFSET = 4;
 
-  private FlacStreamInfo streamInfo;
+  private FlacStreamMetadata streamMetadata;
   private FlacOggSeeker flacOggSeeker;
 
   public static boolean verifyBitstreamType(ParsableByteArray data) {
@@ -50,7 +50,7 @@ import java.util.List;
   protected void reset(boolean headerData) {
     super.reset(headerData);
     if (headerData) {
-      streamInfo = null;
+      streamMetadata = null;
       flacOggSeeker = null;
     }
   }
@@ -71,14 +71,24 @@ import java.util.List;
   protected boolean readHeaders(ParsableByteArray packet, long position, SetupData setupData)
       throws IOException, InterruptedException {
     byte[] data = packet.data;
-    if (streamInfo == null) {
-      streamInfo = new FlacStreamInfo(data, 17);
+    if (streamMetadata == null) {
+      streamMetadata = new FlacStreamMetadata(data, 17);
       byte[] metadata = Arrays.copyOfRange(data, 9, packet.limit());
       metadata[4] = (byte) 0x80; // Set the last metadata block flag, ignore the other blocks
       List<byte[]> initializationData = Collections.singletonList(metadata);
-      setupData.format = Format.createAudioSampleFormat(null, MimeTypes.AUDIO_FLAC, null,
-          Format.NO_VALUE, streamInfo.bitRate(), streamInfo.channels, streamInfo.sampleRate,
-          initializationData, null, 0, null);
+      setupData.format =
+          Format.createAudioSampleFormat(
+              null,
+              MimeTypes.AUDIO_FLAC,
+              null,
+              Format.NO_VALUE,
+              streamMetadata.bitRate(),
+              streamMetadata.channels,
+              streamMetadata.sampleRate,
+              initializationData,
+              null,
+              0,
+              null);
     } else if ((data[0] & 0x7F) == SEEKTABLE_PACKET_TYPE) {
       flacOggSeeker = new FlacOggSeeker();
       flacOggSeeker.parseSeekTable(packet);
@@ -175,11 +185,9 @@ import java.util.List;
     }
 
     @Override
-    public long startSeek(long timeUs) {
-      long granule = convertTimeToGranule(timeUs);
-      int index = Util.binarySearchFloor(seekPointGranules, granule, true, true);
+    public void startSeek(long targetGranule) {
+      int index = Util.binarySearchFloor(seekPointGranules, targetGranule, true, true);
       pendingSeekGranule = seekPointGranules[index];
-      return granule;
     }
 
     @Override
@@ -211,7 +219,7 @@ import java.util.List;
 
     @Override
     public long getDurationUs() {
-      return streamInfo.durationUs();
+      return streamMetadata.durationUs();
     }
 
   }

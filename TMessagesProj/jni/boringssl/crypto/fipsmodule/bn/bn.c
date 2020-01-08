@@ -148,13 +148,13 @@ BIGNUM *BN_copy(BIGNUM *dest, const BIGNUM *src) {
     return dest;
   }
 
-  if (!bn_wexpand(dest, src->top)) {
+  if (!bn_wexpand(dest, src->width)) {
     return NULL;
   }
 
-  OPENSSL_memcpy(dest->d, src->d, sizeof(src->d[0]) * src->top);
+  OPENSSL_memcpy(dest->d, src->d, sizeof(src->d[0]) * src->width);
 
-  dest->top = src->top;
+  dest->width = src->width;
   dest->neg = src->neg;
   return dest;
 }
@@ -164,14 +164,14 @@ void BN_clear(BIGNUM *bn) {
     OPENSSL_memset(bn->d, 0, bn->dmax * sizeof(bn->d[0]));
   }
 
-  bn->top = 0;
+  bn->width = 0;
   bn->neg = 0;
 }
 
 DEFINE_METHOD_FUNCTION(BIGNUM, BN_value_one) {
   static const BN_ULONG kOneLimbs[1] = { 1 };
   out->d = (BN_ULONG*) kOneLimbs;
-  out->top = 1;
+  out->width = 1;
   out->dmax = 1;
   out->neg = 0;
   out->flags = BN_FLG_STATIC_DATA;
@@ -180,61 +180,65 @@ DEFINE_METHOD_FUNCTION(BIGNUM, BN_value_one) {
 // BN_num_bits_word returns the minimum number of bits needed to represent the
 // value in |l|.
 unsigned BN_num_bits_word(BN_ULONG l) {
-  static const unsigned char bits[256] = {
-      0, 1, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5, 5, 5,
-      5, 5, 5, 5, 5, 5, 5, 5, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6,
-      6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 7, 7, 7, 7, 7, 7, 7, 7,
-      7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
-      7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
-      7, 7, 7, 7, 7, 7, 7, 7, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8,
-      8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8,
-      8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8,
-      8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8,
-      8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8,
-      8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8};
+  // |BN_num_bits| is often called on RSA prime factors. These have public bit
+  // lengths, but all bits beyond the high bit are secret, so count bits in
+  // constant time.
+  BN_ULONG x, mask;
+  int bits = (l != 0);
 
-#if defined(OPENSSL_64_BIT)
-  if (l & 0xffffffff00000000L) {
-    if (l & 0xffff000000000000L) {
-      if (l & 0xff00000000000000L) {
-        return (bits[(int)(l >> 56)] + 56);
-      } else {
-        return (bits[(int)(l >> 48)] + 48);
-      }
-    } else {
-      if (l & 0x0000ff0000000000L) {
-        return (bits[(int)(l >> 40)] + 40);
-      } else {
-        return (bits[(int)(l >> 32)] + 32);
-      }
-    }
-  } else
+#if BN_BITS2 > 32
+  // Look at the upper half of |x|. |x| is at most 64 bits long.
+  x = l >> 32;
+  // Set |mask| to all ones if |x| (the top 32 bits of |l|) is non-zero and all
+  // all zeros otherwise.
+  mask = 0u - x;
+  mask = (0u - (mask >> (BN_BITS2 - 1)));
+  // If |x| is non-zero, the lower half is included in the bit count in full,
+  // and we count the upper half. Otherwise, we count the lower half.
+  bits += 32 & mask;
+  l ^= (x ^ l) & mask;  // |l| is |x| if |mask| and remains |l| otherwise.
 #endif
-  {
-    if (l & 0xffff0000L) {
-      if (l & 0xff000000L) {
-        return (bits[(int)(l >> 24L)] + 24);
-      } else {
-        return (bits[(int)(l >> 16L)] + 16);
-      }
-    } else {
-      if (l & 0xff00L) {
-        return (bits[(int)(l >> 8)] + 8);
-      } else {
-        return (bits[(int)(l)]);
-      }
-    }
-  }
+
+  // The remaining blocks are analogous iterations at lower powers of two.
+  x = l >> 16;
+  mask = 0u - x;
+  mask = (0u - (mask >> (BN_BITS2 - 1)));
+  bits += 16 & mask;
+  l ^= (x ^ l) & mask;
+
+  x = l >> 8;
+  mask = 0u - x;
+  mask = (0u - (mask >> (BN_BITS2 - 1)));
+  bits += 8 & mask;
+  l ^= (x ^ l) & mask;
+
+  x = l >> 4;
+  mask = 0u - x;
+  mask = (0u - (mask >> (BN_BITS2 - 1)));
+  bits += 4 & mask;
+  l ^= (x ^ l) & mask;
+
+  x = l >> 2;
+  mask = 0u - x;
+  mask = (0u - (mask >> (BN_BITS2 - 1)));
+  bits += 2 & mask;
+  l ^= (x ^ l) & mask;
+
+  x = l >> 1;
+  mask = 0u - x;
+  mask = (0u - (mask >> (BN_BITS2 - 1)));
+  bits += 1 & mask;
+
+  return bits;
 }
 
 unsigned BN_num_bits(const BIGNUM *bn) {
-  const int max = bn->top - 1;
-
-  if (BN_is_zero(bn)) {
+  const int width = bn_minimal_width(bn);
+  if (width == 0) {
     return 0;
   }
 
-  return max*BN_BITS2 + BN_num_bits_word(bn->d[max]);
+  return (width - 1) * BN_BITS2 + BN_num_bits_word(bn->d[width - 1]);
 }
 
 unsigned BN_num_bytes(const BIGNUM *bn) {
@@ -242,7 +246,7 @@ unsigned BN_num_bytes(const BIGNUM *bn) {
 }
 
 void BN_zero(BIGNUM *bn) {
-  bn->top = bn->neg = 0;
+  bn->width = bn->neg = 0;
 }
 
 int BN_one(BIGNUM *bn) {
@@ -261,7 +265,7 @@ int BN_set_word(BIGNUM *bn, BN_ULONG value) {
 
   bn->neg = 0;
   bn->d[0] = value;
-  bn->top = 1;
+  bn->width = 1;
   return 1;
 }
 
@@ -280,7 +284,7 @@ int BN_set_u64(BIGNUM *bn, uint64_t value) {
   bn->neg = 0;
   bn->d[0] = (BN_ULONG)value;
   bn->d[1] = (BN_ULONG)(value >> 32);
-  bn->top = 2;
+  bn->width = 2;
   return 1;
 #else
 #error "BN_BITS2 must be 32 or 64."
@@ -293,9 +297,37 @@ int bn_set_words(BIGNUM *bn, const BN_ULONG *words, size_t num) {
   }
   OPENSSL_memmove(bn->d, words, num * sizeof(BN_ULONG));
   // |bn_wexpand| verified that |num| isn't too large.
-  bn->top = (int)num;
-  bn_correct_top(bn);
+  bn->width = (int)num;
   bn->neg = 0;
+  return 1;
+}
+
+int bn_fits_in_words(const BIGNUM *bn, size_t num) {
+  // All words beyond |num| must be zero.
+  BN_ULONG mask = 0;
+  for (size_t i = num; i < (size_t)bn->width; i++) {
+    mask |= bn->d[i];
+  }
+  return mask == 0;
+}
+
+int bn_copy_words(BN_ULONG *out, size_t num, const BIGNUM *bn) {
+  if (bn->neg) {
+    OPENSSL_PUT_ERROR(BN, BN_R_NEGATIVE_NUMBER);
+    return 0;
+  }
+
+  size_t width = (size_t)bn->width;
+  if (width > num) {
+    if (!bn_fits_in_words(bn, num)) {
+      OPENSSL_PUT_ERROR(BN, BN_R_BIGNUM_TOO_LONG);
+      return 0;
+    }
+    width = num;
+  }
+
+  OPENSSL_memset(out, 0, sizeof(BN_ULONG) * num);
+  OPENSSL_memcpy(out, bn->d, sizeof(BN_ULONG) * width);
   return 1;
 }
 
@@ -334,7 +366,7 @@ int bn_wexpand(BIGNUM *bn, size_t words) {
     return 0;
   }
 
-  OPENSSL_memcpy(a, bn->d, sizeof(BN_ULONG) * bn->top);
+  OPENSSL_memcpy(a, bn->d, sizeof(BN_ULONG) * bn->width);
 
   OPENSSL_free(bn->d);
   bn->d = a;
@@ -351,20 +383,63 @@ int bn_expand(BIGNUM *bn, size_t bits) {
   return bn_wexpand(bn, (bits+BN_BITS2-1)/BN_BITS2);
 }
 
-void bn_correct_top(BIGNUM *bn) {
-  BN_ULONG *ftl;
-  int tmp_top = bn->top;
+int bn_resize_words(BIGNUM *bn, size_t words) {
+#if defined(OPENSSL_PPC64LE)
+  // This is a workaround for a miscompilation bug in Clang 7.0.1 on POWER.
+  // The unittests catch the miscompilation, if it occurs, and it manifests
+  // as a crash in |bn_fits_in_words|.
+  //
+  // The bug only triggers if building in FIPS mode and with -O3. Clang 8.0.1
+  // has the same bug but this workaround is not effective there---I've not
+  // been able to find a workaround for 8.0.1.
+  //
+  // At the time of writing (2019-08-08), Clang git does *not* have this bug
+  // and does not need this workaroud. The current git version should go on to
+  // be Clang 10 thus, once we can depend on that, this can be removed.
+  if (value_barrier_w((size_t)bn->width == words)) {
+    return 1;
+  }
+#endif
 
-  if (tmp_top > 0) {
-    for (ftl = &(bn->d[tmp_top - 1]); tmp_top > 0; tmp_top--) {
-      if (*(ftl--)) {
-        break;
-      }
+  if ((size_t)bn->width <= words) {
+    if (!bn_wexpand(bn, words)) {
+      return 0;
     }
-    bn->top = tmp_top;
+    OPENSSL_memset(bn->d + bn->width, 0,
+                   (words - bn->width) * sizeof(BN_ULONG));
+    bn->width = words;
+    return 1;
   }
 
-  if (bn->top == 0) {
+  // All words beyond the new width must be zero.
+  if (!bn_fits_in_words(bn, words)) {
+    OPENSSL_PUT_ERROR(BN, BN_R_BIGNUM_TOO_LONG);
+    return 0;
+  }
+  bn->width = words;
+  return 1;
+}
+
+void bn_select_words(BN_ULONG *r, BN_ULONG mask, const BN_ULONG *a,
+                     const BN_ULONG *b, size_t num) {
+  for (size_t i = 0; i < num; i++) {
+    OPENSSL_STATIC_ASSERT(sizeof(BN_ULONG) <= sizeof(crypto_word_t),
+                          "crypto_word_t is too small");
+    r[i] = constant_time_select_w(mask, a[i], b[i]);
+  }
+}
+
+int bn_minimal_width(const BIGNUM *bn) {
+  int ret = bn->width;
+  while (ret > 0 && bn->d[ret - 1] == 0) {
+    ret--;
+  }
+  return ret;
+}
+
+void bn_set_minimal_width(BIGNUM *bn) {
+  bn->width = bn_minimal_width(bn);
+  if (bn->width == 0) {
     bn->neg = 0;
   }
 }

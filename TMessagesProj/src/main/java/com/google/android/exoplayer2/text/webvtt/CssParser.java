@@ -20,6 +20,8 @@ import com.google.android.exoplayer2.util.ColorParser;
 import com.google.android.exoplayer2.util.ParsableByteArray;
 import com.google.android.exoplayer2.util.Util;
 import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -35,8 +37,8 @@ import java.util.regex.Pattern;
   private static final String PROPERTY_TEXT_DECORATION = "text-decoration";
   private static final String VALUE_BOLD = "bold";
   private static final String VALUE_UNDERLINE = "underline";
-  private static final String BLOCK_START = "{";
-  private static final String BLOCK_END = "}";
+  private static final String RULE_START = "{";
+  private static final String RULE_END = "}";
   private static final String PROPERTY_FONT_STYLE = "font-style";
   private static final String VALUE_ITALIC = "italic";
 
@@ -52,37 +54,47 @@ import java.util.regex.Pattern;
   }
 
   /**
-   * Takes a CSS style block and consumes up to the first empty line found. Attempts to parse the
-   * contents of the style block and returns a {@link WebvttCssStyle} instance if successful, or
-   * {@code null} otherwise.
+   * Takes a CSS style block and consumes up to the first empty line. Attempts to parse the contents
+   * of the style block and returns a list of {@link WebvttCssStyle} instances if successful. If
+   * parsing fails, it returns a list including only the styles which have been successfully parsed
+   * up to the style rule which was malformed.
    *
    * @param input The input from which the style block should be read.
-   * @return A {@link WebvttCssStyle} that represents the parsed block.
+   * @return A list of {@link WebvttCssStyle}s that represents the parsed block, or a list
+   *     containing the styles up to the parsing failure.
    */
-  public WebvttCssStyle parseBlock(ParsableByteArray input) {
+  public List<WebvttCssStyle> parseBlock(ParsableByteArray input) {
     stringBuilder.setLength(0);
     int initialInputPosition = input.getPosition();
     skipStyleBlock(input);
     styleInput.reset(input.data, input.getPosition());
     styleInput.setPosition(initialInputPosition);
-    String selector = parseSelector(styleInput, stringBuilder);
-    if (selector == null || !BLOCK_START.equals(parseNextToken(styleInput, stringBuilder))) {
-      return null;
-    }
-    WebvttCssStyle style = new WebvttCssStyle();
-    applySelectorToStyle(style, selector);
-    String token = null;
-    boolean blockEndFound = false;
-    while (!blockEndFound) {
-      int position = styleInput.getPosition();
-      token = parseNextToken(styleInput, stringBuilder);
-      blockEndFound = token == null || BLOCK_END.equals(token);
-      if (!blockEndFound) {
-        styleInput.setPosition(position);
-        parseStyleDeclaration(styleInput, style, stringBuilder);
+
+    List<WebvttCssStyle> styles = new ArrayList<>();
+    String selector;
+    while ((selector = parseSelector(styleInput, stringBuilder)) != null) {
+      if (!RULE_START.equals(parseNextToken(styleInput, stringBuilder))) {
+        return styles;
+      }
+      WebvttCssStyle style = new WebvttCssStyle();
+      applySelectorToStyle(style, selector);
+      String token = null;
+      boolean blockEndFound = false;
+      while (!blockEndFound) {
+        int position = styleInput.getPosition();
+        token = parseNextToken(styleInput, stringBuilder);
+        blockEndFound = token == null || RULE_END.equals(token);
+        if (!blockEndFound) {
+          styleInput.setPosition(position);
+          parseStyleDeclaration(styleInput, style, stringBuilder);
+        }
+      }
+      // Check that the style rule ended correctly.
+      if (RULE_END.equals(token)) {
+        styles.add(style);
       }
     }
-    return BLOCK_END.equals(token) ? style : null; // Check that the style block ended correctly.
+    return styles;
   }
 
   /**
@@ -107,7 +119,7 @@ import java.util.regex.Pattern;
     if (token == null) {
       return null;
     }
-    if (BLOCK_START.equals(token)) {
+    if (RULE_START.equals(token)) {
       input.setPosition(position);
       return "";
     }
@@ -156,7 +168,7 @@ import java.util.regex.Pattern;
     String token = parseNextToken(input, stringBuilder);
     if (";".equals(token)) {
       // The style declaration is well formed.
-    } else if (BLOCK_END.equals(token)) {
+    } else if (RULE_END.equals(token)) {
       // The style declaration is well formed and we can go on, but the closing bracket had to be
       // fed back.
       input.setPosition(position);
@@ -250,7 +262,7 @@ import java.util.regex.Pattern;
         // Syntax error.
         return null;
       }
-      if (BLOCK_END.equals(token) || ";".equals(token)) {
+      if (RULE_END.equals(token) || ";".equals(token)) {
         input.setPosition(position);
         expressionEndFound = true;
       } else {

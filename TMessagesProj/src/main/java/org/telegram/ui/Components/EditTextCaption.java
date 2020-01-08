@@ -12,6 +12,7 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
+import android.graphics.Rect;
 import android.os.Build;
 import android.text.Editable;
 import android.text.Layout;
@@ -25,6 +26,7 @@ import android.view.ActionMode;
 import android.view.Gravity;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
 import android.view.ViewGroup;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.view.inputmethod.EditorInfo;
@@ -226,7 +228,7 @@ public class EditTextCaption extends EditTextBoldCursor {
     }
 
     private ActionMode.Callback overrideCallback(final ActionMode.Callback callback) {
-        return new ActionMode.Callback() {
+        ActionMode.Callback wrap = new ActionMode.Callback() {
             @Override
             public boolean onCreateActionMode(ActionMode mode, Menu menu) {
                 copyPasteShowed = true;
@@ -283,6 +285,40 @@ public class EditTextCaption extends EditTextBoldCursor {
                 callback.onDestroyActionMode(mode);
             }
         };
+        if (Build.VERSION.SDK_INT >= 23) {
+            return new ActionMode.Callback2() {
+                @Override
+                public boolean onCreateActionMode(ActionMode mode, Menu menu) {
+                    return wrap.onCreateActionMode(mode, menu);
+                }
+
+                @Override
+                public boolean onPrepareActionMode(ActionMode mode, Menu menu) {
+                    return wrap.onPrepareActionMode(mode, menu);
+                }
+
+                @Override
+                public boolean onActionItemClicked(ActionMode mode, MenuItem item) {
+                    return wrap.onActionItemClicked(mode, item);
+                }
+
+                @Override
+                public void onDestroyActionMode(ActionMode mode) {
+                    wrap.onDestroyActionMode(mode);
+                }
+
+                @Override
+                public void onGetContentRect(ActionMode mode, View view, Rect outRect) {
+                    if (callback instanceof ActionMode.Callback2) {
+                        ((ActionMode.Callback2) callback).onGetContentRect(mode, view, outRect);
+                    } else {
+                        super.onGetContentRect(mode, view, outRect);
+                    }
+                }
+            };
+        } else {
+            return wrap;
+        }
     }
 
     @Override
@@ -367,10 +403,11 @@ public class EditTextCaption extends EditTextBoldCursor {
     public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
         super.onInitializeAccessibilityNodeInfo(info);
         if (!TextUtils.isEmpty(caption)) {
-            if (Build.VERSION.SDK_INT >= 26)
-				info.setHintText(caption);
-            else
-                info.setText(info.getText()+", "+caption);
+            if (Build.VERSION.SDK_INT >= 26) {
+                info.setHintText(caption);
+            } else {
+                info.setText(info.getText() + ", " + caption);
+            }
         }
     }
 }

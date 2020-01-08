@@ -74,18 +74,18 @@ public class StickersAdapter extends RecyclerListView.SelectionAdapter implement
         MediaDataController.getInstance(currentAccount).checkStickers(MediaDataController.TYPE_MASK);
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.newEmojiSuggestionsAvailable);
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.fileDidLoad);
-        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.fileDidFailedLoad);
+        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.fileDidFailToLoad);
     }
 
     public void onDestroy() {
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.newEmojiSuggestionsAvailable);
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.fileDidLoad);
-        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.fileDidFailedLoad);
+        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.fileDidFailToLoad);
     }
 
     @Override
     public void didReceivedNotification(int id, int account, final Object... args) {
-        if (id == NotificationCenter.fileDidLoad || id == NotificationCenter.fileDidFailedLoad) {
+        if (id == NotificationCenter.fileDidLoad || id == NotificationCenter.fileDidFailToLoad) {
             if (stickers != null && !stickers.isEmpty() && !stickersToLoad.isEmpty() && visible) {
                 String fileName = (String) args[0];
                 stickersToLoad.remove(fileName);
@@ -223,11 +223,13 @@ public class StickersAdapter extends RecyclerListView.SelectionAdapter implement
         String originalEmoji = emoji.toString();
         int length = emoji.length();
         for (int a = 0; a < length; a++) {
-            if (a < length - 1 && (emoji.charAt(a) == 0xD83C && emoji.charAt(a + 1) >= 0xDFFB && emoji.charAt(a + 1) <= 0xDFFF || emoji.charAt(a) == 0x200D && (emoji.charAt(a + 1) == 0x2640 || emoji.charAt(a + 1) == 0x2642))) {
+            char ch = emoji.charAt(a);
+            char nch = a < length - 1 ? emoji.charAt(a + 1) : 0;
+            if (a < length - 1 && ch == 0xD83C && nch >= 0xDFFB && nch <= 0xDFFF) {
                 emoji = TextUtils.concat(emoji.subSequence(0, a), emoji.subSequence(a + 2, emoji.length()));
                 length -= 2;
                 a--;
-            } else if (emoji.charAt(a) == 0xfe0f) {
+            } else if (ch == 0xfe0f) {
                 emoji = TextUtils.concat(emoji.subSequence(0, a), emoji.subSequence(a + 1, emoji.length()));
                 length--;
                 a--;
@@ -247,7 +249,7 @@ public class StickersAdapter extends RecyclerListView.SelectionAdapter implement
             }
         }
         if (emojiOnly || SharedConfig.suggestStickers == 2 || !isValidEmoji) {
-            if (visible && (keywordResults == null || keywordResults.isEmpty())) {
+            if (visible && (emojiOnly || SharedConfig.suggestStickers == 2 || keywordResults == null || keywordResults.isEmpty())) {
                 visible = false;
                 delegate.needChangePanelVisibility(false);
                 notifyDataSetChanged();
@@ -309,8 +311,8 @@ public class StickersAdapter extends RecyclerListView.SelectionAdapter implement
 
                 @Override
                 public int compare(StickerResult lhs, StickerResult rhs) {
-                    boolean isAnimated1 = MessageObject.isAnimatedStickerDocument(lhs.sticker);
-                    boolean isAnimated2 = MessageObject.isAnimatedStickerDocument(rhs.sticker);
+                    boolean isAnimated1 = MessageObject.isAnimatedStickerDocument(lhs.sticker, true);
+                    boolean isAnimated2 = MessageObject.isAnimatedStickerDocument(rhs.sticker, true);
                     if (isAnimated1 == isAnimated2) {
                         int idx1 = getIndex(lhs.sticker.id);
                         int idx2 = getIndex(rhs.sticker.id);

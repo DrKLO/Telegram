@@ -50,6 +50,8 @@ public class SharedAudioCell extends FrameLayout implements DownloadController.F
 
     private MessageObject currentMessageObject;
 
+    private boolean checkForButtonPress;
+
     private int currentAccount = UserConfig.selectedAccount;
     private int TAG;
     private int buttonState;
@@ -137,6 +139,10 @@ public class SharedAudioCell extends FrameLayout implements DownloadController.F
         checkBox.setChecked(checked, animated);
     }
 
+    public void setCheckForButtonPress(boolean value) {
+        checkForButtonPress = value;
+    }
+
     @Override
     protected void onAttachedToWindow() {
         super.onAttachedToWindow();
@@ -175,24 +181,35 @@ public class SharedAudioCell extends FrameLayout implements DownloadController.F
                 radialProgress.setPressed(miniButtonPressed, true);
                 invalidate();
                 result = true;
+            } else if (checkForButtonPress && radialProgress.getProgressRect().contains(x, y)) {
+                buttonPressed = true;
+                radialProgress.setPressed(buttonPressed, false);
+                invalidate();
+                result = true;
             }
-        } else if (miniButtonPressed) {
-            if (event.getAction() == MotionEvent.ACTION_UP) {
+        } else if (event.getAction() == MotionEvent.ACTION_UP) {
+            if (miniButtonPressed) {
                 miniButtonPressed = false;
                 playSoundEffect(SoundEffectConstants.CLICK);
                 didPressedMiniButton(true);
                 invalidate();
-            } else if (event.getAction() == MotionEvent.ACTION_CANCEL) {
+            } else if (buttonPressed) {
+                buttonPressed = false;
+                playSoundEffect(SoundEffectConstants.CLICK);
+                didPressedButton();
+                invalidate();
+            }
+        } else if (event.getAction() == MotionEvent.ACTION_CANCEL) {
+            miniButtonPressed = false;
+            buttonPressed = false;
+            invalidate();
+        } else if (event.getAction() == MotionEvent.ACTION_MOVE) {
+            if (!area && miniButtonPressed) {
                 miniButtonPressed = false;
                 invalidate();
-            } else if (event.getAction() == MotionEvent.ACTION_MOVE) {
-                if (!area) {
-                    miniButtonPressed = false;
-                    invalidate();
-                }
             }
-            radialProgress.setPressed(miniButtonPressed, true);
         }
+        radialProgress.setPressed(miniButtonPressed, true);
         return result;
     }
 

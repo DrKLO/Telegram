@@ -67,11 +67,13 @@
 // sequential access of large files without extra "magic" comprise *BSD,
 // Darwin, IRIX...
 #ifndef _FILE_OFFSET_BITS
-
+#define _FILE_OFFSET_BITS 64
 #endif
 #endif
 
 #include <openssl/bio.h>
+
+#if !defined(OPENSSL_TRUSTY)
 
 #include <errno.h>
 #include <stdio.h>
@@ -80,6 +82,8 @@
 #include <openssl/buf.h>
 #include <openssl/err.h>
 #include <openssl/mem.h>
+
+#include "../internal.h"
 
 
 #define BIO_FP_READ 0x02
@@ -103,13 +107,12 @@ BIO *BIO_new_file(const char *filename, const char *mode) {
     return NULL;
   }
 
-  ret = BIO_new(BIO_s_file());
+  ret = BIO_new_fp(file, BIO_CLOSE);
   if (ret == NULL) {
     fclose(file);
     return NULL;
   }
 
-  BIO_set_fp(ret, file, BIO_CLOSE);
   return ret;
 }
 
@@ -311,3 +314,5 @@ int BIO_rw_filename(BIO *bio, const char *filename) {
   return BIO_ctrl(bio, BIO_C_SET_FILENAME,
                   BIO_CLOSE | BIO_FP_READ | BIO_FP_WRITE, (char *)filename);
 }
+
+#endif  // OPENSSL_TRUSTY

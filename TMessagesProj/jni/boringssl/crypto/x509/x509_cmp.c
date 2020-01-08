@@ -315,7 +315,7 @@ ASN1_BIT_STRING *X509_get0_pubkey_bitstr(const X509 *x)
     return x->cert_info->key->public_key;
 }
 
-int X509_check_private_key(X509 *x, EVP_PKEY *k)
+int X509_check_private_key(X509 *x, const EVP_PKEY *k)
 {
     EVP_PKEY *xk;
     int ret;

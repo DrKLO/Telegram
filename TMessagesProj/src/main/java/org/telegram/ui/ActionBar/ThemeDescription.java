@@ -54,6 +54,7 @@ import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.ScamDrawable;
 import org.telegram.ui.Components.SeekBarView;
 import org.telegram.ui.Components.TypefaceSpan;
+import org.telegram.ui.Components.VideoTimelineView;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
@@ -324,11 +325,14 @@ public class ThemeDescription {
                 ((ActionBar) viewToInvalidate).setSearchTextColor(color, false);
             }
             if ((changeFlags & FLAG_AB_SUBMENUITEM) != 0) {
-                ((ActionBar) viewToInvalidate).setPopupItemsColor(color, (changeFlags & FLAG_IMAGECOLOR) != 0);
+                ((ActionBar) viewToInvalidate).setPopupItemsColor(color, (changeFlags & FLAG_IMAGECOLOR) != 0, false);
             }
             if ((changeFlags & FLAG_AB_SUBMENUBACKGROUND) != 0) {
-                ((ActionBar) viewToInvalidate).setPopupBackgroundColor(color);
+                ((ActionBar) viewToInvalidate).setPopupBackgroundColor(color, false);
             }
+        }
+        if (viewToInvalidate instanceof VideoTimelineView) {
+            ((VideoTimelineView) viewToInvalidate).setColor(color);
         }
         if (viewToInvalidate instanceof EmptyTextProgressView) {
             if ((changeFlags & FLAG_TEXTCOLOR) != 0) {
@@ -399,6 +403,15 @@ public class ThemeDescription {
                 } else if (viewToInvalidate instanceof SimpleTextView) {
                     SimpleTextView textView = (SimpleTextView) viewToInvalidate;
                     textView.setSideDrawablesColor(color);
+                } else if (viewToInvalidate instanceof TextView) {
+                    Drawable[] drawables = ((TextView) viewToInvalidate).getCompoundDrawables();
+                    if (drawables != null) {
+                        for (int a = 0; a < drawables.length; a++) {
+                            if (drawables[a] != null) {
+                                drawables[a].setColorFilter(new PorterDuffColorFilter(color, PorterDuff.Mode.MULTIPLY));
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -571,6 +584,8 @@ public class ThemeDescription {
                                     if ((changeFlags & FLAG_HINTTEXTCOLOR) != 0) {
                                         ((EditTextCaption) object).setHintColor(color);
                                         ((EditTextCaption) object).setHintTextColor(color);
+                                    } else if ((changeFlags & FLAG_CURSORCOLOR) != 0) {
+                                        ((EditTextCaption) object).setCursorColor(color);
                                     } else {
                                         ((EditTextCaption) object).setTextColor(color);
                                     }

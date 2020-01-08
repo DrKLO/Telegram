@@ -366,6 +366,21 @@ public interface Player {
     default void onPlayerStateChanged(boolean playWhenReady, int playbackState) {}
 
     /**
+     * Called when the value returned from {@link #getPlaybackSuppressionReason()} changes.
+     *
+     * @param playbackSuppressionReason The current {@link PlaybackSuppressionReason}.
+     */
+    default void onPlaybackSuppressionReasonChanged(
+        @PlaybackSuppressionReason int playbackSuppressionReason) {}
+
+    /**
+     * Called when the value of {@link #isPlaying()} changes.
+     *
+     * @param isPlaying Whether the player is playing.
+     */
+    default void onIsPlayingChanged(boolean isPlaying) {}
+
+    /**
      * Called when the value of {@link #getRepeatMode()} changes.
      *
      * @param repeatMode The {@link RepeatMode} used for playback.
@@ -461,6 +476,23 @@ public interface Player {
    * The player has finished playing the media.
    */
   int STATE_ENDED = 4;
+
+  /**
+   * Reason why playback is suppressed even though {@link #getPlayWhenReady()} is {@code true}. One
+   * of {@link #PLAYBACK_SUPPRESSION_REASON_NONE} or {@link
+   * #PLAYBACK_SUPPRESSION_REASON_TRANSIENT_AUDIO_FOCUS_LOSS}.
+   */
+  @Documented
+  @Retention(RetentionPolicy.SOURCE)
+  @IntDef({
+    PLAYBACK_SUPPRESSION_REASON_NONE,
+    PLAYBACK_SUPPRESSION_REASON_TRANSIENT_AUDIO_FOCUS_LOSS
+  })
+  @interface PlaybackSuppressionReason {}
+  /** Playback is not suppressed. */
+  int PLAYBACK_SUPPRESSION_REASON_NONE = 0;
+  /** Playback is suppressed due to transient audio focus loss. */
+  int PLAYBACK_SUPPRESSION_REASON_TRANSIENT_AUDIO_FOCUS_LOSS = 1;
 
   /**
    * Repeat modes for playback. One of {@link #REPEAT_MODE_OFF}, {@link #REPEAT_MODE_ONE} or {@link
@@ -588,10 +620,37 @@ public interface Player {
   int getPlaybackState();
 
   /**
+   * Returns the reason why playback is suppressed even though {@link #getPlayWhenReady()} is {@code
+   * true}, or {@link #PLAYBACK_SUPPRESSION_REASON_NONE} if playback is not suppressed.
+   *
+   * @return The current {@link PlaybackSuppressionReason playback suppression reason}.
+   */
+  @PlaybackSuppressionReason
+  int getPlaybackSuppressionReason();
+
+  /**
+   * Returns whether the player is playing, i.e. {@link #getContentPosition()} is advancing.
+   *
+   * <p>If {@code false}, then at least one of the following is true:
+   *
+   * <ul>
+   *   <li>The {@link #getPlaybackState() playback state} is not {@link #STATE_READY ready}.
+   *   <li>There is no {@link #getPlayWhenReady() intention to play}.
+   *   <li>Playback is {@link #getPlaybackSuppressionReason() suppressed for other reasons}.
+   * </ul>
+   *
+   * @return Whether the player is playing.
+   */
+  boolean isPlaying();
+
+  /**
    * Returns the error that caused playback to fail. This is the same error that will have been
    * reported via {@link Player.EventListener#onPlayerError(ExoPlaybackException)} at the time of
    * failure. It can be queried using this method until {@code stop(true)} is called or the player
    * is re-prepared.
+   *
+   * <p>Note that this method will always return {@code null} if {@link #getPlaybackState()} is not
+   * {@link #STATE_IDLE}.
    *
    * @return The error, or {@code null}.
    */

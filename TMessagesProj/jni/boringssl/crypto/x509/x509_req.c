@@ -320,3 +320,23 @@ int X509_REQ_add1_attr_by_txt(X509_REQ *req,
         return 1;
     return 0;
 }
+
+void X509_REQ_get0_signature(const X509_REQ *req, const ASN1_BIT_STRING **psig,
+                             const X509_ALGOR **palg)
+{
+    if (psig != NULL)
+        *psig = req->signature;
+    if (palg != NULL)
+        *palg = req->sig_alg;
+}
+
+int X509_REQ_get_signature_nid(const X509_REQ *req)
+{
+    return OBJ_obj2nid(req->sig_alg->algorithm);
+}
+
+int i2d_re_X509_REQ_tbs(X509_REQ *req, unsigned char **pp)
+{
+    req->req_info->enc.modified = 1;
+    return i2d_X509_REQ_INFO(req->req_info, pp);
+}

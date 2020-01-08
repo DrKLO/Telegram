@@ -22,6 +22,7 @@
 #include<vector>
 #include<memory>
 #include<unordered_map>
+#include<map>
 #include <algorithm>
 #include"vpoint.h"
 #include"vrect.h"
@@ -51,7 +52,7 @@ class LottieShapeData;
 class LOTPolystarData;
 class LOTMaskData;
 
-enum class MatteType
+enum class MatteType: uchar
 {
     None = 0,
     Alpha = 1,
@@ -60,7 +61,8 @@ enum class MatteType
     LumaInv
 };
 
-enum class LayerType {
+enum class LayerType: uchar
+{
     Precomp = 0,
     Solid = 1,
     Image = 2,
@@ -73,30 +75,77 @@ class LottieColor
 {
 public:
     LottieColor() = default;
-    LottieColor(float red, float green , float blue):r(red), g(green),b(blue){}
-    VColor toColor(float a=1){ return VColor((255 * r), (255 * g), (255 * b), (255 * a));}
+    LottieColor(float red, float green, float blue, std::map<int32_t, int32_t> *colorReplacement) {
+        r = red;
+        g = green;
+        b = blue;
+        colorMap = colorReplacement;
+    };
+    VColor toColor(float a=1) {
+        float r1, g1, b1;
+        getColorReplacement(colorMap, *this, r1, g1, b1);
+        return VColor((255 * r1), (255 * g1), (255 * b1), (255 * a));
+    };
     friend inline LottieColor operator+(const LottieColor &c1, const LottieColor &c2);
     friend inline LottieColor operator-(const LottieColor &c1, const LottieColor &c2);
+    friend inline void getColorReplacement(std::map<int32_t, int32_t> *colorMap, const LottieColor &c, float &r, float &g, float &b);
 public:
+    std::map<int32_t, int32_t> *colorMap{nullptr};
     float r{1};
     float g{1};
     float b{1};
 };
 
+inline void getColorReplacement(std::map<int32_t, int32_t> *colorMap, const LottieColor &c, float &r, float &g, float &b) {
+    if (colorMap != nullptr && !colorMap->empty()) {
+        int32_t rr = (int32_t) (c.r * 255);
+        int32_t gg = (int32_t) (c.g * 255);
+        int32_t bb = (int32_t) (c.b * 255);
+        int32_t cc = (int32_t) (((bb & 0xff) << 16) | ((gg & 0xff) << 8) | (rr & 0xff));
+        std::map<int32_t, int32_t>::iterator iter = colorMap->find(cc);
+        if (iter != colorMap->end()) {
+            cc = iter->second;
+            r = ((cc) & 0xff) / 255.0f;
+            g = ((cc >> 8) & 0xff) / 255.0f;
+            b = ((cc >> 16) & 0xff) / 255.0f;
+            return;
+        }
+    }
+    r = c.r;
+    g = c.g;
+    b = c.b;
+}
+
 inline LottieColor operator-(const LottieColor &c1, const LottieColor &c2)
 {
-    return LottieColor(c1.r - c2.r, c1.g - c2.g, c1.b - c2.b);
+    float r1, g1, b1;
+    float r2, g2, b2;
+    getColorReplacement(c1.colorMap, c1, r1, g1, b1);
+    getColorReplacement(c2.colorMap, c2, r2, g2, b2);
+    return LottieColor(r1 - r2, g1 - g2, b1 - b2, nullptr);
 }
 inline LottieColor operator+(const LottieColor &c1, const LottieColor &c2)
 {
-    return LottieColor(c1.r + c2.r, c1.g + c2.g, c1.b + c2.b);
+    float r1, g1, b1;
+    float r2, g2, b2;
+    getColorReplacement(c1.colorMap, c1, r1, g1, b1);
+    getColorReplacement(c2.colorMap, c2, r2, g2, b2);
+    return LottieColor(r1 + r2, g1 + g2, b1 + b2, nullptr);
 }
 
 inline const LottieColor operator*(const LottieColor &c, float m)
-{ return LottieColor(c.r*m, c.g*m, c.b*m); }
+{
+    float r1, g1, b1;
+    getColorReplacement(c.colorMap, c, r1, g1, b1);
+    return LottieColor(r1 * m, g1 * m, b1 * m, nullptr);
+}
 
 inline const LottieColor operator*(float m, const LottieColor &c)
-{ return LottieColor(c.r*m, c.g*m, c.b*m); }
+{
+    float r1, g1, b1;
+    getColorReplacement(c.colorMap, c, r1, g1, b1);
+    return LottieColor(r1 * m, g1 * m, b1 * m, nullptr);
+}
 
 class LottieShapeData
 {
@@ -332,7 +381,7 @@ private:
     bool                                 mStatic{true};
 };
 
-enum class LottieBlendMode
+enum class LottieBlendMode: uchar
 {
     Normal = 0,
     Multiply = 1,
@@ -365,8 +414,10 @@ public:
     bool isStatic() const{return mStatic;}
     void setStatic(bool value) {mStatic = value;}
     bool hidden() const {return mHidden;}
+    void setHidden(bool value) {mHidden = value;}
+    void setName(const char *str) {mName = str;}
     const std::string& name() const{ return mName;}
-public:
+private:
     std::string               mName;
     bool                      mStatic{true};
     bool                      mHidden{false};
@@ -485,6 +536,16 @@ private:
     }impl;
 };
 
+struct ExtraLayerData
+{
+    LottieColor                mSolidColor;
+    std::string                mPreCompRefId;
+    LOTAnimatable<float>       mTimeRemap;  /* "tm" */
+    LOTCompositionData        *mCompRef{nullptr};
+    std::shared_ptr<LOTAsset>  mAsset;
+    std::vector<std::shared_ptr<LOTMaskData>>  mMasks;
+};
+
 class LOTLayerData : public LOTGroupData
 {
 public:
@@ -495,12 +556,11 @@ public:
     bool hasRepeater() const noexcept {return mHasRepeater;}
     int id() const noexcept{ return mId;}
     int parentId() const noexcept{ return mParentId;}
+    bool hasParent() const noexcept {return mParentId != -1;}
     int inFrame() const noexcept{return mInFrame;}
     int outFrame() const noexcept{return mOutFrame;}
     int startFrame() const noexcept{return mStartFrame;}
-    int solidWidth() const noexcept{return mSolidLayer.mWidth;}
-    int solidHeight() const noexcept{return mSolidLayer.mHeight;}
-    LottieColor solidColor() const noexcept{return mSolidLayer.mColor;}
+    LottieColor solidColor() const noexcept{return mExtra->mSolidColor;}
     bool autoOrient() const noexcept{return mAutoOrient;}
     int timeRemap(int frameNo) const;
     VSize layerSize() const {return mLayerSize;}
@@ -513,34 +573,32 @@ public:
     {
         return mTransform ? mTransform->opacity(frameNo) : 1.0f;
     }
+    LOTAsset* asset() const
+    {
+        return (mExtra && mExtra->mAsset) ? mExtra->mAsset.get() : nullptr;
+    }
 public:
-    struct SolidLayer {
-        int            mWidth{0};
-        int            mHeight{0};
-        LottieColor    mColor;
-    };
-
+    ExtraLayerData* extra()
+    {
+        if (!mExtra) mExtra = std::make_unique<ExtraLayerData>();
+        return mExtra.get();
+    }
     MatteType            mMatteType{MatteType::None};
-    LayerType            mLayerType{LayerType::Null}; //lottie layer type  (solid/shape/precomp)
-    int                  mParentId{-1}; // Lottie the id of the parent in the composition
-    int                  mId{-1};  // Lottie the group id  used for parenting.
-    long                 mInFrame{0};
-    long                 mOutFrame{0};
-    long                 mStartFrame{0};
-    VSize                mLayerSize;
+    LayerType            mLayerType{LayerType::Null};
     LottieBlendMode      mBlendMode{LottieBlendMode::Normal};
-    float                mTimeStreatch{1.0f};
-    std::string          mPreCompRefId;
-    LOTAnimatable<float> mTimeRemap;  /* "tm" */
-    SolidLayer           mSolidLayer;
     bool                 mHasPathOperator{false};
     bool                 mHasMask{false};
     bool                 mHasRepeater{false};
     bool                 mHasGradient{false};
     bool                 mAutoOrient{false};
-    std::vector<std::shared_ptr<LOTMaskData>>  mMasks;
-    LOTCompositionData   *mCompRef{nullptr};
-    std::shared_ptr<LOTAsset> mAsset;
+    VSize                mLayerSize;
+    int                  mParentId{-1}; // Lottie the id of the parent in the composition
+    int                  mId{-1};  // Lottie the group id  used for parenting.
+    float                mTimeStreatch{1.0f};
+    int                  mInFrame{0};
+    int                  mOutFrame{0};
+    int                  mStartFrame{0};
+    std::unique_ptr<ExtraLayerData> mExtra{nullptr};
 };
 
 using LayerInfo = std::tuple<std::string, int , int>;
@@ -597,8 +655,10 @@ inline int LOTLayerData::timeRemap(int frameNo) const
      * when a layer has timeremap bodymovin updates the startFrame()
      * of all child layer so we don't have to take care of it.
      */
-    frameNo = mTimeRemap.isStatic() ? frameNo - startFrame():
-              mCompRef->frameAtTime(mTimeRemap.value(frameNo));
+    if (!mExtra || mExtra->mTimeRemap.isStatic())
+        frameNo = frameNo - startFrame();
+    else
+        frameNo = mExtra->mCompRef->frameAtTime(mExtra->mTimeRemap.value(frameNo));
     /* Apply time streatch if it has any.
      * Time streatch is just a factor by which the animation will speedup or slow
      * down with respect to the overal animation.

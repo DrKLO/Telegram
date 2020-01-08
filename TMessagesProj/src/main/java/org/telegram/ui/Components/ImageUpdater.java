@@ -22,8 +22,6 @@ import android.os.Build;
 import android.os.Bundle;
 import android.provider.MediaStore;
 import androidx.core.content.FileProvider;
-import android.util.TypedValue;
-import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.BuildConfig;
@@ -99,7 +97,7 @@ public class ImageUpdater implements NotificationCenter.NotificationCenterDelega
             return;
         }
         BottomSheet.Builder builder = new BottomSheet.Builder(parentFragment.getParentActivity());
-        builder.setTitle(LocaleController.getString("ChoosePhoto", R.string.ChoosePhoto));
+        builder.setTitle(LocaleController.getString("ChoosePhoto", R.string.ChoosePhoto), true);
 
         CharSequence[] items;
         int[] icons;
@@ -135,12 +133,6 @@ public class ImageUpdater implements NotificationCenter.NotificationCenterDelega
         });
         BottomSheet sheet = builder.create();
         parentFragment.showDialog(sheet);
-        TextView titleView = sheet.getTitleView();
-        if (titleView != null) {
-            titleView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
-            titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
-            titleView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
-        }
         sheet.setItemColor(searchAvailable ? 3 : 2, Theme.getColor(Theme.key_dialogTextRed2), Theme.getColor(Theme.key_dialogRedIcon));
     }
 
@@ -158,7 +150,7 @@ public class ImageUpdater implements NotificationCenter.NotificationCenterDelega
         }
         final HashMap<Object, Object> photos = new HashMap<>();
         final ArrayList<Object> order = new ArrayList<>();
-        PhotoPickerActivity fragment = new PhotoPickerActivity(0, null, photos, order, new ArrayList<>(), 1, false, null);
+        PhotoPickerActivity fragment = new PhotoPickerActivity(0, null, photos, order, 1, false, null);
         fragment.setDelegate(new PhotoPickerActivity.PhotoPickerActivityDelegate() {
 
             private boolean sendPressed;
@@ -168,12 +160,12 @@ public class ImageUpdater implements NotificationCenter.NotificationCenterDelega
 
             }
 
-            private void sendSelectedPhotos(HashMap<Object, Object> photos, ArrayList<Object> order) {
+            private void sendSelectedPhotos(HashMap<Object, Object> photos, ArrayList<Object> order, boolean notify, int scheduleDate) {
 
             }
 
             @Override
-            public void actionButtonPressed(boolean canceled) {
+            public void actionButtonPressed(boolean canceled, boolean notify, int scheduleDate) {
                 if (photos.isEmpty() || delegate == null || sendPressed || canceled) {
                     return;
                 }
@@ -198,6 +190,11 @@ public class ImageUpdater implements NotificationCenter.NotificationCenterDelega
                     }
                 }
                 didSelectPhotos(media);
+            }
+
+            @Override
+            public void onCaptionChanged(CharSequence caption) {
+
             }
         });
         fragment.setInitialSearchString(delegate.getInitialSearchString());
@@ -226,7 +223,7 @@ public class ImageUpdater implements NotificationCenter.NotificationCenterDelega
                             bitmap = ImageLoader.loadBitmap(path.getAbsolutePath(), null, 800, 800, true);
                         } else {
                             NotificationCenter.getInstance(currentAccount).addObserver(ImageUpdater.this, NotificationCenter.fileDidLoad);
-                            NotificationCenter.getInstance(currentAccount).addObserver(ImageUpdater.this, NotificationCenter.fileDidFailedLoad);
+                            NotificationCenter.getInstance(currentAccount).addObserver(ImageUpdater.this, NotificationCenter.fileDidFailToLoad);
                             uploadingImage = FileLoader.getAttachFileName(photoSize.location);
                             imageReceiver.setImage(ImageLocation.getForPhoto(photoSize, info.searchImage.photo), null, null, "jpg", null, 1);
                         }
@@ -289,9 +286,10 @@ public class ImageUpdater implements NotificationCenter.NotificationCenterDelega
             }
         }
         PhotoAlbumPickerActivity fragment = new PhotoAlbumPickerActivity(1, false, false, null);
+        fragment.setAllowSearchImages(searchAvailable);
         fragment.setDelegate(new PhotoAlbumPickerActivity.PhotoAlbumPickerActivityDelegate() {
             @Override
-            public void didSelectPhotos(ArrayList<SendMessagesHelper.SendingMediaInfo> photos) {
+            public void didSelectPhotos(ArrayList<SendMessagesHelper.SendingMediaInfo> photos, boolean notify, int scheduleDate) {
                 ImageUpdater.this.didSelectPhotos(photos);
             }
 
@@ -354,10 +352,10 @@ public class ImageUpdater implements NotificationCenter.NotificationCenterDelega
                     FileLog.e(e);
                 }
                 final ArrayList<Object> arrayList = new ArrayList<>();
-                arrayList.add(new MediaController.PhotoEntry(0, 0, 0, currentPicturePath, orientation, false));
-                PhotoViewer.getInstance().openPhotoForSelect(arrayList, 0, PhotoViewer.SELECT_TYPE_AVATAR, new PhotoViewer.EmptyPhotoViewerProvider() {
+                arrayList.add(new MediaController.PhotoEntry(0, 0, 0, currentPicturePath, orientation, false, 0, 0, 0));
+                PhotoViewer.getInstance().openPhotoForSelect(arrayList, 0, PhotoViewer.SELECT_TYPE_AVATAR, false, new PhotoViewer.EmptyPhotoViewerProvider() {
                     @Override
-                    public void sendButtonPressed(int index, VideoEditedInfo videoEditedInfo) {
+                    public void sendButtonPressed(int index, VideoEditedInfo videoEditedInfo, boolean notify, int scheduleDate) {
                         String path = null;
                         MediaController.PhotoEntry photoEntry = (MediaController.PhotoEntry) arrayList.get(0);
                         if (photoEntry.imagePath != null) {
@@ -454,11 +452,11 @@ public class ImageUpdater implements NotificationCenter.NotificationCenterDelega
                     delegate = null;
                 }
             }
-        } else if (id == NotificationCenter.fileDidLoad || id == NotificationCenter.fileDidFailedLoad || id == NotificationCenter.httpFileDidLoad || id == NotificationCenter.httpFileDidFailedLoad) {
+        } else if (id == NotificationCenter.fileDidLoad || id == NotificationCenter.fileDidFailToLoad || id == NotificationCenter.httpFileDidLoad || id == NotificationCenter.httpFileDidFailedLoad) {
             String path = (String) args[0];
             if (path.equals(uploadingImage)) {
                 NotificationCenter.getInstance(currentAccount).removeObserver(ImageUpdater.this, NotificationCenter.fileDidLoad);
-                NotificationCenter.getInstance(currentAccount).removeObserver(ImageUpdater.this, NotificationCenter.fileDidFailedLoad);
+                NotificationCenter.getInstance(currentAccount).removeObserver(ImageUpdater.this, NotificationCenter.fileDidFailToLoad);
                 NotificationCenter.getInstance(currentAccount).removeObserver(ImageUpdater.this, NotificationCenter.httpFileDidLoad);
                 NotificationCenter.getInstance(currentAccount).removeObserver(ImageUpdater.this, NotificationCenter.httpFileDidFailedLoad);
 

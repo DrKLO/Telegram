@@ -86,4 +86,8 @@ public class DialogObject {
             return -peer.channel_id;
         }
     }
+
+    public static long getLastMessageOrDraftDate(TLRPC.Dialog dialog, TLRPC.DraftMessage draftMessage) {
+        return draftMessage != null && draftMessage.date >= dialog.last_message_date ? draftMessage.date : dialog.last_message_date;
+    }
 }

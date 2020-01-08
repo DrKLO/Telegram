@@ -1,7 +1,14 @@
-#!/usr/bin/env perl
+#! /usr/bin/env perl
+# Copyright 2005-2016 The OpenSSL Project Authors. All Rights Reserved.
+#
+# Licensed under the OpenSSL license (the "License").  You may not use
+# this file except in compliance with the License.  You can obtain a copy
+# in the file LICENSE in the source distribution or at
+# https://www.openssl.org/source/license.html
+
 #
 # ====================================================================
-# Written by Andy Polyakov <appro@fy.chalmers.se> for the OpenSSL
+# Written by Andy Polyakov <appro@openssl.org> for the OpenSSL
 # project. The module is, however, dual licensed under OpenSSL and
 # CRYPTOGAMS licenses depending on where you obtain it. For further
 # details see http://www.openssl.org/~appro/cryptogams/.
@@ -547,6 +554,7 @@ $code.=<<___;
 .type	_x86_64_AES_encrypt_compact,\@abi-omnipotent
 .align	16
 _x86_64_AES_encrypt_compact:
+.cfi_startproc
 	lea	128($sbox),$inp			# size optimization
 	mov	0-128($inp),$acc1		# prefetch Te4
 	mov	32-128($inp),$acc2
@@ -580,23 +588,32 @@ $code.=<<___;
 	xor	8($key),$s2
 	xor	12($key),$s3
 	.byte	0xf3,0xc3			# rep ret
+.cfi_endproc
 .size	_x86_64_AES_encrypt_compact,.-_x86_64_AES_encrypt_compact
 ___
 
-# void asm_AES_encrypt (const void *inp,void *out,const AES_KEY *key);
+# void aes_nohw_encrypt (const void *inp,void *out,const AES_KEY *key);
 $code.=<<___;
 .align	16
-.globl	asm_AES_encrypt
-.type	asm_AES_encrypt,\@function,3
-.hidden	asm_AES_encrypt
-asm_AES_encrypt:
+.globl	aes_nohw_encrypt
+.type	aes_nohw_encrypt,\@function,3
+.hidden	aes_nohw_encrypt
+aes_nohw_encrypt:
+.cfi_startproc
 	mov	%rsp,%rax
+.cfi_def_cfa_register	%rax
 	push	%rbx
+.cfi_push	%rbx
 	push	%rbp
+.cfi_push	%rbp
 	push	%r12
+.cfi_push	%r12
 	push	%r13
+.cfi_push	%r13
 	push	%r14
+.cfi_push	%r14
 	push	%r15
+.cfi_push	%r15
 
 	# allocate frame "above" key schedule
 	lea	-63(%rdx),%rcx	# %rdx is key argument
@@ -609,6 +626,7 @@ asm_AES_encrypt:
 
 	mov	%rsi,16(%rsp)	# save out
 	mov	%rax,24(%rsp)	# save original stack pointer
+.cfi_cfa_expression	%rsp+24,deref,+8
 .Lenc_prologue:
 
 	mov	%rdx,$key
@@ -635,21 +653,30 @@ asm_AES_encrypt:
 
 	mov	16(%rsp),$out	# restore out
 	mov	24(%rsp),%rsi	# restore saved stack pointer
+.cfi_def_cfa	%rsi,8
 	mov	$s0,0($out)	# write output vector
 	mov	$s1,4($out)
 	mov	$s2,8($out)
 	mov	$s3,12($out)
 
 	mov	-48(%rsi),%r15
+.cfi_restore	%r15
 	mov	-40(%rsi),%r14
+.cfi_restore	%r14
 	mov	-32(%rsi),%r13
+.cfi_restore	%r13
 	mov	-24(%rsi),%r12
+.cfi_restore	%r12
 	mov	-16(%rsi),%rbp
+.cfi_restore	%rbp
 	mov	-8(%rsi),%rbx
+.cfi_restore	%rbx
 	lea	(%rsi),%rsp
+.cfi_def_cfa_register	%rsp
 .Lenc_epilogue:
 	ret
-.size	asm_AES_encrypt,.-asm_AES_encrypt
+.cfi_endproc
+.size	aes_nohw_encrypt,.-aes_nohw_encrypt
 ___
 
 #------------------------------------------------------------------#
@@ -1134,6 +1161,7 @@ $code.=<<___;
 .type	_x86_64_AES_decrypt_compact,\@abi-omnipotent
 .align	16
 _x86_64_AES_decrypt_compact:
+.cfi_startproc
 	lea	128($sbox),$inp			# size optimization
 	mov	0-128($inp),$acc1		# prefetch Td4
 	mov	32-128($inp),$acc2
@@ -1176,23 +1204,32 @@ $code.=<<___;
 	xor	8($key),$s2
 	xor	12($key),$s3
 	.byte	0xf3,0xc3			# rep ret
+.cfi_endproc
 .size	_x86_64_AES_decrypt_compact,.-_x86_64_AES_decrypt_compact
 ___
 
-# void asm_AES_decrypt (const void *inp,void *out,const AES_KEY *key);
+# void aes_nohw_decrypt (const void *inp,void *out,const AES_KEY *key);
 $code.=<<___;
 .align	16
-.globl	asm_AES_decrypt
-.type	asm_AES_decrypt,\@function,3
-.hidden	asm_AES_decrypt
-asm_AES_decrypt:
+.globl	aes_nohw_decrypt
+.type	aes_nohw_decrypt,\@function,3
+.hidden	aes_nohw_decrypt
+aes_nohw_decrypt:
+.cfi_startproc
 	mov	%rsp,%rax
+.cfi_def_cfa_register	%rax
 	push	%rbx
+.cfi_push	%rbx
 	push	%rbp
+.cfi_push	%rbp
 	push	%r12
+.cfi_push	%r12
 	push	%r13
+.cfi_push	%r13
 	push	%r14
+.cfi_push	%r14
 	push	%r15
+.cfi_push	%r15
 
 	# allocate frame "above" key schedule
 	lea	-63(%rdx),%rcx	# %rdx is key argument
@@ -1205,6 +1242,7 @@ asm_AES_decrypt:
 
 	mov	%rsi,16(%rsp)	# save out
 	mov	%rax,24(%rsp)	# save original stack pointer
+.cfi_cfa_expression	%rsp+24,deref,+8
 .Ldec_prologue:
 
 	mov	%rdx,$key
@@ -1233,21 +1271,30 @@ asm_AES_decrypt:
 
 	mov	16(%rsp),$out	# restore out
 	mov	24(%rsp),%rsi	# restore saved stack pointer
+.cfi_def_cfa	%rsi,8
 	mov	$s0,0($out)	# write output vector
 	mov	$s1,4($out)
 	mov	$s2,8($out)
 	mov	$s3,12($out)
 
 	mov	-48(%rsi),%r15
+.cfi_restore	%r15
 	mov	-40(%rsi),%r14
+.cfi_restore	%r14
 	mov	-32(%rsi),%r13
+.cfi_restore	%r13
 	mov	-24(%rsi),%r12
+.cfi_restore	%r12
 	mov	-16(%rsi),%rbp
+.cfi_restore	%rbp
 	mov	-8(%rsi),%rbx
+.cfi_restore	%rbx
 	lea	(%rsi),%rsp
+.cfi_def_cfa_register	%rsp
 .Ldec_epilogue:
 	ret
-.size	asm_AES_decrypt,.-asm_AES_decrypt
+.cfi_endproc
+.size	aes_nohw_decrypt,.-aes_nohw_decrypt
 ___
 #------------------------------------------------------------------#
 
@@ -1278,33 +1325,46 @@ $code.=<<___;
 ___
 }
 
-# int asm_AES_set_encrypt_key(const unsigned char *userKey, const int bits, AES_KEY *key)
+# int aes_nohw_set_encrypt_key(const unsigned char *userKey, const int bits, AES_KEY *key)
 $code.=<<___;
 .align	16
-.globl asm_AES_set_encrypt_key
-.type  asm_AES_set_encrypt_key,\@function,3
-asm_AES_set_encrypt_key:
+.globl aes_nohw_set_encrypt_key
+.type  aes_nohw_set_encrypt_key,\@function,3
+aes_nohw_set_encrypt_key:
+.cfi_startproc
 	push	%rbx
+.cfi_push	%rbx
 	push	%rbp
+.cfi_push	%rbp
 	push	%r12			# redundant, but allows to share
+.cfi_push	%r12
 	push	%r13			# exception handler...
+.cfi_push	%r13
 	push	%r14
+.cfi_push	%r14
 	push	%r15
+.cfi_push	%r15
 	sub	\$8,%rsp
+.cfi_adjust_cfa_offset	8
 .Lenc_key_prologue:
 
 	call	_x86_64_AES_set_encrypt_key
 
 	mov	40(%rsp),%rbp
+.cfi_restore	%rbp
 	mov	48(%rsp),%rbx
+.cfi_restore	%rbx
 	add	\$56,%rsp
+.cfi_adjust_cfa_offset	-56
 .Lenc_key_epilogue:
 	ret
-.size asm_AES_set_encrypt_key,.-asm_AES_set_encrypt_key
+.cfi_endproc
+.size aes_nohw_set_encrypt_key,.-aes_nohw_set_encrypt_key
 
 .type	_x86_64_AES_set_encrypt_key,\@abi-omnipotent
 .align	16
 _x86_64_AES_set_encrypt_key:
+.cfi_startproc
 	mov	%esi,%ecx			# %ecx=bits
 	mov	%rdi,%rsi			# %rsi=userKey
 	mov	%rdx,%rdi			# %rdi=key
@@ -1486,6 +1546,7 @@ $code.=<<___;
 	mov	\$-1,%rax
 .Lexit:
 	.byte	0xf3,0xc3			# rep ret
+.cfi_endproc
 .size	_x86_64_AES_set_encrypt_key,.-_x86_64_AES_set_encrypt_key
 ___
 
@@ -1543,19 +1604,27 @@ $code.=<<___;
 ___
 }
 
-# int asm_AES_set_decrypt_key(const unsigned char *userKey, const int bits, AES_KEY *key)
+# int aes_nohw_set_decrypt_key(const unsigned char *userKey, const int bits, AES_KEY *key)
 $code.=<<___;
 .align	16
-.globl asm_AES_set_decrypt_key
-.type  asm_AES_set_decrypt_key,\@function,3
-asm_AES_set_decrypt_key:
+.globl aes_nohw_set_decrypt_key
+.type  aes_nohw_set_decrypt_key,\@function,3
+aes_nohw_set_decrypt_key:
+.cfi_startproc
 	push	%rbx
+.cfi_push	%rbx
 	push	%rbp
+.cfi_push	%rbp
 	push	%r12
+.cfi_push	%r12
 	push	%r13
+.cfi_push	%r13
 	push	%r14
+.cfi_push	%r14
 	push	%r15
+.cfi_push	%r15
 	push	%rdx			# save key schedule
+.cfi_adjust_cfa_offset	8
 .Ldec_key_prologue:
 
 	call	_x86_64_AES_set_encrypt_key
@@ -1609,20 +1678,28 @@ $code.=<<___;
 	xor	%rax,%rax
 .Labort:
 	mov	8(%rsp),%r15
+.cfi_restore	%r15
 	mov	16(%rsp),%r14
+.cfi_restore	%r14
 	mov	24(%rsp),%r13
+.cfi_restore	%r13
 	mov	32(%rsp),%r12
+.cfi_restore	%r12
 	mov	40(%rsp),%rbp
+.cfi_restore	%rbp
 	mov	48(%rsp),%rbx
+.cfi_restore	%rbx
 	add	\$56,%rsp
+.cfi_adjust_cfa_offset	-56
 .Ldec_key_epilogue:
 	ret
-.size	asm_AES_set_decrypt_key,.-asm_AES_set_decrypt_key
+.cfi_endproc
+.size	aes_nohw_set_decrypt_key,.-aes_nohw_set_decrypt_key
 ___
 
-# void asm_AES_cbc_encrypt (const void char *inp, unsigned char *out,
-#			    size_t length, const AES_KEY *key,
-#			    unsigned char *ivp,const int enc);
+# void aes_nohw_cbc_encrypt (const void char *inp, unsigned char *out,
+#			                       size_t length, const AES_KEY *key,
+#			                       unsigned char *ivp,const int enc);
 {
 # stack frame layout
 # -8(%rsp)		return address
@@ -1640,20 +1717,30 @@ my $mark="80+240(%rsp)";	# copy of aes_key->rounds
 
 $code.=<<___;
 .align	16
-.globl	asm_AES_cbc_encrypt
-.type	asm_AES_cbc_encrypt,\@function,6
+.globl	aes_nohw_cbc_encrypt
+.type	aes_nohw_cbc_encrypt,\@function,6
 .extern	OPENSSL_ia32cap_P
-.hidden	asm_AES_cbc_encrypt
-asm_AES_cbc_encrypt:
+.hidden	aes_nohw_cbc_encrypt
+aes_nohw_cbc_encrypt:
+.cfi_startproc
 	cmp	\$0,%rdx	# check length
 	je	.Lcbc_epilogue
 	pushfq
+# This could be .cfi_push 49, but libunwind fails on registers it does not
+# recognize. See https://bugzilla.redhat.com/show_bug.cgi?id=217087.
+.cfi_adjust_cfa_offset	8
 	push	%rbx
+.cfi_push	%rbx
 	push	%rbp
+.cfi_push	%rbp
 	push	%r12
+.cfi_push	%r12
 	push	%r13
+.cfi_push	%r13
 	push	%r14
+.cfi_push	%r14
 	push	%r15
+.cfi_push	%r15
 .Lcbc_prologue:
 
 	cld
@@ -1664,6 +1751,7 @@ asm_AES_cbc_encrypt:
 	cmp	\$0,%r9
 	cmoveq	%r10,$sbox
 
+.cfi_remember_state
 	leaq	OPENSSL_ia32cap_P(%rip),%r10
 	mov	(%r10), %r10d
 	cmp	\$$speed_limit,%rdx
@@ -1699,8 +1787,10 @@ asm_AES_cbc_encrypt:
 .Lcbc_te_ok:
 
 	xchg	%rsp,$key
+.cfi_def_cfa_register	$key
 	#add	\$8,%rsp	# reserve for return address!
 	mov	$key,$_rsp	# save %rsp
+.cfi_cfa_expression	$_rsp,deref,+64
 .Lcbc_fast_body:
 	mov	%rdi,$_inp	# save copy of inp
 	mov	%rsi,$_out	# save copy of out
@@ -1898,6 +1988,7 @@ asm_AES_cbc_encrypt:
 #--------------------------- SLOW ROUTINE ---------------------------#
 .align	16
 .Lcbc_slow_prologue:
+.cfi_restore_state
 	# allocate aligned stack frame...
 	lea	-88(%rsp),%rbp
 	and	\$-64,%rbp
@@ -1909,8 +2000,10 @@ asm_AES_cbc_encrypt:
 	sub	%r10,%rbp
 
 	xchg	%rsp,%rbp
+.cfi_def_cfa_register	%rbp
 	#add	\$8,%rsp	# reserve for return address!
 	mov	%rbp,$_rsp	# save %rsp
+.cfi_cfa_expression	$_rsp,deref,+64
 .Lcbc_slow_body:
 	#mov	%rdi,$_inp	# save copy of inp
 	#mov	%rsi,$_out	# save copy of out
@@ -1930,7 +2023,7 @@ asm_AES_cbc_encrypt:
 	lea	($key,%rax),%rax
 	mov	%rax,$keyend
 
-	# pick Te4 copy which can't "overlap" with stack frame or key scdedule
+	# pick Te4 copy which can't "overlap" with stack frame or key schedule
 	lea	2048($sbox),$sbox
 	lea	768-8(%rsp),%rax
 	sub	$sbox,%rax
@@ -2082,18 +2175,30 @@ asm_AES_cbc_encrypt:
 .align	16
 .Lcbc_exit:
 	mov	$_rsp,%rsi
+.cfi_def_cfa	%rsi,64
 	mov	(%rsi),%r15
+.cfi_restore	%r15
 	mov	8(%rsi),%r14
+.cfi_restore	%r14
 	mov	16(%rsi),%r13
+.cfi_restore	%r13
 	mov	24(%rsi),%r12
+.cfi_restore	%r12
 	mov	32(%rsi),%rbp
+.cfi_restore	%rbp
 	mov	40(%rsi),%rbx
+.cfi_restore	%rbx
 	lea	48(%rsi),%rsp
+.cfi_def_cfa	%rsp,16
 .Lcbc_popfq:
 	popfq
+# This could be .cfi_pop 49, but libunwind fails on registers it does not
+# recognize. See https://bugzilla.redhat.com/show_bug.cgi?id=217087.
+.cfi_adjust_cfa_offset	-8
 .Lcbc_epilogue:
 	ret
-.size	asm_AES_cbc_encrypt,.-asm_AES_cbc_encrypt
+.cfi_endproc
+.size	aes_nohw_cbc_encrypt,.-aes_nohw_cbc_encrypt
 ___
 }
 
@@ -2753,45 +2858,45 @@ cbc_se_handler:
 
 .section	.pdata
 .align	4
-	.rva	.LSEH_begin_asm_AES_encrypt
-	.rva	.LSEH_end_asm_AES_encrypt
-	.rva	.LSEH_info_asm_AES_encrypt
+	.rva	.LSEH_begin_aes_nohw_encrypt
+	.rva	.LSEH_end_aes_nohw_encrypt
+	.rva	.LSEH_info_aes_nohw_encrypt
 
-	.rva	.LSEH_begin_asm_AES_decrypt
-	.rva	.LSEH_end_asm_AES_decrypt
-	.rva	.LSEH_info_asm_AES_decrypt
+	.rva	.LSEH_begin_aes_nohw_decrypt
+	.rva	.LSEH_end_aes_nohw_decrypt
+	.rva	.LSEH_info_aes_nohw_decrypt
 
-	.rva	.LSEH_begin_asm_AES_set_encrypt_key
-	.rva	.LSEH_end_asm_AES_set_encrypt_key
-	.rva	.LSEH_info_asm_AES_set_encrypt_key
+	.rva	.LSEH_begin_aes_nohw_set_encrypt_key
+	.rva	.LSEH_end_aes_nohw_set_encrypt_key
+	.rva	.LSEH_info_aes_nohw_set_encrypt_key
 
-	.rva	.LSEH_begin_asm_AES_set_decrypt_key
-	.rva	.LSEH_end_asm_AES_set_decrypt_key
-	.rva	.LSEH_info_asm_AES_set_decrypt_key
+	.rva	.LSEH_begin_aes_nohw_set_decrypt_key
+	.rva	.LSEH_end_aes_nohw_set_decrypt_key
+	.rva	.LSEH_info_aes_nohw_set_decrypt_key
 
-	.rva	.LSEH_begin_asm_AES_cbc_encrypt
-	.rva	.LSEH_end_asm_AES_cbc_encrypt
-	.rva	.LSEH_info_asm_AES_cbc_encrypt
+	.rva	.LSEH_begin_aes_nohw_cbc_encrypt
+	.rva	.LSEH_end_aes_nohw_cbc_encrypt
+	.rva	.LSEH_info_aes_nohw_cbc_encrypt
 
 .section	.xdata
 .align	8
-.LSEH_info_asm_AES_encrypt:
+.LSEH_info_aes_nohw_encrypt:
 	.byte	9,0,0,0
 	.rva	block_se_handler
 	.rva	.Lenc_prologue,.Lenc_epilogue	# HandlerData[]
-.LSEH_info_asm_AES_decrypt:
+.LSEH_info_aes_nohw_decrypt:
 	.byte	9,0,0,0
 	.rva	block_se_handler
 	.rva	.Ldec_prologue,.Ldec_epilogue	# HandlerData[]
-.LSEH_info_asm_AES_set_encrypt_key:
+.LSEH_info_aes_nohw_set_encrypt_key:
 	.byte	9,0,0,0
 	.rva	key_se_handler
 	.rva	.Lenc_key_prologue,.Lenc_key_epilogue	# HandlerData[]
-.LSEH_info_asm_AES_set_decrypt_key:
+.LSEH_info_aes_nohw_set_decrypt_key:
 	.byte	9,0,0,0
 	.rva	key_se_handler
 	.rva	.Ldec_key_prologue,.Ldec_key_epilogue	# HandlerData[]
-.LSEH_info_asm_AES_cbc_encrypt:
+.LSEH_info_aes_nohw_cbc_encrypt:
 	.byte	9,0,0,0
 	.rva	cbc_se_handler
 ___
@@ -2801,4 +2906,4 @@ $code =~ s/\`([^\`]*)\`/eval($1)/gem;
 
 print $code;
 
-close STDOUT;
+close STDOUT or die "error closing STDOUT";

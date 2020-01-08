@@ -195,19 +195,19 @@ public class StickerMasksView extends FrameLayout implements NotificationCenter.
         if (currentType == MediaDataController.TYPE_IMAGE) {
             Drawable drawable = getContext().getResources().getDrawable(R.drawable.ic_masks_msk1);
             Theme.setDrawableColorByKey(drawable, Theme.key_chat_emojiPanelIcon);
-            scrollSlidingTabStrip.addIconTab(drawable);
+            scrollSlidingTabStrip.addIconTab(0, drawable);
             stickersEmptyView.setText(LocaleController.getString("NoStickers", R.string.NoStickers));
         } else {
             Drawable drawable = getContext().getResources().getDrawable(R.drawable.ic_masks_sticker1);
             Theme.setDrawableColorByKey(drawable, Theme.key_chat_emojiPanelIcon);
-            scrollSlidingTabStrip.addIconTab(drawable);
+            scrollSlidingTabStrip.addIconTab(1, drawable);
             stickersEmptyView.setText(LocaleController.getString("NoMasks", R.string.NoMasks));
         }
 
         if (!recentStickers[currentType].isEmpty()) {
             recentTabBum = stickersTabOffset;
             stickersTabOffset++;
-            scrollSlidingTabStrip.addIconTab(Theme.createEmojiIconSelectorDrawable(getContext(), R.drawable.ic_masks_recent1, Theme.getColor(Theme.key_chat_emojiPanelMasksIcon), Theme.getColor(Theme.key_chat_emojiPanelMasksIconSelected)));
+            scrollSlidingTabStrip.addIconTab(2, Theme.createEmojiIconSelectorDrawable(getContext(), R.drawable.ic_masks_recent1, Theme.getColor(Theme.key_chat_emojiPanelMasksIcon), Theme.getColor(Theme.key_chat_emojiPanelMasksIconSelected)));
         }
 
         stickerSets[currentType].clear();
@@ -283,7 +283,7 @@ public class StickerMasksView extends FrameLayout implements NotificationCenter.
     protected void onAttachedToWindow() {
         super.onAttachedToWindow();
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.stickersDidLoad);
-        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.recentImagesDidLoad);
+        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.recentDocumentsDidLoad);
         AndroidUtilities.runOnUIThread(() -> {
             updateStickerTabs();
             reloadStickersAdapter();

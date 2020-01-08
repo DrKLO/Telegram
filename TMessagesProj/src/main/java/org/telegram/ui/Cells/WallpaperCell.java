@@ -18,6 +18,7 @@ import android.graphics.Paint;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.drawable.Drawable;
+import android.graphics.drawable.GradientDrawable;
 import android.os.Build;
 import android.view.Gravity;
 import android.view.MotionEvent;
@@ -101,87 +102,74 @@ public class WallpaperCell extends FrameLayout {
             return super.onTouchEvent(event);
         }
 
-        public void setWallpaper(Object object, long selectedBackground, Drawable themedWallpaper, boolean themed) {
+        public void setWallpaper(Object object, String selectedBackgroundSlug, Drawable themedWallpaper, boolean themed) {
             currentWallpaper = object;
-            if (object == null) {
-                imageView.setVisibility(INVISIBLE);
-                imageView2.setVisibility(VISIBLE);
-                if (themed) {
-                    imageView2.setImageDrawable(themedWallpaper);
-                    imageView2.setScaleType(ImageView.ScaleType.CENTER_CROP);
-                } else {
-                    imageView2.setBackgroundColor(selectedBackground == -1 || selectedBackground == Theme.DEFAULT_BACKGROUND_ID ? 0x5a475866 : 0x5a000000);
-                    imageView2.setScaleType(ImageView.ScaleType.CENTER);
-                    imageView2.setImageResource(R.drawable.ic_gallery_background);
+            imageView.setVisibility(VISIBLE);
+            imageView2.setVisibility(INVISIBLE);
+            imageView.setBackgroundDrawable(null);
+            imageView.getImageReceiver().setColorFilter(null);
+            imageView.getImageReceiver().setAlpha(1.0f);
+            if (object instanceof TLRPC.TL_wallPaper) {
+                TLRPC.TL_wallPaper wallPaper = (TLRPC.TL_wallPaper) object;
+                isSelected = selectedBackgroundSlug.equals(wallPaper.slug);
+                TLRPC.PhotoSize thumb = FileLoader.getClosestPhotoSizeWithSize(wallPaper.document.thumbs, 100);
+                TLRPC.PhotoSize image = FileLoader.getClosestPhotoSizeWithSize(wallPaper.document.thumbs, 320);
+                if (image == thumb) {
+                    image = null;
                 }
-            } else {
-                imageView.setVisibility(VISIBLE);
-                imageView2.setVisibility(INVISIBLE);
-                imageView.setBackgroundDrawable(null);
-                imageView.getImageReceiver().setColorFilter(null);
-                imageView.getImageReceiver().setAlpha(1.0f);
-                if (object instanceof TLRPC.TL_wallPaper) {
-                    TLRPC.TL_wallPaper wallPaper = (TLRPC.TL_wallPaper) object;
-                    isSelected = wallPaper.id == selectedBackground;
-                    TLRPC.PhotoSize thumb = FileLoader.getClosestPhotoSizeWithSize(wallPaper.document.thumbs, 100);
-                    TLRPC.PhotoSize image = FileLoader.getClosestPhotoSizeWithSize(wallPaper.document.thumbs, 320);
+                int size = image != null ? image.size : wallPaper.document.size;
+                if (wallPaper.pattern) {
+                    imageView.setBackgroundColor(0xff000000 | wallPaper.settings.background_color);
+                    imageView.setImage(ImageLocation.getForDocument(image, wallPaper.document), "100_100", ImageLocation.getForDocument(thumb, wallPaper.document), null, "jpg", size, 1, wallPaper);
+                    imageView.getImageReceiver().setColorFilter(new PorterDuffColorFilter(AndroidUtilities.getPatternColor(wallPaper.settings.background_color), PorterDuff.Mode.SRC_IN));
+                    imageView.getImageReceiver().setAlpha(wallPaper.settings.intensity / 100.0f);
+                } else {
+                    if (image != null) {
+                        imageView.setImage(ImageLocation.getForDocument(image, wallPaper.document), "100_100", ImageLocation.getForDocument(thumb, wallPaper.document), "100_100_b", "jpg", size, 1, wallPaper);
+                    } else {
+                        imageView.setImage(ImageLocation.getForDocument(wallPaper.document), "100_100", ImageLocation.getForDocument(thumb, wallPaper.document), "100_100_b", "jpg", size, 1, wallPaper);
+                    }
+                }
+            } else if (object instanceof WallpapersListActivity.ColorWallpaper) {
+                WallpapersListActivity.ColorWallpaper wallPaper = (WallpapersListActivity.ColorWallpaper) object;
+                if (wallPaper.path != null) {
+                    imageView.setImage(wallPaper.path.getAbsolutePath(), "100_100", null);
+                } else {
+                    imageView.setImageBitmap(null);
+                    if (wallPaper.gradientColor != 0) {
+                        imageView.setBackground(new GradientDrawable(GradientDrawable.Orientation.BL_TR, new int[]{0xff000000 | wallPaper.color, 0xff000000 | wallPaper.gradientColor}));
+                    } else {
+                        imageView.setBackgroundColor(0xff000000 | wallPaper.color);
+                    }
+                }
+                isSelected = selectedBackgroundSlug.equals(wallPaper.slug);
+            } else if (object instanceof WallpapersListActivity.FileWallpaper) {
+                WallpapersListActivity.FileWallpaper wallPaper = (WallpapersListActivity.FileWallpaper) object;
+                isSelected = selectedBackgroundSlug.equals(wallPaper.slug);
+                if (wallPaper.originalPath != null) {
+                    imageView.setImage(wallPaper.originalPath.getAbsolutePath(), "100_100", null);
+                } else if (wallPaper.path != null) {
+                    imageView.setImage(wallPaper.path.getAbsolutePath(), "100_100", null);
+                } else if (Theme.THEME_BACKGROUND_SLUG.equals(wallPaper.slug)) {
+                    imageView.setImageDrawable(Theme.getThemedWallpaper(true, imageView));
+                } else {
+                    imageView.setImageResource(wallPaper.thumbResId);
+                }
+            } else if (object instanceof MediaController.SearchImage) {
+                MediaController.SearchImage wallPaper = (MediaController.SearchImage) object;
+                if (wallPaper.photo != null) {
+                    TLRPC.PhotoSize thumb = FileLoader.getClosestPhotoSizeWithSize(wallPaper.photo.sizes, 100);
+                    TLRPC.PhotoSize image = FileLoader.getClosestPhotoSizeWithSize(wallPaper.photo.sizes, 320);
                     if (image == thumb) {
                         image = null;
                     }
-                    int size = image != null ? image.size : wallPaper.document.size;
-                    if (wallPaper.pattern) {
-                        imageView.setBackgroundColor(0xff000000 | wallPaper.settings.background_color);
-                        imageView.setImage(ImageLocation.getForDocument(image, wallPaper.document), "100_100", ImageLocation.getForDocument(thumb, wallPaper.document), null, "jpg", size, 1, wallPaper);
-                        imageView.getImageReceiver().setColorFilter(new PorterDuffColorFilter(AndroidUtilities.getPatternColor(wallPaper.settings.background_color), PorterDuff.Mode.SRC_IN));
-                        imageView.getImageReceiver().setAlpha(wallPaper.settings.intensity / 100.0f);
-                    } else {
-                        /*if (wallPaper.settings != null && wallPaper.settings.blur) {
-                            imageView.setImage(null, "100_100", thumb, "100_100_b", "jpg", size, 1, wallPaper);
-                        } else {*/
-                        if (image != null) {
-                            imageView.setImage(ImageLocation.getForDocument(image, wallPaper.document), "100_100", ImageLocation.getForDocument(thumb, wallPaper.document), "100_100_b", "jpg", size, 1, wallPaper);
-                        } else {
-                            imageView.setImage(ImageLocation.getForDocument(wallPaper.document), "100_100", ImageLocation.getForDocument(thumb, wallPaper.document), "100_100_b", "jpg", size, 1, wallPaper);
-                        }
-                        //}
-                    }
-                } else if (object instanceof WallpapersListActivity.ColorWallpaper) {
-                    WallpapersListActivity.ColorWallpaper wallPaper = (WallpapersListActivity.ColorWallpaper) object;
-                    if (wallPaper.path != null) {
-                        imageView.setImage(wallPaper.path.getAbsolutePath(), "100_100", null);
-                    } else {
-                        imageView.setImageBitmap(null);
-                        imageView.setBackgroundColor(0xff000000 | wallPaper.color);
-                    }
-                    isSelected = wallPaper.id == selectedBackground;
-                } else if (object instanceof WallpapersListActivity.FileWallpaper) {
-                    WallpapersListActivity.FileWallpaper wallPaper = (WallpapersListActivity.FileWallpaper) object;
-                    isSelected = wallPaper.id == selectedBackground;
-                    if (wallPaper.originalPath != null) {
-                        imageView.setImage(wallPaper.originalPath.getAbsolutePath(), "100_100", null);
-                    } else if (wallPaper.path != null) {
-                        imageView.setImage(wallPaper.path.getAbsolutePath(), "100_100", null);
-                    } else if (wallPaper.resId == Theme.THEME_BACKGROUND_ID) {
-                        imageView.setImageDrawable(Theme.getThemedWallpaper(true));
-                    } else {
-                        imageView.setImageResource(wallPaper.thumbResId);
-                    }
-                } else if (object instanceof MediaController.SearchImage) {
-                    MediaController.SearchImage wallPaper = (MediaController.SearchImage) object;
-                    if (wallPaper.photo != null) {
-                        TLRPC.PhotoSize thumb = FileLoader.getClosestPhotoSizeWithSize(wallPaper.photo.sizes, 100);
-                        TLRPC.PhotoSize image = FileLoader.getClosestPhotoSizeWithSize(wallPaper.photo.sizes, 320);
-                        if (image == thumb) {
-                            image = null;
-                        }
-                        int size = image != null ? image.size : 0;
-                        imageView.setImage(ImageLocation.getForPhoto(image, wallPaper.photo), "100_100", ImageLocation.getForPhoto(thumb, wallPaper.photo), "100_100_b", "jpg", size, 1, wallPaper);
-                    } else {
-                        imageView.setImage(wallPaper.thumbUrl, "100_100", null);
-                    }
+                    int size = image != null ? image.size : 0;
+                    imageView.setImage(ImageLocation.getForPhoto(image, wallPaper.photo), "100_100", ImageLocation.getForPhoto(thumb, wallPaper.photo), "100_100_b", "jpg", size, 1, wallPaper);
                 } else {
-                    isSelected = false;
+                    imageView.setImage(wallPaper.thumbUrl, "100_100", null);
                 }
+            } else {
+                isSelected = false;
             }
         }
 
@@ -324,14 +312,14 @@ public class WallpaperCell extends FrameLayout {
         }
     }
 
-    public void setWallpaper(int type, int index, Object wallpaper, long selectedBackground, Drawable themedWallpaper, boolean themed) {
+    public void setWallpaper(int type, int index, Object wallpaper, String selectedBackgroundSlug, Drawable themedWallpaper, boolean themed) {
         currentType = type;
         if (wallpaper == null) {
             wallpaperViews[index].setVisibility(GONE);
             wallpaperViews[index].clearAnimation();
         } else {
             wallpaperViews[index].setVisibility(VISIBLE);
-            wallpaperViews[index].setWallpaper(wallpaper, selectedBackground, themedWallpaper, themed);
+            wallpaperViews[index].setWallpaper(wallpaper, selectedBackgroundSlug, themedWallpaper, themed);
         }
     }
 

@@ -93,6 +93,7 @@ static int policy_cache_create(X509 *x,
         /*
          * Duplicate policy OIDs are illegal: reject if matches found.
          */
+        sk_X509_POLICY_DATA_sort(cache->data);
         if (OBJ_obj2nid(data->valid_policy) == NID_any_policy) {
             if (cache->anyPolicy) {
                 ret = -1;
@@ -262,6 +263,7 @@ X509_POLICY_DATA *policy_cache_find_data(const X509_POLICY_CACHE *cache,
     X509_POLICY_DATA tmp;
 
     tmp.valid_policy = (ASN1_OBJECT *)id;
+    sk_X509_POLICY_DATA_sort(cache->data);
     if (!sk_X509_POLICY_DATA_find(cache->data, &idx, &tmp))
         return NULL;
     return sk_X509_POLICY_DATA_value(cache->data, idx);

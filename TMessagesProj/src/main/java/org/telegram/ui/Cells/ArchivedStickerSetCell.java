@@ -126,9 +126,9 @@ public class ArchivedStickerSetCell extends FrameLayout {
                 imageLocation = ImageLocation.getForSticker(thumb, sticker);
             }
 
-            if (object instanceof TLRPC.Document && MessageObject.isAnimatedStickerDocument(sticker)) {
+            if (object instanceof TLRPC.Document && MessageObject.isAnimatedStickerDocument(sticker, true)) {
                 imageView.setImage(ImageLocation.getForDocument(sticker), "50_50", imageLocation, null, 0, set);
-            } else if (imageLocation != null && imageLocation.lottieAnimation) {
+            } else if (imageLocation != null && imageLocation.imageType == FileLoader.IMAGE_TYPE_LOTTIE) {
                 imageView.setImage(imageLocation, "50_50", "tgs", null, set);
             } else {
                 imageView.setImage(imageLocation, "50_50", "webp", null, set);

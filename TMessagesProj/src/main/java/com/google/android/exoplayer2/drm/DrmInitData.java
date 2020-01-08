@@ -18,6 +18,7 @@ package com.google.android.exoplayer2.drm;
 import android.os.Parcel;
 import android.os.Parcelable;
 import androidx.annotation.Nullable;
+import android.text.TextUtils;
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.drm.DrmInitData.SchemeData;
 import com.google.android.exoplayer2.util.Assertions;
@@ -136,9 +137,10 @@ public final class DrmInitData implements Comparator<SchemeData>, Parcelable {
     Arrays.sort(this.schemeDatas, this);
   }
 
-  /* package */ DrmInitData(Parcel in) {
+  /* package */
+  DrmInitData(Parcel in) {
     schemeType = in.readString();
-    schemeDatas = in.createTypedArray(SchemeData.CREATOR);
+    schemeDatas = Util.castNonNull(in.createTypedArray(SchemeData.CREATOR));
     schemeDataCount = schemeDatas.length;
   }
 
@@ -180,6 +182,25 @@ public final class DrmInitData implements Comparator<SchemeData>, Parcelable {
       return this;
     }
     return new DrmInitData(schemeType, false, schemeDatas);
+  }
+
+  /**
+   * Returns an instance containing the {@link #schemeDatas} from both this and {@code other}. The
+   * {@link #schemeType} of the instances being merged must either match, or at least one scheme
+   * type must be {@code null}.
+   *
+   * @param drmInitData The instance to merge.
+   * @return The merged result.
+   */
+  public DrmInitData merge(DrmInitData drmInitData) {
+    Assertions.checkState(
+        schemeType == null
+            || drmInitData.schemeType == null
+            || TextUtils.equals(schemeType, drmInitData.schemeType));
+    String mergedSchemeType = schemeType != null ? this.schemeType : drmInitData.schemeType;
+    SchemeData[] mergedSchemeDatas =
+        Util.nullSafeArrayConcatenation(schemeDatas, drmInitData.schemeDatas);
+    return new DrmInitData(mergedSchemeType, mergedSchemeDatas);
   }
 
   @Override

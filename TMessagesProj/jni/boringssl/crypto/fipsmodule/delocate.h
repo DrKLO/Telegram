@@ -20,10 +20,11 @@
 #include "../internal.h"
 
 
-#if defined(BORINGSSL_FIPS) && !defined(OPENSSL_ASAN) && !defined(OPENSSL_MSAN)
+#if !defined(BORINGSSL_SHARED_LIBRARY) && defined(BORINGSSL_FIPS) && \
+    !defined(OPENSSL_ASAN) && !defined(OPENSSL_MSAN)
 #define DEFINE_BSS_GET(type, name)        \
   static type name __attribute__((used)); \
-  type *name##_bss_get(void);
+  type *name##_bss_get(void) __attribute__((const));
 // For FIPS builds we require that CRYPTO_ONCE_INIT be zero.
 #define DEFINE_STATIC_ONCE(name) DEFINE_BSS_GET(CRYPTO_once_t, name)
 // For FIPS builds we require that CRYPTO_STATIC_MUTEX_INIT be zero.

@@ -28,6 +28,13 @@ public abstract class BasePlayer implements Player {
   }
 
   @Override
+  public final boolean isPlaying() {
+    return getPlaybackState() == Player.STATE_READY
+        && getPlayWhenReady()
+        && getPlaybackSuppressionReason() == PLAYBACK_SUPPRESSION_REASON_NONE;
+  }
+
+  @Override
   public final void seekToDefaultPosition() {
     seekToDefaultPosition(getCurrentWindowIndex());
   }

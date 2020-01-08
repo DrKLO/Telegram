@@ -278,11 +278,12 @@ struct dh_st {
 
 extern "C++" {
 
-namespace bssl {
+BSSL_NAMESPACE_BEGIN
 
 BORINGSSL_MAKE_DELETER(DH, DH_free)
+BORINGSSL_MAKE_UP_REF(DH, DH_up_ref)
 
-}  // namespace bssl
+BSSL_NAMESPACE_END
 
 }  // extern C++
 

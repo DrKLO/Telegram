@@ -1285,7 +1285,7 @@ public class WebPlayerView extends ViewGroup implements VideoPlayer.VideoPlayerD
                 return;
             }
             duration = value;
-            durationLayout = new StaticLayout(String.format(Locale.US, "%d:%02d", duration / 60, duration % 60), textPaint, AndroidUtilities.dp(1000), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
+            durationLayout = new StaticLayout(AndroidUtilities.formatShortDuration(duration), textPaint, AndroidUtilities.dp(1000), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
             if (durationLayout.getLineCount() > 0) {
                 durationWidth = (int) Math.ceil(durationLayout.getLineWidth(0));
             }
@@ -1302,7 +1302,7 @@ public class WebPlayerView extends ViewGroup implements VideoPlayer.VideoPlayerD
                 return;
             }
             progress = value;
-            progressLayout = new StaticLayout(String.format(Locale.US, "%d:%02d", progress / 60, progress % 60), textPaint, AndroidUtilities.dp(1000), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
+            progressLayout = new StaticLayout(AndroidUtilities.formatShortDuration(progress), textPaint, AndroidUtilities.dp(1000), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
             invalidate();
         }
 

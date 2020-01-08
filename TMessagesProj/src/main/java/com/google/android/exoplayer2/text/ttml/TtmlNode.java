@@ -231,11 +231,11 @@ import java.util.TreeSet;
           new Cue(
               bitmap,
               region.position,
-              Cue.ANCHOR_TYPE_MIDDLE,
+              Cue.ANCHOR_TYPE_START,
               region.line,
               region.lineAnchor,
               region.width,
-              /* height= */ Cue.DIMEN_UNSET));
+              region.height));
     }
 
     // Create text based cues.

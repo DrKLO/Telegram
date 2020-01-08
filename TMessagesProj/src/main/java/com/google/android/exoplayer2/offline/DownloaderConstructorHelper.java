@@ -110,10 +110,8 @@ public final class DownloaderConstructorHelper {
             ? cacheReadDataSourceFactory
             : new FileDataSourceFactory();
     if (cacheWriteDataSinkFactory == null) {
-      CacheDataSinkFactory factory =
+      cacheWriteDataSinkFactory =
           new CacheDataSinkFactory(cache, CacheDataSink.DEFAULT_FRAGMENT_SIZE);
-      factory.experimental_setRespectCacheFragmentationFlag(true);
-      cacheWriteDataSinkFactory = factory;
     }
     onlineCacheDataSourceFactory =
         new CacheDataSourceFactory(

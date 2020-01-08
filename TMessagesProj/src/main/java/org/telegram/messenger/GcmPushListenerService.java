@@ -187,6 +187,12 @@ public class GcmPushListenerService extends FirebaseMessagingService {
                                     MessagesController.getInstance(accountFinal).performLogout(0);
                                 }
                             });
+                            countDownLatch.countDown();
+                            return;
+                        }
+                        case "GEO_LIVE_PENDING": {
+                            Utilities.stageQueue.postRunnable(() -> LocationController.getInstance(accountFinal).setNewLocationEndWatchTime());
+                            countDownLatch.countDown();
                             return;
                         }
                     }
@@ -195,6 +201,7 @@ public class GcmPushListenerService extends FirebaseMessagingService {
                     int chat_id;
                     int user_id;
                     long dialog_id = 0;
+                    boolean scheduled;
                     if (custom.has("channel_id")) {
                         channel_id = custom.getInt("channel_id");
                         dialog_id = -channel_id;
@@ -216,17 +223,41 @@ public class GcmPushListenerService extends FirebaseMessagingService {
                     if (custom.has("encryption_id")) {
                         dialog_id = ((long) custom.getInt("encryption_id")) << 32;
                     }
+                    if (custom.has("schedule")) {
+                        scheduled = custom.getInt("schedule") == 1;
+                    } else {
+                        scheduled = false;
+                    }
                     if (dialog_id == 0 && "ENCRYPTED_MESSAGE".equals(loc_key)) {
                         dialog_id = -(1L << 32);
                     }
+                    boolean canRelease = true;
                     if (dialog_id != 0) {
-                        /*int badge;
-                        if (json.has("badge")) {
-                            badge = json.getInt("badge");
-                        } else {
-                            badge = 1;
-                        }*/
-                        if ("MESSAGE_DELETED".equals(loc_key)) {
+                        if ("READ_HISTORY".equals(loc_key)) {
+                            int max_id = custom.getInt("max_id");
+                            final ArrayList<TLRPC.Update> updates = new ArrayList<>();
+                            if (BuildVars.LOGS_ENABLED) {
+                                FileLog.d("GCM received read notification max_id = " + max_id + " for dialogId = " + dialog_id);
+                            }
+                            if (channel_id != 0) {
+                                TLRPC.TL_updateReadChannelInbox update = new TLRPC.TL_updateReadChannelInbox();
+                                update.channel_id = channel_id;
+                                update.max_id = max_id;
+                                updates.add(update);
+                            } else {
+                                TLRPC.TL_updateReadHistoryInbox update = new TLRPC.TL_updateReadHistoryInbox();
+                                if (user_id != 0) {
+                                    update.peer = new TLRPC.TL_peerUser();
+                                    update.peer.user_id = user_id;
+                                } else {
+                                    update.peer = new TLRPC.TL_peerChat();
+                                    update.peer.chat_id = chat_id;
+                                }
+                                update.max_id = max_id;
+                                updates.add(update);
+                            }
+                            MessagesController.getInstance(accountFinal).processUpdateArray(updates, null, null, false, 0);
+                        } else if ("MESSAGE_DELETED".equals(loc_key)) {
                             String messages = custom.getString("messages");
                             String[] messagesArgs = messages.split(",");
                             SparseArray<ArrayList<Integer>> deletedMessages = new SparseArray<>();
@@ -238,6 +269,9 @@ public class GcmPushListenerService extends FirebaseMessagingService {
                             NotificationsController.getInstance(currentAccount).removeDeletedMessagesFromNotifications(deletedMessages);
 
                             MessagesController.getInstance(currentAccount).deleteMessagesByPush(dialog_id, ids, channel_id);
+                            if (BuildVars.LOGS_ENABLED) {
+                                FileLog.d("GCM received " + loc_key + " for dialogId = " + dialog_id + " mids = " + TextUtils.join(",", ids));
+                            }
                         } else if (!TextUtils.isEmpty(loc_key)) {
                             int msg_id;
                             if (custom.has("msg_id")) {
@@ -313,7 +347,8 @@ public class GcmPushListenerService extends FirebaseMessagingService {
                                     FileLog.d("GCM received message notification " + loc_key + " for dialogId = " + dialog_id + " mid = " + msg_id);
                                 }
                                 switch (loc_key) {
-                                    case "MESSAGE_TEXT": {
+                                    case "MESSAGE_TEXT":
+                                    case "CHANNEL_MESSAGE_TEXT": {
                                         messageText = LocaleController.formatString("NotificationMessageText", R.string.NotificationMessageText, args[0], args[1]);
                                         message1 = args[1];
                                         break;
@@ -402,7 +437,8 @@ public class GcmPushListenerService extends FirebaseMessagingService {
                                         message1 = LocaleController.getString("AttachGame", R.string.AttachGame);
                                         break;
                                     }
-                                    case "MESSAGE_GAME_SCORE": {
+                                    case "MESSAGE_GAME_SCORE":
+                                    case "CHANNEL_MESSAGE_GAME_SCORE":{
                                         messageText = LocaleController.formatString("NotificationMessageGameScored", R.string.NotificationMessageGameScored, args[0], args[1], args[2]);
                                         break;
                                     }
@@ -429,11 +465,6 @@ public class GcmPushListenerService extends FirebaseMessagingService {
                                     case "MESSAGES": {
                                         messageText = LocaleController.formatString("NotificationMessageAlbum", R.string.NotificationMessageAlbum, args[0]);
                                         localMessage = true;
-                                        break;
-                                    }
-                                    case "CHANNEL_MESSAGE_TEXT": {
-                                        messageText = LocaleController.formatString("NotificationMessageText", R.string.NotificationMessageText, args[0], args[1]);
-                                        message1 = args[1];
                                         break;
                                     }
                                     case "CHANNEL_MESSAGE_NOTEXT": {
@@ -504,10 +535,6 @@ public class GcmPushListenerService extends FirebaseMessagingService {
                                     case "CHANNEL_MESSAGE_GAME": {
                                         messageText = LocaleController.formatString("NotificationMessageGame", R.string.NotificationMessageGame, args[0]);
                                         message1 = LocaleController.getString("AttachGame", R.string.AttachGame);
-                                        break;
-                                    }
-                                    case "CHANNEL_MESSAGE_GAME_SCORE": {
-                                        messageText = LocaleController.formatString("NotificationMessageGameScored", R.string.NotificationMessageGameScored, args[0], args[1], args[2]);
                                         break;
                                     }
                                     case "CHANNEL_MESSAGE_FWDS": {
@@ -614,7 +641,8 @@ public class GcmPushListenerService extends FirebaseMessagingService {
                                         message1 = LocaleController.getString("PaymentInvoice", R.string.PaymentInvoice);
                                         break;
                                     }
-                                    case "CHAT_CREATED": {
+                                    case "CHAT_CREATED":
+                                    case "CHAT_ADD_YOU": {
                                         messageText = LocaleController.formatString("NotificationInvitedToGroup", R.string.NotificationInvitedToGroup, args[0], args[1]);
                                         break;
                                     }
@@ -628,10 +656,6 @@ public class GcmPushListenerService extends FirebaseMessagingService {
                                     }
                                     case "CHAT_ADD_MEMBER": {
                                         messageText = LocaleController.formatString("NotificationGroupAddMember", R.string.NotificationGroupAddMember, args[0], args[1], args[2]);
-                                        break;
-                                    }
-                                    case "CHAT_ADD_YOU": {
-                                        messageText = LocaleController.formatString("NotificationInvitedToGroup", R.string.NotificationInvitedToGroup, args[0], args[1]);
                                         break;
                                     }
                                     case "CHAT_DELETE_MEMBER": {
@@ -810,34 +834,20 @@ public class GcmPushListenerService extends FirebaseMessagingService {
                                         }
                                         break;
                                     }
-                                    case "CONTACT_JOINED": {
-                                        //ignored
-                                        break;
-                                    }
-                                    case "AUTH_UNKNOWN": {
-                                        //ignored
-                                        break;
-                                    }
-                                    case "AUTH_REGION": {
-                                        //ignored
-                                        break;
-                                    }
                                     case "ENCRYPTED_MESSAGE": {
                                         messageText = LocaleController.getString("YouHaveNewMessage", R.string.YouHaveNewMessage);
                                         name = LocaleController.getString("SecretChatName", R.string.SecretChatName);
                                         localMessage = true;
                                         break;
                                     }
+                                    case "CONTACT_JOINED":
+                                    case "AUTH_UNKNOWN":
+                                    case "AUTH_REGION":
+                                    case "LOCKED_MESSAGE":
                                     case "ENCRYPTION_REQUEST":
                                     case "ENCRYPTION_ACCEPT":
-                                    case "LOCKED_MESSAGE": {
-                                        //ignored
-                                        break;
-                                    }
-                                    case "PHONE_CALL_REQUEST": {
-                                        //ignored
-                                        break;
-                                    }
+                                    case "PHONE_CALL_REQUEST":
+                                    case "MESSAGE_MUTED":
                                     case "PHONE_CALL_MISSED": {
                                         //ignored
                                         break;
@@ -876,43 +886,19 @@ public class GcmPushListenerService extends FirebaseMessagingService {
                                     messageOwner.from_id = chat_from_id;
                                     messageOwner.mentioned = mention || pinned;
                                     messageOwner.silent = silent;
+                                    messageOwner.from_scheduled = scheduled;
 
                                     MessageObject messageObject = new MessageObject(currentAccount, messageOwner, messageText, name, userName, localMessage, channel, edited);
                                     ArrayList<MessageObject> arrayList = new ArrayList<>();
                                     arrayList.add(messageObject);
+                                    canRelease = false;
                                     NotificationsController.getInstance(currentAccount).processNewMessages(arrayList, true, true, countDownLatch);
-                                } else {
-                                    countDownLatch.countDown();
                                 }
-                            } else {
-                                countDownLatch.countDown();
                             }
-                        } else {
-                            int max_id = custom.getInt("max_id");
-                            final ArrayList<TLRPC.Update> updates = new ArrayList<>();
-                            if (BuildVars.LOGS_ENABLED) {
-                                FileLog.d("GCM received read notification max_id = " + max_id + " for dialogId = " + dialog_id);
-                            }
-                            if (channel_id != 0) {
-                                TLRPC.TL_updateReadChannelInbox update = new TLRPC.TL_updateReadChannelInbox();
-                                update.channel_id = channel_id;
-                                update.max_id = max_id;
-                                updates.add(update);
-                            } else {
-                                TLRPC.TL_updateReadHistoryInbox update = new TLRPC.TL_updateReadHistoryInbox();
-                                if (user_id != 0) {
-                                    update.peer = new TLRPC.TL_peerUser();
-                                    update.peer.user_id = user_id;
-                                } else {
-                                    update.peer = new TLRPC.TL_peerChat();
-                                    update.peer.chat_id = chat_id;
-                                }
-                                update.max_id = max_id;
-                                updates.add(update);
-                            }
-                            MessagesController.getInstance(accountFinal).processUpdateArray(updates, null, null, false, 0);
-                            countDownLatch.countDown();
                         }
+                    }
+                    if (canRelease) {
+                        countDownLatch.countDown();
                     }
 
                     ConnectionsManager.onInternalPushReceived(currentAccount);

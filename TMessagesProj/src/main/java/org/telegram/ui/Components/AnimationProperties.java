@@ -2,6 +2,7 @@ package org.telegram.ui.Components;
 
 import android.graphics.Paint;
 import android.graphics.drawable.ColorDrawable;
+import android.graphics.drawable.ShapeDrawable;
 import android.util.Property;
 
 import org.telegram.ui.Cells.DialogCell;
@@ -58,6 +59,18 @@ public class AnimationProperties {
         @Override
         public Integer get(ColorDrawable object) {
             return object.getAlpha();
+        }
+    };
+
+    public static final Property<ShapeDrawable, Integer> SHAPE_DRAWABLE_ALPHA = new IntProperty<ShapeDrawable>("alpha") {
+        @Override
+        public void setValue(ShapeDrawable object, int value) {
+            object.getPaint().setAlpha(value);
+        }
+
+        @Override
+        public Integer get(ShapeDrawable object) {
+            return object.getPaint().getAlpha();
         }
     };
 

@@ -77,8 +77,9 @@ int BN_bn2cbb_padded(CBB *out, size_t len, const BIGNUM *in) {
 static const char hextable[] = "0123456789abcdef";
 
 char *BN_bn2hex(const BIGNUM *bn) {
+  int width = bn_minimal_width(bn);
   char *buf = OPENSSL_malloc(1 /* leading '-' */ + 1 /* zero is non-empty */ +
-                             bn->top * BN_BYTES * 2 + 1 /* trailing NUL */);
+                             width * BN_BYTES * 2 + 1 /* trailing NUL */);
   if (buf == NULL) {
     OPENSSL_PUT_ERROR(BN, ERR_R_MALLOC_FAILURE);
     return NULL;
@@ -94,7 +95,7 @@ char *BN_bn2hex(const BIGNUM *bn) {
   }
 
   int z = 0;
-  for (int i = bn->top - 1; i >= 0; i--) {
+  for (int i = width - 1; i >= 0; i--) {
     for (int j = BN_BITS2 - 8; j >= 0; j -= 8) {
       // strip leading zeros
       int v = ((int)(bn->d[i] >> (long)j)) & 0xff;
@@ -153,7 +154,7 @@ static int decode_hex(BIGNUM *bn, const char *in, int in_len) {
     in_len -= todo;
   }
   assert(i <= bn->dmax);
-  bn->top = i;
+  bn->width = i;
   return 1;
 }
 
@@ -222,7 +223,7 @@ static int bn_x2bn(BIGNUM **outp, const char *in, decode_func decode, char_test_
     goto err;
   }
 
-  bn_correct_top(ret);
+  bn_set_minimal_width(ret);
   if (!BN_is_zero(ret)) {
     ret->neg = neg;
   }
@@ -347,7 +348,7 @@ int BN_print(BIO *bp, const BIGNUM *a) {
     goto end;
   }
 
-  for (i = a->top - 1; i >= 0; i--) {
+  for (i = bn_minimal_width(a) - 1; i >= 0; i--) {
     for (j = BN_BITS2 - 4; j >= 0; j -= 4) {
       // strip leading zeros
       v = ((int)(a->d[i] >> (long)j)) & 0x0f;
@@ -366,17 +367,13 @@ end:
 }
 
 int BN_print_fp(FILE *fp, const BIGNUM *a) {
-  BIO *b;
-  int ret;
-
-  b = BIO_new(BIO_s_file());
+  BIO *b = BIO_new_fp(fp, BIO_NOCLOSE);
   if (b == NULL) {
     return 0;
   }
-  BIO_set_fp(b, fp, BIO_NOCLOSE);
-  ret = BN_print(b, a);
-  BIO_free(b);
 
+  int ret = BN_print(b, a);
+  BIO_free(b);
   return ret;
 }
 
@@ -462,4 +459,12 @@ BIGNUM *BN_mpi2bn(const uint8_t *in, size_t len, BIGNUM *out) {
     BN_clear_bit(out, BN_num_bits(out) - 1);
   }
   return out;
+}
+
+int BN_bn2binpad(const BIGNUM *in, uint8_t *out, int len) {
+  if (len < 0 ||
+      !BN_bn2bin_padded(out, (size_t)len, in)) {
+    return -1;
+  }
+  return len;
 }

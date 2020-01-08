@@ -21,7 +21,6 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffXfermode;
-import android.graphics.Region;
 import android.util.SparseArray;
 import com.google.android.exoplayer2.text.Cue;
 import com.google.android.exoplayer2.util.Log;
@@ -150,6 +149,8 @@ import java.util.List;
     List<Cue> cues = new ArrayList<>();
     SparseArray<PageRegion> pageRegions = subtitleService.pageComposition.regions;
     for (int i = 0; i < pageRegions.size(); i++) {
+      // Save clean clipping state.
+      canvas.save();
       PageRegion pageRegion = pageRegions.valueAt(i);
       int regionId = pageRegions.keyAt(i);
       RegionComposition regionComposition = subtitleService.regions.get(regionId);
@@ -163,9 +164,7 @@ import java.util.List;
           displayDefinition.horizontalPositionMaximum);
       int clipBottom = Math.min(baseVerticalAddress + regionComposition.height,
           displayDefinition.verticalPositionMaximum);
-      canvas.clipRect(baseHorizontalAddress, baseVerticalAddress, clipRight, clipBottom,
-          Region.Op.REPLACE);
-
+      canvas.clipRect(baseHorizontalAddress, baseVerticalAddress, clipRight, clipBottom);
       ClutDefinition clutDefinition = subtitleService.cluts.get(regionComposition.clutId);
       if (clutDefinition == null) {
         clutDefinition = subtitleService.ancillaryCluts.get(regionComposition.clutId);
@@ -214,9 +213,11 @@ import java.util.List;
           (float) regionComposition.height / displayDefinition.height));
 
       canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR);
+      // Restore clean clipping state.
+      canvas.restore();
     }
 
-    return cues;
+    return Collections.unmodifiableList(cues);
   }
 
   // Static parsing.

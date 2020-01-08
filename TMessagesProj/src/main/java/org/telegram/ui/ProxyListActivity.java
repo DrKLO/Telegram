@@ -46,9 +46,12 @@ import org.telegram.ui.Cells.TextSettingsCell;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RecyclerListView;
 
+import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.DefaultItemAnimator;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+
+import java.util.List;
 
 public class ProxyListActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
 
@@ -371,7 +374,14 @@ public class ProxyListActivity extends BaseFragment implements NotificationCente
                     NotificationCenter.getGlobalInstance().removeObserver(ProxyListActivity.this, NotificationCenter.proxySettingsChanged);
                     NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.proxySettingsChanged);
                     NotificationCenter.getGlobalInstance().addObserver(ProxyListActivity.this, NotificationCenter.proxySettingsChanged);
-                    updateRows(true);
+                    updateRows(false);
+                    if (listAdapter != null) {
+                        listAdapter.notifyItemRemoved(position);
+                        if (SharedConfig.currentProxy == null) {
+                            listAdapter.notifyItemChanged(useProxyRow, ListAdapter.PAYLOAD_CHECKED_CHANGED);
+                            listAdapter.notifyItemChanged(callsRow, ListAdapter.PAYLOAD_CHECKED_CHANGED);
+                        }
+                    }
                 });
                 showDialog(builder.create());
                 return true;
@@ -491,6 +501,8 @@ public class ProxyListActivity extends BaseFragment implements NotificationCente
 
     private class ListAdapter extends RecyclerListView.SelectionAdapter {
 
+        public static final int PAYLOAD_CHECKED_CHANGED = 0;
+
         private Context mContext;
 
         public ListAdapter(Context context) {
@@ -552,6 +564,20 @@ public class ProxyListActivity extends BaseFragment implements NotificationCente
                     cell.setChecked(SharedConfig.currentProxy == info);
                     break;
                 }
+            }
+        }
+
+        @Override
+        public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position, @NonNull List payloads) {
+            if (holder.getItemViewType() == 3 && payloads.contains(PAYLOAD_CHECKED_CHANGED)) {
+                TextCheckCell checkCell = (TextCheckCell) holder.itemView;
+                if (position == useProxyRow) {
+                    checkCell.setChecked(useProxySettings);
+                } else if (position == callsRow) {
+                    checkCell.setChecked(useProxyForCalls);
+                }
+            } else {
+                super.onBindViewHolder(holder, position, payloads);
             }
         }
 

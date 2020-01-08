@@ -28,7 +28,7 @@ public class EmptyTextProgressView extends FrameLayout {
     private TextView textView;
     private RadialProgressView progressBar;
     private boolean inLayout;
-    private boolean showAtCenter;
+    private int showAtPos;
 
     public EmptyTextProgressView(Context context) {
         super(context);
@@ -89,7 +89,11 @@ public class EmptyTextProgressView extends FrameLayout {
     }
 
     public void setShowAtCenter(boolean value) {
-        showAtCenter = value;
+        showAtPos = value ? 1 : 0;
+    }
+
+    public void setShowAtTop(boolean value) {
+        showAtPos = value ? 2 : 0;
     }
 
     @Override
@@ -107,7 +111,9 @@ public class EmptyTextProgressView extends FrameLayout {
 
             int x = (width - child.getMeasuredWidth()) / 2;
             int y;
-            if (showAtCenter) {
+            if (showAtPos == 2) {
+                y = (AndroidUtilities.dp(100) - child.getMeasuredHeight()) / 2 + getPaddingTop();
+            } else if (showAtPos == 1) {
                 y = (height / 2 - child.getMeasuredHeight()) / 2 + getPaddingTop();
             } else {
                 y = (height - child.getMeasuredHeight()) / 2 + getPaddingTop();

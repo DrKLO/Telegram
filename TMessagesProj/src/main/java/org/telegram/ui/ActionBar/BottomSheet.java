@@ -77,9 +77,12 @@ public class BottomSheet extends Dialog {
     private int[] itemIcons;
     private View customView;
     private CharSequence title;
+    private boolean bigTitle;
     protected boolean fullWidth;
     protected boolean isFullscreen;
     protected ColorDrawable backDrawable = new ColorDrawable(0xff000000);
+
+    private boolean canDismissWithSwipe = true;
 
     private boolean allowCustomAnimation = true;
     private boolean showWithoutAnimation;
@@ -522,14 +525,24 @@ public class BottomSheet extends Dialog {
         }
 
         public void setTextAndIcon(CharSequence text, int icon) {
+            setTextAndIcon(text, icon, false);
+        }
+
+        public void setTextAndIcon(CharSequence text, int icon, boolean bigTitle) {
             textView.setText(text);
             if (icon != 0) {
                 imageView.setImageResource(icon);
                 imageView.setVisibility(VISIBLE);
-                textView.setPadding(AndroidUtilities.dp(LocaleController.isRTL ? 16 : 72), 0, AndroidUtilities.dp(LocaleController.isRTL ? 72 : 16), 0);
+                if (bigTitle) {
+                    textView.setPadding(AndroidUtilities.dp(LocaleController.isRTL ? 21 : 72), 0, AndroidUtilities.dp(LocaleController.isRTL ? 72 : 21), 0);
+                    imageView.setPadding(LocaleController.isRTL ? 0 : AndroidUtilities.dp(5), 0, LocaleController.isRTL ? AndroidUtilities.dp(5) : 5, 0);
+                } else {
+                    textView.setPadding(AndroidUtilities.dp(LocaleController.isRTL ? 16 : 72), 0, AndroidUtilities.dp(LocaleController.isRTL ? 72 : 16), 0);
+                    imageView.setPadding(0, 0, 0, 0);
+                }
             } else {
                 imageView.setVisibility(INVISIBLE);
-                textView.setPadding(AndroidUtilities.dp(16), 0, AndroidUtilities.dp(16), 0);
+                textView.setPadding(AndroidUtilities.dp(bigTitle ? 21 : 16), 0, AndroidUtilities.dp(bigTitle ? 21 : 16), 0);
             }
         }
     }
@@ -546,7 +559,7 @@ public class BottomSheet extends Dialog {
         }
     }
 
-    public BottomSheet(Context context, boolean needFocus, int backgroundType) {
+    public BottomSheet(Context context, boolean needFocus) {
         super(context, R.style.TransparentDialog);
 
         if (Build.VERSION.SDK_INT >= 21) {
@@ -556,11 +569,7 @@ public class BottomSheet extends Dialog {
         touchSlop = vc.getScaledTouchSlop();
 
         Rect padding = new Rect();
-        if (backgroundType == 0) {
-            shadowDrawable = context.getResources().getDrawable(R.drawable.sheet_shadow).mutate();
-        } else if (backgroundType == 1) {
-            shadowDrawable = context.getResources().getDrawable(R.drawable.sheet_shadow_round).mutate();
-        }
+        shadowDrawable = context.getResources().getDrawable(R.drawable.sheet_shadow_round).mutate();
         shadowDrawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_dialogBackground), PorterDuff.Mode.MULTIPLY));
         shadowDrawable.getPadding(padding);
         backgroundPaddingLeft = padding.left;
@@ -600,6 +609,15 @@ public class BottomSheet extends Dialog {
         window.setWindowAnimations(R.style.DialogNoAnimation);
         setContentView(container, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
 
+        if (Build.VERSION.SDK_INT >= 23) {
+            int color = Theme.getColor(Theme.key_actionBarDefault, null, true);
+            if (color == 0xffffffff) {
+                int flags = container.getSystemUiVisibility();
+                flags |= View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
+                container.setSystemUiVisibility(flags);
+            }
+        }
+
         if (containerView == null) {
             containerView = new FrameLayout(getContext()) {
                 @Override
@@ -625,10 +643,17 @@ public class BottomSheet extends Dialog {
             titleView.setLines(1);
             titleView.setSingleLine(true);
             titleView.setText(title);
-            titleView.setTextColor(Theme.getColor(Theme.key_dialogTextGray2));
-            titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
+            if (bigTitle) {
+                titleView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
+                titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
+                titleView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+                titleView.setPadding(AndroidUtilities.dp(21), AndroidUtilities.dp(6), AndroidUtilities.dp(21), AndroidUtilities.dp(8));
+            } else {
+                titleView.setTextColor(Theme.getColor(Theme.key_dialogTextGray2));
+                titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
+                titleView.setPadding(AndroidUtilities.dp(16), 0, AndroidUtilities.dp(16), AndroidUtilities.dp(8));
+            }
             titleView.setEllipsize(TextUtils.TruncateAt.MIDDLE);
-            titleView.setPadding(AndroidUtilities.dp(16), 0, AndroidUtilities.dp(16), AndroidUtilities.dp(8));
             titleView.setGravity(Gravity.CENTER_VERTICAL);
             containerView.addView(titleView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48));
             titleView.setOnTouchListener((v, event) -> true);
@@ -649,7 +674,7 @@ public class BottomSheet extends Dialog {
                         continue;
                     }
                     BottomSheetCell cell = new BottomSheetCell(getContext(), 0);
-                    cell.setTextAndIcon(items[a], itemIcons != null ? itemIcons[a] : 0);
+                    cell.setTextAndIcon(items[a], itemIcons != null ? itemIcons[a] : 0, bigTitle);
                     containerView.addView(cell, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.LEFT | Gravity.TOP, 0, topOffset, 0, 0));
                     topOffset += 48;
                     cell.setTag(a);
@@ -756,7 +781,11 @@ public class BottomSheet extends Dialog {
     }
 
     protected boolean canDismissWithSwipe() {
-        return true;
+        return canDismissWithSwipe;
+    }
+
+    public void setCanDismissWithSwipe(boolean value) {
+        canDismissWithSwipe = value;
     }
 
     protected boolean onContainerTouchEvent(MotionEvent event) {
@@ -768,7 +797,12 @@ public class BottomSheet extends Dialog {
     }
 
     public void setTitle(CharSequence value) {
+        setTitle(value, false);
+    }
+
+    public void setTitle(CharSequence value, boolean big) {
         title = value;
+        bigTitle = big;
     }
 
     public void setApplyTopPadding(boolean value) {
@@ -1036,16 +1070,12 @@ public class BottomSheet extends Dialog {
 
         private BottomSheet bottomSheet;
 
-        public Builder(Context context, boolean needFocus, int backgroundType) {
-            bottomSheet = new BottomSheet(context, needFocus, backgroundType);
-        }
-
         public Builder(Context context) {
-            bottomSheet = new BottomSheet(context, false, 0);
+            bottomSheet = new BottomSheet(context, false);
         }
 
         public Builder(Context context, boolean needFocus) {
-            bottomSheet = new BottomSheet(context, needFocus, 0);
+            bottomSheet = new BottomSheet(context, needFocus);
         }
 
         public Builder setItems(CharSequence[] items, final OnClickListener onClickListener) {
@@ -1067,7 +1097,12 @@ public class BottomSheet extends Dialog {
         }
 
         public Builder setTitle(CharSequence title) {
+            return setTitle(title, false);
+        }
+
+        public Builder setTitle(CharSequence title, boolean big) {
             bottomSheet.title = title;
+            bottomSheet.bigTitle = big;
             return this;
         }
 
@@ -1145,5 +1180,9 @@ public class BottomSheet extends Dialog {
 
     public void onContainerDraw(Canvas canvas) {
 
+    }
+
+    public ThemeDescription[] getThemeDescriptions() {
+        return null;
     }
 }

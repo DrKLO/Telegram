@@ -16,37 +16,28 @@
 package com.google.android.exoplayer2.offline;
 
 import androidx.annotation.Nullable;
+import java.io.IOException;
 
-/** Persists {@link DownloadState}s. */
-interface DownloadIndex {
-  /** Releases the used resources. */
-  void release();
+/** An index of {@link Download Downloads}. */
+public interface DownloadIndex {
 
   /**
-   * Returns the {@link DownloadState} with the given {@code id}, or null.
+   * Returns the {@link Download} with the given {@code id}, or null.
    *
-   * @param id ID of a {@link DownloadState}.
-   * @return The {@link DownloadState} with the given {@code id}, or null if a download state with
-   *     this id doesn't exist.
+   * @param id ID of a {@link Download}.
+   * @return The {@link Download} with the given {@code id}, or null if a download state with this
+   *     id doesn't exist.
+   * @throws IOException If an error occurs reading the state.
    */
   @Nullable
-  DownloadState getDownloadState(String id);
+  Download getDownload(String id) throws IOException;
 
   /**
-   * Returns a {@link DownloadStateCursor} to {@link DownloadState}s with the given {@code states}.
+   * Returns a {@link DownloadCursor} to {@link Download}s with the given {@code states}.
    *
-   * @param states Returns only the {@link DownloadState}s with this states. If empty, returns all.
-   * @return A cursor to {@link DownloadState}s with the given {@code states}.
+   * @param states Returns only the {@link Download}s with this states. If empty, returns all.
+   * @return A cursor to {@link Download}s with the given {@code states}.
+   * @throws IOException If an error occurs reading the state.
    */
-  DownloadStateCursor getDownloadStates(@DownloadState.State int... states);
-
-  /**
-   * Adds or replaces a {@link DownloadState}.
-   *
-   * @param downloadState The {@link DownloadState} to be added.
-   */
-  void putDownloadState(DownloadState downloadState);
-
-  /** Removes the {@link DownloadState} with the given {@code id}. */
-  void removeDownloadState(String id);
+  DownloadCursor getDownloads(@Download.State int... states) throws IOException;
 }

@@ -108,10 +108,10 @@
 
 #include <openssl/bn.h>
 
+#include <limits.h>
 #include <string.h>
 
 #include <openssl/err.h>
-#include <openssl/mem.h>
 #include <openssl/rand.h>
 #include <openssl/type_check.h>
 
@@ -120,12 +120,7 @@
 #include "../rand/internal.h"
 
 
-static const uint8_t kDefaultAdditionalData[32] = {0};
-
 int BN_rand(BIGNUM *rnd, int bits, int top, int bottom) {
-  uint8_t *buf = NULL;
-  int ret = 0, bit, bytes, mask;
-
   if (rnd == NULL) {
     return 0;
   }
@@ -146,68 +141,62 @@ int BN_rand(BIGNUM *rnd, int bits, int top, int bottom) {
     return 1;
   }
 
-  bytes = (bits + 7) / 8;
-  bit = (bits - 1) % 8;
-  mask = 0xff << (bit + 1);
-
-  buf = OPENSSL_malloc(bytes);
-  if (buf == NULL) {
-    OPENSSL_PUT_ERROR(BN, ERR_R_MALLOC_FAILURE);
-    goto err;
+  if (bits > INT_MAX - (BN_BITS2 - 1)) {
+    OPENSSL_PUT_ERROR(BN, BN_R_BIGNUM_TOO_LONG);
+    return 0;
   }
 
-  // Make a random number and set the top and bottom bits.
-  RAND_bytes(buf, bytes);
+  int words = (bits + BN_BITS2 - 1) / BN_BITS2;
+  int bit = (bits - 1) % BN_BITS2;
+  const BN_ULONG kOne = 1;
+  const BN_ULONG kThree = 3;
+  BN_ULONG mask = bit < BN_BITS2 - 1 ? (kOne << (bit + 1)) - 1 : BN_MASK2;
+  if (!bn_wexpand(rnd, words)) {
+    return 0;
+  }
 
+  RAND_bytes((uint8_t *)rnd->d, words * sizeof(BN_ULONG));
+  rnd->d[words - 1] &= mask;
   if (top != BN_RAND_TOP_ANY) {
     if (top == BN_RAND_TOP_TWO && bits > 1) {
       if (bit == 0) {
-        buf[0] = 1;
-        buf[1] |= 0x80;
+        rnd->d[words - 1] |= 1;
+        rnd->d[words - 2] |= kOne << (BN_BITS2 - 1);
       } else {
-        buf[0] |= (3 << (bit - 1));
+        rnd->d[words - 1] |= kThree << (bit - 1);
       }
     } else {
-      buf[0] |= (1 << bit);
+      rnd->d[words - 1] |= kOne << bit;
     }
   }
-
-  buf[0] &= ~mask;
-
-  // Set the bottom bit if requested,
-  if (bottom == BN_RAND_BOTTOM_ODD)  {
-    buf[bytes - 1] |= 1;
+  if (bottom == BN_RAND_BOTTOM_ODD) {
+    rnd->d[0] |= 1;
   }
 
-  if (!BN_bin2bn(buf, bytes, rnd)) {
-    goto err;
-  }
-
-  ret = 1;
-
-err:
-  OPENSSL_free(buf);
-  return ret;
+  rnd->neg = 0;
+  rnd->width = words;
+  return 1;
 }
 
 int BN_pseudo_rand(BIGNUM *rnd, int bits, int top, int bottom) {
   return BN_rand(rnd, bits, top, bottom);
 }
 
-// bn_less_than_word returns one if the number represented by |len| words at |a|
-// is less than |b| and zero otherwise. It performs this computation in time
-// independent of the value of |a|. |b| is assumed public.
-static int bn_less_than_word(const BN_ULONG *a, size_t len, BN_ULONG b) {
+// bn_less_than_word_mask returns a mask of all ones if the number represented
+// by |len| words at |a| is less than |b| and zero otherwise. It performs this
+// computation in time independent of the value of |a|. |b| is assumed public.
+static crypto_word_t bn_less_than_word_mask(const BN_ULONG *a, size_t len,
+                                            BN_ULONG b) {
   if (b == 0) {
-    return 0;
+    return CONSTTIME_FALSE_W;
   }
   if (len == 0) {
-    return 1;
+    return CONSTTIME_TRUE_W;
   }
 
   // |a| < |b| iff a[1..len-1] are all zero and a[0] < b.
-  OPENSSL_COMPILE_ASSERT(sizeof(BN_ULONG) <= sizeof(crypto_word_t),
-                         crypto_word_t_too_small);
+  OPENSSL_STATIC_ASSERT(sizeof(BN_ULONG) <= sizeof(crypto_word_t),
+                        "crypto_word_t is too small");
   crypto_word_t mask = 0;
   for (size_t i = 1; i < len; i++) {
     mask |= a[i];
@@ -215,25 +204,19 @@ static int bn_less_than_word(const BN_ULONG *a, size_t len, BN_ULONG b) {
   // |mask| is now zero iff a[1..len-1] are all zero.
   mask = constant_time_is_zero_w(mask);
   mask &= constant_time_lt_w(a[0], b);
-  return constant_time_select_int(mask, 1, 0);
+  return mask;
 }
 
 int bn_in_range_words(const BN_ULONG *a, BN_ULONG min_inclusive,
                       const BN_ULONG *max_exclusive, size_t len) {
-  return bn_less_than_words(a, max_exclusive, len) &&
-         !bn_less_than_word(a, len, min_inclusive);
+  crypto_word_t mask = ~bn_less_than_word_mask(a, len, min_inclusive);
+  return mask & bn_less_than_words(a, max_exclusive, len);
 }
 
-int bn_rand_range_words(BN_ULONG *out, BN_ULONG min_inclusive,
-                        const BN_ULONG *max_exclusive, size_t len,
-                        const uint8_t additional_data[32]) {
-  // This function implements the equivalent of steps 4 through 7 of FIPS 186-4
-  // appendices B.4.2 and B.5.2. When called in those contexts, |max_exclusive|
-  // is n and |min_inclusive| is one.
-
-  // Compute the bit length of |max_exclusive| (step 1), in terms of a number of
-  // |words| worth of entropy to fill and a mask of bits to clear in the top
-  // word.
+static int bn_range_to_mask(size_t *out_words, BN_ULONG *out_mask,
+                            size_t min_inclusive, const BN_ULONG *max_exclusive,
+                            size_t len) {
+  // The magnitude of |max_exclusive| is assumed public.
   size_t words = len;
   while (words > 0 && max_exclusive[words - 1] == 0) {
     words--;
@@ -253,6 +236,27 @@ int bn_rand_range_words(BN_ULONG *out, BN_ULONG min_inclusive,
 #if defined(OPENSSL_64_BIT)
   mask |= mask >> 32;
 #endif
+
+  *out_words = words;
+  *out_mask = mask;
+  return 1;
+}
+
+int bn_rand_range_words(BN_ULONG *out, BN_ULONG min_inclusive,
+                        const BN_ULONG *max_exclusive, size_t len,
+                        const uint8_t additional_data[32]) {
+  // This function implements the equivalent of steps 4 through 7 of FIPS 186-4
+  // appendices B.4.2 and B.5.2. When called in those contexts, |max_exclusive|
+  // is n and |min_inclusive| is one.
+
+  // Compute the bit length of |max_exclusive| (step 1), in terms of a number of
+  // |words| worth of entropy to fill and a mask of bits to clear in the top
+  // word.
+  size_t words;
+  BN_ULONG mask;
+  if (!bn_range_to_mask(&words, &mask, min_inclusive, max_exclusive, len)) {
+    return 0;
+  }
 
   // Fill any unused words with zero.
   OPENSSL_memset(out + words, 0, (len - words) * sizeof(BN_ULONG));
@@ -278,15 +282,53 @@ int bn_rand_range_words(BN_ULONG *out, BN_ULONG min_inclusive,
 
 int BN_rand_range_ex(BIGNUM *r, BN_ULONG min_inclusive,
                      const BIGNUM *max_exclusive) {
-  if (!bn_wexpand(r, max_exclusive->top) ||
+  static const uint8_t kDefaultAdditionalData[32] = {0};
+  if (!bn_wexpand(r, max_exclusive->width) ||
       !bn_rand_range_words(r->d, min_inclusive, max_exclusive->d,
-                           max_exclusive->top, kDefaultAdditionalData)) {
+                           max_exclusive->width, kDefaultAdditionalData)) {
     return 0;
   }
 
   r->neg = 0;
-  r->top = max_exclusive->top;
-  bn_correct_top(r);
+  r->width = max_exclusive->width;
+  return 1;
+}
+
+int bn_rand_secret_range(BIGNUM *r, int *out_is_uniform, BN_ULONG min_inclusive,
+                         const BIGNUM *max_exclusive) {
+  size_t words;
+  BN_ULONG mask;
+  if (!bn_range_to_mask(&words, &mask, min_inclusive, max_exclusive->d,
+                        max_exclusive->width) ||
+      !bn_wexpand(r, words)) {
+    return 0;
+  }
+
+  assert(words > 0);
+  assert(mask != 0);
+  // The range must be large enough for bit tricks to fix invalid values.
+  if (words == 1 && min_inclusive > mask >> 1) {
+    OPENSSL_PUT_ERROR(BN, BN_R_INVALID_RANGE);
+    return 0;
+  }
+
+  // Select a uniform random number with num_bits(max_exclusive) bits.
+  RAND_bytes((uint8_t *)r->d, words * sizeof(BN_ULONG));
+  r->d[words - 1] &= mask;
+
+  // Check, in constant-time, if the value is in range.
+  *out_is_uniform =
+      bn_in_range_words(r->d, min_inclusive, max_exclusive->d, words);
+  crypto_word_t in_range = *out_is_uniform;
+  in_range = 0 - in_range;
+
+  // If the value is not in range, force it to be in range.
+  r->d[0] |= constant_time_select_w(in_range, 0, min_inclusive);
+  r->d[words - 1] &= constant_time_select_w(in_range, BN_MASK2, mask >> 1);
+  assert(bn_in_range_words(r->d, min_inclusive, max_exclusive->d, words));
+
+  r->neg = 0;
+  r->width = words;
   return 1;
 }
 

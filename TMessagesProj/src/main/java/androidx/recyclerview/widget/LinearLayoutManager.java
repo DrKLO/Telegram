@@ -1085,6 +1085,9 @@ public class LinearLayoutManager extends RecyclerView.LayoutManager implements
     }
 
     public void scrollToPositionWithOffset(int position, int offset, boolean bottom) {
+        if (mPendingScrollPosition == position && mPendingScrollPositionOffset == offset && mPendingScrollPositionBottom == bottom) {
+            return;
+        }
         mPendingScrollPosition = position;
         mPendingScrollPositionOffset = offset;
         mPendingScrollPositionBottom = bottom;

@@ -30,7 +30,6 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.ui.Components.FireworksEffect;
@@ -172,7 +171,7 @@ public class ActionBar extends FrameLayout {
                     snowflakesEffect = new SnowflakesEffect();
                     titleTextView.invalidate();
                     invalidate();
-                } else if (BuildVars.DEBUG_PRIVATE_VERSION) {
+                } else {
                     snowflakesEffect = null;
                     fireworksEffect = new FireworksEffect();
                     titleTextView.invalidate();
@@ -312,14 +311,26 @@ public class ActionBar extends FrameLayout {
         subtitleTextView.setTextColor(color);
     }
 
-    public void setPopupItemsColor(int color, boolean icon) {
-        if (menu != null) {
+    public void setPopupItemsColor(int color, boolean icon, boolean forActionMode) {
+        if (forActionMode && actionMode != null) {
+            actionMode.setPopupItemsColor(color, icon);
+        } else if (!forActionMode && menu != null) {
             menu.setPopupItemsColor(color, icon);
         }
     }
 
-    public void setPopupBackgroundColor(int color) {
-        if (menu != null) {
+    public void setPopupItemsSelectorColor(int color, boolean forActionMode) {
+        if (forActionMode && actionMode != null) {
+            actionMode.setPopupItemsSelectorColor(color);
+        } else if (!forActionMode && menu != null) {
+            menu.setPopupItemsSelectorColor(color);
+        }
+    }
+
+    public void setPopupBackgroundColor(int color, boolean forActionMode) {
+        if (forActionMode && actionMode != null) {
+            actionMode.redrawPopup(color);
+        } else if (!forActionMode && menu != null) {
             menu.redrawPopup(color);
         }
     }
@@ -377,6 +388,7 @@ public class ActionBar extends FrameLayout {
         }
         actionMode = new ActionBarMenu(getContext(), this);
         actionMode.isActionMode = true;
+        actionMode.setClickable(true);
         actionMode.setBackgroundColor(Theme.getColor(Theme.key_actionBarActionModeDefault));
         addView(actionMode, indexOfChild(backButtonImageView));
         actionMode.setPadding(0, occupyStatusBar ? AndroidUtilities.statusBarHeight : 0, 0, 0);
@@ -601,7 +613,7 @@ public class ActionBar extends FrameLayout {
         return actionMode != null && actionModeVisible;
     }
 
-    protected void onSearchFieldVisibilityChanged(boolean visible) {
+    public void onSearchFieldVisibilityChanged(boolean visible) {
         isSearchFieldVisible = visible;
         if (titleTextView != null) {
             titleTextView.setVisibility(visible ? INVISIBLE : VISIBLE);

@@ -25,6 +25,7 @@ import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.FileLog;
 
 import java.util.ArrayList;
+import java.util.List;
 
 public class CameraSession {
 
@@ -46,6 +47,7 @@ public class CameraSession {
     private boolean sameTakePictureOrientation;
     private boolean flipFront = true;
     private float currentZoom;
+    private boolean optimizeForBarcode;
 
     public static final int ORIENTATION_HYSTERESIS = 5;
 
@@ -108,6 +110,11 @@ public class CameraSession {
         return orientationHistory;
     }
 
+    public void setOptimizeForBarcode(boolean value) {
+        optimizeForBarcode = value;
+        configurePhotoCamera();
+    }
+
     public void checkFlashMode(String mode) {
         ArrayList<String> modes = CameraController.getInstance().availableFlashModes;
         if (modes.contains(currentFlashMode)) {
@@ -124,6 +131,15 @@ public class CameraSession {
         configurePhotoCamera();
         SharedPreferences sharedPreferences = ApplicationLoader.applicationContext.getSharedPreferences("camera", Activity.MODE_PRIVATE);
         sharedPreferences.edit().putString(cameraInfo.frontCamera != 0 ? "flashMode_front" : "flashMode", mode).commit();
+    }
+
+    public void setTorchEnabled(boolean enabled) {
+        try {
+            currentFlashMode = enabled ? Camera.Parameters.FLASH_MODE_TORCH : Camera.Parameters.FLASH_MODE_OFF;
+            configurePhotoCamera();
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
     }
 
     public String getCurrentFlashMode() {
@@ -339,9 +355,20 @@ public class CameraSession {
                     maxZoom = params.getMaxZoom();
                     params.setZoom((int) (currentZoom * maxZoom));
 
-                    String desiredMode = Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE;
-                    if (params.getSupportedFocusModes().contains(desiredMode)) {
-                        params.setFocusMode(desiredMode);
+                    if (optimizeForBarcode) {
+                        List<String> modes = params.getSupportedSceneModes();
+                        if (modes != null && modes.contains(Camera.Parameters.SCENE_MODE_BARCODE)) {
+                            params.setSceneMode(Camera.Parameters.SCENE_MODE_BARCODE);
+                        }
+                        String desiredMode = Camera.Parameters.FOCUS_MODE_CONTINUOUS_VIDEO;
+                        if (params.getSupportedFocusModes().contains(desiredMode)) {
+                            params.setFocusMode(desiredMode);
+                        }
+                    } else {
+                        String desiredMode = Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE;
+                        if (params.getSupportedFocusModes().contains(desiredMode)) {
+                            params.setFocusMode(desiredMode);
+                        }
                     }
 
                     int outputOrientation = 0;
@@ -522,7 +549,11 @@ public class CameraSession {
 
     public void setOneShotPreviewCallback(Camera.PreviewCallback callback) {
         if (cameraInfo != null && cameraInfo.camera != null) {
-            cameraInfo.camera.setOneShotPreviewCallback(callback);
+            try {
+                cameraInfo.camera.setOneShotPreviewCallback(callback);
+            } catch (Exception ignore) {
+
+            }
         }
     }
 

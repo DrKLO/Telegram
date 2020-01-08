@@ -214,6 +214,19 @@ public final class Loader implements LoaderErrorThrower {
   }
 
   /**
+   * Whether the last call to {@link #startLoading} resulted in a fatal error. Calling {@link
+   * #maybeThrowError()} will throw the fatal error.
+   */
+  public boolean hasFatalError() {
+    return fatalError != null;
+  }
+
+  /** Clears any stored fatal error. */
+  public void clearFatalError() {
+    fatalError = null;
+  }
+
+  /**
    * Starts loading a {@link Loadable}.
    *
    * <p>The calling thread must be a {@link Looper} thread, which is the thread on which the {@link

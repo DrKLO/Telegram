@@ -123,6 +123,11 @@ public abstract class NoSampleRenderer implements Renderer, RendererCapabilities
   }
 
   @Override
+  public long getReadingPositionUs() {
+    return C.TIME_END_OF_SOURCE;
+  }
+
+  @Override
   public final void setCurrentStreamFinal() {
     streamIsFinal = true;
   }

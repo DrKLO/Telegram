@@ -1,4 +1,11 @@
-#!/usr/bin/env perl
+#! /usr/bin/env perl
+# Copyright 2005-2016 The OpenSSL Project Authors. All Rights Reserved.
+#
+# Licensed under the OpenSSL license (the "License").  You may not use
+# this file except in compliance with the License.  You can obtain a copy
+# in the file LICENSE in the source distribution or at
+# https://www.openssl.org/source/license.html
+
 
 # ====================================================================
 # Written by Andy Polyakov <appro@openssl.org> for the OpenSSL
@@ -56,9 +63,7 @@ open OUT,"| \"$^X\" \"$xlate\" $flavour \"$output\"";
 # In upstream, this is controlled by shelling out to the compiler to check
 # versions, but BoringSSL is intended to be used with pre-generated perlasm
 # output, so this isn't useful anyway.
-#
-# TODO(davidben): Set $addx to one once build problems are resolved.
-$addx = 0;
+$addx = 1;
 
 # int bn_mul_mont(
 $rp="%rdi";	# BN_ULONG *rp,
@@ -66,7 +71,9 @@ $ap="%rsi";	# const BN_ULONG *ap,
 $bp="%rdx";	# const BN_ULONG *bp,
 $np="%rcx";	# const BN_ULONG *np,
 $n0="%r8";	# const BN_ULONG *n0,
-$num="%r9";	# int num);
+# TODO(davidben): The code below treats $num as an int, but C passes in a
+# size_t.
+$num="%r9";	# size_t num);
 $lo0="%r10";
 $hi0="%r11";
 $hi1="%r13";
@@ -292,31 +299,30 @@ $code.=<<___;
 
 	xor	$i,$i			# i=0 and clear CF!
 	mov	(%rsp),%rax		# tp[0]
-	lea	(%rsp),$ap		# borrow ap for tp
 	mov	$num,$j			# j=num
-	jmp	.Lsub
+
 .align	16
-.Lsub:
-	sbb	($np,$i,8),%rax
+.Lsub:	sbb	($np,$i,8),%rax
 	mov	%rax,($rp,$i,8)		# rp[i]=tp[i]-np[i]
-	mov	8($ap,$i,8),%rax	# tp[i+1]
+	mov	8(%rsp,$i,8),%rax	# tp[i+1]
 	lea	1($i),$i		# i++
-	dec	$j			# doesnn't affect CF!
+	dec	$j			# doesn't affect CF!
 	jnz	.Lsub
 
 	sbb	\$0,%rax		# handle upmost overflow bit
+	mov	\$-1,%rbx
+	xor	%rax,%rbx		# not %rax
 	xor	$i,$i
-	and	%rax,$ap
-	not	%rax
-	mov	$rp,$np
-	and	%rax,$np
 	mov	$num,$j			# j=num
-	or	$np,$ap			# ap=borrow?tp:rp
-.align	16
-.Lcopy:					# copy or in-place refresh
-	mov	($ap,$i,8),%rax
-	mov	$i,(%rsp,$i,8)		# zap temporary vector
-	mov	%rax,($rp,$i,8)		# rp[i]=tp[i]
+
+.Lcopy:					# conditional copy
+	mov	($rp,$i,8),%rcx
+	mov	(%rsp,$i,8),%rdx
+	and	%rbx,%rcx
+	and	%rax,%rdx
+	mov	$num,(%rsp,$i,8)	# zap temporary vector
+	or	%rcx,%rdx
+	mov	%rdx,($rp,$i,8)		# rp[i]=tp[i]
 	lea	1($i),$i
 	sub	\$1,$j
 	jnz	.Lcopy
@@ -706,7 +712,6 @@ $code.=<<___;
 	mov	16(%rsp,$num,8),$rp	# restore $rp
 	lea	-4($num),$j
 	mov	0(%rsp),@ri[0]		# tp[0]
-	pxor	%xmm0,%xmm0
 	mov	8(%rsp),@ri[1]		# tp[1]
 	shr	\$2,$j			# j=num/4-1
 	lea	(%rsp),$ap		# borrow ap for tp
@@ -716,8 +721,7 @@ $code.=<<___;
 	mov	16($ap),@ri[2]		# tp[2]
 	mov	24($ap),@ri[3]		# tp[3]
 	sbb	8($np),@ri[1]
-	jmp	.Lsub4x
-.align	16
+
 .Lsub4x:
 	mov	@ri[0],0($rp,$i,8)	# rp[i]=tp[i]-np[i]
 	mov	@ri[1],8($rp,$i,8)	# rp[i]=tp[i]-np[i]
@@ -732,7 +736,7 @@ $code.=<<___;
 	mov	56($ap,$i,8),@ri[3]
 	sbb	40($np,$i,8),@ri[1]
 	lea	4($i),$i		# i++
-	dec	$j			# doesnn't affect CF!
+	dec	$j			# doesn't affect CF!
 	jnz	.Lsub4x
 
 	mov	@ri[0],0($rp,$i,8)	# rp[i]=tp[i]-np[i]
@@ -744,34 +748,35 @@ $code.=<<___;
 
 	sbb	\$0,@ri[0]		# handle upmost overflow bit
 	mov	@ri[3],24($rp,$i,8)	# rp[i]=tp[i]-np[i]
-	xor	$i,$i			# i=0
-	and	@ri[0],$ap
-	not	@ri[0]
-	mov	$rp,$np
-	and	@ri[0],$np
-	lea	-4($num),$j
-	or	$np,$ap			# ap=borrow?tp:rp
-	shr	\$2,$j			# j=num/4-1
+	pxor	%xmm0,%xmm0
+	movq	@ri[0],%xmm4
+	pcmpeqd	%xmm5,%xmm5
+	pshufd	\$0,%xmm4,%xmm4
+	mov	$num,$j
+	pxor	%xmm4,%xmm5
+	shr	\$2,$j			# j=num/4
+	xor	%eax,%eax		# i=0
 
-	movdqu	($ap),%xmm1
-	movdqa	%xmm0,(%rsp)
-	movdqu	%xmm1,($rp)
 	jmp	.Lcopy4x
 .align	16
-.Lcopy4x:					# copy or in-place refresh
-	movdqu	16($ap,$i),%xmm2
-	movdqu	32($ap,$i),%xmm1
-	movdqa	%xmm0,16(%rsp,$i)
-	movdqu	%xmm2,16($rp,$i)
-	movdqa	%xmm0,32(%rsp,$i)
-	movdqu	%xmm1,32($rp,$i)
-	lea	32($i),$i
+.Lcopy4x:				# conditional copy
+	movdqa	(%rsp,%rax),%xmm1
+	movdqu	($rp,%rax),%xmm2
+	pand	%xmm4,%xmm1
+	pand	%xmm5,%xmm2
+	movdqa	16(%rsp,%rax),%xmm3
+	movdqa	%xmm0,(%rsp,%rax)
+	por	%xmm2,%xmm1
+	movdqu	16($rp,%rax),%xmm2
+	movdqu	%xmm1,($rp,%rax)
+	pand	%xmm4,%xmm3
+	pand	%xmm5,%xmm2
+	movdqa	%xmm0,16(%rsp,%rax)
+	por	%xmm2,%xmm3
+	movdqu	%xmm3,16($rp,%rax)
+	lea	32(%rax),%rax
 	dec	$j
 	jnz	.Lcopy4x
-
-	movdqu	16($ap,$i),%xmm2
-	movdqa	%xmm0,16(%rsp,$i)
-	movdqu	%xmm2,16($rp,$i)
 ___
 }
 $code.=<<___;
@@ -1573,4 +1578,4 @@ ___
 }
 
 print $code;
-close STDOUT;
+close STDOUT or die "error closing STDOUT";

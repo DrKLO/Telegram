@@ -83,7 +83,7 @@ public class PhotoPickerPhotoCell extends FrameLayout {
         checkBox.setSize(zoom ? 30 : 26);
         checkBox.setCheckOffset(AndroidUtilities.dp(1));
         checkBox.setDrawBackground(true);
-        checkBox.setColor(0xff66bffa, 0xffffffff);
+        checkBox.setColor(Theme.getColor(Theme.key_dialogFloatingButton), 0xffffffff);
         addView(checkBox, LayoutHelper.createFrame(zoom ? 30 : 26, zoom ? 30 : 26, Gravity.RIGHT | Gravity.TOP, 0, 4, 4, 0));
 
         setFocusable(true);
@@ -92,6 +92,16 @@ public class PhotoPickerPhotoCell extends FrameLayout {
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         super.onMeasure(MeasureSpec.makeMeasureSpec(itemWidth, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(itemWidth, MeasureSpec.EXACTLY));
+    }
+
+    @Override
+    protected void onAttachedToWindow() {
+        super.onAttachedToWindow();
+        updateColors();
+    }
+
+    public void updateColors() {
+        checkBox.setColor(Theme.getColor(Theme.key_dialogFloatingButton), 0xffffffff);
     }
 
     public void showCheck(boolean show) {
@@ -129,9 +139,7 @@ public class PhotoPickerPhotoCell extends FrameLayout {
             imageView.setOrientation(photoEntry.orientation, true);
             if (photoEntry.isVideo) {
                 videoInfoContainer.setVisibility(View.VISIBLE);
-                int minutes = photoEntry.duration / 60;
-                int seconds = photoEntry.duration - minutes * 60;
-                videoTextView.setText(String.format("%d:%02d", minutes, seconds));
+                videoTextView.setText(AndroidUtilities.formatShortDuration(photoEntry.duration));
                 setContentDescription(LocaleController.getString("AttachVideo", R.string.AttachVideo) + ", " + LocaleController.formatCallDuration(photoEntry.duration));
                 imageView.setImage("vthumb://" + photoEntry.imageId + ":" + photoEntry.path, null, thumb);
             } else {

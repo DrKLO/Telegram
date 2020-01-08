@@ -531,6 +531,8 @@ extern "C" {
 #define		X509_get_signature_type(x) EVP_PKEY_type(OBJ_obj2nid((x)->sig_alg->algorithm))
 
 #define		X509_CRL_get_version(x) ASN1_INTEGER_get((x)->crl->version)
+const ASN1_TIME *X509_CRL_get0_lastUpdate(const X509_CRL *crl);
+const ASN1_TIME *X509_CRL_get0_nextUpdate(const X509_CRL *crl);
 #define 	X509_CRL_get_lastUpdate(x) ((x)->crl->lastUpdate)
 #define 	X509_CRL_get_nextUpdate(x) ((x)->crl->nextUpdate)
 #define		X509_CRL_get_issuer(x) ((x)->crl->issuer)
@@ -671,6 +673,8 @@ OPENSSL_EXPORT int i2d_PrivateKey_bio(BIO *bp, EVP_PKEY *pkey);
 OPENSSL_EXPORT EVP_PKEY *d2i_PrivateKey_bio(BIO *bp, EVP_PKEY **a);
 OPENSSL_EXPORT int i2d_PUBKEY_bio(BIO *bp, EVP_PKEY *pkey);
 OPENSSL_EXPORT EVP_PKEY *d2i_PUBKEY_bio(BIO *bp, EVP_PKEY **a);
+OPENSSL_EXPORT DH *d2i_DHparams_bio(BIO *bp, DH **dh);
+OPENSSL_EXPORT int i2d_DHparams_bio(BIO *bp, const DH *dh);
 
 OPENSSL_EXPORT X509 *X509_dup(X509 *x509);
 OPENSSL_EXPORT X509_ATTRIBUTE *X509_ATTRIBUTE_dup(X509_ATTRIBUTE *xa);
@@ -762,6 +766,8 @@ OPENSSL_EXPORT void *X509_get_ex_data(X509 *r, int idx);
 OPENSSL_EXPORT int		i2d_X509_AUX(X509 *a,unsigned char **pp);
 OPENSSL_EXPORT X509 *		d2i_X509_AUX(X509 **a,const unsigned char **pp,long length);
 
+OPENSSL_EXPORT int i2d_re_X509_tbs(X509 *x, unsigned char **pp);
+
 OPENSSL_EXPORT void X509_get0_signature(const ASN1_BIT_STRING **psig,
                                         const X509_ALGOR **palg, const X509 *x);
 OPENSSL_EXPORT int X509_get_signature_nid(const X509 *x);
@@ -829,9 +835,15 @@ OPENSSL_EXPORT int 		X509_set_pubkey(X509 *x, EVP_PKEY *pkey);
 OPENSSL_EXPORT EVP_PKEY *	X509_get_pubkey(X509 *x);
 OPENSSL_EXPORT ASN1_BIT_STRING * X509_get0_pubkey_bitstr(const X509 *x);
 OPENSSL_EXPORT STACK_OF(X509_EXTENSION) *X509_get0_extensions(const X509 *x);
+OPENSSL_EXPORT const X509_ALGOR *X509_get0_tbs_sigalg(const X509 *x);
 
 OPENSSL_EXPORT int		X509_REQ_set_version(X509_REQ *x,long version);
 OPENSSL_EXPORT int		X509_REQ_set_subject_name(X509_REQ *req,X509_NAME *name);
+OPENSSL_EXPORT void X509_REQ_get0_signature(const X509_REQ *req,
+                                            const ASN1_BIT_STRING **psig,
+                                            const X509_ALGOR **palg);
+OPENSSL_EXPORT int X509_REQ_get_signature_nid(const X509_REQ *req);
+OPENSSL_EXPORT int i2d_re_X509_REQ_tbs(X509_REQ *req, unsigned char **pp);
 OPENSSL_EXPORT int		X509_REQ_set_pubkey(X509_REQ *x, EVP_PKEY *pkey);
 OPENSSL_EXPORT EVP_PKEY *	X509_REQ_get_pubkey(X509_REQ *req);
 OPENSSL_EXPORT int		X509_REQ_extension_nid(int nid);
@@ -866,7 +878,17 @@ OPENSSL_EXPORT int X509_CRL_set_nextUpdate(X509_CRL *x, const ASN1_TIME *tm);
 OPENSSL_EXPORT int X509_CRL_sort(X509_CRL *crl);
 OPENSSL_EXPORT int X509_CRL_up_ref(X509_CRL *crl);
 
+OPENSSL_EXPORT void X509_CRL_get0_signature(const X509_CRL *crl,
+                                            const ASN1_BIT_STRING **psig,
+                                            const X509_ALGOR **palg);
+OPENSSL_EXPORT int X509_CRL_get_signature_nid(const X509_CRL *crl);
+OPENSSL_EXPORT int i2d_re_X509_CRL_tbs(X509_CRL *req, unsigned char **pp);
+
+OPENSSL_EXPORT const ASN1_INTEGER *X509_REVOKED_get0_serialNumber(
+    const X509_REVOKED *x);
 OPENSSL_EXPORT int X509_REVOKED_set_serialNumber(X509_REVOKED *x, ASN1_INTEGER *serial);
+OPENSSL_EXPORT const ASN1_TIME *X509_REVOKED_get0_revocationDate(
+    const X509_REVOKED *x);
 OPENSSL_EXPORT int X509_REVOKED_set_revocationDate(X509_REVOKED *r, ASN1_TIME *tm);
 
 OPENSSL_EXPORT X509_CRL *X509_CRL_diff(X509_CRL *base, X509_CRL *newer,
@@ -874,7 +896,7 @@ OPENSSL_EXPORT X509_CRL *X509_CRL_diff(X509_CRL *base, X509_CRL *newer,
 
 OPENSSL_EXPORT int		X509_REQ_check_private_key(X509_REQ *x509,EVP_PKEY *pkey);
 
-OPENSSL_EXPORT int		X509_check_private_key(X509 *x509,EVP_PKEY *pkey);
+OPENSSL_EXPORT int		X509_check_private_key(X509 *x509, const EVP_PKEY *pkey);
 OPENSSL_EXPORT int 		X509_chain_check_suiteb(int *perror_depth,
 						X509 *x, STACK_OF(X509) *chain,
 						unsigned long flags);
@@ -1107,12 +1129,15 @@ DECLARE_ASN1_FUNCTIONS(RSA_PSS_PARAMS)
 #if !defined(BORINGSSL_NO_CXX)
 extern "C++" {
 
-namespace bssl {
+BSSL_NAMESPACE_BEGIN
 
 BORINGSSL_MAKE_DELETER(NETSCAPE_SPKI, NETSCAPE_SPKI_free)
+BORINGSSL_MAKE_DELETER(RSA_PSS_PARAMS, RSA_PSS_PARAMS_free)
 BORINGSSL_MAKE_DELETER(X509, X509_free)
+BORINGSSL_MAKE_UP_REF(X509, X509_up_ref)
 BORINGSSL_MAKE_DELETER(X509_ALGOR, X509_ALGOR_free)
 BORINGSSL_MAKE_DELETER(X509_CRL, X509_CRL_free)
+BORINGSSL_MAKE_UP_REF(X509_CRL, X509_CRL_up_ref)
 BORINGSSL_MAKE_DELETER(X509_CRL_METHOD, X509_CRL_METHOD_free)
 BORINGSSL_MAKE_DELETER(X509_EXTENSION, X509_EXTENSION_free)
 BORINGSSL_MAKE_DELETER(X509_INFO, X509_INFO_free)
@@ -1133,7 +1158,7 @@ using ScopedX509_STORE_CTX =
     internal::StackAllocated<X509_STORE_CTX, void, X509_STORE_CTX_zero,
                              X509_STORE_CTX_cleanup>;
 
-}  // namespace bssl
+BSSL_NAMESPACE_END
 
 }  /* extern C++ */
 #endif  /* !BORINGSSL_NO_CXX */
@@ -1175,5 +1200,6 @@ using ScopedX509_STORE_CTX =
 #define X509_R_WRONG_TYPE 134
 #define X509_R_NAME_TOO_LONG 135
 #define X509_R_INVALID_PARAMETER 136
+#define X509_R_SIGNATURE_ALGORITHM_MISMATCH 137
 
 #endif

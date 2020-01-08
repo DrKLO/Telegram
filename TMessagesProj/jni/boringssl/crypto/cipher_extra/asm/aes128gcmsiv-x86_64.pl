@@ -2253,4 +2253,4 @@ aes256gcmsiv_kdf();
 
 print $code;
 
-close STDOUT;
+close STDOUT or die "error closing STDOUT";

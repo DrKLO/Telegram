@@ -73,7 +73,7 @@ public:
 
     void visit(LOTData *obj)
     {
-        switch (obj->mType) {
+        switch (obj->type()) {
         case LOTData::Type::Repeater:
         case LOTData::Type::ShapeGroup:
         case LOTData::Type::Layer: {
@@ -210,7 +210,7 @@ void LOTGradient::populate(VGradientStops &stops, int frameNo)
     int j = 0;
     for (int i = 0; i < colorPoints; i++) {
         float       colorStop = ptr[0];
-        LottieColor color = LottieColor(ptr[3], ptr[2], ptr[1]);
+        LottieColor color = LottieColor(ptr[3], ptr[2], ptr[1], nullptr);
         if (opacityArraySize) {
             if (j == opacityArraySize) {
                 // already reached the end

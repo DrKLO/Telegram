@@ -134,9 +134,9 @@ public final class CacheDataSource implements DataSource {
 
   private @Nullable DataSource currentDataSource;
   private boolean currentDataSpecLengthUnset;
-  private @Nullable Uri uri;
-  private @Nullable Uri actualUri;
-  private @HttpMethod int httpMethod;
+  @Nullable private Uri uri;
+  @Nullable private Uri actualUri;
+  @HttpMethod private int httpMethod;
   private int flags;
   private @Nullable String key;
   private long readPosition;
@@ -283,7 +283,7 @@ public final class CacheDataSource implements DataSource {
       }
       openNextSource(false);
       return bytesRemaining;
-    } catch (IOException e) {
+    } catch (Throwable e) {
       handleBeforeThrow(e);
       throw e;
     }
@@ -319,10 +319,13 @@ public final class CacheDataSource implements DataSource {
       }
       return bytesRead;
     } catch (IOException e) {
-      if (currentDataSpecLengthUnset && isCausedByPositionOutOfRange(e)) {
+      if (currentDataSpecLengthUnset && CacheUtil.isCausedByPositionOutOfRange(e)) {
         setNoBytesRemainingAndMaybeStoreLength();
         return C.RESULT_END_OF_INPUT;
       }
+      handleBeforeThrow(e);
+      throw e;
+    } catch (Throwable e) {
       handleBeforeThrow(e);
       throw e;
     }
@@ -349,7 +352,7 @@ public final class CacheDataSource implements DataSource {
     notifyBytesRead();
     try {
       closeCurrentSource();
-    } catch (IOException e) {
+    } catch (Throwable e) {
       handleBeforeThrow(e);
       throw e;
     }
@@ -484,20 +487,6 @@ public final class CacheDataSource implements DataSource {
     return redirectedUri != null ? redirectedUri : defaultUri;
   }
 
-  private static boolean isCausedByPositionOutOfRange(IOException e) {
-    Throwable cause = e;
-    while (cause != null) {
-      if (cause instanceof DataSourceException) {
-        int reason = ((DataSourceException) cause).reason;
-        if (reason == DataSourceException.POSITION_OUT_OF_RANGE) {
-          return true;
-        }
-      }
-      cause = cause.getCause();
-    }
-    return false;
-  }
-
   private boolean isReadingFromUpstream() {
     return !isReadingFromCache();
   }
@@ -530,7 +519,7 @@ public final class CacheDataSource implements DataSource {
     }
   }
 
-  private void handleBeforeThrow(IOException exception) {
+  private void handleBeforeThrow(Throwable exception) {
     if (isReadingFromCache() || exception instanceof CacheException) {
       seenCacheError = true;
     }

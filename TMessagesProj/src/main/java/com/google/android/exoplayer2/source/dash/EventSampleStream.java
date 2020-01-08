@@ -112,8 +112,7 @@ import java.io.IOException;
       }
     }
     int sampleIndex = currentIndex++;
-    byte[] serializedEvent = eventMessageEncoder.encode(eventStream.events[sampleIndex],
-        eventStream.timescale);
+    byte[] serializedEvent = eventMessageEncoder.encode(eventStream.events[sampleIndex]);
     if (serializedEvent != null) {
       buffer.ensureSpaceForWrite(serializedEvent.length);
       buffer.setFlags(C.BUFFER_FLAG_KEY_FRAME);

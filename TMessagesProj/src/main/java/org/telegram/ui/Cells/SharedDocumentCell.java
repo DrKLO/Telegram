@@ -26,6 +26,7 @@ import org.telegram.messenger.DownloadController;
 import org.telegram.messenger.ImageLoader;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.MediaController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.R;
@@ -37,7 +38,9 @@ import org.telegram.ui.Components.CheckBox2;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.LineProgressView;
 
+import java.io.File;
 import java.util.Date;
+import java.util.Locale;
 
 public class SharedDocumentCell extends FrameLayout implements DownloadController.FileDownloadProgressListener {
 
@@ -59,13 +62,24 @@ public class SharedDocumentCell extends FrameLayout implements DownloadControlle
     private boolean loading;
     private boolean loaded;
 
+    private boolean isPickerCell;
+
     public SharedDocumentCell(Context context) {
+        this(context, false);
+    }
+
+    public SharedDocumentCell(Context context, boolean pickerCell) {
         super(context);
 
+        isPickerCell = pickerCell;
         TAG = DownloadController.getInstance(currentAccount).generateObserverTag();
 
         placeholderImageView = new ImageView(context);
-        addView(placeholderImageView, LayoutHelper.createFrame(40, 40, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 0 : 12, 8, LocaleController.isRTL ? 12 : 0, 0));
+        if (isPickerCell) {
+            addView(placeholderImageView, LayoutHelper.createFrame(42, 42, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 0 : 15, 12, LocaleController.isRTL ? 15 : 0, 0));
+        } else {
+            addView(placeholderImageView, LayoutHelper.createFrame(40, 40, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 0 : 12, 8, LocaleController.isRTL ? 12 : 0, 0));
+        }
 
         extTextView = new TextView(context);
         extTextView.setTextColor(Theme.getColor(Theme.key_files_iconText));
@@ -77,7 +91,11 @@ public class SharedDocumentCell extends FrameLayout implements DownloadControlle
         extTextView.setGravity(Gravity.CENTER);
         extTextView.setEllipsize(TextUtils.TruncateAt.END);
         extTextView.setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO);
-        addView(extTextView, LayoutHelper.createFrame(32, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 0 : 16, 22, LocaleController.isRTL ? 16 : 0, 0));
+        if (isPickerCell) {
+            addView(extTextView, LayoutHelper.createFrame(32, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 0 : 20, 28, LocaleController.isRTL ? 20 : 0, 0));
+        } else {
+            addView(extTextView, LayoutHelper.createFrame(32, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 0 : 16, 22, LocaleController.isRTL ? 16 : 0, 0));
+        }
 
         thumbImageView = new BackupImageView(context) {
             @Override
@@ -94,31 +112,51 @@ public class SharedDocumentCell extends FrameLayout implements DownloadControlle
             }
         };
         thumbImageView.setRoundRadius(AndroidUtilities.dp(4));
-        addView(thumbImageView, LayoutHelper.createFrame(40, 40, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 0 : 12, 8, LocaleController.isRTL ? 12 : 0, 0));
+        if (isPickerCell) {
+            addView(thumbImageView, LayoutHelper.createFrame(42, 42, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 0 : 16, 12, LocaleController.isRTL ? 16 : 0, 0));
+        } else {
+            addView(thumbImageView, LayoutHelper.createFrame(40, 40, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 0 : 12, 8, LocaleController.isRTL ? 12 : 0, 0));
+        }
 
         nameTextView = new TextView(context);
         nameTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
         nameTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
         nameTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
-        nameTextView.setMaxLines(2);
         nameTextView.setEllipsize(TextUtils.TruncateAt.END);
         nameTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL);
-        addView(nameTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 8 : 72, 5, LocaleController.isRTL ? 72 : 8, 0));
+        if (isPickerCell) {
+            nameTextView.setLines(1);
+            nameTextView.setMaxLines(1);
+            nameTextView.setSingleLine(true);
+            addView(nameTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 8 : 72, 9, LocaleController.isRTL ? 72 : 8, 0));
+        } else {
+            nameTextView.setMaxLines(2);
+            addView(nameTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 8 : 72, 5, LocaleController.isRTL ? 72 : 8, 0));
+        }
 
         statusImageView = new ImageView(context);
         statusImageView.setVisibility(INVISIBLE);
         statusImageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_sharedMedia_startStopLoadIcon), PorterDuff.Mode.MULTIPLY));
-        addView(statusImageView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 8 : 72, 35, LocaleController.isRTL ? 72 : 8, 0));
+        if (isPickerCell) {
+            addView(statusImageView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 8 : 72, 39, LocaleController.isRTL ? 72 : 8, 0));
+        } else {
+            addView(statusImageView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 8 : 72, 35, LocaleController.isRTL ? 72 : 8, 0));
+        }
 
         dateTextView = new TextView(context);
         dateTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText3));
-        dateTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         dateTextView.setLines(1);
         dateTextView.setMaxLines(1);
         dateTextView.setSingleLine(true);
         dateTextView.setEllipsize(TextUtils.TruncateAt.END);
         dateTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL);
-        addView(dateTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 8 : 72, 30, LocaleController.isRTL ? 72 : 8, 0));
+        if (isPickerCell) {
+            dateTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
+            addView(dateTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 8 : 72, 34, LocaleController.isRTL ? 72 : 8, 0));
+        } else {
+            dateTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+            addView(dateTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 8 : 72, 30, LocaleController.isRTL ? 72 : 8, 0));
+        }
 
         progressView = new LineProgressView(context);
         progressView.setProgressColor(Theme.getColor(Theme.key_sharedMedia_startStopLoadIcon));
@@ -129,18 +167,23 @@ public class SharedDocumentCell extends FrameLayout implements DownloadControlle
         checkBox.setColor(null, Theme.key_windowBackgroundWhite, Theme.key_checkboxCheck);
         checkBox.setDrawUnchecked(false);
         checkBox.setDrawBackgroundAsArc(2);
-        addView(checkBox, LayoutHelper.createFrame(24, 24, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 0 : 33, 28, LocaleController.isRTL ? 33 : 0, 0));
+        if (isPickerCell) {
+            addView(checkBox, LayoutHelper.createFrame(24, 24, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 0 : 38, 36, LocaleController.isRTL ? 38 : 0, 0));
+        } else {
+            addView(checkBox, LayoutHelper.createFrame(24, 24, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 0 : 33, 28, LocaleController.isRTL ? 33 : 0, 0));
+        }
     }
 
-    public void setTextAndValueAndTypeAndThumb(String text, String value, String type, String thumb, int resId) {
+    public void setTextAndValueAndTypeAndThumb(String text, String value, String type, String thumb, int resId, boolean divider) {
         nameTextView.setText(text);
         dateTextView.setText(value);
         if (type != null) {
             extTextView.setVisibility(VISIBLE);
-            extTextView.setText(type);
+            extTextView.setText(type.toLowerCase());
         } else {
             extTextView.setVisibility(INVISIBLE);
         }
+        needDivider = divider;
         if (resId == 0) {
             placeholderImageView.setImageResource(AndroidUtilities.getThumbForNameOrMime(text, type, false));
             placeholderImageView.setVisibility(VISIBLE);
@@ -149,11 +192,29 @@ public class SharedDocumentCell extends FrameLayout implements DownloadControlle
         }
         if (thumb != null || resId != 0) {
             if (thumb != null) {
-                thumbImageView.setImage(thumb, "40_40", null);
+                thumbImageView.setImage(thumb, "42_42", null);
             } else {
-                Drawable drawable = Theme.createCircleDrawableWithIcon(AndroidUtilities.dp(40), resId);
-                Theme.setCombinedDrawableColor(drawable, Theme.getColor(Theme.key_files_folderIconBackground), false);
-                Theme.setCombinedDrawableColor(drawable, Theme.getColor(Theme.key_files_folderIcon), true);
+                Drawable drawable = Theme.createCircleDrawableWithIcon(AndroidUtilities.dp(42), resId);
+                String iconKey;
+                String backKey;
+                if (resId == R.drawable.files_storage) {
+                    backKey = Theme.key_chat_attachLocationBackground;
+                    iconKey = Theme.key_chat_attachLocationIcon;
+                } else if (resId == R.drawable.files_gallery) {
+                    backKey = Theme.key_chat_attachContactBackground;
+                    iconKey = Theme.key_chat_attachContactIcon;
+                } else if (resId == R.drawable.files_music) {
+                    backKey = Theme.key_chat_attachAudioBackground;
+                    iconKey = Theme.key_chat_attachAudioIcon;
+                } else if (resId == R.drawable.files_internal) {
+                    backKey = Theme.key_chat_attachGalleryBackground;
+                    iconKey = Theme.key_chat_attachGalleryIcon;
+                } else {
+                    backKey = Theme.key_files_folderIconBackground;
+                    iconKey = Theme.key_files_folderIcon;
+                }
+                Theme.setCombinedDrawableColor(drawable, Theme.getColor(backKey), false);
+                Theme.setCombinedDrawableColor(drawable, Theme.getColor(iconKey), true);
                 thumbImageView.setImageDrawable(drawable);
             }
             thumbImageView.setVisibility(VISIBLE);
@@ -163,6 +224,59 @@ public class SharedDocumentCell extends FrameLayout implements DownloadControlle
             thumbImageView.setImageBitmap(null);
             thumbImageView.setVisibility(INVISIBLE);
         }
+        setWillNotDraw(!needDivider);
+    }
+
+    public void setPhotoEntry(MediaController.PhotoEntry entry) {
+        String path;
+        if (entry.thumbPath != null) {
+            thumbImageView.setImage(entry.thumbPath, null, Theme.chat_attachEmptyDrawable);
+            path = entry.thumbPath;
+        } else if (entry.path != null) {
+            if (entry.isVideo) {
+                thumbImageView.setOrientation(0, true);
+                thumbImageView.setImage("vthumb://" + entry.imageId + ":" + entry.path, null, Theme.chat_attachEmptyDrawable);
+            } else {
+                thumbImageView.setOrientation(entry.orientation, true);
+                thumbImageView.setImage("thumb://" + entry.imageId + ":" + entry.path, null, Theme.chat_attachEmptyDrawable);
+            }
+            path = entry.path;
+        } else {
+            thumbImageView.setImageDrawable(Theme.chat_attachEmptyDrawable);
+            path = "";
+        }
+
+        File file = new File(path);
+        nameTextView.setText(file.getName());
+        String type = FileLoader.getFileExtension(file);
+        StringBuilder builder = new StringBuilder();
+        extTextView.setVisibility(GONE);
+        if (entry.width != 0 && entry.height != 0) {
+            if (builder.length() > 0) {
+                builder.append(", ");
+            }
+            builder.append(String.format(Locale.US, "%dx%d", entry.width, entry.height));
+        }
+        if (entry.isVideo) {
+            if (builder.length() > 0) {
+                builder.append(", ");
+            }
+            builder.append(AndroidUtilities.formatShortDuration(entry.duration));
+        }
+        if (entry.size != 0) {
+            if (builder.length() > 0) {
+                builder.append(", ");
+            }
+            builder.append(AndroidUtilities.formatFileSize(entry.size));
+        }
+        if (builder.length() > 0) {
+            builder.append(", ");
+        }
+        builder.append(LocaleController.getInstance().formatterStats.format(entry.dateTaken));
+        dateTextView.setText(builder);
+        //placeholderImageView.setImageResource(AndroidUtilities.getThumbForNameOrMime(path, null, false));
+        //placeholderImageView.setVisibility(VISIBLE);
+        placeholderImageView.setVisibility(GONE);
     }
 
     @Override
@@ -309,14 +423,18 @@ public class SharedDocumentCell extends FrameLayout implements DownloadControlle
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        super.onMeasure(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(56), MeasureSpec.EXACTLY));
-        setMeasuredDimension(getMeasuredWidth(), AndroidUtilities.dp(5 + 29) + nameTextView.getMeasuredHeight() + (needDivider ? 1 : 0));
+        if (isPickerCell) {
+            super.onMeasure(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(64) + (needDivider ? 1 : 0), MeasureSpec.EXACTLY));
+        } else {
+            super.onMeasure(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(56), MeasureSpec.EXACTLY));
+            setMeasuredDimension(getMeasuredWidth(), AndroidUtilities.dp(5 + 29) + nameTextView.getMeasuredHeight() + (needDivider ? 1 : 0));
+        }
     }
 
     @Override
     protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
         super.onLayout(changed, left, top, right, bottom);
-        if (nameTextView.getLineCount() > 1) {
+        if (!isPickerCell && nameTextView.getLineCount() > 1) {
             int y = nameTextView.getMeasuredHeight() - AndroidUtilities.dp(22);
             dateTextView.layout(dateTextView.getLeft(), y + dateTextView.getTop(), dateTextView.getRight(), y + dateTextView.getBottom());
             statusImageView.layout(statusImageView.getLeft(), y + statusImageView.getTop(), statusImageView.getRight(), y + statusImageView.getBottom());

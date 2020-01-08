@@ -98,8 +98,8 @@ static uint8_t conv_bin2ascii(uint8_t a) {
   return ret;
 }
 
-OPENSSL_COMPILE_ASSERT(sizeof(((EVP_ENCODE_CTX *)(NULL))->data) % 3 == 0,
-                       data_length_must_be_multiple_of_base64_chunk_size);
+OPENSSL_STATIC_ASSERT(sizeof(((EVP_ENCODE_CTX *)(NULL))->data) % 3 == 0,
+                      "data length must be a multiple of base64 chunk size");
 
 int EVP_EncodedLength(size_t *out_len, size_t len) {
   if (len + 2 < len) {

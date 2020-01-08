@@ -99,8 +99,6 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
     private Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private TextPaint textPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
 
-    private int currentAccount = UserConfig.selectedAccount;
-
     private TLRPC.TL_exportedMessageLink exportedMessageLink;
     private boolean loadingLink;
     private boolean copyLinkOnEnd;
@@ -111,6 +109,13 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
     private int scrollOffsetY;
     private int topBeforeSwitch;
 
+    private ShareAlertDelegate delegate;
+
+    public interface ShareAlertDelegate {
+        void didShare();
+    }
+
+    @SuppressWarnings("FieldCanBeLocal")
     private class SearchField extends FrameLayout {
 
         private View searchBackground;
@@ -246,7 +251,7 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
     }
 
     public ShareAlert(final Context context, ArrayList<MessageObject> messages, final String text, boolean channel, final String copyLink, boolean fullScreen) {
-        super(context, true, 1);
+        super(context, true);
 
         shadowDrawable = context.getResources().getDrawable(R.drawable.sheet_shadow_round).mutate();
         shadowDrawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_dialogBackground), PorterDuff.Mode.MULTIPLY));
@@ -659,36 +664,9 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
         writeButtonContainer.setAlpha(0.0f);
         writeButtonContainer.setContentDescription(LocaleController.getString("Send", R.string.Send));
         containerView.addView(writeButtonContainer, LayoutHelper.createFrame(60, 60, Gravity.RIGHT | Gravity.BOTTOM, 0, 0, 6, 10));
-        writeButtonContainer.setOnClickListener(v -> {
-            for (int a = 0; a < selectedDialogs.size(); a++) {
-                long key = selectedDialogs.keyAt(a);
-                if (AlertsCreator.checkSlowMode(getContext(), currentAccount, key, frameLayout2.getTag() != null && commentTextView.length() > 0)) {
-                    return;
-                }
-            }
-
-            if (sendingMessageObjects != null) {
-                for (int a = 0; a < selectedDialogs.size(); a++) {
-                    long key = selectedDialogs.keyAt(a);
-                    if (frameLayout2.getTag() != null && commentTextView.length() > 0) {
-                        SendMessagesHelper.getInstance(currentAccount).sendMessage(commentTextView.getText().toString(), key, null, null, true, null, null, null);
-                    }
-                    SendMessagesHelper.getInstance(currentAccount).sendMessage(sendingMessageObjects, key);
-                }
-            } else if (sendingText != null) {
-                for (int a = 0; a < selectedDialogs.size(); a++) {
-                    long key = selectedDialogs.keyAt(a);
-                    if (frameLayout2.getTag() != null && commentTextView.length() > 0) {
-                        SendMessagesHelper.getInstance(currentAccount).sendMessage(commentTextView.getText().toString(), key, null, null, true, null, null, null);
-                    }
-                    SendMessagesHelper.getInstance(currentAccount).sendMessage(sendingText, key, null, null, true, null, null, null);
-                }
-            }
-            dismiss();
-        });
 
         ImageView writeButton = new ImageView(context);
-        Drawable drawable = Theme.createSimpleSelectorCircleDrawable(AndroidUtilities.dp(56), Theme.getColor(Theme.key_dialogFloatingButton), Theme.getColor(Theme.key_dialogFloatingButtonPressed));
+        Drawable drawable = Theme.createSimpleSelectorCircleDrawable(AndroidUtilities.dp(56), Theme.getColor(Theme.key_dialogFloatingButton), Theme.getColor(Build.VERSION.SDK_INT >= 21 ? Theme.key_dialogFloatingButtonPressed : Theme.key_dialogFloatingButton));
         if (Build.VERSION.SDK_INT < 21) {
             Drawable shadowDrawable = context.getResources().getDrawable(R.drawable.floating_shadow_profile).mutate();
             shadowDrawable.setColorFilter(new PorterDuffColorFilter(0xff000000, PorterDuff.Mode.MULTIPLY));
@@ -710,6 +688,36 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
             });
         }
         writeButtonContainer.addView(writeButton, LayoutHelper.createFrame(Build.VERSION.SDK_INT >= 21 ? 56 : 60, Build.VERSION.SDK_INT >= 21 ? 56 : 60, Gravity.LEFT | Gravity.TOP, Build.VERSION.SDK_INT >= 21 ? 2 : 0, 0, 0, 0));
+        writeButton.setOnClickListener(v -> {
+            for (int a = 0; a < selectedDialogs.size(); a++) {
+                long key = selectedDialogs.keyAt(a);
+                if (AlertsCreator.checkSlowMode(getContext(), currentAccount, key, frameLayout2.getTag() != null && commentTextView.length() > 0)) {
+                    return;
+                }
+            }
+
+            if (sendingMessageObjects != null) {
+                for (int a = 0; a < selectedDialogs.size(); a++) {
+                    long key = selectedDialogs.keyAt(a);
+                    if (frameLayout2.getTag() != null && commentTextView.length() > 0) {
+                        SendMessagesHelper.getInstance(currentAccount).sendMessage(commentTextView.getText().toString(), key, null, null, true, null, null, null, true, 0);
+                    }
+                    SendMessagesHelper.getInstance(currentAccount).sendMessage(sendingMessageObjects, key, true, 0);
+                }
+            } else if (sendingText != null) {
+                for (int a = 0; a < selectedDialogs.size(); a++) {
+                    long key = selectedDialogs.keyAt(a);
+                    if (frameLayout2.getTag() != null && commentTextView.length() > 0) {
+                        SendMessagesHelper.getInstance(currentAccount).sendMessage(commentTextView.getText().toString(), key, null, null, true, null, null, null, true, 0);
+                    }
+                    SendMessagesHelper.getInstance(currentAccount).sendMessage(sendingText, key, null, null, true, null, null, null, true, 0);
+                }
+            }
+            if (delegate != null) {
+                delegate.didShare();
+            }
+            dismiss();
+        });
 
         textPaint.setTextSize(AndroidUtilities.dp(12));
         textPaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
@@ -761,6 +769,10 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
             }
         }
         return -1000;
+    }
+
+    public void setDelegate(ShareAlertDelegate shareAlertDelegate) {
+        delegate = shareAlertDelegate;
     }
 
     @Override
@@ -932,7 +944,7 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
             showCommentTextView(false);
         } else {
             selectedCountView.invalidate();
-            if (animated != 0 && !showCommentTextView(true)) {
+            if (!showCommentTextView(true) && animated != 0) {
                 selectedCountView.setPivotX(AndroidUtilities.dp(21));
                 selectedCountView.setPivotY(AndroidUtilities.dp(12));
                 AnimatorSet animatorSet = new AnimatorSet();
@@ -1326,7 +1338,7 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
                 Utilities.searchQueue.cancelRunnable(searchRunnable);
                 searchRunnable = null;
             }
-            if (query == null || query.length() == 0) {
+            if (TextUtils.isEmpty(query)) {
                 searchResult.clear();
                 topBeforeSwitch = getCurrentTop();
                 lastSearchId = -1;

@@ -53,6 +53,7 @@ import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.BringAppForegroundService;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
 import org.telegram.messenger.browser.Browser;
@@ -244,7 +245,7 @@ public class EmbedBottomSheet extends BottomSheet {
 
     @SuppressLint("SetJavaScriptEnabled")
     private EmbedBottomSheet(Context context, String title, String description, String originalUrl, final String url, int w, int h, int seekTime) {
-        super(context, false, 0);
+        super(context, false);
         fullWidth = true;
         setApplyTopPadding(false);
         setApplyBottomPadding(false);
@@ -574,7 +575,7 @@ public class EmbedBottomSheet extends BottomSheet {
             public TextureView onSwitchInlineMode(View controlsView, boolean inline, float aspectRatio, int rotation, boolean animated) {
                 if (inline) {
                     controlsView.setTranslationY(0);
-                    pipVideoView = new PipVideoView();
+                    pipVideoView = new PipVideoView(false);
                     return pipVideoView.show(parentActivity, EmbedBottomSheet.this, controlsView, aspectRatio, rotation, null);
                 }
 
@@ -723,14 +724,15 @@ public class EmbedBottomSheet extends BottomSheet {
         pipButton.setBackgroundDrawable(Theme.createSelectorDrawable(Theme.getColor(Theme.key_dialogButtonSelector), 0));
         imageButtonsContainer.addView(pipButton, LayoutHelper.createFrame(48, 48, Gravity.TOP | Gravity.LEFT, 0, 0, 4, 0));
         pipButton.setOnClickListener(v -> {
-            if (!checkInlinePermissions()) {
+            boolean inAppOnly = isYouTube && "inapp".equals(MessagesController.getInstance(currentAccount).youtubePipType);
+            if (!inAppOnly && !checkInlinePermissions()) {
                 return;
             }
             if (progressBar.getVisibility() == View.VISIBLE) {
                 return;
             }
             boolean animated = false;
-            pipVideoView = new PipVideoView();
+            pipVideoView = new PipVideoView(inAppOnly);
             pipVideoView.show(parentActivity, EmbedBottomSheet.this, null, width != 0 && height != 0 ? width / (float) height : 1.0f, 0, webView);
             if (isYouTube) {
                 runJsCode("hideControls();");
@@ -932,6 +934,9 @@ public class EmbedBottomSheet extends BottomSheet {
             videoView.getTextureView().setVisibility(View.INVISIBLE);
             if (videoView.getTextureImageView() != null) {
                 videoView.getTextureImageView().setVisibility(View.INVISIBLE);
+            }
+            if ("disabled".equals(MessagesController.getInstance(currentAccount).youtubePipType)) {
+                pipButton.setVisibility(View.GONE);
             }
         }
 

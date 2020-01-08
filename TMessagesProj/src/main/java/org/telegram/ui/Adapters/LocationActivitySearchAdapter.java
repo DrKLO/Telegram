@@ -33,12 +33,12 @@ public class LocationActivitySearchAdapter extends BaseLocationAdapter {
 
     @Override
     public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-        return new RecyclerListView.Holder(new LocationCell(mContext));
+        return new RecyclerListView.Holder(new LocationCell(mContext, false));
     }
 
     @Override
     public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
-        ((LocationCell) holder.itemView).setLocation(places.get(position), iconUrls.get(position), position != places.size() - 1);
+        ((LocationCell) holder.itemView).setLocation(places.get(position), iconUrls.get(position), position, position != places.size() - 1);
     }
 
     public TLRPC.TL_messageMediaVenue getItem(int i) {

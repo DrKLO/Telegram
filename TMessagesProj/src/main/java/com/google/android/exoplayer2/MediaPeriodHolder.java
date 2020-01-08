@@ -67,8 +67,7 @@ import org.checkerframework.checker.nullness.compatqual.NullableType;
    * Creates a new holder with information required to play it as part of a timeline.
    *
    * @param rendererCapabilities The renderer capabilities.
-   * @param rendererPositionOffsetUs The time offset of the start of the media period to provide to
-   *     renderers.
+   * @param rendererPositionOffsetUs The renderer time of the start of the period, in microseconds.
    * @param trackSelector The track selector.
    * @param allocator The allocator.
    * @param mediaSource The media source that produced the media period.
@@ -82,14 +81,16 @@ import org.checkerframework.checker.nullness.compatqual.NullableType;
       MediaSource mediaSource,
       MediaPeriodInfo info) {
     this.rendererCapabilities = rendererCapabilities;
-    this.rendererPositionOffsetUs = rendererPositionOffsetUs - info.startPositionUs;
+    this.rendererPositionOffsetUs = rendererPositionOffsetUs;
     this.trackSelector = trackSelector;
     this.mediaSource = mediaSource;
     this.uid = info.id.periodUid;
     this.info = info;
     sampleStreams = new SampleStream[rendererCapabilities.length];
     mayRetainStreamFlags = new boolean[rendererCapabilities.length];
-    mediaPeriod = createMediaPeriod(info.id, mediaSource, allocator, info.startPositionUs);
+    mediaPeriod =
+        createMediaPeriod(
+            info.id, mediaSource, allocator, info.startPositionUs, info.endPositionUs);
   }
 
   /**
@@ -111,6 +112,15 @@ import org.checkerframework.checker.nullness.compatqual.NullableType;
   /** Returns the renderer time of the start of the period, in microseconds. */
   public long getRendererOffset() {
     return rendererPositionOffsetUs;
+  }
+
+  /**
+   * Sets the renderer time of the start of the period, in microseconds.
+   *
+   * @param rendererPositionOffsetUs The new renderer position offset, in microseconds.
+   */
+  public void setRendererOffset(long rendererPositionOffsetUs) {
+    this.rendererPositionOffsetUs = rendererPositionOffsetUs;
   }
 
   /** Returns start position of period in renderer time. */
@@ -294,7 +304,7 @@ import org.checkerframework.checker.nullness.compatqual.NullableType;
   public void release() {
     disableTrackSelectionsInResult();
     trackSelectorResult = null;
-    releaseMediaPeriod(info.id, mediaSource, mediaPeriod);
+    releaseMediaPeriod(info.endPositionUs, mediaSource, mediaPeriod);
   }
 
   /**
@@ -399,24 +409,25 @@ import org.checkerframework.checker.nullness.compatqual.NullableType;
 
   /** Returns a media period corresponding to the given {@code id}. */
   private static MediaPeriod createMediaPeriod(
-      MediaPeriodId id, MediaSource mediaSource, Allocator allocator, long startPositionUs) {
+      MediaPeriodId id,
+      MediaSource mediaSource,
+      Allocator allocator,
+      long startPositionUs,
+      long endPositionUs) {
     MediaPeriod mediaPeriod = mediaSource.createPeriod(id, allocator, startPositionUs);
-    if (id.endPositionUs != C.TIME_UNSET && id.endPositionUs != C.TIME_END_OF_SOURCE) {
+    if (endPositionUs != C.TIME_UNSET && endPositionUs != C.TIME_END_OF_SOURCE) {
       mediaPeriod =
           new ClippingMediaPeriod(
-              mediaPeriod,
-              /* enableInitialDiscontinuity= */ true,
-              /* startUs= */ 0,
-              id.endPositionUs);
+              mediaPeriod, /* enableInitialDiscontinuity= */ true, /* startUs= */ 0, endPositionUs);
     }
     return mediaPeriod;
   }
 
   /** Releases the given {@code mediaPeriod}, logging and suppressing any errors. */
   private static void releaseMediaPeriod(
-      MediaPeriodId id, MediaSource mediaSource, MediaPeriod mediaPeriod) {
+      long endPositionUs, MediaSource mediaSource, MediaPeriod mediaPeriod) {
     try {
-      if (id.endPositionUs != C.TIME_UNSET && id.endPositionUs != C.TIME_END_OF_SOURCE) {
+      if (endPositionUs != C.TIME_UNSET && endPositionUs != C.TIME_END_OF_SOURCE) {
         mediaSource.releasePeriod(((ClippingMediaPeriod) mediaPeriod).mediaPeriod);
       } else {
         mediaSource.releasePeriod(mediaPeriod);

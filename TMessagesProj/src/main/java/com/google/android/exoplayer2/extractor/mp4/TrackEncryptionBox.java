@@ -52,7 +52,7 @@ public final class TrackEncryptionBox {
    * If {@link #perSampleIvSize} is 0, holds the default initialization vector as defined in the
    * track encryption box or sample group description box. Null otherwise.
    */
-  public final byte[] defaultInitializationVector;
+  @Nullable public final byte[] defaultInitializationVector;
 
   /**
    * @param isEncrypted See {@link #isEncrypted}.

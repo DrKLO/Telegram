@@ -30,8 +30,8 @@ public:
     void onHandshakeConnectionConnected();
     void onHandshakeConnectionClosed();
     HandshakeType getType();
-    ByteArray *getAuthKeyTempPending();
-    int64_t getAuthKeyTempPendingId();
+    ByteArray *getPendingAuthKey();
+    int64_t getPendingAuthKeyId();
     TLObject *getCurrentHandshakeRequest();
 
 private:

@@ -278,7 +278,9 @@ public class CropAreaView extends View {
             canvas.drawRect(0, (int) actualRect.top, (int) actualRect.left, (int) actualRect.bottom, dimPaint);
             canvas.drawRect((int) actualRect.right, (int) actualRect.top, getWidth(), (int) actualRect.bottom, dimPaint);
             canvas.drawRect(0, (int) actualRect.bottom, getWidth(), getHeight(), dimPaint);
-            canvas.drawBitmap(circleBitmap, (int) actualRect.left, (int) actualRect.top, null);
+            if (circleBitmap != null) {
+                canvas.drawBitmap(circleBitmap, (int) actualRect.left, (int) actualRect.top, null);
+            }
         }
     }
 

@@ -38,7 +38,13 @@ import java.io.IOException;
 
   public int revision;
   public int type;
+  /**
+   * The absolute granule position of the page. This is the total number of samples from the start
+   * of the file up to the <em>end</em> of the page. Samples partially in the page that continue on
+   * the next page do not count.
+   */
   public long granulePosition;
+
   public long streamSerialNumber;
   public long pageSequenceNumber;
   public long pageChecksum;
@@ -72,10 +78,10 @@ import java.io.IOException;
    * Peeks an Ogg page header and updates this {@link OggPageHeader}.
    *
    * @param input The {@link ExtractorInput} to read from.
-   * @param quiet If {@code true}, no exceptions are thrown but {@code false} is returned if
-   *     something goes wrong.
-   * @return {@code true} if the read was successful. The read fails if the end of the input is
-   *     encountered without reading data.
+   * @param quiet Whether to return {@code false} rather than throwing an exception if the header
+   *     cannot be populated.
+   * @return Whether the read was successful. The read fails if the end of the input is encountered
+   *     without reading data.
    * @throws IOException If reading data fails or the stream is invalid.
    * @throws InterruptedException If the thread is interrupted.
    */

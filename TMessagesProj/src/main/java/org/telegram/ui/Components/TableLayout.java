@@ -13,6 +13,7 @@ import android.widget.LinearLayout;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ArticleViewer;
+import org.telegram.ui.Cells.TextSelectionHelper;
 
 import java.lang.reflect.Array;
 import java.util.ArrayList;
@@ -46,6 +47,7 @@ public class TableLayout extends View {
 
     static final int MAX_SIZE = 100000;
     static final int UNINITIALIZED_HASH = 0;
+    private TextSelectionHelper.ArticleTextSelectionHelper textSelectionHelper;
 
     private int colCount;
 
@@ -86,12 +88,14 @@ public class TableLayout extends View {
         public int textX;
         public int textY;
         public int textLeft;
+        public int rowspan;
 
         private int measuredWidth;
         private int measuredHeight;
         private int fixedHeight;
         public int x;
         public int y;
+        private int selectionIndex = -1;
 
         public Child(int i) {
             index = i;
@@ -242,6 +246,9 @@ public class TableLayout extends View {
             if (textLayout != null) {
                 canvas.save();
                 canvas.translate(getTextX(), getTextY());
+                if (selectionIndex >= 0) {
+                    textSelectionHelper.draw(canvas, (TextSelectionHelper.ArticleSelectableView) getParent().getParent(), selectionIndex);
+                }
                 textLayout.draw(canvas);
                 canvas.restore();
             }
@@ -322,6 +329,14 @@ public class TableLayout extends View {
                 }
             }
         }
+
+        public void setSelectionIndex(int selectionIndex) {
+            this.selectionIndex = selectionIndex;
+        }
+
+        public int getRow() {
+           return rowspan + 10;
+        }
     }
 
     public interface TableLayoutDelegate {
@@ -330,6 +345,7 @@ public class TableLayout extends View {
         Paint getHalfLinePaint();
         Paint getHeaderPaint();
         Paint getStripPaint();
+        void onLayoutChild(ArticleViewer.DrawingText text, int x, int y);
     }
 
     private TableLayoutDelegate delegate;
@@ -342,6 +358,7 @@ public class TableLayout extends View {
         layoutParams.rowSpec = new Spec(false, new Interval(y, y + rowspan), FILL, 0.0f);
         layoutParams.columnSpec = new Spec(false, new Interval(x, x + colspan), FILL, 0.0f);
         child.layoutParams = layoutParams;
+        child.rowspan = y;
         childrens.add(child);
         invalidateStructure();
     }
@@ -356,6 +373,7 @@ public class TableLayout extends View {
         layoutParams.rowSpec = new Spec(false, new Interval(y, y + (cell.rowspan != 0 ? cell.rowspan : 1)), FILL, 0.0f);
         layoutParams.columnSpec = new Spec(false, new Interval(x, x + colspan), FILL, 1.0f);
         child.layoutParams = layoutParams;
+        child.rowspan = y;
         childrens.add(child);
         if (cell.rowspan > 1) {
             rowSpans.add(new Point(y, y + cell.rowspan));
@@ -392,8 +410,9 @@ public class TableLayout extends View {
         return childrens.get(index);
     }
 
-    public TableLayout(Context context, TableLayoutDelegate tableLayoutDelegate) {
+    public TableLayout(Context context, TableLayoutDelegate tableLayoutDelegate, TextSelectionHelper.ArticleTextSelectionHelper textSelectionHelper) {
         super(context);
+        this.textSelectionHelper = textSelectionHelper;
         setRowCount(DEFAULT_COUNT);
         setColumnCount(DEFAULT_COUNT);
         setOrientation(DEFAULT_ORIENTATION);
@@ -945,7 +964,10 @@ public class TableLayout extends View {
                 }
             }
         }
-
+        for (int i = 0, N = getChildCount(); i < N; i++) {
+            Child c = getChildAt(i);
+            delegate.onLayoutChild(c.textLayout, c.getTextX(), c.getTextY());
+        }
         setMeasuredDimension(measuredWidth, fixedHeight);
     }
 

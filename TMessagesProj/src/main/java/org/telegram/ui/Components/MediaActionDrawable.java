@@ -3,6 +3,8 @@ package org.telegram.ui.Components;
 import android.graphics.Canvas;
 import android.graphics.ColorFilter;
 import android.graphics.CornerPathEffect;
+import android.graphics.LinearGradient;
+import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.PixelFormat;
@@ -36,6 +38,7 @@ public class MediaActionDrawable extends Drawable {
 
     private TextPaint textPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
     private Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private Paint backPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private Paint paint2 = new Paint(Paint.ANTI_ALIAS_FLAG);
     private Paint paint3 = new Paint(Paint.ANTI_ALIAS_FLAG);
     private Path path1 = new Path();
@@ -88,6 +91,9 @@ public class MediaActionDrawable extends Drawable {
 
     private MediaActionDrawableDelegate delegate;
 
+    private Theme.MessageDrawable messageDrawable;
+    private boolean hasOverlayImage;
+
     public interface MediaActionDrawableDelegate {
         void invalidate();
     }
@@ -131,6 +137,10 @@ public class MediaActionDrawable extends Drawable {
         paint3.setColor(value | 0xff000000);
         textPaint.setColor(value | 0xff000000);
         colorFilter = new PorterDuffColorFilter(value, PorterDuff.Mode.MULTIPLY);
+    }
+
+    public void setBackColor(int value) {
+        backPaint.setColor(value | 0xff000000);
     }
 
     public int getColor() {
@@ -233,6 +243,16 @@ public class MediaActionDrawable extends Drawable {
         return animatingTransition ? transitionProgress : 1.0f;
     }
 
+    public void setBackgroundDrawable(Drawable drawable) {
+        if (drawable instanceof Theme.MessageDrawable) {
+            messageDrawable = (Theme.MessageDrawable) drawable;
+        }
+    }
+
+    public void setHasOverlayImage(boolean value) {
+        hasOverlayImage = value;
+    }
+
     @Override
     public void setBounds(int left, int top, int right, int bottom) {
         super.setBounds(left, top, right, bottom);
@@ -254,15 +274,33 @@ public class MediaActionDrawable extends Drawable {
     public void draw(Canvas canvas) {
         android.graphics.Rect bounds = getBounds();
 
+        if (messageDrawable != null && messageDrawable.hasGradient() && !hasOverlayImage) {
+            LinearGradient shader = messageDrawable.getGradientShader();
+            Matrix matrix = messageDrawable.getMatrix();
+            matrix.postTranslate(0, bounds.top);
+            shader.setLocalMatrix(matrix);
+            paint.setShader(shader);
+            paint2.setShader(shader);
+            paint3.setShader(shader);
+        } else {
+            paint.setShader(null);
+            paint2.setShader(null);
+            paint3.setShader(null);
+        }
+
         int cx = bounds.centerX();
         int cy = bounds.centerY();
 
+        int saveCount = 0;
+
         if (nextIcon == ICON_NONE) {
-            float progress = 1.0f - transitionProgress;
-            canvas.save();
-            canvas.scale(progress, progress, cx, cy);
+            if (currentIcon != ICON_CANCEL && currentIcon != ICON_CANCEL_FILL) {
+                saveCount = canvas.save();
+                float progress = 1.0f - transitionProgress;
+                canvas.scale(progress, progress, cx, cy);
+            }
         } else if ((nextIcon == ICON_CHECK || nextIcon == ICON_EMPTY) && currentIcon == ICON_NONE) {
-            canvas.save();
+            saveCount = canvas.save();
             canvas.scale(transitionProgress, transitionProgress, cx, cy);
         }
 
@@ -427,9 +465,13 @@ public class MediaActionDrawable extends Drawable {
                 if (currentIcon == ICON_CANCEL_FILL) {
                     rotation = 0;
                     iconScale = backProgress;
+                    iconScaleX = bounds.left;
+                    iconScaleY = bounds.top;
                 } else {
                     rotation = 45 * progress;
                     iconScale = 1.0f;
+                    iconScaleX = bounds.centerX();
+                    iconScaleY = bounds.centerY();
                 }
             } else if (nextIcon == ICON_CANCEL_FILL || nextIcon == ICON_CANCEL) {
                 float progress = transitionProgress;
@@ -513,6 +555,8 @@ public class MediaActionDrawable extends Drawable {
 
         Drawable nextDrawable = null;
         Drawable previousDrawable = null;
+        Path[] nextPath = null;
+        Path[] previousPath = null;
 
         float drawableScale;
         float previowsDrawableScale;
@@ -527,9 +571,9 @@ public class MediaActionDrawable extends Drawable {
         }
 
         if (nextIcon == ICON_FILE) {
-            nextDrawable = Theme.chat_fileIcon;
+            nextPath = Theme.chat_filePath;
         } else if (currentIcon == ICON_FILE) {
-            previousDrawable = Theme.chat_fileIcon;
+            previousPath = Theme.chat_filePath;
         }
         if (nextIcon == ICON_FIRE) {
             nextDrawable = Theme.chat_flameIcon;
@@ -769,6 +813,33 @@ public class MediaActionDrawable extends Drawable {
             nextDrawable.draw(canvas);
         }
 
+        if (previousPath != null && previousPath != nextPath) {
+            int w = (int) (AndroidUtilities.dp(24) * previowsDrawableScale);
+            int h = (int) (AndroidUtilities.dp(24) * previowsDrawableScale);
+            paint2.setStyle(Paint.Style.FILL_AND_STROKE);
+            paint2.setAlpha(currentIcon == nextIcon ? 255 : (int) ((1.0f - transitionProgress) * 255));
+            canvas.save();
+            canvas.translate(cx - w / 2, cy - h / 2);
+            canvas.drawPath(previousPath[0], paint2);
+            if (previousPath[1] != null) {
+                canvas.drawPath(previousPath[1], backPaint);
+            }
+            canvas.restore();
+        }
+        if (nextPath != null) {
+            int w = (int) (AndroidUtilities.dp(24) * drawableScale);
+            int h = (int) (AndroidUtilities.dp(24) * drawableScale);
+            paint2.setStyle(Paint.Style.FILL_AND_STROKE);
+            paint2.setAlpha(currentIcon == nextIcon ? 255 : (int) (transitionProgress * 255));
+            canvas.save();
+            canvas.translate(cx - w / 2, cy - h / 2);
+            canvas.drawPath(nextPath[0], paint2);
+            if (nextPath[1] != null) {
+                canvas.drawPath(nextPath[1], backPaint);
+            }
+            canvas.restore();
+        }
+
         long newTime = System.currentTimeMillis();
         long dt = newTime - lastAnimationTime;
         if (dt > 17) {
@@ -807,8 +878,8 @@ public class MediaActionDrawable extends Drawable {
                 invalidateSelf();
             }
         }
-        if (nextIcon == ICON_NONE || (nextIcon == ICON_CHECK || nextIcon == ICON_EMPTY) && currentIcon == ICON_NONE) {
-            canvas.restore();
+        if (saveCount >= 1) {
+            canvas.restoreToCount(saveCount);
         }
     }
 

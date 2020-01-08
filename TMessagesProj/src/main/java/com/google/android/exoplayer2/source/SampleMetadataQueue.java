@@ -219,25 +219,31 @@ import com.google.android.exoplayer2.util.Util;
    *
    * @param formatHolder A {@link FormatHolder} to populate in the case of reading a format.
    * @param buffer A {@link DecoderInputBuffer} to populate in the case of reading a sample or the
-   *     end of the stream. If a sample is read then the buffer is populated with information
-   *     about the sample, but not its data. The size and absolute position of the data in the
-   *     rolling buffer is stored in {@code extrasHolder}, along with an encryption id if present
-   *     and the absolute position of the first byte that may still be required after the current
-   *     sample has been read. May be null if the caller requires that the format of the stream be
-   *     read even if it's not changing.
-   * @param formatRequired Whether the caller requires that the format of the stream be read even
-   *     if it's not changing. A sample will never be read if set to true, however it is still
-   *     possible for the end of stream or nothing to be read.
+   *     end of the stream. If a sample is read then the buffer is populated with information about
+   *     the sample, but not its data. The size and absolute position of the data in the rolling
+   *     buffer is stored in {@code extrasHolder}, along with an encryption id if present and the
+   *     absolute position of the first byte that may still be required after the current sample has
+   *     been read. If a {@link DecoderInputBuffer#isFlagsOnly() flags-only} buffer is passed, only
+   *     the buffer flags may be populated by this method and the read position of the queue will
+   *     not change. May be null if the caller requires that the format of the stream be read even
+   *     if it's not changing.
+   * @param formatRequired Whether the caller requires that the format of the stream be read even if
+   *     it's not changing. A sample will never be read if set to true, however it is still possible
+   *     for the end of stream or nothing to be read.
    * @param loadingFinished True if an empty queue should be considered the end of the stream.
-   * @param downstreamFormat The current downstream {@link Format}. If the format of the next
-   *     sample is different to the current downstream format then a format will be read.
+   * @param downstreamFormat The current downstream {@link Format}. If the format of the next sample
+   *     is different to the current downstream format then a format will be read.
    * @param extrasHolder The holder into which extra sample information should be written.
-   * @return The result, which can be {@link C#RESULT_NOTHING_READ}, {@link C#RESULT_FORMAT_READ}
-   *     or {@link C#RESULT_BUFFER_READ}.
+   * @return The result, which can be {@link C#RESULT_NOTHING_READ}, {@link C#RESULT_FORMAT_READ} or
+   *     {@link C#RESULT_BUFFER_READ}.
    */
   @SuppressWarnings("ReferenceEquality")
-  public synchronized int read(FormatHolder formatHolder, DecoderInputBuffer buffer,
-      boolean formatRequired, boolean loadingFinished, Format downstreamFormat,
+  public synchronized int read(
+      FormatHolder formatHolder,
+      DecoderInputBuffer buffer,
+      boolean formatRequired,
+      boolean loadingFinished,
+      Format downstreamFormat,
       SampleExtrasHolder extrasHolder) {
     if (!hasNextSample()) {
       if (loadingFinished || isLastSampleQueued) {
@@ -258,12 +264,12 @@ import com.google.android.exoplayer2.util.Util;
       return C.RESULT_FORMAT_READ;
     }
 
+    buffer.setFlags(flags[relativeReadIndex]);
+    buffer.timeUs = timesUs[relativeReadIndex];
     if (buffer.isFlagsOnly()) {
-      return C.RESULT_NOTHING_READ;
+      return C.RESULT_BUFFER_READ;
     }
 
-    buffer.timeUs = timesUs[relativeReadIndex];
-    buffer.setFlags(flags[relativeReadIndex]);
     extrasHolder.size = sizes[relativeReadIndex];
     extrasHolder.offset = offsets[relativeReadIndex];
     extrasHolder.cryptoData = cryptoDatas[relativeReadIndex];

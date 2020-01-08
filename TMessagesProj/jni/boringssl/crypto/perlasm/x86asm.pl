@@ -33,6 +33,26 @@ sub ::AUTOLOAD
     &generic($opcode,@_) or die "undefined subroutine \&$AUTOLOAD";
 }
 
+# record_function_hit(int) writes a byte with value one to the given offset of
+# |BORINGSSL_function_hit|, but only if NDEBUG is not defined. This is used in
+# impl_dispatch_test.cc to test whether the expected assembly functions are
+# triggered by high-level API calls.
+sub ::record_function_hit
+{ my($index)=@_;
+    &preprocessor_ifndef("NDEBUG");
+    &push("ebx");
+    &push("edx");
+    &call(&label("pic"));
+    &set_label("pic");
+    &blindpop("ebx");
+    &lea("ebx",&DWP("BORINGSSL_function_hit+$index"."-".&label("pic"),"ebx"));
+    &mov("edx", 1);
+    &movb(&BP(0, "ebx"), "dl");
+    &pop("edx");
+    &pop("ebx");
+    &preprocessor_endif();
+}
+
 sub ::emit
 { my $opcode=shift;
 
@@ -255,9 +275,29 @@ sub ::asciz
 
 sub ::asm_finish
 {   &file_end();
-    print "#if defined(__i386__)\n" unless $win32;
+    my $comment = "#";
+    $comment = ";" if ($win32 || $netware);
+    print <<___;
+$comment This file is generated from a similarly-named Perl script in the BoringSSL
+$comment source tree. Do not edit by hand.
+
+___
+    if ($win32 || $netware) {
+        print <<___ unless $masm;
+%ifdef BORINGSSL_PREFIX
+%include "boringssl_prefix_symbols_nasm.inc"
+%endif
+___
+    } else {
+        print <<___;
+#if defined(__i386__)
+#if defined(BORINGSSL_PREFIX)
+#include <boringssl_prefix_symbols_asm.h>
+#endif
+___
+    }
     print @out;
-    print "#endif\n" unless $win32;
+    print "#endif\n" unless ($win32 || $netware);
 }
 
 sub ::asm_init
@@ -281,7 +321,7 @@ sub ::asm_init
     #elsif (($type eq "nw-mwasm"))
     #{	$netware=1; $mwerks=1;	require "x86nasm.pl";	}
     elsif (($type eq "win32"))
-    {	$win32=1;		require "x86masm.pl";	}
+    {	$win32=1; $masm=1;	require "x86masm.pl";	}
     elsif (($type eq "macosx"))
     {	$aout=1; $macosx=1;	require "x86gas.pl";	}
     elsif (($type eq "android"))

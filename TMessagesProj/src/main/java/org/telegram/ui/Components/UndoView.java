@@ -12,6 +12,8 @@ import android.graphics.PorterDuffColorFilter;
 import android.graphics.RectF;
 import android.graphics.Typeface;
 import android.os.SystemClock;
+import android.text.SpannableStringBuilder;
+import android.text.Spanned;
 import android.text.TextPaint;
 import android.text.TextUtils;
 import android.util.TypedValue;
@@ -45,6 +47,8 @@ public class UndoView extends FrameLayout {
     private LinearLayout undoButton;
     private int undoViewHeight;
 
+    private Object currentInfoObject;
+
     private int currentAccount = UserConfig.selectedAccount;
 
     private TextPaint textPaint;
@@ -65,7 +69,7 @@ public class UndoView extends FrameLayout {
 
     private float additionalTranslationY;
 
-    private boolean isShowed;
+    private boolean isShown;
 
     public final static int ACTION_CLEAR = 0;
     public final static int ACTION_DELETE = 1;
@@ -78,6 +82,8 @@ public class UndoView extends FrameLayout {
     public final static int ACTION_CONTACT_ADDED = 8;
     public final static int ACTION_OWNER_TRANSFERED_CHANNEL = 9;
     public final static int ACTION_OWNER_TRANSFERED_GROUP = 10;
+    public final static int ACTION_QR_SESSION_ACCEPTED = 11;
+    public final static int ACTION_THEME_CHANGED = 12;
 
     public UndoView(Context context) {
         super(context);
@@ -90,8 +96,11 @@ public class UndoView extends FrameLayout {
         subinfoTextView = new TextView(context);
         subinfoTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
         subinfoTextView.setTextColor(Theme.getColor(Theme.key_undo_infoColor));
+        subinfoTextView.setLinkTextColor(Theme.getColor(Theme.key_undo_cancelColor));
+        subinfoTextView.setHighlightColor(0);
         subinfoTextView.setSingleLine(true);
         subinfoTextView.setEllipsize(TextUtils.TruncateAt.END);
+        subinfoTextView.setMovementMethod(new AndroidUtilities.LinkMovementMethodMy());
         addView(subinfoTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.LEFT, 58, 27, 8, 0));
 
         leftImageView = new RLottieImageView(context);
@@ -162,18 +171,27 @@ public class UndoView extends FrameLayout {
     }
 
     private boolean hasSubInfo() {
-        return currentAction == ACTION_ARCHIVE_HIDDEN || currentAction == ACTION_ARCHIVE_HINT || currentAction == ACTION_ARCHIVE_FEW_HINT || currentAction == ACTION_ARCHIVE_PINNED;
+        return currentAction == ACTION_QR_SESSION_ACCEPTED || currentAction == ACTION_ARCHIVE_HIDDEN || currentAction == ACTION_ARCHIVE_HINT || currentAction == ACTION_ARCHIVE_FEW_HINT || currentAction == ACTION_ARCHIVE_PINNED;
+    }
+
+    public boolean isMultilineSubInfo() {
+        return currentAction == ACTION_THEME_CHANGED;
     }
 
     public void setAdditionalTranslationY(float value) {
         additionalTranslationY = value;
     }
 
+    public Object getCurrentInfoObject() {
+        return currentInfoObject;
+    }
+
     public void hide(boolean apply, int animated) {
-        if (getVisibility() != VISIBLE || !isShowed) {
+        if (getVisibility() != VISIBLE || !isShown) {
             return;
         }
-        isShowed = false;
+        currentInfoObject = null;
+        isShown = false;
         if (currentActionRunnable != null) {
             if (apply) {
                 currentActionRunnable.run();
@@ -234,12 +252,13 @@ public class UndoView extends FrameLayout {
         if (currentActionRunnable != null) {
             currentActionRunnable.run();
         }
-        isShowed = true;
+        isShown = true;
         currentActionRunnable = actionRunnable;
         currentCancelRunnable = cancelRunnable;
         currentDialogId = did;
         currentAction = action;
         timeLeft = 5000;
+        currentInfoObject = infoObject;
         lastUpdateTime = SystemClock.uptimeMillis();
 
         if (isTooltipAction()) {
@@ -305,6 +324,57 @@ public class UndoView extends FrameLayout {
 
             leftImageView.setProgress(0);
             leftImageView.playAnimation();
+        } else if (currentAction == ACTION_QR_SESSION_ACCEPTED) {
+            TLRPC.TL_authorization authorization = (TLRPC.TL_authorization) infoObject;
+
+            infoTextView.setText(LocaleController.getString("AuthAnotherClientOk", R.string.AuthAnotherClientOk));
+            leftImageView.setAnimation(R.raw.contact_check, 36, 36);
+
+            FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) infoTextView.getLayoutParams();
+            layoutParams.leftMargin = AndroidUtilities.dp(58);
+            layoutParams.topMargin = AndroidUtilities.dp(6);
+            subinfoTextView.setText(authorization.app_name);
+            subinfoTextView.setVisibility(VISIBLE);
+            infoTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+            infoTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+
+            undoTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteRedText2));
+            undoImageView.setVisibility(GONE);
+            undoButton.setVisibility(VISIBLE);
+            leftImageView.setVisibility(VISIBLE);
+
+            leftImageView.setProgress(0);
+            leftImageView.playAnimation();
+        } else if (currentAction == ACTION_THEME_CHANGED) {
+            TLRPC.TL_authorization authorization = (TLRPC.TL_authorization) infoObject;
+
+            infoTextView.setText(LocaleController.getString("ColorThemeChanged", R.string.ColorThemeChanged));
+            leftImageView.setImageResource(R.drawable.toast_pallete);
+
+            FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) infoTextView.getLayoutParams();
+            layoutParams.leftMargin = AndroidUtilities.dp(58);
+            layoutParams.rightMargin = AndroidUtilities.dp(48);
+            layoutParams.topMargin = AndroidUtilities.dp(6);
+
+            layoutParams = (FrameLayout.LayoutParams) subinfoTextView.getLayoutParams();
+            layoutParams.rightMargin = AndroidUtilities.dp(48);
+
+            String text = LocaleController.getString("ColorThemeChangedInfo", R.string.ColorThemeChangedInfo);
+            SpannableStringBuilder builder = new SpannableStringBuilder(text);
+            int index1 = text.indexOf('*');
+            int index2 = text.lastIndexOf('*');
+            if (index1 >= 0 && index2 >= 0 && index1 != index2) {
+                builder.replace(index2, index2 + 1, "");
+                builder.replace(index1, index1 + 1, "");
+                builder.setSpan(new URLSpanNoUnderline("tg://settings/themes"), index1, index2 - 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            }
+            subinfoTextView.setText(builder);
+            subinfoTextView.setVisibility(VISIBLE);
+            subinfoTextView.setSingleLine(false);
+            subinfoTextView.setMaxLines(2);
+            undoTextView.setVisibility(GONE);
+            undoButton.setVisibility(VISIBLE);
+            leftImageView.setVisibility(VISIBLE);
         } else if (currentAction == ACTION_ARCHIVE || currentAction == ACTION_ARCHIVE_FEW) {
             if (action == ACTION_ARCHIVE) {
                 infoTextView.setText(LocaleController.getString("ChatArchived", R.string.ChatArchived));
@@ -356,7 +426,16 @@ public class UndoView extends FrameLayout {
 
         AndroidUtilities.makeAccessibilityAnnouncement(infoTextView.getText() + (subinfoTextView.getVisibility() == VISIBLE ? ". " + subinfoTextView.getText() : ""));
 
-        if (hasSubInfo()) {
+        if (isMultilineSubInfo()) {
+            ViewGroup parent = (ViewGroup) getParent();
+            int width = parent.getMeasuredWidth();
+            if (width == 0) {
+                width = AndroidUtilities.displaySize.x;
+            }
+            width -= AndroidUtilities.dp(16);
+            measureChildWithMargins(subinfoTextView, MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY), 0, MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED), 0);
+            undoViewHeight = subinfoTextView.getMeasuredHeight() + AndroidUtilities.dp(27 + 10);
+        } else if (hasSubInfo()) {
             undoViewHeight = AndroidUtilities.dp(52);
         } else if (getParent() instanceof ViewGroup) {
             ViewGroup parent = (ViewGroup) getParent();

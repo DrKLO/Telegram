@@ -17,6 +17,7 @@ package com.google.android.exoplayer2.text;
 
 import com.google.android.exoplayer2.Format;
 import com.google.android.exoplayer2.decoder.OutputBuffer;
+import com.google.android.exoplayer2.util.Assertions;
 import java.util.List;
 
 /**
@@ -45,22 +46,22 @@ public abstract class SubtitleOutputBuffer extends OutputBuffer implements Subti
 
   @Override
   public int getEventTimeCount() {
-    return subtitle.getEventTimeCount();
+    return Assertions.checkNotNull(subtitle).getEventTimeCount();
   }
 
   @Override
   public long getEventTime(int index) {
-    return subtitle.getEventTime(index) + subsampleOffsetUs;
+    return Assertions.checkNotNull(subtitle).getEventTime(index) + subsampleOffsetUs;
   }
 
   @Override
   public int getNextEventTimeIndex(long timeUs) {
-    return subtitle.getNextEventTimeIndex(timeUs - subsampleOffsetUs);
+    return Assertions.checkNotNull(subtitle).getNextEventTimeIndex(timeUs - subsampleOffsetUs);
   }
 
   @Override
   public List<Cue> getCues(long timeUs) {
-    return subtitle.getCues(timeUs - subsampleOffsetUs);
+    return Assertions.checkNotNull(subtitle).getCues(timeUs - subsampleOffsetUs);
   }
 
   @Override

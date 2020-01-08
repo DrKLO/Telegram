@@ -113,9 +113,7 @@
 #include <openssl/dsa.h>
 #include <openssl/evp.h>
 #include <openssl/pem.h>
-/*
- * #include <openssl/pkcs7.h>
- */
+#include <openssl/pkcs7.h>
 #include <openssl/rsa.h>
 #include <openssl/x509.h>
 
@@ -127,6 +125,7 @@ IMPLEMENT_PEM_rw(X509_REQ, X509_REQ, PEM_STRING_X509_REQ, X509_REQ)
 
 IMPLEMENT_PEM_write(X509_REQ_NEW, X509_REQ, PEM_STRING_X509_REQ_OLD, X509_REQ)
 IMPLEMENT_PEM_rw(X509_CRL, X509_CRL, PEM_STRING_X509_CRL, X509_CRL)
+IMPLEMENT_PEM_rw(PKCS7, PKCS7, PEM_STRING_PKCS7, PKCS7)
 
 /*
  * We treat RSA or DSA private keys as a special case. For private keys we

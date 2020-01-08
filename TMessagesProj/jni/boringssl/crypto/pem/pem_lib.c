@@ -121,17 +121,14 @@ void PEM_dek_info(char *buf, const char *type, int len, char *str)
 void *PEM_ASN1_read(d2i_of_void *d2i, const char *name, FILE *fp, void **x,
                     pem_password_cb *cb, void *u)
 {
-    BIO *b;
-    void *ret;
-
-    if ((b = BIO_new(BIO_s_file())) == NULL) {
+    BIO *b = BIO_new_fp(fp, BIO_NOCLOSE);
+    if (b == NULL) {
         OPENSSL_PUT_ERROR(PEM, ERR_R_BUF_LIB);
-        return (0);
+        return NULL;
     }
-    BIO_set_fp(b, fp, BIO_NOCLOSE);
-    ret = PEM_ASN1_read_bio(d2i, name, b, x, cb, u);
+    void *ret = PEM_ASN1_read_bio(d2i, name, b, x, cb, u);
     BIO_free(b);
-    return (ret);
+    return ret;
 }
 #endif
 
@@ -188,6 +185,26 @@ static int check_pem(const char *nm, const char *name)
     return 0;
 }
 
+static const EVP_CIPHER *cipher_by_name(const char *name)
+{
+    /* This is similar to the (deprecated) function |EVP_get_cipherbyname|. Note
+     * the PEM code assumes that ciphers have at least 8 bytes of IV, at most 20
+     * bytes of overhead and generally behave like CBC mode. */
+    if (0 == strcmp(name, SN_des_cbc)) {
+        return EVP_des_cbc();
+    } else if (0 == strcmp(name, SN_des_ede3_cbc)) {
+        return EVP_des_ede3_cbc();
+    } else if (0 == strcmp(name, SN_aes_128_cbc)) {
+        return EVP_aes_128_cbc();
+    } else if (0 == strcmp(name, SN_aes_192_cbc)) {
+        return EVP_aes_192_cbc();
+    } else if (0 == strcmp(name, SN_aes_256_cbc)) {
+        return EVP_aes_256_cbc();
+    } else {
+        return NULL;
+    }
+}
+
 int PEM_bytes_read_bio(unsigned char **pdata, long *plen, char **pnm,
                        const char *name, BIO *bp, pem_password_cb *cb,
                        void *u)
@@ -200,8 +217,11 @@ int PEM_bytes_read_bio(unsigned char **pdata, long *plen, char **pnm,
 
     for (;;) {
         if (!PEM_read_bio(bp, &nm, &header, &data, &len)) {
-            if (ERR_GET_REASON(ERR_peek_error()) == PEM_R_NO_START_LINE)
+            uint32_t error = ERR_peek_error();
+            if (ERR_GET_LIB(error) == ERR_LIB_PEM &&
+                ERR_GET_REASON(error) == PEM_R_NO_START_LINE) {
                 ERR_add_error_data(2, "Expecting: ", name);
+            }
             return 0;
         }
         if (check_pem(nm, name))
@@ -237,17 +257,14 @@ int PEM_ASN1_write(i2d_of_void *i2d, const char *name, FILE *fp,
                    void *x, const EVP_CIPHER *enc, unsigned char *kstr,
                    int klen, pem_password_cb *callback, void *u)
 {
-    BIO *b;
-    int ret;
-
-    if ((b = BIO_new(BIO_s_file())) == NULL) {
+    BIO *b = BIO_new_fp(fp, BIO_NOCLOSE);
+    if (b == NULL) {
         OPENSSL_PUT_ERROR(PEM, ERR_R_BUF_LIB);
-        return (0);
+        return 0;
     }
-    BIO_set_fp(b, fp, BIO_NOCLOSE);
-    ret = PEM_ASN1_write_bio(i2d, name, b, x, enc, kstr, klen, callback, u);
+    int ret = PEM_ASN1_write_bio(i2d, name, b, x, enc, kstr, klen, callback, u);
     BIO_free(b);
-    return (ret);
+    return ret;
 }
 #endif
 
@@ -265,7 +282,9 @@ int PEM_ASN1_write_bio(i2d_of_void *i2d, const char *name, BIO *bp,
 
     if (enc != NULL) {
         objstr = OBJ_nid2sn(EVP_CIPHER_nid(enc));
-        if (objstr == NULL || EVP_CIPHER_iv_length(enc) == 0) {
+        if (objstr == NULL ||
+            cipher_by_name(objstr) == NULL ||
+            EVP_CIPHER_iv_length(enc) < 8) {
             OPENSSL_PUT_ERROR(PEM, PEM_R_UNSUPPORTED_CIPHER);
             goto err;
         }
@@ -393,26 +412,6 @@ int PEM_do_header(EVP_CIPHER_INFO *cipher, unsigned char *data, long *plen,
     return (1);
 }
 
-static const EVP_CIPHER *cipher_by_name(const char *name)
-{
-    /* This is similar to the (deprecated) function |EVP_get_cipherbyname|. */
-    if (0 == strcmp(name, SN_rc4)) {
-        return EVP_rc4();
-    } else if (0 == strcmp(name, SN_des_cbc)) {
-        return EVP_des_cbc();
-    } else if (0 == strcmp(name, SN_des_ede3_cbc)) {
-        return EVP_des_ede3_cbc();
-    } else if (0 == strcmp(name, SN_aes_128_cbc)) {
-        return EVP_aes_128_cbc();
-    } else if (0 == strcmp(name, SN_aes_192_cbc)) {
-        return EVP_aes_192_cbc();
-    } else if (0 == strcmp(name, SN_aes_256_cbc)) {
-        return EVP_aes_256_cbc();
-    } else {
-        return NULL;
-    }
-}
-
 int PEM_get_EVP_CIPHER_INFO(char *header, EVP_CIPHER_INFO *cipher)
 {
     const EVP_CIPHER *enc = NULL;
@@ -420,6 +419,7 @@ int PEM_get_EVP_CIPHER_INFO(char *header, EVP_CIPHER_INFO *cipher)
     char **header_pp = &header;
 
     cipher->cipher = NULL;
+    OPENSSL_memset(cipher->iv, 0, sizeof(cipher->iv));
     if ((header == NULL) || (*header == '\0') || (*header == '\n'))
         return (1);
     if (strncmp(header, "Proc-Type: ", 11) != 0) {
@@ -466,6 +466,13 @@ int PEM_get_EVP_CIPHER_INFO(char *header, EVP_CIPHER_INFO *cipher)
         OPENSSL_PUT_ERROR(PEM, PEM_R_UNSUPPORTED_ENCRYPTION);
         return (0);
     }
+    // The IV parameter must be at least 8 bytes long to be used as the salt in
+    // the KDF. (This should not happen given |cipher_by_name|.)
+    if (EVP_CIPHER_iv_length(enc) < 8) {
+        assert(0);
+        OPENSSL_PUT_ERROR(PEM, PEM_R_UNSUPPORTED_ENCRYPTION);
+        return 0;
+    }
     if (!load_iv(header_pp, &(cipher->iv[0]), EVP_CIPHER_iv_length(enc)))
         return (0);
 
@@ -504,15 +511,12 @@ static int load_iv(char **fromp, unsigned char *to, int num)
 int PEM_write(FILE *fp, const char *name, const char *header,
               const unsigned char *data, long len)
 {
-    BIO *b;
-    int ret;
-
-    if ((b = BIO_new(BIO_s_file())) == NULL) {
+    BIO *b = BIO_new_fp(fp, BIO_NOCLOSE);
+    if (b == NULL) {
         OPENSSL_PUT_ERROR(PEM, ERR_R_BUF_LIB);
-        return (0);
+        return 0;
     }
-    BIO_set_fp(b, fp, BIO_NOCLOSE);
-    ret = PEM_write_bio(b, name, header, data, len);
+    int ret = PEM_write_bio(b, name, header, data, len);
     BIO_free(b);
     return (ret);
 }
@@ -578,15 +582,12 @@ int PEM_write_bio(BIO *bp, const char *name, const char *header,
 int PEM_read(FILE *fp, char **name, char **header, unsigned char **data,
              long *len)
 {
-    BIO *b;
-    int ret;
-
-    if ((b = BIO_new(BIO_s_file())) == NULL) {
+    BIO *b = BIO_new_fp(fp, BIO_NOCLOSE);
+    if (b == NULL) {
         OPENSSL_PUT_ERROR(PEM, ERR_R_BUF_LIB);
-        return (0);
+        return 0;
     }
-    BIO_set_fp(b, fp, BIO_NOCLOSE);
-    ret = PEM_read_bio(b, name, header, data, len);
+    int ret = PEM_read_bio(b, name, header, data, len);
     BIO_free(b);
     return (ret);
 }

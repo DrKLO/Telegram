@@ -71,6 +71,11 @@
 #include "../internal.h"
 
 
+// Node depends on |EVP_R_NOT_XOF_OR_INVALID_LENGTH|.
+//
+// TODO(davidben): Fix Node to not touch the error queue itself and remove this.
+OPENSSL_DECLARE_ERROR_REASON(EVP, NOT_XOF_OR_INVALID_LENGTH)
+
 EVP_PKEY *EVP_PKEY_new(void) {
   EVP_PKEY *ret;
 
@@ -176,7 +181,7 @@ int EVP_PKEY_size(const EVP_PKEY *pkey) {
   return 0;
 }
 
-int EVP_PKEY_bits(EVP_PKEY *pkey) {
+int EVP_PKEY_bits(const EVP_PKEY *pkey) {
   if (pkey && pkey->ameth && pkey->ameth->pkey_bits) {
     return pkey->ameth->pkey_bits(pkey);
   }
@@ -200,6 +205,8 @@ static const EVP_PKEY_ASN1_METHOD *evp_pkey_asn1_find(int nid) {
       return &dsa_asn1_meth;
     case EVP_PKEY_ED25519:
       return &ed25519_asn1_meth;
+    case EVP_PKEY_X25519:
+      return &x25519_asn1_meth;
     default:
       return NULL;
   }
@@ -225,7 +232,7 @@ int EVP_PKEY_assign_RSA(EVP_PKEY *pkey, RSA *key) {
   return EVP_PKEY_assign(pkey, EVP_PKEY_RSA, key);
 }
 
-RSA *EVP_PKEY_get0_RSA(EVP_PKEY *pkey) {
+RSA *EVP_PKEY_get0_RSA(const EVP_PKEY *pkey) {
   if (pkey->type != EVP_PKEY_RSA) {
     OPENSSL_PUT_ERROR(EVP, EVP_R_EXPECTING_AN_RSA_KEY);
     return NULL;
@@ -233,7 +240,7 @@ RSA *EVP_PKEY_get0_RSA(EVP_PKEY *pkey) {
   return pkey->pkey.rsa;
 }
 
-RSA *EVP_PKEY_get1_RSA(EVP_PKEY *pkey) {
+RSA *EVP_PKEY_get1_RSA(const EVP_PKEY *pkey) {
   RSA *rsa = EVP_PKEY_get0_RSA(pkey);
   if (rsa != NULL) {
     RSA_up_ref(rsa);
@@ -253,7 +260,7 @@ int EVP_PKEY_assign_DSA(EVP_PKEY *pkey, DSA *key) {
   return EVP_PKEY_assign(pkey, EVP_PKEY_DSA, key);
 }
 
-DSA *EVP_PKEY_get0_DSA(EVP_PKEY *pkey) {
+DSA *EVP_PKEY_get0_DSA(const EVP_PKEY *pkey) {
   if (pkey->type != EVP_PKEY_DSA) {
     OPENSSL_PUT_ERROR(EVP, EVP_R_EXPECTING_A_DSA_KEY);
     return NULL;
@@ -261,7 +268,7 @@ DSA *EVP_PKEY_get0_DSA(EVP_PKEY *pkey) {
   return pkey->pkey.dsa;
 }
 
-DSA *EVP_PKEY_get1_DSA(EVP_PKEY *pkey) {
+DSA *EVP_PKEY_get1_DSA(const EVP_PKEY *pkey) {
   DSA *dsa = EVP_PKEY_get0_DSA(pkey);
   if (dsa != NULL) {
     DSA_up_ref(dsa);
@@ -281,7 +288,7 @@ int EVP_PKEY_assign_EC_KEY(EVP_PKEY *pkey, EC_KEY *key) {
   return EVP_PKEY_assign(pkey, EVP_PKEY_EC, key);
 }
 
-EC_KEY *EVP_PKEY_get0_EC_KEY(EVP_PKEY *pkey) {
+EC_KEY *EVP_PKEY_get0_EC_KEY(const EVP_PKEY *pkey) {
   if (pkey->type != EVP_PKEY_EC) {
     OPENSSL_PUT_ERROR(EVP, EVP_R_EXPECTING_AN_EC_KEY_KEY);
     return NULL;
@@ -289,7 +296,7 @@ EC_KEY *EVP_PKEY_get0_EC_KEY(EVP_PKEY *pkey) {
   return pkey->pkey.ec;
 }
 
-EC_KEY *EVP_PKEY_get1_EC_KEY(EVP_PKEY *pkey) {
+EC_KEY *EVP_PKEY_get1_EC_KEY(const EVP_PKEY *pkey) {
   EC_KEY *ec_key = EVP_PKEY_get0_EC_KEY(pkey);
   if (ec_key != NULL) {
     EC_KEY_up_ref(ec_key);
@@ -297,7 +304,8 @@ EC_KEY *EVP_PKEY_get1_EC_KEY(EVP_PKEY *pkey) {
   return ec_key;
 }
 
-DH *EVP_PKEY_get0_DH(EVP_PKEY *pkey) { return NULL; }
+DH *EVP_PKEY_get0_DH(const EVP_PKEY *pkey) { return NULL; }
+DH *EVP_PKEY_get1_DH(const EVP_PKEY *pkey) { return NULL; }
 
 int EVP_PKEY_assign(EVP_PKEY *pkey, int type, void *key) {
   if (!EVP_PKEY_set_type(pkey, type)) {
@@ -329,7 +337,73 @@ int EVP_PKEY_set_type(EVP_PKEY *pkey, int type) {
   return 1;
 }
 
+EVP_PKEY *EVP_PKEY_new_raw_private_key(int type, ENGINE *unused,
+                                       const uint8_t *in, size_t len) {
+  EVP_PKEY *ret = EVP_PKEY_new();
+  if (ret == NULL ||
+      !EVP_PKEY_set_type(ret, type)) {
+    goto err;
+  }
 
+  if (ret->ameth->set_priv_raw == NULL) {
+    OPENSSL_PUT_ERROR(EVP, EVP_R_OPERATION_NOT_SUPPORTED_FOR_THIS_KEYTYPE);
+    goto err;
+  }
+
+  if (!ret->ameth->set_priv_raw(ret, in, len)) {
+    goto err;
+  }
+
+  return ret;
+
+err:
+  EVP_PKEY_free(ret);
+  return NULL;
+}
+
+EVP_PKEY *EVP_PKEY_new_raw_public_key(int type, ENGINE *unused,
+                                      const uint8_t *in, size_t len) {
+  EVP_PKEY *ret = EVP_PKEY_new();
+  if (ret == NULL ||
+      !EVP_PKEY_set_type(ret, type)) {
+    goto err;
+  }
+
+  if (ret->ameth->set_pub_raw == NULL) {
+    OPENSSL_PUT_ERROR(EVP, EVP_R_OPERATION_NOT_SUPPORTED_FOR_THIS_KEYTYPE);
+    goto err;
+  }
+
+  if (!ret->ameth->set_pub_raw(ret, in, len)) {
+    goto err;
+  }
+
+  return ret;
+
+err:
+  EVP_PKEY_free(ret);
+  return NULL;
+}
+
+int EVP_PKEY_get_raw_private_key(const EVP_PKEY *pkey, uint8_t *out,
+                                 size_t *out_len) {
+  if (pkey->ameth->get_priv_raw == NULL) {
+    OPENSSL_PUT_ERROR(EVP, EVP_R_OPERATION_NOT_SUPPORTED_FOR_THIS_KEYTYPE);
+    return 0;
+  }
+
+  return pkey->ameth->get_priv_raw(pkey, out, out_len);
+}
+
+int EVP_PKEY_get_raw_public_key(const EVP_PKEY *pkey, uint8_t *out,
+                                size_t *out_len) {
+  if (pkey->ameth->get_pub_raw == NULL) {
+    OPENSSL_PUT_ERROR(EVP, EVP_R_OPERATION_NOT_SUPPORTED_FOR_THIS_KEYTYPE);
+    return 0;
+  }
+
+  return pkey->ameth->get_pub_raw(pkey, out, out_len);
+}
 
 int EVP_PKEY_cmp_parameters(const EVP_PKEY *a, const EVP_PKEY *b) {
   if (a->type != b->type) {
@@ -360,3 +434,10 @@ void OpenSSL_add_all_ciphers(void) {}
 void OpenSSL_add_all_digests(void) {}
 
 void EVP_cleanup(void) {}
+
+int EVP_PKEY_base_id(const EVP_PKEY *pkey) {
+  // OpenSSL has two notions of key type because it supports multiple OIDs for
+  // the same algorithm: NID_rsa vs NID_rsaEncryption and five distinct spelling
+  // of DSA. We do not support these, so the base ID is simply the ID.
+  return EVP_PKEY_id(pkey);
+}

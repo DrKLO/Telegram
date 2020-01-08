@@ -37,10 +37,13 @@ public final class MimeTypes {
   public static final String VIDEO_H265 = BASE_TYPE_VIDEO + "/hevc";
   public static final String VIDEO_VP8 = BASE_TYPE_VIDEO + "/x-vnd.on2.vp8";
   public static final String VIDEO_VP9 = BASE_TYPE_VIDEO + "/x-vnd.on2.vp9";
+  public static final String VIDEO_AV1 = BASE_TYPE_VIDEO + "/av01";
   public static final String VIDEO_MP4V = BASE_TYPE_VIDEO + "/mp4v-es";
   public static final String VIDEO_MPEG = BASE_TYPE_VIDEO + "/mpeg";
   public static final String VIDEO_MPEG2 = BASE_TYPE_VIDEO + "/mpeg2";
   public static final String VIDEO_VC1 = BASE_TYPE_VIDEO + "/wvc1";
+  public static final String VIDEO_DIVX = BASE_TYPE_VIDEO + "/divx";
+  public static final String VIDEO_DOLBY_VISION = BASE_TYPE_VIDEO + "/dolby-vision";
   public static final String VIDEO_UNKNOWN = BASE_TYPE_VIDEO + "/x-unknown";
 
   public static final String AUDIO_MP4 = BASE_TYPE_AUDIO + "/mp4";
@@ -55,6 +58,7 @@ public final class MimeTypes {
   public static final String AUDIO_AC3 = BASE_TYPE_AUDIO + "/ac3";
   public static final String AUDIO_E_AC3 = BASE_TYPE_AUDIO + "/eac3";
   public static final String AUDIO_E_AC3_JOC = BASE_TYPE_AUDIO + "/eac3-joc";
+  public static final String AUDIO_AC4 = BASE_TYPE_AUDIO + "/ac4";
   public static final String AUDIO_TRUEHD = BASE_TYPE_AUDIO + "/true-hd";
   public static final String AUDIO_DTS = BASE_TYPE_AUDIO + "/vnd.dts";
   public static final String AUDIO_DTS_HD = BASE_TYPE_AUDIO + "/vnd.dts.hd";
@@ -118,42 +122,22 @@ public final class MimeTypes {
     customMimeTypes.add(customMimeType);
   }
 
-  /**
-   * Whether the top-level type of {@code mimeType} is audio.
-   *
-   * @param mimeType The mimeType to test.
-   * @return Whether the top level type is audio.
-   */
+  /** Returns whether the given string is an audio mime type. */
   public static boolean isAudio(@Nullable String mimeType) {
     return BASE_TYPE_AUDIO.equals(getTopLevelType(mimeType));
   }
 
-  /**
-   * Whether the top-level type of {@code mimeType} is video.
-   *
-   * @param mimeType The mimeType to test.
-   * @return Whether the top level type is video.
-   */
+  /** Returns whether the given string is a video mime type. */
   public static boolean isVideo(@Nullable String mimeType) {
     return BASE_TYPE_VIDEO.equals(getTopLevelType(mimeType));
   }
 
-  /**
-   * Whether the top-level type of {@code mimeType} is text.
-   *
-   * @param mimeType The mimeType to test.
-   * @return Whether the top level type is text.
-   */
+  /** Returns whether the given string is a text mime type. */
   public static boolean isText(@Nullable String mimeType) {
     return BASE_TYPE_TEXT.equals(getTopLevelType(mimeType));
   }
 
-  /**
-   * Whether the top-level type of {@code mimeType} is application.
-   *
-   * @param mimeType The mimeType to test.
-   * @return Whether the top level type is application.
-   */
+  /** Returns whether the given string is an application mime type. */
   public static boolean isApplication(@Nullable String mimeType) {
     return BASE_TYPE_APPLICATION.equals(getTopLevelType(mimeType));
   }
@@ -213,6 +197,13 @@ public final class MimeTypes {
       return MimeTypes.VIDEO_H264;
     } else if (codec.startsWith("hev1") || codec.startsWith("hvc1")) {
       return MimeTypes.VIDEO_H265;
+    } else if (codec.startsWith("dvav")
+        || codec.startsWith("dva1")
+        || codec.startsWith("dvhe")
+        || codec.startsWith("dvh1")) {
+      return MimeTypes.VIDEO_DOLBY_VISION;
+    } else if (codec.startsWith("av01")) {
+      return MimeTypes.VIDEO_AV1;
     } else if (codec.startsWith("vp9") || codec.startsWith("vp09")) {
       return MimeTypes.VIDEO_VP9;
     } else if (codec.startsWith("vp8") || codec.startsWith("vp08")) {
@@ -238,6 +229,8 @@ public final class MimeTypes {
       return MimeTypes.AUDIO_E_AC3;
     } else if (codec.startsWith("ec+3")) {
       return MimeTypes.AUDIO_E_AC3_JOC;
+    } else if (codec.startsWith("ac-4") || codec.startsWith("dac4")) {
+      return MimeTypes.AUDIO_AC4;
     } else if (codec.startsWith("dtsc") || codec.startsWith("dtse")) {
       return MimeTypes.AUDIO_DTS;
     } else if (codec.startsWith("dtsh") || codec.startsWith("dtsl")) {
@@ -302,6 +295,8 @@ public final class MimeTypes {
         return MimeTypes.AUDIO_DTS_HD;
       case 0xAD:
         return MimeTypes.AUDIO_OPUS;
+      case 0xAE:
+        return MimeTypes.AUDIO_AC4;
       default:
         return null;
     }
@@ -353,8 +348,11 @@ public final class MimeTypes {
       case MimeTypes.AUDIO_AC3:
         return C.ENCODING_AC3;
       case MimeTypes.AUDIO_E_AC3:
-      case MimeTypes.AUDIO_E_AC3_JOC:
         return C.ENCODING_E_AC3;
+      case MimeTypes.AUDIO_E_AC3_JOC:
+        return C.ENCODING_E_AC3_JOC;
+      case MimeTypes.AUDIO_AC4:
+        return C.ENCODING_AC4;
       case MimeTypes.AUDIO_DTS:
         return C.ENCODING_DTS;
       case MimeTypes.AUDIO_DTS_HD:
@@ -377,10 +375,8 @@ public final class MimeTypes {
   }
 
   /**
-   * Returns the top-level type of {@code mimeType}.
-   *
-   * @param mimeType The mimeType whose top-level type is required.
-   * @return The top-level type, or null if the mimeType is null.
+   * Returns the top-level type of {@code mimeType}, or null if {@code mimeType} is null or does not
+   * contain a forward slash character ({@code '/'}).
    */
   private static @Nullable String getTopLevelType(@Nullable String mimeType) {
     if (mimeType == null) {
@@ -388,7 +384,7 @@ public final class MimeTypes {
     }
     int indexOfSlash = mimeType.indexOf('/');
     if (indexOfSlash == -1) {
-      throw new IllegalArgumentException("Invalid mime type: " + mimeType);
+      return null;
     }
     return mimeType.substring(0, indexOfSlash);
   }

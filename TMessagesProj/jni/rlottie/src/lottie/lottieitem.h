@@ -72,6 +72,7 @@ public:
    const LOTLayerNode * renderTree()const;
    bool render(const rlottie::Surface &surface);
    void setValue(const std::string &keypath, LOTVariant &value);
+   void resetCurrentFrame();
 private:
    VMatrix                                    mScaleMatrix;
    VSize                                      mViewSize;
@@ -107,6 +108,7 @@ public:
    LOTLayerItem(LOTLayerData *layerData);
    int id() const {return mLayerData->id();}
    int parentId() const {return mLayerData->parentId();}
+   LOTLayerItem *resolvedParentLayer() const {return mParentLayer;}
    void setParentLayer(LOTLayerItem *parent){mParentLayer = parent;}
    void setComplexContent(bool value) { mComplexContent = value;}
    bool complexContent() const {return mComplexContent;}

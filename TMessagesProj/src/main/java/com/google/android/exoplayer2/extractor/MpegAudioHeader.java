@@ -186,10 +186,6 @@ public final class MpegAudioHeader {
       }
     }
 
-    // Calculate the bitrate in the same way Mp3Extractor calculates sample timestamps so that
-    // seeking to a given timestamp and playing from the start up to that timestamp give the same
-    // results for CBR streams. See also [internal: b/120390268].
-    bitrate = 8 * frameSize * sampleRate / samplesPerFrame;
     String mimeType = MIME_TYPE_BY_LAYER[3 - layer];
     int channels = ((headerData >> 6) & 3) == 3 ? 1 : 2;
     header.setValues(version, mimeType, frameSize, sampleRate, channels, bitrate, samplesPerFrame);

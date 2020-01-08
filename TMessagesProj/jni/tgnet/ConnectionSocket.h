@@ -38,7 +38,7 @@ public:
 protected:
     int32_t instanceNum;
     void onEvent(uint32_t events);
-    void checkTimeout(int64_t now);
+    bool checkTimeout(int64_t now);
     void resetLastEventTime();
     bool hasTlsHashMismatch();
     virtual void onReceivedData(NativeByteBuffer *buffer) = 0;
@@ -74,6 +74,7 @@ private:
     std::string currentSecretDomain;
 
     bool tlsHashMismatch = false;
+    bool tlsBufferSized = true;
     NativeByteBuffer *tlsBuffer = nullptr;
     ByteArray *tempBuffer = nullptr;
     size_t bytesRead = 0;

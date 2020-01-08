@@ -139,7 +139,10 @@ public final class UrlTemplate {
           String formatTag = DEFAULT_FORMAT_TAG;
           if (formatTagIndex != -1) {
             formatTag = identifier.substring(formatTagIndex);
-            if (!formatTag.endsWith("d")) {
+            // Allowed conversions are decimal integer (which is the only conversion allowed by the
+            // DASH specification) and hexadecimal integer (due to existing content that uses it).
+            // Else we assume that the conversion is missing, and that it should be decimal integer.
+            if (!formatTag.endsWith("d") && !formatTag.endsWith("x")) {
               formatTag += "d";
             }
             identifier = identifier.substring(0, formatTagIndex);

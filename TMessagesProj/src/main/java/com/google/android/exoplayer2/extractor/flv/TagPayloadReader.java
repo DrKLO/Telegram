@@ -58,12 +58,11 @@ import com.google.android.exoplayer2.util.ParsableByteArray;
    *
    * @param data The payload data to consume.
    * @param timeUs The timestamp associated with the payload.
+   * @return Whether a sample was output.
    * @throws ParserException If an error occurs parsing the data.
    */
-  public final void consume(ParsableByteArray data, long timeUs) throws ParserException {
-    if (parseHeader(data)) {
-      parsePayload(data, timeUs);
-    }
+  public final boolean consume(ParsableByteArray data, long timeUs) throws ParserException {
+    return parseHeader(data) && parsePayload(data, timeUs);
   }
 
   /**
@@ -78,10 +77,11 @@ import com.google.android.exoplayer2.util.ParsableByteArray;
   /**
    * Parses tag payload.
    *
-   * @param data Buffer where tag payload is stored
-   * @param timeUs Time position of the frame
+   * @param data Buffer where tag payload is stored.
+   * @param timeUs Time position of the frame.
+   * @return Whether a sample was output.
    * @throws ParserException If an error occurs parsing the payload.
    */
-  protected abstract void parsePayload(ParsableByteArray data, long timeUs) throws ParserException;
-
+  protected abstract boolean parsePayload(ParsableByteArray data, long timeUs)
+      throws ParserException;
 }

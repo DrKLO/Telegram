@@ -14,6 +14,7 @@ import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
 import android.app.Dialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.graphics.Typeface;
 import android.os.Vibrator;
 import android.text.Editable;
@@ -237,7 +238,6 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
         passwordEditText.setTransformationMethod(PasswordTransformationMethod.getInstance());
         passwordEditText.setTypeface(Typeface.DEFAULT);
         passwordEditText.setCursorColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
-        passwordEditText.setCursorSize(AndroidUtilities.dp(20));
         passwordEditText.setCursorWidth(1.5f);
         linearLayout.addView(passwordEditText, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 36, Gravity.TOP | Gravity.LEFT, 40, 32, 40, 0));
         passwordEditText.setOnEditorActionListener((textView, i, keyEvent) -> {
@@ -293,7 +293,7 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
                             final TLRPC.TL_auth_passwordRecovery res = (TLRPC.TL_auth_passwordRecovery) response;
                             AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
                             builder.setMessage(LocaleController.formatString("RestoreEmailSent", R.string.RestoreEmailSent, res.email_pattern));
-                            builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
+                            builder.setTitle(LocaleController.getString("RestoreEmailSentTitle", R.string.RestoreEmailSentTitle));
                             builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), (dialogInterface, i) -> {
                                 TwoStepVerificationActivity fragment = new TwoStepVerificationActivity(currentAccount, 1);
                                 fragment.currentPassword = currentPassword;
@@ -382,23 +382,34 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
                 } else if (position == turnPasswordOffRow || position == abortPasswordRow) {
                     AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
                     String text;
+                    String buttonText;
+                    String title;
                     if (position == abortPasswordRow) {
                         if (currentPassword != null && currentPassword.has_password) {
                             text = LocaleController.getString("CancelEmailQuestion", R.string.CancelEmailQuestion);
                         } else {
                             text = LocaleController.getString("CancelPasswordQuestion", R.string.CancelPasswordQuestion);
                         }
+                        title = LocaleController.getString("CancelEmailQuestionTitle", R.string.CancelEmailQuestionTitle);
+                        buttonText = LocaleController.getString("Abort", R.string.Abort);
                     } else {
                         text = LocaleController.getString("TurnPasswordOffQuestion", R.string.TurnPasswordOffQuestion);
                         if (currentPassword.has_secure_values) {
                             text += "\n\n" + LocaleController.getString("TurnPasswordOffPassport", R.string.TurnPasswordOffPassport);
                         }
+                        title = LocaleController.getString("TurnPasswordOffQuestionTitle", R.string.TurnPasswordOffQuestionTitle);
+                        buttonText = LocaleController.getString("Disable", R.string.Disable);
                     }
                     builder.setMessage(text);
-                    builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
-                    builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), (dialogInterface, i) -> setNewPassword(true));
+                    builder.setTitle(title);
+                    builder.setPositiveButton(buttonText, (dialogInterface, i) -> setNewPassword(true));
                     builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
-                    showDialog(builder.create());
+                    AlertDialog alertDialog = builder.create();
+                    showDialog(alertDialog);
+                    TextView button = (TextView) alertDialog.getButton(DialogInterface.BUTTON_POSITIVE);
+                    if (button != null) {
+                        button.setTextColor(Theme.getColor(Theme.key_dialogTextRed2));
+                    }
                 } else if (position == resendCodeRow) {
                     TLRPC.TL_account_resendPasswordEmail req = new TLRPC.TL_account_resendPasswordEmail();
                     ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> {
@@ -881,6 +892,9 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
     }
 
     private void showAlertWithText(String title, String text) {
+        if (getParentActivity() == null) {
+            return;
+        }
         AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
         builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), null);
         builder.setTitle(title);

@@ -245,6 +245,9 @@ public class SearchAdapterHelper {
                                         localServerSearch.add(chat);
                                         globalSearchMap.put(-chat.id, chat);
                                     } else if (user != null) {
+                                        if (!allowBots && user.bot || !allowSelf && user.self) {
+                                            continue;
+                                        }
                                         localServerSearch.add(user);
                                         globalSearchMap.put(user.id, user);
                                     }
@@ -398,7 +401,7 @@ public class SearchAdapterHelper {
             return;
         }
         boolean changed = false;
-        Pattern pattern = Pattern.compile("(^|\\s)#[\\w@.]+");
+        Pattern pattern = Pattern.compile("(^|\\s)#[^0-9][\\w@.]+");
         Matcher matcher = pattern.matcher(message);
         while (matcher.find()) {
             int start = matcher.start();
@@ -456,6 +459,17 @@ public class SearchAdapterHelper {
                 FileLog.e(e);
             }
         });
+    }
+
+    public void removeUserId(int userId) {
+        Object object = globalSearchMap.get(userId);
+        if (object != null) {
+            globalSearch.remove(object);
+        }
+        object = groupSearchMap.get(userId);
+        if (object != null) {
+            groupSearch.remove(object);
+        }
     }
 
     public ArrayList<TLObject> getGlobalSearch() {

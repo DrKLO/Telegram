@@ -21,6 +21,7 @@
 #include <openssl/curve25519.h>
 
 #include "../internal.h"
+#include "../test/file_test.h"
 #include "../test/test_util.h"
 
 
@@ -123,4 +124,27 @@ TEST(X25519Test, DISABLED_IteratedLarge) {
   };
 
   EXPECT_EQ(Bytes(kExpected), Bytes(scalar));
+}
+
+TEST(X25519Test, Wycheproof) {
+  FileTestGTest("third_party/wycheproof_testvectors/x25519_test.txt",
+                [](FileTest *t) {
+      t->IgnoreInstruction("curve");
+      t->IgnoreAttribute("curve");
+
+      // Our implementation tolerates the Wycheproof "acceptable"
+      // inputs. Wycheproof's valid vs. acceptable criteria does not match our
+      // X25519 return value, so we test only the overall output.
+      t->IgnoreAttribute("result");
+
+      std::vector<uint8_t> priv, pub, shared;
+      ASSERT_TRUE(t->GetBytes(&priv, "private"));
+      ASSERT_TRUE(t->GetBytes(&pub, "public"));
+      ASSERT_TRUE(t->GetBytes(&shared, "shared"));
+      ASSERT_EQ(32u, priv.size());
+      ASSERT_EQ(32u, pub.size());
+      uint8_t secret[32];
+      X25519(secret, priv.data(), pub.data());
+      EXPECT_EQ(Bytes(secret), Bytes(shared));
+  });
 }

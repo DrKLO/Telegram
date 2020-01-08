@@ -49,19 +49,18 @@ public interface Cache {
     void onSpanRemoved(Cache cache, CacheSpan span);
 
     /**
-     * Called when an existing {@link CacheSpan} is accessed, causing it to be replaced. The new
+     * Called when an existing {@link CacheSpan} is touched, causing it to be replaced. The new
      * {@link CacheSpan} is guaranteed to represent the same data as the one it replaces, however
-     * {@link CacheSpan#file} and {@link CacheSpan#lastAccessTimestamp} may have changed.
-     * <p>
-     * Note that for span replacement, {@link #onSpanAdded(Cache, CacheSpan)} and
-     * {@link #onSpanRemoved(Cache, CacheSpan)} are not called in addition to this method.
+     * {@link CacheSpan#file} and {@link CacheSpan#lastTouchTimestamp} may have changed.
+     *
+     * <p>Note that for span replacement, {@link #onSpanAdded(Cache, CacheSpan)} and {@link
+     * #onSpanRemoved(Cache, CacheSpan)} are not called in addition to this method.
      *
      * @param cache The source of the event.
      * @param oldSpan The old {@link CacheSpan}, which has been removed from the cache.
      * @param newSpan The new {@link CacheSpan}, which has been added to the cache.
      */
     void onSpanTouched(Cache cache, CacheSpan oldSpan, CacheSpan newSpan);
-
   }
 
   /**
@@ -77,7 +76,26 @@ public interface Cache {
       super(cause);
     }
 
+    public CacheException(String message, Throwable cause) {
+      super(message, cause);
+    }
   }
+
+  /**
+   * Returned by {@link #getUid()} if initialization failed before the unique identifier was read or
+   * generated.
+   */
+  long UID_UNSET = -1;
+
+  /**
+   * Returns a non-negative unique identifier for the cache, or {@link #UID_UNSET} if initialization
+   * failed before the unique identifier was determined.
+   *
+   * <p>Implementations are expected to generate and store the unique identifier alongside the
+   * cached content. If the location of the cache is deleted or swapped, it is expected that a new
+   * unique identifier will be generated when the cache is recreated.
+   */
+  long getUid();
 
   /**
    * Releases the cache. This method must be called when the cache is no longer required. The cache

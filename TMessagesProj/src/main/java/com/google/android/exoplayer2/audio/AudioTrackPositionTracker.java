@@ -517,7 +517,7 @@ import java.lang.reflect.Method;
       rawPlaybackHeadPosition += passthroughWorkaroundPauseOffset;
     }
 
-    if (Util.SDK_INT <= 28) {
+    if (Util.SDK_INT <= 29) {
       if (rawPlaybackHeadPosition == 0
           && lastRawPlaybackHeadPosition > 0
           && state == PLAYSTATE_PLAYING) {

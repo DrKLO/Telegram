@@ -58,7 +58,7 @@ public class WallpaperUpdater {
 
     public void showAlert(final boolean fromTheme) {
         BottomSheet.Builder builder = new BottomSheet.Builder(parentActivity);
-        builder.setTitle(LocaleController.getString("ChoosePhoto", R.string.ChoosePhoto));
+        builder.setTitle(LocaleController.getString("ChoosePhoto", R.string.ChoosePhoto), true);
 
         CharSequence[] items;
         int[] icons;
@@ -118,7 +118,7 @@ public class WallpaperUpdater {
             fragment.setAllowSearchImages(false);
             fragment.setDelegate(new PhotoAlbumPickerActivity.PhotoAlbumPickerActivityDelegate() {
                 @Override
-                public void didSelectPhotos(ArrayList<SendMessagesHelper.SendingMediaInfo> photos) {
+                public void didSelectPhotos(ArrayList<SendMessagesHelper.SendingMediaInfo> photos, boolean notify, int scheduleDate) {
                     WallpaperUpdater.this.didSelectPhotos(photos);
                 }
 

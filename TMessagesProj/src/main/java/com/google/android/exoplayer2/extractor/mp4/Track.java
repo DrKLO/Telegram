@@ -123,6 +123,7 @@ public final class Track {
    * @return The {@link TrackEncryptionBox} for the given sample description index. Maybe null if no
    *     such entry exists.
    */
+  @Nullable
   public TrackEncryptionBox getSampleDescriptionEncryptionBox(int sampleDescriptionIndex) {
     return sampleDescriptionEncryptionBoxes == null ? null
         : sampleDescriptionEncryptionBoxes[sampleDescriptionIndex];

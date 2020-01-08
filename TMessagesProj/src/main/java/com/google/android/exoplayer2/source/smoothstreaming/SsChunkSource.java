@@ -55,4 +55,11 @@ public interface SsChunkSource extends ChunkSource {
    * @param newManifest The new manifest.
    */
   void updateManifest(SsManifest newManifest);
+
+  /**
+   * Updates the track selection.
+   *
+   * @param trackSelection The new track selection instance. Must be equivalent to the previous one.
+   */
+  void updateTrackSelection(TrackSelection trackSelection);
 }

@@ -37,7 +37,7 @@ import java.util.List;
  * <p>Example usage:
  *
  * <pre>{@code
- * SimpleCache cache = new SimpleCache(downloadFolder, new NoOpCacheEvictor());
+ * SimpleCache cache = new SimpleCache(downloadFolder, new NoOpCacheEvictor(), databaseProvider);
  * DefaultHttpDataSourceFactory factory = new DefaultHttpDataSourceFactory("ExoPlayer", null);
  * DownloaderConstructorHelper constructorHelper =
  *     new DownloaderConstructorHelper(cache, factory);
@@ -48,7 +48,7 @@ import java.util.List;
  *         Collections.singletonList(new StreamKey(0, 0)),
  *         constructorHelper);
  * // Perform the download.
- * ssDownloader.download();
+ * ssDownloader.download(progressListener);
  * // Access downloaded data using CacheDataSource
  * CacheDataSource cacheDataSource =
  *     new CacheDataSource(cache, factory.createDataSource(), CacheDataSource.FLAG_BLOCK_ON_CACHE);

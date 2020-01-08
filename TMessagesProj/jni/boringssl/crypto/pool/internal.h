@@ -23,7 +23,7 @@ extern "C" {
 #endif
 
 
-DECLARE_LHASH_OF(CRYPTO_BUFFER);
+DECLARE_LHASH_OF(CRYPTO_BUFFER)
 
 struct crypto_buffer_st {
   CRYPTO_BUFFER_POOL *pool;

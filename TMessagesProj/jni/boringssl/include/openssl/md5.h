@@ -80,17 +80,19 @@ OPENSSL_EXPORT int MD5_Init(MD5_CTX *md5);
 OPENSSL_EXPORT int MD5_Update(MD5_CTX *md5, const void *data, size_t len);
 
 // MD5_Final adds the final padding to |md5| and writes the resulting digest to
-// |md|, which must have at least |MD5_DIGEST_LENGTH| bytes of space. It
+// |out|, which must have at least |MD5_DIGEST_LENGTH| bytes of space. It
 // returns one.
-OPENSSL_EXPORT int MD5_Final(uint8_t *md, MD5_CTX *md5);
+OPENSSL_EXPORT int MD5_Final(uint8_t out[MD5_DIGEST_LENGTH], MD5_CTX *md5);
 
 // MD5 writes the digest of |len| bytes from |data| to |out| and returns |out|.
 // There must be at least |MD5_DIGEST_LENGTH| bytes of space in |out|.
-OPENSSL_EXPORT uint8_t *MD5(const uint8_t *data, size_t len, uint8_t *out);
+OPENSSL_EXPORT uint8_t *MD5(const uint8_t *data, size_t len,
+                            uint8_t out[MD5_DIGEST_LENGTH]);
 
 // MD5_Transform is a low-level function that performs a single, MD5 block
 // transformation using the state from |md5| and 64 bytes from |block|.
-OPENSSL_EXPORT void MD5_Transform(MD5_CTX *md5, const uint8_t *block);
+OPENSSL_EXPORT void MD5_Transform(MD5_CTX *md5,
+                                  const uint8_t block[MD5_CBLOCK]);
 
 struct md5_state_st {
   uint32_t h[4];

@@ -130,14 +130,13 @@ public class PhotoFace {
     }
 
     public float getWidthForAnchor(int anchor) {
-        if (anchor == 1)
+        if (anchor == 1) {
             return eyesDistance;
-
+        }
         return width;
     }
 
     public float getAngle() {
         return angle;
     }
-
  }

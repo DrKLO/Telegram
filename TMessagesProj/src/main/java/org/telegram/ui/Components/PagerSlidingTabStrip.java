@@ -10,11 +10,15 @@ package org.telegram.ui.Components;
 
 import android.content.Context;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Paint.Style;
 import android.graphics.drawable.Drawable;
 import androidx.viewpager.widget.ViewPager;
 import androidx.viewpager.widget.ViewPager.OnPageChangeListener;
+
+import android.graphics.drawable.RippleDrawable;
+import android.os.Build;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewTreeObserver.OnGlobalLayoutListener;
@@ -24,6 +28,7 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.ui.ActionBar.Theme;
 
 public class PagerSlidingTabStrip extends HorizontalScrollView {
 
@@ -127,8 +132,23 @@ public class PagerSlidingTabStrip extends HorizontalScrollView {
                     ((IconTabProvider) pager.getAdapter()).customOnDraw(canvas, position);
                 }
             }
+
+            @Override
+            public void setSelected(boolean selected) {
+                super.setSelected(selected);
+                Drawable background = getBackground();
+                if (Build.VERSION.SDK_INT >= 21 && background != null) {
+                    int color = Theme.getColor(selected ? Theme.key_chat_emojiPanelIconSelected : Theme.key_chat_emojiBottomPanelIcon);
+                    Theme.setSelectorDrawableColor(background, Color.argb(30, Color.red(color), Color.green(color), Color.blue(color)), true);
+                }
+            }
         };
         tab.setFocusable(true);
+        if (Build.VERSION.SDK_INT >= 21) {
+            RippleDrawable rippleDrawable = (RippleDrawable) Theme.createSelectorDrawable(Theme.getColor(Theme.key_chat_emojiBottomPanelIcon));
+            Theme.setRippleDrawableForceSoftware(rippleDrawable);
+            tab.setBackground(rippleDrawable);
+        }
         tab.setImageDrawable(drawable);
         tab.setScaleType(ImageView.ScaleType.CENTER);
         tab.setOnClickListener(v -> {

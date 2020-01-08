@@ -86,6 +86,7 @@ EC_KEY *EC_KEY_parse_private_key(CBS *cbs, const EC_GROUP *group) {
   // Parse the optional parameters field.
   EC_GROUP *inner_group = NULL;
   EC_KEY *ret = NULL;
+  BIGNUM *priv_key = NULL;
   if (CBS_peek_asn1_tag(&ec_private_key, kParametersTag)) {
     // Per SEC 1, as an alternative to omitting it, one is allowed to specify
     // this field and put in a NULL to mean inheriting this value. This was
@@ -126,15 +127,10 @@ EC_KEY *EC_KEY_parse_private_key(CBS *cbs, const EC_GROUP *group) {
   // Although RFC 5915 specifies the length of the key, OpenSSL historically
   // got this wrong, so accept any length. See upstream's
   // 30cd4ff294252c4b6a4b69cbef6a5b4117705d22.
-  ret->priv_key =
-      BN_bin2bn(CBS_data(&private_key), CBS_len(&private_key), NULL);
+  priv_key = BN_bin2bn(CBS_data(&private_key), CBS_len(&private_key), NULL);
   ret->pub_key = EC_POINT_new(group);
-  if (ret->priv_key == NULL || ret->pub_key == NULL) {
-    goto err;
-  }
-
-  if (BN_cmp(ret->priv_key, EC_GROUP_get0_order(group)) >= 0) {
-    OPENSSL_PUT_ERROR(EC, EC_R_WRONG_ORDER);
+  if (priv_key == NULL || ret->pub_key == NULL ||
+      !EC_KEY_set_private_key(ret, priv_key)) {
     goto err;
   }
 
@@ -163,7 +159,8 @@ EC_KEY *EC_KEY_parse_private_key(CBS *cbs, const EC_GROUP *group) {
         (point_conversion_form_t)(CBS_data(&public_key)[0] & ~0x01);
   } else {
     // Compute the public key instead.
-    if (!EC_POINT_mul(group, ret->pub_key, ret->priv_key, NULL, NULL, NULL)) {
+    if (!ec_point_mul_scalar_base(group, &ret->pub_key->raw,
+                                  &ret->priv_key->scalar)) {
       goto err;
     }
     // Remember the original private-key-only encoding.
@@ -181,11 +178,13 @@ EC_KEY *EC_KEY_parse_private_key(CBS *cbs, const EC_GROUP *group) {
     goto err;
   }
 
+  BN_free(priv_key);
   EC_GROUP_free(inner_group);
   return ret;
 
 err:
   EC_KEY_free(ret);
+  BN_free(priv_key);
   EC_GROUP_free(inner_group);
   return NULL;
 }
@@ -203,7 +202,7 @@ int EC_KEY_marshal_private_key(CBB *cbb, const EC_KEY *key,
       !CBB_add_asn1(&ec_private_key, &private_key, CBS_ASN1_OCTETSTRING) ||
       !BN_bn2cbb_padded(&private_key,
                         BN_num_bytes(EC_GROUP_get0_order(key->group)),
-                        key->priv_key)) {
+                        EC_KEY_get0_private_key(key))) {
     OPENSSL_PUT_ERROR(EC, EC_R_ENCODE_ERROR);
     return 0;
   }
@@ -265,7 +264,8 @@ static int parse_explicit_prime_curve(CBS *in, CBS *out_prime, CBS *out_a,
                                       CBS *out_base_y, CBS *out_order) {
   // See RFC 3279, section 2.3.5. Note that RFC 3279 calls this structure an
   // ECParameters while RFC 5480 calls it a SpecifiedECDomain.
-  CBS params, field_id, field_type, curve, base;
+  CBS params, field_id, field_type, curve, base, cofactor;
+  int has_cofactor;
   uint64_t version;
   if (!CBS_get_asn1(in, &params, CBS_ASN1_SEQUENCE) ||
       !CBS_get_asn1_uint64(&params, &version) ||
@@ -273,7 +273,8 @@ static int parse_explicit_prime_curve(CBS *in, CBS *out_prime, CBS *out_a,
       !CBS_get_asn1(&params, &field_id, CBS_ASN1_SEQUENCE) ||
       !CBS_get_asn1(&field_id, &field_type, CBS_ASN1_OBJECT) ||
       CBS_len(&field_type) != sizeof(kPrimeField) ||
-      OPENSSL_memcmp(CBS_data(&field_type), kPrimeField, sizeof(kPrimeField)) != 0 ||
+      OPENSSL_memcmp(CBS_data(&field_type), kPrimeField, sizeof(kPrimeField)) !=
+          0 ||
       !CBS_get_asn1(&field_id, out_prime, CBS_ASN1_INTEGER) ||
       !is_unsigned_integer(out_prime) ||
       CBS_len(&field_id) != 0 ||
@@ -281,16 +282,26 @@ static int parse_explicit_prime_curve(CBS *in, CBS *out_prime, CBS *out_a,
       !CBS_get_asn1(&curve, out_a, CBS_ASN1_OCTETSTRING) ||
       !CBS_get_asn1(&curve, out_b, CBS_ASN1_OCTETSTRING) ||
       // |curve| has an optional BIT STRING seed which we ignore.
+      !CBS_get_optional_asn1(&curve, NULL, NULL, CBS_ASN1_BITSTRING) ||
+      CBS_len(&curve) != 0 ||
       !CBS_get_asn1(&params, &base, CBS_ASN1_OCTETSTRING) ||
       !CBS_get_asn1(&params, out_order, CBS_ASN1_INTEGER) ||
-      !is_unsigned_integer(out_order)) {
+      !is_unsigned_integer(out_order) ||
+      !CBS_get_optional_asn1(&params, &cofactor, &has_cofactor,
+                             CBS_ASN1_INTEGER) ||
+      CBS_len(&params) != 0) {
     OPENSSL_PUT_ERROR(EC, EC_R_DECODE_ERROR);
     return 0;
   }
 
-  // |params| has an optional cofactor which we ignore. With the optional seed
-  // in |curve|, a group already has arbitrarily many encodings. Parse enough to
-  // uniquely determine the curve.
+  if (has_cofactor) {
+    // We only support prime-order curves so the cofactor must be one.
+    if (CBS_len(&cofactor) != 1 ||
+        CBS_data(&cofactor)[0] != 1) {
+      OPENSSL_PUT_ERROR(EC, EC_R_UNKNOWN_GROUP);
+      return 0;
+    }
+  }
 
   // Require that the base point use uncompressed form.
   uint8_t form;

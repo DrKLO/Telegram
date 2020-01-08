@@ -15,7 +15,6 @@
  */
 package com.google.android.exoplayer2.mediacodec;
 
-import android.annotation.TargetApi;
 import android.media.MediaFormat;
 import androidx.annotation.Nullable;
 import com.google.android.exoplayer2.Format;
@@ -24,7 +23,6 @@ import java.nio.ByteBuffer;
 import java.util.List;
 
 /** Helper class for configuring {@link MediaFormat} instances. */
-@TargetApi(16)
 public final class MediaFormatUtil {
 
   private MediaFormatUtil() {}

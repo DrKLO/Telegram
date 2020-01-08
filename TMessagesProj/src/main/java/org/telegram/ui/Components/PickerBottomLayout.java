@@ -43,7 +43,7 @@ public class PickerBottomLayout extends FrameLayout {
         cancelButton.setTextColor(Theme.getColor(Theme.key_picker_enabledButton));
         cancelButton.setGravity(Gravity.CENTER);
         cancelButton.setBackgroundDrawable(Theme.createSelectorDrawable(0x0f000000, 0));
-        cancelButton.setPadding(AndroidUtilities.dp(29), 0, AndroidUtilities.dp(29), 0);
+        cancelButton.setPadding(AndroidUtilities.dp(33), 0, AndroidUtilities.dp(33), 0);
         cancelButton.setText(LocaleController.getString("Cancel", R.string.Cancel).toUpperCase());
         cancelButton.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
         addView(cancelButton, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT));
@@ -51,7 +51,7 @@ public class PickerBottomLayout extends FrameLayout {
         doneButton = new LinearLayout(context);
         doneButton.setOrientation(LinearLayout.HORIZONTAL);
         doneButton.setBackgroundDrawable(Theme.createSelectorDrawable(0x0f000000, 0));
-        doneButton.setPadding(AndroidUtilities.dp(29), 0, AndroidUtilities.dp(29), 0);
+        doneButton.setPadding(AndroidUtilities.dp(33), 0, AndroidUtilities.dp(33), 0);
         addView(doneButton, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.RIGHT));
 
         doneButtonBadgeTextView = new TextView(context);

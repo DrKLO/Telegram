@@ -15,7 +15,6 @@
  */
 package com.google.android.exoplayer2.drm;
 
-import android.annotation.TargetApi;
 import android.media.MediaCrypto;
 import java.util.UUID;
 
@@ -23,7 +22,6 @@ import java.util.UUID;
  * An {@link ExoMediaCrypto} implementation that contains the necessary information to build or
  * update a framework {@link MediaCrypto}.
  */
-@TargetApi(16)
 public final class FrameworkMediaCrypto implements ExoMediaCrypto {
 
   /** The DRM scheme UUID. */

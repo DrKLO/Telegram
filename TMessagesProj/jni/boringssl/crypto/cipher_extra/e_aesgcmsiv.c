@@ -27,28 +27,47 @@
 #define EVP_AEAD_AES_GCM_SIV_NONCE_LEN 12
 #define EVP_AEAD_AES_GCM_SIV_TAG_LEN 16
 
-#if defined(OPENSSL_X86_64) && !defined(OPENSSL_NO_ASM)
+// TODO(davidben): AES-GCM-SIV assembly is not correct for Windows. It must save
+// and restore xmm6 through xmm15.
+#if defined(OPENSSL_X86_64) && !defined(OPENSSL_NO_ASM) && \
+    !defined(OPENSSL_WINDOWS)
+#define AES_GCM_SIV_ASM
 
 // Optimised AES-GCM-SIV
 
 struct aead_aes_gcm_siv_asm_ctx {
   alignas(16) uint8_t key[16*15];
   int is_128_bit;
-  // ptr contains the original pointer from |OPENSSL_malloc|, which may only be
-  // 8-byte aligned. When freeing this structure, actually call |OPENSSL_free|
-  // on this pointer.
-  void *ptr;
 };
+
+// The assembly code assumes 8-byte alignment of the EVP_AEAD_CTX's state, and
+// aligns to 16 bytes itself.
+OPENSSL_STATIC_ASSERT(sizeof(((EVP_AEAD_CTX *)NULL)->state) + 8 >=
+                          sizeof(struct aead_aes_gcm_siv_asm_ctx),
+                      "AEAD state is too small");
+#if defined(__GNUC__) || defined(__clang__)
+OPENSSL_STATIC_ASSERT(alignof(union evp_aead_ctx_st_state) >= 8,
+                      "AEAD state has insufficient alignment");
+#endif
+
+// asm_ctx_from_ctx returns a 16-byte aligned context pointer from |ctx|.
+static struct aead_aes_gcm_siv_asm_ctx *asm_ctx_from_ctx(
+    const EVP_AEAD_CTX *ctx) {
+  // ctx->state must already be 8-byte aligned. Thus, at most, we may need to
+  // add eight to align it to 16 bytes.
+  const uintptr_t offset = ((uintptr_t)&ctx->state) & 8;
+  return (struct aead_aes_gcm_siv_asm_ctx *)(&ctx->state.opaque[offset]);
+}
 
 // aes128gcmsiv_aes_ks writes an AES-128 key schedule for |key| to
 // |out_expanded_key|.
 extern void aes128gcmsiv_aes_ks(
     const uint8_t key[16], uint8_t out_expanded_key[16*15]);
 
-// aes128gcmsiv_aes_ks writes an AES-128 key schedule for |key| to
+// aes256gcmsiv_aes_ks writes an AES-256 key schedule for |key| to
 // |out_expanded_key|.
 extern void aes256gcmsiv_aes_ks(
-    const uint8_t key[16], uint8_t out_expanded_key[16*15]);
+    const uint8_t key[32], uint8_t out_expanded_key[16*15]);
 
 static int aead_aes_gcm_siv_asm_init(EVP_AEAD_CTX *ctx, const uint8_t *key,
                                      size_t key_len, size_t tag_len) {
@@ -68,18 +87,8 @@ static int aead_aes_gcm_siv_asm_init(EVP_AEAD_CTX *ctx, const uint8_t *key,
     return 0;
   }
 
-  char *ptr = OPENSSL_malloc(sizeof(struct aead_aes_gcm_siv_asm_ctx) + 8);
-  if (ptr == NULL) {
-    return 0;
-  }
-  assert((((uintptr_t)ptr) & 7) == 0);
-
-  // gcm_siv_ctx needs to be 16-byte aligned in a cross-platform way.
-  struct aead_aes_gcm_siv_asm_ctx *gcm_siv_ctx =
-      (struct aead_aes_gcm_siv_asm_ctx *)(ptr + (((uintptr_t)ptr) & 8));
-
+  struct aead_aes_gcm_siv_asm_ctx *gcm_siv_ctx = asm_ctx_from_ctx(ctx);
   assert((((uintptr_t)gcm_siv_ctx) & 15) == 0);
-  gcm_siv_ctx->ptr = ptr;
 
   if (key_bits == 128) {
     aes128gcmsiv_aes_ks(key, &gcm_siv_ctx->key[0]);
@@ -88,16 +97,13 @@ static int aead_aes_gcm_siv_asm_init(EVP_AEAD_CTX *ctx, const uint8_t *key,
     aes256gcmsiv_aes_ks(key, &gcm_siv_ctx->key[0]);
     gcm_siv_ctx->is_128_bit = 0;
   }
-  ctx->aead_state = gcm_siv_ctx;
+
   ctx->tag_len = tag_len;
 
   return 1;
 }
 
-static void aead_aes_gcm_siv_asm_cleanup(EVP_AEAD_CTX *ctx) {
-  const struct aead_aes_gcm_siv_asm_ctx *gcm_siv_ctx = ctx->aead_state;
-  OPENSSL_free(gcm_siv_ctx->ptr);
-}
+static void aead_aes_gcm_siv_asm_cleanup(EVP_AEAD_CTX *ctx) {}
 
 // aesgcmsiv_polyval_horner updates the POLYVAL value in |in_out_poly| to
 // include a number (|in_blocks|) of 16-byte blocks of data from |in|, given
@@ -337,7 +343,7 @@ static int aead_aes_gcm_siv_asm_seal_scatter(
     size_t *out_tag_len, size_t max_out_tag_len, const uint8_t *nonce,
     size_t nonce_len, const uint8_t *in, size_t in_len, const uint8_t *extra_in,
     size_t extra_in_len, const uint8_t *ad, size_t ad_len) {
-  const struct aead_aes_gcm_siv_asm_ctx *gcm_siv_ctx = ctx->aead_state;
+  const struct aead_aes_gcm_siv_asm_ctx *gcm_siv_ctx = asm_ctx_from_ctx(ctx);
   const uint64_t in_len_64 = in_len;
   const uint64_t ad_len_64 = ad_len;
 
@@ -420,7 +426,12 @@ static int aead_aes_gcm_siv_asm_open(const EVP_AEAD_CTX *ctx, uint8_t *out,
     return 0;
   }
 
-  const struct aead_aes_gcm_siv_asm_ctx *gcm_siv_ctx = ctx->aead_state;
+  if (nonce_len != EVP_AEAD_AES_GCM_SIV_NONCE_LEN) {
+    OPENSSL_PUT_ERROR(CIPHER, CIPHER_R_UNSUPPORTED_NONCE_SIZE);
+    return 0;
+  }
+
+  const struct aead_aes_gcm_siv_asm_ctx *gcm_siv_ctx = asm_ctx_from_ctx(ctx);
   const size_t plaintext_len = in_len - EVP_AEAD_AES_GCM_SIV_TAG_LEN;
   const uint8_t *const given_tag = in + plaintext_len;
 
@@ -547,7 +558,7 @@ static const EVP_AEAD aead_aes_256_gcm_siv_asm = {
     NULL /* tag_len */,
 };
 
-#endif  // X86_64 && !NO_ASM
+#endif  // X86_64 && !NO_ASM && !WINDOWS
 
 struct aead_aes_gcm_siv_ctx {
   union {
@@ -557,6 +568,15 @@ struct aead_aes_gcm_siv_ctx {
   block128_f kgk_block;
   unsigned is_256:1;
 };
+
+OPENSSL_STATIC_ASSERT(sizeof(((EVP_AEAD_CTX *)NULL)->state) >=
+                          sizeof(struct aead_aes_gcm_siv_ctx),
+                      "AEAD state is too small");
+#if defined(__GNUC__) || defined(__clang__)
+OPENSSL_STATIC_ASSERT(alignof(union evp_aead_ctx_st_state) >=
+                          alignof(struct aead_aes_gcm_siv_ctx),
+                      "AEAD state has insufficient alignment");
+#endif
 
 static int aead_aes_gcm_siv_init(EVP_AEAD_CTX *ctx, const uint8_t *key,
                                  size_t key_len, size_t tag_len) {
@@ -576,24 +596,18 @@ static int aead_aes_gcm_siv_init(EVP_AEAD_CTX *ctx, const uint8_t *key,
   }
 
   struct aead_aes_gcm_siv_ctx *gcm_siv_ctx =
-      OPENSSL_malloc(sizeof(struct aead_aes_gcm_siv_ctx));
-  if (gcm_siv_ctx == NULL) {
-    return 0;
-  }
+      (struct aead_aes_gcm_siv_ctx *)&ctx->state;
   OPENSSL_memset(gcm_siv_ctx, 0, sizeof(struct aead_aes_gcm_siv_ctx));
 
   aes_ctr_set_key(&gcm_siv_ctx->ks.ks, NULL, &gcm_siv_ctx->kgk_block, key,
                   key_len);
   gcm_siv_ctx->is_256 = (key_len == 32);
-  ctx->aead_state = gcm_siv_ctx;
   ctx->tag_len = tag_len;
 
   return 1;
 }
 
-static void aead_aes_gcm_siv_cleanup(EVP_AEAD_CTX *ctx) {
-  OPENSSL_free(ctx->aead_state);
-}
+static void aead_aes_gcm_siv_cleanup(EVP_AEAD_CTX *ctx) {}
 
 // gcm_siv_crypt encrypts (or decrypts—it's the same thing) |in_len| bytes from
 // |in| to |out|, using the block function |enc_block| with |key| in counter
@@ -718,7 +732,8 @@ static int aead_aes_gcm_siv_seal_scatter(
     size_t *out_tag_len, size_t max_out_tag_len, const uint8_t *nonce,
     size_t nonce_len, const uint8_t *in, size_t in_len, const uint8_t *extra_in,
     size_t extra_in_len, const uint8_t *ad, size_t ad_len) {
-  const struct aead_aes_gcm_siv_ctx *gcm_siv_ctx = ctx->aead_state;
+  const struct aead_aes_gcm_siv_ctx *gcm_siv_ctx =
+      (struct aead_aes_gcm_siv_ctx *)&ctx->state;
   const uint64_t in_len_64 = in_len;
   const uint64_t ad_len_64 = ad_len;
 
@@ -778,7 +793,8 @@ static int aead_aes_gcm_siv_open_gather(const EVP_AEAD_CTX *ctx, uint8_t *out,
     return 0;
   }
 
-  const struct aead_aes_gcm_siv_ctx *gcm_siv_ctx = ctx->aead_state;
+  const struct aead_aes_gcm_siv_ctx *gcm_siv_ctx =
+      (struct aead_aes_gcm_siv_ctx *)&ctx->state;
 
   struct gcm_siv_record_keys keys;
   gcm_siv_keys(gcm_siv_ctx, &keys, nonce);
@@ -831,7 +847,7 @@ static const EVP_AEAD aead_aes_256_gcm_siv = {
     NULL /* tag_len */,
 };
 
-#if defined(OPENSSL_X86_64) && !defined(OPENSSL_NO_ASM)
+#if defined(AES_GCM_SIV_ASM)
 
 static char avx_aesni_capable(void) {
   const uint32_t ecx = OPENSSL_ia32cap_P[1];
@@ -864,4 +880,4 @@ const EVP_AEAD *EVP_aead_aes_256_gcm_siv(void) {
   return &aead_aes_256_gcm_siv;
 }
 
-#endif  // X86_64 && !NO_ASM
+#endif  // AES_GCM_SIV_ASM

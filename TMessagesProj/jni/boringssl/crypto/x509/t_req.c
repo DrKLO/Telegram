@@ -65,13 +65,11 @@
 
 
 int X509_REQ_print_fp(FILE *fp, X509_REQ *x) {
-  BIO *bio = BIO_new(BIO_s_file());
+  BIO *bio = BIO_new_fp(fp, BIO_NOCLOSE);
   if (bio == NULL) {
     OPENSSL_PUT_ERROR(X509, ERR_R_BUF_LIB);
     return 0;
   }
-
-  BIO_set_fp(bio, fp, BIO_NOCLOSE);
   int ret = X509_REQ_print(bio, x);
   BIO_free(bio);
   return ret;

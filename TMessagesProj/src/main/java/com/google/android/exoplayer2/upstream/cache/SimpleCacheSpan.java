@@ -26,7 +26,9 @@ import java.util.regex.Pattern;
 /** This class stores span metadata in filename. */
 /* package */ final class SimpleCacheSpan extends CacheSpan {
 
-  private static final String SUFFIX = ".v3.exo";
+  /* package */ static final String COMMON_SUFFIX = ".exo";
+
+  private static final String SUFFIX = ".v3" + COMMON_SUFFIX;
   private static final Pattern CACHE_FILE_PATTERN_V1 = Pattern.compile(
       "^(.+)\\.(\\d+)\\.(\\d+)\\.v1\\.exo$", Pattern.DOTALL);
   private static final Pattern CACHE_FILE_PATTERN_V2 = Pattern.compile(
@@ -36,16 +38,16 @@ import java.util.regex.Pattern;
 
   /**
    * Returns a new {@link File} instance from {@code cacheDir}, {@code id}, {@code position}, {@code
-   * lastAccessTimestamp}.
+   * timestamp}.
    *
    * @param cacheDir The parent abstract pathname.
    * @param id The cache file id.
    * @param position The position of the stored data in the original stream.
-   * @param lastAccessTimestamp The last access timestamp.
+   * @param timestamp The file timestamp.
    * @return The cache file.
    */
-  public static File getCacheFile(File cacheDir, int id, long position, long lastAccessTimestamp) {
-    return new File(cacheDir, id + "." + position + "." + lastAccessTimestamp + SUFFIX);
+  public static File getCacheFile(File cacheDir, int id, long position, long timestamp) {
+    return new File(cacheDir, id + "." + position + "." + timestamp + SUFFIX);
   }
 
   /**
@@ -82,22 +84,36 @@ import java.util.regex.Pattern;
     return new SimpleCacheSpan(key, position, length, C.TIME_UNSET, null);
   }
 
-  /*
-   * Note: {@code fileLength} is equivalent to {@code file.length()}, but passing it as an explicit
-   * argument can reduce the number of calls to this method if the calling code already knows the
-   * file length. This is preferable because calling {@code file.length()} can be expensive. See:
-   * https://github.com/google/ExoPlayer/issues/4253#issuecomment-451593889.
-   */
   /**
    * Creates a cache span from an underlying cache file. Upgrades the file if necessary.
    *
    * @param file The cache file.
-   * @param length The length of the cache file in bytes.
+   * @param length The length of the cache file in bytes, or {@link C#LENGTH_UNSET} to query the
+   *     underlying file system. Querying the underlying file system can be expensive, so callers
+   *     that already know the length of the file should pass it explicitly.
    * @return The span, or null if the file name is not correctly formatted, or if the id is not
-   *     present in the content index.
+   *     present in the content index, or if the length is 0.
    */
   @Nullable
   public static SimpleCacheSpan createCacheEntry(File file, long length, CachedContentIndex index) {
+    return createCacheEntry(file, length, /* lastTouchTimestamp= */ C.TIME_UNSET, index);
+  }
+
+  /**
+   * Creates a cache span from an underlying cache file. Upgrades the file if necessary.
+   *
+   * @param file The cache file.
+   * @param length The length of the cache file in bytes, or {@link C#LENGTH_UNSET} to query the
+   *     underlying file system. Querying the underlying file system can be expensive, so callers
+   *     that already know the length of the file should pass it explicitly.
+   * @param lastTouchTimestamp The last touch timestamp, or {@link C#TIME_UNSET} to use the file
+   *     timestamp.
+   * @return The span, or null if the file name is not correctly formatted, or if the id is not
+   *     present in the content index, or if the length is 0.
+   */
+  @Nullable
+  public static SimpleCacheSpan createCacheEntry(
+      File file, long length, long lastTouchTimestamp, CachedContentIndex index) {
     String name = file.getName();
     if (!name.endsWith(SUFFIX)) {
       file = upgradeFile(file, index);
@@ -111,12 +127,25 @@ import java.util.regex.Pattern;
     if (!matcher.matches()) {
       return null;
     }
+
     int id = Integer.parseInt(matcher.group(1));
     String key = index.getKeyForId(id);
-    return key == null
-        ? null
-        : new SimpleCacheSpan(
-            key, Long.parseLong(matcher.group(2)), length, Long.parseLong(matcher.group(3)), file);
+    if (key == null) {
+      return null;
+    }
+
+    if (length == C.LENGTH_UNSET) {
+      length = file.length();
+    }
+    if (length == 0) {
+      return null;
+    }
+
+    long position = Long.parseLong(matcher.group(2));
+    if (lastTouchTimestamp == C.TIME_UNSET) {
+      lastTouchTimestamp = Long.parseLong(matcher.group(3));
+    }
+    return new SimpleCacheSpan(key, position, length, lastTouchTimestamp, file);
   }
 
   /**
@@ -158,28 +187,26 @@ import java.util.regex.Pattern;
    * @param position The position of the {@link CacheSpan} in the original stream.
    * @param length The length of the {@link CacheSpan}, or {@link C#LENGTH_UNSET} if this is an
    *     open-ended hole.
-   * @param lastAccessTimestamp The last access timestamp, or {@link C#TIME_UNSET} if {@link
+   * @param lastTouchTimestamp The last touch timestamp, or {@link C#TIME_UNSET} if {@link
    *     #isCached} is false.
    * @param file The file corresponding to this {@link CacheSpan}, or null if it's a hole.
    */
   private SimpleCacheSpan(
-      String key, long position, long length, long lastAccessTimestamp, @Nullable File file) {
-    super(key, position, length, lastAccessTimestamp, file);
+      String key, long position, long length, long lastTouchTimestamp, @Nullable File file) {
+    super(key, position, length, lastTouchTimestamp, file);
   }
 
   /**
-   * Returns a copy of this CacheSpan whose last access time stamp is set to current time. This
-   * doesn't copy or change the underlying cache file.
+   * Returns a copy of this CacheSpan with a new file and last touch timestamp.
    *
-   * @param id The cache file id.
-   * @return A {@link SimpleCacheSpan} with updated last access time stamp.
+   * @param file The new file.
+   * @param lastTouchTimestamp The new last touch time.
+   * @return A copy with the new file and last touch timestamp.
    * @throws IllegalStateException If called on a non-cached span (i.e. {@link #isCached} is false).
    */
-  public SimpleCacheSpan copyWithUpdatedLastAccessTime(int id) {
+  public SimpleCacheSpan copyWithFileAndLastTouchTimestamp(File file, long lastTouchTimestamp) {
     Assertions.checkState(isCached);
-    long now = System.currentTimeMillis();
-    File newCacheFile = getCacheFile(file.getParentFile(), id, position, now);
-    return new SimpleCacheSpan(key, position, length, now, newCacheFile);
+    return new SimpleCacheSpan(key, position, length, lastTouchTimestamp, file);
   }
 
 }

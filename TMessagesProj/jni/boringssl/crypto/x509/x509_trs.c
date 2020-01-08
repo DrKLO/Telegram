@@ -158,6 +158,7 @@ int X509_TRUST_get_by_id(int id)
     tmp.trust = id;
     if (!trtable)
         return -1;
+    sk_X509_TRUST_sort(trtable);
     if (!sk_X509_TRUST_find(trtable, &idx, &tmp)) {
         return -1;
     }

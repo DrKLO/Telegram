@@ -1,4 +1,4 @@
-change SimpleExoPlayer.java.java
+change SimpleExoPlayer.java
 change VideoListener.java
 change AspectRatioFrameLayout.java
 change DefaultExtractorsFactory.java

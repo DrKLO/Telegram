@@ -47,9 +47,11 @@ echo "Configuring..."
 --enable-runtime-cpudetect \
 --enable-pthreads \
 --enable-avresample \
+--enable-swscale \
 --enable-protocol=file \
 --enable-decoder=h264 \
 --enable-decoder=mpeg4 \
+--enable-decoder=mjpeg \
 --enable-decoder=gif \
 --enable-decoder=alac \
 --enable-demuxer=mov \
@@ -64,7 +66,7 @@ make -j8 install
 
 }
 
-NDK=/path-to-NDK
+NDK=path_to_ndk
 
 #x86_64
 PREBUILT=$NDK/toolchains/x86_64-4.9/prebuilt/darwin-x86_64
@@ -112,7 +114,7 @@ OPTIMIZE_CFLAGS="-marm -march=$CPU"
 PREFIX=./android/$CPU
 ADDITIONAL_CONFIGURE_FLAG=--enable-neon
 build_one
-#
+
 #x86
 PREBUILT=$NDK/toolchains/x86-4.9/prebuilt/darwin-x86_64
 PLATFORM=$NDK/platforms/android-16/arch-x86

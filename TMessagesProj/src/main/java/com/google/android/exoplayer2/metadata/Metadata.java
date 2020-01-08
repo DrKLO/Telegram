@@ -18,6 +18,7 @@ package com.google.android.exoplayer2.metadata;
 import android.os.Parcel;
 import android.os.Parcelable;
 import androidx.annotation.Nullable;
+import com.google.android.exoplayer2.Format;
 import com.google.android.exoplayer2.util.Util;
 import java.util.Arrays;
 import java.util.List;
@@ -28,10 +29,27 @@ import org.checkerframework.checker.nullness.compatqual.NullableType;
  */
 public final class Metadata implements Parcelable {
 
-  /**
-   * A metadata entry.
-   */
-  public interface Entry extends Parcelable {}
+  /** A metadata entry. */
+  public interface Entry extends Parcelable {
+
+    /**
+     * Returns the {@link Format} that can be used to decode the wrapped metadata in {@link
+     * #getWrappedMetadataBytes()}, or null if this Entry doesn't contain wrapped metadata.
+     */
+    @Nullable
+    default Format getWrappedMetadataFormat() {
+      return null;
+    }
+
+    /**
+     * Returns the bytes of the wrapped metadata in this Entry, or null if it doesn't contain
+     * wrapped metadata.
+     */
+    @Nullable
+    default byte[] getWrappedMetadataBytes() {
+      return null;
+    }
+  }
 
   private final Entry[] entries;
 
@@ -79,6 +97,21 @@ public final class Metadata implements Parcelable {
   }
 
   /**
+   * Returns a copy of this metadata with the entries of the specified metadata appended. Returns
+   * this instance if {@code other} is null.
+   *
+   * @param other The metadata that holds the entries to append. If null, this methods returns this
+   *     instance.
+   * @return The metadata instance with the appended entries.
+   */
+  public Metadata copyWithAppendedEntriesFrom(@Nullable Metadata other) {
+    if (other == null) {
+      return this;
+    }
+    return copyWithAppendedEntries(other.entries);
+  }
+
+  /**
    * Returns a copy of this metadata with the specified entries appended.
    *
    * @param entriesToAppend The entries to append.
@@ -107,6 +140,11 @@ public final class Metadata implements Parcelable {
     return Arrays.hashCode(entries);
   }
 
+  @Override
+  public String toString() {
+    return "entries=" + Arrays.toString(entries);
+  }
+
   // Parcelable implementation.
 
   @Override
@@ -122,16 +160,16 @@ public final class Metadata implements Parcelable {
     }
   }
 
-  public static final Parcelable.Creator<Metadata> CREATOR = new Parcelable.Creator<Metadata>() {
-    @Override
-    public Metadata createFromParcel(Parcel in) {
-      return new Metadata(in);
-    }
+  public static final Parcelable.Creator<Metadata> CREATOR =
+      new Parcelable.Creator<Metadata>() {
+        @Override
+        public Metadata createFromParcel(Parcel in) {
+          return new Metadata(in);
+        }
 
-    @Override
-    public Metadata[] newArray(int size) {
-      return new Metadata[0];
-    }
-  };
-
+        @Override
+        public Metadata[] newArray(int size) {
+          return new Metadata[size];
+        }
+      };
 }

@@ -812,8 +812,15 @@ public final class DashMediaSource extends BaseMediaSource {
       ParsingLoadable<DashManifest> loadable,
       long elapsedRealtimeMs,
       long loadDurationMs,
-      IOException error) {
-    boolean isFatal = error instanceof ParserException;
+      IOException error,
+      int errorCount) {
+    long retryDelayMs =
+        loadErrorHandlingPolicy.getRetryDelayMsFor(
+            C.DATA_TYPE_MANIFEST, loadDurationMs, error, errorCount);
+    LoadErrorAction loadErrorAction =
+        retryDelayMs == C.TIME_UNSET
+            ? Loader.DONT_RETRY_FATAL
+            : Loader.createRetryAction(/* resetErrorCount= */ false, retryDelayMs);
     manifestEventDispatcher.loadError(
         loadable.dataSpec,
         loadable.getUri(),
@@ -823,8 +830,8 @@ public final class DashMediaSource extends BaseMediaSource {
         loadDurationMs,
         loadable.bytesLoaded(),
         error,
-        isFatal);
-    return isFatal ? Loader.DONT_RETRY_FATAL : Loader.RETRY;
+        !loadErrorAction.isRetry());
+    return loadErrorAction;
   }
 
   /* package */ void onUtcTimestampLoadCompleted(ParsingLoadable<Long> loadable,
@@ -1030,6 +1037,9 @@ public final class DashMediaSource extends BaseMediaSource {
 
   private void startLoadingManifest() {
     handler.removeCallbacks(refreshManifestRunnable);
+    if (loader.hasFatalError()) {
+      return;
+    }
     if (loader.isLoading()) {
       manifestLoadPending = true;
       return;
@@ -1296,7 +1306,7 @@ public final class DashMediaSource extends BaseMediaSource {
         long loadDurationMs,
         IOException error,
         int errorCount) {
-      return onManifestLoadError(loadable, elapsedRealtimeMs, loadDurationMs, error);
+      return onManifestLoadError(loadable, elapsedRealtimeMs, loadDurationMs, error, errorCount);
     }
 
   }

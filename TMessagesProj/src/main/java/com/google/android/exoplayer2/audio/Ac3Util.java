@@ -16,6 +16,7 @@
 package com.google.android.exoplayer2.audio;
 
 import androidx.annotation.IntDef;
+import androidx.annotation.Nullable;
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.Format;
 import com.google.android.exoplayer2.audio.Ac3Util.SyncFrameInfo.StreamType;
@@ -55,10 +56,10 @@ public final class Ac3Util {
     public static final int STREAM_TYPE_TYPE2 = 2;
 
     /**
-     * The sample mime type of the bitstream. One of {@link MimeTypes#AUDIO_AC3} and
-     * {@link MimeTypes#AUDIO_E_AC3}.
+     * The sample mime type of the bitstream. One of {@link MimeTypes#AUDIO_AC3} and {@link
+     * MimeTypes#AUDIO_E_AC3}.
      */
-    public final String mimeType;
+    @Nullable public final String mimeType;
     /**
      * The type of the stream if {@link #mimeType} is {@link MimeTypes#AUDIO_E_AC3}, or {@link
      * #STREAM_TYPE_UNDEFINED} otherwise.
@@ -82,7 +83,7 @@ public final class Ac3Util {
     public final int sampleCount;
 
     private SyncFrameInfo(
-        String mimeType,
+        @Nullable String mimeType,
         @StreamType int streamType,
         int channelCount,
         int sampleRate,
@@ -433,6 +434,11 @@ public final class Ac3Util {
       mimeType = MimeTypes.AUDIO_AC3;
       data.skipBits(16 + 16); // syncword, crc1
       int fscod = data.readBits(2);
+      if (fscod == 3) {
+        // fscod '11' indicates that the decoder should not attempt to decode audio. We invalidate
+        // the mime type to prevent association with a renderer.
+        mimeType = null;
+      }
       int frmsizecod = data.readBits(6);
       frameSize = getAc3SyncframeSize(fscod, frmsizecod);
       data.skipBits(5 + 3); // bsid, bsmod
@@ -446,7 +452,8 @@ public final class Ac3Util {
       if (acmod == 2) {
         data.skipBits(2); // dsurmod
       }
-      sampleRate = SAMPLE_RATE_BY_FSCOD[fscod];
+      sampleRate =
+          fscod < SAMPLE_RATE_BY_FSCOD.length ? SAMPLE_RATE_BY_FSCOD[fscod] : Format.NO_VALUE;
       sampleCount = AC3_SYNCFRAME_AUDIO_SAMPLE_COUNT;
       lfeon = data.readBit();
       channelCount = CHANNEL_COUNT_BY_ACMOD[acmod] + (lfeon ? 1 : 0);

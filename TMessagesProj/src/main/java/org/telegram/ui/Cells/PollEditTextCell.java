@@ -17,6 +17,7 @@ import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.util.TypedValue;
 import android.view.Gravity;
+import android.view.MotionEvent;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputConnection;
 import android.widget.FrameLayout;
@@ -53,6 +54,20 @@ public class PollEditTextCell extends FrameLayout {
                 }
                 return conn;
             }
+
+            @Override
+            protected void onDraw(Canvas canvas) {
+                super.onDraw(canvas);
+                onEditTextDraw(this, canvas);
+            }
+
+            @Override
+            public boolean onTouchEvent(MotionEvent event) {
+                if (!isEnabled()) {
+                    return false;
+                }
+                return super.onTouchEvent(event);
+            }
         };
         textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
         textView.setHintTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteHintText));
@@ -69,7 +84,6 @@ public class PollEditTextCell extends FrameLayout {
             deleteImageView.setFocusable(false);
             deleteImageView.setScaleType(ImageView.ScaleType.CENTER);
             deleteImageView.setBackgroundDrawable(Theme.createSelectorDrawable(Theme.getColor(Theme.key_stickers_menuSelector)));
-            deleteImageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_stickers_menu), PorterDuff.Mode.MULTIPLY));
             deleteImageView.setImageResource(R.drawable.msg_panel_clear);
             deleteImageView.setOnClickListener(onDelete);
             deleteImageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText), PorterDuff.Mode.MULTIPLY));
@@ -83,14 +97,23 @@ public class PollEditTextCell extends FrameLayout {
         }
     }
 
+    public void createErrorTextView() {
+        textView2 = new SimpleTextView(getContext());
+        textView2.setTextSize(13);
+        textView2.setGravity((LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.TOP);
+        addView(textView2, LayoutHelper.createFrame(48, 24, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.TOP, LocaleController.isRTL ? 20 : 0, 17, LocaleController.isRTL ? 0 : 20, 0));
+    }
+
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         int width = MeasureSpec.getSize(widthMeasureSpec);
         if (deleteImageView != null) {
             deleteImageView.measure(MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(48), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(48), MeasureSpec.EXACTLY));
+        }
+        if (textView2 != null) {
             textView2.measure(MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(48), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(24), MeasureSpec.EXACTLY));
         }
-        textView.measure(MeasureSpec.makeMeasureSpec(width - getPaddingLeft() - getPaddingRight() - AndroidUtilities.dp(deleteImageView != null ? 79 : 42), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED));
+        textView.measure(MeasureSpec.makeMeasureSpec(width - getPaddingLeft() - getPaddingRight() - AndroidUtilities.dp(textView2 != null && textView.getBackground() == null ? 79 : 42), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED));
         int h = textView.getMeasuredHeight();
         setMeasuredDimension(width, Math.max(AndroidUtilities.dp(50), textView.getMeasuredHeight()) + (needDivider ? 1 : 0));
         if (textView2 != null) {
@@ -121,6 +144,10 @@ public class PollEditTextCell extends FrameLayout {
         return true;
     }
 
+    protected void onEditTextDraw(EditTextBoldCursor editText, Canvas canvas) {
+
+    }
+
     public String getText() {
         return textView.getText().toString();
     }
@@ -133,19 +160,19 @@ public class PollEditTextCell extends FrameLayout {
         textView.setTextColor(color);
     }
 
-    public void setText(String text, boolean divider) {
+    public void setText(CharSequence text, boolean divider) {
         textView.setText(text);
         needDivider = divider;
         setWillNotDraw(!divider);
     }
 
-    public void setTextAndHint(String text, String hint, boolean divider) {
+    public void setTextAndHint(CharSequence text, String hint, boolean divider) {
         if (deleteImageView != null) {
             deleteImageView.setTag(null);
         }
         textView.setText(text);
         if (!TextUtils.isEmpty(text)) {
-            textView.setSelection(text.length());
+            textView.setSelection(textView.length());
         }
         textView.setHint(hint);
         needDivider = divider;
@@ -157,6 +184,9 @@ public class PollEditTextCell extends FrameLayout {
     }
 
     public void setText2(String text) {
+        if (textView2 == null) {
+            return;
+        }
         textView2.setText(text);
     }
 

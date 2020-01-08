@@ -158,6 +158,25 @@ struct X509_VERIFY_PARAM_st
 
 DEFINE_STACK_OF(X509_VERIFY_PARAM)
 
+typedef int (*X509_STORE_CTX_verify_cb)(int, X509_STORE_CTX *);
+typedef int (*X509_STORE_CTX_verify_fn)(X509_STORE_CTX *);
+typedef int (*X509_STORE_CTX_get_issuer_fn)(X509 **issuer,
+                                            X509_STORE_CTX *ctx, X509 *x);
+typedef int (*X509_STORE_CTX_check_issued_fn)(X509_STORE_CTX *ctx,
+                                              X509 *x, X509 *issuer);
+typedef int (*X509_STORE_CTX_check_revocation_fn)(X509_STORE_CTX *ctx);
+typedef int (*X509_STORE_CTX_get_crl_fn)(X509_STORE_CTX *ctx,
+                                         X509_CRL **crl, X509 *x);
+typedef int (*X509_STORE_CTX_check_crl_fn)(X509_STORE_CTX *ctx, X509_CRL *crl);
+typedef int (*X509_STORE_CTX_cert_crl_fn)(X509_STORE_CTX *ctx,
+                                          X509_CRL *crl, X509 *x);
+typedef int (*X509_STORE_CTX_check_policy_fn)(X509_STORE_CTX *ctx);
+typedef STACK_OF(X509) *(*X509_STORE_CTX_lookup_certs_fn)(X509_STORE_CTX *ctx,
+                                                          X509_NAME *nm);
+typedef STACK_OF(X509_CRL) *(*X509_STORE_CTX_lookup_crls_fn)(X509_STORE_CTX *ctx,
+                                                             X509_NAME *nm);
+typedef int (*X509_STORE_CTX_cleanup_fn)(X509_STORE_CTX *ctx);
+
 /* This is used to hold everything.  It is used for all certificate
  * validation.  Once we have a certificate chain, the 'verify'
  * function is then called to actually check the cert chain. */
@@ -175,25 +194,22 @@ struct x509_store_st
 	X509_VERIFY_PARAM *param;
 
 	/* Callbacks for various operations */
-	int (*verify)(X509_STORE_CTX *ctx);	/* called to verify a certificate */
-	int (*verify_cb)(int ok,X509_STORE_CTX *ctx);	/* error callback */
-	int (*get_issuer)(X509 **issuer, X509_STORE_CTX *ctx, X509 *x);	/* get issuers cert from ctx */
-	int (*check_issued)(X509_STORE_CTX *ctx, X509 *x, X509 *issuer); /* check issued */
-	int (*check_revocation)(X509_STORE_CTX *ctx); /* Check revocation status of chain */
-	int (*get_crl)(X509_STORE_CTX *ctx, X509_CRL **crl, X509 *x); /* retrieve CRL */
-	int (*check_crl)(X509_STORE_CTX *ctx, X509_CRL *crl); /* Check CRL validity */
-	int (*cert_crl)(X509_STORE_CTX *ctx, X509_CRL *crl, X509 *x); /* Check certificate against CRL */
-	STACK_OF(X509) * (*lookup_certs)(X509_STORE_CTX *ctx, X509_NAME *nm);
-	STACK_OF(X509_CRL) * (*lookup_crls)(X509_STORE_CTX *ctx, X509_NAME *nm);
-	int (*cleanup)(X509_STORE_CTX *ctx);
+	X509_STORE_CTX_verify_fn verify;	/* called to verify a certificate */
+	X509_STORE_CTX_verify_cb verify_cb;	/* error callback */
+	X509_STORE_CTX_get_issuer_fn get_issuer;	/* get issuers cert from ctx */
+	X509_STORE_CTX_check_issued_fn check_issued; /* check issued */
+	X509_STORE_CTX_check_revocation_fn check_revocation; /* Check revocation status of chain */
+	X509_STORE_CTX_get_crl_fn get_crl; /* retrieve CRL */
+	X509_STORE_CTX_check_crl_fn check_crl; /* Check CRL validity */
+	X509_STORE_CTX_cert_crl_fn cert_crl; /* Check certificate against CRL */
+	X509_STORE_CTX_lookup_certs_fn lookup_certs;
+	X509_STORE_CTX_lookup_crls_fn lookup_crls;
+	X509_STORE_CTX_cleanup_fn cleanup;
 
 	CRYPTO_refcount_t references;
 	} /* X509_STORE */;
 
 OPENSSL_EXPORT int X509_STORE_set_depth(X509_STORE *store, int depth);
-
-#define X509_STORE_set_verify_cb_func(ctx,func) ((ctx)->verify_cb=(func))
-#define X509_STORE_set_verify_func(ctx,func)	((ctx)->verify=(func))
 
 /* This is the functions plus an instance of the local variables. */
 struct x509_lookup_st
@@ -222,18 +238,18 @@ struct x509_store_ctx_st      /* X509_STORE_CTX */
 	void *other_ctx;	/* Other info for use with get_issuer() */
 
 	/* Callbacks for various operations */
-	int (*verify)(X509_STORE_CTX *ctx);	/* called to verify a certificate */
-	int (*verify_cb)(int ok,X509_STORE_CTX *ctx);		/* error callback */
-	int (*get_issuer)(X509 **issuer, X509_STORE_CTX *ctx, X509 *x);	/* get issuers cert from ctx */
-	int (*check_issued)(X509_STORE_CTX *ctx, X509 *x, X509 *issuer); /* check issued */
-	int (*check_revocation)(X509_STORE_CTX *ctx); /* Check revocation status of chain */
-	int (*get_crl)(X509_STORE_CTX *ctx, X509_CRL **crl, X509 *x); /* retrieve CRL */
-	int (*check_crl)(X509_STORE_CTX *ctx, X509_CRL *crl); /* Check CRL validity */
-	int (*cert_crl)(X509_STORE_CTX *ctx, X509_CRL *crl, X509 *x); /* Check certificate against CRL */
-	int (*check_policy)(X509_STORE_CTX *ctx);
-	STACK_OF(X509) * (*lookup_certs)(X509_STORE_CTX *ctx, X509_NAME *nm);
-	STACK_OF(X509_CRL) * (*lookup_crls)(X509_STORE_CTX *ctx, X509_NAME *nm);
-	int (*cleanup)(X509_STORE_CTX *ctx);
+	X509_STORE_CTX_verify_fn verify;	/* called to verify a certificate */
+	X509_STORE_CTX_verify_cb verify_cb;		/* error callback */
+	X509_STORE_CTX_get_issuer_fn get_issuer;	/* get issuers cert from ctx */
+	X509_STORE_CTX_check_issued_fn check_issued; /* check issued */
+	X509_STORE_CTX_check_revocation_fn check_revocation; /* Check revocation status of chain */
+	X509_STORE_CTX_get_crl_fn get_crl; /* retrieve CRL */
+	X509_STORE_CTX_check_crl_fn check_crl; /* Check CRL validity */
+	X509_STORE_CTX_cert_crl_fn cert_crl; /* Check certificate against CRL */
+	X509_STORE_CTX_check_policy_fn check_policy;
+	X509_STORE_CTX_lookup_certs_fn lookup_certs;
+	X509_STORE_CTX_lookup_crls_fn lookup_crls;
+	X509_STORE_CTX_cleanup_fn cleanup;
 
 	/* The following is built up */
 	int valid;		/* if 0, rebuild chain */
@@ -354,6 +370,8 @@ OPENSSL_EXPORT void X509_STORE_CTX_set_depth(X509_STORE_CTX *ctx, int depth);
 /* Issuer lookup error */
 #define		X509_V_ERR_STORE_LOOKUP				66
 
+#define		X509_V_ERR_NAME_CONSTRAINTS_WITHOUT_SANS	67
+
 /* Certificate verify flags */
 
 /* Send issuer+subject checks to verify_cb */
@@ -366,8 +384,8 @@ OPENSSL_EXPORT void X509_STORE_CTX_set_depth(X509_STORE_CTX *ctx, int depth);
 #define	X509_V_FLAG_CRL_CHECK_ALL		0x8
 /* Ignore unhandled critical extensions */
 #define	X509_V_FLAG_IGNORE_CRITICAL		0x10
-/* Disable workarounds for broken certificates */
-#define	X509_V_FLAG_X509_STRICT			0x20
+/* Does nothing as its functionality has been enabled by default. */
+#define	X509_V_FLAG_X509_STRICT			0x00
 /* Enable proxy certificate validation */
 #define	X509_V_FLAG_ALLOW_PROXY_CERTS		0x40
 /* Enable policy checking */
@@ -441,11 +459,58 @@ OPENSSL_EXPORT X509_VERIFY_PARAM *X509_STORE_get0_param(X509_STORE *ctx);
 OPENSSL_EXPORT void X509_STORE_set0_additional_untrusted(
     X509_STORE *ctx, STACK_OF(X509) *untrusted);
 
-OPENSSL_EXPORT void X509_STORE_set_verify_cb(X509_STORE *ctx,
-				  int (*verify_cb)(int, X509_STORE_CTX *));
+OPENSSL_EXPORT void X509_STORE_set_verify(X509_STORE *ctx,
+                                          X509_STORE_CTX_verify_fn verify);
+#define X509_STORE_set_verify_func(ctx, func) \
+  X509_STORE_set_verify((ctx), (func))
+OPENSSL_EXPORT void X509_STORE_CTX_set_verify(X509_STORE_CTX *ctx,
+                                              X509_STORE_CTX_verify_fn verify);
+OPENSSL_EXPORT X509_STORE_CTX_verify_fn X509_STORE_get_verify(X509_STORE *ctx);
+OPENSSL_EXPORT void X509_STORE_set_verify_cb(
+    X509_STORE *ctx, X509_STORE_CTX_verify_cb verify_cb);
+#define X509_STORE_set_verify_cb_func(ctx, func) \
+  X509_STORE_set_verify_cb((ctx), (func))
+OPENSSL_EXPORT X509_STORE_CTX_verify_cb
+X509_STORE_get_verify_cb(X509_STORE *ctx);
+OPENSSL_EXPORT void X509_STORE_set_get_issuer(
+    X509_STORE *ctx, X509_STORE_CTX_get_issuer_fn get_issuer);
+OPENSSL_EXPORT X509_STORE_CTX_get_issuer_fn
+X509_STORE_get_get_issuer(X509_STORE *ctx);
+OPENSSL_EXPORT void X509_STORE_set_check_issued(
+    X509_STORE *ctx, X509_STORE_CTX_check_issued_fn check_issued);
+OPENSSL_EXPORT X509_STORE_CTX_check_issued_fn
+X509_STORE_get_check_issued(X509_STORE *ctx);
+OPENSSL_EXPORT void X509_STORE_set_check_revocation(
+    X509_STORE *ctx, X509_STORE_CTX_check_revocation_fn check_revocation);
+OPENSSL_EXPORT X509_STORE_CTX_check_revocation_fn
+X509_STORE_get_check_revocation(X509_STORE *ctx);
+OPENSSL_EXPORT void X509_STORE_set_get_crl(X509_STORE *ctx,
+                                           X509_STORE_CTX_get_crl_fn get_crl);
+OPENSSL_EXPORT X509_STORE_CTX_get_crl_fn
+X509_STORE_get_get_crl(X509_STORE *ctx);
+OPENSSL_EXPORT void X509_STORE_set_check_crl(
+    X509_STORE *ctx, X509_STORE_CTX_check_crl_fn check_crl);
+OPENSSL_EXPORT X509_STORE_CTX_check_crl_fn
+X509_STORE_get_check_crl(X509_STORE *ctx);
+OPENSSL_EXPORT void X509_STORE_set_cert_crl(
+    X509_STORE *ctx, X509_STORE_CTX_cert_crl_fn cert_crl);
+OPENSSL_EXPORT X509_STORE_CTX_cert_crl_fn
+X509_STORE_get_cert_crl(X509_STORE *ctx);
+OPENSSL_EXPORT void X509_STORE_set_lookup_certs(
+    X509_STORE *ctx, X509_STORE_CTX_lookup_certs_fn lookup_certs);
+OPENSSL_EXPORT X509_STORE_CTX_lookup_certs_fn
+X509_STORE_get_lookup_certs(X509_STORE *ctx);
+OPENSSL_EXPORT void X509_STORE_set_lookup_crls(
+    X509_STORE *ctx, X509_STORE_CTX_lookup_crls_fn lookup_crls);
+#define X509_STORE_set_lookup_crls_cb(ctx, func) \
+  X509_STORE_set_lookup_crls((ctx), (func))
+OPENSSL_EXPORT X509_STORE_CTX_lookup_crls_fn
+X509_STORE_get_lookup_crls(X509_STORE *ctx);
+OPENSSL_EXPORT void X509_STORE_set_cleanup(X509_STORE *ctx,
+                                           X509_STORE_CTX_cleanup_fn cleanup);
+OPENSSL_EXPORT X509_STORE_CTX_cleanup_fn
+X509_STORE_get_cleanup(X509_STORE *ctx);
 
-OPENSSL_EXPORT void X509_STORE_set_lookup_crls_cb(X509_STORE *ctx,
-		STACK_OF(X509_CRL)* (*cb)(X509_STORE_CTX *ctx, X509_NAME *nm));
 
 OPENSSL_EXPORT X509_STORE_CTX *X509_STORE_CTX_new(void);
 
@@ -459,6 +524,7 @@ OPENSSL_EXPORT void X509_STORE_CTX_trusted_stack(X509_STORE_CTX *ctx, STACK_OF(X
 OPENSSL_EXPORT void X509_STORE_CTX_cleanup(X509_STORE_CTX *ctx);
 
 OPENSSL_EXPORT X509_STORE *X509_STORE_CTX_get0_store(X509_STORE_CTX *ctx);
+OPENSSL_EXPORT X509 *X509_STORE_CTX_get0_cert(X509_STORE_CTX *ctx);
 
 OPENSSL_EXPORT X509_LOOKUP *X509_STORE_add_lookup(X509_STORE *v, X509_LOOKUP_METHOD *m);
 

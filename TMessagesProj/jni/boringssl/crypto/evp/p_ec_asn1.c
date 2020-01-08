@@ -206,13 +206,7 @@ static int ec_missing_parameters(const EVP_PKEY *pkey) {
 }
 
 static int ec_copy_parameters(EVP_PKEY *to, const EVP_PKEY *from) {
-  EC_GROUP *group = EC_GROUP_dup(EC_KEY_get0_group(from->pkey.ec));
-  if (group == NULL ||
-      EC_KEY_set_group(to->pkey.ec, group) == 0) {
-    return 0;
-  }
-  EC_GROUP_free(group);
-  return 1;
+  return EC_KEY_set_group(to->pkey.ec, EC_KEY_get0_group(from->pkey.ec));
 }
 
 static int ec_cmp_parameters(const EVP_PKEY *a, const EVP_PKEY *b) {
@@ -242,6 +236,11 @@ const EVP_PKEY_ASN1_METHOD ec_asn1_meth = {
 
   eckey_priv_decode,
   eckey_priv_encode,
+
+  NULL /* set_priv_raw */,
+  NULL /* set_pub_raw */,
+  NULL /* get_priv_raw */,
+  NULL /* get_pub_raw */,
 
   eckey_opaque,
 

@@ -91,11 +91,20 @@ public class ChatActionCell extends BaseCell {
         this.delegate = delegate;
     }
 
-    public void setCustomDate(int date) {
+    public void setCustomDate(int date, boolean scheduled, boolean inLayout) {
         if (customDate == date) {
             return;
         }
-        CharSequence newText = LocaleController.formatDateChat(date);
+        CharSequence newText;
+        if (scheduled) {
+            if (date == 0x7ffffffe) {
+                newText = LocaleController.getString("MessageScheduledUntilOnline", R.string.MessageScheduledUntilOnline);
+            } else {
+                newText = LocaleController.formatString("MessageScheduledOn", R.string.MessageScheduledOn, LocaleController.formatDateChat(date));
+            }
+        } else {
+            newText = LocaleController.formatDateChat(date);
+        }
         if (customText != null && TextUtils.equals(newText, customText)) {
             return;
         }
@@ -106,7 +115,11 @@ public class ChatActionCell extends BaseCell {
             invalidate();
         }
         if (!wasLayout) {
-            AndroidUtilities.runOnUIThread(this::requestLayout);
+            if (inLayout) {
+                AndroidUtilities.runOnUIThread(this::requestLayout);
+            } else {
+                requestLayout();
+            }
         } else {
             buildLayout();
         }
@@ -133,7 +146,7 @@ public class ChatActionCell extends BaseCell {
                     }
                 }
             }
-            avatarDrawable.setInfo(id, null, null, false);
+            avatarDrawable.setInfo(id, null, null);
             if (currentMessageObject.messageOwner.action instanceof TLRPC.TL_messageActionUserUpdatedPhoto) {
                 imageReceiver.setImage(null, null, avatarDrawable, null, currentMessageObject, 0);
             } else {

@@ -15,7 +15,6 @@
  */
 package com.google.android.exoplayer2.drm;
 
-import android.annotation.TargetApi;
 import android.media.MediaDrm;
 import androidx.annotation.IntDef;
 import androidx.annotation.Nullable;
@@ -27,7 +26,6 @@ import java.util.Map;
 /**
  * A DRM session.
  */
-@TargetApi(16)
 public interface DrmSession<T extends ExoMediaCrypto> {
 
   /**

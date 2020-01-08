@@ -21,8 +21,8 @@
 
 #if !defined(OPENSSL_C11_ATOMIC)
 
-OPENSSL_COMPILE_ASSERT((CRYPTO_refcount_t)-1 == CRYPTO_REFCOUNT_MAX,
-                       CRYPTO_REFCOUNT_MAX_is_incorrect);
+OPENSSL_STATIC_ASSERT((CRYPTO_refcount_t)-1 == CRYPTO_REFCOUNT_MAX,
+                      "CRYPTO_REFCOUNT_MAX is incorrect");
 
 static struct CRYPTO_STATIC_MUTEX g_refcount_lock = CRYPTO_STATIC_MUTEX_INIT;
 

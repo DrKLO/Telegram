@@ -56,6 +56,8 @@
 
 #include <openssl/bio.h>
 
+#if !defined(OPENSSL_TRUSTY)
+
 #include <assert.h>
 #include <errno.h>
 #include <string.h>
@@ -540,3 +542,5 @@ int BIO_set_nbio(BIO *bio, int on) {
 int BIO_do_connect(BIO *bio) {
   return BIO_ctrl(bio, BIO_C_DO_STATE_MACHINE, 0, NULL);
 }
+
+#endif  // OPENSSL_TRUSTY

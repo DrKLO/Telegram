@@ -106,7 +106,6 @@ public class CountrySelectActivity extends BaseFragment {
                 searchWas = false;
                 listView.setAdapter(listViewAdapter);
                 listView.setFastScrollVisible(true);
-                emptyView.setText(LocaleController.getString("ChooseCountry", R.string.ChooseCountry));
             }
 
             @Override
@@ -115,13 +114,6 @@ public class CountrySelectActivity extends BaseFragment {
                 searchListViewAdapter.search(text);
                 if (text.length() != 0) {
                     searchWas = true;
-                    if (listView != null) {
-                        listView.setAdapter(searchListViewAdapter);
-                        listView.setFastScrollVisible(false);
-                    }
-                    if (emptyView != null) {
-
-                    }
                 }
             }
         });
@@ -402,7 +394,14 @@ public class CountrySelectActivity extends BaseFragment {
 
         private void updateSearchResults(final ArrayList<Country> arrCounties) {
             AndroidUtilities.runOnUIThread(() -> {
+                if (!searching) {
+                    return;
+                }
                 searchResult = arrCounties;
+                if (searchWas && listView != null && listView.getAdapter() != searchListViewAdapter) {
+                    listView.setAdapter(searchListViewAdapter);
+                    listView.setFastScrollVisible(false);
+                }
                 notifyDataSetChanged();
             });
         }

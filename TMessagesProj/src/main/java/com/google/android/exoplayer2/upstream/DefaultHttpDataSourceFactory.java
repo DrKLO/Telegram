@@ -18,6 +18,7 @@ package com.google.android.exoplayer2.upstream;
 import androidx.annotation.Nullable;
 import com.google.android.exoplayer2.upstream.HttpDataSource.BaseFactory;
 import com.google.android.exoplayer2.upstream.HttpDataSource.Factory;
+import com.google.android.exoplayer2.util.Assertions;
 
 /** A {@link Factory} that produces {@link DefaultHttpDataSource} instances. */
 public final class DefaultHttpDataSourceFactory extends BaseFactory {
@@ -93,7 +94,7 @@ public final class DefaultHttpDataSourceFactory extends BaseFactory {
       int connectTimeoutMillis,
       int readTimeoutMillis,
       boolean allowCrossProtocolRedirects) {
-    this.userAgent = userAgent;
+    this.userAgent = Assertions.checkNotEmpty(userAgent);
     this.listener = listener;
     this.connectTimeoutMillis = connectTimeoutMillis;
     this.readTimeoutMillis = readTimeoutMillis;

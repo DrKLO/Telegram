@@ -21,12 +21,15 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.ActionBar;
+import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.ChatMessageCell;
 
 
 @SuppressWarnings("FieldCanBeLocal")
 public class HintView extends FrameLayout {
+
+    public static final int TYPE_SEARCH_AS_LIST = 3;
 
     private TextView textView;
     private ImageView imageView;
@@ -54,14 +57,23 @@ public class HintView extends FrameLayout {
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         textView.setMaxLines(2);
         textView.setMaxWidth(AndroidUtilities.dp(250));
-        textView.setGravity(Gravity.LEFT | Gravity.TOP);
-        textView.setBackgroundDrawable(Theme.createRoundRectDrawable(AndroidUtilities.dp(3), Theme.getColor(Theme.key_chat_gifSaveHintBackground)));
-        if (currentType == 2) {
-            textView.setPadding(AndroidUtilities.dp(7), AndroidUtilities.dp(6), AndroidUtilities.dp(7), AndroidUtilities.dp(7));
+        if (currentType == TYPE_SEARCH_AS_LIST) {
+            textView.setGravity(Gravity.LEFT | Gravity.CENTER_VERTICAL);
+            textView.setBackground(Theme.createRoundRectDrawable(AndroidUtilities.dp(5),
+                    Theme.getColor(Theme.key_chat_gifSaveHintBackground)));
+            textView.setPadding(AndroidUtilities.dp(10), 0, AndroidUtilities.dp(10), 0);
+            addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 30, Gravity.LEFT | Gravity.TOP, 0, topArrow ? 6 : 0, 0, topArrow ? 0 : 6));
         } else {
-            textView.setPadding(AndroidUtilities.dp(currentType == 0 ? 54 : 5), AndroidUtilities.dp(6), AndroidUtilities.dp(5), AndroidUtilities.dp(7));
+            textView.setGravity(Gravity.LEFT | Gravity.TOP);
+            textView.setBackground(Theme.createRoundRectDrawable(AndroidUtilities.dp(3),
+                    Theme.getColor(Theme.key_chat_gifSaveHintBackground)));
+            if (currentType == 2) {
+                textView.setPadding(AndroidUtilities.dp(7), AndroidUtilities.dp(6), AndroidUtilities.dp(7), AndroidUtilities.dp(7));
+            } else {
+                textView.setPadding(AndroidUtilities.dp(currentType == 0 ? 54 : 5), AndroidUtilities.dp(6), AndroidUtilities.dp(5), AndroidUtilities.dp(7));
+            }
+            addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 0, topArrow ? 6 : 0, 0, topArrow ? 0 : 6));
         }
-        addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 0, topArrow ? 6 : 0, 0, topArrow ? 0 : 6));
 
         if (type == 0) {
             textView.setText(LocaleController.getString("AutoplayVideoInfo", R.string.AutoplayVideoInfo));
@@ -206,8 +218,18 @@ public class HintView extends FrameLayout {
         int[] position = new int[2];
         view.getLocationInWindow(position);
 
-        int centerX = position[0] + view.getMeasuredWidth() / 2;
         int top = position[1] - AndroidUtilities.dp(4);
+
+        int centerX;
+        if (currentType == TYPE_SEARCH_AS_LIST) {
+            if (view instanceof SimpleTextView) {
+                centerX = position[0] + ((SimpleTextView) view).getTextWidth() / 2;
+            } else {
+                throw new IllegalArgumentException();
+            }
+        } else {
+            centerX = position[0] + view.getMeasuredWidth() / 2;
+        }
 
         View parentView = (View) getParent();
         parentView.getLocationInWindow(position);
@@ -218,25 +240,30 @@ public class HintView extends FrameLayout {
             top -= AndroidUtilities.statusBarHeight;
         }
 
-
         int parentWidth = parentView.getMeasuredWidth();
         if (isTopArrow) {
             setTranslationY(AndroidUtilities.dp(44));
         } else {
             setTranslationY(top - getMeasuredHeight() - ActionBar.getCurrentActionBarHeight());
         }
-        int iconX = centerX;
-        int left = AndroidUtilities.dp(19);
-        if (iconX > parentView.getMeasuredWidth() / 2) {
-            int offset = parentWidth - getMeasuredWidth() - AndroidUtilities.dp(28);
-            setTranslationX(offset);
-            left += offset;
+        final int offset;
+        if (centerX > parentView.getMeasuredWidth() / 2) {
+            if (currentType == TYPE_SEARCH_AS_LIST) {
+                offset = (int) (parentWidth - getMeasuredWidth() * 1.5f);
+            } else {
+                offset = parentWidth - getMeasuredWidth() - AndroidUtilities.dp(28);
+            }
         } else {
-            setTranslationX(0);
+            if (currentType == TYPE_SEARCH_AS_LIST) {
+                offset = centerX - getMeasuredWidth() / 2 - arrowImageView.getMeasuredWidth();
+            } else {
+                offset = 0;
+            }
         }
-        float arrowX = centerX - left - arrowImageView.getMeasuredWidth() / 2;
+        setTranslationX(offset);
+        float arrowX = centerX - (AndroidUtilities.dp(19) + offset) - arrowImageView.getMeasuredWidth() / 2;
         arrowImageView.setTranslationX(arrowX);
-        if (iconX > parentView.getMeasuredWidth() / 2) {
+        if (centerX > parentView.getMeasuredWidth() / 2) {
             if (arrowX < AndroidUtilities.dp(10)) {
                 float diff = arrowX - AndroidUtilities.dp(10);
                 setTranslationX(getTranslationX() + diff);

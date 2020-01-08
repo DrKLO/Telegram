@@ -29,13 +29,19 @@ public class VideoEditedInfo {
     public long estimatedDuration;
     public boolean roundVideo;
     public boolean muted;
+    public long originalDuration;
     public TLRPC.InputFile file;
     public TLRPC.InputEncryptedFile encryptedFile;
     public byte[] key;
     public byte[] iv;
 
+    public boolean canceled;
+    public boolean videoConvertFirstWrite;
+    public boolean needUpdateProgress = false;
+
+
     public String getString() {
-        return String.format(Locale.US, "-1_%d_%d_%d_%d_%d_%d_%d_%d_%d_%s", startTime, endTime, rotationValue, originalWidth, originalHeight, bitrate, resultWidth, resultHeight, framerate, originalPath);
+        return String.format(Locale.US, "-1_%d_%d_%d_%d_%d_%d_%d_%d_%d_%d_%s", startTime, endTime, rotationValue, originalWidth, originalHeight, bitrate, resultWidth, resultHeight, originalDuration, framerate, originalPath);
     }
 
     public boolean parseString(String string) {
@@ -44,7 +50,7 @@ public class VideoEditedInfo {
         }
         try {
             String args[] = string.split("_");
-            if (args.length >= 10) {
+            if (args.length >= 11) {
                 startTime = Long.parseLong(args[1]);
                 endTime = Long.parseLong(args[2]);
                 rotationValue = Integer.parseInt(args[3]);
@@ -53,21 +59,10 @@ public class VideoEditedInfo {
                 bitrate = Integer.parseInt(args[6]);
                 resultWidth = Integer.parseInt(args[7]);
                 resultHeight = Integer.parseInt(args[8]);
-                int pathStart;
-                if (args.length >= 11) {
-                    try {
-                        framerate = Integer.parseInt(args[9]);
-                    } catch (Exception ignore) {
+                originalDuration = Long.parseLong(args[9]);
+                framerate = Integer.parseInt(args[10]);
 
-                    }
-                }
-                if (framerate <= 0 || framerate > 400) {
-                    pathStart = 9;
-                    framerate = 25;
-                } else {
-                    pathStart = 10;
-                }
-                for (int a = pathStart; a < args.length; a++) {
+                for (int a = 11; a < args.length; a++) {
                     if (originalPath == null) {
                         originalPath = args[a];
                     } else {

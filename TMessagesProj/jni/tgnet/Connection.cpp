@@ -318,6 +318,7 @@ void Connection::connect() {
     } else if (connectionType == ConnectionTypeTemp) {
         currentAddressFlags = TcpAddressFlagTemp;
         tcpAddress = currentDatacenter->getCurrentAddress(currentAddressFlags);
+        ipv6 = 0;
     } else {
         currentAddressFlags = isStatic;
         tcpAddress = currentDatacenter->getCurrentAddress(currentAddressFlags | ipv6);
@@ -520,7 +521,7 @@ void Connection::sendData(NativeByteBuffer *buff, bool reportAck, bool encrypted
 
                 if (useSecret != 0) {
                     int16_t datacenterId;
-                    if (isMediaConnection && connectionType != ConnectionTypeGenericMedia) {
+                    if (isMediaConnection) {
                         if (ConnectionsManager::getInstance(currentDatacenter->instanceNum).testBackend) {
                             datacenterId = -(int16_t) (10000 + currentDatacenter->getDatacenterId());
                         } else {

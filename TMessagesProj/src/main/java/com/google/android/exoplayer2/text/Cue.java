@@ -28,9 +28,10 @@ import java.lang.annotation.RetentionPolicy;
  */
 public class Cue {
 
-  /**
-   * An unset position or width.
-   */
+  /** The empty cue. */
+  public static final Cue EMPTY = new Cue("");
+
+  /** An unset position or width. */
   public static final float DIMEN_UNSET = Float.MIN_VALUE;
 
   /**

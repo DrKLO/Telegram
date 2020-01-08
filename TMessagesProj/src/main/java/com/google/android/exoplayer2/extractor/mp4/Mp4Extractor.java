@@ -19,6 +19,7 @@ import androidx.annotation.IntDef;
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.Format;
 import com.google.android.exoplayer2.ParserException;
+import com.google.android.exoplayer2.audio.Ac4Util;
 import com.google.android.exoplayer2.extractor.Extractor;
 import com.google.android.exoplayer2.extractor.ExtractorInput;
 import com.google.android.exoplayer2.extractor.ExtractorOutput;
@@ -31,6 +32,7 @@ import com.google.android.exoplayer2.extractor.TrackOutput;
 import com.google.android.exoplayer2.extractor.mp4.Atom.ContainerAtom;
 import com.google.android.exoplayer2.metadata.Metadata;
 import com.google.android.exoplayer2.util.Assertions;
+import com.google.android.exoplayer2.util.MimeTypes;
 import com.google.android.exoplayer2.util.NalUnitUtil;
 import com.google.android.exoplayer2.util.ParsableByteArray;
 import com.google.android.exoplayer2.util.Util;
@@ -88,13 +90,14 @@ public final class Mp4Extractor implements Extractor, SeekMap {
    * For poorly interleaved streams, the maximum byte difference one track is allowed to be read
    * ahead before the source will be reloaded at a new position to read another track.
    */
-  private static final long MAXIMUM_READ_AHEAD_BYTES_STREAM = 1024 * 1024;
+  private static final long MAXIMUM_READ_AHEAD_BYTES_STREAM = 1 * 1024 * 1024;
 
   private final @Flags int flags;
 
   // Temporary arrays.
   private final ParsableByteArray nalStartCode;
   private final ParsableByteArray nalLength;
+  private final ParsableByteArray scratch;
 
   private final ParsableByteArray atomHeader;
   private final ArrayDeque<ContainerAtom> containerAtoms;
@@ -108,6 +111,7 @@ public final class Mp4Extractor implements Extractor, SeekMap {
   private int sampleTrackIndex;
   private int sampleBytesWritten;
   private int sampleCurrentNalBytesRemaining;
+  private boolean isAc4HeaderRequired;
 
   // Extractor outputs.
   private ExtractorOutput extractorOutput;
@@ -136,6 +140,7 @@ public final class Mp4Extractor implements Extractor, SeekMap {
     containerAtoms = new ArrayDeque<>();
     nalStartCode = new ParsableByteArray(NalUnitUtil.NAL_START_CODE);
     nalLength = new ParsableByteArray(4);
+    scratch = new ParsableByteArray();
     sampleTrackIndex = C.INDEX_UNSET;
   }
 
@@ -156,6 +161,7 @@ public final class Mp4Extractor implements Extractor, SeekMap {
     sampleTrackIndex = C.INDEX_UNSET;
     sampleBytesWritten = 0;
     sampleCurrentNalBytesRemaining = 0;
+    isAc4HeaderRequired = false;
     if (position == 0) {
       enterReadingAtomHeaderState();
     } else if (tracks != null) {
@@ -303,6 +309,9 @@ public final class Mp4Extractor implements Extractor, SeekMap {
       if (atomSize == atomHeaderBytesRead) {
         processAtomEnded(endPosition);
       } else {
+        if (atomType == Atom.TYPE_meta) {
+          maybeSkipRemainingMetaAtomHeaderBytes(input);
+        }
         // Start reading the first child atom.
         enterReadingAtomHeaderState();
       }
@@ -401,21 +410,27 @@ public final class Mp4Extractor implements Extractor, SeekMap {
     for (int i = 0; i < trackCount; i++) {
       TrackSampleTable trackSampleTable = trackSampleTables.get(i);
       Track track = trackSampleTable.track;
+      long trackDurationUs =
+          track.durationUs != C.TIME_UNSET ? track.durationUs : trackSampleTable.durationUs;
+      durationUs = Math.max(durationUs, trackDurationUs);
       Mp4Track mp4Track = new Mp4Track(track, trackSampleTable,
           extractorOutput.track(i, track.type));
+
       // Each sample has up to three bytes of overhead for the start code that replaces its length.
       // Allow ten source samples per output sample, like the platform extractor.
       int maxInputSize = trackSampleTable.maximumSize + 3 * 10;
       Format format = track.format.copyWithMaxInputSize(maxInputSize);
+      if (track.type == C.TRACK_TYPE_VIDEO
+          && trackDurationUs > 0
+          && trackSampleTable.sampleCount > 1) {
+        float frameRate = trackSampleTable.sampleCount / (trackDurationUs / 1000000f);
+        format = format.copyWithFrameRate(frameRate);
+      }
       format =
           MetadataUtil.getFormatWithMetadata(
               track.type, format, udtaMetadata, mdtaMetadata, gaplessInfoHolder);
       mp4Track.trackOutput.format(format);
 
-      durationUs =
-          Math.max(
-              durationUs,
-              track.durationUs != C.TIME_UNSET ? track.durationUs : trackSampleTable.durationUs);
       if (track.type == C.TRACK_TYPE_VIDEO && firstVideoTrackIndex == C.INDEX_UNSET) {
         firstVideoTrackIndex = tracks.size();
       }
@@ -487,6 +502,8 @@ public final class Mp4Extractor implements Extractor, SeekMap {
       if (sampleTrackIndex == C.INDEX_UNSET) {
         return RESULT_END_OF_INPUT;
       }
+      isAc4HeaderRequired =
+          MimeTypes.AUDIO_AC4.equals(tracks[sampleTrackIndex].track.format.sampleMimeType);
     }
     Mp4Track track = tracks[sampleTrackIndex];
     TrackOutput trackOutput = track.trackOutput;
@@ -520,9 +537,13 @@ public final class Mp4Extractor implements Extractor, SeekMap {
       while (sampleBytesWritten < sampleSize) {
         if (sampleCurrentNalBytesRemaining == 0) {
           // Read the NAL length so that we know where we find the next one.
-          input.readFully(nalLength.data, nalUnitLengthFieldLengthDiff, nalUnitLengthFieldLength);
+          input.readFully(nalLengthData, nalUnitLengthFieldLengthDiff, nalUnitLengthFieldLength);
           nalLength.setPosition(0);
-          sampleCurrentNalBytesRemaining = nalLength.readUnsignedIntToInt();
+          int nalLengthInt = nalLength.readInt();
+          if (nalLengthInt < 0) {
+            throw new ParserException("Invalid NAL length");
+          }
+          sampleCurrentNalBytesRemaining = nalLengthInt;
           // Write a start code for the current NAL unit.
           nalStartCode.setPosition(0);
           trackOutput.sampleData(nalStartCode, 4);
@@ -536,6 +557,14 @@ public final class Mp4Extractor implements Extractor, SeekMap {
         }
       }
     } else {
+      if (isAc4HeaderRequired) {
+        Ac4Util.getAc4SampleHeader(sampleSize, scratch);
+        int length = scratch.limit();
+        trackOutput.sampleData(scratch, length);
+        sampleSize += length;
+        sampleBytesWritten += length;
+        isAc4HeaderRequired = false;
+      }
       while (sampleBytesWritten < sampleSize) {
         int writtenBytes = trackOutput.sampleData(input, sampleSize - sampleBytesWritten, false);
         sampleBytesWritten += writtenBytes;
@@ -614,6 +643,32 @@ public final class Mp4Extractor implements Extractor, SeekMap {
         sampleIndex = sampleTable.getIndexOfLaterOrEqualSynchronizationSample(timeUs);
       }
       track.sampleIndex = sampleIndex;
+    }
+  }
+
+  /**
+   * Possibly skips the version and flags fields (1+3 byte) of a full meta atom of the {@code
+   * input}.
+   *
+   * <p>Atoms of type {@link Atom#TYPE_meta} are defined to be full atoms which have four additional
+   * bytes for a version and a flags field (see 4.2 'Object Structure' in ISO/IEC 14496-12:2005).
+   * QuickTime do not have such a full box structure. Since some of these files are encoded wrongly,
+   * we can't rely on the file type though. Instead we must check the 8 bytes after the common
+   * header bytes ourselves.
+   */
+  private void maybeSkipRemainingMetaAtomHeaderBytes(ExtractorInput input)
+      throws IOException, InterruptedException {
+    scratch.reset(8);
+    // Peek the next 8 bytes which can be either
+    // (iso) [1 byte version + 3 bytes flags][4 byte size of next atom]
+    // (qt)  [4 byte size of next atom      ][4 byte hdlr atom type   ]
+    // In case of (iso) we need to skip the next 4 bytes.
+    input.peekFully(scratch.data, 0, 8);
+    scratch.skipBytes(4);
+    if (scratch.readInt() == Atom.TYPE_hdlr) {
+      input.resetPeekPosition();
+    } else {
+      input.skipFully(4);
     }
   }
 

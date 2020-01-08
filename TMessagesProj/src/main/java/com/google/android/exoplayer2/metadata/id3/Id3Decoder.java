@@ -713,9 +713,11 @@ public final class Id3Decoder implements MetadataDecoder {
    */
   private static int removeUnsynchronization(ParsableByteArray data, int length) {
     byte[] bytes = data.data;
-    for (int i = data.getPosition(); i + 1 < length; i++) {
+    int startPosition = data.getPosition();
+    for (int i = startPosition; i + 1 < startPosition + length; i++) {
       if ((bytes[i] & 0xFF) == 0xFF && bytes[i + 1] == 0x00) {
-        System.arraycopy(bytes, i + 2, bytes, i + 1, length - i - 2);
+        int relativePosition = i - startPosition;
+        System.arraycopy(bytes, i + 2, bytes, i + 1, length - relativePosition - 2);
         length--;
       }
     }

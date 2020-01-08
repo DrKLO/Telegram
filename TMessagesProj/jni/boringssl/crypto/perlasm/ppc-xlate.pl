@@ -255,6 +255,19 @@ my $darn = sub {
     "	.long	".sprintf "0x%X",(31<<26)|($rt<<21)|($l<<16)|(755<<1);
 };
 
+print <<___;
+# This file is generated from a similarly-named Perl script in the BoringSSL
+# source tree. Do not edit by hand.
+
+#if defined(__has_feature)
+#if __has_feature(memory_sanitizer) && !defined(OPENSSL_NO_ASM)
+#define OPENSSL_NO_ASM
+#endif
+#endif
+
+#if !defined(OPENSSL_NO_ASM) && defined(__powerpc64__)
+___
+
 while($line=<>) {
 
     $line =~ s|[#!;].*$||;	# get rid of asm-style comments...
@@ -295,5 +308,7 @@ while($line=<>) {
     print $line if ($line);
     print "\n";
 }
+
+print "#endif  // !OPENSSL_NO_ASM && __powerpc64__\n";
 
 close STDOUT;

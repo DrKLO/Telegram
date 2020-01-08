@@ -87,18 +87,18 @@ public interface MediaPeriod extends SequenceableLoader {
   TrackGroupArray getTrackGroups();
 
   /**
-   * Returns a list of {@link StreamKey stream keys} which allow to filter the media in this period
-   * to load only the parts needed to play the provided {@link TrackSelection}.
+   * Returns a list of {@link StreamKey StreamKeys} which allow to filter the media in this period
+   * to load only the parts needed to play the provided {@link TrackSelection TrackSelections}.
    *
    * <p>This method is only called after the period has been prepared.
    *
-   * @param trackSelection The {@link TrackSelection} describing the tracks for which stream keys
-   *     are requested.
-   * @return The corresponding {@link StreamKey stream keys} for the selected tracks, or an empty
+   * @param trackSelections The {@link TrackSelection TrackSelections} describing the tracks for
+   *     which stream keys are requested.
+   * @return The corresponding {@link StreamKey StreamKeys} for the selected tracks, or an empty
    *     list if filtering is not possible and the entire media needs to be loaded to play the
    *     selected tracks.
    */
-  default List<StreamKey> getStreamKeys(TrackSelection trackSelection) {
+  default List<StreamKey> getStreamKeys(List<TrackSelection> trackSelections) {
     return Collections.emptyList();
   }
 
@@ -106,12 +106,15 @@ public interface MediaPeriod extends SequenceableLoader {
    * Performs a track selection.
    *
    * <p>The call receives track {@code selections} for each renderer, {@code mayRetainStreamFlags}
-   * indicating whether the existing {@code SampleStream} can be retained for each selection, and
+   * indicating whether the existing {@link SampleStream} can be retained for each selection, and
    * the existing {@code stream}s themselves. The call will update {@code streams} to reflect the
    * provided selections, clearing, setting and replacing entries as required. If an existing sample
    * stream is retained but with the requirement that the consuming renderer be reset, then the
    * corresponding flag in {@code streamResetFlags} will be set to true. This flag will also be set
    * if a new sample stream is created.
+   *
+   * <p>Note that previously received {@link TrackSelection TrackSelections} are no longer valid and
+   * references need to be replaced even if the corresponding {@link SampleStream} is kept.
    *
    * <p>This method is only called after the period has been prepared.
    *

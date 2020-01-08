@@ -64,8 +64,8 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
   private MediaSource mediaSource;
   private boolean playWhenReady;
-  private boolean internalPlayWhenReady;
-  private @RepeatMode int repeatMode;
+  @PlaybackSuppressionReason private int playbackSuppressionReason;
+  @RepeatMode private int repeatMode;
   private boolean shuffleModeEnabled;
   private int pendingOperationAcks;
   private boolean hasPendingPrepare;
@@ -119,6 +119,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
     period = new Timeline.Period();
     playbackParameters = PlaybackParameters.DEFAULT;
     seekParameters = SeekParameters.DEFAULT;
+    playbackSuppressionReason = PLAYBACK_SUPPRESSION_REASON_NONE;
     eventHandler =
         new Handler(looper) {
           @Override
@@ -197,8 +198,14 @@ import java.util.concurrent.CopyOnWriteArrayList;
     return playbackInfo.playbackState;
   }
 
+  @PlaybackSuppressionReason
+  public int getPlaybackSuppressionReason() {
+    return playbackSuppressionReason;
+  }
+
   @Override
-  public @Nullable ExoPlaybackException getPlaybackError() {
+  @Nullable
+  public ExoPlaybackException getPlaybackError() {
     return playbackError;
   }
 
@@ -239,19 +246,39 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
   @Override
   public void setPlayWhenReady(boolean playWhenReady) {
-    setPlayWhenReady(playWhenReady, /* suppressPlayback= */ false);
+    setPlayWhenReady(playWhenReady, PLAYBACK_SUPPRESSION_REASON_NONE);
   }
 
-  public void setPlayWhenReady(boolean playWhenReady, boolean suppressPlayback) {
-    boolean internalPlayWhenReady = playWhenReady && !suppressPlayback;
-    if (this.internalPlayWhenReady != internalPlayWhenReady) {
-      this.internalPlayWhenReady = internalPlayWhenReady;
+  public void setPlayWhenReady(
+      boolean playWhenReady, @PlaybackSuppressionReason int playbackSuppressionReason) {
+    boolean oldIsPlaying = isPlaying();
+    boolean oldInternalPlayWhenReady =
+        this.playWhenReady && this.playbackSuppressionReason == PLAYBACK_SUPPRESSION_REASON_NONE;
+    boolean internalPlayWhenReady =
+        playWhenReady && playbackSuppressionReason == PLAYBACK_SUPPRESSION_REASON_NONE;
+    if (oldInternalPlayWhenReady != internalPlayWhenReady) {
       internalPlayer.setPlayWhenReady(internalPlayWhenReady);
     }
-    if (this.playWhenReady != playWhenReady) {
-      this.playWhenReady = playWhenReady;
+    boolean playWhenReadyChanged = this.playWhenReady != playWhenReady;
+    boolean suppressionReasonChanged = this.playbackSuppressionReason != playbackSuppressionReason;
+    this.playWhenReady = playWhenReady;
+    this.playbackSuppressionReason = playbackSuppressionReason;
+    boolean isPlaying = isPlaying();
+    boolean isPlayingChanged = oldIsPlaying != isPlaying;
+    if (playWhenReadyChanged || suppressionReasonChanged || isPlayingChanged) {
       int playbackState = playbackInfo.playbackState;
-      notifyListeners(listener -> listener.onPlayerStateChanged(playWhenReady, playbackState));
+      notifyListeners(
+          listener -> {
+            if (playWhenReadyChanged) {
+              listener.onPlayerStateChanged(playWhenReady, playbackState);
+            }
+            if (suppressionReasonChanged) {
+              listener.onPlaybackSuppressionReasonChanged(playbackSuppressionReason);
+            }
+            if (isPlayingChanged) {
+              listener.onIsPlayingChanged(isPlaying);
+            }
+          });
     }
   }
 
@@ -401,6 +428,11 @@ import java.util.concurrent.CopyOnWriteArrayList;
     mediaSource = null;
     internalPlayer.release();
     eventHandler.removeCallbacksAndMessages(null);
+    playbackInfo =
+        getResetPlaybackInfo(
+            /* resetPosition= */ false,
+            /* resetState= */ false,
+            /* playbackState= */ Player.STATE_IDLE);
   }
 
   @Override
@@ -505,7 +537,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
   @Override
   public long getTotalBufferedDuration() {
-    return Math.max(0, C.usToMs(playbackInfo.totalBufferedDurationUs));
+    return C.usToMs(playbackInfo.totalBufferedDurationUs);
   }
 
   @Override
@@ -527,7 +559,9 @@ import java.util.concurrent.CopyOnWriteArrayList;
   public long getContentPosition() {
     if (isPlayingAd()) {
       playbackInfo.timeline.getPeriodByUid(playbackInfo.periodId.periodUid, period);
-      return period.getPositionInWindowMs() + C.usToMs(playbackInfo.contentPositionUs);
+      return playbackInfo.contentPositionUs == C.TIME_UNSET
+          ? playbackInfo.timeline.getWindow(getCurrentWindowIndex(), window).getDefaultPositionMs()
+          : period.getPositionInWindowMs() + C.usToMs(playbackInfo.contentPositionUs);
     } else {
       return getCurrentPosition();
     }
@@ -626,8 +660,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
             playbackInfo.resetToNewPosition(
                 playbackInfo.periodId, /* startPositionUs= */ 0, playbackInfo.contentPositionUs);
       }
-      if ((!this.playbackInfo.timeline.isEmpty() || hasPendingPrepare)
-          && playbackInfo.timeline.isEmpty()) {
+      if (!this.playbackInfo.timeline.isEmpty() && playbackInfo.timeline.isEmpty()) {
         // Update the masking variables, which are used when the timeline becomes empty.
         maskingPeriodIndex = 0;
         maskingWindowIndex = 0;
@@ -661,6 +694,8 @@ import java.util.concurrent.CopyOnWriteArrayList;
       maskingPeriodIndex = getCurrentPeriodIndex();
       maskingWindowPositionMs = getCurrentPosition();
     }
+    // Also reset period-based PlaybackInfo positions if resetting the state.
+    resetPosition = resetPosition || resetState;
     MediaPeriodId mediaPeriodId =
         resetPosition
             ? playbackInfo.getDummyFirstMediaPeriodId(shuffleModeEnabled, window)
@@ -689,9 +724,11 @@ import java.util.concurrent.CopyOnWriteArrayList;
       @Player.DiscontinuityReason int positionDiscontinuityReason,
       @Player.TimelineChangeReason int timelineChangeReason,
       boolean seekProcessed) {
+    boolean previousIsPlaying = isPlaying();
     // Assign playback info immediately such that all getters return the right values.
     PlaybackInfo previousPlaybackInfo = this.playbackInfo;
     this.playbackInfo = playbackInfo;
+    boolean isPlaying = isPlaying();
     notifyListeners(
         new PlaybackInfoUpdate(
             playbackInfo,
@@ -702,7 +739,8 @@ import java.util.concurrent.CopyOnWriteArrayList;
             positionDiscontinuityReason,
             timelineChangeReason,
             seekProcessed,
-            playWhenReady));
+            playWhenReady,
+            /* isPlayingChanged= */ previousIsPlaying != isPlaying));
   }
 
   private void notifyListeners(ListenerInvocation listenerInvocation) {
@@ -747,6 +785,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
     private final boolean isLoadingChanged;
     private final boolean trackSelectorResultChanged;
     private final boolean playWhenReady;
+    private final boolean isPlayingChanged;
 
     public PlaybackInfoUpdate(
         PlaybackInfo playbackInfo,
@@ -754,10 +793,11 @@ import java.util.concurrent.CopyOnWriteArrayList;
         CopyOnWriteArrayList<ListenerHolder> listeners,
         TrackSelector trackSelector,
         boolean positionDiscontinuity,
-        @Player.DiscontinuityReason int positionDiscontinuityReason,
-        @Player.TimelineChangeReason int timelineChangeReason,
+        @DiscontinuityReason int positionDiscontinuityReason,
+        @TimelineChangeReason int timelineChangeReason,
         boolean seekProcessed,
-        boolean playWhenReady) {
+        boolean playWhenReady,
+        boolean isPlayingChanged) {
       this.playbackInfo = playbackInfo;
       this.listenerSnapshot = new CopyOnWriteArrayList<>(listeners);
       this.trackSelector = trackSelector;
@@ -766,6 +806,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
       this.timelineChangeReason = timelineChangeReason;
       this.seekProcessed = seekProcessed;
       this.playWhenReady = playWhenReady;
+      this.isPlayingChanged = isPlayingChanged;
       playbackStateChanged = previousPlaybackInfo.playbackState != playbackInfo.playbackState;
       timelineOrManifestChanged =
           previousPlaybackInfo.timeline != playbackInfo.timeline
@@ -804,6 +845,12 @@ import java.util.concurrent.CopyOnWriteArrayList;
         invokeAll(
             listenerSnapshot,
             listener -> listener.onPlayerStateChanged(playWhenReady, playbackInfo.playbackState));
+      }
+      if (isPlayingChanged) {
+        invokeAll(
+            listenerSnapshot,
+            listener ->
+                listener.onIsPlayingChanged(playbackInfo.playbackState == Player.STATE_READY));
       }
       if (seekProcessed) {
         invokeAll(listenerSnapshot, EventListener::onSeekProcessed);

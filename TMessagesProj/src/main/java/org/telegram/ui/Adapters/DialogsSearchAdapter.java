@@ -320,22 +320,15 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
                     int lower_id = (int) did;
                     int high_id = (int) (did >> 32);
                     if (lower_id != 0) {
-                        if (high_id == 1) {
-                            if (dialogsType == 0 && !chatsToLoad.contains(lower_id)) {
-                                chatsToLoad.add(lower_id);
+                        if (lower_id > 0) {
+                            if (dialogsType != 2 && !usersToLoad.contains(lower_id)) {
+                                usersToLoad.add(lower_id);
                                 add = true;
                             }
                         } else {
-                            if (lower_id > 0) {
-                                if (dialogsType != 2 && !usersToLoad.contains(lower_id)) {
-                                    usersToLoad.add(lower_id);
-                                    add = true;
-                                }
-                            } else {
-                                if (!chatsToLoad.contains(-lower_id)) {
-                                    chatsToLoad.add(-lower_id);
-                                    add = true;
-                                }
+                            if (!chatsToLoad.contains(-lower_id)) {
+                                chatsToLoad.add(-lower_id);
+                                add = true;
                             }
                         }
                     } else if (dialogsType == 0 || dialogsType == 3) {
@@ -370,12 +363,7 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
                     MessagesStorage.getInstance(currentAccount).getChatsInternal(TextUtils.join(",", chatsToLoad), chats);
                     for (int a = 0; a < chats.size(); a++) {
                         TLRPC.Chat chat = chats.get(a);
-                        long did;
-                        if (chat.id > 0) {
-                            did = -chat.id;
-                        } else {
-                            did = AndroidUtilities.makeBroadcastId(chat.id);
-                        }
+                        long did = -chat.id;
                         if (chat.migrated_to != null) {
                             RecentSearchObject recentSearchObject = hashMap.get(did);
                             hashMap.remove(did);
@@ -515,28 +503,19 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
                     int lower_id = (int) id;
                     int high_id = (int) (id >> 32);
                     if (lower_id != 0) {
-                        if (high_id == 1) {
+                        if (lower_id > 0) {
+                            if (dialogsType == 4 && lower_id == selfUserId) {
+                                continue;
+                            }
+                            if (dialogsType != 2 && !usersToLoad.contains(lower_id)) {
+                                usersToLoad.add(lower_id);
+                            }
+                        } else {
                             if (dialogsType == 4) {
                                 continue;
                             }
-                            if (dialogsType == 0 && !chatsToLoad.contains(lower_id)) {
-                                chatsToLoad.add(lower_id);
-                            }
-                        } else {
-                            if (lower_id > 0) {
-                                if (dialogsType == 4 && lower_id == selfUserId) {
-                                    continue;
-                                }
-                                if (dialogsType != 2 && !usersToLoad.contains(lower_id)) {
-                                    usersToLoad.add(lower_id);
-                                }
-                            } else {
-                                if (dialogsType == 4) {
-                                    continue;
-                                }
-                                if (!chatsToLoad.contains(-lower_id)) {
-                                    chatsToLoad.add(-lower_id);
-                                }
+                            if (!chatsToLoad.contains(-lower_id)) {
+                                chatsToLoad.add(-lower_id);
                             }
                         }
                     } else if (dialogsType == 0 || dialogsType == 3) {
@@ -547,7 +526,7 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
                 }
                 cursor.dispose();
 
-                if (savedMessages.startsWith(search1)) {
+                if (dialogsType != 4 && savedMessages.startsWith(search1)) {
                     TLRPC.User user = UserConfig.getInstance(currentAccount).getCurrentUser();
                     DialogSearchResult dialogSearchResult = new DialogSearchResult();
                     dialogSearchResult.date = Integer.MAX_VALUE;
@@ -616,12 +595,7 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
                                     TLRPC.Chat chat = TLRPC.Chat.TLdeserialize(data, data.readInt32(false), false);
                                     data.reuse();
                                     if (!(chat == null || chat.deactivated || ChatObject.isChannel(chat) && ChatObject.isNotInChat(chat))) {
-                                        long dialog_id;
-                                        if (chat.id > 0) {
-                                            dialog_id = -chat.id;
-                                        } else {
-                                            dialog_id = AndroidUtilities.makeBroadcastId(chat.id);
-                                        }
+                                        long dialog_id = -chat.id;
                                         DialogSearchResult dialogSearchResult = dialogsResult.get(dialog_id);
                                         dialogSearchResult.name = AndroidUtilities.generateSearchName(chat.title, null, q);
                                         dialogSearchResult.object = chat;
@@ -905,7 +879,7 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
                     if (needMessagesSearch != 2) {
                         searchAdapterHelper.queryServerSearch(query, true, dialogsType != 4, true, dialogsType != 4, 0, dialogsType == 0, 0);
                     }
-                    searchMessagesInternal(query);
+                    searchMessagesInternal(text);
                 });
             }, 300);
         }
@@ -1075,7 +1049,7 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
                     @Override
                     public boolean onInterceptTouchEvent(MotionEvent e) {
                         if (getParent() != null && getParent().getParent() != null) {
-                            getParent().getParent().requestDisallowInterceptTouchEvent(true);
+                            getParent().getParent().requestDisallowInterceptTouchEvent(canScrollHorizontally(-1));
                         }
                         return super.onInterceptTouchEvent(e);
                     }
@@ -1108,7 +1082,7 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
                 innerListView = horizontalListView;
                 break;
             case 6:
-                view = new TextCell(mContext, 16);
+                view = new TextCell(mContext, 16, false);
                 break;
         }
         if (viewType == 5) {
@@ -1282,7 +1256,7 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
                 DialogCell cell = (DialogCell) holder.itemView;
                 cell.useSeparator = (position != getItemCount() - 1);
                 MessageObject messageObject = (MessageObject) getItem(position);
-                cell.setDialog(messageObject.getDialogId(), messageObject, messageObject.messageOwner.date);
+                cell.setDialog(messageObject.getDialogId(), messageObject, messageObject.messageOwner.date, false);
                 break;
             }
             case 4: {

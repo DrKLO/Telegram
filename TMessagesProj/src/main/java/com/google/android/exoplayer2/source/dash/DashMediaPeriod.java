@@ -22,6 +22,7 @@ import android.util.SparseIntArray;
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.Format;
 import com.google.android.exoplayer2.SeekParameters;
+import com.google.android.exoplayer2.offline.StreamKey;
 import com.google.android.exoplayer2.source.CompositeSequenceableLoaderFactory;
 import com.google.android.exoplayer2.source.EmptySampleStream;
 import com.google.android.exoplayer2.source.MediaPeriod;
@@ -55,12 +56,16 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /** A DASH {@link MediaPeriod}. */
 /* package */ final class DashMediaPeriod
     implements MediaPeriod,
         SequenceableLoader.Callback<ChunkSampleStream<DashChunkSource>>,
         ChunkSampleStream.ReleaseCallback<DashChunkSource> {
+
+  private static final Pattern CEA608_SERVICE_DESCRIPTOR_REGEX = Pattern.compile("CC([1-4])=(.+)");
 
   /* package */ final int id;
   private final DashChunkSource.Factory chunkSourceFactory;
@@ -190,6 +195,49 @@ import java.util.List;
   @Override
   public TrackGroupArray getTrackGroups() {
     return trackGroups;
+  }
+
+  @Override
+  public List<StreamKey> getStreamKeys(List<TrackSelection> trackSelections) {
+    List<AdaptationSet> manifestAdaptationSets = manifest.getPeriod(periodIndex).adaptationSets;
+    List<StreamKey> streamKeys = new ArrayList<>();
+    for (TrackSelection trackSelection : trackSelections) {
+      int trackGroupIndex = trackGroups.indexOf(trackSelection.getTrackGroup());
+      TrackGroupInfo trackGroupInfo = trackGroupInfos[trackGroupIndex];
+      if (trackGroupInfo.trackGroupCategory != TrackGroupInfo.CATEGORY_PRIMARY) {
+        // Ignore non-primary tracks.
+        continue;
+      }
+      int[] adaptationSetIndices = trackGroupInfo.adaptationSetIndices;
+      int[] trackIndices = new int[trackSelection.length()];
+      for (int i = 0; i < trackSelection.length(); i++) {
+        trackIndices[i] = trackSelection.getIndexInTrackGroup(i);
+      }
+      Arrays.sort(trackIndices);
+
+      int currentAdaptationSetIndex = 0;
+      int totalTracksInPreviousAdaptationSets = 0;
+      int tracksInCurrentAdaptationSet =
+          manifestAdaptationSets.get(adaptationSetIndices[0]).representations.size();
+      for (int i = 0; i < trackIndices.length; i++) {
+        while (trackIndices[i]
+            >= totalTracksInPreviousAdaptationSets + tracksInCurrentAdaptationSet) {
+          currentAdaptationSetIndex++;
+          totalTracksInPreviousAdaptationSets += tracksInCurrentAdaptationSet;
+          tracksInCurrentAdaptationSet =
+              manifestAdaptationSets
+                  .get(adaptationSetIndices[currentAdaptationSetIndex])
+                  .representations
+                  .size();
+        }
+        streamKeys.add(
+            new StreamKey(
+                periodIndex,
+                adaptationSetIndices[currentAdaptationSetIndex],
+                trackIndices[i] - totalTracksInPreviousAdaptationSets));
+      }
+    }
+    return streamKeys;
   }
 
   @Override
@@ -354,17 +402,27 @@ import java.util.List;
       int[] streamIndexToTrackGroupIndex) {
     // Create newly selected primary and event streams.
     for (int i = 0; i < selections.length; i++) {
-      if (streams[i] == null && selections[i] != null) {
+      TrackSelection selection = selections[i];
+      if (selection == null) {
+        continue;
+      }
+      if (streams[i] == null) {
+        // Create new stream for selection.
         streamResetFlags[i] = true;
         int trackGroupIndex = streamIndexToTrackGroupIndex[i];
         TrackGroupInfo trackGroupInfo = trackGroupInfos[trackGroupIndex];
         if (trackGroupInfo.trackGroupCategory == TrackGroupInfo.CATEGORY_PRIMARY) {
-          streams[i] = buildSampleStream(trackGroupInfo, selections[i], positionUs);
+          streams[i] = buildSampleStream(trackGroupInfo, selection, positionUs);
         } else if (trackGroupInfo.trackGroupCategory == TrackGroupInfo.CATEGORY_MANIFEST_EVENTS) {
           EventStream eventStream = eventStreams.get(trackGroupInfo.eventStreamGroupIndex);
-          Format format = selections[i].getTrackGroup().getFormat(0);
+          Format format = selection.getTrackGroup().getFormat(0);
           streams[i] = new EventSampleStream(eventStream, format, manifest.dynamic);
         }
+      } else if (streams[i] instanceof ChunkSampleStream) {
+        // Update selection in existing stream.
+        @SuppressWarnings("unchecked")
+        ChunkSampleStream<DashChunkSource> stream = (ChunkSampleStream<DashChunkSource>) streams[i];
+        stream.getChunkSource().updateTrackSelection(selection);
       }
     }
     // Create newly selected embedded streams from the corresponding primary stream. Note that this
@@ -413,18 +471,28 @@ import java.util.List;
 
     int primaryGroupCount = groupedAdaptationSetIndices.length;
     boolean[] primaryGroupHasEventMessageTrackFlags = new boolean[primaryGroupCount];
-    boolean[] primaryGroupHasCea608TrackFlags = new boolean[primaryGroupCount];
-    int totalEmbeddedTrackGroupCount = identifyEmbeddedTracks(primaryGroupCount, adaptationSets,
-        groupedAdaptationSetIndices, primaryGroupHasEventMessageTrackFlags,
-        primaryGroupHasCea608TrackFlags);
+    Format[][] primaryGroupCea608TrackFormats = new Format[primaryGroupCount][];
+    int totalEmbeddedTrackGroupCount =
+        identifyEmbeddedTracks(
+            primaryGroupCount,
+            adaptationSets,
+            groupedAdaptationSetIndices,
+            primaryGroupHasEventMessageTrackFlags,
+            primaryGroupCea608TrackFormats);
 
     int totalGroupCount = primaryGroupCount + totalEmbeddedTrackGroupCount + eventStreams.size();
     TrackGroup[] trackGroups = new TrackGroup[totalGroupCount];
     TrackGroupInfo[] trackGroupInfos = new TrackGroupInfo[totalGroupCount];
 
-    int trackGroupCount = buildPrimaryAndEmbeddedTrackGroupInfos(adaptationSets,
-        groupedAdaptationSetIndices, primaryGroupCount, primaryGroupHasEventMessageTrackFlags,
-        primaryGroupHasCea608TrackFlags, trackGroups, trackGroupInfos);
+    int trackGroupCount =
+        buildPrimaryAndEmbeddedTrackGroupInfos(
+            adaptationSets,
+            groupedAdaptationSetIndices,
+            primaryGroupCount,
+            primaryGroupHasEventMessageTrackFlags,
+            primaryGroupCea608TrackFormats,
+            trackGroups,
+            trackGroupInfos);
 
     buildManifestEventTrackGroupInfos(eventStreams, trackGroups, trackGroupInfos, trackGroupCount);
 
@@ -480,39 +548,46 @@ import java.util.List;
 
   /**
    * Iterates through list of primary track groups and identifies embedded tracks.
-   * <p>
+   *
    * @param primaryGroupCount The number of primary track groups.
    * @param adaptationSets The list of {@link AdaptationSet} of the current DASH period.
-   * @param groupedAdaptationSetIndices The indices of {@link AdaptationSet} that belongs to
-   *     the same primary group, grouped in primary track groups order.
-   * @param primaryGroupHasEventMessageTrackFlags An output array containing boolean flag, each
-   *     indicates whether the corresponding primary track group contains an embedded event message
-   *     track.
-   * @param primaryGroupHasCea608TrackFlags An output array containing boolean flag, each
-   *     indicates whether the corresponding primary track group contains an embedded Cea608 track.
-   * @return Total number of embedded tracks.
+   * @param groupedAdaptationSetIndices The indices of {@link AdaptationSet} that belongs to the
+   *     same primary group, grouped in primary track groups order.
+   * @param primaryGroupHasEventMessageTrackFlags An output array to be filled with flags indicating
+   *     whether each of the primary track groups contains an embedded event message track.
+   * @param primaryGroupCea608TrackFormats An output array to be filled with track formats for
+   *     CEA-608 tracks embedded in each of the primary track groups.
+   * @return Total number of embedded track groups.
    */
-  private static int identifyEmbeddedTracks(int primaryGroupCount,
-      List<AdaptationSet> adaptationSets, int[][] groupedAdaptationSetIndices,
-      boolean[] primaryGroupHasEventMessageTrackFlags, boolean[] primaryGroupHasCea608TrackFlags) {
-    int numEmbeddedTrack = 0;
+  private static int identifyEmbeddedTracks(
+      int primaryGroupCount,
+      List<AdaptationSet> adaptationSets,
+      int[][] groupedAdaptationSetIndices,
+      boolean[] primaryGroupHasEventMessageTrackFlags,
+      Format[][] primaryGroupCea608TrackFormats) {
+    int numEmbeddedTrackGroups = 0;
     for (int i = 0; i < primaryGroupCount; i++) {
       if (hasEventMessageTrack(adaptationSets, groupedAdaptationSetIndices[i])) {
         primaryGroupHasEventMessageTrackFlags[i] = true;
-        numEmbeddedTrack++;
+        numEmbeddedTrackGroups++;
       }
-      if (hasCea608Track(adaptationSets, groupedAdaptationSetIndices[i])) {
-        primaryGroupHasCea608TrackFlags[i] = true;
-        numEmbeddedTrack++;
+      primaryGroupCea608TrackFormats[i] =
+          getCea608TrackFormats(adaptationSets, groupedAdaptationSetIndices[i]);
+      if (primaryGroupCea608TrackFormats[i].length != 0) {
+        numEmbeddedTrackGroups++;
       }
     }
-    return numEmbeddedTrack;
+    return numEmbeddedTrackGroups;
   }
 
-  private static int buildPrimaryAndEmbeddedTrackGroupInfos(List<AdaptationSet> adaptationSets,
-      int[][] groupedAdaptationSetIndices, int primaryGroupCount,
-      boolean[] primaryGroupHasEventMessageTrackFlags, boolean[] primaryGroupHasCea608TrackFlags,
-      TrackGroup[] trackGroups, TrackGroupInfo[] trackGroupInfos) {
+  private static int buildPrimaryAndEmbeddedTrackGroupInfos(
+      List<AdaptationSet> adaptationSets,
+      int[][] groupedAdaptationSetIndices,
+      int primaryGroupCount,
+      boolean[] primaryGroupHasEventMessageTrackFlags,
+      Format[][] primaryGroupCea608TrackFormats,
+      TrackGroup[] trackGroups,
+      TrackGroupInfo[] trackGroupInfos) {
     int trackGroupCount = 0;
     for (int i = 0; i < primaryGroupCount; i++) {
       int[] adaptationSetIndices = groupedAdaptationSetIndices[i];
@@ -530,7 +605,7 @@ import java.util.List;
       int eventMessageTrackGroupIndex =
           primaryGroupHasEventMessageTrackFlags[i] ? trackGroupCount++ : C.INDEX_UNSET;
       int cea608TrackGroupIndex =
-          primaryGroupHasCea608TrackFlags[i] ? trackGroupCount++ : C.INDEX_UNSET;
+          primaryGroupCea608TrackFormats[i].length != 0 ? trackGroupCount++ : C.INDEX_UNSET;
 
       trackGroups[primaryTrackGroupIndex] = new TrackGroup(formats);
       trackGroupInfos[primaryTrackGroupIndex] =
@@ -548,9 +623,7 @@ import java.util.List;
             TrackGroupInfo.embeddedEmsgTrack(adaptationSetIndices, primaryTrackGroupIndex);
       }
       if (cea608TrackGroupIndex != C.INDEX_UNSET) {
-        Format format = Format.createTextSampleFormat(firstAdaptationSet.id + ":cea608",
-            MimeTypes.APPLICATION_CEA608, 0, null);
-        trackGroups[cea608TrackGroupIndex] = new TrackGroup(format);
+        trackGroups[cea608TrackGroupIndex] = new TrackGroup(primaryGroupCea608TrackFormats[i]);
         trackGroupInfos[cea608TrackGroupIndex] =
             TrackGroupInfo.embeddedCea608Track(adaptationSetIndices, primaryTrackGroupIndex);
       }
@@ -572,25 +645,39 @@ import java.util.List;
   private ChunkSampleStream<DashChunkSource> buildSampleStream(TrackGroupInfo trackGroupInfo,
       TrackSelection selection, long positionUs) {
     int embeddedTrackCount = 0;
-    int[] embeddedTrackTypes = new int[2];
-    Format[] embeddedTrackFormats = new Format[2];
     boolean enableEventMessageTrack =
         trackGroupInfo.embeddedEventMessageTrackGroupIndex != C.INDEX_UNSET;
+    TrackGroup embeddedEventMessageTrackGroup = null;
     if (enableEventMessageTrack) {
-      embeddedTrackFormats[embeddedTrackCount] =
-          trackGroups.get(trackGroupInfo.embeddedEventMessageTrackGroupIndex).getFormat(0);
-      embeddedTrackTypes[embeddedTrackCount++] = C.TRACK_TYPE_METADATA;
+      embeddedEventMessageTrackGroup =
+          trackGroups.get(trackGroupInfo.embeddedEventMessageTrackGroupIndex);
+      embeddedTrackCount++;
     }
-    boolean enableCea608Track = trackGroupInfo.embeddedCea608TrackGroupIndex != C.INDEX_UNSET;
-    if (enableCea608Track) {
-      embeddedTrackFormats[embeddedTrackCount] =
-          trackGroups.get(trackGroupInfo.embeddedCea608TrackGroupIndex).getFormat(0);
-      embeddedTrackTypes[embeddedTrackCount++] = C.TRACK_TYPE_TEXT;
+    boolean enableCea608Tracks = trackGroupInfo.embeddedCea608TrackGroupIndex != C.INDEX_UNSET;
+    TrackGroup embeddedCea608TrackGroup = null;
+    if (enableCea608Tracks) {
+      embeddedCea608TrackGroup = trackGroups.get(trackGroupInfo.embeddedCea608TrackGroupIndex);
+      embeddedTrackCount += embeddedCea608TrackGroup.length;
     }
-    if (embeddedTrackCount < embeddedTrackTypes.length) {
-      embeddedTrackFormats = Arrays.copyOf(embeddedTrackFormats, embeddedTrackCount);
-      embeddedTrackTypes = Arrays.copyOf(embeddedTrackTypes, embeddedTrackCount);
+
+    Format[] embeddedTrackFormats = new Format[embeddedTrackCount];
+    int[] embeddedTrackTypes = new int[embeddedTrackCount];
+    embeddedTrackCount = 0;
+    if (enableEventMessageTrack) {
+      embeddedTrackFormats[embeddedTrackCount] = embeddedEventMessageTrackGroup.getFormat(0);
+      embeddedTrackTypes[embeddedTrackCount] = C.TRACK_TYPE_METADATA;
+      embeddedTrackCount++;
     }
+    List<Format> embeddedCea608TrackFormats = new ArrayList<>();
+    if (enableCea608Tracks) {
+      for (int i = 0; i < embeddedCea608TrackGroup.length; i++) {
+        embeddedTrackFormats[embeddedTrackCount] = embeddedCea608TrackGroup.getFormat(i);
+        embeddedTrackTypes[embeddedTrackCount] = C.TRACK_TYPE_TEXT;
+        embeddedCea608TrackFormats.add(embeddedTrackFormats[embeddedTrackCount]);
+        embeddedTrackCount++;
+      }
+    }
+
     PlayerTrackEmsgHandler trackPlayerEmsgHandler =
         manifest.dynamic && enableEventMessageTrack
             ? playerEmsgHandler.newPlayerTrackEmsgHandler()
@@ -605,7 +692,7 @@ import java.util.List;
             trackGroupInfo.trackType,
             elapsedRealtimeOffsetMs,
             enableEventMessageTrack,
-            enableCea608Track,
+            embeddedCea608TrackFormats,
             trackPlayerEmsgHandler,
             transferListener);
     ChunkSampleStream<DashChunkSource> stream =
@@ -650,18 +737,60 @@ import java.util.List;
     return false;
   }
 
-  private static boolean hasCea608Track(List<AdaptationSet> adaptationSets,
-      int[] adaptationSetIndices) {
+  private static Format[] getCea608TrackFormats(
+      List<AdaptationSet> adaptationSets, int[] adaptationSetIndices) {
     for (int i : adaptationSetIndices) {
+      AdaptationSet adaptationSet = adaptationSets.get(i);
       List<Descriptor> descriptors = adaptationSets.get(i).accessibilityDescriptors;
       for (int j = 0; j < descriptors.size(); j++) {
         Descriptor descriptor = descriptors.get(j);
         if ("urn:scte:dash:cc:cea-608:2015".equals(descriptor.schemeIdUri)) {
-          return true;
+          String value = descriptor.value;
+          if (value == null) {
+            // There are embedded CEA-608 tracks, but service information is not declared.
+            return new Format[] {buildCea608TrackFormat(adaptationSet.id)};
+          }
+          String[] services = Util.split(value, ";");
+          Format[] formats = new Format[services.length];
+          for (int k = 0; k < services.length; k++) {
+            Matcher matcher = CEA608_SERVICE_DESCRIPTOR_REGEX.matcher(services[k]);
+            if (!matcher.matches()) {
+              // If we can't parse service information for all services, assume a single track.
+              return new Format[] {buildCea608TrackFormat(adaptationSet.id)};
+            }
+            formats[k] =
+                buildCea608TrackFormat(
+                    adaptationSet.id,
+                    /* language= */ matcher.group(2),
+                    /* accessibilityChannel= */ Integer.parseInt(matcher.group(1)));
+          }
+          return formats;
         }
       }
     }
-    return false;
+    return new Format[0];
+  }
+
+  private static Format buildCea608TrackFormat(int adaptationSetId) {
+    return buildCea608TrackFormat(
+        adaptationSetId, /* language= */ null, /* accessibilityChannel= */ Format.NO_VALUE);
+  }
+
+  private static Format buildCea608TrackFormat(
+      int adaptationSetId, String language, int accessibilityChannel) {
+    return Format.createTextSampleFormat(
+        adaptationSetId
+            + ":cea608"
+            + (accessibilityChannel != Format.NO_VALUE ? ":" + accessibilityChannel : ""),
+        MimeTypes.APPLICATION_CEA608,
+        /* codecs= */ null,
+        /* bitrate= */ Format.NO_VALUE,
+        /* selectionFlags= */ 0,
+        language,
+        accessibilityChannel,
+        /* drmInitData= */ null,
+        Format.OFFSET_SAMPLE_RELATIVE,
+        /* initializationData= */ null);
   }
 
   @SuppressWarnings("unchecked")
@@ -697,7 +826,7 @@ import java.util.List;
 
     public final int[] adaptationSetIndices;
     public final int trackType;
-    public @TrackGroupCategory final int trackGroupCategory;
+    @TrackGroupCategory public final int trackGroupCategory;
 
     public final int eventStreamGroupIndex;
     public final int primaryTrackGroupIndex;
@@ -717,7 +846,7 @@ import java.util.List;
           primaryTrackGroupIndex,
           embeddedEventMessageTrackGroupIndex,
           embeddedCea608TrackGroupIndex,
-          -1);
+          /* eventStreamGroupIndex= */ -1);
     }
 
     public static TrackGroupInfo embeddedEmsgTrack(int[] adaptationSetIndices,
@@ -729,7 +858,7 @@ import java.util.List;
           primaryTrackGroupIndex,
           C.INDEX_UNSET,
           C.INDEX_UNSET,
-          -1);
+          /* eventStreamGroupIndex= */ -1);
     }
 
     public static TrackGroupInfo embeddedCea608Track(int[] adaptationSetIndices,
@@ -741,15 +870,15 @@ import java.util.List;
           primaryTrackGroupIndex,
           C.INDEX_UNSET,
           C.INDEX_UNSET,
-          -1);
+          /* eventStreamGroupIndex= */ -1);
     }
 
     public static TrackGroupInfo mpdEventTrack(int eventStreamIndex) {
       return new TrackGroupInfo(
           C.TRACK_TYPE_METADATA,
           CATEGORY_MANIFEST_EVENTS,
-          null,
-          -1,
+          new int[0],
+          /* primaryTrackGroupIndex= */ -1,
           C.INDEX_UNSET,
           C.INDEX_UNSET,
           eventStreamIndex);

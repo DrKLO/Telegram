@@ -16,6 +16,7 @@
 #define OPENSSL_HEADER_CRYPTO_H
 
 #include <openssl/base.h>
+#include <openssl/sha.h>
 
 // Upstream OpenSSL defines |OPENSSL_malloc|, etc., in crypto.h rather than
 // mem.h.
@@ -58,6 +59,14 @@ OPENSSL_EXPORT int CRYPTO_has_asm(void);
 // which case it returns one.
 OPENSSL_EXPORT int FIPS_mode(void);
 
+// BORINGSSL_self_test triggers the FIPS KAT-based self tests. It returns one on
+// success and zero on error. The argument is the integrity hash of the FIPS
+// module and may be used to check and write flag files to suppress duplicate
+// self-tests. If it is all zeros, no flag file will be checked nor written and
+// tests will always be run.
+OPENSSL_EXPORT int BORINGSSL_self_test(
+    const uint8_t module_sha512_hash[SHA512_DIGEST_LENGTH]);
+
 
 // Deprecated functions.
 
@@ -65,17 +74,25 @@ OPENSSL_EXPORT int FIPS_mode(void);
 // “OpenSSL”. node.js requires a version number in this text.
 #define OPENSSL_VERSION_TEXT "OpenSSL 1.1.0 (compatible; BoringSSL)"
 
-#define SSLEAY_VERSION 0
-
-// SSLeay_version is a compatibility function that returns the string
-// "BoringSSL".
-OPENSSL_EXPORT const char *SSLeay_version(int unused);
-
 #define OPENSSL_VERSION 0
+#define OPENSSL_CFLAGS 1
+#define OPENSSL_BUILT_ON 2
+#define OPENSSL_PLATFORM 3
+#define OPENSSL_DIR 4
 
 // OpenSSL_version is a compatibility function that returns the string
-// "BoringSSL".
-OPENSSL_EXPORT const char *OpenSSL_version(int unused);
+// "BoringSSL" if |which| is |OPENSSL_VERSION| and placeholder strings
+// otherwise.
+OPENSSL_EXPORT const char *OpenSSL_version(int which);
+
+#define SSLEAY_VERSION OPENSSL_VERSION
+#define SSLEAY_CFLAGS OPENSSL_CFLAGS
+#define SSLEAY_BUILT_ON OPENSSL_BUILT_ON
+#define SSLEAY_PLATFORM OPENSSL_PLATFORM
+#define SSLEAY_DIR OPENSSL_DIR
+
+// SSLeay_version calls |OpenSSL_version|.
+OPENSSL_EXPORT const char *SSLeay_version(int which);
 
 // SSLeay is a compatibility function that returns OPENSSL_VERSION_NUMBER from
 // base.h.
@@ -87,6 +104,9 @@ OPENSSL_EXPORT unsigned long OpenSSL_version_num(void);
 
 // CRYPTO_malloc_init returns one.
 OPENSSL_EXPORT int CRYPTO_malloc_init(void);
+
+// OPENSSL_malloc_init returns one.
+OPENSSL_EXPORT int OPENSSL_malloc_init(void);
 
 // ENGINE_load_builtin_engines does nothing.
 OPENSSL_EXPORT void ENGINE_load_builtin_engines(void);
@@ -109,6 +129,13 @@ OPENSSL_EXPORT void OPENSSL_load_builtin_modules(void);
 // OPENSSL_init_crypto calls |CRYPTO_library_init| and returns one.
 OPENSSL_EXPORT int OPENSSL_init_crypto(uint64_t opts,
                                        const OPENSSL_INIT_SETTINGS *settings);
+
+// OPENSSL_cleanup does nothing.
+OPENSSL_EXPORT void OPENSSL_cleanup(void);
+
+// FIPS_mode_set returns one if |on| matches whether BoringSSL was built with
+// |BORINGSSL_FIPS| and zero otherwise.
+OPENSSL_EXPORT int FIPS_mode_set(int on);
 
 
 #if defined(__cplusplus)

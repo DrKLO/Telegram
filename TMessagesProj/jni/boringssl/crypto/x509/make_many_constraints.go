@@ -137,10 +137,10 @@ func main() {
 	}{
 		{"many_names1.pem", 513, 513},
 		{"many_names2.pem", 1025, 0},
-		{"many_names3.pem", 0, 1025},
+		{"many_names3.pem", 1, 1025},
 		{"some_names1.pem", 256, 256},
 		{"some_names2.pem", 513, 0},
-		{"some_names3.pem", 0, 513},
+		{"some_names3.pem", 1, 513},
 	}
 	for i, leaf := range leaves {
 		leafTemplate := x509.Certificate{

@@ -300,6 +300,7 @@ public class PasscodeActivity extends BaseFragment implements NotificationCenter
                         SharedConfig.passcodeHash = "";
                         SharedConfig.appLocked = false;
                         SharedConfig.saveConfig();
+                        getMediaDataController().buildShortcuts();
                         int count = listView.getChildCount();
                         for (int a = 0; a < count; a++) {
                             View child = listView.getChildAt(a);
@@ -538,6 +539,7 @@ public class PasscodeActivity extends BaseFragment implements NotificationCenter
             SharedConfig.allowScreenCapture = true;
             SharedConfig.passcodeType = currentPasswordType;
             SharedConfig.saveConfig();
+            getMediaDataController().buildShortcuts();
             finishFragment();
             NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.didSetPasscode);
             passwordEditText.clearFocus();

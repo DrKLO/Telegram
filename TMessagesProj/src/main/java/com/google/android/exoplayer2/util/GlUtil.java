@@ -17,7 +17,6 @@ package com.google.android.exoplayer2.util;
 
 import static android.opengl.GLU.gluErrorString;
 
-import android.annotation.TargetApi;
 import android.opengl.GLES11Ext;
 import android.opengl.GLES20;
 import android.text.TextUtils;
@@ -43,7 +42,7 @@ public final class GlUtil {
     int lastError = GLES20.GL_NO_ERROR;
     int error;
     while ((error = GLES20.glGetError()) != GLES20.GL_NO_ERROR) {
-      Log.e(TAG, "glError " + gluErrorString(lastError));
+      Log.e(TAG, "glError " + gluErrorString(error));
       lastError = error;
     }
     if (ExoPlayerLibraryInfo.GL_ASSERTIONS_ENABLED && lastError != GLES20.GL_NO_ERROR) {
@@ -52,7 +51,7 @@ public final class GlUtil {
   }
 
   /**
-   * Builds a GL shader program from vertex & fragment shader code.
+   * Builds a GL shader program from vertex and fragment shader code.
    *
    * @param vertexCode GLES20 vertex shader program as arrays of strings. Strings are joined by
    *     adding a new line character in between each of them.
@@ -65,7 +64,7 @@ public final class GlUtil {
   }
 
   /**
-   * Builds a GL shader program from vertex & fragment shader code.
+   * Builds a GL shader program from vertex and fragment shader code.
    *
    * @param vertexCode GLES20 vertex shader program.
    * @param fragmentCode GLES20 fragment shader program.
@@ -114,7 +113,6 @@ public final class GlUtil {
    * Creates a GL_TEXTURE_EXTERNAL_OES with default configuration of GL_LINEAR filtering and
    * GL_CLAMP_TO_EDGE wrapping.
    */
-  @TargetApi(15)
   public static int createExternalTexture() {
     int[] texId = new int[1];
     GLES20.glGenTextures(1, IntBuffer.wrap(texId));

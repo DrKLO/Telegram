@@ -75,7 +75,7 @@ static std::string dirname(const std::string &path)
     return std::string(path, 0, len);
 }
 
-bool LottieLoader::load(const std::string &path, std::map<int32_t, int32_t> &colorReplacement)
+bool LottieLoader::load(const std::string &path, std::map<int32_t, int32_t> *colorReplacement)
 {
     mModel = LottieFileCache::instance().find(path);
     if (mModel) return true;
@@ -87,32 +87,40 @@ bool LottieLoader::load(const std::string &path, std::map<int32_t, int32_t> &col
         vCritical << "failed to open file = " << path.c_str();
         return false;
     } else {
-        std::stringstream buf;
-        buf << f.rdbuf();
+        std::string content;
 
-        LottieParser parser(const_cast<char *>(buf.str().data()), dirname(path).c_str(), colorReplacement);
+        std::getline(f, content, '\0') ;
+        f.close();
+
+        if (content.empty()) return false;
+
+        const char *str = content.c_str();
+        LottieParser parser(const_cast<char *>(str), dirname(path).c_str(), colorReplacement);
         if (parser.hasParsingError()) {
-            f.close();
             return false;
         }
         mModel = parser.model();
-        LottieFileCache::instance().add(path, mModel);
 
-        f.close();
+        if (!mModel) return false;
+
+        LottieFileCache::instance().add(path, mModel);
     }
 
     return true;
 }
 
 bool LottieLoader::loadFromData(std::string &&jsonData, const std::string &key,
+                                std::map<int32_t, int32_t> *colorReplacement,
                                 const std::string &resourcePath)
 {
     mModel = LottieFileCache::instance().find(key);
     if (mModel) return true;
 
-    std::map<int32_t, int32_t> colors;
-    LottieParser parser(const_cast<char *>(jsonData.c_str()), resourcePath.c_str(), colors);
+    LottieParser parser(const_cast<char *>(jsonData.c_str()), resourcePath.c_str(), colorReplacement);
     mModel = parser.model();
+
+    if (!mModel) return false;
+
     LottieFileCache::instance().add(key, mModel);
 
     return true;

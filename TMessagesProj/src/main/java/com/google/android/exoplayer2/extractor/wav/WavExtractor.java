@@ -87,12 +87,14 @@ public final class WavExtractor implements Extractor {
     if (!wavHeader.hasDataBounds()) {
       WavHeaderReader.skipToData(input, wavHeader);
       extractorOutput.seekMap(wavHeader);
+    } else if (input.getPosition() == 0) {
+      input.skipFully(wavHeader.getDataStartPosition());
     }
 
-    long dataLimit = wavHeader.getDataLimit();
-    Assertions.checkState(dataLimit != C.POSITION_UNSET);
+    long dataEndPosition = wavHeader.getDataEndPosition();
+    Assertions.checkState(dataEndPosition != C.POSITION_UNSET);
 
-    long bytesLeft = dataLimit - input.getPosition();
+    long bytesLeft = dataEndPosition - input.getPosition();
     if (bytesLeft <= 0) {
       return Extractor.RESULT_END_OF_INPUT;
     }

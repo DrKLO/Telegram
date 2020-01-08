@@ -90,6 +90,18 @@ public class ClippingImageView extends View {
         invalidate();
     }
 
+    public void getClippedVisibleRect(RectF rect) {
+        rect.left = getTranslationX();
+        rect.top = getTranslationY();
+        rect.right = rect.left + getMeasuredWidth() * getScaleX();
+        rect.bottom = rect.top + getMeasuredHeight() * getScaleY();
+
+        rect.left += clipLeft;
+        rect.top += clipTop;
+        rect.right -= clipRight;
+        rect.bottom -= clipBottom;
+    }
+
     public int getClipBottom() {
         return clipBottom;
     }

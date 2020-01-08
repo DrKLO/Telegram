@@ -78,10 +78,25 @@ LOTCompItem::LOTCompItem(LOTModel *model)
     mViewSize = mCompData->size();
 }
 
+static bool isGoodParentLayer(LOTLayerItem *parent, LOTLayerItem *child) {
+    do {
+        if (parent == child) {
+            return false;
+        }
+        parent = parent->resolvedParentLayer();
+    } while (parent);
+    return true;
+}
+
 void LOTCompItem::setValue(const std::string &keypath, LOTVariant &value)
 {
     LOTKeyPath key(keypath);
     mRootLayer->resolveKeyPath(key, 0, value);
+    mCurFrameNo = -1;
+}
+
+void LOTCompItem::resetCurrentFrame()
+{
     mCurFrameNo = -1;
 }
 
@@ -342,9 +357,11 @@ void LOTLayerItem::render(VPainter *painter, const VRle &inheritMask,
 
 LOTLayerMaskItem::LOTLayerMaskItem(LOTLayerData *layerData)
 {
-    mMasks.reserve(layerData->mMasks.size());
+    if (!layerData->mExtra) return;
 
-    for (auto &i : layerData->mMasks) {
+    mMasks.reserve(layerData->mExtra->mMasks.size());
+
+    for (auto &i : layerData->mExtra->mMasks) {
         mMasks.emplace_back(i.get());
         mStatic &= i->isStatic();
     }
@@ -414,9 +431,8 @@ bool LOTLayerItem::resolveKeyPath(LOTKeyPath &keyPath, uint depth,
     }
 
     if (!keyPath.skip(name())) {
-        if (keyPath.fullyResolvesTo(name(), depth) &&
-            transformProp(value.property())) {
-            //@TODO handle propery update.
+        if (keyPath.fullyResolvesTo(name(), depth) && transformProp(value.property())) {
+            mDirtyFlag = DirtyFlagBit::All;
         }
     }
     return true;
@@ -428,7 +444,9 @@ bool LOTShapeLayerItem::resolveKeyPath(LOTKeyPath &keyPath, uint depth,
     if (LOTLayerItem::resolveKeyPath(keyPath, depth, value)) {
         if (keyPath.propagate(name(), depth)) {
             uint newDepth = keyPath.nextDepth(name(), depth);
-            mRoot->resolveKeyPath(keyPath, newDepth, value);
+            if (mRoot->resolveKeyPath(keyPath, newDepth, value)) {
+                mDirtyFlag = DirtyFlagBit::All;
+            }
         }
         return true;
     }
@@ -442,7 +460,9 @@ bool LOTCompLayerItem::resolveKeyPath(LOTKeyPath &keyPath, uint depth,
         if (keyPath.propagate(name(), depth)) {
             uint newDepth = keyPath.nextDepth(name(), depth);
             for (const auto &layer : mLayers) {
-                layer->resolveKeyPath(keyPath, newDepth, value);
+                if (layer->resolveKeyPath(keyPath, newDepth, value)) {
+                    mDirtyFlag = DirtyFlagBit::All;
+                }
             }
         }
         return true;
@@ -527,7 +547,10 @@ LOTCompLayerItem::LOTCompLayerItem(LOTLayerData *layerModel)
             auto search =
                 std::find_if(mLayers.begin(), mLayers.end(),
                              [id](const auto &val) { return val->id() == id; });
-            if (search != mLayers.end()) layer->setParentLayer((*search).get());
+            if (search != mLayers.end() &&
+                isGoodParentLayer((*search).get(), layer.get())) {
+                layer->setParentLayer((*search).get());
+            }
         }
     }
 
@@ -745,7 +768,9 @@ void LOTSolidLayerItem::updateContent()
     if (flag() & DirtyFlagBit::Matrix) {
         VPath path;
         path.addRect(
-            VRectF(0, 0, mLayerData->solidWidth(), mLayerData->solidHeight()));
+                VRectF(0, 0,
+                       mLayerData->layerSize().width(),
+                       mLayerData->layerSize().height()));
         path.transform(combinedMatrix());
         mRenderNode.mFlag |= VDrawable::DirtyState::Path;
         mRenderNode.mPath = path;
@@ -785,16 +810,20 @@ void LOTSolidLayerItem::renderList(std::vector<VDrawable *> &list)
 LOTImageLayerItem::LOTImageLayerItem(LOTLayerData *layerData)
     : LOTLayerItem(layerData)
 {
-    VBrush brush(mLayerData->mAsset->bitmap());
+    if (!mLayerData->asset()) return;
+
+    VBrush brush(mLayerData->asset()->bitmap());
     mRenderNode.setBrush(brush);
 }
 
 void LOTImageLayerItem::updateContent()
 {
+    if (!mLayerData->asset()) return;
+
     if (flag() & DirtyFlagBit::Matrix) {
         VPath path;
-        path.addRect(VRectF(0, 0, mLayerData->mAsset->mWidth,
-                            mLayerData->mAsset->mHeight));
+        path.addRect(VRectF(0, 0, mLayerData->asset()->mWidth,
+                            mLayerData->asset()->mHeight));
         path.transform(combinedMatrix());
         mRenderNode.mFlag |= VDrawable::DirtyState::Path;
         mRenderNode.mPath = path;

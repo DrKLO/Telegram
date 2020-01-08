@@ -83,6 +83,13 @@ int pkcs12_key_gen(const char *pass, size_t pass_len, const uint8_t *salt,
                    size_t salt_len, uint8_t id, unsigned iterations,
                    size_t out_len, uint8_t *out, const EVP_MD *md);
 
+// pkcs12_pbe_encrypt_init configures |ctx| for encrypting with a PBES1 scheme
+// defined in PKCS#12. It writes the corresponding AlgorithmIdentifier to |out|.
+int pkcs12_pbe_encrypt_init(CBB *out, EVP_CIPHER_CTX *ctx, int alg,
+                            unsigned iterations, const char *pass,
+                            size_t pass_len, const uint8_t *salt,
+                            size_t salt_len);
+
 struct pbe_suite {
   int pbe_nid;
   uint8_t oid[10];
@@ -111,6 +118,10 @@ int PKCS5_pbe2_encrypt_init(CBB *out, EVP_CIPHER_CTX *ctx,
                             const EVP_CIPHER *cipher, unsigned iterations,
                             const char *pass, size_t pass_len,
                             const uint8_t *salt, size_t salt_len);
+
+// pkcs12_iterations_acceptable returns one if |iterations| is a reasonable
+// number of PBKDF2 iterations and zero otherwise.
+int pkcs12_iterations_acceptable(uint64_t iterations);
 
 
 #if defined(__cplusplus)

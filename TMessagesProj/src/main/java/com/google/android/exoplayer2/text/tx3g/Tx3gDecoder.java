@@ -65,6 +65,7 @@ public final class Tx3gDecoder extends SimpleSubtitleDecoder {
   private static final float DEFAULT_VERTICAL_PLACEMENT = 0.85f;
 
   private final ParsableByteArray parsableByteArray;
+
   private boolean customVerticalPlacement;
   private int defaultFontFace;
   private int defaultColorRgba;
@@ -80,10 +81,7 @@ public final class Tx3gDecoder extends SimpleSubtitleDecoder {
   public Tx3gDecoder(List<byte[]> initializationData) {
     super("Tx3gDecoder");
     parsableByteArray = new ParsableByteArray();
-    decodeInitializationData(initializationData);
-  }
 
-  private void decodeInitializationData(List<byte[]> initializationData) {
     if (initializationData != null && initializationData.size() == 1
         && (initializationData.get(0).length == 48 || initializationData.get(0).length == 53)) {
       byte[] initializationBytes = initializationData.get(0);
@@ -151,8 +149,16 @@ public final class Tx3gDecoder extends SimpleSubtitleDecoder {
       }
       parsableByteArray.setPosition(position + atomSize);
     }
-    return new Tx3gSubtitle(new Cue(cueText, null, verticalPlacement, Cue.LINE_TYPE_FRACTION,
-        Cue.ANCHOR_TYPE_START, Cue.DIMEN_UNSET, Cue.TYPE_UNSET, Cue.DIMEN_UNSET));
+    return new Tx3gSubtitle(
+        new Cue(
+            cueText,
+            /* textAlignment= */ null,
+            verticalPlacement,
+            Cue.LINE_TYPE_FRACTION,
+            Cue.ANCHOR_TYPE_START,
+            Cue.DIMEN_UNSET,
+            Cue.TYPE_UNSET,
+            Cue.DIMEN_UNSET));
   }
 
   private static String readSubtitleText(ParsableByteArray parsableByteArray)

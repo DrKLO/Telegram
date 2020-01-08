@@ -121,7 +121,7 @@ public class ContainerMediaChunk extends BaseMediaChunk {
         BaseMediaChunkOutput output = getOutput();
         output.setSampleOffsetUs(sampleOffsetUs);
         extractorWrapper.init(
-            output,
+            getTrackOutputProvider(output),
             clippedStartTimeUs == C.TIME_UNSET
                 ? C.TIME_UNSET
                 : (clippedStartTimeUs - sampleOffsetUs),
@@ -144,4 +144,17 @@ public class ContainerMediaChunk extends BaseMediaChunk {
     loadCompleted = true;
   }
 
+  /**
+   * Returns the {@link ChunkExtractorWrapper.TrackOutputProvider} to be used by the wrapped
+   * extractor.
+   *
+   * @param baseMediaChunkOutput The {@link BaseMediaChunkOutput} most recently passed to {@link
+   *     #init(BaseMediaChunkOutput)}.
+   * @return A {@link ChunkExtractorWrapper.TrackOutputProvider} to be used by the wrapped
+   *     extractor.
+   */
+  protected ChunkExtractorWrapper.TrackOutputProvider getTrackOutputProvider(
+      BaseMediaChunkOutput baseMediaChunkOutput) {
+    return baseMediaChunkOutput;
+  }
 }

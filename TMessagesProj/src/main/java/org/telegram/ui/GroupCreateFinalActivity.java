@@ -391,7 +391,7 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
             }
         };
         avatarImage.setRoundRadius(AndroidUtilities.dp(32));
-        avatarDrawable.setInfo(5, null, null, chatType == ChatObject.CHAT_TYPE_BROADCAST);
+        avatarDrawable.setInfo(5, null, null);
         avatarImage.setImageDrawable(avatarDrawable);
         avatarImage.setContentDescription(LocaleController.getString("ChoosePhoto", R.string.ChoosePhoto));
         editTextContainer.addView(avatarImage, LayoutHelper.createFrame(64, 64, Gravity.TOP | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT), LocaleController.isRTL ? 0 : 16, 16, LocaleController.isRTL ? 16 : 0, 16));
@@ -488,7 +488,7 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
                 }
                 LocationActivity fragment = new LocationActivity(LocationActivity.LOCATION_TYPE_GROUP);
                 fragment.setDialogId(0);
-                fragment.setDelegate((location, live) -> {
+                fragment.setDelegate((location, live, notify, scheduleDate) -> {
                     currentGroupCreateLocation.setLatitude(location.geo.lat);
                     currentGroupCreateLocation.setLongitude(location.geo._long);
                     currentGroupCreateAddress = location.address;
@@ -944,7 +944,7 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
                 new ThemeDescription(listView, ThemeDescription.FLAG_TEXTCOLOR, new Class[]{GroupCreateUserCell.class}, new String[]{"textView"}, null, null, null, Theme.key_groupcreate_sectionText),
                 new ThemeDescription(listView, ThemeDescription.FLAG_TEXTCOLOR | ThemeDescription.FLAG_CHECKTAG, new Class[]{GroupCreateUserCell.class}, new String[]{"statusTextView"}, null, null, null, Theme.key_windowBackgroundWhiteBlueText),
                 new ThemeDescription(listView, ThemeDescription.FLAG_TEXTCOLOR | ThemeDescription.FLAG_CHECKTAG, new Class[]{GroupCreateUserCell.class}, new String[]{"statusTextView"}, null, null, null, Theme.key_windowBackgroundWhiteGrayText),
-                new ThemeDescription(listView, 0, new Class[]{GroupCreateUserCell.class}, null, new Drawable[]{Theme.avatar_broadcastDrawable, Theme.avatar_savedDrawable}, cellDelegate, Theme.key_avatar_text),
+                new ThemeDescription(listView, 0, new Class[]{GroupCreateUserCell.class}, null, new Drawable[]{Theme.avatar_savedDrawable}, cellDelegate, Theme.key_avatar_text),
                 new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundRed),
                 new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundOrange),
                 new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundViolet),

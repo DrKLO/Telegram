@@ -76,7 +76,7 @@ public final class Ac3Extractor implements Extractor {
       if (scratch.readUnsignedInt24() != ID3_TAG) {
         break;
       }
-      scratch.skipBytes(3);
+      scratch.skipBytes(3); // version, flags
       int length = scratch.readSynchSafeInt();
       startPosition += 10 + length;
       input.advancePeekPosition(length);

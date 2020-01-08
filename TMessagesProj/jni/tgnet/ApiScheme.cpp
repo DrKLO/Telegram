@@ -339,13 +339,37 @@ void TL_account_registerDevice::serializeToStream(NativeByteBuffer *stream) {
     stream->writeString(token);
 }
 
+TL_restrictionReason *TL_restrictionReason::TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, int32_t instanceNum, bool &error) {
+    if (TL_restrictionReason::constructor != constructor) {
+        error = true;
+        if (LOGS_ENABLED) DEBUG_E("can't parse magic %x in TL_restrictionReason", constructor);
+        return nullptr;
+    }
+    TL_restrictionReason *result = new TL_restrictionReason();
+    result->readParams(stream, instanceNum, error);
+    return result;
+}
+
+void TL_restrictionReason::readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error) {
+    platform = stream->readString(&error);
+    reason = stream->readString(&error);
+    text = stream->readString(&error);
+}
+
+void TL_restrictionReason::serializeToStream(NativeByteBuffer *stream) {
+    stream->writeInt32(constructor);
+    stream->writeString(platform);
+    stream->writeString(reason);
+    stream->writeString(text);
+}
+
 User *User::TLdeserialize(NativeByteBuffer *stream, uint32_t constructor, int32_t instanceNum, bool &error) {
     User *result = nullptr;
     switch (constructor) {
         case 0x200250ba:
             result = new TL_userEmpty();
             break;
-        case 0x2e13f4c3:
+        case 0x938458c1:
             result = new TL_user();
             break;
         default:
@@ -394,7 +418,20 @@ void TL_user::readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &er
         bot_info_version = stream->readInt32(&error);
     }
     if ((flags & 262144) != 0) {
-        restriction_reason = stream->readString(&error);
+        uint32_t magic = stream->readUint32(&error);
+        if (magic != 0x1cb5c415) {
+            error = true;
+            if (LOGS_ENABLED) DEBUG_E("wrong Vector magic, got %x", magic);
+            return;
+        }
+        int32_t count = stream->readInt32(&error);
+        for (int32_t a = 0; a < count; a++) {
+            TL_restrictionReason *object = TL_restrictionReason::TLdeserialize(stream, stream->readUint32(&error), instanceNum, error);
+            if (object == nullptr) {
+                return;
+            }
+            restriction_reason.push_back(std::unique_ptr<TL_restrictionReason>(object));
+        }
     }
     if ((flags & 524288) != 0) {
         bot_inline_placeholder = stream->readString(&error);
@@ -433,7 +470,12 @@ void TL_user::serializeToStream(NativeByteBuffer *stream) {
         stream->writeInt32(bot_info_version);
     }
     if ((flags & 262144) != 0) {
-        stream->writeString(restriction_reason);
+        stream->writeInt32(0x1cb5c415);
+        uint32_t count = (uint32_t) restriction_reason.size();
+        stream->writeInt32(count);
+        for (int a = 0; a < count; a++) {
+            restriction_reason[a]->serializeToStream(stream);
+        }
     }
     if ((flags & 524288) != 0) {
         stream->writeString(bot_inline_placeholder);

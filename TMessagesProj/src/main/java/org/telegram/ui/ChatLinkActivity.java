@@ -445,8 +445,10 @@ public class ChatLinkActivity extends BaseFragment implements NotificationCenter
         }
         if (!ChatObject.isChannel(chat)) {
             MessagesController.getInstance(currentAccount).convertToMegaGroup(getParentActivity(), chat.id, this, param -> {
-                MessagesController.getInstance(currentAccount).toogleChannelInvitesHistory(param, false);
-                linkChat(getMessagesController().getChat(param), createFragment);
+                if (param != 0) {
+                    MessagesController.getInstance(currentAccount).toogleChannelInvitesHistory(param, false);
+                    linkChat(getMessagesController().getChat(param), createFragment);
+                }
             });
             return;
         }
@@ -644,6 +646,9 @@ public class ChatLinkActivity extends BaseFragment implements NotificationCenter
 
         private void updateSearchResults(final ArrayList<TLRPC.Chat> chats, final ArrayList<CharSequence> names) {
             AndroidUtilities.runOnUIThread(() -> {
+                if (!searching) {
+                    return;
+                }
                 searchResult = chats;
                 searchResultNames = names;
                 if (listView.getAdapter() == searchAdapter) {
@@ -856,7 +861,7 @@ public class ChatLinkActivity extends BaseFragment implements NotificationCenter
                 new ThemeDescription(listView, 0, new Class[]{ManageChatUserCell.class}, new String[]{"nameTextView"}, null, null, null, Theme.key_windowBackgroundWhiteBlackText),
                 new ThemeDescription(listView, 0, new Class[]{ManageChatUserCell.class}, new String[]{"statusColor"}, null, null, cellDelegate, Theme.key_windowBackgroundWhiteGrayText),
                 new ThemeDescription(listView, 0, new Class[]{ManageChatUserCell.class}, new String[]{"statusOnlineColor"}, null, null, cellDelegate, Theme.key_windowBackgroundWhiteBlueText),
-                new ThemeDescription(listView, 0, new Class[]{ManageChatUserCell.class}, null, new Drawable[]{Theme.avatar_broadcastDrawable, Theme.avatar_savedDrawable}, null, Theme.key_avatar_text),
+                new ThemeDescription(listView, 0, new Class[]{ManageChatUserCell.class}, null, new Drawable[]{Theme.avatar_savedDrawable}, null, Theme.key_avatar_text),
                 new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundRed),
                 new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundOrange),
                 new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundViolet),

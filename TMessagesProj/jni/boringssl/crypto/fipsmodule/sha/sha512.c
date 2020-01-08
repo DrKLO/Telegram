@@ -60,31 +60,15 @@
 
 #include <openssl/mem.h>
 
+#include "internal.h"
 #include "../../internal.h"
 
 
-// IMPLEMENTATION NOTES.
-//
 // The 32-bit hash algorithms share a common byte-order neutral collector and
 // padding function implementations that operate on unaligned data,
-// ../md32_common.h. This SHA-512 implementation does not. Reasons
-// [in reverse order] are:
-//
-// - It's the only 64-bit hash algorithm for the moment of this writing,
-//   there is no need for common collector/padding implementation [yet];
-// - By supporting only a transform function that operates on *aligned* data
-//   the collector/padding function is simpler and easier to optimize.
-
-#if !defined(OPENSSL_NO_ASM) &&                         \
-    (defined(OPENSSL_X86) || defined(OPENSSL_X86_64) || \
-     defined(OPENSSL_ARM) || defined(OPENSSL_AARCH64))
-#define SHA512_ASM
-#endif
-
-#if defined(OPENSSL_X86) || defined(OPENSSL_X86_64) || \
-    defined(__ARM_FEATURE_UNALIGNED)
-#define SHA512_BLOCK_CAN_MANAGE_UNALIGNED_DATA
-#endif
+// ../digest/md32_common.h. SHA-512 is the only 64-bit hash algorithm, as of
+// this writing, so there is no need for a common collector/padding
+// implementation yet.
 
 int SHA384_Init(SHA512_CTX *sha) {
   sha->h[0] = UINT64_C(0xcbbb9d5dc1059ed8);
@@ -121,7 +105,8 @@ int SHA512_Init(SHA512_CTX *sha) {
   return 1;
 }
 
-uint8_t *SHA384(const uint8_t *data, size_t len, uint8_t *out) {
+uint8_t *SHA384(const uint8_t *data, size_t len,
+                uint8_t out[SHA384_DIGEST_LENGTH]) {
   SHA512_CTX ctx;
   SHA384_Init(&ctx);
   SHA384_Update(&ctx, data, len);
@@ -130,7 +115,8 @@ uint8_t *SHA384(const uint8_t *data, size_t len, uint8_t *out) {
   return out;
 }
 
-uint8_t *SHA512(const uint8_t *data, size_t len, uint8_t *out) {
+uint8_t *SHA512(const uint8_t *data, size_t len,
+                uint8_t out[SHA512_DIGEST_LENGTH]) {
   SHA512_CTX ctx;
   SHA512_Init(&ctx);
   SHA512_Update(&ctx, data, len);
@@ -140,33 +126,29 @@ uint8_t *SHA512(const uint8_t *data, size_t len, uint8_t *out) {
 }
 
 #if !defined(SHA512_ASM)
-static
+static void sha512_block_data_order(uint64_t *state, const uint8_t *in,
+                                    size_t num_blocks);
 #endif
-void sha512_block_data_order(uint64_t *state, const uint64_t *W, size_t num);
 
 
-int SHA384_Final(uint8_t *md, SHA512_CTX *sha) {
-  return SHA512_Final(md, sha);
+int SHA384_Final(uint8_t out[SHA384_DIGEST_LENGTH], SHA512_CTX *sha) {
+  // |SHA384_Init| sets |sha->md_len| to |SHA384_DIGEST_LENGTH|, so this has a
+  // |smaller output.
+  return SHA512_Final(out, sha);
 }
 
 int SHA384_Update(SHA512_CTX *sha, const void *data, size_t len) {
   return SHA512_Update(sha, data, len);
 }
 
-void SHA512_Transform(SHA512_CTX *c, const uint8_t *block) {
-#ifndef SHA512_BLOCK_CAN_MANAGE_UNALIGNED_DATA
-  if ((size_t)block % sizeof(c->u.d[0]) != 0) {
-    OPENSSL_memcpy(c->u.p, block, sizeof(c->u.p));
-    block = c->u.p;
-  }
-#endif
-  sha512_block_data_order(c->h, (uint64_t *)block, 1);
+void SHA512_Transform(SHA512_CTX *c, const uint8_t block[SHA512_CBLOCK]) {
+  sha512_block_data_order(c->h, block, 1);
 }
 
 int SHA512_Update(SHA512_CTX *c, const void *in_data, size_t len) {
   uint64_t l;
-  uint8_t *p = c->u.p;
-  const uint8_t *data = (const uint8_t *)in_data;
+  uint8_t *p = c->p;
+  const uint8_t *data = in_data;
 
   if (len == 0) {
     return 1;
@@ -182,7 +164,7 @@ int SHA512_Update(SHA512_CTX *c, const void *in_data, size_t len) {
   c->Nl = l;
 
   if (c->num != 0) {
-    size_t n = sizeof(c->u) - c->num;
+    size_t n = sizeof(c->p) - c->num;
 
     if (len < n) {
       OPENSSL_memcpy(p + c->num, data, len);
@@ -192,27 +174,15 @@ int SHA512_Update(SHA512_CTX *c, const void *in_data, size_t len) {
       OPENSSL_memcpy(p + c->num, data, n), c->num = 0;
       len -= n;
       data += n;
-      sha512_block_data_order(c->h, (uint64_t *)p, 1);
+      sha512_block_data_order(c->h, p, 1);
     }
   }
 
-  if (len >= sizeof(c->u)) {
-#ifndef SHA512_BLOCK_CAN_MANAGE_UNALIGNED_DATA
-    if ((size_t)data % sizeof(c->u.d[0]) != 0) {
-      while (len >= sizeof(c->u)) {
-        OPENSSL_memcpy(p, data, sizeof(c->u));
-        sha512_block_data_order(c->h, (uint64_t *)p, 1);
-        len -= sizeof(c->u);
-        data += sizeof(c->u);
-      }
-    } else
-#endif
-    {
-      sha512_block_data_order(c->h, (uint64_t *)data, len / sizeof(c->u));
-      data += len;
-      len %= sizeof(c->u);
-      data -= len;
-    }
+  if (len >= sizeof(c->p)) {
+    sha512_block_data_order(c->h, data, len / sizeof(c->p));
+    data += len;
+    len %= sizeof(c->p);
+    data -= len;
   }
 
   if (len != 0) {
@@ -223,39 +193,39 @@ int SHA512_Update(SHA512_CTX *c, const void *in_data, size_t len) {
   return 1;
 }
 
-int SHA512_Final(uint8_t *md, SHA512_CTX *sha) {
-  uint8_t *p = (uint8_t *)sha->u.p;
+int SHA512_Final(uint8_t out[SHA512_DIGEST_LENGTH], SHA512_CTX *sha) {
+  uint8_t *p = sha->p;
   size_t n = sha->num;
 
   p[n] = 0x80;  // There always is a room for one
   n++;
-  if (n > (sizeof(sha->u) - 16)) {
-    OPENSSL_memset(p + n, 0, sizeof(sha->u) - n);
+  if (n > (sizeof(sha->p) - 16)) {
+    OPENSSL_memset(p + n, 0, sizeof(sha->p) - n);
     n = 0;
-    sha512_block_data_order(sha->h, (uint64_t *)p, 1);
+    sha512_block_data_order(sha->h, p, 1);
   }
 
-  OPENSSL_memset(p + n, 0, sizeof(sha->u) - 16 - n);
-  p[sizeof(sha->u) - 1] = (uint8_t)(sha->Nl);
-  p[sizeof(sha->u) - 2] = (uint8_t)(sha->Nl >> 8);
-  p[sizeof(sha->u) - 3] = (uint8_t)(sha->Nl >> 16);
-  p[sizeof(sha->u) - 4] = (uint8_t)(sha->Nl >> 24);
-  p[sizeof(sha->u) - 5] = (uint8_t)(sha->Nl >> 32);
-  p[sizeof(sha->u) - 6] = (uint8_t)(sha->Nl >> 40);
-  p[sizeof(sha->u) - 7] = (uint8_t)(sha->Nl >> 48);
-  p[sizeof(sha->u) - 8] = (uint8_t)(sha->Nl >> 56);
-  p[sizeof(sha->u) - 9] = (uint8_t)(sha->Nh);
-  p[sizeof(sha->u) - 10] = (uint8_t)(sha->Nh >> 8);
-  p[sizeof(sha->u) - 11] = (uint8_t)(sha->Nh >> 16);
-  p[sizeof(sha->u) - 12] = (uint8_t)(sha->Nh >> 24);
-  p[sizeof(sha->u) - 13] = (uint8_t)(sha->Nh >> 32);
-  p[sizeof(sha->u) - 14] = (uint8_t)(sha->Nh >> 40);
-  p[sizeof(sha->u) - 15] = (uint8_t)(sha->Nh >> 48);
-  p[sizeof(sha->u) - 16] = (uint8_t)(sha->Nh >> 56);
+  OPENSSL_memset(p + n, 0, sizeof(sha->p) - 16 - n);
+  p[sizeof(sha->p) - 1] = (uint8_t)(sha->Nl);
+  p[sizeof(sha->p) - 2] = (uint8_t)(sha->Nl >> 8);
+  p[sizeof(sha->p) - 3] = (uint8_t)(sha->Nl >> 16);
+  p[sizeof(sha->p) - 4] = (uint8_t)(sha->Nl >> 24);
+  p[sizeof(sha->p) - 5] = (uint8_t)(sha->Nl >> 32);
+  p[sizeof(sha->p) - 6] = (uint8_t)(sha->Nl >> 40);
+  p[sizeof(sha->p) - 7] = (uint8_t)(sha->Nl >> 48);
+  p[sizeof(sha->p) - 8] = (uint8_t)(sha->Nl >> 56);
+  p[sizeof(sha->p) - 9] = (uint8_t)(sha->Nh);
+  p[sizeof(sha->p) - 10] = (uint8_t)(sha->Nh >> 8);
+  p[sizeof(sha->p) - 11] = (uint8_t)(sha->Nh >> 16);
+  p[sizeof(sha->p) - 12] = (uint8_t)(sha->Nh >> 24);
+  p[sizeof(sha->p) - 13] = (uint8_t)(sha->Nh >> 32);
+  p[sizeof(sha->p) - 14] = (uint8_t)(sha->Nh >> 40);
+  p[sizeof(sha->p) - 15] = (uint8_t)(sha->Nh >> 48);
+  p[sizeof(sha->p) - 16] = (uint8_t)(sha->Nh >> 56);
 
-  sha512_block_data_order(sha->h, (uint64_t *)p, 1);
+  sha512_block_data_order(sha->h, p, 1);
 
-  if (md == NULL) {
+  if (out == NULL) {
     // TODO(davidben): This NULL check is absent in other low-level hash 'final'
     // functions and is one of the few places one can fail.
     return 0;
@@ -267,28 +237,28 @@ int SHA512_Final(uint8_t *md, SHA512_CTX *sha) {
       for (n = 0; n < SHA384_DIGEST_LENGTH / 8; n++) {
         uint64_t t = sha->h[n];
 
-        *(md++) = (uint8_t)(t >> 56);
-        *(md++) = (uint8_t)(t >> 48);
-        *(md++) = (uint8_t)(t >> 40);
-        *(md++) = (uint8_t)(t >> 32);
-        *(md++) = (uint8_t)(t >> 24);
-        *(md++) = (uint8_t)(t >> 16);
-        *(md++) = (uint8_t)(t >> 8);
-        *(md++) = (uint8_t)(t);
+        *(out++) = (uint8_t)(t >> 56);
+        *(out++) = (uint8_t)(t >> 48);
+        *(out++) = (uint8_t)(t >> 40);
+        *(out++) = (uint8_t)(t >> 32);
+        *(out++) = (uint8_t)(t >> 24);
+        *(out++) = (uint8_t)(t >> 16);
+        *(out++) = (uint8_t)(t >> 8);
+        *(out++) = (uint8_t)(t);
       }
       break;
     case SHA512_DIGEST_LENGTH:
       for (n = 0; n < SHA512_DIGEST_LENGTH / 8; n++) {
         uint64_t t = sha->h[n];
 
-        *(md++) = (uint8_t)(t >> 56);
-        *(md++) = (uint8_t)(t >> 48);
-        *(md++) = (uint8_t)(t >> 40);
-        *(md++) = (uint8_t)(t >> 32);
-        *(md++) = (uint8_t)(t >> 24);
-        *(md++) = (uint8_t)(t >> 16);
-        *(md++) = (uint8_t)(t >> 8);
-        *(md++) = (uint8_t)(t);
+        *(out++) = (uint8_t)(t >> 56);
+        *(out++) = (uint8_t)(t >> 48);
+        *(out++) = (uint8_t)(t >> 40);
+        *(out++) = (uint8_t)(t >> 32);
+        *(out++) = (uint8_t)(t >> 24);
+        *(out++) = (uint8_t)(t >> 16);
+        *(out++) = (uint8_t)(t >> 8);
+        *(out++) = (uint8_t)(t);
       }
       break;
     // ... as well as make sure md_len is not abused.
@@ -353,20 +323,6 @@ static const uint64_t K512[80] = {
     __asm__("rorq %1, %0" : "=r"(ret) : "J"(n), "0"(a) : "cc"); \
     ret;                                                        \
   })
-#define PULL64(x)                                \
-  ({                                             \
-    uint64_t ret = *((const uint64_t *)(&(x)));  \
-    __asm__("bswapq %0" : "=r"(ret) : "0"(ret)); \
-    ret;                                         \
-  })
-#elif(defined(__i386) || defined(__i386__))
-#define PULL64(x)                                                             \
-  ({                                                                          \
-    const unsigned int *p = (const unsigned int *)(&(x));                     \
-    unsigned int hi = p[0], lo = p[1];                                        \
-    __asm__("bswapl %0; bswapl %1;" : "=r"(lo), "=r"(hi) : "0"(lo), "1"(hi)); \
-    ((uint64_t)hi) << 32 | lo;                                                \
-  })
 #elif(defined(_ARCH_PPC) && defined(__64BIT__)) || defined(_ARCH_PPC64)
 #define ROTR(a, n)                                             \
   ({                                                           \
@@ -381,46 +337,21 @@ static const uint64_t K512[80] = {
     __asm__("ror %0, %1, %2" : "=r"(ret) : "r"(a), "I"(n)); \
     ret;                                                    \
   })
-#if defined(__BYTE_ORDER__) && defined(__ORDER_LITTLE_ENDIAN__) && \
-    __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
-#define PULL64(x)                                                         \
-  ({                                                                      \
-    uint64_t ret;                                                         \
-    __asm__("rev %0, %1" : "=r"(ret) : "r"(*((const uint64_t *)(&(x))))); \
-    ret;                                                                  \
-  })
 #endif
-#endif
-#elif defined(_MSC_VER)
-#if defined(_WIN64)  // applies to both IA-64 and AMD64
+#elif defined(_MSC_VER) && defined(_WIN64)
 #pragma intrinsic(_rotr64)
 #define ROTR(a, n) _rotr64((a), n)
-#endif
-#if defined(_M_IX86) && !defined(OPENSSL_NO_ASM)
-static uint64_t __fastcall __pull64be(const void *x) {
-  _asm mov edx, [ecx + 0]
-  _asm mov eax, [ecx + 4]
-  _asm bswap edx
-  _asm bswap eax
-}
-#define PULL64(x) __pull64be(&(x))
-#if _MSC_VER <= 1200
-#pragma inline_depth(0)
-#endif
-#endif
-#endif
-
-#ifndef PULL64
-#define B(x, j) \
-  (((uint64_t)(*(((const uint8_t *)(&x)) + j))) << ((7 - j) * 8))
-#define PULL64(x)                                                        \
-  (B(x, 0) | B(x, 1) | B(x, 2) | B(x, 3) | B(x, 4) | B(x, 5) | B(x, 6) | \
-   B(x, 7))
 #endif
 
 #ifndef ROTR
 #define ROTR(x, s) (((x) >> s) | (x) << (64 - s))
 #endif
+
+static inline uint64_t load_u64_be(const void *ptr) {
+  uint64_t ret;
+  OPENSSL_memcpy(&ret, ptr, sizeof(ret));
+  return CRYPTO_bswap8(ret);
+}
 
 #define Sigma0(x) (ROTR((x), 28) ^ ROTR((x), 34) ^ ROTR((x), 39))
 #define Sigma1(x) (ROTR((x), 14) ^ ROTR((x), 18) ^ ROTR((x), 41))
@@ -434,7 +365,7 @@ static uint64_t __fastcall __pull64be(const void *x) {
 #if defined(__i386) || defined(__i386__) || defined(_M_IX86)
 // This code should give better results on 32-bit CPU with less than
 // ~24 registers, both size and performance wise...
-static void sha512_block_data_order(uint64_t *state, const uint64_t *W,
+static void sha512_block_data_order(uint64_t *state, const uint8_t *in,
                                     size_t num) {
   uint64_t A, E, T;
   uint64_t X[9 + 80], *F;
@@ -452,7 +383,7 @@ static void sha512_block_data_order(uint64_t *state, const uint64_t *W,
     F[7] = state[7];
 
     for (i = 0; i < 16; i++, F--) {
-      T = PULL64(W[i]);
+      T = load_u64_be(in + i * 8);
       F[0] = A;
       F[4] = E;
       F[8] = T;
@@ -483,7 +414,7 @@ static void sha512_block_data_order(uint64_t *state, const uint64_t *W,
     state[6] += F[6];
     state[7] += F[7];
 
-    W += 16;
+    in += 16 * 8;
   }
 }
 
@@ -507,7 +438,7 @@ static void sha512_block_data_order(uint64_t *state, const uint64_t *W,
     ROUND_00_15(i + j, a, b, c, d, e, f, g, h);        \
   } while (0)
 
-static void sha512_block_data_order(uint64_t *state, const uint64_t *W,
+static void sha512_block_data_order(uint64_t *state, const uint8_t *in,
                                     size_t num) {
   uint64_t a, b, c, d, e, f, g, h, s0, s1, T1;
   uint64_t X[16];
@@ -524,37 +455,37 @@ static void sha512_block_data_order(uint64_t *state, const uint64_t *W,
     g = state[6];
     h = state[7];
 
-    T1 = X[0] = PULL64(W[0]);
+    T1 = X[0] = load_u64_be(in);
     ROUND_00_15(0, a, b, c, d, e, f, g, h);
-    T1 = X[1] = PULL64(W[1]);
+    T1 = X[1] = load_u64_be(in + 8);
     ROUND_00_15(1, h, a, b, c, d, e, f, g);
-    T1 = X[2] = PULL64(W[2]);
+    T1 = X[2] = load_u64_be(in + 2 * 8);
     ROUND_00_15(2, g, h, a, b, c, d, e, f);
-    T1 = X[3] = PULL64(W[3]);
+    T1 = X[3] = load_u64_be(in + 3 * 8);
     ROUND_00_15(3, f, g, h, a, b, c, d, e);
-    T1 = X[4] = PULL64(W[4]);
+    T1 = X[4] = load_u64_be(in + 4 * 8);
     ROUND_00_15(4, e, f, g, h, a, b, c, d);
-    T1 = X[5] = PULL64(W[5]);
+    T1 = X[5] = load_u64_be(in + 5 * 8);
     ROUND_00_15(5, d, e, f, g, h, a, b, c);
-    T1 = X[6] = PULL64(W[6]);
+    T1 = X[6] = load_u64_be(in + 6 * 8);
     ROUND_00_15(6, c, d, e, f, g, h, a, b);
-    T1 = X[7] = PULL64(W[7]);
+    T1 = X[7] = load_u64_be(in + 7 * 8);
     ROUND_00_15(7, b, c, d, e, f, g, h, a);
-    T1 = X[8] = PULL64(W[8]);
+    T1 = X[8] = load_u64_be(in + 8 * 8);
     ROUND_00_15(8, a, b, c, d, e, f, g, h);
-    T1 = X[9] = PULL64(W[9]);
+    T1 = X[9] = load_u64_be(in + 9 * 8);
     ROUND_00_15(9, h, a, b, c, d, e, f, g);
-    T1 = X[10] = PULL64(W[10]);
+    T1 = X[10] = load_u64_be(in + 10 * 8);
     ROUND_00_15(10, g, h, a, b, c, d, e, f);
-    T1 = X[11] = PULL64(W[11]);
+    T1 = X[11] = load_u64_be(in + 11 * 8);
     ROUND_00_15(11, f, g, h, a, b, c, d, e);
-    T1 = X[12] = PULL64(W[12]);
+    T1 = X[12] = load_u64_be(in + 12 * 8);
     ROUND_00_15(12, e, f, g, h, a, b, c, d);
-    T1 = X[13] = PULL64(W[13]);
+    T1 = X[13] = load_u64_be(in + 13 * 8);
     ROUND_00_15(13, d, e, f, g, h, a, b, c);
-    T1 = X[14] = PULL64(W[14]);
+    T1 = X[14] = load_u64_be(in + 14 * 8);
     ROUND_00_15(14, c, d, e, f, g, h, a, b);
-    T1 = X[15] = PULL64(W[15]);
+    T1 = X[15] = load_u64_be(in + 15 * 8);
     ROUND_00_15(15, b, c, d, e, f, g, h, a);
 
     for (i = 16; i < 80; i += 16) {
@@ -585,7 +516,7 @@ static void sha512_block_data_order(uint64_t *state, const uint64_t *W,
     state[6] += g;
     state[7] += h;
 
-    W += 16;
+    in += 16 * 8;
   }
 }
 
@@ -594,8 +525,6 @@ static void sha512_block_data_order(uint64_t *state, const uint64_t *W,
 #endif  // !SHA512_ASM
 
 #undef ROTR
-#undef PULL64
-#undef B
 #undef Sigma0
 #undef Sigma1
 #undef sigma0
@@ -604,5 +533,3 @@ static void sha512_block_data_order(uint64_t *state, const uint64_t *W,
 #undef Maj
 #undef ROUND_00_15
 #undef ROUND_16_80
-#undef HOST_c2l
-#undef HOST_l2c

@@ -64,24 +64,23 @@ extern "C" {
 #endif
 
 
-// This header file contains some common macros for enforcing type checking.
-// Several, common OpenSSL structures (i.e. stack and lhash) operate on void
-// pointers, but we wish to have type checking when they are used with a
-// specific type.
+#if defined(__cplusplus) || (defined(_MSC_VER) && !defined(__clang__))
+// In C++ and non-clang MSVC, |static_assert| is a keyword.
+#define OPENSSL_STATIC_ASSERT(cond, msg) static_assert(cond, msg)
+#else
+// C11 defines the |_Static_assert| keyword and the |static_assert| macro in
+// assert.h. While the former is available at all versions in Clang and GCC, the
+// later depends on libc and, in glibc, depends on being built in C11 mode. We
+// do not require this, for now, so use |_Static_assert| directly.
+#define OPENSSL_STATIC_ASSERT(cond, msg) _Static_assert(cond, msg)
+#endif
 
 // CHECKED_CAST casts |p| from type |from| to type |to|.
+//
+// TODO(davidben): Although this macro is not public API and is unused in
+// BoringSSL, wpa_supplicant uses it to define its own stacks. Remove this once
+// wpa_supplicant has been fixed.
 #define CHECKED_CAST(to, from, p) ((to) (1 ? (p) : (from)0))
-
-// CHECKED_PTR_OF casts a given pointer to void* and statically checks that it
-// was a pointer to |type|.
-#define CHECKED_PTR_OF(type, p) CHECKED_CAST(void*, type*, (p))
-
-#if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 201112L
-#define OPENSSL_COMPILE_ASSERT(cond, msg) _Static_assert(cond, #msg)
-#else
-#define OPENSSL_COMPILE_ASSERT(cond, msg) \
-  typedef char OPENSSL_COMPILE_ASSERT_##msg[((cond) ? 1 : -1)] OPENSSL_UNUSED
-#endif
 
 
 #if defined(__cplusplus)

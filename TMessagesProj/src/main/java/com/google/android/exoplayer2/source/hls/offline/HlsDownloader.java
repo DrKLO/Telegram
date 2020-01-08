@@ -21,7 +21,6 @@ import com.google.android.exoplayer2.offline.DownloaderConstructorHelper;
 import com.google.android.exoplayer2.offline.SegmentDownloader;
 import com.google.android.exoplayer2.offline.StreamKey;
 import com.google.android.exoplayer2.source.hls.playlist.HlsMasterPlaylist;
-import com.google.android.exoplayer2.source.hls.playlist.HlsMasterPlaylist.HlsUrl;
 import com.google.android.exoplayer2.source.hls.playlist.HlsMediaPlaylist;
 import com.google.android.exoplayer2.source.hls.playlist.HlsPlaylist;
 import com.google.android.exoplayer2.source.hls.playlist.HlsPlaylistParser;
@@ -40,7 +39,7 @@ import java.util.List;
  * <p>Example usage:
  *
  * <pre>{@code
- * SimpleCache cache = new SimpleCache(downloadFolder, new NoOpCacheEvictor());
+ * SimpleCache cache = new SimpleCache(downloadFolder, new NoOpCacheEvictor(), databaseProvider);
  * DefaultHttpDataSourceFactory factory = new DefaultHttpDataSourceFactory("ExoPlayer", null);
  * DownloaderConstructorHelper constructorHelper =
  *     new DownloaderConstructorHelper(cache, factory);
@@ -51,7 +50,7 @@ import java.util.List;
  *         Collections.singletonList(new StreamKey(HlsMasterPlaylist.GROUP_INDEX_VARIANT, 0)),
  *         constructorHelper);
  * // Perform the download.
- * hlsDownloader.download();
+ * hlsDownloader.download(progressListener);
  * // Access downloaded data using CacheDataSource
  * CacheDataSource cacheDataSource =
  *     new CacheDataSource(cache, factory.createDataSource(), CacheDataSource.FLAG_BLOCK_ON_CACHE);
@@ -78,16 +77,13 @@ public final class HlsDownloader extends SegmentDownloader<HlsPlaylist> {
   @Override
   protected List<Segment> getSegments(
       DataSource dataSource, HlsPlaylist playlist, boolean allowIncompleteList) throws IOException {
-    String baseUri = playlist.baseUri;
-
     ArrayList<DataSpec> mediaPlaylistDataSpecs = new ArrayList<>();
     if (playlist instanceof HlsMasterPlaylist) {
       HlsMasterPlaylist masterPlaylist = (HlsMasterPlaylist) playlist;
-      addMediaPlaylistDataSpecs(baseUri, masterPlaylist.variants, mediaPlaylistDataSpecs);
-      addMediaPlaylistDataSpecs(baseUri, masterPlaylist.audios, mediaPlaylistDataSpecs);
-      addMediaPlaylistDataSpecs(baseUri, masterPlaylist.subtitles, mediaPlaylistDataSpecs);
+      addMediaPlaylistDataSpecs(masterPlaylist.mediaPlaylistUrls, mediaPlaylistDataSpecs);
     } else {
-      mediaPlaylistDataSpecs.add(SegmentDownloader.getCompressibleDataSpec(Uri.parse(baseUri)));
+      mediaPlaylistDataSpecs.add(
+          SegmentDownloader.getCompressibleDataSpec(Uri.parse(playlist.baseUri)));
     }
 
     ArrayList<Segment> segments = new ArrayList<>();
@@ -119,10 +115,9 @@ public final class HlsDownloader extends SegmentDownloader<HlsPlaylist> {
     return segments;
   }
 
-  private void addMediaPlaylistDataSpecs(String baseUri, List<HlsUrl> urls, List<DataSpec> out) {
-    for (int i = 0; i < urls.size(); i++) {
-      Uri playlistUri = UriUtil.resolveToUri(baseUri, urls.get(i).url);
-      out.add(SegmentDownloader.getCompressibleDataSpec(playlistUri));
+  private void addMediaPlaylistDataSpecs(List<Uri> mediaPlaylistUrls, List<DataSpec> out) {
+    for (int i = 0; i < mediaPlaylistUrls.size(); i++) {
+      out.add(SegmentDownloader.getCompressibleDataSpec(mediaPlaylistUrls.get(i)));
     }
   }
 

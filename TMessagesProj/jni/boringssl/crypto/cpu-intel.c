@@ -54,10 +54,6 @@
  * copied and put under another distribution licence
  * [including the GNU Public Licence.] */
 
-#if !defined(__STDC_FORMAT_MACROS)
-#define __STDC_FORMAT_MACROS
-#endif
-
 #include <openssl/cpu.h>
 
 
@@ -156,49 +152,42 @@ void OPENSSL_cpuid_setup(void) {
                edx == 0x69746e65 /* enti */ &&
                ecx == 0x444d4163 /* cAMD */;
 
-  int has_amd_xop = 0;
-  if (is_amd) {
-    // AMD-specific logic.
-    // See http://developer.amd.com/wordpress/media/2012/10/254811.pdf
-    OPENSSL_cpuid(&eax, &ebx, &ecx, &edx, 0x80000000);
-    uint32_t num_extended_ids = eax;
-    if (num_extended_ids >= 0x80000001) {
-      OPENSSL_cpuid(&eax, &ebx, &ecx, &edx, 0x80000001);
-      if (ecx & (1u << 11)) {
-        has_amd_xop = 1;
-      }
-    }
-  }
-
-  uint32_t extended_features = 0;
+  uint32_t extended_features[2] = {0};
   if (num_ids >= 7) {
     OPENSSL_cpuid(&eax, &ebx, &ecx, &edx, 7);
-    extended_features = ebx;
-  }
-
-  // Determine the number of cores sharing an L1 data cache to adjust the
-  // hyper-threading bit.
-  uint32_t cores_per_cache = 0;
-  if (is_amd) {
-    // AMD CPUs never share an L1 data cache between threads but do set the HTT
-    // bit on multi-core CPUs.
-    cores_per_cache = 1;
-  } else if (num_ids >= 4) {
-    // TODO(davidben): The Intel manual says this CPUID leaf enumerates all
-    // caches using ECX and doesn't say which is first. Does this matter?
-    OPENSSL_cpuid(&eax, &ebx, &ecx, &edx, 4);
-    cores_per_cache = 1 + ((eax >> 14) & 0xfff);
+    extended_features[0] = ebx;
+    extended_features[1] = ecx;
   }
 
   OPENSSL_cpuid(&eax, &ebx, &ecx, &edx, 1);
 
-  // Adjust the hyper-threading bit.
-  if (edx & (1u << 28)) {
-    uint32_t num_logical_cores = (ebx >> 16) & 0xff;
-    if (cores_per_cache == 1 || num_logical_cores <= 1) {
-      edx &= ~(1u << 28);
+  if (is_amd) {
+    // See https://www.amd.com/system/files/TechDocs/25481.pdf, page 10.
+    const uint32_t base_family = (eax >> 8) & 15;
+    const uint32_t base_model = (eax >> 4) & 15;
+
+    uint32_t family = base_family;
+    uint32_t model = base_model;
+    if (base_family == 0xf) {
+      const uint32_t ext_family = (eax >> 20) & 255;
+      family += ext_family;
+      const uint32_t ext_model = (eax >> 16) & 15;
+      model |= ext_model << 4;
+    }
+
+    if (family < 0x17 || (family == 0x17 && 0x70 <= model && model <= 0x7f)) {
+      // Disable RDRAND on AMD families before 0x17 (Zen) due to reported
+      // failures after suspend.
+      // https://bugzilla.redhat.com/show_bug.cgi?id=1150286
+      // Also disable for family 0x17, models 0x70–0x7f, due to possible RDRAND
+      // failures there too.
+      ecx &= ~(1u << 30);
     }
   }
+
+  // Force the hyper-threading bit so that the more conservative path is always
+  // chosen.
+  edx |= 1u << 28;
 
   // Reserved bit #20 was historically repurposed to control the in-memory
   // representation of RC4 state. Always set it to zero.
@@ -219,12 +208,9 @@ void OPENSSL_cpuid_setup(void) {
     edx &= ~(1u << 30);
   }
 
-  // The SDBG bit is repurposed to denote AMD XOP support.
-  if (has_amd_xop) {
-    ecx |= (1u << 11);
-  } else {
-    ecx &= ~(1u << 11);
-  }
+  // The SDBG bit is repurposed to denote AMD XOP support. Don't ever use AMD
+  // XOP code paths.
+  ecx &= ~(1u << 11);
 
   uint64_t xcr0 = 0;
   if (ecx & (1u << 27)) {
@@ -241,26 +227,26 @@ void OPENSSL_cpuid_setup(void) {
     //
     // TODO(davidben): Should bits 17 and 26-28 also be cleared? Upstream
     // doesn't clear those.
-    extended_features &=
+    extended_features[0] &=
         ~((1u << 5) | (1u << 16) | (1u << 21) | (1u << 30) | (1u << 31));
   }
   // See Intel manual, volume 1, section 15.2.
   if ((xcr0 & 0xe6) != 0xe6) {
     // Clear AVX512F. Note we don't touch other AVX512 extensions because they
     // can be used with YMM.
-    extended_features &= ~(1u << 16);
+    extended_features[0] &= ~(1u << 16);
   }
 
   // Disable ADX instructions on Knights Landing. See OpenSSL commit
   // 64d92d74985ebb3d0be58a9718f9e080a14a8e7f.
   if ((ecx & (1u << 26)) == 0) {
-    extended_features &= ~(1u << 19);
+    extended_features[0] &= ~(1u << 19);
   }
 
   OPENSSL_ia32cap_P[0] = edx;
   OPENSSL_ia32cap_P[1] = ecx;
-  OPENSSL_ia32cap_P[2] = extended_features;
-  OPENSSL_ia32cap_P[3] = 0;
+  OPENSSL_ia32cap_P[2] = extended_features[0];
+  OPENSSL_ia32cap_P[3] = extended_features[1];
 
   const char *env1, *env2;
   env1 = getenv("OPENSSL_ia32cap");

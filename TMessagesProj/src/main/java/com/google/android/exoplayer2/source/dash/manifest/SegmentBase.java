@@ -277,6 +277,7 @@ public abstract class SegmentBase {
 
     /* package */ final UrlTemplate initializationTemplate;
     /* package */ final UrlTemplate mediaTemplate;
+    /* package */ final long endNumber;
 
     /**
      * @param initialization A {@link RangedUri} corresponding to initialization data, if such data
@@ -286,6 +287,9 @@ public abstract class SegmentBase {
      * @param presentationTimeOffset The presentation time offset. The value in seconds is the
      *     division of this value and {@code timescale}.
      * @param startNumber The sequence number of the first segment.
+     * @param endNumber The sequence number of the last segment as specified by the
+     *     SupplementalProperty with schemeIdUri="http://dashif.org/guidelines/last-segment-number",
+     *     or {@link C#INDEX_UNSET}.
      * @param duration The duration of each segment in the case of fixed duration segments. The
      *     value in seconds is the division of this value and {@code timescale}. If {@code
      *     segmentTimeline} is non-null then this parameter is ignored.
@@ -302,14 +306,21 @@ public abstract class SegmentBase {
         long timescale,
         long presentationTimeOffset,
         long startNumber,
+        long endNumber,
         long duration,
         List<SegmentTimelineElement> segmentTimeline,
         UrlTemplate initializationTemplate,
         UrlTemplate mediaTemplate) {
-      super(initialization, timescale, presentationTimeOffset, startNumber,
-          duration, segmentTimeline);
+      super(
+          initialization,
+          timescale,
+          presentationTimeOffset,
+          startNumber,
+          duration,
+          segmentTimeline);
       this.initializationTemplate = initializationTemplate;
       this.mediaTemplate = mediaTemplate;
+      this.endNumber = endNumber;
     }
 
     @Override
@@ -340,6 +351,8 @@ public abstract class SegmentBase {
     public int getSegmentCount(long periodDurationUs) {
       if (segmentTimeline != null) {
         return segmentTimeline.size();
+      } else if (endNumber != C.INDEX_UNSET) {
+        return (int) (endNumber - startNumber + 1);
       } else if (periodDurationUs != C.TIME_UNSET) {
         long durationUs = (duration * C.MICROS_PER_SECOND) / timescale;
         return (int) Util.ceilDivide(periodDurationUs, durationUs);
@@ -347,7 +360,6 @@ public abstract class SegmentBase {
         return DashSegmentIndex.INDEX_UNBOUNDED;
       }
     }
-
   }
 
   /**

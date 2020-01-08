@@ -53,6 +53,8 @@ public class PipVideoView {
     private int videoWidth;
     private int videoHeight;
 
+    private boolean isInAppOnly;
+
     private WindowManager.LayoutParams windowLayoutParams;
     private WindowManager windowManager;
     private SharedPreferences preferences;
@@ -133,7 +135,7 @@ public class PipVideoView {
                 });
             }
 
-            setOnTouchListener((v, event) -> true);
+            //setOnTouchListener((v, event) -> true);
             updatePlayButton();
             show(false, false);
         }
@@ -232,6 +234,14 @@ public class PipVideoView {
         }
 
         @Override
+        public boolean onTouchEvent(MotionEvent event) {
+            if (currentAnimation != null) {
+                return true;
+            }
+            return super.onTouchEvent(event);
+        }
+
+        @Override
         public void requestDisallowInterceptTouchEvent(boolean disallowIntercept) {
             super.requestDisallowInterceptTouchEvent(disallowIntercept);
             checkNeedHide();
@@ -257,6 +267,10 @@ public class PipVideoView {
             }
             canvas.drawRect(progressLineX, progressLineY, progressX, progressLineY + AndroidUtilities.dp(3), progressPaint);
         }
+    }
+
+    public PipVideoView(boolean inAppOnly) {
+        isInAppOnly = inAppOnly;
     }
 
     public TextureView show(Activity activity, EmbedBottomSheet sheet, View controls, float aspectRatio, int rotation, WebView webview) {
@@ -301,11 +315,6 @@ public class PipVideoView {
             }
 
             @Override
-            public void requestDisallowInterceptTouchEvent(boolean disallowIntercept) {
-                super.requestDisallowInterceptTouchEvent(disallowIntercept);
-            }
-
-            @Override
             public boolean onTouchEvent(MotionEvent event) {
                 if (!dragging) {
                     return false;
@@ -345,7 +354,7 @@ public class PipVideoView {
                     dragging = false;
                     animateToBoundsMaybe();
                 }
-                return true;
+                return super.onTouchEvent(event);
             }
         };
 
@@ -381,7 +390,11 @@ public class PipVideoView {
         }
         windowView.addView(controlsView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
 
-        windowManager = (WindowManager) ApplicationLoader.applicationContext.getSystemService(Context.WINDOW_SERVICE);
+        if (isInAppOnly) {
+            windowManager = activity.getWindowManager();
+        } else {
+            windowManager = (WindowManager) ApplicationLoader.applicationContext.getSystemService(Context.WINDOW_SERVICE);
+        }
 
         preferences = ApplicationLoader.applicationContext.getSharedPreferences("pipconfig", Context.MODE_PRIVATE);
 
@@ -398,10 +411,14 @@ public class PipVideoView {
             windowLayoutParams.y = getSideCoord(false, sidey, py, videoHeight);
             windowLayoutParams.format = PixelFormat.TRANSLUCENT;
             windowLayoutParams.gravity = Gravity.TOP | Gravity.LEFT;
-            if (Build.VERSION.SDK_INT >= 26) {
-                windowLayoutParams.type = WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY;
+            if (isInAppOnly) {
+                windowLayoutParams.type = WindowManager.LayoutParams.LAST_APPLICATION_WINDOW;
             } else {
-                windowLayoutParams.type = WindowManager.LayoutParams.TYPE_SYSTEM_ALERT;
+                if (Build.VERSION.SDK_INT >= 26) {
+                    windowLayoutParams.type = WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY;
+                } else {
+                    windowLayoutParams.type = WindowManager.LayoutParams.TYPE_SYSTEM_ALERT;
+                }
             }
             windowLayoutParams.flags = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE | WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED | WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS;
             windowManager.addView(windowView, windowLayoutParams);

@@ -781,6 +781,8 @@ void ERR_load_BIO_strings(void) {}
 
 void ERR_load_ERR_strings(void) {}
 
+void ERR_load_RAND_strings(void) {}
+
 struct err_save_state_st {
   struct err_error_st *errors;
   size_t num_errors;

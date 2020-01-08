@@ -142,9 +142,11 @@ extern "C" {
 // BN_ULONG is the native word size when working with big integers.
 //
 // Note: on some platforms, inttypes.h does not define print format macros in
-// C++ unless |__STDC_FORMAT_MACROS| defined. As this is a public header, bn.h
-// does not define |__STDC_FORMAT_MACROS| itself. C++ source files which use the
-// FMT macros must define it externally.
+// C++ unless |__STDC_FORMAT_MACROS| defined. This is due to text in C99 which
+// was never adopted in any C++ standard and explicitly overruled in C++11. As
+// this is a public header, bn.h does not define |__STDC_FORMAT_MACROS| itself.
+// Projects which use |BN_*_FMT*| with outdated C headers may need to define it
+// externally.
 #if defined(OPENSSL_64_BIT)
 #define BN_ULONG uint64_t
 #define BN_BITS2 64
@@ -158,7 +160,7 @@ extern "C" {
 #define BN_DEC_FMT1 "%" PRIu32
 #define BN_DEC_FMT2 "%09" PRIu32
 #define BN_HEX_FMT1 "%" PRIx32
-#define BN_HEX_FMT2 "%08" PRIx64
+#define BN_HEX_FMT2 "%08" PRIx32
 #else
 #error "Must define either OPENSSL_32_BIT or OPENSSL_64_BIT"
 #endif
@@ -237,7 +239,8 @@ OPENSSL_EXPORT BIGNUM *BN_bin2bn(const uint8_t *in, size_t len, BIGNUM *ret);
 
 // BN_bn2bin serialises the absolute value of |in| to |out| as a big-endian
 // integer, which must have |BN_num_bytes| of space available. It returns the
-// number of bytes written.
+// number of bytes written. Note this function leaks the magnitude of |in|. If
+// |in| is secret, use |BN_bn2bin_padded| instead.
 OPENSSL_EXPORT size_t BN_bn2bin(const BIGNUM *in, uint8_t *out);
 
 // BN_le2bn sets |*ret| to the value of |len| bytes from |in|, interpreted as
@@ -459,6 +462,7 @@ OPENSSL_EXPORT int BN_is_odd(const BIGNUM *bn);
 // BN_is_pow2 returns 1 if |a| is a power of two, and 0 otherwise.
 OPENSSL_EXPORT int BN_is_pow2(const BIGNUM *a);
 
+
 // Bitwise operations.
 
 // BN_lshift sets |r| equal to |a| << n. The |a| and |r| arguments may be the
@@ -492,8 +496,18 @@ OPENSSL_EXPORT int BN_clear_bit(BIGNUM *a, int n);
 OPENSSL_EXPORT int BN_is_bit_set(const BIGNUM *a, int n);
 
 // BN_mask_bits truncates |a| so that it is only |n| bits long. It returns one
-// on success or zero if |n| is greater than the length of |a| already.
+// on success or zero if |n| is negative.
+//
+// This differs from OpenSSL which additionally returns zero if |a|'s word
+// length is less than or equal to |n|, rounded down to a number of words. Note
+// word size is platform-dependent, so this behavior is also difficult to rely
+// on in OpenSSL and not very useful.
 OPENSSL_EXPORT int BN_mask_bits(BIGNUM *a, int n);
+
+// BN_count_low_zero_bits returns the number of low-order zero bits in |bn|, or
+// the number of factors of two which divide it. It returns zero if |bn| is
+// zero.
+OPENSSL_EXPORT int BN_count_low_zero_bits(const BIGNUM *bn);
 
 
 // Modulo arithmetic.
@@ -618,9 +632,12 @@ OPENSSL_EXPORT int BN_rand_range_ex(BIGNUM *r, BN_ULONG min_inclusive,
 // BN_pseudo_rand_range is an alias for BN_rand_range.
 OPENSSL_EXPORT int BN_pseudo_rand_range(BIGNUM *rnd, const BIGNUM *range);
 
-// BN_GENCB holds a callback function that is used by generation functions that
-// can take a very long time to complete. Use |BN_GENCB_set| to initialise a
-// |BN_GENCB| structure.
+#define BN_GENCB_GENERATED 0
+#define BN_GENCB_PRIME_TEST 1
+
+// bn_gencb_st, or |BN_GENCB|, holds a callback function that is used by
+// generation functions that can take a very long time to complete. Use
+// |BN_GENCB_set| to initialise a |BN_GENCB| structure.
 //
 // The callback receives the address of that |BN_GENCB| structure as its last
 // argument and the user is free to put an arbitrary pointer in |arg|. The other
@@ -636,9 +653,6 @@ OPENSSL_EXPORT int BN_pseudo_rand_range(BIGNUM *rnd, const BIGNUM *range);
 //
 // When other code needs to call a BN generation function it will often take a
 // BN_GENCB argument and may call the function with other argument values.
-#define BN_GENCB_GENERATED 0
-#define BN_GENCB_PRIME_TEST 1
-
 struct bn_gencb_st {
   void *arg;        // callback-specific data
   int (*callback)(int event, int n, struct bn_gencb_st *);
@@ -647,8 +661,7 @@ struct bn_gencb_st {
 // BN_GENCB_set configures |callback| to call |f| and sets |callout->arg| to
 // |arg|.
 OPENSSL_EXPORT void BN_GENCB_set(BN_GENCB *callback,
-                                 int (*f)(int event, int n,
-                                          struct bn_gencb_st *),
+                                 int (*f)(int event, int n, BN_GENCB *),
                                  void *arg);
 
 // BN_GENCB_call calls |callback|, if not NULL, and returns the return value of
@@ -689,12 +702,15 @@ enum bn_primality_result_t {
 // Miller-Rabin tests primality for odd integers greater than 3, returning
 // |bn_probably_prime| if the number is probably prime,
 // |bn_non_prime_power_composite| if the number is a composite that is not the
-// power of a single prime, and |bn_composite| otherwise.  If |iterations| is
-// |BN_prime_checks|, then a value that results in a false positive rate lower
-// than the number-field sieve security level of |w| is used. It returns one on
+// power of a single prime, and |bn_composite| otherwise. It returns one on
 // success and zero on failure. If |cb| is not NULL, then it is called during
 // each iteration of the primality test.
-int BN_enhanced_miller_rabin_primality_test(
+//
+// If |iterations| is |BN_prime_checks|, then a value that results in a false
+// positive rate lower than the number-field sieve security level of |w| is
+// used, provided |w| was generated randomly. |BN_prime_checks| is not suitable
+// for inputs potentially crafted by an adversary.
+OPENSSL_EXPORT int BN_enhanced_miller_rabin_primality_test(
     enum bn_primality_result_t *out_result, const BIGNUM *w, int iterations,
     BN_CTX *ctx, BN_GENCB *cb);
 
@@ -706,13 +722,14 @@ int BN_enhanced_miller_rabin_primality_test(
 // list of small primes before Miller-Rabin tests. The probability of this
 // function returning a false positive is 2^{2*checks}. If |checks| is
 // |BN_prime_checks| then a value that results in a false positive rate lower
-// than the number-field sieve security level of |candidate| is used. If |cb| is
-// not NULL then it is called during the checking process. See the comment above
-// |BN_GENCB|.
+// than the number-field sieve security level of |candidate| is used, provided
+// |candidate| was generated randomly. |BN_prime_checks| is not suitable for
+// inputs potentially crafted by an adversary.
+//
+// If |cb| is not NULL then it is called during the checking process. See the
+// comment above |BN_GENCB|.
 //
 // The function returns one on success and zero on error.
-//
-// (If you are unsure whether you want |do_trial_division|, don't set it.)
 OPENSSL_EXPORT int BN_primality_test(int *is_probably_prime,
                                      const BIGNUM *candidate, int checks,
                                      BN_CTX *ctx, int do_trial_division,
@@ -725,7 +742,10 @@ OPENSSL_EXPORT int BN_primality_test(int *is_probably_prime,
 // list of small primes before Miller-Rabin tests. The probability of this
 // function returning one when |candidate| is composite is 2^{2*checks}. If
 // |checks| is |BN_prime_checks| then a value that results in a false positive
-// rate lower than the number-field sieve security level of |candidate| is used.
+// rate lower than the number-field sieve security level of |candidate| is used,
+// provided |candidate| was generated randomly. |BN_prime_checks| is not
+// suitable for inputs potentially crafted by an adversary.
+//
 // If |cb| is not NULL then it is called during the checking process. See the
 // comment above |BN_GENCB|.
 //
@@ -767,6 +787,10 @@ OPENSSL_EXPORT BIGNUM *BN_mod_inverse(BIGNUM *out, const BIGNUM *a,
 // value) to protect it against side-channel attacks. On failure, if the failure
 // was caused by |a| having no inverse mod |n| then |*out_no_inverse| will be
 // set to one; otherwise it will be set to zero.
+//
+// Note this function may incorrectly report |a| has no inverse if the random
+// blinding value has no inverse. It should only be used when |n| has few
+// non-invertible elements, such as an RSA modulus.
 int BN_mod_inverse_blinded(BIGNUM *out, int *out_no_inverse, const BIGNUM *a,
                            const BN_MONT_CTX *mont, BN_CTX *ctx);
 
@@ -788,8 +812,15 @@ int BN_mod_inverse_odd(BIGNUM *out, int *out_no_inverse, const BIGNUM *a,
 // BN_MONT_CTX contains the precomputed values needed to work in a specific
 // Montgomery domain.
 
-// BN_MONT_CTX_new returns a fresh BN_MONT_CTX or NULL on allocation failure.
-OPENSSL_EXPORT BN_MONT_CTX *BN_MONT_CTX_new(void);
+// BN_MONT_CTX_new_for_modulus returns a fresh |BN_MONT_CTX| given the modulus,
+// |mod| or NULL on error. Note this function assumes |mod| is public.
+OPENSSL_EXPORT BN_MONT_CTX *BN_MONT_CTX_new_for_modulus(const BIGNUM *mod,
+                                                        BN_CTX *ctx);
+
+// BN_MONT_CTX_new_consttime behaves like |BN_MONT_CTX_new_for_modulus| but
+// treats |mod| as secret.
+OPENSSL_EXPORT BN_MONT_CTX *BN_MONT_CTX_new_consttime(const BIGNUM *mod,
+                                                      BN_CTX *ctx);
 
 // BN_MONT_CTX_free frees memory associated with |mont|.
 OPENSSL_EXPORT void BN_MONT_CTX_free(BN_MONT_CTX *mont);
@@ -799,14 +830,10 @@ OPENSSL_EXPORT void BN_MONT_CTX_free(BN_MONT_CTX *mont);
 OPENSSL_EXPORT BN_MONT_CTX *BN_MONT_CTX_copy(BN_MONT_CTX *to,
                                              const BN_MONT_CTX *from);
 
-// BN_MONT_CTX_set sets up a Montgomery context given the modulus, |mod|. It
-// returns one on success and zero on error.
-OPENSSL_EXPORT int BN_MONT_CTX_set(BN_MONT_CTX *mont, const BIGNUM *mod,
-                                   BN_CTX *ctx);
-
 // BN_MONT_CTX_set_locked takes |lock| and checks whether |*pmont| is NULL. If
 // so, it creates a new |BN_MONT_CTX| and sets the modulus for it to |mod|. It
-// then stores it as |*pmont|. It returns one on success and zero on error.
+// then stores it as |*pmont|. It returns one on success and zero on error. Note
+// this function assumes |mod| is public.
 //
 // If |*pmont| is already non-NULL then it does nothing and returns one.
 int BN_MONT_CTX_set_locked(BN_MONT_CTX **pmont, CRYPTO_MUTEX *lock,
@@ -849,10 +876,14 @@ OPENSSL_EXPORT int BN_exp(BIGNUM *r, const BIGNUM *a, const BIGNUM *p,
 OPENSSL_EXPORT int BN_mod_exp(BIGNUM *r, const BIGNUM *a, const BIGNUM *p,
                               const BIGNUM *m, BN_CTX *ctx);
 
+// BN_mod_exp_mont behaves like |BN_mod_exp| but treats |a| as secret and
+// requires 0 <= |a| < |m|.
 OPENSSL_EXPORT int BN_mod_exp_mont(BIGNUM *r, const BIGNUM *a, const BIGNUM *p,
                                    const BIGNUM *m, BN_CTX *ctx,
                                    const BN_MONT_CTX *mont);
 
+// BN_mod_exp_mont_consttime behaves like |BN_mod_exp| but treats |a|, |p|, and
+// |m| as secret and requires 0 <= |a| < |m|.
 OPENSSL_EXPORT int BN_mod_exp_mont_consttime(BIGNUM *rr, const BIGNUM *a,
                                              const BIGNUM *p, const BIGNUM *m,
                                              BN_CTX *ctx,
@@ -891,21 +922,59 @@ OPENSSL_EXPORT int BN_mod_exp2_mont(BIGNUM *r, const BIGNUM *a1,
                                     const BIGNUM *p2, const BIGNUM *m,
                                     BN_CTX *ctx, const BN_MONT_CTX *mont);
 
+// BN_MONT_CTX_new returns a fresh |BN_MONT_CTX| or NULL on allocation failure.
+// Use |BN_MONT_CTX_new_for_modulus| instead.
+OPENSSL_EXPORT BN_MONT_CTX *BN_MONT_CTX_new(void);
+
+// BN_MONT_CTX_set sets up a Montgomery context given the modulus, |mod|. It
+// returns one on success and zero on error. Use |BN_MONT_CTX_new_for_modulus|
+// instead.
+OPENSSL_EXPORT int BN_MONT_CTX_set(BN_MONT_CTX *mont, const BIGNUM *mod,
+                                   BN_CTX *ctx);
+
+// BN_bn2binpad behaves like |BN_bn2bin_padded|, but it returns |len| on success
+// and -1 on error.
+//
+// Use |BN_bn2bin_padded| instead. It is |size_t|-clean.
+OPENSSL_EXPORT int BN_bn2binpad(const BIGNUM *in, uint8_t *out, int len);
+
 
 // Private functions
 
 struct bignum_st {
-  BN_ULONG *d; /* Pointer to an array of 'BN_BITS2' bit chunks in little-endian
-                  order. */
-  int top;    // Index of last used element in |d|, plus one.
-  int dmax;   // Size of |d|, in words.
-  int neg;    // one if the number is negative
-  int flags;  // bitmask of BN_FLG_* values
+  // d is a pointer to an array of |width| |BN_BITS2|-bit chunks in
+  // little-endian order. This stores the absolute value of the number.
+  BN_ULONG *d;
+  // width is the number of elements of |d| which are valid. This value is not
+  // necessarily minimal; the most-significant words of |d| may be zero.
+  // |width| determines a potentially loose upper-bound on the absolute value
+  // of the |BIGNUM|.
+  //
+  // Functions taking |BIGNUM| inputs must compute the same answer for all
+  // possible widths. |bn_minimal_width|, |bn_set_minimal_width|, and other
+  // helpers may be used to recover the minimal width, provided it is not
+  // secret. If it is secret, use a different algorithm. Functions may output
+  // minimal or non-minimal |BIGNUM|s depending on secrecy requirements, but
+  // those which cause widths to unboundedly grow beyond the minimal value
+  // should be documented such.
+  //
+  // Note this is different from historical |BIGNUM| semantics.
+  int width;
+  // dmax is number of elements of |d| which are allocated.
+  int dmax;
+  // neg is one if the number if negative and zero otherwise.
+  int neg;
+  // flags is a bitmask of |BN_FLG_*| values
+  int flags;
 };
 
 struct bn_mont_ctx_st {
-  BIGNUM RR;  // used to convert to montgomery form
-  BIGNUM N;   // The modulus
+  // RR is R^2, reduced modulo |N|. It is used to convert to Montgomery form. It
+  // is guaranteed to have the same width as |N|.
+  BIGNUM RR;
+  // N is the modulus. It is always stored in minimal form, so |N.width|
+  // determines R.
+  BIGNUM N;
   BN_ULONG n0[2];  // least significant words of (R*Ri-1)/N
 };
 
@@ -926,7 +995,7 @@ OPENSSL_EXPORT unsigned BN_num_bits_word(BN_ULONG l);
 #if !defined(BORINGSSL_NO_CXX)
 extern "C++" {
 
-namespace bssl {
+BSSL_NAMESPACE_BEGIN
 
 BORINGSSL_MAKE_DELETER(BIGNUM, BN_free)
 BORINGSSL_MAKE_DELETER(BN_CTX, BN_CTX_free)
@@ -944,7 +1013,7 @@ class BN_CTXScope {
   BN_CTXScope &operator=(BN_CTXScope &) = delete;
 };
 
-}  // namespace bssl
+BSSL_NAMESPACE_END
 
 }  // extern C++
 #endif

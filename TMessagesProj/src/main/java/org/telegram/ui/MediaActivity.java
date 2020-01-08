@@ -43,48 +43,52 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import androidx.annotation.NonNull;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.ContactsController;
-import org.telegram.messenger.MediaDataController;
-import org.telegram.messenger.LocaleController;
-import org.telegram.messenger.MediaController;
-import org.telegram.messenger.MessagesController;
-import org.telegram.messenger.SendMessagesHelper;
-import org.telegram.messenger.UserConfig;
-import org.telegram.messenger.browser.Browser;
-import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
-import org.telegram.tgnet.ConnectionsManager;
-import org.telegram.tgnet.TLRPC;
+import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.MediaController;
+import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.MessageObject;
+import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
+import org.telegram.messenger.SendMessagesHelper;
+import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
+import org.telegram.messenger.browser.Browser;
+import org.telegram.tgnet.ConnectionsManager;
+import org.telegram.tgnet.TLRPC;
+import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.ActionBar.ActionBarMenuItem;
-import org.telegram.ui.ActionBar.ActionBarPopupWindow;
-import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.BackDrawable;
+import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ActionBar.ThemeDescription;
 import org.telegram.ui.Cells.GraySectionCell;
 import org.telegram.ui.Cells.LoadingCell;
+import org.telegram.ui.Cells.SharedAudioCell;
 import org.telegram.ui.Cells.SharedDocumentCell;
 import org.telegram.ui.Cells.SharedLinkCell;
 import org.telegram.ui.Cells.SharedMediaSectionCell;
 import org.telegram.ui.Cells.SharedPhotoVideoCell;
-import org.telegram.ui.Cells.SharedAudioCell;
 import org.telegram.ui.Components.AlertsCreator;
 import org.telegram.ui.Components.AnimationProperties;
 import org.telegram.ui.Components.BackupImageView;
-import org.telegram.ui.ActionBar.BaseFragment;
+import org.telegram.ui.Components.ClippingImageView;
 import org.telegram.ui.Components.EmbedBottomSheet;
+import org.telegram.ui.Components.FragmentContextView;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.NumberTextView;
-import org.telegram.ui.Components.FragmentContextView;
 import org.telegram.ui.Components.RadialProgressView;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.ScrollSlidingTextTabStrip;
@@ -92,9 +96,6 @@ import org.telegram.ui.Components.ScrollSlidingTextTabStrip;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
 
 @SuppressWarnings("unchecked")
 public class MediaActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
@@ -107,6 +108,7 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
         private ImageView emptyImageView;
         private LinearLayout emptyView;
         private RadialProgressView progressBar;
+        private ClippingImageView animatingImageView;
         private int selectedType;
 
         public MediaPage(Context context) {
@@ -144,6 +146,7 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
 
     private boolean searchWas;
     private boolean searching;
+    private boolean disableActionBarScrolling;
 
     private int[] hasMedia;
     private int initialTab;
@@ -191,10 +194,9 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
             if (messageObject == null || mediaPages[0].selectedType != 0 && mediaPages[0].selectedType != 1) {
                 return null;
             }
-            int count = mediaPages[0].listView.getChildCount();
-
-            for (int a = 0; a < count; a++) {
-                View view = mediaPages[0].listView.getChildAt(a);
+            final RecyclerListView listView = mediaPages[0].listView;
+            for (int a = 0, count = listView.getChildCount(); a < count; a++) {
+                View view = listView.getChildAt(a);
                 BackupImageView imageView = null;
                 if (view instanceof SharedPhotoVideoCell) {
                     SharedPhotoVideoCell cell = (SharedPhotoVideoCell) view;
@@ -220,14 +222,42 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                     PhotoViewer.PlaceProviderObject object = new PhotoViewer.PlaceProviderObject();
                     object.viewX = coords[0];
                     object.viewY = coords[1] - (Build.VERSION.SDK_INT >= 21 ? 0 : AndroidUtilities.statusBarHeight);
-                    object.parentView = mediaPages[0].listView;
+                    object.parentView = listView;
+                    object.animatingImageView = mediaPages[0].animatingImageView;
                     object.imageReceiver = imageView.getImageReceiver();
+                    object.radius = object.imageReceiver.getRoundRadius();
                     object.thumb = object.imageReceiver.getBitmapSafe();
                     object.parentView.getLocationInWindow(coords);
                     object.clipTopAddition = (int) (actionBar.getHeight() + actionBar.getTranslationY());
                     if (fragmentContextView != null && fragmentContextView.getVisibility() == View.VISIBLE) {
                         object.clipTopAddition += AndroidUtilities.dp(36);
                     }
+
+                    if (PhotoViewer.isShowingImage(messageObject)) {
+                        final View pinnedHeader = listView.getPinnedHeader();
+                        if (pinnedHeader != null) {
+                            int top = (int) (actionBar.getHeight() + actionBar.getTranslationY());
+                            if (fragmentContextView != null && fragmentContextView.getVisibility() == View.VISIBLE) {
+                                top += fragmentContextView.getHeight() - AndroidUtilities.dp(2.5f);
+                            }
+                            if (view instanceof SharedDocumentCell) {
+                                top += AndroidUtilities.dp(8f);
+                            }
+                            final int topOffset = top - object.viewY;
+                            if (topOffset > view.getHeight()) {
+                                scrollWithoutActionBar(listView, -(topOffset + pinnedHeader.getHeight()));
+                            } else {
+                                int bottomOffset = object.viewY - listView.getHeight();
+                                if (view instanceof SharedDocumentCell) {
+                                    bottomOffset -= AndroidUtilities.dp(8f);
+                                }
+                                if (bottomOffset >= 0) {
+                                    scrollWithoutActionBar(listView, bottomOffset + view.getHeight());
+                                }
+                            }
+                        }
+                    }
+
                     return object;
                 }
             }
@@ -451,14 +481,7 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
             @Override
             public void onItemClick(int id) {
                 if (id == -1) {
-                    if (actionBar.isActionModeShowed()) {
-                        for (int a = 1; a >= 0; a--) {
-                            selectedFiles[a].clear();
-                        }
-                        cantDeleteMessagesCount = 0;
-                        actionBar.hideActionMode();
-                        updateRowsSelection();
-                    } else {
+                    if (!closeActionMode()) {
                         finishFragment();
                     }
                 } else if (id == delete) {
@@ -475,7 +498,7 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                     } else {
                         currentEncryptedChat = MessagesController.getInstance(currentAccount).getEncryptedChat((int) (dialog_id >> 32));
                     }
-                    AlertsCreator.createDeleteMessagesAlert(MediaActivity.this, currentUser, currentChat, currentEncryptedChat, null, mergeDialogId, null, selectedFiles, null, 1, () -> {
+                    AlertsCreator.createDeleteMessagesAlert(MediaActivity.this, currentUser, currentChat, currentEncryptedChat, null, mergeDialogId, null, selectedFiles, null, false, 1, () -> {
                         actionBar.hideActionMode();
                         actionBar.closeSearchField();
                         cantDeleteMessagesCount = 0;
@@ -508,9 +531,9 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                             for (int a = 0; a < dids.size(); a++) {
                                 long did = dids.get(a);
                                 if (message != null) {
-                                    SendMessagesHelper.getInstance(currentAccount).sendMessage(message.toString(), did, null, null, true, null, null, null);
+                                    SendMessagesHelper.getInstance(currentAccount).sendMessage(message.toString(), did, null, null, true, null, null, null, true, 0);
                                 }
-                                SendMessagesHelper.getInstance(currentAccount).sendMessage(fmessages, did);
+                                SendMessagesHelper.getInstance(currentAccount).sendMessage(fmessages, did, true, 0);
                             }
                             fragment1.finishFragment();
                         } else {
@@ -554,19 +577,15 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                     int lower_part = (int) dialog_id;
                     int high_id = (int) (dialog_id >> 32);
                     if (lower_part != 0) {
-                        if (high_id == 1) {
-                            args.putInt("chat_id", lower_part);
-                        } else {
-                            if (lower_part > 0) {
-                                args.putInt("user_id", lower_part);
-                            } else if (lower_part < 0) {
-                                TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-lower_part);
-                                if (chat != null && chat.migrated_to != null) {
-                                    args.putInt("migrated_to", lower_part);
-                                    lower_part = -chat.migrated_to.channel_id;
-                                }
-                                args.putInt("chat_id", -lower_part);
+                        if (lower_part > 0) {
+                            args.putInt("user_id", lower_part);
+                        } else if (lower_part < 0) {
+                            TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-lower_part);
+                            if (chat != null && chat.migrated_to != null) {
+                                args.putInt("migrated_to", lower_part);
+                                lower_part = -chat.migrated_to.channel_id;
                             }
+                            args.putInt("chat_id", -lower_part);
                         }
                     } else {
                         args.putInt("enc_id", high_id);
@@ -844,6 +863,7 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                         mediaPages[a].listView.checkSection();
                     }
                 }
+                fixScrollOffset();
             }
 
             @Override
@@ -1125,6 +1145,16 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                 public boolean supportsPredictiveItemAnimations() {
                     return false;
                 }
+
+                @Override
+                protected void calculateExtraLayoutSpace(@NonNull RecyclerView.State state, @NonNull int[] extraLayoutSpace) {
+                    super.calculateExtraLayoutSpace(state, extraLayoutSpace);
+                    if (mediaPage.selectedType == 0) {
+                        extraLayoutSpace[1] = Math.max(extraLayoutSpace[1], SharedPhotoVideoCell.getItemSize(columnsCount) * 2);
+                    } else if (mediaPage.selectedType == 1) {
+                        extraLayoutSpace[1] = Math.max(extraLayoutSpace[1], AndroidUtilities.dp(56f) * 2);
+                    }
+                }
             };
             mediaPages[a].listView = new RecyclerListView(context) {
                 @Override
@@ -1161,7 +1191,7 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                         if (scrollY != 0 && scrollY != actionBarHeight) {
                             if (scrollY < actionBarHeight / 2) {
                                 mediaPages[0].listView.smoothScrollBy(0, -scrollY);
-                            } else {
+                            } else if (mediaPages[0].listView.canScrollVertically(1)) {
                                 mediaPages[0].listView.smoothScrollBy(0, actionBarHeight - scrollY);
                             }
                         }
@@ -1177,7 +1207,8 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                     int visibleItemCount = firstVisibleItem == RecyclerView.NO_POSITION ? 0 : Math.abs(layoutManager.findLastVisibleItemPosition() - firstVisibleItem) + 1;
                     int totalItemCount = recyclerView.getAdapter().getItemCount();
 
-                    if (visibleItemCount != 0 && firstVisibleItem + visibleItemCount > totalItemCount - 2 && !sharedMediaData[mediaPage.selectedType].loading) {
+                    final int threshold = mediaPage.selectedType == 0 ? 3 : 6;
+                    if (visibleItemCount != 0 && firstVisibleItem + visibleItemCount > totalItemCount - threshold && !sharedMediaData[mediaPage.selectedType].loading) {
                         int type;
                         if (mediaPage.selectedType == 0) {
                             type = MediaDataController.MEDIA_PHOTOVIDEO;
@@ -1198,7 +1229,7 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                             MediaDataController.getInstance(currentAccount).loadMedia(mergeDialogId, 50, sharedMediaData[mediaPage.selectedType].max_id[1], type, 1, classGuid);
                         }
                     }
-                    if (recyclerView == mediaPages[0].listView && !searching && !actionBar.isActionModeShowed()) {
+                    if (recyclerView == mediaPages[0].listView && !searching && !actionBar.isActionModeShowed() && !disableActionBarScrolling) {
                         float currentTranslation = actionBar.getTranslationY();
                         float newTranslation = currentTranslation - dy;
                         if (newTranslation < -ActionBar.getCurrentActionBarHeight()) {
@@ -1230,6 +1261,17 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
             if (a == 0 && scrollToPositionOnRecreate != -1) {
                 layoutManager.scrollToPositionWithOffset(scrollToPositionOnRecreate, scrollToOffsetOnRecreate);
             }
+
+            final RecyclerListView listView = mediaPages[a].listView;
+            mediaPages[a].animatingImageView = new ClippingImageView(context) {
+                @Override
+                public void invalidate() {
+                    super.invalidate();
+                    listView.invalidate();
+                }
+            };
+            mediaPages[a].animatingImageView.setVisibility(View.GONE);
+            mediaPages[a].listView.addOverlayView(mediaPages[a].animatingImageView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
 
             mediaPages[a].emptyView = new LinearLayout(context) {
                 @Override
@@ -1288,6 +1330,19 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
         return fragmentView;
     }
 
+    private boolean closeActionMode() {
+        if (actionBar.isActionModeShowed()) {
+            for (int a = 1; a >= 0; a--) {
+                selectedFiles[a].clear();
+            }
+            cantDeleteMessagesCount = 0;
+            actionBar.hideActionMode();
+            updateRowsSelection();
+            return true;
+        } else {
+            return false;
+        }
+    }
     private void setScrollY(float value) {
         actionBar.setTranslationY(value);
         if (fragmentContextView != null) {
@@ -1390,6 +1445,10 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                 }
             }
         } else if (id == NotificationCenter.messagesDeleted) {
+            boolean scheduled = (Boolean) args[2];
+            if (scheduled) {
+                return;
+            }
             TLRPC.Chat currentChat = null;
             if ((int) dialog_id < 0) {
                 currentChat = MessagesController.getInstance(currentAccount).getChat(-(int) dialog_id);
@@ -1435,6 +1494,10 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                 }
             }
         } else if (id == NotificationCenter.didReceiveNewMessages) {
+            boolean scheduled = (Boolean) args[2];
+            if (scheduled) {
+                return;
+            }
             long uid = (Long) args[0];
             if (uid == dialog_id) {
                 ArrayList<MessageObject> arr = (ArrayList<MessageObject>) args[1];
@@ -1485,6 +1548,10 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                 }
             }
         } else if (id == NotificationCenter.messageReceivedByServer) {
+            Boolean scheduled = (Boolean) args[6];
+            if (scheduled) {
+                return;
+            }
             Integer msgId = (Integer) args[0];
             Integer newMsgId = (Integer) args[1];
             for (SharedMediaData data : sharedMediaData) {
@@ -1566,19 +1633,21 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
 
     @Override
     public boolean onBackPressed() {
-        return actionBar.isEnabled();
+        return actionBar.isEnabled() && !closeActionMode();
     }
 
-    private void updateSections(ViewGroup listView, boolean checkBottom) {
+    private void updateSections(RecyclerView listView, boolean checkTopBottom) {
         int count = listView.getChildCount();
         int minPositionDateHolder = Integer.MAX_VALUE;
         View minDateChild = null;
         float padding = listView.getPaddingTop() + actionBar.getTranslationY();
+        int minTop = Integer.MAX_VALUE;
         int maxBottom = 0;
 
         for (int a = 0; a < count; a++) {
             View view = listView.getChildAt(a);
             int bottom = view.getBottom();
+            minTop = Math.min(minTop, view.getTop());
             maxBottom = Math.max(bottom, maxBottom);
             if (bottom <= padding) {
                 continue;
@@ -1605,8 +1674,13 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                 }
             }
         }
-        if (checkBottom && maxBottom != 0 && maxBottom < (listView.getMeasuredHeight() - listView.getPaddingBottom())) {
-            resetScroll();
+        if (checkTopBottom) {
+            if (maxBottom != 0 && maxBottom < (listView.getMeasuredHeight() - listView.getPaddingBottom())) {
+                resetScroll();
+            } else if (minTop != Integer.MAX_VALUE && minTop > listView.getPaddingTop() + actionBar.getTranslationY()) {
+                scrollWithoutActionBar(listView, -listView.computeVerticalScrollOffset());
+                resetScroll();
+            }
         }
     }
 
@@ -1939,7 +2013,7 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
         }
         AndroidUtilities.hideKeyboard(getParentActivity().getCurrentFocus());
         selectedFiles[item.getDialogId() == dialog_id ? 0 : 1].put(item.getId(), item);
-        if (!item.canDeleteMessage(null)) {
+        if (!item.canDeleteMessage(false, null)) {
             cantDeleteMessagesCount++;
         }
         actionBar.createActionMode().getItem(delete).setVisibility(cantDeleteMessagesCount == 0 ? View.VISIBLE : View.GONE);
@@ -1982,7 +2056,7 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
             int loadIndex = message.getDialogId() == dialog_id ? 0 : 1;
             if (selectedFiles[loadIndex].indexOfKey(message.getId()) >= 0) {
                 selectedFiles[loadIndex].remove(message.getId());
-                if (!message.canDeleteMessage(null)) {
+                if (!message.canDeleteMessage(false, null)) {
                     cantDeleteMessagesCount--;
                 }
             } else {
@@ -1990,7 +2064,7 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                     return;
                 }
                 selectedFiles[loadIndex].put(message.getId(), message);
-                if (!message.canDeleteMessage(null)) {
+                if (!message.canDeleteMessage(false, null)) {
                     cantDeleteMessagesCount++;
                 }
             }
@@ -2050,7 +2124,7 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                 }
             } else if (selectedMode == 3) {
                 try {
-                    TLRPC.WebPage webPage = message.messageOwner.media.webpage;
+                    TLRPC.WebPage webPage = message.messageOwner.media != null ? message.messageOwner.media.webpage : null;
                     String link = null;
                     if (webPage != null && !(webPage instanceof TLRPC.TL_webPageEmpty)) {
                         if (webPage.cached_page != null) {
@@ -2116,7 +2190,27 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
         }
         if (num == 0) {
             photoVideoAdapter.notifyDataSetChanged();
+            fixScrollOffset();
         }
+    }
+
+    private void fixScrollOffset() {
+        if (actionBar.getTranslationY() != 0f) {
+            final RecyclerListView listView = mediaPages[0].listView;
+            final View child = listView.getChildAt(0);
+            if (child != null) {
+                final int offset = (int) (child.getY() - (actionBar.getMeasuredHeight() + actionBar.getTranslationY() + additionalPadding));
+                if (offset > 0) {
+                    scrollWithoutActionBar(listView, offset);
+                }
+            }
+        }
+    }
+
+    private void scrollWithoutActionBar(RecyclerView listView, int dy) {
+        disableActionBarScrolling = true;
+        listView.scrollBy(0, dy);
+        disableActionBarScrolling = false;
     }
 
     SharedLinkCell.SharedLinkCellDelegate sharedLinkCellDelegate = new SharedLinkCell.SharedLinkCellDelegate() {
@@ -2762,6 +2856,9 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
 
         private void updateSearchResults(final ArrayList<MessageObject> documents) {
             AndroidUtilities.runOnUIThread(() -> {
+                if (!searching) {
+                    return;
+                }
                 searchesInProgress--;
                 searchResult = documents;
                 int count = getItemCount();
@@ -2912,16 +3009,19 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
 
         arrayList.add(new ThemeDescription(selectedMessagesCountTextView, ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_actionBarDefaultIcon));
 
-        arrayList.add(new ThemeDescription(fragmentContextView, ThemeDescription.FLAG_CELLBACKGROUNDCOLOR, new Class[]{FragmentContextView.class}, new String[]{"frameLayout"}, null, null, null, Theme.key_inappPlayerBackground));
-        arrayList.add(new ThemeDescription(fragmentContextView, 0, new Class[]{FragmentContextView.class}, new String[]{"playButton"}, null, null, null, Theme.key_inappPlayerPlayPause));
-        arrayList.add(new ThemeDescription(fragmentContextView, ThemeDescription.FLAG_TEXTCOLOR, new Class[]{FragmentContextView.class}, new String[]{"titleTextView"}, null, null, null, Theme.key_inappPlayerTitle));
-        arrayList.add(new ThemeDescription(fragmentContextView, ThemeDescription.FLAG_TEXTCOLOR, new Class[]{FragmentContextView.class}, new String[]{"frameLayout"}, null, null, null, Theme.key_inappPlayerPerformer));
-        arrayList.add(new ThemeDescription(fragmentContextView, ThemeDescription.FLAG_CELLBACKGROUNDCOLOR, new Class[]{FragmentContextView.class}, new String[]{"closeButton"}, null, null, null, Theme.key_inappPlayerClose));
+        arrayList.add(new ThemeDescription(fragmentContextView, ThemeDescription.FLAG_BACKGROUND | ThemeDescription.FLAG_CHECKTAG, new Class[]{FragmentContextView.class}, new String[]{"frameLayout"}, null, null, null, Theme.key_inappPlayerBackground));
+        arrayList.add(new ThemeDescription(fragmentContextView, ThemeDescription.FLAG_IMAGECOLOR, new Class[]{FragmentContextView.class}, new String[]{"playButton"}, null, null, null, Theme.key_inappPlayerPlayPause));
+        arrayList.add(new ThemeDescription(fragmentContextView, ThemeDescription.FLAG_TEXTCOLOR | ThemeDescription.FLAG_CHECKTAG, new Class[]{FragmentContextView.class}, new String[]{"titleTextView"}, null, null, null, Theme.key_inappPlayerTitle));
+        arrayList.add(new ThemeDescription(fragmentContextView, ThemeDescription.FLAG_TEXTCOLOR | ThemeDescription.FLAG_FASTSCROLL, new Class[]{FragmentContextView.class}, new String[]{"titleTextView"}, null, null, null, Theme.key_inappPlayerPerformer));
+        arrayList.add(new ThemeDescription(fragmentContextView, ThemeDescription.FLAG_IMAGECOLOR, new Class[]{FragmentContextView.class}, new String[]{"closeButton"}, null, null, null, Theme.key_inappPlayerClose));
 
+        arrayList.add(new ThemeDescription(fragmentContextView, ThemeDescription.FLAG_BACKGROUND | ThemeDescription.FLAG_CHECKTAG, new Class[]{FragmentContextView.class}, new String[]{"frameLayout"}, null, null, null, Theme.key_returnToCallBackground));
+        arrayList.add(new ThemeDescription(fragmentContextView, ThemeDescription.FLAG_TEXTCOLOR | ThemeDescription.FLAG_CHECKTAG, new Class[]{FragmentContextView.class}, new String[]{"titleTextView"}, null, null, null, Theme.key_returnToCallText));
+
+        arrayList.add(new ThemeDescription(scrollSlidingTextTabStrip, 0, new Class[]{ScrollSlidingTextTabStrip.class}, new String[]{"selectorDrawable"}, null, null, null, Theme.key_actionBarTabLine));
         arrayList.add(new ThemeDescription(scrollSlidingTextTabStrip.getTabsContainer(), ThemeDescription.FLAG_TEXTCOLOR | ThemeDescription.FLAG_CHECKTAG, new Class[]{TextView.class}, null, null, null, Theme.key_actionBarTabActiveText));
         arrayList.add(new ThemeDescription(scrollSlidingTextTabStrip.getTabsContainer(), ThemeDescription.FLAG_TEXTCOLOR | ThemeDescription.FLAG_CHECKTAG, new Class[]{TextView.class}, null, null, null, Theme.key_actionBarTabUnactiveText));
-        arrayList.add(new ThemeDescription(scrollSlidingTextTabStrip.getTabsContainer(), ThemeDescription.FLAG_BACKGROUNDFILTER | ThemeDescription.FLAG_DRAWABLESELECTEDSTATE, new Class[]{TextView.class}, null, null, null, Theme.key_actionBarTabLine));
-        arrayList.add(new ThemeDescription(null, 0, null, null, new Drawable[]{scrollSlidingTextTabStrip.getSelectorDrawable()}, null, Theme.key_actionBarTabSelector));
+        arrayList.add(new ThemeDescription(scrollSlidingTextTabStrip.getTabsContainer(), ThemeDescription.FLAG_BACKGROUNDFILTER | ThemeDescription.FLAG_DRAWABLESELECTEDSTATE, new Class[]{TextView.class}, null, null, null, Theme.key_actionBarTabSelector));
 
         for (int a = 0; a < mediaPages.length; a++) {
             final int num = a;

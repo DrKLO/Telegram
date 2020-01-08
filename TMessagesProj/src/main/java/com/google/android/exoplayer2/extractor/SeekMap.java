@@ -25,7 +25,7 @@ import com.google.android.exoplayer2.util.Assertions;
 public interface SeekMap {
 
   /** A {@link SeekMap} that does not support seeking. */
-  final class Unseekable implements SeekMap {
+  class Unseekable implements SeekMap {
 
     private final long durationUs;
     private final SeekPoints startSeekPoints;

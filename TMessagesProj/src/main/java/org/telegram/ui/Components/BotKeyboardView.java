@@ -112,12 +112,7 @@ public class BotKeyboardView extends LinearLayout {
                     textView.setPadding(AndroidUtilities.dp(4), 0, AndroidUtilities.dp(4), 0);
                     textView.setText(Emoji.replaceEmoji(button.text, textView.getPaint().getFontMetricsInt(), AndroidUtilities.dp(16), false));
                     layout.addView(textView, LayoutHelper.createLinear(0, LayoutHelper.MATCH_PARENT, weight, 0, 0, b != row.buttons.size() - 1 ? 10 : 0, 0));
-                    textView.setOnClickListener(new OnClickListener() {
-                        @Override
-                        public void onClick(View v) {
-                            delegate.didPressedButton((TLRPC.KeyboardButton) v.getTag());
-                        }
-                    });
+                    textView.setOnClickListener(v -> delegate.didPressedButton((TLRPC.KeyboardButton) v.getTag()));
                     buttonViews.add(textView);
                 }
             }

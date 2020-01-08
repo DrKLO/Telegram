@@ -62,7 +62,7 @@ public:
     void pauseNetwork();
     void setNetworkAvailable(bool value, int32_t type, bool slow);
     void setUseIpv6(bool value);
-    void init(uint32_t version, int32_t layer, int32_t apiId, std::string deviceModel, std::string systemVersion, std::string appVersion, std::string langCode, std::string systemLangCode, std::string configPath, std::string logPath, std::string regId, int32_t userId, bool isPaused, bool enablePushConnection, bool hasNetwork, int32_t networkType);
+    void init(uint32_t version, int32_t layer, int32_t apiId, std::string deviceModel, std::string systemVersion, std::string appVersion, std::string langCode, std::string systemLangCode, std::string configPath, std::string logPath, std::string regId, std::string cFingerprint, int32_t userId, bool isPaused, bool enablePushConnection, bool hasNetwork, int32_t networkType);
     void setProxySettings(std::string address, uint16_t port, std::string username, std::string password, std::string secret);
     void setLangCode(std::string langCode);
     void setRegId(std::string regId);
@@ -92,7 +92,7 @@ private:
     void sendPing(Datacenter *datacenter, bool usePushConnection);
     void sendMessagesToConnection(std::vector<std::unique_ptr<NetworkMessage>> &messages, Connection *connection, bool reportAck);
     void sendMessagesToConnectionWithConfirmation(std::vector<std::unique_ptr<NetworkMessage>> &messages, Connection *connection, bool reportAck);
-    void requestSaltsForDatacenter(Datacenter *datacenter, bool useTempConnection);
+    void requestSaltsForDatacenter(Datacenter *datacenter, bool media, bool useTempConnection);
     void clearRequestsForDatacenter(Datacenter *datacenter, HandshakeType type);
     void registerForInternalPushUpdates();
     void processRequestQueue(uint32_t connectionType, uint32_t datacenterId);
@@ -129,7 +129,7 @@ private:
     void checkProxyInternal(ProxyCheckInfo *proxyCheckInfo);
 
     int32_t instanceNum = 0;
-    uint32_t configVersion = 4;
+    uint32_t configVersion = 5;
     Config *config = nullptr;
 
     std::list<EventObject *> events;
@@ -210,6 +210,7 @@ private:
     std::string currentAppVersion;
     std::string currentLangCode;
     std::string currentRegId;
+    std::string certFingerprint;
     std::string currentSystemLangCode;
     std::string currentConfigPath;
     std::string currentLogPath;

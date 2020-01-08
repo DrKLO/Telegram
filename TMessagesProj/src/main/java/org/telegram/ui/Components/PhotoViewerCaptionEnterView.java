@@ -10,11 +10,9 @@ package org.telegram.ui.Components;
 
 import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
-import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.drawable.Drawable;
-import android.os.Build;
 import android.text.Editable;
 import android.text.InputFilter;
 import android.text.SpannableStringBuilder;
@@ -26,7 +24,6 @@ import android.view.ActionMode;
 import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.Menu;
-import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
@@ -42,10 +39,8 @@ import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
+import org.telegram.ui.ActionBar.FloatingToolbar;
 import org.telegram.ui.ActionBar.Theme;
-
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
 
 public class PhotoViewerCaptionEnterView extends FrameLayout implements NotificationCenter.NotificationCenterDelegate, SizeNotifierFrameLayoutPhoto.SizeNotifierFrameLayoutPhotoDelegate {
 
@@ -59,8 +54,6 @@ public class PhotoViewerCaptionEnterView extends FrameLayout implements Notifica
     private ImageView emojiButton;
     private EmojiView emojiView;
     private SizeNotifierFrameLayoutPhoto sizeNotifierLayout;
-
-    private ActionMode currentActionMode;
 
     private AnimatorSet runningAnimation;
     private AnimatorSet runningAnimation2;
@@ -110,6 +103,7 @@ public class PhotoViewerCaptionEnterView extends FrameLayout implements Notifica
         emojiButton.setImageResource(R.drawable.input_smile);
         emojiButton.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
         emojiButton.setPadding(AndroidUtilities.dp(4), AndroidUtilities.dp(1), 0, 0);
+        emojiButton.setAlpha(0.58f);
         frameLayout.addView(emojiButton, LayoutHelper.createFrame(48, 48, Gravity.BOTTOM | Gravity.LEFT));
         emojiButton.setOnClickListener(view -> {
             if (!isPopupShowing()) {
@@ -145,64 +139,19 @@ public class PhotoViewerCaptionEnterView extends FrameLayout implements Notifica
                     fixHandleView(true);
                 }
             }
+
+            @Override
+            protected void extendActionMode(ActionMode actionMode, Menu menu) {
+                PhotoViewerCaptionEnterView.this.extendActionMode(actionMode, menu);
+            }
+
+            @Override
+            protected int getActionModeStyle() {
+                return FloatingToolbar.STYLE_BLACK;
+            }
         };
-        if (Build.VERSION.SDK_INT >= 23 && windowView != null) {
-            messageEditText.setCustomSelectionActionModeCallback(new ActionMode.Callback() {
-                @Override
-                public boolean onCreateActionMode(ActionMode mode, Menu menu) {
-                    currentActionMode = mode;
-                    return true;
-                }
 
-                @Override
-                public boolean onPrepareActionMode(ActionMode mode, Menu menu) {
-                    if (Build.VERSION.SDK_INT >= 23) {
-                        fixActionMode(mode);
-                    }
-                    return true;
-                }
-
-                @Override
-                public boolean onActionItemClicked(ActionMode mode, MenuItem item) {
-                    return false;
-                }
-
-                @Override
-                public void onDestroyActionMode(ActionMode mode) {
-                    if (currentActionMode == mode) {
-                        currentActionMode = null;
-                    }
-                }
-            });
-
-            messageEditText.setCustomInsertionActionModeCallback(new ActionMode.Callback() {
-                @Override
-                public boolean onCreateActionMode(ActionMode mode, Menu menu) {
-                    currentActionMode = mode;
-                    return true;
-                }
-
-                @Override
-                public boolean onPrepareActionMode(ActionMode mode, Menu menu) {
-                    if (Build.VERSION.SDK_INT >= 23) {
-                        fixActionMode(mode);
-                    }
-                    return true;
-                }
-
-                @Override
-                public boolean onActionItemClicked(ActionMode mode, MenuItem item) {
-                    return false;
-                }
-
-                @Override
-                public void onDestroyActionMode(ActionMode mode) {
-                    if (currentActionMode == mode) {
-                        currentActionMode = null;
-                    }
-                }
-            });
-        }
+        messageEditText.setWindowView(windowView);
         messageEditText.setHint(LocaleController.getString("AddCaption", R.string.AddCaption));
         messageEditText.setImeOptions(EditorInfo.IME_FLAG_NO_EXTRACT_UI);
         messageEditText.setInputType(messageEditText.getInputType() | EditorInfo.TYPE_TEXT_FLAG_CAP_SENTENCES);
@@ -215,6 +164,7 @@ public class PhotoViewerCaptionEnterView extends FrameLayout implements Notifica
         messageEditText.setCursorColor(0xffffffff);
         messageEditText.setCursorSize(AndroidUtilities.dp(20));
         messageEditText.setTextColor(0xffffffff);
+        messageEditText.setHighlightColor(0x4fffffff);
         messageEditText.setHintTextColor(0xb2ffffff);
         InputFilter[] inputFilters = new InputFilter[1];
         inputFilters[0] = new InputFilter.LengthFilter(captionMaxLength);
@@ -255,8 +205,7 @@ public class PhotoViewerCaptionEnterView extends FrameLayout implements Notifica
                 if (delegate != null) {
                     delegate.onTextChanged(charSequence);
                 }
-
-                if (before != count && (count - before) > 1) {
+                if (count - before > 1) {
                     processChange = true;
                 }
             }
@@ -324,7 +273,7 @@ public class PhotoViewerCaptionEnterView extends FrameLayout implements Notifica
     }
 
     public boolean hideActionMode() {
-        if (Build.VERSION.SDK_INT >= 23 && currentActionMode != null) {
+        /*if (Build.VERSION.SDK_INT >= 23 && currentActionMode != null) {
             try {
                 currentActionMode.finish();
             } catch (Exception e) {
@@ -332,41 +281,12 @@ public class PhotoViewerCaptionEnterView extends FrameLayout implements Notifica
             }
             currentActionMode = null;
             return true;
-        }
+        }*/
         return false;
     }
 
-    @SuppressLint("PrivateApi")
-    @SuppressWarnings("unchecked")
-    private void fixActionMode(ActionMode mode) {
-        try {
-            Class classActionMode = Class.forName("com.android.internal.view.FloatingActionMode");
-            Field fieldToolbar = classActionMode.getDeclaredField("mFloatingToolbar");
-            fieldToolbar.setAccessible(true);
-            Object toolbar = fieldToolbar.get(mode);
+    protected void extendActionMode(ActionMode actionMode, Menu menu) {
 
-            Class classToolbar = Class.forName("com.android.internal.widget.FloatingToolbar");
-            Field fieldToolbarPopup = classToolbar.getDeclaredField("mPopup");
-            Field fieldToolbarWidth = classToolbar.getDeclaredField("mWidthChanged");
-            fieldToolbarPopup.setAccessible(true);
-            fieldToolbarWidth.setAccessible(true);
-            Object popup = fieldToolbarPopup.get(toolbar);
-
-            Class classToolbarPopup = Class.forName("com.android.internal.widget.FloatingToolbar$FloatingToolbarPopup");
-            Field fieldToolbarPopupParent = classToolbarPopup.getDeclaredField("mParent");
-            fieldToolbarPopupParent.setAccessible(true);
-
-            View currentView = (View) fieldToolbarPopupParent.get(popup);
-            if (currentView != windowView) {
-                fieldToolbarPopupParent.set(popup, windowView);
-
-                Method method = classActionMode.getDeclaredMethod("updateViewLocationInWindow");
-                method.setAccessible(true);
-                method.invoke(mode);
-            }
-        } catch (Throwable e) {
-            FileLog.e(e);
-        }
     }
 
     private void onWindowSizeChanged() {
@@ -620,6 +540,7 @@ public class PhotoViewerCaptionEnterView extends FrameLayout implements Notifica
 
     public void closeKeyboard() {
         AndroidUtilities.hideKeyboard(messageEditText);
+        messageEditText.clearFocus();
     }
 
     public boolean isKeyboardVisible() {

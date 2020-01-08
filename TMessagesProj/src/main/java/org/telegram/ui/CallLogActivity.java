@@ -24,7 +24,6 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
@@ -88,6 +87,10 @@ public class CallLogActivity extends BaseFragment implements NotificationCenter.
 	@SuppressWarnings("unchecked")
 	public void didReceivedNotification(int id, int account, Object... args) {
 		if (id == NotificationCenter.didReceiveNewMessages && firstLoaded) {
+			boolean scheduled = (Boolean) args[2];
+			if (scheduled) {
+				return;
+			}
 			ArrayList<MessageObject> arr = (ArrayList<MessageObject>) args[1];
 			for (MessageObject msg : arr) {
 				if (msg.messageOwner.action instanceof TLRPC.TL_messageActionPhoneCall) {
@@ -115,6 +118,10 @@ public class CallLogActivity extends BaseFragment implements NotificationCenter.
 				}
 			}
 		} else if (id == NotificationCenter.messagesDeleted && firstLoaded) {
+			boolean scheduled = (Boolean) args[2];
+			if (scheduled) {
+				return;
+			}
 			boolean didChange = false;
 			ArrayList<Integer> ids = (ArrayList<Integer>) args[0];
 			Iterator<CallLogRow> itrtr = calls.iterator();
@@ -347,6 +354,7 @@ public class CallLogActivity extends BaseFragment implements NotificationCenter.
 			args.putBoolean("destroyAfterSelect", true);
 			args.putBoolean("returnAsResult", true);
 			args.putBoolean("onlyUsers", true);
+			args.putBoolean("allowSelf", false);
 			ContactsActivity contactsFragment = new ContactsActivity(args);
 			contactsFragment.setDelegate((user, param, activity) -> VoIPHelper.startCall(user, getParentActivity(), null));
 			presentFragment(contactsFragment);
@@ -445,7 +453,7 @@ public class CallLogActivity extends BaseFragment implements NotificationCenter.
 					for (TLRPC.Message msg : row.calls) {
 						ids.add(msg.id);
 					}
-					MessagesController.getInstance(currentAccount).deleteMessages(ids, null, null, 0, false);
+					MessagesController.getInstance(currentAccount).deleteMessages(ids, null, null, 0, 0, false, false);
 				})
 				.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null)
 				.show()
@@ -623,9 +631,9 @@ public class CallLogActivity extends BaseFragment implements NotificationCenter.
 				new ThemeDescription(listView, 0, new Class[]{CustomCell.class}, null, new Drawable[]{Theme.dialogs_verifiedDrawable}, null, Theme.key_chats_verifiedBackground),
 				new ThemeDescription(listView, 0, new Class[]{CustomCell.class}, Theme.dialogs_offlinePaint, null, null, Theme.key_windowBackgroundWhiteGrayText3),
 				new ThemeDescription(listView, 0, new Class[]{CustomCell.class}, Theme.dialogs_onlinePaint, null, null, Theme.key_windowBackgroundWhiteBlueText3),
-				new ThemeDescription(listView, 0, new Class[]{CustomCell.class}, null, new Paint[]{Theme.dialogs_namePaint, Theme.dialogs_searchNamePaint}, null, null, Theme.key_chats_name),
-				new ThemeDescription(listView, 0, new Class[]{CustomCell.class}, null, new Paint[]{Theme.dialogs_nameEncryptedPaint, Theme.dialogs_searchNameEncryptedPaint}, null, null, Theme.key_chats_secretName),
-				new ThemeDescription(listView, 0, new Class[]{CustomCell.class}, null, new Drawable[]{Theme.avatar_broadcastDrawable, Theme.avatar_savedDrawable}, null, Theme.key_avatar_text),
+				new ThemeDescription(listView, 0, new Class[]{CustomCell.class}, null, new Paint[]{Theme.dialogs_namePaint[0], Theme.dialogs_namePaint[1], Theme.dialogs_searchNamePaint}, null, null, Theme.key_chats_name),
+				new ThemeDescription(listView, 0, new Class[]{CustomCell.class}, null, new Paint[]{Theme.dialogs_nameEncryptedPaint[0], Theme.dialogs_nameEncryptedPaint[1], Theme.dialogs_searchNameEncryptedPaint}, null, null, Theme.key_chats_secretName),
+				new ThemeDescription(listView, 0, new Class[]{CustomCell.class}, null, new Drawable[]{Theme.avatar_savedDrawable}, null, Theme.key_avatar_text),
 				new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundRed),
 				new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundOrange),
 				new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundViolet),

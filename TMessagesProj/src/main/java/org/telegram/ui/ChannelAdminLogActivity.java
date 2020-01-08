@@ -96,6 +96,7 @@ import org.telegram.ui.Components.AdminLogFilterAlert;
 import org.telegram.ui.Components.ChatAvatarContainer;
 import org.telegram.ui.Components.EmbedBottomSheet;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.PhonebookShareAlert;
 import org.telegram.ui.Components.PipRoundVideoView;
 import org.telegram.ui.Components.RadialProgressView;
 import org.telegram.ui.Components.RecyclerListView;
@@ -1309,9 +1310,9 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
                                 scrollToPositionOnRecreate = -1;
                             }
                         }
-                        Theme.ThemeInfo themeInfo = Theme.applyThemeFile(locFile, selectedObject.getDocumentName(), true);
+                        Theme.ThemeInfo themeInfo = Theme.applyThemeFile(locFile, selectedObject.getDocumentName(), null, true);
                         if (themeInfo != null) {
-                            presentFragment(new ThemePreviewActivity(locFile, themeInfo));
+                            presentFragment(new ThemePreviewActivity(themeInfo));
                         } else {
                             scrollToPositionOnRecreate = -1;
                             if (getParentActivity() == null) {
@@ -1643,7 +1644,7 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
                 if (viewBottom > height) {
                     viewBottom = viewTop + height;
                 }
-                messageCell.setVisiblePart(viewTop, viewBottom - viewTop);
+                messageCell.setVisiblePart(viewTop, viewBottom - viewTop, contentView.getHeightWithKeyboard() - AndroidUtilities.dp(48) - chatListView.getTop());
 
                 MessageObject messageObject = messageCell.getMessageObject();
                 if (roundVideoContainer != null && messageObject.isRoundVideo() && MediaController.getInstance().isPlayingMessage(messageObject)) {
@@ -1695,7 +1696,7 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
             } else {
                 messageObject = ((ChatActionCell) minMessageChild).getMessageObject();
             }
-            floatingDateView.setCustomDate(messageObject.messageOwner.date);
+            floatingDateView.setCustomDate(messageObject.messageOwner.date, false, true);
         }
         currentFloatingDateOnScreen = false;
         currentFloatingTopIsNotMessage = !(minChild instanceof ChatMessageCell || minChild instanceof ChatActionCell);
@@ -1766,8 +1767,6 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
                 chatAdapter.notifyDataSetChanged();
             }
         }
-
-        fixLayout();
     }
 
     @Override
@@ -1780,37 +1779,22 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
         wasPaused = true;
     }
 
-    public void openVCard(String vcard, String first_name, String last_name) {
+    public void openVCard(TLRPC.User user, String vcard, String first_name, String last_name) {
         try {
-            File f = new File(FileLoader.getDirectory(FileLoader.MEDIA_DIR_CACHE), "sharing/");
+            File f = AndroidUtilities.getSharingDirectory();
             f.mkdirs();
             f = new File(f, "vcard.vcf");
             BufferedWriter writer = new BufferedWriter(new FileWriter(f));
             writer.write(vcard);
             writer.close();
-            presentFragment(new PhonebookShareActivity(null, null, f, ContactsController.formatName(first_name, last_name)));
+            showDialog(new PhonebookShareAlert(this, null, user, null, f, ContactsController.formatName(first_name, last_name)));
         } catch (Exception e) {
             FileLog.e(e);
         }
     }
 
-    private void fixLayout() {
-        if (avatarContainer != null) {
-            avatarContainer.getViewTreeObserver().addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
-                @Override
-                public boolean onPreDraw() {
-                    if (avatarContainer != null) {
-                        avatarContainer.getViewTreeObserver().removeOnPreDrawListener(this);
-                    }
-                    return true;
-                }
-            });
-        }
-    }
-
     @Override
     public void onConfigurationChanged(android.content.res.Configuration newConfig) {
-        fixLayout();
         if (visibleDialog instanceof DatePickerDialog) {
             visibleDialog.dismiss();
         }
@@ -1979,16 +1963,6 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
                     }
 
                     @Override
-                    public void didPressBotButton(ChatMessageCell cell, TLRPC.KeyboardButton button) {
-
-                    }
-
-                    @Override
-                    public void didPressVoteButton(ChatMessageCell cell, TLRPC.TL_pollAnswer button) {
-
-                    }
-
-                    @Override
                     public void didPressCancelSendButton(ChatMessageCell cell) {
 
                     }
@@ -2145,9 +2119,9 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
                                         scrollToPositionOnRecreate = -1;
                                     }
                                 }
-                                Theme.ThemeInfo themeInfo = Theme.applyThemeFile(locFile, message.getDocumentName(), true);
+                                Theme.ThemeInfo themeInfo = Theme.applyThemeFile(locFile, message.getDocumentName(), null, true);
                                 if (themeInfo != null) {
-                                    presentFragment(new ThemePreviewActivity(locFile, themeInfo));
+                                    presentFragment(new ThemePreviewActivity(themeInfo));
                                     return;
                                 } else {
                                     scrollToPositionOnRecreate = -1;
@@ -2170,7 +2144,7 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
                                 ArticleViewer.getInstance().open(messageObject);
                             }
                         } else if (type == 5) {
-                            openVCard(messageObject.messageOwner.media.vcard, messageObject.messageOwner.media.first_name, messageObject.messageOwner.media.last_name);
+                            openVCard(getMessagesController().getUser(messageObject.messageOwner.media.user_id), messageObject.messageOwner.media.vcard, messageObject.messageOwner.media.first_name, messageObject.messageOwner.media.last_name);
                         } else {
                             if (messageObject.messageOwner.media != null && messageObject.messageOwner.media.webpage != null) {
                                 Browser.openUrl(getParentActivity(), messageObject.messageOwner.media.webpage.url);
@@ -2318,7 +2292,7 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
                         if (viewBottom > height) {
                             viewBottom = viewTop + height;
                         }
-                        messageCell.setVisiblePart(viewTop, viewBottom - viewTop);
+                        messageCell.setVisiblePart(viewTop, viewBottom - viewTop, contentView.getHeightWithKeyboard() - AndroidUtilities.dp(48) - chatListView.getTop());
 
                         return true;
                     }
@@ -2436,7 +2410,7 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
                 new ThemeDescription(avatarContainer.getSubtitleTextView(), ThemeDescription.FLAG_TEXTCOLOR, null, new Paint[]{Theme.chat_statusPaint, Theme.chat_statusRecordPaint}, null, null, Theme.key_actionBarDefaultSubtitle, null),
                 new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_SELECTORCOLOR, null, null, null, null, Theme.key_actionBarDefaultSelector),
 
-                new ThemeDescription(chatListView, 0, new Class[]{ChatMessageCell.class}, null, new Drawable[]{Theme.avatar_broadcastDrawable, Theme.avatar_savedDrawable}, null, Theme.key_avatar_text),
+                new ThemeDescription(chatListView, 0, new Class[]{ChatMessageCell.class}, null, new Drawable[]{Theme.avatar_savedDrawable}, null, Theme.key_avatar_text),
                 new ThemeDescription(chatListView, 0, new Class[]{ChatMessageCell.class}, null, null, null, Theme.key_avatar_backgroundRed),
                 new ThemeDescription(chatListView, 0, new Class[]{ChatMessageCell.class}, null, null, null, Theme.key_avatar_backgroundOrange),
                 new ThemeDescription(chatListView, 0, new Class[]{ChatMessageCell.class}, null, null, null, Theme.key_avatar_backgroundViolet),
@@ -2455,6 +2429,7 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
                 new ThemeDescription(chatListView, 0, new Class[]{ChatMessageCell.class}, null, new Drawable[]{Theme.chat_msgInSelectedDrawable, Theme.chat_msgInMediaSelectedDrawable}, null, Theme.key_chat_inBubbleSelected),
                 new ThemeDescription(chatListView, 0, new Class[]{ChatMessageCell.class}, null, new Drawable[]{Theme.chat_msgInShadowDrawable, Theme.chat_msgInMediaShadowDrawable}, null, Theme.key_chat_inBubbleShadow),
                 new ThemeDescription(chatListView, 0, new Class[]{ChatMessageCell.class}, null, new Drawable[]{Theme.chat_msgOutDrawable, Theme.chat_msgOutMediaDrawable}, null, Theme.key_chat_outBubble),
+                new ThemeDescription(chatListView, 0, new Class[]{ChatMessageCell.class}, null, new Drawable[]{Theme.chat_msgOutDrawable, Theme.chat_msgOutMediaDrawable}, null, Theme.key_chat_outBubbleGradient),
                 new ThemeDescription(chatListView, 0, new Class[]{ChatMessageCell.class}, null, new Drawable[]{Theme.chat_msgOutSelectedDrawable, Theme.chat_msgOutMediaSelectedDrawable}, null, Theme.key_chat_outBubbleSelected),
                 new ThemeDescription(chatListView, 0, new Class[]{ChatMessageCell.class}, null, new Drawable[]{Theme.chat_msgOutShadowDrawable, Theme.chat_msgOutMediaShadowDrawable}, null, Theme.key_chat_outBubbleShadow),
                 new ThemeDescription(chatListView, ThemeDescription.FLAG_TEXTCOLOR, new Class[]{ChatActionCell.class}, Theme.chat_actionTextPaint, null, null, Theme.key_chat_serviceText),
@@ -2468,8 +2443,10 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
                 new ThemeDescription(chatListView, 0, new Class[]{ChatMessageCell.class}, null, null, null, Theme.key_chat_messageTextOut),
                 new ThemeDescription(chatListView, ThemeDescription.FLAG_LINKCOLOR, new Class[]{ChatMessageCell.class}, null, null, null, Theme.key_chat_messageLinkIn, null),
                 new ThemeDescription(chatListView, ThemeDescription.FLAG_LINKCOLOR, new Class[]{ChatMessageCell.class}, null, null, null, Theme.key_chat_messageLinkOut, null),
-                new ThemeDescription(chatListView, 0, new Class[]{ChatMessageCell.class}, null, new Drawable[]{Theme.chat_msgOutCheckDrawable, Theme.chat_msgOutHalfCheckDrawable}, null, Theme.key_chat_outSentCheck),
-                new ThemeDescription(chatListView, 0, new Class[]{ChatMessageCell.class}, null, new Drawable[]{Theme.chat_msgOutCheckSelectedDrawable, Theme.chat_msgOutHalfCheckSelectedDrawable}, null, Theme.key_chat_outSentCheckSelected),
+                new ThemeDescription(chatListView, 0, new Class[]{ChatMessageCell.class}, null, new Drawable[]{Theme.chat_msgOutCheckDrawable}, null, Theme.key_chat_outSentCheck),
+                new ThemeDescription(chatListView, 0, new Class[]{ChatMessageCell.class}, null, new Drawable[]{Theme.chat_msgOutCheckSelectedDrawable}, null, Theme.key_chat_outSentCheckSelected),
+                new ThemeDescription(chatListView, 0, new Class[]{ChatMessageCell.class}, null, new Drawable[]{Theme.chat_msgOutCheckReadDrawable, Theme.chat_msgOutHalfCheckDrawable}, null, Theme.key_chat_outSentCheckRead),
+                new ThemeDescription(chatListView, 0, new Class[]{ChatMessageCell.class}, null, new Drawable[]{Theme.chat_msgOutCheckReadSelectedDrawable, Theme.chat_msgOutHalfCheckSelectedDrawable}, null, Theme.key_chat_outSentCheckReadSelected),
                 new ThemeDescription(chatListView, 0, new Class[]{ChatMessageCell.class}, null, new Drawable[]{Theme.chat_msgOutClockDrawable}, null, Theme.key_chat_outSentClock),
                 new ThemeDescription(chatListView, 0, new Class[]{ChatMessageCell.class}, null, new Drawable[]{Theme.chat_msgOutSelectedClockDrawable}, null, Theme.key_chat_outSentClockSelected),
                 new ThemeDescription(chatListView, 0, new Class[]{ChatMessageCell.class}, null, new Drawable[]{Theme.chat_msgInClockDrawable}, null, Theme.key_chat_inSentClock),

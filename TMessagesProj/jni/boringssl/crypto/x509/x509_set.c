@@ -162,3 +162,8 @@ STACK_OF(X509_EXTENSION) *X509_get0_extensions(const X509 *x)
 {
     return x->cert_info->extensions;
 }
+
+const X509_ALGOR *X509_get0_tbs_sigalg(const X509 *x)
+{
+    return x->cert_info->signature;
+}

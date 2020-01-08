@@ -20,7 +20,6 @@ import androidx.annotation.Nullable;
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.source.MediaSourceEventListener.EventDispatcher;
 import com.google.android.exoplayer2.source.hls.HlsDataSourceFactory;
-import com.google.android.exoplayer2.source.hls.playlist.HlsMasterPlaylist.HlsUrl;
 import com.google.android.exoplayer2.upstream.LoadErrorHandlingPolicy;
 import java.io.IOException;
 
@@ -81,21 +80,21 @@ public interface HlsPlaylistTracker {
      *     {@link C#TIME_UNSET} if the playlist should not be blacklisted.
      * @return True if blacklisting did not encounter errors. False otherwise.
      */
-    boolean onPlaylistError(HlsUrl url, long blacklistDurationMs);
+    boolean onPlaylistError(Uri url, long blacklistDurationMs);
   }
 
   /** Thrown when a playlist is considered to be stuck due to a server side error. */
   final class PlaylistStuckException extends IOException {
 
     /** The url of the stuck playlist. */
-    public final String url;
+    public final Uri url;
 
     /**
      * Creates an instance.
      *
      * @param url See {@link #url}.
      */
-    public PlaylistStuckException(String url) {
+    public PlaylistStuckException(Uri url) {
       this.url = url;
     }
   }
@@ -104,14 +103,14 @@ public interface HlsPlaylistTracker {
   final class PlaylistResetException extends IOException {
 
     /** The url of the reset playlist. */
-    public final String url;
+    public final Uri url;
 
     /**
      * Creates an instance.
      *
      * @param url See {@link #url}.
      */
-    public PlaylistResetException(String url) {
+    public PlaylistResetException(Uri url) {
       this.url = url;
     }
   }
@@ -164,16 +163,16 @@ public interface HlsPlaylistTracker {
 
   /**
    * Returns the most recent snapshot available of the playlist referenced by the provided {@link
-   * HlsUrl}.
+   * Uri}.
    *
-   * @param url The {@link HlsUrl} corresponding to the requested media playlist.
+   * @param url The {@link Uri} corresponding to the requested media playlist.
    * @param isForPlayback Whether the caller might use the snapshot to request media segments for
    *     playback. If true, the primary playlist may be updated to the one requested.
-   * @return The most recent snapshot of the playlist referenced by the provided {@link HlsUrl}. May
-   *     be null if no snapshot has been loaded yet.
+   * @return The most recent snapshot of the playlist referenced by the provided {@link Uri}. May be
+   *     null if no snapshot has been loaded yet.
    */
   @Nullable
-  HlsMediaPlaylist getPlaylistSnapshot(HlsUrl url, boolean isForPlayback);
+  HlsMediaPlaylist getPlaylistSnapshot(Uri url, boolean isForPlayback);
 
   /**
    * Returns the start time of the first loaded primary playlist, or {@link C#TIME_UNSET} if no
@@ -182,15 +181,14 @@ public interface HlsPlaylistTracker {
   long getInitialStartTimeUs();
 
   /**
-   * Returns whether the snapshot of the playlist referenced by the provided {@link HlsUrl} is
-   * valid, meaning all the segments referenced by the playlist are expected to be available. If the
+   * Returns whether the snapshot of the playlist referenced by the provided {@link Uri} is valid,
+   * meaning all the segments referenced by the playlist are expected to be available. If the
    * playlist is not valid then some of the segments may no longer be available.
    *
-   * @param url The {@link HlsUrl}.
-   * @return Whether the snapshot of the playlist referenced by the provided {@link HlsUrl} is
-   *     valid.
+   * @param url The {@link Uri}.
+   * @return Whether the snapshot of the playlist referenced by the provided {@link Uri} is valid.
    */
-  boolean isSnapshotValid(HlsUrl url);
+  boolean isSnapshotValid(Uri url);
 
   /**
    * If the tracker is having trouble refreshing the master playlist or the primary playlist, this
@@ -201,13 +199,13 @@ public interface HlsPlaylistTracker {
   void maybeThrowPrimaryPlaylistRefreshError() throws IOException;
 
   /**
-   * If the playlist is having trouble refreshing the playlist referenced by the given {@link
-   * HlsUrl}, this method throws the underlying error.
+   * If the playlist is having trouble refreshing the playlist referenced by the given {@link Uri},
+   * this method throws the underlying error.
    *
-   * @param url The {@link HlsUrl}.
+   * @param url The {@link Uri}.
    * @throws IOException The underyling error.
    */
-  void maybeThrowPlaylistRefreshError(HlsUrl url) throws IOException;
+  void maybeThrowPlaylistRefreshError(Uri url) throws IOException;
 
   /**
    * Requests a playlist refresh and whitelists it.
@@ -215,9 +213,9 @@ public interface HlsPlaylistTracker {
    * <p>The playlist tracker may choose the delay the playlist refresh. The request is discarded if
    * a refresh was already pending.
    *
-   * @param url The {@link HlsUrl} of the playlist to be refreshed.
+   * @param url The {@link Uri} of the playlist to be refreshed.
    */
-  void refreshPlaylist(HlsUrl url);
+  void refreshPlaylist(Uri url);
 
   /**
    * Returns whether the tracked playlists describe a live stream.
