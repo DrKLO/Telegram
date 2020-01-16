@@ -6,6 +6,9 @@ package org.telegram.ui;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.graphics.Canvas;
+import android.graphics.Paint;
+import android.text.TextPaint;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
@@ -32,17 +35,104 @@ import org.telegram.ui.Cells.TextDetailSettingsCell;
 import org.telegram.ui.Cells.TextSettingsCell;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RecyclerListView;
+import org.telegram.ui.Cells.ChatMessageCell;
+import org.telegram.ui.Components.SeekBarView;
 
 import java.lang.reflect.*;
 import java.util.ArrayList;
 
 public class ForkSettingsActivity extends BaseFragment {
 
+    private class StickerSizeCell extends FrameLayout {
+
+        private SeekBarView sizeBar;
+        private TextPaint textPaint;
+
+        private final int startStickerSize = 2;
+        private final int endStickerSize = (int)ChatMessageCell.MAX_STICKER_SIZE;
+        private final String option = "stickerSize";
+
+        private float diff() {
+            return (float)(endStickerSize -  startStickerSize);
+        }
+
+        private float stickerSize() {
+            return MessagesController.getGlobalMainSettings().getFloat(option, endStickerSize);
+        }
+
+        private void setStickerSize(float size) {
+            SharedPreferences preferences = MessagesController.getGlobalMainSettings();
+            SharedPreferences.Editor editor = preferences.edit();
+            editor.putFloat(option, size);
+            editor.commit();
+        }
+
+        public StickerSizeCell(Context context) {
+            super(context);
+
+            setWillNotDraw(false);
+
+            textPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
+            textPaint.setTextSize(AndroidUtilities.dp(16));
+
+            sizeBar = new SeekBarView(context);
+            sizeBar.setReportChanges(true);
+            sizeBar.setDelegate(new SeekBarView.SeekBarViewDelegate() {
+                @Override
+                public void onSeekBarDrag(boolean stop, float progress) {
+                    setStickerSize(startStickerSize + diff() * progress);
+                    listAdapter.notifyItemChanged(stickerSizeRow);
+                }
+
+                @Override
+                public void onSeekBarPressed(boolean pressed) {
+
+                }
+            });
+            addView(
+                sizeBar,
+                LayoutHelper.createFrame(
+                    LayoutHelper.MATCH_PARENT,
+                    38,
+                    Gravity.LEFT | Gravity.TOP,
+                    9,
+                    5,
+                    43,
+                    11));
+        }
+
+        @Override
+        protected void onDraw(Canvas canvas) {
+            textPaint.setColor(Theme.getColor(Theme.key_windowBackgroundWhiteValueText));
+            canvas.drawText(
+                "" + Math.round(stickerSize()),
+                getMeasuredWidth() - AndroidUtilities.dp(39),
+                AndroidUtilities.dp(28),
+                textPaint);
+        }
+
+        @Override
+        protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+            super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+            float a = (stickerSize() - startStickerSize);
+            float b = diff();
+            sizeBar.setProgress(a / b);
+        }
+
+        @Override
+        public void invalidate() {
+            super.invalidate();
+            sizeBar.invalidate();
+        }
+    }
+
+
     private RecyclerListView listView;
     private ListAdapter listAdapter;
 
     private ArrayList<Integer> sectionRows = new ArrayList<Integer>();
-    private String[] sectionStrings = {"General", "ChatCamera"};
+    private String[] sectionStrings = {"General", "ChatCamera", "StickerSize"};
+    private int[] sectionInts = {0, 0, R.string.StickerSize};
 
     private int rowCount;
 
@@ -57,6 +147,8 @@ public class ForkSettingsActivity extends BaseFragment {
     private int mentionByName;
     private int openArchiveOnPull;
     private int hideBottomButton;
+
+    private int stickerSizeRow;
 
     private ArrayList<Integer> emptyRows = new ArrayList<Integer>();
     private int syncPinsRow;
@@ -82,6 +174,9 @@ public class ForkSettingsActivity extends BaseFragment {
     private static String getLocale(String s) {
         return LocaleController.getString(s, 0);
     }
+    private static String getLocale(String s, int i) {
+        return LocaleController.getString(s, i);
+    }
 
     @Override
     public boolean onFragmentCreate() {
@@ -104,6 +199,10 @@ public class ForkSettingsActivity extends BaseFragment {
         sectionRows.add(rowCount++);
         inappCameraRow = rowCount++;
         systemCameraRow = rowCount++;
+
+        emptyRows.add(rowCount++);
+        sectionRows.add(rowCount++);
+        stickerSizeRow = rowCount++;
 
         emptyRows.add(rowCount++);
         syncPinsRow = rowCount++;
@@ -292,7 +391,7 @@ public class ForkSettingsActivity extends BaseFragment {
                         break;
                     }
                     HeaderCell headerCell = (HeaderCell) holder.itemView;
-                    headerCell.setText(getLocale(sectionStrings[i]));
+                    headerCell.setText(getLocale(sectionStrings[i], sectionInts[i]));
                     break;
                 }
             }
@@ -325,24 +424,22 @@ public class ForkSettingsActivity extends BaseFragment {
                     break;
                 case 2:
                     view = new TextSettingsCell(mContext);
-                    view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
                     break;
                 case 3:
                     view = new TextCheckCell(mContext);
-                    view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
                     break;
                 case 4:
                     view = new HeaderCell(mContext);
-                    view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
                     break;
                 case 5:
-                    view = new NotificationsCheckCell(mContext);
-                    view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+                    view = new StickerSizeCell(mContext);
                     break;
                 case 6:
                     view = new TextDetailSettingsCell(mContext);
-                    view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
                     break;
+            }
+            if (viewType != 1) {
+                view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
             }
             view.setLayoutParams(new RecyclerView.LayoutParams(RecyclerView.LayoutParams.MATCH_PARENT, RecyclerView.LayoutParams.WRAP_CONTENT));
             return new RecyclerListView.Holder(view);
@@ -369,6 +466,8 @@ public class ForkSettingsActivity extends BaseFragment {
                 return 3;
             } else if (sectionRows.contains(position)) {
                 return 4;
+            } else if (position == stickerSizeRow) {
+                return 5;
             }
             return 6;
         }

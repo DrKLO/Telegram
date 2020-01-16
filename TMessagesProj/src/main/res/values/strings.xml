@@ -8473,4 +8473,5 @@
     <string name="MentionByName">Mention User by Name</string>
     <string name="HideBottomButton">Hide Bottom Button</string>
     <string name="OpenArchiveOnPull">Open Archive on Pulldown</string>
+    <string name="StickerSize">Sticker Size</string>
 </resources>
