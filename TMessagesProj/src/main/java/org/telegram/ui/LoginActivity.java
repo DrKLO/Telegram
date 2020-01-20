@@ -1447,7 +1447,7 @@ public class LoginActivity extends BaseFragment {
             addView(addProxyButton, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 42, Gravity.CENTER_HORIZONTAL | Gravity.BOTTOM, 10, 0, 10, 10));
             addProxyButton.setOnClickListener(view -> presentFragment(new ProxyListActivity()));
 
-            if (newAccount) {
+            if (true) {
                 checkBoxCell = new CheckBoxCell(context, 2);
                 checkBoxCell.setText(LocaleController.getString("SyncContacts", R.string.SyncContacts), "", syncContacts, false);
                 addView(checkBoxCell, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, Gravity.LEFT | Gravity.TOP, 0, 0, 0, 0));
