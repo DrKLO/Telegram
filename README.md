@@ -32,6 +32,8 @@ Fork Client is a fork of the official Telegram for Android application.
 - Added upload date for profile photos.
 - Added ability to see the profile info from the dialogs list via context menu.
 - Added ability to see unread count when you want to mark as read multiple dialogs.
+- Option to directly open the archive on pulldown
+- PiP mode for YouTube's in-app player
 
 ### Privacy Features:
 
