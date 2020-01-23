@@ -2960,11 +2960,11 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                                     holder = chatListView.findViewHolderForAdapterPosition(prevPosition);
                                     if (holder != null) {
                                         top = holder.itemView.getTop();
-                                        if (y - AndroidUtilities.dp(48) < holder.itemView.getBottom()) {
-                                            tx = Math.min(holder.itemView.getTranslationX(), tx);
-                                        }
                                         if (holder.itemView instanceof ChatMessageCell) {
                                             cell = (ChatMessageCell) holder.itemView;
+                                            if (y - AndroidUtilities.dp(48) < holder.itemView.getBottom()) {
+                                                //tx = Math.min(cell.getTranslationX(), tx);
+                                            }
                                             if (!cell.isPinnedTop()) {
                                                 break;
                                             }
@@ -10305,6 +10305,16 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
 
                         dayArray.add(0, obj);
 
+                        if (chatAdapter != null && placeToPaste >= 0 && placeToPaste < messages.size()) {
+                            MessageObject prevMessage = messages.get(placeToPaste);
+                            if (prevMessage.hasValidGroupId() && prevMessage.getGroupId() != obj.getGroupId()) {
+                                MessageObject.GroupedMessages group = groupedMessagesMap.get(prevMessage.getGroupId());
+                                if (group != null && group.messages.size() > 1) {
+                                    int size = group.messages.size();
+                                    chatAdapter.notifyItemRangeChanged(1, size - 1);
+                                }
+                            }
+                        }
                         messages.add(placeToPaste, obj);
                         if (chatAdapter != null) {
                             chatAdapter.notifyItemChanged(placeToPaste);
