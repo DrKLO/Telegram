@@ -9566,11 +9566,17 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 button.title.draw(canvas);
                 int alpha = (int) (animatePollAnswerAlpha ? 255 * Math.min((pollUnvoteInProgress ? 1.0f - pollAnimationProgress : pollAnimationProgress) / 0.3f, 1.0f) : 255);
                 if (pollVoted || pollClosed || animatePollAnswerAlpha) {
-                    if (lastPoll.quiz && pollVoted && button.chosen && !currentBackgroundDrawable.hasGradient()) {
+                    if (lastPoll.quiz && pollVoted && button.chosen) {
+                        String key;
                         if (button.correct) {
-                            Theme.chat_docBackPaint.setColor(Theme.getColor(currentMessageObject.isOutOwner() ? Theme.key_chat_outPollCorrectAnswer : Theme.key_chat_inPollCorrectAnswer));
+                            key = currentMessageObject.isOutOwner() ? Theme.key_chat_outPollCorrectAnswer : Theme.key_chat_inPollCorrectAnswer;
                         } else {
-                            Theme.chat_docBackPaint.setColor(Theme.getColor(currentMessageObject.isOutOwner() ? Theme.key_chat_outPollWrongAnswer : Theme.key_chat_inPollWrongAnswer));
+                            key = currentMessageObject.isOutOwner() ? Theme.key_chat_outPollWrongAnswer : Theme.key_chat_inPollWrongAnswer;
+                        }
+                        if (!currentBackgroundDrawable.hasGradient() || Theme.hasThemeKey(key)) {
+                            Theme.chat_docBackPaint.setColor(Theme.getColor(key));
+                        } else {
+                            Theme.chat_docBackPaint.setColor(Theme.getColor(currentMessageObject.isOutOwner() ? Theme.key_chat_outAudioSeekbarFill : Theme.key_chat_inAudioSeekbarFill));
                         }
                     } else {
                         Theme.chat_docBackPaint.setColor(Theme.getColor(currentMessageObject.isOutOwner() ? Theme.key_chat_outAudioSeekbarFill : Theme.key_chat_inAudioSeekbarFill));
