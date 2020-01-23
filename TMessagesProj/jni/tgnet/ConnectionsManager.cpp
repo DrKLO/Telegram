@@ -197,12 +197,10 @@ void ConnectionsManager::select() {
         EventObject *eventObject = (EventObject *) epollEvents[a].data.ptr;
         eventObject->onEvent(epollEvents[a].events);
     }
-    for (std::vector<ConnectionSocket *>::iterator iter = activeConnections.begin(); iter != activeConnections.end();) {
-        if ((*iter)->checkTimeout(now)) {
-            iter = activeConnections.erase(iter);
-        } else {
-            iter++;
-        }
+    activeConnectionsCopy.resize(activeConnections.size());
+    std::copy(std::begin(activeConnections), std::end(activeConnections), std::begin(activeConnectionsCopy));
+    for (auto connection : activeConnectionsCopy) {
+        connection->checkTimeout(now);
     }
 
     Datacenter *datacenter = getDatacenterWithId(currentDatacenterId);

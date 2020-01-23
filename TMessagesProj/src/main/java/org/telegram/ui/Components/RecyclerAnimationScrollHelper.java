@@ -177,11 +177,13 @@ public class RecyclerAnimationScrollHelper {
                             }
                             child.setTranslationY(0);
                         }
-                        if (animationCallback != null) {
-                            animationCallback.onEndAnimation();
-                        }
+
                         if (finalAnimatableAdapter != null) {
                             finalAnimatableAdapter.onAnimationEnd();
+                        }
+
+                        if (animationCallback != null) {
+                            animationCallback.onEndAnimation();
                         }
 
                         animator = null;
@@ -264,7 +266,7 @@ public class RecyclerAnimationScrollHelper {
             if (!animationRunning) {
                 super.notifyDataSetChanged();
             } else {
-                shouldNotifyDataSetChanged = false;
+                shouldNotifyDataSetChanged = true;
             }
         }
 
@@ -297,20 +299,8 @@ public class RecyclerAnimationScrollHelper {
 
         public void onAnimationEnd() {
             animationRunning = false;
-            if (shouldNotifyDataSetChanged) {
+            if (shouldNotifyDataSetChanged || !rangeInserted.isEmpty() || !rangeRemoved.isEmpty()) {
                 notifyDataSetChanged();
-            } else {
-                if (!rangeInserted.isEmpty()) {
-                    for (int i = 0; i < rangeInserted.size(); i += 2) {
-                        notifyItemRangeInserted(rangeInserted.get(i), rangeInserted.get(i + 1));
-                    }
-                }
-
-                if (!rangeRemoved.isEmpty()) {
-                    for (int i = 0; i < rangeRemoved.size(); i += 2) {
-                        notifyItemRangeRemoved(rangeRemoved.get(i), rangeRemoved.get(i + 1));
-                    }
-                }
             }
         }
     }

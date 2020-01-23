@@ -533,9 +533,7 @@ int32_t ConnectionSocket::checkSocketError(int32_t *error) {
 
 void ConnectionSocket::closeSocket(int32_t reason, int32_t error) {
     lastEventTime = ConnectionsManager::getInstance(instanceNum).getCurrentTimeMonotonicMillis();
-    if (reason != 2) {
-        ConnectionsManager::getInstance(instanceNum).detachConnection(this);
-    }
+    ConnectionsManager::getInstance(instanceNum).detachConnection(this);
     if (socketFd >= 0) {
         epoll_ctl(ConnectionsManager::getInstance(instanceNum).epolFd, EPOLL_CTL_DEL, socketFd, nullptr);
         if (close(socketFd) != 0) {

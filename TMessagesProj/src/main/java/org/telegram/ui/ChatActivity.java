@@ -9143,7 +9143,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                         needSelectFromMessageId = needSelect;
                     }
                 }
-                
+
                 loadsCount++;
                 long did = (Long) args[0];
                 int loadIndex = did == dialog_id ? 0 : 1;
@@ -12407,13 +12407,16 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                             public void onAnimationUpdate(ValueAnimator animation) {
                                 float translationY = (float) animation.getAnimatedValue();
                                 if (!wasManualScroll && unreadMessageObject != null && chatListView != null) {
-                                    if (position < 0 || position >= chatAdapter.getItemCount() || messages.get(position - chatAdapter.messagesStartRow) != unreadMessageObject) {
+                                    int msgIndex = position - chatAdapter.messagesStartRow;
+                                    if (msgIndex < 0 || msgIndex >= messages.size() || messages.get(msgIndex) != unreadMessageObject) {
                                         position = chatAdapter.messagesStartRow + messages.indexOf(unreadMessageObject);
                                     }
-                                    View v = chatLayoutManager.findViewByPosition(position);
-                                    float top = pinnedMessageView.getBottom() + translationY - chatListView.getTop();
-                                    if (v != null && top > v.getTop() + AndroidUtilities.dp(9)) {
-                                        chatListView.scrollBy(0, (int) (v.getTop() + AndroidUtilities.dp(9) - top));
+                                    if (position >= 0) {
+                                        View v = chatLayoutManager.findViewByPosition(position);
+                                        float top = pinnedMessageView.getBottom() + translationY - chatListView.getTop();
+                                        if (v != null && top > v.getTop() + AndroidUtilities.dp(9)) {
+                                            chatListView.scrollBy(0, (int) (v.getTop() + AndroidUtilities.dp(9) - top));
+                                        }
                                     }
                                 }
                                 pinnedMessageView.setTranslationY(translationY);

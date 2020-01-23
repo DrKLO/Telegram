@@ -496,11 +496,20 @@ public class ConnectionsManager extends BaseController {
     }
 
     public static int getInitFlags() {
+        int flags = 0;
         EmuDetector detector = EmuDetector.with(ApplicationLoader.applicationContext);
         if (detector.detect()) {
-            return 1024;
+            flags |= 1024;
         }
-        return 0;
+        try {
+            String installer = ApplicationLoader.applicationContext.getPackageManager().getInstallerPackageName(ApplicationLoader.applicationContext.getPackageName());
+            if ("com.android.vending".equals(installer)) {
+                flags |= 2048;
+            }
+        } catch (Throwable ignore) {
+
+        }
+        return flags;
     }
 
     public static void onBytesSent(int amount, int networkType, final int currentAccount) {

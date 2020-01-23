@@ -712,28 +712,30 @@ public class PollCreateActivity extends BaseFragment {
                         RecyclerView.ViewHolder holder = listView.findContainingViewHolder(p);
                         if (holder != null) {
                             int position = holder.getAdapterPosition();
-                            int index = position - answerStartRow;
-                            listAdapter.notifyItemRemoved(holder.getAdapterPosition());
-                            System.arraycopy(answers, index + 1, answers, index, answers.length - 1 - index);
-                            System.arraycopy(answersChecks, index + 1, answersChecks, index, answersChecks.length - 1 - index);
-                            answers[answers.length - 1] = null;
-                            answersChecks[answersChecks.length - 1] = false;
-                            answersCount--;
-                            if (answersCount == answers.length - 1) {
-                                listAdapter.notifyItemInserted(answerStartRow + answers.length - 1);
+                            if (position != RecyclerView.NO_POSITION) {
+                                int index = position - answerStartRow;
+                                listAdapter.notifyItemRemoved(position);
+                                System.arraycopy(answers, index + 1, answers, index, answers.length - 1 - index);
+                                System.arraycopy(answersChecks, index + 1, answersChecks, index, answersChecks.length - 1 - index);
+                                answers[answers.length - 1] = null;
+                                answersChecks[answersChecks.length - 1] = false;
+                                answersCount--;
+                                if (answersCount == answers.length - 1) {
+                                    listAdapter.notifyItemInserted(answerStartRow + answers.length - 1);
+                                }
+                                holder = listView.findViewHolderForAdapterPosition(position - 1);
+                                EditTextBoldCursor editText = p.getTextView();
+                                if (holder != null && holder.itemView instanceof PollEditTextCell) {
+                                    PollEditTextCell editTextCell = (PollEditTextCell) holder.itemView;
+                                    editTextCell.getTextView().requestFocus();
+                                } else if (editText.isFocused()) {
+                                    AndroidUtilities.hideKeyboard(editText);
+                                }
+                                editText.clearFocus();
+                                checkDoneButton();
+                                updateRows();
+                                listAdapter.notifyItemChanged(answerSectionRow);
                             }
-                            holder = listView.findViewHolderForAdapterPosition(position - 1);
-                            EditTextBoldCursor editText = p.getTextView();
-                            if (holder != null && holder.itemView instanceof PollEditTextCell) {
-                                PollEditTextCell editTextCell = (PollEditTextCell) holder.itemView;
-                                editTextCell.getTextView().requestFocus();
-                            } else if (editText.isFocused()) {
-                                AndroidUtilities.hideKeyboard(editText);
-                            }
-                            editText.clearFocus();
-                            checkDoneButton();
-                            updateRows();
-                            listAdapter.notifyItemChanged(answerSectionRow);
                         }
                     }) {
                         @Override
@@ -772,8 +774,10 @@ public class PollCreateActivity extends BaseFragment {
                             RecyclerView.ViewHolder holder = listView.findContainingViewHolder(editText);
                             if (holder != null) {
                                 int position = holder.getAdapterPosition();
-                                int index = position - answerStartRow;
-                                answersChecks[index] = checked;
+                                if (position != RecyclerView.NO_POSITION) {
+                                    int index = position - answerStartRow;
+                                    answersChecks[index] = checked;
+                                }
                             }
                             checkDoneButton();
                         }
@@ -783,8 +787,10 @@ public class PollCreateActivity extends BaseFragment {
                             RecyclerView.ViewHolder holder = listView.findContainingViewHolder(editText);
                             if (holder != null) {
                                 int position = holder.getAdapterPosition();
-                                int index = position - answerStartRow;
-                                return answersChecks[index];
+                                if (position != RecyclerView.NO_POSITION) {
+                                    int index = position - answerStartRow;
+                                    return answersChecks[index];
+                                }
                             }
                             return false;
                         }
@@ -824,17 +830,19 @@ public class PollCreateActivity extends BaseFragment {
                             RecyclerView.ViewHolder holder = listView.findContainingViewHolder(cell);
                             if (holder != null) {
                                 int position = holder.getAdapterPosition();
-                                int index = position - answerStartRow;
-                                if (index == answersCount - 1 && answersCount < 10) {
-                                    addNewField();
-                                } else {
-                                    if (index == answersCount - 1) {
-                                        AndroidUtilities.hideKeyboard(cell.getTextView());
+                                if (position != RecyclerView.NO_POSITION) {
+                                    int index = position - answerStartRow;
+                                    if (index == answersCount - 1 && answersCount < 10) {
+                                        addNewField();
                                     } else {
-                                        holder = listView.findViewHolderForAdapterPosition(position + 1);
-                                        if (holder != null && holder.itemView instanceof PollEditTextCell) {
-                                            PollEditTextCell editTextCell = (PollEditTextCell) holder.itemView;
-                                            editTextCell.getTextView().requestFocus();
+                                        if (index == answersCount - 1) {
+                                            AndroidUtilities.hideKeyboard(cell.getTextView());
+                                        } else {
+                                            holder = listView.findViewHolderForAdapterPosition(position + 1);
+                                            if (holder != null && holder.itemView instanceof PollEditTextCell) {
+                                                PollEditTextCell editTextCell = (PollEditTextCell) holder.itemView;
+                                                editTextCell.getTextView().requestFocus();
+                                            }
                                         }
                                     }
                                 }

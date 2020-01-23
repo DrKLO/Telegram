@@ -191,6 +191,7 @@ private:
     bool networkSlow = false;
     bool ipv6Enabled = false;
     std::vector<ConnectionSocket *> activeConnections;
+    std::vector<ConnectionSocket *> activeConnectionsCopy;
     int epolFd;
     int eventFd;
     int *pipeFd;

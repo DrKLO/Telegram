@@ -278,12 +278,12 @@ android {
                 manifest.srcFile 'config/release/AndroidManifest_SDK23.xml'
             }
             ext {
-                abiVersionCode = 0
+                abiVersionCode = 9
             }
         }
     }
 
-    defaultConfig.versionCode = 1846
+    defaultConfig.versionCode = 1847
 
     applicationVariants.all { variant ->
         variant.outputs.all { output ->
