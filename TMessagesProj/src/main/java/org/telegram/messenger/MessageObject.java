@@ -1789,25 +1789,43 @@ public class MessageObject {
             return;
         }
         if ((results.flags & 2) != 0) {
-            byte[] chosen = null;
-            boolean correct = false;
+            ArrayList<byte[]> chosen = null;
+            byte[] correct = null;
             if (results.min && media.results.results != null) {
                 for (int b = 0, N2 = media.results.results.size(); b < N2; b++) {
                     TLRPC.TL_pollAnswerVoters answerVoters = media.results.results.get(b);
                     if (answerVoters.chosen) {
-                        chosen = answerVoters.option;
-                        correct = answerVoters.correct;
-                        break;
+                        if (chosen == null) {
+                            chosen = new ArrayList<>();
+                        }
+                        chosen.add(answerVoters.option);
+                    }
+                    if (answerVoters.correct) {
+                        correct = answerVoters.option;
                     }
                 }
             }
             media.results.results = results.results;
-            if (chosen != null) {
+            if (chosen != null || correct != null) {
                 for (int b = 0, N2 = media.results.results.size(); b < N2; b++) {
                     TLRPC.TL_pollAnswerVoters answerVoters = media.results.results.get(b);
-                    if (Arrays.equals(answerVoters.option, chosen)) {
-                        answerVoters.chosen = true;
-                        answerVoters.correct = correct;
+                    if (chosen != null) {
+                        for (int a = 0, N = chosen.size(); a < N; a++) {
+                            if (Arrays.equals(answerVoters.option, chosen.get(a))) {
+                                answerVoters.chosen = true;
+                                chosen.remove(a);
+                                break;
+                            }
+                        }
+                        if (chosen.isEmpty()) {
+                            chosen = null;
+                        }
+                    }
+                    if (correct != null && Arrays.equals(answerVoters.option, correct)) {
+                        answerVoters.correct = true;
+                        correct = null;
+                    }
+                    if (chosen == null && correct == null) {
                         break;
                     }
                 }

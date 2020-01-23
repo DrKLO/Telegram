@@ -2304,6 +2304,11 @@ public class Theme {
     public static final String key_chat_attachPermissionText = "chat_attachPermissionText";
     public static final String key_chat_attachEmptyImage = "chat_attachEmptyImage";
 
+    public static final String key_chat_inPollCorrectAnswer = "chat_inPollCorrectAnswer";
+    public static final String key_chat_outPollCorrectAnswer = "chat_outPollCorrectAnswer";
+    public static final String key_chat_inPollWrongAnswer = "chat_inPollWrongAnswer";
+    public static final String key_chat_outPollWrongAnswer = "chat_outPollWrongAnswer";
+
     public static final String key_chat_attachGalleryBackground = "chat_attachGalleryBackground";
     public static final String key_chat_attachGalleryIcon = "chat_attachGalleryIcon";
     public static final String key_chat_attachAudioBackground = "chat_attachAudioBackground";
@@ -2993,6 +2998,10 @@ public class Theme {
         defaultColors.put(key_chat_attachPollBackground, 0xfff2c04b);
         defaultColors.put(key_chat_attachPollIcon, 0xffffffff);
 
+        defaultColors.put(key_chat_inPollCorrectAnswer, 0xff60c255);
+        defaultColors.put(key_chat_outPollCorrectAnswer, 0xff60c255);
+        defaultColors.put(key_chat_inPollWrongAnswer, 0xffeb6060);
+        defaultColors.put(key_chat_outPollWrongAnswer, 0xffeb6060);
 
         defaultColors.put(key_chat_status, 0xffd5e8f7);
         defaultColors.put(key_chat_inGreenCall, 0xff00c853);
@@ -3503,6 +3512,10 @@ public class Theme {
         fallbackKeys.put(key_chat_outTextSelectionHighlight, key_chat_textSelectBackground);
         fallbackKeys.put(key_chat_inTextSelectionHighlight, key_chat_textSelectBackground);
         fallbackKeys.put(key_chat_TextSelectionCursor, key_chat_messagePanelCursor);
+        fallbackKeys.put(key_chat_inPollCorrectAnswer, key_chat_attachLocationBackground);
+        fallbackKeys.put(key_chat_outPollCorrectAnswer, key_chat_attachLocationBackground);
+        fallbackKeys.put(key_chat_inPollWrongAnswer, key_chat_attachAudioBackground);
+        fallbackKeys.put(key_chat_outPollWrongAnswer, key_chat_attachAudioBackground);
 
         themeAccentExclusionKeys.addAll(Arrays.asList(keys_avatar_background));
         themeAccentExclusionKeys.addAll(Arrays.asList(keys_avatar_nameInMessage));

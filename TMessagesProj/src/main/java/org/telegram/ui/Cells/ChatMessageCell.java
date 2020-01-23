@@ -1836,7 +1836,9 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                             return textSelectionHelper.onTouchEvent(event);
                         } else {
                             event.offsetLocation(this.getLeft() - cell.getLeft(), this.getTop() - cell.getTop());
-                            return textSelectionHelper.onTouchEvent(event);
+                            boolean result = textSelectionHelper.onTouchEvent(event);
+                            event.offsetLocation(-(this.getLeft() - cell.getLeft()), -(this.getTop() - cell.getTop()));
+                            return result;
                         }
                     }
                 }
@@ -9566,9 +9568,9 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 if (pollVoted || pollClosed || animatePollAnswerAlpha) {
                     if (lastPoll.quiz && pollVoted && button.chosen && !currentBackgroundDrawable.hasGradient()) {
                         if (button.correct) {
-                            Theme.chat_docBackPaint.setColor(Theme.getColor(Theme.key_chat_attachLocationBackground));
+                            Theme.chat_docBackPaint.setColor(Theme.getColor(currentMessageObject.isOutOwner() ? Theme.key_chat_outPollCorrectAnswer : Theme.key_chat_inPollCorrectAnswer));
                         } else {
-                            Theme.chat_docBackPaint.setColor(Theme.getColor(Theme.key_chat_attachAudioBackground));
+                            Theme.chat_docBackPaint.setColor(Theme.getColor(currentMessageObject.isOutOwner() ? Theme.key_chat_outPollWrongAnswer : Theme.key_chat_inPollWrongAnswer));
                         }
                     } else {
                         Theme.chat_docBackPaint.setColor(Theme.getColor(currentMessageObject.isOutOwner() ? Theme.key_chat_outAudioSeekbarFill : Theme.key_chat_inAudioSeekbarFill));
