@@ -105,8 +105,6 @@ import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.TermsOfServiceView;
 import org.telegram.ui.Components.ThemeEditorView;
 import org.telegram.ui.Components.UpdateAppAlertDialog;
-import org.telegram.ui.Wallet.WalletActivity;
-import org.telegram.ui.Wallet.WalletCreateActivity;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -248,7 +246,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
         }
         Theme.createChatResources(this, false);
         if (SharedConfig.passcodeHash.length() != 0 && SharedConfig.appLocked) {
-            SharedConfig.lastPauseTime = (int) (SystemClock.uptimeMillis() / 1000);
+            SharedConfig.lastPauseTime = (int) (SystemClock.elapsedRealtime() / 1000);
         }
 
         AndroidUtilities.fillStatusBarHeight(this);
@@ -485,9 +483,6 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                     Bundle args = new Bundle();
                     args.putInt("user_id", UserConfig.getInstance(currentAccount).getClientUserId());
                     presentFragment(new ChatActivity(args));
-                    drawerLayoutContainer.closeDrawer(false);
-                } else if (id == 12) {
-                    presentFragment(getCurrentWalletFragment(null));
                     drawerLayoutContainer.closeDrawer(false);
                 }
             }
@@ -747,33 +742,6 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
         }
     }
 
-    private BaseFragment getCurrentWalletFragment(String transferWalletUrl) {
-        BaseFragment fragment;
-        UserConfig userConfig = UserConfig.getInstance(currentAccount);
-        if (TextUtils.isEmpty(userConfig.tonEncryptedData)) {
-            if (!TextUtils.isEmpty(transferWalletUrl)) {
-                AlertDialog.Builder builder = new AlertDialog.Builder(this);
-                builder.setTitle(LocaleController.getString("Wallet", R.string.Wallet));
-                builder.setMessage(LocaleController.getString("WalletTonLinkNoWalletText", R.string.WalletTonLinkNoWalletText));
-                builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
-                builder.setPositiveButton(LocaleController.getString("WalletTonLinkNoWalletCreateWallet", R.string.WalletTonLinkNoWalletCreateWallet), (dialog, which) -> presentFragment(new WalletCreateActivity(WalletCreateActivity.TYPE_CREATE)));
-                builder.show();
-                fragment = null;
-            } else {
-                fragment = new WalletCreateActivity(WalletCreateActivity.TYPE_CREATE);
-            }
-        } else if (!userConfig.tonCreationFinished) {
-            WalletCreateActivity activity = new WalletCreateActivity(WalletCreateActivity.TYPE_KEY_GENERATED);
-            activity.setResumeCreation();
-            fragment = activity;
-        } else if (!TextUtils.isEmpty(transferWalletUrl)) {
-            fragment = new WalletActivity(transferWalletUrl);
-        } else {
-            fragment = new WalletActivity();
-        }
-        return fragment;
-    }
-
     public int getMainFragmentsCount() {
         return mainFragmentsStack.size();
     }
@@ -985,7 +953,6 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
             int open_settings = 0;
             int open_new_dialog = 0;
             long dialogId = 0;
-            String transferWalletUrl = null;
             if (SharedConfig.directShare && intent != null && intent.getExtras() != null) {
                 dialogId = intent.getExtras().getLong("dialogId", 0);
                 long hash = intent.getExtras().getLong("hash", 0);
@@ -1349,15 +1316,6 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                                         }
                                         break;
                                     }
-                                    case "ton": {
-                                        if (Build.VERSION.SDK_INT >= 18 && !TextUtils.isEmpty(UserConfig.getInstance(UserConfig.selectedAccount).walletConfig) && !TextUtils.isEmpty(UserConfig.getInstance(UserConfig.selectedAccount).walletBlockchainName)) {
-                                            String url = data.toString();
-                                            if (url.startsWith("ton:transfer") || url.startsWith("ton://transfer")) {
-                                                transferWalletUrl = url.replace("ton:transfer", "ton://transfer");
-                                            }
-                                        }
-                                        break;
-                                    }
                                     case "tg": {
                                         String url = data.toString();
                                         if (url.startsWith("tg:resolve") || url.startsWith("tg://resolve")) {
@@ -1673,19 +1631,6 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                     }
                     pushOpened = false;
                     isNew = false;
-                } else if (transferWalletUrl != null) {
-                    BaseFragment fragment = getCurrentWalletFragment(transferWalletUrl);
-                    if (fragment != null) {
-                        AndroidUtilities.runOnUIThread(() -> presentFragment(fragment));
-                    }
-                    if (AndroidUtilities.isTablet()) {
-                        actionBarLayout.showLastFragment();
-                        rightActionBarLayout.showLastFragment();
-                        drawerLayoutContainer.setAllowOpenDrawer(false, false);
-                    } else {
-                        drawerLayoutContainer.setAllowOpenDrawer(true, false);
-                    }
-                    pushOpened = true;
                 } else if (showPlayer) {
                     if (!actionBarLayout.fragmentsStack.isEmpty()) {
                         BaseFragment fragment = actionBarLayout.fragmentsStack.get(0);
@@ -2053,7 +1998,11 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                                     progressDialog.setOnCancelListener(dialog -> canceled[0] = true);
 
                                     MessagesController.getInstance(intentAccount).ensureMessagesLoaded(-invite.chat.id, ChatObject.isChannel(invite.chat), 0, () -> {
-                                        progressDialog.hide();
+                                        try {
+                                            progressDialog.dismiss();
+                                        } catch (Exception e) {
+                                            FileLog.e(e);
+                                        }
                                         if (canceled[0]) {
                                             return;
                                         }
@@ -2702,6 +2651,9 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (SharedConfig.passcodeHash.length() != 0 && SharedConfig.lastPauseTime != 0) {
             SharedConfig.lastPauseTime = 0;
+            if (BuildVars.LOGS_ENABLED) {
+                FileLog.d("reset lastPauseTime onActivityResult");
+            }
             UserConfig.getInstance(currentAccount).saveConfig(false);
         }
         super.onActivityResult(requestCode, resultCode, data);
@@ -3523,11 +3475,14 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
 
     private void onPasscodePause() {
         if (lockRunnable != null) {
+            if (BuildVars.LOGS_ENABLED) {
+                FileLog.d("cancel lockRunnable onPasscodePause");
+            }
             AndroidUtilities.cancelRunOnUIThread(lockRunnable);
             lockRunnable = null;
         }
         if (SharedConfig.passcodeHash.length() != 0) {
-            SharedConfig.lastPauseTime = (int) (SystemClock.uptimeMillis() / 1000);
+            SharedConfig.lastPauseTime = (int) (SystemClock.elapsedRealtime() / 1000);
             lockRunnable = new Runnable() {
                 @Override
                 public void run() {
@@ -3548,8 +3503,14 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
             };
             if (SharedConfig.appLocked) {
                 AndroidUtilities.runOnUIThread(lockRunnable, 1000);
+                if (BuildVars.LOGS_ENABLED) {
+                    FileLog.d("schedule app lock in " + 1000);
+                }
             } else if (SharedConfig.autoLockIn != 0) {
-                AndroidUtilities.runOnUIThread(lockRunnable, (long) SharedConfig.autoLockIn * 1000 + 1000);
+                if (BuildVars.LOGS_ENABLED) {
+                    FileLog.d("schedule app lock in " + (((long) SharedConfig.autoLockIn) * 1000 + 1000));
+                }
+                AndroidUtilities.runOnUIThread(lockRunnable, ((long) SharedConfig.autoLockIn) * 1000 + 1000);
             }
         } else {
             SharedConfig.lastPauseTime = 0;
@@ -3559,6 +3520,9 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
 
     private void onPasscodeResume() {
         if (lockRunnable != null) {
+            if (BuildVars.LOGS_ENABLED) {
+                FileLog.d("cancel lockRunnable onPasscodeResume");
+            }
             AndroidUtilities.cancelRunOnUIThread(lockRunnable);
             lockRunnable = null;
         }
@@ -3568,6 +3532,9 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
         if (SharedConfig.lastPauseTime != 0) {
             SharedConfig.lastPauseTime = 0;
             SharedConfig.saveConfig();
+            if (BuildVars.LOGS_ENABLED) {
+                FileLog.d("reset lastPauseTime onPasscodeResume");
+            }
         }
     }
 

@@ -61,7 +61,7 @@ public class BottomSheet extends Dialog {
     protected ContainerView container;
     private WindowInsets lastInsets;
 
-    private Runnable startAnimationRunnable;
+    protected Runnable startAnimationRunnable;
     private int layoutCount;
 
     private boolean dismissed;
@@ -116,6 +116,11 @@ public class BottomSheet extends Dialog {
     protected int currentSheetAnimationType;
 
     protected View nestedScrollChild;
+    private boolean disableScroll;
+
+    public void setDisableScroll(boolean b) {
+        disableScroll = b;
+    }
 
     protected class ContainerView extends FrameLayout implements NestedScrollingParent {
 
@@ -268,7 +273,7 @@ public class BottomSheet extends Dialog {
                 float dx = Math.abs((int) (ev.getX() - startedTrackingX));
                 float dy = (int) ev.getY() - startedTrackingY;
                 velocityTracker.addMovement(ev);
-                if (maybeStartTracking && !startedTracking && (dy > 0 && dy / 3.0f > Math.abs(dx) && Math.abs(dy) >= touchSlop)) {
+                if (!disableScroll && maybeStartTracking && !startedTracking && (dy > 0 && dy / 3.0f > Math.abs(dx) && Math.abs(dy) >= touchSlop)) {
                     startedTrackingY = (int) ev.getY();
                     maybeStartTracking = false;
                     startedTracking = true;

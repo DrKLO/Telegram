@@ -400,7 +400,7 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
             protected void onDraw(Canvas canvas) {
                 if (hasNoCover == 1 || hasNoCover == 2 && (!getImageReceiver().hasBitmapImage() || getImageReceiver().getCurrentAlpha() != 1.0f)) {
                     rect.set(0, 0, getMeasuredWidth(), getMeasuredHeight());
-                    canvas.drawRoundRect(rect, getRoundRadius(), getRoundRadius(), paint);
+                    canvas.drawRoundRect(rect, getRoundRadius()[0], getRoundRadius()[0], paint);
                     float plusScale = thumbMaxScale / getScaleX() / 3;
                     int s = (int) (AndroidUtilities.dp(63) * Math.max(plusScale / thumbMaxScale, 1.0f / thumbMaxScale));
                     int x = (int) (rect.centerX() - s / 2);
@@ -513,7 +513,7 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
             }
         });
         seekBarView.setReportChanges(true);
-        playerLayout.addView(seekBarView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 30, Gravity.TOP | Gravity.LEFT, 8, 62, 8, 0));
+        playerLayout.addView(seekBarView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 38, Gravity.TOP | Gravity.LEFT, 4, 58, 4, 0));
 
         progressView = new LineProgressView(context);
         progressView.setVisibility(View.INVISIBLE);
@@ -1042,12 +1042,12 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
     }
 
     @Override
-    public void onProgressDownload(String fileName, float progress) {
-        progressView.setProgress(progress, true);
+    public void onProgressDownload(String fileName, long downloadedSize, long totalSize) {
+        progressView.setProgress(Math.min(1f, downloadedSize / (float) totalSize), true);
     }
 
     @Override
-    public void onProgressUpload(String fileName, float progress, boolean isEncrypted) {
+    public void onProgressUpload(String fileName, long uploadedSize, long totalSize, boolean isEncrypted) {
 
     }
 

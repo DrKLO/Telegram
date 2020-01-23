@@ -461,15 +461,15 @@ public class SharedDocumentCell extends FrameLayout implements DownloadControlle
     }
 
     @Override
-    public void onProgressDownload(String fileName, float progress) {
+    public void onProgressDownload(String fileName, long downloadedSize, long totalSize) {
         if (progressView.getVisibility() != VISIBLE) {
             updateFileExistIcon();
         }
-        progressView.setProgress(progress, true);
+        progressView.setProgress(Math.min(1f, downloadedSize / (float) totalSize), true);
     }
 
     @Override
-    public void onProgressUpload(String fileName, float progress, boolean isEncrypted) {
+    public void onProgressUpload(String fileName, long uploadedSize, long totalSize, boolean isEncrypted) {
 
     }
 

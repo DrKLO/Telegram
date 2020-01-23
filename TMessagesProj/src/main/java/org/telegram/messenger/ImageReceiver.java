@@ -14,6 +14,7 @@ import android.graphics.Canvas;
 import android.graphics.ColorFilter;
 import android.graphics.Matrix;
 import android.graphics.Paint;
+import android.graphics.Path;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.RectF;
@@ -195,12 +196,14 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
     private boolean isAspectFit;
     private boolean forcePreview;
     private boolean forceCrossfade;
-    private int roundRadius;
+    private int[] roundRadius = new int[4];
 
     private Paint roundPaint;
     private RectF roundRect = new RectF();
     private RectF bitmapRect = new RectF();
     private Matrix shaderMatrix = new Matrix();
+    private Path roundPath = new Path();
+    private static float[] radii = new float[8];
     private float overrideAlpha = 1.0f;
     private int isPressed;
     private boolean centerRotation;
@@ -625,8 +628,17 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
         }
     }
 
+    private boolean hasRoundRadius() {
+        /*for (int a = 0; a < roundRadius.length; a++) {
+            if (roundRadius[a] != 0) {
+                return true;
+            }
+        }*/
+        return true;
+    }
+
     private void updateDrawableRadius(Drawable drawable) {
-        if (roundRadius != 0 && drawable instanceof BitmapDrawable) {
+        if (hasRoundRadius() && drawable instanceof BitmapDrawable) {
             if (drawable instanceof RLottieDrawable) {
 
             } else if (drawable instanceof AnimatedFileDrawable) {
@@ -790,7 +802,15 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
                         shader.setLocalMatrix(shaderMatrix);
                         roundPaint.setAlpha(alpha);
                         roundRect.set(drawRegion);
-                        canvas.drawRoundRect(roundRect, roundRadius, roundRadius, roundPaint);
+
+                        for (int a = 0; a < roundRadius.length; a++) {
+                            radii[a * 2] = roundRadius[a];
+                            radii[a * 2 + 1] = roundRadius[a];
+                        }
+                        roundPath.reset();
+                        roundPath.addRoundRect(roundRect, radii, Path.Direction.CW);
+                        roundPath.close();
+                        canvas.drawPath(roundPath, roundPaint);
                     }
                 } else {
                     roundPaint.setShader(shader);
@@ -828,7 +848,15 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
                         }
                         shader.setLocalMatrix(shaderMatrix);
                         roundPaint.setAlpha(alpha);
-                        canvas.drawRoundRect(roundRect, roundRadius, roundRadius, roundPaint);
+
+                        for (int a = 0; a < roundRadius.length; a++) {
+                            radii[a * 2] = roundRadius[a];
+                            radii[a * 2 + 1] = roundRadius[a];
+                        }
+                        roundPath.reset();
+                        roundPath.addRoundRect(roundRect, radii, Path.Direction.CW);
+                        roundPath.close();
+                        canvas.drawPath(roundPath, roundPaint);
                     }
                 }
             } else {
@@ -1411,8 +1439,23 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
     }
 
     public void setRoundRadius(int value) {
-        if (roundRadius != value) {
-            roundRadius = value;
+        setRoundRadius(new int[]{value, value, value, value});
+    }
+
+    public void setRoundRadius(int tl, int tr, int bl, int br) {
+        setRoundRadius(new int[]{tl, tr, bl, br});
+    }
+
+    public void setRoundRadius(int[] value) {
+        boolean changed = false;
+        for (int a = 0; a < roundRadius.length; a++) {
+            if (roundRadius[a] != value[a]) {
+                changed = true;
+                break;
+            }
+        }
+        if (changed) {
+            System.arraycopy(value, 0, roundRadius, 0, roundRadius.length);
             if (currentImageDrawable != null && imageShader == null) {
                 updateDrawableRadius(currentImageDrawable);
             }
@@ -1433,7 +1476,7 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
         currentAccount = value;
     }
 
-    public int getRoundRadius() {
+    public int[] getRoundRadius() {
         return roundRadius;
     }
 

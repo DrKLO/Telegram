@@ -220,10 +220,10 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter {
     }
 
     public void sortOnlineContacts(boolean notify) {
-        if (onlineContacts == null || notify && (SystemClock.uptimeMillis() - lastSortTime) < 2000) {
+        if (onlineContacts == null || notify && (SystemClock.elapsedRealtime() - lastSortTime) < 2000) {
             return;
         }
-        lastSortTime = SystemClock.uptimeMillis();
+        lastSortTime = SystemClock.elapsedRealtime();
         try {
             int currentTime = ConnectionsManager.getInstance(currentAccount).getCurrentTime();
             MessagesController messagesController = MessagesController.getInstance(currentAccount);

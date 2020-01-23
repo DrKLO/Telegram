@@ -1298,6 +1298,14 @@ public class RecyclerListView extends RecyclerView {
         return onInterceptTouchListener != null && onInterceptTouchListener.onInterceptTouchEvent(e) || super.onInterceptTouchEvent(e);
     }
 
+    @Override
+    public boolean dispatchTouchEvent(MotionEvent ev) {
+        if (sectionsAdapter != null && pinnedHeader != null && pinnedHeader.getAlpha() != 0 && pinnedHeader.dispatchTouchEvent(ev)) {
+            return true;
+        }
+        return super.dispatchTouchEvent(ev);
+    }
+
     private void checkIfEmpty() {
         if (isHidden) {
             return;
@@ -1675,7 +1683,7 @@ public class RecyclerListView extends RecyclerView {
                     pinnedHeaderShadowDrawable.setAlpha((int) (255 * pinnedHeaderShadowAlpha));
                     pinnedHeaderShadowDrawable.draw(canvas);
 
-                    long newTime = SystemClock.uptimeMillis();
+                    long newTime = SystemClock.elapsedRealtime();
                     long dt = Math.min(20, newTime - lastAlphaAnimationTime);
                     lastAlphaAnimationTime = newTime;
                     if (pinnedHeaderShadowAlpha < pinnedHeaderShadowTargetAlpha) {

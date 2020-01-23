@@ -243,10 +243,8 @@ public class MediaActionDrawable extends Drawable {
         return animatingTransition ? transitionProgress : 1.0f;
     }
 
-    public void setBackgroundDrawable(Drawable drawable) {
-        if (drawable instanceof Theme.MessageDrawable) {
-            messageDrawable = (Theme.MessageDrawable) drawable;
-        }
+    public void setBackgroundDrawable(Theme.MessageDrawable drawable) {
+        messageDrawable = drawable;
     }
 
     public void setHasOverlayImage(boolean value) {
@@ -349,7 +347,7 @@ public class MediaActionDrawable extends Drawable {
                     float currentProgress;
                     float currentProgress2;
                     float currentProgress3;
-                    float d = AndroidUtilities.dp(13) * scale;
+                    float d = AndroidUtilities.dp(13) * scale * scale + (isMini ? AndroidUtilities.dp(2) : 0);
 
                     progress -= DOWNLOAD_TO_CANCEL_STAGE1;
                     currentProgress3 = progress / (DOWNLOAD_TO_CANCEL_STAGE2 + DOWNLOAD_TO_CANCEL_STAGE3);

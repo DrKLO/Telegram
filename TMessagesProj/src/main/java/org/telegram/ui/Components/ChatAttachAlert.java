@@ -3501,6 +3501,7 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
         if (baseFragment instanceof ChatActivity) {
             galleryAlbumEntry = MediaController.allMediaAlbumEntry;
             TLRPC.Chat chat = ((ChatActivity) baseFragment).getCurrentChat();
+            TLRPC.User user = ((ChatActivity) baseFragment).getCurrentUser();
             if (chat != null) {
                 mediaEnabled = ChatObject.canSendMedia(chat);
                 pollsEnabled = ChatObject.canSendPolls(chat);
@@ -3524,7 +3525,7 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
                     cameraIcon.setEnabled(mediaEnabled);
                 }
             } else {
-                pollsEnabled = false;
+                pollsEnabled = user != null && user.bot;
             }
         } else {
             galleryAlbumEntry = MediaController.allPhotosAlbumEntry;

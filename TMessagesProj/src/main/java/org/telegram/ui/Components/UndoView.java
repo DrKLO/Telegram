@@ -84,6 +84,8 @@ public class UndoView extends FrameLayout {
     public final static int ACTION_OWNER_TRANSFERED_GROUP = 10;
     public final static int ACTION_QR_SESSION_ACCEPTED = 11;
     public final static int ACTION_THEME_CHANGED = 12;
+    public final static int ACTION_QUIZ_CORRECT = 13;
+    public final static int ACTION_QUIZ_INCORRECT = 14;
 
     public UndoView(Context context) {
         super(context);
@@ -167,11 +169,12 @@ public class UndoView extends FrameLayout {
     private boolean isTooltipAction() {
         return currentAction == ACTION_ARCHIVE_HIDDEN || currentAction == ACTION_ARCHIVE_HINT || currentAction == ACTION_ARCHIVE_FEW_HINT ||
                 currentAction == ACTION_ARCHIVE_PINNED || currentAction == ACTION_CONTACT_ADDED || currentAction == ACTION_OWNER_TRANSFERED_CHANNEL ||
-                currentAction == ACTION_OWNER_TRANSFERED_GROUP;
+                currentAction == ACTION_OWNER_TRANSFERED_GROUP || currentAction == ACTION_QUIZ_CORRECT || currentAction == ACTION_QUIZ_INCORRECT;
     }
 
     private boolean hasSubInfo() {
-        return currentAction == ACTION_QR_SESSION_ACCEPTED || currentAction == ACTION_ARCHIVE_HIDDEN || currentAction == ACTION_ARCHIVE_HINT || currentAction == ACTION_ARCHIVE_FEW_HINT || currentAction == ACTION_ARCHIVE_PINNED;
+        return currentAction == ACTION_QR_SESSION_ACCEPTED || currentAction == ACTION_ARCHIVE_HIDDEN || currentAction == ACTION_ARCHIVE_HINT || currentAction == ACTION_ARCHIVE_FEW_HINT || currentAction == ACTION_ARCHIVE_PINNED ||
+                currentAction == ACTION_QUIZ_CORRECT || currentAction == ACTION_QUIZ_INCORRECT;
     }
 
     public boolean isMultilineSubInfo() {
@@ -259,7 +262,7 @@ public class UndoView extends FrameLayout {
         currentAction = action;
         timeLeft = 5000;
         currentInfoObject = infoObject;
-        lastUpdateTime = SystemClock.uptimeMillis();
+        lastUpdateTime = SystemClock.elapsedRealtime();
 
         if (isTooltipAction()) {
             CharSequence infoText;
@@ -285,6 +288,16 @@ public class UndoView extends FrameLayout {
                 subInfoText = LocaleController.getString("ArchiveHiddenInfo", R.string.ArchiveHiddenInfo);
                 icon = R.raw.chats_swipearchive;
                 size = 48;
+            } else if (currentAction == ACTION_QUIZ_CORRECT) {
+                infoText = LocaleController.getString("QuizWellDone", R.string.QuizWellDone);
+                subInfoText = LocaleController.getString("QuizWellDoneInfo", R.string.QuizWellDoneInfo);
+                icon = R.raw.wallet_congrats;
+                size = 44;
+            } else if (currentAction == ACTION_QUIZ_INCORRECT) {
+                infoText = LocaleController.getString("QuizWrongAnswer", R.string.QuizWrongAnswer);
+                subInfoText = LocaleController.getString("QuizWrongAnswerInfo", R.string.QuizWrongAnswerInfo);
+                icon = R.raw.wallet_science;
+                size = 44;
             } else if (action == ACTION_ARCHIVE_PINNED) {
                 infoText = LocaleController.getString("ArchivePinned", R.string.ArchivePinned);
                 subInfoText = LocaleController.getString("ArchivePinnedInfo", R.string.ArchivePinnedInfo);
@@ -480,7 +493,7 @@ public class UndoView extends FrameLayout {
             canvas.drawArc(rect, -90, -360 * (timeLeft / 5000.0f), false, progressPaint);
         }
 
-        long newTime = SystemClock.uptimeMillis();
+        long newTime = SystemClock.elapsedRealtime();
         long dt = newTime - lastUpdateTime;
         timeLeft -= dt;
         lastUpdateTime = newTime;

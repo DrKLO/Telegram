@@ -383,8 +383,8 @@ public class AudioPlayerCell extends View implements DownloadController.FileDown
     }
 
     @Override
-    public void onProgressDownload(String fileName, float progress) {
-        radialProgress.setProgress(progress, true);
+    public void onProgressDownload(String fileName, long downloadedSize, long totalSize) {
+        radialProgress.setProgress(Math.min(1f, downloadedSize / (float) totalSize), true);
         if (hasMiniProgress != 0) {
             if (miniButtonState != 1) {
                 updateButtonState(false, true);
@@ -397,7 +397,7 @@ public class AudioPlayerCell extends View implements DownloadController.FileDown
     }
 
     @Override
-    public void onProgressUpload(String fileName, float progress, boolean isEncrypted) {
+    public void onProgressUpload(String fileName, long uploadedSize, long totalSize, boolean isEncrypted) {
 
     }
 

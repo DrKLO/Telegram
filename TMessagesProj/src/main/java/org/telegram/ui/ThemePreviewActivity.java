@@ -14,8 +14,10 @@ import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
 import android.animation.StateListAnimator;
 import android.annotation.SuppressLint;
+import android.app.Activity;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.database.DataSetObserver;
 import android.graphics.Bitmap;
@@ -1373,7 +1375,7 @@ public class ThemePreviewActivity extends BaseFragment implements DownloadContro
 
                             }
                         });
-                        patternLayout[a].addView(intensitySeekBar, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 30, Gravity.TOP | Gravity.LEFT, 9, 215, 9, 0));
+                        patternLayout[a].addView(intensitySeekBar, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 38, Gravity.TOP | Gravity.LEFT, 5, 211, 5, 0));
                     } else {
                         colorPicker = new ColorPicker(context, editingTheme, new ColorPicker.ColorPickerDelegate() {
                             @Override
@@ -1510,7 +1512,7 @@ public class ThemePreviewActivity extends BaseFragment implements DownloadContro
                         actionBar2.setTranslationY(-loc[1]);
                         page2.invalidate();
                     }
-                    if (SystemClock.uptimeMillis() < watchForKeyboardEndTime) {
+                    if (SystemClock.elapsedRealtime() < watchForKeyboardEndTime) {
                         invalidate();
                     }
                 }
@@ -1519,7 +1521,7 @@ public class ThemePreviewActivity extends BaseFragment implements DownloadContro
         frameLayout.setWillNotDraw(false);
         fragmentView = frameLayout;
         frameLayout.getViewTreeObserver().addOnGlobalLayoutListener(onGlobalLayoutListener = () -> {
-            watchForKeyboardEndTime = SystemClock.uptimeMillis() + 1500;
+            watchForKeyboardEndTime = SystemClock.elapsedRealtime() + 1500;
             frameLayout.invalidate();
         });
 
@@ -1644,6 +1646,9 @@ public class ThemePreviewActivity extends BaseFragment implements DownloadContro
                     parentLayout.rebuildAllFragmentViews(false, false);
                     Theme.applyThemeFile(new File(applyingTheme.pathToFile), applyingTheme.name, applyingTheme.info, false);
                     MessagesController.getInstance(applyingTheme.account).saveTheme(applyingTheme, null, false, false);
+                    SharedPreferences.Editor editor = ApplicationLoader.applicationContext.getSharedPreferences("themeconfig", Activity.MODE_PRIVATE).edit();
+                    editor.putString("lastDayTheme", applyingTheme.getKey());
+                    editor.commit();
                 }
                 finishFragment();
                 if (screenType == SCREEN_TYPE_PREVIEW) {
@@ -1971,9 +1976,9 @@ public class ThemePreviewActivity extends BaseFragment implements DownloadContro
     }
 
     @Override
-    public void onProgressDownload(String fileName, float progress) {
+    public void onProgressDownload(String fileName, long downloadedSize, long totalSize) {
         if (radialProgress != null) {
-            radialProgress.setProgress(progress, progressVisible);
+            radialProgress.setProgress(Math.min(1f, downloadedSize / (float) totalSize), progressVisible);
             if (radialProgress.getIcon() != MediaActionDrawable.ICON_EMPTY) {
                 updateButtonState(false, true);
             }
@@ -1981,7 +1986,7 @@ public class ThemePreviewActivity extends BaseFragment implements DownloadContro
     }
 
     @Override
-    public void onProgressUpload(String fileName, float progress, boolean isEncrypted) {
+    public void onProgressUpload(String fileName, long uploadedSize, long totalSize, boolean isEncrypted) {
 
     }
 
@@ -3470,11 +3475,11 @@ public class ThemePreviewActivity extends BaseFragment implements DownloadContro
 
             items.add(new ThemeDescription(listView2, 0, new Class[]{ChatMessageCell.class}, null, new Drawable[]{Theme.chat_msgInDrawable, Theme.chat_msgInMediaDrawable}, null, Theme.key_chat_inBubble));
             items.add(new ThemeDescription(listView2, 0, new Class[]{ChatMessageCell.class}, null, new Drawable[]{Theme.chat_msgInSelectedDrawable, Theme.chat_msgInMediaSelectedDrawable}, null, Theme.key_chat_inBubbleSelected));
-            items.add(new ThemeDescription(listView2, 0, new Class[]{ChatMessageCell.class}, null, new Drawable[]{Theme.chat_msgInShadowDrawable, Theme.chat_msgInMediaShadowDrawable}, null, Theme.key_chat_inBubbleShadow));
+            items.add(new ThemeDescription(listView2, 0, new Class[]{ChatMessageCell.class}, null, new Drawable[]{Theme.chat_msgInDrawable.getShadowDrawable(), Theme.chat_msgInMediaDrawable.getShadowDrawable()}, null, Theme.key_chat_inBubbleShadow));
             items.add(new ThemeDescription(listView2, 0, new Class[]{ChatMessageCell.class}, null, new Drawable[]{Theme.chat_msgOutDrawable, Theme.chat_msgOutMediaDrawable}, null, Theme.key_chat_outBubble));
             items.add(new ThemeDescription(listView2, 0, new Class[]{ChatMessageCell.class}, null, new Drawable[]{Theme.chat_msgOutDrawable, Theme.chat_msgOutMediaDrawable}, null, Theme.key_chat_outBubbleGradient));
             items.add(new ThemeDescription(listView2, 0, new Class[]{ChatMessageCell.class}, null, new Drawable[]{Theme.chat_msgOutSelectedDrawable, Theme.chat_msgOutMediaSelectedDrawable}, null, Theme.key_chat_outBubbleSelected));
-            items.add(new ThemeDescription(listView2, 0, new Class[]{ChatMessageCell.class}, null, new Drawable[]{Theme.chat_msgOutShadowDrawable, Theme.chat_msgOutMediaShadowDrawable}, null, Theme.key_chat_outBubbleShadow));
+            items.add(new ThemeDescription(listView2, 0, new Class[]{ChatMessageCell.class}, null, new Drawable[]{Theme.chat_msgOutDrawable.getShadowDrawable(), Theme.chat_msgOutMediaDrawable.getShadowDrawable()}, null, Theme.key_chat_outBubbleShadow));
             items.add(new ThemeDescription(listView2, 0, new Class[]{ChatMessageCell.class}, null, null, null, Theme.key_chat_messageTextIn));
             items.add(new ThemeDescription(listView2, 0, new Class[]{ChatMessageCell.class}, null, null, null, Theme.key_chat_messageTextOut));
             items.add(new ThemeDescription(listView2, 0, new Class[]{ChatMessageCell.class}, null, new Drawable[]{Theme.chat_msgOutCheckDrawable}, null, Theme.key_chat_outSentCheck));

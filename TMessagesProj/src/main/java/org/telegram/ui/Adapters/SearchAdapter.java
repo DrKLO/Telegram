@@ -35,7 +35,6 @@ import org.telegram.ui.Cells.UserCell;
 import org.telegram.ui.Components.RecyclerListView;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -72,13 +71,8 @@ public class SearchAdapter extends RecyclerListView.SelectionAdapter {
         searchAdapterHelper = new SearchAdapterHelper(true);
         searchAdapterHelper.setDelegate(new SearchAdapterHelper.SearchAdapterHelperDelegate() {
             @Override
-            public void onDataSetChanged() {
+            public void onDataSetChanged(int searchId) {
                 notifyDataSetChanged();
-            }
-
-            @Override
-            public void onSetHashtags(ArrayList<SearchAdapterHelper.HashtagObject> arrayList, HashMap<String, SearchAdapterHelper.HashtagObject> hashMap) {
-
             }
 
             @Override
@@ -108,7 +102,7 @@ public class SearchAdapter extends RecyclerListView.SelectionAdapter {
             searchResult.clear();
             searchResultNames.clear();
             if (allowUsernameSearch) {
-                searchAdapterHelper.queryServerSearch(null, true, allowChats, allowBots, allowSelf, channelId, allowPhoneNumbers, 0);
+                searchAdapterHelper.queryServerSearch(null, true, allowChats, allowBots, allowSelf, false, channelId, allowPhoneNumbers, 0, 0);
             }
             notifyDataSetChanged();
         } else {
@@ -131,7 +125,7 @@ public class SearchAdapter extends RecyclerListView.SelectionAdapter {
     private void processSearch(final String query) {
         AndroidUtilities.runOnUIThread(() -> {
             if (allowUsernameSearch) {
-                searchAdapterHelper.queryServerSearch(query, true, allowChats, allowBots, allowSelf, channelId, allowPhoneNumbers, -1);
+                searchAdapterHelper.queryServerSearch(query, true, allowChats, allowBots, allowSelf, false, channelId, allowPhoneNumbers, -1, 0);
             }
             final int currentAccount = UserConfig.selectedAccount;
             final ArrayList<TLRPC.TL_contact> contactsCopy = new ArrayList<>(ContactsController.getInstance(currentAccount).contacts);

@@ -112,7 +112,9 @@ public class UpdateAppAlertDialog extends AlertDialog implements NotificationCen
         } else if (id == NotificationCenter.FileLoadProgressChanged) {
             String location = (String) args[0];
             if (fileName != null && fileName.equals(location)) {
-                Float loadProgress = (Float) args[1];
+                Long loadedSize = (Long) args[1];
+                Long totalSize = (Long) args[2];
+                float loadProgress = Math.min(1f, loadedSize / (float) totalSize);
                 radialProgress.setProgress(loadProgress, true);
             }
         }

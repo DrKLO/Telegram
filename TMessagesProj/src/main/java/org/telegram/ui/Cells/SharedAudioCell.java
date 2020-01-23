@@ -417,7 +417,8 @@ public class SharedAudioCell extends FrameLayout implements DownloadController.F
     }
 
     @Override
-    public void onProgressDownload(String fileName, float progress) {
+    public void onProgressDownload(String fileName, long downloadSize, long totalSize) {
+        float progress = Math.min(1f, downloadSize / (float) totalSize);
         radialProgress.setProgress(progress, true);
         if (hasMiniProgress != 0) {
             if (miniButtonState != 1) {
@@ -431,7 +432,7 @@ public class SharedAudioCell extends FrameLayout implements DownloadController.F
     }
 
     @Override
-    public void onProgressUpload(String fileName, float progress, boolean isEncrypted) {
+    public void onProgressUpload(String fileName, long uploadedSize, long totalSize, boolean isEncrypted) {
 
     }
 

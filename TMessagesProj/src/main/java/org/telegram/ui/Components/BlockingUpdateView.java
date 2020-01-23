@@ -183,8 +183,10 @@ public class BlockingUpdateView extends FrameLayout implements NotificationCente
         } else if (id == NotificationCenter.FileLoadProgressChanged) {
             String location = (String) args[0];
             if (fileName != null && fileName.equals(location)) {
-                Float loadProgress = (Float) args[1];
-                radialProgress.setProgress(loadProgress, true);
+                Long loadedSize = (Long) args[1];
+                Long totalSize = (Long) args[2];
+                float progress = Math.min(1f, loadedSize / (float) totalSize);
+                radialProgress.setProgress(progress, true);
             }
         }
     }

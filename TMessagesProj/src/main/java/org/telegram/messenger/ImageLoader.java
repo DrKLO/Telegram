@@ -83,7 +83,7 @@ public class ImageLoader {
     private DispatchQueue thumbGeneratingQueue = new DispatchQueue("thumbGeneratingQueue");
     private DispatchQueue imageLoadQueue = new DispatchQueue("imageLoadQueue");
     private HashMap<String, String> replacedBitmaps = new HashMap<>();
-    private ConcurrentHashMap<String, Float> fileProgresses = new ConcurrentHashMap<>();
+    private ConcurrentHashMap<String, long[]> fileProgresses = new ConcurrentHashMap<>();
     private HashMap<String, ThumbGenerateTask> thumbGenerateTasks = new HashMap<>();
     private HashMap<String, Integer> forceLoadingImages = new HashMap<>();
     private static ThreadLocal<byte[]> bytesLocal = new ThreadLocal<>();
@@ -143,13 +143,13 @@ public class ImageLoader {
             this.currentAccount = currentAccount;
         }
 
-        private void reportProgress(final float progress) {
+        private void reportProgress(long uploadedSize, long totalSize) {
             long currentTime = System.currentTimeMillis();
-            if (progress == 1 || lastProgressTime == 0 || lastProgressTime < currentTime - 500) {
+            if (uploadedSize == totalSize || lastProgressTime == 0 || lastProgressTime < currentTime - 100) {
                 lastProgressTime = currentTime;
                 Utilities.stageQueue.postRunnable(() -> {
-                    fileProgresses.put(url, progress);
-                    AndroidUtilities.runOnUIThread(() -> NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.FileLoadProgressChanged, url, progress));
+                    fileProgresses.put(url, new long[]{uploadedSize, totalSize});
+                    AndroidUtilities.runOnUIThread(() -> NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.FileLoadProgressChanged, url, uploadedSize, totalSize));
                 });
             }
         }
@@ -243,12 +243,12 @@ public class ImageLoader {
                                     fileOutputStream.write(data, 0, read);
                                     totalLoaded += read;
                                     if (fileSize > 0) {
-                                        reportProgress(totalLoaded / (float) fileSize);
+                                        reportProgress(totalLoaded, fileSize);
                                     }
                                 } else if (read == -1) {
                                     done = true;
                                     if (fileSize != 0) {
-                                        reportProgress(1.0f);
+                                        reportProgress(fileSize, fileSize);
                                     }
                                     break;
                                 } else {
@@ -441,13 +441,13 @@ public class ImageLoader {
             overrideUrl = url;
         }
 
-        private void reportProgress(final float progress) {
+        private void reportProgress(long uploadedSize, long totalSize) {
             long currentTime = System.currentTimeMillis();
-            if (progress == 1 || lastProgressTime == 0 || lastProgressTime < currentTime - 500) {
+            if (uploadedSize == totalSize || lastProgressTime == 0 || lastProgressTime < currentTime - 100) {
                 lastProgressTime = currentTime;
                 Utilities.stageQueue.postRunnable(() -> {
-                    fileProgresses.put(cacheImage.url, progress);
-                    AndroidUtilities.runOnUIThread(() -> NotificationCenter.getInstance(cacheImage.currentAccount).postNotificationName(NotificationCenter.FileLoadProgressChanged, cacheImage.url, progress));
+                    fileProgresses.put(cacheImage.url, new long[]{uploadedSize, totalSize});
+                    AndroidUtilities.runOnUIThread(() -> NotificationCenter.getInstance(cacheImage.currentAccount).postNotificationName(NotificationCenter.FileLoadProgressChanged, cacheImage.url, uploadedSize, totalSize));
                 });
             }
         }
@@ -547,12 +547,12 @@ public class ImageLoader {
                                     totalLoaded += read;
                                     fileOutputStream.write(data, 0, read);
                                     if (imageSize != 0) {
-                                        reportProgress(totalLoaded / (float) imageSize);
+                                        reportProgress(totalLoaded, imageSize);
                                     }
                                 } else if (read == -1) {
                                     done = true;
                                     if (imageSize != 0) {
-                                        reportProgress(1.0f);
+                                        reportProgress(imageSize, imageSize);
                                     }
                                     break;
                                 } else {
@@ -1638,13 +1638,13 @@ public class ImageLoader {
             final int currentAccount = a;
             FileLoader.getInstance(a).setDelegate(new FileLoader.FileLoaderDelegate() {
                 @Override
-                public void fileUploadProgressChanged(final String location, final float progress, final boolean isEncrypted) {
-                    fileProgresses.put(location, progress);
+                public void fileUploadProgressChanged(final String location, long uploadedSize, long totalSize, final boolean isEncrypted) {
+                    fileProgresses.put(location, new long[]{uploadedSize, totalSize});
                     long currentTime = System.currentTimeMillis();
                     if (lastProgressUpdateTime == 0 || lastProgressUpdateTime < currentTime - 500) {
                         lastProgressUpdateTime = currentTime;
 
-                        AndroidUtilities.runOnUIThread(() -> NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.FileUploadProgressChanged, location, progress, isEncrypted));
+                        AndroidUtilities.runOnUIThread(() -> NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.FileUploadProgressChanged, location, uploadedSize, totalSize, isEncrypted));
                     }
                 }
 
@@ -1688,12 +1688,12 @@ public class ImageLoader {
                 }
 
                 @Override
-                public void fileLoadProgressChanged(final String location, final float progress) {
-                    fileProgresses.put(location, progress);
+                public void fileLoadProgressChanged(final String location, long uploadedSize, long totalSize) {
+                    fileProgresses.put(location, new long[]{uploadedSize, totalSize});
                     long currentTime = System.currentTimeMillis();
                     if (lastProgressUpdateTime == 0 || lastProgressUpdateTime < currentTime - 500) {
                         lastProgressUpdateTime = currentTime;
-                        AndroidUtilities.runOnUIThread(() -> NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.FileLoadProgressChanged, location, progress));
+                        AndroidUtilities.runOnUIThread(() -> NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.FileLoadProgressChanged, location, uploadedSize, totalSize));
                     }
                 }
             });
@@ -1895,6 +1895,17 @@ public class ImageLoader {
     }
 
     public Float getFileProgress(String location) {
+        if (location == null) {
+            return null;
+        }
+        long[] progress = fileProgresses.get(location);
+        if (progress == null) {
+            return null;
+        }
+        return Math.min(1f, progress[0] / (float) progress[1]);
+    }
+
+    public long[] getFileProgressSizes(String location) {
         if (location == null) {
             return null;
         }

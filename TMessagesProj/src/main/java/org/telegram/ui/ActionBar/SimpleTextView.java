@@ -491,7 +491,7 @@ public class SimpleTextView extends View implements Drawable.Callback {
         if (!scrollNonFitText || !textDoesNotFit && scrollingOffset == 0) {
             return;
         }
-        long newUpdateTime = SystemClock.uptimeMillis();
+        long newUpdateTime = SystemClock.elapsedRealtime();
         long dt = newUpdateTime - lastUpdateTime;
         if (dt > 17) {
             dt = 17;

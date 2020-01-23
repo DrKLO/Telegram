@@ -36,6 +36,8 @@ public class AudioRecoder {
     public long startTime = 0;
     public long endTime = 0;
 
+    public final MediaFormat format;
+
     public AudioRecoder(MediaFormat inputAudioFormat, MediaExtractor extractor, int trackIndex) throws IOException {
         this.extractor = extractor;
         this.trackIndex = trackIndex;
@@ -46,12 +48,12 @@ public class AudioRecoder {
 
 
         encoder = MediaCodec.createEncoderByType(MediaController.AUIDO_MIME_TYPE);
-        MediaFormat Format = MediaFormat.createAudioFormat(MediaController.AUIDO_MIME_TYPE,
+        format = MediaFormat.createAudioFormat(MediaController.AUIDO_MIME_TYPE,
                 inputAudioFormat.getInteger(MediaFormat.KEY_SAMPLE_RATE),
                 inputAudioFormat.getInteger(MediaFormat.KEY_CHANNEL_COUNT)
         );
-        Format.setInteger(MediaFormat.KEY_BIT_RATE, 64 * 1024);
-        encoder.configure(Format, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE);
+        format.setInteger(MediaFormat.KEY_BIT_RATE, 64 * 1024);
+        encoder.configure(format, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE);
         encoder.start();
 
 

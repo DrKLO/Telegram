@@ -44,7 +44,7 @@ public class MessageBackgroundDrawable extends Drawable {
         isSelected = selected;
         animationInProgress = animated;
         if (animated) {
-            lastAnimationTime = SystemClock.uptimeMillis();
+            lastAnimationTime = SystemClock.elapsedRealtime();
         } else {
             currentAnimationProgress = selected ? 1.0f : 0.0f;
         }
@@ -71,7 +71,7 @@ public class MessageBackgroundDrawable extends Drawable {
     public void setTouchCoords(float x, float y) {
         touchX = x;
         touchY = y;
-        lastTouchTime = SystemClock.uptimeMillis();
+        lastTouchTime = SystemClock.elapsedRealtime();
     }
 
     public void setTouchCoordsOverride(float x, float y) {
@@ -153,7 +153,7 @@ public class MessageBackgroundDrawable extends Drawable {
             canvas.drawCircle(x1, y1, finalRadius * interpolatedProgress, paint);
         }
         if (animationInProgress) {
-            long newTime = SystemClock.uptimeMillis();
+            long newTime = SystemClock.elapsedRealtime();
             long dt = newTime - lastAnimationTime;
             if (dt > 20) {
                 dt = 17;

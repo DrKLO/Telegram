@@ -650,16 +650,16 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
         }
 
         @Override
-        public void onProgressDownload(String fileName, float progress) {
-            radialProgress.setProgress(progress, true);
+        public void onProgressDownload(String fileName, long downloadedSize, long totalSize) {
+            radialProgress.setProgress(Math.min(1f, downloadedSize / (float) totalSize), true);
             if (buttonState != 1) {
                 updateButtonState(false);
             }
         }
 
         @Override
-        public void onProgressUpload(String fileName, float progress, boolean isEncrypted) {
-            radialProgress.setProgress(progress, true);
+        public void onProgressUpload(String fileName, long uploadedSize, long totalSize, boolean isEncrypted) {
+            radialProgress.setProgress(Math.min(1f, uploadedSize / (float) totalSize), true);
         }
 
         @Override

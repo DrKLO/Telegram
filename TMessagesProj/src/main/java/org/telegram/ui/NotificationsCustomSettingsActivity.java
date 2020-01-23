@@ -875,7 +875,7 @@ public class NotificationsCustomSettingsActivity extends BaseFragment {
         public SearchAdapter(Context context) {
             mContext = context;
             searchAdapterHelper = new SearchAdapterHelper(true);
-            searchAdapterHelper.setDelegate(() -> {
+            searchAdapterHelper.setDelegate((searchId) -> {
                 if (searchRunnable == null && !searchAdapterHelper.isSearchInProgress()) {
                     emptyView.showTextView();
                 }
@@ -892,7 +892,7 @@ public class NotificationsCustomSettingsActivity extends BaseFragment {
                 searchResult.clear();
                 searchResultNames.clear();
                 searchAdapterHelper.mergeResults(null);
-                searchAdapterHelper.queryServerSearch(null, true, currentType != NotificationsController.TYPE_PRIVATE, true, false, 0, false, 0);
+                searchAdapterHelper.queryServerSearch(null, true, currentType != NotificationsController.TYPE_PRIVATE, true, false, false, 0, false, 0, 0);
                 notifyDataSetChanged();
             } else {
                 Utilities.searchQueue.postRunnable(searchRunnable = () -> processSearch(query), 300);
@@ -901,7 +901,7 @@ public class NotificationsCustomSettingsActivity extends BaseFragment {
 
         private void processSearch(final String query) {
             AndroidUtilities.runOnUIThread(() -> {
-                searchAdapterHelper.queryServerSearch(query, true, currentType != NotificationsController.TYPE_PRIVATE, true, false, 0, false, 0);
+                searchAdapterHelper.queryServerSearch(query, true, currentType != NotificationsController.TYPE_PRIVATE, true, false, false, 0, false, 0, 0);
                 final ArrayList<NotificationsSettingsActivity.NotificationException> contactsCopy = new ArrayList<>(exceptions);
                 Utilities.searchQueue.postRunnable(() -> {
                     String search1 = query.trim().toLowerCase();

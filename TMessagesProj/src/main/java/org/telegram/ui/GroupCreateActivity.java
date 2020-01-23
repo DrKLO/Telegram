@@ -1085,7 +1085,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
             }
 
             searchAdapterHelper = new SearchAdapterHelper(false);
-            searchAdapterHelper.setDelegate(() -> {
+            searchAdapterHelper.setDelegate((searchId) -> {
                 if (searchRunnable == null && !searchAdapterHelper.isSearchInProgress()) {
                     emptyView.showTextView();
                 }
@@ -1338,11 +1338,11 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
                 searchResult.clear();
                 searchResultNames.clear();
                 searchAdapterHelper.mergeResults(null);
-                searchAdapterHelper.queryServerSearch(null, true, isAlwaysShare || isNeverShare, false, false, 0, false, 0);
+                searchAdapterHelper.queryServerSearch(null, true, isAlwaysShare || isNeverShare, false, false, false, 0, false, 0, 0);
                 notifyDataSetChanged();
             } else {
                 Utilities.searchQueue.postRunnable(searchRunnable = () -> AndroidUtilities.runOnUIThread(() -> {
-                    searchAdapterHelper.queryServerSearch(query, true, isAlwaysShare || isNeverShare, true, false, 0, false, 0);
+                    searchAdapterHelper.queryServerSearch(query, true, isAlwaysShare || isNeverShare, true, false, false, 0, false, 0, 0);
                     Utilities.searchQueue.postRunnable(searchRunnable = () -> {
                         String search1 = query.trim().toLowerCase();
                         if (search1.length() == 0) {

@@ -245,6 +245,19 @@ public class ChatObject {
         return canUserDoAction(chat, ACTION_INVITE);
     }
 
+    public static boolean canAddBotsToChat(TLRPC.Chat chat) {
+        if (isChannel(chat)) {
+            if (chat != null && chat.megagroup && (chat.admin_rights != null && (chat.admin_rights.post_messages || chat.admin_rights.add_admins) || chat.creator)) {
+                return true;
+            }
+        } else {
+            if (chat.migrated_to == null) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public static boolean canPinMessages(TLRPC.Chat chat) {
         return canUserDoAction(chat, ACTION_PIN) || ChatObject.isChannel(chat) && !chat.megagroup && chat.admin_rights != null && chat.admin_rights.edit_messages;
     }

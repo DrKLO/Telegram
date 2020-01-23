@@ -19,6 +19,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.RandomAccessFile;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -28,12 +29,12 @@ import java.util.concurrent.CountDownLatch;
 public class FileLoader extends BaseController {
 
     public interface FileLoaderDelegate {
-        void fileUploadProgressChanged(String location, float progress, boolean isEncrypted);
+        void fileUploadProgressChanged(String location, long uploadedSize, long totalSize, boolean isEncrypted);
         void fileDidUploaded(String location, TLRPC.InputFile inputFile, TLRPC.InputEncryptedFile inputEncryptedFile, byte[] key, byte[] iv, long totalFileSize);
         void fileDidFailedUpload(String location, boolean isEncrypted);
         void fileDidLoaded(String location, File finalFile, int type);
         void fileDidFailedLoad(String location, int state);
-        void fileLoadProgressChanged(String location, float progress);
+        void fileLoadProgressChanged(String location, long uploadedSize, long totalSize);
     }
 
     public static final int MEDIA_DIR_IMAGE = 0;
@@ -254,6 +255,9 @@ public class FileLoader extends BaseController {
                     uploadSizes.remove(location);
                 }
             }
+            if (delegate != null) {
+                delegate.fileUploadProgressChanged(location, 0, estimatedSize, encrypted);
+            }
             FileUploadOperation operation = new FileUploadOperation(currentAccount, location, encrypted, esimated, type);
             if (encrypted) {
                 uploadOperationPathsEnc.put(location, operation);
@@ -328,9 +332,9 @@ public class FileLoader extends BaseController {
                 }
 
                 @Override
-                public void didChangedUploadProgress(FileUploadOperation operation, final float progress) {
+                public void didChangedUploadProgress(FileUploadOperation operation, long uploadedSize, long totalSize) {
                     if (delegate != null) {
-                        delegate.fileUploadProgressChanged(location, progress, encrypted);
+                        delegate.fileUploadProgressChanged(location, uploadedSize, totalSize, encrypted);
                     }
                 }
             });
@@ -659,9 +663,9 @@ public class FileLoader extends BaseController {
             }
 
             @Override
-            public void didChangedLoadProgress(FileLoadOperation operation, float progress) {
+            public void didChangedLoadProgress(FileLoadOperation operation, long uploadedSize, long totalSize) {
                 if (delegate != null) {
-                    delegate.fileLoadProgressChanged(finalFileName, progress);
+                    delegate.fileLoadProgressChanged(finalFileName, uploadedSize, totalSize);
                 }
             }
         };
@@ -1242,5 +1246,46 @@ public class FileLoader extends BaseController {
         out.getFD().sync();
         out.close();
         return true;
+    }
+
+    public static long getTempFileSize(TLRPC.Document documentLocation, boolean encrypt) {
+        long location_id = documentLocation.id;
+        long datacenterId = documentLocation.dc_id;
+
+        if (datacenterId == 0 || location_id == 0) {
+            return 0;
+        }
+
+        String fileName = datacenterId + "_" + location_id + (encrypt ? ".temp.enc" : ".temp");
+        String fileNameParts = datacenterId + "_" + location_id + ".pt";
+        File f = new File(getDirectory(MEDIA_DIR_CACHE), fileName);
+
+        long size = 0;
+        if (f.exists()) {
+            size = f.length();
+        }
+
+        if (size != 0) {
+            File cacheFileParts = new File(getDirectory(MEDIA_DIR_CACHE), fileNameParts);
+            try {
+                RandomAccessFile filePartsStream = new RandomAccessFile(cacheFileParts, "r");
+                long len = filePartsStream.length();
+                if (len % 8 == 4) {
+                    len -= 4;
+                    int count = filePartsStream.readInt();
+                    if (count <= len / 2) {
+                        size = documentLocation.size;
+                        for (int a = 0; a < count; a++) {
+                            int start = filePartsStream.readInt();
+                            int end = filePartsStream.readInt();
+                            size -= end - start;
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                FileLog.e(e);
+            }
+        }
+        return size;
     }
 }

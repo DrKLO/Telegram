@@ -50,8 +50,10 @@ public class VideoEncodingService extends Service implements NotificationCenter.
         if (id == NotificationCenter.FileUploadProgressChanged) {
             String fileName = (String) args[0];
             if (account == currentAccount && path != null && path.equals(fileName)) {
-                Float progress = (Float) args[1];
-                Boolean enc = (Boolean) args[2];
+                Long loadedSize = (Long) args[1];
+                Long totalSize = (Long) args[2];
+                float progress = Math.min(1f, loadedSize / (float) totalSize);
+                Boolean enc = (Boolean) args[3];
                 currentProgress = (int) (progress * 100);
                 builder.setProgress(100, currentProgress, currentProgress == 0);
                 try {

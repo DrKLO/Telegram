@@ -572,7 +572,7 @@ public class RLottieDrawable extends BitmapDrawable implements Animatable {
         if (nativePtr == 0 || destroyWhenDone) {
             return;
         }
-        long now = SystemClock.uptimeMillis();
+        long now = SystemClock.elapsedRealtime();
         long timeDiff = Math.abs(now - lastFrameTime);
         int timeCheck;
         if (AndroidUtilities.screenRefreshRate <= 60) {

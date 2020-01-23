@@ -70,10 +70,15 @@ public class MediaCodecVideoConvertor {
 
             checkConversionCanceled();
 
-            if (needCompress) {
-                int videoIndex = MediaController.findTrack(extractor, false);
-                int audioIndex = bitrate != -1 ? MediaController.findTrack(extractor, true) : -1;
+            int videoIndex = MediaController.findTrack(extractor, false);
+            int audioIndex = bitrate != -1 ? MediaController.findTrack(extractor, true) : -1;
 
+            boolean needConvertVideo = false;
+            if (videoIndex >= 0 && !extractor.getTrackFormat(videoIndex).getString(MediaFormat.KEY_MIME).equals(MediaController.VIDEO_MIME_TYPE)) {
+                needConvertVideo = true;
+            }
+
+            if (needCompress || needConvertVideo) {
                 AudioRecoder audioRecoder = null;
                 ByteBuffer audioBuffer = null;
                 boolean copyAudioBuffer = true;
@@ -217,36 +222,45 @@ public class MediaCodecVideoConvertor {
 
                         if (audioIndex >= 0) {
                             MediaFormat audioFormat = extractor.getTrackFormat(audioIndex);
-                            copyAudioBuffer = audioFormat.getString(MediaFormat.KEY_MIME).equals(MediaController.AUIDO_MIME_TYPE);
-                            audioTrackIndex = mediaMuxer.addTrack(audioFormat, true);
+                            copyAudioBuffer = audioFormat.getString(MediaFormat.KEY_MIME).equals(MediaController.AUIDO_MIME_TYPE)
+                                    || audioFormat.getString(MediaFormat.KEY_MIME).equals("audio/mpeg");
 
-                            if (copyAudioBuffer) {
-                                extractor.selectTrack(audioIndex);
-                                int maxBufferSize = audioFormat.getInteger(MediaFormat.KEY_MAX_INPUT_SIZE);
-                                audioBuffer = ByteBuffer.allocateDirect(maxBufferSize);
+                            if (audioFormat.getString(MediaFormat.KEY_MIME).equals("audio/unknown")) {
+                                audioIndex = -1;
+                            }
 
-                                if (startTime > 0) {
-                                    extractor.seekTo(startTime, MediaExtractor.SEEK_TO_PREVIOUS_SYNC);
+                            if (audioIndex >= 0) {
+                                if (copyAudioBuffer) {
+                                    audioTrackIndex = mediaMuxer.addTrack(audioFormat, true);
+                                    extractor.selectTrack(audioIndex);
+                                    int maxBufferSize = audioFormat.getInteger(MediaFormat.KEY_MAX_INPUT_SIZE);
+                                    audioBuffer = ByteBuffer.allocateDirect(maxBufferSize);
+
+                                    if (startTime > 0) {
+                                        extractor.seekTo(startTime, MediaExtractor.SEEK_TO_PREVIOUS_SYNC);
+                                    } else {
+                                        extractor.seekTo(0, MediaExtractor.SEEK_TO_PREVIOUS_SYNC);
+                                    }
                                 } else {
-                                    extractor.seekTo(0, MediaExtractor.SEEK_TO_PREVIOUS_SYNC);
-                                }
-                            } else {
-                                MediaExtractor audioExtractor = new MediaExtractor();
-                                audioExtractor.setDataSource(videoPath);
-                                audioExtractor.selectTrack(audioIndex);
+                                    MediaExtractor audioExtractor = new MediaExtractor();
+                                    audioExtractor.setDataSource(videoPath);
+                                    audioExtractor.selectTrack(audioIndex);
 
-                                if (startTime > 0) {
-                                    audioExtractor.seekTo(startTime, MediaExtractor.SEEK_TO_PREVIOUS_SYNC);
-                                } else {
-                                    audioExtractor.seekTo(0, MediaExtractor.SEEK_TO_PREVIOUS_SYNC);
-                                }
+                                    if (startTime > 0) {
+                                        audioExtractor.seekTo(startTime, MediaExtractor.SEEK_TO_PREVIOUS_SYNC);
+                                    } else {
+                                        audioExtractor.seekTo(0, MediaExtractor.SEEK_TO_PREVIOUS_SYNC);
+                                    }
 
-                                audioRecoder = new AudioRecoder(audioFormat, audioExtractor, audioIndex);
-                                audioRecoder.startTime = startTime;
-                                audioRecoder.endTime = endTime;
+                                    audioRecoder = new AudioRecoder(audioFormat, audioExtractor, audioIndex);
+                                    audioRecoder.startTime = startTime;
+                                    audioRecoder.endTime = endTime;
+                                    audioTrackIndex = mediaMuxer.addTrack(audioRecoder.format, true);
+                                }
                             }
                         }
-                        boolean audioEncoderDone = false;
+
+                        boolean audioEncoderDone = audioIndex < 0;
 
                         boolean firstEncode = true;
 
@@ -592,12 +606,17 @@ public class MediaCodecVideoConvertor {
         if (audioTrackIndex >= 0) {
             extractor.selectTrack(audioTrackIndex);
             MediaFormat trackFormat = extractor.getTrackFormat(audioTrackIndex);
-            muxerAudioTrackIndex = mediaMuxer.addTrack(trackFormat, true);
-            maxBufferSize = Math.max(trackFormat.getInteger(MediaFormat.KEY_MAX_INPUT_SIZE), maxBufferSize);
-            if (start > 0) {
-                extractor.seekTo(start, MediaExtractor.SEEK_TO_PREVIOUS_SYNC);
+
+            if (trackFormat.getString(MediaFormat.KEY_MIME).equals("audio/unknown")) {
+                audioTrackIndex = -1;
             } else {
-                extractor.seekTo(0, MediaExtractor.SEEK_TO_PREVIOUS_SYNC);
+                muxerAudioTrackIndex = mediaMuxer.addTrack(trackFormat, true);
+                maxBufferSize = Math.max(trackFormat.getInteger(MediaFormat.KEY_MAX_INPUT_SIZE), maxBufferSize);
+                if (start > 0) {
+                    extractor.seekTo(start, MediaExtractor.SEEK_TO_PREVIOUS_SYNC);
+                } else {
+                    extractor.seekTo(0, MediaExtractor.SEEK_TO_PREVIOUS_SYNC);
+                }
             }
         }
         ByteBuffer buffer = ByteBuffer.allocateDirect(maxBufferSize);

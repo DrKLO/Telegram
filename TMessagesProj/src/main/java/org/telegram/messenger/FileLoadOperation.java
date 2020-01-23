@@ -169,7 +169,7 @@ public class FileLoadOperation {
     public interface FileLoadOperationDelegate {
         void didFinishLoadingFile(FileLoadOperation operation, File finalFile);
         void didFailedLoadingFile(FileLoadOperation operation, int state);
-        void didChangedLoadProgress(FileLoadOperation operation, float progress);
+        void didChangedLoadProgress(FileLoadOperation operation, long uploadedSize, long totalSize);
     }
 
     public FileLoadOperation(ImageLocation imageLocation, Object parent, String extension, int size) {
@@ -917,7 +917,7 @@ public class FileLoadOperation {
             }
             if (!isPreloadVideoOperation && downloadedBytes != 0 && totalBytesCount > 0) {
                 copyNotLoadedRanges();
-                delegate.didChangedLoadProgress(FileLoadOperation.this, Math.min(1.0f, (float) downloadedBytes / (float) totalBytesCount));
+                delegate.didChangedLoadProgress(FileLoadOperation.this, downloadedBytes, totalBytesCount);
             }
             try {
                 fileOutputStream = new RandomAccessFile(cacheFileTemp, "rws");
@@ -1451,7 +1451,7 @@ public class FileLoadOperation {
                     }
                     if (totalBytesCount > 0 && state == stateDownloading) {
                         copyNotLoadedRanges();
-                        delegate.didChangedLoadProgress(FileLoadOperation.this, Math.min(1.0f, (float) downloadedBytes / (float) totalBytesCount));
+                        delegate.didChangedLoadProgress(FileLoadOperation.this, downloadedBytes, totalBytesCount);
                     }
                 }
 
@@ -1712,6 +1712,7 @@ public class FileLoadOperation {
                     req.location = location;
                     req.offset = downloadOffset;
                     req.limit = currentDownloadChunkSize;
+                    req.cdn_supported = true;
                     request = req;
                 }
             }

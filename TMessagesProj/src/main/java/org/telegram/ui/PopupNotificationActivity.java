@@ -418,6 +418,11 @@ public class PopupNotificationActivity extends Activity implements NotificationC
             public void onUpdateSlowModeButton(View button, boolean show, CharSequence time) {
 
             }
+
+            @Override
+            public void onSendLongClick() {
+
+            }
         });
 
         messageContainer = new FrameLayoutTouch(this);

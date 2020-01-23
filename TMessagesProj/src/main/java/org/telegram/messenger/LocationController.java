@@ -120,7 +120,7 @@ public class LocationController extends BaseController implements NotificationCe
             if (lastKnownLocation != null && (this == networkLocationListener || this == passiveLocationListener)) {
                 if (!started && location.distanceTo(lastKnownLocation) > 20) {
                     setLastKnownLocation(location);
-                    lastLocationSendTime = SystemClock.uptimeMillis() - BACKGROUD_UPDATE_TIME + 5000;
+                    lastLocationSendTime = SystemClock.elapsedRealtime() - BACKGROUD_UPDATE_TIME + 5000;
                 }
             } else {
                 setLastKnownLocation(location);
@@ -437,14 +437,14 @@ public class LocationController extends BaseController implements NotificationCe
     }
 
     private boolean shouldStopGps() {
-        return SystemClock.uptimeMillis() > locationEndWatchTime;
+        return SystemClock.elapsedRealtime() > locationEndWatchTime;
     }
 
     protected void setNewLocationEndWatchTime() {
         if (sharingLocations.isEmpty()) {
             return;
         }
-        locationEndWatchTime = SystemClock.uptimeMillis() + WATCH_LOCATION_TIMEOUT;
+        locationEndWatchTime = SystemClock.elapsedRealtime() + WATCH_LOCATION_TIMEOUT;
         start();
     }
 
@@ -471,18 +471,18 @@ public class LocationController extends BaseController implements NotificationCe
             }
         }
         if (started) {
-            long newTime = SystemClock.uptimeMillis();
+            long newTime = SystemClock.elapsedRealtime();
             if (lastLocationByGoogleMaps || Math.abs(lastLocationStartTime - newTime) > LOCATION_ACQUIRE_TIME || shouldSendLocationNow()) {
                 lastLocationByGoogleMaps = false;
                 locationSentSinceLastGoogleMapUpdate = true;
-                boolean cancelAll = (SystemClock.uptimeMillis() - lastLocationSendTime) > 2 * 1000;
+                boolean cancelAll = (SystemClock.elapsedRealtime() - lastLocationSendTime) > 2 * 1000;
                 lastLocationStartTime = newTime;
-                lastLocationSendTime = SystemClock.uptimeMillis();
+                lastLocationSendTime = SystemClock.elapsedRealtime();
                 broadcastLastKnownLocation(cancelAll);
             }
         } else {
-            if (Math.abs(lastLocationSendTime - SystemClock.uptimeMillis()) > BACKGROUD_UPDATE_TIME) {
-                lastLocationStartTime = SystemClock.uptimeMillis();
+            if (Math.abs(lastLocationSendTime - SystemClock.elapsedRealtime()) > BACKGROUD_UPDATE_TIME) {
+                lastLocationStartTime = SystemClock.elapsedRealtime();
                 start();
             }
         }
@@ -492,7 +492,7 @@ public class LocationController extends BaseController implements NotificationCe
         if (!shouldStopGps()) {
             return false;
         }
-        if (Math.abs(lastLocationSendTime - SystemClock.uptimeMillis()) >= SEND_NEW_LOCATION_TIME) {
+        if (Math.abs(lastLocationSendTime - SystemClock.elapsedRealtime()) >= SEND_NEW_LOCATION_TIME) {
             return true;
         }
         return false;
@@ -552,7 +552,7 @@ public class LocationController extends BaseController implements NotificationCe
         }
         sharingLocations.add(info);
         saveSharingLocation(info, 0);
-        lastLocationSendTime = SystemClock.uptimeMillis() - BACKGROUD_UPDATE_TIME + 5000;
+        lastLocationSendTime = SystemClock.elapsedRealtime() - BACKGROUD_UPDATE_TIME + 5000;
         AndroidUtilities.runOnUIThread(() -> {
             if (old != null) {
                 sharingLocationsUI.remove(old);
@@ -772,10 +772,10 @@ public class LocationController extends BaseController implements NotificationCe
         }
         lastLocationByGoogleMaps = true;
         if (first || lastKnownLocation != null && lastKnownLocation.distanceTo(location) >= 20) {
-            lastLocationSendTime = SystemClock.uptimeMillis() - BACKGROUD_UPDATE_TIME;
+            lastLocationSendTime = SystemClock.elapsedRealtime() - BACKGROUD_UPDATE_TIME;
             locationSentSinceLastGoogleMapUpdate = false;
         } else if (locationSentSinceLastGoogleMapUpdate) {
-            lastLocationSendTime = SystemClock.uptimeMillis() - BACKGROUD_UPDATE_TIME + FOREGROUND_UPDATE_TIME;
+            lastLocationSendTime = SystemClock.elapsedRealtime() - BACKGROUD_UPDATE_TIME + FOREGROUND_UPDATE_TIME;
             locationSentSinceLastGoogleMapUpdate = false;
         }
         setLastKnownLocation(location);
@@ -785,7 +785,7 @@ public class LocationController extends BaseController implements NotificationCe
         if (started) {
             return;
         }
-        lastLocationStartTime = SystemClock.uptimeMillis();
+        lastLocationStartTime = SystemClock.elapsedRealtime();
         started = true;
         boolean ok = false;
         if (checkPlayServices()) {
@@ -900,7 +900,7 @@ public class LocationController extends BaseController implements NotificationCe
             return;
         }
         Integer date = lastReadLocationTime.get(dialogId);
-        int currentDate = (int) (SystemClock.uptimeMillis() / 1000);
+        int currentDate = (int) (SystemClock.elapsedRealtime() / 1000);
         if (date != null && date + 60 > currentDate) {
             return;
         }

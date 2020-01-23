@@ -106,7 +106,7 @@ public class MaxFileSizeCell extends FrameLayout {
 
             }
         });
-        addView(seekBarView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 30, Gravity.TOP | Gravity.LEFT, 10, 40, 10, 0));
+        addView(seekBarView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 38, Gravity.TOP | Gravity.LEFT, 6, 36, 6, 0));
     }
 
     protected void didChangedSizeValue(int value) {

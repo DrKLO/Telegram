@@ -153,6 +153,9 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
     private int preferedHeaderRow;
     private int newThemeInfoRow;
     private int themeHeaderRow;
+    private int bubbleRadiusHeaderRow;
+    private int bubbleRadiusRow;
+    private int bubbleRadiusInfoRow;
     private int chatListHeaderRow;
     private int chatListRow;
     private int chatListInfoRow;
@@ -212,9 +215,9 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
         private SeekBarView sizeBar;
         private int startFontSize = 12;
         private int endFontSize = 30;
-        private int lastWidth;
 
         private TextPaint textPaint;
+        private int lastWidth;
 
         public TextSizeCell(Context context) {
             super(context);
@@ -237,7 +240,7 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
 
                 }
             });
-            addView(sizeBar, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 38, Gravity.LEFT | Gravity.TOP, 9, 5, 43, 0));
+            addView(sizeBar, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 38, Gravity.LEFT | Gravity.TOP, 5, 5, 39, 0));
 
             messagesCell = new ThemePreviewMessagesCell(context, parentLayout, 0);
             addView(messagesCell, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 0, 53, 0, 0));
@@ -252,8 +255,11 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
         @Override
         protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
             super.onMeasure(widthMeasureSpec, heightMeasureSpec);
-            int w = MeasureSpec.getSize(widthMeasureSpec);
-            sizeBar.setProgress((SharedConfig.fontSize - startFontSize) / (float) (endFontSize - startFontSize));
+            int width = MeasureSpec.getSize(widthMeasureSpec);
+            if (lastWidth != width) {
+                sizeBar.setProgress((SharedConfig.fontSize - startFontSize) / (float) (endFontSize - startFontSize));
+                lastWidth = width;
+            }
         }
 
         @Override
@@ -264,10 +270,96 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
         }
     }
 
+    private class BubbleRadiusCell extends FrameLayout {
+
+        private SeekBarView sizeBar;
+        private int startRadius = 0;
+        private int endRadius = 17;
+
+        private TextPaint textPaint;
+
+        public BubbleRadiusCell(Context context) {
+            super(context);
+
+            setWillNotDraw(false);
+
+            textPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
+            textPaint.setTextSize(AndroidUtilities.dp(16));
+
+            sizeBar = new SeekBarView(context);
+            sizeBar.setReportChanges(true);
+            sizeBar.setDelegate(new SeekBarView.SeekBarViewDelegate() {
+                @Override
+                public void onSeekBarDrag(boolean stop, float progress) {
+                    setBubbleRadius(Math.round(startRadius + (endRadius - startRadius) * progress), false);
+                }
+
+                @Override
+                public void onSeekBarPressed(boolean pressed) {
+
+                }
+            });
+            addView(sizeBar, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 38, Gravity.LEFT | Gravity.TOP, 5, 5, 39, 0));
+        }
+
+        @Override
+        protected void onDraw(Canvas canvas) {
+            textPaint.setColor(Theme.getColor(Theme.key_windowBackgroundWhiteValueText));
+            canvas.drawText("" + SharedConfig.bubbleRadius, getMeasuredWidth() - AndroidUtilities.dp(39), AndroidUtilities.dp(28), textPaint);
+        }
+
+        @Override
+        protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+            super.onMeasure(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY), heightMeasureSpec);
+            sizeBar.setProgress((SharedConfig.bubbleRadius - startRadius) / (float) (endRadius - startRadius));
+        }
+
+        @Override
+        public void invalidate() {
+            super.invalidate();
+            sizeBar.invalidate();
+        }
+    }
+
     public ThemeActivity(int type) {
         super();
         currentType = type;
         updateRows(true);
+    }
+
+    private boolean setBubbleRadius(int size, boolean layout) {
+        if (size != SharedConfig.bubbleRadius) {
+            SharedConfig.bubbleRadius = size;
+            SharedPreferences preferences = MessagesController.getGlobalMainSettings();
+            SharedPreferences.Editor editor = preferences.edit();
+            editor.putInt("bubbleRadius", SharedConfig.bubbleRadius);
+            editor.commit();
+
+            RecyclerView.ViewHolder holder = listView.findViewHolderForAdapterPosition(textSizeRow);
+            if (holder != null && holder.itemView instanceof TextSizeCell) {
+                TextSizeCell cell = (TextSizeCell) holder.itemView;
+                ChatMessageCell[] cells = cell.messagesCell.getCells();
+                for (int a = 0; a < cells.length; a++) {
+                    cells[a].getMessageObject().resetLayout();
+                    cells[a].requestLayout();
+                }
+                cell.invalidate();
+            }
+
+            holder = listView.findViewHolderForAdapterPosition(bubbleRadiusRow);
+            if (holder != null && holder.itemView instanceof BubbleRadiusCell) {
+                BubbleRadiusCell cell = (BubbleRadiusCell) holder.itemView;
+                if (layout) {
+                    cell.requestLayout();
+                } else {
+                    cell.invalidate();
+                }
+            }
+
+            updateMenuItem();
+            return true;
+        }
+        return false;
     }
 
     private boolean setFontSize(int size) {
@@ -326,6 +418,9 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
         automaticBrightnessInfoRow = -1;
         textSizeHeaderRow = -1;
         themeHeaderRow = -1;
+        bubbleRadiusHeaderRow = -1;
+        bubbleRadiusRow = -1;
+        bubbleRadiusInfoRow = -1;
         chatListHeaderRow = -1;
         chatListRow = -1;
         chatListInfoRow = -1;
@@ -376,6 +471,10 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
                 themeAccentListRow = rowCount++;
             }
             themeInfoRow = rowCount++;
+
+            bubbleRadiusHeaderRow = rowCount++;
+            bubbleRadiusRow = rowCount++;
+            bubbleRadiusInfoRow = rowCount++;
 
             chatListHeaderRow = rowCount++;
             chatListRow = rowCount++;
@@ -642,8 +741,16 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
                     builder1.setTitle(LocaleController.getString("ThemeResetToDefaultsTitle", R.string.ThemeResetToDefaultsTitle));
                     builder1.setMessage(LocaleController.getString("ThemeResetToDefaultsText", R.string.ThemeResetToDefaultsText));
                     builder1.setPositiveButton(LocaleController.getString("Reset", R.string.Reset), (dialogInterface, i) -> {
+                        boolean changed = false;
                         if (setFontSize(AndroidUtilities.isTablet() ? 18 : 16)) {
+                            changed = true;
+                        }
+                        if (setBubbleRadius(6, true)) {
+                            changed = true;
+                        }
+                        if (changed) {
                             listAdapter.notifyItemChanged(textSizeRow, new Object());
+                            listAdapter.notifyItemChanged(bubbleRadiusRow, new Object());
                         }
                         if (themesHorizontalListCell != null) {
                             Theme.ThemeInfo themeInfo = Theme.getTheme("Blue");
@@ -905,7 +1012,7 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
         }
         int fontSize = AndroidUtilities.isTablet() ? 18 : 16;
         Theme.ThemeInfo currentTheme = Theme.getCurrentTheme();
-        if (SharedConfig.fontSize != fontSize || !currentTheme.firstAccentIsDefault || currentTheme.currentAccentId != Theme.DEFALT_THEME_ACCENT_ID) {
+        if (SharedConfig.fontSize != fontSize || SharedConfig.bubbleRadius != 6 || !currentTheme.firstAccentIsDefault || currentTheme.currentAccentId != Theme.DEFALT_THEME_ACCENT_ID) {
             menuItem.showSubItem(reset_settings);
         } else {
             menuItem.hideSubItem(reset_settings);
@@ -1526,8 +1633,7 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
                     view = themesHorizontalListCell;
                     view.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, AndroidUtilities.dp(148)));
                     break;
-                case 12:
-                default: {
+                case 12: {
                     RecyclerListView accentsListView = new TintRecyclerListView(mContext) {
                         @Override
                         public boolean onInterceptTouchEvent(MotionEvent e) {
@@ -1652,6 +1758,11 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
                     view.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, AndroidUtilities.dp(62)));
                     break;
                 }
+                case 13:
+                default:
+                    view = new BubbleRadiusCell(mContext);
+                    view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+                    break;
             }
             return new RecyclerListView.Holder(view);
         }
@@ -1754,6 +1865,8 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
                         headerCell.setText(LocaleController.getString("TextSizeHeader", R.string.TextSizeHeader));
                     } else if (position == chatListHeaderRow) {
                         headerCell.setText(LocaleController.getString("ChatList", R.string.ChatList));
+                    } else if (position == bubbleRadiusHeaderRow) {
+                        headerCell.setText(LocaleController.getString("BubbleRadius", R.string.BubbleRadius));
                     }
                     break;
                 }
@@ -1849,13 +1962,13 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
                 return 2;
             } else if (position == themeInfoRow || position == nightTypeInfoRow || position == scheduleFromToInfoRow ||
                     position == stickersSection2Row || position == settings2Row || position == newThemeInfoRow ||
-                    position == chatListInfoRow) {
+                    position == chatListInfoRow || position == bubbleRadiusInfoRow) {
                 return 3;
             } else if (position == nightDisabledRow || position == nightScheduledRow || position == nightAutomaticRow || position == nightSystemDefaultRow) {
                 return 4;
             } else if (position == scheduleHeaderRow || position == automaticHeaderRow || position == preferedHeaderRow ||
                     position == settingsRow || position == themeHeaderRow || position == textSizeHeaderRow ||
-                    position == chatListHeaderRow) {
+                    position == chatListHeaderRow || position == bubbleRadiusHeaderRow) {
                 return 5;
             } else if (position == automaticBrightnessRow) {
                 return 6;
@@ -1873,6 +1986,8 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
                 return 11;
             } else if (position == themeAccentListRow) {
                 return 12;
+            } else if (position == bubbleRadiusRow) {
+                return 13;
             }
             return 1;
         }
@@ -1887,7 +2002,7 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
     @Override
     public ThemeDescription[] getThemeDescriptions() {
         return new ThemeDescription[]{
-                new ThemeDescription(listView, ThemeDescription.FLAG_CELLBACKGROUNDCOLOR, new Class[]{TextSettingsCell.class, TextCheckCell.class, HeaderCell.class, BrightnessControlCell.class, ThemeTypeCell.class, TextSizeCell.class, ChatListCell.class, NotificationsCheckCell.class, ThemesHorizontalListCell.class, TintRecyclerListView.class}, null, null, null, Theme.key_windowBackgroundWhite),
+                new ThemeDescription(listView, ThemeDescription.FLAG_CELLBACKGROUNDCOLOR, new Class[]{TextSettingsCell.class, TextCheckCell.class, HeaderCell.class, BrightnessControlCell.class, ThemeTypeCell.class, TextSizeCell.class, BubbleRadiusCell.class, ChatListCell.class, NotificationsCheckCell.class, ThemesHorizontalListCell.class, TintRecyclerListView.class}, null, null, null, Theme.key_windowBackgroundWhite),
                 new ThemeDescription(fragmentView, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_windowBackgroundGray),
 
                 new ThemeDescription(actionBar, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_actionBarDefault),
@@ -1928,6 +2043,9 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
                 new ThemeDescription(listView, ThemeDescription.FLAG_PROGRESSBAR, new Class[]{TextSizeCell.class}, new String[]{"sizeBar"}, null, null, null, Theme.key_player_progress),
                 new ThemeDescription(listView, 0, new Class[]{TextSizeCell.class}, new String[]{"sizeBar"}, null, null, null, Theme.key_player_progressBackground),
 
+                new ThemeDescription(listView, ThemeDescription.FLAG_PROGRESSBAR, new Class[]{BubbleRadiusCell.class}, new String[]{"sizeBar"}, null, null, null, Theme.key_player_progress),
+                new ThemeDescription(listView, 0, new Class[]{BubbleRadiusCell.class}, new String[]{"sizeBar"}, null, null, null, Theme.key_player_progressBackground),
+
                 new ThemeDescription(listView, 0, new Class[]{ChatListCell.class}, null, null, null, Theme.key_radioBackground),
                 new ThemeDescription(listView, 0, new Class[]{ChatListCell.class}, null, null, null, Theme.key_radioBackgroundChecked),
 
@@ -1938,11 +2056,11 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
 
                 new ThemeDescription(listView, 0, null, null, new Drawable[]{Theme.chat_msgInDrawable, Theme.chat_msgInMediaDrawable}, null, Theme.key_chat_inBubble),
                 new ThemeDescription(listView, 0, null, null, new Drawable[]{Theme.chat_msgInSelectedDrawable, Theme.chat_msgInMediaSelectedDrawable}, null, Theme.key_chat_inBubbleSelected),
-                new ThemeDescription(listView, 0, null, null, new Drawable[]{Theme.chat_msgInShadowDrawable, Theme.chat_msgInMediaShadowDrawable}, null, Theme.key_chat_inBubbleShadow),
+                new ThemeDescription(listView, 0, null, null, new Drawable[]{Theme.chat_msgInDrawable.getShadowDrawable(), Theme.chat_msgInMediaDrawable.getShadowDrawable()}, null, Theme.key_chat_inBubbleShadow),
                 new ThemeDescription(listView, 0, null, null, new Drawable[]{Theme.chat_msgOutDrawable, Theme.chat_msgOutMediaDrawable}, null, Theme.key_chat_outBubble),
                 new ThemeDescription(listView, 0, null, null, new Drawable[]{Theme.chat_msgOutDrawable, Theme.chat_msgOutMediaDrawable}, null, Theme.key_chat_outBubbleGradient),
                 new ThemeDescription(listView, 0, null, null, new Drawable[]{Theme.chat_msgOutSelectedDrawable, Theme.chat_msgOutMediaSelectedDrawable}, null, Theme.key_chat_outBubbleSelected),
-                new ThemeDescription(listView, 0, null, null, new Drawable[]{Theme.chat_msgOutShadowDrawable, Theme.chat_msgOutMediaShadowDrawable}, null, Theme.key_chat_outBubbleShadow),
+                new ThemeDescription(listView, 0, null, null, new Drawable[]{Theme.chat_msgOutDrawable.getShadowDrawable(), Theme.chat_msgOutMediaDrawable.getShadowDrawable()}, null, Theme.key_chat_outBubbleShadow),
                 new ThemeDescription(listView, 0, null, null, null, null, Theme.key_chat_messageTextIn),
                 new ThemeDescription(listView, 0, null, null, null, null, Theme.key_chat_messageTextOut),
                 new ThemeDescription(listView, 0, null, null, new Drawable[]{Theme.chat_msgOutCheckDrawable}, null, Theme.key_chat_outSentCheck),

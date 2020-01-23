@@ -28,8 +28,8 @@ public class DownloadController extends BaseController implements NotificationCe
     public interface FileDownloadProgressListener {
         void onFailedDownload(String fileName, boolean canceled);
         void onSuccessDownload(String fileName);
-        void onProgressDownload(String fileName, float progress);
-        void onProgressUpload(String fileName, float progress, boolean isEncrypted);
+        void onProgressDownload(String fileName, long downloadSize, long totalSize);
+        void onProgressUpload(String fileName, long downloadSize, long totalSize, boolean isEncrypted);
         int getObserverTag();
     }
 
@@ -981,11 +981,12 @@ public class DownloadController extends BaseController implements NotificationCe
             String fileName = (String) args[0];
             ArrayList<WeakReference<FileDownloadProgressListener>> arrayList = loadingFileObservers.get(fileName);
             if (arrayList != null) {
-                Float progress = (Float) args[1];
+                Long loadedSize = (Long) args[1];
+                Long totalSize = (Long) args[2];
                 for (int a = 0, size = arrayList.size(); a < size; a++) {
                     WeakReference<FileDownloadProgressListener> reference = arrayList.get(a);
                     if (reference.get() != null) {
-                        reference.get().onProgressDownload(fileName, progress);
+                        reference.get().onProgressDownload(fileName, loadedSize, totalSize);
                     }
                 }
             }
@@ -996,12 +997,13 @@ public class DownloadController extends BaseController implements NotificationCe
             String fileName = (String) args[0];
             ArrayList<WeakReference<FileDownloadProgressListener>> arrayList = loadingFileObservers.get(fileName);
             if (arrayList != null) {
-                Float progress = (Float) args[1];
-                Boolean enc = (Boolean) args[2];
+                Long loadedSize = (Long) args[1];
+                Long totalSize = (Long) args[2];
+                Boolean enc = (Boolean) args[3];
                 for (int a = 0, size = arrayList.size(); a < size; a++) {
                     WeakReference<FileDownloadProgressListener> reference = arrayList.get(a);
                     if (reference.get() != null) {
-                        reference.get().onProgressUpload(fileName, progress, enc);
+                        reference.get().onProgressUpload(fileName, loadedSize, totalSize, enc);
                     }
                 }
             }
@@ -1050,5 +1052,12 @@ public class DownloadController extends BaseController implements NotificationCe
                 FileLog.e(e);
             }
         }
+    }
+
+    public static float getProgress(long[] progressSizes) {
+        if (progressSizes == null || progressSizes.length < 2 || progressSizes[1] == 0) {
+            return 0f;
+        }
+        return Math.min(1f, progressSizes[0] / (float) progressSizes[1]);
     }
 }

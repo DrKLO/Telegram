@@ -342,7 +342,7 @@ public class PeopleNearbyActivity extends BaseFragment implements NotificationCe
             if (BuildVars.DEBUG_VERSION) {
                 FileLog.d("located distance = " + distance);
             }
-            if ((SystemClock.uptimeMillis() - lastLoadedLocationTime) >= 3000L && lastLoadedLocation.distanceTo(location) > 20) {
+            if ((SystemClock.elapsedRealtime() - lastLoadedLocationTime) >= 3000L && lastLoadedLocation.distanceTo(location) > 20) {
                 if (reqId != 0) {
                     getConnectionsManager().cancelRequest(reqId, true);
                     reqId = 0;
@@ -355,7 +355,7 @@ public class PeopleNearbyActivity extends BaseFragment implements NotificationCe
             return;
         }
         lastLoadedLocation = location;
-        lastLoadedLocationTime = SystemClock.uptimeMillis();
+        lastLoadedLocationTime = SystemClock.elapsedRealtime();
         LocationController.fetchLocationAddress(currentGroupCreateLocation, PeopleNearbyActivity.this);
         TLRPC.TL_contacts_getLocated req = new TLRPC.TL_contacts_getLocated();
         req.geo_point = new TLRPC.TL_inputGeoPoint();

@@ -75,8 +75,4 @@ public class BaseController {
     protected final FileRefController getFileRefController() {
         return parentAccountInstance.getFileRefController();
     }
-
-    protected final TonController getTonController() {
-        return parentAccountInstance.getTonController();
-    }
 }

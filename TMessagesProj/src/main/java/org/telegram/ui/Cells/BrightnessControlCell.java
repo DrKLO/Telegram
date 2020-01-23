@@ -56,7 +56,7 @@ public class BrightnessControlCell extends FrameLayout {
 
             }
         });
-        addView(seekBarView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 30, Gravity.TOP | Gravity.LEFT, 58, 9, 58, 0));
+        addView(seekBarView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 38, Gravity.TOP | Gravity.LEFT, 54, 5, 54, 0));
 
         rightImageView = new ImageView(context);
         rightImageView.setImageResource(R.drawable.brightness_high);

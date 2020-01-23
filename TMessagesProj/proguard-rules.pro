@@ -4,7 +4,6 @@
     @com.google.android.gms.common.annotation.KeepName *;
 }
 -keep class org.telegram.** { *; }
--keep class drinkless.org.ton.** { *; }
 -keep class com.google.android.exoplayer2.ext.** { *; }
 -keep class com.google.android.exoplayer2.util.** { *; }
 -keep class com.google.android.exoplayer2.metadata.** { *; }

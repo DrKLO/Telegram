@@ -139,7 +139,7 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter {
         searchAdapterHelper = new SearchAdapterHelper(true);
         searchAdapterHelper.setDelegate(new SearchAdapterHelper.SearchAdapterHelperDelegate() {
             @Override
-            public void onDataSetChanged() {
+            public void onDataSetChanged(int searchId) {
                 notifyDataSetChanged();
             }
 

@@ -79,7 +79,7 @@ public class FileUploadOperation {
     public interface FileUploadOperationDelegate {
         void didFinishUploadingFile(FileUploadOperation operation, TLRPC.InputFile inputFile, TLRPC.InputEncryptedFile inputEncryptedFile, byte[] key, byte[] iv);
         void didFailedUploadingFile(FileUploadOperation operation);
-        void didChangedUploadProgress(FileUploadOperation operation, float progress);
+        void didChangedUploadProgress(FileUploadOperation operation, long uploadedSize, long totalSize);
     }
 
     public FileUploadOperation(int instance, String location, boolean encrypted, int estimated, int type) {
@@ -525,7 +525,7 @@ public class FileUploadOperation {
                 } else {
                     size = totalFileSize;
                 }
-                delegate.didChangedUploadProgress(FileUploadOperation.this, uploadedBytesCount / (float) size);
+                delegate.didChangedUploadProgress(FileUploadOperation.this, uploadedBytesCount, size);
                 currentUploadRequetsCount--;
                 if (isLastPart && currentUploadRequetsCount == 0 && state == 1) {
                     state = 3;

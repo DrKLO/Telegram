@@ -13,6 +13,7 @@ import android.graphics.BitmapShader;
 import android.graphics.Canvas;
 import android.graphics.Matrix;
 import android.graphics.Paint;
+import android.graphics.Path;
 import android.graphics.PixelFormat;
 import android.graphics.Rect;
 import android.graphics.RectF;
@@ -92,8 +93,11 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable {
     private BitmapShader nextRenderingShader;
     private BitmapShader backgroundShader;
 
-    private int roundRadius;
+    private int[] roundRadius = new int[4];
+    private int[] roundRadiusBackup;
     private Matrix shaderMatrix = new Matrix();
+    private Path roundPath = new Path();
+    private static float[] radii = new float[8];
 
     private float scaleX = 1.0f;
     private float scaleY = 1.0f;
@@ -220,7 +224,7 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable {
                             } catch (Throwable e) {
                                 FileLog.e(e);
                             }
-                            if (backgroundShader == null && backgroundBitmap != null && roundRadius != 0) {
+                            if (backgroundShader == null && backgroundBitmap != null && hasRoundRadius()) {
                                 backgroundShader = new BitmapShader(backgroundBitmap, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP);
                             }
                         }
@@ -306,7 +310,11 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable {
     }
 
     public void setSecondParentView(View view) {
+        boolean hadSecond = secondParentView != null;
         secondParentView = view;
+        if (hadSecond && view == null && roundRadiusBackup != null) {
+            setRoundRadius(roundRadiusBackup);
+        }
         if (view == null && recycleWithSecond) {
             recycle();
         }
@@ -532,7 +540,7 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable {
                 scaleY = (float) dstRect.height() / bitmapH;
                 applyTransformation = false;
             }
-            if (roundRadius != 0) {
+            if (hasRoundRadius()) {
                 float scale = Math.max(scaleX, scaleY);
 
                 if (renderingShader == null) {
@@ -555,7 +563,14 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable {
                 shaderMatrix.preScale(scaleX, scaleY);
 
                 renderingShader.setLocalMatrix(shaderMatrix);
-                canvas.drawRoundRect(actualDrawRect, roundRadius, roundRadius, paint);
+                for (int a = 0; a < roundRadius.length; a++) {
+                    radii[a * 2] = roundRadius[a];
+                    radii[a * 2 + 1] = roundRadius[a];
+                }
+                roundPath.reset();
+                roundPath.addRoundRect(actualDrawRect, radii, Path.Direction.CW);
+                roundPath.close();
+                canvas.drawPath(roundPath, paint);
             } else {
                 canvas.translate(dstRect.left, dstRect.top);
                 if (metaData[2] == 90) {
@@ -622,9 +637,24 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable {
         actualDrawRect.set(x, y, x + width, y + height);
     }
 
-    public void setRoundRadius(int value) {
-        roundRadius = value;
+    public void setRoundRadius(int[] value) {
+        if (secondParentView != null) {
+            if (roundRadiusBackup == null) {
+                roundRadiusBackup = new int[4];
+            }
+            System.arraycopy(roundRadius, 0, roundRadiusBackup, 0, roundRadiusBackup.length);
+        }
+        System.arraycopy(value, 0, roundRadius, 0, roundRadius.length);
         getPaint().setFlags(Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG);
+    }
+
+    private boolean hasRoundRadius() {
+        for (int a = 0; a < roundRadius.length; a++) {
+            if (roundRadius[a] != 0) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public boolean hasBitmap() {

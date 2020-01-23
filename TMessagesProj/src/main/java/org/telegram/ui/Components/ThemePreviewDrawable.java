@@ -71,20 +71,26 @@ public class ThemePreviewDrawable extends BitmapDrawable {
         Theme.setDrawableColor(emojiDrawable, messageFieldIconColor);
         Drawable micDrawable = ApplicationLoader.applicationContext.getResources().getDrawable(R.drawable.preview_mic).mutate();
         Theme.setDrawableColor(micDrawable, messageFieldIconColor);
-        Drawable msgInDrawable = ApplicationLoader.applicationContext.getResources().getDrawable(R.drawable.preview_msg_in).mutate();
-        Theme.setDrawableColor(msgInDrawable, messageInColor);
-        Theme.MessageDrawable msgOutDrawable = new Theme.MessageDrawable(Theme.MessageDrawable.TYPE_PREVIEW, false) {
-            @Override
-            protected int getColor(String key) {
-                return colors.get(key);
-            }
 
-            @Override
-            protected Integer getCurrentColor(String key) {
-                return colors.get(key);
-            }
-        };
-        Theme.setDrawableColor(msgOutDrawable, messageOutColor);
+        Theme.MessageDrawable[] messageDrawable = new Theme.MessageDrawable[2];
+        for (int a = 0; a < 2; a++) {
+            messageDrawable[a] = new Theme.MessageDrawable(Theme.MessageDrawable.TYPE_PREVIEW, a == 1, false) {
+                @Override
+                protected int getColor(String key) {
+                    Integer color = colors.get(key);
+                    if (color == null) {
+                        return Theme.getColor(key);
+                    }
+                    return color;
+                }
+
+                @Override
+                protected Integer getCurrentColor(String key) {
+                    return colors.get(key);
+                }
+            };
+            Theme.setDrawableColor(messageDrawable[a], a == 1 ? messageOutColor : messageInColor);
+        }
 
         boolean hasBackground = false;
         if (backgroundColor != null) {
@@ -182,19 +188,19 @@ public class ThemePreviewDrawable extends BitmapDrawable {
             otherDrawable.setBounds(x, y, x + otherDrawable.getIntrinsicWidth(), y + otherDrawable.getIntrinsicHeight());
             otherDrawable.draw(canvas);
         }
-        if (msgOutDrawable != null) {
-            msgOutDrawable.setBounds(161, 216, bitmap.getWidth() - 20, 216 + 92);
-            msgOutDrawable.setTop(0, 522);
-            msgOutDrawable.draw(canvas);
 
-            msgOutDrawable.setBounds(161, 430, bitmap.getWidth() - 20, 430 + 92);
-            msgOutDrawable.setTop(430, 522);
-            msgOutDrawable.draw(canvas);
-        }
-        if (msgInDrawable != null) {
-            msgInDrawable.setBounds(20, 323, 399, 323 + 92);
-            msgInDrawable.draw(canvas);
-        }
+        messageDrawable[1].setBounds(161, 216, bitmap.getWidth() - 20, 216 + 92);
+        messageDrawable[1].setTop(0, 522, false, false);
+        messageDrawable[1].draw(canvas);
+
+        messageDrawable[1].setBounds(161, 430, bitmap.getWidth() - 20, 430 + 92);
+        messageDrawable[1].setTop(430, 522, false, false);
+        messageDrawable[1].draw(canvas);
+
+        messageDrawable[0].setBounds(20, 323, 399, 323 + 92);
+        messageDrawable[0].setTop(323, 522, false, false);
+        messageDrawable[0].draw(canvas);
+
         if (serviceColor != null) {
             int x = (bitmap.getWidth() - 126) / 2;
             int y = 150;

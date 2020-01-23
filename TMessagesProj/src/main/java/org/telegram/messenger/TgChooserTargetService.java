@@ -57,6 +57,9 @@ public class TgChooserTargetService extends ChooserTargetService {
         if (!preferences.getBoolean("direct_share", true)) {
             return targets;
         }
+        if (AndroidUtilities.needShowPasscode() || SharedConfig.isWaitingForPasscodeEnter) {
+            return targets;
+        }
 
         ImageLoader imageLoader = ImageLoader.getInstance();
         final CountDownLatch countDownLatch = new CountDownLatch(1);

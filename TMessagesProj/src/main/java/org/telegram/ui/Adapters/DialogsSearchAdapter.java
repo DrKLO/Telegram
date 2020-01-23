@@ -75,7 +75,10 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
     private boolean messagesSearchEndReached;
     private String lastMessagesSearchString;
     private int nextSearchRate;
-    private int lastSearchId = 0;
+    private int lastSearchId;
+    private int lastGlobalSearchId;
+    private int lastLocalSearchId;
+    private int lastMessagesSearchId;
     private int dialogsType;
     private SearchAdapterHelper searchAdapterHelper;
     private RecyclerListView innerListView;
@@ -165,7 +168,14 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
         searchAdapterHelper = new SearchAdapterHelper(false);
         searchAdapterHelper.setDelegate(new SearchAdapterHelper.SearchAdapterHelperDelegate() {
             @Override
-            public void onDataSetChanged() {
+            public void onDataSetChanged(int searchId) {
+                lastGlobalSearchId = searchId;
+                if (lastLocalSearchId != searchId) {
+                    searchResult.clear();
+                }
+                if (lastMessagesSearchId != searchId) {
+                    searchResultMessages.clear();
+                }
                 searchWas = true;
                 if (!searchAdapterHelper.isSearchInProgress() && delegate != null) {
                     delegate.searchStateChanged(false);
@@ -182,6 +192,11 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
                     delegate.searchStateChanged(false);
                 }
                 notifyDataSetChanged();
+            }
+
+            @Override
+            public boolean canApplySearchResults(int searchId) {
+                return searchId == lastSearchId;
             }
         });
         mContext = context;
@@ -205,14 +220,14 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
     }
 
     public void loadMoreSearchMessages() {
-        searchMessagesInternal(lastMessagesSearchString);
+        searchMessagesInternal(lastMessagesSearchString, lastMessagesSearchId);
     }
 
     public String getLastSearchString() {
         return lastMessagesSearchString;
     }
 
-    private void searchMessagesInternal(final String query) {
+    private void searchMessagesInternal(final String query, int searchId) {
         if (needMessagesSearch == 0 || TextUtils.isEmpty(lastMessagesSearchString) && TextUtils.isEmpty(query)) {
             return;
         }
@@ -259,7 +274,7 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
             delegate.searchStateChanged(true);
         }*/
         reqId = ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
-            if (currentReqId == lastReqId) {
+            if (currentReqId == lastReqId && (searchId <= 0 || searchId == lastSearchId)) {
                 if (error == null) {
                     TLRPC.messages_Messages res = (TLRPC.messages_Messages) response;
                     MessagesStorage.getInstance(currentAccount).putUsersAndChats(res.users, res.chats, true, true);
@@ -271,6 +286,11 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
                     nextSearchRate = res.next_rate;
                     for (int a = 0; a < res.messages.size(); a++) {
                         TLRPC.Message message = res.messages.get(a);
+                        long did = MessageObject.getDialogId(message);
+                        Integer maxId = MessagesController.getInstance(currentAccount).deletedHistory.get(did);
+                        if (maxId != null && message.id <= maxId) {
+                            continue;
+                        }
                         searchResultMessages.add(new MessageObject(currentAccount, message, false));
                         long dialog_id = MessageObject.getDialogId(message);
                         ConcurrentHashMap<Long, Integer> read_max = message.out ? MessagesController.getInstance(currentAccount).dialogs_read_outbox_max : MessagesController.getInstance(currentAccount).dialogs_read_inbox_max;
@@ -283,6 +303,15 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
                     }
                     searchWas = true;
                     messagesSearchEndReached = res.messages.size() != 20;
+                    if (searchId > 0) {
+                        lastMessagesSearchId = searchId;
+                        if (lastLocalSearchId != searchId) {
+                            searchResult.clear();
+                        }
+                        if (lastGlobalSearchId != searchId) {
+                            searchAdapterHelper.clear();
+                        }
+                    }
                     notifyDataSetChanged();
                 }
             }
@@ -294,11 +323,11 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
     }
 
     public boolean hasRecentRearch() {
-        return dialogsType != 4 && dialogsType != 5 && dialogsType != 6 && (!recentSearchObjects.isEmpty() || !MediaDataController.getInstance(currentAccount).hints.isEmpty());
+        return dialogsType != 2 && dialogsType != 4 && dialogsType != 5 && dialogsType != 6 && (!recentSearchObjects.isEmpty() || !MediaDataController.getInstance(currentAccount).hints.isEmpty());
     }
 
     public boolean isRecentSearchDisplayed() {
-        return needMessagesSearch != 2 && !searchWas && (!recentSearchObjects.isEmpty() || !MediaDataController.getInstance(currentAccount).hints.isEmpty()) && dialogsType != 4 && dialogsType != 5 && dialogsType != 6;
+        return needMessagesSearch != 2 && !searchWas && (!recentSearchObjects.isEmpty() || !MediaDataController.getInstance(currentAccount).hints.isEmpty()) && dialogsType != 2 && dialogsType != 4 && dialogsType != 5 && dialogsType != 6;
     }
 
     public void loadRecentSearch() {
@@ -472,7 +501,7 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
                 String savedMessages = LocaleController.getString("SavedMessages", R.string.SavedMessages).toLowerCase();
                 String search1 = query.trim().toLowerCase();
                 if (search1.length() == 0) {
-                    lastSearchId = -1;
+                    lastSearchId = 0;
                     updateSearchResults(new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), lastSearchId);
                     return;
                 }
@@ -773,6 +802,13 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
             if (searchId != lastSearchId) {
                 return;
             }
+            lastLocalSearchId = searchId;
+            if (lastGlobalSearchId != searchId) {
+                searchAdapterHelper.clear();
+            }
+            if (lastMessagesSearchId != searchId) {
+                searchResultMessages.clear();
+            }
             searchWas = true;
             for (int a = 0; a < result.size(); a++) {
                 TLObject obj = result.get(a);
@@ -838,11 +874,11 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
             searchResultHashtags.clear();
             searchAdapterHelper.mergeResults(null);
             if (needMessagesSearch != 2) {
-                searchAdapterHelper.queryServerSearch(null, true, true, true, true, 0, dialogsType == 0, 0);
+                searchAdapterHelper.queryServerSearch(null, true, true, true, true, dialogsType == 2, 0, dialogsType == 0, 0, 0);
             }
             searchWas = false;
-            lastSearchId = -1;
-            searchMessagesInternal(null);
+            lastSearchId = 0;
+            searchMessagesInternal(null, 0);
             notifyDataSetChanged();
         } else {
             if (needMessagesSearch != 2 && (query.startsWith("#") && query.length() == 1)) {
@@ -877,9 +913,9 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
                         return;
                     }
                     if (needMessagesSearch != 2) {
-                        searchAdapterHelper.queryServerSearch(query, true, dialogsType != 4, true, dialogsType != 4, 0, dialogsType == 0, 0);
+                        searchAdapterHelper.queryServerSearch(query, true, dialogsType != 4, true, dialogsType != 4, dialogsType == 2, 0, dialogsType == 0, 0, searchId);
                     }
-                    searchMessagesInternal(text);
+                    searchMessagesInternal(text, searchId);
                 });
             }, 300);
         }

@@ -17,7 +17,6 @@ import android.os.SystemClock;
 import android.view.animation.DecelerateInterpolator;
 
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.FileLog;
 
 public class MenuDrawable extends Drawable {
 
@@ -54,7 +53,7 @@ public class MenuDrawable extends Drawable {
             } else {
                 currentAnimationTime = (int) ((1.0f - currentRotation) * 200);
             }
-            lastFrameTime = SystemClock.uptimeMillis();
+            lastFrameTime = SystemClock.elapsedRealtime();
             finalRotation = rotation;
         } else {
             finalRotation = currentRotation = rotation;
@@ -65,7 +64,7 @@ public class MenuDrawable extends Drawable {
     @Override
     public void draw(Canvas canvas) {
         if (currentRotation != finalRotation) {
-            long newTime = SystemClock.uptimeMillis();
+            long newTime = SystemClock.elapsedRealtime();
             if (lastFrameTime != 0) {
                 long dt = newTime - lastFrameTime;
 

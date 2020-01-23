@@ -116,7 +116,11 @@ public class AlertDialog extends Dialog implements Drawable.Callback {
         if (isShowing()) {
             return;
         }
-        show();
+        try {
+            show();
+        } catch (Exception ignore) {
+
+        }
     };
 
     private ArrayList<AlertDialogCell> itemViews = new ArrayList<>();
@@ -1033,6 +1037,10 @@ public class AlertDialog extends Dialog implements Drawable.Callback {
     public void showDelayed(long delay) {
         AndroidUtilities.cancelRunOnUIThread(showRunnable);
         AndroidUtilities.runOnUIThread(showRunnable, delay);
+    }
+
+    public ThemeDescription[] getThemeDescriptions() {
+        return null;
     }
 
     public static class Builder {

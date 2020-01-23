@@ -438,7 +438,7 @@ public class ScrollSlidingTabStrip extends HorizontalScrollView {
                 width = currentTab.getMeasuredWidth();
             }
             if (animateFromPosition) {
-                long newTime = SystemClock.uptimeMillis();
+                long newTime = SystemClock.elapsedRealtime();
                 long dt = newTime - lastAnimationTime;
                 lastAnimationTime = newTime;
 
@@ -484,7 +484,7 @@ public class ScrollSlidingTabStrip extends HorizontalScrollView {
             startAnimationPosition = currentTab.getLeft();
             positionAnimationProgress = 0.0f;
             animateFromPosition = true;
-            lastAnimationTime = SystemClock.uptimeMillis();
+            lastAnimationTime = SystemClock.elapsedRealtime();
         } else {
             animateFromPosition = false;
         }

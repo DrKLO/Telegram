@@ -16,6 +16,7 @@ import android.text.StaticLayout;
 import android.text.TextPaint;
 import android.view.MotionEvent;
 import android.view.SoundEffectConstants;
+import android.view.View;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.DownloadController;
@@ -62,7 +63,7 @@ public class PopupAudioView extends BaseCell implements SeekBar.SeekBarDelegate,
 
         TAG = DownloadController.getInstance(currentAccount).generateObserverTag();
 
-        seekBar = new SeekBar(getContext());
+        seekBar = new SeekBar(this);
         seekBar.setDelegate(this);
         progressView = new ProgressView();
     }
@@ -125,6 +126,12 @@ public class PopupAudioView extends BaseCell implements SeekBar.SeekBarDelegate,
             return;
         }
 
+        int h = AndroidUtilities.displaySize.y;
+        if (getParent() instanceof View) {
+            View view = (View) getParent();
+            h = view.getMeasuredHeight();
+        }
+        Theme.chat_msgInMediaDrawable.setTop((int) getY(), h, false, false);
         setDrawableBounds(Theme.chat_msgInMediaDrawable, 0, 0, getMeasuredWidth(), getMeasuredHeight());
         Theme.chat_msgInMediaDrawable.draw(canvas);
 
@@ -313,8 +320,8 @@ public class PopupAudioView extends BaseCell implements SeekBar.SeekBarDelegate,
     }
 
     @Override
-    public void onProgressDownload(String fileName, float progress) {
-        progressView.setProgress(progress);
+    public void onProgressDownload(String fileName, long downloadedSize, long totalSize) {
+        progressView.setProgress(Math.min(1f, downloadedSize / (float) totalSize));
         if (buttonState != 3) {
             updateButtonState();
         }
@@ -322,7 +329,7 @@ public class PopupAudioView extends BaseCell implements SeekBar.SeekBarDelegate,
     }
 
     @Override
-    public void onProgressUpload(String fileName, float progress, boolean isEncrypted) {
+    public void onProgressUpload(String fileName, long uploadedSize, long totalSize, boolean isEncrypted) {
 
     }
 

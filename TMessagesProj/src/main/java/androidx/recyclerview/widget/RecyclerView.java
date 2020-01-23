@@ -2841,7 +2841,7 @@ public class RecyclerView extends ViewGroup implements ScrollingView,
      * @param focused The descendant view that actually has the focus if child is focusable, null
      *                otherwise.
      */
-    private void requestChildOnScreen(@NonNull View child, @Nullable View focused) {
+    protected void requestChildOnScreen(@NonNull View child, @Nullable View focused) {
         View rectView = (focused != null) ? focused : child;
         mTempRect.set(0, 0, rectView.getWidth(), rectView.getHeight());
 

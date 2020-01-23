@@ -659,10 +659,6 @@ public class CameraScanActivity extends BaseFragment implements Camera.PreviewCa
                 }
                 Uri uri = Uri.parse(text);
                 String path = uri.getPath().replace("/", "");
-                if (!getTonController().isValidWalletAddress(path)) {
-                    onNoWalletFound(bitmap != null);
-                    return null;
-                }
             } else {
                 if (!text.startsWith("tg://login?token=")) {
                     onNoWalletFound(false);

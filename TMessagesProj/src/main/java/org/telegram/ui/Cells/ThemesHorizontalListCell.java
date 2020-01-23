@@ -618,7 +618,7 @@ public class ThemesHorizontalListCell extends RecyclerListView implements Notifi
                     loadingDrawable.draw(canvas);
                 }
                 if (themeInfo.themeLoaded) {
-                    long newTime = SystemClock.uptimeMillis();
+                    long newTime = SystemClock.elapsedRealtime();
                     long dt = Math.min(17, newTime - lastDrawTime);
                     lastDrawTime = newTime;
                     placeholderAlpha -= dt / 180.0f;

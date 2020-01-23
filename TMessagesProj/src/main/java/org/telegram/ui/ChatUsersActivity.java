@@ -67,7 +67,6 @@ import org.telegram.ui.Components.UndoView;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -279,8 +278,6 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
                 return;
             }
             selectedSlowmode = index;
-            info.slowmode_seconds = getSecondsForIndex(index);
-            info.flags |= 131072;
             for (int a = 0; a < 3; a++) {
                 RecyclerView.ViewHolder holder = listView.findViewHolderForAdapterPosition(slowmodeInfoRow);
                 if (holder != null) {
@@ -1659,6 +1656,8 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
             }
         }
         if (selectedSlowmode != initialSlowmode && info != null) {
+            info.slowmode_seconds = getSecondsForIndex(selectedSlowmode);
+            info.flags |= 131072;
             getMessagesController().setChannelSlowMode(chatId, info.slowmode_seconds);
         }
         finishFragment();
@@ -1987,17 +1986,7 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
         public SearchAdapter(Context context) {
             mContext = context;
             searchAdapterHelper = new SearchAdapterHelper(true);
-            searchAdapterHelper.setDelegate(new SearchAdapterHelper.SearchAdapterHelperDelegate() {
-                @Override
-                public void onDataSetChanged() {
-                    notifyDataSetChanged();
-                }
-
-                @Override
-                public void onSetHashtags(ArrayList<SearchAdapterHelper.HashtagObject> arrayList, HashMap<String, SearchAdapterHelper.HashtagObject> hashMap) {
-
-                }
-            });
+            searchAdapterHelper.setDelegate(searchId -> notifyDataSetChanged());
         }
 
         public void searchUsers(final String query) {
@@ -2010,7 +1999,7 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
                 searchResultMap.clear();
                 searchResultNames.clear();
                 searchAdapterHelper.mergeResults(null);
-                searchAdapterHelper.queryServerSearch(null, type != 0, false, true, false, ChatObject.isChannel(currentChat) ? chatId : 0, false, type);
+                searchAdapterHelper.queryServerSearch(null, type != 0, false, true, false, false, ChatObject.isChannel(currentChat) ? chatId : 0, false, type, 0);
                 notifyDataSetChanged();
             } else {
                 Utilities.searchQueue.postRunnable(searchRunnable = () -> processSearch(query), 300);
@@ -2025,7 +2014,7 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
                 final ArrayList<TLObject> participantsCopy = !ChatObject.isChannel(currentChat) && info != null ? new ArrayList<>(info.participants.participants) : null;
                 final ArrayList<TLRPC.TL_contact> contactsCopy = selectType == 1 ? new ArrayList<>(getContactsController().contacts) : null;
 
-                searchAdapterHelper.queryServerSearch(query, selectType != 0, false, true, false, ChatObject.isChannel(currentChat) ? chatId : 0, false, type);
+                searchAdapterHelper.queryServerSearch(query, selectType != 0, false, true, false, false, ChatObject.isChannel(currentChat) ? chatId : 0, false, type, 0);
                 if (participantsCopy != null || contactsCopy != null) {
                     Utilities.searchQueue.postRunnable(() -> {
                         String search1 = query.trim().toLowerCase();
@@ -2637,15 +2626,16 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
                         }
                     } else if (position == slowmodeInfoRow) {
                         privacyCell.setBackgroundDrawable(Theme.getThemedDrawable(mContext, R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow));
-                        if (info == null || info.slowmode_seconds == 0) {
+                        int seconds = getSecondsForIndex(selectedSlowmode);
+                        if (info == null || seconds == 0) {
                             privacyCell.setText(LocaleController.getString("SlowmodeInfoOff", R.string.SlowmodeInfoOff));
                         } else {
-                            if (info.slowmode_seconds < 60) {
-                                privacyCell.setText(LocaleController.formatString("SlowmodeInfoSelected", R.string.SlowmodeInfoSelected, LocaleController.formatPluralString("Seconds", info.slowmode_seconds)));
-                            } else if (info.slowmode_seconds < 60 * 60) {
-                                privacyCell.setText(LocaleController.formatString("SlowmodeInfoSelected", R.string.SlowmodeInfoSelected, LocaleController.formatPluralString("Minutes", info.slowmode_seconds / 60)));
+                            if (seconds < 60) {
+                                privacyCell.setText(LocaleController.formatString("SlowmodeInfoSelected", R.string.SlowmodeInfoSelected, LocaleController.formatPluralString("Seconds", seconds)));
+                            } else if (seconds < 60 * 60) {
+                                privacyCell.setText(LocaleController.formatString("SlowmodeInfoSelected", R.string.SlowmodeInfoSelected, LocaleController.formatPluralString("Minutes", seconds / 60)));
                             } else {
-                                privacyCell.setText(LocaleController.formatString("SlowmodeInfoSelected", R.string.SlowmodeInfoSelected, LocaleController.formatPluralString("Hours", info.slowmode_seconds / 60 / 60)));
+                                privacyCell.setText(LocaleController.formatString("SlowmodeInfoSelected", R.string.SlowmodeInfoSelected, LocaleController.formatPluralString("Hours", seconds / 60 / 60)));
                             }
                         }
                     }

@@ -846,8 +846,8 @@ public class ContextLinkCell extends View implements DownloadController.FileDown
     }
 
     @Override
-    public void onProgressDownload(String fileName, float progress) {
-        radialProgress.setProgress(progress, true);
+    public void onProgressDownload(String fileName, long downloadedSize, long totalSize) {
+        radialProgress.setProgress(Math.min(1f, downloadedSize / (float) totalSize), true);
         if (documentAttachType == DOCUMENT_ATTACH_TYPE_AUDIO || documentAttachType == DOCUMENT_ATTACH_TYPE_MUSIC) {
             if (buttonState != 4) {
                 updateButtonState(false, true);
@@ -860,7 +860,7 @@ public class ContextLinkCell extends View implements DownloadController.FileDown
     }
 
     @Override
-    public void onProgressUpload(String fileName, float progress, boolean isEncrypted) {
+    public void onProgressUpload(String fileName, long uploadedSize, long totalSize, boolean isEncrypted) {
 
     }
 

@@ -125,7 +125,7 @@ public class ShareDialogCell extends FrameLayout {
         boolean result = super.drawChild(canvas, child, drawingTime);
         if (child == imageView) {
             if (user != null && !MessagesController.isSupportUser(user)) {
-                long newTime = SystemClock.uptimeMillis();
+                long newTime = SystemClock.elapsedRealtime();
                 long dt = newTime - lastUpdateTime;
                 if (dt > 17) {
                     dt = 17;

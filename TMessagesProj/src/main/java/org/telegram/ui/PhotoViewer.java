@@ -444,9 +444,9 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                     videoPlayerControlFrameLayout.invalidate();
                     if (shouldSavePositionForCurrentVideo != null) {
                         float value = progress;
-                        if (value >= 0 && shouldSavePositionForCurrentVideo != null && SystemClock.uptimeMillis() - lastSaveTime >= 1000) {
+                        if (value >= 0 && shouldSavePositionForCurrentVideo != null && SystemClock.elapsedRealtime() - lastSaveTime >= 1000) {
                             String saveFor = shouldSavePositionForCurrentVideo;
-                            lastSaveTime = SystemClock.uptimeMillis();
+                            lastSaveTime = SystemClock.elapsedRealtime();
                             Utilities.globalQueue.postRunnable(() -> {
                                 SharedPreferences.Editor editor = ApplicationLoader.applicationContext.getSharedPreferences("media_saved_pos", Activity.MODE_PRIVATE).edit();
                                 editor.putFloat(shouldSavePositionForCurrentVideo, value).commit();
@@ -559,7 +559,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         }
     };
 
-    private float[][] animationValues = new float[2][10];
+    private float[][] animationValues = new float[2][13];
 
     private ChatActivity parentChatActivity;
     private MentionsAdapter mentionsAdapter;
@@ -1028,7 +1028,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         public int dialogId;
         public int index;
         public int size;
-        public int radius;
+        public int[] radius;
         public int clipBottomAddition;
         public int clipTopAddition;
         public float scale = 1.0f;
@@ -1456,7 +1456,9 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             String location = (String) args[0];
             for (int a = 0; a < 3; a++) {
                 if (currentFileNames[a] != null && currentFileNames[a].equals(location)) {
-                    Float loadProgress = (Float) args[1];
+                    Long loadedSize = (Long) args[1];
+                    Long totalSize = (Long) args[2];
+                    float loadProgress = Math.min(1f, loadedSize / (float) totalSize);
                     boolean animated = a == 0 || a == 1 && sideImage == rightImage || a == 2 && sideImage == leftImage;
                     photoProgressViews[a].setProgress(loadProgress, animated);
                     if (a == 0 && videoPlayer != null && videoPlayerSeekbar != null) {
@@ -2864,11 +2866,13 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                 return;
             }
             if (compressItem.getTag() == null) {
-                if (tooltip == null) {
-                    tooltip = new Tooltip(activity, containerView, 0xcc111111, Color.WHITE);
+                if (videoConvertSupported) {
+                    if (tooltip == null) {
+                        tooltip = new Tooltip(activity, containerView, 0xcc111111, Color.WHITE);
+                    }
+                    tooltip.setText(LocaleController.getString("VideoQualityIsTooLow", R.string.VideoQualityIsTooLow));
+                    tooltip.show(compressItem);
                 }
-                tooltip.setText(LocaleController.getString("VideoQualityIsTooLow", R.string.VideoQualityIsTooLow));
-                tooltip.show(compressItem);
                 return;
             }
 
@@ -3710,37 +3714,6 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
     }
 
     private void createVideoControlsInterface() {
-        videoPlayerSeekbar = new SeekBar(containerView.getContext());
-        videoPlayerSeekbar.setLineHeight(AndroidUtilities.dp(4));
-        videoPlayerSeekbar.setColors(0x66ffffff, 0x66ffffff, 0xffd5d0d7, 0xffffffff, 0xffffffff);
-        videoPlayerSeekbar.setDelegate(new SeekBar.SeekBarDelegate() {
-            @Override
-            public void onSeekBarDrag(float progress) {
-                if (videoPlayer != null) {
-                    if (!inPreview && videoTimelineView.getVisibility() == View.VISIBLE) {
-                        progress = videoTimelineView.getLeftProgress() + (videoTimelineView.getRightProgress() - videoTimelineView.getLeftProgress()) * progress;
-                    }
-                    long duration = videoPlayer.getDuration();
-                    if (duration == C.TIME_UNSET) {
-                        seekToProgressPending = progress;
-                    } else {
-                        videoPlayer.seekTo((int) (progress * duration));
-                    }
-                    showVideoSeekPreviewPosition(false);
-                    needShowOnReady = false;
-                }
-            }
-
-            @Override
-            public void onSeekBarContinuousDrag(float progress) {
-                if (videoPlayer != null && videoPreviewFrame != null) {
-                    videoPreviewFrame.setProgress(progress, videoPlayerSeekbar.getWidth());
-                }
-                showVideoSeekPreviewPosition(true);
-                updateVideoSeekPreviewPosition();
-            }
-        });
-
         videoPlayerControlFrameLayout = new FrameLayout(containerView.getContext()) {
 
             @Override
@@ -3803,6 +3776,37 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         };
         videoPlayerControlFrameLayout.setWillNotDraw(false);
         bottomLayout.addView(videoPlayerControlFrameLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT));
+
+        videoPlayerSeekbar = new SeekBar(videoPlayerControlFrameLayout);
+        videoPlayerSeekbar.setLineHeight(AndroidUtilities.dp(4));
+        videoPlayerSeekbar.setColors(0x66ffffff, 0x66ffffff, 0xffd5d0d7, 0xffffffff, 0xffffffff);
+        videoPlayerSeekbar.setDelegate(new SeekBar.SeekBarDelegate() {
+            @Override
+            public void onSeekBarDrag(float progress) {
+                if (videoPlayer != null) {
+                    if (!inPreview && videoTimelineView.getVisibility() == View.VISIBLE) {
+                        progress = videoTimelineView.getLeftProgress() + (videoTimelineView.getRightProgress() - videoTimelineView.getLeftProgress()) * progress;
+                    }
+                    long duration = videoPlayer.getDuration();
+                    if (duration == C.TIME_UNSET) {
+                        seekToProgressPending = progress;
+                    } else {
+                        videoPlayer.seekTo((int) (progress * duration));
+                    }
+                    showVideoSeekPreviewPosition(false);
+                    needShowOnReady = false;
+                }
+            }
+
+            @Override
+            public void onSeekBarContinuousDrag(float progress) {
+                if (videoPlayer != null && videoPreviewFrame != null) {
+                    videoPreviewFrame.setProgress(progress, videoPlayerSeekbar.getWidth());
+                }
+                showVideoSeekPreviewPosition(true);
+                updateVideoSeekPreviewPosition();
+            }
+        });
 
         videoPreviewFrame = new VideoSeekPreviewImage(containerView.getContext(), () -> {
             if (needShowOnReady) {
@@ -4056,6 +4060,9 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         }
         if (photoFilterView != null) {
             photoFilterView.updateColors();
+        }
+        if (captionEditText != null) {
+            captionEditText.updateColors();
         }
         if (selectedPhotosListView != null) {
             int count = selectedPhotosListView.getChildCount();
@@ -5736,7 +5743,6 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                 }
             }
             if (imageLocation == null) {
-                closePhoto(false, false);
                 return;
             }
             imagesArrLocations.add(imageLocation);
@@ -6492,7 +6498,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                 Spannable spannableString = SpannableString.valueOf(caption.toString());
                 messageObject.addEntitiesToText(spannableString, true, false);
                 if (messageObject.isVideo()) {
-                    MessageObject.addUrlsByPattern(messageObject.isOutOwner(), spannableString, false, 3, messageObject.getDuration());
+                    MessageObject.addUrlsByPattern(messageObject.isOutOwner(), spannableString, false, 3, messageObject.getDuration(), false);
                 }
                 str = Emoji.replaceEmoji(spannableString, captionTextView.getPaint().getFontMetricsInt(), AndroidUtilities.dp(20), false);
             } else {
@@ -6867,8 +6873,8 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                     }
                     return;
                 } else if (currentAnimation != null) {
-                    imageReceiver.setImageBitmap(currentAnimation);
                     currentAnimation.setSecondParentView(containerView);
+                    imageReceiver.setImageBitmap(currentAnimation);
                     return;
                 } else if (sharedMediaType == MediaDataController.MEDIA_FILE) {
                     if (messageObject.canPreviewDocument()) {
@@ -7241,7 +7247,6 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                 animatingImageViews[i].setVisibility(View.VISIBLE);
                 animatingImageViews[i].setRadius(object.radius);
                 animatingImageViews[i].setOrientation(orientation);
-                animatingImageViews[i].setNeedRadius(object.radius != 0);
                 animatingImageViews[i].setImageBitmap(object.thumb);
             }
 
@@ -7335,9 +7340,12 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                     animationValues[0][4] = clipHorizontal * object.scale;
                     animationValues[0][5] = clipTop * object.scale;
                     animationValues[0][6] = clipBottom * object.scale;
-                    animationValues[0][7] = animatingImageView.getRadius();
-                    animationValues[0][8] = clipVertical * object.scale;
-                    animationValues[0][9] = clipHorizontal * object.scale;
+                    int[] rad = animatingImageView.getRadius();
+                    for (int a = 0; a < 4; a++) {
+                        animationValues[0][7 + a] = rad != null ? rad[a] : 0;
+                    }
+                    animationValues[0][11] = clipVertical * object.scale;
+                    animationValues[0][12] = clipHorizontal * object.scale;
 
                     animationValues[1][0] = scale;
                     animationValues[1][1] = scale;
@@ -7349,6 +7357,9 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                     animationValues[1][7] = 0;
                     animationValues[1][8] = 0;
                     animationValues[1][9] = 0;
+                    animationValues[1][10] = 0;
+                    animationValues[1][11] = 0;
+                    animationValues[1][12] = 0;
 
                     for (int i = 0; i < animatingImageViews.length; i++) {
                         animatingImageViews[i].setAnimationProgress(0);
@@ -7613,7 +7624,6 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                         orientation = animatedOrientation;
                     }
                     for (int i = 0; i < animatingImageViews.length; i++) {
-                        animatingImageViews[i].setNeedRadius(object.radius != 0);
                         animatingImageViews[i].setOrientation(orientation);
                         animatingImageViews[i].setImageBitmap(object.thumb);
                     }
@@ -7621,7 +7631,6 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                     layoutParams.width = centerImage.getImageWidth();
                     layoutParams.height = centerImage.getImageHeight();
                     for (int i = 0; i < animatingImageViews.length; i++) {
-                        animatingImageViews[i].setNeedRadius(false);
                         animatingImageViews[i].setOrientation(centerImage.getOrientation());
                         animatingImageViews[i].setImageBitmap(centerImage.getBitmapSafe());
                     }
@@ -7678,6 +7687,9 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                     animationValues[0][7] = 0;
                     animationValues[0][8] = 0;
                     animationValues[0][9] = 0;
+                    animationValues[0][10] = 0;
+                    animationValues[0][11] = 0;
+                    animationValues[0][12] = 0;
 
                     animationValues[1][0] = object.scale;
                     animationValues[1][1] = object.scale;
@@ -7686,9 +7698,11 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                     animationValues[1][4] = clipHorizontal * object.scale;
                     animationValues[1][5] = clipTop * object.scale;
                     animationValues[1][6] = clipBottom * object.scale;
-                    animationValues[1][7] = object.radius;
-                    animationValues[1][8] = clipVertical * object.scale;
-                    animationValues[1][9] = clipHorizontal * object.scale;
+                    for (int a = 0; a < 4; a++) {
+                        animationValues[1][7 + a] = object.radius != null ? object.radius[a] : 0;
+                    }
+                    animationValues[1][11] = clipVertical * object.scale;
+                    animationValues[1][12] = clipHorizontal * object.scale;
 
                     ArrayList<Animator> animators = new ArrayList<>((sendPhotoType == SELECT_TYPE_AVATAR ? 3 : 2) + animatingImageViews.length + (animatingImageViews.length > 1 ? 1 : 0));
                     for (int i = 0; i < animatingImageViews.length; i++) {

@@ -62,6 +62,7 @@ import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.NativeByteBuffer;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.ShareDialogCell;
@@ -89,6 +90,7 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
     private ShareSearchAdapter searchAdapter;
     private ArrayList<MessageObject> sendingMessageObjects;
     private String sendingText;
+    private int hasPoll;
     private EmptyTextProgressView searchEmptyView;
     private Drawable shadowDrawable;
     private View[] shadow = new View[2];
@@ -262,6 +264,18 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
         searchAdapter = new ShareSearchAdapter(context);
         isChannel = channel;
         sendingText = text;
+
+        if (sendingMessageObjects != null) {
+            for (int a = 0, N = sendingMessageObjects.size(); a < N; a++) {
+                MessageObject messageObject = sendingMessageObjects.get(a);
+                if (messageObject.isPoll()) {
+                    hasPoll = messageObject.isPublicPoll() ? 2 : 1;
+                    if (hasPoll == 2) {
+                        break;
+                    }
+                }
+            }
+        }
 
         if (channel) {
             loadingLink = true;
@@ -561,6 +575,27 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
             }
             if (dialog == null) {
                 return;
+            }
+            if (hasPoll != 0) {
+                int lowerId = (int) dialog.id;
+                if (lowerId < 0) {
+                    TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-lowerId);
+                    boolean isChannel = ChatObject.isChannel(chat) && hasPoll == 2 && !chat.megagroup;
+                    if (isChannel || !ChatObject.canSendPolls(chat)) {
+                        AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
+                        builder.setTitle(LocaleController.getString("SendMessageTitle", R.string.SendMessageTitle));
+                        if (isChannel) {
+                            builder.setMessage(LocaleController.getString("PublicPollCantForward", R.string.PublicPollCantForward));
+                        } else if (ChatObject.isActionBannedByDefault(chat, ChatObject.ACTION_SEND_POLLS)) {
+                            builder.setMessage(LocaleController.getString("ErrorSendRestrictedPollsAll", R.string.ErrorSendRestrictedPollsAll));
+                        } else {
+                            builder.setMessage(LocaleController.getString("ErrorSendRestrictedPolls", R.string.ErrorSendRestrictedPolls));
+                        }
+                        builder.setNegativeButton(LocaleController.getString("OK", R.string.OK), null);
+                        builder.show();
+                        return;
+                    }
+                }
             }
             ShareDialogCell cell = (ShareDialogCell) view;
             if (selectedDialogs.indexOfKey(dialog.id) >= 0) {

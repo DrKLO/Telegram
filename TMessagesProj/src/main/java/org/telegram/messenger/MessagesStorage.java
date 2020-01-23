@@ -2147,7 +2147,7 @@ public class MessagesStorage extends BaseController {
         });
     }
 
-    public void updateMessagePollResults(long pollId, TLRPC.TL_poll poll, TLRPC.TL_pollResults results) {
+    public void updateMessagePollResults(long pollId, TLRPC.TL_poll poll, TLRPC.PollResults results) {
         storageQueue.postRunnable(() -> {
             try {
                 ArrayList<Long> mids = null;
@@ -4726,6 +4726,24 @@ public class MessagesStorage extends BaseController {
         });
     }
 
+    public void isDialogHasTopMessage(long did, Runnable onDontExist) {
+        storageQueue.postRunnable(() -> {
+            boolean exists = false;
+            try {
+                SQLiteCursor cursor = database.queryFinalized(String.format(Locale.US, "SELECT last_mid FROM dialogs WHERE did = %d", did));
+                if (cursor.next()) {
+                    exists = cursor.intValue(0) != 0;
+                }
+                cursor.dispose();
+            } catch (Exception e) {
+                FileLog.e(e);
+            }
+            if (!exists) {
+                AndroidUtilities.runOnUIThread(onDontExist);
+            }
+        });
+    }
+
     public boolean isDialogHasMessages(final long did) {
         final CountDownLatch countDownLatch = new CountDownLatch(1);
         final boolean[] result = new boolean[1];
@@ -5231,10 +5249,11 @@ public class MessagesStorage extends BaseController {
                         data.reuse();
                         if (messageMedia.document != null) {
                             downloadObject.object = messageMedia.document;
+                            downloadObject.secret = MessageObject.isVideoDocument(messageMedia.document) && messageMedia.ttl_seconds > 0 && messageMedia.ttl_seconds <= 60;
                         } else if (messageMedia.photo != null) {
                             downloadObject.object = messageMedia.photo;
+                            downloadObject.secret = messageMedia.ttl_seconds > 0 && messageMedia.ttl_seconds <= 60;
                         }
-                        downloadObject.secret = messageMedia.ttl_seconds > 0 && messageMedia.ttl_seconds <= 60;
                         downloadObject.forceCache = (messageMedia.flags & 0x80000000) != 0;
                     }
                     objects.add(downloadObject);
@@ -7480,6 +7499,12 @@ public class MessagesStorage extends BaseController {
         if (message.media != null) {
             if (message.media.user_id != 0 && !usersToLoad.contains(message.media.user_id)) {
                 usersToLoad.add(message.media.user_id);
+            }
+            if (message.media instanceof TLRPC.TL_messageMediaPoll) {
+                TLRPC.TL_messageMediaPoll messageMediaPoll = (TLRPC.TL_messageMediaPoll) message.media;
+                if (!messageMediaPoll.results.recent_voters.isEmpty()) {
+                    usersToLoad.addAll(messageMediaPoll.results.recent_voters);
+                }
             }
         }
         if (message.fwd_from != null) {

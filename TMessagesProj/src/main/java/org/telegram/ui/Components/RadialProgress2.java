@@ -13,7 +13,6 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.RectF;
-import android.graphics.drawable.Drawable;
 import android.view.View;
 
 import org.telegram.messenger.AndroidUtilities;
@@ -96,7 +95,7 @@ public class RadialProgress2 {
         invalidateParent();
     }
 
-    public void setBackgroundDrawable(Drawable drawable) {
+    public void setBackgroundDrawable(Theme.MessageDrawable drawable) {
         mediaActionDrawable.setBackgroundDrawable(drawable);
         miniMediaActionDrawable.setBackgroundDrawable(drawable);
     }

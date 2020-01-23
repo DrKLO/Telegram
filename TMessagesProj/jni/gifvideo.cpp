@@ -335,6 +335,8 @@ void Java_org_telegram_ui_Components_AnimatedFileDrawable_getVideoInfo(JNIEnv *e
                     info->audio_stream->codecpar->codec_id == AV_CODEC_ID_AMR_WB ||
                     info->audio_stream->codecpar->codec_id == AV_CODEC_ID_FLAC ||
                     info->audio_stream->codecpar->codec_id == AV_CODEC_ID_MP3 ||
+                    // not supported codec, skip audio in this case
+                    info->audio_stream->codecpar->codec_id == AV_CODEC_ID_ADPCM_IMA_WAV ||
                     (sdkVersion > 21 && info->audio_stream->codecpar->codec_id == AV_CODEC_ID_OPUS);
             dataArr[PARAM_NUM_HAS_AUDIO] = 1;
         } else {

@@ -54,6 +54,8 @@ public class PhotoViewerCaptionEnterView extends FrameLayout implements Notifica
     private ImageView emojiButton;
     private EmojiView emojiView;
     private SizeNotifierFrameLayoutPhoto sizeNotifierLayout;
+    private Drawable drawable;
+    private Drawable checkDrawable;
 
     private AnimatorSet runningAnimation;
     private AnimatorSet runningAnimation2;
@@ -233,8 +235,8 @@ public class PhotoViewerCaptionEnterView extends FrameLayout implements Notifica
             }
         });
 
-        Drawable drawable = Theme.createCircleDrawable(AndroidUtilities.dp(16), 0xff66bffa);
-        Drawable checkDrawable = context.getResources().getDrawable(R.drawable.input_done).mutate();
+        drawable = Theme.createCircleDrawable(AndroidUtilities.dp(16), 0xff66bffa);
+        checkDrawable = context.getResources().getDrawable(R.drawable.input_done).mutate();
         CombinedDrawable combinedDrawable = new CombinedDrawable(drawable, checkDrawable, 0, AndroidUtilities.dp(1));
         combinedDrawable.setCustomSize(AndroidUtilities.dp(32), AndroidUtilities.dp(32));
 
@@ -270,6 +272,11 @@ public class PhotoViewerCaptionEnterView extends FrameLayout implements Notifica
 
     public void setForceFloatingEmoji(boolean value) {
         forceFloatingEmoji = value;
+    }
+
+    public void updateColors() {
+        Theme.setDrawableColor(drawable, Theme.getColor(Theme.key_dialogFloatingButton));
+        Theme.setDrawableColor(checkDrawable, Theme.getColor(Theme.key_dialogFloatingIcon));
     }
 
     public boolean hideActionMode() {

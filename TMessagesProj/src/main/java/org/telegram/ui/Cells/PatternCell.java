@@ -194,15 +194,15 @@ public class PatternCell extends BackupImageView implements DownloadController.F
     }
 
     @Override
-    public void onProgressDownload(String fileName, float progress) {
-        radialProgress.setProgress(progress, true);
+    public void onProgressDownload(String fileName, long downloadedSize, long totalSize) {
+        radialProgress.setProgress(Math.min(1f, downloadedSize / (float) totalSize), true);
         if (radialProgress.getIcon() != MediaActionDrawable.ICON_EMPTY) {
             updateButtonState(currentPattern, false, true);
         }
     }
 
     @Override
-    public void onProgressUpload(String fileName, float progress, boolean isEncrypted) {
+    public void onProgressUpload(String fileName, long uploadedSize, long totalSize, boolean isEncrypted) {
 
     }
 

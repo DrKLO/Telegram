@@ -10,6 +10,7 @@ package org.telegram.ui.Cells;
 
 import android.content.Context;
 import android.graphics.Canvas;
+import android.graphics.drawable.Drawable;
 import android.text.Layout;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
@@ -192,9 +193,18 @@ public class BotHelpCell extends View {
     @Override
     protected void onDraw(Canvas canvas) {
         int x = (getWidth() - width) / 2;
-        int y = AndroidUtilities.dp(4);
-        Theme.chat_msgInMediaShadowDrawable.setBounds(x, y, width + x, height + y);
-        Theme.chat_msgInMediaShadowDrawable.draw(canvas);
+        int y = AndroidUtilities.dp(2);
+        Drawable shadowDrawable = Theme.chat_msgInMediaDrawable.getShadowDrawable();
+        if (shadowDrawable != null) {
+            shadowDrawable.setBounds(x, y, width + x, height + y);
+            shadowDrawable.draw(canvas);
+        }
+        int h = AndroidUtilities.displaySize.y;
+        if (getParent() instanceof View) {
+            View view = (View) getParent();
+            h = view.getMeasuredHeight();
+        }
+        Theme.chat_msgInMediaDrawable.setTop((int) getY(), h, false, false);
         Theme.chat_msgInMediaDrawable.setBounds(x, y, width + x, height + y);
         Theme.chat_msgInMediaDrawable.draw(canvas);
         Theme.chat_msgTextPaint.setColor(Theme.getColor(Theme.key_chat_messageTextIn));

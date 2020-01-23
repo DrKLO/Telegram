@@ -145,6 +145,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
         default boolean hasScheduledMessages() {
             return true;
         }
+        void onSendLongClick();
     }
 
     private int currentAccount = UserConfig.selectedAccount;
@@ -1653,7 +1654,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                     colorType = 2;
                 }
                 if (color != drawableColor) {
-                    lastAnimationTime = SystemClock.uptimeMillis();
+                    lastAnimationTime = SystemClock.elapsedRealtime();
                     if (prevColorType != 0 && prevColorType != colorType) {
                         if (showingPopup) {
                             animationProgress = 0.0f;
@@ -1673,7 +1674,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                     sendButtonInverseDrawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_chat_messagePanelVoicePressed), PorterDuff.Mode.MULTIPLY));
                 }
                 if (animationProgress < 1.0f) {
-                    long newTime = SystemClock.uptimeMillis();
+                    long newTime = SystemClock.elapsedRealtime();
                     long dt = newTime - lastAnimationTime;
                     animationProgress += dt / animationDuration;
                     if (animationProgress > 1.0f) {
@@ -1935,6 +1936,11 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
             sendPopupWindow.setInputMethodMode(ActionBarPopupWindow.INPUT_METHOD_NOT_NEEDED);
             sendPopupWindow.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_UNSPECIFIED);
             sendPopupWindow.getContentView().setFocusableInTouchMode(true);
+            SharedConfig.removeScheduledOrNoSuoundHint();
+
+            if (delegate != null) {
+                delegate.onSendLongClick();
+            }
         }
 
         sendPopupLayout.measure(MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(1000), MeasureSpec.AT_MOST), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(1000), MeasureSpec.AT_MOST));
@@ -4026,12 +4032,16 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
             botKeyboardViewVisible = false;
             botKeyboardView.setDelegate(button -> {
                 MessageObject object = replyingMessageObject != null ? replyingMessageObject : ((int) dialog_id < 0 ? botButtonsMessageObject : null);
-                didPressedBotButton(button, object, replyingMessageObject != null ? replyingMessageObject : botButtonsMessageObject);
+                boolean open = didPressedBotButton(button, object, replyingMessageObject != null ? replyingMessageObject : botButtonsMessageObject);
                 if (replyingMessageObject != null) {
                     openKeyboardInternal();
                     setButtons(botMessageObject, false);
                 } else if (botButtonsMessageObject.messageOwner.reply_markup.single_use) {
-                    openKeyboardInternal();
+                    if (open) {
+                        openKeyboardInternal();
+                    } else {
+                        showPopup(0, 0);
+                    }
                     SharedPreferences preferences = MessagesController.getMainSettings(currentAccount);
                     preferences.edit().putInt("answered_" + dialog_id, botButtonsMessageObject.getId()).commit();
                 }
@@ -4070,9 +4080,9 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
         updateBotButton();
     }
 
-    public void didPressedBotButton(final TLRPC.KeyboardButton button, final MessageObject replyMessageObject, final MessageObject messageObject) {
+    public boolean didPressedBotButton(final TLRPC.KeyboardButton button, final MessageObject replyMessageObject, final MessageObject messageObject) {
         if (button == null || messageObject == null) {
-            return;
+            return false;
         }
         if (button instanceof TLRPC.TL_keyboardButton) {
             SendMessagesHelper.getInstance(currentAccount).sendMessage(button.text, dialog_id, replyMessageObject, null, false, null, null, null, true, 0);
@@ -4080,6 +4090,9 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
             parentFragment.showOpenUrlAlert(button.url, true);
         } else if (button instanceof TLRPC.TL_keyboardButtonRequestPhone) {
             parentFragment.shareMyContact(2, messageObject);
+        } else if (button instanceof TLRPC.TL_keyboardButtonRequestPoll) {
+            parentFragment.openPollCreate((button.flags & 1) != 0 ? button.quiz : null);
+            return false;
         } else if (button instanceof TLRPC.TL_keyboardButtonRequestGeoLocation) {
             AlertDialog.Builder builder = new AlertDialog.Builder(parentActivity);
             builder.setTitle(LocaleController.getString("ShareYouLocationTitle", R.string.ShareYouLocationTitle));
@@ -4099,7 +4112,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
             SendMessagesHelper.getInstance(currentAccount).sendCallback(true, messageObject, button, parentFragment);
         } else if (button instanceof TLRPC.TL_keyboardButtonSwitchInline) {
             if (parentFragment.processSwitchButton((TLRPC.TL_keyboardButtonSwitchInline) button)) {
-                return;
+                return true;
             }
             if (button.same_peer) {
                 int uid = messageObject.messageOwner.from_id;
@@ -4108,7 +4121,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                 }
                 TLRPC.User user = accountInstance.getMessagesController().getUser(uid);
                 if (user == null) {
-                    return;
+                    return true;
                 }
                 setFieldText("@" + user.username + " " + button.query);
             } else {
@@ -4158,6 +4171,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                 parentFragment.presentFragment(fragment);
             }
         }
+        return true;
     }
 
     public boolean isPopupView(View view) {

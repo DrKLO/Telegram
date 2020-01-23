@@ -41,7 +41,6 @@ import org.telegram.ui.Cells.StickerSetCell;
 import org.telegram.ui.Cells.TextCheckCell;
 import org.telegram.ui.Cells.TextInfoPrivacyCell;
 import org.telegram.ui.Cells.TextSettingsCell;
-import org.telegram.ui.Components.AlertsCreator;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.StickersAlert;
@@ -404,7 +403,7 @@ public class StickersActivity extends BaseFragment implements NotificationCenter
                                 URLSpanNoUnderline spanNoUnderline = new URLSpanNoUnderline("@stickers") {
                                     @Override
                                     public void onClick(View widget) {
-                                        MessagesController.getInstance(currentAccount).openByUserName("stickers", StickersActivity.this, 1);
+                                        MessagesController.getInstance(currentAccount).openByUserName("stickers", StickersActivity.this, 3);
                                     }
                                 };
                                 stringBuilder.setSpan(spanNoUnderline, index, index + botName.length(), Spanned.SPAN_INCLUSIVE_INCLUSIVE);

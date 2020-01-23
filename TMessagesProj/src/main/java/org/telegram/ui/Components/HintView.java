@@ -7,7 +7,6 @@ import android.animation.ObjectAnimator;
 import android.content.Context;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
-import android.os.Build;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
@@ -20,7 +19,6 @@ import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.R;
-import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.ChatMessageCell;
@@ -30,6 +28,7 @@ import org.telegram.ui.Cells.ChatMessageCell;
 public class HintView extends FrameLayout {
 
     public static final int TYPE_SEARCH_AS_LIST = 3;
+    public static final int TYPE_POLL_VOTE = 5;
 
     private TextView textView;
     private ImageView imageView;
@@ -41,6 +40,9 @@ public class HintView extends FrameLayout {
     private int currentType;
     private boolean isTopArrow;
     private String overrideText;
+    private int shownY;
+
+    private long showingDuration = 2000;
 
     public HintView(Context context, int type) {
         this(context, type, false);
@@ -56,18 +58,18 @@ public class HintView extends FrameLayout {
         textView.setTextColor(Theme.getColor(Theme.key_chat_gifSaveHintText));
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         textView.setMaxLines(2);
-        textView.setMaxWidth(AndroidUtilities.dp(250));
+        textView.setMaxWidth(AndroidUtilities.dp(type == 4 ? 280 : 250));
         if (currentType == TYPE_SEARCH_AS_LIST) {
             textView.setGravity(Gravity.LEFT | Gravity.CENTER_VERTICAL);
-            textView.setBackground(Theme.createRoundRectDrawable(AndroidUtilities.dp(5),
-                    Theme.getColor(Theme.key_chat_gifSaveHintBackground)));
+            textView.setBackground(Theme.createRoundRectDrawable(AndroidUtilities.dp(5), Theme.getColor(Theme.key_chat_gifSaveHintBackground)));
             textView.setPadding(AndroidUtilities.dp(10), 0, AndroidUtilities.dp(10), 0);
             addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 30, Gravity.LEFT | Gravity.TOP, 0, topArrow ? 6 : 0, 0, topArrow ? 0 : 6));
         } else {
             textView.setGravity(Gravity.LEFT | Gravity.TOP);
-            textView.setBackground(Theme.createRoundRectDrawable(AndroidUtilities.dp(3),
-                    Theme.getColor(Theme.key_chat_gifSaveHintBackground)));
-            if (currentType == 2) {
+            textView.setBackground(Theme.createRoundRectDrawable(AndroidUtilities.dp(3), Theme.getColor(Theme.key_chat_gifSaveHintBackground)));
+            if (currentType == TYPE_POLL_VOTE || currentType == 4) {
+                textView.setPadding(AndroidUtilities.dp(9), AndroidUtilities.dp(6), AndroidUtilities.dp(9), AndroidUtilities.dp(7));
+            } else if (currentType == 2) {
                 textView.setPadding(AndroidUtilities.dp(7), AndroidUtilities.dp(6), AndroidUtilities.dp(7), AndroidUtilities.dp(7));
             } else {
                 textView.setPadding(AndroidUtilities.dp(currentType == 0 ? 54 : 5), AndroidUtilities.dp(6), AndroidUtilities.dp(5), AndroidUtilities.dp(7));
@@ -102,16 +104,26 @@ public class HintView extends FrameLayout {
     }
 
     public boolean showForMessageCell(ChatMessageCell cell, boolean animated) {
-        if (currentType == 0 && getTag() != null || messageCell == cell) {
+        return showForMessageCell(cell, null, 0, 0, animated);
+    }
+
+    public boolean showForMessageCell(ChatMessageCell cell, Object object, int x, int y, boolean animated) {
+        if (currentType == TYPE_POLL_VOTE && y == shownY && messageCell == cell || currentType != TYPE_POLL_VOTE && (currentType == 0 && getTag() != null || messageCell == cell)) {
             return false;
         }
         if (hideRunnable != null) {
             AndroidUtilities.cancelRunOnUIThread(hideRunnable);
             hideRunnable = null;
         }
-        int top = cell.getTop();
-        int centerX;
+        int[] position = new int[2];
+        cell.getLocationInWindow(position);
+        int top = position[1];
+        View p = (View) getParent();
+        p.getLocationInWindow(position);
+        top -= position[1];
+
         View parentView = (View) cell.getParent();
+        int centerX;
         if (currentType == 0) {
             ImageReceiver imageReceiver = cell.getPhotoImage();
             top += imageReceiver.getImageY();
@@ -122,6 +134,29 @@ public class HintView extends FrameLayout {
                 return false;
             }
             centerX = cell.getNoSoundIconCenterX();
+        } else if (currentType == TYPE_POLL_VOTE) {
+            Integer count = (Integer) object;
+            centerX = x;
+            top += y;
+            shownY = y;
+            if (count == -1) {
+                textView.setText(LocaleController.getString("PollSelectOption", R.string.PollSelectOption));
+            } else {
+                if (cell.getMessageObject().isQuiz()) {
+                    if (count == 0) {
+                        textView.setText(LocaleController.getString("NoVotesQuiz", R.string.NoVotesQuiz));
+                    } else {
+                        textView.setText(LocaleController.formatPluralString("Answer", count));
+                    }
+                } else {
+                    if (count == 0) {
+                        textView.setText(LocaleController.getString("NoVotes", R.string.NoVotes));
+                    } else {
+                        textView.setText(LocaleController.formatPluralString("Vote", count));
+                    }
+                }
+            }
+            measure(MeasureSpec.makeMeasureSpec(1000, MeasureSpec.AT_MOST), MeasureSpec.makeMeasureSpec(1000, MeasureSpec.AT_MOST));
         } else {
             MessageObject messageObject = cell.getMessageObject();
             if (overrideText == null) {
@@ -149,7 +184,11 @@ public class HintView extends FrameLayout {
         }
         int iconX = cell.getLeft() + centerX;
         int left = AndroidUtilities.dp(19);
-        if (iconX > parentView.getMeasuredWidth() / 2) {
+        if (currentType == TYPE_POLL_VOTE) {
+            int offset = Math.max(0, centerX - getMeasuredWidth() / 2 - AndroidUtilities.dp(19.1f));
+            setTranslationX(offset);
+            left += offset;
+        } else if (iconX > parentView.getMeasuredWidth() / 2) {
             int offset = parentWidth - getMeasuredWidth() - AndroidUtilities.dp(38);
             setTranslationX(offset);
             left += offset;
@@ -187,7 +226,7 @@ public class HintView extends FrameLayout {
         if (animated) {
             animatorSet = new AnimatorSet();
             animatorSet.playTogether(
-                    ObjectAnimator.ofFloat(this, "alpha", 0.0f, 1.0f)
+                    ObjectAnimator.ofFloat(this, View.ALPHA, 0.0f, 1.0f)
             );
             animatorSet.addListener(new AnimatorListenerAdapter() {
                 @Override
@@ -213,12 +252,16 @@ public class HintView extends FrameLayout {
             AndroidUtilities.cancelRunOnUIThread(hideRunnable);
             hideRunnable = null;
         }
-        measure(MeasureSpec.makeMeasureSpec(1000, MeasureSpec.AT_MOST), MeasureSpec.makeMeasureSpec(1000, MeasureSpec.AT_MOST));
+        measure(MeasureSpec.makeMeasureSpec(AndroidUtilities.displaySize.x, MeasureSpec.AT_MOST), MeasureSpec.makeMeasureSpec(AndroidUtilities.displaySize.x, MeasureSpec.AT_MOST));
 
         int[] position = new int[2];
         view.getLocationInWindow(position);
 
         int top = position[1] - AndroidUtilities.dp(4);
+
+        if (currentType == 4) {
+            top += AndroidUtilities.dp(4);
+        }
 
         int centerX;
         if (currentType == TYPE_SEARCH_AS_LIST) {
@@ -236,22 +279,25 @@ public class HintView extends FrameLayout {
         centerX -= position[0];
         top -= position[1];
 
-        if (Build.VERSION.SDK_INT >= 21) {
-            top -= AndroidUtilities.statusBarHeight;
-        }
-
         int parentWidth = parentView.getMeasuredWidth();
         if (isTopArrow) {
             setTranslationY(AndroidUtilities.dp(44));
         } else {
-            setTranslationY(top - getMeasuredHeight() - ActionBar.getCurrentActionBarHeight());
+            setTranslationY(top - getMeasuredHeight());
         }
         final int offset;
+
+        int leftMargin = 0;
+        int rightMargin = 0;
+        if (getLayoutParams() instanceof MarginLayoutParams) {
+            leftMargin = ((MarginLayoutParams) getLayoutParams()).leftMargin;
+            rightMargin = ((MarginLayoutParams) getLayoutParams()).rightMargin;
+        }
         if (centerX > parentView.getMeasuredWidth() / 2) {
             if (currentType == TYPE_SEARCH_AS_LIST) {
                 offset = (int) (parentWidth - getMeasuredWidth() * 1.5f);
             } else {
-                offset = parentWidth - getMeasuredWidth() - AndroidUtilities.dp(28);
+                offset = parentWidth - getMeasuredWidth() - (leftMargin + rightMargin);
             }
         } else {
             if (currentType == TYPE_SEARCH_AS_LIST) {
@@ -261,7 +307,7 @@ public class HintView extends FrameLayout {
             }
         }
         setTranslationX(offset);
-        float arrowX = centerX - (AndroidUtilities.dp(19) + offset) - arrowImageView.getMeasuredWidth() / 2;
+        float arrowX = centerX - (leftMargin + offset) - arrowImageView.getMeasuredWidth() / 2;
         arrowImageView.setTranslationX(arrowX);
         if (centerX > parentView.getMeasuredWidth() / 2) {
             if (arrowX < AndroidUtilities.dp(10)) {
@@ -292,13 +338,13 @@ public class HintView extends FrameLayout {
         if (animated) {
             animatorSet = new AnimatorSet();
             animatorSet.playTogether(
-                    ObjectAnimator.ofFloat(this, "alpha", 0.0f, 1.0f)
+                    ObjectAnimator.ofFloat(this, View.ALPHA, 0.0f, 1.0f)
             );
             animatorSet.addListener(new AnimatorListenerAdapter() {
                 @Override
                 public void onAnimationEnd(Animator animation) {
                     animatorSet = null;
-                    AndroidUtilities.runOnUIThread(hideRunnable = () -> hide(), 2000);
+                    AndroidUtilities.runOnUIThread(hideRunnable = () -> hide(), showingDuration);
                 }
             });
             animatorSet.setDuration(300);
@@ -325,7 +371,7 @@ public class HintView extends FrameLayout {
         }
         animatorSet = new AnimatorSet();
         animatorSet.playTogether(
-                ObjectAnimator.ofFloat(this, "alpha", 0.0f)
+                ObjectAnimator.ofFloat(this, View.ALPHA, 0.0f)
         );
         animatorSet.addListener(new AnimatorListenerAdapter() {
             @Override
@@ -346,5 +392,9 @@ public class HintView extends FrameLayout {
 
     public ChatMessageCell getMessageCell() {
         return messageCell;
+    }
+
+    public void setShowingDuration(long showingDuration) {
+        this.showingDuration = showingDuration;
     }
 }

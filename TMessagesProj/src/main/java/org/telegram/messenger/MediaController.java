@@ -943,9 +943,9 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                                     currentPlayingMessageObject.audioProgress = value;
                                     currentPlayingMessageObject.audioProgressSec = (int) (lastProgress / 1000);
                                     currentPlayingMessageObject.bufferedProgress = bufferedValue;
-                                    if (value >= 0 && shouldSavePositionForCurrentAudio != null && SystemClock.uptimeMillis() - lastSaveTime >= 1000) {
+                                    if (value >= 0 && shouldSavePositionForCurrentAudio != null && SystemClock.elapsedRealtime() - lastSaveTime >= 1000) {
                                         String saveFor = shouldSavePositionForCurrentAudio;
-                                        lastSaveTime = SystemClock.uptimeMillis();
+                                        lastSaveTime = SystemClock.elapsedRealtime();
                                         Utilities.globalQueue.postRunnable(() -> {
                                             SharedPreferences.Editor editor = ApplicationLoader.applicationContext.getSharedPreferences("media_saved_pos", Activity.MODE_PRIVATE).edit();
                                             editor.putFloat(shouldSavePositionForCurrentAudio, value).commit();
@@ -2664,7 +2664,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
         if (!SharedConfig.raiseToSpeak) {
             startRaiseToEarSensors(raiseChat);
         }
-        if (proximityWakeLock != null && !proximityWakeLock.isHeld() && (playingMessageObject.isVoice() || playingMessageObject.isRoundVideo())) {
+        if (!ApplicationLoader.mainInterfacePaused && proximityWakeLock != null && !proximityWakeLock.isHeld() && (playingMessageObject.isVoice() || playingMessageObject.isRoundVideo())) {
             proximityWakeLock.acquire();
         }
         startProgressTimer(playingMessageObject);
@@ -2836,9 +2836,20 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
         recordReplyingMessageObject = reply_to_msg;
     }
 
+    private boolean shouldRequestRecordAudioFocus() {
+        try {
+            if (/*NotificationsController.audioManager.isWiredHeadsetOn() || */NotificationsController.audioManager.isBluetoothA2dpOn()) {
+                return false;
+            }
+        } catch (Throwable ignore) {
+
+        }
+        return true;
+    }
+
     public void requestAudioFocus(boolean request) {
         if (request) {
-            if (!hasRecordAudioFocus) {
+            if (!hasRecordAudioFocus && shouldRequestRecordAudioFocus()) {
                 int result = NotificationsController.audioManager.requestAudioFocus(audioRecordFocusChangedListener, AudioManager.STREAM_MUSIC, AudioManager.AUDIOFOCUS_GAIN_TRANSIENT);
                 if (result == AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
                     hasRecordAudioFocus = true;

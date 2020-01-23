@@ -160,6 +160,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
     private int lastItemsCount;
 
     private int messagesCount;
+    private int hasPoll;
 
     private PacmanAnimation pacmanAnimation;
 
@@ -890,6 +891,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             folderId = arguments.getInt("folderId", 0);
             resetDelegate = arguments.getBoolean("resetDelegate", true);
             messagesCount = arguments.getInt("messagesCount", 0);
+            hasPoll = arguments.getInt("hasPoll", 0);
         }
 
         if (dialogsType == 0) {
@@ -1948,6 +1950,11 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
 
                 @Override
                 public void onUpdateSlowModeButton(View button, boolean show, CharSequence time) {
+
+                }
+
+                @Override
+                public void onSendLongClick() {
 
                 }
             });
@@ -3658,16 +3665,28 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
 
     private void didSelectResult(final long dialog_id, boolean useAlert, final boolean param) {
         if (addToGroupAlertString == null && checkCanWrite) {
-            if ((int) dialog_id < 0) {
-                TLRPC.Chat chat = getMessagesController().getChat(-(int) dialog_id);
-                if (ChatObject.isChannel(chat) && !chat.megagroup && (cantSendToChannels || !ChatObject.isCanWriteToChannel(-(int) dialog_id, currentAccount))) {
+            int lowerId = (int) dialog_id;
+            if (lowerId < 0) {
+                TLRPC.Chat chat = getMessagesController().getChat(-lowerId);
+                if (ChatObject.isChannel(chat) && !chat.megagroup && ((cantSendToChannels || !ChatObject.isCanWriteToChannel(-lowerId, currentAccount)) || hasPoll == 2)) {
                     AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
                     builder.setTitle(LocaleController.getString("SendMessageTitle", R.string.SendMessageTitle));
-                    builder.setMessage(LocaleController.getString("ChannelCantSendMessage", R.string.ChannelCantSendMessage));
+                    if (hasPoll == 2) {
+                        builder.setMessage(LocaleController.getString("PublicPollCantForward", R.string.PublicPollCantForward));
+                    } else {
+                        builder.setMessage(LocaleController.getString("ChannelCantSendMessage", R.string.ChannelCantSendMessage));
+                    }
                     builder.setNegativeButton(LocaleController.getString("OK", R.string.OK), null);
                     showDialog(builder.create());
                     return;
                 }
+            } else if (lowerId == 0 && hasPoll != 0) {
+                AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+                builder.setTitle(LocaleController.getString("SendMessageTitle", R.string.SendMessageTitle));
+                builder.setMessage(LocaleController.getString("PollCantForwardSecretChat", R.string.PollCantForwardSecretChat));
+                builder.setNegativeButton(LocaleController.getString("OK", R.string.OK), null);
+                showDialog(builder.create());
+                return;
             }
         }
         if (useAlert && (selectAlertString != null && selectAlertStringGroup != null || addToGroupAlertString != null)) {
@@ -3687,7 +3706,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                     buttonText = LocaleController.getString("Send", R.string.Send);
                 } else if (lower_part > 0) {
                     TLRPC.User user = getMessagesController().getUser(lower_part);
-                    if (user == null) {
+                    if (user == null || selectAlertString == null) {
                         return;
                     }
                     title = LocaleController.getString("SendMessageTitle", R.string.SendMessageTitle);

@@ -237,15 +237,15 @@ public class OtherDocumentPlaceholderDrawable extends RecyclableDrawable impleme
     }
 
     @Override
-    public void onProgressDownload(String fileName, float progress) {
+    public void onProgressDownload(String fileName, long downloadedSize, long totalSize) {
         if (!progressVisible) {
             checkFileExist();
         }
-        setProgress(progress, true);
+        setProgress(Math.min(1f, downloadedSize / (float) totalSize), true);
     }
 
     @Override
-    public void onProgressUpload(String fileName, float progress, boolean isEncrypted) {
+    public void onProgressUpload(String fileName, long uploadedSize, long totalSize, boolean isEncrypted) {
 
     }
 

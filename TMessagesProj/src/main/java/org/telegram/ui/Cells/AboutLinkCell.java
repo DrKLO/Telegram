@@ -80,13 +80,13 @@ public class AboutLinkCell extends FrameLayout {
     }
 
     public void setTextAndValue(String text, String value, boolean parseLinks) {
-        if (TextUtils.isEmpty(text) || text != null && oldText != null && text.equals(oldText)) {
+        if (TextUtils.isEmpty(text) || text != null && text.equals(oldText)) {
             return;
         }
         oldText = text;
         stringBuilder = new SpannableStringBuilder(oldText);
         if (parseLinks) {
-            MessageObject.addLinks(false, stringBuilder, false);
+            MessageObject.addLinks(false, stringBuilder, false, false);
         }
         Emoji.replaceEmoji(stringBuilder, Theme.profile_aboutTextPaint.getFontMetricsInt(), AndroidUtilities.dp(20), false);
         if (TextUtils.isEmpty(value)) {

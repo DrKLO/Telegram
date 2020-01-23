@@ -452,7 +452,7 @@ public class ColorPicker extends FrameLayout {
         drawPointerArrow(canvas, (int) (sliderRect.left + (1.0f - value) * sliderRect.width()), (int) sliderRect.centerY(), getColor(), true);
 
         if (!circlePressed && pressedMoveProgress < 1.0f) {
-            long newTime = SystemClock.uptimeMillis();
+            long newTime = SystemClock.elapsedRealtime();
             long dt = newTime - lastUpdateTime;
             lastUpdateTime = newTime;
             pressedMoveProgress += dt / 180.0f;
@@ -521,7 +521,7 @@ public class ColorPicker extends FrameLayout {
                     }
                     circlePressed = true;
                     pressedMoveProgress = 0.0f;
-                    lastUpdateTime = SystemClock.uptimeMillis();
+                    lastUpdateTime = SystemClock.elapsedRealtime();
 
                     x = Math.max(0, Math.min(x, colorWheelBitmap.getWidth()));
                     y = Math.max(AndroidUtilities.dp(54), Math.min(y, AndroidUtilities.dp(54) + colorWheelBitmap.getHeight()));
@@ -565,7 +565,7 @@ public class ColorPicker extends FrameLayout {
             case MotionEvent.ACTION_UP:
                 colorPressed = false;
                 circlePressed = false;
-                lastUpdateTime = SystemClock.uptimeMillis();
+                lastUpdateTime = SystemClock.elapsedRealtime();
                 invalidate();
                 break;
         }

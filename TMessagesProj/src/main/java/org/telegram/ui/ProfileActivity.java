@@ -390,7 +390,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 } else {
                     rect.set(0f, 0f, getMeasuredWidth(), getMeasuredHeight());
                     placeholderPaint.setAlpha((int) (foregroundAlpha * 255f));
-                    final int radius = foregroundImageReceiver.getRoundRadius();
+                    final int radius = foregroundImageReceiver.getRoundRadius()[0];
                     canvas.drawRoundRect(rect, radius, radius, placeholderPaint);
                 }
             }

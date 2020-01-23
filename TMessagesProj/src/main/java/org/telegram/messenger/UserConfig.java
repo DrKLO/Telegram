@@ -75,12 +75,6 @@ public class UserConfig extends BaseController {
     public String tonKeyName;
     public boolean tonCreationFinished;
 
-    public String walletConfig;
-    public String walletBlockchainName;
-    public String walletConfigUrl;
-    public String walletConfigFromUrl;
-    public int walletConfigType;
-
     private static volatile UserConfig[] Instance = new UserConfig[UserConfig.MAX_ACCOUNT_COUNT];
     public static UserConfig getInstance(int num) {
         UserConfig localInstance = Instance[num];
@@ -163,11 +157,6 @@ public class UserConfig extends BaseController {
                 } else {
                     editor.remove("tonEncryptedData").remove("tonPublicKey").remove("tonKeyName").remove("tonPasscodeType").remove("tonPasscodeSalt").remove("tonPasscodeRetryInMs").remove("tonBadPasscodeTries").remove("tonLastUptimeMillis").remove("tonCreationFinished");
                 }
-                editor.putString("walletConfig", walletConfig);
-                editor.putString("walletConfigUrl", walletConfigUrl);
-                editor.putInt("walletConfigType", walletConfigType);
-                editor.putString("walletBlockchainName", walletBlockchainName);
-                editor.putString("walletConfigFromUrl", walletConfigFromUrl);
 
                 editor.putInt("6migrateOffsetId", migrateOffsetId);
                 if (migrateOffsetId != -1) {
@@ -319,11 +308,6 @@ public class UserConfig extends BaseController {
                     FileLog.e(e);
                 }
             }
-            walletConfig = "";//preferences.getString("walletConfig", "");
-            walletConfigUrl = "https://test.ton.org/config.json";//preferences.getString("walletConfigUrl", "https://test.ton.org/config.json");
-            walletConfigType = TonController.CONFIG_TYPE_JSON;//preferences.getInt("walletConfigType", TonController.CONFIG_TYPE_JSON);
-            walletBlockchainName = "";//preferences.getString("walletBlockchainName", "");
-            walletConfigFromUrl = "";//preferences.getString("walletConfigFromUrl", "");
 
             try {
                 String terms = preferences.getString("terms", null);
