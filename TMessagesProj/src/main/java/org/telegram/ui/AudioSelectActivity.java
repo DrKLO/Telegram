@@ -55,6 +55,7 @@ import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
+import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.UserObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.messenger.UserConfig;
@@ -212,7 +213,7 @@ public class AudioSelectActivity extends BaseFragment implements NotificationCen
         editText.setCursorColor(Theme.getColor(Theme.key_dialogTextBlack));
         editText.setHintTextColor(Theme.getColor(Theme.key_chat_messagePanelHint));
 
-        sizeNotifierFrameLayout = new SizeNotifierFrameLayout(context) {
+        sizeNotifierFrameLayout = new SizeNotifierFrameLayout(context, SharedConfig.smoothKeyboard) {
 
             private int lastNotifyWidth;
             private boolean ignoreLayout;
@@ -225,16 +226,25 @@ public class AudioSelectActivity extends BaseFragment implements NotificationCen
 
                 setMeasuredDimension(widthSize, heightSize);
 
-                int keyboardSize = getKeyboardHeight();
+                int kbHeight = getKeyboardHeight();
+                int keyboardSize = SharedConfig.smoothKeyboard ? 0 : kbHeight;
                 if (keyboardSize <= AndroidUtilities.dp(20)) {
                     if (!AndroidUtilities.isInMultiwindow && commentTextView != null && frameLayout2.getParent() == this) {
                         heightSize -= commentTextView.getEmojiPadding();
                         heightMeasureSpec = MeasureSpec.makeMeasureSpec(heightSize, MeasureSpec.EXACTLY);
                     }
-                } else if (commentTextView != null) {
+                }
+
+                if (kbHeight > AndroidUtilities.dp(20) && commentTextView != null) {
                     ignoreLayout = true;
                     commentTextView.hideEmojiView();
                     ignoreLayout = false;
+                }
+
+                if (SharedConfig.smoothKeyboard && commentTextView != null && commentTextView.isPopupShowing()) {
+                    fragmentView.setTranslationY(getCurrentPanTranslationY());
+                    listView.setTranslationY(0);
+                    emptyView.setTranslationY(0);
                 }
 
                 int childCount = getChildCount();
@@ -269,7 +279,8 @@ public class AudioSelectActivity extends BaseFragment implements NotificationCen
                 }
                 final int count = getChildCount();
 
-                int paddingBottom = commentTextView != null && frameLayout2.getParent() == this && getKeyboardHeight() <= AndroidUtilities.dp(20) && !AndroidUtilities.isInMultiwindow && !AndroidUtilities.isTablet() ? commentTextView.getEmojiPadding() : 0;
+                int keyboardSize = SharedConfig.smoothKeyboard ? 0 : getKeyboardHeight();
+                int paddingBottom = commentTextView != null && frameLayout2.getParent() == this && keyboardSize <= AndroidUtilities.dp(20) && !AndroidUtilities.isInMultiwindow && !AndroidUtilities.isTablet() ? commentTextView.getEmojiPadding() : 0;
                 setBottomClip(paddingBottom);
 
                 for (int i = 0; i < count; i++) {
@@ -323,7 +334,7 @@ public class AudioSelectActivity extends BaseFragment implements NotificationCen
                         if (AndroidUtilities.isTablet()) {
                             childTop = getMeasuredHeight() - child.getMeasuredHeight();
                         } else {
-                            childTop = getMeasuredHeight() + getKeyboardHeight() - child.getMeasuredHeight();
+                            childTop = getMeasuredHeight() + keyboardSize - child.getMeasuredHeight();
                         }
                     }
                     child.layout(childLeft, childTop, childLeft + width, childTop + height);
@@ -390,7 +401,7 @@ public class AudioSelectActivity extends BaseFragment implements NotificationCen
         listView.setOnScrollListener(new RecyclerView.OnScrollListener() {
             @Override
             public void onScrollStateChanged(RecyclerView recyclerView, int newState) {
-                if (newState == RecyclerView.SCROLL_STATE_DRAGGING && searching && searchWas) {
+                if (newState == RecyclerView.SCROLL_STATE_DRAGGING) {
                     AndroidUtilities.hideKeyboard(getParentActivity().getCurrentFocus());
                 }
             }
@@ -581,6 +592,21 @@ public class AudioSelectActivity extends BaseFragment implements NotificationCen
         updateEmptyView();
         updateCountButton(0);
         return fragmentView;
+    }
+
+    @Override
+    protected void onPanTranslationUpdate(int y) {
+        if (listView == null) {
+            return;
+        }
+        if (commentTextView.isPopupShowing()) {
+            fragmentView.setTranslationY(y);
+            listView.setTranslationY(0);
+            emptyView.setTranslationY(0);
+        } else {
+            listView.setTranslationY(y);
+            emptyView.setTranslationY(y);
+        }
     }
 
     private void updateEmptyView() {

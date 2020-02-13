@@ -237,7 +237,9 @@ public class ThemeDescription {
                 if (drawablesToUpdate[a] == null) {
                     continue;
                 }
-                if (drawablesToUpdate[a] instanceof ScamDrawable) {
+                if (drawablesToUpdate[a] instanceof BackDrawable) {
+                    ((BackDrawable) drawablesToUpdate[a]).setColor(color);
+                } else if (drawablesToUpdate[a] instanceof ScamDrawable) {
                     ((ScamDrawable) drawablesToUpdate[a]).setColor(color);
                 } else if (drawablesToUpdate[a] instanceof RLottieDrawable) {
                     if (lottieLayerName != null) {
@@ -699,6 +701,7 @@ public class ThemeDescription {
                                     ((RadialProgressView) object).setProgressColor(color);
                                 } else if (object instanceof Paint) {
                                     ((Paint) object).setColor(color);
+                                    child.invalidate();
                                 } else if (object instanceof SeekBarView) {
                                     if ((changeFlags & FLAG_PROGRESSBAR) != 0) {
                                         ((SeekBarView) object).setOuterColor(color);

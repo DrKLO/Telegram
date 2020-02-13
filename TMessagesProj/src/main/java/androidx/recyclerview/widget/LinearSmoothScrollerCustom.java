@@ -15,7 +15,9 @@ import android.view.View;
 import android.view.animation.DecelerateInterpolator;
 import android.view.animation.LinearInterpolator;
 
-public class LinearSmoothScrollerMiddle extends RecyclerView.SmoothScroller {
+import org.telegram.messenger.AndroidUtilities;
+
+public class LinearSmoothScrollerCustom extends RecyclerView.SmoothScroller {
 
     private static final float MILLISECONDS_PER_INCH = 25f;
 
@@ -32,9 +34,14 @@ public class LinearSmoothScrollerMiddle extends RecyclerView.SmoothScroller {
     private final float MILLISECONDS_PER_PX;
 
     protected int mInterimTargetDx = 0, mInterimTargetDy = 0;
+    private int scrollPosition;
 
-    public LinearSmoothScrollerMiddle(Context context) {
+    public static final int POSITION_MIDDLE = 0;
+    public static final int POSITION_END = 1;
+
+    public LinearSmoothScrollerCustom(Context context, int position) {
         MILLISECONDS_PER_PX = MILLISECONDS_PER_INCH / context.getResources().getDisplayMetrics().densityDpi;
+        scrollPosition = position;
     }
 
     @Override
@@ -80,7 +87,6 @@ public class LinearSmoothScrollerMiddle extends RecyclerView.SmoothScroller {
     }
 
     protected void updateActionForInterimTarget(Action action) {
-        // find an interim target position
         PointF scrollVector = computeScrollVectorForPosition(getTargetPosition());
         if (scrollVector == null || (scrollVector.x == 0 && scrollVector.y == 0)) {
             final int target = getTargetPosition();
@@ -94,12 +100,7 @@ public class LinearSmoothScrollerMiddle extends RecyclerView.SmoothScroller {
         mInterimTargetDx = (int) (TARGET_SEEK_SCROLL_DISTANCE_PX * scrollVector.x);
         mInterimTargetDy = (int) (TARGET_SEEK_SCROLL_DISTANCE_PX * scrollVector.y);
         final int time = calculateTimeForScrolling(TARGET_SEEK_SCROLL_DISTANCE_PX);
-        // To avoid UI hiccups, trigger a smooth scroll to a distance little further than the
-        // interim target. Since we track the distance travelled in onSeekTargetStep callback, it
-        // won't actually scroll more than what we need.
-        action.update((int) (mInterimTargetDx * TARGET_SEEK_EXTRA_SCROLL_RATIO)
-                , (int) (mInterimTargetDy * TARGET_SEEK_EXTRA_SCROLL_RATIO)
-                , (int) (time * TARGET_SEEK_EXTRA_SCROLL_RATIO), mLinearInterpolator);
+        action.update((int) (mInterimTargetDx * TARGET_SEEK_EXTRA_SCROLL_RATIO), (int) (mInterimTargetDy * TARGET_SEEK_EXTRA_SCROLL_RATIO), (int) (time * TARGET_SEEK_EXTRA_SCROLL_RATIO), mLinearInterpolator);
     }
 
     private int clampApplyScroll(int tmpDt, int dt) {
@@ -126,8 +127,10 @@ public class LinearSmoothScrollerMiddle extends RecyclerView.SmoothScroller {
         int viewSize = bottom - top;
         if (viewSize > boxSize) {
             start = 0;
-        } else {
+        } else if (scrollPosition == POSITION_MIDDLE) {
             start = (boxSize - viewSize) / 2;
+        } else {
+            start = (layoutManager.getPaddingTop() - AndroidUtilities.dp(88));
         }
         end = start + viewSize;
         final int dtStart = start - top;

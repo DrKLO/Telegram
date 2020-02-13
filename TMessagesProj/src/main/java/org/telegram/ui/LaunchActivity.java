@@ -25,6 +25,7 @@ import android.graphics.Color;
 import android.graphics.Point;
 import android.graphics.Shader;
 import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.ColorDrawable;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -231,7 +232,31 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
             }
         }
 
-        getWindow().setBackgroundDrawableResource(R.drawable.transparent);
+        getWindow().setBackgroundDrawable(new ColorDrawable(0xffffffff) {
+            @Override
+            public void setBounds(int left, int top, int right, int bottom) {
+                bottom += AndroidUtilities.dp(500);
+                super.setBounds(left, top, right, bottom);
+            }
+
+            @Override
+            public void draw(Canvas canvas) {
+                if (SharedConfig.smoothKeyboard) {
+                    int color = getColor();
+                    int newColor;
+                    if (PhotoViewer.hasInstance() && PhotoViewer.getInstance().isVisible()) {
+                        newColor = 0xff000000;
+                    } else {
+                        newColor = Theme.getColor(Theme.key_windowBackgroundWhite);
+                    }
+                    if (color != newColor) {
+                        setColor(newColor);
+                    }
+                    super.draw(canvas);
+                }
+            }
+        });
+
         if (SharedConfig.passcodeHash.length() > 0 && !SharedConfig.allowScreenCapture) {
             try {
                 getWindow().setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE);

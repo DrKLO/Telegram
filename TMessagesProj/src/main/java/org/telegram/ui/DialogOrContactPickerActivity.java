@@ -78,6 +78,8 @@ public class DialogOrContactPickerActivity extends BaseFragment {
         return t * t * t * t * t + 1.0F;
     };
 
+    private boolean swipeBackEnabled = true;
+
     public DialogOrContactPickerActivity() {
         super();
 
@@ -580,6 +582,11 @@ public class DialogOrContactPickerActivity extends BaseFragment {
         if (contactsActivity != null) {
             contactsActivity.onPause();
         }
+    }
+
+    @Override
+    public boolean isSwipeBackEnabled(MotionEvent event) {
+        return swipeBackEnabled;
     }
 
     @Override

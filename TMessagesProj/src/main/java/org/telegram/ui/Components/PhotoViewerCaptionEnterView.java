@@ -12,6 +12,7 @@ import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
 import android.content.Context;
 import android.graphics.Canvas;
+import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.text.Editable;
 import android.text.InputFilter;
@@ -150,6 +151,12 @@ public class PhotoViewerCaptionEnterView extends FrameLayout implements Notifica
             @Override
             protected int getActionModeStyle() {
                 return FloatingToolbar.STYLE_BLACK;
+            }
+
+            @Override
+            public boolean requestRectangleOnScreen(Rect rectangle) {
+                rectangle.bottom += AndroidUtilities.dp(1000);
+                return super.requestRectangleOnScreen(rectangle);
             }
         };
 

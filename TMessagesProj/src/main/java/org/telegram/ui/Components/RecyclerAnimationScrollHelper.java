@@ -8,8 +8,6 @@ import android.view.View;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.google.android.exoplayer2.util.Log;
-
 import org.telegram.ui.Cells.ChatMessageCell;
 
 import java.util.ArrayList;
@@ -24,11 +22,11 @@ public class RecyclerAnimationScrollHelper {
     private LinearLayoutManager layoutManager;
 
     private int scrollDirection;
-    ValueAnimator animator;
+    private ValueAnimator animator;
 
-    ScrollListener scrollListener;
+    private ScrollListener scrollListener;
 
-    AnimationCallback animationCallback;
+    private AnimationCallback animationCallback;
 
     public RecyclerAnimationScrollHelper(RecyclerListView recyclerView, LinearLayoutManager layoutManager) {
         this.recyclerView = recyclerView;

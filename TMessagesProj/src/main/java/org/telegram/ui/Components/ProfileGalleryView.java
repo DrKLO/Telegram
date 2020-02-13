@@ -42,6 +42,7 @@ public class ProfileGalleryView extends CircularViewPager implements Notificatio
     private final ViewPagerAdapter adapter;
     private final int parentClassGuid;
     private final long dialogId;
+    private boolean scrolledByUser;
 
     private int currentAccount = UserConfig.selectedAccount;
 
@@ -145,6 +146,7 @@ public class ProfileGalleryView extends CircularViewPager implements Notificatio
         if (action == MotionEvent.ACTION_DOWN) {
             isScrollingListView = true;
             isSwipingViewPager = true;
+            scrolledByUser = true;
             downPoint.set(ev.getX(), ev.getY());
         } else if (action == MotionEvent.ACTION_MOVE) {
             final float dx = ev.getX() - downPoint.x;
@@ -226,7 +228,7 @@ public class ProfileGalleryView extends CircularViewPager implements Notificatio
     }
 
     public BackupImageView getCurrentItemView() {
-        if (adapter != null) {
+        if (adapter != null && !adapter.objects.isEmpty()) {
             return adapter.objects.get(getCurrentItem()).imageView;
         } else {
             return null;
@@ -235,6 +237,14 @@ public class ProfileGalleryView extends CircularViewPager implements Notificatio
 
     public void resetCurrentItem() {
         setCurrentItem(adapter.getExtraCount(), false);
+    }
+
+    public int getRealCount() {
+        return adapter.getCount() - adapter.getExtraCount() * 2;
+    }
+
+    public int getRealPosition() {
+        return adapter.getRealPosition(getCurrentItem());
     }
 
     @Override
@@ -318,6 +328,9 @@ public class ProfileGalleryView extends CircularViewPager implements Notificatio
                 }
                 loadNeighboringThumbs();
                 getAdapter().notifyDataSetChanged();
+                if (!scrolledByUser) {
+                    resetCurrentItem();
+                }
                 if (fromCache) {
                     MessagesController.getInstance(currentAccount).loadDialogPhotos(did, 80, 0, false, parentClassGuid);
                 }
@@ -398,9 +411,9 @@ public class ProfileGalleryView extends CircularViewPager implements Notificatio
                     {
                         final int realPosition = getRealPosition(position);
                         if (realPosition == 0) {
-                            setImage(imagesLocations.get(realPosition), null, parentAvatarImageView.getImageReceiver().getBitmap(), imagesLocationsSizes.get(realPosition), null);
+                            setImage(imagesLocations.get(realPosition), null, parentAvatarImageView.getImageReceiver().getBitmap(), imagesLocationsSizes.get(realPosition), 1, null);
                         } else {
-                            setImage(imagesLocations.get(realPosition), null, thumbsLocations.get(realPosition), null, null, null, null, imagesLocationsSizes.get(realPosition), null);
+                            setImage(imagesLocations.get(realPosition), null, thumbsLocations.get(realPosition), null, null, 0, 1, imagesLocationsSizes.get(realPosition));
                             radialProgress = new RadialProgress2(this);
                             radialProgress.setOverrideAlpha(0.0f);
                             radialProgress.setIcon(MediaActionDrawable.ICON_EMPTY, false, false);

@@ -3,6 +3,7 @@ package org.telegram.ui.Components;
 import android.content.Context;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
+import android.graphics.Rect;
 import android.os.Build;
 import android.text.Editable;
 import android.text.InputFilter;
@@ -99,6 +100,12 @@ public class EditTextEmoji extends FrameLayout implements NotificationCenter.Not
                     FileLog.e(e);
                 }
                 return false;
+            }
+
+            @Override
+            public boolean requestRectangleOnScreen(Rect rectangle) {
+                rectangle.bottom += AndroidUtilities.dp(1000);
+                return super.requestRectangleOnScreen(rectangle);
             }
         };
         editText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);

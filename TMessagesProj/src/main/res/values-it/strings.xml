@@ -795,6 +795,7 @@
     <string name="YouLeft">Hai lasciato il gruppo</string>
     <string name="DeleteThisGroup">Elimina questo gruppo</string>
     <string name="DeleteThisChat">Elimina questa chat</string>
+    <string name="DeleteTheseChats">Elimina chat</string>
     <string name="SlideToCancel">ANNULLA</string>
     <string name="SaveToDownloads">Salva nei download</string>
     <string name="SaveToGIFs">Salva nelle GIF</string>
@@ -962,6 +963,8 @@
     <string name="OneResult">1 risultato</string>
     <string name="VideoQualityIsTooLow">Qualità video troppo bassa per cambiare le impostazioni di compressione.</string>
     <string name="TextSelectionHit">Tieni premuta la **parola**, quindi muovi il cursore per selezionare altro testo da copiare.</string>
+    <string name="CardNumberCopied">Numero carta copiato negli appunti</string>
+    <string name="CopyCardNumber">Copia</string>
     <!--notification-->
     <string name="MessageLifetimeChanged">%1$s ha impostato il timer di autodistruzione a %2$s</string>
     <string name="MessageLifetimeChangedOutgoing">Hai impostato il timer di autodistruzione a %1$s</string>
@@ -1116,7 +1119,6 @@
     <string name="SoftUserLimitAlert">Potrai aggiungere più utenti dopo aver creato il gruppo e averlo convertito in supergruppo.</string>
     <string name="EnterGroupNamePlaceholder">Inserisci il nome del gruppo</string>
     <string name="GroupName">Nome del gruppo</string>
-    <string name="MembersCount">%1$d di %2$d</string>
     <string name="MembersCountZero">fino a %1$s</string>
     <string name="JoinToGroupErrorFull">Spiacenti, questo gruppo è già pieno.</string>
     <string name="JoinToGroupErrorNotExist">Spiacenti, sembra che questa chat non esista.</string>
@@ -1168,6 +1170,9 @@
     <string name="Invite">Invita</string>
     <string name="BlockContact">Blocca utente</string>
     <string name="BlockUser">Blocca utente</string>
+    <string name="BlockUsers">Blocca utenti</string>
+    <string name="BlockUserMessage">Vuoi impedire a **%1$s** di scriverti e chiamarti su Telegram?</string>
+    <string name="BlockUsersMessage">Vuoi impedire a **%1$s** di scriverti e chiamarti su Telegram?</string>
     <string name="UserBlocked">Utente bloccato</string>
     <string name="UserUnblocked">Utente sbloccato</string>
     <string name="EditContact">Modifica contatto</string>
@@ -1212,6 +1217,8 @@
     <string name="SharedPhotosAndVideos">Foto e video</string>
     <string name="SharedLinks">Link</string>
     <string name="SharedAudioFiles">File audio</string>
+    <string name="SendMessageLocation">Invia messaggio</string>
+    <string name="ReportUserLocation">Segnala</string>
     <!--usernames-->
     <string name="Username">Username</string>
     <string name="UsernamePlaceholder">Il tuo username</string>
@@ -1675,6 +1682,10 @@
     <string name="DebugMenuReloadContacts">Ricarica contatti</string>
     <string name="DebugMenuResetDialogs">Ripristina chat</string>
     <string name="DebugMenuReadAllDialogs">Leggi tutte le chat</string>
+    <string name="DebugMenuEnablePauseMusic">Enable pause music on record</string>
+    <string name="DebugMenuDisablePauseMusic">Disable pause music on record</string>
+    <string name="DebugMenuEnableSmoothKeyboard">Attiva tastiera fluida</string>
+    <string name="DebugMenuDisableSmoothKeyboard">Disattiva tastiera fluida</string>
     <string name="DebugMenuEnableCamera">Attiva fotocamera in-app</string>
     <string name="DebugMenuDisableCamera">Disattiva fotocamera in-app</string>
     <string name="DebugMenuResetContacts">Ripristina contatti importati</string>
@@ -1743,7 +1754,7 @@
     <string name="AddAnotherAccountInfo">Connetti altri account Telegram e passa facilmente da uno all\'altro.</string>
     <string name="SetPasscode">Imposta un codice di blocco</string>
     <string name="SetPasscodeInfo">Blocca l\'app con un codice, così gli altri non potranno aprirla.</string>
-    <string name="ClearCache">Vuota la cache</string>
+    <string name="ClearCache">Svuota cache</string>
     <string name="ClearCacheInfo">Libera spazio sul tuo dispositivo; i tuoi media rimarranno nel cloud.</string>
     <string name="ChangePhoneNumber">Cambia numero di telefono</string>
     <string name="ChangePhoneNumberInfo">Sposta il tuo account, le chat e i media su un nuovo numero.</string>
@@ -1777,7 +1788,7 @@
     <string name="LocalDatabaseClearTextTitle">Cancella database locale</string>
     <string name="LocalDatabaseClearText">Sei sicuro di voler eliminare i messaggi di testo nella cache?</string>
     <string name="LocalDatabaseInfo">Cancellando il database locale, verranno eliminati i messaggi nella cache e il database verrà compresso per risparmiare spazio. Telegram ha bisogno di alcuni dati per funzionare, quindi il database non sarà azzerato.\n\nQuesta operazione può richiedere alcuni minuti.</string>
-    <string name="ClearMediaCache">Vuota la cache</string>
+    <string name="ClearMediaCache">Svuota cache</string>
     <string name="CacheClear">Svuota</string>
     <string name="CalculatingSize">Calcolo...</string>
     <string name="LocalDocumentCache">Documenti</string>
@@ -2049,11 +2060,13 @@
     <string name="October">Ottobre</string>
     <string name="November">Novembre</string>
     <string name="December">Dicembre</string>
-    <string name="SharedFilesTab">FILE</string>
-    <string name="SharedMediaTab">MEDIA</string>
-    <string name="SharedLinksTab">LINK</string>
-    <string name="SharedMusicTab">AUDIO</string>
-    <string name="SharedVoiceTab">MESSAGGI VOCALI</string>
+    <string name="SharedFilesTab2">File</string>
+    <string name="SharedMediaTab2">Media</string>
+    <string name="SharedMediaTabFull2">Media condivisi</string>
+    <string name="SharedGroupsTab2">Gruppi</string>
+    <string name="SharedLinksTab2">Link</string>
+    <string name="SharedMusicTab2">Audio</string>
+    <string name="SharedVoiceTab2">Messaggi vocali</string>
     <string name="DocumentsTitle">File condivisi</string>
     <string name="SharedContentTitle">Contenuto condiviso</string>
     <string name="LinksTitle">Link condivisi</string>
@@ -2082,8 +2095,8 @@
     <string name="SendLocation">Invia la mia posizione corrente</string>
     <string name="SendLiveLocation">Condividi posizione attuale per...</string>
     <string name="SendLiveLocationMenu">Condividi posizione attuale</string>
-    <string name="StopLiveLocation">Arresta condivisione</string>
-    <string name="StopLiveLocationAlertToTitle">Arresta condivisione posizione</string>
+    <string name="StopLiveLocation">Termina condivisione</string>
+    <string name="StopLiveLocationAlertToTitle">Termina condivisione posizione</string>
     <string name="StopLiveLocationAlertToUserText">Vuoi interrompere la condivisione della tua posizione attuale con **%1$s**?</string>
     <string name="StopLiveLocationAlertToGroupText">Vuoi interrompere la condivisione della tua posizione attuale con **%1$s**?</string>
     <string name="StopLiveLocationAlertAllText">Vuoi interrompere la condivisione della tua posizione attuale?</string>
@@ -2111,6 +2124,10 @@
     <string name="LiveLocationAlertGroup">Scegli per quanto tempo le persone in questa chat vedranno la tua posizione attuale.</string>
     <string name="GpsDisabledAlertTitle">Attiva GPS</string>
     <string name="GpsDisabledAlertText">Per favore attiva il tuo GPS per accedere alle funzioni basate sulla posizione.</string>
+    <string name="MakeMyselfVisible">Rendimi visibile</string>
+    <string name="MakeMyselfVisibleTitle">Mostrare il tuo profilo?</string>
+    <string name="MakeMyselfVisibleInfo">Gli utenti nelle vicinanze potranno visualizzare il tuo profilo e inviarti messaggi. Questo può aiutarti a trovare nuovi amici, ma potrebbe anche attirare un\'eccessiva attenzione. Puoi interrompere la condivisione del tuo profilo in qualsiasi momento.\n\nIl tuo numero di telefono rimarrà nascosto.</string>
+    <string name="StopShowingMe">Interrompi visibilità</string>
     <string name="PeopleNearby">Persone vicine</string>
     <string name="AddPeopleNearby">Aggiungi persone vicine</string>
     <string name="PeopleNearbyAccessInfo">Aggiungi rapidamente persone vicine che stanno guardando questa sezione e scopri chat di gruppo locali.\n\nPer favore concedi l\'accesso alla posizione per abilitare questa funzione.</string>
@@ -2119,7 +2136,7 @@
     <string name="PeopleNearbyGpsInfo">Aggiungi rapidamente persone vicine che stanno guardando questa sezione e scopri chat di gruppo locali.\n\nPer favore attiva i servizi di localizzazione per abilitare questa funzione.</string>
     <string name="PeopleNearbyGps">Attiva</string>
     <string name="ChatsNearbyHeader">Gruppi vicini</string>
-    <string name="PeopleNearbyInfo">Chiedi al tuo amico vicino di aprire questa pagina per scambiare i numeri di telefono.</string>
+    <string name="PeopleNearbyInfo2">Scambia info di contatto con le persone vicine e trova nuovi amici.</string>
     <string name="PeopleNearbyEmpty">Cerco utenti attorno a te...</string>
     <string name="NearbyCreateGroup">Crea un gruppo locale</string>
     <string name="NearbyStartGroup">Avvia gruppo</string>
@@ -2150,8 +2167,8 @@
     <string name="VideoDoesNotSupportStreaming">Questo video non è ottimizzato per lo streaming. Potresti doverlo scaricare completamente per riprodurlo.</string>
     <string name="CantPlayVideo">L\'app non è in grado di riprodurre questo video. Vuoi provare con un player esterno?</string>
     <string name="NoRecentSearches">Nessuna ricerca recente</string>
-    <string name="ImagesTab">IMMAGINI</string>
-    <string name="GifsTab">GIF</string>
+    <string name="ImagesTab2">Immagini</string>
+    <string name="GifsTab2">GIF</string>
     <string name="NoRecentGIFs">Nessuna GIF recente</string>
     <string name="SearchImages">CERCA IMMAGINI</string>
     <string name="SearchImagesInfo">RICERCA WEB</string>
@@ -2281,9 +2298,9 @@
     <string name="DataUsage">Utilizzo disco e rete</string>
     <string name="StorageUsage">Utilizzo archivio</string>
     <string name="NetworkUsage">Utilizzo dati</string>
-    <string name="NetworkUsageMobile">CELLULARE</string>
-    <string name="NetworkUsageWiFi">WI-FI</string>
-    <string name="NetworkUsageRoaming">ROAMING</string>
+    <string name="NetworkUsageMobileTab">Cellulare</string>
+    <string name="NetworkUsageWiFiTab">Wi-Fi</string>
+    <string name="NetworkUsageRoamingTab">Roaming</string>
     <string name="MessagesDataUsage">Messaggi e altri dati</string>
     <string name="CountSent">Inviati</string>
     <string name="CountReceived">Ricevuti</string>
@@ -2552,7 +2569,7 @@
     <string name="AreYouSureLogout">Sei sicuro di voler uscire?\n\nNota che puoi usare Telegram su tutti i tuoi dispositivi contemporaneamente.\n\nRicorda, uscendo eliminerai tutte le chat segrete.</string>
     <string name="DeleteFewChatsTitle">Elimina %1$s</string>
     <string name="ClearFewChatsTitle">Svuota %1$s</string>
-    <string name="ClearCacheFewChatsTitle">Svuota la cache per %1$s</string>
+    <string name="ClearCacheFewChatsTitle">Svuota cache per %1$s</string>
     <string name="AreYouSureDeleteFewChats">Sei sicuro di voler eliminare le chat selezionate?</string>
     <string name="AreYouSureClearHistoryFewChats">Sei sicuro di voler eliminare la cronologia nelle chat selezionate?</string>
     <string name="AreYouSureClearHistoryCacheFewChats">Eliminare tutti i testi e i media dalle chat selezionate?</string>
@@ -2572,7 +2589,7 @@
     <string name="ShareYouLocationInline">Questo bot vorrebbe sapere la tua posizione ogni volta che invii una richiesta. Questo può essere usato per fornire risultati specifici in base alla posizione.</string>
     <string name="ShareYouPhoneNumberTitle">Condividere il tuo numero di telefono?</string>
     <string name="AreYouSureShareMyContactInfoBot">Il bot saprà il tuo numero di telefono. Questo può essere utile per l\'integrazione con altri servizi.</string>
-    <string name="AreYouSureShareMyContactInfoUser">Sei sicuro di voler condividere il tuo numero %1$s con **%2$s**?</string>
+    <string name="AreYouSureShareMyContactInfoUser">Vuoi condividere il tuo numero %1$s con **%2$s**?</string>
     <string name="AreYouSureShareMyContactInfo">Sei sicuro di voler condividere il tuo numero?</string>
     <string name="AreYouSureBlockContact2">Sei sicuro di voler bloccare **%1$s**?</string>
     <string name="AreYouSureUnblockContact">Sei sicuro di voler sbloccare questo contatto?</string>
@@ -2849,6 +2866,12 @@
     <string name="items_few">%1$d oggetti</string>
     <string name="items_many">%1$d oggetti</string>
     <string name="items_other">%1$d oggetti</string>
+
+
+
+
+
+
     <string name="FromChats_zero">da %1$d chat</string>
     <string name="FromChats_one">da %1$d chat</string>
     <string name="FromChats_two">da %1$d chat</string>
@@ -3006,12 +3029,36 @@
     <string name="Files_few">%1$d file</string>
     <string name="Files_many">%1$d file</string>
     <string name="Files_other">%1$d file</string>
+    <string name="MusicFiles_zero">%1$d file musicali</string>
+    <string name="MusicFiles_one">%1$d file musicale</string>
+    <string name="MusicFiles_two">%1$d file musicali</string>
+    <string name="MusicFiles_few">%1$d file musicali</string>
+    <string name="MusicFiles_many">%1$d file musicali</string>
+    <string name="MusicFiles_other">%1$d file musicali</string>
+    <string name="CommonGroups_zero">%1$d gruppi in comune</string>
+    <string name="CommonGroups_one">%1$d gruppo in comune</string>
+    <string name="CommonGroups_two">%1$d gruppi in comune</string>
+    <string name="CommonGroups_few">%1$d gruppi in comune</string>
+    <string name="CommonGroups_many">%1$d gruppi in comune</string>
+    <string name="CommonGroups_other">%1$d gruppi in comune</string>
     <string name="Media_zero">%1$d media</string>
     <string name="Media_one">%1$d media</string>
     <string name="Media_two">%1$d media</string>
     <string name="Media_few">%1$d media</string>
     <string name="Media_many">%1$d media</string>
     <string name="Media_other">%1$d media</string>
+    <string name="Voice_zero">%1$d messaggi vocali</string>
+    <string name="Voice_one">%1$d messaggio vocale</string>
+    <string name="Voice_two">%1$d messaggi vocali</string>
+    <string name="Voice_few">%1$d messaggi vocali</string>
+    <string name="Voice_many">%1$d messaggi vocali</string>
+    <string name="Voice_other">%1$d messaggi vocali</string>
+    <string name="Links_zero">%1$d link</string>
+    <string name="Links_one">%1$d link</string>
+    <string name="Links_two">%1$d link</string>
+    <string name="Links_few">%1$d link</string>
+    <string name="Links_many">%1$d link</string>
+    <string name="Links_other">%1$d link</string>
     <string name="BlockedUsersCount_zero">%1$d utenti bloccati</string>
     <string name="BlockedUsersCount_one">%1$d utente bloccato</string>
     <string name="BlockedUsersCount_two">%1$d utenti bloccati</string>
@@ -3114,6 +3161,24 @@
     <string name="CountOfResults_few">Risultato %1$d di %2$d</string>
     <string name="CountOfResults_many">Risultato %1$d di %2$d</string>
     <string name="CountOfResults_other">Risultato %1$d di %2$d</string>
+    <string name="UsersCount_zero">%1$d utenti</string>
+    <string name="UsersCount_one">%1$d utente</string>
+    <string name="UsersCount_two">%1$d utenti</string>
+    <string name="UsersCount_few">%1$d utenti</string>
+    <string name="UsersCount_many">%1$d utenti</string>
+    <string name="UsersCount_other">%1$d utenti</string>
+    <string name="UsersCountTitle_zero">%1$d utenti</string>
+    <string name="UsersCountTitle_one">%1$d utente</string>
+    <string name="UsersCountTitle_two">%1$d utenti</string>
+    <string name="UsersCountTitle_few">%1$d utenti</string>
+    <string name="UsersCountTitle_many">%1$d utenti</string>
+    <string name="UsersCountTitle_other">%1$d utenti</string>
+    <string name="MembersCountSelected_zero">%1$d di %2$d selezionati</string>
+    <string name="MembersCountSelected_one">%1$d di %2$d selezionato</string>
+    <string name="MembersCountSelected_two">%1$d di %2$d selezionati</string>
+    <string name="MembersCountSelected_few">%1$d di %2$d selezionati</string>
+    <string name="MembersCountSelected_many">%1$d di %2$d selezionati</string>
+    <string name="MembersCountSelected_other">%1$d di %2$d selezionati</string>
     <!--accessibility descriptions-->
     <string name="AccDescrGroup">Gruppo</string>
     <string name="AccDescrChannel">Canale</string>
@@ -3162,7 +3227,7 @@
     <string name="AccDescrRepeatOne">Ripeti, una</string>
     <string name="AccDescrClosePlayer">Chiudi lettore musicale</string>
     <string name="AccDescrPlayerSpeed">Riproduzione a velocità doppia</string>
-    <string name="AccDescrStopLiveLocation">Arresta condivisione posizione attuale</string>
+    <string name="AccDescrStopLiveLocation">Termina condivisione posizione attuale</string>
     <string name="AccDescrInstantCamera">Fotocamera istantanea</string>
     <string name="AccDescrShutter">Pulsante di scatto</string>
     <string name="AccDescrSwitchCamera">Cambia fotocamera</string>

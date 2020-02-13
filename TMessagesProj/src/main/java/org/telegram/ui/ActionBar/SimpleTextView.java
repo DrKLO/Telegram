@@ -10,12 +10,13 @@ package org.telegram.ui.ActionBar;
 
 import android.content.Context;
 import android.graphics.Canvas;
+import android.graphics.LinearGradient;
 import android.graphics.Paint;
 import android.graphics.PorterDuff;
-import android.graphics.PorterDuffColorFilter;
+import android.graphics.PorterDuffXfermode;
+import android.graphics.Shader;
 import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
-import android.graphics.drawable.GradientDrawable;
 import android.os.SystemClock;
 import android.text.Layout;
 import android.text.SpannableStringBuilder;
@@ -49,8 +50,8 @@ public class SimpleTextView extends View implements Drawable.Callback {
     private float scrollingOffset;
     private long lastUpdateTime;
     private int currentScrollDelay;
-    private GradientDrawable fadeDrawable;
-    private GradientDrawable fadeDrawableBack;
+    private Paint fadePaint;
+    private Paint fadePaintBack;
     private int lastWidth;
 
     private int offsetX;
@@ -107,8 +108,15 @@ public class SimpleTextView extends View implements Drawable.Callback {
         }
         scrollNonFitText = value;
         if (scrollNonFitText) {
-            fadeDrawable = new GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT, new int[]{0xffffffff, 0});
-            fadeDrawableBack = new GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT, new int[]{0, 0xffffffff});
+            fadePaint = new Paint();
+            LinearGradient gradient = new LinearGradient(0, 0, AndroidUtilities.dp(6), 0, new int[]{0xffffffff, 0}, new float[]{0f, 1f}, Shader.TileMode.CLAMP);
+            fadePaint.setShader(gradient);
+            fadePaint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.DST_OUT));
+
+            fadePaintBack = new Paint();
+            gradient = new LinearGradient(0, 0, AndroidUtilities.dp(6), 0, new int[]{0, 0xffffffff}, new float[]{0f, 1f}, Shader.TileMode.CLAMP);
+            fadePaintBack.setShader(gradient);
+            fadePaintBack.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.DST_OUT));
         }
         requestLayout();
     }
@@ -383,6 +391,12 @@ public class SimpleTextView extends View implements Drawable.Callback {
     @Override
     protected void onDraw(Canvas canvas) {
         int textOffsetX = 0;
+
+        boolean fade = scrollNonFitText && (textDoesNotFit || scrollingOffset != 0);
+        if (fade) {
+            canvas.saveLayerAlpha(0, 0, getMeasuredWidth(), getMeasuredHeight(), 255, Canvas.ALL_SAVE_FLAG);
+        }
+
         totalWidth = textWidth;
         if (leftDrawable != null) {
             int x = (int) -scrollingOffset;
@@ -456,34 +470,22 @@ public class SimpleTextView extends View implements Drawable.Callback {
             if (offsetX + textOffsetX != 0 || offsetY != 0 || scrollingOffset != 0) {
                 canvas.restore();
             }
-            if (scrollNonFitText && (textDoesNotFit || scrollingOffset != 0)) {
+            if (fade) {
                 if (scrollingOffset < AndroidUtilities.dp(10)) {
-                    fadeDrawable.setAlpha((int) (255 * (scrollingOffset / AndroidUtilities.dp(10))));
+                    fadePaint.setAlpha((int) (255 * (scrollingOffset / AndroidUtilities.dp(10))));
                 } else if (scrollingOffset > totalWidth + AndroidUtilities.dp(DIST_BETWEEN_SCROLLING_TEXT) - AndroidUtilities.dp(10)) {
                     float dist = scrollingOffset - (totalWidth + AndroidUtilities.dp(DIST_BETWEEN_SCROLLING_TEXT) - AndroidUtilities.dp(10));
-                    fadeDrawable.setAlpha((int) (255 * (1.0f - dist / AndroidUtilities.dp(10))));
+                    fadePaint.setAlpha((int) (255 * (1.0f - dist / AndroidUtilities.dp(10))));
                 } else {
-                    fadeDrawable.setAlpha(255);
+                    fadePaint.setAlpha(255);
                 }
-                fadeDrawable.setBounds(0, 0, AndroidUtilities.dp(6), getMeasuredHeight());
-                fadeDrawable.draw(canvas);
-
-                fadeDrawableBack.setBounds(getMeasuredWidth() - AndroidUtilities.dp(6), 0, getMeasuredWidth(), getMeasuredHeight());
-                fadeDrawableBack.draw(canvas);
+                canvas.drawRect(0, 0, AndroidUtilities.dp(6), getMeasuredHeight(), fadePaint);
+                canvas.save();
+                canvas.translate(getMeasuredWidth() - AndroidUtilities.dp(6), 0);
+                canvas.drawRect(0, 0, AndroidUtilities.dp(6), getMeasuredHeight(), fadePaintBack);
+                canvas.restore();
             }
             updateScrollAnimation();
-        }
-    }
-
-    @Override
-    public void setBackgroundColor(int color) {
-        if (scrollNonFitText) {
-            if (fadeDrawable != null) {
-                fadeDrawable.setColorFilter(new PorterDuffColorFilter(color, PorterDuff.Mode.MULTIPLY));
-                fadeDrawableBack.setColorFilter(new PorterDuffColorFilter(color, PorterDuff.Mode.MULTIPLY));
-            }
-        } else {
-            super.setBackgroundColor(color);
         }
     }
 

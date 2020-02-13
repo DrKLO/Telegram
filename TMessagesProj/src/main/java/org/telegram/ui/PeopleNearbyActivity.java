@@ -13,8 +13,11 @@ import android.animation.AnimatorListenerAdapter;
 import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
 import android.content.Context;
+import android.graphics.Canvas;
+import android.graphics.Paint;
 import android.graphics.drawable.Drawable;
 import android.location.Location;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.SystemClock;
 import android.util.TypedValue;
@@ -33,6 +36,7 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.LocationController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
+import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.AlertDialog;
@@ -61,6 +65,10 @@ public class PeopleNearbyActivity extends BaseFragment implements NotificationCe
     private RecyclerListView listView;
     private ActionIntroActivity groupCreateActivity;
     private UndoView undoView;
+    private LinearLayoutManager layoutManager;
+
+    private View actionBarBackground;
+    private AnimatorSet actionBarAnimator;
 
     private String currentGroupCreateAddress;
     private String currentGroupCreateDisplayAddress;
@@ -69,6 +77,8 @@ public class PeopleNearbyActivity extends BaseFragment implements NotificationCe
     private boolean checkingCanCreate;
     private boolean canCreateGroup;
     private AlertDialog loadingDialog;
+
+    private boolean expanded;
 
     private Runnable checkExpiredRunnable;
     private int reqId;
@@ -88,7 +98,7 @@ public class PeopleNearbyActivity extends BaseFragment implements NotificationCe
         @Override
         public void run() {
             if (shortPollRunnable != null) {
-                sendRequest(true);
+                sendRequest(true, 0);
                 AndroidUtilities.cancelRunOnUIThread(shortPollRunnable);
                 AndroidUtilities.runOnUIThread(shortPollRunnable, SHORT_POLL_TIMEOUT);
             }
@@ -99,12 +109,15 @@ public class PeopleNearbyActivity extends BaseFragment implements NotificationCe
     private ArrayList<TLRPC.TL_peerLocated> chats;
 
     private int currentChatId;
+    private boolean showingMe;
 
     private int helpRow;
+    private int helpSectionRow;
     private int usersHeaderRow;
+    private int showMeRow;
     private int usersStartRow;
     private int usersEndRow;
-    private int usersEmptyRow;
+    private int showMoreRow;
     private int usersSectionRow;
     private int chatsHeaderRow;
     private int chatsStartRow;
@@ -125,19 +138,29 @@ public class PeopleNearbyActivity extends BaseFragment implements NotificationCe
         rowCount = 0;
         usersStartRow = -1;
         usersEndRow = -1;
-        usersEmptyRow = -1;
+        showMoreRow = -1;
         chatsStartRow = -1;
         chatsEndRow = -1;
         chatsCreateRow = -1;
+        showMeRow = -1;
 
         helpRow = rowCount++;
+        helpSectionRow = rowCount++;
         usersHeaderRow = rowCount++;
-        if (users.isEmpty()) {
-            usersEmptyRow = rowCount++;
-        } else {
+        showMeRow = rowCount++;
+        if (!users.isEmpty()) {
+            int count;
+            if (expanded) {
+                count = users.size();
+            } else {
+                count = Math.min(5, users.size());
+            }
             usersStartRow = rowCount;
-            rowCount += users.size();
+            rowCount += count;
             usersEndRow = rowCount;
+            if (count != users.size()) {
+                showMoreRow = rowCount++;
+            }
         }
         usersSectionRow = rowCount++;
 
@@ -162,7 +185,7 @@ public class PeopleNearbyActivity extends BaseFragment implements NotificationCe
         getNotificationCenter().addObserver(this, NotificationCenter.newPeopleNearbyAvailable);
         getNotificationCenter().addObserver(this, NotificationCenter.needDeleteDialog);
         checkCanCreateGroup();
-        sendRequest(false);
+        sendRequest(false, 0);
         AndroidUtilities.runOnUIThread(shortPollRunnable, SHORT_POLL_TIMEOUT);
         return true;
     }
@@ -193,8 +216,18 @@ public class PeopleNearbyActivity extends BaseFragment implements NotificationCe
     @Override
     public View createView(Context context) {
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
-        actionBar.setAllowOverlayTitle(true);
+        actionBar.setBackgroundDrawable(null);
+        actionBar.setTitleColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+        actionBar.setItemsColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText), false);
+        actionBar.setItemsBackgroundColor(Theme.getColor(Theme.key_listSelector), false);
+        actionBar.setCastShadows(false);
+        actionBar.setAddToContainer(false);
+        actionBar.setOccupyStatusBar(Build.VERSION.SDK_INT >= 21 && !AndroidUtilities.isTablet());
         actionBar.setTitle(LocaleController.getString("PeopleNearby", R.string.PeopleNearby));
+        actionBar.getTitleTextView().setAlpha(0.0f);
+        if (!AndroidUtilities.isTablet()) {
+            actionBar.showActionModeTop();
+        }
         actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
             @Override
             public void onItemClick(int id) {
@@ -204,24 +237,45 @@ public class PeopleNearbyActivity extends BaseFragment implements NotificationCe
             }
         });
 
-        fragmentView = new FrameLayout(context);
+        fragmentView = new FrameLayout(context) {
+            @Override
+            protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+                FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) actionBarBackground.getLayoutParams();
+                layoutParams.height = ActionBar.getCurrentActionBarHeight() + (actionBar.getOccupyStatusBar() ? AndroidUtilities.statusBarHeight : 0) + AndroidUtilities.dp(3);
+
+                super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+            }
+
+            @Override
+            protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
+                super.onLayout(changed, left, top, right, bottom);
+                checkScroll(false);
+            }
+        };
         fragmentView.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundGray));
         fragmentView.setTag(Theme.key_windowBackgroundGray);
         FrameLayout frameLayout = (FrameLayout) fragmentView;
 
         listView = new RecyclerListView(context);
-        listView.setLayoutManager(new LinearLayoutManager(context, LinearLayoutManager.VERTICAL, false));
+        listView.setGlowColor(0);
+        listView.setLayoutManager(layoutManager = new LinearLayoutManager(context, LinearLayoutManager.VERTICAL, false));
         listView.setAdapter(listViewAdapter = new ListAdapter(context));
         listView.setVerticalScrollbarPosition(LocaleController.isRTL ? RecyclerListView.SCROLLBAR_POSITION_LEFT : RecyclerListView.SCROLLBAR_POSITION_RIGHT);
         frameLayout.addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
 
         listView.setOnItemClickListener((view, position) -> {
+            if (getParentActivity() == null) {
+                return;
+            }
             if (position >= usersStartRow && position < usersEndRow) {
+                ManageChatUserCell cell = (ManageChatUserCell) view;
                 TLRPC.TL_peerLocated peerLocated = users.get(position - usersStartRow);
                 Bundle args1 = new Bundle();
                 args1.putInt("user_id", peerLocated.peer.user_id);
-                ChatActivity chatActivity = new ChatActivity(args1);
-                presentFragment(chatActivity);
+                if (cell.hasAvatarSet()) {
+                    args1.putBoolean("expandPhoto", true);
+                }
+                presentFragment(new ProfileActivity(args1));
             } else if (position >= chatsStartRow && position < chatsEndRow) {
                 TLRPC.TL_peerLocated peerLocated = chats.get(position - chatsStartRow);
                 Bundle args1 = new Bundle();
@@ -242,14 +296,106 @@ public class PeopleNearbyActivity extends BaseFragment implements NotificationCe
                     return;
                 }
                 openGroupCreate();
+            } else if (position == showMeRow) {
+                UserConfig userConfig = getUserConfig();
+                if (showingMe) {
+                    userConfig.sharingMyLocationUntil = 0;
+                    userConfig.saveConfig(false);
+                    sendRequest(false, 2);
+                    updateRows();
+                } else {
+                    AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+                    builder.setTitle(LocaleController.getString("MakeMyselfVisibleTitle", R.string.MakeMyselfVisibleTitle));
+                    builder.setMessage(LocaleController.getString("MakeMyselfVisibleInfo", R.string.MakeMyselfVisibleInfo));
+                    builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), (dialog, which) -> {
+                        userConfig.sharingMyLocationUntil = 0x7fffffff;
+                        userConfig.saveConfig(false);
+                        sendRequest(false, 1);
+                        updateRows();
+                    });
+                    builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+                    showDialog(builder.create());
+                }
+                userConfig.saveConfig(false);
+            } else if (position == showMoreRow) {
+                expanded = true;
+                updateRows();
             }
         });
+        listView.setOnScrollListener(new RecyclerView.OnScrollListener() {
+            @Override
+            public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
+                checkScroll(true);
+            }
+        });
+
+        actionBarBackground = new View(context) {
+
+            private Paint paint = new Paint();
+
+            @Override
+            protected void onDraw(Canvas canvas) {
+                paint.setColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+                int h = getMeasuredHeight() - AndroidUtilities.dp(3);
+                canvas.drawRect(0, 0, getMeasuredWidth(), h, paint);
+                parentLayout.drawHeaderShadow(canvas, h);
+            }
+        };
+        actionBarBackground.setAlpha(0.0f);
+        frameLayout.addView(actionBarBackground, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+        frameLayout.addView(actionBar, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
         undoView = new UndoView(context);
         frameLayout.addView(undoView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.BOTTOM | Gravity.LEFT, 8, 0, 8, 8));
 
         updateRows();
         return fragmentView;
+    }
+
+    private int[] location = new int[2];
+    private void checkScroll(boolean animated) {
+        int first = layoutManager.findFirstVisibleItemPosition();
+        boolean show;
+        if (first != 0) {
+            show = true;
+        } else {
+            RecyclerView.ViewHolder holder = listView.findViewHolderForAdapterPosition(first);
+            if (holder == null) {
+                show = true;
+            } else {
+                HintInnerCell hintInnerCell = (HintInnerCell) holder.itemView;
+                hintInnerCell.titleTextView.getLocationOnScreen(location);
+                show = location[1] + hintInnerCell.titleTextView.getMeasuredHeight() < actionBar.getBottom();
+            }
+        }
+        boolean visible = actionBarBackground.getTag() == null;
+        if (show != visible) {
+            actionBarBackground.setTag(show ? null : 1);
+            if (actionBarAnimator != null) {
+                actionBarAnimator.cancel();
+                actionBarAnimator = null;
+            }
+            if (animated) {
+                actionBarAnimator = new AnimatorSet();
+                actionBarAnimator.playTogether(
+                        ObjectAnimator.ofFloat(actionBarBackground, View.ALPHA, show ? 1.0f : 0.0f),
+                        ObjectAnimator.ofFloat(actionBar.getTitleTextView(), View.ALPHA, show ? 1.0f : 0.0f)
+                );
+                actionBarAnimator.setDuration(150);
+                actionBarAnimator.addListener(new AnimatorListenerAdapter() {
+                    @Override
+                    public void onAnimationEnd(Animator animation) {
+                        if (animation.equals(actionBarAnimator)) {
+                            actionBarAnimator = null;
+                        }
+                    }
+                });
+                actionBarAnimator.start();
+            } else {
+                actionBarBackground.setAlpha(show ? 1.0f : 0.0f);
+                actionBar.getTitleTextView().setAlpha(show ? 1.0f : 0.0f);
+            }
+        }
     }
 
     private void openGroupCreate() {
@@ -324,7 +470,7 @@ public class PeopleNearbyActivity extends BaseFragment implements NotificationCe
         showProgressAnimation.start();
     }
 
-    private void sendRequest(boolean shortpoll) {
+    private void sendRequest(boolean shortpoll, int share) {
         if (!firstLoaded) {
             AndroidUtilities.runOnUIThread(showProgressRunnable = () -> {
                 showLoadingProgress(true);
@@ -342,7 +488,7 @@ public class PeopleNearbyActivity extends BaseFragment implements NotificationCe
             if (BuildVars.DEBUG_VERSION) {
                 FileLog.d("located distance = " + distance);
             }
-            if ((SystemClock.elapsedRealtime() - lastLoadedLocationTime) >= 3000L && lastLoadedLocation.distanceTo(location) > 20) {
+            if (share != 0 || (SystemClock.elapsedRealtime() - lastLoadedLocationTime) >= 3000L && lastLoadedLocation.distanceTo(location) > 20) {
                 if (reqId != 0) {
                     getConnectionsManager().cancelRequest(reqId, true);
                     reqId = 0;
@@ -361,6 +507,10 @@ public class PeopleNearbyActivity extends BaseFragment implements NotificationCe
         req.geo_point = new TLRPC.TL_inputGeoPoint();
         req.geo_point.lat = location.getLatitude();
         req.geo_point._long = location.getLongitude();
+        if (share != 0) {
+            req.flags |= 1;
+            req.self_expires = share == 1 ? 0x7fffffff : 0;
+        }
         reqId = getConnectionsManager().sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
             reqId = 0;
             if (showProgressRunnable != null) {
@@ -368,25 +518,49 @@ public class PeopleNearbyActivity extends BaseFragment implements NotificationCe
                 showProgressRunnable = null;
             }
             showLoadingProgress(false);
-            if (response != null) {
+            if (response != null && share != 2) {
                 TLRPC.Updates updates = (TLRPC.TL_updates) response;
                 getMessagesController().putUsers(updates.users, false);
                 getMessagesController().putChats(updates.chats, false);
                 users.clear();
                 chats.clear();
+                boolean hasSelf = false;
+                UserConfig userConfig = getUserConfig();
+                boolean saveConfig = false;
+                if (userConfig.sharingMyLocationUntil != 0) {
+                    userConfig.lastMyLocationShareTime = (int) (System.currentTimeMillis() / 1000);
+                    saveConfig = true;
+                }
                 for (int a = 0, N = updates.updates.size(); a < N; a++) {
                     TLRPC.Update baseUpdate = updates.updates.get(a);
                     if (baseUpdate instanceof TLRPC.TL_updatePeerLocated) {
                         TLRPC.TL_updatePeerLocated update = (TLRPC.TL_updatePeerLocated) baseUpdate;
                         for (int b = 0, N2 = update.peers.size(); b < N2; b++) {
-                            TLRPC.TL_peerLocated peerLocated = update.peers.get(b);
-                            if (peerLocated.peer instanceof TLRPC.TL_peerUser) {
-                                users.add(peerLocated);
-                            } else {
-                                chats.add(peerLocated);
+                            TLRPC.PeerLocated object = update.peers.get(b);
+                            if (object instanceof TLRPC.TL_peerLocated) {
+                                TLRPC.TL_peerLocated peerLocated = (TLRPC.TL_peerLocated) object;
+                                if (peerLocated.peer instanceof TLRPC.TL_peerUser) {
+                                    users.add(peerLocated);
+                                } else {
+                                    chats.add(peerLocated);
+                                }
+                            } else if (object instanceof TLRPC.TL_peerSelfLocated) {
+                                hasSelf = true;
+                                TLRPC.TL_peerSelfLocated peerSelfLocated = (TLRPC.TL_peerSelfLocated) object;
+                                if (userConfig.sharingMyLocationUntil != peerSelfLocated.expires) {
+                                    userConfig.sharingMyLocationUntil = peerSelfLocated.expires;
+                                    saveConfig = true;
+                                }
                             }
                         }
                     }
+                }
+                if (!hasSelf && userConfig.sharingMyLocationUntil != 0) {
+                    userConfig.sharingMyLocationUntil = 0;
+                    saveConfig = true;
+                }
+                if (saveConfig) {
+                    userConfig.saveConfig(false);
                 }
                 checkForExpiredLocations(true);
                 updateRows();
@@ -453,27 +627,30 @@ public class PeopleNearbyActivity extends BaseFragment implements NotificationCe
     @Override
     public void didReceivedNotification(int id, int account, Object... args) {
         if (id == NotificationCenter.newLocationAvailable) {
-            sendRequest(false);
+            sendRequest(false, 0);
         } else if (id == NotificationCenter.newPeopleNearbyAvailable) {
             TLRPC.TL_updatePeerLocated update = (TLRPC.TL_updatePeerLocated) args[0];
             for (int b = 0, N2 = update.peers.size(); b < N2; b++) {
-                TLRPC.TL_peerLocated peerLocated = update.peers.get(b);
-                boolean found = false;
-                ArrayList<TLRPC.TL_peerLocated> arrayList;
-                if (peerLocated.peer instanceof TLRPC.TL_peerUser) {
-                    arrayList = users;
-                } else {
-                    arrayList = chats;
-                }
-                for (int a = 0, N = arrayList.size(); a < N; a++) {
-                    TLRPC.TL_peerLocated old = arrayList.get(a);
-                    if (old.peer.user_id != 0 && old.peer.user_id == peerLocated.peer.user_id || old.peer.chat_id != 0 && old.peer.chat_id == peerLocated.peer.chat_id || old.peer.channel_id != 0 && old.peer.channel_id == peerLocated.peer.channel_id) {
-                        arrayList.set(a, peerLocated);
-                        found = true;
+                TLRPC.PeerLocated object = update.peers.get(b);
+                if (object instanceof TLRPC.TL_peerLocated) {
+                    TLRPC.TL_peerLocated peerLocated = (TLRPC.TL_peerLocated) object;
+                    boolean found = false;
+                    ArrayList<TLRPC.TL_peerLocated> arrayList;
+                    if (peerLocated.peer instanceof TLRPC.TL_peerUser) {
+                        arrayList = users;
+                    } else {
+                        arrayList = chats;
                     }
-                }
-                if (!found) {
-                    arrayList.add(peerLocated);
+                    for (int a = 0, N = arrayList.size(); a < N; a++) {
+                        TLRPC.TL_peerLocated old = arrayList.get(a);
+                        if (old.peer.user_id != 0 && old.peer.user_id == peerLocated.peer.user_id || old.peer.chat_id != 0 && old.peer.chat_id == peerLocated.peer.chat_id || old.peer.channel_id != 0 && old.peer.channel_id == peerLocated.peer.channel_id) {
+                            arrayList.set(a, peerLocated);
+                            found = true;
+                        }
+                    }
+                    if (!found) {
+                        arrayList.add(peerLocated);
+                    }
                 }
             }
             checkForExpiredLocations(true);
@@ -559,26 +736,37 @@ public class PeopleNearbyActivity extends BaseFragment implements NotificationCe
         }
     }
 
+    @SuppressWarnings("FieldCanBeLocal")
     public class HintInnerCell extends FrameLayout {
 
         private ImageView imageView;
+        private TextView titleTextView;
         private TextView messageTextView;
 
         public HintInnerCell(Context context) {
             super(context);
 
+            int top = (int) ((ActionBar.getCurrentActionBarHeight() + (actionBar.getOccupyStatusBar() ? AndroidUtilities.statusBarHeight : 0)) / AndroidUtilities.density) - 44;
+
             imageView = new ImageView(context);
             imageView.setBackgroundDrawable(Theme.createCircleDrawable(AndroidUtilities.dp(74), Theme.getColor(Theme.key_chats_archiveBackground)));
             imageView.setImageDrawable(new ShareLocationDrawable(context, 2));
             imageView.setScaleType(ImageView.ScaleType.CENTER);
-            addView(imageView, LayoutHelper.createFrame(74, 74, Gravity.TOP | Gravity.CENTER_HORIZONTAL, 0, 27, 0, 0));
+            addView(imageView, LayoutHelper.createFrame(74, 74, Gravity.TOP | Gravity.CENTER_HORIZONTAL, 0, top + 27, 0, 0));
+
+            titleTextView = new TextView(context);
+            titleTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+            titleTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 24);
+            titleTextView.setGravity(Gravity.CENTER);
+            titleTextView.setText(AndroidUtilities.replaceTags(LocaleController.formatString("PeopleNearby", R.string.PeopleNearby)));
+            addView(titleTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.LEFT, 52, top + 120, 52, 27));
 
             messageTextView = new TextView(context);
-            messageTextView.setTextColor(Theme.getColor(Theme.key_chats_message));
-            messageTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+            messageTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
+            messageTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
             messageTextView.setGravity(Gravity.CENTER);
-            messageTextView.setText(AndroidUtilities.replaceTags(LocaleController.formatString("PeopleNearbyInfo", R.string.PeopleNearbyInfo)));
-            addView(messageTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.LEFT, 52, 125, 52, 27));
+            messageTextView.setText(AndroidUtilities.replaceTags(LocaleController.formatString("PeopleNearbyInfo2", R.string.PeopleNearbyInfo2)));
+            addView(messageTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.LEFT, 40, top + 161, 40, 27));
         }
     }
 
@@ -610,7 +798,7 @@ public class PeopleNearbyActivity extends BaseFragment implements NotificationCe
                     view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
                     break;
                 case 1:
-                    view = new ShadowSectionCell(mContext, 22);
+                    view = new ShadowSectionCell(mContext);
                     break;
                 case 2:
                     view = new ManageChatTextCell(mContext);
@@ -637,6 +825,7 @@ public class PeopleNearbyActivity extends BaseFragment implements NotificationCe
                 case 5:
                 default:
                     view = new HintInnerCell(mContext);
+                    view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
                     break;
             }
             view.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
@@ -666,7 +855,7 @@ public class PeopleNearbyActivity extends BaseFragment implements NotificationCe
                         TLRPC.TL_peerLocated peerLocated = users.get(index);
                         TLRPC.User user = getMessagesController().getUser(peerLocated.peer.user_id);
                         if (user != null) {
-                            userCell.setData(user, null, formatDistance(peerLocated), index != users.size() - 1);
+                            userCell.setData(user, null, formatDistance(peerLocated), showMoreRow != -1 || position != usersEndRow - 1);
                         }
                     } else if (position >= chatsStartRow && position < chatsEndRow) {
                         int index = position - chatsStartRow;
@@ -693,6 +882,8 @@ public class PeopleNearbyActivity extends BaseFragment implements NotificationCe
                         privacyCell.setBackgroundDrawable(Theme.getThemedDrawable(mContext, R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow));
                     } else if (position == chatsSectionRow) {
                         privacyCell.setBackgroundDrawable(Theme.getThemedDrawable(mContext, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
+                    } else if (position == helpSectionRow) {
+                        privacyCell.setBackgroundDrawable(Theme.getThemedDrawable(mContext, R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow));
                     }
                     break;
                 case 2:
@@ -700,6 +891,15 @@ public class PeopleNearbyActivity extends BaseFragment implements NotificationCe
                     actionCell.setColors(Theme.key_windowBackgroundWhiteBlueIcon, Theme.key_windowBackgroundWhiteBlueButton);
                     if (position == chatsCreateRow) {
                         actionCell.setText(LocaleController.getString("NearbyCreateGroup", R.string.NearbyCreateGroup), null, R.drawable.groups_create, chatsStartRow != -1);
+                    } else if (position == showMeRow) {
+                        if (showingMe = (getUserConfig().sharingMyLocationUntil > getConnectionsManager().getCurrentTime())) {
+                            actionCell.setText(LocaleController.getString("StopShowingMe", R.string.StopShowingMe), null, R.drawable.actions_nearby_off, chatsStartRow != -1);
+                            actionCell.setColors(Theme.key_windowBackgroundWhiteRedText5, Theme.key_windowBackgroundWhiteRedText5);
+                        } else {
+                            actionCell.setText(LocaleController.getString("MakeMyselfVisible", R.string.MakeMyselfVisible), null, R.drawable.actions_nearby_on, usersStartRow != -1);
+                        }
+                    } else if (position == showMoreRow) {
+                        actionCell.setText(LocaleController.formatPluralString("ShowVotes", users.size() - 5), null, R.drawable.arrow_more, false);
                     }
                     break;
                 case 3:
@@ -708,12 +908,6 @@ public class PeopleNearbyActivity extends BaseFragment implements NotificationCe
                         headerCell.setText(LocaleController.getString("PeopleNearbyHeader", R.string.PeopleNearbyHeader));
                     } else if (position == chatsHeaderRow) {
                         headerCell.setText(LocaleController.getString("ChatsNearbyHeader", R.string.ChatsNearbyHeader));
-                    }
-                    break;
-                case 4:
-                    TextView textView = (TextView) holder.itemView;
-                    if (position == usersEmptyRow) {
-                        textView.setText(AndroidUtilities.replaceTags(LocaleController.getString("PeopleNearbyEmpty", R.string.PeopleNearbyEmpty)));
                     }
                     break;
             }
@@ -730,14 +924,12 @@ public class PeopleNearbyActivity extends BaseFragment implements NotificationCe
         public int getItemViewType(int position) {
             if (position == helpRow) {
                 return 5;
-            } else if (position == chatsCreateRow) {
+            } else if (position == chatsCreateRow || position == showMeRow || position == showMoreRow) {
                 return 2;
             } else if (position == usersHeaderRow || position == chatsHeaderRow) {
                 return 3;
-            } else if (position == usersSectionRow || position == chatsSectionRow) {
+            } else if (position == usersSectionRow || position == chatsSectionRow || position == helpSectionRow) {
                 return 1;
-            } else if (position == usersEmptyRow) {
-                return 4;
             }
             return 0;
         }
@@ -758,15 +950,14 @@ public class PeopleNearbyActivity extends BaseFragment implements NotificationCe
         };
 
         return new ThemeDescription[]{
-                new ThemeDescription(listView, ThemeDescription.FLAG_CELLBACKGROUNDCOLOR, new Class[]{ManageChatUserCell.class, ManageChatTextCell.class, HeaderCell.class, TextView.class}, null, null, null, Theme.key_windowBackgroundWhite),
+                new ThemeDescription(listView, ThemeDescription.FLAG_CELLBACKGROUNDCOLOR, new Class[]{ManageChatUserCell.class, ManageChatTextCell.class, HeaderCell.class, TextView.class, HintInnerCell.class}, null, null, null, Theme.key_windowBackgroundWhite),
                 new ThemeDescription(fragmentView, ThemeDescription.FLAG_BACKGROUND | ThemeDescription.FLAG_CHECKTAG, null, null, null, null, Theme.key_windowBackgroundGray),
                 new ThemeDescription(fragmentView, ThemeDescription.FLAG_BACKGROUND | ThemeDescription.FLAG_CHECKTAG, null, null, null, null, Theme.key_windowBackgroundWhite),
 
-                new ThemeDescription(actionBar, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_actionBarDefault),
-                new ThemeDescription(listView, ThemeDescription.FLAG_LISTGLOWCOLOR, null, null, null, null, Theme.key_actionBarDefault),
-                new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_ITEMSCOLOR, null, null, null, null, Theme.key_actionBarDefaultIcon),
-                new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_TITLECOLOR, null, null, null, null, Theme.key_actionBarDefaultTitle),
-                new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_SELECTORCOLOR, null, null, null, null, Theme.key_actionBarDefaultSelector),
+                new ThemeDescription(actionBarBackground, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_windowBackgroundWhite),
+                new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_ITEMSCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteBlackText),
+                new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_TITLECOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteBlackText),
+                new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_SELECTORCOLOR, null, null, null, null, Theme.key_listSelector),
 
                 new ThemeDescription(listView, ThemeDescription.FLAG_SELECTOR, null, null, null, null, Theme.key_listSelector),
 
@@ -796,6 +987,8 @@ public class PeopleNearbyActivity extends BaseFragment implements NotificationCe
                 new ThemeDescription(listView, ThemeDescription.FLAG_CHECKTAG, new Class[]{ManageChatTextCell.class}, new String[]{"imageView"}, null, null, null, Theme.key_windowBackgroundWhiteGrayIcon),
                 new ThemeDescription(listView, ThemeDescription.FLAG_CHECKTAG, new Class[]{ManageChatTextCell.class}, new String[]{"imageView"}, null, null, null, Theme.key_windowBackgroundWhiteBlueButton),
                 new ThemeDescription(listView, ThemeDescription.FLAG_CHECKTAG, new Class[]{ManageChatTextCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlueIcon),
+                new ThemeDescription(listView, ThemeDescription.FLAG_CHECKTAG, new Class[]{ManageChatTextCell.class}, new String[]{"imageView"}, null, null, null, Theme.key_windowBackgroundWhiteRedText5),
+                new ThemeDescription(listView, ThemeDescription.FLAG_CHECKTAG, new Class[]{ManageChatTextCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteRedText5),
 
                 new ThemeDescription(undoView, ThemeDescription.FLAG_BACKGROUNDFILTER, null, null, null, null, Theme.key_undo_background),
                 new ThemeDescription(undoView, 0, new Class[]{UndoView.class}, new String[]{"undoImageView"}, null, null, null, Theme.key_undo_cancelColor),

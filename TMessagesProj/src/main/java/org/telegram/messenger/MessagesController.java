@@ -3043,12 +3043,18 @@ public class MessagesController extends BaseController implements NotificationCe
 
         if (first) {
             boolean isProxyDialog = false;
+            boolean emptyMax = max_id_delete == 0;
+            if (emptyMax) {
+                int max = getMessagesStorage().getDialogMaxMessageId(did);
+                if (max > 0) {
+                    max_id_delete = Math.max(max, max_id_delete);
+                }
+            }
             getMessagesStorage().deleteDialog(did, onlyHistory);
             TLRPC.Dialog dialog = dialogs_dict.get(did);
             if (onlyHistory == 0 || onlyHistory == 3) {
                 getNotificationsController().deleteNotificationChannel(did);
             }
-            boolean emptyMax = max_id_delete == 0;
             if (dialog != null) {
                 if (emptyMax) {
                     max_id_delete = Math.max(0, dialog.top_message);
@@ -7211,10 +7217,12 @@ public class MessagesController extends BaseController implements NotificationCe
         getContactsController().deleteUnknownAppAccounts();
     }
 
+    private boolean gettingAppChangelog;
     public void generateUpdateMessage() {
-        if (BuildVars.DEBUG_VERSION || SharedConfig.lastUpdateVersion == null || SharedConfig.lastUpdateVersion.equals(BuildVars.BUILD_VERSION_STRING)) {
+        if (gettingAppChangelog || BuildVars.DEBUG_VERSION || SharedConfig.lastUpdateVersion == null || SharedConfig.lastUpdateVersion.equals(BuildVars.BUILD_VERSION_STRING)) {
             return;
         }
+        gettingAppChangelog = true;
         TLRPC.TL_help_getAppChangelog req = new TLRPC.TL_help_getAppChangelog();
         req.prev_app_version = SharedConfig.lastUpdateVersion;
         getConnectionsManager().sendRequest(req, (response, error) -> {

@@ -493,7 +493,9 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                                 LocaleController.getString("DebugMenuCallSettings", R.string.DebugMenuCallSettings),
                                 null,
                                 BuildVars.DEBUG_PRIVATE_VERSION ? "Check for app updates" : null,
-                                LocaleController.getString("DebugMenuReadAllDialogs", R.string.DebugMenuReadAllDialogs)
+                                LocaleController.getString("DebugMenuReadAllDialogs", R.string.DebugMenuReadAllDialogs),
+                                SharedConfig.pauseMusicOnRecord ? LocaleController.getString("DebugMenuDisablePauseMusic", R.string.DebugMenuDisablePauseMusic) : LocaleController.getString("DebugMenuEnablePauseMusic", R.string.DebugMenuEnablePauseMusic),
+                                BuildVars.DEBUG_VERSION && !AndroidUtilities.isTablet() ? (SharedConfig.smoothKeyboard ? LocaleController.getString("DebugMenuDisableSmoothKeyboard", R.string.DebugMenuDisableSmoothKeyboard) : LocaleController.getString("DebugMenuEnableSmoothKeyboard", R.string.DebugMenuEnableSmoothKeyboard)) : null
                         };
                         builder.setItems(items, (dialog, which) -> {
                             if (which == 0) {
@@ -526,6 +528,13 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                                 ((LaunchActivity) getParentActivity()).checkAppUpdate(true);
                             } else if (which == 10) {
                                 MessagesStorage.getInstance(currentAccount).readAllDialogs(-1);
+                            } else if (which == 11) {
+                                SharedConfig.togglePauseMusicOnRecord();
+                            } else if (which == 12) {
+                                SharedConfig.toggleSmoothKeyboard();
+                                if (SharedConfig.smoothKeyboard && getParentActivity() != null) {
+                                    getParentActivity().getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_PAN);
+                                }
                             }
                         });
                         builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);

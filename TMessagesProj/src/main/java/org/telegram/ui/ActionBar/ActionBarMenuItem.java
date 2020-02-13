@@ -39,6 +39,7 @@ import android.widget.TextView;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
+import org.telegram.messenger.SharedConfig;
 import org.telegram.ui.Components.CloseProgressDrawable2;
 import org.telegram.ui.Components.EditTextBoldCursor;
 import org.telegram.ui.Components.LayoutHelper;
@@ -72,6 +73,10 @@ public class ActionBarMenuItem extends FrameLayout {
 
         public Animator getCustomToggleTransition() {
             return null;
+        }
+
+        public void onLayout(int l, int t, int r, int b) {
+
         }
     }
 
@@ -111,7 +116,7 @@ public class ActionBarMenuItem extends FrameLayout {
     private CloseProgressDrawable2 progressDrawable;
     private int additionalYOffset;
     private int additionalXOffset;
-    private boolean longClickEnabled = true;
+    private boolean longClickEnabled;
     private boolean animateClear = true;
     private boolean clearsTextOnSearchCollapse = true;
     private boolean measurePopup = true;
@@ -564,6 +569,10 @@ public class ActionBarMenuItem extends FrameLayout {
         iconView.setImageDrawable(drawable);
     }
 
+    public ImageView getIconView() {
+        return iconView;
+    }
+
     public void setIcon(int resId) {
         if (iconView == null) {
             return;
@@ -898,6 +907,9 @@ public class ActionBarMenuItem extends FrameLayout {
         if (popupWindow != null && popupWindow.isShowing()) {
             updateOrShowPopup(false, true);
         }
+        if (listener != null) {
+            listener.onLayout(left, top, right, bottom);
+        }
     }
 
     public void setAdditionalYOffset(int value) {
@@ -912,7 +924,7 @@ public class ActionBarMenuItem extends FrameLayout {
         int offsetY;
 
         if (parentMenu != null) {
-            offsetY = -parentMenu.parentActionBar.getMeasuredHeight() + parentMenu.getTop() + parentMenu.getPaddingTop();
+            offsetY = -parentMenu.parentActionBar.getMeasuredHeight() + parentMenu.getTop() + parentMenu.getPaddingTop() - (int) parentMenu.parentActionBar.getTranslationY();
         } else {
             float scaleY = getScaleY();
             offsetY = -(int) (getMeasuredHeight() * scaleY - (subMenuOpenSide != 2 ? getTranslationY() : 0) / scaleY) + additionalYOffset;
@@ -926,11 +938,21 @@ public class ActionBarMenuItem extends FrameLayout {
         if (parentMenu != null) {
             View parent = parentMenu.parentActionBar;
             if (subMenuOpenSide == 0) {
-                if (show) {
-                    popupWindow.showAsDropDown(parent, getLeft() + parentMenu.getLeft() + getMeasuredWidth() - popupLayout.getMeasuredWidth() + (int) getTranslationX(), offsetY);
-                }
-                if (update) {
-                    popupWindow.update(parent, getLeft() + parentMenu.getLeft() + getMeasuredWidth() - popupLayout.getMeasuredWidth() + (int) getTranslationX(), offsetY, -1, -1);
+                if (SharedConfig.smoothKeyboard) {
+                    getLocationOnScreen(location);
+                    if (show) {
+                        popupWindow.showAtLocation(parent, Gravity.LEFT | Gravity.TOP, location[0] + getMeasuredWidth() - popupLayout.getMeasuredWidth() + (int) getTranslationX(), offsetY);
+                    }
+                    if (update) {
+                        popupWindow.update(location[0] + getMeasuredWidth() - popupLayout.getMeasuredWidth() + (int) getTranslationX(), offsetY, -1, -1);
+                    }
+                } else {
+                    if (show) {
+                        popupWindow.showAsDropDown(parent, getLeft() + parentMenu.getLeft() + getMeasuredWidth() - popupLayout.getMeasuredWidth() + (int) getTranslationX(), offsetY);
+                    }
+                    if (update) {
+                        popupWindow.update(parent, getLeft() + parentMenu.getLeft() + getMeasuredWidth() - popupLayout.getMeasuredWidth() + (int) getTranslationX(), offsetY, -1, -1);
+                    }
                 }
             } else {
                 if (show) {

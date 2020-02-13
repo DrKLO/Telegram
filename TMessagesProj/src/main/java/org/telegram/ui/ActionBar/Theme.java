@@ -125,15 +125,25 @@ public class Theme {
         private boolean isSelected;
         private Path path;
 
+        private Rect backupRect = new Rect();
+
         private boolean isOut;
 
         private int topY;
         private boolean isTopNear;
         private boolean isBottomNear;
 
-        private int[] currentShadowDrawableRadius = new int[4];
+        private int[] currentShadowDrawableRadius = new int[]{-1, -1, -1, -1};
         private Drawable[] shadowDrawable = new Drawable[4];
-        private int shadowDrawableColor = 0xffffffff;
+        private int[] shadowDrawableColor = new int[]{0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff};
+
+        private int[][] currentBackgroundDrawableRadius = new int[][]{
+                {-1, -1, -1, -1},
+                {-1, -1, -1, -1}};
+        private Drawable[][] backgroundDrawable = new Drawable[2][4];
+        private int[][] backgroundDrawableColor = new int[][]{
+                {0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff},
+                {0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff}};
 
         public static final int TYPE_TEXT = 0;
         public static final int TYPE_MEDIA = 1;
@@ -216,6 +226,55 @@ public class Theme {
             return paint;
         }
 
+        public Drawable[] getShadowDrawables() {
+            return shadowDrawable;
+        }
+
+        public Drawable getBackgroundDrawable() {
+            int newRad = AndroidUtilities.dp(SharedConfig.bubbleRadius);
+            int idx;
+            if (isTopNear && isBottomNear) {
+                idx = 3;
+            } else if (isTopNear) {
+                idx = 2;
+            } else if (isBottomNear) {
+                idx = 1;
+            } else {
+                idx = 0;
+            }
+            int idx2 = isSelected ? 1 : 0;
+            if (currentBackgroundDrawableRadius[idx2][idx] != newRad) {
+                currentBackgroundDrawableRadius[idx2][idx] = newRad;
+                try {
+                    Bitmap bitmap = Bitmap.createBitmap(dp(50), dp(40), Bitmap.Config.ARGB_8888);
+                    Canvas canvas = new Canvas(bitmap);
+
+                    Paint shadowPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+                    shadowPaint.setColor(0xffffffff);
+                    backupRect.set(getBounds());
+                    setBounds(0, 0, bitmap.getWidth(), bitmap.getHeight());
+                    draw(canvas, shadowPaint);
+
+                    backgroundDrawable[idx2][idx] = new NinePatchDrawable(bitmap, getByteBuffer(bitmap.getWidth() / 2 - 1, bitmap.getWidth() / 2 + 1, bitmap.getHeight() / 2 - 1, bitmap.getHeight() / 2 + 1).array(), new Rect(), null);
+                    backgroundDrawableColor[idx2][idx] = 0;
+                    setBounds(backupRect);
+                } catch (Throwable ignore) {
+
+                }
+            }
+            int color;
+            if (isSelected) {
+                color = getColor(isOut ? key_chat_outBubbleSelected : key_chat_inBubbleSelected);
+            } else {
+                color = getColor(isOut ? key_chat_outBubble : key_chat_inBubble);
+            }
+            if (backgroundDrawable[idx2][idx] != null && backgroundDrawableColor[idx2][idx] != color) {
+                backgroundDrawable[idx2][idx].setColorFilter(new PorterDuffColorFilter(color, PorterDuff.Mode.MULTIPLY));
+                backgroundDrawableColor[idx2][idx] = color;
+            }
+            return backgroundDrawable[idx2][idx];
+        }
+
         public Drawable getShadowDrawable() {
             int newRad = AndroidUtilities.dp(SharedConfig.bubbleRadius);
             int idx;
@@ -235,7 +294,10 @@ public class Theme {
                     Canvas canvas = new Canvas(bitmap);
 
                     Paint shadowPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-                    shadowPaint.setColor(0x155F6569);
+
+                    LinearGradient gradientShader = new LinearGradient(0, 0, 0, dp(40), new int[]{0x155F6569, 0x295F6569}, null, Shader.TileMode.CLAMP);
+                    shadowPaint.setShader(gradientShader);
+
                     shadowPaint.setShadowLayer(2, 0, 1, 0xffffffff);
                     if (AndroidUtilities.density > 1) {
                         setBounds(-1, -1, bitmap.getWidth() + 1, bitmap.getHeight() + 1);
@@ -253,15 +315,15 @@ public class Theme {
                     }
 
                     shadowDrawable[idx] = new NinePatchDrawable(bitmap, getByteBuffer(bitmap.getWidth() / 2 - 1, bitmap.getWidth() / 2 + 1, bitmap.getHeight() / 2 - 1, bitmap.getHeight() / 2 + 1).array(), new Rect(), null);
-                    shadowDrawableColor = 0;
+                    shadowDrawableColor[idx] = 0;
                 } catch (Throwable ignore) {
 
                 }
             }
             int color = getColor(isOut ? key_chat_outBubbleShadow : key_chat_inBubbleShadow);
-            if (shadowDrawable[idx] != null && shadowDrawableColor != color) {
+            if (shadowDrawable[idx] != null && shadowDrawableColor[idx] != color) {
                 shadowDrawable[idx].setColorFilter(new PorterDuffColorFilter(color, PorterDuff.Mode.MULTIPLY));
-                shadowDrawableColor = color;
+                shadowDrawableColor[idx] = color;
             }
             return shadowDrawable[idx];
         }
@@ -309,6 +371,14 @@ public class Theme {
 
         public void draw(Canvas canvas, Paint paintToUse) {
             Rect bounds = getBounds();
+            if (paintToUse == null && gradientShader == null) {
+                Drawable background = getBackgroundDrawable();
+                if (background != null) {
+                    background.setBounds(bounds);
+                    background.draw(canvas);
+                    return;
+                }
+            }
             int padding = dp(2);
             int rad;
             int nearRad;
@@ -1825,7 +1895,7 @@ public class Theme {
     public static int serviceSelectedMessageColorBackup;
     private static int serviceMessage2Color;
     private static int serviceSelectedMessage2Color;
-    private static int currentColor;
+    public static int currentColor;
     private static int currentSelectedColor;
     private static Drawable wallpaper;
     private static Drawable themedWallpaper;
@@ -2602,6 +2672,11 @@ public class Theme {
     public static final String key_profile_verifiedCheck = "profile_verifiedCheck";
     public static final String key_profile_status = "profile_status";
 
+    public static final String key_profile_tabText = "profile_tabText";
+    public static final String key_profile_tabSelectedText = "profile_tabSelectedText";
+    public static final String key_profile_tabSelectedLine = "profile_tabSelectedLine";
+    public static final String key_profile_tabSelector = "profile_tabSelector";
+
     public static final String key_sharedMedia_startStopLoadIcon = "sharedMedia_startStopLoadIcon";
     public static final String key_sharedMedia_linkPlaceholder = "sharedMedia_linkPlaceholder";
     public static final String key_sharedMedia_linkPlaceholderText = "sharedMedia_linkPlaceholderText";
@@ -3271,6 +3346,11 @@ public class Theme {
         defaultColors.put(key_profile_title, 0xffffffff);
         defaultColors.put(key_profile_status, 0xffd7eafa);
 
+        defaultColors.put(key_profile_tabText, 0xff878c90);
+        defaultColors.put(key_profile_tabSelectedText, 0xff3a95d5);
+        defaultColors.put(key_profile_tabSelectedLine, 0xff4fa6e9);
+        defaultColors.put(key_profile_tabSelector, 0x0f000000);
+
         defaultColors.put(key_player_actionBar, 0xffffffff);
         defaultColors.put(key_player_actionBarSelector, 0x0f000000);
         defaultColors.put(key_player_actionBarTitle, 0xff2f3438);
@@ -3516,6 +3596,11 @@ public class Theme {
         fallbackKeys.put(key_chat_outPollCorrectAnswer, key_chat_attachLocationBackground);
         fallbackKeys.put(key_chat_inPollWrongAnswer, key_chat_attachAudioBackground);
         fallbackKeys.put(key_chat_outPollWrongAnswer, key_chat_attachAudioBackground);
+
+        fallbackKeys.put(key_profile_tabText, key_windowBackgroundWhiteGrayText);
+        fallbackKeys.put(key_profile_tabSelectedText, key_windowBackgroundWhiteBlueHeader);
+        fallbackKeys.put(key_profile_tabSelectedLine, key_windowBackgroundWhiteBlueHeader);
+        fallbackKeys.put(key_profile_tabSelector, key_listSelector);
 
         themeAccentExclusionKeys.addAll(Arrays.asList(keys_avatar_background));
         themeAccentExclusionKeys.addAll(Arrays.asList(keys_avatar_nameInMessage));
@@ -4124,6 +4209,8 @@ public class Theme {
         int eventType = -1;
         if (monthOfYear == 11 && dayOfMonth >= 24 && dayOfMonth <= 31 || monthOfYear == 0 && dayOfMonth == 1) {
             eventType = 0;
+        } else if (monthOfYear == 1 && dayOfMonth == 14) {
+            eventType = 1;
         }
         return eventType;
     }

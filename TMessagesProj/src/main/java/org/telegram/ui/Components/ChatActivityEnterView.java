@@ -26,6 +26,7 @@ import android.graphics.Paint;
 import android.graphics.PixelFormat;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
+import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.media.AudioManager;
@@ -1014,6 +1015,12 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                 if (parentFragment != null) {
                     parentFragment.extendActionMode(menu);
                 }
+            }
+
+            @Override
+            public boolean requestRectangleOnScreen(Rect rectangle) {
+                rectangle.bottom += AndroidUtilities.dp(1000);
+                return super.requestRectangleOnScreen(rectangle);
             }
         };
         messageEditText.setDelegate(() -> {

@@ -18,14 +18,14 @@ import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
 import android.os.Build;
 import android.view.View;
-import android.widget.FrameLayout;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarLayout;
+import org.telegram.ui.ActionBar.AdjustPanFrameLayout;
 import org.telegram.ui.ActionBar.Theme;
 
-public class SizeNotifierFrameLayout extends FrameLayout {
+public class SizeNotifierFrameLayout extends AdjustPanFrameLayout {
 
     private Rect rect = new Rect();
     private Drawable backgroundDrawable;
@@ -37,21 +37,24 @@ public class SizeNotifierFrameLayout extends FrameLayout {
     private float translationX;
     private float translationY;
     private float parallaxScale = 1.0f;
+    private int backgroundTranslationY;
     private boolean paused = true;
     private Drawable oldBackgroundDrawable;
     private ActionBarLayout parentLayout;
+    private boolean useSmoothKeyboard;
 
     public interface SizeNotifierFrameLayoutDelegate {
         void onSizeChanged(int keyboardHeight, boolean isWidthGreater);
     }
 
-    public SizeNotifierFrameLayout(Context context) {
-        this(context, null);
+    public SizeNotifierFrameLayout(Context context, boolean smoothKeyboard) {
+        this(context, smoothKeyboard, null);
     }
 
-    public SizeNotifierFrameLayout(Context context, ActionBarLayout layout) {
+    public SizeNotifierFrameLayout(Context context, boolean smoothKeyboard, ActionBarLayout layout) {
         super(context);
         setWillNotDraw(false);
+        useSmoothKeyboard = smoothKeyboard;
         parentLayout = layout;
     }
 
@@ -143,6 +146,10 @@ public class SizeNotifierFrameLayout extends FrameLayout {
         bottomClip = value;
     }
 
+    public void setBackgroundTranslation(int translation) {
+        backgroundTranslationY = translation;
+    }
+
     public int getHeightWithKeyboard() {
         return getKeyboardHeight() + getMeasuredHeight();
     }
@@ -153,6 +160,7 @@ public class SizeNotifierFrameLayout extends FrameLayout {
             super.onDraw(canvas);
             return;
         }
+        int kbHeight = useSmoothKeyboard ? 0 : keyboardHeight;
         Drawable newDrawable = Theme.getCachedWallpaperNonBlocking();
         if (newDrawable != backgroundDrawable && newDrawable != null) {
             if (Theme.isAnimatingColor()) {
@@ -186,7 +194,7 @@ public class SizeNotifierFrameLayout extends FrameLayout {
                     canvas.save();
                     canvas.clipRect(0, 0, getMeasuredWidth(), getMeasuredHeight() - bottomClip);
                 }
-                drawable.setBounds(0, 0, getMeasuredWidth(), getMeasuredHeight() + keyboardHeight);
+                drawable.setBounds(0, backgroundTranslationY, getMeasuredWidth(), backgroundTranslationY + getMeasuredHeight() + kbHeight);
                 drawable.draw(canvas);
                 if (bottomClip != 0) {
                     canvas.restore();
@@ -204,12 +212,12 @@ public class SizeNotifierFrameLayout extends FrameLayout {
                     int actionBarHeight = (isActionBarVisible() ? ActionBar.getCurrentActionBarHeight() : 0) + (Build.VERSION.SDK_INT >= 21 && occupyStatusBar ? AndroidUtilities.statusBarHeight : 0);
                     int viewHeight = getMeasuredHeight() - actionBarHeight;
                     float scaleX = (float) getMeasuredWidth() / (float) drawable.getIntrinsicWidth();
-                    float scaleY = (float) (viewHeight + keyboardHeight) / (float) drawable.getIntrinsicHeight();
+                    float scaleY = (float) (viewHeight + kbHeight) / (float) drawable.getIntrinsicHeight();
                     float scale = scaleX < scaleY ? scaleY : scaleX;
                     int width = (int) Math.ceil(drawable.getIntrinsicWidth() * scale * parallaxScale);
                     int height = (int) Math.ceil(drawable.getIntrinsicHeight() * scale * parallaxScale);
                     int x = (getMeasuredWidth() - width) / 2 + (int) translationX;
-                    int y = (viewHeight - height + keyboardHeight) / 2 + actionBarHeight + (int) translationY;
+                    int y = backgroundTranslationY + (viewHeight - height + kbHeight) / 2 + actionBarHeight + (int) translationY;
                     canvas.save();
                     canvas.clipRect(0, actionBarHeight, width, getMeasuredHeight() - bottomClip);
                     drawable.setBounds(x, y, x + width, y + height);

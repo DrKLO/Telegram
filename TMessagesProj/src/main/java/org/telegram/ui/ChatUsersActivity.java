@@ -960,6 +960,11 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
             emptyView.showTextView();
         }
         updateRows();
+
+        if (needOpenSearch) {
+            searchItem.openSearch(false);
+        }
+
         return fragmentView;
     }
     
@@ -1941,7 +1946,6 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
     public void onResume() {
         super.onResume();
         AndroidUtilities.requestAdjustResize(getParentActivity(), classGuid);
-        //AndroidUtilities.removeAdjustResize(getParentActivity(), classGuid);
         if (listViewAdapter != null) {
             listViewAdapter.notifyDataSetChanged();
         }
@@ -1965,7 +1969,8 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
     @Override
     protected void onTransitionAnimationEnd(boolean isOpen, boolean backward) {
         if (isOpen && !backward && needOpenSearch) {
-            searchItem.openSearch(true);
+            searchItem.getSearchField().requestFocus();
+            AndroidUtilities.showKeyboard(searchItem.getSearchField());
         }
     }
 

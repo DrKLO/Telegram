@@ -219,7 +219,7 @@
     <string name="ArchiveHintText2">Stille chats blijven gearchiveerd bij nieuwe berichten.</string>
     <string name="ArchiveHintHeader3">Vastgezette chats</string>
     <string name="ArchiveHintText3">Je kunt een ongelimteerd aantal gearchiveerde chats vastzetten.</string>
-    <string name="ScheduledOrNoSoundHint">Hold this button to schedule your message or send it without sound.</string>
+    <string name="ScheduledOrNoSoundHint">Hou deze knop ingedrukt om je bericht te plannen of zonder geluid te sturen.</string>
     <!--channels-->
     <string name="SetAsAdmin">Promoveren tot beheerder</string>
     <string name="EditAdminRights">Beheerdersrechten aanpassen</string>
@@ -245,7 +245,7 @@
     <string name="ActionPinnedText">un1 heeft \"%1$s\" vastgezet</string>
     <string name="ActionPinnedNoText">un1 heeft bericht vastgezet</string>
     <string name="ActionPinnedPoll">un1 heeft een poll vastgezet</string>
-    <string name="ActionPinnedQuiz">un1 pinned a quiz</string>
+    <string name="ActionPinnedQuiz">un1 heeft een quiz vastgezet</string>
     <string name="ActionPinnedPhoto">un1 heeft foto vastgezet</string>
     <string name="ActionPinnedVideo">un1 heeft een video vastgezet</string>
     <string name="ActionPinnedFile">un1 heeft bestand vastgezet</string>
@@ -378,7 +378,7 @@
     <string name="ChannelMessageVideo">%1$s plaatste een video</string>
     <string name="ChannelMessageContact2">%1$s plaatste een contact %2$s</string>
     <string name="ChannelMessagePoll2">%1$s plaatste een poll %2$s</string>
-    <string name="ChannelMessageQuiz2">%1$s posted the quiz \"%2$s\"</string>
+    <string name="ChannelMessageQuiz2">%1$s plaatste de quiz \"%2$s\"</string>
     <string name="ChannelMessageMap">%1$s plaatste een locatie</string>
     <string name="ChannelMessageLiveLocation">%1$ plaatste een live-locatie</string>
     <string name="ChannelMessageDocument">%1$s plaatste een bestand</string>
@@ -525,48 +525,48 @@
     <string name="SlowmodeSendErrorTooLong">Sorry, deze tekst is te lang om als 1 bericht te sturen.\n\nTempolimiet is ingeschakeld, je kunt niet meer dan 1 bericht tegelijkertijd sturen.</string>
     <!--polls-->
     <string name="NewPoll">Nieuwe poll</string>
-    <string name="NewQuiz">New Quiz</string>
+    <string name="NewQuiz">Nieuwe Quiz</string>
     <string name="Poll">Poll</string>
     <string name="Question">Vraag</string>
     <string name="QuestionHint">Stel een vraag</string>
     <string name="PollOptions">Pollopties</string>
-    <string name="QuizAnswers">Quiz answers</string>
-    <string name="PollResults">Poll Results</string>
-    <string name="PollAnonymous">Anonymous Voting</string>
+    <string name="QuizAnswers">Quiz antwoorden</string>
+    <string name="PollResults">Poll resultaten</string>
+    <string name="PollAnonymous">Anoniem stemmen</string>
     <string name="PollQuiz">Quizmode</string>
-    <string name="PollSelectOption">Select an option first</string>
-    <string name="PollCollapse">Collapse</string>
-    <string name="PollExpand">Expand</string>
-    <string name="PublicPollCantForward">Sorry, polls with visible votes can’t be forwarded to channels.</string>
-    <string name="PollCantForwardSecretChat">Sorry, polls can’t be forwarded to secret chats.</string>
-    <string name="PollMultiple">Multiple Answers</string>
-    <string name="PollTapToSelect">Tap to choose the correct answer</string>
-    <string name="QuizInfo">Polls in Quiz Mode have one correct answer. Users can\'t revoke their answers.</string>
-    <string name="AddAnOption">Optie toevoegen</string>
+    <string name="PollSelectOption">Kies eerst een optie</string>
+    <string name="PollCollapse">Inklappen</string>
+    <string name="PollExpand">Uitklappen</string>
+    <string name="PublicPollCantForward">Sorry, polls met zichtbare stemmen kunnen niet naar kanalen worden doorgestuurd.</string>
+    <string name="PollCantForwardSecretChat">Sorry, polls kunnen niet worden doorgestuurd naar geheime chats</string>
+    <string name="PollMultiple">Meerdere antwoorden</string>
+    <string name="PollTapToSelect">Tik om het juiste antwoord te kiezen</string>
+    <string name="QuizInfo">Polls in quiz-modus hebben 1 correct antwoord. Gebruikers kunnen hun antwoord niet intrekken.</string>
+    <string name="AddAnOption">Optie toevoegen...</string>
     <string name="AddAnOptionInfo">Je kan nog %1$s.</string>
     <string name="AddAnOptionInfoMax">Maximaal aantal opties zijn toegevoegd.</string>
     <string name="AnonymousPoll">Anonieme poll</string>
-    <string name="QuizWrongAnswer">Wrong answer!</string>
-    <string name="QuizWrongAnswerInfo">You missed the correct option.</string>
+    <string name="QuizWrongAnswer">Fout antwoord!</string>
+    <string name="QuizWrongAnswerInfo">Je hebt de juiste optie gemist.</string>
     <string name="QuizWellDone">Goed gedaan!</string>
-    <string name="QuizWellDoneInfo">You chose the right answer.</string>
+    <string name="QuizWellDoneInfo">Je hebt het goede antwoord gekozen.</string>
     <string name="PublicPoll">Poll</string>
     <string name="QuizPoll">Quiz</string>
     <string name="PollSubmitVotes">STEMMEN</string>
-    <string name="PollViewResults">VIEW RESULTS</string>
+    <string name="PollViewResults">RESULTATEN WEERGEVEN</string>
     <string name="AnonymousQuizPoll">Anonieme quiz</string>
     <string name="StopPoll">Poll stoppen</string>
     <string name="StopPollAlertTitle">Poll stoppen?</string>
     <string name="StopPollAlertText">Als je deze poll nu stopt kan niemand meer stemmen. Deze actie kan niet ongedaan worden gemaakt.</string>
     <string name="StopQuiz">Quiz stoppen?</string>
     <string name="StopQuizAlertTitle">Quiz stoppen?</string>
-    <string name="StopQuizAlertText">If you stop this quiz now, nobody will be able to submit answers. This action cannot be undone.</string>
+    <string name="StopQuizAlertText">Als je deze quiz nu stopt kan niemand antwoorden insturen, je kunt dit niet ongedaan maken.</string>
     <string name="CancelPollAlertTitle">Poll verwijderen?</string>
     <string name="CancelPollAlertText">Deze poll echt weggooien?</string>
     <string name="Unvote">Stem intrekken</string>
     <string name="FinalResults">Eindresultaat</string>
     <string name="NoVotes">Geen stemmen</string>
-    <string name="NoVotesQuiz">Nobody answered</string>
+    <string name="NoVotesQuiz">Niemand heeft geantwoord</string>
     <string name="Vote_zero">%1$d stemmen</string>
     <string name="Vote_one">%1$d stem</string>
     <string name="Vote_two">%1$d stemmen</string>
@@ -627,7 +627,7 @@
     <string name="EventLogPinnedMessages">bericht door un1 vastgezet:</string>
     <string name="EventLogUnpinnedMessages">bericht door un1 losgemaakt</string>
     <string name="EventLogStopPoll">un1 heeft de poll gestopt:</string>
-    <string name="EventLogStopQuiz">un1 stopped the quiz:</string>
+    <string name="EventLogStopQuiz">un1 stopte de quiz:</string>
     <string name="EventLogDeletedMessages">bericht door un1 verwijderd:</string>
     <string name="EventLogChangedLocation">un1 wijzigde de groepslocatie naar \"%1$s\"</string>
     <string name="EventLogRemovedLocation">un1 verwijderde de groepslocatie</string>
@@ -795,6 +795,7 @@
     <string name="YouLeft">Je hebt deze groep verlaten</string>
     <string name="DeleteThisGroup">Deze groep verwijderen</string>
     <string name="DeleteThisChat">Chat verwijderen</string>
+    <string name="DeleteTheseChats">Delete chats</string>
     <string name="SlideToCancel">SLEEP OM TE ANNULEREN</string>
     <string name="SaveToDownloads">Opslaan in Downloads</string>
     <string name="SaveToGIFs">GIF opslaan</string>
@@ -957,11 +958,13 @@
     <string name="MessageScheduledLimitReached">Sorry, je kunt niet meer dan 100 berichten plannen.</string>
     <string name="MessageScheduledBotAction">Deze actie is beschikbaar na publicatie van het bericht.</string>
     <string name="MessageScheduledVote">Stemmen is beschikbaar naar publicatie van het bericht.</string>
-    <string name="MessageScheduledVoteResults">Poll results will become available after the message is published.</string>
+    <string name="MessageScheduledVoteResults">Poll-resultaten zijn zichtbaar na het publiceren van het bericht.</string>
     <string name="MessageScheduledReminderNotification">&#128197; Herinnering</string>
     <string name="OneResult">1 resultaat</string>
     <string name="VideoQualityIsTooLow">Videokwaliteit is te laag om de compressie-instellingen te wijzigen.</string>
     <string name="TextSelectionHit">Hou het **woord** vast, beweeg de cursor om meer tekst te selecteren om te kopiëren.</string>
+    <string name="CardNumberCopied">Card number copied to clipboard</string>
+    <string name="CopyCardNumber">Kopiëren</string>
     <!--notification-->
     <string name="MessageLifetimeChanged">%1$s heeft de zelfvernietigingstimer ingesteld op %2$s</string>
     <string name="MessageLifetimeChangedOutgoing">Je hebt de zelfvernietigingstimer ingesteld op %1$s</string>
@@ -982,7 +985,7 @@
     <string name="NotificationMessageSDVideo">%1$s heeft je een zelfvernietigende video gestuurd</string>
     <string name="NotificationMessageContact2">%1$s deelde een contact %2$s met je</string>
     <string name="NotificationMessagePoll2">%1$s stuurde je een poll %2$s</string>
-    <string name="NotificationMessageQuiz2">%1$s sent you the quiz \"%2$s\"</string>
+    <string name="NotificationMessageQuiz2">%1$s stuude je de quiz \"%2$s\"</string>
     <string name="NotificationMessageMap">%1$s heeft je een locatie gestuurd</string>
     <string name="NotificationMessageLiveLocation">%1$s deelt een live-locatie met je</string>
     <string name="NotificationMessageGame">%1$s wil %2$s met je spelen</string>
@@ -999,7 +1002,7 @@
     <string name="NotificationMessageGroupPhoto">%1$s heeft een foto gestuurd naar de groep %2$s</string>
     <string name="NotificationMessageGroupVideo">%1$s heeft een video gestuurd naar de groep %2$s</string>
     <string name="NotificationMessageGroupPoll2">%1$s stuurde een poll %3$s naar de groep %2$s</string>
-    <string name="NotificationMessageGroupQuiz2">%1$s sent the quiz \"%3$s\" to the group %2$s</string>
+    <string name="NotificationMessageGroupQuiz2">%1$s stuurde de quiz \"%3$s\" naar de groep %2$s</string>
     <string name="NotificationMessageGroupContact2">%1$s deelde een contact %3$s in de groep %2$s</string>
     <string name="NotificationMessageGroupMap">%1$s heeft een locatie gestuurd naar de groep %2$s</string>
     <string name="NotificationMessageGroupLiveLocation">%1$s deelt een live-locatie met groep %2$s</string>
@@ -1041,7 +1044,7 @@
     <string name="NotificationActionPinnedText">%1$s heeft \"%2$s\" vastgezet in de groep %3$s</string>
     <string name="NotificationActionPinnedNoText">%1$s heeft bericht vastgezet in de groep %2$s</string>
     <string name="NotificationActionPinnedPoll2">%1$s heeft een poll %3$s vastgezet in de groep %2$s</string>
-    <string name="NotificationActionPinnedQuiz2">%1$s pinned the quiz \"%3$s\" in the group %2$s</string>
+    <string name="NotificationActionPinnedQuiz2">%1$s heeft de quiz \"%3$s\" vastgezet in de groep %2$s</string>
     <string name="NotificationActionPinnedPhoto">%1$s heeft foto vastgezet in de groep %2$s</string>
     <string name="NotificationActionPinnedGame">%1$s heeft een spel in de groep %2$s vastgezet</string>
     <string name="NotificationActionPinnedGameScore">%1$s heeft een score vastgezet in de groep %2$s</string>
@@ -1060,7 +1063,7 @@
     <string name="NotificationActionPinnedTextChannel">%1$s heeft \"%2$s\" vastgezet</string>
     <string name="NotificationActionPinnedNoTextChannel">%1$s heeft bericht vastgezet</string>
     <string name="NotificationActionPinnedPollChannel2">%1$s heeft een poll vastgezet %2$s</string>
-    <string name="NotificationActionPinnedQuizChannel2">%1$s pinned the quiz \"%2$s\"</string>
+    <string name="NotificationActionPinnedQuizChannel2">%1$s heeft quiz \"%2$s\" vastgezet</string>
     <string name="NotificationActionPinnedPhotoChannel">%1$s heeft foto vastgezet</string>
     <string name="NotificationActionPinnedGameChannel">%1$s heeft een spel vastgezet</string>
     <string name="NotificationActionPinnedGameScoreChannel">%1$s heeft een score vastgezet</string>
@@ -1116,7 +1119,6 @@
     <string name="SoftUserLimitAlert">Nadat je de groep hebt aangemaakt kun je meer gebruikers toevoegen en omzetten naar een supergroep.</string>
     <string name="EnterGroupNamePlaceholder">Groepsnaam</string>
     <string name="GroupName">Groepsnaam</string>
-    <string name="MembersCount">%1$d van %2$d geselecteerd</string>
     <string name="MembersCountZero">tot aan %1$s</string>
     <string name="JoinToGroupErrorFull">Sorry, deze groep is al vol.</string>
     <string name="JoinToGroupErrorNotExist">Sorry, deze groep bestaat niet.</string>
@@ -1168,6 +1170,9 @@
     <string name="Invite">Nodig uit</string>
     <string name="BlockContact">Blokkeer</string>
     <string name="BlockUser">Blokkeer gebruiker</string>
+    <string name="BlockUsers">Block users</string>
+    <string name="BlockUserMessage">Do you want to block **%1$s** from messaging and calling you on Telegram?</string>
+    <string name="BlockUsersMessage">Do you want to block **%1$s** from messaging and calling you on Telegram?</string>
     <string name="UserBlocked">Gebruiker geblokkeerd</string>
     <string name="UserUnblocked">Gebruiker gedeblokkeerd</string>
     <string name="EditContact">Wijzig</string>
@@ -1212,6 +1217,8 @@
     <string name="SharedPhotosAndVideos">Foto\'s en video\'s</string>
     <string name="SharedLinks">Links</string>
     <string name="SharedAudioFiles">Audiobestanden</string>
+    <string name="SendMessageLocation">Send Message</string>
+    <string name="ReportUserLocation">Report</string>
     <!--usernames-->
     <string name="Username">Gebruikersnaam</string>
     <string name="UsernamePlaceholder">Kies een naam</string>
@@ -1317,7 +1324,7 @@
     <string name="CustomThemes">Aangepaste thema\'s</string>
     <string name="ThemeSetUrl">Link instellen</string>
     <string name="ThemeUrl">Themalink</string>
-    <string name="BubbleRadius">Message corners</string>
+    <string name="BubbleRadius">Berichthoeken</string>
     <string name="ChatList">Weergave chatoverzicht</string>
     <string name="ChatListDefault">Twee regels</string>
     <string name="ChatListExpanded">Drie regels</string>
@@ -1675,6 +1682,10 @@
     <string name="DebugMenuReloadContacts">Contacten verversen</string>
     <string name="DebugMenuResetDialogs">Chats herstellen</string>
     <string name="DebugMenuReadAllDialogs">Alles als gelezen</string>
+    <string name="DebugMenuEnablePauseMusic">Enable pause music on record</string>
+    <string name="DebugMenuDisablePauseMusic">Disable pause music on record</string>
+    <string name="DebugMenuEnableSmoothKeyboard">Enable smooth keyboard</string>
+    <string name="DebugMenuDisableSmoothKeyboard">Disable smooth keyboard</string>
     <string name="DebugMenuEnableCamera">In-app camera inschakelen</string>
     <string name="DebugMenuDisableCamera">In-app camera uitschakelen</string>
     <string name="DebugMenuResetContacts">Reset geimporteerde contacten</string>
@@ -1953,7 +1964,7 @@
     <string name="PassportLanguage_HU">Hongaars</string>
     <string name="PassportLanguage_HY">Armeens</string>
     <string name="PassportLanguage_ID">Indonesisch</string>
-    <string name="PassportLanguage_IS">Ijslands</string>
+    <string name="PassportLanguage_IS">IJslands</string>
     <string name="PassportLanguage_IT">Italiaans</string>
     <string name="PassportLanguage_JA">Japans</string>
     <string name="PassportLanguage_KA">Georgisch</string>
@@ -1978,7 +1989,7 @@
     <string name="PassportLanguage_TK">Turkmeens</string>
     <string name="PassportLanguage_TR">Turks</string>
     <string name="PassportLanguage_UK">Oekraïens</string>
-    <string name="PassportLanguage_UZ">Oesbeeks</string>
+    <string name="PassportLanguage_UZ">Oezbeeks</string>
     <string name="PassportLanguage_VI">Vietnamees</string>
     <!--sessions view-->
     <string name="SessionsTitle">Actieve sessies</string>
@@ -2049,11 +2060,13 @@
     <string name="October">oktober</string>
     <string name="November">november</string>
     <string name="December">december</string>
-    <string name="SharedFilesTab">BESTANDEN</string>
-    <string name="SharedMediaTab">MEDIA</string>
-    <string name="SharedLinksTab">LINKS</string>
-    <string name="SharedMusicTab">AUDIO</string>
-    <string name="SharedVoiceTab">SPRAAK</string>
+    <string name="SharedFilesTab2">Bestanden</string>
+    <string name="SharedMediaTab2">Media</string>
+    <string name="SharedMediaTabFull2">Shared Media</string>
+    <string name="SharedGroupsTab2">Groepen</string>
+    <string name="SharedLinksTab2">Links</string>
+    <string name="SharedMusicTab2">Audio</string>
+    <string name="SharedVoiceTab2">Voice Messages</string>
     <string name="DocumentsTitle">Gedeelde bestanden</string>
     <string name="SharedContentTitle">Gedeelde content</string>
     <string name="LinksTitle">Gedeelde links</string>
@@ -2111,6 +2124,10 @@
     <string name="LiveLocationAlertGroup">Kies hoelang je je Live-locatie met mensen in deze chat wilt delen.</string>
     <string name="GpsDisabledAlertTitle">GPS inschakelen</string>
     <string name="GpsDisabledAlertText">Activeer je GPS voor locatie-gebaseerde diensten.</string>
+    <string name="MakeMyselfVisible">Make Myself Visible</string>
+    <string name="MakeMyselfVisibleTitle">Show Your Profile?</string>
+    <string name="MakeMyselfVisibleInfo">Users nearby will be able to view your profile and send you messages. This may help you find new friends, but could also attract excessive attention. You can stop sharing your profile at any time.\n\nYour phone number will remain hidden.</string>
+    <string name="StopShowingMe">Stop Showing Me</string>
     <string name="PeopleNearby">Mensen dichtbij</string>
     <string name="AddPeopleNearby">Voeg mensen dichtbij toe</string>
     <string name="PeopleNearbyAccessInfo">Gebruik deze sectie om makkelijk mensen dichtbij toe te voegen die deze sectie open hebben en lokale groepschats te ontdekken.\n\nSta locatie-toegang toe om deze functie in te schakelen.</string>
@@ -2119,7 +2136,7 @@
     <string name="PeopleNearbyGpsInfo">Voeg snel mensen dichtbij toe die deze sectie open hebben en ontdek lokale groepschats.\n\nSta locatietoegang toe om deze functie te gebruiken.</string>
     <string name="PeopleNearbyGps">Inschakelen</string>
     <string name="ChatsNearbyHeader">Groepen dichtbij</string>
-    <string name="PeopleNearbyInfo">Vraag je vriend die bij je is om deze pagina te openen en zo telefoonnummers uit te wisselen.</string>
+    <string name="PeopleNearbyInfo2">Exchange contact info with people nearby and find new friends.</string>
     <string name="PeopleNearbyEmpty">Zoeken naar gebruikers in de buurt</string>
     <string name="NearbyCreateGroup">Maak een lokale groep</string>
     <string name="NearbyStartGroup">Groep starten</string>
@@ -2150,8 +2167,8 @@
     <string name="VideoDoesNotSupportStreaming">Deze video is niet geoptimaliseerd om te streamen, een volledige download kan nodig zijn om deze af te spelen.</string>
     <string name="CantPlayVideo">De app kon deze video niet afspelen. Afspelen proberen met externe speler?</string>
     <string name="NoRecentSearches">Geen recente zoekopdrachten</string>
-    <string name="ImagesTab">AFBEELDINGEN</string>
-    <string name="GifsTab">GIF\'S</string>
+    <string name="ImagesTab2">Images</string>
+    <string name="GifsTab2">GIFs</string>
     <string name="NoRecentGIFs">Niets recents</string>
     <string name="SearchImages">ONLINE ZOEKEN</string>
     <string name="SearchImagesInfo">ZOEK OP HET WEB</string>
@@ -2281,9 +2298,9 @@
     <string name="DataUsage">Opslag- en datagebruik</string>
     <string name="StorageUsage">Opslaggebruik</string>
     <string name="NetworkUsage">Datagebruik</string>
-    <string name="NetworkUsageMobile">MOBIEL</string>
-    <string name="NetworkUsageWiFi">WI-FI</string>
-    <string name="NetworkUsageRoaming">ROAMEN</string>
+    <string name="NetworkUsageMobileTab">Mobile</string>
+    <string name="NetworkUsageWiFiTab">Wi-Fi</string>
+    <string name="NetworkUsageRoamingTab">Roaming</string>
     <string name="MessagesDataUsage">Berichten en andere gegevens</string>
     <string name="CountSent">Verzonden</string>
     <string name="CountReceived">Ontvangen</string>
@@ -2849,6 +2866,12 @@
     <string name="items_few">%1$d items</string>
     <string name="items_many">%1$d items</string>
     <string name="items_other">%1$d items</string>
+
+
+
+
+
+
     <string name="FromChats_zero">van %1$d chats</string>
     <string name="FromChats_one">van %1$d chat</string>
     <string name="FromChats_two">van %1$d chats</string>
@@ -3006,12 +3029,36 @@
     <string name="Files_few">%1$d bestanden</string>
     <string name="Files_many">%1$d bestanden</string>
     <string name="Files_other">%1$d bestanden</string>
+    <string name="MusicFiles_zero">%1$d music files</string>
+    <string name="MusicFiles_one">%1$d music file</string>
+    <string name="MusicFiles_two">%1$d music files</string>
+    <string name="MusicFiles_few">%1$d music files</string>
+    <string name="MusicFiles_many">%1$d music files</string>
+    <string name="MusicFiles_other">%1$d music files</string>
+    <string name="CommonGroups_zero">%1$d groups in common</string>
+    <string name="CommonGroups_one">%1$d group in common</string>
+    <string name="CommonGroups_two">%1$d groups in common</string>
+    <string name="CommonGroups_few">%1$d groups in common</string>
+    <string name="CommonGroups_many">%1$d groups in common</string>
+    <string name="CommonGroups_other">%1$d groups in common</string>
     <string name="Media_zero">%1$d media</string>
     <string name="Media_one">%1$d media</string>
     <string name="Media_two">%1$d media</string>
     <string name="Media_few">%1$d media</string>
     <string name="Media_many">%1$d media</string>
     <string name="Media_other">%1$d media</string>
+    <string name="Voice_zero">%1$d voice messages</string>
+    <string name="Voice_one">%1$d voice message</string>
+    <string name="Voice_two">%1$d voice messages</string>
+    <string name="Voice_few">%1$d voice messages</string>
+    <string name="Voice_many">%1$d voice messages</string>
+    <string name="Voice_other">%1$d voice messages</string>
+    <string name="Links_zero">%1$d links</string>
+    <string name="Links_one">%1$d link</string>
+    <string name="Links_two">%1$d links</string>
+    <string name="Links_few">%1$d links</string>
+    <string name="Links_many">%1$d links</string>
+    <string name="Links_other">%1$d links</string>
     <string name="BlockedUsersCount_zero">%1$d geblokkeerde gebruikers</string>
     <string name="BlockedUsersCount_one">%1$d geblokkeerde gebruiker</string>
     <string name="BlockedUsersCount_two">%1$d geblokkeerde gebruikers</string>
@@ -3114,6 +3161,24 @@
     <string name="CountOfResults_few">%1$d van %2$d resultaten</string>
     <string name="CountOfResults_many">%1$d van %2$d resultaten</string>
     <string name="CountOfResults_other">%1$d van %2$d resultaten</string>
+    <string name="UsersCount_zero">%1$d gebruikers</string>
+    <string name="UsersCount_one">%1$d gebruiker</string>
+    <string name="UsersCount_two">%1$d gebruikers</string>
+    <string name="UsersCount_few">%1$d gebruikers</string>
+    <string name="UsersCount_many">%1$d gebruikers</string>
+    <string name="UsersCount_other">%1$d gebruikers</string>
+    <string name="UsersCountTitle_zero">%1$d users</string>
+    <string name="UsersCountTitle_one">%1$d user</string>
+    <string name="UsersCountTitle_two">%1$d users</string>
+    <string name="UsersCountTitle_few">%1$d users</string>
+    <string name="UsersCountTitle_many">%1$d users</string>
+    <string name="UsersCountTitle_other">%1$d users</string>
+    <string name="MembersCountSelected_zero">%1$d of %2$d selected</string>
+    <string name="MembersCountSelected_one">%1$d of %2$d selected</string>
+    <string name="MembersCountSelected_two">%1$d of %2$d selected</string>
+    <string name="MembersCountSelected_few">%1$d of %2$d selected</string>
+    <string name="MembersCountSelected_many">%1$d of %2$d selected</string>
+    <string name="MembersCountSelected_other">%1$d of %2$d selected</string>
     <!--accessibility descriptions-->
     <string name="AccDescrGroup">Groep</string>
     <string name="AccDescrChannel">Kanaal</string>

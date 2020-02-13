@@ -1159,6 +1159,68 @@ public class AlertsCreator {
         }
     }
 
+    public interface BlockDialogCallback {
+        void run(boolean report, boolean delete);
+    }
+
+    public static void createBlockDialogAlert(BaseFragment fragment, int count, boolean reportSpam, TLRPC.User user, BlockDialogCallback onProcessRunnable) {
+        if (fragment == null || fragment.getParentActivity() == null || count == 1 && user == null) {
+            return;
+        }
+        Context context = fragment.getParentActivity();
+        AlertDialog.Builder builder = new AlertDialog.Builder(context);
+
+        CheckBoxCell[] cell = new CheckBoxCell[2];
+
+        LinearLayout linearLayout = new LinearLayout(context);
+        linearLayout.setOrientation(LinearLayout.VERTICAL);
+        builder.setView(linearLayout);
+
+        String actionText;
+        if (count == 1) {
+            String name = ContactsController.formatName(user.first_name, user.last_name);
+            builder.setTitle(LocaleController.formatString("BlockUserTitle", R.string.BlockUserTitle, name));
+            actionText = LocaleController.getString("BlockUser", R.string.BlockUser);
+            builder.setMessage(AndroidUtilities.replaceTags(LocaleController.formatString("BlockUserMessage", R.string.BlockUserMessage, name)));
+        } else {
+            builder.setTitle(LocaleController.formatString("BlockUserTitle", R.string.BlockUserTitle, LocaleController.formatPluralString("UsersCountTitle", count)));
+            actionText = LocaleController.getString("BlockUsers", R.string.BlockUsers);
+            builder.setMessage(AndroidUtilities.replaceTags(LocaleController.formatString("BlockUsersMessage", R.string.BlockUsersMessage, LocaleController.formatPluralString("UsersCount", count))));
+        }
+
+        final boolean[] checks = new boolean[]{true, true};
+
+        for (int a = 0; a < cell.length; a++) {
+            if (a == 0 && !reportSpam) {
+                continue;
+            }
+            int num = a;
+            cell[a] = new CheckBoxCell(context, 1);
+            cell[a].setBackgroundDrawable(Theme.getSelectorDrawable(false));
+            if (a == 0) {
+                cell[a].setText(LocaleController.getString("ReportSpamTitle", R.string.ReportSpamTitle), "", true, false);
+            } else {
+                cell[a].setText(count == 1 ? LocaleController.getString("DeleteThisChat", R.string.DeleteThisChat) : LocaleController.getString("DeleteTheseChats", R.string.DeleteTheseChats), "", true, false);
+            }
+            cell[a].setPadding(LocaleController.isRTL ? AndroidUtilities.dp(16) : AndroidUtilities.dp(8), 0, LocaleController.isRTL ? AndroidUtilities.dp(8) : AndroidUtilities.dp(16), 0);
+            linearLayout.addView(cell[a], LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48));
+            cell[a].setOnClickListener(v -> {
+                CheckBoxCell cell1 = (CheckBoxCell) v;
+                checks[num] = !checks[num];
+                cell1.setChecked(checks[num], true);
+            });
+        }
+
+        builder.setPositiveButton(actionText, (dialogInterface, i) -> onProcessRunnable.run(checks[0], checks[1]));
+        builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+        AlertDialog alertDialog = builder.create();
+        fragment.showDialog(alertDialog);
+        TextView button = (TextView) alertDialog.getButton(DialogInterface.BUTTON_POSITIVE);
+        if (button != null) {
+            button.setTextColor(Theme.getColor(Theme.key_dialogTextRed2));
+        }
+    }
+
     public interface DatePickerDelegate {
         void didSelectDate(int year, int month, int dayOfMonth);
     }

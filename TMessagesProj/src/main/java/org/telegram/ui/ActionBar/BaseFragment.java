@@ -18,6 +18,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.view.Menu;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.accessibility.AccessibilityManager;
@@ -53,7 +54,6 @@ public class BaseFragment {
     protected boolean inPreviewMode;
     protected int classGuid;
     protected Bundle arguments;
-    protected boolean swipeBackEnabled = true;
     protected boolean hasOwnBackground = false;
     protected boolean isPaused = true;
 
@@ -95,6 +95,10 @@ public class BaseFragment {
 
     public int getClassGuid() {
         return classGuid;
+    }
+
+    public boolean isSwipeBackEnabled(MotionEvent event) {
+        return true;
     }
 
     protected void setInPreviewMode(boolean value) {
@@ -163,7 +167,7 @@ public class BaseFragment {
             }
             if (actionBar != null) {
                 boolean differentParent = parentLayout != null && parentLayout.getContext() != actionBar.getContext();
-                if (actionBar.getAddToContainer() || differentParent) {
+                if (actionBar.shouldAddToContainer() || differentParent) {
                     ViewGroup parent = (ViewGroup) actionBar.getParent();
                     if (parent != null) {
                         try {
@@ -445,6 +449,22 @@ public class BaseFragment {
 
     }
 
+    protected void onPanTranslationUpdate(int y) {
+
+    }
+
+    protected void onPanTransitionStart() {
+
+    }
+
+    protected void onPanTransitionEnd() {
+
+    }
+
+    public int getCurrentPanTranslationY() {
+        return parentLayout != null ? parentLayout.getCurrentPanTranslationY() : 0;
+    }
+
     public Dialog getVisibleDialog() {
         return visibleDialog;
     }
@@ -473,7 +493,7 @@ public class BaseFragment {
         return getAccountInstance().getContactsController();
     }
 
-    protected MediaDataController getMediaDataController() {
+    public MediaDataController getMediaDataController() {
         return getAccountInstance().getMediaDataController();
     }
 
@@ -493,11 +513,11 @@ public class BaseFragment {
         return getAccountInstance().getMessagesStorage();
     }
 
-    protected SendMessagesHelper getSendMessagesHelper() {
+    public SendMessagesHelper getSendMessagesHelper() {
         return getAccountInstance().getSendMessagesHelper();
     }
 
-    protected FileLoader getFileLoader() {
+    public FileLoader getFileLoader() {
         return getAccountInstance().getFileLoader();
     }
 

@@ -115,7 +115,7 @@
     <string name="PaymentPhoneEmailToProvider">سيتم إرسال رقم الهاتف والبريد الإلكتروني إلى %1$s كمعلومات دفع.</string>
     <!--chats view-->
     <string name="NewConversationShortcut">محادثة جديدة</string>
-    <string name="AutoNightModeOff">Auto-Night Mode is off</string>
+    <string name="AutoNightModeOff">الوضع الليلي الآلي معطَّل</string>
     <string name="Settings">الإعدادات</string>
     <string name="Contacts">جهات الاتصال</string>
     <string name="NewGroup">مجموعة جديدة</string>
@@ -236,7 +236,7 @@
     <string name="MegaLeaveAlertWithName">هل ترغب حقًا في مغادرة **%1$s**؟</string>
     <string name="GroupUserCantAdd">المعذرة، لا يمكنك إضافة هذا المستخدم للمجموعات.</string>
     <string name="GroupUserAddLimit">المعذرة، المجموعة ممتلئة.</string>
-    <string name="GroupUserLeftError">المعذرة، إذا غادر شخص ما المجموعة، تحتاج أن تكون في قائمة جهات اتصاله كي تتمكن من إعادة إضافته إليها.\n\nيرجى الملاحظة أنه مازال بإمكانه الانضمام عبر رابط الدعوة الخاص بالمجموعة طالما أنه ليس في قائمة المستخدمين الذين تمت إزالتهم.</string>
+    <string name="GroupUserLeftError">عذرًا، إذا لم يعد شخص جزءًا من مجموعة؛ يجب أن تكون في جهات اتصاله في تيليجرام لإضافته مرة أخرى إليها.\n\nلاحظ أنه لا يزال بإمكان هذا الشخص الانضمام عبر رابط دعوة المجموعة طالما أنه ليس في قائمة المستخدمين الذين تمت إزالتهم.</string>
     <string name="GroupUserCantAdmin">المعذرة، يوجد الكثير من المشرفين في هذه المجموعة.</string>
     <string name="PublicChannelsTooMuch">المعذرة، يملك هذا المستخدم الكثير من المجموعات أو القنوات العامة. دعه يجعل بعض مجموعاته أو قنواته الحالية خاصة أولًا.</string>
     <string name="LocatedChannelsTooMuch">المعذرة، يملك هذا المستخدم الكثير من المجموعات المحلية. دعه يحذف أو ينقل ملكية بعض منها أولًا.</string>
@@ -245,7 +245,7 @@
     <string name="ActionPinnedText">ثبت un1  «%1$s»</string>
     <string name="ActionPinnedNoText">ثبت un1 رسالة</string>
     <string name="ActionPinnedPoll">ثبت un1 استفتاءًا</string>
-    <string name="ActionPinnedQuiz">un1 pinned a quiz</string>
+    <string name="ActionPinnedQuiz">ثبت un1 اختبارًا</string>
     <string name="ActionPinnedPhoto">un1 ثبت صورة</string>
     <string name="ActionPinnedVideo">ثبت un1 مقطعًا مرئيًا</string>
     <string name="ActionPinnedFile">ثبت un1 ملفًا</string>
@@ -358,7 +358,7 @@
     <string name="ChannelCantOpenBanned">للأسف، تم حظرك من المشاركة في المجموعات العامة.</string>
     <string name="ChannelCantOpenNa">المعذرة، لا يمكن الوصول إلى هذه المحادثة.</string>
     <string name="ChannelAddTo">هل ترغب بإضافة %1$s للقناة؟</string>
-    <string name="ChannelUserLeftError">المعذرة، قرر هذا المستخدم مغادرة القناة، لا يمكنك إضافته مرة أخرى إليها.</string>
+    <string name="ChannelUserLeftError">عذرًا، إذا لم يعد شخص جزءًا من قناة؛ يجب أن تكون في جهات اتصاله في تيليجرام لإضافته مرة أخرى إليها.\n\nلاحظ أنه لا يزال بإمكان هذا الشخص الانضمام عبر رابط دعوة القناة طالما أنه ليس في قائمة المستخدمين الذين تمت إزالتهم.</string>
     <string name="ChannelUserCantAdd">المعذرة، لا يمكنك إضافة هذا المستخدم للقنوات.</string>
     <string name="ChannelUserCantAdmin">المعذرة، يوجد الكثير من المشرفين في هذه القناة.</string>
     <string name="ChannelUserCantBot">المعذرة، يوجد الكثير من حسابات البوت في هذه القناة.</string>
@@ -378,7 +378,7 @@
     <string name="ChannelMessageVideo">نشرت %1$s مقطعًا مرئيًا</string>
     <string name="ChannelMessageContact2">نشرت %1$s جهة اتصال %2$s</string>
     <string name="ChannelMessagePoll2">نشرت %1$s الاستفتاء %2$s</string>
-    <string name="ChannelMessageQuiz2">%1$s posted the quiz \"%2$s\"</string>
+    <string name="ChannelMessageQuiz2">نشرت %1$s الاختبار «%2$s»</string>
     <string name="ChannelMessageMap">نشرت %1$s موقعًا</string>
     <string name="ChannelMessageLiveLocation">نشرت %1$s موقعًا حيًا</string>
     <string name="ChannelMessageDocument">نشرت %1$s ملفًا</string>
@@ -525,29 +525,29 @@
     <string name="SlowmodeSendErrorTooLong">المعذرة، هذا النص طويل للغاية ولا يمكن إرساله برسالة واحدة.\n\nتم تفعيل الوضع البطيء. لا يمكنك إرسال عدة رسائل مرةً واحدة.</string>
     <!--polls-->
     <string name="NewPoll">استفتاء جديد</string>
-    <string name="NewQuiz">New Quiz</string>
+    <string name="NewQuiz">اختبار جديد</string>
     <string name="Poll">استفتاء</string>
     <string name="Question">السؤال</string>
     <string name="QuestionHint">اطرح سؤالًا</string>
     <string name="PollOptions">خيارات الاستفتاء</string>
-    <string name="QuizAnswers">Quiz answers</string>
+    <string name="QuizAnswers">إجابات الاختبار</string>
     <string name="PollResults">نتائج الاستفتاء</string>
-    <string name="PollAnonymous">Anonymous Voting</string>
+    <string name="PollAnonymous">استفتاء سري</string>
     <string name="PollQuiz">وضع الاختبار</string>
-    <string name="PollSelectOption">Select an option first</string>
-    <string name="PollCollapse">Collapse</string>
-    <string name="PollExpand">Expand</string>
-    <string name="PublicPollCantForward">المعذرة، لا يمكن تحويل الاستفتاءات العلنية للقنوات.</string>
+    <string name="PollSelectOption">حدد خيارًا أولًا</string>
+    <string name="PollCollapse">طيّ</string>
+    <string name="PollExpand">توسيع</string>
+    <string name="PublicPollCantForward">المعذرة، لا يمكن تحويل استفتاءات الإجابات العلنية للقنوات.</string>
     <string name="PollCantForwardSecretChat">المعذرة، لا يمكن تحويل الاستفتاءات للمحادثات السرية.</string>
     <string name="PollMultiple">إجابات متعددة</string>
     <string name="PollTapToSelect">اضغط لاختيار الإجابة الصحيحة</string>
-    <string name="QuizInfo">Polls in Quiz Mode have one correct answer. Users can\'t revoke their answers.</string>
+    <string name="QuizInfo">تملك الاختبارات إجابة واحدة صحيحة. لا يمكن للمستخدمين تغيير إجاباتهم.</string>
     <string name="AddAnOption">إضافة خيار...</string>
     <string name="AddAnOptionInfo">يمكنك إضافة %1$s.</string>
     <string name="AddAnOptionInfoMax">لقد قمت بإضافة العدد الأقصى من الخيارات.</string>
     <string name="AnonymousPoll">استفتاء سري</string>
     <string name="QuizWrongAnswer">إجابة خاطئة!</string>
-    <string name="QuizWrongAnswerInfo">You missed the correct option.</string>
+    <string name="QuizWrongAnswerInfo">لم تختر الإجابة الصحيحة.</string>
     <string name="QuizWellDone">أحسنت!</string>
     <string name="QuizWellDoneInfo">لقد اخترت الإجابة الصحيحة.</string>
     <string name="PublicPoll">استفتاء</string>
@@ -559,26 +559,26 @@
     <string name="StopPollAlertTitle">إيقاف الاستفتاء؟</string>
     <string name="StopPollAlertText">إذا قمت بإيقاف الاستفتاء الآنَ فلن يتمكن أي أحد من التصويت عليه، لا يمكنك التراجع عن هذا القرار.</string>
     <string name="StopQuiz">إيقاف الاختبار</string>
-    <string name="StopQuizAlertTitle">Stop quiz?</string>
-    <string name="StopQuizAlertText">If you stop this quiz now, nobody will be able to submit answers. This action cannot be undone.</string>
+    <string name="StopQuizAlertTitle">إيقاف الاختبار؟</string>
+    <string name="StopQuizAlertText">إذا أوقفت هذا الاختبار الآن فلن يتمكن أحد من تقديم الإجابات. لا يمكنك التراجع عن هذا الإجراء.</string>
     <string name="CancelPollAlertTitle">تجاهل الاستفتاء؟</string>
     <string name="CancelPollAlertText">هل ترغب حقًا في تجاهل هذا الاستفتاء؟</string>
     <string name="Unvote">سحب الصوت</string>
     <string name="FinalResults">النتائج النهائية</string>
     <string name="NoVotes">ما من أصوات</string>
-    <string name="NoVotesQuiz">Nobody answered</string>
+    <string name="NoVotesQuiz">لم يُجب أحد</string>
     <string name="Vote_zero">%1$d صوت</string>
     <string name="Vote_one">صوت واحد</string>
     <string name="Vote_two">صوتان</string>
     <string name="Vote_few">%1$d أصوات</string>
     <string name="Vote_many">%1$d صوتًا</string>
     <string name="Vote_other">%1$d صوت</string>
-    <string name="Answer_zero">%1$d answers</string>
-    <string name="Answer_one">%1$d answer</string>
-    <string name="Answer_two">%1$d answers</string>
-    <string name="Answer_few">%1$d answers</string>
-    <string name="Answer_many">%1$d answers</string>
-    <string name="Answer_other">%1$d answers</string>
+    <string name="Answer_zero">%1$d إجابة</string>
+    <string name="Answer_one">إجابة واحدة</string>
+    <string name="Answer_two">إجابتين</string>
+    <string name="Answer_few">%1$d إجابات</string>
+    <string name="Answer_many">%1$d إجابةً</string>
+    <string name="Answer_other">%1$d إجابة</string>
     <string name="ShowVotes_zero">عرض المزيد (%1$d)</string>
     <string name="ShowVotes_one">عرض المزيد (%1$d)</string>
     <string name="ShowVotes_two">عرض المزيد (%1$d)</string>
@@ -627,7 +627,7 @@
     <string name="EventLogPinnedMessages">un1 ثبت هذه رسالة:</string>
     <string name="EventLogUnpinnedMessages">ألغى un1 تثبيت رسالة</string>
     <string name="EventLogStopPoll">أوقف un1 الاستفتاء:</string>
-    <string name="EventLogStopQuiz">un1 stopped the quiz:</string>
+    <string name="EventLogStopQuiz">أوقف un1 الاختبار:</string>
     <string name="EventLogDeletedMessages">حذف un1 هذه الرسالة:</string>
     <string name="EventLogChangedLocation">غيّرَ un1 موقع المجموعة ليصبح «%1$s»</string>
     <string name="EventLogRemovedLocation">أزال un1 موقع المجموعة</string>
@@ -795,6 +795,7 @@
     <string name="YouLeft">لقد قمت بمغادرة المجموعة</string>
     <string name="DeleteThisGroup">حذف هذه المحادثة</string>
     <string name="DeleteThisChat">حذف هذه المحادثة</string>
+    <string name="DeleteTheseChats">حذف المحادثات</string>
     <string name="SlideToCancel">اسحب للإلغاء</string>
     <string name="SaveToDownloads">حفظ في الجهاز</string>
     <string name="SaveToGIFs">حفظ في الصور المتحركة</string>
@@ -957,11 +958,13 @@
     <string name="MessageScheduledLimitReached">المعذرة، لا يمكنك جدولة أكثر من 100 رسالة.</string>
     <string name="MessageScheduledBotAction">سيكون من الممكن القيام بهذا الإجراء بعد نشر الرسالة.</string>
     <string name="MessageScheduledVote">سيكون من الممكن التصويت بعد نشر الرسالة.</string>
-    <string name="MessageScheduledVoteResults">Poll results will become available after the message is published.</string>
+    <string name="MessageScheduledVoteResults">ستصبح نتائج الاستفتاء متاحة بعد نشر الرسالة.</string>
     <string name="MessageScheduledReminderNotification">&#128197; تذكير</string>
     <string name="OneResult">نتيجة واحدة</string>
     <string name="VideoQualityIsTooLow">جودة المقطع المرئي أقل مما ينبغي لتغيير إعدادات الضغط.</string>
     <string name="TextSelectionHit">اضغط باستمرار على **كلمة** ما، ثم حرّك المؤشر لتحديد المزيد والنسخ.</string>
+    <string name="CardNumberCopied">Card number copied to clipboard</string>
+    <string name="CopyCardNumber">نسخ</string>
     <!--notification-->
     <string name="MessageLifetimeChanged">عيّن %1$s عداد التدمير الذاتي ليصبح %2$s</string>
     <string name="MessageLifetimeChangedOutgoing">قمت بتعيين عداد التدمير الذاتي ليصبح %1$s</string>
@@ -982,7 +985,7 @@
     <string name="NotificationMessageSDVideo">أرسل لك %1$s مقطعًا مرئيًا ذاتي التدمير</string>
     <string name="NotificationMessageContact2">أرسل لك %1$s جهة اتصال %2$s</string>
     <string name="NotificationMessagePoll2">أرسل لك %1$s استفتاء %2$s</string>
-    <string name="NotificationMessageQuiz2">%1$s sent you the quiz \"%2$s\"</string>
+    <string name="NotificationMessageQuiz2">أرسل لك %1$s الاستفتاء «%2$s»</string>
     <string name="NotificationMessageMap">أرسل لك %1$s موقعًا</string>
     <string name="NotificationMessageLiveLocation">أرسل لك %1$s موقعًا حيًا</string>
     <string name="NotificationMessageGame">%1$s دعاك للعب %2$s</string>
@@ -999,7 +1002,7 @@
     <string name="NotificationMessageGroupPhoto">أرسل %1$s صورةً لمجموعة %2$s</string>
     <string name="NotificationMessageGroupVideo">أرسل %1$s مقطعًا مرئيًا لمجموعة %2$s</string>
     <string name="NotificationMessageGroupPoll2">أرسل %1$s استفتاء %3$s في مجموعة %2$s</string>
-    <string name="NotificationMessageGroupQuiz2">%1$s sent the quiz \"%3$s\" to the group %2$s</string>
+    <string name="NotificationMessageGroupQuiz2">أرسل %1$s الاستفتاء «%3$s» لمجموعة %2$s</string>
     <string name="NotificationMessageGroupContact2">أرسل %1$s جهة اتصال %3$s لمجموعة %2$s</string>
     <string name="NotificationMessageGroupMap">أرسل %1$s موقعًا حيًا لمجموعة %2$s</string>
     <string name="NotificationMessageGroupLiveLocation">شارك %1$s موقعه الحي مع مجموعة %2$s</string>
@@ -1041,7 +1044,7 @@
     <string name="NotificationActionPinnedText">ثبّتَ %1$s «%2$s» في مجموعة %3$s</string>
     <string name="NotificationActionPinnedNoText">ثبّتَ %1$s رسالةً في مجموعة %2$s</string>
     <string name="NotificationActionPinnedPoll2">ثبّتَ %1$s استفتاء %3$s في مجموعة %2$s</string>
-    <string name="NotificationActionPinnedQuiz2">%1$s pinned the quiz \"%3$s\" in the group %2$s</string>
+    <string name="NotificationActionPinnedQuiz2">أرسل %1$s الاختبار «%3$s» لمجموعة %2$s</string>
     <string name="NotificationActionPinnedPhoto">ثبّتَ %1$s صورةً في مجموعة %2$s</string>
     <string name="NotificationActionPinnedGame">ثبّتَ %1$s لعبةً في مجموعة %2$s</string>
     <string name="NotificationActionPinnedGameScore">ثبّتَ %1$s نتيجة لعبة في مجموعة %2$s</string>
@@ -1060,7 +1063,7 @@
     <string name="NotificationActionPinnedTextChannel">ثبت %1$s «%2$s»</string>
     <string name="NotificationActionPinnedNoTextChannel">ثبت %1$s رسالة</string>
     <string name="NotificationActionPinnedPollChannel2">ثبّتَت %1$s استفتاء %2$s</string>
-    <string name="NotificationActionPinnedQuizChannel2">%1$s pinned the quiz \"%2$s\"</string>
+    <string name="NotificationActionPinnedQuizChannel2">ثبت %1$s الاختبار «%2$s»</string>
     <string name="NotificationActionPinnedPhotoChannel">%1$s ثبت صورة</string>
     <string name="NotificationActionPinnedGameChannel">%1$s ثبت لعبة</string>
     <string name="NotificationActionPinnedGameScoreChannel">ثبّتَت %1$s نتيجة لعبة</string>
@@ -1116,7 +1119,6 @@
     <string name="SoftUserLimitAlert">ستتمكن من إضافة أعضاء أكثر إذا انتهيت من إنشاء المجموعة وقمت بتحويلها إلى مجموعة خارقة.</string>
     <string name="EnterGroupNamePlaceholder">أدخل اسم للمجموعة</string>
     <string name="GroupName">اسم المجموعة</string>
-    <string name="MembersCount">تم اختيار %1$d من %2$d</string>
     <string name="MembersCountZero">حتى %1$s</string>
     <string name="JoinToGroupErrorFull">المعذرة، هذه المجموعة ممتلئة.</string>
     <string name="JoinToGroupErrorNotExist">المعذرة، هذه المحادثة غير موجودة.</string>
@@ -1168,6 +1170,9 @@
     <string name="Invite">دعوة</string>
     <string name="BlockContact">حظر المستخدم</string>
     <string name="BlockUser">حظر مستخدم جديد</string>
+    <string name="BlockUsers">Block users</string>
+    <string name="BlockUserMessage">Do you want to block **%1$s** from messaging and calling you on Telegram?</string>
+    <string name="BlockUsersMessage">Do you want to block **%1$s** from messaging and calling you on Telegram?</string>
     <string name="UserBlocked">تم حظر المستخدم</string>
     <string name="UserUnblocked">تم إلغاء حظر المستخدم</string>
     <string name="EditContact">تعديل جهة الاتصال</string>
@@ -1212,6 +1217,8 @@
     <string name="SharedPhotosAndVideos">الصور والمقاطع المرئية</string>
     <string name="SharedLinks">الروابط</string>
     <string name="SharedAudioFiles">الصوتيات</string>
+    <string name="SendMessageLocation">Send Message</string>
+    <string name="ReportUserLocation">Report</string>
     <!--usernames-->
     <string name="Username">اسم المستخدم</string>
     <string name="UsernamePlaceholder">اسم المستخدم الخاص بك</string>
@@ -1305,7 +1312,7 @@
     <string name="DeleteThemeTitle">حذف النمط</string>
     <string name="DeleteThemeAlert">هل ترغب حقًا في حذف هذا النمط؟</string>
     <string name="IncorrectTheme">ملف النمط غير صحيح</string>
-    <string name="EnterThemeNameEdit">Tap **Create** if you want to share your theme with others or customize each color manually.\n\nPlease enter theme name:</string>
+    <string name="EnterThemeNameEdit">اضغط على **إنشاء** إذا كنت ترغب في مشاركة نمطك مع الآخرين أو تخصيص كل لون يدويًّا.\n\nيرجى إدخال اسم النمط:</string>
     <string name="EnterThemeName">أدخل اسم النمط</string>
     <string name="CloseEditor">أغلق المحرر</string>
     <string name="SaveTheme">حفظ النمط</string>
@@ -1675,6 +1682,10 @@
     <string name="DebugMenuReloadContacts">إعادة تنزيل جهات الاتصال</string>
     <string name="DebugMenuResetDialogs">إعادة تعيين المحادثات</string>
     <string name="DebugMenuReadAllDialogs">"قراءة كافة المحادثات "</string>
+    <string name="DebugMenuEnablePauseMusic">Enable pause music on record</string>
+    <string name="DebugMenuDisablePauseMusic">Disable pause music on record</string>
+    <string name="DebugMenuEnableSmoothKeyboard">Enable smooth keyboard</string>
+    <string name="DebugMenuDisableSmoothKeyboard">Disable smooth keyboard</string>
     <string name="DebugMenuEnableCamera">تفعيل الكاميرا الداخلية للتطبيق</string>
     <string name="DebugMenuDisableCamera">تعطيل الكاميرا الداخلية للتطبيق</string>
     <string name="DebugMenuResetContacts">إعادة ضبط جهات الاتصال المستوردة</string>
@@ -1764,14 +1775,14 @@
     <string name="DistanceUnitsMiles">ميل</string>
     <string name="AuthAnotherClient">مسح رمز QR</string>
     <string name="AuthAnotherClientScan">مسح رمز QR</string>
-    <string name="AuthAnotherClientTokenError">Token invalid or already expired.</string>
-    <string name="AuthAnotherClientNotFound">No auth token found</string>
-    <string name="AuthAnotherClientOk">Auth successfull</string>
+    <string name="AuthAnotherClientTokenError">رمز غير صالح أو منتهي الصلاحية.</string>
+    <string name="AuthAnotherClientNotFound">لم يتم العثور على رمز مصادقة</string>
+    <string name="AuthAnotherClientOk">تمّت المصادقة بنجاح</string>
     <string name="AuthAnotherClientDownloadClientUrl">https://desktop.telegram.org</string>
-    <string name="AuthAnotherClientInfo1">Download Telegram on your computer from *desktop.telegram.org*.</string>
+    <string name="AuthAnotherClientInfo1">قم بتنزيل تيليجرام على حاسوبك من *desktop.telegram.org*.</string>
     <string name="AuthAnotherClientInfo2">افتح تيليجرام على سطح المكتب للحصول على رمز QR.</string>
     <string name="AuthAnotherClientInfo3">امسح رمز الـ QR لربط حسابك.</string>
-    <string name="AuthAnotherClientUrl">This code can be used to allow someone to log in to your Telegram account.\n\nTo confirm Telegram login, please go to Settings &gt; Devices &gt; Scan QR and scan the code.</string>
+    <string name="AuthAnotherClientUrl">يمكن استخدام هذا الرمز للسماح لشخص ما بتسجيل الدخول إلى حسابك في تيليجرام.\n\nلتأكيد عملية تسجيل الدخول؛ يرجى الذهاب إلى الإعدادات &gt; الأجهزة &gt; مسح QR وامسح الرمز.</string>
     <!--cache view-->
     <string name="LocalDatabase">قاعدة البيانات على الجهاز</string>
     <string name="LocalDatabaseClearTextTitle">مسح قاعدة البيانات المحلية</string>
@@ -2049,11 +2060,13 @@
     <string name="October">أكتوبر</string>
     <string name="November">نوفمبر</string>
     <string name="December">ديسمبر</string>
-    <string name="SharedFilesTab">ملفات</string>
-    <string name="SharedMediaTab">وسائط</string>
-    <string name="SharedLinksTab">روابط</string>
-    <string name="SharedMusicTab">صوتيات</string>
-    <string name="SharedVoiceTab">تسجيلات</string>
+    <string name="SharedFilesTab2">ملفات</string>
+    <string name="SharedMediaTab2">وسائط</string>
+    <string name="SharedMediaTabFull2">Shared Media</string>
+    <string name="SharedGroupsTab2">مجموعات</string>
+    <string name="SharedLinksTab2">روابط</string>
+    <string name="SharedMusicTab2">صوتيات</string>
+    <string name="SharedVoiceTab2">Voice Messages</string>
     <string name="DocumentsTitle">الملفات المتبادلة</string>
     <string name="SharedContentTitle">الوسائط المتبادلة</string>
     <string name="LinksTitle">الروابط المتبادلة</string>
@@ -2096,7 +2109,7 @@
     <string name="NearbyVenue">أو اختر مكانًا</string>
     <string name="TapToSendLocation">انقر لإرسال هذا الموقع</string>
     <string name="LiveLocations">المواقع الحية</string>
-    <string name="LiveLocationContext">Live Location</string>
+    <string name="LiveLocationContext">الموقع المباشر</string>
     <string name="SendLiveLocationFor15m">لمدة 15 دقيقة</string>
     <string name="SendLiveLocationFor1h">لمدة ساعة</string>
     <string name="SendLiveLocationFor8h">لمدة 8 ساعات</string>
@@ -2111,6 +2124,10 @@
     <string name="LiveLocationAlertGroup">اختر المدة التي سيتمكن خلالها أعضاء هذه المحادثة من مشاهدة موقعك الحي.</string>
     <string name="GpsDisabledAlertTitle">تفعيل خدمات الموقع</string>
     <string name="GpsDisabledAlertText">يرجى تفعيل خدمات الموقع لاستخدام ميزات تيليجرام التي تحتاجها.</string>
+    <string name="MakeMyselfVisible">إظهار نفسي</string>
+    <string name="MakeMyselfVisibleTitle">إظهار&#160;ملفك الشخصي</string>
+    <string name="MakeMyselfVisibleInfo">Users nearby will be able to view your profile and send you messages. This may help you find new friends, but could also attract excessive attention. You can stop sharing your profile at any time.\n\nYour phone number will remain hidden.</string>
+    <string name="StopShowingMe">إيقاف إظهاري</string>
     <string name="PeopleNearby">الأشخاص القريبون</string>
     <string name="AddPeopleNearby">إضافة الأشخاص القريبين</string>
     <string name="PeopleNearbyAccessInfo">أضف الأشخاص القريبين الذين يستعرضون هذا القسم أيضًا واكتشف المجموعات المحلية بكل سهولة.\n\nاسمح بالوصول إلى موقعك لتفعيل هذه الميزة.</string>
@@ -2119,7 +2136,7 @@
     <string name="PeopleNearbyGpsInfo">أضف الأشخاص القريبين الذين يستعرضون هذا القسم أيضًا واكتشف المجموعات المحلية بكل سهولة.\n\nقم بتشغيل خدمات الموقع لتفعيل هذه الميزة.</string>
     <string name="PeopleNearbyGps">تشغيل</string>
     <string name="ChatsNearbyHeader">المجموعات القريبة منك</string>
-    <string name="PeopleNearbyInfo">اطلب من أصدقائك فتح هذه الصفحة لتبادل أرقام الهواتف.</string>
+    <string name="PeopleNearbyInfo2">Exchange contact info with people nearby and find new friends.</string>
     <string name="PeopleNearbyEmpty">يتم البحث عن مستخدمين قريبين منك...</string>
     <string name="NearbyCreateGroup">إنشاء مجموعة محلية</string>
     <string name="NearbyStartGroup">إنشاء مجموعة</string>
@@ -2131,7 +2148,7 @@
     <string name="PlacesInThisArea">الأماكن في هذه المنطقة</string>
     <!--photo gallery view-->
     <string name="ShowAsList">عرض في لائحة</string>
-    <string name="ShowAsGrid">Show as grid</string>
+    <string name="ShowAsGrid">عرض كمصفوفة</string>
     <string name="ShowAllMedia">عرض كافة الوسائط</string>
     <string name="ShowAllFiles">عرض جميع الملفات</string>
     <string name="TapToDownload">انقر للتحميل</string>
@@ -2150,8 +2167,8 @@
     <string name="VideoDoesNotSupportStreaming">هذا المقطع ليس معالَجا ليتم عرضُه فورَ تشغيله، قد تحتاج لتنزيله بالكامل قبل مشاهدته.</string>
     <string name="CantPlayVideo">لم يتمكن التطبيق من تشغيل هذا المقطع المرئي، هل ترغب في تشغيله بمشغل خارجي؟</string>
     <string name="NoRecentSearches">ما من عمليات بحث تمت مؤخرًا</string>
-    <string name="ImagesTab">الصور</string>
-    <string name="GifsTab">الصور المتحركة</string>
+    <string name="ImagesTab2">Images</string>
+    <string name="GifsTab2">GIFs</string>
     <string name="NoRecentGIFs">لا يوجد صور متحركة حديثة</string>
     <string name="SearchImages">بحث الصور</string>
     <string name="SearchImagesInfo">البحث في الويب</string>
@@ -2281,9 +2298,9 @@
     <string name="DataUsage">استخدام التخزين والشبكة</string>
     <string name="StorageUsage">استخدام التخزين</string>
     <string name="NetworkUsage">استهلاك البيانات</string>
-    <string name="NetworkUsageMobile">الخلوية</string>
-    <string name="NetworkUsageWiFi">WI-FI</string>
-    <string name="NetworkUsageRoaming">التجوال</string>
+    <string name="NetworkUsageMobileTab">Mobile</string>
+    <string name="NetworkUsageWiFiTab">Wi-Fi</string>
+    <string name="NetworkUsageRoamingTab">Roaming</string>
     <string name="MessagesDataUsage">الرسائل والبيانات الأخرى</string>
     <string name="CountSent">المرسلة</string>
     <string name="CountReceived">الواردة</string>
@@ -2754,10 +2771,10 @@
     <string name="Recipient_many">%1$d مستقبلًا</string>
     <string name="Recipient_other">%1$d مستقبل</string>
     <string name="OnlineCount_zero">%1$d متصل</string>
-    <string name="OnlineCount_one">%1$d متصل</string>
-    <string name="OnlineCount_two">%1$d متصل</string>
-    <string name="OnlineCount_few">%1$d متصل</string>
-    <string name="OnlineCount_many">%1$d متصل</string>
+    <string name="OnlineCount_one">متصل واحد</string>
+    <string name="OnlineCount_two">متصلان</string>
+    <string name="OnlineCount_few">%1$d متصلين</string>
+    <string name="OnlineCount_many">%1$d متصلا</string>
     <string name="OnlineCount_other">%1$d متصل</string>
     <string name="TelegramContacts_zero">لا يوجد جهات اتصال على تيليجرام</string>
     <string name="TelegramContacts_one">جهة اتصال واحدة على تيليجرام</string>
@@ -2849,6 +2866,12 @@
     <string name="items_few">%1$d عناصر</string>
     <string name="items_many">%1$d عنصرًا</string>
     <string name="items_other">%1$d عنصر</string>
+
+
+
+
+
+
     <string name="FromChats_zero">من %1$d محادثة</string>
     <string name="FromChats_one">من محادثة واحدة</string>
     <string name="FromChats_two">من محادثتين</string>
@@ -3006,12 +3029,36 @@
     <string name="Files_few">%1$d ملفات</string>
     <string name="Files_many">%1$d ملفًا</string>
     <string name="Files_other">%1$d ملف</string>
+    <string name="MusicFiles_zero">%1$d music files</string>
+    <string name="MusicFiles_one">%1$d music file</string>
+    <string name="MusicFiles_two">%1$d music files</string>
+    <string name="MusicFiles_few">%1$d music files</string>
+    <string name="MusicFiles_many">%1$d music files</string>
+    <string name="MusicFiles_other">%1$d music files</string>
+    <string name="CommonGroups_zero">%1$d groups in common</string>
+    <string name="CommonGroups_one">%1$d group in common</string>
+    <string name="CommonGroups_two">%1$d groups in common</string>
+    <string name="CommonGroups_few">%1$d groups in common</string>
+    <string name="CommonGroups_many">%1$d groups in common</string>
+    <string name="CommonGroups_other">%1$d groups in common</string>
     <string name="Media_zero">%1$d ملف</string>
     <string name="Media_one">ملف واحد</string>
     <string name="Media_two">ملفان</string>
     <string name="Media_few">%1$d ملفات</string>
     <string name="Media_many">%1$d ملفًا</string>
     <string name="Media_other">%1$d ملف</string>
+    <string name="Voice_zero">%1$d voice messages</string>
+    <string name="Voice_one">%1$d voice message</string>
+    <string name="Voice_two">%1$d voice messages</string>
+    <string name="Voice_few">%1$d voice messages</string>
+    <string name="Voice_many">%1$d voice messages</string>
+    <string name="Voice_other">%1$d voice messages</string>
+    <string name="Links_zero">%1$d links</string>
+    <string name="Links_one">%1$d link</string>
+    <string name="Links_two">%1$d links</string>
+    <string name="Links_few">%1$d links</string>
+    <string name="Links_many">%1$d links</string>
+    <string name="Links_other">%1$d links</string>
     <string name="BlockedUsersCount_zero">%1$d مستخدم محظور</string>
     <string name="BlockedUsersCount_one">مستخدم واحد محظور</string>
     <string name="BlockedUsersCount_two">مستخدمان محظوران</string>
@@ -3108,12 +3155,30 @@
     <string name="ThemeInstallCount_few">%1$d أشخاص يستخدمون هذا النمط</string>
     <string name="ThemeInstallCount_many">%1$d شخصًا يستخدم هذا النمط</string>
     <string name="ThemeInstallCount_other">%1$d شخص يستخدم هذا النمط</string>
-    <string name="CountOfResults_zero">%1$d of %2$d results</string>
-    <string name="CountOfResults_one">%1$d of %2$d results</string>
-    <string name="CountOfResults_two">%1$d of %2$d results</string>
-    <string name="CountOfResults_few">%1$d of %2$d results</string>
-    <string name="CountOfResults_many">%1$d of %2$d results</string>
-    <string name="CountOfResults_other">%1$d of %2$d results</string>
+    <string name="CountOfResults_zero">%1$d من %2$d</string>
+    <string name="CountOfResults_one">"%1$d من %2$d "</string>
+    <string name="CountOfResults_two">%1$d من %2$d</string>
+    <string name="CountOfResults_few">%1$d من %2$d</string>
+    <string name="CountOfResults_many">%1$d من %2$d</string>
+    <string name="CountOfResults_other">"%1$d من %2$d "</string>
+    <string name="UsersCount_zero">%1$d users</string>
+    <string name="UsersCount_one">%1$d user</string>
+    <string name="UsersCount_two">%1$d users</string>
+    <string name="UsersCount_few">%1$d users</string>
+    <string name="UsersCount_many">%1$d users</string>
+    <string name="UsersCount_other">%1$d users</string>
+    <string name="UsersCountTitle_zero">%1$d users</string>
+    <string name="UsersCountTitle_one">%1$d user</string>
+    <string name="UsersCountTitle_two">%1$d users</string>
+    <string name="UsersCountTitle_few">%1$d users</string>
+    <string name="UsersCountTitle_many">%1$d users</string>
+    <string name="UsersCountTitle_other">%1$d users</string>
+    <string name="MembersCountSelected_zero">%1$d of %2$d selected</string>
+    <string name="MembersCountSelected_one">%1$d of %2$d selected</string>
+    <string name="MembersCountSelected_two">%1$d of %2$d selected</string>
+    <string name="MembersCountSelected_few">%1$d of %2$d selected</string>
+    <string name="MembersCountSelected_many">%1$d of %2$d selected</string>
+    <string name="MembersCountSelected_other">%1$d of %2$d selected</string>
     <!--accessibility descriptions-->
     <string name="AccDescrGroup">مجموعة</string>
     <string name="AccDescrChannel">قناة</string>

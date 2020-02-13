@@ -793,6 +793,10 @@ public class EmojiData {
     public static final HashSet<String> emojiBigColoredMap = new HashSet<>(emojiBigColored.length);
     public static final HashMap<CharSequence, CharSequence> emojiAliasMap = new HashMap<>(aliasNew.length);
 
+    public static boolean isHeartEmoji(String emoji) {
+        return "❤".equals(emoji) || "🧡".equals(emoji) || "💛".equals(emoji) || "💚".equals(emoji) || "💙".equals(emoji) || "💜".equals(emoji) || "🖤".equals(emoji) || "🤍".equals(emoji) || "🤎".equals(emoji);
+    }
+
     static {
         for (int a = 0; a < emojiToFE0F.length; a++) {
             emojiToFE0FMap.put(emojiToFE0F[a], true);

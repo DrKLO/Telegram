@@ -405,7 +405,6 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
     @Override
     public boolean onFragmentCreate() {
         super.onFragmentCreate();
-        swipeBackEnabled = false;
         getNotificationCenter().addObserver(this, NotificationCenter.closeChats);
         NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.locationPermissionGranted);
         if (messageObject != null && messageObject.isLiveLocation()) {
@@ -450,6 +449,11 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
             AndroidUtilities.cancelRunOnUIThread(markAsReadRunnable);
             markAsReadRunnable = null;
         }
+    }
+
+    @Override
+    public boolean isSwipeBackEnabled(MotionEvent event) {
+        return false;
     }
 
     @Override

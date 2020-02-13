@@ -19,8 +19,8 @@ public class BuildVars {
     public static boolean USE_CLOUD_STRINGS = true;
     public static boolean CHECK_UPDATES = true;
     public static boolean TON_WALLET_STANDALONE = false;
-    public static int BUILD_VERSION = 1851;
-    public static String BUILD_VERSION_STRING = "5.14.0";
+    public static int BUILD_VERSION = 1864;
+    public static String BUILD_VERSION_STRING = "5.15.0";
     public static int APP_ID = 4;
     public static String APP_HASH = "014b35b6184100b085b0d0572f9b5103";
     public static String HOCKEY_APP_HASH = "a5b5c4f551dadedc9918d9766a22ca7c";

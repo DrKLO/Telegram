@@ -132,6 +132,8 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
 
     private View shadow;
 
+    private int currentPanTranslationY;
+
     private FrameLayout frameLayout2;
     private EditTextEmoji commentTextView;
     private FrameLayout writeButtonContainer;
@@ -610,7 +612,7 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
 
         cameraDrawable = context.getResources().getDrawable(R.drawable.instant_camera).mutate();
 
-        sizeNotifierFrameLayout = new SizeNotifierFrameLayout(context) {
+        sizeNotifierFrameLayout = new SizeNotifierFrameLayout(context, false) {
 
             private int lastNotifyWidth;
             private RectF rect = new RectF();
@@ -649,7 +651,7 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
                     ignoreLayout = false;
                 }
                 int availableHeight = totalHeight - getPaddingTop();
-                int keyboardSize = getKeyboardHeight();
+                int keyboardSize = useSmoothKeyboard ? 0 : getKeyboardHeight();
                 if (!AndroidUtilities.isInMultiwindow && keyboardSize <= AndroidUtilities.dp(20)) {
                     availableHeight -= commentTextView.getEmojiPadding();
                 }
@@ -710,7 +712,7 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
                 setMeasuredDimension(widthSize, heightSize);
                 widthSize -= backgroundPaddingLeft * 2;
 
-                int keyboardSize = getKeyboardHeight();
+                int keyboardSize = useSmoothKeyboard ? 0 : getKeyboardHeight();
                 if (keyboardSize <= AndroidUtilities.dp(20)) {
                     if (!AndroidUtilities.isInMultiwindow) {
                         heightSize -= commentTextView.getEmojiPadding();
@@ -757,7 +759,8 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
                 }
                 final int count = getChildCount();
 
-                int paddingBottom = getKeyboardHeight() <= AndroidUtilities.dp(20) && !AndroidUtilities.isInMultiwindow && !AndroidUtilities.isTablet() ? commentTextView.getEmojiPadding() : 0;
+                int keyboardSize = useSmoothKeyboard ? 0 : getKeyboardHeight();
+                int paddingBottom = keyboardSize <= AndroidUtilities.dp(20) && !AndroidUtilities.isInMultiwindow && !AndroidUtilities.isTablet() ? commentTextView.getEmojiPadding() : 0;
                 setBottomClip(paddingBottom);
 
                 for (int i = 0; i < count; i++) {
@@ -811,7 +814,7 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
                         if (AndroidUtilities.isTablet()) {
                             childTop = getMeasuredHeight() - child.getMeasuredHeight();
                         } else {
-                            childTop = getMeasuredHeight() + getKeyboardHeight() - child.getMeasuredHeight();
+                            childTop = getMeasuredHeight() + keyboardSize - child.getMeasuredHeight();
                         }
                     }
                     child.layout(childLeft, childTop, childLeft + width, childTop + height);
@@ -916,6 +919,17 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
                 }
                 super.setTranslationY(translationY);
                 checkCameraViewPosition();
+            }
+
+            @Override
+            protected void onPanTranslationUpdate(int y) {
+                currentPanTranslationY = y;
+                if (commentTextView.isPopupShowing()) {
+                    containerView.setTranslationY(y);
+                    actionBar.setTranslationY(0);
+                } else {
+                    actionBar.setTranslationY(y);
+                }
             }
         };
         containerView = sizeNotifierFrameLayout;
@@ -2996,7 +3010,7 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
                     cameraViewOffsetY = 0;
                 }
                 int containerHeight = containerView.getMeasuredHeight();
-                int keyboardSize = sizeNotifierFrameLayout.getKeyboardHeight();
+                int keyboardSize = useSmoothKeyboard ? 0 : sizeNotifierFrameLayout.getKeyboardHeight();
                 if (!AndroidUtilities.isInMultiwindow && keyboardSize <= AndroidUtilities.dp(20)) {
                     containerHeight -= commentTextView.getEmojiPadding();
                 }

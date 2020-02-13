@@ -55,6 +55,7 @@ import org.telegram.messenger.MediaController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.MessagesStorage;
 import org.telegram.messenger.NotificationCenter;
+import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
 import org.telegram.messenger.VideoEditedInfo;
@@ -543,7 +544,7 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
             }
         }
 
-        sizeNotifierFrameLayout = new SizeNotifierFrameLayout(context) {
+        sizeNotifierFrameLayout = new SizeNotifierFrameLayout(context, SharedConfig.smoothKeyboard) {
 
             private int lastNotifyWidth;
             private boolean ignoreLayout;
@@ -585,16 +586,24 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
 
                 setMeasuredDimension(widthSize, heightSize);
 
-                int keyboardSize = getKeyboardHeight();
+                int kbHeight = getKeyboardHeight();
+                int keyboardSize = SharedConfig.smoothKeyboard ? 0 : kbHeight;
                 if (keyboardSize <= AndroidUtilities.dp(20)) {
                     if (!AndroidUtilities.isInMultiwindow && commentTextView != null && frameLayout2.getParent() == this) {
                         heightSize -= commentTextView.getEmojiPadding();
                         heightMeasureSpec = MeasureSpec.makeMeasureSpec(heightSize, MeasureSpec.EXACTLY);
                     }
-                } else if (commentTextView != null) {
+                }
+                if (kbHeight > AndroidUtilities.dp(20) && commentTextView != null) {
                     ignoreLayout = true;
                     commentTextView.hideEmojiView();
                     ignoreLayout = false;
+                }
+
+                if (SharedConfig.smoothKeyboard && commentTextView != null && commentTextView.isPopupShowing()) {
+                    fragmentView.setTranslationY(getCurrentPanTranslationY());
+                    listView.setTranslationY(0);
+                    emptyView.setTranslationY(0);
                 }
 
                 int childCount = getChildCount();
@@ -632,7 +641,8 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
                 }
                 final int count = getChildCount();
 
-                int paddingBottom = commentTextView != null && frameLayout2.getParent() == this && getKeyboardHeight() <= AndroidUtilities.dp(20) && !AndroidUtilities.isInMultiwindow && !AndroidUtilities.isTablet() ? commentTextView.getEmojiPadding() : 0;
+                int keyboardSize = SharedConfig.smoothKeyboard ? 0 : getKeyboardHeight();
+                int paddingBottom = commentTextView != null && frameLayout2.getParent() == this && keyboardSize <= AndroidUtilities.dp(20) && !AndroidUtilities.isInMultiwindow && !AndroidUtilities.isTablet() ? commentTextView.getEmojiPadding() : 0;
                 setBottomClip(paddingBottom);
 
                 for (int i = 0; i < count; i++) {
@@ -686,7 +696,7 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
                         if (AndroidUtilities.isTablet()) {
                             childTop = getMeasuredHeight() - child.getMeasuredHeight();
                         } else {
-                            childTop = getMeasuredHeight() + getKeyboardHeight() - child.getMeasuredHeight();
+                            childTop = getMeasuredHeight() + keyboardSize - child.getMeasuredHeight();
                         }
                     }
                     child.layout(childLeft, childTop, childLeft + width, childTop + height);
@@ -866,17 +876,17 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
         }
         sizeNotifierFrameLayout.addView(emptyView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.LEFT | Gravity.TOP, 0, 0, 0, selectPhotoType != 0 ? 0 : 48));
 
-        if (selectedAlbum == null) {
-            listView.setOnScrollListener(new RecyclerView.OnScrollListener() {
-                @Override
-                public void onScrollStateChanged(RecyclerView recyclerView, int newState) {
-                    if (newState == RecyclerView.SCROLL_STATE_DRAGGING) {
-                        AndroidUtilities.hideKeyboard(getParentActivity().getCurrentFocus());
-                    }
+        listView.setOnScrollListener(new RecyclerView.OnScrollListener() {
+            @Override
+            public void onScrollStateChanged(RecyclerView recyclerView, int newState) {
+                if (newState == RecyclerView.SCROLL_STATE_DRAGGING) {
+                    AndroidUtilities.hideKeyboard(getParentActivity().getCurrentFocus());
                 }
+            }
 
-                @Override
-                public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
+            @Override
+            public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
+                if (selectedAlbum == null) {
                     int firstVisibleItem = layoutManager.findFirstVisibleItemPosition();
                     int visibleItemCount = firstVisibleItem == RecyclerView.NO_POSITION ? 0 : Math.abs(layoutManager.findLastVisibleItemPosition() - firstVisibleItem) + 1;
                     if (visibleItemCount > 0) {
@@ -888,8 +898,10 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
                         }
                     }
                 }
-            });
+            }
+        });
 
+        if (selectedAlbum == null) {
             updateSearchInterface();
         }
 
@@ -1108,6 +1120,21 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
         return fragmentView;
     }
 
+    @Override
+    protected void onPanTranslationUpdate(int y) {
+        if (listView == null) {
+            return;
+        }
+        if (commentTextView.isPopupShowing()) {
+            fragmentView.setTranslationY(y);
+            listView.setTranslationY(0);
+            emptyView.setTranslationY(0);
+        } else {
+            listView.setTranslationY(y);
+            emptyView.setTranslationY(y);
+        }
+    }
+
     public void setLayoutViews(FrameLayout f2, FrameLayout button, View count, View s, EditTextEmoji emoji) {
         frameLayout2 = f2;
         writeButtonContainer = button;
@@ -1173,7 +1200,7 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
                 initialSearchString = null;
                 processSearch(searchItem.getSearchField());
             }
-            getParentActivity().getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
+            getParentActivity().getWindow().setSoftInputMode(SharedConfig.smoothKeyboard ? WindowManager.LayoutParams.SOFT_INPUT_ADJUST_PAN : WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
         }
     }
 

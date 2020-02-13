@@ -21,6 +21,7 @@ import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Build;
 import android.text.TextUtils;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewParent;
 import android.webkit.CookieManager;
@@ -154,7 +155,6 @@ public class WebviewActivity extends BaseFragment {
     @SuppressLint({"SetJavaScriptEnabled", "AddJavascriptInterface"})
     @Override
     public View createView(Context context) {
-        swipeBackEnabled = false;
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
         actionBar.setAllowOverlayTitle(true);
 
@@ -324,6 +324,11 @@ public class WebviewActivity extends BaseFragment {
         if (isOpen && !backward && webView != null) {
             webView.loadUrl(currentUrl);
         }
+    }
+
+    @Override
+    public boolean isSwipeBackEnabled(MotionEvent event) {
+        return false;
     }
 
     public static boolean supportWebview() {

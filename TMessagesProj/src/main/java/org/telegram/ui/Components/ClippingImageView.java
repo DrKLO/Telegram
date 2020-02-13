@@ -51,6 +51,8 @@ public class ClippingImageView extends View {
     private float animationProgress;
     private float[][] animationValues;
 
+    private float additionalTranslationY;
+
     public ClippingImageView(Context context) {
         super(context);
         paint = new Paint(Paint.FILTER_BITMAP_FLAG);
@@ -66,6 +68,20 @@ public class ClippingImageView extends View {
 
     public void setAnimationValues(float[][] values) {
         animationValues = values;
+    }
+
+    public void setAdditionalTranslationY(float value) {
+        additionalTranslationY = value;
+    }
+
+    @Override
+    public void setTranslationY(float translationY) {
+        super.setTranslationY(translationY + additionalTranslationY);
+    }
+
+    @Override
+    public float getTranslationY() {
+        return super.getTranslationY() - additionalTranslationY;
     }
 
     @Keep

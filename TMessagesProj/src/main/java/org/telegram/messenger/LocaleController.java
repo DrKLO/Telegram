@@ -2661,7 +2661,7 @@ public class LocaleController {
         public int quantityForNumber(int count) {
             if (count == 0) {
                 return QUANTITY_ZERO;
-            } else if (count > 0 && count < 2) {
+            } else if (count == 1) {
                 return QUANTITY_ONE;
             } else {
                 return QUANTITY_OTHER;

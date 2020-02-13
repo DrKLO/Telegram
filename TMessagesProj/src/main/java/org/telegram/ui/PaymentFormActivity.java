@@ -185,6 +185,8 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
     private boolean shouldNavigateBack;
     private ScrollView scrollView;
 
+    private boolean swipeBackEnabled = true;
+
     private TextView textView;
     private HeaderCell[] headerCell = new HeaderCell[3];
     private ArrayList<View> dividers = new ArrayList<>();
@@ -3043,13 +3045,19 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
                     AndroidUtilities.runOnUIThread(() -> {
                         NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.paymentFinished);
                         setDonePressed(false);
-                        webView.setVisibility(View.VISIBLE);
                         webviewLoading = true;
                         showEditDoneProgress(true, true);
-                        progressView.setVisibility(View.VISIBLE);
-                        doneItem.setEnabled(false);
-                        doneItem.getContentView().setVisibility(View.INVISIBLE);
-                        webView.loadUrl(webViewUrl = ((TLRPC.TL_payments_paymentVerificationNeeded) response).url);
+                        if (progressView != null) {
+                            progressView.setVisibility(View.VISIBLE);
+                        }
+                        if (doneItem != null) {
+                            doneItem.setEnabled(false);
+                            doneItem.getContentView().setVisibility(View.INVISIBLE);
+                        }
+                        if (webView != null) {
+                            webView.setVisibility(View.VISIBLE);
+                            webView.loadUrl(webViewUrl = ((TLRPC.TL_payments_paymentVerificationNeeded) response).url);
+                        }
                     });
                 }
             } else {
@@ -3083,6 +3091,11 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
         if (detailSettingsCell[0] != null) {
             detailSettingsCell[0].setEnabled(!donePressed);
         }
+    }
+
+    @Override
+    public boolean isSwipeBackEnabled(MotionEvent event) {
+        return swipeBackEnabled;
     }
 
     private void checkPassword() {

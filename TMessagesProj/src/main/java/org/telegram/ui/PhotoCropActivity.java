@@ -372,7 +372,6 @@ public class PhotoCropActivity extends BaseFragment {
 
     @Override
     public boolean onFragmentCreate() {
-        swipeBackEnabled = false;
         if (imageToCrop == null) {
             String photoPath = getArguments().getString("photoPath");
             Uri photoUri = getArguments().getParcelable("photoUri");
@@ -452,6 +451,11 @@ public class PhotoCropActivity extends BaseFragment {
         fragmentView.setLayoutParams(new FrameLayout.LayoutParams(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
 
         return fragmentView;
+    }
+
+    @Override
+    public boolean isSwipeBackEnabled(MotionEvent event) {
+        return false;
     }
 
     public void setDelegate(PhotoEditActivityDelegate delegate) {

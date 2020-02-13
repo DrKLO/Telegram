@@ -48,6 +48,9 @@ public class UserConfig extends BaseController {
     public int migrateOffsetChannelId = -1;
     public long migrateOffsetAccess = -1;
 
+    public int sharingMyLocationUntil;
+    public int lastMyLocationShareTime;
+
     public boolean notificationsSettingsLoaded;
     public boolean notificationsSignUpSettingsLoaded;
     public boolean syncContacts = true;
@@ -142,6 +145,8 @@ public class UserConfig extends BaseController {
                 editor.putBoolean("notificationsSignUpSettingsLoaded", notificationsSignUpSettingsLoaded);
                 editor.putLong("autoDownloadConfigLoadTime", autoDownloadConfigLoadTime);
                 editor.putBoolean("hasValidDialogLoadIds", hasValidDialogLoadIds);
+                editor.putInt("sharingMyLocationUntil", sharingMyLocationUntil);
+                editor.putInt("lastMyLocationShareTime", lastMyLocationShareTime);
                 if (tonEncryptedData != null) {
                     editor.putString("tonEncryptedData", tonEncryptedData);
                     editor.putString("tonPublicKey", tonPublicKey);
@@ -296,6 +301,8 @@ public class UserConfig extends BaseController {
             tonPublicKey = preferences.getString("tonPublicKey", null);
             tonKeyName = preferences.getString("tonKeyName", "walletKey" + currentAccount);
             tonCreationFinished = preferences.getBoolean("tonCreationFinished", true);
+            sharingMyLocationUntil = preferences.getInt("sharingMyLocationUntil", 0);
+            lastMyLocationShareTime = preferences.getInt("lastMyLocationShareTime", 0);
             String salt = preferences.getString("tonPasscodeSalt", null);
             if (salt != null) {
                 try {
@@ -443,6 +450,8 @@ public class UserConfig extends BaseController {
         getPreferences().edit().clear().commit();
         clearTonConfig();
 
+        sharingMyLocationUntil = 0;
+        lastMyLocationShareTime = 0;
         currentUser = null;
         clientUserId = 0;
         registeredForPush = false;

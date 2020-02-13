@@ -79,6 +79,8 @@ public class DataUsageActivity extends BaseFragment {
         return t * t * t * t * t + 1.0F;
     };
 
+    private boolean swipeBackEnabled = true;
+
     public DataUsageActivity() {
         super();
     }
@@ -548,6 +550,11 @@ public class DataUsageActivity extends BaseFragment {
         }
     }
 
+    @Override
+    public boolean isSwipeBackEnabled(MotionEvent event) {
+        return swipeBackEnabled;
+    }
+
     private void setScrollY(float value) {
         actionBar.setTranslationY(value);
         for (int a = 0; a < viewPages.length; a++) {
@@ -560,9 +567,9 @@ public class DataUsageActivity extends BaseFragment {
         if (scrollSlidingTextTabStrip == null) {
             return;
         }
-        scrollSlidingTextTabStrip.addTextTab(0, LocaleController.getString("NetworkUsageMobile", R.string.NetworkUsageMobile));
-        scrollSlidingTextTabStrip.addTextTab(1, LocaleController.getString("NetworkUsageWiFi", R.string.NetworkUsageWiFi));
-        scrollSlidingTextTabStrip.addTextTab(2, LocaleController.getString("NetworkUsageRoaming", R.string.NetworkUsageRoaming));
+        scrollSlidingTextTabStrip.addTextTab(0, LocaleController.getString("NetworkUsageMobileTab", R.string.NetworkUsageMobileTab));
+        scrollSlidingTextTabStrip.addTextTab(1, LocaleController.getString("NetworkUsageWiFiTab", R.string.NetworkUsageWiFiTab));
+        scrollSlidingTextTabStrip.addTextTab(2, LocaleController.getString("NetworkUsageRoamingTab", R.string.NetworkUsageRoamingTab));
         scrollSlidingTextTabStrip.setVisibility(View.VISIBLE);
         actionBar.setExtraHeight(AndroidUtilities.dp(44));
         int id = scrollSlidingTextTabStrip.getCurrentTabId();

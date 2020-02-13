@@ -2836,20 +2836,9 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
         recordReplyingMessageObject = reply_to_msg;
     }
 
-    private boolean shouldRequestRecordAudioFocus() {
-        try {
-            if (/*NotificationsController.audioManager.isWiredHeadsetOn() || */NotificationsController.audioManager.isBluetoothA2dpOn()) {
-                return false;
-            }
-        } catch (Throwable ignore) {
-
-        }
-        return true;
-    }
-
     public void requestAudioFocus(boolean request) {
         if (request) {
-            if (!hasRecordAudioFocus && shouldRequestRecordAudioFocus()) {
+            if (!hasRecordAudioFocus && SharedConfig.pauseMusicOnRecord) {
                 int result = NotificationsController.audioManager.requestAudioFocus(audioRecordFocusChangedListener, AudioManager.STREAM_MUSIC, AudioManager.AUDIOFOCUS_GAIN_TRANSIENT);
                 if (result == AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
                     hasRecordAudioFocus = true;

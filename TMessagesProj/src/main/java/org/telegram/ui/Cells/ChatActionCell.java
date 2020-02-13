@@ -11,6 +11,9 @@ package org.telegram.ui.Cells;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
+import android.graphics.ColorFilter;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffColorFilter;
 import android.text.Layout;
 import android.text.Spannable;
 import android.text.StaticLayout;
@@ -78,6 +81,11 @@ public class ChatActionCell extends BaseCell {
     private int customDate;
     private CharSequence customText;
 
+    private String overrideBackground;
+    private String overrideText;
+    private ColorFilter overrideColorFilter;
+    private int overrideColor;
+
     private ChatActionCellDelegate delegate;
 
     public ChatActionCell(Context context) {
@@ -123,6 +131,11 @@ public class ChatActionCell extends BaseCell {
         } else {
             buildLayout();
         }
+    }
+
+    public void setOverrideColor(String background, String text) {
+        overrideBackground = background;
+        overrideText = text;
     }
 
     public void setMessageObject(MessageObject messageObject) {
@@ -407,197 +420,222 @@ public class ChatActionCell extends BaseCell {
             imageReceiver.draw(canvas);
         }
 
-        if (textLayout != null) {
-            final int count = textLayout.getLineCount();
-            final int corner = AndroidUtilities.dp(11);
-            final int cornerOffset = AndroidUtilities.dp(6);
-            final int cornerRest = corner - cornerOffset;
-            final int cornerIn = AndroidUtilities.dp(8);
-            int y = AndroidUtilities.dp(7);
-            int previousLineBottom = 0;
-            int previousLineHeight = 0;
-            int dx;
-            int dx2;
-            int dy;
-            for (int a = 0; a < count; a++) {
-                int width = findMaxWidthAroundLine(a);
-                int x = (getMeasuredWidth() - width - cornerRest) / 2;
-                width += cornerRest;
-                int lineBottom = textLayout.getLineBottom(a);
-                int height = lineBottom - previousLineBottom;
-                int additionalHeight = 0;
-                previousLineBottom = lineBottom;
+        if (textLayout == null) {
+            return;
+        }
 
-                boolean drawBottomCorners = a == count - 1;
-                boolean drawTopCorners = a == 0;
+        if (overrideBackground != null) {
+            int color = Theme.getColor(overrideBackground);
+            if (color != overrideColor) {
+                overrideColor = color;
+                overrideColorFilter = new PorterDuffColorFilter(overrideColor, PorterDuff.Mode.MULTIPLY);
+            }
+            for (int a = 0; a < 4; a++) {
+                Theme.chat_cornerOuter[a].setColorFilter(overrideColorFilter);
+                Theme.chat_cornerInner[a].setColorFilter(overrideColorFilter);
+            }
+            Theme.chat_actionBackgroundPaint.setColor(overrideColor);
+            Theme.chat_actionTextPaint.setColor(Theme.getColor(overrideText));
+        }
 
-                if (drawTopCorners) {
-                    y -= AndroidUtilities.dp(3);
-                    height += AndroidUtilities.dp(3);
-                }
-                if (drawBottomCorners) {
-                    height += AndroidUtilities.dp(3);
-                }
+        final int count = textLayout.getLineCount();
+        final int corner = AndroidUtilities.dp(11);
+        final int cornerOffset = AndroidUtilities.dp(6);
+        final int cornerRest = corner - cornerOffset;
+        final int cornerIn = AndroidUtilities.dp(8);
+        int y = AndroidUtilities.dp(7);
+        int previousLineBottom = 0;
+        int previousLineHeight = 0;
+        int dx;
+        int dx2;
+        int dy;
+        for (int a = 0; a < count; a++) {
+            int width = findMaxWidthAroundLine(a);
+            int x = (getMeasuredWidth() - width - cornerRest) / 2;
+            width += cornerRest;
+            int lineBottom = textLayout.getLineBottom(a);
+            int height = lineBottom - previousLineBottom;
+            int additionalHeight = 0;
+            previousLineBottom = lineBottom;
 
-                int yOld = y;
-                int hOld = height;
+            boolean drawBottomCorners = a == count - 1;
+            boolean drawTopCorners = a == 0;
 
-                int drawInnerBottom = 0;
-                int drawInnerTop = 0;
-                int nextLineWidth = 0;
-                int prevLineWidth = 0;
-                if (!drawBottomCorners && a + 1 < count) {
-                    nextLineWidth = findMaxWidthAroundLine(a + 1) + cornerRest;
-                    if (nextLineWidth + cornerRest * 2 < width) {
-                        drawInnerBottom = 1;
-                        drawBottomCorners = true;
-                    } else if (width + cornerRest * 2 < nextLineWidth) {
-                        drawInnerBottom = 2;
-                    } else {
-                        drawInnerBottom = 3;
-                    }
-                }
-                if (!drawTopCorners && a > 0) {
-                    prevLineWidth = findMaxWidthAroundLine(a - 1) + cornerRest;
-                    if (prevLineWidth + cornerRest * 2 < width) {
-                        drawInnerTop = 1;
-                        drawTopCorners = true;
-                    } else if (width + cornerRest * 2 < prevLineWidth) {
-                        drawInnerTop = 2;
-                    } else {
-                        drawInnerTop = 3;
-                    }
-                }
-
-                if (drawInnerBottom != 0) {
-                    if (drawInnerBottom == 1) {
-                        int nextX = (getMeasuredWidth() - nextLineWidth) / 2;
-                        additionalHeight = AndroidUtilities.dp(3);
-
-                        if (isLineBottom(nextLineWidth, width, a + 1, count, cornerRest)) {
-                            canvas.drawRect(x + cornerOffset, y + height, nextX - cornerRest, y + height + AndroidUtilities.dp(3), Theme.chat_actionBackgroundPaint);
-                            canvas.drawRect(nextX + nextLineWidth + cornerRest, y + height, x + width - cornerOffset, y + height + AndroidUtilities.dp(3), Theme.chat_actionBackgroundPaint);
-                        } else {
-                            canvas.drawRect(x + cornerOffset, y + height, nextX, y + height + AndroidUtilities.dp(3), Theme.chat_actionBackgroundPaint);
-                            canvas.drawRect(nextX + nextLineWidth, y + height, x + width - cornerOffset, y + height + AndroidUtilities.dp(3), Theme.chat_actionBackgroundPaint);
-                        }
-                    } else if (drawInnerBottom == 2) {
-                        additionalHeight = AndroidUtilities.dp(3);
-
-                        dy = y + height - AndroidUtilities.dp(11);
-
-                        dx = x - cornerIn;
-                        if (drawInnerTop != 2 && drawInnerTop != 3) {
-                            dx -= cornerRest;
-                        }
-                        if (drawTopCorners || drawBottomCorners) {
-                            canvas.drawRect(dx + cornerIn, dy + AndroidUtilities.dp(3), dx + cornerIn + corner, dy + corner, Theme.chat_actionBackgroundPaint);
-                        }
-                        Theme.chat_cornerInner[2].setBounds(dx, dy, dx + cornerIn, dy + cornerIn);
-                        Theme.chat_cornerInner[2].draw(canvas);
-
-                        dx = x + width;
-                        if (drawInnerTop != 2 && drawInnerTop != 3) {
-                            dx += cornerRest;
-                        }
-                        if (drawTopCorners || drawBottomCorners) {
-                            canvas.drawRect(dx - corner, dy + AndroidUtilities.dp(3), dx, dy + corner, Theme.chat_actionBackgroundPaint);
-                        }
-                        Theme.chat_cornerInner[3].setBounds(dx, dy, dx + cornerIn, dy + cornerIn);
-                        Theme.chat_cornerInner[3].draw(canvas);
-                    } else {
-                        additionalHeight = AndroidUtilities.dp(6);
-                    }
-                }
-                if (drawInnerTop != 0) {
-                    if (drawInnerTop == 1) {
-                        int prevX = (getMeasuredWidth() - prevLineWidth) / 2;
-
-                        y -= AndroidUtilities.dp(3);
-                        height += AndroidUtilities.dp(3);
-
-                        if (isLineTop(prevLineWidth, width, a - 1, count, cornerRest)) {
-                            canvas.drawRect(x + cornerOffset, y, prevX - cornerRest, y + AndroidUtilities.dp(3), Theme.chat_actionBackgroundPaint);
-                            canvas.drawRect(prevX + prevLineWidth + cornerRest, y, x + width - cornerOffset, y + AndroidUtilities.dp(3), Theme.chat_actionBackgroundPaint);
-                        } else {
-                            canvas.drawRect(x + cornerOffset, y, prevX, y + AndroidUtilities.dp(3), Theme.chat_actionBackgroundPaint);
-                            canvas.drawRect(prevX + prevLineWidth, y, x + width - cornerOffset, y + AndroidUtilities.dp(3), Theme.chat_actionBackgroundPaint);
-                        }
-                    } else if (drawInnerTop == 2) {
-                        y -= AndroidUtilities.dp(3);
-                        height += AndroidUtilities.dp(3);
-
-                        dy = previousLineHeight;
-
-                        dx = x - cornerIn;
-                        if (drawInnerBottom != 2 && drawInnerBottom != 3) {
-                            dx -= cornerRest;
-                        }
-                        if (drawTopCorners || drawBottomCorners) {
-                            canvas.drawRect(dx + cornerIn, y + AndroidUtilities.dp(3), dx + cornerIn + corner, y + AndroidUtilities.dp(11), Theme.chat_actionBackgroundPaint);
-                        }
-                        Theme.chat_cornerInner[0].setBounds(dx, dy, dx + cornerIn, dy + cornerIn);
-                        Theme.chat_cornerInner[0].draw(canvas);
-
-                        dx = x + width;
-                        if (drawInnerBottom != 2 && drawInnerBottom != 3) {
-                            dx += cornerRest;
-                        }
-                        if (drawTopCorners || drawBottomCorners) {
-                            canvas.drawRect(dx - corner, y + AndroidUtilities.dp(3), dx, y + AndroidUtilities.dp(11), Theme.chat_actionBackgroundPaint);
-                        }
-                        Theme.chat_cornerInner[1].setBounds(dx, dy, dx + cornerIn, dy + cornerIn);
-                        Theme.chat_cornerInner[1].draw(canvas);
-                    } else {
-                        y -= AndroidUtilities.dp(6);
-                        height += AndroidUtilities.dp(6);
-                    }
-                }
-
-                if (drawTopCorners || drawBottomCorners) {
-                    canvas.drawRect(x + cornerOffset, yOld, x + width - cornerOffset, yOld + hOld, Theme.chat_actionBackgroundPaint);
-                } else {
-                    canvas.drawRect(x, yOld, x + width, yOld + hOld, Theme.chat_actionBackgroundPaint);
-                }
-
-                dx = x - cornerRest;
-                dx2 = x + width - cornerOffset;
-                if (drawTopCorners && !drawBottomCorners && drawInnerBottom != 2) {
-                    canvas.drawRect(dx, y + corner, dx + corner, y + height + additionalHeight - AndroidUtilities.dp(6), Theme.chat_actionBackgroundPaint);
-                    canvas.drawRect(dx2, y + corner, dx2 + corner, y + height + additionalHeight - AndroidUtilities.dp(6), Theme.chat_actionBackgroundPaint);
-                } else if (drawBottomCorners && !drawTopCorners && drawInnerTop != 2) {
-                    canvas.drawRect(dx, y + corner - AndroidUtilities.dp(5), dx + corner, y + height + additionalHeight - corner, Theme.chat_actionBackgroundPaint);
-                    canvas.drawRect(dx2, y + corner - AndroidUtilities.dp(5), dx2 + corner, y + height + additionalHeight - corner, Theme.chat_actionBackgroundPaint);
-                } else if (drawTopCorners || drawBottomCorners) {
-                    canvas.drawRect(dx, y + corner, dx + corner, y + height + additionalHeight - corner, Theme.chat_actionBackgroundPaint);
-                    canvas.drawRect(dx2, y + corner, dx2 + corner, y + height + additionalHeight - corner, Theme.chat_actionBackgroundPaint);
-                }
-
-                if (drawTopCorners) {
-                    Theme.chat_cornerOuter[0].setBounds(dx, y, dx + corner, y + corner);
-                    Theme.chat_cornerOuter[0].draw(canvas);
-                    Theme.chat_cornerOuter[1].setBounds(dx2, y, dx2 + corner, y + corner);
-                    Theme.chat_cornerOuter[1].draw(canvas);
-                }
-
-                if (drawBottomCorners) {
-                    dy = y + height + additionalHeight - corner;
-
-                    Theme.chat_cornerOuter[2].setBounds(dx2, dy, dx2 + corner, dy + corner);
-                    Theme.chat_cornerOuter[2].draw(canvas);
-                    Theme.chat_cornerOuter[3].setBounds(dx, dy, dx + corner, dy + corner);
-                    Theme.chat_cornerOuter[3].draw(canvas);
-                }
-
-                y += height;
-
-                previousLineHeight = y + additionalHeight;
+            if (drawTopCorners) {
+                y -= AndroidUtilities.dp(3);
+                height += AndroidUtilities.dp(3);
+            }
+            if (drawBottomCorners) {
+                height += AndroidUtilities.dp(3);
             }
 
-            canvas.save();
-            canvas.translate(textXLeft, textY);
-            textLayout.draw(canvas);
-            canvas.restore();
+            int yOld = y;
+            int hOld = height;
+
+            int drawInnerBottom = 0;
+            int drawInnerTop = 0;
+            int nextLineWidth = 0;
+            int prevLineWidth = 0;
+            if (!drawBottomCorners && a + 1 < count) {
+                nextLineWidth = findMaxWidthAroundLine(a + 1) + cornerRest;
+                if (nextLineWidth + cornerRest * 2 < width) {
+                    drawInnerBottom = 1;
+                    drawBottomCorners = true;
+                } else if (width + cornerRest * 2 < nextLineWidth) {
+                    drawInnerBottom = 2;
+                } else {
+                    drawInnerBottom = 3;
+                }
+            }
+            if (!drawTopCorners && a > 0) {
+                prevLineWidth = findMaxWidthAroundLine(a - 1) + cornerRest;
+                if (prevLineWidth + cornerRest * 2 < width) {
+                    drawInnerTop = 1;
+                    drawTopCorners = true;
+                } else if (width + cornerRest * 2 < prevLineWidth) {
+                    drawInnerTop = 2;
+                } else {
+                    drawInnerTop = 3;
+                }
+            }
+
+            if (drawInnerBottom != 0) {
+                if (drawInnerBottom == 1) {
+                    int nextX = (getMeasuredWidth() - nextLineWidth) / 2;
+                    additionalHeight = AndroidUtilities.dp(3);
+
+                    if (isLineBottom(nextLineWidth, width, a + 1, count, cornerRest)) {
+                        canvas.drawRect(x + cornerOffset, y + height, nextX - cornerRest, y + height + AndroidUtilities.dp(3), Theme.chat_actionBackgroundPaint);
+                        canvas.drawRect(nextX + nextLineWidth + cornerRest, y + height, x + width - cornerOffset, y + height + AndroidUtilities.dp(3), Theme.chat_actionBackgroundPaint);
+                    } else {
+                        canvas.drawRect(x + cornerOffset, y + height, nextX, y + height + AndroidUtilities.dp(3), Theme.chat_actionBackgroundPaint);
+                        canvas.drawRect(nextX + nextLineWidth, y + height, x + width - cornerOffset, y + height + AndroidUtilities.dp(3), Theme.chat_actionBackgroundPaint);
+                    }
+                } else if (drawInnerBottom == 2) {
+                    additionalHeight = AndroidUtilities.dp(3);
+
+                    dy = y + height - AndroidUtilities.dp(11);
+
+                    dx = x - cornerIn;
+                    if (drawInnerTop != 2 && drawInnerTop != 3) {
+                        dx -= cornerRest;
+                    }
+                    if (drawTopCorners || drawBottomCorners) {
+                        canvas.drawRect(dx + cornerIn, dy + AndroidUtilities.dp(3), dx + cornerIn + corner, dy + corner, Theme.chat_actionBackgroundPaint);
+                    }
+                    Theme.chat_cornerInner[2].setBounds(dx, dy, dx + cornerIn, dy + cornerIn);
+                    Theme.chat_cornerInner[2].draw(canvas);
+
+                    dx = x + width;
+                    if (drawInnerTop != 2 && drawInnerTop != 3) {
+                        dx += cornerRest;
+                    }
+                    if (drawTopCorners || drawBottomCorners) {
+                        canvas.drawRect(dx - corner, dy + AndroidUtilities.dp(3), dx, dy + corner, Theme.chat_actionBackgroundPaint);
+                    }
+                    Theme.chat_cornerInner[3].setBounds(dx, dy, dx + cornerIn, dy + cornerIn);
+                    Theme.chat_cornerInner[3].draw(canvas);
+                } else {
+                    additionalHeight = AndroidUtilities.dp(6);
+                }
+            }
+            if (drawInnerTop != 0) {
+                if (drawInnerTop == 1) {
+                    int prevX = (getMeasuredWidth() - prevLineWidth) / 2;
+
+                    y -= AndroidUtilities.dp(3);
+                    height += AndroidUtilities.dp(3);
+
+                    if (isLineTop(prevLineWidth, width, a - 1, count, cornerRest)) {
+                        canvas.drawRect(x + cornerOffset, y, prevX - cornerRest, y + AndroidUtilities.dp(3), Theme.chat_actionBackgroundPaint);
+                        canvas.drawRect(prevX + prevLineWidth + cornerRest, y, x + width - cornerOffset, y + AndroidUtilities.dp(3), Theme.chat_actionBackgroundPaint);
+                    } else {
+                        canvas.drawRect(x + cornerOffset, y, prevX, y + AndroidUtilities.dp(3), Theme.chat_actionBackgroundPaint);
+                        canvas.drawRect(prevX + prevLineWidth, y, x + width - cornerOffset, y + AndroidUtilities.dp(3), Theme.chat_actionBackgroundPaint);
+                    }
+                } else if (drawInnerTop == 2) {
+                    y -= AndroidUtilities.dp(3);
+                    height += AndroidUtilities.dp(3);
+
+                    dy = previousLineHeight;
+
+                    dx = x - cornerIn;
+                    if (drawInnerBottom != 2 && drawInnerBottom != 3) {
+                        dx -= cornerRest;
+                    }
+                    if (drawTopCorners || drawBottomCorners) {
+                        canvas.drawRect(dx + cornerIn, y + AndroidUtilities.dp(3), dx + cornerIn + corner, y + AndroidUtilities.dp(11), Theme.chat_actionBackgroundPaint);
+                    }
+                    Theme.chat_cornerInner[0].setBounds(dx, dy, dx + cornerIn, dy + cornerIn);
+                    Theme.chat_cornerInner[0].draw(canvas);
+
+                    dx = x + width;
+                    if (drawInnerBottom != 2 && drawInnerBottom != 3) {
+                        dx += cornerRest;
+                    }
+                    if (drawTopCorners || drawBottomCorners) {
+                        canvas.drawRect(dx - corner, y + AndroidUtilities.dp(3), dx, y + AndroidUtilities.dp(11), Theme.chat_actionBackgroundPaint);
+                    }
+                    Theme.chat_cornerInner[1].setBounds(dx, dy, dx + cornerIn, dy + cornerIn);
+                    Theme.chat_cornerInner[1].draw(canvas);
+                } else {
+                    y -= AndroidUtilities.dp(6);
+                    height += AndroidUtilities.dp(6);
+                }
+            }
+
+            if (drawTopCorners || drawBottomCorners) {
+                canvas.drawRect(x + cornerOffset, yOld, x + width - cornerOffset, yOld + hOld, Theme.chat_actionBackgroundPaint);
+            } else {
+                canvas.drawRect(x, yOld, x + width, yOld + hOld, Theme.chat_actionBackgroundPaint);
+            }
+
+            dx = x - cornerRest;
+            dx2 = x + width - cornerOffset;
+            if (drawTopCorners && !drawBottomCorners && drawInnerBottom != 2) {
+                canvas.drawRect(dx, y + corner, dx + corner, y + height + additionalHeight - AndroidUtilities.dp(6), Theme.chat_actionBackgroundPaint);
+                canvas.drawRect(dx2, y + corner, dx2 + corner, y + height + additionalHeight - AndroidUtilities.dp(6), Theme.chat_actionBackgroundPaint);
+            } else if (drawBottomCorners && !drawTopCorners && drawInnerTop != 2) {
+                canvas.drawRect(dx, y + corner - AndroidUtilities.dp(5), dx + corner, y + height + additionalHeight - corner, Theme.chat_actionBackgroundPaint);
+                canvas.drawRect(dx2, y + corner - AndroidUtilities.dp(5), dx2 + corner, y + height + additionalHeight - corner, Theme.chat_actionBackgroundPaint);
+            } else if (drawTopCorners || drawBottomCorners) {
+                canvas.drawRect(dx, y + corner, dx + corner, y + height + additionalHeight - corner, Theme.chat_actionBackgroundPaint);
+                canvas.drawRect(dx2, y + corner, dx2 + corner, y + height + additionalHeight - corner, Theme.chat_actionBackgroundPaint);
+            }
+
+            if (drawTopCorners) {
+                Theme.chat_cornerOuter[0].setBounds(dx, y, dx + corner, y + corner);
+                Theme.chat_cornerOuter[0].draw(canvas);
+                Theme.chat_cornerOuter[1].setBounds(dx2, y, dx2 + corner, y + corner);
+                Theme.chat_cornerOuter[1].draw(canvas);
+            }
+
+            if (drawBottomCorners) {
+                dy = y + height + additionalHeight - corner;
+
+                Theme.chat_cornerOuter[2].setBounds(dx2, dy, dx2 + corner, dy + corner);
+                Theme.chat_cornerOuter[2].draw(canvas);
+                Theme.chat_cornerOuter[3].setBounds(dx, dy, dx + corner, dy + corner);
+                Theme.chat_cornerOuter[3].draw(canvas);
+            }
+
+            y += height;
+
+            previousLineHeight = y + additionalHeight;
+        }
+
+        canvas.save();
+        canvas.translate(textXLeft, textY);
+        textLayout.draw(canvas);
+        canvas.restore();
+
+        if (overrideColorFilter != null) {
+            for (int a = 0; a < 4; a++) {
+                Theme.chat_cornerOuter[a].setColorFilter(Theme.colorFilter);
+                Theme.chat_cornerInner[a].setColorFilter(Theme.colorFilter);
+            }
+            Theme.chat_actionBackgroundPaint.setColor(Theme.currentColor);
+            Theme.chat_actionTextPaint.setColor(Theme.getColor(Theme.key_chat_serviceText));
         }
     }
 

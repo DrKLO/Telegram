@@ -983,7 +983,8 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
                 if (selectedContacts.size() == 0) {
                     actionBar.setSubtitle(LocaleController.formatString("MembersCountZero", R.string.MembersCountZero, LocaleController.formatPluralString("Members", maxCount)));
                 } else {
-                    actionBar.setSubtitle(LocaleController.formatString("MembersCount", R.string.MembersCount, selectedContacts.size(), maxCount));
+                    String str = LocaleController.getPluralString("MembersCountSelected", selectedContacts.size());
+                    actionBar.setSubtitle(String.format(str, selectedContacts.size(), maxCount));
                 }
             }
         }

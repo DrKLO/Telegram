@@ -249,20 +249,29 @@ public class ActionIntroActivity extends BaseFragment implements LocationControl
                             int y = (height - imageView.getMeasuredHeight()) / 2;
                             imageView.layout(0, y, imageView.getMeasuredWidth(), y + imageView.getMeasuredHeight());
                             int x = (int) (width * 0.4f);
-                            y = (int) (height * 0.22f);
+                            y = (int) (height * 0.08f);
                             titleTextView.layout(x, y, x + titleTextView.getMeasuredWidth(), y + titleTextView.getMeasuredHeight());
                             x = (int) (width * 0.4f + (width * 0.6f - descriptionLayout.getMeasuredWidth()) / 2);
-                            y = (int) (height * 0.39f);
+                            y = (int) (height * 0.25f);
                             descriptionLayout.layout(x, y, x + descriptionLayout.getMeasuredWidth(), y + descriptionLayout.getMeasuredHeight());
                             x = (int) (width * 0.4f + (width * 0.6f - buttonTextView.getMeasuredWidth()) / 2);
-                            y = (int) (height * 0.74f);
+                            y = (int) (height * 0.78f);
                             buttonTextView.layout(x, y, x + buttonTextView.getMeasuredWidth(), y + buttonTextView.getMeasuredHeight());
                         } else {
-                            int y = (int) (height * 0.148f);
-                            imageView.layout(0, y, imageView.getMeasuredWidth(), y + imageView.getMeasuredHeight());
-                            y = (int) (height * 0.551f);
-                            titleTextView.layout(0, y, titleTextView.getMeasuredWidth(), y + titleTextView.getMeasuredHeight());
-                            y = (int) (height * 0.631f);
+                            int y;
+                            if (AndroidUtilities.displaySize.y < 1800) {
+                                y = (int) (height * 0.06f);
+                                imageView.layout(0, y, imageView.getMeasuredWidth(), y + imageView.getMeasuredHeight());
+                                y = (int) (height * 0.463f);
+                                titleTextView.layout(0, y, titleTextView.getMeasuredWidth(), y + titleTextView.getMeasuredHeight());
+                                y = (int) (height * 0.543f);
+                            } else {
+                                y = (int) (height * 0.148f);
+                                imageView.layout(0, y, imageView.getMeasuredWidth(), y + imageView.getMeasuredHeight());
+                                y = (int) (height * 0.551f);
+                                titleTextView.layout(0, y, titleTextView.getMeasuredWidth(), y + titleTextView.getMeasuredHeight());
+                                y = (int) (height * 0.631f);
+                            }
                             int x = (getMeasuredWidth() - descriptionLayout.getMeasuredWidth()) / 2;
                             descriptionLayout.layout(x, y, x + descriptionLayout.getMeasuredWidth(), y + descriptionLayout.getMeasuredHeight());
                             x = (width - buttonTextView.getMeasuredWidth()) / 2;

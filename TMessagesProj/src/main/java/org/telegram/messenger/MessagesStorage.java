@@ -2046,7 +2046,7 @@ public class MessagesStorage extends BaseController {
     }
 
     public void putDialogPhotos(final int did, final TLRPC.photos_Photos photos) {
-        if (photos == null || photos.photos.isEmpty()) {
+        if (photos == null) {
             return;
         }
         storageQueue.postRunnable(() -> {
@@ -8146,6 +8146,33 @@ public class MessagesStorage extends BaseController {
                 FileLog.e(e);
             }
         });
+    }
+
+    public int getDialogMaxMessageId(final long dialog_id) {
+        final CountDownLatch countDownLatch = new CountDownLatch(1);
+        final Integer[] max = new Integer[]{0};
+        storageQueue.postRunnable(() -> {
+            SQLiteCursor cursor = null;
+            try {
+                cursor = database.queryFinalized("SELECT MAX(mid) FROM messages WHERE uid = " + dialog_id);
+                if (cursor.next()) {
+                    max[0] = cursor.intValue(0);
+                }
+            } catch (Exception e) {
+                FileLog.e(e);
+            } finally {
+                if (cursor != null) {
+                    cursor.dispose();
+                }
+            }
+            countDownLatch.countDown();
+        });
+        try {
+            countDownLatch.await();
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+        return max[0];
     }
 
     public int getDialogReadMax(final boolean outbox, final long dialog_id) {

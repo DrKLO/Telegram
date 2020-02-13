@@ -838,7 +838,6 @@ public class ChangePhoneActivity extends BaseFragment {
 
         private Timer timeTimer;
         private Timer codeTimer;
-        private int openTime;
         private final Object timerSync = new Object();
         private int time = 60000;
         private int codeTime = 15000;
@@ -1100,7 +1099,6 @@ public class ChangePhoneActivity extends BaseFragment {
             requestPhone = params.getString("phoneFormated");
             phoneHash = params.getString("phoneHash");
             timeout = time = params.getInt("timeout");
-            openTime = (int) (System.currentTimeMillis() / 1000);
             nextType = params.getInt("nextType");
             pattern = params.getString("pattern");
             length = params.getInt("length");

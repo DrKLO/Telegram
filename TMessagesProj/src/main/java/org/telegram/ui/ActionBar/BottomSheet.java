@@ -61,6 +61,8 @@ public class BottomSheet extends Dialog {
     protected ContainerView container;
     private WindowInsets lastInsets;
 
+    protected boolean useSmoothKeyboard;
+
     protected Runnable startAnimationRunnable;
     private int layoutCount;
 
@@ -695,7 +697,7 @@ public class BottomSheet extends Dialog {
         params.dimAmount = 0;
         params.flags &= ~WindowManager.LayoutParams.FLAG_DIM_BEHIND;
         if (focusable) {
-            params.softInputMode = WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE;
+            params.softInputMode = useSmoothKeyboard ? WindowManager.LayoutParams.SOFT_INPUT_ADJUST_PAN : WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE;
         } else {
             params.flags |= WindowManager.LayoutParams.FLAG_ALT_FOCUSABLE_IM;
         }
@@ -727,7 +729,7 @@ public class BottomSheet extends Dialog {
         Window window = getWindow();
         WindowManager.LayoutParams params = window.getAttributes();
         if (focusable) {
-            params.softInputMode = WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE;
+            params.softInputMode = (useSmoothKeyboard ? WindowManager.LayoutParams.SOFT_INPUT_ADJUST_PAN : WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
             params.flags &=~ WindowManager.LayoutParams.FLAG_ALT_FOCUSABLE_IM;
         } else {
             params.softInputMode = WindowManager.LayoutParams.SOFT_INPUT_ADJUST_NOTHING;
@@ -748,7 +750,7 @@ public class BottomSheet extends Dialog {
     public void show() {
         super.show();
         if (focusable) {
-            getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
+            getWindow().setSoftInputMode(useSmoothKeyboard ? WindowManager.LayoutParams.SOFT_INPUT_ADJUST_PAN : WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
         }
         dismissed = false;
         cancelSheetAnimation();

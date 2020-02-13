@@ -3301,18 +3301,29 @@ void ConnectionsManager::setSystemLangCode(std::string langCode) {
 
 void ConnectionsManager::resumeNetwork(bool partial) {
     scheduleTask([&, partial] {
+        if (lastMonotonicPauseTime != 0) {
+            int64_t diff = (getCurrentTimeMonotonicMillis() - lastMonotonicPauseTime) / 1000;
+            int64_t systemDiff = getCurrentTime() - lastSystemPauseTime;
+            if (systemDiff < 0 || abs(systemDiff - diff) > 2) {
+                timeDifference -= (systemDiff - diff);
+            }
+        }
         if (partial) {
             if (networkPaused) {
-                lastPauseTime = getCurrentTimeMonotonicMillis();
+                lastMonotonicPauseTime = lastPauseTime = getCurrentTimeMonotonicMillis();
+                lastSystemPauseTime = getCurrentTime();
                 networkPaused = false;
                 if (LOGS_ENABLED) DEBUG_D("wakeup network in background account%u", instanceNum);
             } else if (lastPauseTime != 0) {
-                lastPauseTime = getCurrentTimeMonotonicMillis();
+                lastMonotonicPauseTime = lastPauseTime = getCurrentTimeMonotonicMillis();
+                lastSystemPauseTime = getCurrentTime();
                 networkPaused = false;
                 if (LOGS_ENABLED) DEBUG_D("reset sleep timeout account%u", instanceNum);
             }
         } else {
             lastPauseTime = 0;
+            lastMonotonicPauseTime = 0;
+            lastSystemPauseTime = 0;
             networkPaused = false;
             if (LOGS_ENABLED) DEBUG_D("wakeup network account%u", instanceNum);
         }
@@ -3332,7 +3343,8 @@ void ConnectionsManager::pauseNetwork() {
     if (lastPauseTime != 0) {
         return;
     }
-    lastPauseTime = getCurrentTimeMonotonicMillis();
+    lastMonotonicPauseTime = lastPauseTime = getCurrentTimeMonotonicMillis();
+    lastSystemPauseTime = getCurrentTime();
 }
 
 void ConnectionsManager::setNetworkAvailable(bool value, int32_t type, bool slow) {

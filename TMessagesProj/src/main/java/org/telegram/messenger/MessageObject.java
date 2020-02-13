@@ -3564,6 +3564,9 @@ public class MessageObject {
                 } else {
                     spannable.setSpan(new URLSpanBrowser(url, run), run.start, run.end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                 }
+            } else if (run.urlEntity instanceof TLRPC.TL_messageEntityBankCard) {
+                hasUrls = true;
+                spannable.setSpan(new URLSpanNoUnderline("card:" + url, run), run.start, run.end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
             } else if (run.urlEntity instanceof TLRPC.TL_messageEntityPhone) {
                 hasUrls = true;
                 String tel = PhoneFormat.stripExceptNumbers(url);

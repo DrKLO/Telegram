@@ -44,6 +44,7 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
+import org.telegram.messenger.SharedConfig;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
@@ -286,7 +287,7 @@ public class ChannelCreateActivity extends BaseFragment implements NotificationC
         if (currentStep == 0) {
             actionBar.setTitle(LocaleController.getString("NewChannel", R.string.NewChannel));
 
-            SizeNotifierFrameLayout sizeNotifierFrameLayout = new SizeNotifierFrameLayout(context) {
+            SizeNotifierFrameLayout sizeNotifierFrameLayout = new SizeNotifierFrameLayout(context, SharedConfig.smoothKeyboard) {
 
                 private boolean ignoreLayout;
 
@@ -300,7 +301,7 @@ public class ChannelCreateActivity extends BaseFragment implements NotificationC
 
                     measureChildWithMargins(actionBar, widthMeasureSpec, 0, heightMeasureSpec, 0);
 
-                    int keyboardSize = getKeyboardHeight();
+                    int keyboardSize = SharedConfig.smoothKeyboard ? 0 : getKeyboardHeight();
                     if (keyboardSize > AndroidUtilities.dp(20)) {
                         ignoreLayout = true;
                         nameTextView.hideEmojiView();
@@ -333,7 +334,8 @@ public class ChannelCreateActivity extends BaseFragment implements NotificationC
                 protected void onLayout(boolean changed, int l, int t, int r, int b) {
                     final int count = getChildCount();
 
-                    int paddingBottom = getKeyboardHeight() <= AndroidUtilities.dp(20) && !AndroidUtilities.isInMultiwindow && !AndroidUtilities.isTablet() ? nameTextView.getEmojiPadding() : 0;
+                    int keyboardSize = SharedConfig.smoothKeyboard ? 0 : getKeyboardHeight();
+                    int paddingBottom = keyboardSize <= AndroidUtilities.dp(20) && !AndroidUtilities.isInMultiwindow && !AndroidUtilities.isTablet() ? nameTextView.getEmojiPadding() : 0;
                     setBottomClip(paddingBottom);
 
                     for (int i = 0; i < count; i++) {
@@ -387,7 +389,7 @@ public class ChannelCreateActivity extends BaseFragment implements NotificationC
                             if (AndroidUtilities.isTablet()) {
                                 childTop = getMeasuredHeight() - child.getMeasuredHeight();
                             } else {
-                                childTop = getMeasuredHeight() + getKeyboardHeight() - child.getMeasuredHeight();
+                                childTop = getMeasuredHeight() + keyboardSize - child.getMeasuredHeight();
                             }
                         }
                         child.layout(childLeft, childTop, childLeft + width, childTop + height);

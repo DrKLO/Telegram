@@ -12,24 +12,26 @@ import android.content.Context;
 import android.graphics.Rect;
 import android.view.View;
 import android.view.WindowManager;
-import android.widget.FrameLayout;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.ui.ActionBar.AdjustPanFrameLayout;
 
-public class SizeNotifierFrameLayoutPhoto extends FrameLayout {
+public class SizeNotifierFrameLayoutPhoto extends AdjustPanFrameLayout {
 
     private Rect rect = new Rect();
     private int keyboardHeight;
     private SizeNotifierFrameLayoutPhotoDelegate delegate;
     private WindowManager windowManager;
     private boolean withoutWindow;
+    private boolean useSmoothKeyboard;
 
     public interface SizeNotifierFrameLayoutPhotoDelegate {
         void onSizeChanged(int keyboardHeight, boolean isWidthGreater);
     }
 
-    public SizeNotifierFrameLayoutPhoto(Context context) {
+    public SizeNotifierFrameLayoutPhoto(Context context, boolean smoothKeyboard) {
         super(context);
+        useSmoothKeyboard = smoothKeyboard;
     }
 
     public void setDelegate(SizeNotifierFrameLayoutPhotoDelegate sizeNotifierFrameLayoutPhotoDelegate) {
@@ -55,7 +57,12 @@ public class SizeNotifierFrameLayoutPhoto extends FrameLayout {
         } else {
             int usableViewHeight = rootView.getHeight() - AndroidUtilities.getViewInset(rootView);
             int top = rect.top;
-            int size = AndroidUtilities.displaySize.y - top - usableViewHeight;
+            int size;
+            if (useSmoothKeyboard) {
+                size = Math.max(0, usableViewHeight - (rect.bottom - rect.top));
+            } else {
+                size = AndroidUtilities.displaySize.y - top - usableViewHeight;
+            }
             if (size <= Math.max(AndroidUtilities.dp(10), AndroidUtilities.statusBarHeight)) {
                 size = 0;
             }
@@ -67,12 +74,9 @@ public class SizeNotifierFrameLayoutPhoto extends FrameLayout {
         if (delegate != null) {
             keyboardHeight = getKeyboardHeight();
             final boolean isWidthGreater = AndroidUtilities.displaySize.x > AndroidUtilities.displaySize.y;
-            post(new Runnable() {
-                @Override
-                public void run() {
-                    if (delegate != null) {
-                        delegate.onSizeChanged(keyboardHeight, isWidthGreater);
-                    }
+            post(() -> {
+                if (delegate != null) {
+                    delegate.onSizeChanged(keyboardHeight, isWidthGreater);
                 }
             });
         }
