@@ -145,7 +145,7 @@ public class GestureDetector2 {
 
     private static final int LONGPRESS_TIMEOUT = ViewConfiguration.getLongPressTimeout();
     private static final int TAP_TIMEOUT = ViewConfiguration.getTapTimeout();
-    private static final int DOUBLE_TAP_TIMEOUT = 150;
+    private static final int DOUBLE_TAP_TIMEOUT = 200;
     private static final int DOUBLE_TAP_MIN_TIME = 40;
 
     private static final int SHOW_PRESS = 1;

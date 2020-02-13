@@ -72,7 +72,7 @@ public class NotificationCenter {
     public static final int musicDidLoad = totalEvents++;
     public static final int needShowAlert = totalEvents++;
     public static final int needShowPlayServicesAlert = totalEvents++;
-    public static final int didUpdatedMessagesViews = totalEvents++;
+    public static final int didUpdateMessagesViews = totalEvents++;
     public static final int needReloadRecentDialogsSearch = totalEvents++;
     public static final int peerSettingsDidLoad = totalEvents++;
     public static final int wasUnableToFindCurrentLocation = totalEvents++;

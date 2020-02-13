@@ -243,6 +243,7 @@ public class Theme {
                 idx = 0;
             }
             int idx2 = isSelected ? 1 : 0;
+            boolean forceSetColor = false;
             if (currentBackgroundDrawableRadius[idx2][idx] != newRad) {
                 currentBackgroundDrawableRadius[idx2][idx] = newRad;
                 try {
@@ -256,7 +257,7 @@ public class Theme {
                     draw(canvas, shadowPaint);
 
                     backgroundDrawable[idx2][idx] = new NinePatchDrawable(bitmap, getByteBuffer(bitmap.getWidth() / 2 - 1, bitmap.getWidth() / 2 + 1, bitmap.getHeight() / 2 - 1, bitmap.getHeight() / 2 + 1).array(), new Rect(), null);
-                    backgroundDrawableColor[idx2][idx] = 0;
+                    forceSetColor = true;
                     setBounds(backupRect);
                 } catch (Throwable ignore) {
 
@@ -268,7 +269,7 @@ public class Theme {
             } else {
                 color = getColor(isOut ? key_chat_outBubble : key_chat_inBubble);
             }
-            if (backgroundDrawable[idx2][idx] != null && backgroundDrawableColor[idx2][idx] != color) {
+            if (backgroundDrawable[idx2][idx] != null && (backgroundDrawableColor[idx2][idx] != color || forceSetColor)) {
                 backgroundDrawable[idx2][idx].setColorFilter(new PorterDuffColorFilter(color, PorterDuff.Mode.MULTIPLY));
                 backgroundDrawableColor[idx2][idx] = color;
             }
@@ -287,6 +288,7 @@ public class Theme {
             } else {
                 idx = 0;
             }
+            boolean forceSetColor = false;
             if (currentShadowDrawableRadius[idx] != newRad) {
                 currentShadowDrawableRadius[idx] = newRad;
                 try {
@@ -315,13 +317,13 @@ public class Theme {
                     }
 
                     shadowDrawable[idx] = new NinePatchDrawable(bitmap, getByteBuffer(bitmap.getWidth() / 2 - 1, bitmap.getWidth() / 2 + 1, bitmap.getHeight() / 2 - 1, bitmap.getHeight() / 2 + 1).array(), new Rect(), null);
-                    shadowDrawableColor[idx] = 0;
+                    forceSetColor = true;
                 } catch (Throwable ignore) {
 
                 }
             }
             int color = getColor(isOut ? key_chat_outBubbleShadow : key_chat_inBubbleShadow);
-            if (shadowDrawable[idx] != null && shadowDrawableColor[idx] != color) {
+            if (shadowDrawable[idx] != null && (shadowDrawableColor[idx] != color || forceSetColor)) {
                 shadowDrawable[idx].setColorFilter(new PorterDuffColorFilter(color, PorterDuff.Mode.MULTIPLY));
                 shadowDrawableColor[idx] = color;
             }
@@ -526,6 +528,10 @@ public class Theme {
             paint.setAlpha(alpha);
             if (isOut) {
                 selectedPaint.setAlpha((int) (Color.alpha(getColor(key_chat_outBubbleGradientSelectedOverlay)) * (alpha / 255.0f)));
+            }
+            if (gradientShader == null) {
+                Drawable background = getBackgroundDrawable();
+                background.setAlpha(alpha);
             }
         }
 

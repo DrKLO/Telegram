@@ -964,7 +964,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             getNotificationCenter().addObserver(this, NotificationCenter.botKeyboardDidLoad);
             getNotificationCenter().addObserver(this, NotificationCenter.chatSearchResultsAvailable);
             getNotificationCenter().addObserver(this, NotificationCenter.chatSearchResultsLoading);
-            getNotificationCenter().addObserver(this, NotificationCenter.didUpdatedMessagesViews);
+            getNotificationCenter().addObserver(this, NotificationCenter.didUpdateMessagesViews);
             getNotificationCenter().addObserver(this, NotificationCenter.pinnedMessageDidLoad);
             getNotificationCenter().addObserver(this, NotificationCenter.peerSettingsDidLoad);
             getNotificationCenter().addObserver(this, NotificationCenter.newDraftReceived);
@@ -1153,7 +1153,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         getNotificationCenter().removeObserver(this, NotificationCenter.chatSearchResultsAvailable);
         getNotificationCenter().removeObserver(this, NotificationCenter.chatSearchResultsLoading);
         getNotificationCenter().removeObserver(this, NotificationCenter.messagePlayingPlayStateChanged);
-        getNotificationCenter().removeObserver(this, NotificationCenter.didUpdatedMessagesViews);
+        getNotificationCenter().removeObserver(this, NotificationCenter.didUpdateMessagesViews);
         getNotificationCenter().removeObserver(this, NotificationCenter.chatInfoCantLoad);
         getNotificationCenter().removeObserver(this, NotificationCenter.pinnedMessageDidLoad);
         getNotificationCenter().removeObserver(this, NotificationCenter.peerSettingsDidLoad);
@@ -11564,11 +11564,12 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     messagesSearchAdapter.notifyDataSetChanged();
                 }
             }
-        } else if (id == NotificationCenter.didUpdatedMessagesViews) {
+        } else if (id == NotificationCenter.didUpdateMessagesViews) {
             SparseArray<SparseIntArray> channelViews = (SparseArray<SparseIntArray>) args[0];
             SparseIntArray array = channelViews.get((int) dialog_id);
             if (array != null) {
                 boolean updated = false;
+                LongSparseArray<MessageObject.GroupedMessages> newGroups = null;
                 for (int a = 0; a < array.size(); a++) {
                     int messageId = array.keyAt(a);
                     MessageObject messageObject = messagesDict[0].get(messageId);
@@ -11576,11 +11577,33 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                         int newValue = array.get(messageId);
                         if (newValue > messageObject.messageOwner.views) {
                             messageObject.messageOwner.views = newValue;
+                            if (messageObject.hasValidGroupId()) {
+                                MessageObject.GroupedMessages groupedMessages = groupedMessagesMap.get(messageObject.getGroupId());
+                                if (groupedMessages != null) {
+                                    if (newGroups == null) {
+                                        newGroups = new LongSparseArray<>();
+                                    }
+                                    newGroups.put(groupedMessages.groupId, groupedMessages);
+                                }
+                            }
                             updated = true;
                         }
                     }
                 }
                 if (updated) {
+                    if (newGroups != null) {
+                        for (int b = 0; b < newGroups.size(); b++) {
+                            MessageObject.GroupedMessages groupedMessages = newGroups.valueAt(b);
+                            MessageObject messageObject = groupedMessages.messages.get(groupedMessages.messages.size() - 1);
+                            int index = messages.indexOf(messageObject);
+                            if (index >= 0) {
+                                if (chatAdapter != null) {
+                                    chatAdapter.notifyItemRangeChanged(index + chatAdapter.messagesStartRow, groupedMessages.messages.size());
+                                }
+                            }
+                        }
+                    }
+
                     updateVisibleRows();
                 }
             }

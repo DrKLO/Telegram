@@ -3345,6 +3345,7 @@ void ConnectionsManager::pauseNetwork() {
     }
     lastMonotonicPauseTime = lastPauseTime = getCurrentTimeMonotonicMillis();
     lastSystemPauseTime = getCurrentTime();
+    saveConfig();
 }
 
 void ConnectionsManager::setNetworkAvailable(bool value, int32_t type, bool slow) {

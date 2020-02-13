@@ -524,7 +524,6 @@ public class PeopleNearbyActivity extends BaseFragment implements NotificationCe
                 getMessagesController().putChats(updates.chats, false);
                 users.clear();
                 chats.clear();
-                boolean hasSelf = false;
                 UserConfig userConfig = getUserConfig();
                 boolean saveConfig = false;
                 if (userConfig.sharingMyLocationUntil != 0) {
@@ -545,7 +544,6 @@ public class PeopleNearbyActivity extends BaseFragment implements NotificationCe
                                     chats.add(peerLocated);
                                 }
                             } else if (object instanceof TLRPC.TL_peerSelfLocated) {
-                                hasSelf = true;
                                 TLRPC.TL_peerSelfLocated peerSelfLocated = (TLRPC.TL_peerSelfLocated) object;
                                 if (userConfig.sharingMyLocationUntil != peerSelfLocated.expires) {
                                     userConfig.sharingMyLocationUntil = peerSelfLocated.expires;
@@ -554,10 +552,6 @@ public class PeopleNearbyActivity extends BaseFragment implements NotificationCe
                             }
                         }
                     }
-                }
-                if (!hasSelf && userConfig.sharingMyLocationUntil != 0) {
-                    userConfig.sharingMyLocationUntil = 0;
-                    saveConfig = true;
                 }
                 if (saveConfig) {
                     userConfig.saveConfig(false);
@@ -893,7 +887,7 @@ public class PeopleNearbyActivity extends BaseFragment implements NotificationCe
                         actionCell.setText(LocaleController.getString("NearbyCreateGroup", R.string.NearbyCreateGroup), null, R.drawable.groups_create, chatsStartRow != -1);
                     } else if (position == showMeRow) {
                         if (showingMe = (getUserConfig().sharingMyLocationUntil > getConnectionsManager().getCurrentTime())) {
-                            actionCell.setText(LocaleController.getString("StopShowingMe", R.string.StopShowingMe), null, R.drawable.actions_nearby_off, chatsStartRow != -1);
+                            actionCell.setText(LocaleController.getString("StopShowingMe", R.string.StopShowingMe), null, R.drawable.actions_nearby_off, usersStartRow != -1);
                             actionCell.setColors(Theme.key_windowBackgroundWhiteRedText5, Theme.key_windowBackgroundWhiteRedText5);
                         } else {
                             actionCell.setText(LocaleController.getString("MakeMyselfVisible", R.string.MakeMyselfVisible), null, R.drawable.actions_nearby_on, usersStartRow != -1);

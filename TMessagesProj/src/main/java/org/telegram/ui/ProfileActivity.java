@@ -1050,7 +1050,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         Theme.createProfileResources(context);
 
         hasOwnBackground = true;
-        extraHeight = AndroidUtilities.dpf2(88f);
+        extraHeight = AndroidUtilities.dp(88f);
         actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
             @Override
             public void onItemClick(final int id) {
@@ -2001,7 +2001,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             avatarImage.setTranslationY(AndroidUtilities.lerp((float) Math.ceil(avatarY), 0f, value));
             avatarImage.setRoundRadius((int) AndroidUtilities.lerp(AndroidUtilities.dpf2(21f), 0f, value));
 
-            if (extraHeight > AndroidUtilities.dpf2(88f) && expandProgress < 0.33f) {
+            if (extraHeight > AndroidUtilities.dp(88f) && expandProgress < 0.33f) {
                 refreshNameAndOnlineXY();
             }
 
@@ -2047,13 +2047,13 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 statusColor = Theme.getColor(Theme.key_avatar_subtitleInProfileBlue);
             }
             onlineTextView[1].setTextColor(ColorUtils.blendARGB(statusColor, Color.argb(179, 255, 255, 255), value));
-            if (extraHeight > AndroidUtilities.dpf2(88f)) {
+            if (extraHeight > AndroidUtilities.dp(88f)) {
                 nameTextView[1].setPivotY(AndroidUtilities.lerp(0, nameTextView[1].getMeasuredHeight(), value));
                 nameTextView[1].setScaleX(AndroidUtilities.lerp(1.12f, 1.67f, value));
                 nameTextView[1].setScaleY(AndroidUtilities.lerp(1.12f, 1.67f, value));
             }
 
-            needLayoutText(Math.min(1f, extraHeight / AndroidUtilities.dpf2(88f)));
+            needLayoutText(Math.min(1f, extraHeight / AndroidUtilities.dp(88f)));
 
             nameTextView[1].setTextColor(ColorUtils.blendARGB(Theme.getColor(Theme.key_profile_title), Color.WHITE, value));
             actionBar.setItemsColor(ColorUtils.blendARGB(Theme.getColor(Theme.key_actionBarDefaultIcon), Color.WHITE, value), false);
@@ -2677,7 +2677,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         }
 
         if (avatarImage != null) {
-            final float diff = Math.min(1f, extraHeight / AndroidUtilities.dpf2(88f));
+            final float diff = Math.min(1f, extraHeight / AndroidUtilities.dp(88f));
 
             listView.setTopGlowOffset((int) extraHeight);
 
@@ -2734,8 +2734,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             avatarY = (actionBar.getOccupyStatusBar() ? AndroidUtilities.statusBarHeight : 0) + ActionBar.getCurrentActionBarHeight() / 2.0f * (1.0f + diff) - 21 * AndroidUtilities.density + 27 * AndroidUtilities.density * diff + actionBar.getTranslationY();
 
             float h = openAnimationInProgress ? initialAnimationExtraHeight : extraHeight;
-            if (h > AndroidUtilities.dpf2(88f) || isPulledDown) {
-                expandProgress = Math.max(0f, Math.min(1f, (h - AndroidUtilities.dpf2(88f)) / (listView.getMeasuredWidth() - newTop - AndroidUtilities.dpf2(88f))));
+            if (h > AndroidUtilities.dp(88f) || isPulledDown) {
+                expandProgress = Math.max(0f, Math.min(1f, (h - AndroidUtilities.dp(88f)) / (listView.getMeasuredWidth() - newTop - AndroidUtilities.dp(88f))));
                 avatarScale = AndroidUtilities.lerp((42f + 18f) / 42f, (42f + 42f + 18f) / 42f, Math.min(1f, expandProgress * 3f));
 
                 final float durationFactor = Math.min(AndroidUtilities.dpf2(2000f), Math.max(AndroidUtilities.dpf2(1100f), Math.abs(listViewVelocityY))) / AndroidUtilities.dpf2(1100f);
@@ -2869,11 +2869,10 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 }
 
                 final FrameLayout.LayoutParams params = (FrameLayout.LayoutParams) avatarImage.getLayoutParams();
-                //params.width = params.height = (int) AndroidUtilities.lerp(AndroidUtilities.dpf2(42f), listView.getMeasuredWidth() / avatarScale, animationProgress);
                 params.width = params.height = (int) AndroidUtilities.lerp(AndroidUtilities.dpf2(42f), (extraHeight + newTop) / avatarScale, animationProgress);
                 params.leftMargin = (int) AndroidUtilities.lerp(AndroidUtilities.dpf2(64f), 0f, animationProgress);
                 avatarImage.requestLayout();
-            } else if (extraHeight <= AndroidUtilities.dpf2(88f)) {
+            } else if (extraHeight <= AndroidUtilities.dp(88f)) {
                 avatarScale = (42 + 18 * diff) / 42.0f;
                 float nameScale = 1.0f + 0.12f * diff;
                 if (expandAnimator == null || !expandAnimator.isRunning()) {
@@ -2933,7 +2932,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     private void needLayoutText(float diff) {
         FrameLayout.LayoutParams layoutParams;
         float scale = nameTextView[1].getScaleX();
-        float maxScale = extraHeight > AndroidUtilities.dpf2(88f) ? 1.67f : 1.12f;
+        float maxScale = extraHeight > AndroidUtilities.dp(88f) ? 1.67f : 1.12f;
 
         if (extraHeight > AndroidUtilities.dp(88f) && scale != maxScale) {
             return;
@@ -3333,7 +3332,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         bD = (int) ((Color.blue(color) - b) * progress);
         aD = (int) ((Color.alpha(color) - a) * progress);
         for (int i = 0; i < 2; i++) {
-            if (nameTextView[i] == null) {
+            if (nameTextView[i] == null || i == 1 && playProfileAnimation == 2) {
                 continue;
             }
             nameTextView[i].setTextColor(Color.argb(a + aD, r + rD, g + gD, b + bD));
@@ -3400,7 +3399,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     }
                     nameTextView[1].setLayoutParams(layoutParams);
 
-                    initialAnimationExtraHeight = AndroidUtilities.dpf2(88f);
+                    initialAnimationExtraHeight = AndroidUtilities.dp(88f);
                 } else {
                     layoutParams = (FrameLayout.LayoutParams) nameTextView[1].getLayoutParams();
                     layoutParams.width = (int) ((AndroidUtilities.displaySize.x - AndroidUtilities.dp(32)) / 1.67f);

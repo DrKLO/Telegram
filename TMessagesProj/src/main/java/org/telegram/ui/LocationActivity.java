@@ -709,6 +709,7 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
         mapTypeButton.setBackgroundDrawable(drawable);
         mapTypeButton.setIcon(R.drawable.location_type);
         mapViewClip.addView(mapTypeButton, LayoutHelper.createFrame(Build.VERSION.SDK_INT >= 21 ? 40 : 44, Build.VERSION.SDK_INT >= 21 ? 40 : 44, Gravity.RIGHT | Gravity.TOP, 0, 12, 12, 0));
+        mapTypeButton.setOnClickListener(v -> mapTypeButton.toggleSubMenu());
         mapTypeButton.setDelegate(id -> {
             if (googleMap == null) {
                 return;

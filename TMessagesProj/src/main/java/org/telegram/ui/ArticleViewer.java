@@ -3642,6 +3642,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
         progressView = new ContextProgressView(activity, 2);
         progressView.setVisibility(View.GONE);
         menuContainer.addView(progressView, LayoutHelper.createFrame(48, 56));
+        menuButton.setOnClickListener(v -> menuButton.toggleSubMenu());
         menuButton.setDelegate(id -> {
             if (currentPage == null || parentActivity == null) {
                 return;
