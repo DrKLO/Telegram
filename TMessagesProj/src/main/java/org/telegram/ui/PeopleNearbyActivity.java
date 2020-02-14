@@ -520,18 +520,24 @@ public class PeopleNearbyActivity extends BaseFragment implements NotificationCe
                 showProgressRunnable = null;
             }
             showLoadingProgress(false);
+            boolean saveConfig = false;
+            UserConfig userConfig = getUserConfig();
+            if (share == 1 && error != null) {
+                userConfig.sharingMyLocationUntil = 0;
+                saveConfig = true;
+                updateRows();
+            }
             if (response != null && share != 2) {
                 TLRPC.Updates updates = (TLRPC.TL_updates) response;
                 getMessagesController().putUsers(updates.users, false);
                 getMessagesController().putChats(updates.chats, false);
                 users.clear();
                 chats.clear();
-                UserConfig userConfig = getUserConfig();
-                boolean saveConfig = false;
                 if (userConfig.sharingMyLocationUntil != 0) {
                     userConfig.lastMyLocationShareTime = (int) (System.currentTimeMillis() / 1000);
                     saveConfig = true;
                 }
+                boolean hasSelf = false;
                 for (int a = 0, N = updates.updates.size(); a < N; a++) {
                     TLRPC.Update baseUpdate = updates.updates.get(a);
                     if (baseUpdate instanceof TLRPC.TL_updatePeerLocated) {
@@ -546,6 +552,7 @@ public class PeopleNearbyActivity extends BaseFragment implements NotificationCe
                                     chats.add(peerLocated);
                                 }
                             } else if (object instanceof TLRPC.TL_peerSelfLocated) {
+                                hasSelf = true;
                                 TLRPC.TL_peerSelfLocated peerSelfLocated = (TLRPC.TL_peerSelfLocated) object;
                                 if (userConfig.sharingMyLocationUntil != peerSelfLocated.expires) {
                                     userConfig.sharingMyLocationUntil = peerSelfLocated.expires;
@@ -555,11 +562,16 @@ public class PeopleNearbyActivity extends BaseFragment implements NotificationCe
                         }
                     }
                 }
-                if (saveConfig) {
-                    userConfig.saveConfig(false);
+                if (!hasSelf && userConfig.sharingMyLocationUntil != 0) {
+                    userConfig.sharingMyLocationUntil = 0;
+                    saveConfig = true;
                 }
+
                 checkForExpiredLocations(true);
                 updateRows();
+            }
+            if (saveConfig) {
+                userConfig.saveConfig(false);
             }
             if (shortPollRunnable != null) {
                 AndroidUtilities.cancelRunOnUIThread(shortPollRunnable);

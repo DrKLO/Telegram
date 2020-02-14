@@ -556,11 +556,13 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                 messagesDict[0].remove(oldMid);
                 messagesDict[0].put(newMid, obj);
                 obj.messageOwner.id = newMid;
+                max_id[0] = Math.min(newMid, max_id[0]);
             }
         }
     }
 
     private SharedMediaData[] sharedMediaData = new SharedMediaData[5];
+    private SharedMediaPreloader sharedMediaPreloader;
 
     private final static int forward = 100;
     private final static int delete = 101;
@@ -577,9 +579,11 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
 
     private boolean isActionModeShowed;
 
-    public SharedMediaLayout(Context context, long did, int[] mediaCount, SharedMediaData[] mediaData, int commonGroupsCount, ArrayList<Integer> sortedUsers, TLRPC.ChatFull chatInfo, ProfileActivity parent) {
+    public SharedMediaLayout(Context context, long did, SharedMediaPreloader preloader, int commonGroupsCount, ArrayList<Integer> sortedUsers, TLRPC.ChatFull chatInfo, ProfileActivity parent) {
         super(context);
 
+        sharedMediaPreloader = preloader;
+        int[] mediaCount = preloader.getLastMediaCount();
         hasMedia = new int[]{mediaCount[0], mediaCount[1], mediaCount[2], mediaCount[3], mediaCount[4], commonGroupsCount};
         if (chatInfo != null) {
             initialTab = 6;
@@ -599,19 +603,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
         for (int a = 0; a < sharedMediaData.length; a++) {
             sharedMediaData[a] = new SharedMediaData();
             sharedMediaData[a].max_id[0] = ((int) dialog_id) == 0 ? Integer.MIN_VALUE : Integer.MAX_VALUE;
-            if (mediaData != null) {
-                sharedMediaData[a].totalCount = mediaData[a].totalCount;
-                sharedMediaData[a].messages.addAll(mediaData[a].messages);
-                sharedMediaData[a].sections.addAll(mediaData[a].sections);
-                for (HashMap.Entry<String, ArrayList<MessageObject>> entry : mediaData[a].sectionArrays.entrySet()) {
-                    sharedMediaData[a].sectionArrays.put(entry.getKey(), new ArrayList<>(entry.getValue()));
-                }
-                for (int i = 0; i < 2; i++) {
-                    sharedMediaData[a].messagesDict[i] = mediaData[a].messagesDict[i].clone();
-                    sharedMediaData[a].max_id[i] = mediaData[a].max_id[i];
-                    sharedMediaData[a].endReached[i] = mediaData[a].endReached[i];
-                }
-            }
+            fillMediaData(a);
             if (mergeDialogId != 0 && info != null) {
                 sharedMediaData[a].max_id[1] = info.migrated_from_max_id;
                 sharedMediaData[a].endReached[1] = false;
@@ -966,7 +958,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                 @Override
                 public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
                     checkLoadMoreScroll(mediaPage, recyclerView, layoutManager);
-                    if (dy != 0 && mediaPages[0].selectedType == 0 && !mediaData[0].messages.isEmpty()) {
+                    if (dy != 0 && mediaPages[0].selectedType == 0 && !sharedMediaData[0].messages.isEmpty()) {
                         showFloatingDateView();
                     }
                 }
@@ -1067,6 +1059,25 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
 
         updateTabs();
         switchToCurrentSelectedMode(false);
+    }
+
+    private boolean fillMediaData(int type) {
+        SharedMediaData[] mediaData = sharedMediaPreloader.getSharedMediaData();
+        if (mediaData == null) {
+            return false;
+        }
+        sharedMediaData[type].totalCount = mediaData[type].totalCount;
+        sharedMediaData[type].messages.addAll(mediaData[type].messages);
+        sharedMediaData[type].sections.addAll(mediaData[type].sections);
+        for (HashMap.Entry<String, ArrayList<MessageObject>> entry : mediaData[type].sectionArrays.entrySet()) {
+            sharedMediaData[type].sectionArrays.put(entry.getKey(), new ArrayList<>(entry.getValue()));
+        }
+        for (int i = 0; i < 2; i++) {
+            sharedMediaData[type].messagesDict[i] = mediaData[type].messagesDict[i].clone();
+            sharedMediaData[type].max_id[i] = mediaData[type].max_id[i];
+            sharedMediaData[type].endReached[i] = mediaData[type].endReached[i];
+        }
+        return !mediaData[type].messages.isEmpty();
     }
 
     private void showFloatingDateView() {
@@ -1709,8 +1720,8 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
         if (id == NotificationCenter.mediaDidLoad) {
             long uid = (Long) args[0];
             int guid = (Integer) args[3];
+            int type = (Integer) args[4];
             if (guid == profileActivity.getClassGuid()) {
-                int type = (Integer) args[4];
                 sharedMediaData[type].loading = false;
                 sharedMediaData[type].totalCount = (Integer) args[1];
                 ArrayList<MessageObject> arr = (ArrayList<MessageObject>) args[2];
@@ -1785,6 +1796,44 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                             if (mediaPages[a].listView != null) {
                                 if (mediaPages[a].listView.getEmptyView() == null) {
                                     mediaPages[a].listView.setEmptyView(mediaPages[a].emptyView);
+                                }
+                            }
+                        }
+                    }
+                }
+            } else if (sharedMediaPreloader != null && sharedMediaData[type].messages.isEmpty()) {
+                if (fillMediaData(type)) {
+                    RecyclerListView.Adapter adapter = null;
+                    if (type == 0) {
+                        adapter = photoVideoAdapter;
+                    } else if (type == 1) {
+                        adapter = documentsAdapter;
+                    } else if (type == 2) {
+                        adapter = voiceAdapter;
+                    } else if (type == 3) {
+                        adapter = linksAdapter;
+                    } else if (type == 4) {
+                        adapter = audioAdapter;
+                    }
+                    if (adapter != null) {
+                        for (int a = 0; a < mediaPages.length; a++) {
+                            if (mediaPages[a].listView.getAdapter() == adapter) {
+                                mediaPages[a].listView.stopScroll();
+                            }
+                        }
+                        adapter.notifyDataSetChanged();
+                    }
+                    scrolling = true;
+                    for (int a = 0; a < mediaPages.length; a++) {
+                        if (mediaPages[a].selectedType == type) {
+                            if (!sharedMediaData[type].loading) {
+                                if (mediaPages[a].progressView != null) {
+                                    mediaPages[a].progressView.setVisibility(View.GONE);
+                                }
+                                if (mediaPages[a].listView != null) {
+                                    if (mediaPages[a].listView.getEmptyView() == null) {
+                                        mediaPages[a].listView.setEmptyView(mediaPages[a].emptyView);
+                                    }
                                 }
                             }
                         }
@@ -2589,7 +2638,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
 
         @Override
         public boolean isEnabled(int section, int row) {
-            return row != 0;
+            return section == 0 || row != 0;
         }
 
         @Override
@@ -2707,7 +2756,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
 
         @Override
         public boolean isEnabled(int section, int row) {
-            return row != 0;
+            return section == 0 || row != 0;
         }
 
         @Override

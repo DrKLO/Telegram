@@ -289,7 +289,11 @@ public class LocationController extends BaseController implements NotificationCe
                             startFusedLocationRequest(true);
                             break;
                         case LocationSettingsStatusCodes.RESOLUTION_REQUIRED:
-                            AndroidUtilities.runOnUIThread(() -> getNotificationCenter().postNotificationName(NotificationCenter.needShowPlayServicesAlert, status));
+                            Utilities.stageQueue.postRunnable(() -> {
+                                if (lookingForPeopleNearby || !sharingLocations.isEmpty()) {
+                                    AndroidUtilities.runOnUIThread(() -> getNotificationCenter().postNotificationName(NotificationCenter.needShowPlayServicesAlert, status));
+                                }
+                            });
                             break;
                         case LocationSettingsStatusCodes.SETTINGS_CHANGE_UNAVAILABLE:
                             Utilities.stageQueue.postRunnable(() -> {
@@ -468,7 +472,8 @@ public class LocationController extends BaseController implements NotificationCe
 
     protected void update() {
         UserConfig userConfig = getUserConfig();
-        if (ApplicationLoader.isScreenOn && !ApplicationLoader.mainInterfacePaused && !shareMyCurrentLocation && userConfig.sharingMyLocationUntil != 0 && Math.abs(System.currentTimeMillis() / 1000 - userConfig.lastMyLocationShareTime) >= 60 * 60) {
+        if (ApplicationLoader.isScreenOn && !ApplicationLoader.mainInterfacePaused && !shareMyCurrentLocation &&
+                userConfig.isClientActivated() && userConfig.isConfigLoaded() && userConfig.sharingMyLocationUntil != 0 && Math.abs(System.currentTimeMillis() / 1000 - userConfig.lastMyLocationShareTime) >= 60 * 60) {
             shareMyCurrentLocation = true;
         }
         if (!sharingLocations.isEmpty()) {

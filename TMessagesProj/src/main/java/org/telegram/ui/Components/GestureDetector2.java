@@ -34,108 +34,14 @@ public class GestureDetector2 {
         boolean onScroll(MotionEvent e1, MotionEvent e2, float distanceX, float distanceY);
         void onLongPress(MotionEvent e);
         boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY);
-        default int getDoubleTapTimeout(MotionEvent e) {
-            return DOUBLE_TAP_TIMEOUT;
-        }
     }
 
-    /**
-     * The listener that is used to notify when a double-tap or a confirmed
-     * single-tap occur.
-     */
     public interface OnDoubleTapListener {
-        /**
-         * Notified when a single-tap occurs.
-         * <p>
-         * Unlike {@link OnGestureListener#onSingleTapUp(MotionEvent)}, this
-         * will only be called after the detector is confident that the user's
-         * first tap is not followed by a second tap leading to a double-tap
-         * gesture.
-         *
-         * @param e The down motion event of the single-tap.
-         * @return true if the event is consumed, else false
-         */
         boolean onSingleTapConfirmed(MotionEvent e);
-
-        /**
-         * Notified when a double-tap occurs.
-         *
-         * @param e The down motion event of the first tap of the double-tap.
-         * @return true if the event is consumed, else false
-         */
         boolean onDoubleTap(MotionEvent e);
-
-        /**
-         * Notified when an event within a double-tap gesture occurs, including
-         * the down, move, and up events.
-         *
-         * @param e The motion event that occurred during the double-tap gesture.
-         * @return true if the event is consumed, else false
-         */
         boolean onDoubleTapEvent(MotionEvent e);
-    }
-
-    public interface OnContextClickListener {
-        /**
-         * Notified when a context click occurs.
-         *
-         * @param e The motion event that occurred during the context click.
-         * @return true if the event is consumed, else false
-         */
-        boolean onContextClick(MotionEvent e);
-    }
-
-    /**
-     * A convenience class to extend when you only want to listen for a subset
-     * of all the gestures. This implements all methods in the
-     * {@link OnGestureListener}, {@link OnDoubleTapListener}, and {@link OnContextClickListener}
-     * but does nothing and return {@code false} for all applicable methods.
-     */
-    public static class SimpleOnGestureListener implements OnGestureListener, OnDoubleTapListener,
-            OnContextClickListener {
-
-        public boolean onSingleTapUp(MotionEvent e) {
-            return false;
-        }
-
-        public void onLongPress(MotionEvent e) {
-        }
-
-        public boolean onScroll(MotionEvent e1, MotionEvent e2,
-                                float distanceX, float distanceY) {
-            return false;
-        }
-
-        public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX,
-                               float velocityY) {
-            return false;
-        }
-
-        public void onShowPress(MotionEvent e) {
-        }
-
-        public boolean onDown(MotionEvent e) {
-            return false;
-        }
-
-        public void onUp(MotionEvent e) {
-
-        }
-
-        public boolean onDoubleTap(MotionEvent e) {
-            return false;
-        }
-
-        public boolean onDoubleTapEvent(MotionEvent e) {
-            return false;
-        }
-
-        public boolean onSingleTapConfirmed(MotionEvent e) {
-            return false;
-        }
-
-        public boolean onContextClick(MotionEvent e) {
-            return false;
+        default boolean canDoubleTap(MotionEvent e) {
+            return true;
         }
     }
 
@@ -304,7 +210,6 @@ public class GestureDetector2 {
         final boolean pointerUp = (action & MotionEvent.ACTION_MASK) == MotionEvent.ACTION_POINTER_UP;
         final int skipIndex = pointerUp ? ev.getActionIndex() : -1;
 
-        // Determine focal point
         float sumX = 0, sumY = 0;
         final int count = ev.getPointerCount();
         for (int i = 0; i < count; i++) {
@@ -322,7 +227,6 @@ public class GestureDetector2 {
             case MotionEvent.ACTION_POINTER_DOWN:
                 mDownFocusX = mLastFocusX = focusX;
                 mDownFocusY = mLastFocusY = focusY;
-                // Cancel long press and taps
                 cancelTaps();
                 break;
 
@@ -330,8 +234,6 @@ public class GestureDetector2 {
                 mDownFocusX = mLastFocusX = focusX;
                 mDownFocusY = mLastFocusY = focusY;
 
-                // Check the dot product of current velocities.
-                // If the pointer that left was opposing another velocity vector, clear.
                 mVelocityTracker.computeCurrentVelocity(1000, mMaximumFlingVelocity);
                 final int upIndex = ev.getActionIndex();
                 final int id1 = ev.getPointerId(upIndex);
@@ -353,21 +255,20 @@ public class GestureDetector2 {
                 break;
 
             case MotionEvent.ACTION_DOWN:
+                mDeferConfirmSingleTap = false;
                 if (mDoubleTapListener != null) {
-                    boolean hadTapMessage = mHandler.hasMessages(TAP);
-                    if (hadTapMessage) mHandler.removeMessages(TAP);
-                    if ((mCurrentDownEvent != null) && (mPreviousUpEvent != null)
-                            && hadTapMessage
-                            && isConsideredDoubleTap(mCurrentDownEvent, mPreviousUpEvent, ev)) {
-                        // This is a second tap
-                        mIsDoubleTapping = true;
-                        // Give a callback with the first tap of the double-tap
-                        handled |= mDoubleTapListener.onDoubleTap(mCurrentDownEvent);
-                        // Give a callback with down event of the double-tap
-                        handled |= mDoubleTapListener.onDoubleTapEvent(ev);
+                    if (mDoubleTapListener.canDoubleTap(ev)) {
+                        boolean hadTapMessage = mHandler.hasMessages(TAP);
+                        if (hadTapMessage) mHandler.removeMessages(TAP);
+                        if ((mCurrentDownEvent != null) && (mPreviousUpEvent != null) && hadTapMessage && isConsideredDoubleTap(mCurrentDownEvent, mPreviousUpEvent, ev)) {
+                            mIsDoubleTapping = true;
+                            handled |= mDoubleTapListener.onDoubleTap(mCurrentDownEvent);
+                            handled |= mDoubleTapListener.onDoubleTapEvent(ev);
+                        } else {
+                            mHandler.sendEmptyMessageDelayed(TAP, DOUBLE_TAP_TIMEOUT);
+                        }
                     } else {
-                        // This is a first tap
-                        mHandler.sendEmptyMessageDelayed(TAP, mListener.getDoubleTapTimeout(ev));
+                        mDeferConfirmSingleTap = true;
                     }
                 }
 
@@ -381,16 +282,12 @@ public class GestureDetector2 {
                 mAlwaysInBiggerTapRegion = true;
                 mStillDown = true;
                 mInLongPress = false;
-                mDeferConfirmSingleTap = false;
 
                 if (mIsLongpressEnabled) {
                     mHandler.removeMessages(LONG_PRESS);
-                    mHandler.sendMessageAtTime(
-                            mHandler.obtainMessage(LONG_PRESS, 0, 0), mCurrentDownEvent.getDownTime()
-                                    + ViewConfiguration.getLongPressTimeout());
+                    mHandler.sendMessageAtTime(mHandler.obtainMessage(LONG_PRESS, 0, 0), mCurrentDownEvent.getDownTime() + ViewConfiguration.getLongPressTimeout());
                 }
-                mHandler.sendEmptyMessageAtTime(SHOW_PRESS,
-                        mCurrentDownEvent.getDownTime() + TAP_TIMEOUT);
+                mHandler.sendEmptyMessageAtTime(SHOW_PRESS, mCurrentDownEvent.getDownTime() + TAP_TIMEOUT);
                 handled |= mListener.onDown(ev);
                 break;
 
@@ -472,8 +369,7 @@ public class GestureDetector2 {
                     final float velocityY = velocityTracker.getYVelocity(pointerId);
                     final float velocityX = velocityTracker.getXVelocity(pointerId);
 
-                    if ((Math.abs(velocityY) > mMinimumFlingVelocity)
-                            || (Math.abs(velocityX) > mMinimumFlingVelocity)) {
+                    if ((Math.abs(velocityY) > mMinimumFlingVelocity) || (Math.abs(velocityX) > mMinimumFlingVelocity)) {
                         handled = mListener.onFling(mCurrentDownEvent, ev, velocityX, velocityY);
                     }
                 }
@@ -534,7 +430,7 @@ public class GestureDetector2 {
         }
 
         final long deltaTime = secondDown.getEventTime() - firstUp.getEventTime();
-        if (deltaTime > mListener.getDoubleTapTimeout(firstDown) || deltaTime < DOUBLE_TAP_MIN_TIME) {
+        if (deltaTime > DOUBLE_TAP_TIMEOUT || deltaTime < DOUBLE_TAP_MIN_TIME) {
             return false;
         }
 

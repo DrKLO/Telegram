@@ -7241,7 +7241,12 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                         buttonState = -1;
                     } else {
                         if (documentAttachType == DOCUMENT_ATTACH_TYPE_GIF && currentMessageObject.gifState == 1) {
-                            buttonState = 2;
+                            if (photoImage.isAnimationRunning()) {
+                                currentMessageObject.gifState = 0;
+                                buttonState = -1;
+                            } else {
+                                buttonState = 2;
+                            }
                         } else if (documentAttachType == DOCUMENT_ATTACH_TYPE_VIDEO) {
                             buttonState = 3;
                         } else {

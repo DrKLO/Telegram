@@ -1116,11 +1116,13 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
                         pressedLinkOwnerView.invalidate();
                     }
                 } else if (pressedLinkOwnerView != null && textSelectionHelper.isSelectable(pressedLinkOwnerView)) {
-                    windowView.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
                     if (pressedLinkOwnerView.getTag() != null && pressedLinkOwnerView.getTag() == BOTTOM_SHEET_VIEW_TAG && textSelectionHelperBottomSheet != null) {
                         textSelectionHelperBottomSheet.trySelect(pressedLinkOwnerView);
                     } else {
                         textSelectionHelper.trySelect(pressedLinkOwnerView);
+                    }
+                    if (textSelectionHelper.isSelectionMode()) {
+                        windowView.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
                     }
                 } else if (pressedLinkOwnerLayout != null && pressedLinkOwnerView != null) {
                     windowView.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
@@ -1634,7 +1636,9 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
         } else {
             layoutManager[index].scrollToPositionWithOffset(0, 0);
         }
-        checkScrollAnimated();
+        if (!previous) {
+            checkScrollAnimated();
+        }
     }
 
     private boolean addPageToStack(TLRPC.WebPage webPage, String anchor, int order) {
@@ -7745,6 +7749,14 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
                 }
 
                 @Override
+                public boolean onTouchEvent(MotionEvent ev) {
+                    if (tableLayout.getMeasuredWidth() <= getMeasuredWidth() - AndroidUtilities.dp(36)) {
+                        return false;
+                    }
+                    return super.onTouchEvent(ev);
+                }
+
+                @Override
                 protected void onScrollChanged(int l, int t, int oldl, int oldt) {
                     super.onScrollChanged(l, t, oldl, oldt);
                     if (pressedLinkOwnerLayout != null) {
@@ -8631,6 +8643,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
                 @Override
                 public boolean onInterceptTouchEvent(MotionEvent ev) {
                     windowView.requestDisallowInterceptTouchEvent(true);
+                    cancelCheckLongPress();
                     return super.onInterceptTouchEvent(ev);
                 }
             };
@@ -11232,8 +11245,6 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
                             for (int a = 0, count = textLayout.getLineCount(); a < count; a++) {
                                 width = Math.max((int) Math.ceil(textLayout.getLineWidth(a)), width);
                             }
-                            textLayout.x = (int) getX();
-                            textLayout.y = (int) getY();
                         }
                     } else {
                         height = 1;
@@ -11243,7 +11254,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
 
                 @Override
                 public boolean onTouchEvent(MotionEvent event) {
-                    return checkLayoutForLinks(parentAdapter, event, this, textLayout, 0, 0) || super.onTouchEvent(event);
+                    return checkLayoutForLinks(parentAdapter, event, BlockPreformattedCell.this, textLayout, 0, 0) || super.onTouchEvent(event);
                 }
 
                 @Override
@@ -11253,6 +11264,8 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
                         drawTextSelection(canvas, BlockPreformattedCell.this);
                         textLayout.draw(canvas);
                         canvas.restore();
+                        textLayout.x = (int) getX();
+                        textLayout.y = (int) getY();
                     }
                 }
             };
@@ -11260,6 +11273,12 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
             layoutParams.leftMargin = layoutParams.rightMargin = AndroidUtilities.dp(16);
             layoutParams.topMargin = layoutParams.bottomMargin = AndroidUtilities.dp(12);
             scrollView.addView(textContainer, layoutParams);
+
+            scrollView.setOnScrollChangeListener((v, scrollX, scrollY, oldScrollX, oldScrollY) -> {
+                if (textSelectionHelper != null && textSelectionHelper.isSelectionMode()) {
+                    textSelectionHelper.invalidate();
+                }
+            });
 
             setWillNotDraw(false);
         }
@@ -11290,6 +11309,12 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
             if (textLayout != null) {
                 blocks.add(textLayout);
             }
+        }
+
+        @Override
+        public void invalidate() {
+            textContainer.invalidate();
+            super.invalidate();
         }
     }
 

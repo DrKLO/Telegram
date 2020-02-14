@@ -1314,7 +1314,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         }
         ArrayList<Integer> users = chatInfo != null && chatInfo.participants != null && chatInfo.participants.participants.size() > 5 ? sortedUsers : null;
         TLRPC.ChatFull chatFull = users != null ? chatInfo : null;
-        sharedMediaLayout = new SharedMediaLayout(context, did, sharedMediaPreloader.getLastMediaCount(), sharedMediaPreloader.getSharedMediaData(), userInfo != null ? userInfo.common_chats_count : 0, sortedUsers, chatFull, this) {
+        sharedMediaLayout = new SharedMediaLayout(context, did, sharedMediaPreloader, userInfo != null ? userInfo.common_chats_count : 0, sortedUsers, chatFull, this) {
             @Override
             protected void onSelectedTabChanged() {
                 updateSelectedMediaTabText();
@@ -1511,6 +1511,11 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             private final Paint paint = new Paint();
 
             private VelocityTracker velocityTracker;
+
+            @Override
+            protected boolean allowSelectChildAtPosition(View child) {
+                return child != sharedMediaLayout;
+            }
 
             @Override
             public boolean hasOverlappingRendering() {

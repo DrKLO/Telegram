@@ -74,6 +74,7 @@ import android.view.Surface;
 import android.view.TextureView;
 import android.view.VelocityTracker;
 import android.view.View;
+import android.view.ViewConfiguration;
 import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
 import android.view.WindowInsets;
@@ -250,9 +251,12 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
     private ImageReceiver sideImage;
     private boolean isCurrentVideo;
 
+    private long lastPhotoSetTime;
+
     private GradientDrawable[] pressedDrawable = new GradientDrawable[2];
     private boolean[] drawPressedDrawable = new boolean[2];
     private float[] pressedDrawableAlpha = new float[2];
+    private int touchSlop;
 
     private boolean useSmoothKeyboard;
 
@@ -1898,6 +1902,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         }
         parentActivity = activity;
         actvityContext = new ContextThemeWrapper(parentActivity, R.style.Theme_TMessages);
+        touchSlop = ViewConfiguration.get(parentActivity).getScaledTouchSlop();
 
         if (progressDrawables == null) {
             progressDrawables = new Drawable[4];
@@ -6316,6 +6321,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         currentFileNames[1] = getFileName(index + 1);
         currentFileNames[2] = getFileName(index - 1);
         placeProvider.willSwitchFromPhoto(currentMessageObject, getFileLocation(currentFileLocation), currentIndex);
+        lastPhotoSetTime = SystemClock.elapsedRealtime();
 
         int prevIndex = currentIndex;
         currentIndex = index;
@@ -8153,7 +8159,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                 }
                 float dx = Math.abs(ev.getX() - moveStartX);
                 float dy = Math.abs(ev.getY() - dragY);
-                if (dx > AndroidUtilities.dp(3) || dy > AndroidUtilities.dp(3)) {
+                if (dx > touchSlop || dy > touchSlop) {
                     discardTap = true;
                     hidePressedDrawables();
                     if (qualityChooseView != null && qualityChooseView.getVisibility() == View.VISIBLE) {
@@ -8806,7 +8812,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
     public boolean onDown(MotionEvent e) {
         if (!doubleTap && checkImageView.getVisibility() != View.VISIBLE && !drawPressedDrawable[0] && !drawPressedDrawable[1]) {
             float x = e.getX();
-            int side = containerView.getMeasuredWidth() / 5;
+            int side = containerView.getMeasuredWidth() / 6;
             if (x < side) {
                 if (leftImage.hasImageSet()) {
                     drawPressedDrawable[0] = true;
@@ -8823,15 +8829,15 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
     }
 
     @Override
-    public int getDoubleTapTimeout(MotionEvent e) {
+    public boolean canDoubleTap(MotionEvent e) {
         if (checkImageView.getVisibility() != View.VISIBLE && !drawPressedDrawable[0] && !drawPressedDrawable[1]) {
             float x = e.getX();
-            int side = containerView.getMeasuredWidth() / 5;
+            int side = containerView.getMeasuredWidth() / 6;
             if (x < side || x > containerView.getMeasuredWidth() - side) {
-                return 200;
+                return currentMessageObject == null || currentMessageObject.isVideo() && (SystemClock.elapsedRealtime() - lastPhotoSetTime) >= 500;
             }
         }
-        return GestureDetector2.DOUBLE_TAP_TIMEOUT;
+        return true;
     }
 
     private void hidePressedDrawables() {
@@ -8884,7 +8890,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         }
         float x = e.getX();
         if (checkImageView.getVisibility() != View.VISIBLE) {
-            int side = containerView.getMeasuredWidth() / 5;
+            int side = containerView.getMeasuredWidth() / 6;
             if (x < side) {
                 if (leftImage.hasImageSet()) {
                     switchToNextIndex(-1, true);
