@@ -895,6 +895,9 @@ public class PollCreateActivity extends BaseFragment {
             String from = answers[idx1];
             answers[idx1] = answers[idx2];
             answers[idx2] = from;
+            boolean temp = answersChecks[idx1];
+            answersChecks[idx1] = answersChecks[idx2];
+            answersChecks[idx2] = temp;
             notifyItemMoved(fromIndex, toIndex);
         }
     }

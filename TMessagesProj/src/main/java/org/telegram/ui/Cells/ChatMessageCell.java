@@ -3632,10 +3632,8 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 drawName = true;
                 drawForwardedName = true;
                 drawPhotoImage = false;
-                int maxWidth = availableTimeWidth = Math.min(AndroidUtilities.dp(500), messageObject.getMaxMessageTextWidth());
+                int maxWidth = Math.min(AndroidUtilities.dp(500), messageObject.getMaxMessageTextWidth());
                 backgroundWidth = maxWidth + AndroidUtilities.dp(31);
-                availableTimeWidth = AndroidUtilities.dp(120);
-                measureTime(messageObject);
 
                 TLRPC.TL_messageMediaPoll media = (TLRPC.TL_messageMediaPoll) messageObject.messageOwner.media;
 
@@ -3680,7 +3678,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                         docTitleOffsetX = 0;
                     }
                 }
-                int w = maxWidth - timeWidth - AndroidUtilities.dp(messageObject.isOutOwner() ? 28 : 8);
+                int w = maxWidth - AndroidUtilities.dp(messageObject.isOutOwner() ? 28 : 8);
 
                 TextPaint textPaint = !media.poll.public_voters && !media.poll.multiple_choice ? Theme.chat_livePaint : Theme.chat_locationAddressPaint;
                 CharSequence votes;
@@ -3693,10 +3691,13 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 if (infoLayout != null) {
                     if (!media.poll.public_voters && !media.poll.multiple_choice) {
                         infoX = (int) Math.ceil(infoLayout.getLineCount() > 0 ? -infoLayout.getLineLeft(0) : 0);
+                        availableTimeWidth = (int) (maxWidth - infoLayout.getLineWidth(0) - AndroidUtilities.dp(16));
                     } else {
                         infoX = (int) ((backgroundWidth - AndroidUtilities.dp(28) - Math.ceil(infoLayout.getLineWidth(0))) / 2 - infoLayout.getLineLeft(0));
+                        availableTimeWidth = maxWidth;
                     }
                 }
+                measureTime(messageObject);
 
                 lastPoll = media.poll;
                 lastPollResults = media.results.results;
@@ -3958,9 +3959,11 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                         backgroundWidth = maxTextWidth;
                         maxWidth = maxTextWidth - AndroidUtilities.dp(31);
                     }
+                    availableTimeWidth = maxWidth;
                     if (drawPhotoImage) {
                         photoWidth = AndroidUtilities.dp(86);
                         photoHeight = AndroidUtilities.dp(86);
+                        availableTimeWidth -= photoWidth;
                     } else {
                         photoWidth = AndroidUtilities.dp(56);
                         photoHeight = AndroidUtilities.dp(56);
@@ -3968,7 +3971,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                             photoHeight += (docTitleLayout.getLineCount() - 1) * AndroidUtilities.dp(16);
                         }
                     }
-                    availableTimeWidth = maxWidth;
+
                     if (!drawPhotoImage && TextUtils.isEmpty(messageObject.caption) && infoLayout != null) {
                         int lineCount = infoLayout.getLineCount();
                         measureTime(messageObject);
@@ -7784,8 +7787,12 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             viewsTextWidth = (int) Math.ceil(Theme.chat_timePaint.measureText(currentViewsString));
             timeWidth += viewsTextWidth + Theme.chat_msgInViewsDrawable.getIntrinsicWidth() + AndroidUtilities.dp(10);
         }
-        if (messageObject.scheduled && messageObject.isSendError()) {
-            timeWidth += AndroidUtilities.dp(18);
+        if (messageObject.scheduled) {
+            if (messageObject.isSendError()) {
+                timeWidth += AndroidUtilities.dp(18);
+            } else if (messageObject.isSending() && messageObject.messageOwner.to_id.channel_id != 0 && !messageObject.isMegagroup()) {
+                timeWidth += AndroidUtilities.dp(18);
+            }
         }
         if (signString != null) {
             if (availableTimeWidth == 0) {

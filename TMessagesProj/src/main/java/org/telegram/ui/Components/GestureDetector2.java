@@ -34,6 +34,9 @@ public class GestureDetector2 {
         boolean onScroll(MotionEvent e1, MotionEvent e2, float distanceX, float distanceY);
         void onLongPress(MotionEvent e);
         boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY);
+        default int getDoubleTapTimeout(MotionEvent e) {
+            return DOUBLE_TAP_TIMEOUT;
+        }
     }
 
     /**
@@ -145,7 +148,7 @@ public class GestureDetector2 {
 
     private static final int LONGPRESS_TIMEOUT = ViewConfiguration.getLongPressTimeout();
     private static final int TAP_TIMEOUT = ViewConfiguration.getTapTimeout();
-    private static final int DOUBLE_TAP_TIMEOUT = 200;
+    public static final int DOUBLE_TAP_TIMEOUT = ViewConfiguration.getDoubleTapTimeout();
     private static final int DOUBLE_TAP_MIN_TIME = 40;
 
     private static final int SHOW_PRESS = 1;
@@ -364,7 +367,7 @@ public class GestureDetector2 {
                         handled |= mDoubleTapListener.onDoubleTapEvent(ev);
                     } else {
                         // This is a first tap
-                        mHandler.sendEmptyMessageDelayed(TAP, DOUBLE_TAP_TIMEOUT);
+                        mHandler.sendEmptyMessageDelayed(TAP, mListener.getDoubleTapTimeout(ev));
                     }
                 }
 
@@ -531,7 +534,7 @@ public class GestureDetector2 {
         }
 
         final long deltaTime = secondDown.getEventTime() - firstUp.getEventTime();
-        if (deltaTime > DOUBLE_TAP_TIMEOUT || deltaTime < DOUBLE_TAP_MIN_TIME) {
+        if (deltaTime > mListener.getDoubleTapTimeout(firstDown) || deltaTime < DOUBLE_TAP_MIN_TIME) {
             return false;
         }
 

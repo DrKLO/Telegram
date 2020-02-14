@@ -406,7 +406,6 @@ public class AdminLogFilterAlert extends BottomSheet {
             switch (viewType) {
                 case 0:
                     view = new CheckBoxCell(context, 1, 21);
-                    view.setBackgroundDrawable(Theme.getSelectorDrawable(false));
                     break;
                 case 1:
                     ShadowSectionCell shadowSectionCell = new ShadowSectionCell(context, 18);

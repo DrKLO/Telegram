@@ -268,14 +268,16 @@ public class PeopleNearbyActivity extends BaseFragment implements NotificationCe
                 return;
             }
             if (position >= usersStartRow && position < usersEndRow) {
-                ManageChatUserCell cell = (ManageChatUserCell) view;
-                TLRPC.TL_peerLocated peerLocated = users.get(position - usersStartRow);
-                Bundle args1 = new Bundle();
-                args1.putInt("user_id", peerLocated.peer.user_id);
-                if (cell.hasAvatarSet()) {
-                    args1.putBoolean("expandPhoto", true);
+                if (view instanceof ManageChatUserCell) {
+                    ManageChatUserCell cell = (ManageChatUserCell) view;
+                    TLRPC.TL_peerLocated peerLocated = users.get(position - usersStartRow);
+                    Bundle args1 = new Bundle();
+                    args1.putInt("user_id", peerLocated.peer.user_id);
+                    if (cell.hasAvatarSet()) {
+                        args1.putBoolean("expandPhoto", true);
+                    }
+                    presentFragment(new ProfileActivity(args1));
                 }
-                presentFragment(new ProfileActivity(args1));
             } else if (position >= chatsStartRow && position < chatsEndRow) {
                 TLRPC.TL_peerLocated peerLocated = chats.get(position - chatsStartRow);
                 Bundle args1 = new Bundle();

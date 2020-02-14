@@ -7421,7 +7421,7 @@ public class Theme {
         File wallpaperFile;
         boolean wallpaperMotion;
         ThemeAccent accent = currentTheme.getAccent(false);
-        if (accent != null && previousTheme == null) {
+        if (accent != null && !hasPreviousTheme) {
             wallpaperFile = accent.getPathToWallpaper();
             wallpaperMotion = accent.patternMotion;
         } else {

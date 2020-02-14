@@ -1484,7 +1484,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
 
     @Override
     public boolean onTouchEvent(MotionEvent ev) {
-        if (!profileActivity.getParentLayout().checkTransitionAnimation() && !checkTabsAnimationInProgress()) {
+        if (profileActivity.getParentLayout() != null && !profileActivity.getParentLayout().checkTransitionAnimation() && !checkTabsAnimationInProgress()) {
             if (ev != null && ev.getAction() == MotionEvent.ACTION_DOWN && !startedTracking && !maybeStartTracking && ev.getY() >= AndroidUtilities.dp(48)) {
                 startedTrackingPointerId = ev.getPointerId(0);
                 maybeStartTracking = true;
