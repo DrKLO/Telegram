@@ -7211,11 +7211,14 @@ public class Theme {
                 return getDefaultColor(key);
             }
         }
+        if (key.equals(key_windowBackgroundWhite) || key.equals(key_windowBackgroundGray)) {
+            return 0xff000000 | color;
+        }
         return color;
     }
 
     public static void setColor(String key, int color, boolean useDefault) {
-        if (key.equals(key_chat_wallpaper) || key.equals(key_chat_wallpaper_gradient_to)) {
+        if (key.equals(key_chat_wallpaper) || key.equals(key_chat_wallpaper_gradient_to) || key.equals(key_windowBackgroundWhite) || key.equals(key_windowBackgroundGray)) {
             color = 0xff000000 | color;
         }
 

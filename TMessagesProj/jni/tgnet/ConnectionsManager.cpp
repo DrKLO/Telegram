@@ -552,7 +552,7 @@ int64_t ConnectionsManager::getCurrentTimeMillis() {
 }
 
 int64_t ConnectionsManager::getCurrentTimeMonotonicMillis() {
-    clock_gettime(CLOCK_MONOTONIC, &timeSpecMonotonic);
+    clock_gettime(CLOCK_BOOTTIME, &timeSpecMonotonic);
     return (int64_t) timeSpecMonotonic.tv_sec * 1000 + (int64_t) timeSpecMonotonic.tv_nsec / 1000000;
 }
 

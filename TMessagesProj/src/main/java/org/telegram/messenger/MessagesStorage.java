@@ -7390,6 +7390,13 @@ public class MessagesStorage extends BaseController {
                             state_media.bindInteger(4, MediaDataController.getMediaType(message));
                             state_media.bindByteBuffer(5, data);
                             state_media.step();
+                        } else if (message instanceof TLRPC.TL_messageService && message.action instanceof TLRPC.TL_messageActionHistoryClear) {
+                            try {
+                                database.executeFast(String.format(Locale.US, "DELETE FROM media_v2 WHERE mid = %d", message.id)).stepThis().dispose();
+                                database.executeFast("DELETE FROM media_counts_v2 WHERE uid = " + dialog_id).stepThis().dispose();
+                            } catch (Exception e2) {
+                                FileLog.e(e2);
+                            }
                         }
                         data.reuse();
 

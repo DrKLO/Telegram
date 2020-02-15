@@ -202,6 +202,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
             notificationCenter.addObserver(this, NotificationCenter.messageReceivedByServer);
             notificationCenter.addObserver(this, NotificationCenter.mediaDidLoad);
             notificationCenter.addObserver(this, NotificationCenter.messagesDeleted);
+            notificationCenter.addObserver(this, NotificationCenter.replaceMessagesObjects);
         }
 
         public void addDelegate(SharedMediaPreloaderDelegate delegate) {
@@ -224,6 +225,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
             notificationCenter.removeObserver(this, NotificationCenter.messageReceivedByServer);
             notificationCenter.removeObserver(this, NotificationCenter.mediaDidLoad);
             notificationCenter.removeObserver(this, NotificationCenter.messagesDeleted);
+            notificationCenter.removeObserver(this, NotificationCenter.replaceMessagesObjects);
         }
 
         public int[] getLastMediaCount() {
@@ -391,6 +393,43 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                     }
                 }
                 loadMediaCounts();
+            } else if (id == NotificationCenter.replaceMessagesObjects) {
+                long did = (long) args[0];
+                if (did != dialogId && did != mergeDialogId) {
+                    return;
+                }
+                int loadIndex = did == dialogId ? 0 : 1;
+                ArrayList<MessageObject> messageObjects = (ArrayList<MessageObject>) args[1];
+                for (int b = 0, N = messageObjects.size(); b < N; b++) {
+                    MessageObject messageObject = messageObjects.get(b);
+                    int mid = messageObject.getId();
+                    int type = MediaDataController.getMediaType(messageObject.messageOwner);
+                    for (int a = 0; a < sharedMediaData.length; a++) {
+                        MessageObject old = sharedMediaData[a].messagesDict[loadIndex].get(mid);
+                        if (old != null) {
+                            int oldType = MediaDataController.getMediaType(messageObject.messageOwner);
+                            if (type == -1 || oldType != type) {
+                                sharedMediaData[a].deleteMessage(mid, loadIndex);
+                                if (loadIndex == 0) {
+                                    if (mediaCount[a] > 0) {
+                                        mediaCount[a]--;
+                                    }
+                                } else {
+                                    if (mediaMergeCount[a] > 0) {
+                                        mediaMergeCount[a]--;
+                                    }
+                                }
+                            } else {
+                                int idx = sharedMediaData[a].messages.indexOf(old);
+                                if (idx >= 0) {
+                                    sharedMediaData[a].messagesDict[loadIndex].put(mid, messageObject);
+                                    sharedMediaData[a].messages.set(idx, messageObject);
+                                }
+                            }
+                            break;
+                        }
+                    }
+                }
             }
         }
 

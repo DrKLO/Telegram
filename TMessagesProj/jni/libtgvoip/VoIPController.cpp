@@ -3074,7 +3074,7 @@ static void initMachTimestart() {
 double VoIPController::GetCurrentTime(){
 #if defined(__linux__)
 	struct timespec ts;
-	clock_gettime(CLOCK_MONOTONIC, &ts);
+	clock_gettime(CLOCK_BOOTTIME, &ts);
 	return ts.tv_sec+(double)ts.tv_nsec/1000000000.0;
 #elif defined(__APPLE__)
 	static pthread_once_t token = PTHREAD_ONCE_INIT;
