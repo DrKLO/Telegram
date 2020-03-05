@@ -72,7 +72,7 @@ public class NotificationsController extends BaseController {
     public static String OTHER_NOTIFICATIONS_CHANNEL = null;
 
     private static DispatchQueue notificationsQueue = new DispatchQueue("notificationsQueue");
-    private ArrayList<MessageObject> pushMessages = new ArrayList<>();
+    private ArrayList<MessageObject>pushMessages = new ArrayList<>();
     private ArrayList<MessageObject> delayedPushMessages = new ArrayList<>();
     private LongSparseArray<MessageObject> pushMessagesDict = new LongSparseArray<>();
     private LongSparseArray<MessageObject> fcmRandomMessagesDict = new LongSparseArray<>();
@@ -690,7 +690,12 @@ public class NotificationsController extends BaseController {
                         hasScheduled = messageObject.messageOwner.from_scheduled;
                     }
                     delayedPushMessages.add(messageObject);
-                    pushMessages.add(0, messageObject);
+                    if (!isPersonalMessage(messageObject)) {
+                        pushMessages.add( messageObject);
+                    }
+                    else {
+                        pushMessages.add(0, messageObject);
+                    }
                     if (mid != 0) {
                         pushMessagesDict.put(mid, messageObject);
                     } else if (random_id != 0) {
