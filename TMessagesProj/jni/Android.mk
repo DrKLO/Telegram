@@ -1,7 +1,7 @@
 MY_LOCAL_PATH := $(call my-dir)
 LOCAL_PATH := $(MY_LOCAL_PATH)
-
-LOCAL_MODULE    := avutil 
+LOCAL_MODULE    := avutil
+LOCAL_SHORT_COMMANDS := true
 
 ifeq ($(TARGET_ARCH_ABI),armeabi-v7a)
     LOCAL_SRC_FILES := ./ffmpeg/armv7-a/libavutil.a

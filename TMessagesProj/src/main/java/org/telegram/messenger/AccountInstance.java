@@ -25,6 +25,10 @@ public class AccountInstance {
         currentAccount = instance;
     }
 
+    public StatisticsController getStatisticsController() {
+        return StatisticsController.getInstance(currentAccount);
+    }
+
     public MessagesController getMessagesController() {
         return MessagesController.getInstance(currentAccount);
     }

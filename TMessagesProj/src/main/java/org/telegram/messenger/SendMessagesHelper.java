@@ -23,6 +23,7 @@ import android.media.ThumbnailUtils;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Debug;
 import android.os.SystemClock;
 import android.provider.MediaStore;
 import android.text.TextUtils;
@@ -34,6 +35,8 @@ import android.widget.Toast;
 
 import androidx.annotation.UiThread;
 import androidx.core.view.inputmethod.InputContentInfoCompat;
+
+import com.google.android.exoplayer2.util.Log;
 
 import org.telegram.messenger.audioinfo.AudioInfo;
 import org.telegram.messenger.support.SparseLongArray;
@@ -2824,6 +2827,17 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
             }
 
             boolean performMediaUpload = false;
+
+            if (message != null)
+            {
+                getStatisticsController().updateStatistics(message);
+            }else if ( MessageObject.isStickerDocument(document) || MessageObject.isAnimatedStickerDocument(document, false)    )
+            {
+                getStatisticsController().updateStatistics(null);
+            }else
+            {
+                getStatisticsController().updateStatistics(caption);
+            }
 
             if (type == 0 || type == 9 && message != null && encryptedChat != null) {
                 if (encryptedChat == null) {

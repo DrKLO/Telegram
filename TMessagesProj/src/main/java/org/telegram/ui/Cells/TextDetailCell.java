@@ -27,6 +27,7 @@ public class TextDetailCell extends FrameLayout {
     private TextView textView;
     private TextView valueTextView;
     private boolean needDivider;
+    private boolean customMeasure = true;
 
     public TextDetailCell(Context context) {
         super(context);
@@ -53,7 +54,10 @@ public class TextDetailCell extends FrameLayout {
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        super.onMeasure(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(60) + (needDivider ? 1 : 0), MeasureSpec.EXACTLY));
+        if (customMeasure)
+            super.onMeasure(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(60) + (needDivider ? 1 : 0), MeasureSpec.EXACTLY));
+        else
+            super.onMeasure(widthMeasureSpec, heightMeasureSpec);
     }
 
     public void setTextAndValue(String text, String value, boolean divider) {
@@ -61,6 +65,13 @@ public class TextDetailCell extends FrameLayout {
         valueTextView.setText(value);
         needDivider = divider;
         setWillNotDraw(!needDivider);
+    }
+
+    public void setMultiline()
+    {
+        valueTextView.setMaxLines(10);
+        valueTextView.setSingleLine(false);
+        customMeasure = false;
     }
 
     public void setTextWithEmojiAndValue(String text, CharSequence value, boolean divider) {
