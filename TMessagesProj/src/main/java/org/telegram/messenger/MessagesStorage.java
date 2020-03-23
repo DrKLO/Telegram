@@ -11,6 +11,7 @@ package org.telegram.messenger;
 import android.content.SharedPreferences;
 import android.text.TextUtils;
 import android.util.LongSparseArray;
+import android.util.Pair;
 import android.util.SparseArray;
 import android.util.SparseIntArray;
 
@@ -1359,10 +1360,10 @@ public class MessagesStorage extends BaseController {
         }
     }
 
-    public HashMap<String,StatisticsController.DailyStatistics> getAllDailyStatistics(int limit)
+    public ArrayList<Pair<String,StatisticsController.DailyStatistics>> getAllDailyStatistics(int limit)
     {
         final CountDownLatch countDownLatch = new CountDownLatch(1);
-        final  HashMap<String,StatisticsController.DailyStatistics> results = new HashMap<>();
+        final ArrayList<Pair<String,StatisticsController.DailyStatistics>> results = new ArrayList<>();
         storageQueue.postRunnable(() -> {
             try {
                 SQLiteCursor cursor = database.queryFinalized(String.format(Locale.US, "SELECT * FROM messages_statistics ORDER BY date(date) DESC Limit %d",limit));
@@ -1372,7 +1373,7 @@ public class MessagesStorage extends BaseController {
                     cur.messages = cursor.intValue(2);
                     cur.emojis = cursor.intValue(3);
                     cur.stickers = cursor.intValue(4);
-                    results.put(cursor.stringValue(0),cur);
+                    results.add(new Pair<>(cursor.stringValue(0),cur));
                 }
                 cursor.dispose();
             } catch (Exception e) {

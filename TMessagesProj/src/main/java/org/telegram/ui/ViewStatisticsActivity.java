@@ -2,6 +2,7 @@ package org.telegram.ui;
 
 import android.content.Context;
 import android.text.method.ScrollingMovementMethod;
+import android.util.Pair;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
@@ -22,6 +23,7 @@ import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ActionBar.ThemeDescription;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -70,9 +72,9 @@ public class ViewStatisticsActivity extends BaseFragment {
         statisticsField.setMovementMethod(new ScrollingMovementMethod());
         statisticsField.setTextIsSelectable(true);
 
-        HashMap<String, StatisticsController.DailyStatistics> results = getMessagesStorage().getAllDailyStatistics(100);
-        for(Map.Entry<String, StatisticsController.DailyStatistics> entry : results.entrySet()) {
-            statisticsField.append(  String.format("Date: %s\n%s-------------------------\n", entry.getKey(), entry.getValue().format() )     );
+        ArrayList<Pair<String,StatisticsController.DailyStatistics>> results = getMessagesStorage().getAllDailyStatistics(100);
+        for(Pair<String,StatisticsController.DailyStatistics> entry : results) {
+            statisticsField.append(  String.format("Date: %s\n%s-------------------------\n", entry.first, entry.second.format() )     );
         }
         linearLayout.addView(statisticsField);
         return fragmentView;
