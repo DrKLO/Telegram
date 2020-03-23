@@ -67,6 +67,7 @@ import org.telegram.messenger.ImageLoader;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.NotificationsController;
 import org.telegram.messenger.SharedConfig;
+import org.telegram.messenger.StatisticsController;
 import org.telegram.messenger.UserObject;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.BuildVars;
@@ -174,6 +175,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
     private int numberRow;
     private int usernameRow;
     private int bioRow;
+    private int statsRow;
     private int settingsSectionRow;
     private int settingsSectionRow2;
     private int notificationRow;
@@ -280,6 +282,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         numberRow = rowCount++;
         usernameRow = rowCount++;
         bioRow = rowCount++;
+        statsRow = rowCount++;
         settingsSectionRow = rowCount++;
         settingsSectionRow2 = rowCount++;
         notificationRow = rowCount++;
@@ -467,6 +470,8 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                 }
             } else if (position == numberRow) {
                 presentFragment(new ActionIntroActivity(ActionIntroActivity.ACTION_TYPE_CHANGE_PHONE_NUMBER));
+            }else if (position == statsRow) {
+                presentFragment(new ViewStatisticsActivity());
             }
         });
 
@@ -2257,9 +2262,16 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                             textCell.setTextWithEmojiAndValue(value, LocaleController.getString("UserBio", R.string.UserBio), false);
                             currentBio = userInfo != null ? userInfo.about : null;
                         } else {
-                            textCell.setTextAndValue(LocaleController.getString("UserBio", R.string.UserBio), LocaleController.getString("UserBioDetail", R.string.UserBioDetail), false);
+                            textCell.setTextAndValue(LocaleController.getString("UserBio", R.string.UserBio), LocaleController.getString("UserBioDetail", R.string.UserBioDetail), true);
                             currentBio = null;
                         }
+                    } else if (position == statsRow) {
+                        String currentDate = StatisticsController.getCurrentDate();
+                        StatisticsController.DailyStatistics currentStatistics = getMessagesStorage().getDailyStatistics(currentDate);
+                        textCell.setMultiline();
+                        textCell.setTextAndValue(String.format("Stats - %s", currentDate),
+                                currentStatistics.format(),
+                                 false);
                     }
                     break;
                 }
@@ -2270,7 +2282,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         public boolean isEnabled(RecyclerView.ViewHolder holder) {
             int position = holder.getAdapterPosition();
             return position == notificationRow || position == numberRow || position == privacyRow ||
-                    position == languageRow || position == usernameRow || position == bioRow ||
+                    position == languageRow || position == usernameRow || position == bioRow || position == statsRow ||
                     position == versionRow || position == dataRow || position == chatRow ||
                     position == helpRow || position == devicesRow;
         }
@@ -2360,7 +2372,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                 return 2;
             } else if (position == versionRow) {
                 return 5;
-            } else if (position == numberRow || position == usernameRow || position == bioRow) {
+            } else if (position == numberRow || position == usernameRow || position == bioRow || position == statsRow) {
                 return 6;
             } else if (position == settingsSectionRow2 || position == numberSectionRow) {
                 return 4;

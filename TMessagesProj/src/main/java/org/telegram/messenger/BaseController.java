@@ -24,6 +24,10 @@ public class BaseController {
         return parentAccountInstance.getContactsController();
     }
 
+    protected final StatisticsController getStatisticsController() {
+        return parentAccountInstance.getStatisticsController();
+    }
+
     protected final MediaDataController getMediaDataController() {
         return parentAccountInstance.getMediaDataController();
     }

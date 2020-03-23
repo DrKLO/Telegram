@@ -11,8 +11,11 @@ package org.telegram.messenger;
 import android.content.SharedPreferences;
 import android.text.TextUtils;
 import android.util.LongSparseArray;
+import android.util.Pair;
 import android.util.SparseArray;
 import android.util.SparseIntArray;
+
+import com.google.android.exoplayer2.util.Log;
 
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.SQLite.SQLiteCursor;
@@ -216,6 +219,8 @@ public class MessagesStorage extends BaseController {
                 }
                 database.executeFast("CREATE TABLE messages_holes(uid INTEGER, start INTEGER, end INTEGER, PRIMARY KEY(uid, start));").stepThis().dispose();
                 database.executeFast("CREATE INDEX IF NOT EXISTS uid_end_messages_holes ON messages_holes(uid, end);").stepThis().dispose();
+
+                database.executeFast("CREATE TABLE IF NOT EXISTS messages_statistics (date STRING PRIMARY KEY, chars_send INTEGER, messages_send INTEGER, emojis_send INTEGER, stickers_send INTEGER);").stepThis().dispose();
 
                 database.executeFast("CREATE TABLE media_holes_v2(uid INTEGER, type INTEGER, start INTEGER, end INTEGER, PRIMARY KEY(uid, type, start));").stepThis().dispose();
                 database.executeFast("CREATE INDEX IF NOT EXISTS uid_end_media_holes_v2 ON media_holes_v2(uid, type, end);").stepThis().dispose();
@@ -1336,6 +1341,82 @@ public class MessagesStorage extends BaseController {
         });
     }
 
+    public void setDailyStatistics(final StatisticsController.DailyStatistics stats,final String date)
+    {
+        final CountDownLatch countDownLatch = new CountDownLatch(1);
+        storageQueue.postRunnable(() -> {
+            try {
+                database.executeFast(String.format(Locale.US, "INSERT OR REPLACE INTO messages_statistics (date, chars_send, messages_send, emojis_send, stickers_send) VALUES ('%s','%s','%s','%s','%s');", date, stats.chars, stats.messages, stats.emojis, stats.stickers)).stepThis().dispose();
+            } catch (Exception e) {
+                FileLog.e(e);
+            } finally {
+                countDownLatch.countDown();
+            }
+        });
+        try {
+            countDownLatch.await();
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+    }
+
+    public ArrayList<Pair<String,StatisticsController.DailyStatistics>> getAllDailyStatistics(int limit)
+    {
+        final CountDownLatch countDownLatch = new CountDownLatch(1);
+        final ArrayList<Pair<String,StatisticsController.DailyStatistics>> results = new ArrayList<>();
+        storageQueue.postRunnable(() -> {
+            try {
+                SQLiteCursor cursor = database.queryFinalized(String.format(Locale.US, "SELECT * FROM messages_statistics ORDER BY date(date) DESC Limit %d",limit));
+                while (cursor.next()) {
+                    StatisticsController.DailyStatistics cur = new StatisticsController.DailyStatistics();
+                    cur.chars = cursor.intValue(1);
+                    cur.messages = cursor.intValue(2);
+                    cur.emojis = cursor.intValue(3);
+                    cur.stickers = cursor.intValue(4);
+                    results.add(new Pair<>(cursor.stringValue(0),cur));
+                }
+                cursor.dispose();
+            } catch (Exception e) {
+                FileLog.e(e);
+            } finally {
+                countDownLatch.countDown();
+            }
+        });
+        try {
+            countDownLatch.await();
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+        return results;
+    }
+
+    public StatisticsController.DailyStatistics getDailyStatistics(final String date)
+    {
+        final CountDownLatch countDownLatch = new CountDownLatch(1);
+        final StatisticsController.DailyStatistics result = new StatisticsController.DailyStatistics();
+        storageQueue.postRunnable(() -> {
+            try {
+                    SQLiteCursor cursor = database.queryFinalized(String.format(Locale.US, "SELECT chars_send, messages_send, emojis_send, stickers_send  FROM messages_statistics WHERE date = '%s'", date));
+                    if (cursor.next()) {
+                        result.chars = cursor.intValue(0);
+                        result.messages = cursor.intValue(1);
+                        result.emojis = cursor.intValue(2);
+                        result.stickers = cursor.intValue(3);
+                    }
+                    cursor.dispose();
+            } catch (Exception e) {
+                FileLog.e(e);
+            } finally {
+                countDownLatch.countDown();
+            }
+        });
+        try {
+            countDownLatch.await();
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+        return result;
+    }
 
     public void loadUnreadMessages() {
         storageQueue.postRunnable(() -> {
@@ -8212,6 +8293,7 @@ public class MessagesStorage extends BaseController {
         }
         return max[0];
     }
+
 
     public int getChannelPtsSync(final int channelId) {
         final CountDownLatch countDownLatch = new CountDownLatch(1);
