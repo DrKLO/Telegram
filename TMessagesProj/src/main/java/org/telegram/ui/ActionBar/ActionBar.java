@@ -182,9 +182,13 @@ public class ActionBar extends FrameLayout {
         return super.onInterceptTouchEvent(ev);
     }
 
+    protected boolean shouldClipChild(View child) {
+        return clipContent && (child == titleTextView || child == subtitleTextView || child == menu || child == backButtonImageView);
+    }
+
     @Override
     protected boolean drawChild(Canvas canvas, View child, long drawingTime) {
-        boolean clip = clipContent && (child == titleTextView || child == subtitleTextView || child == actionMode || child == menu || child == backButtonImageView);
+        boolean clip = shouldClipChild(child);
         if (clip) {
             canvas.save();
             canvas.clipRect(0, -getTranslationY() + (occupyStatusBar ? AndroidUtilities.statusBarHeight : 0), getMeasuredWidth(), getMeasuredHeight());
@@ -826,9 +830,6 @@ public class ActionBar extends FrameLayout {
             }
 
             switch (verticalGravity) {
-                case Gravity.TOP:
-                    childTop = lp.topMargin;
-                    break;
                 case Gravity.CENTER_VERTICAL:
                     childTop = (bottom - top - height) / 2 + lp.topMargin - lp.bottomMargin;
                     break;

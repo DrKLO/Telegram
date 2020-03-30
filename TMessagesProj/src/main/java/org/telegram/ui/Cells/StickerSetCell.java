@@ -8,6 +8,7 @@
 
 package org.telegram.ui.Cells;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.PorterDuff;
@@ -32,6 +33,8 @@ import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.BackupImageView;
+import org.telegram.ui.Components.CheckBox2;
+import org.telegram.ui.Components.Easings;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RadialProgressView;
 
@@ -39,17 +42,22 @@ import java.util.ArrayList;
 
 public class StickerSetCell extends FrameLayout {
 
+    private final int option;
+
     private TextView textView;
     private TextView valueTextView;
     private BackupImageView imageView;
     private RadialProgressView progressView;
+    private CheckBox2 checkBox;
     private boolean needDivider;
     private ImageView optionsButton;
+    private ImageView reorderButton;
     private TLRPC.TL_messages_stickerSet stickersSet;
     private Rect rect = new Rect();
 
     public StickerSetCell(Context context, int option) {
         super(context);
+        this.option = option;
 
         textView = new TextView(context);
         textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
@@ -59,8 +67,8 @@ public class StickerSetCell extends FrameLayout {
         textView.setMaxLines(1);
         textView.setSingleLine(true);
         textView.setEllipsize(TextUtils.TruncateAt.END);
-        textView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
-        addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT, LocaleController.isRTL ? 40 : 71, 9, LocaleController.isRTL ? 71 : 40, 0));
+        textView.setGravity(LayoutHelper.getAbsoluteGravityStart());
+        addView(textView, LayoutHelper.createFrameRelatively(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.START, 71, 9, 46, 0));
 
         valueTextView = new TextView(context);
         valueTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2));
@@ -68,8 +76,8 @@ public class StickerSetCell extends FrameLayout {
         valueTextView.setLines(1);
         valueTextView.setMaxLines(1);
         valueTextView.setSingleLine(true);
-        valueTextView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
-        addView(valueTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT, LocaleController.isRTL ? 40 : 71, 32, LocaleController.isRTL ? 71 : 40, 0));
+        valueTextView.setGravity(LayoutHelper.getAbsoluteGravityStart());
+        addView(valueTextView, LayoutHelper.createFrameRelatively(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.START, 71, 32, 46, 0));
 
         imageView = new BackupImageView(context);
         imageView.setAspectFit(true);
@@ -90,6 +98,20 @@ public class StickerSetCell extends FrameLayout {
                 optionsButton.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_stickers_menu), PorterDuff.Mode.MULTIPLY));
                 optionsButton.setImageResource(R.drawable.msg_actions);
                 addView(optionsButton, LayoutHelper.createFrame(40, 40, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.CENTER_VERTICAL));
+
+                reorderButton = new ImageView(context);
+                reorderButton.setAlpha(0f);
+                reorderButton.setVisibility(GONE);
+                reorderButton.setScaleType(ImageView.ScaleType.CENTER);
+                reorderButton.setImageResource(R.drawable.list_reorder);
+                reorderButton.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_stickers_menu), PorterDuff.Mode.MULTIPLY));
+                addView(reorderButton, LayoutHelper.createFrameRelatively(58, 58, Gravity.END));
+
+                checkBox = new CheckBox2(context, 21);
+                checkBox.setColor(null, Theme.key_windowBackgroundWhite, Theme.key_checkboxCheck);
+                checkBox.setDrawUnchecked(false);
+                checkBox.setDrawBackgroundAsArc(3);
+                addView(checkBox, LayoutHelper.createFrameRelatively(24, 24, Gravity.START, 34, 30, 0, 0));
             } else if (option == 3) {
                 optionsButton.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_featuredStickers_addedIcon), PorterDuff.Mode.MULTIPLY));
                 optionsButton.setImageResource(R.drawable.sticker_added);
@@ -125,6 +147,10 @@ public class StickerSetCell extends FrameLayout {
                 progressView.setVisibility(VISIBLE);
             }
         }
+    }
+
+    public void setNeedDivider(boolean needDivider) {
+        this.needDivider = needDivider;
     }
 
     public void setStickersSet(TLRPC.TL_messages_stickerSet set, boolean divider) {
@@ -178,14 +204,78 @@ public class StickerSetCell extends FrameLayout {
             }
         } else {
             valueTextView.setText(LocaleController.formatPluralString("Stickers", 0));
+            imageView.setImageDrawable(null);
         }
     }
 
     public void setChecked(boolean checked) {
-        if (optionsButton == null) {
-            return;
+        setChecked(checked, true);
+    }
+
+    public void setChecked(boolean checked, boolean animated) {
+        switch (option) {
+            case 1:
+                checkBox.setChecked(checked, animated);
+                break;
+            case 3:
+                optionsButton.setVisibility(checked ? VISIBLE : INVISIBLE);
+                break;
         }
-        optionsButton.setVisibility(checked ? VISIBLE : INVISIBLE);
+    }
+
+    public void setReorderable(boolean reorderable) {
+        setReorderable(reorderable, true);
+    }
+
+    public void setReorderable(boolean reorderable, boolean animated) {
+        if (option == 1) {
+
+            final float[] alphaValues = {reorderable ? 1f : 0f, reorderable ? 0f : 1f};
+            final float[] scaleValues = {reorderable ? 1f : .66f, reorderable ? .66f : 1f};
+
+            if (animated) {
+                reorderButton.setVisibility(VISIBLE);
+                reorderButton.animate()
+                        .alpha(alphaValues[0])
+                        .scaleX(scaleValues[0])
+                        .scaleY(scaleValues[0])
+                        .setDuration(200)
+                        .setInterpolator(Easings.easeOutSine)
+                        .withEndAction(() -> {
+                            if (!reorderable) {
+                                reorderButton.setVisibility(GONE);
+                            }
+                        }).start();
+
+                optionsButton.setVisibility(VISIBLE);
+                optionsButton.animate()
+                        .alpha(alphaValues[1])
+                        .scaleX(scaleValues[1])
+                        .scaleY(scaleValues[1])
+                        .setDuration(200)
+                        .setInterpolator(Easings.easeOutSine)
+                        .withEndAction(() -> {
+                            if (reorderable) {
+                                optionsButton.setVisibility(GONE);
+                            }
+                        }).start();
+            } else {
+                reorderButton.setVisibility(reorderable ? VISIBLE : GONE);
+                reorderButton.setAlpha(alphaValues[0]);
+                reorderButton.setScaleX(scaleValues[0]);
+                reorderButton.setScaleY(scaleValues[0]);
+
+                optionsButton.setVisibility(reorderable ? GONE : VISIBLE);
+                optionsButton.setAlpha(alphaValues[1]);
+                optionsButton.setScaleX(scaleValues[1]);
+                optionsButton.setScaleY(scaleValues[1]);
+            }
+        }
+    }
+
+    @SuppressLint("ClickableViewAccessibility")
+    public void setOnReorderButtonTouchListener(OnTouchListener listener) {
+        reorderButton.setOnTouchListener(listener);
     }
 
     public void setOnOptionsClick(OnClickListener listener) {

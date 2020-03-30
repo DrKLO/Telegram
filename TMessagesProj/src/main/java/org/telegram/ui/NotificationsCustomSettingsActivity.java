@@ -16,7 +16,6 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.graphics.drawable.Drawable;
 import android.media.Ringtone;
 import android.media.RingtoneManager;
 import android.net.Uri;
@@ -125,7 +124,7 @@ public class NotificationsCustomSettingsActivity extends BaseFragment {
 
     @Override
     public boolean onFragmentCreate() {
-        updateRows();
+        updateRows(true);
         return super.onFragmentCreate();
     }
 
@@ -279,15 +278,19 @@ public class NotificationsCustomSettingsActivity extends BaseFragment {
                             }
                         }
                         arrayList.remove(exception);
-                        if (exceptionsAddRow != -1 && arrayList.isEmpty() && arrayList == exceptions) {
-                            listView.getAdapter().notifyItemChanged(exceptionsAddRow);
-                            listView.getAdapter().notifyItemRemoved(deleteAllRow);
-                            listView.getAdapter().notifyItemRemoved(deleteAllSectionRow);
+                        if (arrayList == exceptions) {
+                            if (exceptionsAddRow != -1 && arrayList.isEmpty()) {
+                                listView.getAdapter().notifyItemChanged(exceptionsAddRow);
+                                listView.getAdapter().notifyItemRemoved(deleteAllRow);
+                                listView.getAdapter().notifyItemRemoved(deleteAllSectionRow);
+                            }
+                            listView.getAdapter().notifyItemRemoved(position);
+                            updateRows(false);
+                            checkRowsEnabled();
+                        } else {
+                            updateRows(true);
+                            searchAdapter.notifyDataSetChanged();
                         }
-                        listView.getAdapter().notifyItemRemoved(position);
-
-                        updateRows();
-                        checkRowsEnabled();
                         actionBar.closeSearchField();
                     } else {
                         SharedPreferences preferences = getNotificationsSettings();
@@ -302,8 +305,7 @@ public class NotificationsCustomSettingsActivity extends BaseFragment {
                         if (newException) {
                             exceptions.add(exception);
                             exceptionsDict.put(exception.did, exception);
-                            updateRows();
-                            adapter.notifyDataSetChanged();
+                            updateRows(true);
                         } else {
                             listView.getAdapter().notifyItemChanged(position);
                         }
@@ -331,8 +333,7 @@ public class NotificationsCustomSettingsActivity extends BaseFragment {
                     ProfileNotificationsActivity profileNotificationsActivity = new ProfileNotificationsActivity(args2);
                     profileNotificationsActivity.setDelegate(exception -> {
                         exceptions.add(0, exception);
-                        updateRows();
-                        adapter.notifyDataSetChanged();
+                        updateRows(true);
                     });
                     presentFragment(profileNotificationsActivity, true);
                 });
@@ -361,9 +362,8 @@ public class NotificationsCustomSettingsActivity extends BaseFragment {
 
                     exceptions.clear();
                     exceptionsDict.clear();
-                    updateRows();
+                    updateRows(true);
                     getNotificationCenter().postNotificationName(NotificationCenter.notificationsSettingsUpdated);
-                    adapter.notifyDataSetChanged();
                 });
                 builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
                 AlertDialog alertDialog = builder.create();
@@ -739,13 +739,12 @@ public class NotificationsCustomSettingsActivity extends BaseFragment {
                 } else {
                     exceptions = channelsResult;
                 }
-                updateRows();
-                adapter.notifyDataSetChanged();
+                updateRows(true);
             });
         });
     }
 
-    private void updateRows() {
+    private void updateRows(boolean notify) {
         rowCount = 0;
         if (currentType != -1) {
             alertRow = rowCount++;
@@ -799,6 +798,9 @@ public class NotificationsCustomSettingsActivity extends BaseFragment {
         } else {
             deleteAllRow = -1;
             deleteAllSectionRow = -1;
+        }
+        if (notify && adapter != null) {
+            adapter.notifyDataSetChanged();
         }
     }
 
@@ -1435,7 +1437,7 @@ public class NotificationsCustomSettingsActivity extends BaseFragment {
                 new ThemeDescription(listView, 0, new Class[]{UserCell.class}, new String[]{"nameTextView"}, null, null, null, Theme.key_windowBackgroundWhiteBlackText),
                 new ThemeDescription(listView, 0, new Class[]{UserCell.class}, new String[]{"statusColor"}, null, null, cellDelegate, Theme.key_windowBackgroundWhiteGrayText),
                 new ThemeDescription(listView, 0, new Class[]{UserCell.class}, new String[]{"statusOnlineColor"}, null, null, cellDelegate, Theme.key_windowBackgroundWhiteBlueText),
-                new ThemeDescription(listView, 0, new Class[]{UserCell.class}, null, new Drawable[]{Theme.avatar_savedDrawable}, null, Theme.key_avatar_text),
+                new ThemeDescription(listView, 0, new Class[]{UserCell.class}, null, Theme.avatarDrawables, null, Theme.key_avatar_text),
                 new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundRed),
                 new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundOrange),
                 new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundViolet),

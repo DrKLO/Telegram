@@ -36,7 +36,7 @@ public class TextPaintImageReceiverSpan extends ReplacementSpan {
         imageReceiver = new ImageReceiver(parentView);
         imageReceiver.setInvalidateAll(true);
         if (invert) {
-            imageReceiver.setDelegate((imageReceiver, set, thumb) -> {
+            imageReceiver.setDelegate((imageReceiver, set, thumb, memCache) -> {
                 if (!imageReceiver.canInvertBitmap()) {
                     return;
                 }

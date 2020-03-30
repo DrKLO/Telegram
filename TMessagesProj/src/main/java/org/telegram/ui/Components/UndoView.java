@@ -86,6 +86,7 @@ public class UndoView extends FrameLayout {
     public final static int ACTION_THEME_CHANGED = 12;
     public final static int ACTION_QUIZ_CORRECT = 13;
     public final static int ACTION_QUIZ_INCORRECT = 14;
+    public final static int ACTION_FILTERS_AVAILABLE = 15;
 
     public UndoView(Context context) {
         super(context);
@@ -173,12 +174,13 @@ public class UndoView extends FrameLayout {
     }
 
     private boolean hasSubInfo() {
-        return currentAction == ACTION_QR_SESSION_ACCEPTED || currentAction == ACTION_ARCHIVE_HIDDEN || currentAction == ACTION_ARCHIVE_HINT || currentAction == ACTION_ARCHIVE_FEW_HINT || currentAction == ACTION_ARCHIVE_PINNED ||
-                currentAction == ACTION_QUIZ_CORRECT || currentAction == ACTION_QUIZ_INCORRECT;
+        return currentAction == ACTION_QR_SESSION_ACCEPTED || currentAction == ACTION_ARCHIVE_HIDDEN || currentAction == ACTION_ARCHIVE_HINT || currentAction == ACTION_ARCHIVE_FEW_HINT ||
+                currentAction == ACTION_QUIZ_CORRECT || currentAction == ACTION_QUIZ_INCORRECT ||
+                currentAction == ACTION_ARCHIVE_PINNED && MessagesController.getInstance(currentAccount).dialogFilters.isEmpty();
     }
 
     public boolean isMultilineSubInfo() {
-        return currentAction == ACTION_THEME_CHANGED;
+        return currentAction == ACTION_THEME_CHANGED || currentAction == ACTION_FILTERS_AVAILABLE;
     }
 
     public void setAdditionalTranslationY(float value) {
@@ -263,6 +265,8 @@ public class UndoView extends FrameLayout {
         timeLeft = 5000;
         currentInfoObject = infoObject;
         lastUpdateTime = SystemClock.elapsedRealtime();
+        undoTextView.setText(LocaleController.getString("Undo", R.string.Undo).toUpperCase());
+        undoImageView.setVisibility(VISIBLE);
 
         if (isTooltipAction()) {
             CharSequence infoText;
@@ -300,7 +304,11 @@ public class UndoView extends FrameLayout {
                 size = 44;
             } else if (action == ACTION_ARCHIVE_PINNED) {
                 infoText = LocaleController.getString("ArchivePinned", R.string.ArchivePinned);
-                subInfoText = LocaleController.getString("ArchivePinnedInfo", R.string.ArchivePinnedInfo);
+                if (MessagesController.getInstance(currentAccount).dialogFilters.isEmpty()) {
+                    subInfoText = LocaleController.getString("ArchivePinnedInfo", R.string.ArchivePinnedInfo);
+                } else {
+                    subInfoText = null;
+                }
                 icon = R.raw.chats_infotip;
             } else {
                 if (action == ACTION_ARCHIVE_HINT) {
@@ -308,7 +316,11 @@ public class UndoView extends FrameLayout {
                 } else {
                     infoText = LocaleController.getString("ChatsArchived", R.string.ChatsArchived);
                 }
-                subInfoText = LocaleController.getString("ChatArchivedInfo", R.string.ChatArchivedInfo);
+                if (MessagesController.getInstance(currentAccount).dialogFilters.isEmpty()) {
+                    subInfoText = LocaleController.getString("ChatArchivedInfo", R.string.ChatArchivedInfo);
+                } else {
+                    subInfoText = null;
+                }
                 icon = R.raw.chats_infotip;
             }
 
@@ -319,6 +331,9 @@ public class UndoView extends FrameLayout {
                 FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) infoTextView.getLayoutParams();
                 layoutParams.leftMargin = AndroidUtilities.dp(58);
                 layoutParams.topMargin = AndroidUtilities.dp(6);
+                layoutParams.rightMargin = 0;
+                layoutParams = (FrameLayout.LayoutParams) subinfoTextView.getLayoutParams();
+                layoutParams.rightMargin = 0;
                 subinfoTextView.setText(subInfoText);
                 subinfoTextView.setVisibility(VISIBLE);
                 infoTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
@@ -327,6 +342,7 @@ public class UndoView extends FrameLayout {
                 FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) infoTextView.getLayoutParams();
                 layoutParams.leftMargin = AndroidUtilities.dp(58);
                 layoutParams.topMargin = AndroidUtilities.dp(13);
+                layoutParams.rightMargin = 0;
                 subinfoTextView.setVisibility(GONE);
                 infoTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
                 infoTextView.setTypeface(Typeface.DEFAULT);
@@ -354,6 +370,40 @@ public class UndoView extends FrameLayout {
             undoTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteRedText2));
             undoImageView.setVisibility(GONE);
             undoButton.setVisibility(VISIBLE);
+            leftImageView.setVisibility(VISIBLE);
+
+            leftImageView.setProgress(0);
+            leftImageView.playAnimation();
+        } else if (currentAction == ACTION_FILTERS_AVAILABLE) {
+            timeLeft = 10000;
+            undoTextView.setText(LocaleController.getString("Open", R.string.Open).toUpperCase());
+            infoTextView.setText(LocaleController.getString("FilterAvailableTitle", R.string.FilterAvailableTitle));
+            leftImageView.setAnimation(R.raw.filter_new, 36, 36);
+            int margin = (int) Math.ceil(undoTextView.getPaint().measureText(undoTextView.getText().toString())) + AndroidUtilities.dp(26);
+
+            FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) infoTextView.getLayoutParams();
+            layoutParams.leftMargin = AndroidUtilities.dp(58);
+            layoutParams.rightMargin = margin;
+            layoutParams.topMargin = AndroidUtilities.dp(6);
+
+            layoutParams = (FrameLayout.LayoutParams) subinfoTextView.getLayoutParams();
+            layoutParams.rightMargin = margin;
+
+            String text = LocaleController.getString("FilterAvailableText", R.string.FilterAvailableText);
+            SpannableStringBuilder builder = new SpannableStringBuilder(text);
+            int index1 = text.indexOf('*');
+            int index2 = text.lastIndexOf('*');
+            if (index1 >= 0 && index2 >= 0 && index1 != index2) {
+                builder.replace(index2, index2 + 1, "");
+                builder.replace(index1, index1 + 1, "");
+                builder.setSpan(new URLSpanNoUnderline("tg://settings/folders"), index1, index2 - 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            }
+            subinfoTextView.setText(builder);
+            subinfoTextView.setVisibility(VISIBLE);
+            subinfoTextView.setSingleLine(false);
+            subinfoTextView.setMaxLines(2);
+            undoButton.setVisibility(VISIBLE);
+            undoImageView.setVisibility(GONE);
             leftImageView.setVisibility(VISIBLE);
 
             leftImageView.setProgress(0);
@@ -398,6 +448,7 @@ public class UndoView extends FrameLayout {
             FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) infoTextView.getLayoutParams();
             layoutParams.leftMargin = AndroidUtilities.dp(58);
             layoutParams.topMargin = AndroidUtilities.dp(13);
+            layoutParams.rightMargin = 0;
 
             infoTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
             undoButton.setVisibility(VISIBLE);
@@ -412,6 +463,7 @@ public class UndoView extends FrameLayout {
             FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) infoTextView.getLayoutParams();
             layoutParams.leftMargin = AndroidUtilities.dp(45);
             layoutParams.topMargin = AndroidUtilities.dp(13);
+            layoutParams.rightMargin = 0;
 
             infoTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
             undoButton.setVisibility(VISIBLE);

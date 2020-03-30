@@ -15,7 +15,6 @@ import android.animation.ObjectAnimator;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
-import android.graphics.drawable.Drawable;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.TextUtils;
@@ -35,16 +34,15 @@ import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.ColorSpanUnderline;
-import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.ProgressButton;
 
 public class FeaturedStickerSetInfoCell extends FrameLayout {
 
     private TextView nameTextView;
     private TextView infoTextView;
-    private TextView addButton;
+    private ProgressButton addButton;
     private TextView delButton;
-    private Drawable addDrawable;
     private TLRPC.StickerSetCovered set;
 
     private AnimatorSet animatorSet;
@@ -58,8 +56,6 @@ public class FeaturedStickerSetInfoCell extends FrameLayout {
 
     public FeaturedStickerSetInfoCell(Context context, int left) {
         super(context);
-
-        addDrawable = Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(4), Theme.getColor(Theme.key_featuredStickers_addButton), Theme.getColor(Theme.key_featuredStickers_addButtonPressed));
 
         nameTextView = new TextView(context);
         nameTextView.setTextColor(Theme.getColor(Theme.key_chat_emojiPanelTrendingTitle));
@@ -76,13 +72,10 @@ public class FeaturedStickerSetInfoCell extends FrameLayout {
         infoTextView.setSingleLine(true);
         addView(infoTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.LEFT, left, 30, 100, 0));
 
-        addButton = new TextView(context);
-        addButton.setGravity(Gravity.CENTER);
+        addButton = new ProgressButton(context);
+        addButton.setProgressColor(Theme.getColor(Theme.key_featuredStickers_buttonProgress));
         addButton.setTextColor(Theme.getColor(Theme.key_featuredStickers_buttonText));
-        addButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-        addButton.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
-        addButton.setBackgroundDrawable(addDrawable);
-        addButton.setPadding(AndroidUtilities.dp(17), 0, AndroidUtilities.dp(17), 0);
+        addButton.setBackgroundRoundRect(Theme.getColor(Theme.key_featuredStickers_addButton), Theme.getColor(Theme.key_featuredStickers_addButtonPressed));
         addButton.setText(LocaleController.getString("Add", R.string.Add));
         addView(addButton, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 28, Gravity.TOP | Gravity.RIGHT, 0, 16, 14, 0));
 
@@ -119,15 +112,23 @@ public class FeaturedStickerSetInfoCell extends FrameLayout {
         delButton.setOnClickListener(onClickListener);
     }
 
+    public void setAddDrawProgress(boolean drawProgress, boolean animated) {
+        addButton.setDrawProgress(drawProgress, animated);
+    }
+
     public void setStickerSet(TLRPC.StickerSetCovered stickerSet, boolean unread) {
-        setStickerSet(stickerSet, unread, false, 0, 0);
+        setStickerSet(stickerSet, unread, false, 0, 0, false);
     }
 
     public void setStickerSet(TLRPC.StickerSetCovered stickerSet, boolean unread, boolean animated) {
-        setStickerSet(stickerSet, unread, animated, 0, 0);
+        setStickerSet(stickerSet, unread, animated, 0, 0, false);
     }
 
     public void setStickerSet(TLRPC.StickerSetCovered stickerSet, boolean unread, boolean animated, int index, int searchLength) {
+        setStickerSet(stickerSet, unread, animated, index, searchLength, false);
+    }
+
+    public void setStickerSet(TLRPC.StickerSetCovered stickerSet, boolean unread, boolean animated, int index, int searchLength, boolean forceInstalled) {
         if (animatorSet != null) {
             animatorSet.cancel();
             animatorSet = null;
@@ -147,7 +148,7 @@ public class FeaturedStickerSetInfoCell extends FrameLayout {
         isUnread = unread;
         if (hasOnClick) {
             addButton.setVisibility(VISIBLE);
-            isInstalled = MediaDataController.getInstance(currentAccount).isStickerPackInstalled(stickerSet.set.id);
+            isInstalled = forceInstalled || MediaDataController.getInstance(currentAccount).isStickerPackInstalled(stickerSet.set.id);
             if (animated) {
                 if (isInstalled) {
                     delButton.setVisibility(VISIBLE);

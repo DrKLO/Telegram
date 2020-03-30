@@ -3,6 +3,7 @@ package org.telegram.ui.Components;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.ValueAnimator;
+import android.util.SparseArray;
 import android.view.View;
 
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -27,6 +28,8 @@ public class RecyclerAnimationScrollHelper {
     private ScrollListener scrollListener;
 
     private AnimationCallback animationCallback;
+
+    public SparseArray<View> positionToOldView = new SparseArray<>();
 
     public RecyclerAnimationScrollHelper(RecyclerListView recyclerView, LinearLayoutManager layoutManager) {
         this.recyclerView = recyclerView;
@@ -60,9 +63,11 @@ public class RecyclerAnimationScrollHelper {
         int h = 0;
         int t = 0;
         final ArrayList<View> oldViews = new ArrayList<>();
+        positionToOldView.clear();
         for (int i = 0; i < n; i++) {
             View child = recyclerView.getChildAt(0);
             oldViews.add(child);
+            positionToOldView.put(layoutManager.getPosition(child), child);
 
             int bot = child.getBottom();
             int top = child.getTop();
@@ -70,7 +75,7 @@ public class RecyclerAnimationScrollHelper {
             if (top < t) t = top;
 
             if (child instanceof ChatMessageCell) {
-                ((ChatMessageCell) child).setAnimationRunning(true);
+                ((ChatMessageCell) child).setAnimationRunning(true, true);
             }
             recyclerView.removeView(child);
         }
@@ -109,14 +114,14 @@ public class RecyclerAnimationScrollHelper {
                         bottom = child.getBottom();
 
                     if (child instanceof ChatMessageCell) {
-                        ((ChatMessageCell) child).setAnimationRunning(true);
+                        ((ChatMessageCell) child).setAnimationRunning(true, false);
                     }
                 }
 
                 for (View view : oldViews) {
                     recyclerView.addView(view);
                     if (view instanceof ChatMessageCell) {
-                        ((ChatMessageCell) view).setAnimationRunning(true);
+                        ((ChatMessageCell) view).setAnimationRunning(true, true);
                     }
                 }
 
@@ -132,7 +137,14 @@ public class RecyclerAnimationScrollHelper {
                 animator = ValueAnimator.ofFloat(0, 1f);
                 animator.addUpdateListener(animation -> {
                     float value = ((float) animation.getAnimatedValue());
-                    for (View view : oldViews) {
+                    int size = oldViews.size();
+                    for (int i = 0; i < size; i++) {
+                        View view = oldViews.get(i);
+                        float viewTop = view.getY();
+                        float viewBottom = view.getY() + view.getMeasuredHeight();
+                        if (viewBottom < 0 || viewTop > recyclerView.getMeasuredHeight()) {
+                            continue;
+                        }
                         if (scrollDown) {
                             view.setTranslationY(-scrollLength * value);
                         } else {
@@ -140,15 +152,17 @@ public class RecyclerAnimationScrollHelper {
                         }
                     }
 
-                    for (View view : incomingViews) {
+                    size = incomingViews.size();
+                    for (int i = 0; i < size; i++) {
+                        View view = incomingViews.get(i);
                         if (scrollDown) {
                             view.setTranslationY((scrollLength) * (1f - value));
                         } else {
                             view.setTranslationY(-(scrollLength) * (1f - value));
                         }
                     }
-                    if (scrollListener != null) scrollListener.onScroll();
                     recyclerView.invalidate();
+                    if (scrollListener != null) scrollListener.onScroll();
                 });
 
                 animator.addListener(new AnimatorListenerAdapter() {
@@ -157,13 +171,12 @@ public class RecyclerAnimationScrollHelper {
                         recyclerView.animationRunning = false;
 
                         for (View view : oldViews) {
-                            recyclerView.removeView(view);
                             if (view instanceof ChatMessageCell) {
-                                ((ChatMessageCell) view).setAnimationRunning(false);
+                                ((ChatMessageCell) view).setAnimationRunning(false, true);
                             }
                             view.setTranslationY(0);
+                            recyclerView.removeView(view);
                         }
-
 
                         recyclerView.setVerticalScrollBarEnabled(true);
 
@@ -171,7 +184,7 @@ public class RecyclerAnimationScrollHelper {
                         for (int i = 0; i < n; i++) {
                             View child = recyclerView.getChildAt(i);
                             if (child instanceof ChatMessageCell) {
-                                ((ChatMessageCell) child).setAnimationRunning(false);
+                                ((ChatMessageCell) child).setAnimationRunning(false, false);
                             }
                             child.setTranslationY(0);
                         }
@@ -183,6 +196,8 @@ public class RecyclerAnimationScrollHelper {
                         if (animationCallback != null) {
                             animationCallback.onEndAnimation();
                         }
+
+                        positionToOldView.clear();
 
                         animator = null;
                     }
@@ -219,7 +234,7 @@ public class RecyclerAnimationScrollHelper {
             View child = recyclerView.getChildAt(i);
             child.setTranslationY(0f);
             if (child instanceof ChatMessageCell) {
-                ((ChatMessageCell) child).setAnimationRunning(false);
+                ((ChatMessageCell) child).setAnimationRunning(false, false);
             }
         }
     }

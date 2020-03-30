@@ -8,13 +8,20 @@
 
 package org.telegram.ui.Components;
 
-import android.animation.LayoutTransition;
+import android.animation.Animator;
+import android.animation.ValueAnimator;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Paint.Style;
 import android.graphics.drawable.Drawable;
+import android.os.Build;
 import android.os.SystemClock;
+import android.transition.AutoTransition;
+import android.transition.Transition;
+import android.transition.TransitionManager;
+import android.transition.TransitionSet;
+import android.transition.TransitionValues;
 import android.util.SparseArray;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -74,8 +81,6 @@ public class ScrollSlidingTabStrip extends HorizontalScrollView {
 
     private int lastScrollX = 0;
 
-    private LayoutTransition layoutTransition;
-
     public ScrollSlidingTabStrip(Context context) {
         super(context);
 
@@ -94,29 +99,6 @@ public class ScrollSlidingTabStrip extends HorizontalScrollView {
 
         defaultTabLayoutParams = new LinearLayout.LayoutParams(AndroidUtilities.dp(52), LayoutHelper.MATCH_PARENT);
         defaultExpandLayoutParams = new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, 1.0F);
-
-        layoutTransition = new LayoutTransition();
-        layoutTransition.setAnimateParentHierarchy(false);
-        layoutTransition.setDuration(250);
-        layoutTransition.addTransitionListener(new LayoutTransition.TransitionListener() {
-
-            private boolean inTransition;
-
-            @Override
-            public void startTransition(LayoutTransition transition, ViewGroup container, View view, int transitionType) {
-
-            }
-
-            @Override
-            public void endTransition(LayoutTransition transition, ViewGroup container, View view, int transitionType) {
-                if (inTransition) {
-                    return;
-                }
-                inTransition = true;
-                tabsContainer.setLayoutTransition(null);
-                inTransition = false;
-            }
-        });
     }
 
     public void setDelegate(ScrollSlidingTabStripDelegate scrollSlidingTabStripDelegate) {
@@ -138,8 +120,27 @@ public class ScrollSlidingTabStrip extends HorizontalScrollView {
         tabTypes = new HashMap<>();
         futureTabsPositions.clear();
         tabCount = 0;
-        if (animated) {
-            tabsContainer.setLayoutTransition(layoutTransition);
+        if (animated && Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+            final AutoTransition transition = new AutoTransition();
+            transition.setDuration(250);
+            transition.setOrdering(TransitionSet.ORDERING_TOGETHER);
+            transition.addTransition(new Transition() {
+                @Override
+                public void captureStartValues(TransitionValues transitionValues) {
+                }
+
+                @Override
+                public void captureEndValues(TransitionValues transitionValues) {
+                }
+
+                @Override
+                public Animator createAnimator(ViewGroup sceneRoot, TransitionValues startValues, TransitionValues endValues) {
+                    final ValueAnimator invalidateAnimator = ValueAnimator.ofFloat(0, 1);
+                    invalidateAnimator.addUpdateListener(a -> invalidate());
+                    return invalidateAnimator;
+                }
+            });
+            TransitionManager.beginDelayedTransition(tabsContainer, transition);
         }
     }
 
@@ -502,6 +503,10 @@ public class ScrollSlidingTabStrip extends HorizontalScrollView {
             scrollToChild(position);
         }
         invalidate();
+    }
+
+    public void setCurrentPosition(int currentPosition) {
+        this.currentPosition = currentPosition;
     }
 
     public void setIndicatorHeight(int value) {

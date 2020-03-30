@@ -15,6 +15,7 @@ import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
 import android.os.SystemClock;
 import androidx.annotation.Keep;
+
 import android.text.Layout;
 import android.util.SparseIntArray;
 import android.util.TypedValue;
@@ -118,7 +119,13 @@ public class ScrollSlidingTextTabStrip extends HorizontalScrollView {
         setWillNotDraw(false);
 
         setHorizontalScrollBarEnabled(false);
-        tabsContainer = new LinearLayout(context);
+        tabsContainer = new LinearLayout(context) {
+            @Override
+            public void setAlpha(float alpha) {
+                super.setAlpha(alpha);
+                ScrollSlidingTextTabStrip.this.invalidate();
+            }
+        };
         tabsContainer.setOrientation(LinearLayout.HORIZONTAL);
         tabsContainer.setPadding(AndroidUtilities.dp(7), 0, AndroidUtilities.dp(7), 0);
         tabsContainer.setLayoutParams(new LayoutParams(LayoutParams.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
@@ -190,6 +197,7 @@ public class ScrollSlidingTextTabStrip extends HorizontalScrollView {
         return tabsContainer;
     }
 
+    @Keep
     public float getAnimationIdicatorProgress() {
         return animationIdicatorProgress;
     }
@@ -227,6 +235,7 @@ public class ScrollSlidingTextTabStrip extends HorizontalScrollView {
             prevLayoutWidth = 0;
         }
         TextView tab = new TextView(getContext());
+        tab.setWillNotDraw(false);
         tab.setGravity(Gravity.CENTER);
         tab.setText(text);
         tab.setBackgroundDrawable(Theme.createSelectorDrawable(Theme.getColor(selectorColorKey), 3));
@@ -313,6 +322,10 @@ public class ScrollSlidingTextTabStrip extends HorizontalScrollView {
         }
     }
 
+    public void resetTab() {
+        selectedTabId = -1;
+    }
+
     public int getFirstTabId() {
         return positionToId.get(0, 0);
     }
@@ -322,6 +335,7 @@ public class ScrollSlidingTextTabStrip extends HorizontalScrollView {
         boolean result = super.drawChild(canvas, child, drawingTime);
         if (child == tabsContainer) {
             final int height = getMeasuredHeight();
+            selectorDrawable.setAlpha((int) (255 * tabsContainer.getAlpha()));
             selectorDrawable.setBounds(indicatorX, height - AndroidUtilities.dpr(4), indicatorX + indicatorWidth, height);
             selectorDrawable.draw(canvas);
         }

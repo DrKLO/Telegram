@@ -492,7 +492,7 @@ public class DataAutoDownloadActivity extends BaseFragment {
                     linearLayout.setOrientation(LinearLayout.VERTICAL);
                     builder.setCustomView(linearLayout);
 
-                    HeaderCell headerCell = new HeaderCell(getParentActivity(), true, 21, 15, false);
+                    HeaderCell headerCell = new HeaderCell(getParentActivity(), Theme.key_dialogTextBlue2, 21, 15, false);
                     if (position == photosRow) {
                         headerCell.setText(LocaleController.getString("AutoDownloadPhotosTitle", R.string.AutoDownloadPhotosTitle));
                     } else if (position == videosRow) {

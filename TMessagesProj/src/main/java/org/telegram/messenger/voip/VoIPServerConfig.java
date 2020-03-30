@@ -5,9 +5,6 @@ import org.json.JSONObject;
 import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.FileLog;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-
 /**
  * Created by grishka on 01.03.17.
  */

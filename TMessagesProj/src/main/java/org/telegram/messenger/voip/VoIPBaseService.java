@@ -46,6 +46,7 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.PowerManager;
+import android.os.SystemClock;
 import android.os.Vibrator;
 import android.telecom.CallAudioState;
 import android.telecom.Connection;
@@ -97,11 +98,11 @@ import java.util.List;
 public abstract class VoIPBaseService extends Service implements SensorEventListener, AudioManager.OnAudioFocusChangeListener, VoIPController.ConnectionStateListener, NotificationCenter.NotificationCenterDelegate{
 
 	protected int currentAccount = -1;
-	public static final int STATE_WAIT_INIT = 1;
-	public static final int STATE_WAIT_INIT_ACK = 2;
-	public static final int STATE_ESTABLISHED = 3;
-	public static final int STATE_FAILED = 4;
-	public static final int STATE_RECONNECTING = 5;
+	public static final int STATE_WAIT_INIT = TgVoip.STATE_WAIT_INIT;
+	public static final int STATE_WAIT_INIT_ACK = TgVoip.STATE_WAIT_INIT_ACK;
+	public static final int STATE_ESTABLISHED = TgVoip.STATE_ESTABLISHED;
+	public static final int STATE_FAILED = TgVoip.STATE_FAILED;
+	public static final int STATE_RECONNECTING = TgVoip.STATE_RECONNECTING;
 	public static final int STATE_ENDED = 11;
 	public static final String ACTION_HEADSET_PLUG = "android.intent.action.HEADSET_PLUG";
 
@@ -125,8 +126,8 @@ public abstract class VoIPBaseService extends Service implements SensorEventList
 	protected NetworkInfo lastNetInfo;
 	protected int currentState = 0;
 	protected Notification ongoingCallNotification;
-	protected VoIPController controller;
-	protected int lastError;
+	protected TgVoip.Instance tgVoip;
+	protected String lastError;
 	protected PowerManager.WakeLock proximityWakelock;
 	protected PowerManager.WakeLock cpuWakelock;
 	protected boolean isProximityNear;
@@ -144,10 +145,8 @@ public abstract class VoIPBaseService extends Service implements SensorEventList
 	protected boolean needPlayEndSound;
 	protected boolean haveAudioFocus;
 	protected boolean micMute;
-	protected boolean controllerStarted;
 	protected BluetoothAdapter btAdapter;
-	protected VoIPController.Stats stats = new VoIPController.Stats();
-	protected VoIPController.Stats prevStats = new VoIPController.Stats();
+	protected TgVoip.TrafficStats prevTrafficStats;
 	protected boolean isBtHeadsetConnected;
 	protected Runnable afterSoundRunnable=new Runnable(){
 		@Override
@@ -160,7 +159,7 @@ public abstract class VoIPBaseService extends Service implements SensorEventList
 			((AudioManager)ApplicationLoader.applicationContext.getSystemService(AUDIO_SERVICE)).setSpeakerphoneOn(false);
 		}
 	};
-	protected long lastKnownDuration = 0;
+	protected long callStartTime;
 	protected boolean playingSound;
 	protected boolean isOutgoing;
 	protected Runnable timeoutRunnable;
@@ -279,9 +278,10 @@ public abstract class VoIPBaseService extends Service implements SensorEventList
 	}
 
 	public void setMicMute(boolean mute) {
-		micMute=mute;
-		if(controller!=null)
-			controller.setMicMute(mute);
+		micMute = mute;
+		if (tgVoip != null) {
+			tgVoip.setMuteMicrophone(mute);
+		}
 	}
 
 	public boolean isMicMute() {
@@ -429,13 +429,14 @@ public abstract class VoIPBaseService extends Service implements SensorEventList
 	}
 
 	public String getDebugString() {
-		return controller.getDebugString();
+		return tgVoip != null ? tgVoip.getDebugInfo() : "";
 	}
 
 	public long getCallDuration() {
-		if (!controllerStarted || controller == null)
-			return lastKnownDuration;
-		return lastKnownDuration = controller.getCallDuration();
+		if (callStartTime == 0) {
+			return 0;
+		}
+		return SystemClock.elapsedRealtime() - callStartTime;
 	}
 
 	public static VoIPBaseService getSharedInstance(){
@@ -597,13 +598,14 @@ public abstract class VoIPBaseService extends Service implements SensorEventList
 				NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.didEndCall);
 			}
 		});
-		if (controller != null && controllerStarted) {
-			lastKnownDuration = controller.getCallDuration();
-			updateStats();
-			StatsController.getInstance(currentAccount).incrementTotalCallsTime(getStatsNetworkType(), (int) (lastKnownDuration / 1000) % 5);
-			onControllerPreRelease();
-			controller.release();
-			controller = null;
+		if (tgVoip != null) {
+			updateTrafficStats();
+			StatsController.getInstance(currentAccount).incrementTotalCallsTime(getStatsNetworkType(), (int) (getCallDuration() / 1000) % 5);
+			onTgVoipPreStop();
+			onTgVoipStop(tgVoip.stop());
+			prevTrafficStats = null;
+			callStartTime = 0;
+			tgVoip = null;
 		}
 		cpuWakelock.release();
 		AudioManager am = (AudioManager) getSystemService(AUDIO_SERVICE);
@@ -640,20 +642,16 @@ public abstract class VoIPBaseService extends Service implements SensorEventList
 		VoIPHelper.lastCallTime=System.currentTimeMillis();
 	}
 
-	protected void onControllerPreRelease(){
-
+	protected void onTgVoipPreStop() {
 	}
 
-	protected VoIPController createController(){
-		return new VoIPController();
+	protected void onTgVoipStop(TgVoip.FinalState finalState) {
 	}
 
 	protected void initializeAccountRelatedThings(){
 		updateServerConfig();
 		NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.appDidLogout);
 		ConnectionsManager.getInstance(currentAccount).setAppPaused(false, false);
-		controller = createController();
-		controller.setConnectionStateListener(this);
 	}
 
 	@Override
@@ -662,14 +660,15 @@ public abstract class VoIPBaseService extends Service implements SensorEventList
 		if (BuildVars.LOGS_ENABLED) {
 			FileLog.d("=============== VoIPService STARTING ===============");
 		}
-		AudioManager am = (AudioManager) getSystemService(AUDIO_SERVICE);
-		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1 && am.getProperty(AudioManager.PROPERTY_OUTPUT_FRAMES_PER_BUFFER)!=null) {
-			int outFramesPerBuffer = Integer.parseInt(am.getProperty(AudioManager.PROPERTY_OUTPUT_FRAMES_PER_BUFFER));
-			VoIPController.setNativeBufferSize(outFramesPerBuffer);
-		} else {
-			VoIPController.setNativeBufferSize(AudioTrack.getMinBufferSize(48000, AudioFormat.CHANNEL_OUT_MONO, AudioFormat.ENCODING_PCM_16BIT) / 2);
-		}
 		try {
+			AudioManager am = (AudioManager) getSystemService(AUDIO_SERVICE);
+			if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1 && am.getProperty(AudioManager.PROPERTY_OUTPUT_FRAMES_PER_BUFFER)!=null) {
+				int outFramesPerBuffer = Integer.parseInt(am.getProperty(AudioManager.PROPERTY_OUTPUT_FRAMES_PER_BUFFER));
+				TgVoip.setBufferSize(outFramesPerBuffer);
+			} else {
+				TgVoip.setBufferSize(AudioTrack.getMinBufferSize(48000, AudioFormat.CHANNEL_OUT_MONO, AudioFormat.ENCODING_PCM_16BIT) / 2);
+			}
+
 			cpuWakelock = ((PowerManager) getSystemService(POWER_SERVICE)).newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "telegram-voip");
 			cpuWakelock.acquire();
 
@@ -704,7 +703,6 @@ public abstract class VoIPBaseService extends Service implements SensorEventList
 				for (StateListener l : stateListeners)
 					l.onAudioSettingsChanged();
 			}
-
 		} catch (Exception x) {
 			if (BuildVars.LOGS_ENABLED) {
 				FileLog.e("error initializing voip controller", x);
@@ -730,25 +728,27 @@ public abstract class VoIPBaseService extends Service implements SensorEventList
 		}
 	}
 
-	protected void updateStats() {
-		controller.getStats(stats);
-		long wifiSentDiff = stats.bytesSentWifi - prevStats.bytesSentWifi;
-		long wifiRecvdDiff = stats.bytesRecvdWifi - prevStats.bytesRecvdWifi;
-		long mobileSentDiff = stats.bytesSentMobile - prevStats.bytesSentMobile;
-		long mobileRecvdDiff = stats.bytesRecvdMobile - prevStats.bytesRecvdMobile;
-		VoIPController.Stats tmp = stats;
-		stats = prevStats;
-		prevStats = tmp;
-		if (wifiSentDiff > 0)
+	protected void updateTrafficStats() {
+		final TgVoip.TrafficStats trafficStats = tgVoip.getTrafficStats();
+		final long wifiSentDiff = trafficStats.bytesSentWifi - (prevTrafficStats != null ? prevTrafficStats.bytesSentWifi : 0);
+		final long wifiRecvdDiff = trafficStats.bytesReceivedWifi - (prevTrafficStats != null ? prevTrafficStats.bytesReceivedWifi : 0);
+		final long mobileSentDiff = trafficStats.bytesSentMobile - (prevTrafficStats != null ? prevTrafficStats.bytesSentMobile : 0);
+		final long mobileRecvdDiff = trafficStats.bytesReceivedMobile - (prevTrafficStats != null ? prevTrafficStats.bytesReceivedMobile : 0);
+		prevTrafficStats = trafficStats;
+		if (wifiSentDiff > 0) {
 			StatsController.getInstance(currentAccount).incrementSentBytesCount(StatsController.TYPE_WIFI, StatsController.TYPE_CALLS, wifiSentDiff);
-		if (wifiRecvdDiff > 0)
+		}
+		if (wifiRecvdDiff > 0) {
 			StatsController.getInstance(currentAccount).incrementReceivedBytesCount(StatsController.TYPE_WIFI, StatsController.TYPE_CALLS, wifiRecvdDiff);
-		if (mobileSentDiff > 0)
-			StatsController.getInstance(currentAccount).incrementSentBytesCount(lastNetInfo != null && lastNetInfo.isRoaming() ? StatsController.TYPE_ROAMING : StatsController.TYPE_MOBILE,
-					StatsController.TYPE_CALLS, mobileSentDiff);
-		if (mobileRecvdDiff > 0)
-			StatsController.getInstance(currentAccount).incrementReceivedBytesCount(lastNetInfo != null && lastNetInfo.isRoaming() ? StatsController.TYPE_ROAMING : StatsController.TYPE_MOBILE,
-					StatsController.TYPE_CALLS, mobileRecvdDiff);
+		}
+		if (mobileSentDiff > 0) {
+			StatsController.getInstance(currentAccount).incrementSentBytesCount(lastNetInfo != null && lastNetInfo.isRoaming() ?
+					StatsController.TYPE_ROAMING : StatsController.TYPE_MOBILE, StatsController.TYPE_CALLS, mobileSentDiff);
+		}
+		if (mobileRecvdDiff > 0) {
+			StatsController.getInstance(currentAccount).incrementReceivedBytesCount(lastNetInfo != null && lastNetInfo.isRoaming() ?
+					StatsController.TYPE_ROAMING : StatsController.TYPE_MOBILE, StatsController.TYPE_CALLS, mobileRecvdDiff);
+		}
 	}
 
 	protected void configureDeviceForCall() {
@@ -905,7 +905,7 @@ public abstract class VoIPBaseService extends Service implements SensorEventList
 			l.onAudioSettingsChanged();
 	}
 
-	public int getLastError() {
+	public String getLastError() {
 		return lastError;
 	}
 
@@ -914,24 +914,30 @@ public abstract class VoIPBaseService extends Service implements SensorEventList
 	}
 
 	protected void updateNetworkType() {
-		ConnectivityManager cm = (ConnectivityManager) getSystemService(CONNECTIVITY_SERVICE);
-		NetworkInfo info = cm.getActiveNetworkInfo();
-		lastNetInfo = info;
-		int type = VoIPController.NET_TYPE_UNKNOWN;
+		if (tgVoip != null) {
+			tgVoip.setNetworkType(getNetworkType());
+		} else {
+			lastNetInfo = getActiveNetworkInfo();
+		}
+	}
+
+	protected int getNetworkType() {
+		final NetworkInfo info = lastNetInfo = getActiveNetworkInfo();
+		int type = TgVoip.NET_TYPE_UNKNOWN;
 		if (info != null) {
 			switch (info.getType()) {
 				case ConnectivityManager.TYPE_MOBILE:
 					switch (info.getSubtype()) {
 						case TelephonyManager.NETWORK_TYPE_GPRS:
-							type = VoIPController.NET_TYPE_GPRS;
+							type = TgVoip.NET_TYPE_GPRS;
 							break;
 						case TelephonyManager.NETWORK_TYPE_EDGE:
 						case TelephonyManager.NETWORK_TYPE_1xRTT:
-							type = VoIPController.NET_TYPE_EDGE;
+							type = TgVoip.NET_TYPE_EDGE;
 							break;
 						case TelephonyManager.NETWORK_TYPE_UMTS:
 						case TelephonyManager.NETWORK_TYPE_EVDO_0:
-							type = VoIPController.NET_TYPE_3G;
+							type = TgVoip.NET_TYPE_3G;
 							break;
 						case TelephonyManager.NETWORK_TYPE_HSDPA:
 						case TelephonyManager.NETWORK_TYPE_HSPA:
@@ -939,31 +945,33 @@ public abstract class VoIPBaseService extends Service implements SensorEventList
 						case TelephonyManager.NETWORK_TYPE_HSUPA:
 						case TelephonyManager.NETWORK_TYPE_EVDO_A:
 						case TelephonyManager.NETWORK_TYPE_EVDO_B:
-							type = VoIPController.NET_TYPE_HSPA;
+							type = TgVoip.NET_TYPE_HSPA;
 							break;
 						case TelephonyManager.NETWORK_TYPE_LTE:
-							type = VoIPController.NET_TYPE_LTE;
+							type = TgVoip.NET_TYPE_LTE;
 							break;
 						default:
-							type = VoIPController.NET_TYPE_OTHER_MOBILE;
+							type = TgVoip.NET_TYPE_OTHER_MOBILE;
 							break;
 					}
 					break;
 				case ConnectivityManager.TYPE_WIFI:
-					type = VoIPController.NET_TYPE_WIFI;
+					type = TgVoip.NET_TYPE_WIFI;
 					break;
 				case ConnectivityManager.TYPE_ETHERNET:
-					type = VoIPController.NET_TYPE_ETHERNET;
+					type = TgVoip.NET_TYPE_ETHERNET;
 					break;
 			}
 		}
-		if (controller != null) {
-			controller.setNetworkType(type);
-		}
+		return type;
+	}
+
+	protected NetworkInfo getActiveNetworkInfo() {
+		return ((ConnectivityManager) getSystemService(CONNECTIVITY_SERVICE)).getActiveNetworkInfo();
 	}
 
 	protected void callFailed() {
-		callFailed(controller != null && controllerStarted ? controller.getLastError() : VoIPController.ERROR_UNKNOWN);
+		callFailed(tgVoip != null ? tgVoip.getLastError() : TgVoip.ERROR_UNKNOWN);
 	}
 
 	protected Bitmap getRoundAvatarBitmap(TLObject userOrChat){
@@ -1183,30 +1191,30 @@ public abstract class VoIPBaseService extends Service implements SensorEventList
 		startForeground(ID_INCOMING_CALL_NOTIFICATION, incomingNotification);
 	}
 
-	protected void callFailed(int errorCode){
-		try{
-			throw new Exception("Call "+getCallID()+" failed with error code "+errorCode);
-		}catch(Exception x){
+	protected void callFailed(String error) {
+		try {
+			throw new Exception("Call " + getCallID() + " failed with error: " + error);
+		} catch (Exception x) {
 			FileLog.e(x);
 		}
-		lastError = errorCode;
+		lastError = error;
 		dispatchStateChanged(STATE_FAILED);
-		if(errorCode!=VoIPController.ERROR_LOCALIZED && soundPool!=null){
-			playingSound=true;
+		if (TextUtils.equals(error, TgVoip.ERROR_LOCALIZED) && soundPool != null) {
+			playingSound = true;
 			soundPool.play(spFailedID, 1, 1, 0, 0, 1);
 			AndroidUtilities.runOnUIThread(afterSoundRunnable, 1000);
 		}
-		if(USE_CONNECTION_SERVICE && systemCallConnection!=null){
+		if (USE_CONNECTION_SERVICE && systemCallConnection != null) {
 			systemCallConnection.setDisconnected(new DisconnectCause(DisconnectCause.ERROR));
 			systemCallConnection.destroy();
-			systemCallConnection=null;
+			systemCallConnection = null;
 		}
 		stopSelf();
 	}
 
 	/*package*/ void callFailedFromConnectionService(){
 		if(isOutgoing)
-			callFailed(VoIPController.ERROR_CONNECTION_SERVICE);
+			callFailed(TgVoip.ERROR_CONNECTION_SERVICE);
 		else
 			hangUp();
 	}
@@ -1236,11 +1244,10 @@ public abstract class VoIPBaseService extends Service implements SensorEventList
 				AndroidUtilities.runOnUIThread(new Runnable(){
 					@Override
 					public void run(){
-						if(controller==null)
-							return;
-						int netType=getStatsNetworkType();
-						StatsController.getInstance(currentAccount).incrementTotalCallsTime(netType, 5);
-						AndroidUtilities.runOnUIThread(this, 5000);
+						if (tgVoip != null) {
+							StatsController.getInstance(currentAccount).incrementTotalCallsTime(getStatsNetworkType(), 5);
+							AndroidUtilities.runOnUIThread(this, 5000);
+						}
 					}
 				}, 5000);
 				if(isOutgoing)
@@ -1358,16 +1365,16 @@ public abstract class VoIPBaseService extends Service implements SensorEventList
 	}
 
 	public void updateOutputGainControlState(){
-		if(controller==null || !controllerStarted)
-			return;
-		if(!USE_CONNECTION_SERVICE){
-			AudioManager am=(AudioManager) getSystemService(AUDIO_SERVICE);
-			controller.setAudioOutputGainControlEnabled(hasEarpiece() && !am.isSpeakerphoneOn() && !am.isBluetoothScoOn() && !isHeadsetPlugged);
-			controller.setEchoCancellationStrength(isHeadsetPlugged || (hasEarpiece() && !am.isSpeakerphoneOn() && !am.isBluetoothScoOn() && !isHeadsetPlugged) ? 0 : 1);
-		}else{
-			boolean isEarpiece=systemCallConnection.getCallAudioState().getRoute()==CallAudioState.ROUTE_EARPIECE;
-			controller.setAudioOutputGainControlEnabled(isEarpiece);
-			controller.setEchoCancellationStrength(isEarpiece ? 0 : 1);
+		if (tgVoip != null) {
+			if (!USE_CONNECTION_SERVICE) {
+				final AudioManager am = (AudioManager) getSystemService(AUDIO_SERVICE);
+				tgVoip.setAudioOutputGainControlEnabled(hasEarpiece() && !am.isSpeakerphoneOn() && !am.isBluetoothScoOn() && !isHeadsetPlugged);
+				tgVoip.setEchoCancellationStrength(isHeadsetPlugged || (hasEarpiece() && !am.isSpeakerphoneOn() && !am.isBluetoothScoOn() && !isHeadsetPlugged) ? 0 : 1);
+			} else {
+				final boolean isEarpiece = systemCallConnection.getCallAudioState().getRoute() == CallAudioState.ROUTE_EARPIECE;
+				tgVoip.setAudioOutputGainControlEnabled(isEarpiece);
+				tgVoip.setEchoCancellationStrength(isEarpiece ? 0 : 1);
+			}
 		}
 	}
 

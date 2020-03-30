@@ -35,6 +35,7 @@ import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessageObject;
+import org.telegram.messenger.MessagesStorage;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.UserObject;
 import org.telegram.messenger.FileLog;
@@ -198,7 +199,7 @@ public class DialogCell extends BaseCell {
 
     private RectF rect = new RectF();
 
-    public class BounceInterpolator implements Interpolator {
+    public static class BounceInterpolator implements Interpolator {
 
         public float getInterpolation(float t) {
             if (t < 0.33f) {
@@ -743,11 +744,8 @@ public class DialogCell extends BaseCell {
                         if (mess.length() > 150) {
                             mess = mess.substring(0, 150);
                         }
-                        SpannableStringBuilder stringBuilder;
-                        if (useForceThreeLines || SharedConfig.useThreeLinesLayout) {
-                            stringBuilder = SpannableStringBuilder.valueOf(String.format(messageFormat, mess.replace('\n', ' '), messageNameString));
-                        } else {
-                            stringBuilder = SpannableStringBuilder.valueOf(String.format(messageFormat, mess.replace('\n', ' '), messageNameString));
+                        SpannableStringBuilder stringBuilder = SpannableStringBuilder.valueOf(String.format(messageFormat, mess.replace('\n', ' '), messageNameString));
+                        if (!useForceThreeLines && !SharedConfig.useThreeLinesLayout) {
                             stringBuilder.setSpan(new ForegroundColorSpan(Theme.getColor(Theme.key_chats_draft)), 0, messageNameString.length() + 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                         }
                         messageString = Emoji.replaceEmoji(stringBuilder, Theme.dialogs_messagePaint[paintIndex].getFontMetricsInt(), AndroidUtilities.dp(20), false);
@@ -1407,8 +1405,14 @@ public class DialogCell extends BaseCell {
                 } else {
                     currentDialogFolderId = 0;
                 }
-                fullSeparator = dialog instanceof TLRPC.TL_dialog && dialog.pinned && nextDialog != null && !nextDialog.pinned;
-                fullSeparator2 = dialog instanceof TLRPC.TL_dialogFolder && nextDialog != null && !nextDialog.pinned;
+                if (dialogsType == 7 || dialogsType == 8) {
+                    MessagesController.DialogFilter filter = MessagesController.getInstance(currentAccount).selectedDialogFilter[dialogsType == 8 ? 1 : 0];
+                    fullSeparator = dialog instanceof TLRPC.TL_dialog && nextDialog != null && filter != null && filter.pinnedDialogs.indexOfKey(dialog.id) >= 0 && filter.pinnedDialogs.indexOfKey(nextDialog.id) < 0;
+                    fullSeparator2 = false;
+                } else {
+                    fullSeparator = dialog instanceof TLRPC.TL_dialog && dialog.pinned && nextDialog != null && !nextDialog.pinned;
+                    fullSeparator2 = dialog instanceof TLRPC.TL_dialogFolder && nextDialog != null && !nextDialog.pinned;
+                }
                 update(0);
                 if (dialogChanged) {
                     reorderIconProgress = drawPin && drawReorder ? 1.0f : 0.0f;
@@ -1475,12 +1479,22 @@ public class DialogCell extends BaseCell {
                         clearingDialog = MessagesController.getInstance(currentAccount).isClearingDialog(dialog.id);
                         message = MessagesController.getInstance(currentAccount).dialogMessage.get(dialog.id);
                         lastUnreadState = message != null && message.isUnread();
-                        unreadCount = dialog.unread_count;
+                        if (dialog instanceof TLRPC.TL_dialogFolder) {
+                            unreadCount = MessagesStorage.getInstance(currentAccount).getArchiveUnreadCount();
+                            mentionCount = 0;
+                        } else {
+                            unreadCount = dialog.unread_count;
+                            mentionCount = dialog.unread_mentions_count;
+                        }
                         markUnread = dialog.unread_mark;
-                        mentionCount = dialog.unread_mentions_count;
                         currentEditDate = message != null ? message.messageOwner.edit_date : 0;
                         lastMessageDate = dialog.last_message_date;
-                        drawPin = currentDialogFolderId == 0 && dialog.pinned;
+                        if (dialogsType == 7 || dialogsType == 8) {
+                            MessagesController.DialogFilter filter = MessagesController.getInstance(currentAccount).selectedDialogFilter[dialogsType == 8 ? 1 : 0];
+                            drawPin = filter != null && filter.pinnedDialogs.indexOfKey(dialog.id) >= 0;
+                        } else {
+                            drawPin = currentDialogFolderId == 0 && dialog.pinned;
+                        }
                         if (message != null) {
                             lastSendState = message.messageOwner.send_state;
                         }
@@ -1542,9 +1556,21 @@ public class DialogCell extends BaseCell {
                     }
                     if (isDialogCell) {
                         TLRPC.Dialog dialog = MessagesController.getInstance(currentAccount).dialogs_dict.get(currentDialogId);
-                        if (dialog != null && (unreadCount != dialog.unread_count || markUnread != dialog.unread_mark || mentionCount != dialog.unread_mentions_count)) {
-                            unreadCount = dialog.unread_count;
-                            mentionCount = dialog.unread_mentions_count;
+                        int newCount;
+                        int newMentionCount;
+                        if (dialog instanceof TLRPC.TL_dialogFolder) {
+                            newCount = MessagesStorage.getInstance(currentAccount).getArchiveUnreadCount();
+                            newMentionCount = 0;
+                        } else if (dialog != null) {
+                            newCount = dialog.unread_count;
+                            newMentionCount = dialog.unread_mentions_count;
+                        } else {
+                            newCount = 0;
+                            newMentionCount = 0;
+                        }
+                        if (dialog != null && (unreadCount != newCount || markUnread != dialog.unread_mark || mentionCount != newMentionCount)) {
+                            unreadCount = newCount;
+                            mentionCount = newMentionCount;
                             markUnread = dialog.unread_mark;
                             continueUpdate = true;
                         }
@@ -2251,7 +2277,7 @@ public class DialogCell extends BaseCell {
         if (lastMessageDate == 0 && message != null) {
             lastDate = message.messageOwner.date;
         }
-        String date = LocaleController.formatDateAudio(lastDate);
+        String date = LocaleController.formatDateAudio(lastDate, true);
         if (message.isOut()) {
             sb.append(LocaleController.formatString("AccDescrSentDate", R.string.AccDescrSentDate, date));
         } else {

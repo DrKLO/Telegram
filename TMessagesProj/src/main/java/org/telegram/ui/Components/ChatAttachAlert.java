@@ -3865,6 +3865,10 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
                 if (mediaEnabled) {
                     musicButton = buttonsCount++;
                 }
+                TLRPC.User user = baseFragment instanceof ChatActivity ? ((ChatActivity) baseFragment).getCurrentUser() : null;
+                if (user != null && user.bot) {
+                    contactButton = buttonsCount++;
+                }
             }
             super.notifyDataSetChanged();
         }

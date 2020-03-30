@@ -47,6 +47,7 @@ public class PollEditTextCell extends FrameLayout {
     private boolean showNextButton;
     private boolean needDivider;
     private AnimatorSet checkBoxAnimation;
+    private boolean alwaysShowText2;
 
     public PollEditTextCell(Context context, OnClickListener onDelete) {
         super(context);
@@ -128,6 +129,7 @@ public class PollEditTextCell extends FrameLayout {
     }
 
     public void createErrorTextView() {
+        alwaysShowText2 = true;
         textView2 = new SimpleTextView(getContext());
         textView2.setTextSize(13);
         textView2.setGravity((LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.TOP);
@@ -152,7 +154,7 @@ public class PollEditTextCell extends FrameLayout {
         textView.measure(MeasureSpec.makeMeasureSpec(width - getPaddingLeft() - getPaddingRight() - AndroidUtilities.dp(textView2 != null && textView.getBackground() == null ? 122 : 42), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED));
         int h = textView.getMeasuredHeight();
         setMeasuredDimension(width, Math.max(AndroidUtilities.dp(50), textView.getMeasuredHeight()) + (needDivider ? 1 : 0));
-        if (textView2 != null) {
+        if (textView2 != null && !alwaysShowText2) {
             textView2.setAlpha(h >= AndroidUtilities.dp(52) ? 1.0f : 0.0f);
         }
     }

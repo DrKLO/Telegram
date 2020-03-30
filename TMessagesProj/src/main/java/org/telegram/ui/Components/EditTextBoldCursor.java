@@ -341,6 +341,14 @@ public class EditTextBoldCursor extends EditText {
     }
 
     @Override
+    protected void onScrollChanged(int horiz, int vert, int oldHoriz, int oldVert) {
+        super.onScrollChanged(horiz, vert, oldHoriz, oldVert);
+        if (horiz != oldHoriz) {
+            getParent().requestDisallowInterceptTouchEvent(true);
+        }
+    }
+
+    @Override
     public void setText(CharSequence text, BufferType type) {
         super.setText(text, type);
         checkHeaderVisibility(nextSetTextAnimated);

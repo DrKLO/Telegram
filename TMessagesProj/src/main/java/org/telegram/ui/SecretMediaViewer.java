@@ -58,6 +58,7 @@ import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Components.AnimationProperties;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.Scroller;
 import org.telegram.ui.Components.VideoPlayer;
@@ -92,7 +93,6 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
 
     private class SecretDeleteTimer extends FrameLayout {
 
-        private Paint deleteProgressPaint;
         private Paint afterDeleteProgressPaint;
         private Paint circlePaint;
         private Paint particlePaint;
@@ -128,9 +128,6 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
             particlePaint.setColor(0xffe6e6e6);
             particlePaint.setStrokeCap(Paint.Cap.ROUND);
             particlePaint.setStyle(Paint.Style.STROKE);
-
-            deleteProgressPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-            deleteProgressPaint.setColor(0xffe6e6e6);
 
             afterDeleteProgressPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
             afterDeleteProgressPaint.setStyle(Paint.Style.STROKE);
@@ -887,10 +884,10 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
 
         imageMoveAnimation = new AnimatorSet();
         imageMoveAnimation.playTogether(
-                ObjectAnimator.ofFloat(actionBar, "alpha", 0, 1.0f),
-                ObjectAnimator.ofFloat(secretDeleteTimer, "alpha", 0, 1.0f),
-                ObjectAnimator.ofInt(photoBackgroundDrawable, "alpha", 0, 255),
-                ObjectAnimator.ofFloat(secretDeleteTimer, "alpha", 0, 1.0f),
+                ObjectAnimator.ofFloat(actionBar, View.ALPHA, 0, 1.0f),
+                ObjectAnimator.ofFloat(secretDeleteTimer, View.ALPHA, 0, 1.0f),
+                ObjectAnimator.ofInt(photoBackgroundDrawable, AnimationProperties.COLOR_DRAWABLE_ALPHA, 0, 255),
+                ObjectAnimator.ofFloat(secretDeleteTimer, View.ALPHA, 0, 1.0f),
                 ObjectAnimator.ofFloat(this, "animationValue", 0, 1)
         );
         photoAnimationInProgress = 3;
@@ -941,7 +938,7 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
 
         if (animated) {
             ArrayList<Animator> arrayList = new ArrayList<>();
-            arrayList.add(ObjectAnimator.ofFloat(actionBar, "alpha", show ? 1.0f : 0.0f));
+            arrayList.add(ObjectAnimator.ofFloat(actionBar, View.ALPHA, show ? 1.0f : 0.0f));
             currentActionBarAnimation = new AnimatorSet();
             currentActionBarAnimation.playTogether(arrayList);
             if (!show) {
@@ -1250,19 +1247,19 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
                 videoCrossfadeStarted = false;
                 textureUploaded = false;
                 imageMoveAnimation.playTogether(
-                        ObjectAnimator.ofInt(photoBackgroundDrawable, "alpha", 0),
+                        ObjectAnimator.ofInt(photoBackgroundDrawable, AnimationProperties.COLOR_DRAWABLE_ALPHA, 0),
                         ObjectAnimator.ofFloat(this, "animationValue", 0, 1),
-                        ObjectAnimator.ofFloat(actionBar, "alpha", 0),
-                        ObjectAnimator.ofFloat(secretDeleteTimer, "alpha", 0),
+                        ObjectAnimator.ofFloat(actionBar, View.ALPHA, 0),
+                        ObjectAnimator.ofFloat(secretDeleteTimer, View.ALPHA, 0),
                         ObjectAnimator.ofFloat(this, "videoCrossfadeAlpha", 0)
                 );
             } else {
                 centerImage.setManualAlphaAnimator(true);
                 imageMoveAnimation.playTogether(
-                        ObjectAnimator.ofInt(photoBackgroundDrawable, "alpha", 0),
+                        ObjectAnimator.ofInt(photoBackgroundDrawable, AnimationProperties.COLOR_DRAWABLE_ALPHA, 0),
                         ObjectAnimator.ofFloat(this, "animationValue", 0, 1),
-                        ObjectAnimator.ofFloat(actionBar, "alpha", 0),
-                        ObjectAnimator.ofFloat(secretDeleteTimer, "alpha", 0),
+                        ObjectAnimator.ofFloat(actionBar, View.ALPHA, 0),
+                        ObjectAnimator.ofFloat(secretDeleteTimer, View.ALPHA, 0),
                         ObjectAnimator.ofFloat(centerImage, "currentAlpha", 0.0f)
                 );
             }
@@ -1302,10 +1299,10 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
         } else {
             AnimatorSet animatorSet = new AnimatorSet();
             animatorSet.playTogether(
-                    ObjectAnimator.ofFloat(containerView, "scaleX", 0.9f),
-                    ObjectAnimator.ofFloat(containerView, "scaleY", 0.9f),
-                    ObjectAnimator.ofInt(photoBackgroundDrawable, "alpha", 0),
-                    ObjectAnimator.ofFloat(actionBar, "alpha", 0)
+                    ObjectAnimator.ofFloat(containerView, View.SCALE_X, 0.9f),
+                    ObjectAnimator.ofFloat(containerView, View.SCALE_Y, 0.9f),
+                    ObjectAnimator.ofInt(photoBackgroundDrawable, AnimationProperties.COLOR_DRAWABLE_ALPHA, 0),
+                    ObjectAnimator.ofFloat(actionBar, View.ALPHA, 0)
             );
             photoAnimationInProgress = 2;
             photoAnimationEndRunnable = () -> {

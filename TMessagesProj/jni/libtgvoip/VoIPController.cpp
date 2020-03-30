@@ -29,6 +29,11 @@
 #include <sstream>
 #include <inttypes.h>
 #include <float.h>
+#ifdef HAVE_CONFIG_H
+#include <opus.h>
+#else
+#include <opus.h>
+#endif
 
 
 inline int pad4(int x){
@@ -63,74 +68,6 @@ extern jclass jniUtilitiesClass;
 #if defined(TGVOIP_USE_CALLBACK_AUDIO_IO)
 #include "audio/AudioIOCallback.h"
 #endif
-
-#pragma mark - OpenSSL wrappers
-
-#ifndef TGVOIP_USE_CUSTOM_CRYPTO
-extern "C" {
-#include <openssl/sha.h>
-#include <openssl/aes.h>
-//#include <openssl/modes.h>
-#include <openssl/rand.h>
-}
-
-void tgvoip_openssl_aes_ige_encrypt(uint8_t* in, uint8_t* out, size_t length, uint8_t* key, uint8_t* iv){
-	AES_KEY akey;
-	AES_set_encrypt_key(key, 32*8, &akey);
-	AES_ige_encrypt(in, out, length, &akey, iv, AES_ENCRYPT);
-}
-
-void tgvoip_openssl_aes_ige_decrypt(uint8_t* in, uint8_t* out, size_t length, uint8_t* key, uint8_t* iv){
-	AES_KEY akey;
-	AES_set_decrypt_key(key, 32*8, &akey);
-	AES_ige_encrypt(in, out, length, &akey, iv, AES_DECRYPT);
-}
-
-void tgvoip_openssl_rand_bytes(uint8_t* buffer, size_t len){
-	RAND_bytes(buffer, len);
-}
-
-void tgvoip_openssl_sha1(uint8_t* msg, size_t len, uint8_t* output){
-	SHA1(msg, len, output);
-}
-
-void tgvoip_openssl_sha256(uint8_t* msg, size_t len, uint8_t* output){
-	SHA256(msg, len, output);
-}
-
-void tgvoip_openssl_aes_ctr_encrypt(uint8_t* inout, size_t length, uint8_t* key, uint8_t* iv, uint8_t* ecount, uint32_t* num){
-	AES_KEY akey;
-	AES_set_encrypt_key(key, 32*8, &akey);
-	AES_ctr128_encrypt(inout, inout, length, &akey, iv, ecount, num);
-}
-
-void tgvoip_openssl_aes_cbc_encrypt(uint8_t* in, uint8_t* out, size_t length, uint8_t* key, uint8_t* iv){
-	AES_KEY akey;
-	AES_set_encrypt_key(key, 256, &akey);
-	AES_cbc_encrypt(in, out, length, &akey, iv, AES_ENCRYPT);
-}
-
-void tgvoip_openssl_aes_cbc_decrypt(uint8_t* in, uint8_t* out, size_t length, uint8_t* key, uint8_t* iv){
-	AES_KEY akey;
-	AES_set_decrypt_key(key, 256, &akey);
-	AES_cbc_encrypt(in, out, length, &akey, iv, AES_DECRYPT);
-}
-
-CryptoFunctions VoIPController::crypto={
-		tgvoip_openssl_rand_bytes,
-		tgvoip_openssl_sha1,
-		tgvoip_openssl_sha256,
-		tgvoip_openssl_aes_ige_encrypt,
-		tgvoip_openssl_aes_ige_decrypt,
-		tgvoip_openssl_aes_ctr_encrypt,
-		tgvoip_openssl_aes_cbc_encrypt,
-		tgvoip_openssl_aes_cbc_decrypt
-
-};
-#else
-CryptoFunctions VoIPController::crypto; // set it yourself upon initialization
-#endif
-
 
 extern FILE* tgvoipLogFile;
 
@@ -294,6 +231,12 @@ VoIPController::~VoIPController(){
 		tgvoipLogFile=NULL;
 		fclose(log);
 	}
+#if defined(TGVOIP_USE_CALLBACK_AUDIO_IO)
+	if (preprocDecoder) {
+        opus_decoder_destroy(preprocDecoder);
+        preprocDecoder=nullptr;
+	}
+#endif
 }
 
 void VoIPController::Stop(){
@@ -773,10 +716,10 @@ string VoIPController::GetCurrentAudioOutputID(){
 
 void VoIPController::SetProxy(int protocol, string address, uint16_t port, string username, string password){
 	proxyProtocol=protocol;
-	proxyAddress=address;
+	proxyAddress=std::move(address);
 	proxyPort=port;
-	proxyUsername=username;
-	proxyPassword=password;
+	proxyUsername=std::move(username);
+	proxyPassword=std::move(password);
 }
 
 int VoIPController::GetSignalBarsCount(){
@@ -841,9 +784,11 @@ void VoIPController::SetEchoCancellationStrength(int strength){
 }
 
 #if defined(TGVOIP_USE_CALLBACK_AUDIO_IO)
-void VoIPController::SetAudioDataCallbacks(std::function<void(int16_t*, size_t)> input, std::function<void(int16_t*, size_t)> output){
+void VoIPController::SetAudioDataCallbacks(std::function<void(int16_t*, size_t)> input, std::function<void(int16_t*, size_t)> output, std::function<void(int16_t*, size_t)> preproc=nullptr){
 	audioInputDataCallback=input;
 	audioOutputDataCallback=output;
+    audioPreprocDataCallback=preproc;
+    preprocDecoder=preprocDecoder ? preprocDecoder : opus_decoder_create(48000, 1, NULL);
 }
 #endif
 
@@ -894,7 +839,7 @@ void VoIPController::SetConfig(const Config& cfg){
 
 void VoIPController::SetPersistentState(vector<uint8_t> state){
 	using namespace json11;
-	
+
 	if(state.empty())
 		return;
 	string jsonErr;
@@ -915,7 +860,7 @@ void VoIPController::SetPersistentState(vector<uint8_t> state){
 
 vector<uint8_t> VoIPController::GetPersistentState(){
 	using namespace json11;
-	
+
 	Json::object obj=Json::object{
 		{"ver", 1},
 	};
@@ -1116,10 +1061,11 @@ void VoIPController::HandleAudioInput(unsigned char *data, size_t len, unsigned 
 	}
 
 	unsentStreamPackets++;
+	size_t pktLength = pkt.GetLength();
 	PendingOutgoingPacket p{
 			/*.seq=*/GenerateOutSeq(),
 			/*.type=*/PKT_STREAM_DATA,
-			/*.len=*/pkt.GetLength(),
+			/*.len=*/pktLength,
 			/*.data=*/Buffer(move(pkt)),
 			/*.endpoint=*/0,
 	};
@@ -1142,10 +1088,11 @@ void VoIPController::HandleAudioInput(unsigned char *data, size_t len, unsigned 
 			pkt.WriteBytes(*ecData);
 		}
 
+		pktLength = pkt.GetLength();
 		PendingOutgoingPacket p{
 				GenerateOutSeq(),
 				PKT_STREAM_EC,
-				pkt.GetLength(),
+				pktLength,
 				Buffer(move(pkt)),
 				0
 		};
@@ -1153,6 +1100,13 @@ void VoIPController::HandleAudioInput(unsigned char *data, size_t len, unsigned 
 	}
 
 	audioTimestampOut+=outgoingStreams[0]->frameDuration;
+
+#if defined(TGVOIP_USE_CALLBACK_AUDIO_IO)
+	if (audioPreprocDataCallback && preprocDecoder) {
+        int size=opus_decode(preprocDecoder, data, len, preprocBuffer, 4096, 0);
+        audioPreprocDataCallback(preprocBuffer, size);
+	}
+#endif
 }
 
 void VoIPController::InitializeAudio(){
@@ -1324,7 +1278,7 @@ void VoIPController::WritePacketHeader(uint32_t pseq, BufferOutputStream *s, uns
 		if(!currentExtras.empty()){
 			s->WriteByte(static_cast<unsigned char>(currentExtras.size()));
 			for(vector<UnacknowledgedExtraData>::iterator x=currentExtras.begin(); x!=currentExtras.end(); ++x){
-				LOGV("Writing extra into header: type %u, length %lu", x->type, x->data.Length());
+				LOGV("Writing extra into header: type %u, length %d", x->type, int(x->data.Length()));
 				assert(x->data.Length()<=254);
 				s->WriteByte(static_cast<unsigned char>(x->data.Length()+1));
 				s->WriteByte(x->type);
@@ -1406,7 +1360,7 @@ void VoIPController::WritePacketHeader(uint32_t pseq, BufferOutputStream *s, uns
 					s->WriteByte(XPFLAG_HAS_EXTRA);
 					s->WriteByte(static_cast<unsigned char>(currentExtras.size()));
 					for(vector<UnacknowledgedExtraData>::iterator x=currentExtras.begin(); x!=currentExtras.end(); ++x){
-						LOGV("Writing extra into header: type %u, length %lu", x->type, x->data.Length());
+						LOGV("Writing extra into header: type %u, length %d", x->type, int(x->data.Length()));
 						assert(x->data.Length()<=254);
 						s->WriteByte(static_cast<unsigned char>(x->data.Length()+1));
 						s->WriteByte(x->type);
@@ -1486,10 +1440,11 @@ void VoIPController::SendInit(){
 					out.WriteInt32(id);
 				}*/
 			}
+			size_t outLength = out.GetLength();
 			SendOrEnqueuePacket(PendingOutgoingPacket{
 					/*.seq=*/initSeq,
 					/*.type=*/PKT_INIT,
-					/*.len=*/out.GetLength(),
+					/*.len=*/outLength,
 					/*.data=*/Buffer(move(out)),
 					/*.endpoint=*/e.id
 			});
@@ -1518,14 +1473,14 @@ void VoIPController::InitUDPProxy(){
 		ResetUdpAvailability();
 		return;
 	}
-	
+
 	NetworkSocket* tcp=NetworkSocket::Create(PROTO_TCP);
 	tcp->Connect(resolvedProxyAddress, proxyPort);
-	
+
 	vector<NetworkSocket*> writeSockets;
 	vector<NetworkSocket*> readSockets;
 	vector<NetworkSocket*> errorSockets;
-	
+
 	while(!tcp->IsFailed() && !tcp->IsReadyToSend()){
 		writeSockets.push_back(tcp);
 		if(!NetworkSocket::Select(readSockets, writeSockets, errorSockets, selectCanceller)){
@@ -1579,12 +1534,12 @@ void VoIPController::RunRecvThread(){
 		udpPingTimeoutID=messageThread.Post(std::bind(&VoIPController::SendUdpPings, this), 0.0, 0.5);
 	}
 	while(runReceiver){
-		
+
 		if(proxyProtocol==PROXY_SOCKS5 && needReInitUdpProxy){
 			InitUDPProxy();
 			needReInitUdpProxy=false;
 		}
-		
+
 		packet.data=*buffer;
 		packet.length=buffer.Length();
 
@@ -1595,7 +1550,7 @@ void VoIPController::RunRecvThread(){
 		errorSockets.push_back(realUdpSocket);
 		if(!realUdpSocket->IsReadyToSend())
 			writeSockets.push_back(realUdpSocket);
-		
+
 		{
 			MutexGuard m(endpointsMutex);
 			for(pair<const int64_t, Endpoint>& _e:endpoints){
@@ -2132,7 +2087,7 @@ simpleAudioBlock random_id:long random_bytes:string raw_data:string = DecryptedA
 		}
 		for(vector<UnacknowledgedExtraData>::iterator x=currentExtras.begin();x!=currentExtras.end();){
 			if(x->firstContainingSeq!=0 && (lastRemoteAckSeq==x->firstContainingSeq || seqgt(lastRemoteAckSeq, x->firstContainingSeq))){
-				LOGV("Peer acknowledged extra type %u length %lu", x->type, x->data.Length());
+				LOGV("Peer acknowledged extra type %u length %d", x->type, int(x->data.Length()));
 				ProcessAcknowledgedOutgoingExtra(*x);
 				x=currentExtras.erase(x);
 				continue;
@@ -2310,10 +2265,11 @@ simpleAudioBlock random_id:long random_bytes:string raw_data:string = DecryptedA
 			out.WriteByte((unsigned char) ((*s)->enabled ? 1 : 0));
 		}
 		LOGI("Sending init ack");
+		size_t outLength = out.GetLength();
 		SendOrEnqueuePacket(PendingOutgoingPacket{
 				/*.seq=*/GenerateOutSeq(),
 				/*.type=*/PKT_INIT_ACK,
-				/*.len=*/out.GetLength(),
+				/*.len=*/outLength,
 				/*.data=*/Buffer(move(out)),
 				/*.endpoint=*/0
 		});
@@ -2541,10 +2497,11 @@ simpleAudioBlock random_id:long random_bytes:string raw_data:string = DecryptedA
 		}
 		BufferOutputStream pkt(128);
 		pkt.WriteInt32(pseq);
+		size_t pktLength = pkt.GetLength();
 		SendOrEnqueuePacket(PendingOutgoingPacket{
 				/*.seq=*/GenerateOutSeq(),
 				/*.type=*/PKT_PONG,
-				/*.len=*/pkt.GetLength(),
+				/*.len=*/pktLength,
 				/*.data=*/Buffer(move(pkt)),
 				/*.endpoint=*/srcEndpoint.id,
 		});
@@ -2799,7 +2756,7 @@ bool VoIPController::SendOrEnqueuePacket(PendingOutgoingPacket pkt, bool enqueue
 		abort();
 		return false;
 	}
-	
+
 
 	bool canSend;
 	if(endpoint->type!=Endpoint::Type::TCP_RELAY){
@@ -3055,7 +3012,7 @@ void VoIPController::AddTCPRelays(){
 			relays.push_back(tcpRelay);
 		}
 		for(Endpoint& e:relays){
-			endpoints[e.id]=move(e);
+			endpoints[e.id]=e;
 		}
 		didAddTcpRelays=true;
 	}
@@ -3206,7 +3163,7 @@ void VoIPController::SendPacketReliably(unsigned char type, unsigned char *data,
 
 void VoIPController::SendExtra(Buffer &data, unsigned char type){
 	MutexGuard m(queuedPacketsMutex);
-	LOGV("Sending extra type %u length %lu", type, data.Length());
+	LOGV("Sending extra type %u length %d", type, int(data.Length()));
 	for(vector<UnacknowledgedExtraData>::iterator x=currentExtras.begin();x!=currentExtras.end();++x){
 		if(x->type==type){
 			x->firstContainingSeq=0;
@@ -3479,16 +3436,17 @@ void VoIPController::SendVideoFrame(const Buffer &frame, uint32_t flags, uint32_
 			pkt.WriteBytes(frame, offset, len);
 
 			uint32_t seq=GenerateOutSeq();
+			size_t pktLength = pkt.GetLength();
 			PendingOutgoingPacket p{
 					/*.seq=*/seq,
 					/*.type=*/PKT_STREAM_DATA,
-					/*.len=*/pkt.GetLength(),
+					/*.len=*/pktLength,
 					/*.data=*/Buffer(move(pkt)),
 					/*.endpoint=*/0,
 			};
 			unsentStreamPackets++;
 			SendOrEnqueuePacket(move(p));
-			videoCongestionControl.ProcessPacketSent(static_cast<unsigned int>(pkt.GetLength()));
+			videoCongestionControl.ProcessPacketSent(static_cast<unsigned int>(pktLength));
 			sentFrame.unacknowledgedPackets.push_back(seq);
 		}
 		MutexGuard m(sentVideoFramesMutex);
@@ -3750,7 +3708,7 @@ void VoIPController::UpdateCongestion(){
 				wasExtraEC=true;
 			}
 		}
-		
+
 		if(avgSendLossCount>0.08){
 			extraEcLevel=4;
 		}else if(avgSendLossCount>0.05){
@@ -4019,7 +3977,7 @@ Endpoint::~Endpoint(){
 
 #pragma mark - AudioInputTester
 
-AudioInputTester::AudioInputTester(std::string deviceID) : deviceID(deviceID){
+AudioInputTester::AudioInputTester(std::string deviceID) : deviceID(std::move(deviceID)){
 	io=audio::AudioIO::Create(deviceID, "default");
 	if(io->Failed()){
 		LOGE("Audio IO failed");

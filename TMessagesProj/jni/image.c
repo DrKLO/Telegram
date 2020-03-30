@@ -742,8 +742,8 @@ JNIEXPORT void Java_org_telegram_messenger_Utilities_stackBlurBitmap(JNIEnv* env
     const int divsum = SQUARE((div + 1) >> 1);
 
     // Small buffers
-    int stack[div * 3];
-    zeroClearInt(stack, div * 3);
+    int stack[div * 4];
+    zeroClearInt(stack, div * 4);
 
     int vmin[MAX(w, h)];
     zeroClearInt(vmin, MAX(w, h));
@@ -752,9 +752,11 @@ JNIEXPORT void Java_org_telegram_messenger_Utilities_stackBlurBitmap(JNIEnv* env
     int *r = malloc(wh * sizeof(int));
     int *g = malloc(wh * sizeof(int));
     int *b = malloc(wh * sizeof(int));
+    int *a = malloc(wh * sizeof(int));
     zeroClearInt(r, wh);
     zeroClearInt(g, wh);
     zeroClearInt(b, wh);
+    zeroClearInt(a, wh);
 
     const size_t dvcount = 256 * divsum;
     int *dv = malloc(sizeof(int) * dvcount);
@@ -766,36 +768,40 @@ JNIEXPORT void Java_org_telegram_messenger_Utilities_stackBlurBitmap(JNIEnv* env
     // Variables
     int x, y;
     int *sir;
-    int routsum, goutsum, boutsum;
-    int rinsum, ginsum, binsum;
-    int rsum, gsum, bsum, p, yp;
+    int routsum, goutsum, boutsum, aoutsum;
+    int rinsum, ginsum, binsum,  ainsum;
+    int rsum, gsum, bsum, asum, p, yp;
     int stackpointer;
     int stackstart;
     int rbs;
 
     int yw = 0, yi = 0;
     for (y = 0; y < h; y++) {
-        rinsum = ginsum = binsum = routsum = goutsum = boutsum = rsum = gsum = bsum = 0;
+        ainsum = aoutsum = asum = rinsum = ginsum = binsum = routsum = goutsum = boutsum = rsum = gsum = bsum = 0;
 
         for (i = -radius; i <= radius; i++) {
-            sir = &stack[(i + radius) * 3];
+            sir = &stack[(i + radius) * 4];
             int offset = (y * stride + (MIN(wm, MAX(i, 0))) * 4);
             sir[0] = pixels[offset];
             sir[1] = pixels[offset + 1];
             sir[2] = pixels[offset + 2];
+            sir[3] = pixels[offset + 3];
 
             rbs = r1 - abs(i);
             rsum += sir[0] * rbs;
             gsum += sir[1] * rbs;
             bsum += sir[2] * rbs;
+            asum += sir[3] * rbs;
             if (i > 0) {
                 rinsum += sir[0];
                 ginsum += sir[1];
                 binsum += sir[2];
+                ainsum += sir[3];
             } else {
                 routsum += sir[0];
                 goutsum += sir[1];
                 boutsum += sir[2];
+                aoutsum += sir[3];
             }
         }
         stackpointer = radius;
@@ -804,17 +810,20 @@ JNIEXPORT void Java_org_telegram_messenger_Utilities_stackBlurBitmap(JNIEnv* env
             r[yi] = dv[rsum];
             g[yi] = dv[gsum];
             b[yi] = dv[bsum];
+            a[yi] = dv[asum];
 
             rsum -= routsum;
             gsum -= goutsum;
             bsum -= boutsum;
+            asum -= aoutsum;
 
             stackstart = stackpointer - radius + div;
-            sir = &stack[(stackstart % div) * 3];
+            sir = &stack[(stackstart % div) * 4];
 
             routsum -= sir[0];
             goutsum -= sir[1];
             boutsum -= sir[2];
+            aoutsum -= sir[3];
 
             if (y == 0) {
                 vmin[x] = MIN(x + radius + 1, wm);
@@ -824,24 +833,29 @@ JNIEXPORT void Java_org_telegram_messenger_Utilities_stackBlurBitmap(JNIEnv* env
             sir[0] = pixels[offset];
             sir[1] = pixels[offset + 1];
             sir[2] = pixels[offset + 2];
+            sir[3] = pixels[offset + 3];
             rinsum += sir[0];
             ginsum += sir[1];
             binsum += sir[2];
+            ainsum += sir[3];
 
             rsum += rinsum;
             gsum += ginsum;
             bsum += binsum;
+            asum += ainsum;
 
             stackpointer = (stackpointer + 1) % div;
-            sir = &stack[(stackpointer % div) * 3];
+            sir = &stack[(stackpointer % div) * 4];
 
             routsum += sir[0];
             goutsum += sir[1];
             boutsum += sir[2];
+            aoutsum += sir[3];
 
             rinsum -= sir[0];
             ginsum -= sir[1];
             binsum -= sir[2];
+            ainsum -= sir[3];
 
             yi++;
         }
@@ -849,31 +863,35 @@ JNIEXPORT void Java_org_telegram_messenger_Utilities_stackBlurBitmap(JNIEnv* env
     }
 
     for (x = 0; x < w; x++) {
-        rinsum = ginsum = binsum = routsum = goutsum = boutsum = rsum = gsum = bsum = 0;
+        ainsum = aoutsum = asum = rinsum = ginsum = binsum = routsum = goutsum = boutsum = rsum = gsum = bsum = 0;
         yp = -radius * w;
         for (i = -radius; i <= radius; i++) {
             yi = MAX(0, yp) + x;
 
-            sir = &stack[(i + radius) * 3];
+            sir = &stack[(i + radius) * 4];
 
             sir[0] = r[yi];
             sir[1] = g[yi];
             sir[2] = b[yi];
+            sir[3] = a[yi];
 
             rbs = r1 - abs(i);
 
             rsum += r[yi] * rbs;
             gsum += g[yi] * rbs;
             bsum += b[yi] * rbs;
+            asum += a[yi] * rbs;
 
             if (i > 0) {
                 rinsum += sir[0];
                 ginsum += sir[1];
                 binsum += sir[2];
+                ainsum += sir[3];
             } else {
                 routsum += sir[0];
                 goutsum += sir[1];
                 boutsum += sir[2];
+                aoutsum += sir[3];
             }
 
             if (i < hm) {
@@ -886,16 +904,19 @@ JNIEXPORT void Java_org_telegram_messenger_Utilities_stackBlurBitmap(JNIEnv* env
             pixels[offset] = dv[rsum];
             pixels[offset + 1] = dv[gsum];
             pixels[offset + 2] = dv[bsum];
+            pixels[offset + 3] = dv[asum];
             rsum -= routsum;
             gsum -= goutsum;
             bsum -= boutsum;
+            asum -= aoutsum;
 
             stackstart = stackpointer - radius + div;
-            sir = &stack[(stackstart % div) * 3];
+            sir = &stack[(stackstart % div) * 4];
 
             routsum -= sir[0];
             goutsum -= sir[1];
             boutsum -= sir[2];
+            aoutsum -= sir[3];
 
             if (x == 0) {
                 vmin[y] = (MIN(y + r1, hm)) * w;
@@ -905,25 +926,30 @@ JNIEXPORT void Java_org_telegram_messenger_Utilities_stackBlurBitmap(JNIEnv* env
             sir[0] = r[p];
             sir[1] = g[p];
             sir[2] = b[p];
+            sir[3] = a[p];
 
             rinsum += sir[0];
             ginsum += sir[1];
             binsum += sir[2];
+            ainsum += sir[3];
 
             rsum += rinsum;
             gsum += ginsum;
             bsum += binsum;
+            asum += ainsum;
 
             stackpointer = (stackpointer + 1) % div;
-            sir = &stack[stackpointer * 3];
+            sir = &stack[stackpointer * 4];
 
             routsum += sir[0];
             goutsum += sir[1];
             boutsum += sir[2];
+            aoutsum += sir[3];
 
             rinsum -= sir[0];
             ginsum -= sir[1];
             binsum -= sir[2];
+            ainsum -= sir[3];
 
             yi += w;
         }
@@ -932,6 +958,7 @@ JNIEXPORT void Java_org_telegram_messenger_Utilities_stackBlurBitmap(JNIEnv* env
     free(r);
     free(g);
     free(b);
+    free(a);
     free(dv);
     AndroidBitmap_unlockPixels(env, bitmap);
 }

@@ -61,6 +61,7 @@ public class StickersArchiveAlert extends AlertDialog.Builder {
 
         TextView textView = new TextView(context);
         textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+        textView.setGravity(LayoutHelper.getAbsoluteGravityStart());
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
         textView.setPadding(AndroidUtilities.dp(23), AndroidUtilities.dp(10), AndroidUtilities.dp(23), 0);
         if (set.set.masks) {

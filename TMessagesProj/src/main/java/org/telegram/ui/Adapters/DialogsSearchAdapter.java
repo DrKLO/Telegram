@@ -89,7 +89,7 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
     private ArrayList<RecentSearchObject> recentSearchObjects = new ArrayList<>();
     private LongSparseArray<RecentSearchObject> recentSearchObjectsById = new LongSparseArray<>();
 
-    private class DialogSearchResult {
+    private static class DialogSearchResult {
         public TLObject object;
         public int date;
         public CharSequence name;
@@ -409,7 +409,7 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
                     MessagesStorage.getInstance(currentAccount).getUsersInternal(TextUtils.join(",", usersToLoad), users);
                     for (int a = 0; a < users.size(); a++) {
                         TLRPC.User user = users.get(a);
-                        RecentSearchObject recentSearchObject = hashMap.get((long) user.id);
+                        RecentSearchObject recentSearchObject = hashMap.get(user.id);
                         if (recentSearchObject != null) {
                             recentSearchObject.object = user;
                         }
@@ -466,6 +466,23 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
         MessagesStorage.getInstance(currentAccount).getStorageQueue().postRunnable(() -> {
             try {
                 MessagesStorage.getInstance(currentAccount).getDatabase().executeFast("DELETE FROM search_recent WHERE 1").stepThis().dispose();
+            } catch (Exception e) {
+                FileLog.e(e);
+            }
+        });
+    }
+
+    public void removeRecentSearch(long did) {
+        RecentSearchObject object = recentSearchObjectsById.get(did);
+        if (object == null) {
+            return;
+        }
+        recentSearchObjectsById.remove(did);
+        recentSearchObjects.remove(object);
+        notifyDataSetChanged();
+        MessagesStorage.getInstance(currentAccount).getStorageQueue().postRunnable(() -> {
+            try {
+                MessagesStorage.getInstance(currentAccount).getDatabase().executeFast("DELETE FROM search_recent WHERE did = " + did).stepThis().dispose();
             } catch (Exception e) {
                 FileLog.e(e);
             }
@@ -561,7 +578,7 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
                     dialogSearchResult.date = Integer.MAX_VALUE;
                     dialogSearchResult.name = savedMessages;
                     dialogSearchResult.object = user;
-                    dialogsResult.put((long) user.id, dialogSearchResult);
+                    dialogsResult.put(user.id, dialogSearchResult);
                     resultCount++;
                 }
 
@@ -590,7 +607,7 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
                                 if (data != null) {
                                     TLRPC.User user = TLRPC.User.TLdeserialize(data, data.readInt32(false), false);
                                     data.reuse();
-                                    DialogSearchResult dialogSearchResult = dialogsResult.get((long) user.id);
+                                    DialogSearchResult dialogSearchResult = dialogsResult.get(user.id);
                                     if (user.status != null) {
                                         user.status.expires = cursor.intValue(1);
                                     }
@@ -748,7 +765,7 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
                     cursor = MessagesStorage.getInstance(currentAccount).getDatabase().queryFinalized("SELECT u.data, u.status, u.name, u.uid FROM users as u INNER JOIN contacts as c ON u.uid = c.uid");
                     while (cursor.next()) {
                         int uid = cursor.intValue(3);
-                        if (dialogsResult.indexOfKey((long) uid) >= 0) {
+                        if (dialogsResult.indexOfKey(uid) >= 0) {
                             continue;
                         }
                         String name = cursor.stringValue(2);

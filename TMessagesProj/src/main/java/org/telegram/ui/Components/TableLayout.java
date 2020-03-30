@@ -1233,7 +1233,7 @@ public class TableLayout extends View {
         }
 
         private Arc[] topologicalSort(List<Arc> arcs) {
-            return topologicalSort(arcs.toArray(new Arc[arcs.size()]));
+            return topologicalSort(arcs.toArray(new Arc[0]));
         }
 
         private void addComponentSizes(List<Arc> result, PackedMap<Interval, MutableInt> links) {

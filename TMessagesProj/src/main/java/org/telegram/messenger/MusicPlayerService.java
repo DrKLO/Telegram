@@ -91,7 +91,7 @@ public class MusicPlayerService extends Service implements NotificationCenter.No
             NotificationCenter.getInstance(a).addObserver(this, NotificationCenter.fileDidLoad);
         }
         imageReceiver = new ImageReceiver(null);
-        imageReceiver.setDelegate((imageReceiver, set, thumb) -> {
+        imageReceiver.setDelegate((imageReceiver, set, thumb, memCache) -> {
             if (set && !TextUtils.isEmpty(loadingFilePath)) {
                 MessageObject messageObject = MediaController.getInstance().getPlayingMessageObject();
                 if (messageObject != null) {

@@ -138,6 +138,7 @@ public class CheckBoxBase {
         progressDelegate = delegate;
     }
 
+    @Keep
     public float getProgress() {
         return progress;
     }

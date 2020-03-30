@@ -101,7 +101,7 @@ import java.util.HashMap;
 @SuppressWarnings("unchecked")
 public class MediaActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
 
-    private class MediaPage extends FrameLayout {
+    private static class MediaPage extends FrameLayout {
         private RecyclerListView listView;
         private LinearLayout progressView;
         private TextView emptyTextView;
@@ -268,7 +268,7 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
         }
     };
 
-    private SharedMediaLayout.SharedMediaData[] sharedMediaData = new SharedMediaLayout.SharedMediaData[5];
+    private SharedMediaLayout.SharedMediaData[] sharedMediaData = new SharedMediaLayout.SharedMediaData[6];
 
     private final static int forward = 3;
     private final static int delete = 4;
@@ -841,36 +841,33 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
             @Override
             public boolean onTouchEvent(MotionEvent ev) {
                 if (!parentLayout.checkTransitionAnimation() && !checkTabsAnimationInProgress()) {
+                    if (ev != null) {
+                        if (velocityTracker == null) {
+                            velocityTracker = VelocityTracker.obtain();
+                        }
+                        velocityTracker.addMovement(ev);
+                    }
                     if (ev != null && ev.getAction() == MotionEvent.ACTION_DOWN && !startedTracking && !maybeStartTracking) {
                         startedTrackingPointerId = ev.getPointerId(0);
                         maybeStartTracking = true;
                         startedTrackingX = (int) ev.getX();
                         startedTrackingY = (int) ev.getY();
-                        if (velocityTracker != null) {
-                            velocityTracker.clear();
-                        }
+                        velocityTracker.clear();
                     } else if (ev != null && ev.getAction() == MotionEvent.ACTION_MOVE && ev.getPointerId(0) == startedTrackingPointerId) {
-                        if (velocityTracker == null) {
-                            velocityTracker = VelocityTracker.obtain();
-                        }
                         int dx = (int) (ev.getX() - startedTrackingX);
                         int dy = Math.abs((int) ev.getY() - startedTrackingY);
-                        velocityTracker.addMovement(ev);
                         if (startedTracking && (animatingForward && dx > 0 || !animatingForward && dx < 0)) {
                             if (!prepareForMoving(ev, dx < 0)) {
                                 maybeStartTracking = true;
                                 startedTracking = false;
                                 mediaPages[0].setTranslationX(0);
-                                if (animatingForward) {
-                                    mediaPages[1].setTranslationX(mediaPages[0].getMeasuredWidth());
-                                } else {
-                                    mediaPages[1].setTranslationX(-mediaPages[0].getMeasuredWidth());
-                                }
+                                mediaPages[1].setTranslationX(animatingForward ? mediaPages[0].getMeasuredWidth() : -mediaPages[0].getMeasuredWidth());
+                                scrollSlidingTextTabStrip.selectTabWithId(mediaPages[1].selectedType, 0);
                             }
                         }
                         if (maybeStartTracking && !startedTracking) {
                             float touchSlop = AndroidUtilities.getPixelsInCM(0.3f, true);
-                            if (Math.abs(dx) >= touchSlop && Math.abs(dx) / 3 > dy) {
+                            if (Math.abs(dx) >= touchSlop && Math.abs(dx) > dy) {
                                 prepareForMoving(ev, dx < 0);
                             }
                         } else if (startedTracking) {
@@ -888,42 +885,36 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                             }
                             scrollSlidingTextTabStrip.selectTabWithId(mediaPages[1].selectedType, scrollProgress);
                         }
-                    } else if (ev != null && ev.getPointerId(0) == startedTrackingPointerId && (ev.getAction() == MotionEvent.ACTION_CANCEL || ev.getAction() == MotionEvent.ACTION_UP || ev.getAction() == MotionEvent.ACTION_POINTER_UP)) {
-                        if (velocityTracker == null) {
-                            velocityTracker = VelocityTracker.obtain();
-                        }
+                    } else if (ev == null || ev.getPointerId(0) == startedTrackingPointerId && (ev.getAction() == MotionEvent.ACTION_CANCEL || ev.getAction() == MotionEvent.ACTION_UP || ev.getAction() == MotionEvent.ACTION_POINTER_UP)) {
                         velocityTracker.computeCurrentVelocity(1000, maximumVelocity);
-                        if (!startedTracking) {
-                            float velX = velocityTracker.getXVelocity();
-                            float velY = velocityTracker.getYVelocity();
-                            if (Math.abs(velX) >= 3000 && Math.abs(velX) > Math.abs(velY)) {
-                                prepareForMoving(ev, velX < 0);
+                        float velX;
+                        float velY;
+                        if (ev != null && ev.getAction() != MotionEvent.ACTION_CANCEL) {
+                            velX = velocityTracker.getXVelocity();
+                            velY = velocityTracker.getYVelocity();
+                            if (!startedTracking) {
+                                if (Math.abs(velX) >= 3000 && Math.abs(velX) > Math.abs(velY)) {
+                                    prepareForMoving(ev, velX < 0);
+                                }
                             }
+                        } else {
+                            velX = 0;
+                            velY = 0;
                         }
                         if (startedTracking) {
                             float x = mediaPages[0].getX();
                             tabsAnimation = new AnimatorSet();
-                            float velX = velocityTracker.getXVelocity();
-                            float velY = velocityTracker.getYVelocity();
                             backAnimation = Math.abs(x) < mediaPages[0].getMeasuredWidth() / 3.0f && (Math.abs(velX) < 3500 || Math.abs(velX) < Math.abs(velY));
                             float distToMove;
                             float dx;
                             if (backAnimation) {
                                 dx = Math.abs(x);
                                 if (animatingForward) {
-                                    /*tabsAnimation.playTogether(
-                                            FastAnimator.ofView(mediaPages[0]).translationX(0),
-                                            FastAnimator.ofView(mediaPages[1]).translationX(mediaPages[1].getMeasuredWidth())
-                                    );*/
                                     tabsAnimation.playTogether(
                                             ObjectAnimator.ofFloat(mediaPages[0], View.TRANSLATION_X, 0),
                                             ObjectAnimator.ofFloat(mediaPages[1], View.TRANSLATION_X, mediaPages[1].getMeasuredWidth())
                                     );
                                 } else {
-                                    /*tabsAnimation.playTogether(
-                                            FastAnimator.ofView(mediaPages[0]).translationX(0),
-                                            FastAnimator.ofView(mediaPages[1]).translationX(-mediaPages[1].getMeasuredWidth())
-                                    );*/
                                     tabsAnimation.playTogether(
                                             ObjectAnimator.ofFloat(mediaPages[0], View.TRANSLATION_X, 0),
                                             ObjectAnimator.ofFloat(mediaPages[1], View.TRANSLATION_X, -mediaPages[1].getMeasuredWidth())
@@ -932,19 +923,11 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                             } else {
                                 dx = mediaPages[0].getMeasuredWidth() - Math.abs(x);
                                 if (animatingForward) {
-                                    /*tabsAnimation.playTogether(
-                                            FastAnimator.ofView(mediaPages[0]).translationX(-mediaPages[0].getMeasuredWidth()),
-                                            FastAnimator.ofView(mediaPages[1]).translationX(0)
-                                    );*/
                                     tabsAnimation.playTogether(
                                             ObjectAnimator.ofFloat(mediaPages[0], View.TRANSLATION_X, -mediaPages[0].getMeasuredWidth()),
                                             ObjectAnimator.ofFloat(mediaPages[1], View.TRANSLATION_X, 0)
                                     );
                                 } else {
-                                    /*tabsAnimation.playTogether(
-                                            FastAnimator.ofView(mediaPages[0]).translationX(mediaPages[0].getMeasuredWidth()),
-                                            FastAnimator.ofView(mediaPages[1]).translationX(0)
-                                    );*/
                                     tabsAnimation.playTogether(
                                             ObjectAnimator.ofFloat(mediaPages[0], View.TRANSLATION_X, mediaPages[0].getMeasuredWidth()),
                                             ObjectAnimator.ofFloat(mediaPages[1], View.TRANSLATION_X, 0)
@@ -1002,9 +985,9 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                             });
                             tabsAnimation.start();
                             tabsAnimationInProgress = true;
+                            startedTracking = false;
                         } else {
                             maybeStartTracking = false;
-                            startedTracking = false;
                             actionBar.setEnabled(true);
                             scrollSlidingTextTabStrip.setEnabled(true);
                         }
@@ -1082,6 +1065,7 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                     updateSections(this, true);
                 }
             };
+            mediaPages[a].listView.setScrollingTouchSlop(RecyclerView.TOUCH_SLOP_PAGING);
             mediaPages[a].listView.setItemAnimator(null);
             mediaPages[a].listView.setClipToPadding(false);
             mediaPages[a].listView.setSectionsType(2);
@@ -1137,6 +1121,8 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                             type = MediaDataController.MEDIA_AUDIO;
                         } else if (mediaPage.selectedType == 4) {
                             type = MediaDataController.MEDIA_MUSIC;
+                        } else if (mediaPage.selectedType == 5) {
+                            type = MediaDataController.MEDIA_GIF;
                         } else {
                             type = MediaDataController.MEDIA_URL;
                         }

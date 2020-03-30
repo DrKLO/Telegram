@@ -1,3 +1,5 @@
+import java.security.MessageDigest
+
 apply plugin: 'com.android.application'
 
 repositories {
@@ -21,15 +23,15 @@ dependencies {
 
     compileOnly 'org.checkerframework:checker-qual:2.5.2'
     compileOnly 'org.checkerframework:checker-compat-qual:2.5.0'
-    implementation 'com.google.firebase:firebase-messaging:20.1.0'
-    implementation 'com.google.firebase:firebase-config:19.1.1'
+    implementation 'com.google.firebase:firebase-messaging:20.1.3'
+    implementation 'com.google.firebase:firebase-config:19.1.3'
     implementation 'com.google.android.gms:play-services-maps:17.0.0'
     implementation 'com.google.android.gms:play-services-auth:17.0.0'
     implementation 'com.google.android.gms:play-services-vision:16.2.0'
-    implementation 'com.google.android.gms:play-services-wallet:17.0.0'
     implementation 'com.google.android.gms:play-services-wearable:17.0.0'
     implementation 'com.google.android.gms:play-services-location:17.0.0'
-    implementation 'net.hockeyapp.android:HockeySDK:5.2.0'
+    implementation "com.microsoft.appcenter:appcenter-distribute:3.1.0"
+    implementation "com.microsoft.appcenter:appcenter-crashes:3.1.0"
     implementation 'com.googlecode.mp4parser:isoparser:1.0.6'
     implementation 'com.stripe:stripe-android:2.0.2'
     implementation files('libs/libgsaverification-client.aar')
@@ -37,7 +39,7 @@ dependencies {
 
 android {
     compileSdkVersion 29
-    buildToolsVersion '29.0.2'
+    buildToolsVersion '29.0.3'
     ndkVersion "20.0.5594570"
 
     defaultConfig.applicationId = "org.telegram.messenger"
@@ -283,7 +285,12 @@ android {
         }
     }
 
-    defaultConfig.versionCode = 1869
+    defaultConfig.versionCode = 1908
+
+    def tgVoipDexFileName = "libtgvoip.dex"
+    def tgVoipDexClasses = ["AudioRecordJNI", "AudioTrackJNI", "NativeTgVoipDelegate", "NativeTgVoipInstance", "TgVoipNativeLoader", "Resampler", "VLog"]
+    def tgVoipDexClassesPath = "org/telegram/messenger/voip"
+    def dxUtilPath = "${sdkDirectory.path}/build-tools/${buildToolsVersion}/dx"
 
     applicationVariants.all { variant ->
         variant.outputs.all { output ->
@@ -306,6 +313,61 @@ android {
                 file(manifestPath).write(manifestContent)
             }
         }
+
+        def assembleTgVoipDexTaskName = "assemble${variant.name.capitalize()}TgVoipDex"
+
+        task "${assembleTgVoipDexTaskName}" {
+            doLast {
+                def sourceDir = (File) android.sourceSets.main.java.srcDirs[0]
+                def classesDir = "${buildDir}/intermediates/javac/${variant.name}/classes"
+                def javaDir = "${buildDir}/intermediates/java_tgvoip/${variant.name}/java"
+                def tgVoipDir = new File(classesDir, tgVoipDexClassesPath)
+                def javaVoipDirFile = new File(javaDir, tgVoipDexClassesPath)
+                def tgVoipDexJavaFile = new File(javaVoipDirFile, "TgVoipDex.java")
+                if (!javaVoipDirFile.exists()) {
+                    javaVoipDirFile.mkdirs()
+                }
+                def assetsDirFile = new File(buildDir, "intermediates/merged_assets/${variant.name}/out")
+                if (!assetsDirFile.exists()) {
+                    assetsDirFile.mkdirs()
+                }
+                def tgVoipDexFile = new File(assetsDirFile, tgVoipDexFileName)
+
+                def classes = tgVoipDir.list(new FilenameFilter() {
+                    @Override
+                    boolean accept(File dir, String name) {
+                        // handle inner and anonymous classes
+                        return tgVoipDexClasses.any { name == "${it}.class" || name.startsWith("${it}\$") && name.endsWith(".class") }
+                    }
+                }).collect { "${tgVoipDexClassesPath}/${it}" }
+
+                // 1. create libtgvoip.dex
+                exec {
+                    workingDir classesDir
+                    commandLine([dxUtilPath, "--dex", "--output=${tgVoipDexFile}"] + classes)
+                }
+
+                // 2. remove classes from the main dex
+                project.delete classes.collect { "${classesDir}/${it}" }
+
+                // 3. insert checksum of libtgvoip.dex into TgVoipDex.java
+                def digest = MessageDigest.getInstance("SHA1")
+                def fileInputStream = tgVoipDexFile.newInputStream()
+                def buffer = new byte[4096]
+                def len
+                while ((len = fileInputStream.read(buffer)) > 0) {
+                    digest.update(buffer, 0, len)
+                }
+                def dexChecksum = new String(Base64.getEncoder().encode(digest.digest())).trim()
+                tgVoipDexJavaFile.write(new String(new File(sourceDir, "${tgVoipDexClassesPath}/TgVoipDex.java").readBytes()).replace("\$CHECKSUM\$", dexChecksum))
+                exec {
+                    commandLine([findJavac(), "-d", classesDir, tgVoipDexJavaFile.absolutePath])
+                }
+            }
+        }
+
+        tasks.findByName("compile${variant.name.capitalize()}JavaWithJavac").finalizedBy(assembleTgVoipDexTaskName)
+        tasks.findByName("${assembleTgVoipDexTaskName}").mustRunAfter tasks.findByName("merge${variant.name.capitalize()}Assets")
     }
 
     variantFilter { variant ->
@@ -318,7 +380,7 @@ android {
     defaultConfig {
         minSdkVersion 16
         targetSdkVersion 28
-        versionName "5.15.0"
+        versionName "6.0.0"
 
         vectorDrawables.generatedDensities = ['mdpi', 'hdpi', 'xhdpi', 'xxhdpi']
 
@@ -330,6 +392,33 @@ android {
         }
 
         manifestPlaceholders = [applicationClassName: "ApplicationLoader"]
+    }
+}
+
+private static File findJavaHome() {
+    String javaPath = System.getProperty("java.home")
+    if (javaPath != null) {
+        File javaBase = new File(javaPath)
+        if (javaBase.exists()) {
+            if (javaBase.getName().equalsIgnoreCase("jre") && new File(javaBase.getParentFile(), "bin/java").exists()) {
+                return javaBase.getParentFile()
+            } else {
+                return javaBase
+            }
+        } else {
+            return null
+        }
+    } else {
+        return null
+    }
+}
+
+private static File findJavac() {
+    File javaHome = findJavaHome()
+    if (javaHome != null) {
+        return new File(javaHome, "bin/javac")
+    } else {
+        return null
     }
 }
 

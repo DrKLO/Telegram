@@ -182,7 +182,7 @@ public class PipVideoView {
             if (isVisible) {
                 if (animated) {
                     currentAnimation = new AnimatorSet();
-                    currentAnimation.playTogether(ObjectAnimator.ofFloat(this, "alpha", 1.0f));
+                    currentAnimation.playTogether(ObjectAnimator.ofFloat(this, View.ALPHA, 1.0f));
                     currentAnimation.setDuration(150);
                     currentAnimation.addListener(new AnimatorListenerAdapter() {
                         @Override
@@ -197,7 +197,7 @@ public class PipVideoView {
             } else {
                 if (animated) {
                     currentAnimation = new AnimatorSet();
-                    currentAnimation.playTogether(ObjectAnimator.ofFloat(this, "alpha", 0.0f));
+                    currentAnimation.playTogether(ObjectAnimator.ofFloat(this, View.ALPHA, 0.0f));
                     currentAnimation.setDuration(150);
                     currentAnimation.addListener(new AnimatorListenerAdapter() {
                         @Override

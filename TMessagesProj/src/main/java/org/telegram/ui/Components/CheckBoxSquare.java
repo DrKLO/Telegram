@@ -57,6 +57,7 @@ public class CheckBoxSquare extends View {
         invalidate();
     }
 
+    @Keep
     public float getProgress() {
         return progress;
     }

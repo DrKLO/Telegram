@@ -94,6 +94,7 @@ public class AnimatedArrowDrawable extends Drawable {
         paint.setColor(color);
     }
 
+    @Keep
     public float getAnimationProgress() {
         return animProgress;
     }

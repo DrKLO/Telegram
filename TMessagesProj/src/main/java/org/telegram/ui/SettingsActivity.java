@@ -54,7 +54,6 @@ import android.view.animation.Interpolator;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
-import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -85,7 +84,6 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.MessageObject;
 import org.telegram.ui.ActionBar.AlertDialog;
-import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.ThemeDescription;
 import org.telegram.ui.Cells.EmptyCell;
@@ -181,8 +179,18 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
     private int privacyRow;
     private int dataRow;
     private int chatRow;
+    private int filtersRow;
     private int devicesRow;
-    private int helpRow;
+    private int devicesSectionRow;
+    private int helpHeaderRow;
+    private int questionRow;
+    private int faqRow;
+    private int policyRow;
+    private int helpSectionCell;
+    private int debugHeaderRow;
+    private int sendLogsRow;
+    private int clearLogsRow;
+    private int switchBackendRow;
     private int versionRow;
     private int rowCount;
 
@@ -274,26 +282,12 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.userInfoDidLoad);
         NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.emojiDidLoad);
 
-        rowCount = 0;
-        emptyRow = rowCount++;
-        numberSectionRow = rowCount++;
-        numberRow = rowCount++;
-        usernameRow = rowCount++;
-        bioRow = rowCount++;
-        settingsSectionRow = rowCount++;
-        settingsSectionRow2 = rowCount++;
-        notificationRow = rowCount++;
-        privacyRow = rowCount++;
-        dataRow = rowCount++;
-        chatRow = rowCount++;
-        devicesRow = rowCount++;
-        languageRow = rowCount++;
-        helpRow = rowCount++;
-        versionRow = rowCount++;
+        updateRows();
 
-        MediaDataController.getInstance(currentAccount).checkFeaturedStickers();
-        userInfo = MessagesController.getInstance(currentAccount).getUserFull(UserConfig.getInstance(currentAccount).getClientUserId());
-        MessagesController.getInstance(currentAccount).loadUserInfo(UserConfig.getInstance(currentAccount).getCurrentUser(), true, classGuid);
+        getMediaDataController().checkFeaturedStickers();
+        getMessagesController().loadSuggestedFilters();
+        userInfo = getMessagesController().getUserFull(UserConfig.getInstance(currentAccount).getClientUserId());
+        getMessagesController().loadUserInfo(UserConfig.getInstance(currentAccount).getCurrentUser(), true, classGuid);
 
         return true;
     }
@@ -453,10 +447,35 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                 presentFragment(new DataSettingsActivity());
             } else if (position == chatRow) {
                 presentFragment(new ThemeActivity(ThemeActivity.THEME_TYPE_BASIC));
+            } else if (position == filtersRow) {
+                presentFragment(new FiltersSetupActivity());
             } else if (position == devicesRow) {
                 presentFragment(new SessionsActivity(0));
-            } else if (position == helpRow) {
-                showHelpAlert();
+            } else if (position == questionRow) {
+                showDialog(AlertsCreator.createSupportAlert(SettingsActivity.this));
+            } else if (position == faqRow) {
+                Browser.openUrl(getParentActivity(), LocaleController.getString("TelegramFaqUrl", R.string.TelegramFaqUrl));
+            } else if (position == policyRow) {
+                Browser.openUrl(getParentActivity(), LocaleController.getString("PrivacyPolicyUrl", R.string.PrivacyPolicyUrl));
+            } else if (position == sendLogsRow) {
+                sendLogs();
+            } else if (position == clearLogsRow) {
+                FileLog.cleanupLogs();
+            } else if (position == switchBackendRow) {
+                if (getParentActivity() == null) {
+                    return;
+                }
+                AlertDialog.Builder builder1 = new AlertDialog.Builder(getParentActivity());
+                builder1.setMessage(LocaleController.getString("AreYouSure", R.string.AreYouSure));
+                builder1.setTitle(LocaleController.getString("AppName", R.string.AppName));
+                builder1.setPositiveButton(LocaleController.getString("OK", R.string.OK), (dialogInterface, i) -> {
+                    SharedConfig.pushAuthKey = null;
+                    SharedConfig.pushAuthKeyId = null;
+                    SharedConfig.saveConfig();
+                    ConnectionsManager.getInstance(currentAccount).switchBackend();
+                });
+                builder1.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+                showDialog(builder1.create());
             } else if (position == languageRow) {
                 presentFragment(new LanguageSelectActivity());
             } else if (position == usernameRow) {
@@ -495,7 +514,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                                 BuildVars.DEBUG_PRIVATE_VERSION ? "Check for app updates" : null,
                                 LocaleController.getString("DebugMenuReadAllDialogs", R.string.DebugMenuReadAllDialogs),
                                 SharedConfig.pauseMusicOnRecord ? LocaleController.getString("DebugMenuDisablePauseMusic", R.string.DebugMenuDisablePauseMusic) : LocaleController.getString("DebugMenuEnablePauseMusic", R.string.DebugMenuEnablePauseMusic),
-                                BuildVars.DEBUG_VERSION && !AndroidUtilities.isTablet() ? (SharedConfig.smoothKeyboard ? LocaleController.getString("DebugMenuDisableSmoothKeyboard", R.string.DebugMenuDisableSmoothKeyboard) : LocaleController.getString("DebugMenuEnableSmoothKeyboard", R.string.DebugMenuEnableSmoothKeyboard)) : null
+                                BuildVars.DEBUG_VERSION && !AndroidUtilities.isTablet() && Build.VERSION.SDK_INT >= 23 ? (SharedConfig.smoothKeyboard ? LocaleController.getString("DebugMenuDisableSmoothKeyboard", R.string.DebugMenuDisableSmoothKeyboard) : LocaleController.getString("DebugMenuEnableSmoothKeyboard", R.string.DebugMenuEnableSmoothKeyboard)) : null
                         };
                         builder.setItems(items, (dialog, which) -> {
                             if (which == 0) {
@@ -512,14 +531,17 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                                 BuildVars.LOGS_ENABLED = !BuildVars.LOGS_ENABLED;
                                 SharedPreferences sharedPreferences = ApplicationLoader.applicationContext.getSharedPreferences("systemConfig", Context.MODE_PRIVATE);
                                 sharedPreferences.edit().putBoolean("logsEnabled", BuildVars.LOGS_ENABLED).commit();
+                                updateRows();
                             } else if (which == 5) {
                                 SharedConfig.toggleInappCamera();
                             } else if (which == 6) {
                                 MessagesStorage.getInstance(currentAccount).clearSentMedia();
                                 SharedConfig.setNoSoundHintShowed(false);
                                 SharedPreferences.Editor editor = MessagesController.getGlobalMainSettings().edit();
-                                editor.remove("archivehint").remove("archivehint_l").remove("gifhint").remove("soundHint").remove("themehint").commit();
+                                editor.remove("archivehint").remove("archivehint_l").remove("gifhint").remove("soundHint").remove("themehint").remove("filterhint").commit();
                                 SharedConfig.textSelectionHintShows = 0;
+                                SharedConfig.lockRecordAudioVideoHint = 0;
+                                SharedConfig.stickersReorderingHintUsed = false;
                             } else if (which == 7) {
                                 VoIPHelper.showCallDebugSettings(getParentActivity());
                             } else if (which == 8) {
@@ -771,6 +793,56 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         });
 
         return fragmentView;
+    }
+
+    private void updateRows() {
+        rowCount = 0;
+        emptyRow = rowCount++;
+        numberSectionRow = rowCount++;
+        numberRow = rowCount++;
+        usernameRow = rowCount++;
+        bioRow = rowCount++;
+        settingsSectionRow = rowCount++;
+        settingsSectionRow2 = rowCount++;
+        notificationRow = rowCount++;
+        privacyRow = rowCount++;
+        dataRow = rowCount++;
+        chatRow = rowCount++;
+        if (getMessagesController().filtersEnabled || !getMessagesController().dialogFilters.isEmpty()) {
+            filtersRow = rowCount++;
+        } else {
+            filtersRow = -1;
+        }
+        devicesRow = rowCount++;
+        languageRow = rowCount++;
+        devicesSectionRow = rowCount++;
+        helpHeaderRow = rowCount++;
+        questionRow = rowCount++;
+        faqRow = rowCount++;
+        policyRow = rowCount++;
+        if (BuildVars.LOGS_ENABLED || BuildVars.DEBUG_VERSION) {
+            helpSectionCell = rowCount++;
+            debugHeaderRow = rowCount++;
+        } else {
+            helpSectionCell = -1;
+            debugHeaderRow = -1;
+        }
+        if (BuildVars.LOGS_ENABLED) {
+            sendLogsRow = rowCount++;
+            clearLogsRow = rowCount++;
+        } else {
+            sendLogsRow = -1;
+            clearLogsRow = -1;
+        }
+        if (BuildVars.DEBUG_VERSION) {
+            switchBackendRow = rowCount++;
+        } else {
+            switchBackendRow = -1;
+        }
+        versionRow = rowCount++;
+        if (listAdapter != null) {
+            listAdapter.notifyDataSetChanged();
+        }
     }
 
     private Animator searchExpandTransition(boolean enter) {
@@ -1097,6 +1169,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         }
     }
 
+    @Keep
     public float getAnimationProgress() {
         return animationProgress;
     }
@@ -1392,102 +1465,6 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         }
     }
 
-    private void showHelpAlert() {
-        if (getParentActivity() == null) {
-            return;
-        }
-        Context context = getParentActivity();
-        BottomSheet.Builder builder = new BottomSheet.Builder(context);
-        builder.setApplyTopPadding(false);
-
-        LinearLayout linearLayout = new LinearLayout(context);
-        linearLayout.setOrientation(LinearLayout.VERTICAL);
-
-        HeaderCell headerCell = new HeaderCell(context, true, 23, 15, false);
-        headerCell.setHeight(47);
-        headerCell.setText(LocaleController.getString("SettingsHelp", R.string.SettingsHelp));
-        linearLayout.addView(headerCell);
-
-        LinearLayout linearLayoutInviteContainer = new LinearLayout(context);
-        linearLayoutInviteContainer.setOrientation(LinearLayout.VERTICAL);
-        linearLayout.addView(linearLayoutInviteContainer, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
-
-        int count = 6;
-        for (int a = 0; a < count; a++) {
-            if (a >= 3 && a <= 4 && !BuildVars.LOGS_ENABLED || a == 5 && !BuildVars.DEBUG_VERSION) {
-                continue;
-            }
-            TextCell textCell = new TextCell(context);
-            String text;
-            switch (a) {
-                case 0:
-                    text = LocaleController.getString("AskAQuestion", R.string.AskAQuestion);
-                    break;
-                case 1:
-                    text = LocaleController.getString("TelegramFAQ", R.string.TelegramFAQ);
-                    break;
-                case 2:
-                    text = LocaleController.getString("PrivacyPolicy", R.string.PrivacyPolicy);
-                    break;
-                case 3:
-                    text = LocaleController.getString("DebugSendLogs", R.string.DebugSendLogs);
-                    break;
-                case 4:
-                    text = LocaleController.getString("DebugClearLogs", R.string.DebugClearLogs);
-                    break;
-                case 5:
-                default:
-                    text = "Switch Backend";
-                    break;
-            }
-            textCell.setText(text, BuildVars.LOGS_ENABLED || BuildVars.DEBUG_VERSION ? a != count - 1 : a != 2);
-            textCell.setTag(a);
-            textCell.setBackgroundDrawable(Theme.getSelectorDrawable(false));
-            linearLayoutInviteContainer.addView(textCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
-            textCell.setOnClickListener(v2 -> {
-                Integer tag = (Integer) v2.getTag();
-                switch (tag) {
-                    case 0: {
-                        showDialog(AlertsCreator.createSupportAlert(SettingsActivity.this));
-                        break;
-                    }
-                    case 1:
-                        Browser.openUrl(getParentActivity(), LocaleController.getString("TelegramFaqUrl", R.string.TelegramFaqUrl));
-                        break;
-                    case 2:
-                        Browser.openUrl(getParentActivity(), LocaleController.getString("PrivacyPolicyUrl", R.string.PrivacyPolicyUrl));
-                        break;
-                    case 3:
-                        sendLogs();
-                        break;
-                    case 4:
-                        FileLog.cleanupLogs();
-                        break;
-                    case 5: {
-                        if (getParentActivity() == null) {
-                            return;
-                        }
-                        AlertDialog.Builder builder1 = new AlertDialog.Builder(getParentActivity());
-                        builder1.setMessage(LocaleController.getString("AreYouSure", R.string.AreYouSure));
-                        builder1.setTitle(LocaleController.getString("AppName", R.string.AppName));
-                        builder1.setPositiveButton(LocaleController.getString("OK", R.string.OK), (dialogInterface, i) -> {
-                            SharedConfig.pushAuthKey = null;
-                            SharedConfig.pushAuthKeyId = null;
-                            SharedConfig.saveConfig();
-                            ConnectionsManager.getInstance(currentAccount).switchBackend();
-                        });
-                        builder1.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
-                        showDialog(builder1.create());
-                        break;
-                    }
-                }
-                builder.getDismissRunnable().run();
-            });
-        }
-        builder.setCustomView(linearLayout);
-        showDialog(builder.create());
-    }
-
     private void sendLogs() {
         if (getParentActivity() == null) {
             return;
@@ -1565,7 +1542,9 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                         i.putExtra(Intent.EXTRA_EMAIL, "");
                         i.putExtra(Intent.EXTRA_SUBJECT, "Logs from " + LocaleController.getInstance().formatterStats.format(System.currentTimeMillis()));
                         i.putExtra(Intent.EXTRA_STREAM, uri);
-                        getParentActivity().startActivityForResult(Intent.createChooser(i, "Select email application."), 500);
+                        if (getParentActivity() != null) {
+                            getParentActivity().startActivityForResult(Intent.createChooser(i, "Select email application."), 500);
+                        }
                     } else {
                         Toast.makeText(getParentActivity(), LocaleController.getString("ErrorOccurred", R.string.ErrorOccurred), Toast.LENGTH_SHORT).show();
                     }
@@ -1807,7 +1786,6 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
 
                 new SearchResult(400, LocaleController.getString("Language", R.string.Language), R.drawable.menu_language, () -> presentFragment(new LanguageSelectActivity())),
 
-                new SearchResult(401, LocaleController.getString("SettingsHelp", R.string.SettingsHelp), R.drawable.menu_help, SettingsActivity.this::showHelpAlert),
                 new SearchResult(402, LocaleController.getString("AskAQuestion", R.string.AskAQuestion), LocaleController.getString("SettingsHelp", R.string.SettingsHelp), R.drawable.menu_help, () -> showDialog(AlertsCreator.createSupportAlert(SettingsActivity.this))),
                 new SearchResult(403, LocaleController.getString("TelegramFAQ", R.string.TelegramFAQ), LocaleController.getString("SettingsHelp", R.string.SettingsHelp), R.drawable.menu_help, () -> Browser.openUrl(getParentActivity(), LocaleController.getString("TelegramFaqUrl", R.string.TelegramFaqUrl))),
                 new SearchResult(404, LocaleController.getString("PrivacyPolicy", R.string.PrivacyPolicy), LocaleController.getString("SettingsHelp", R.string.SettingsHelp), R.drawable.menu_help, () -> Browser.openUrl(getParentActivity(), LocaleController.getString("PrivacyPolicyUrl", R.string.PrivacyPolicyUrl))),
@@ -2205,7 +2183,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                 case 2: {
                     TextCell textCell = (TextCell) holder.itemView;
                     if (position == languageRow) {
-                        textCell.setTextAndIcon(LocaleController.getString("Language", R.string.Language), R.drawable.menu_language, true);
+                        textCell.setTextAndIcon(LocaleController.getString("Language", R.string.Language), R.drawable.menu_language, false);
                     } else if (position == notificationRow) {
                         textCell.setTextAndIcon(LocaleController.getString("NotificationsAndSounds", R.string.NotificationsAndSounds), R.drawable.menu_notifications, true);
                     } else if (position == privacyRow) {
@@ -2214,18 +2192,35 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                         textCell.setTextAndIcon(LocaleController.getString("DataSettings", R.string.DataSettings), R.drawable.menu_data, true);
                     } else if (position == chatRow) {
                         textCell.setTextAndIcon(LocaleController.getString("ChatSettings", R.string.ChatSettings), R.drawable.menu_chats, true);
-                    } else if (position == helpRow) {
-                        textCell.setTextAndIcon(LocaleController.getString("SettingsHelp", R.string.SettingsHelp), R.drawable.menu_help, false);
+                    } else if (position == filtersRow) {
+                        textCell.setTextAndIcon(LocaleController.getString("Filters", R.string.Filters), R.drawable.menu_folders, true);
+                    } else if (position == questionRow) {
+                        textCell.setTextAndIcon(LocaleController.getString("AskAQuestion", R.string.AskAQuestion), R.drawable.menu_support2, true);
+                    } else if (position == faqRow) {
+                        textCell.setTextAndIcon(LocaleController.getString("TelegramFAQ", R.string.TelegramFAQ), R.drawable.menu_help, true);
+                    } else if (position == policyRow) {
+                        textCell.setTextAndIcon(LocaleController.getString("PrivacyPolicy", R.string.PrivacyPolicy), R.drawable.menu_policy, false);
+                    } else if (position == sendLogsRow) {
+                        textCell.setText(LocaleController.getString("DebugSendLogs", R.string.DebugSendLogs), true);
+                    } else if (position == clearLogsRow) {
+                        textCell.setText(LocaleController.getString("DebugClearLogs", R.string.DebugClearLogs), switchBackendRow != -1);
+                    } else if (position == switchBackendRow) {
+                        textCell.setText("Switch Backend", false);
                     } else if (position == devicesRow) {
                         textCell.setTextAndIcon(LocaleController.getString("Devices", R.string.Devices), R.drawable.menu_devices, true);
                     }
                     break;
                 }
                 case 4: {
+                    HeaderCell headerCell = (HeaderCell) holder.itemView;
                     if (position == settingsSectionRow2) {
-                        ((HeaderCell) holder.itemView).setText(LocaleController.getString("SETTINGS", R.string.SETTINGS));
+                        headerCell.setText(LocaleController.getString("SETTINGS", R.string.SETTINGS));
                     } else if (position == numberSectionRow) {
-                        ((HeaderCell) holder.itemView).setText(LocaleController.getString("Account", R.string.Account));
+                        headerCell.setText(LocaleController.getString("Account", R.string.Account));
+                    } else if (position == helpHeaderRow) {
+                        headerCell.setText(LocaleController.getString("SettingsHelp", R.string.SettingsHelp));
+                    } else if (position == debugHeaderRow) {
+                        headerCell.setText(LocaleController.getString("SettingsDebug", R.string.SettingsDebug));
                     }
                     break;
                 }
@@ -2272,7 +2267,9 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
             return position == notificationRow || position == numberRow || position == privacyRow ||
                     position == languageRow || position == usernameRow || position == bioRow ||
                     position == versionRow || position == dataRow || position == chatRow ||
-                    position == helpRow || position == devicesRow;
+                    position == questionRow || position == devicesRow || position == filtersRow ||
+                    position == faqRow || position == policyRow || position == sendLogsRow ||
+                    position == clearLogsRow || position == switchBackendRow;
         }
 
         @Override
@@ -2352,17 +2349,20 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         public int getItemViewType(int position) {
             if (position == emptyRow) {
                 return 0;
-            } else if (position == settingsSectionRow) {
+            } else if (position == settingsSectionRow || position == devicesSectionRow || position == helpSectionCell) {
                 return 1;
             } else if (position == notificationRow || position == privacyRow || position == languageRow ||
-                    position == dataRow || position == chatRow || position == helpRow ||
-                    position == devicesRow) {
+                    position == dataRow || position == chatRow || position == questionRow ||
+                    position == devicesRow || position == filtersRow || position == faqRow ||
+                    position == policyRow || position == sendLogsRow || position == clearLogsRow ||
+                    position == switchBackendRow) {
                 return 2;
             } else if (position == versionRow) {
                 return 5;
             } else if (position == numberRow || position == usernameRow || position == bioRow) {
                 return 6;
-            } else if (position == settingsSectionRow2 || position == numberSectionRow) {
+            } else if (position == settingsSectionRow2 || position == numberSectionRow || position == helpHeaderRow ||
+                    position == debugHeaderRow) {
                 return 4;
             } else {
                 return 2;
@@ -2408,7 +2408,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                 new ThemeDescription(listView, ThemeDescription.FLAG_BACKGROUNDFILTER | ThemeDescription.FLAG_CELLBACKGROUNDCOLOR, new Class[]{TextInfoPrivacyCell.class}, null, null, null, Theme.key_windowBackgroundGray),
                 new ThemeDescription(listView, 0, new Class[]{TextInfoPrivacyCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteGrayText4),
 
-                new ThemeDescription(avatarImage, 0, null, null, new Drawable[]{Theme.avatar_savedDrawable}, null, Theme.key_avatar_text),
+                new ThemeDescription(avatarImage, 0, null, null, Theme.avatarDrawables, null, Theme.key_avatar_text),
                 new ThemeDescription(avatarImage, 0, null, null, new Drawable[]{avatarDrawable}, null, Theme.key_avatar_backgroundInProfileBlue),
 
                 new ThemeDescription(writeButton, ThemeDescription.FLAG_IMAGECOLOR, null, null, null, null, Theme.key_profile_actionIcon),

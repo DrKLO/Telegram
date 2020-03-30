@@ -60,10 +60,12 @@ public class DrawerProfileCell extends FrameLayout {
     private Rect srcRect = new Rect();
     private Rect destRect = new Rect();
     private Paint paint = new Paint();
+    private Paint backPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private Integer currentColor;
     private Integer currentMoonColor;
     private SnowflakesEffect snowflakesEffect;
-    private boolean accountsShowed;
+    private boolean accountsShown;
+    private int darkThemeBackgroundColor;
 
     public DrawerProfileCell(Context context) {
         super(context);
@@ -98,7 +100,7 @@ public class DrawerProfileCell extends FrameLayout {
 
         arrowView = new ImageView(context);
         arrowView.setScaleType(ImageView.ScaleType.CENTER);
-        arrowView.setImageResource(R.drawable.collapse_down);
+        arrowView.setImageResource(R.drawable.menu_expand);
         addView(arrowView, LayoutHelper.createFrame(59, 59, Gravity.RIGHT | Gravity.BOTTOM));
         setArrowState(false);
 
@@ -107,7 +109,7 @@ public class DrawerProfileCell extends FrameLayout {
         darkThemeView.setImageResource(R.drawable.menu_night);
         darkThemeView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_chats_menuName), PorterDuff.Mode.MULTIPLY));
         if (Build.VERSION.SDK_INT >= 21) {
-            darkThemeView.setBackgroundDrawable(Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector)));
+            darkThemeView.setBackgroundDrawable(Theme.createSelectorDrawable(darkThemeBackgroundColor = Theme.getColor(Theme.key_listSelector), 1, AndroidUtilities.dp(17)));
             Theme.setRippleDrawableForceSoftware((RippleDrawable) darkThemeView.getBackground());
         }
         darkThemeView.setOnClickListener(v -> {
@@ -181,6 +183,7 @@ public class DrawerProfileCell extends FrameLayout {
         boolean useImageBackground = !backgroundKey.equals(Theme.key_chats_menuTopBackground) && Theme.isCustomTheme() && !Theme.isPatternWallpaper() && backgroundDrawable != null && !(backgroundDrawable instanceof ColorDrawable) && !(backgroundDrawable instanceof GradientDrawable);
         boolean drawCatsShadow = false;
         int color;
+        int darkBackColor = 0;
         if (!useImageBackground && Theme.hasThemeKey(Theme.key_chats_menuTopShadowCats)) {
             color = Theme.getColor(Theme.key_chats_menuTopShadowCats);
             drawCatsShadow = true;
@@ -209,6 +212,7 @@ public class DrawerProfileCell extends FrameLayout {
             if (backgroundDrawable instanceof ColorDrawable || backgroundDrawable instanceof GradientDrawable) {
                 backgroundDrawable.setBounds(0, 0, getMeasuredWidth(), getMeasuredHeight());
                 backgroundDrawable.draw(canvas);
+                darkBackColor = Theme.getColor(Theme.key_listSelector);
             } else if (backgroundDrawable instanceof BitmapDrawable) {
                 Bitmap bitmap = ((BitmapDrawable) backgroundDrawable).getBitmap();
                 float scaleX = (float) getMeasuredWidth() / (float) bitmap.getWidth();
@@ -225,6 +229,7 @@ public class DrawerProfileCell extends FrameLayout {
                 } catch (Throwable e) {
                     FileLog.e(e);
                 }
+                darkBackColor = (Theme.getServiceMessageColor() & 0x00ffffff) | 0x50000000;
             }
         } else {
             int visibility = drawCatsShadow? VISIBLE : INVISIBLE;
@@ -233,6 +238,19 @@ public class DrawerProfileCell extends FrameLayout {
             }
             phoneTextView.setTextColor(Theme.getColor(Theme.key_chats_menuPhoneCats));
             super.onDraw(canvas);
+            darkBackColor = Theme.getColor(Theme.key_listSelector);
+        }
+
+        if (darkBackColor != 0) {
+            if (darkBackColor != darkThemeBackgroundColor) {
+                backPaint.setColor(darkThemeBackgroundColor = darkBackColor);
+                if (Build.VERSION.SDK_INT >= 21) {
+                    Theme.setSelectorDrawableColor(darkThemeView.getBackground(), darkThemeBackgroundColor = darkBackColor, true);
+                }
+            }
+            if (useImageBackground && backgroundDrawable instanceof BitmapDrawable) {
+                canvas.drawCircle(darkThemeView.getX() + darkThemeView.getMeasuredWidth() / 2, darkThemeView.getY() + darkThemeView.getMeasuredHeight() / 2, AndroidUtilities.dp(17), backPaint);
+            }
         }
 
         if (snowflakesEffect != null) {
@@ -240,15 +258,15 @@ public class DrawerProfileCell extends FrameLayout {
         }
     }
 
-    public boolean isAccountsShowed() {
-        return accountsShowed;
+    public boolean isAccountsShown() {
+        return accountsShown;
     }
 
-    public void setAccountsShowed(boolean value, boolean animated) {
-        if (accountsShowed == value) {
+    public void setAccountsShown(boolean value, boolean animated) {
+        if (accountsShown == value) {
             return;
         }
-        accountsShowed = value;
+        accountsShown = value;
         setArrowState(animated);
     }
 
@@ -256,7 +274,7 @@ public class DrawerProfileCell extends FrameLayout {
         if (user == null) {
             return;
         }
-        accountsShowed = accounts;
+        accountsShown = accounts;
         setArrowState(false);
         nameTextView.setText(UserObject.getUserName(user));
         phoneTextView.setText(PhoneFormat.getInstance().format("+" + user.phone));
@@ -284,13 +302,13 @@ public class DrawerProfileCell extends FrameLayout {
     }
 
     private void setArrowState(boolean animated) {
-        final float rotation = accountsShowed ? 180.0f : 0.0f;
+        final float rotation = accountsShown ? 180.0f : 0.0f;
         if (animated) {
             arrowView.animate().rotation(rotation).setDuration(220).setInterpolator(CubicBezierInterpolator.EASE_OUT).start();
         } else {
             arrowView.animate().cancel();
             arrowView.setRotation(rotation);
         }
-        arrowView.setContentDescription(accountsShowed ? LocaleController.getString("AccDescrHideAccounts", R.string.AccDescrHideAccounts) : LocaleController.getString("AccDescrShowAccounts", R.string.AccDescrShowAccounts));
+        arrowView.setContentDescription(accountsShown ? LocaleController.getString("AccDescrHideAccounts", R.string.AccDescrHideAccounts) : LocaleController.getString("AccDescrShowAccounts", R.string.AccDescrShowAccounts));
     }
 }

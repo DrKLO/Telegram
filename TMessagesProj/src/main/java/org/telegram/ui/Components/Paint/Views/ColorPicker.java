@@ -23,6 +23,8 @@ import org.telegram.messenger.R;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.Paint.Swatch;
 
+import androidx.annotation.Keep;
+
 public class ColorPicker extends FrameLayout {
 
     public interface ColorPickerDelegate {
@@ -73,7 +75,7 @@ public class ColorPicker extends FrameLayout {
     private Paint swatchStrokePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private RectF rectF = new RectF();
 
-    private float location = 1.0f;
+    private float location;
     private float weight = 0.27f;
     private float draggingFactor;
     private boolean dragging;
@@ -90,12 +92,9 @@ public class ColorPicker extends FrameLayout {
         settingsButton.setScaleType(ImageView.ScaleType.CENTER);
         settingsButton.setImageResource(R.drawable.photo_paint_brush);
         addView(settingsButton, LayoutHelper.createFrame(60, 52));
-        settingsButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (delegate != null) {
-                    delegate.onSettingsPressed();
-                }
+        settingsButton.setOnClickListener(v -> {
+            if (delegate != null) {
+                delegate.onSettingsPressed();
             }
         });
 
@@ -103,12 +102,9 @@ public class ColorPicker extends FrameLayout {
         undoButton.setScaleType(ImageView.ScaleType.CENTER);
         undoButton.setImageResource(R.drawable.photo_undo);
         addView(undoButton, LayoutHelper.createFrame(60, 52));
-        undoButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (delegate != null) {
-                    delegate.onUndoPressed();
-                }
+        undoButton.setOnClickListener(v -> {
+            if (delegate != null) {
+                delegate.onUndoPressed();
             }
         });
 
@@ -194,7 +190,7 @@ public class ColorPicker extends FrameLayout {
         int color = colorForLocation(location = value);
         swatchPaint.setColor(color);
 
-        float hsv[] = new float[3];
+        float[] hsv = new float[3];
         Color.colorToHSV(color, hsv);
 
         if (hsv[0] < 0.001 && hsv[1] < 0.001 && hsv[2] > 0.92f) {
@@ -203,7 +199,6 @@ public class ColorPicker extends FrameLayout {
         } else {
             swatchStrokePaint.setColor(color);
         }
-
 
         invalidate();
     }
@@ -230,7 +225,6 @@ public class ColorPicker extends FrameLayout {
         if (action == MotionEvent.ACTION_CANCEL || action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_POINTER_UP) {
             if (interacting && delegate != null) {
                 delegate.onFinishedColorPicking();
-
                 getContext().getSharedPreferences("paint", Activity.MODE_PRIVATE).edit().putFloat("last_color_location", location).commit();
             }
             interacting = false;
@@ -297,11 +291,13 @@ public class ColorPicker extends FrameLayout {
         canvas.drawCircle(cx, cy, swatchRadius - AndroidUtilities.dp(0.5f), swatchStrokePaint);
     }
 
+    @Keep
     private void setDraggingFactor(float factor) {
         draggingFactor = factor;
         invalidate();
     }
 
+    @Keep
     public float getDraggingFactor() {
         return draggingFactor;
     }

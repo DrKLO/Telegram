@@ -45,7 +45,6 @@ import org.telegram.messenger.UserObject;
 import org.telegram.messenger.voip.VoIPService;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
-import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
@@ -287,6 +286,7 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
         launchActivity.presentFragment(locationActivity);
     }
 
+    @Keep
     public float getTopPadding() {
         return topPadding;
     }
@@ -317,7 +317,6 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
         topPadding = value;
         if (fragment != null && getParent() != null) {
             View view = fragment.getFragmentView();
-            ActionBar actionBar = fragment.getActionBar();
             int additionalPadding = 0;
             if (additionalContextView != null && additionalContextView.getVisibility() == VISIBLE && additionalContextView.getParent() != null) {
                 additionalPadding = AndroidUtilities.dp(36);

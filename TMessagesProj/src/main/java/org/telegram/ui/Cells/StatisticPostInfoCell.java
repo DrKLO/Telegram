@@ -1,0 +1,142 @@
+package org.telegram.ui.Cells;
+
+import android.content.Context;
+import android.graphics.Color;
+import android.text.TextUtils;
+import android.view.Gravity;
+import android.widget.FrameLayout;
+import android.widget.LinearLayout;
+import android.widget.TextView;
+
+import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.FileLoader;
+import org.telegram.messenger.ImageLocation;
+import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.MessageObject;
+import org.telegram.tgnet.TLRPC;
+import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Components.BackupImageView;
+import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.StatisticActivity;
+
+import java.util.ArrayList;
+import java.util.Locale;
+
+public class StatisticPostInfoCell extends FrameLayout {
+
+    private TextView message;
+    private TextView views;
+    private TextView shares;
+    private TextView date;
+    private BackupImageView imageView;
+
+    private final TLRPC.ChatFull chat;
+
+    public StatisticPostInfoCell(Context context, TLRPC.ChatFull chat) {
+        super(context);
+        this.chat = chat;
+        imageView = new BackupImageView(context);
+        addView(imageView, LayoutHelper.createFrame(46, 46, Gravity.START | Gravity.CENTER_VERTICAL, 12, 0, 16, 0));
+
+        LinearLayout contentLayout = new LinearLayout(context);
+        contentLayout.setOrientation(LinearLayout.VERTICAL);
+        LinearLayout linearLayout = new LinearLayout(context);
+        linearLayout.setOrientation(LinearLayout.HORIZONTAL);
+
+        message = new TextView(context);
+        message.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        message.setTextSize(15);
+        message.setTextColor(Color.BLACK);
+        message.setLines(1);
+        message.setEllipsize(TextUtils.TruncateAt.END);
+
+        views = new TextView(context);
+        views.setTextSize(15);
+        views.setTextColor(Color.BLACK);
+
+        linearLayout.addView(message, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1f, Gravity.NO_GRAVITY, 0, 0, 16, 0));
+        linearLayout.addView(views, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
+        contentLayout.addView(linearLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.START | Gravity.TOP, 0, 8, 0, 0));
+
+        date = new TextView(context);
+        date.setTextSize(13);
+        date.setTextColor(Color.BLACK);
+        date.setLines(1);
+        date.setEllipsize(TextUtils.TruncateAt.END);
+
+        shares = new TextView(context);
+        shares.setTextSize(13);
+        shares.setTextColor(Color.BLACK);
+
+        linearLayout = new LinearLayout(context);
+        linearLayout.setOrientation(LinearLayout.HORIZONTAL);
+
+        linearLayout.addView(date, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1f, Gravity.NO_GRAVITY, 0, 0, 8, 0));
+        linearLayout.addView(shares, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
+        contentLayout.addView(linearLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.START | Gravity.TOP, 0, 2, 0, 0));
+
+        addView(contentLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.NO_GRAVITY, 72, 0, 12, 0));
+
+        message.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
+        views.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
+        date.setTextColor(Theme.getColor(Theme.key_dialogTextGray4));
+        shares.setTextColor(Theme.getColor(Theme.key_dialogTextGray4));
+    }
+
+
+    @Override
+    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+        super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(56), MeasureSpec.EXACTLY));
+    }
+
+    public void setData(StatisticActivity.RecentPostInfo postInfo) {
+        MessageObject messageObject = postInfo.message;
+        if (messageObject.photoThumbs != null) {
+            TLRPC.PhotoSize size = FileLoader.getClosestPhotoSizeWithSize(messageObject.photoThumbs, AndroidUtilities.getPhotoSize());
+            TLRPC.PhotoSize thumbSize = FileLoader.getClosestPhotoSizeWithSize(messageObject.photoThumbs,50);
+            imageView.setImage(
+                    ImageLocation.getForObject(size, messageObject.photoThumbsObject), "50_50",
+                    ImageLocation.getForObject(thumbSize, messageObject.photoThumbsObject), "b1", 0, messageObject);
+            imageView.setRoundRadius(AndroidUtilities.dp(4));
+        } else if (chat.chat_photo.sizes.size() > 0) {
+            imageView.setImage(ImageLocation.getForPhoto(chat.chat_photo.sizes.get(0), chat.chat_photo), "50_50", null, null, chat);
+            imageView.setRoundRadius(AndroidUtilities.dp(46) >> 1);
+        }
+
+        String text;
+        if (messageObject.isMusic()) {
+            text = String.format("%s, %s", messageObject.getMusicTitle().trim(), messageObject.getMusicAuthor().trim());
+        } else {
+            text = messageObject.caption != null ? messageObject.caption.toString() : messageObject.messageText.toString();
+        }
+
+        message.setText(text.replace("\n", " ").trim());
+        views.setText(String.format(LocaleController.getPluralString("Views", postInfo.counters.views), formatCount(postInfo.counters.views)));
+        date.setText(LocaleController.formatDateAudio(postInfo.message.messageOwner.date, false));
+        shares.setText(String.format(LocaleController.getPluralString("Shares", postInfo.counters.forwards), formatCount(postInfo.counters.forwards)));
+    }
+
+    public String formatCount(int count) {
+        if (count < 1000) return Integer.toString(count);
+
+        ArrayList<String> strings = new ArrayList<>();
+        while (count != 0) {
+            int mod = count % 1000;
+            count /= 1000;
+            if (count > 0) {
+                strings.add(String.format(Locale.ENGLISH, "%03d", mod));
+            } else {
+                strings.add(Integer.toString(mod));
+            }
+        }
+        StringBuilder stringBuilder = new StringBuilder();
+        for (int i = strings.size() - 1; i >= 0; i--) {
+            stringBuilder.append(strings.get(i));
+            if (i != 0) {
+                stringBuilder.append(",");
+            }
+        }
+
+        return stringBuilder.toString();
+    }
+}

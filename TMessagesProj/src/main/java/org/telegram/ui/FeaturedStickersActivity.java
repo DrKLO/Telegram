@@ -122,7 +122,7 @@ public class FeaturedStickersActivity extends BaseFragment implements Notificati
                     @Override
                     public void onStickerSetInstalled() {
                         FeaturedStickerSetCell cell = (FeaturedStickerSetCell) view;
-                        cell.setDrawProgress(true);
+                        cell.setDrawProgress(true, true);
                         installingStickerSets.put(stickerSet.set.id, stickerSet);
                     }
 
@@ -216,9 +216,8 @@ public class FeaturedStickersActivity extends BaseFragment implements Notificati
                 if (installing && cell.isInstalled()) {
                     installingStickerSets.remove(stickerSet.set.id);
                     installing = false;
-                    cell.setDrawProgress(false);
                 }
-                cell.setDrawProgress(installing);
+                cell.setDrawProgress(installing, false);
             }
         }
 
@@ -241,8 +240,8 @@ public class FeaturedStickersActivity extends BaseFragment implements Notificati
                             return;
                         }
                         installingStickerSets.put(pack.set.id, pack);
-                        MediaDataController.getInstance(currentAccount).removeStickersSet(getParentActivity(), pack.set, 2, FeaturedStickersActivity.this, false);
-                        parent1.setDrawProgress(true);
+                        MediaDataController.getInstance(currentAccount).toggleStickerSet(getParentActivity(), pack, 2, FeaturedStickersActivity.this, false, false);
+                        parent1.setDrawProgress(true, true);
                     });
                     break;
                 case 1:

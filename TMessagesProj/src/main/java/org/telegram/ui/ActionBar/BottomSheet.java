@@ -965,8 +965,8 @@ public class BottomSheet extends Dialog {
         currentSheetAnimationType = 2;
         currentSheetAnimation = new AnimatorSet();
         currentSheetAnimation.playTogether(
-                ObjectAnimator.ofFloat(containerView, "translationY", containerView.getMeasuredHeight() + AndroidUtilities.dp(10)),
-                ObjectAnimator.ofInt(backDrawable, "alpha", 0)
+                ObjectAnimator.ofFloat(containerView, View.TRANSLATION_Y, containerView.getMeasuredHeight() + AndroidUtilities.dp(10)),
+                ObjectAnimator.ofInt(backDrawable, AnimationProperties.COLOR_DRAWABLE_ALPHA, 0)
         );
         currentSheetAnimation.setDuration(180);
         currentSheetAnimation.setInterpolator(CubicBezierInterpolator.EASE_OUT);
@@ -1016,8 +1016,8 @@ public class BottomSheet extends Dialog {
             currentSheetAnimationType = 2;
             currentSheetAnimation = new AnimatorSet();
             currentSheetAnimation.playTogether(
-                    ObjectAnimator.ofFloat(containerView, "translationY", containerView.getMeasuredHeight() + AndroidUtilities.dp(10)),
-                    ObjectAnimator.ofInt(backDrawable, "alpha", 0)
+                    ObjectAnimator.ofFloat(containerView, View.TRANSLATION_Y, containerView.getMeasuredHeight() + AndroidUtilities.dp(10)),
+                    ObjectAnimator.ofInt(backDrawable, AnimationProperties.COLOR_DRAWABLE_ALPHA, 0)
             );
             if (useFastDismiss) {
                 int height = containerView.getMeasuredHeight();

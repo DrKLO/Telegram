@@ -423,6 +423,7 @@ public class ActionIntroActivity extends BaseFragment implements LocationControl
             descriptionLayout = new LinearLayout(context);
             descriptionLayout.setOrientation(LinearLayout.VERTICAL);
             descriptionLayout.setPadding(AndroidUtilities.dp(24), 0, AndroidUtilities.dp(24), 0);
+            descriptionLayout.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
             viewGroup.addView(descriptionLayout);
 
             for (int a = 0; a < 3; a++) {
@@ -432,15 +433,14 @@ public class ActionIntroActivity extends BaseFragment implements LocationControl
 
                 desctiptionLines[a * 2] = new TextView(context);
                 desctiptionLines[a * 2].setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
-                desctiptionLines[a * 2].setGravity(Gravity.LEFT);
+                desctiptionLines[a * 2].setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
                 desctiptionLines[a * 2].setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
-                desctiptionLines[a * 2].setText(String.format("%d.", a + 1));
+                desctiptionLines[a * 2].setText(String.format(LocaleController.isRTL ? ".%d" : "%d.", a + 1));
                 desctiptionLines[a * 2].setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
-                linearLayout.addView(desctiptionLines[a * 2], LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 0, 0, 4, 0));
 
                 desctiptionLines[a * 2 + 1] = new TextView(context);
                 desctiptionLines[a * 2 + 1].setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
-                desctiptionLines[a * 2 + 1].setGravity(Gravity.LEFT);
+                desctiptionLines[a * 2 + 1].setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
                 desctiptionLines[a * 2 + 1].setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
                 if (a == 0) {
                     desctiptionLines[a * 2 + 1].setLinkTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteLinkText));
@@ -461,7 +461,14 @@ public class ActionIntroActivity extends BaseFragment implements LocationControl
                 } else if (a == 2) {
                     desctiptionLines[a * 2 + 1].setText(LocaleController.getString("AuthAnotherClientInfo3", R.string.AuthAnotherClientInfo3));
                 }
-                linearLayout.addView(desctiptionLines[a * 2 + 1], LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
+                if (LocaleController.isRTL) {
+                    linearLayout.setGravity(Gravity.RIGHT);
+                    linearLayout.addView(desctiptionLines[a * 2 + 1], LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1.0f));
+                    linearLayout.addView(desctiptionLines[a * 2], LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 4, 0, 0, 0));
+                } else {
+                    linearLayout.addView(desctiptionLines[a * 2], LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 0, 0, 4, 0));
+                    linearLayout.addView(desctiptionLines[a * 2 + 1], LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
+                }
             }
 
             descriptionText.setVisibility(View.GONE);

@@ -9,6 +9,7 @@
 package org.telegram.ui;
 
 import android.content.Context;
+import android.util.LongSparseArray;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
@@ -33,11 +34,14 @@ import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.StickersAlert;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 public class ArchivedStickersActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
+
+    private final LongSparseArray<TLRPC.StickerSetCovered> installingStickerSets = new LongSparseArray<>();
 
     private ListAdapter listAdapter;
     private EmptyTextProgressView emptyView;
@@ -48,6 +52,10 @@ public class ArchivedStickersActivity extends BaseFragment implements Notificati
     private boolean firstLoaded;
     private boolean endReached;
 
+    private boolean isInTransition;
+    private Runnable doOnTransitionEnd;
+
+    private int archiveInfoRow;
     private int stickersStartRow;
     private int stickersEndRow;
     private int stickersLoadingRow;
@@ -68,14 +76,16 @@ public class ArchivedStickersActivity extends BaseFragment implements Notificati
         super.onFragmentCreate();
         getStickers();
         updateRows();
-        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.needReloadArchivedStickers);
+        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.needAddArchivedStickers);
+        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.stickersDidLoad);
         return true;
     }
 
     @Override
     public void onFragmentDestroy() {
         super.onFragmentDestroy();
-        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.needReloadArchivedStickers);
+        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.needAddArchivedStickers);
+        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.stickersDidLoad);
     }
 
     @Override
@@ -124,7 +134,7 @@ public class ArchivedStickersActivity extends BaseFragment implements Notificati
         listView.setAdapter(listAdapter);
         listView.setOnItemClickListener((view, position) -> {
             if (position >= stickersStartRow && position < stickersEndRow && getParentActivity() != null) {
-                final TLRPC.StickerSetCovered stickerSet = sets.get(position);
+                final TLRPC.StickerSetCovered stickerSet = sets.get(position - stickersStartRow);
                 TLRPC.InputStickerSet inputStickerSet;
                 if (stickerSet.set.id != 0) {
                     inputStickerSet = new TLRPC.TL_inputStickerSetID();
@@ -134,18 +144,16 @@ public class ArchivedStickersActivity extends BaseFragment implements Notificati
                     inputStickerSet.short_name = stickerSet.set.short_name;
                 }
                 inputStickerSet.access_hash = stickerSet.set.access_hash;
-                StickersAlert stickersAlert = new StickersAlert(getParentActivity(), ArchivedStickersActivity.this, inputStickerSet, null, null);
+                final StickersAlert stickersAlert = new StickersAlert(getParentActivity(), ArchivedStickersActivity.this, inputStickerSet, null, null);
                 stickersAlert.setInstallDelegate(new StickersAlert.StickersAlertInstallDelegate() {
                     @Override
                     public void onStickerSetInstalled() {
-                        ArchivedStickerSetCell cell = (ArchivedStickerSetCell) view;
-                        cell.setChecked(true);
+                        ((ArchivedStickerSetCell) view).setDrawProgress(true, true);
+                        installingStickerSets.put(stickerSet.set.id, stickerSet);
                     }
 
                     @Override
                     public void onStickerSetUninstalled() {
-                        ArchivedStickerSetCell cell = (ArchivedStickerSetCell) view;
-                        cell.setChecked(false);
                     }
                 });
                 showDialog(stickersAlert);
@@ -166,6 +174,7 @@ public class ArchivedStickersActivity extends BaseFragment implements Notificati
     private void updateRows() {
         rowCount = 0;
         if (!sets.isEmpty()) {
+            archiveInfoRow = currentType == MediaDataController.TYPE_IMAGE ? rowCount++ : -1;
             stickersStartRow = rowCount;
             stickersEndRow = rowCount + sets.size();
             rowCount += sets.size();
@@ -177,13 +186,11 @@ public class ArchivedStickersActivity extends BaseFragment implements Notificati
                 stickersLoadingRow = -1;
             }
         } else {
+            archiveInfoRow = -1;
             stickersStartRow = -1;
             stickersEndRow = -1;
             stickersLoadingRow = -1;
             stickersShadowRow = -1;
-        }
-        if (listAdapter != null) {
-            listAdapter.notifyDataSetChanged();
         }
     }
 
@@ -202,20 +209,44 @@ public class ArchivedStickersActivity extends BaseFragment implements Notificati
         req.offset_id = sets.isEmpty() ? 0 : sets.get(sets.size() - 1).set.id;
         req.limit = 15;
         req.masks = currentType == MediaDataController.TYPE_MASK;
-        int reqId = ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
+        int reqId = getConnectionsManager().sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
             if (error == null) {
-                TLRPC.TL_messages_archivedStickers res = (TLRPC.TL_messages_archivedStickers) response;
-                sets.addAll(res.sets);
-                endReached = res.sets.size() != 15;
-                loadingStickers = false;
-                firstLoaded = true;
-                if (emptyView != null) {
-                    emptyView.showTextView();
-                }
-                updateRows();
+                processResponse((TLRPC.TL_messages_archivedStickers) response);
             }
         }));
-        ConnectionsManager.getInstance(currentAccount).bindRequestToGuid(reqId, classGuid);
+        getConnectionsManager().bindRequestToGuid(reqId, classGuid);
+    }
+
+    private void processResponse(TLRPC.TL_messages_archivedStickers res) {
+        if (!isInTransition) {
+            sets.addAll(res.sets);
+            endReached = res.sets.size() != 15;
+            loadingStickers = false;
+            firstLoaded = true;
+            if (emptyView != null) {
+                emptyView.showTextView();
+            }
+            updateRows();
+            if (listAdapter != null) {
+                listAdapter.notifyDataSetChanged();
+            }
+        } else {
+            doOnTransitionEnd = () -> processResponse(res);
+        }
+    }
+
+    @Override
+    protected void onTransitionAnimationStart(boolean isOpen, boolean backward) {
+        isInTransition = true;
+    }
+
+    @Override
+    protected void onTransitionAnimationEnd(boolean isOpen, boolean backward) {
+        isInTransition = false;
+        if (doOnTransitionEnd != null) {
+            doOnTransitionEnd.run();
+            doOnTransitionEnd = null;
+        }
     }
 
     @Override
@@ -228,15 +259,41 @@ public class ArchivedStickersActivity extends BaseFragment implements Notificati
 
     @Override
     public void didReceivedNotification(int id, int account, Object... args) {
-        if (id == NotificationCenter.needReloadArchivedStickers) {
-            firstLoaded = false;
-            endReached = false;
-            sets.clear();
-            updateRows();
-            if (emptyView != null) {
-                emptyView.showProgress();
+        if (id == NotificationCenter.needAddArchivedStickers) {
+            final List<TLRPC.StickerSetCovered> newSets = new ArrayList<>((List<TLRPC.StickerSetCovered>) args[0]);
+            for (int i = newSets.size() - 1; i >= 0; i--) {
+                for (int j = 0, size2 = sets.size(); j < size2; j++) {
+                    if (sets.get(j).set.id == newSets.get(i).set.id) {
+                        newSets.remove(i);
+                        break;
+                    }
+                }
             }
-            getStickers();
+            if (!newSets.isEmpty()) {
+                sets.addAll(0, newSets);
+                updateRows();
+                if (listAdapter != null) {
+                    listAdapter.notifyItemRangeInserted(stickersStartRow, newSets.size());
+                }
+            }
+        } else if (id == NotificationCenter.stickersDidLoad) {
+            if (listView != null) {
+                for (int i = 0, size = listView.getChildCount(); i < size; i++) {
+                    final View view = listView.getChildAt(i);
+                    if (view instanceof ArchivedStickerSetCell) {
+                        final ArchivedStickerSetCell cell = (ArchivedStickerSetCell) view;
+                        final TLRPC.StickerSetCovered stickersSet = cell.getStickersSet();
+                        if (stickersSet != null) {
+                            final boolean isInstalled = MediaDataController.getInstance(currentAccount).isStickerPackInstalled(stickersSet.set.id);
+                            if (isInstalled) {
+                                installingStickerSets.remove(stickersSet.set.id);
+                                cell.setDrawProgress(false, true);
+                            }
+                            cell.setChecked(isInstalled, true, false);
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -256,11 +313,40 @@ public class ArchivedStickersActivity extends BaseFragment implements Notificati
         @Override
         public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
             if (getItemViewType(position) == 0) {
+                final int stickerSetPosition = position - stickersStartRow;
                 ArchivedStickerSetCell cell = (ArchivedStickerSetCell) holder.itemView;
-                cell.setTag(position);
-                TLRPC.StickerSetCovered stickerSet = sets.get(position);
-                cell.setStickersSet(stickerSet, position != sets.size() - 1);
-                cell.setChecked(MediaDataController.getInstance(currentAccount).isStickerPackInstalled(stickerSet.set.id));
+                TLRPC.StickerSetCovered stickerSet = sets.get(stickerSetPosition);
+                cell.setStickersSet(stickerSet, stickerSetPosition != sets.size() - 1);
+                final boolean isInstalled = MediaDataController.getInstance(currentAccount).isStickerPackInstalled(stickerSet.set.id);
+                cell.setChecked(isInstalled, false, false);
+                if (isInstalled) {
+                    installingStickerSets.remove(stickerSet.set.id);
+                    cell.setDrawProgress(false, false);
+                } else {
+                    cell.setDrawProgress(installingStickerSets.indexOfKey(stickerSet.set.id) >= 0, false);
+                }
+                cell.setOnCheckedChangeListener((c, isChecked) -> {
+                    if (isChecked) {
+                        c.setChecked(false, false, false);
+                        if (installingStickerSets.indexOfKey(stickerSet.set.id) >= 0) {
+                            return;
+                        }
+                        c.setDrawProgress(true, true);
+                        installingStickerSets.put(stickerSet.set.id, stickerSet);
+                    }
+                    MediaDataController.getInstance(currentAccount).toggleStickerSet(getParentActivity(), stickerSet, !isChecked ? 1 : 2, ArchivedStickersActivity.this, false, false);
+                });
+            } else if (getItemViewType(position) == 2) {
+                final TextInfoPrivacyCell cell = (TextInfoPrivacyCell) holder.itemView;
+                if (position == archiveInfoRow) {
+                    cell.setTopPadding(17);
+                    cell.setBottomPadding(10);
+                    cell.setText(LocaleController.getString("ArchivedStickersInfo", R.string.ArchivedStickersInfo));
+                } else {
+                    cell.setTopPadding(10);
+                    cell.setBottomPadding(17);
+                    cell.setText(null);
+                }
             }
         }
 
@@ -276,15 +362,6 @@ public class ArchivedStickersActivity extends BaseFragment implements Notificati
                 case 0:
                     view = new ArchivedStickerSetCell(mContext, true);
                     view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
-                    ((ArchivedStickerSetCell) view).setOnCheckClick((buttonView, isChecked) -> {
-                        ArchivedStickerSetCell cell = (ArchivedStickerSetCell) buttonView.getParent();
-                        int num = (Integer) cell.getTag();
-                        if (num >= sets.size()) {
-                            return;
-                        }
-                        TLRPC.StickerSetCovered stickerSet = sets.get(num);
-                        MediaDataController.getInstance(currentAccount).removeStickersSet(getParentActivity(), stickerSet.set, !isChecked ? 1 : 2, ArchivedStickersActivity.this, false);
-                    });
                     break;
                 case 1:
                     view = new LoadingCell(mContext);
@@ -305,7 +382,7 @@ public class ArchivedStickersActivity extends BaseFragment implements Notificati
                 return 0;
             } else if (i == stickersLoadingRow) {
                 return 1;
-            } else if (i == stickersShadowRow) {
+            } else if (i == stickersShadowRow || i == archiveInfoRow) {
                 return 2;
             }
             return 0;
@@ -335,8 +412,15 @@ public class ArchivedStickersActivity extends BaseFragment implements Notificati
 
                 new ThemeDescription(listView, 0, new Class[]{ArchivedStickerSetCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlackText),
                 new ThemeDescription(listView, 0, new Class[]{ArchivedStickerSetCell.class}, new String[]{"valueTextView"}, null, null, null, Theme.key_windowBackgroundWhiteGrayText2),
-                new ThemeDescription(listView, 0, new Class[]{ArchivedStickerSetCell.class}, new String[]{"checkBox"}, null, null, null, Theme.key_switchTrack),
-                new ThemeDescription(listView, 0, new Class[]{ArchivedStickerSetCell.class}, new String[]{"checkBox"}, null, null, null, Theme.key_switchTrackChecked)
+
+                new ThemeDescription(listView, ThemeDescription.FLAG_BACKGROUNDFILTER, new Class[]{TextInfoPrivacyCell.class}, null, null, null, Theme.key_windowBackgroundGrayShadow),
+                new ThemeDescription(listView, 0, new Class[]{TextInfoPrivacyCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteGrayText4),
+
+                new ThemeDescription(listView, 0, new Class[]{ArchivedStickerSetCell.class}, new String[]{"deleteButton"}, null, null, null, Theme.key_featuredStickers_removeButtonText),
+                new ThemeDescription(listView, ThemeDescription.FLAG_USEBACKGROUNDDRAWABLE | ThemeDescription.FLAG_DRAWABLESELECTEDSTATE, new Class[]{ArchivedStickerSetCell.class}, new String[]{"deleteButton"}, null, null, null, Theme.key_featuredStickers_removeButtonText),
+                new ThemeDescription(listView, 0, new Class[]{ArchivedStickerSetCell.class}, new String[]{"addButton"}, null, null, null, Theme.key_featuredStickers_buttonText),
+                new ThemeDescription(listView, ThemeDescription.FLAG_USEBACKGROUNDDRAWABLE, new Class[]{ArchivedStickerSetCell.class}, new String[]{"addButton"}, null, null, null, Theme.key_featuredStickers_addButton),
+                new ThemeDescription(listView, ThemeDescription.FLAG_USEBACKGROUNDDRAWABLE | ThemeDescription.FLAG_DRAWABLESELECTEDSTATE, new Class[]{ArchivedStickerSetCell.class}, new String[]{"addButton"}, null, null, null, Theme.key_featuredStickers_addButtonPressed),
         };
     }
 }

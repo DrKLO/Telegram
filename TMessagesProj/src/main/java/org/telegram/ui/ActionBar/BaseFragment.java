@@ -237,7 +237,8 @@ public class BaseFragment {
     }
 
     public void onFragmentDestroy() {
-        ConnectionsManager.getInstance(currentAccount).cancelRequestsForGuid(classGuid);
+        getConnectionsManager().cancelRequestsForGuid(classGuid);
+        getMessagesStorage().cancelTasksForGuid(classGuid);
         isFinished = true;
         if (actionBar != null) {
             actionBar.setEnabled(false);
@@ -509,7 +510,7 @@ public class BaseFragment {
         return getAccountInstance().getNotificationsController();
     }
 
-    protected MessagesStorage getMessagesStorage() {
+    public MessagesStorage getMessagesStorage() {
         return getAccountInstance().getMessagesStorage();
     }
 

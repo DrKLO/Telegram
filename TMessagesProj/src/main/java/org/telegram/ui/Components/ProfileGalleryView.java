@@ -23,7 +23,6 @@ import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
-import org.telegram.ui.CircularViewPager;
 import org.telegram.ui.ProfileActivity;
 
 import java.util.ArrayList;
@@ -33,16 +32,18 @@ import androidx.recyclerview.widget.RecyclerView;
 
 public class ProfileGalleryView extends CircularViewPager implements NotificationCenter.NotificationCenterDelegate {
 
+    private final Callback callback;
     private final PointF downPoint = new PointF();
     private final int touchSlop;
     private boolean isScrollingListView = true;
     private boolean isSwipingViewPager = true;
-    private final GestureDetector gestureDetector;
     private final RecyclerListView parentListView;
     private final ViewPagerAdapter adapter;
     private final int parentClassGuid;
     private final long dialogId;
+
     private boolean scrolledByUser;
+    private boolean isDownReleased;
 
     private int currentAccount = UserConfig.selectedAccount;
 
@@ -58,7 +59,12 @@ public class ProfileGalleryView extends CircularViewPager implements Notificatio
         private BackupImageView imageView;
     }
 
-    public ProfileGalleryView(Context context, long dialogId, ActionBar parentActionBar, RecyclerListView parentListView, ProfileActivity.AvatarImageView parentAvatarImageView, int parentClassGuid) {
+    public interface Callback {
+        void onDown(boolean left);
+        void onRelease();
+    }
+
+    public ProfileGalleryView(Context context, long dialogId, ActionBar parentActionBar, RecyclerListView parentListView, ProfileActivity.AvatarImageView parentAvatarImageView, int parentClassGuid, Callback callback) {
         super(context);
         setVisibility(View.GONE);
         setOverScrollMode(View.OVER_SCROLL_NEVER);
@@ -68,55 +74,8 @@ public class ProfileGalleryView extends CircularViewPager implements Notificatio
         this.parentListView = parentListView;
         this.parentClassGuid = parentClassGuid;
         setAdapter(adapter = new ViewPagerAdapter(context, parentAvatarImageView, parentActionBar));
-
-        touchSlop = ViewConfiguration.get(context).getScaledTouchSlop();
-        gestureDetector = new GestureDetector(context, new GestureDetector.OnGestureListener() {
-            @Override
-            public boolean onDown(MotionEvent e) {
-                return false;
-            }
-
-            @Override
-            public void onShowPress(MotionEvent e) {
-            }
-
-            @Override
-            public boolean onSingleTapUp(MotionEvent e) {
-                final int itemsCount = adapter.getCount();
-                int currentItem = getCurrentItem();
-                if (itemsCount > 1) {
-                    if (e.getX() > getWidth() / 3) {
-                        final int extraCount = adapter.getExtraCount();
-                        if (++currentItem >= itemsCount - extraCount) {
-                            currentItem = extraCount;
-                        }
-                    } else {
-                        final int extraCount = adapter.getExtraCount();
-                        if (--currentItem < extraCount) {
-                            currentItem = itemsCount - extraCount - 1;
-                        }
-                    }
-                    setCurrentItem(currentItem, false);
-                    return true;
-                } else {
-                    return false;
-                }
-            }
-
-            @Override
-            public boolean onScroll(MotionEvent e1, MotionEvent e2, float distanceX, float distanceY) {
-                return false;
-            }
-
-            @Override
-            public void onLongPress(MotionEvent e) {
-            }
-
-            @Override
-            public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
-                return false;
-            }
-        });
+        this.touchSlop = ViewConfiguration.get(context).getScaledTouchSlop();
+        this.callback = callback;
 
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.dialogPhotosLoaded);
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.fileDidLoad);
@@ -132,7 +91,6 @@ public class ProfileGalleryView extends CircularViewPager implements Notificatio
 
     @Override
     public boolean onTouchEvent(MotionEvent ev) {
-        gestureDetector.onTouchEvent(ev);
         if (parentListView.getScrollState() != RecyclerView.SCROLL_STATE_IDLE && !isScrollingListView && isSwipingViewPager) {
             isSwipingViewPager = false;
             final MotionEvent cancelEvent = MotionEvent.obtain(ev);
@@ -148,9 +106,37 @@ public class ProfileGalleryView extends CircularViewPager implements Notificatio
             isSwipingViewPager = true;
             scrolledByUser = true;
             downPoint.set(ev.getX(), ev.getY());
+            if (adapter.getCount() > 1) {
+                callback.onDown(ev.getX() < getWidth() / 3f);
+            }
+            isDownReleased = false;
+        } else if (action == MotionEvent.ACTION_UP) {
+            if (!isDownReleased) {
+                final int itemsCount = adapter.getCount();
+                int currentItem = getCurrentItem();
+                if (itemsCount > 1) {
+                    if (ev.getX() > getWidth() / 3f) {
+                        final int extraCount = adapter.getExtraCount();
+                        if (++currentItem >= itemsCount - extraCount) {
+                            currentItem = extraCount;
+                        }
+                    } else {
+                        final int extraCount = adapter.getExtraCount();
+                        if (--currentItem < extraCount) {
+                            currentItem = itemsCount - extraCount - 1;
+                        }
+                    }
+                    callback.onRelease();
+                    setCurrentItem(currentItem, false);
+                }
+            }
         } else if (action == MotionEvent.ACTION_MOVE) {
             final float dx = ev.getX() - downPoint.x;
             final float dy = ev.getY() - downPoint.y;
+            if (Math.abs(dy) >= touchSlop || Math.abs(dx) >= touchSlop) {
+                isDownReleased = true;
+                callback.onRelease();
+            }
             if (isSwipingViewPager && isScrollingListView) {
                 if (Math.abs(dy) >= touchSlop || Math.abs(dx) >= touchSlop) {
                     if (Math.abs(dy) > Math.abs(dx)) {

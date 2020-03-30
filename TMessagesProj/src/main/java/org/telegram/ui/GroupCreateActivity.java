@@ -118,7 +118,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
     private boolean addToGroup;
     private boolean searchWas;
     private boolean searching;
-    private boolean isGroup;
+    private int chatAddType;
     private SparseArray<GroupCreateSpan> selectedContacts = new SparseArray<>();
     private ArrayList<GroupCreateSpan> allSpans = new ArrayList<>();
     private GroupCreateSpan currentDeletingSpan;
@@ -275,9 +275,9 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
             currentAnimation.setDuration(150);
             addingSpan = span;
             animators.clear();
-            animators.add(ObjectAnimator.ofFloat(addingSpan, "scaleX", 0.01f, 1.0f));
-            animators.add(ObjectAnimator.ofFloat(addingSpan, "scaleY", 0.01f, 1.0f));
-            animators.add(ObjectAnimator.ofFloat(addingSpan, "alpha", 0.0f, 1.0f));
+            animators.add(ObjectAnimator.ofFloat(addingSpan, View.SCALE_X, 0.01f, 1.0f));
+            animators.add(ObjectAnimator.ofFloat(addingSpan, View.SCALE_Y, 0.01f, 1.0f));
+            animators.add(ObjectAnimator.ofFloat(addingSpan, View.ALPHA, 0.0f, 1.0f));
             addView(span);
         }
 
@@ -309,9 +309,9 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
             currentAnimation.setDuration(150);
             removingSpan = span;
             animators.clear();
-            animators.add(ObjectAnimator.ofFloat(removingSpan, "scaleX", 1.0f, 0.01f));
-            animators.add(ObjectAnimator.ofFloat(removingSpan, "scaleY", 1.0f, 0.01f));
-            animators.add(ObjectAnimator.ofFloat(removingSpan, "alpha", 1.0f, 0.0f));
+            animators.add(ObjectAnimator.ofFloat(removingSpan, View.SCALE_X, 1.0f, 0.01f));
+            animators.add(ObjectAnimator.ofFloat(removingSpan, View.SCALE_Y, 1.0f, 0.01f));
+            animators.add(ObjectAnimator.ofFloat(removingSpan, View.ALPHA, 1.0f, 0.0f));
             requestLayout();
         }
     }
@@ -326,7 +326,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
         isAlwaysShare = args.getBoolean("isAlwaysShare", false);
         isNeverShare = args.getBoolean("isNeverShare", false);
         addToGroup = args.getBoolean("addToGroup", false);
-        isGroup = args.getBoolean("isGroup", false);
+        chatAddType = args.getInt("chatAddType", 0);
         chatId = args.getInt("chatId");
         channelId = args.getInt("channelId");
         if (isAlwaysShare || isNeverShare || addToGroup) {
@@ -350,7 +350,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.contactsDidLoad);
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.updateInterfaces);
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.chatDidCreated);
-        AndroidUtilities.removeAdjustResize(getParentActivity(), classGuid);
+        AndroidUtilities.removeAdjustResize(getParentActivity(), classGuid, true);
     }
 
     @Override
@@ -387,13 +387,17 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
             if (addToGroup) {
                 actionBar.setTitle(LocaleController.getString("GroupAddMembers", R.string.GroupAddMembers));
             } else if (isAlwaysShare) {
-                if (isGroup) {
+                if (chatAddType == 2) {
+                    actionBar.setTitle(LocaleController.getString("FilterAlwaysShow", R.string.FilterAlwaysShow));
+                } else if (chatAddType == 1) {
                     actionBar.setTitle(LocaleController.getString("AlwaysAllow", R.string.AlwaysAllow));
                 } else {
                     actionBar.setTitle(LocaleController.getString("AlwaysShareWithTitle", R.string.AlwaysShareWithTitle));
                 }
             } else if (isNeverShare) {
-                if (isGroup) {
+                if (chatAddType == 2) {
+                    actionBar.setTitle(LocaleController.getString("FilterNeverShow", R.string.FilterNeverShow));
+                } else if (chatAddType == 1) {
                     actionBar.setTitle(LocaleController.getString("NeverAllow", R.string.NeverAllow));
                 } else {
                     actionBar.setTitle(LocaleController.getString("NeverShareWithTitle", R.string.NeverShareWithTitle));
@@ -629,7 +633,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
                 presentFragment(new GroupInviteActivity(id));
             } else if (view instanceof GroupCreateUserCell) {
                 GroupCreateUserCell cell = (GroupCreateUserCell) view;
-                TLObject object = cell.getObject();
+                Object object = cell.getObject();
                 int id;
                 if (object instanceof TLRPC.User) {
                     id = ((TLRPC.User) object).id;
@@ -771,7 +775,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
         if (editText != null) {
             editText.requestFocus();
         }
-        AndroidUtilities.requestAdjustResize(getParentActivity(), classGuid);
+        AndroidUtilities.requestAdjustResize(getParentActivity(), classGuid, true);
     }
 
     @Override
@@ -817,6 +821,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
         }
     }
 
+    @Keep
     public int getContainerHeight() {
         return containerHeight;
     }
@@ -827,7 +832,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
             View child = listView.getChildAt(a);
             if (child instanceof GroupCreateUserCell) {
                 GroupCreateUserCell cell = (GroupCreateUserCell) child;
-                TLObject object = cell.getObject();
+                Object object = cell.getObject();
                 int id;
                 if (object instanceof TLRPC.User) {
                     id = ((TLRPC.User) object).id;
@@ -994,9 +999,9 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
                     currentDoneButtonAnimation.cancel();
                 }
                 currentDoneButtonAnimation = new AnimatorSet();
-                currentDoneButtonAnimation.playTogether(ObjectAnimator.ofFloat(floatingButton, "scaleX", 0.0f),
-                        ObjectAnimator.ofFloat(floatingButton, "scaleY", 0.0f),
-                        ObjectAnimator.ofFloat(floatingButton, "alpha", 0.0f));
+                currentDoneButtonAnimation.playTogether(ObjectAnimator.ofFloat(floatingButton, View.SCALE_X, 0.0f),
+                        ObjectAnimator.ofFloat(floatingButton, View.SCALE_Y, 0.0f),
+                        ObjectAnimator.ofFloat(floatingButton, View.ALPHA, 0.0f));
                 currentDoneButtonAnimation.addListener(new AnimatorListenerAdapter() {
                     @Override
                     public void onAnimationEnd(Animator animation) {
@@ -1012,9 +1017,9 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
                 }
                 currentDoneButtonAnimation = new AnimatorSet();
                 floatingButton.setVisibility(View.VISIBLE);
-                currentDoneButtonAnimation.playTogether(ObjectAnimator.ofFloat(floatingButton, "scaleX", 1.0f),
-                        ObjectAnimator.ofFloat(floatingButton, "scaleY", 1.0f),
-                        ObjectAnimator.ofFloat(floatingButton, "alpha", 1.0f));
+                currentDoneButtonAnimation.playTogether(ObjectAnimator.ofFloat(floatingButton, View.SCALE_X, 1.0f),
+                        ObjectAnimator.ofFloat(floatingButton, View.SCALE_Y, 1.0f),
+                        ObjectAnimator.ofFloat(floatingButton, View.ALPHA, 1.0f));
                 currentDoneButtonAnimation.setDuration(180);
                 currentDoneButtonAnimation.start();
                 doneButtonVisible = true;
@@ -1321,7 +1326,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
         public boolean isEnabled(RecyclerView.ViewHolder holder) {
             if (ignoreUsers != null && holder.itemView instanceof GroupCreateUserCell) {
                 GroupCreateUserCell cell = (GroupCreateUserCell) holder.itemView;
-                TLObject object = cell.getObject();
+                Object object = cell.getObject();
                 if (object instanceof TLRPC.User) {
                     TLRPC.User user = (TLRPC.User) object;
                     return ignoreUsers.indexOfKey(user.id) < 0;
@@ -1481,7 +1486,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
                 new ThemeDescription(listView, ThemeDescription.FLAG_TEXTCOLOR, new Class[]{GroupCreateUserCell.class}, new String[]{"checkBox"}, null, null, null, Theme.key_checkboxCheck),
                 new ThemeDescription(listView, ThemeDescription.FLAG_TEXTCOLOR | ThemeDescription.FLAG_CHECKTAG, new Class[]{GroupCreateUserCell.class}, new String[]{"statusTextView"}, null, null, null, Theme.key_windowBackgroundWhiteBlueText),
                 new ThemeDescription(listView, ThemeDescription.FLAG_TEXTCOLOR | ThemeDescription.FLAG_CHECKTAG, new Class[]{GroupCreateUserCell.class}, new String[]{"statusTextView"}, null, null, null, Theme.key_windowBackgroundWhiteGrayText),
-                new ThemeDescription(listView, 0, new Class[]{GroupCreateUserCell.class}, null, new Drawable[]{Theme.avatar_savedDrawable}, null, Theme.key_avatar_text),
+                new ThemeDescription(listView, 0, new Class[]{GroupCreateUserCell.class}, null, Theme.avatarDrawables, null, Theme.key_avatar_text),
                 new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundRed),
                 new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundOrange),
                 new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundViolet),
@@ -1490,7 +1495,6 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
                 new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundBlue),
                 new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundPink),
 
-                new ThemeDescription(spansContainer, 0, new Class[]{GroupCreateSpan.class}, null, null, null, Theme.key_avatar_backgroundGroupCreateSpanBlue),
                 new ThemeDescription(spansContainer, 0, new Class[]{GroupCreateSpan.class}, null, null, null, Theme.key_groupcreate_spanBackground),
                 new ThemeDescription(spansContainer, 0, new Class[]{GroupCreateSpan.class}, null, null, null, Theme.key_groupcreate_spanText),
                 new ThemeDescription(spansContainer, 0, new Class[]{GroupCreateSpan.class}, null, null, null, Theme.key_groupcreate_spanDelete),

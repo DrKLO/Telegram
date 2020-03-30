@@ -151,9 +151,6 @@ public class SharedPhotoVideoCell extends FrameLayout {
                     public void onAnimationEnd(Animator animation) {
                         if (animator != null && animator.equals(animation)) {
                             animator = null;
-                            if (!checked) {
-                                setBackgroundColor(0);
-                            }
                         }
                     }
 

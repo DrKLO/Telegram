@@ -31,9 +31,10 @@ import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserObject;
-import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
+
+import androidx.core.graphics.ColorUtils;
 
 public class GroupCreateSpan extends View {
 
@@ -54,7 +55,7 @@ public class GroupCreateSpan extends View {
     private long lastUpdateTime;
     private int[] colors = new int[8];
 
-    public GroupCreateSpan(Context context, TLObject object) {
+    public GroupCreateSpan(Context context, Object object) {
         this(context, object, null);
     }
 
@@ -62,7 +63,7 @@ public class GroupCreateSpan extends View {
         this(context, null, contact);
     }
 
-    public GroupCreateSpan(Context context, TLObject object, ContactsController.Contact contact) {
+    public GroupCreateSpan(Context context, Object object, ContactsController.Contact contact) {
         super(context);
 
         currentContact = contact;
@@ -76,13 +77,69 @@ public class GroupCreateSpan extends View {
 
         avatarDrawable = new AvatarDrawable();
         avatarDrawable.setTextSize(AndroidUtilities.dp(12));
-        if (object instanceof TLRPC.User) {
+        if (object instanceof String) {
+            imageLocation = null;
+            imageParent = null;
+            String str = (String) object;
+            avatarDrawable.setSmallSize(true);
+            switch (str) {
+                case "contacts":
+                    avatarDrawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_FILTER_CONTACTS);
+                    uid = Integer.MIN_VALUE;
+                    firstName = LocaleController.getString("FilterContacts", R.string.FilterContacts);
+                    break;
+                case "non_contacts":
+                    avatarDrawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_FILTER_NON_CONTACTS);
+                    uid = Integer.MIN_VALUE + 1;
+                    firstName = LocaleController.getString("FilterNonContacts", R.string.FilterNonContacts);
+                    break;
+                case "groups":
+                    avatarDrawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_FILTER_GROUPS);
+                    uid = Integer.MIN_VALUE + 2;
+                    firstName = LocaleController.getString("FilterGroups", R.string.FilterGroups);
+                    break;
+                case "channels":
+                    avatarDrawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_FILTER_CHANNELS);
+                    uid = Integer.MIN_VALUE + 3;
+                    firstName = LocaleController.getString("FilterChannels", R.string.FilterChannels);
+                    break;
+                case "bots":
+                    avatarDrawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_FILTER_BOTS);
+                    uid = Integer.MIN_VALUE + 4;
+                    firstName = LocaleController.getString("FilterBots", R.string.FilterBots);
+                    break;
+                case "muted":
+                    avatarDrawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_FILTER_MUTED);
+                    uid = Integer.MIN_VALUE + 5;
+                    firstName = LocaleController.getString("FilterMuted", R.string.FilterMuted);
+                    break;
+                case "read":
+                    avatarDrawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_FILTER_READ);
+                    uid = Integer.MIN_VALUE + 6;
+                    firstName = LocaleController.getString("FilterRead", R.string.FilterRead);
+                    break;
+                case "archived":
+                default:
+                    avatarDrawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_FILTER_ARCHIVED);
+                    uid = Integer.MIN_VALUE + 7;
+                    firstName = LocaleController.getString("FilterArchived", R.string.FilterArchived);
+                    break;
+            }
+        } else if (object instanceof TLRPC.User) {
             TLRPC.User user = (TLRPC.User) object;
-            avatarDrawable.setInfo(user);
             uid = user.id;
-            firstName = UserObject.getFirstName(user);
-            imageLocation = ImageLocation.getForUser(user, false);
-            imageParent = user;
+            if (UserObject.isUserSelf(user)) {
+                firstName = LocaleController.getString("SavedMessages", R.string.SavedMessages);
+                avatarDrawable.setSmallSize(true);
+                avatarDrawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_SAVED);
+                imageLocation = null;
+                imageParent = null;
+            } else {
+                avatarDrawable.setInfo(user);
+                firstName = UserObject.getFirstName(user);
+                imageLocation = ImageLocation.getForUser(user, false);
+                imageParent = user;
+            }
         } else if (object instanceof TLRPC.Chat) {
             TLRPC.Chat chat = (TLRPC.Chat) object;
             avatarDrawable.setInfo(chat);
@@ -126,9 +183,8 @@ public class GroupCreateSpan extends View {
     }
 
     public void updateColors() {
-        int color = Theme.getColor(Theme.key_avatar_backgroundGroupCreateSpanBlue);
+        int color = avatarDrawable.getColor();
         int back = Theme.getColor(Theme.key_groupcreate_spanBackground);
-        int text = Theme.getColor(Theme.key_groupcreate_spanText);
         int delete = Theme.getColor(Theme.key_groupcreate_spanDelete);
         colors[0] = Color.red(back);
         colors[1] = Color.red(color);
@@ -138,10 +194,8 @@ public class GroupCreateSpan extends View {
         colors[5] = Color.blue(color);
         colors[6] = Color.alpha(back);
         colors[7] = Color.alpha(color);
-        textPaint.setColor(text);
         deleteDrawable.setColorFilter(new PorterDuffColorFilter(delete, PorterDuff.Mode.MULTIPLY));
         backPaint.setColor(back);
-        avatarDrawable.setColor(AvatarDrawable.getColorForId(5));
     }
 
     public boolean isDeleting() {
@@ -223,6 +277,10 @@ public class GroupCreateSpan extends View {
             canvas.restore();
         }
         canvas.translate(textX + AndroidUtilities.dp(32 + 9), AndroidUtilities.dp(8));
+        int text = Theme.getColor(Theme.key_groupcreate_spanText);
+        int textSelected = Theme.getColor(Theme.key_avatar_text);
+        textPaint.setColor(ColorUtils.blendARGB(text, textSelected, progress));
+
         nameLayout.draw(canvas);
         canvas.restore();
     }

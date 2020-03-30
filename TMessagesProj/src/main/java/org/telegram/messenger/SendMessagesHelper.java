@@ -2416,7 +2416,10 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                 if (retryMessageObject.isForwarded()) {
                     type = 4;
                 } else {
-                    if (retryMessageObject.type == 0 || retryMessageObject.isAnimatedEmoji()) {
+                    if (retryMessageObject.isDice()) {
+                        type = 11;
+                        caption = "";
+                    } else if (retryMessageObject.type == 0 || retryMessageObject.isAnimatedEmoji()) {
                         if (retryMessageObject.messageOwner.media instanceof TLRPC.TL_messageMediaGame) {
                             //game = retryMessageObject.messageOwner.media.game;
                         } else {
@@ -2477,18 +2480,26 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                             webPage = null;
                         }
                     }
-                    if (webPage == null) {
-                        newMsg.media = new TLRPC.TL_messageMediaEmpty();
+                    if (webPage == null && (entities == null || entities.isEmpty()) && message.equals("\uD83C\uDFB2") && encryptedChat == null && scheduleDate == 0) {
+                        TLRPC.TL_messageMediaDice mediaDice = new TLRPC.TL_messageMediaDice();
+                        mediaDice.value = -1;
+                        newMsg.media = mediaDice;
+                        type = 11;
+                        caption = "";
                     } else {
-                        newMsg.media = new TLRPC.TL_messageMediaWebPage();
-                        newMsg.media.webpage = webPage;
+                        if (webPage == null) {
+                            newMsg.media = new TLRPC.TL_messageMediaEmpty();
+                        } else {
+                            newMsg.media = new TLRPC.TL_messageMediaWebPage();
+                            newMsg.media.webpage = webPage;
+                        }
+                        if (params != null && params.containsKey("query_id")) {
+                            type = 9;
+                        } else {
+                            type = 0;
+                        }
+                        newMsg.message = message;
                     }
-                    if (params != null && params.containsKey("query_id")) {
-                        type = 9;
-                    } else {
-                        type = 0;
-                    }
-                    newMsg.message = message;
                 } else if (poll != null) {
                     if (encryptedChat != null) {
                         newMsg = new TLRPC.TL_message_secret();
@@ -2886,7 +2897,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                         getMediaDataController().cleanDraft(peer, false);
                     }
                 }
-            } else if (type >= 1 && type <= 3 || type >= 5 && type <= 8 || type == 9 && encryptedChat != null || type == 10) {
+            } else if (type >= 1 && type <= 3 || type >= 5 && type <= 8 || type == 9 && encryptedChat != null || type == 10 || type == 11) {
                 if (encryptedChat == null) {
                     TLRPC.InputMedia inputMedia = null;
                     if (type == 1) {
@@ -3096,6 +3107,9 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                             }
                         }
                         inputMedia = inputMediaPoll;
+                    } else if (type == 11) {
+                        TLRPC.TL_inputMediaDice inputMediaDice = new TLRPC.TL_inputMediaDice();
+                        inputMedia = inputMediaDice;
                     }
 
                     TLObject reqSend;
@@ -3191,7 +3205,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                         } else {
                             performSendMessageRequest(reqSend, newMsgObj, originalPath, delayedMessage, parentObject, scheduleDate != 0);
                         }
-                    } else if (type == 10) {
+                    } else if (type == 10 || type == 11) {
                         performSendMessageRequest(reqSend, newMsgObj, originalPath, delayedMessage, parentObject, scheduleDate != 0);
                     }
                 } else {
@@ -4147,6 +4161,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                         if (id != null) {
                             TLRPC.Message message = newMessages.get(id);
                             if (message != null) {
+                                MessageObject.getDialogId(message);
                                 sentMessages.add(message);
                                 updateMediaPaths(msgObj, message, message.id, originalPath, false);
                                 existFlags = msgObj.getMediaExistanceFlags();
@@ -4403,6 +4418,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                                 }
                             }
                             if (message != null) {
+                                MessageObject.getDialogId(message);
                                 if (scheduledOnline && message.date != 0x7FFFFFFE) {
                                     currentSchedule = false;
                                 }
@@ -4505,7 +4521,11 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
             TLRPC.PhotoSize strippedOld = null;
             TLRPC.PhotoSize strippedNew = null;
             TLObject photoObject = null;
-            if (newMsg.media.photo != null) {
+            if (newMsgObj.isDice()) {
+                TLRPC.TL_messageMediaDice mediaDice = (TLRPC.TL_messageMediaDice) newMsg.media;
+                TLRPC.TL_messageMediaDice mediaDiceNew = (TLRPC.TL_messageMediaDice) sentMessage.media;
+                mediaDice.value = mediaDiceNew.value;
+            } else if (newMsg.media.photo != null) {
                 strippedOld = FileLoader.getClosestPhotoSizeWithSize(newMsg.media.photo.sizes, 40);
                 if (sentMessage != null && sentMessage.media != null && sentMessage.media.photo != null) {
                     strippedNew = FileLoader.getClosestPhotoSizeWithSize(sentMessage.media.photo.sizes, 40);

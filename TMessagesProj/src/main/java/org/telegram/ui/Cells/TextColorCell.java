@@ -16,6 +16,7 @@ import android.graphics.Paint;
 import androidx.annotation.Keep;
 import android.util.TypedValue;
 import android.view.Gravity;
+import android.view.View;
 import android.widget.FrameLayout;
 import android.widget.TextView;
 
@@ -35,8 +36,8 @@ public class TextColorCell extends FrameLayout {
 
     private static Paint colorPaint;
 
-    public final static int colors[] = new int[] {0xfff04444, 0xffff8e01, 0xffffce1f, 0xff79d660, 0xff40edf6, 0xff46beff, 0xffd274f9, 0xffff4f96, 0xffbbbbbb};
-    public final static int colorsToSave[] = new int[] {0xffff0000, 0xffff8e01, 0xffffff00, 0xff00ff00, 0xff00ffff, 0xff0000ff, 0xffd274f9, 0xffff00ff, 0xffffffff};
+    public final static int[] colors = new int[] {0xfff04444, 0xffff8e01, 0xffffce1f, 0xff79d660, 0xff40edf6, 0xff46beff, 0xffd274f9, 0xffff4f96, 0xffbbbbbb};
+    public final static int[] colorsToSave = new int[] {0xffff0000, 0xffff8e01, 0xffffff00, 0xff00ff00, 0xff00ffff, 0xff0000ff, 0xffd274f9, 0xffff00ff, 0xffffffff};
 
     public TextColorCell(Context context) {
         super(context);
@@ -62,6 +63,7 @@ public class TextColorCell extends FrameLayout {
         invalidate();
     }
 
+    @Keep
     @Override
     public float getAlpha() {
         return alpha;
@@ -83,8 +85,8 @@ public class TextColorCell extends FrameLayout {
     public void setEnabled(boolean value, ArrayList<Animator> animators) {
         super.setEnabled(value);
         if (animators != null) {
-            animators.add(ObjectAnimator.ofFloat(textView, "alpha", value ? 1.0f : 0.5f));
-            animators.add(ObjectAnimator.ofFloat(this, "alpha", value ? 1.0f : 0.5f));
+            animators.add(ObjectAnimator.ofFloat(textView, View.ALPHA, value ? 1.0f : 0.5f));
+            animators.add(ObjectAnimator.ofFloat(this, View.ALPHA, value ? 1.0f : 0.5f));
         } else {
             textView.setAlpha(value ? 1.0f : 0.5f);
             setAlpha(value ? 1.0f : 0.5f);

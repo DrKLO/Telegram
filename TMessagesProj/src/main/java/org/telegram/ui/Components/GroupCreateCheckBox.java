@@ -97,6 +97,7 @@ public class GroupCreateCheckBox extends View {
         invalidate();
     }
 
+    @Keep
     public float getProgress() {
         return progress;
     }

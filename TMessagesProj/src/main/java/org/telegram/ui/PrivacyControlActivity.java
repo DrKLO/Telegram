@@ -386,7 +386,7 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
                 if (createFromArray.isEmpty()) {
                     Bundle args = new Bundle();
                     args.putBoolean(position == neverShareRow ? "isNeverShare" : "isAlwaysShare", true);
-                    args.putBoolean("isGroup", rulesType != PRIVACY_RULES_TYPE_LASTSEEN);
+                    args.putInt("chatAddType", rulesType != PRIVACY_RULES_TYPE_LASTSEEN ? 1 : 0);
                     GroupCreateActivity fragment = new GroupCreateActivity(args);
                     fragment.setDelegate(ids -> {
                         if (position == neverShareRow) {
@@ -405,7 +405,7 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
                     });
                     presentFragment(fragment);
                 } else {
-                    PrivacyUsersActivity fragment = new PrivacyUsersActivity(createFromArray, rulesType != PRIVACY_RULES_TYPE_LASTSEEN, position == alwaysShareRow);
+                    PrivacyUsersActivity fragment = new PrivacyUsersActivity(PrivacyUsersActivity.TYPE_PRIVACY, createFromArray, rulesType != PRIVACY_RULES_TYPE_LASTSEEN, position == alwaysShareRow);
                     fragment.setDelegate((ids, added) -> {
                         if (position == neverShareRow) {
                             currentMinus = ids;

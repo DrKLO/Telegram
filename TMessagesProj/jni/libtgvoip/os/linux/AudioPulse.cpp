@@ -193,7 +193,7 @@ AudioPulse::AudioPulse(std::string inputDevice, std::string outputDevice){
 	isLocked=false;
 
 	output=new AudioOutputPulse(context, mainloop, outputDevice);
-	input=new AudioInputPulse(context, mainloop, outputDevice);
+	input=new AudioInputPulse(context, mainloop, inputDevice);
 }
 
 AudioPulse::~AudioPulse(){

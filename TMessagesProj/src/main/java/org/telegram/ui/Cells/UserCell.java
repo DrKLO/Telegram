@@ -27,7 +27,6 @@ import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.UserObject;
 import org.telegram.messenger.R;
 import org.telegram.tgnet.ConnectionsManager;
-import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.messenger.UserConfig;
 import org.telegram.ui.ActionBar.Theme;
@@ -51,13 +50,15 @@ public class UserCell extends FrameLayout {
     private TextView addButton;
 
     private AvatarDrawable avatarDrawable;
-    private TLObject currentObject;
+    private Object currentObject;
     private TLRPC.EncryptedChat encryptedChat;
 
     private CharSequence currentName;
     private CharSequence currentStatus;
     private int currentId;
     private int currentDrawable;
+
+    private boolean selfAsSavedMessages;
 
     private String lastName;
     private int lastStatus;
@@ -141,12 +142,12 @@ public class UserCell extends FrameLayout {
     }
 
     public void setAvatarPadding(int padding) {
-        FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) avatarImageView.getLayoutParams();
+        LayoutParams layoutParams = (LayoutParams) avatarImageView.getLayoutParams();
         layoutParams.leftMargin = AndroidUtilities.dp(LocaleController.isRTL ? 0 : 7 + padding);
         layoutParams.rightMargin = AndroidUtilities.dp(LocaleController.isRTL ? 7 + padding : 0);
         avatarImageView.setLayoutParams(layoutParams);
 
-        layoutParams = (FrameLayout.LayoutParams) nameTextView.getLayoutParams();
+        layoutParams = (LayoutParams) nameTextView.getLayoutParams();
         layoutParams.leftMargin = AndroidUtilities.dp(LocaleController.isRTL ? 28 + (checkBoxBig != null ? 18 : 0) : (64 + padding));
         layoutParams.rightMargin = AndroidUtilities.dp(LocaleController.isRTL ? (64 + padding) : 28 + (checkBoxBig != null ? 18 : 0));
 
@@ -183,15 +184,19 @@ public class UserCell extends FrameLayout {
         }
     }
 
-    public void setData(TLObject object, CharSequence name, CharSequence status, int resId) {
+    public CharSequence getName() {
+        return nameTextView.getText();
+    }
+
+    public void setData(Object object, CharSequence name, CharSequence status, int resId) {
         setData(object, null, name, status, resId, false);
     }
 
-    public void setData(TLObject object, CharSequence name, CharSequence status, int resId, boolean divider) {
+    public void setData(Object object, CharSequence name, CharSequence status, int resId, boolean divider) {
         setData(object, null, name, status, resId, divider);
     }
 
-    public void setData(TLObject object, TLRPC.EncryptedChat ec, CharSequence name, CharSequence status, int resId, boolean divider) {
+    public void setData(Object object, TLRPC.EncryptedChat ec, CharSequence name, CharSequence status, int resId, boolean divider) {
         if (object == null && name == null && status == null) {
             currentStatus = null;
             currentName = null;
@@ -209,6 +214,10 @@ public class UserCell extends FrameLayout {
         needDivider = divider;
         setWillNotDraw(!needDivider);
         update(0);
+    }
+
+    public Object getCurrentObject() {
+        return currentObject;
     }
 
     public void setException(NotificationsSettingsActivity.NotificationException exception, CharSequence name, boolean divider) {
@@ -385,19 +394,61 @@ public class UserCell extends FrameLayout {
             }
         }
 
-        if (currentUser != null) {
-            avatarDrawable.setInfo(currentUser);
-            if (currentUser.status != null) {
-                lastStatus = currentUser.status.expires;
-            } else {
-                lastStatus = 0;
+        if (currentObject instanceof String) {
+            ((LayoutParams) nameTextView.getLayoutParams()).topMargin = AndroidUtilities.dp(19);
+            String str = (String) currentObject;
+            switch (str) {
+                case "contacts":
+                    avatarDrawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_FILTER_CONTACTS);
+                    break;
+                case "non_contacts":
+                    avatarDrawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_FILTER_NON_CONTACTS);
+                    break;
+                case "groups":
+                    avatarDrawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_FILTER_GROUPS);
+                    break;
+                case "channels":
+                    avatarDrawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_FILTER_CHANNELS);
+                    break;
+                case "bots":
+                    avatarDrawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_FILTER_BOTS);
+                    break;
+                case "muted":
+                    avatarDrawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_FILTER_MUTED);
+                    break;
+                case "read":
+                    avatarDrawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_FILTER_READ);
+                    break;
+                case "archived":
+                    avatarDrawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_FILTER_ARCHIVED);
+                    break;
             }
-        } else if (currentChat != null) {
-            avatarDrawable.setInfo(currentChat);
-        } else if (currentName != null) {
-            avatarDrawable.setInfo(currentId, currentName.toString(), null);
+            avatarImageView.setImage(null, "50_50", avatarDrawable);
+            currentStatus = "";
         } else {
-            avatarDrawable.setInfo(currentId, "#", null);
+            ((LayoutParams) nameTextView.getLayoutParams()).topMargin = AndroidUtilities.dp(10);
+            if (currentUser != null) {
+                if (selfAsSavedMessages && UserObject.isUserSelf(currentUser)) {
+                    nameTextView.setText(LocaleController.getString("SavedMessages", R.string.SavedMessages), true);
+                    statusTextView.setText(null);
+                    avatarDrawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_SAVED);
+                    avatarImageView.setImage(null, "50_50", avatarDrawable, currentUser);
+                    ((LayoutParams) nameTextView.getLayoutParams()).topMargin = AndroidUtilities.dp(19);
+                    return;
+                }
+                avatarDrawable.setInfo(currentUser);
+                if (currentUser.status != null) {
+                    lastStatus = currentUser.status.expires;
+                } else {
+                    lastStatus = 0;
+                }
+            } else if (currentChat != null) {
+                avatarDrawable.setInfo(currentChat);
+            } else if (currentName != null) {
+                avatarDrawable.setInfo(currentId, currentName.toString(), null);
+            } else {
+                avatarDrawable.setInfo(currentId, "#", null);
+            }
         }
 
         if (currentName != null) {
@@ -448,6 +499,10 @@ public class UserCell extends FrameLayout {
         } else {
             avatarImageView.setImageDrawable(avatarDrawable);
         }
+    }
+
+    public void setSelfAsSavedMessages(boolean value) {
+        selfAsSavedMessages = value;
     }
 
     @Override

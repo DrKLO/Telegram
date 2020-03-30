@@ -19,8 +19,6 @@ import android.graphics.Paint;
 import android.graphics.PixelFormat;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
-import android.graphics.Rect;
-import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.text.TextUtils;
 import android.util.TypedValue;
@@ -42,17 +40,17 @@ import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.ProgressButton;
 
 public class FeaturedStickerSetCell extends FrameLayout {
 
     private TextView textView;
     private TextView valueTextView;
     private BackupImageView imageView;
-    private TextView addButton;
+    private ProgressButton addButton;
     private ImageView checkImage;
     private boolean needDivider;
     private TLRPC.StickerSetCovered stickersSet;
-    private Rect rect = new Rect();
     private AnimatorSet currentAnimation;
     private boolean wasLayout;
 
@@ -60,21 +58,8 @@ public class FeaturedStickerSetCell extends FrameLayout {
 
     private int currentAccount = UserConfig.selectedAccount;
 
-    private boolean drawProgress;
-    private float progressAlpha;
-    private RectF progressRect = new RectF();
-    private long lastUpdateTime;
-    private Paint progressPaint;
-    private int angle;
-
     public FeaturedStickerSetCell(Context context) {
         super(context);
-
-        progressPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        progressPaint.setColor(Theme.getColor(Theme.key_featuredStickers_buttonProgress));
-        progressPaint.setStrokeCap(Paint.Cap.ROUND);
-        progressPaint.setStyle(Paint.Style.STROKE);
-        progressPaint.setStrokeWidth(AndroidUtilities.dp(2));
 
         textView = new TextView(context);
         textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
@@ -101,51 +86,12 @@ public class FeaturedStickerSetCell extends FrameLayout {
         imageView.setLayerNum(1);
         addView(imageView, LayoutHelper.createFrame(48, 48, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 0 : 12, 8, LocaleController.isRTL ? 12 : 0, 0));
 
-        addButton = new TextView(context) {
-            @Override
-            protected void onDraw(Canvas canvas) {
-                super.onDraw(canvas);
-                if (drawProgress || !drawProgress && progressAlpha != 0) {
-                    progressPaint.setAlpha(Math.min(255, (int) (progressAlpha * 255)));
-                    int x = getMeasuredWidth() - AndroidUtilities.dp(11);
-                    progressRect.set(x, AndroidUtilities.dp(3), x + AndroidUtilities.dp(8), AndroidUtilities.dp(8 + 3));
-                    canvas.drawArc(progressRect, angle, 220, false, progressPaint);
-                    invalidate((int) progressRect.left - AndroidUtilities.dp(2), (int) progressRect.top - AndroidUtilities.dp(2), (int) progressRect.right + AndroidUtilities.dp(2), (int) progressRect.bottom + AndroidUtilities.dp(2));
-                    long newTime = System.currentTimeMillis();
-                    if (Math.abs(lastUpdateTime - System.currentTimeMillis()) < 1000) {
-                        long delta = (newTime - lastUpdateTime);
-                        float dt = 360 * delta / 2000.0f;
-                        angle += dt;
-                        angle -= 360 * (angle / 360);
-                        if (drawProgress) {
-                            if (progressAlpha < 1.0f) {
-                                progressAlpha += delta / 200.0f;
-                                if (progressAlpha > 1.0f) {
-                                    progressAlpha = 1.0f;
-                                }
-                            }
-                        } else {
-                            if (progressAlpha > 0.0f) {
-                                progressAlpha -= delta / 200.0f;
-                                if (progressAlpha < 0.0f) {
-                                    progressAlpha = 0.0f;
-                                }
-                            }
-                        }
-                    }
-                    lastUpdateTime = newTime;
-                    invalidate();
-                }
-            }
-        };
-        addButton.setGravity(Gravity.CENTER);
-        addButton.setTextColor(Theme.getColor(Theme.key_featuredStickers_buttonText));
-        addButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-        addButton.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
-        addButton.setBackgroundDrawable(Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(4), Theme.getColor(Theme.key_featuredStickers_addButton), Theme.getColor(Theme.key_featuredStickers_addButtonPressed)));
+        addButton = new ProgressButton(context);
         addButton.setText(LocaleController.getString("Add", R.string.Add));
-        addButton.setPadding(AndroidUtilities.dp(17), 0, AndroidUtilities.dp(17), 0);
-        addView(addButton, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 28, Gravity.TOP | (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT), LocaleController.isRTL ? 14 : 0, 18, LocaleController.isRTL ? 0 : 14, 0));
+        addButton.setTextColor(Theme.getColor(Theme.key_featuredStickers_buttonText));
+        addButton.setProgressColor(Theme.getColor(Theme.key_featuredStickers_buttonProgress));
+        addButton.setBackgroundRoundRect(Theme.getColor(Theme.key_featuredStickers_addButton), Theme.getColor(Theme.key_featuredStickers_addButtonPressed));
+        addView(addButton, LayoutHelper.createFrameRelatively(LayoutHelper.WRAP_CONTENT, 28, Gravity.TOP | Gravity.END, 0, 18, 14, 0));
 
         checkImage = new ImageView(context);
         checkImage.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_featuredStickers_addedIcon), PorterDuff.Mode.MULTIPLY));
@@ -179,12 +125,7 @@ public class FeaturedStickerSetCell extends FrameLayout {
         boolean sameSet = set == stickersSet && wasLayout;
         needDivider = divider;
         stickersSet = set;
-        lastUpdateTime = System.currentTimeMillis();
         setWillNotDraw(!needDivider);
-        if (currentAnimation != null) {
-            currentAnimation.cancel();
-            currentAnimation = null;
-        }
 
         textView.setText(stickersSet.set.title);
         if (unread) {
@@ -272,6 +213,9 @@ public class FeaturedStickerSetCell extends FrameLayout {
                 if (!wasInstalled) {
                     checkImage.setVisibility(VISIBLE);
                     addButton.setClickable(false);
+                    if (currentAnimation != null) {
+                        currentAnimation.cancel();
+                    }
                     currentAnimation = new AnimatorSet();
                     currentAnimation.setDuration(200);
                     currentAnimation.playTogether(ObjectAnimator.ofFloat(addButton, "alpha", 1.0f, 0.0f),
@@ -301,6 +245,9 @@ public class FeaturedStickerSetCell extends FrameLayout {
                 if (wasInstalled) {
                     addButton.setVisibility(VISIBLE);
                     addButton.setClickable(true);
+                    if (currentAnimation != null) {
+                        currentAnimation.cancel();
+                    }
                     currentAnimation = new AnimatorSet();
                     currentAnimation.setDuration(200);
                     currentAnimation.playTogether(ObjectAnimator.ofFloat(checkImage, "alpha", 1.0f, 0.0f),
@@ -328,6 +275,9 @@ public class FeaturedStickerSetCell extends FrameLayout {
                 }
             }
         } else {
+            if (currentAnimation != null) {
+                currentAnimation.cancel();
+            }
             if (isInstalled = MediaDataController.getInstance(currentAccount).isStickerPackInstalled(set.set.id)) {
                 addButton.setVisibility(INVISIBLE);
                 addButton.setClickable(false);
@@ -354,10 +304,8 @@ public class FeaturedStickerSetCell extends FrameLayout {
         addButton.setOnClickListener(onClickListener);
     }
 
-    public void setDrawProgress(boolean value) {
-        drawProgress = value;
-        lastUpdateTime = System.currentTimeMillis();
-        addButton.invalidate();
+    public void setDrawProgress(boolean value, boolean animated) {
+        addButton.setDrawProgress(value, animated);
     }
 
     public boolean isInstalled() {

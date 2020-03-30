@@ -14,10 +14,7 @@ import android.animation.AnimatorListenerAdapter;
 import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
 import android.annotation.SuppressLint;
-import android.app.Activity;
 import android.app.Dialog;
-import android.app.FragmentManager;
-import android.app.FragmentTransaction;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -46,7 +43,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewParent;
 import android.view.WindowManager;
-import android.view.animation.DecelerateInterpolator;
 import android.view.inputmethod.EditorInfo;
 import android.webkit.CookieManager;
 import android.webkit.JavascriptInterface;
@@ -61,31 +57,13 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.android.gms.common.api.GoogleApiClient;
-import com.google.android.gms.wallet.Cart;
-import com.google.android.gms.wallet.FullWallet;
-import com.google.android.gms.wallet.FullWalletRequest;
-import com.google.android.gms.wallet.LineItem;
-import com.google.android.gms.wallet.MaskedWallet;
-import com.google.android.gms.wallet.MaskedWalletRequest;
-import com.google.android.gms.wallet.PaymentMethodTokenizationParameters;
-import com.google.android.gms.wallet.PaymentMethodTokenizationType;
-import com.google.android.gms.wallet.Wallet;
-import com.google.android.gms.wallet.WalletConstants;
-import com.google.android.gms.wallet.fragment.WalletFragment;
-import com.google.android.gms.wallet.fragment.WalletFragmentInitParams;
-import com.google.android.gms.wallet.fragment.WalletFragmentMode;
-import com.google.android.gms.wallet.fragment.WalletFragmentOptions;
-import com.google.android.gms.wallet.fragment.WalletFragmentStyle;
 import com.stripe.android.Stripe;
 import com.stripe.android.TokenCallback;
 import com.stripe.android.exception.APIConnectionException;
 import com.stripe.android.exception.APIException;
 import com.stripe.android.model.Card;
 import com.stripe.android.model.Token;
-import com.stripe.android.net.StripeApiHandler;
-import com.stripe.android.net.TokenParser;
 
-import org.json.JSONException;
 import org.json.JSONObject;
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.messenger.AndroidUtilities;
@@ -2323,7 +2301,7 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
     }
 
     private void showAndroidPay() {
-        if (getParentActivity() == null || androidPayContainer == null) {
+        /*if (getParentActivity() == null || androidPayContainer == null) {
             return;
         }
 
@@ -2390,12 +2368,12 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
         animatorSet.playTogether(ObjectAnimator.ofFloat(androidPayContainer, "alpha", 0.0f, 1.0f));
         animatorSet.setInterpolator(new DecelerateInterpolator());
         animatorSet.setDuration(180);
-        animatorSet.start();
+        animatorSet.start();*/
     }
 
     @Override
     public void onActivityResultFragment(int requestCode, int resultCode, Intent data) {
-        if (requestCode == LOAD_MASKED_WALLET_REQUEST_CODE) {
+        /*if (requestCode == LOAD_MASKED_WALLET_REQUEST_CODE) {
             if (resultCode == Activity.RESULT_OK) {
                 showEditDoneProgress(true, true);
                 setDonePressed(true);
@@ -2462,7 +2440,7 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
                 showEditDoneProgress(true, false);
                 setDonePressed(false);
             }
-        }
+        }*/
     }
 
     private void goToNextStep() {

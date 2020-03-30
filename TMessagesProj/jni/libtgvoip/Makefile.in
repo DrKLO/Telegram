@@ -808,11 +808,11 @@ am__installdirs = "$(DESTDIR)$(libdir)" \
 	"$(DESTDIR)$(tgvoipincludedir)"
 LTLIBRARIES = $(lib_LTLIBRARIES)
 libtgvoip_la_LIBADD =
-am__libtgvoip_la_SOURCES_DIST = VoIPController.cpp Buffers.cpp \
-	CongestionControl.cpp EchoCanceller.cpp JitterBuffer.cpp \
-	logging.cpp MediaStreamItf.cpp MessageThread.cpp \
-	NetworkSocket.cpp OpusDecoder.cpp OpusEncoder.cpp \
-	PacketReassembler.cpp VoIPGroupController.cpp \
+am__libtgvoip_la_SOURCES_DIST = TgVoip.cpp VoIPController.cpp \
+	Buffers.cpp CongestionControl.cpp EchoCanceller.cpp \
+	JitterBuffer.cpp logging.cpp MediaStreamItf.cpp \
+	MessageThread.cpp NetworkSocket.cpp OpusDecoder.cpp \
+	OpusEncoder.cpp PacketReassembler.cpp VoIPGroupController.cpp \
 	VoIPServerConfig.cpp audio/AudioIO.cpp audio/AudioInput.cpp \
 	audio/AudioOutput.cpp audio/Resampler.cpp \
 	os/posix/NetworkSocketPosix.cpp video/VideoSource.cpp \
@@ -1421,16 +1421,16 @@ am__libtgvoip_la_SOURCES_DIST = VoIPController.cpp Buffers.cpp \
 	webrtc_dsp/common_audio/vad/include/webrtc_vad.h \
 	webrtc_dsp/common_audio/vad/vad_gmm.h \
 	webrtc_dsp/common_audio/vad/vad_sp.h \
-	webrtc_dsp/common_audio/vad/vad_filterbank.h VoIPController.h \
-	Buffers.h BlockingQueue.h PrivateDefines.h CongestionControl.h \
-	EchoCanceller.h JitterBuffer.h logging.h threading.h \
-	MediaStreamItf.h MessageThread.h NetworkSocket.h OpusDecoder.h \
-	OpusEncoder.h PacketReassembler.h VoIPServerConfig.h \
-	audio/AudioIO.h audio/AudioInput.h audio/AudioOutput.h \
-	audio/Resampler.h os/posix/NetworkSocketPosix.h \
-	video/VideoSource.h video/VideoRenderer.h \
-	video/ScreamCongestionController.h json11.hpp utils.h \
-	os/darwin/AudioInputAudioUnit.h \
+	webrtc_dsp/common_audio/vad/vad_filterbank.h TgVoip.h \
+	VoIPController.h Buffers.h BlockingQueue.h PrivateDefines.h \
+	CongestionControl.h EchoCanceller.h JitterBuffer.h logging.h \
+	threading.h MediaStreamItf.h MessageThread.h NetworkSocket.h \
+	OpusDecoder.h OpusEncoder.h PacketReassembler.h \
+	VoIPServerConfig.h audio/AudioIO.h audio/AudioInput.h \
+	audio/AudioOutput.h audio/Resampler.h \
+	os/posix/NetworkSocketPosix.h video/VideoSource.h \
+	video/VideoRenderer.h video/ScreamCongestionController.h \
+	json11.hpp utils.h os/darwin/AudioInputAudioUnit.h \
 	os/darwin/AudioOutputAudioUnit.h os/darwin/AudioUnitIO.h \
 	os/darwin/AudioInputAudioUnitOSX.h \
 	os/darwin/AudioOutputAudioUnitOSX.h os/darwin/DarwinSpecific.h \
@@ -1736,12 +1736,12 @@ am__dirstamp = $(am__leading_dot)dirstamp
 @ENABLE_DSP_TRUE@@TARGET_CPU_ARM_FALSE@am__objects_10 = webrtc_dsp/common_audio/signal_processing/complex_bit_reverse.lo \
 @ENABLE_DSP_TRUE@@TARGET_CPU_ARM_FALSE@	webrtc_dsp/common_audio/third_party/spl_sqrt_floor/spl_sqrt_floor.lo
 am__objects_11 =
-am__objects_12 = VoIPController.lo Buffers.lo CongestionControl.lo \
-	EchoCanceller.lo JitterBuffer.lo logging.lo MediaStreamItf.lo \
-	MessageThread.lo NetworkSocket.lo OpusDecoder.lo \
-	OpusEncoder.lo PacketReassembler.lo VoIPGroupController.lo \
-	VoIPServerConfig.lo audio/AudioIO.lo audio/AudioInput.lo \
-	audio/AudioOutput.lo audio/Resampler.lo \
+am__objects_12 = TgVoip.lo VoIPController.lo Buffers.lo \
+	CongestionControl.lo EchoCanceller.lo JitterBuffer.lo \
+	logging.lo MediaStreamItf.lo MessageThread.lo NetworkSocket.lo \
+	OpusDecoder.lo OpusEncoder.lo PacketReassembler.lo \
+	VoIPGroupController.lo VoIPServerConfig.lo audio/AudioIO.lo \
+	audio/AudioInput.lo audio/AudioOutput.lo audio/Resampler.lo \
 	os/posix/NetworkSocketPosix.lo video/VideoSource.lo \
 	video/VideoRenderer.lo video/ScreamCongestionController.lo \
 	json11.lo $(am__objects_1) $(am__objects_2) $(am__objects_3) \
@@ -1777,7 +1777,7 @@ am__depfiles_remade = ./$(DEPDIR)/Buffers.Plo \
 	./$(DEPDIR)/MediaStreamItf.Plo ./$(DEPDIR)/MessageThread.Plo \
 	./$(DEPDIR)/NetworkSocket.Plo ./$(DEPDIR)/OpusDecoder.Plo \
 	./$(DEPDIR)/OpusEncoder.Plo ./$(DEPDIR)/PacketReassembler.Plo \
-	./$(DEPDIR)/VoIPController.Plo \
+	./$(DEPDIR)/TgVoip.Plo ./$(DEPDIR)/VoIPController.Plo \
 	./$(DEPDIR)/VoIPGroupController.Plo \
 	./$(DEPDIR)/VoIPServerConfig.Plo ./$(DEPDIR)/json11.Plo \
 	./$(DEPDIR)/logging.Plo \
@@ -2153,8 +2153,8 @@ am__can_run_installinfo = \
     n|no|NO) false;; \
     *) (install-info --version) >/dev/null 2>&1;; \
   esac
-am__nobase_tgvoipinclude_HEADERS_DIST = VoIPController.h Buffers.h \
-	BlockingQueue.h PrivateDefines.h CongestionControl.h \
+am__nobase_tgvoipinclude_HEADERS_DIST = TgVoip.h VoIPController.h \
+	Buffers.h BlockingQueue.h PrivateDefines.h CongestionControl.h \
 	EchoCanceller.h JitterBuffer.h logging.h threading.h \
 	MediaStreamItf.h MessageThread.h NetworkSocket.h OpusDecoder.h \
 	OpusEncoder.h PacketReassembler.h VoIPServerConfig.h \
@@ -2347,7 +2347,7 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 lib_LTLIBRARIES = libtgvoip.la
-SRC = VoIPController.cpp Buffers.cpp CongestionControl.cpp \
+SRC = TgVoip.cpp VoIPController.cpp Buffers.cpp CongestionControl.cpp \
 	EchoCanceller.cpp JitterBuffer.cpp logging.cpp \
 	MediaStreamItf.cpp MessageThread.cpp NetworkSocket.cpp \
 	OpusDecoder.cpp OpusEncoder.cpp PacketReassembler.cpp \
@@ -2359,7 +2359,7 @@ SRC = VoIPController.cpp Buffers.cpp CongestionControl.cpp \
 	$(am__append_10) $(am__append_12) $(am__append_14) \
 	$(am__append_16) $(am__append_18) $(am__append_21) \
 	$(am__append_22) $(am__append_23)
-TGVOIP_HDRS = VoIPController.h Buffers.h BlockingQueue.h \
+TGVOIP_HDRS = TgVoip.h VoIPController.h Buffers.h BlockingQueue.h \
 	PrivateDefines.h CongestionControl.h EchoCanceller.h \
 	JitterBuffer.h logging.h threading.h MediaStreamItf.h \
 	MessageThread.h NetworkSocket.h OpusDecoder.h OpusEncoder.h \
@@ -3638,6 +3638,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/OpusDecoder.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/OpusEncoder.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/PacketReassembler.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/TgVoip.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/VoIPController.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/VoIPGroupController.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/VoIPServerConfig.Plo@am__quote@ # am--include-marker
@@ -4506,6 +4507,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/OpusDecoder.Plo
 	-rm -f ./$(DEPDIR)/OpusEncoder.Plo
 	-rm -f ./$(DEPDIR)/PacketReassembler.Plo
+	-rm -f ./$(DEPDIR)/TgVoip.Plo
 	-rm -f ./$(DEPDIR)/VoIPController.Plo
 	-rm -f ./$(DEPDIR)/VoIPGroupController.Plo
 	-rm -f ./$(DEPDIR)/VoIPServerConfig.Plo
@@ -4869,6 +4871,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/OpusDecoder.Plo
 	-rm -f ./$(DEPDIR)/OpusEncoder.Plo
 	-rm -f ./$(DEPDIR)/PacketReassembler.Plo
+	-rm -f ./$(DEPDIR)/TgVoip.Plo
 	-rm -f ./$(DEPDIR)/VoIPController.Plo
 	-rm -f ./$(DEPDIR)/VoIPGroupController.Plo
 	-rm -f ./$(DEPDIR)/VoIPServerConfig.Plo

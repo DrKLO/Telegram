@@ -9,11 +9,14 @@
 package org.telegram.ui.Cells;
 
 import android.content.Context;
+import android.graphics.drawable.ColorDrawable;
+import android.graphics.drawable.Drawable;
 import android.view.View;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Components.CombinedDrawable;
 
 public class ShadowSectionCell extends View {
 
@@ -26,6 +29,16 @@ public class ShadowSectionCell extends View {
     public ShadowSectionCell(Context context, int s) {
         super(context);
         setBackgroundDrawable(Theme.getThemedDrawable(context, R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow));
+        size = s;
+    }
+
+    public ShadowSectionCell(Context context, int s, int backgroundColor) {
+        super(context);
+        Drawable shadowDrawable = Theme.getThemedDrawable(context, R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow);
+        Drawable background = new ColorDrawable(backgroundColor);
+        CombinedDrawable combinedDrawable = new CombinedDrawable(background, shadowDrawable, 0, 0);
+        combinedDrawable.setFullsize(true);
+        setBackgroundDrawable(combinedDrawable);
         size = s;
     }
 

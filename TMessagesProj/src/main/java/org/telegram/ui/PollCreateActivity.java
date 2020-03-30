@@ -655,7 +655,7 @@ public class PollCreateActivity extends BaseFragment {
             View view;
             switch (viewType) {
                 case 0:
-                    view = new HeaderCell(mContext, false, 21, 15, true);
+                    view = new HeaderCell(mContext, Theme.key_windowBackgroundWhiteBlueHeader, 21, 15, true);
                     view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
                     break;
                 case 1:

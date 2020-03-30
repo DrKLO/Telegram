@@ -402,7 +402,7 @@ namespace tgvoip{
 		void SetPersistentState(std::vector<uint8_t> state);
 
 #if defined(TGVOIP_USE_CALLBACK_AUDIO_IO)
-		void SetAudioDataCallbacks(std::function<void(int16_t*, size_t)> input, std::function<void(int16_t*, size_t)> output);
+		void SetAudioDataCallbacks(std::function<void(int16_t*, size_t)> input, std::function<void(int16_t*, size_t)> output, std::function<void(int16_t*, size_t)> preprocessed);
 #endif
 
 		void SetVideoCodecSpecificData(const std::vector<Buffer>& data);
@@ -749,6 +749,9 @@ namespace tgvoip{
 #if defined(TGVOIP_USE_CALLBACK_AUDIO_IO)
 		std::function<void(int16_t*, size_t)> audioInputDataCallback;
 		std::function<void(int16_t*, size_t)> audioOutputDataCallback;
+		std::function<void(int16_t*, size_t)> audioPreprocDataCallback;
+		::OpusDecoder* preprocDecoder=nullptr;
+		int16_t preprocBuffer[4096];
 #endif
 #if defined(__APPLE__) && defined(TARGET_OS_OSX)
 		bool macAudioDuckingEnabled=true;

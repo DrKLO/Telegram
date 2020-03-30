@@ -531,12 +531,13 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
             }
         }
 
+        if (themesHorizontalListCell != null) {
+            themesHorizontalListCell.notifyDataSetChanged(listView.getWidth());
+        }
+
         if (listAdapter != null) {
             if (currentType != THEME_TYPE_NIGHT || previousUpdatedType == Theme.selectedAutoNightType || previousUpdatedType == -1) {
                 if (notify || previousUpdatedType == -1) {
-                    if (themesHorizontalListCell != null) {
-                        themesHorizontalListCell.notifyDataSetChanged(listView.getWidth());
-                    }
                     listAdapter.notifyDataSetChanged();
                 } else {
                     if (prevThemeAccentListRow == -1 && themeAccentListRow != -1) {
@@ -1607,7 +1608,7 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
                     view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
                     break;
                 case 10:
-                    view = new NotificationsCheckCell(mContext, 21, 64);
+                    view = new NotificationsCheckCell(mContext, 21, 64, false);
                     view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
                     break;
                 case 11:

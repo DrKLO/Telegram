@@ -15,6 +15,7 @@ import android.view.Gravity;
 import android.widget.FrameLayout;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
@@ -38,7 +39,7 @@ public class GroupCreateUserCell extends FrameLayout {
     private SimpleTextView statusTextView;
     private CheckBox2 checkBox;
     private AvatarDrawable avatarDrawable;
-    private TLObject currentObject;
+    private Object currentObject;
     private CharSequence currentName;
     private CharSequence currentStatus;
 
@@ -89,7 +90,7 @@ public class GroupCreateUserCell extends FrameLayout {
         this.drawDivider = drawDivider;
     }
 
-    public void setObject(TLObject object, CharSequence name, CharSequence status) {
+    public void setObject(Object object, CharSequence name, CharSequence status) {
         currentObject = object;
         currentStatus = status;
         currentName = name;
@@ -105,13 +106,17 @@ public class GroupCreateUserCell extends FrameLayout {
         checkBox.setEnabled(enabled);
     }
 
-    public TLObject getObject() {
+    public boolean isChecked() {
+        return checkBox.isChecked();
+    }
+
+    public Object getObject() {
         return currentObject;
     }
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        super.onMeasure(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(58), MeasureSpec.EXACTLY));
+        super.onMeasure(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(currentObject instanceof String ? 50 : 58), MeasureSpec.EXACTLY));
     }
 
     public void recycle() {
@@ -125,116 +130,187 @@ public class GroupCreateUserCell extends FrameLayout {
         TLRPC.FileLocation photo = null;
         String newName = null;
 
-
-        if (currentObject instanceof TLRPC.User) {
-            TLRPC.User currentUser = (TLRPC.User) currentObject;
-            if (currentUser.photo != null) {
-                photo = currentUser.photo.photo_small;
+        if (currentObject instanceof String) {
+            ((LayoutParams) nameTextView.getLayoutParams()).topMargin = AndroidUtilities.dp(15);
+            avatarImageView.getLayoutParams().width = avatarImageView.getLayoutParams().height = AndroidUtilities.dp(38);
+            if (checkBox != null) {
+                ((LayoutParams) checkBox.getLayoutParams()).topMargin = AndroidUtilities.dp(25);
+                if (LocaleController.isRTL) {
+                    ((LayoutParams) checkBox.getLayoutParams()).rightMargin = AndroidUtilities.dp(31);
+                } else {
+                    ((LayoutParams) checkBox.getLayoutParams()).leftMargin = AndroidUtilities.dp(32);
+                }
             }
-            if (mask != 0) {
-                boolean continueUpdate = false;
-                if ((mask & MessagesController.UPDATE_MASK_AVATAR) != 0) {
-                    if (lastAvatar != null && photo == null || lastAvatar == null && photo != null || lastAvatar != null && photo != null && (lastAvatar.volume_id != photo.volume_id || lastAvatar.local_id != photo.local_id)) {
-                        continueUpdate = true;
-                    }
+
+            String str = (String) currentObject;
+            switch (str) {
+                case "contacts":
+                    avatarDrawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_FILTER_CONTACTS);
+                    break;
+                case "non_contacts":
+                    avatarDrawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_FILTER_NON_CONTACTS);
+                    break;
+                case "groups":
+                    avatarDrawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_FILTER_GROUPS);
+                    break;
+                case "channels":
+                    avatarDrawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_FILTER_CHANNELS);
+                    break;
+                case "bots":
+                    avatarDrawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_FILTER_BOTS);
+                    break;
+                case "muted":
+                    avatarDrawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_FILTER_MUTED);
+                    break;
+                case "read":
+                    avatarDrawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_FILTER_READ);
+                    break;
+                case "archived":
+                    avatarDrawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_FILTER_ARCHIVED);
+                    break;
+            }
+            lastName = null;
+            nameTextView.setText(currentName, true);
+            statusTextView.setText(null);
+            avatarImageView.setImage(null, "50_50", avatarDrawable);
+        } else {
+            ((LayoutParams) nameTextView.getLayoutParams()).topMargin = AndroidUtilities.dp(10);
+            avatarImageView.getLayoutParams().width = avatarImageView.getLayoutParams().height = AndroidUtilities.dp(46);
+            if (checkBox != null) {
+                ((LayoutParams) checkBox.getLayoutParams()).topMargin = AndroidUtilities.dp(33);
+                if (LocaleController.isRTL) {
+                    ((LayoutParams) checkBox.getLayoutParams()).rightMargin = AndroidUtilities.dp(39);
+                } else {
+                    ((LayoutParams) checkBox.getLayoutParams()).leftMargin = AndroidUtilities.dp(40);
                 }
-                if (currentUser != null && currentStatus == null && !continueUpdate && (mask & MessagesController.UPDATE_MASK_STATUS) != 0) {
-                    int newStatus = 0;
-                    if (currentUser.status != null) {
-                        newStatus = currentUser.status.expires;
-                    }
-                    if (newStatus != lastStatus) {
-                        continueUpdate = true;
-                    }
-                }
-                if (!continueUpdate && currentName == null && lastName != null && (mask & MessagesController.UPDATE_MASK_NAME) != 0) {
-                    newName = UserObject.getUserName(currentUser);
-                    if (!newName.equals(lastName)) {
-                        continueUpdate = true;
-                    }
-                }
-                if (!continueUpdate) {
+            }
+
+            if (currentObject instanceof TLRPC.User) {
+                TLRPC.User currentUser = (TLRPC.User) currentObject;
+                if (UserObject.isUserSelf(currentUser)) {
+                    nameTextView.setText(LocaleController.getString("SavedMessages", R.string.SavedMessages), true);
+                    statusTextView.setText(null);
+                    avatarDrawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_SAVED);
+                    avatarImageView.setImage(null, "50_50", avatarDrawable, currentUser);
+                    ((LayoutParams) nameTextView.getLayoutParams()).topMargin = AndroidUtilities.dp(19);
                     return;
                 }
-            }
-            avatarDrawable.setInfo(currentUser);
-            lastStatus = currentUser.status != null ? currentUser.status.expires : 0;
+                if (currentUser.photo != null) {
+                    photo = currentUser.photo.photo_small;
+                }
+                if (mask != 0) {
+                    boolean continueUpdate = false;
+                    if ((mask & MessagesController.UPDATE_MASK_AVATAR) != 0) {
+                        if (lastAvatar != null && photo == null || lastAvatar == null && photo != null || lastAvatar != null && photo != null && (lastAvatar.volume_id != photo.volume_id || lastAvatar.local_id != photo.local_id)) {
+                            continueUpdate = true;
+                        }
+                    }
+                    if (currentUser != null && currentStatus == null && !continueUpdate && (mask & MessagesController.UPDATE_MASK_STATUS) != 0) {
+                        int newStatus = 0;
+                        if (currentUser.status != null) {
+                            newStatus = currentUser.status.expires;
+                        }
+                        if (newStatus != lastStatus) {
+                            continueUpdate = true;
+                        }
+                    }
+                    if (!continueUpdate && currentName == null && lastName != null && (mask & MessagesController.UPDATE_MASK_NAME) != 0) {
+                        newName = UserObject.getUserName(currentUser);
+                        if (!newName.equals(lastName)) {
+                            continueUpdate = true;
+                        }
+                    }
+                    if (!continueUpdate) {
+                        return;
+                    }
+                }
+                avatarDrawable.setInfo(currentUser);
+                lastStatus = currentUser.status != null ? currentUser.status.expires : 0;
 
-            if (currentName != null) {
-                lastName = null;
-                nameTextView.setText(currentName, true);
-            } else {
-                lastName = newName == null ? UserObject.getUserName(currentUser) : newName;
-                nameTextView.setText(lastName);
-            }
-
-            if (currentStatus == null) {
-                if (currentUser.bot) {
-                    statusTextView.setTag(Theme.key_windowBackgroundWhiteGrayText);
-                    statusTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
-                    statusTextView.setText(LocaleController.getString("Bot", R.string.Bot));
+                if (currentName != null) {
+                    lastName = null;
+                    nameTextView.setText(currentName, true);
                 } else {
-                    if (currentUser.id == UserConfig.getInstance(currentAccount).getClientUserId() || currentUser.status != null && currentUser.status.expires > ConnectionsManager.getInstance(currentAccount).getCurrentTime() || MessagesController.getInstance(currentAccount).onlinePrivacy.containsKey(currentUser.id)) {
-                        statusTextView.setTag(Theme.key_windowBackgroundWhiteBlueText);
-                        statusTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText));
-                        statusTextView.setText(LocaleController.getString("Online", R.string.Online));
-                    } else {
+                    lastName = newName == null ? UserObject.getUserName(currentUser) : newName;
+                    nameTextView.setText(lastName);
+                }
+
+                if (currentStatus == null) {
+                    if (currentUser.bot) {
                         statusTextView.setTag(Theme.key_windowBackgroundWhiteGrayText);
                         statusTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
-                        statusTextView.setText(LocaleController.formatUserStatus(currentAccount, currentUser));
+                        statusTextView.setText(LocaleController.getString("Bot", R.string.Bot));
+                    } else {
+                        if (currentUser.id == UserConfig.getInstance(currentAccount).getClientUserId() || currentUser.status != null && currentUser.status.expires > ConnectionsManager.getInstance(currentAccount).getCurrentTime() || MessagesController.getInstance(currentAccount).onlinePrivacy.containsKey(currentUser.id)) {
+                            statusTextView.setTag(Theme.key_windowBackgroundWhiteBlueText);
+                            statusTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText));
+                            statusTextView.setText(LocaleController.getString("Online", R.string.Online));
+                        } else {
+                            statusTextView.setTag(Theme.key_windowBackgroundWhiteGrayText);
+                            statusTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
+                            statusTextView.setText(LocaleController.formatUserStatus(currentAccount, currentUser));
+                        }
                     }
                 }
-            }
 
-            avatarImageView.setImage(ImageLocation.getForUser(currentUser, false), "50_50", avatarDrawable, currentUser);
-        } else {
-            TLRPC.Chat currentChat = (TLRPC.Chat) currentObject;
-            if (currentChat.photo != null) {
-                photo = currentChat.photo.photo_small;
-            }
-            if (mask != 0) {
-                boolean continueUpdate = false;
-                if ((mask & MessagesController.UPDATE_MASK_AVATAR) != 0) {
-                    if (lastAvatar != null && photo == null || lastAvatar == null && photo != null || lastAvatar != null && photo != null && (lastAvatar.volume_id != photo.volume_id || lastAvatar.local_id != photo.local_id)) {
-                        continueUpdate = true;
-                    }
-                }
-                if (!continueUpdate && currentName == null && lastName != null && (mask & MessagesController.UPDATE_MASK_NAME) != 0) {
-                    newName = currentChat.title;
-                    if (!newName.equals(lastName)) {
-                        continueUpdate = true;
-                    }
-                }
-                if (!continueUpdate) {
-                    return;
-                }
-            }
-
-            avatarDrawable.setInfo(currentChat);
-
-            if (currentName != null) {
-                lastName = null;
-                nameTextView.setText(currentName, true);
+                avatarImageView.setImage(ImageLocation.getForUser(currentUser, false), "50_50", avatarDrawable, currentUser);
             } else {
-                lastName = newName == null ? currentChat.title : newName;
-                nameTextView.setText(lastName);
-            }
-
-            if (currentStatus == null) {
-                statusTextView.setTag(Theme.key_windowBackgroundWhiteGrayText);
-                statusTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
-                if (currentChat.participants_count != 0) {
-                    statusTextView.setText(LocaleController.formatPluralString("Members", currentChat.participants_count));
-                } else if (currentChat.has_geo) {
-                    statusTextView.setText(LocaleController.getString("MegaLocation", R.string.MegaLocation));
-                } else if (TextUtils.isEmpty(currentChat.username)) {
-                    statusTextView.setText(LocaleController.getString("MegaPrivate", R.string.MegaPrivate));
-                } else {
-                    statusTextView.setText(LocaleController.getString("MegaPublic", R.string.MegaPublic));
+                TLRPC.Chat currentChat = (TLRPC.Chat) currentObject;
+                if (currentChat.photo != null) {
+                    photo = currentChat.photo.photo_small;
                 }
-            }
+                if (mask != 0) {
+                    boolean continueUpdate = false;
+                    if ((mask & MessagesController.UPDATE_MASK_AVATAR) != 0) {
+                        if (lastAvatar != null && photo == null || lastAvatar == null && photo != null || lastAvatar != null && photo != null && (lastAvatar.volume_id != photo.volume_id || lastAvatar.local_id != photo.local_id)) {
+                            continueUpdate = true;
+                        }
+                    }
+                    if (!continueUpdate && currentName == null && lastName != null && (mask & MessagesController.UPDATE_MASK_NAME) != 0) {
+                        newName = currentChat.title;
+                        if (!newName.equals(lastName)) {
+                            continueUpdate = true;
+                        }
+                    }
+                    if (!continueUpdate) {
+                        return;
+                    }
+                }
 
-            avatarImageView.setImage(ImageLocation.getForChat(currentChat, false), "50_50", avatarDrawable, currentChat);
+                avatarDrawable.setInfo(currentChat);
+
+                if (currentName != null) {
+                    lastName = null;
+                    nameTextView.setText(currentName, true);
+                } else {
+                    lastName = newName == null ? currentChat.title : newName;
+                    nameTextView.setText(lastName);
+                }
+
+                if (currentStatus == null) {
+                    statusTextView.setTag(Theme.key_windowBackgroundWhiteGrayText);
+                    statusTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
+                    if (currentChat.participants_count != 0) {
+                        statusTextView.setText(LocaleController.formatPluralString("Members", currentChat.participants_count));
+                    } else if (currentChat.has_geo) {
+                        statusTextView.setText(LocaleController.getString("MegaLocation", R.string.MegaLocation));
+                    } else if (TextUtils.isEmpty(currentChat.username)) {
+                        if (ChatObject.isChannel(currentChat) && !currentChat.megagroup) {
+                            statusTextView.setText(LocaleController.getString("ChannelPrivate", R.string.ChannelPrivate));
+                        } else {
+                            statusTextView.setText(LocaleController.getString("MegaPrivate", R.string.MegaPrivate));
+                        }
+                    } else {
+                        if (ChatObject.isChannel(currentChat) && !currentChat.megagroup) {
+                            statusTextView.setText(LocaleController.getString("ChannelPublic", R.string.ChannelPublic));
+                        } else {
+                            statusTextView.setText(LocaleController.getString("MegaPublic", R.string.MegaPublic));
+                        }
+                    }
+                }
+
+                avatarImageView.setImage(ImageLocation.getForChat(currentChat, false), "50_50", avatarDrawable, currentChat);
+            }
         }
 
         if (currentStatus != null) {

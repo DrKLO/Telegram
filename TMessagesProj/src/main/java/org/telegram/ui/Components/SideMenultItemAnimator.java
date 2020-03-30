@@ -31,6 +31,9 @@ public class SideMenultItemAnimator extends SimpleItemAnimator {
     ArrayList<RecyclerView.ViewHolder> mRemoveAnimations = new ArrayList<>();
     ArrayList<RecyclerView.ViewHolder> mChangeAnimations = new ArrayList<>();
 
+    private RecyclerListView parentRecyclerView;
+    private boolean shouldClipChildren;
+
     private static class MoveInfo {
         public RecyclerView.ViewHolder holder;
         public int fromX, fromY, toX, toY;
@@ -75,7 +78,8 @@ public class SideMenultItemAnimator extends SimpleItemAnimator {
         }
     }
 
-    public SideMenultItemAnimator(RecyclerView view) {
+    public SideMenultItemAnimator(RecyclerListView view) {
+        parentRecyclerView = view;
         view.setChildDrawingOrderCallback((childCount, i) -> {
             int childPos = i;
             if (i == childCount - 1) {
@@ -96,14 +100,14 @@ public class SideMenultItemAnimator extends SimpleItemAnimator {
         if (!removalsPending && !movesPending && !additionsPending && !changesPending) {
             return;
         }
-        int totalHeight = 0;
+        int animatingHeight = 0;
         for (int a = 0, N = mPendingRemovals.size(); a < N; a++) {
             RecyclerView.ViewHolder holder = mPendingRemovals.get(a);
-            totalHeight += holder.itemView.getMeasuredHeight();
+            animatingHeight += holder.itemView.getMeasuredHeight();
         }
         for (int a = 0, N = mPendingRemovals.size(); a < N; a++) {
             RecyclerView.ViewHolder holder = mPendingRemovals.get(a);
-            animateRemoveImpl(holder, totalHeight);
+            animateRemoveImpl(holder, animatingHeight);
         }
         mPendingRemovals.clear();
 
@@ -134,19 +138,21 @@ public class SideMenultItemAnimator extends SimpleItemAnimator {
             mAdditionsList.add(additions);
             mPendingAdditions.clear();
 
-            totalHeight = 0;
+            animatingHeight = 0;
             for (int a = 0, N = additions.size(); a < N; a++) {
                 RecyclerView.ViewHolder holder = additions.get(a);
-                totalHeight += holder.itemView.getMeasuredHeight();
+                animatingHeight += holder.itemView.getMeasuredHeight();
             }
 
             for (int a = 0, N = additions.size(); a < N; a++) {
                 RecyclerView.ViewHolder holder = additions.get(a);
-                animateAddImpl(holder, a, N, totalHeight);
+                animateAddImpl(holder, a, N, animatingHeight);
             }
             additions.clear();
             mAdditionsList.remove(additions);
         }
+        parentRecyclerView.invalidateViews();
+        parentRecyclerView.invalidate();
     }
 
     @Override
@@ -467,6 +473,48 @@ public class SideMenultItemAnimator extends SimpleItemAnimator {
                 || !mMovesList.isEmpty()
                 || !mAdditionsList.isEmpty()
                 || !mChangesList.isEmpty());
+    }
+
+    public boolean isAnimatingChild(View child) {
+        if (!shouldClipChildren) {
+            return false;
+        }
+        for (int a = 0, N = mRemoveAnimations.size(); a < N; a++) {
+            if (mRemoveAnimations.get(a).itemView == child) {
+                return true;
+            }
+        }
+        for (int a = 0, N = mAddAnimations.size(); a < N; a++) {
+            if (mAddAnimations.get(a).itemView == child) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public void setShouldClipChildren(boolean value) {
+        shouldClipChildren = value;
+    }
+
+    public int getAnimationClipTop() {
+        if (!shouldClipChildren) {
+            return 0;
+        }
+        if (!mRemoveAnimations.isEmpty()) {
+            int top = Integer.MAX_VALUE;
+            for (int a = 0, N = mRemoveAnimations.size(); a < N; a++) {
+                top = Math.min(top, mRemoveAnimations.get(a).itemView.getTop());
+            }
+            return top;
+        }
+        if (!mAddAnimations.isEmpty()) {
+            int top = Integer.MAX_VALUE;
+            for (int a = 0, N = mAddAnimations.size(); a < N; a++) {
+                top = Math.min(top, mAddAnimations.get(a).itemView.getTop());
+            }
+            return top;
+        }
+        return 0;
     }
 
     void dispatchFinishedWhenDone() {

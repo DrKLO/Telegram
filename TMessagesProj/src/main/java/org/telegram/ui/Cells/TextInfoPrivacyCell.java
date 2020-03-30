@@ -31,6 +31,7 @@ public class TextInfoPrivacyCell extends FrameLayout {
 
     private TextView textView;
     private String linkTextColorKey = Theme.key_windowBackgroundWhiteLinkText;
+    private int topPadding = 10;
     private int bottomPadding = 17;
     private int fixedSize;
 
@@ -66,6 +67,10 @@ public class TextInfoPrivacyCell extends FrameLayout {
         }
     }
 
+    public void setTopPadding(int topPadding) {
+        this.topPadding = topPadding;
+    }
+
     public void setBottomPadding(int value) {
         bottomPadding = value;
     }
@@ -80,7 +85,7 @@ public class TextInfoPrivacyCell extends FrameLayout {
             if (text == null) {
                 textView.setPadding(0, AndroidUtilities.dp(2), 0, 0);
             } else {
-                textView.setPadding(0, AndroidUtilities.dp(10), 0, AndroidUtilities.dp(bottomPadding));
+                textView.setPadding(0, AndroidUtilities.dp(topPadding), 0, AndroidUtilities.dp(bottomPadding));
             }
             SpannableString spannableString = null;
             if (text != null) {

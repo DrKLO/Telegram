@@ -41,6 +41,7 @@ import android.media.AudioManager;
 import android.os.Build;
 import android.os.Bundle;
 import androidx.annotation.IntRange;
+import androidx.annotation.Keep;
 import androidx.annotation.Nullable;
 import androidx.palette.graphics.Palette;
 import android.text.Editable;
@@ -85,14 +86,15 @@ import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.messenger.voip.EncryptionKeyEmojifier;
+import org.telegram.messenger.voip.TgVoip;
 import org.telegram.messenger.voip.VoIPBaseService;
-import org.telegram.messenger.voip.VoIPController;
 import org.telegram.messenger.voip.VoIPService;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.DarkAlertDialog;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Components.BackgroundGradientDrawable;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.CorrectlyMeasuringTextView;
 import org.telegram.ui.Components.CubicBezierInterpolator;
@@ -188,7 +190,7 @@ public class VoIPActivity extends Activity implements VoIPService.StateListener,
         if (user.photo != null) {
             photoView.getImageReceiver().setDelegate(new ImageReceiver.ImageReceiverDelegate() {
                 @Override
-                public void didSetImage(ImageReceiver imageReceiver, boolean set, boolean thumb) {
+                public void didSetImage(ImageReceiver imageReceiver, boolean set, boolean thumb, boolean memCache) {
                     ImageReceiver.BitmapHolder bmp = imageReceiver.getBitmapSafe();
                     if (bmp != null) {
                         updateBlurredPhotos(bmp);
@@ -199,7 +201,15 @@ public class VoIPActivity extends Activity implements VoIPService.StateListener,
             photoView.setLayerType(View.LAYER_TYPE_HARDWARE, null);
         } else {
             photoView.setVisibility(View.GONE);
-            contentView.setBackgroundDrawable(new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, new int[]{0xFF1b354e, 0xFF255b7d}));
+            final BackgroundGradientDrawable gradientDrawable = new BackgroundGradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, new int[]{0xFF1b354e, 0xFF255b7d});
+            final BackgroundGradientDrawable.Sizes sizes = BackgroundGradientDrawable.Sizes.ofDeviceScreen(BackgroundGradientDrawable.Sizes.Orientation.PORTRAIT);
+            gradientDrawable.startDithering(sizes, new BackgroundGradientDrawable.ListenerAdapter() {
+                @Override
+                public void onAllSizesReady() {
+                    contentView.invalidate();
+                }
+            });
+            contentView.setBackground(gradientDrawable);
         }
 
         getWindow().setBackgroundDrawable(new ColorDrawable(0));
@@ -340,8 +350,8 @@ public class VoIPActivity extends Activity implements VoIPService.StateListener,
                 }
                 AnimatorSet set = new AnimatorSet();
                 set.playTogether(
-                        ObjectAnimator.ofFloat(declineSwipe, "alpha", .2f),
-                        ObjectAnimator.ofFloat(declineBtn, "alpha", .2f)
+                        ObjectAnimator.ofFloat(declineSwipe, View.ALPHA, .2f),
+                        ObjectAnimator.ofFloat(declineBtn, View.ALPHA, .2f)
                 );
                 set.setDuration(200);
                 set.setInterpolator(CubicBezierInterpolator.DEFAULT);
@@ -363,8 +373,8 @@ public class VoIPActivity extends Activity implements VoIPService.StateListener,
                 }
                 AnimatorSet set = new AnimatorSet();
                 set.playTogether(
-                        ObjectAnimator.ofFloat(declineSwipe, "alpha", 1),
-                        ObjectAnimator.ofFloat(declineBtn, "alpha", 1)
+                        ObjectAnimator.ofFloat(declineSwipe, View.ALPHA, 1),
+                        ObjectAnimator.ofFloat(declineBtn, View.ALPHA, 1)
                 );
                 set.setDuration(200);
                 set.setInterpolator(CubicBezierInterpolator.DEFAULT);
@@ -397,8 +407,8 @@ public class VoIPActivity extends Activity implements VoIPService.StateListener,
                 }
                 AnimatorSet set = new AnimatorSet();
                 set.playTogether(
-                        ObjectAnimator.ofFloat(acceptSwipe, "alpha", .2f),
-                        ObjectAnimator.ofFloat(acceptBtn, "alpha", .2f)
+                        ObjectAnimator.ofFloat(acceptSwipe, View.ALPHA, .2f),
+                        ObjectAnimator.ofFloat(acceptBtn, View.ALPHA, .2f)
                 );
                 set.setDuration(200);
                 set.setInterpolator(new DecelerateInterpolator());
@@ -420,8 +430,8 @@ public class VoIPActivity extends Activity implements VoIPService.StateListener,
                 }
                 AnimatorSet set = new AnimatorSet();
                 set.playTogether(
-                        ObjectAnimator.ofFloat(acceptSwipe, "alpha", 1),
-                        ObjectAnimator.ofFloat(acceptBtn, "alpha", 1)
+                        ObjectAnimator.ofFloat(acceptSwipe, View.ALPHA, 1),
+                        ObjectAnimator.ofFloat(acceptBtn, View.ALPHA, 1)
                 );
                 set.setDuration(200);
                 set.setInterpolator(CubicBezierInterpolator.DEFAULT);
@@ -919,7 +929,7 @@ public class VoIPActivity extends Activity implements VoIPService.StateListener,
         title.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
         title.setTypeface(Typeface.DEFAULT_BOLD);
         title.setGravity(Gravity.CENTER);
-        title.setText("libtgvoip v" + VoIPController.getVersion());
+        title.setText(getDebugTitle());
         debugOverlay.addView(title, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 16));
 
         ScrollView scroll = new ScrollView(this);
@@ -956,11 +966,21 @@ public class VoIPActivity extends Activity implements VoIPService.StateListener,
                 if (isFinishing() || VoIPService.getSharedInstance() == null) {
                     return;
                 }
+                title.setText(getDebugTitle());
                 debugText.setText(getFormattedDebugString());
                 debugOverlay.postDelayed(this, 500);
             }
         };
         debugOverlay.postDelayed(r, 500);
+    }
+
+    private String getDebugTitle() {
+        String title = "libtgvoip";
+        final String version = TgVoip.getVersion();
+        if (version != null) {
+            title += " v" + version;
+        }
+        return title;
     }
 
     private void showInviteFragment() {
@@ -1040,16 +1060,16 @@ public class VoIPActivity extends Activity implements VoIPService.StateListener,
             AnimatorSet set = new AnimatorSet();
             AnimatorSet decSet = new AnimatorSet();
             decSet.playTogether(
-                    ObjectAnimator.ofFloat(endBtnIcon, "rotation", -135, 0),
+                    ObjectAnimator.ofFloat(endBtnIcon, View.ROTATION, -135, 0),
                     colorAnim
             );
             decSet.setInterpolator(CubicBezierInterpolator.EASE_OUT);
             decSet.setDuration(500);
             AnimatorSet accSet = new AnimatorSet();
             accSet.playTogether(
-                    ObjectAnimator.ofFloat(swipeViewsWrap, "alpha", 1, 0),
-                    ObjectAnimator.ofFloat(declineBtn, "alpha", 0),
-                    ObjectAnimator.ofFloat(accountNameText, "alpha", 0)
+                    ObjectAnimator.ofFloat(swipeViewsWrap, View.ALPHA, 1, 0),
+                    ObjectAnimator.ofFloat(declineBtn, View.ALPHA, 0),
+                    ObjectAnimator.ofFloat(accountNameText, View.ALPHA, 0)
             );
             accSet.setInterpolator(CubicBezierInterpolator.EASE_IN);
             accSet.setDuration(125);
@@ -1070,16 +1090,16 @@ public class VoIPActivity extends Activity implements VoIPService.StateListener,
             AnimatorSet set = new AnimatorSet();
             AnimatorSet decSet = new AnimatorSet();
             decSet.playTogether(
-                    ObjectAnimator.ofFloat(bottomButtons, "alpha", 0, 1)
+                    ObjectAnimator.ofFloat(bottomButtons, View.ALPHA, 0, 1)
             );
             decSet.setInterpolator(CubicBezierInterpolator.EASE_OUT);
             decSet.setDuration(500);
             AnimatorSet accSet = new AnimatorSet();
             accSet.playTogether(
-                    ObjectAnimator.ofFloat(swipeViewsWrap, "alpha", 1, 0),
-                    ObjectAnimator.ofFloat(declineBtn, "alpha", 0),
-                    ObjectAnimator.ofFloat(acceptBtn, "alpha", 0),
-                    ObjectAnimator.ofFloat(accountNameText, "alpha", 0)
+                    ObjectAnimator.ofFloat(swipeViewsWrap, View.ALPHA, 1, 0),
+                    ObjectAnimator.ofFloat(declineBtn, View.ALPHA, 0),
+                    ObjectAnimator.ofFloat(acceptBtn, View.ALPHA, 0),
+                    ObjectAnimator.ofFloat(accountNameText, View.ALPHA, 0)
             );
             accSet.setInterpolator(CubicBezierInterpolator.EASE_IN);
             accSet.setDuration(125);
@@ -1116,13 +1136,13 @@ public class VoIPActivity extends Activity implements VoIPService.StateListener,
             colorAnim.setEvaluator(new ArgbEvaluator());
         }
         set.playTogether(
-                ObjectAnimator.ofFloat(cancelBtn, "alpha", 0, 1),
-                ObjectAnimator.ofFloat(endBtn, "translationX", 0, content.getWidth() / 2 - AndroidUtilities.dp(52) - endBtn.getWidth() / 2),
+                ObjectAnimator.ofFloat(cancelBtn, View.ALPHA, 0, 1),
+                ObjectAnimator.ofFloat(endBtn, View.TRANSLATION_X, 0, content.getWidth() / 2 - AndroidUtilities.dp(52) - endBtn.getWidth() / 2),
                 colorAnim,
-                ObjectAnimator.ofFloat(endBtnIcon, "rotation", 0, -135)//,
-                //ObjectAnimator.ofFloat(spkToggle, "alpha", 0),
-                //ObjectAnimator.ofFloat(micToggle, "alpha", 0),
-                //ObjectAnimator.ofFloat(chatBtn, "alpha", 0)
+                ObjectAnimator.ofFloat(endBtnIcon, View.ROTATION, 0, -135)//,
+                //ObjectAnimator.ofFloat(spkToggle, View.ALPHA, 0),
+                //ObjectAnimator.ofFloat(micToggle, View.ALPHA, 0),
+                //ObjectAnimator.ofFloat(chatBtn, View.ALPHA, 0)
         );
         set.setStartDelay(200);
         set.setDuration(300);
@@ -1155,9 +1175,9 @@ public class VoIPActivity extends Activity implements VoIPService.StateListener,
         set.playTogether(
                 colorAnim,
                 ObjectAnimator.ofFloat(endBtnIcon, "rotation", -135, 0),
-                ObjectAnimator.ofFloat(endBtn, "translationX", 0),
-                ObjectAnimator.ofFloat(cancelBtn, "alpha", 0)//,
-                //ObjectAnimator.ofFloat(bottomButtons, "alpha", 1)
+                ObjectAnimator.ofFloat(endBtn, View.TRANSLATION_X, 0),
+                ObjectAnimator.ofFloat(cancelBtn, View.ALPHA, 0)//,
+                //ObjectAnimator.ofFloat(bottomButtons, View.ALPHA, 1)
         );
         set.setStartDelay(200);
         set.setDuration(300);
@@ -1287,29 +1307,32 @@ public class VoIPActivity extends Activity implements VoIPService.StateListener,
                     }
                 } else if (state == VoIPService.STATE_FAILED) {
                     setStateTextAnimated(LocaleController.getString("VoipFailed", R.string.VoipFailed), false);
-                    int lastError = VoIPService.getSharedInstance() != null ? VoIPService.getSharedInstance().getLastError() : VoIPController.ERROR_UNKNOWN;
-                    if (lastError == VoIPController.ERROR_INCOMPATIBLE) {
-                        showErrorDialog(AndroidUtilities.replaceTags(LocaleController.formatString("VoipPeerIncompatible", R.string.VoipPeerIncompatible,
-                                ContactsController.formatName(user.first_name, user.last_name))));
-                    } else if (lastError == VoIPController.ERROR_PEER_OUTDATED) {
-                        showErrorDialog(AndroidUtilities.replaceTags(LocaleController.formatString("VoipPeerOutdated", R.string.VoipPeerOutdated,
-                                ContactsController.formatName(user.first_name, user.last_name))));
-                    } else if (lastError == VoIPController.ERROR_PRIVACY) {
-                        showErrorDialog(AndroidUtilities.replaceTags(LocaleController.formatString("CallNotAvailable", R.string.CallNotAvailable,
-                                ContactsController.formatName(user.first_name, user.last_name))));
-                    } else if (lastError == VoIPController.ERROR_AUDIO_IO) {
-                        showErrorDialog("Error initializing audio hardware");
-                    } else if (lastError == VoIPController.ERROR_LOCALIZED) {
-                        finish();
-                    } else if (lastError == VoIPController.ERROR_CONNECTION_SERVICE) {
-                        showErrorDialog(LocaleController.getString("VoipErrorUnknown", R.string.VoipErrorUnknown));
+                    final VoIPService voipService = VoIPService.getSharedInstance();
+                    final String lastError = voipService != null ? voipService.getLastError() : TgVoip.ERROR_UNKNOWN;
+                    if (!TextUtils.equals(lastError, TgVoip.ERROR_UNKNOWN)) {
+                        if (TextUtils.equals(lastError, TgVoip.ERROR_INCOMPATIBLE)) {
+                            final String name = ContactsController.formatName(user.first_name, user.last_name);
+                            final String message = LocaleController.formatString("VoipPeerIncompatible", R.string.VoipPeerIncompatible, name);
+                            showErrorDialog(AndroidUtilities.replaceTags(message));
+                        } else if (TextUtils.equals(lastError, TgVoip.ERROR_PEER_OUTDATED)) {
+                            final String name = ContactsController.formatName(user.first_name, user.last_name);
+                            final String message = LocaleController.formatString("VoipPeerOutdated", R.string.VoipPeerOutdated, name);
+                            showErrorDialog(AndroidUtilities.replaceTags(message));
+                        } else if (TextUtils.equals(lastError, TgVoip.ERROR_PRIVACY)) {
+                            final String name = ContactsController.formatName(user.first_name, user.last_name);
+                            final String message = LocaleController.formatString("CallNotAvailable", R.string.CallNotAvailable, name);
+                            showErrorDialog(AndroidUtilities.replaceTags(message));
+                        } else if (TextUtils.equals(lastError, TgVoip.ERROR_AUDIO_IO)) {
+                            showErrorDialog("Error initializing audio hardware");
+                        } else if (TextUtils.equals(lastError, TgVoip.ERROR_LOCALIZED)) {
+                            finish();
+                        } else if (TextUtils.equals(lastError, TgVoip.ERROR_CONNECTION_SERVICE)) {
+                            showErrorDialog(LocaleController.getString("VoipErrorUnknown", R.string.VoipErrorUnknown));
+                        } else {
+                            stateText.postDelayed(() -> finish(), 1000);
+                        }
                     } else {
-                        stateText.postDelayed(new Runnable() {
-                            @Override
-                            public void run() {
-                                finish();
-                            }
-                        }, 1000);
+                        stateText.postDelayed(() -> finish(), 1000);
                     }
                 }
                 brandingText.invalidate();
@@ -1409,14 +1432,14 @@ public class VoIPActivity extends Activity implements VoIPService.StateListener,
         durationText = stateText2;
         AnimatorSet set = new AnimatorSet();
         set.playTogether(
-                ObjectAnimator.ofFloat(stateText2, "alpha", 0, 1),
-                ObjectAnimator.ofFloat(stateText2, "translationY", stateText.getHeight() / 2, 0),
-                ObjectAnimator.ofFloat(stateText2, "scaleX", 0.7f, 1),
-                ObjectAnimator.ofFloat(stateText2, "scaleY", 0.7f, 1),
-                ObjectAnimator.ofFloat(stateText, "alpha", 1, 0),
-                ObjectAnimator.ofFloat(stateText, "translationY", 0, -stateText.getHeight() / 2),
-                ObjectAnimator.ofFloat(stateText, "scaleX", 1, 0.7f),
-                ObjectAnimator.ofFloat(stateText, "scaleY", 1, 0.7f)
+                ObjectAnimator.ofFloat(stateText2, View.ALPHA, 0, 1),
+                ObjectAnimator.ofFloat(stateText2, View.TRANSLATION_Y, stateText.getHeight() / 2, 0),
+                ObjectAnimator.ofFloat(stateText2, View.SCALE_X, 0.7f, 1),
+                ObjectAnimator.ofFloat(stateText2, View.SCALE_Y, 0.7f, 1),
+                ObjectAnimator.ofFloat(stateText, View.ALPHA, 1, 0),
+                ObjectAnimator.ofFloat(stateText, View.TRANSLATION_Y, 0, -stateText.getHeight() / 2),
+                ObjectAnimator.ofFloat(stateText, View.SCALE_X, 1, 0.7f),
+                ObjectAnimator.ofFloat(stateText, View.SCALE_Y, 1, 0.7f)
         );
         set.setDuration(200);
         set.setInterpolator(CubicBezierInterpolator.DEFAULT);
@@ -1454,7 +1477,7 @@ public class VoIPActivity extends Activity implements VoIPService.StateListener,
         if (tooltipAnim != null)
             tooltipAnim.cancel();
         hintTextView.setVisibility(View.VISIBLE);
-        ObjectAnimator oa = ObjectAnimator.ofFloat(hintTextView, "alpha", visible ? 1 : 0);
+        ObjectAnimator oa = ObjectAnimator.ofFloat(hintTextView, View.ALPHA, visible ? 1 : 0);
         oa.setDuration(300);
         oa.setInterpolator(CubicBezierInterpolator.DEFAULT);
         oa.addListener(new AnimatorListenerAdapter() {
@@ -1483,13 +1506,13 @@ public class VoIPActivity extends Activity implements VoIPService.StateListener,
             int firstOffsetX = (rect.width() / 2 - Math.round(emojiWrap.getWidth() * 2.5f) / 2) - loc[0];
             AnimatorSet set = new AnimatorSet();
             set.playTogether(
-                    ObjectAnimator.ofFloat(emojiWrap, "translationY", offsetY),
-                    ObjectAnimator.ofFloat(emojiWrap, "translationX", firstOffsetX),
-                    ObjectAnimator.ofFloat(emojiWrap, "scaleX", 2.5f),
-                    ObjectAnimator.ofFloat(emojiWrap, "scaleY", 2.5f),
-                    ObjectAnimator.ofFloat(blurOverlayView1, "alpha", blurOverlayView1.getAlpha(), 1, 1),
-                    ObjectAnimator.ofFloat(blurOverlayView2, "alpha", blurOverlayView2.getAlpha(), blurOverlayView2.getAlpha(), 1),
-                    ObjectAnimator.ofFloat(emojiExpandedText, "alpha", 1)
+                    ObjectAnimator.ofFloat(emojiWrap, View.TRANSLATION_Y, offsetY),
+                    ObjectAnimator.ofFloat(emojiWrap, View.TRANSLATION_X, firstOffsetX),
+                    ObjectAnimator.ofFloat(emojiWrap, View.SCALE_X, 2.5f),
+                    ObjectAnimator.ofFloat(emojiWrap, View.SCALE_Y, 2.5f),
+                    ObjectAnimator.ofFloat(blurOverlayView1, View.ALPHA, blurOverlayView1.getAlpha(), 1, 1),
+                    ObjectAnimator.ofFloat(blurOverlayView2, View.ALPHA, blurOverlayView2.getAlpha(), blurOverlayView2.getAlpha(), 1),
+                    ObjectAnimator.ofFloat(emojiExpandedText, View.ALPHA, 1)
             );
             set.setDuration(300);
             set.setInterpolator(CubicBezierInterpolator.DEFAULT);
@@ -1504,13 +1527,13 @@ public class VoIPActivity extends Activity implements VoIPService.StateListener,
         } else {
             AnimatorSet set = new AnimatorSet();
             set.playTogether(
-                    ObjectAnimator.ofFloat(emojiWrap, "translationX", 0),
-                    ObjectAnimator.ofFloat(emojiWrap, "translationY", 0),
-                    ObjectAnimator.ofFloat(emojiWrap, "scaleX", 1),
-                    ObjectAnimator.ofFloat(emojiWrap, "scaleY", 1),
-                    ObjectAnimator.ofFloat(blurOverlayView1, "alpha", blurOverlayView1.getAlpha(), blurOverlayView1.getAlpha(), 0),
-                    ObjectAnimator.ofFloat(blurOverlayView2, "alpha", blurOverlayView2.getAlpha(), 0, 0),
-                    ObjectAnimator.ofFloat(emojiExpandedText, "alpha", 0)
+                    ObjectAnimator.ofFloat(emojiWrap, View.TRANSLATION_X, 0),
+                    ObjectAnimator.ofFloat(emojiWrap, View.TRANSLATION_Y, 0),
+                    ObjectAnimator.ofFloat(emojiWrap, View.SCALE_X, 1),
+                    ObjectAnimator.ofFloat(emojiWrap, View.SCALE_Y, 1),
+                    ObjectAnimator.ofFloat(blurOverlayView1, View.ALPHA, blurOverlayView1.getAlpha(), blurOverlayView1.getAlpha(), 0),
+                    ObjectAnimator.ofFloat(blurOverlayView2, View.ALPHA, blurOverlayView2.getAlpha(), 0, 0),
+                    ObjectAnimator.ofFloat(emojiExpandedText, View.ALPHA, 0)
             );
             set.setDuration(300);
             set.setInterpolator(CubicBezierInterpolator.DEFAULT);
@@ -1713,10 +1736,12 @@ public class VoIPActivity extends Activity implements VoIPService.StateListener,
             this.alpha = 0;
         }
 
+        @Keep
         public int getAlpha() {
             return alpha;
         }
 
+        @Keep
         public void setAlpha(int alpha) {
             this.alpha = alpha;
             stateText.invalidate();

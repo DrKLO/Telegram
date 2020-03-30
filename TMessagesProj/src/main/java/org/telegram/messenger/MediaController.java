@@ -55,6 +55,7 @@ import android.widget.FrameLayout;
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.ExoPlayer;
 import com.google.android.exoplayer2.ui.AspectRatioFrameLayout;
+import com.google.android.exoplayer2.util.Log;
 
 import org.telegram.messenger.audioinfo.AudioInfo;
 import org.telegram.messenger.video.MediaCodecVideoConvertor;
@@ -87,7 +88,7 @@ import java.util.TimerTask;
 
 public class MediaController implements AudioManager.OnAudioFocusChangeListener, NotificationCenter.NotificationCenterDelegate, SensorEventListener {
 
-    private native int startRecord(String path);
+    private native int startRecord(String path, int sampleRate);
     private native int writeFrame(ByteBuffer frame, int len);
     private native void stopRecord();
     public static native int isOpusFile(String path);
@@ -446,7 +447,8 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
 
     private ArrayList<ByteBuffer> recordBuffers = new ArrayList<>();
     private ByteBuffer fileBuffer;
-    private int recordBufferSize = 1280;
+    public int recordBufferSize = 1280;
+    public int sampleRate = 16000;
     private int sendAfterDone;
     private boolean sendAfterDoneNotify;
     private int sendAfterDoneScheduleDate;
@@ -489,7 +491,11 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                         sampleStep = (float) len / 2 / (float) newPart;
                         for (int i = 0; i < len / 2; i++) {
                             short peak = buffer.getShort();
-                            if (peak > 2500) {
+                            if (Build.VERSION.SDK_INT < 21) {
+                                if (peak > 2500) {
+                                    sum += peak * peak;
+                                }
+                            } else {
                                 sum += peak * peak;
                             }
                             if (i == (int) nextNum && currentNum < recordSamples.length) {
@@ -518,7 +524,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                                 if (fileBuffer.position() == fileBuffer.limit() || flush) {
                                     if (writeFrame(fileBuffer, !flush ? fileBuffer.limit() : finalBuffer.position()) != 0) {
                                         fileBuffer.rewind();
-                                        recordTimeCount += fileBuffer.limit() / 2 / 16;
+                                        recordTimeCount += fileBuffer.limit() / 2 / (sampleRate / 1000);
                                     }
                                 }
                                 if (oldLimit != -1) {
@@ -529,7 +535,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                         });
                     }
                     recordQueue.postRunnable(recordRunnable);
-                    AndroidUtilities.runOnUIThread(() -> NotificationCenter.getInstance(recordingCurrentAccount).postNotificationName(NotificationCenter.recordProgressChanged, recordingGuid, System.currentTimeMillis() - recordStartTime, amplitude));
+                    AndroidUtilities.runOnUIThread(() -> NotificationCenter.getInstance(recordingCurrentAccount).postNotificationName(NotificationCenter.recordProgressChanged, recordingGuid, amplitude));
                 } else {
                     recordBuffers.add(buffer);
                     if (sendAfterDone != 3) {
@@ -725,12 +731,15 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
 
         recordQueue.postRunnable(() -> {
             try {
-                recordBufferSize = AudioRecord.getMinBufferSize(16000, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT);
-                if (recordBufferSize <= 0) {
-                    recordBufferSize = 1280;
+                sampleRate = 16000;
+                int minBuferSize = AudioRecord.getMinBufferSize(sampleRate, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT);
+                if (minBuferSize <= 0) {
+                    minBuferSize = 1280;
                 }
+                recordBufferSize = minBuferSize;
+
                 for (int a = 0; a < 5; a++) {
-                    ByteBuffer buffer = ByteBuffer.allocateDirect(4096);
+                    ByteBuffer buffer = ByteBuffer.allocateDirect(recordBufferSize);
                     buffer.order(ByteOrder.nativeOrder());
                     recordBuffers.add(buffer);
                 }
@@ -846,30 +855,32 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
 
     @Override
     public void onAudioFocusChange(int focusChange) {
-        if (focusChange == AudioManager.AUDIOFOCUS_LOSS) {
-            if (isPlayingMessage(getPlayingMessageObject()) && !isMessagePaused()) {
-                pauseMessage(playingMessageObject);
-            }
-            hasAudioFocus = 0;
-            audioFocus = AUDIO_NO_FOCUS_NO_DUCK;
-        } else if (focusChange == AudioManager.AUDIOFOCUS_GAIN) {
-            audioFocus = AUDIO_FOCUSED;
-            if (resumeAudioOnFocusGain) {
-                resumeAudioOnFocusGain = false;
-                if (isPlayingMessage(getPlayingMessageObject()) && isMessagePaused()) {
-                    playMessage(getPlayingMessageObject());
+        AndroidUtilities.runOnUIThread(() -> {
+            if (focusChange == AudioManager.AUDIOFOCUS_LOSS) {
+                if (isPlayingMessage(getPlayingMessageObject()) && !isMessagePaused()) {
+                    pauseMessage(playingMessageObject);
+                }
+                hasAudioFocus = 0;
+                audioFocus = AUDIO_NO_FOCUS_NO_DUCK;
+            } else if (focusChange == AudioManager.AUDIOFOCUS_GAIN) {
+                audioFocus = AUDIO_FOCUSED;
+                if (resumeAudioOnFocusGain) {
+                    resumeAudioOnFocusGain = false;
+                    if (isPlayingMessage(getPlayingMessageObject()) && isMessagePaused()) {
+                        playMessage(getPlayingMessageObject());
+                    }
+                }
+            } else if (focusChange == AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK) {
+                audioFocus = AUDIO_NO_FOCUS_CAN_DUCK;
+            } else if (focusChange == AudioManager.AUDIOFOCUS_LOSS_TRANSIENT) {
+                audioFocus = AUDIO_NO_FOCUS_NO_DUCK;
+                if (isPlayingMessage(getPlayingMessageObject()) && !isMessagePaused()) {
+                    pauseMessage(playingMessageObject);
+                    resumeAudioOnFocusGain = true;
                 }
             }
-        } else if (focusChange == AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK) {
-            audioFocus = AUDIO_NO_FOCUS_CAN_DUCK;
-        } else if (focusChange == AudioManager.AUDIOFOCUS_LOSS_TRANSIENT) {
-            audioFocus = AUDIO_NO_FOCUS_NO_DUCK;
-            if (isPlayingMessage(getPlayingMessageObject()) && !isMessagePaused()) {
-                pauseMessage(playingMessageObject);
-                resumeAudioOnFocusGain = true;
-            }
-        }
-        setPlayerVolume();
+            setPlayerVolume();
+        });
     }
 
     private void setPlayerVolume() {
@@ -2889,7 +2900,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
             recordingAudioFile = new File(FileLoader.getDirectory(FileLoader.MEDIA_DIR_CACHE), FileLoader.getAttachFileName(recordingAudio));
 
             try {
-                if (startRecord(recordingAudioFile.getAbsolutePath()) == 0) {
+                if (startRecord(recordingAudioFile.getAbsolutePath(), 16000) == 0) {
                     AndroidUtilities.runOnUIThread(() -> {
                         recordStartRunnable = null;
                         NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.recordStartError, guid);
@@ -2897,7 +2908,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                     return;
                 }
 
-                audioRecorder = new AudioRecord(MediaRecorder.AudioSource.DEFAULT, 16000, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, recordBufferSize * 10);
+                audioRecorder = new AudioRecord(MediaRecorder.AudioSource.DEFAULT, sampleRate, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, recordBufferSize);
                 recordStartTime = System.currentTimeMillis();
                 recordTimeCount = 0;
                 samplesCount = 0;
@@ -2930,7 +2941,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
             recordQueue.postRunnable(recordRunnable);
             AndroidUtilities.runOnUIThread(() -> {
                 recordStartRunnable = null;
-                NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.recordStarted, guid);
+                NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.recordStarted, guid, true);
             });
         }, paused ? 500 : 50);
     }
@@ -2993,7 +3004,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                         }
                         NotificationCenter.getInstance(recordingCurrentAccount).postNotificationName(NotificationCenter.audioDidSent, recordingGuid, send == 2 ? audioToSend : null, send == 2 ? recordingAudioFileToSend.getAbsolutePath() : null);
                     } else {
-                        NotificationCenter.getInstance(recordingCurrentAccount).postNotificationName(NotificationCenter.audioRecordTooShort, recordingGuid, false);
+                        NotificationCenter.getInstance(recordingCurrentAccount).postNotificationName(NotificationCenter.audioRecordTooShort, recordingGuid, false, (int) duration);
                         recordingAudioFileToSend.delete();
                     }
                     requestAudioFocus(false);

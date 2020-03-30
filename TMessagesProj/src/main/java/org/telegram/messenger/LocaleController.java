@@ -441,12 +441,12 @@ public class LocaleController {
         return currentLocaleInfo.isLocal();
     }
 
-    public void reloadCurrentRemoteLocale(int currentAccount, String langCode) {
+    public void reloadCurrentRemoteLocale(int currentAccount, String langCode, boolean force) {
         if (langCode != null) {
             langCode = langCode.replace("-", "_");
         }
         if (langCode == null || currentLocaleInfo != null && (langCode.equals(currentLocaleInfo.shortName) || langCode.equals(currentLocaleInfo.baseLangCode))) {
-            applyRemoteLanguage(currentLocaleInfo, langCode, true, currentAccount);
+            applyRemoteLanguage(currentLocaleInfo, langCode, force, currentAccount);
         }
     }
 
@@ -905,9 +905,9 @@ public class LocaleController {
             changingConfiguration = false;
             if (reloadLastFile) {
                 if (init) {
-                    AndroidUtilities.runOnUIThread(() -> reloadCurrentRemoteLocale(currentAccount, null));
+                    AndroidUtilities.runOnUIThread(() -> reloadCurrentRemoteLocale(currentAccount, null, force));
                 } else {
-                    reloadCurrentRemoteLocale(currentAccount, null);
+                    reloadCurrentRemoteLocale(currentAccount, null, force);
                 }
                 reloadLastFile = false;
             }
@@ -1303,7 +1303,7 @@ public class LocaleController {
         return "LOC_ERR: formatDate";
     }
 
-    public static String formatDateAudio(long date) {
+    public static String formatDateAudio(long date, boolean shortFormat) {
         try {
             date *= 1000;
             Calendar rightNow = Calendar.getInstance();
@@ -1314,7 +1314,11 @@ public class LocaleController {
             int dateYear = rightNow.get(Calendar.YEAR);
 
             if (dateDay == day && year == dateYear) {
-                return LocaleController.formatString("TodayAtFormatted", R.string.TodayAtFormatted, getInstance().formatterDay.format(new Date(date)));
+                if (shortFormat) {
+                    return LocaleController.formatString("TodayAtFormatted", R.string.TodayAtFormatted, getInstance().formatterDay.format(new Date(date)));
+                } else {
+                    return LocaleController.formatString("TodayAtFormattedWithToday", R.string.TodayAtFormattedWithToday, getInstance().formatterDay.format(new Date(date)));
+                }
             } else if (dateDay + 1 == day && year == dateYear) {
                 return LocaleController.formatString("YesterdayAtFormatted", R.string.YesterdayAtFormatted, getInstance().formatterDay.format(new Date(date)));
             } else if (Math.abs(System.currentTimeMillis() - date) < 31536000000L) {

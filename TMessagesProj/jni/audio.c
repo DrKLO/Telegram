@@ -219,14 +219,15 @@ static int writeOggPage(ogg_page *page, FILE *os) {
     return written;
 }
 
-const opus_int32 bitrate = 16000;
-const opus_int32 rate = 16000;
+const opus_int32 bitrate = 25000;
 const opus_int32 frame_size = 960;
 const int with_cvbr = 1;
 const int max_ogg_delay = 0;
 const int comment_padding = 512;
 
-opus_int32 coding_rate = 16000;
+opus_int32 rate = 48000;
+opus_int32 coding_rate = 48000;
+
 ogg_int32_t _packetId;
 OpusEncoder *_encoder = 0;
 uint8_t *_packet = 0;
@@ -282,9 +283,12 @@ void cleanupRecorder() {
     memset(&og, 0, sizeof(ogg_page));
 }
 
-int initRecorder(const char *path) {
+int initRecorder(const char *path, opus_int32 sampleRate) {
     cleanupRecorder();
-    
+
+    coding_rate = sampleRate;
+    rate = sampleRate;
+
     if (!path) {
         return 0;
     }
@@ -305,7 +309,6 @@ int initRecorder(const char *path) {
     inopt.skip = 0;
     
     comment_init(&inopt.comments, &inopt.comments_length, opus_get_version_string());
-    coding_rate = 16000;
     
     if (rate != coding_rate) {
         LOGE("Invalid rate");
@@ -329,6 +332,7 @@ int initRecorder(const char *path) {
     _packet = malloc(max_frame_bytes);
     
     result = opus_encoder_ctl(_encoder, OPUS_SET_BITRATE(bitrate));
+    result = opus_encoder_ctl(_encoder, OPUS_SET_COMPLEXITY(10));
     if (result != OPUS_OK) {
         LOGE("Error OPUS_SET_BITRATE returned: %s", opus_strerror(result));
         return 0;
@@ -409,7 +413,6 @@ int initRecorder(const char *path) {
     
     return 1;
 }
-
 int writeFrame(uint8_t *framePcmBytes, uint32_t frameByteCount) {
     size_t cur_frame_size = frame_size;
     _packetId++;
@@ -493,10 +496,10 @@ int writeFrame(uint8_t *framePcmBytes, uint32_t frameByteCount) {
     return 1;
 }
 
-JNIEXPORT jint Java_org_telegram_messenger_MediaController_startRecord(JNIEnv *env, jclass class, jstring path) {
+JNIEXPORT jint Java_org_telegram_messenger_MediaController_startRecord(JNIEnv *env, jclass class, jstring path, jint sampleRate) {
     const char *pathStr = (*env)->GetStringUTFChars(env, path, 0);
-    
-    int32_t result = initRecorder(pathStr);
+
+    int32_t result = initRecorder(pathStr, sampleRate);
     
     if (pathStr != 0) {
         (*env)->ReleaseStringUTFChars(env, path, pathStr);

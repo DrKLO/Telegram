@@ -32,6 +32,7 @@ import android.view.SoundEffectConstants;
 import android.view.View;
 import android.view.ViewConfiguration;
 import android.view.ViewGroup;
+import android.view.ViewParent;
 import android.view.accessibility.AccessibilityEvent;
 import android.widget.FrameLayout;
 
@@ -85,6 +86,8 @@ public class RecyclerListView extends RecyclerView {
 
     private boolean hideIfEmpty = true;
 
+    private boolean drawSelectorBehind;
+    private int selectorType = 2;
     protected Drawable selectorDrawable;
     protected int selectorPosition;
     protected android.graphics.Rect selectorRect = new android.graphics.Rect();
@@ -676,7 +679,7 @@ public class RecyclerListView extends RecyclerView {
                         }
                     };
                     AndroidUtilities.runOnUIThread(selectChildRunnable, ViewConfiguration.getTapTimeout());
-                    if (currentChildView.isEnabled()) {
+                    if (currentChildView.isEnabled() && canHighlightChildAt(currentChildView, x - currentChildView.getX(), y - currentChildView.getY())) {
                         positionSelector(currentChildPosition, currentChildView);
                         if (selectorDrawable != null) {
                             final Drawable d = selectorDrawable.getCurrent();
@@ -747,6 +750,10 @@ public class RecyclerListView extends RecyclerView {
             }
         }
         return null;
+    }
+
+    protected boolean canHighlightChildAt(View child, float x, float y) {
+        return true;
     }
 
     public void setDisableHighlightState(boolean value) {
@@ -952,11 +959,23 @@ public class RecyclerListView extends RecyclerView {
         }
     }
 
+    public void setSelectorType(int type) {
+        selectorType = type;
+    }
+
+    public void setDrawSelectorBehind(boolean value) {
+        drawSelectorBehind = value;
+    }
+
     public void setSelectorDrawableColor(int color) {
         if (selectorDrawable != null) {
             selectorDrawable.setCallback(null);
         }
-        selectorDrawable = Theme.getSelectorDrawable(color, false);
+        if (selectorType == 2) {
+            selectorDrawable = Theme.getSelectorDrawable(color, false);
+        } else {
+            selectorDrawable = Theme.createSelectorDrawable(color, selectorType);
+        }
         selectorDrawable.setCallback(this);
     }
 
@@ -1052,11 +1071,7 @@ public class RecyclerListView extends RecyclerView {
                                         } else {
                                             headerTop = -AndroidUtilities.dp(100);
                                         }
-                                        if (headerTop < 0) {
-                                            header.setTag(headerTop);
-                                        } else {
-                                            header.setTag(0);
-                                        }
+                                        header.setTag(Math.min(headerTop, 0));
                                     } else {
                                         header.setTag(0);
                                     }
@@ -1653,8 +1668,12 @@ public class RecyclerListView extends RecyclerView {
 
     @Override
     protected void dispatchDraw(Canvas canvas) {
+        if (drawSelectorBehind && !selectorRect.isEmpty()) {
+            selectorDrawable.setBounds(selectorRect);
+            selectorDrawable.draw(canvas);
+        }
         super.dispatchDraw(canvas);
-        if (!selectorRect.isEmpty()) {
+        if (!drawSelectorBehind && !selectorRect.isEmpty()) {
             selectorDrawable.setBounds(selectorRect);
             selectorDrawable.draw(canvas);
         }
@@ -1757,5 +1776,37 @@ public class RecyclerListView extends RecyclerView {
             return;
         }
         super.requestLayout();
+    }
+
+    public static class FoucsableOnTouchListener implements OnTouchListener {
+        private float x;
+        private float y;
+        private boolean onFocus;
+
+        @Override
+        public boolean onTouch(View v, MotionEvent event) {
+            ViewParent parent = v.getParent();
+            if (parent == null) {
+                return false;
+            }
+            if (event.getAction() == MotionEvent.ACTION_DOWN) {
+                x = event.getX();
+                y = event.getY();
+                onFocus = true;
+                parent.requestDisallowInterceptTouchEvent(true);
+            } if (event.getAction() == MotionEvent.ACTION_MOVE) {
+                float dx = (x - event.getX());
+                float dy = (y - event.getY());
+                float touchSlop = ViewConfiguration.get(v.getContext()).getScaledTouchSlop();
+                if (onFocus && Math.sqrt(dx * dx + dy * dy) >touchSlop) {
+                    onFocus = false;
+                    parent.requestDisallowInterceptTouchEvent(false);
+                }
+            } else if (event.getAction() == MotionEvent.ACTION_UP || event.getAction() == MotionEvent.ACTION_CANCEL) {
+                onFocus = false;
+                parent.requestDisallowInterceptTouchEvent(false);
+            }
+            return false;
+        }
     }
 }

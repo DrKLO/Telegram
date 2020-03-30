@@ -10,7 +10,6 @@ package org.telegram.ui;
 
 import android.content.Context;
 import android.content.DialogInterface;
-import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.util.TypedValue;
@@ -523,6 +522,7 @@ public class ChatLinkActivity extends BaseFragment implements NotificationCenter
         }
     }
 
+    @SuppressWarnings("FieldCanBeLocal")
     public class HintInnerCell extends FrameLayout {
 
         private ImageView imageView;
@@ -533,7 +533,7 @@ public class ChatLinkActivity extends BaseFragment implements NotificationCenter
 
             imageView = new ImageView(context);
             imageView.setImageResource(Theme.getCurrentTheme().isDark() ? R.drawable.tip6_dark : R.drawable.tip6);
-            addView(imageView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.CENTER_HORIZONTAL, 0, 20, 8, 0));
+            addView(imageView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.CENTER_HORIZONTAL, 0, 20, 0, 0));
 
             messageTextView = new TextView(context);
             messageTextView.setTextColor(Theme.getColor(Theme.key_chats_message));
@@ -557,7 +557,13 @@ public class ChatLinkActivity extends BaseFragment implements NotificationCenter
 
             addView(messageTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.LEFT, 52, 124, 52, 27));
         }
+
+        @Override
+        protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+            super.onMeasure(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY), heightMeasureSpec);
+        }
     }
+
 
     private class SearchAdapter extends RecyclerListView.SelectionAdapter {
 
@@ -565,9 +571,6 @@ public class ChatLinkActivity extends BaseFragment implements NotificationCenter
         private ArrayList<TLRPC.Chat> searchResult = new ArrayList<>();
         private ArrayList<CharSequence> searchResultNames = new ArrayList<>();
         private Runnable searchRunnable;
-
-        private int searchStartRow;
-        private int totalCount;
 
         public SearchAdapter(Context context) {
             mContext = context;
@@ -670,14 +673,6 @@ public class ChatLinkActivity extends BaseFragment implements NotificationCenter
 
         @Override
         public void notifyDataSetChanged() {
-            totalCount = 0;
-            int count = searchResult.size();
-            if (count != 0) {
-                searchStartRow = totalCount;
-                totalCount += count + 1;
-            } else {
-                searchStartRow = -1;
-            }
             super.notifyDataSetChanged();
         }
 
@@ -861,7 +856,7 @@ public class ChatLinkActivity extends BaseFragment implements NotificationCenter
                 new ThemeDescription(listView, 0, new Class[]{ManageChatUserCell.class}, new String[]{"nameTextView"}, null, null, null, Theme.key_windowBackgroundWhiteBlackText),
                 new ThemeDescription(listView, 0, new Class[]{ManageChatUserCell.class}, new String[]{"statusColor"}, null, null, cellDelegate, Theme.key_windowBackgroundWhiteGrayText),
                 new ThemeDescription(listView, 0, new Class[]{ManageChatUserCell.class}, new String[]{"statusOnlineColor"}, null, null, cellDelegate, Theme.key_windowBackgroundWhiteBlueText),
-                new ThemeDescription(listView, 0, new Class[]{ManageChatUserCell.class}, null, new Drawable[]{Theme.avatar_savedDrawable}, null, Theme.key_avatar_text),
+                new ThemeDescription(listView, 0, new Class[]{ManageChatUserCell.class}, null, Theme.avatarDrawables, null, Theme.key_avatar_text),
                 new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundRed),
                 new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundOrange),
                 new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundViolet),

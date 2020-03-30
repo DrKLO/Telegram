@@ -409,11 +409,13 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
         TLRPC.FileLocation newPhoto = null;
         avatarDrawable.setInfo(user);
         if (UserObject.isUserSelf(user)) {
-            avatarDrawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_SAVED_SMALL);
+            avatarDrawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_SAVED);
+            avatarDrawable.setSmallSize(true);
             if (avatarImageView != null) {
                 avatarImageView.setImage(null, null, avatarDrawable, user);
             }
         } else {
+            avatarDrawable.setSmallSize(false);
             if (avatarImageView != null) {
                 avatarImageView.setImage(ImageLocation.getForUser(user, false), "50_50", avatarDrawable, user);
             }
@@ -429,11 +431,13 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
         if (user != null) {
             avatarDrawable.setInfo(user);
             if (UserObject.isUserSelf(user)) {
-                avatarDrawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_SAVED_SMALL);
+                avatarDrawable.setSmallSize(true);
+                avatarDrawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_SAVED);
                 if (avatarImageView != null) {
                     avatarImageView.setImage(null, null, avatarDrawable, user);
                 }
             } else {
+                avatarDrawable.setSmallSize(false);
                 if (avatarImageView != null) {
                     avatarImageView.setImage(ImageLocation.getForUser(user, false), "50_50", avatarDrawable, user);
                 }

@@ -190,11 +190,11 @@ public class WebPlayerView extends ViewGroup implements VideoPlayer.VideoPlayerD
     private static final Pattern playerIdPattern = Pattern.compile(".*?-([a-zA-Z0-9_-]+)(?:/watch_as3|/html5player(?:-new)?|(?:/[a-z]{2}_[A-Z]{2})?/base)?\\.([a-z]+)$");
     private static final String exprName = "[a-zA-Z_$][a-zA-Z_$0-9]*";
 
-    private abstract class function {
+    private static abstract class function {
         public abstract Object run(Object[] args);
     }
 
-    private class JSExtractor {
+    private static class JSExtractor {
 
         ArrayList<String> codeLines = new ArrayList<>();
 
@@ -427,7 +427,7 @@ public class WebPlayerView extends ViewGroup implements VideoPlayer.VideoPlayerD
         void jsCallFinished(String value);
     }
 
-    public class JavaScriptInterface {
+    public static class JavaScriptInterface {
         private final CallJavaResultInterface callJavaResultInterface;
 
         public JavaScriptInterface(CallJavaResultInterface callJavaResult) {
@@ -1317,7 +1317,7 @@ public class WebPlayerView extends ViewGroup implements VideoPlayer.VideoPlayerD
             if (isVisible) {
                 if (animated) {
                     currentAnimation = new AnimatorSet();
-                    currentAnimation.playTogether(ObjectAnimator.ofFloat(this, "alpha", 1.0f));
+                    currentAnimation.playTogether(ObjectAnimator.ofFloat(this, View.ALPHA, 1.0f));
                     currentAnimation.setDuration(150);
                     currentAnimation.addListener(new AnimatorListenerAdapter() {
                         @Override
@@ -1332,7 +1332,7 @@ public class WebPlayerView extends ViewGroup implements VideoPlayer.VideoPlayerD
             } else {
                 if (animated) {
                     currentAnimation = new AnimatorSet();
-                    currentAnimation.playTogether(ObjectAnimator.ofFloat(this, "alpha", 0.0f));
+                    currentAnimation.playTogether(ObjectAnimator.ofFloat(this, View.ALPHA, 0.0f));
                     currentAnimation.setDuration(150);
                     currentAnimation.addListener(new AnimatorListenerAdapter() {
                         @Override
@@ -1878,29 +1878,31 @@ public class WebPlayerView extends ViewGroup implements VideoPlayer.VideoPlayerD
 
     @Override
     public void onAudioFocusChange(int focusChange) {
-        if (focusChange == AudioManager.AUDIOFOCUS_LOSS) {
-            if (videoPlayer.isPlaying()) {
-                videoPlayer.pause();
-                updatePlayButton();
+        AndroidUtilities.runOnUIThread(() -> {
+            if (focusChange == AudioManager.AUDIOFOCUS_LOSS) {
+                if (videoPlayer.isPlaying()) {
+                    videoPlayer.pause();
+                    updatePlayButton();
+                }
+                hasAudioFocus = false;
+                audioFocus = AUDIO_NO_FOCUS_NO_DUCK;
+            } else if (focusChange == AudioManager.AUDIOFOCUS_GAIN) {
+                audioFocus = AUDIO_FOCUSED;
+                if (resumeAudioOnFocusGain) {
+                    resumeAudioOnFocusGain = false;
+                    videoPlayer.play();
+                }
+            } else if (focusChange == AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK) {
+                audioFocus = AUDIO_NO_FOCUS_CAN_DUCK;
+            } else if (focusChange == AudioManager.AUDIOFOCUS_LOSS_TRANSIENT) {
+                audioFocus = AUDIO_NO_FOCUS_NO_DUCK;
+                if (videoPlayer.isPlaying()) {
+                    resumeAudioOnFocusGain = true;
+                    videoPlayer.pause();
+                    updatePlayButton();
+                }
             }
-            hasAudioFocus = false;
-            audioFocus = AUDIO_NO_FOCUS_NO_DUCK;
-        } else if (focusChange == AudioManager.AUDIOFOCUS_GAIN) {
-            audioFocus = AUDIO_FOCUSED;
-            if (resumeAudioOnFocusGain) {
-                resumeAudioOnFocusGain = false;
-                videoPlayer.play();
-            }
-        } else if (focusChange == AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK) {
-            audioFocus = AUDIO_NO_FOCUS_CAN_DUCK;
-        } else if (focusChange == AudioManager.AUDIOFOCUS_LOSS_TRANSIENT) {
-            audioFocus = AUDIO_NO_FOCUS_NO_DUCK;
-            if (videoPlayer.isPlaying()) {
-                resumeAudioOnFocusGain = true;
-                videoPlayer.pause();
-                updatePlayButton();
-            }
-        }
+        });
     }
 
     private void updateFullscreenButton() {

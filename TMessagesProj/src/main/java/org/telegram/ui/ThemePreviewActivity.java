@@ -610,7 +610,7 @@ public class ThemePreviewActivity extends BaseFragment implements DownloadContro
 
         page2.addView(backgroundImage, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.LEFT | Gravity.TOP, 0, 0, 0, 48));
         if (screenType == SCREEN_TYPE_CHANGE_BACKGROUND) {
-            backgroundImage.getImageReceiver().setDelegate((imageReceiver, set, thumb) -> {
+            backgroundImage.getImageReceiver().setDelegate((imageReceiver, set, thumb, memCache) -> {
                 if (!(currentWallpaper instanceof WallpapersListActivity.ColorWallpaper)) {
                     Drawable dr = imageReceiver.getDrawable();
                     if (set && dr != null) {
@@ -656,6 +656,7 @@ public class ThemePreviewActivity extends BaseFragment implements DownloadContro
                 dropDownContainer.addSubItem(2, LocaleController.getString("ColorPickerBackground", R.string.ColorPickerBackground));
                 dropDownContainer.addSubItem(3, LocaleController.getString("ColorPickerMyMessages", R.string.ColorPickerMyMessages));
                 dropDownContainer.setAllowCloseAnimation(false);
+                dropDownContainer.setForceSmoothKeyboard(true);
                 actionBar2.addView(dropDownContainer, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT, AndroidUtilities.isTablet() ? 64 : 56, 0, 40, 0));
                 dropDownContainer.setOnClickListener(view -> dropDownContainer.toggleSubMenu());
 

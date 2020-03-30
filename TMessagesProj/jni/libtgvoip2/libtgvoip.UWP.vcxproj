@@ -1,0 +1,1069 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|ARM">
+      <Configuration>Debug</Configuration>
+      <Platform>ARM</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|ARM">
+      <Configuration>Release</Configuration>
+      <Platform>ARM</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{88803693-7606-484b-9d2f-4bb789d57c29}</ProjectGuid>
+    <Keyword>WindowsRuntimeComponent</Keyword>
+    <RootNamespace>libtgvoip</RootNamespace>
+    <DefaultLanguage>en</DefaultLanguage>
+    <MinimumVisualStudioVersion>14.0</MinimumVisualStudioVersion>
+    <AppContainerApplication>true</AppContainerApplication>
+    <ApplicationType>Windows Store</ApplicationType>
+    <WindowsTargetPlatformVersion>10.0.17134.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformMinVersion>10.0.10240.0</WindowsTargetPlatformMinVersion>
+    <ApplicationTypeRevision>10.0</ApplicationTypeRevision>
+    <ProjectName>libtgvoip</ProjectName>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v141</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v141</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v141</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <PlatformToolset>v141</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <PlatformToolset>v141</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <PlatformToolset>v141</PlatformToolset>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="$([Microsoft.Build.Utilities.ToolLocationHelper]::GetPlatformExtensionSDKLocation(`WindowsMobile, Version=10.0.17134.0`, $(TargetPlatformIdentifier), $(TargetPlatformVersion),  $(SDKReferenceDirectoryRoot), $(SDKExtensionDirectoryRoot), $(SDKReferenceRegistryRoot)))\DesignTime\CommonConfiguration\Neutral\WindowsMobile.props" Condition="exists('$([Microsoft.Build.Utilities.ToolLocationHelper]::GetPlatformExtensionSDKLocation(`WindowsMobile, Version=10.0.17134.0`, $(TargetPlatformIdentifier), $(TargetPlatformVersion),  $(SDKReferenceDirectoryRoot), $(SDKExtensionDirectoryRoot), $(SDKReferenceRegistryRoot)))\DesignTime\CommonConfiguration\Neutral\WindowsMobile.props')" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="$([Microsoft.Build.Utilities.ToolLocationHelper]::GetPlatformExtensionSDKLocation(`WindowsMobile, Version=10.0.17134.0`, $(TargetPlatformIdentifier), $(TargetPlatformVersion),  $(SDKReferenceDirectoryRoot), $(SDKExtensionDirectoryRoot), $(SDKReferenceRegistryRoot)))\DesignTime\CommonConfiguration\Neutral\WindowsMobile.props" Condition="exists('$([Microsoft.Build.Utilities.ToolLocationHelper]::GetPlatformExtensionSDKLocation(`WindowsMobile, Version=10.0.17134.0`, $(TargetPlatformIdentifier), $(TargetPlatformVersion),  $(SDKReferenceDirectoryRoot), $(SDKExtensionDirectoryRoot), $(SDKReferenceRegistryRoot)))\DesignTime\CommonConfiguration\Neutral\WindowsMobile.props')" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="$([Microsoft.Build.Utilities.ToolLocationHelper]::GetPlatformExtensionSDKLocation(`WindowsMobile, Version=10.0.17134.0`, $(TargetPlatformIdentifier), $(TargetPlatformVersion),  $(SDKReferenceDirectoryRoot), $(SDKExtensionDirectoryRoot), $(SDKReferenceRegistryRoot)))\DesignTime\CommonConfiguration\Neutral\WindowsMobile.props" Condition="exists('$([Microsoft.Build.Utilities.ToolLocationHelper]::GetPlatformExtensionSDKLocation(`WindowsMobile, Version=10.0.17134.0`, $(TargetPlatformIdentifier), $(TargetPlatformVersion),  $(SDKReferenceDirectoryRoot), $(SDKExtensionDirectoryRoot), $(SDKReferenceRegistryRoot)))\DesignTime\CommonConfiguration\Neutral\WindowsMobile.props')" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="$([Microsoft.Build.Utilities.ToolLocationHelper]::GetPlatformExtensionSDKLocation(`WindowsMobile, Version=10.0.17134.0`, $(TargetPlatformIdentifier), $(TargetPlatformVersion),  $(SDKReferenceDirectoryRoot), $(SDKExtensionDirectoryRoot), $(SDKReferenceRegistryRoot)))\DesignTime\CommonConfiguration\Neutral\WindowsMobile.props" Condition="exists('$([Microsoft.Build.Utilities.ToolLocationHelper]::GetPlatformExtensionSDKLocation(`WindowsMobile, Version=10.0.17134.0`, $(TargetPlatformIdentifier), $(TargetPlatformVersion),  $(SDKReferenceDirectoryRoot), $(SDKExtensionDirectoryRoot), $(SDKReferenceRegistryRoot)))\DesignTime\CommonConfiguration\Neutral\WindowsMobile.props')" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|ARM'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="$([Microsoft.Build.Utilities.ToolLocationHelper]::GetPlatformExtensionSDKLocation(`WindowsMobile, Version=10.0.17134.0`, $(TargetPlatformIdentifier), $(TargetPlatformVersion),  $(SDKReferenceDirectoryRoot), $(SDKExtensionDirectoryRoot), $(SDKReferenceRegistryRoot)))\DesignTime\CommonConfiguration\Neutral\WindowsMobile.props" Condition="exists('$([Microsoft.Build.Utilities.ToolLocationHelper]::GetPlatformExtensionSDKLocation(`WindowsMobile, Version=10.0.17134.0`, $(TargetPlatformIdentifier), $(TargetPlatformVersion),  $(SDKReferenceDirectoryRoot), $(SDKExtensionDirectoryRoot), $(SDKReferenceRegistryRoot)))\DesignTime\CommonConfiguration\Neutral\WindowsMobile.props')" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="$([Microsoft.Build.Utilities.ToolLocationHelper]::GetPlatformExtensionSDKLocation(`WindowsMobile, Version=10.0.17134.0`, $(TargetPlatformIdentifier), $(TargetPlatformVersion),  $(SDKReferenceDirectoryRoot), $(SDKExtensionDirectoryRoot), $(SDKReferenceRegistryRoot)))\DesignTime\CommonConfiguration\Neutral\WindowsMobile.props" Condition="exists('$([Microsoft.Build.Utilities.ToolLocationHelper]::GetPlatformExtensionSDKLocation(`WindowsMobile, Version=10.0.17134.0`, $(TargetPlatformIdentifier), $(TargetPlatformVersion),  $(SDKReferenceDirectoryRoot), $(SDKExtensionDirectoryRoot), $(SDKReferenceRegistryRoot)))\DesignTime\CommonConfiguration\Neutral\WindowsMobile.props')" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <GenerateManifest>false</GenerateManifest>
+    <MappedPlatform>Debug</MappedPlatform>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'">
+    <GenerateManifest>false</GenerateManifest>
+    <MappedPlatform>ARM\Debug</MappedPlatform>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <GenerateManifest>false</GenerateManifest>
+    <MappedPlatform>x64\Debug</MappedPlatform>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <GenerateManifest>false</GenerateManifest>
+    <MappedPlatform>Release</MappedPlatform>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM'">
+    <GenerateManifest>false</GenerateManifest>
+    <MappedPlatform>ARM\Release</MappedPlatform>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <GenerateManifest>false</GenerateManifest>
+    <MappedPlatform>x64\Release</MappedPlatform>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <PreprocessorDefinitions>_WINRT_DLL;_CRT_SECURE_NO_WARNINGS;_WINSOCK_DEPRECATED_NO_WARNINGS;NOMINMAX;WEBRTC_APM_DEBUG_DUMP=0;TGVOIP_USE_CUSTOM_CRYPTO;WEBRTC_WIN;WEBRTC_UWP;WEBRTC_NS_FLOAT;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+      <PrecompiledHeaderOutputFile>$(IntDir)pch.pch</PrecompiledHeaderOutputFile>
+      <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
+      <DisableSpecificWarnings>28204</DisableSpecificWarnings>
+      <AdditionalIncludeDirectories>webrtc_dsp;../libopus/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <CompileAsWinRT>true</CompileAsWinRT>
+      <ObjectFileName>$(IntDir)/%(RelativeDir)/</ObjectFileName>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
+      <AdditionalDependencies>libopus.lib;ws2_32.lib;mmdevapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)$(MappedPlatform)\libopus\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'">
+    <ClCompile>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <PreprocessorDefinitions>_WINRT_DLL;_CRT_SECURE_NO_WARNINGS;_WINSOCK_DEPRECATED_NO_WARNINGS;NOMINMAX;WEBRTC_APM_DEBUG_DUMP=0;TGVOIP_USE_CUSTOM_CRYPTO;WEBRTC_WIN;WEBRTC_UWP;WEBRTC_NS_FLOAT;WEBRTC_HAS_NEON;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+      <PrecompiledHeaderOutputFile>$(IntDir)pch.pch</PrecompiledHeaderOutputFile>
+      <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
+      <DisableSpecificWarnings>28204</DisableSpecificWarnings>
+      <AdditionalIncludeDirectories>webrtc_dsp;../libopus/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <ObjectFileName>$(IntDir)/%(RelativeDir)/</ObjectFileName>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
+      <AdditionalDependencies>libopus.lib;ws2_32.lib;mmdevapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)$(MappedPlatform)\libopus\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <PreprocessorDefinitions>_WINRT_DLL;_CRT_SECURE_NO_WARNINGS;_WINSOCK_DEPRECATED_NO_WARNINGS;NOMINMAX;WEBRTC_APM_DEBUG_DUMP=0;TGVOIP_USE_CUSTOM_CRYPTO;WEBRTC_WIN;WEBRTC_UWP;WEBRTC_NS_FLOAT;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+      <PrecompiledHeaderOutputFile>$(IntDir)pch.pch</PrecompiledHeaderOutputFile>
+      <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
+      <DisableSpecificWarnings>28204</DisableSpecificWarnings>
+      <AdditionalIncludeDirectories>webrtc_dsp;../libopus/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <ObjectFileName>$(IntDir)/%(RelativeDir)/</ObjectFileName>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
+      <AdditionalDependencies>libopus.lib;ws2_32.lib;mmdevapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)$(MappedPlatform)\libopus\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <PreprocessorDefinitions>_WINRT_DLL;_CRT_SECURE_NO_WARNINGS;_WINSOCK_DEPRECATED_NO_WARNINGS;NOMINMAX;WEBRTC_APM_DEBUG_DUMP=0;NDEBUG;TGVOIP_USE_CUSTOM_CRYPTO;WEBRTC_WIN;WEBRTC_UWP;WEBRTC_NS_FLOAT;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+      <PrecompiledHeaderOutputFile>$(IntDir)pch.pch</PrecompiledHeaderOutputFile>
+      <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
+      <DisableSpecificWarnings>28204</DisableSpecificWarnings>
+      <AdditionalIncludeDirectories>webrtc_dsp;../libopus/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <ObjectFileName>$(IntDir)/%(RelativeDir)/</ObjectFileName>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
+      <AdditionalDependencies>libopus.lib;ws2_32.lib;mmdevapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)$(MappedPlatform)\libopus\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM'">
+    <ClCompile>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <PreprocessorDefinitions>_WINRT_DLL;_CRT_SECURE_NO_WARNINGS;_WINSOCK_DEPRECATED_NO_WARNINGS;NOMINMAX;WEBRTC_APM_DEBUG_DUMP=0;NDEBUG;TGVOIP_USE_CUSTOM_CRYPTO;WEBRTC_WIN;WEBRTC_UWP;WEBRTC_NS_FLOAT;WEBRTC_HAS_NEON;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+      <PrecompiledHeaderOutputFile>$(IntDir)pch.pch</PrecompiledHeaderOutputFile>
+      <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
+      <DisableSpecificWarnings>28204</DisableSpecificWarnings>
+      <AdditionalIncludeDirectories>webrtc_dsp;../libopus/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <ObjectFileName>$(IntDir)/%(RelativeDir)/</ObjectFileName>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
+      <AdditionalDependencies>libopus.lib;ws2_32.lib;mmdevapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)$(MappedPlatform)\libopus\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <PreprocessorDefinitions>_WINRT_DLL;_CRT_SECURE_NO_WARNINGS;_WINSOCK_DEPRECATED_NO_WARNINGS;NOMINMAX;WEBRTC_APM_DEBUG_DUMP=0;NDEBUG;TGVOIP_USE_CUSTOM_CRYPTO;WEBRTC_WIN;WEBRTC_UWP;WEBRTC_NS_FLOAT;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+      <PrecompiledHeaderOutputFile>$(IntDir)pch.pch</PrecompiledHeaderOutputFile>
+      <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
+      <DisableSpecificWarnings>28204</DisableSpecificWarnings>
+      <AdditionalIncludeDirectories>webrtc_dsp;../libopus/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <ObjectFileName>$(IntDir)/%(RelativeDir)/</ObjectFileName>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
+      <AdditionalDependencies>libopus.lib;ws2_32.lib;mmdevapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)$(MappedPlatform)\libopus\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClInclude Include="audio\AudioInput.h" />
+    <ClInclude Include="audio\AudioIO.h" />
+    <ClInclude Include="audio\AudioIOCallback.h" />
+    <ClInclude Include="audio\AudioOutput.h" />
+    <ClInclude Include="audio\Resampler.h" />
+    <ClInclude Include="BlockingQueue.h" />
+    <ClInclude Include="Buffers.h" />
+    <ClInclude Include="CongestionControl.h" />
+    <ClInclude Include="EchoCanceller.h" />
+    <ClInclude Include="JitterBuffer.h" />
+    <ClInclude Include="json11.hpp" />
+    <ClInclude Include="logging.h" />
+    <ClInclude Include="MediaStreamItf.h" />
+    <ClInclude Include="MessageThread.h" />
+    <ClInclude Include="NetworkSocket.h" />
+    <ClInclude Include="OpusDecoder.h" />
+    <ClInclude Include="OpusEncoder.h" />
+    <ClInclude Include="os\windows\AudioInputWASAPI.h" />
+    <ClInclude Include="os\windows\AudioOutputWASAPI.h" />
+    <ClInclude Include="os\windows\NetworkSocketWinsock.h" />
+    <ClInclude Include="os\windows\WindowsSandboxUtils.h" />
+    <ClInclude Include="os\windows\WindowsSpecific.h" />
+    <ClInclude Include="PacketReassembler.h" />
+    <ClInclude Include="PrivateDefines.h" />
+    <ClInclude Include="threading.h" />
+    <ClInclude Include="utils.h" />
+    <ClInclude Include="video\ScreamCongestionController.h" />
+    <ClInclude Include="video\VideoFEC.h" />
+    <ClInclude Include="video\VideoPacketSender.h" />
+    <ClInclude Include="video\VideoRenderer.h" />
+    <ClInclude Include="video\VideoSource.h" />
+    <ClInclude Include="VoIPController.h" />
+    <ClInclude Include="os\windows\CXWrapper.h" />
+    <ClInclude Include="VoIPServerConfig.h" />
+    <ClInclude Include="webrtc_dsp\absl\algorithm\algorithm.h" />
+    <ClInclude Include="webrtc_dsp\absl\base\attributes.h" />
+    <ClInclude Include="webrtc_dsp\absl\base\config.h" />
+    <ClInclude Include="webrtc_dsp\absl\base\internal\atomic_hook.h" />
+    <ClInclude Include="webrtc_dsp\absl\base\internal\identity.h" />
+    <ClInclude Include="webrtc_dsp\absl\base\internal\inline_variable.h" />
+    <ClInclude Include="webrtc_dsp\absl\base\internal\invoke.h" />
+    <ClInclude Include="webrtc_dsp\absl\base\internal\raw_logging.h" />
+    <ClInclude Include="webrtc_dsp\absl\base\internal\throw_delegate.h" />
+    <ClInclude Include="webrtc_dsp\absl\base\log_severity.h" />
+    <ClInclude Include="webrtc_dsp\absl\base\macros.h" />
+    <ClInclude Include="webrtc_dsp\absl\base\optimization.h" />
+    <ClInclude Include="webrtc_dsp\absl\base\policy_checks.h" />
+    <ClInclude Include="webrtc_dsp\absl\base\port.h" />
+    <ClInclude Include="webrtc_dsp\absl\container\inlined_vector.h" />
+    <ClInclude Include="webrtc_dsp\absl\memory\memory.h" />
+    <ClInclude Include="webrtc_dsp\absl\meta\type_traits.h" />
+    <ClInclude Include="webrtc_dsp\absl\strings\ascii.h" />
+    <ClInclude Include="webrtc_dsp\absl\strings\internal\memutil.h" />
+    <ClInclude Include="webrtc_dsp\absl\strings\string_view.h" />
+    <ClInclude Include="webrtc_dsp\absl\types\bad_optional_access.h" />
+    <ClInclude Include="webrtc_dsp\absl\types\optional.h" />
+    <ClInclude Include="webrtc_dsp\absl\utility\utility.h" />
+    <ClInclude Include="webrtc_dsp\api\array_view.h" />
+    <ClInclude Include="webrtc_dsp\api\audio\audio_frame.h" />
+    <ClInclude Include="webrtc_dsp\api\audio\echo_canceller3_config.h" />
+    <ClInclude Include="webrtc_dsp\api\audio\echo_canceller3_factory.h" />
+    <ClInclude Include="webrtc_dsp\api\audio\echo_control.h" />
+    <ClInclude Include="webrtc_dsp\common_audio\audio_converter.h" />
+    <ClInclude Include="webrtc_dsp\common_audio\channel_buffer.h" />
+    <ClInclude Include="webrtc_dsp\common_audio\fir_filter.h" />
+    <ClInclude Include="webrtc_dsp\common_audio\fir_filter_c.h" />
+    <ClInclude Include="webrtc_dsp\common_audio\fir_filter_factory.h" />
+    <ClInclude Include="webrtc_dsp\common_audio\fir_filter_neon.h" />
+    <ClInclude Include="webrtc_dsp\common_audio\fir_filter_sse.h" />
+    <ClInclude Include="webrtc_dsp\common_audio\include\audio_util.h" />
+    <ClInclude Include="webrtc_dsp\common_audio\mocks\mock_smoothing_filter.h" />
+    <ClInclude Include="webrtc_dsp\common_audio\real_fourier.h" />
+    <ClInclude Include="webrtc_dsp\common_audio\real_fourier_ooura.h" />
+    <ClInclude Include="webrtc_dsp\common_audio\resampler\include\push_resampler.h" />
+    <ClInclude Include="webrtc_dsp\common_audio\resampler\include\resampler.h" />
+    <ClInclude Include="webrtc_dsp\common_audio\resampler\push_sinc_resampler.h" />
+    <ClInclude Include="webrtc_dsp\common_audio\resampler\sinc_resampler.h" />
+    <ClInclude Include="webrtc_dsp\common_audio\resampler\sinusoidal_linear_chirp_source.h" />
+    <ClInclude Include="webrtc_dsp\common_audio\ring_buffer.h" />
+    <ClInclude Include="webrtc_dsp\common_audio\signal_processing\complex_fft_tables.h" />
+    <ClInclude Include="webrtc_dsp\common_audio\signal_processing\dot_product_with_scale.h" />
+    <ClInclude Include="webrtc_dsp\common_audio\signal_processing\include\real_fft.h" />
+    <ClInclude Include="webrtc_dsp\common_audio\signal_processing\include\signal_processing_library.h" />
+    <ClInclude Include="webrtc_dsp\common_audio\signal_processing\include\spl_inl.h" />
+    <ClInclude Include="webrtc_dsp\common_audio\signal_processing\include\spl_inl_armv7.h" />
+    <ClInclude Include="webrtc_dsp\common_audio\signal_processing\resample_by_2_internal.h" />
+    <ClInclude Include="webrtc_dsp\common_audio\smoothing_filter.h" />
+    <ClInclude Include="webrtc_dsp\common_audio\sparse_fir_filter.h" />
+    <ClInclude Include="webrtc_dsp\common_audio\third_party\fft4g\fft4g.h" />
+    <ClInclude Include="webrtc_dsp\common_audio\third_party\spl_sqrt_floor\spl_sqrt_floor.h" />
+    <ClInclude Include="webrtc_dsp\common_audio\vad\include\vad.h" />
+    <ClInclude Include="webrtc_dsp\common_audio\vad\include\webrtc_vad.h" />
+    <ClInclude Include="webrtc_dsp\common_audio\vad\vad_core.h" />
+    <ClInclude Include="webrtc_dsp\common_audio\vad\vad_filterbank.h" />
+    <ClInclude Include="webrtc_dsp\common_audio\vad\vad_gmm.h" />
+    <ClInclude Include="webrtc_dsp\common_audio\vad\vad_sp.h" />
+    <ClInclude Include="webrtc_dsp\common_audio\wav_file.h" />
+    <ClInclude Include="webrtc_dsp\common_audio\wav_header.h" />
+    <ClInclude Include="webrtc_dsp\common_audio\window_generator.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_coding\codecs\isac\bandwidth_info.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_coding\codecs\isac\main\include\isac.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_coding\codecs\isac\main\source\arith_routines.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_coding\codecs\isac\main\source\bandwidth_estimator.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_coding\codecs\isac\main\source\codec.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_coding\codecs\isac\main\source\crc.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_coding\codecs\isac\main\source\encode_lpc_swb.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_coding\codecs\isac\main\source\entropy_coding.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_coding\codecs\isac\main\source\filter_functions.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_coding\codecs\isac\main\source\isac_float_type.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_coding\codecs\isac\main\source\isac_vad.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_coding\codecs\isac\main\source\lpc_analysis.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_coding\codecs\isac\main\source\lpc_gain_swb_tables.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_coding\codecs\isac\main\source\lpc_shape_swb12_tables.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_coding\codecs\isac\main\source\lpc_shape_swb16_tables.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_coding\codecs\isac\main\source\lpc_tables.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_coding\codecs\isac\main\source\os_specific_inline.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_coding\codecs\isac\main\source\pitch_estimator.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_coding\codecs\isac\main\source\pitch_filter.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_coding\codecs\isac\main\source\pitch_gain_tables.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_coding\codecs\isac\main\source\pitch_lag_tables.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_coding\codecs\isac\main\source\settings.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_coding\codecs\isac\main\source\spectrum_ar_model_tables.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_coding\codecs\isac\main\source\structs.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\aec3\adaptive_fir_filter.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\aec3\aec3_common.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\aec3\aec3_fft.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\aec3\aec_state.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\aec3\block_delay_buffer.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\aec3\block_framer.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\aec3\block_processor.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\aec3\block_processor_metrics.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\aec3\cascaded_biquad_filter.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\aec3\comfort_noise_generator.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\aec3\decimator.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\aec3\delay_estimate.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\aec3\downsampled_render_buffer.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\aec3\echo_audibility.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\aec3\echo_canceller3.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\aec3\echo_path_delay_estimator.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\aec3\echo_path_variability.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\aec3\echo_remover.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\aec3\echo_remover_metrics.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\aec3\erle_estimator.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\aec3\erl_estimator.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\aec3\fft_buffer.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\aec3\fft_data.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\aec3\filter_analyzer.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\aec3\frame_blocker.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\aec3\fullband_erle_estimator.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\aec3\main_filter_update_gain.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\aec3\matched_filter.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\aec3\matched_filter_lag_aggregator.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\aec3\matrix_buffer.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\aec3\moving_average.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\aec3\render_buffer.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\aec3\render_delay_buffer.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\aec3\render_delay_controller.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\aec3\render_delay_controller_metrics.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\aec3\render_reverb_model.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\aec3\render_signal_analyzer.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\aec3\residual_echo_estimator.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\aec3\reverb_decay_estimator.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\aec3\reverb_frequency_response.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\aec3\reverb_model.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\aec3\reverb_model_estimator.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\aec3\reverb_model_fallback.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\aec3\shadow_filter_update_gain.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\aec3\skew_estimator.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\aec3\stationarity_estimator.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\aec3\subband_erle_estimator.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\aec3\subtractor.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\aec3\subtractor_output.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\aec3\subtractor_output_analyzer.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\aec3\suppression_filter.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\aec3\suppression_gain.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\aec3\suppression_gain_limiter.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\aec3\vector_buffer.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\aec3\vector_math.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\aecm\aecm_core.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\aecm\aecm_defines.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\aecm\echo_control_mobile.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\aec\aec_common.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\aec\aec_core.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\aec\aec_core_optimized_methods.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\aec\aec_resampler.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\aec\echo_cancellation.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\agc2\adaptive_agc.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\agc2\adaptive_digital_gain_applier.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\agc2\adaptive_mode_level_estimator.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\agc2\adaptive_mode_level_estimator_agc.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\agc2\agc2_common.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\agc2\agc2_testing_common.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\agc2\biquad_filter.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\agc2\compute_interpolated_gain_curve.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\agc2\down_sampler.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\agc2\fixed_digital_level_estimator.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\agc2\fixed_gain_controller.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\agc2\gain_applier.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\agc2\interpolated_gain_curve.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\agc2\limiter.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\agc2\limiter_db_gain_curve.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\agc2\noise_level_estimator.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\agc2\noise_spectrum_estimator.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\agc2\rnn_vad\common.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\agc2\rnn_vad\features_extraction.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\agc2\rnn_vad\fft_util.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\agc2\rnn_vad\lp_residual.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\agc2\rnn_vad\pitch_info.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\agc2\rnn_vad\pitch_search.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\agc2\rnn_vad\pitch_search_internal.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\agc2\rnn_vad\ring_buffer.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\agc2\rnn_vad\rnn.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\agc2\rnn_vad\sequence_buffer.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\agc2\rnn_vad\spectral_features.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\agc2\rnn_vad\spectral_features_internal.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\agc2\rnn_vad\symmetric_matrix_buffer.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\agc2\rnn_vad\test_utils.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\agc2\saturation_protector.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\agc2\signal_classifier.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\agc2\vad_with_level.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\agc2\vector_float_frame.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\agc\agc.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\agc\agc_manager_direct.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\agc\gain_map_internal.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\agc\legacy\analog_agc.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\agc\legacy\digital_agc.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\agc\legacy\gain_control.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\agc\loudness_histogram.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\agc\mock_agc.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\agc\utility.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\audio_buffer.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\audio_generator\file_audio_generator.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\audio_processing_impl.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\common.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\echo_cancellation_impl.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\echo_control_mobile_impl.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\echo_detector\circular_buffer.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\echo_detector\mean_variance_estimator.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\echo_detector\moving_max.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\echo_detector\normalized_covariance_estimator.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\gain_controller2.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\gain_control_for_experimental_agc.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\gain_control_impl.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\include\aec_dump.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\include\audio_frame_view.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\include\audio_generator.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\include\audio_generator_factory.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\include\audio_processing.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\include\audio_processing_statistics.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\include\config.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\include\gain_control.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\include\mock_audio_processing.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\level_estimator_impl.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\logging\apm_data_dumper.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\low_cut_filter.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\noise_suppression_impl.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\ns\defines.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\ns\noise_suppression.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\ns\noise_suppression_x.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\ns\nsx_core.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\ns\nsx_defines.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\ns\ns_core.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\ns\windows_private.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\render_queue_item_verifier.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\residual_echo_detector.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\rms_level.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\splitting_filter.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\three_band_filter_bank.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\transient\common.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\transient\daubechies_8_wavelet_coeffs.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\transient\dyadic_decimator.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\transient\moving_moments.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\transient\transient_detector.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\transient\transient_suppressor.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\transient\wpd_node.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\transient\wpd_tree.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\typing_detection.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\utility\block_mean_calculator.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\utility\delay_estimator.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\utility\delay_estimator_internal.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\utility\delay_estimator_wrapper.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\utility\ooura_fft.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\utility\ooura_fft_tables_common.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\utility\ooura_fft_tables_neon_sse2.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\vad\common.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\vad\gmm.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\vad\noise_gmm_tables.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\vad\pitch_based_vad.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\vad\pitch_internal.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\vad\pole_zero_filter.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\vad\standalone_vad.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\vad\vad_audio_proc.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\vad\vad_audio_proc_internal.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\vad\vad_circular_buffer.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\vad\voice_activity_detector.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\vad\voice_gmm_tables.h" />
+    <ClInclude Include="webrtc_dsp\modules\audio_processing\voice_detection_impl.h" />
+    <ClInclude Include="webrtc_dsp\modules\third_party\fft\fft.h" />
+    <ClInclude Include="webrtc_dsp\rtc_base\arraysize.h" />
+    <ClInclude Include="webrtc_dsp\rtc_base\atomicops.h" />
+    <ClInclude Include="webrtc_dsp\rtc_base\checks.h" />
+    <ClInclude Include="webrtc_dsp\rtc_base\compile_assert_c.h" />
+    <ClInclude Include="webrtc_dsp\rtc_base\constructormagic.h" />
+    <ClInclude Include="webrtc_dsp\rtc_base\criticalsection.h" />
+    <ClInclude Include="webrtc_dsp\rtc_base\deprecation.h" />
+    <ClInclude Include="webrtc_dsp\rtc_base\event.h" />
+    <ClInclude Include="webrtc_dsp\rtc_base\event_tracer.h" />
+    <ClInclude Include="webrtc_dsp\rtc_base\function_view.h" />
+    <ClInclude Include="webrtc_dsp\rtc_base\gtest_prod_util.h" />
+    <ClInclude Include="webrtc_dsp\rtc_base\ignore_wundef.h" />
+    <ClInclude Include="webrtc_dsp\rtc_base\logging.h" />
+    <ClInclude Include="webrtc_dsp\rtc_base\logging_mac.h" />
+    <ClInclude Include="webrtc_dsp\rtc_base\memory\aligned_malloc.h" />
+    <ClInclude Include="webrtc_dsp\rtc_base\numerics\safe_compare.h" />
+    <ClInclude Include="webrtc_dsp\rtc_base\numerics\safe_conversions.h" />
+    <ClInclude Include="webrtc_dsp\rtc_base\numerics\safe_conversions_impl.h" />
+    <ClInclude Include="webrtc_dsp\rtc_base\numerics\safe_minmax.h" />
+    <ClInclude Include="webrtc_dsp\rtc_base\platform_file.h" />
+    <ClInclude Include="webrtc_dsp\rtc_base\platform_thread.h" />
+    <ClInclude Include="webrtc_dsp\rtc_base\platform_thread_types.h" />
+    <ClInclude Include="webrtc_dsp\rtc_base\protobuf_utils.h" />
+    <ClInclude Include="webrtc_dsp\rtc_base\race_checker.h" />
+    <ClInclude Include="webrtc_dsp\rtc_base\refcount.h" />
+    <ClInclude Include="webrtc_dsp\rtc_base\refcountedobject.h" />
+    <ClInclude Include="webrtc_dsp\rtc_base\refcounter.h" />
+    <ClInclude Include="webrtc_dsp\rtc_base\sanitizer.h" />
+    <ClInclude Include="webrtc_dsp\rtc_base\scoped_ref_ptr.h" />
+    <ClInclude Include="webrtc_dsp\rtc_base\stringencode.h" />
+    <ClInclude Include="webrtc_dsp\rtc_base\strings\string_builder.h" />
+    <ClInclude Include="webrtc_dsp\rtc_base\stringutils.h" />
+    <ClInclude Include="webrtc_dsp\rtc_base\string_to_number.h" />
+    <ClInclude Include="webrtc_dsp\rtc_base\swap_queue.h" />
+    <ClInclude Include="webrtc_dsp\rtc_base\system\arch.h" />
+    <ClInclude Include="webrtc_dsp\rtc_base\system\asm_defines.h" />
+    <ClInclude Include="webrtc_dsp\rtc_base\system\ignore_warnings.h" />
+    <ClInclude Include="webrtc_dsp\rtc_base\system\inline.h" />
+    <ClInclude Include="webrtc_dsp\rtc_base\system\rtc_export.h" />
+    <ClInclude Include="webrtc_dsp\rtc_base\system\unused.h" />
+    <ClInclude Include="webrtc_dsp\rtc_base\thread_annotations.h" />
+    <ClInclude Include="webrtc_dsp\rtc_base\thread_checker.h" />
+    <ClInclude Include="webrtc_dsp\rtc_base\thread_checker_impl.h" />
+    <ClInclude Include="webrtc_dsp\rtc_base\timeutils.h" />
+    <ClInclude Include="webrtc_dsp\rtc_base\trace_event.h" />
+    <ClInclude Include="webrtc_dsp\rtc_base\type_traits.h" />
+    <ClInclude Include="webrtc_dsp\system_wrappers\include\asm_defines.h" />
+    <ClInclude Include="webrtc_dsp\system_wrappers\include\compile_assert_c.h" />
+    <ClInclude Include="webrtc_dsp\system_wrappers\include\cpu_features_wrapper.h" />
+    <ClInclude Include="webrtc_dsp\system_wrappers\include\field_trial.h" />
+    <ClInclude Include="webrtc_dsp\system_wrappers\include\metrics.h" />
+    <ClInclude Include="webrtc_dsp\third_party\rnnoise\src\kiss_fft.h" />
+    <ClInclude Include="webrtc_dsp\third_party\rnnoise\src\rnn_activations.h" />
+    <ClInclude Include="webrtc_dsp\third_party\rnnoise\src\rnn_vad_weights.h" />
+    <ClInclude Include="webrtc_dsp\typedefs.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="audio\AudioInput.cpp" />
+    <ClCompile Include="audio\AudioIO.cpp" />
+    <ClCompile Include="audio\AudioIOCallback.cpp" />
+    <ClCompile Include="audio\AudioOutput.cpp" />
+    <ClCompile Include="audio\Resampler.cpp" />
+    <ClCompile Include="BlockingQueue.cpp" />
+    <ClCompile Include="Buffers.cpp" />
+    <ClCompile Include="CongestionControl.cpp" />
+    <ClCompile Include="EchoCanceller.cpp" />
+    <ClCompile Include="JitterBuffer.cpp" />
+    <ClCompile Include="json11.cpp" />
+    <ClCompile Include="logging.cpp" />
+    <ClCompile Include="MediaStreamItf.cpp" />
+    <ClCompile Include="MessageThread.cpp" />
+    <ClCompile Include="NetworkSocket.cpp" />
+    <ClCompile Include="OpusDecoder.cpp" />
+    <ClCompile Include="OpusEncoder.cpp" />
+    <ClCompile Include="os\windows\AudioInputWASAPI.cpp" />
+    <ClCompile Include="os\windows\AudioOutputWASAPI.cpp" />
+    <ClCompile Include="os\windows\NetworkSocketWinsock.cpp" />
+    <ClCompile Include="os\windows\WindowsSandboxUtils.cpp" />
+    <ClCompile Include="os\windows\WindowsSpecific.cpp" />
+    <ClCompile Include="PacketReassembler.cpp" />
+    <ClCompile Include="video\ScreamCongestionController.cpp" />
+    <ClCompile Include="video\VideoFEC.cpp" />
+    <ClCompile Include="video\VideoPacketSender.cpp" />
+    <ClCompile Include="video\VideoRenderer.cpp" />
+    <ClCompile Include="video\VideoSource.cpp" />
+    <ClCompile Include="VoIPController.cpp" />
+    <ClCompile Include="os\windows\CXWrapper.cpp" />
+    <ClCompile Include="VoIPGroupController.cpp" />
+    <ClCompile Include="VoIPServerConfig.cpp" />
+    <ClCompile Include="webrtc_dsp\absl\base\internal\raw_logging.cc" />
+    <ClCompile Include="webrtc_dsp\absl\base\internal\throw_delegate.cc" />
+    <ClCompile Include="webrtc_dsp\absl\strings\ascii.cc" />
+    <ClCompile Include="webrtc_dsp\absl\strings\internal\memutil.cc" />
+    <ClCompile Include="webrtc_dsp\absl\strings\string_view.cc" />
+    <ClCompile Include="webrtc_dsp\absl\types\bad_optional_access.cc" />
+    <ClCompile Include="webrtc_dsp\absl\types\optional.cc" />
+    <ClCompile Include="webrtc_dsp\api\audio\audio_frame.cc" />
+    <ClCompile Include="webrtc_dsp\api\audio\echo_canceller3_config.cc" />
+    <ClCompile Include="webrtc_dsp\api\audio\echo_canceller3_factory.cc" />
+    <ClCompile Include="webrtc_dsp\common_audio\audio_converter.cc" />
+    <ClCompile Include="webrtc_dsp\common_audio\audio_util.cc" />
+    <ClCompile Include="webrtc_dsp\common_audio\channel_buffer.cc" />
+    <ClCompile Include="webrtc_dsp\common_audio\fir_filter_c.cc" />
+    <ClCompile Include="webrtc_dsp\common_audio\fir_filter_factory.cc" />
+    <ClCompile Include="webrtc_dsp\common_audio\fir_filter_neon.cc" />
+    <ClCompile Include="webrtc_dsp\common_audio\fir_filter_sse.cc" />
+    <ClCompile Include="webrtc_dsp\common_audio\real_fourier.cc" />
+    <ClCompile Include="webrtc_dsp\common_audio\real_fourier_ooura.cc" />
+    <ClCompile Include="webrtc_dsp\common_audio\resampler\push_resampler.cc" />
+    <ClCompile Include="webrtc_dsp\common_audio\resampler\push_sinc_resampler.cc" />
+    <ClCompile Include="webrtc_dsp\common_audio\resampler\resampler.cc" />
+    <ClCompile Include="webrtc_dsp\common_audio\resampler\sinc_resampler.cc" />
+    <ClCompile Include="webrtc_dsp\common_audio\resampler\sinc_resampler_neon.cc" />
+    <ClCompile Include="webrtc_dsp\common_audio\resampler\sinc_resampler_sse.cc" />
+    <ClCompile Include="webrtc_dsp\common_audio\resampler\sinusoidal_linear_chirp_source.cc" />
+    <ClCompile Include="webrtc_dsp\common_audio\ring_buffer.c">
+      <CompileAsWinRT>false</CompileAsWinRT>
+    </ClCompile>
+    <ClCompile Include="webrtc_dsp\common_audio\signal_processing\auto_correlation.c">
+      <CompileAsWinRT>false</CompileAsWinRT>
+    </ClCompile>
+    <ClCompile Include="webrtc_dsp\common_audio\signal_processing\auto_corr_to_refl_coef.c">
+      <CompileAsWinRT>false</CompileAsWinRT>
+    </ClCompile>
+    <ClCompile Include="webrtc_dsp\common_audio\signal_processing\complex_bit_reverse.c">
+      <CompileAsWinRT>false</CompileAsWinRT>
+    </ClCompile>
+    <ClCompile Include="webrtc_dsp\common_audio\signal_processing\complex_fft.c">
+      <CompileAsWinRT>false</CompileAsWinRT>
+    </ClCompile>
+    <ClCompile Include="webrtc_dsp\common_audio\signal_processing\copy_set_operations.c">
+      <CompileAsWinRT>false</CompileAsWinRT>
+    </ClCompile>
+    <ClCompile Include="webrtc_dsp\common_audio\signal_processing\cross_correlation.c">
+      <CompileAsWinRT>false</CompileAsWinRT>
+    </ClCompile>
+    <ClCompile Include="webrtc_dsp\common_audio\signal_processing\cross_correlation_neon.c">
+      <CompileAsWinRT>false</CompileAsWinRT>
+    </ClCompile>
+    <ClCompile Include="webrtc_dsp\common_audio\signal_processing\division_operations.c">
+      <CompileAsWinRT>false</CompileAsWinRT>
+    </ClCompile>
+    <ClCompile Include="webrtc_dsp\common_audio\signal_processing\dot_product_with_scale.cc" />
+    <ClCompile Include="webrtc_dsp\common_audio\signal_processing\downsample_fast.c">
+      <CompileAsWinRT>false</CompileAsWinRT>
+    </ClCompile>
+    <ClCompile Include="webrtc_dsp\common_audio\signal_processing\downsample_fast_neon.c">
+      <CompileAsWinRT>false</CompileAsWinRT>
+    </ClCompile>
+    <ClCompile Include="webrtc_dsp\common_audio\signal_processing\energy.c">
+      <CompileAsWinRT>false</CompileAsWinRT>
+    </ClCompile>
+    <ClCompile Include="webrtc_dsp\common_audio\signal_processing\filter_ar.c">
+      <CompileAsWinRT>false</CompileAsWinRT>
+    </ClCompile>
+    <ClCompile Include="webrtc_dsp\common_audio\signal_processing\filter_ar_fast_q12.c">
+      <CompileAsWinRT>false</CompileAsWinRT>
+    </ClCompile>
+    <ClCompile Include="webrtc_dsp\common_audio\signal_processing\filter_ma_fast_q12.c">
+      <CompileAsWinRT>false</CompileAsWinRT>
+    </ClCompile>
+    <ClCompile Include="webrtc_dsp\common_audio\signal_processing\get_hanning_window.c">
+      <CompileAsWinRT>false</CompileAsWinRT>
+    </ClCompile>
+    <ClCompile Include="webrtc_dsp\common_audio\signal_processing\get_scaling_square.c">
+      <CompileAsWinRT>false</CompileAsWinRT>
+    </ClCompile>
+    <ClCompile Include="webrtc_dsp\common_audio\signal_processing\ilbc_specific_functions.c">
+      <CompileAsWinRT>false</CompileAsWinRT>
+    </ClCompile>
+    <ClCompile Include="webrtc_dsp\common_audio\signal_processing\levinson_durbin.c">
+      <CompileAsWinRT>false</CompileAsWinRT>
+    </ClCompile>
+    <ClCompile Include="webrtc_dsp\common_audio\signal_processing\lpc_to_refl_coef.c">
+      <CompileAsWinRT>false</CompileAsWinRT>
+    </ClCompile>
+    <ClCompile Include="webrtc_dsp\common_audio\signal_processing\min_max_operations.c">
+      <CompileAsWinRT>false</CompileAsWinRT>
+    </ClCompile>
+    <ClCompile Include="webrtc_dsp\common_audio\signal_processing\min_max_operations_neon.c">
+      <CompileAsWinRT>false</CompileAsWinRT>
+    </ClCompile>
+    <ClCompile Include="webrtc_dsp\common_audio\signal_processing\randomization_functions.c">
+      <CompileAsWinRT>false</CompileAsWinRT>
+    </ClCompile>
+    <ClCompile Include="webrtc_dsp\common_audio\signal_processing\real_fft.c">
+      <CompileAsWinRT>false</CompileAsWinRT>
+    </ClCompile>
+    <ClCompile Include="webrtc_dsp\common_audio\signal_processing\refl_coef_to_lpc.c">
+      <CompileAsWinRT>false</CompileAsWinRT>
+    </ClCompile>
+    <ClCompile Include="webrtc_dsp\common_audio\signal_processing\resample.c">
+      <CompileAsWinRT>false</CompileAsWinRT>
+    </ClCompile>
+    <ClCompile Include="webrtc_dsp\common_audio\signal_processing\resample_48khz.c">
+      <CompileAsWinRT>false</CompileAsWinRT>
+    </ClCompile>
+    <ClCompile Include="webrtc_dsp\common_audio\signal_processing\resample_by_2.c">
+      <CompileAsWinRT>false</CompileAsWinRT>
+    </ClCompile>
+    <ClCompile Include="webrtc_dsp\common_audio\signal_processing\resample_by_2_internal.c">
+      <CompileAsWinRT>false</CompileAsWinRT>
+    </ClCompile>
+    <ClCompile Include="webrtc_dsp\common_audio\signal_processing\resample_fractional.c">
+      <CompileAsWinRT>false</CompileAsWinRT>
+    </ClCompile>
+    <ClCompile Include="webrtc_dsp\common_audio\signal_processing\splitting_filter1.c">
+      <CompileAsWinRT>false</CompileAsWinRT>
+    </ClCompile>
+    <ClCompile Include="webrtc_dsp\common_audio\signal_processing\spl_init.c">
+      <CompileAsWinRT>false</CompileAsWinRT>
+    </ClCompile>
+    <ClCompile Include="webrtc_dsp\common_audio\signal_processing\spl_inl.c">
+      <CompileAsWinRT>false</CompileAsWinRT>
+    </ClCompile>
+    <ClCompile Include="webrtc_dsp\common_audio\signal_processing\spl_sqrt.c">
+      <CompileAsWinRT>false</CompileAsWinRT>
+    </ClCompile>
+    <ClCompile Include="webrtc_dsp\common_audio\signal_processing\sqrt_of_one_minus_x_squared.c">
+      <CompileAsWinRT>false</CompileAsWinRT>
+    </ClCompile>
+    <ClCompile Include="webrtc_dsp\common_audio\signal_processing\vector_scaling_operations.c">
+      <CompileAsWinRT>false</CompileAsWinRT>
+    </ClCompile>
+    <ClCompile Include="webrtc_dsp\common_audio\smoothing_filter.cc" />
+    <ClCompile Include="webrtc_dsp\common_audio\sparse_fir_filter.cc" />
+    <ClCompile Include="webrtc_dsp\common_audio\third_party\fft4g\fft4g.c">
+      <CompileAsWinRT>false</CompileAsWinRT>
+    </ClCompile>
+    <ClCompile Include="webrtc_dsp\common_audio\third_party\spl_sqrt_floor\spl_sqrt_floor.c">
+      <CompileAsWinRT>false</CompileAsWinRT>
+    </ClCompile>
+    <ClCompile Include="webrtc_dsp\common_audio\vad\vad.cc" />
+    <ClCompile Include="webrtc_dsp\common_audio\vad\vad_core.c">
+      <CompileAsWinRT>false</CompileAsWinRT>
+    </ClCompile>
+    <ClCompile Include="webrtc_dsp\common_audio\vad\vad_filterbank.c">
+      <CompileAsWinRT>false</CompileAsWinRT>
+    </ClCompile>
+    <ClCompile Include="webrtc_dsp\common_audio\vad\vad_gmm.c">
+      <CompileAsWinRT>false</CompileAsWinRT>
+    </ClCompile>
+    <ClCompile Include="webrtc_dsp\common_audio\vad\vad_sp.c">
+      <CompileAsWinRT>false</CompileAsWinRT>
+    </ClCompile>
+    <ClCompile Include="webrtc_dsp\common_audio\vad\webrtc_vad.c">
+      <CompileAsWinRT>false</CompileAsWinRT>
+    </ClCompile>
+    <ClCompile Include="webrtc_dsp\common_audio\wav_file.cc" />
+    <ClCompile Include="webrtc_dsp\common_audio\wav_header.cc" />
+    <ClCompile Include="webrtc_dsp\common_audio\window_generator.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_coding\codecs\isac\main\source\arith_routines.c">
+      <CompileAsWinRT>false</CompileAsWinRT>
+    </ClCompile>
+    <ClCompile Include="webrtc_dsp\modules\audio_coding\codecs\isac\main\source\arith_routines_hist.c">
+      <CompileAsWinRT>false</CompileAsWinRT>
+    </ClCompile>
+    <ClCompile Include="webrtc_dsp\modules\audio_coding\codecs\isac\main\source\arith_routines_logist.c">
+      <CompileAsWinRT>false</CompileAsWinRT>
+    </ClCompile>
+    <ClCompile Include="webrtc_dsp\modules\audio_coding\codecs\isac\main\source\bandwidth_estimator.c">
+      <CompileAsWinRT>false</CompileAsWinRT>
+    </ClCompile>
+    <ClCompile Include="webrtc_dsp\modules\audio_coding\codecs\isac\main\source\crc.c">
+      <CompileAsWinRT>false</CompileAsWinRT>
+    </ClCompile>
+    <ClCompile Include="webrtc_dsp\modules\audio_coding\codecs\isac\main\source\decode.c">
+      <CompileAsWinRT>false</CompileAsWinRT>
+    </ClCompile>
+    <ClCompile Include="webrtc_dsp\modules\audio_coding\codecs\isac\main\source\decode_bwe.c">
+      <CompileAsWinRT>false</CompileAsWinRT>
+    </ClCompile>
+    <ClCompile Include="webrtc_dsp\modules\audio_coding\codecs\isac\main\source\encode.c">
+      <CompileAsWinRT>false</CompileAsWinRT>
+    </ClCompile>
+    <ClCompile Include="webrtc_dsp\modules\audio_coding\codecs\isac\main\source\encode_lpc_swb.c">
+      <CompileAsWinRT>false</CompileAsWinRT>
+    </ClCompile>
+    <ClCompile Include="webrtc_dsp\modules\audio_coding\codecs\isac\main\source\entropy_coding.c">
+      <CompileAsWinRT>false</CompileAsWinRT>
+    </ClCompile>
+    <ClCompile Include="webrtc_dsp\modules\audio_coding\codecs\isac\main\source\filterbanks.c">
+      <CompileAsWinRT>false</CompileAsWinRT>
+    </ClCompile>
+    <ClCompile Include="webrtc_dsp\modules\audio_coding\codecs\isac\main\source\filter_functions.c">
+      <CompileAsWinRT>false</CompileAsWinRT>
+    </ClCompile>
+    <ClCompile Include="webrtc_dsp\modules\audio_coding\codecs\isac\main\source\intialize.c">
+      <CompileAsWinRT>false</CompileAsWinRT>
+    </ClCompile>
+    <ClCompile Include="webrtc_dsp\modules\audio_coding\codecs\isac\main\source\isac.c">
+      <CompileAsWinRT>false</CompileAsWinRT>
+    </ClCompile>
+    <ClCompile Include="webrtc_dsp\modules\audio_coding\codecs\isac\main\source\isac_vad.c">
+      <CompileAsWinRT>false</CompileAsWinRT>
+    </ClCompile>
+    <ClCompile Include="webrtc_dsp\modules\audio_coding\codecs\isac\main\source\lattice.c">
+      <CompileAsWinRT>false</CompileAsWinRT>
+    </ClCompile>
+    <ClCompile Include="webrtc_dsp\modules\audio_coding\codecs\isac\main\source\lpc_analysis.c">
+      <CompileAsWinRT>false</CompileAsWinRT>
+    </ClCompile>
+    <ClCompile Include="webrtc_dsp\modules\audio_coding\codecs\isac\main\source\lpc_gain_swb_tables.c">
+      <CompileAsWinRT>false</CompileAsWinRT>
+    </ClCompile>
+    <ClCompile Include="webrtc_dsp\modules\audio_coding\codecs\isac\main\source\lpc_shape_swb12_tables.c">
+      <CompileAsWinRT>false</CompileAsWinRT>
+    </ClCompile>
+    <ClCompile Include="webrtc_dsp\modules\audio_coding\codecs\isac\main\source\lpc_shape_swb16_tables.c">
+      <CompileAsWinRT>false</CompileAsWinRT>
+    </ClCompile>
+    <ClCompile Include="webrtc_dsp\modules\audio_coding\codecs\isac\main\source\lpc_tables.c">
+      <CompileAsWinRT>false</CompileAsWinRT>
+    </ClCompile>
+    <ClCompile Include="webrtc_dsp\modules\audio_coding\codecs\isac\main\source\pitch_estimator.c">
+      <CompileAsWinRT>false</CompileAsWinRT>
+    </ClCompile>
+    <ClCompile Include="webrtc_dsp\modules\audio_coding\codecs\isac\main\source\pitch_filter.c">
+      <CompileAsWinRT>false</CompileAsWinRT>
+    </ClCompile>
+    <ClCompile Include="webrtc_dsp\modules\audio_coding\codecs\isac\main\source\pitch_gain_tables.c">
+      <CompileAsWinRT>false</CompileAsWinRT>
+    </ClCompile>
+    <ClCompile Include="webrtc_dsp\modules\audio_coding\codecs\isac\main\source\pitch_lag_tables.c">
+      <CompileAsWinRT>false</CompileAsWinRT>
+    </ClCompile>
+    <ClCompile Include="webrtc_dsp\modules\audio_coding\codecs\isac\main\source\spectrum_ar_model_tables.c">
+      <CompileAsWinRT>false</CompileAsWinRT>
+    </ClCompile>
+    <ClCompile Include="webrtc_dsp\modules\audio_coding\codecs\isac\main\source\transform.c">
+      <CompileAsWinRT>false</CompileAsWinRT>
+    </ClCompile>
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\aec3\adaptive_fir_filter.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\aec3\aec3_common.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\aec3\aec3_fft.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\aec3\aec_state.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\aec3\block_delay_buffer.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\aec3\block_framer.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\aec3\block_processor.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\aec3\block_processor2.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\aec3\block_processor_metrics.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\aec3\cascaded_biquad_filter.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\aec3\comfort_noise_generator.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\aec3\decimator.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\aec3\downsampled_render_buffer.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\aec3\echo_audibility.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\aec3\echo_canceller3.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\aec3\echo_path_delay_estimator.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\aec3\echo_path_variability.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\aec3\echo_remover.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\aec3\echo_remover_metrics.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\aec3\erle_estimator.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\aec3\erl_estimator.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\aec3\fft_buffer.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\aec3\filter_analyzer.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\aec3\frame_blocker.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\aec3\fullband_erle_estimator.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\aec3\main_filter_update_gain.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\aec3\matched_filter.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\aec3\matched_filter_lag_aggregator.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\aec3\matrix_buffer.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\aec3\moving_average.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\aec3\render_buffer.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\aec3\render_delay_buffer.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\aec3\render_delay_buffer2.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\aec3\render_delay_controller.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\aec3\render_delay_controller2.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\aec3\render_delay_controller_metrics.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\aec3\render_reverb_model.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\aec3\render_signal_analyzer.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\aec3\residual_echo_estimator.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\aec3\reverb_decay_estimator.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\aec3\reverb_frequency_response.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\aec3\reverb_model.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\aec3\reverb_model_estimator.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\aec3\reverb_model_fallback.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\aec3\shadow_filter_update_gain.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\aec3\skew_estimator.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\aec3\stationarity_estimator.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\aec3\subband_erle_estimator.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\aec3\subtractor.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\aec3\subtractor_output.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\aec3\subtractor_output_analyzer.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\aec3\suppression_filter.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\aec3\suppression_gain.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\aec3\suppression_gain_limiter.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\aec3\vector_buffer.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\aecm\aecm_core.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\aecm\aecm_core_c.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\aecm\aecm_core_neon.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\aecm\echo_control_mobile.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\aec\aec_core.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\aec\aec_core_neon.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\aec\aec_core_sse2.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\aec\aec_resampler.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\aec\echo_cancellation.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\agc2\adaptive_agc.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\agc2\adaptive_digital_gain_applier.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\agc2\adaptive_mode_level_estimator.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\agc2\adaptive_mode_level_estimator_agc.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\agc2\agc2_common.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\agc2\agc2_testing_common.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\agc2\biquad_filter.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\agc2\compute_interpolated_gain_curve.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\agc2\down_sampler.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\agc2\fixed_digital_level_estimator.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\agc2\fixed_gain_controller.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\agc2\gain_applier.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\agc2\interpolated_gain_curve.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\agc2\limiter.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\agc2\limiter_db_gain_curve.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\agc2\noise_level_estimator.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\agc2\noise_spectrum_estimator.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\agc2\rnn_vad\features_extraction.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\agc2\rnn_vad\fft_util.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\agc2\rnn_vad\lp_residual.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\agc2\rnn_vad\pitch_search.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\agc2\rnn_vad\pitch_search_internal.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\agc2\rnn_vad\rnn.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\agc2\rnn_vad\spectral_features.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\agc2\rnn_vad\spectral_features_internal.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\agc2\saturation_protector.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\agc2\signal_classifier.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\agc2\vad_with_level.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\agc2\vector_float_frame.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\agc\agc.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\agc\agc_manager_direct.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\agc\legacy\analog_agc.c">
+      <CompileAsWinRT>false</CompileAsWinRT>
+    </ClCompile>
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\agc\legacy\digital_agc.c">
+      <CompileAsWinRT>false</CompileAsWinRT>
+    </ClCompile>
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\agc\loudness_histogram.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\agc\utility.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\audio_buffer.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\audio_generator\file_audio_generator.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\audio_processing_impl.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\echo_cancellation_impl.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\echo_control_mobile_impl.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\echo_detector\circular_buffer.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\echo_detector\mean_variance_estimator.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\echo_detector\moving_max.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\echo_detector\normalized_covariance_estimator.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\gain_controller2.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\gain_control_for_experimental_agc.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\gain_control_impl.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\include\aec_dump.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\include\audio_generator_factory.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\include\audio_processing.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\include\audio_processing_statistics.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\include\config.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\level_estimator_impl.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\logging\apm_data_dumper.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\low_cut_filter.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\noise_suppression_impl.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\ns\noise_suppression.c">
+      <CompileAsWinRT>false</CompileAsWinRT>
+    </ClCompile>
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\ns\noise_suppression_x.c">
+      <CompileAsWinRT>false</CompileAsWinRT>
+    </ClCompile>
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\ns\nsx_core.c">
+      <CompileAsWinRT>false</CompileAsWinRT>
+    </ClCompile>
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\ns\nsx_core_c.c">
+      <CompileAsWinRT>false</CompileAsWinRT>
+    </ClCompile>
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\ns\nsx_core_neon.c">
+      <CompileAsWinRT>false</CompileAsWinRT>
+    </ClCompile>
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\ns\ns_core.c">
+      <CompileAsWinRT>false</CompileAsWinRT>
+    </ClCompile>
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\residual_echo_detector.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\rms_level.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\splitting_filter.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\three_band_filter_bank.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\transient\moving_moments.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\transient\transient_detector.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\transient\transient_suppressor.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\transient\wpd_node.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\transient\wpd_tree.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\typing_detection.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\utility\block_mean_calculator.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\utility\delay_estimator.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\utility\delay_estimator_wrapper.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\utility\ooura_fft.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\utility\ooura_fft_neon.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\utility\ooura_fft_sse2.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\vad\gmm.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\vad\pitch_based_vad.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\vad\pitch_internal.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\vad\pole_zero_filter.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\vad\standalone_vad.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\vad\vad_audio_proc.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\vad\vad_circular_buffer.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\vad\voice_activity_detector.cc" />
+    <ClCompile Include="webrtc_dsp\modules\audio_processing\voice_detection_impl.cc" />
+    <ClCompile Include="webrtc_dsp\modules\third_party\fft\fft.c">
+      <CompileAsWinRT>false</CompileAsWinRT>
+    </ClCompile>
+    <ClCompile Include="webrtc_dsp\rtc_base\checks.cc" />
+    <ClCompile Include="webrtc_dsp\rtc_base\criticalsection.cc" />
+    <ClCompile Include="webrtc_dsp\rtc_base\event.cc" />
+    <ClCompile Include="webrtc_dsp\rtc_base\event_tracer.cc" />
+    <ClCompile Include="webrtc_dsp\rtc_base\logging_webrtc.cc" />
+    <ClCompile Include="webrtc_dsp\rtc_base\memory\aligned_malloc.cc" />
+    <ClCompile Include="webrtc_dsp\rtc_base\platform_file.cc" />
+    <ClCompile Include="webrtc_dsp\rtc_base\platform_thread.cc" />
+    <ClCompile Include="webrtc_dsp\rtc_base\platform_thread_types.cc" />
+    <ClCompile Include="webrtc_dsp\rtc_base\race_checker.cc" />
+    <ClCompile Include="webrtc_dsp\rtc_base\stringencode.cc" />
+    <ClCompile Include="webrtc_dsp\rtc_base\strings\string_builder.cc" />
+    <ClCompile Include="webrtc_dsp\rtc_base\stringutils.cc" />
+    <ClCompile Include="webrtc_dsp\rtc_base\string_to_number.cc" />
+    <ClCompile Include="webrtc_dsp\rtc_base\thread_checker_impl.cc" />
+    <ClCompile Include="webrtc_dsp\rtc_base\timeutils.cc" />
+    <ClCompile Include="webrtc_dsp\system_wrappers\source\cpu_features.cc" />
+    <ClCompile Include="webrtc_dsp\system_wrappers\source\field_trial.cc" />
+    <ClCompile Include="webrtc_dsp\system_wrappers\source\metrics.cc" />
+    <ClCompile Include="webrtc_dsp\third_party\rnnoise\src\kiss_fft.cc" />
+    <ClCompile Include="webrtc_dsp\third_party\rnnoise\src\rnn_vad_weights.cc" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\libopus\libopus.vcxproj">
+      <Project>{904ac506-51a0-474e-9f55-ec3febbcccd9}</Project>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <SDKReference Include="WindowsMobile, Version=10.0.17134.0" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets" />
+</Project>

@@ -12,6 +12,7 @@ import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
+import android.animation.ValueAnimator;
 import android.annotation.TargetApi;
 import android.app.Activity;
 import android.content.Context;
@@ -26,7 +27,6 @@ import android.graphics.PorterDuff;
 import android.graphics.PorterDuffXfermode;
 import android.graphics.RectF;
 import android.graphics.SurfaceTexture;
-import android.graphics.drawable.ColorDrawable;
 import android.media.AudioFormat;
 import android.media.AudioRecord;
 import android.media.MediaCodec;
@@ -43,13 +43,13 @@ import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
-import androidx.annotation.Keep;
 import android.view.Gravity;
 import android.view.HapticFeedbackConstants;
 import android.view.MotionEvent;
 import android.view.Surface;
 import android.view.TextureView;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.ViewOutlineProvider;
 import android.view.WindowManager;
 import android.view.animation.DecelerateInterpolator;
@@ -57,6 +57,7 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 
 import com.google.android.exoplayer2.ExoPlayer;
+import com.google.android.exoplayer2.util.Log;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
@@ -142,18 +143,6 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
     private boolean recording;
     private long recordedTime;
     private boolean cancelled;
-    private long duration;
-
-    private Runnable timerRunnable = new Runnable() {
-        @Override
-        public void run() {
-            if (!recording) {
-                return;
-            }
-            NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.recordProgressChanged, recordingGuid, duration = System.currentTimeMillis() - recordStartTime, 0.0);
-            AndroidUtilities.runOnUIThread(timerRunnable, 50);
-        }
-    };
 
     private CameraGLThread cameraThread;
     private Size previewSize;
@@ -162,6 +151,9 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
     private TextureView textureView;
     private BackupImageView textureOverlayView;
     private CameraSession cameraSession;
+
+    private float panTranslationY;
+    private float animationTranslationY;
 
     private float[] mMVPMatrix = new float[16];
     private float[] mSTMatrix = new float[16];
@@ -206,8 +198,14 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
     private float scaleX;
     private float scaleY;
 
+    private View parentView;
+    public boolean opened;
+
+    private BlurBehindDrawable blurBehindDrawable;
+
     public InstantCameraView(Context context, ChatActivity parentFragment) {
         super(context);
+        parentView = parentFragment.getFragmentView();
         setOnTouchListener((v, event) -> {
             if (event.getAction() == MotionEvent.ACTION_DOWN && baseFragment != null) {
                 if (videoPlayer != null) {
@@ -233,13 +231,13 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
                     muteAnimation.setInterpolator(new DecelerateInterpolator());
                     muteAnimation.start();
                 } else {
-                    baseFragment.checkRecordLocked();
+                    baseFragment.checkRecordLocked(false);
                 }
             }
             return true;
         });
         setWillNotDraw(false);
-        setBackgroundColor(0xc0000000);
+
         baseFragment = parentFragment;
         recordingGuid = baseFragment.getClassGuid();
         isSecretChat = baseFragment.getCurrentEncryptedChat() != null;
@@ -320,7 +318,7 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
         switchCameraButton = new ImageView(context);
         switchCameraButton.setScaleType(ImageView.ScaleType.CENTER);
         switchCameraButton.setContentDescription(LocaleController.getString("AccDescrSwitchCamera", R.string.AccDescrSwitchCamera));
-        addView(switchCameraButton, LayoutHelper.createFrame(48, 48, Gravity.LEFT | Gravity.BOTTOM, 20, 0, 0, 14));
+        addView(switchCameraButton, LayoutHelper.createFrame(62, 62, Gravity.LEFT | Gravity.BOTTOM, 8, 0, 0, 0));
         switchCameraButton.setOnClickListener(v -> {
             if (!cameraReady || cameraSession == null || !cameraSession.isInitied() || cameraThread == null) {
                 return;
@@ -349,6 +347,7 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
         addView(textureOverlayView, new FrameLayout.LayoutParams(AndroidUtilities.roundMessageSize, AndroidUtilities.roundMessageSize, Gravity.CENTER));
 
         setVisibility(INVISIBLE);
+        blurBehindDrawable = new BlurBehindDrawable(parentView, this);
     }
 
     @Override
@@ -361,37 +360,27 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
     protected void onSizeChanged(int w, int h, int oldw, int oldh) {
         super.onSizeChanged(w, h, oldw, oldh);
         if (getVisibility() != VISIBLE) {
-            cameraContainer.setTranslationY(getMeasuredHeight() / 2);
-            textureOverlayView.setTranslationY(getMeasuredHeight() / 2);
+            animationTranslationY = getMeasuredHeight() / 2;
+            updateTranslationY();
         }
+        blurBehindDrawable.checkSizes();
     }
 
     @Override
     protected void onAttachedToWindow() {
         super.onAttachedToWindow();
-        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.recordProgressChanged);
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.FileDidUpload);
     }
 
     @Override
     protected void onDetachedFromWindow() {
         super.onDetachedFromWindow();
-        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.recordProgressChanged);
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.FileDidUpload);
     }
 
     @Override
     public void didReceivedNotification(int id, int account, Object... args) {
-        if (id == NotificationCenter.recordProgressChanged) {
-            int guid = (Integer) args[0];
-            if (guid != recordingGuid) {
-                return;
-            }
-            long t = (Long) args[1];
-            progress = t / 60000.0f;
-            recordedTime = t;
-            invalidate();
-        } else if (id == NotificationCenter.FileDidUpload) {
+        if (id == NotificationCenter.FileDidUpload) {
             final String location = (String) args[0];
             if (cameraFile != null && cameraFile.getAbsolutePath().equals(location)) {
                 file = (TLRPC.InputFile) args[1];
@@ -414,11 +403,22 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
 
     @Override
     protected void onDraw(Canvas canvas) {
+        blurBehindDrawable.draw(canvas);
+
         float x = cameraContainer.getX();
         float y = cameraContainer.getY();
         rect.set(x - AndroidUtilities.dp(8), y - AndroidUtilities.dp(8), x + cameraContainer.getMeasuredWidth() + AndroidUtilities.dp(8), y + cameraContainer.getMeasuredHeight() + AndroidUtilities.dp(8));
+        if (recording) {
+            recordedTime = System.currentTimeMillis() - recordStartTime;
+            progress = Math.min(1f, recordedTime / 60000.0f);
+            invalidate();
+        }
+
         if (progress != 0) {
+            canvas.save();
+            canvas.scale(cameraContainer.getScaleX(), cameraContainer.getScaleY(), rect.centerX(), rect.centerY());
             canvas.drawArc(rect, -90, 360 * progress, false, paint);
+            canvas.restore();
         }
         if (Theme.chat_roundVideoShadow != null) {
             int x1 = (int) x - AndroidUtilities.dp(3);
@@ -435,7 +435,9 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
     @Override
     public void setVisibility(int visibility) {
         super.setVisibility(visibility);
-        setAlpha(0.0f);
+        if (visibility != View.VISIBLE && blurBehindDrawable != null) {
+            blurBehindDrawable.clear();
+        }
         switchCameraButton.setAlpha(0.0f);
         cameraContainer.setAlpha(0.0f);
         textureOverlayView.setAlpha(0.0f);
@@ -560,26 +562,48 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
 
     public void startAnimation(boolean open) {
         if (animatorSet != null) {
+            animatorSet.removeAllListeners();
             animatorSet.cancel();
         }
         PipRoundVideoView pipRoundVideoView = PipRoundVideoView.getInstance();
         if (pipRoundVideoView != null) {
             pipRoundVideoView.showTemporary(!open);
         }
+        if (open && !opened) {
+            cameraContainer.setTranslationX(0);
+            textureOverlayView.setTranslationX(0);
+
+            animationTranslationY = getMeasuredHeight() / 2f;
+            updateTranslationY();
+        }
+        opened = open;
+        if (parentView != null) {
+            parentView.invalidate();
+        }
+        blurBehindDrawable.show(open);
         animatorSet = new AnimatorSet();
+        float toX = 0;
+        if (!open) {
+            toX = recordedTime > 300 ?  AndroidUtilities.dp(24) - getMeasuredWidth() / 2f : 0;
+        }
+        ValueAnimator translationYAnimator = ValueAnimator.ofFloat(open ? 1f : 0f, open ? 0 : 1f);
+        translationYAnimator.addUpdateListener(animation -> {
+            animationTranslationY = (getMeasuredHeight() / 2f) * (float) animation.getAnimatedValue();
+            updateTranslationY();
+        });
         animatorSet.playTogether(
-                ObjectAnimator.ofFloat(this, View.ALPHA, open ? 1.0f : 0.0f),
                 ObjectAnimator.ofFloat(switchCameraButton, View.ALPHA, open ? 1.0f : 0.0f),
                 ObjectAnimator.ofFloat(muteImageView, View.ALPHA, 0.0f),
-                ObjectAnimator.ofInt(paint, "alpha", open ? 255 : 0),
+                ObjectAnimator.ofInt(paint, AnimationProperties.PAINT_ALPHA, open ? 255 : 0),
                 ObjectAnimator.ofFloat(cameraContainer, View.ALPHA, open ? 1.0f : 0.0f),
                 ObjectAnimator.ofFloat(cameraContainer, View.SCALE_X, open ? 1.0f : 0.1f),
                 ObjectAnimator.ofFloat(cameraContainer, View.SCALE_Y, open ? 1.0f : 0.1f),
-                ObjectAnimator.ofFloat(cameraContainer, View.TRANSLATION_Y, open ? getMeasuredHeight() / 2 : 0, open ? 0 : getMeasuredHeight() / 2),
+                ObjectAnimator.ofFloat(cameraContainer, View.TRANSLATION_X, toX),
                 ObjectAnimator.ofFloat(textureOverlayView, View.ALPHA, open ? 1.0f : 0.0f),
                 ObjectAnimator.ofFloat(textureOverlayView, View.SCALE_X, open ? 1.0f : 0.1f),
                 ObjectAnimator.ofFloat(textureOverlayView, View.SCALE_Y, open ? 1.0f : 0.1f),
-                ObjectAnimator.ofFloat(textureOverlayView, View.TRANSLATION_Y, open ? getMeasuredHeight() / 2 : 0, open ? 0 : getMeasuredHeight() / 2)
+                ObjectAnimator.ofFloat(textureOverlayView, View.TRANSLATION_X, toX),
+                translationYAnimator
         );
         if (!open) {
             animatorSet.addListener(new AnimatorListenerAdapter() {
@@ -591,10 +615,17 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
                     }
                 }
             });
+        } else {
+            setTranslationX(0);
         }
         animatorSet.setDuration(180);
         animatorSet.setInterpolator(new DecelerateInterpolator());
         animatorSet.start();
+    }
+
+    private void updateTranslationY() {
+        textureOverlayView.setTranslationY(animationTranslationY + panTranslationY);
+        cameraContainer.setTranslationY(animationTranslationY + panTranslationY);
     }
 
     public Rect getCameraRect() {
@@ -660,9 +691,14 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
         } else {
             cancelled = recordedTime < 800;
             recording = false;
-            AndroidUtilities.cancelRunOnUIThread(timerRunnable);
+            int reason;
+            if (cancelled) {
+                reason = 4;
+            } else {
+                reason = state == 3 ? 2 : 5;
+            }
             if (cameraThread != null) {
-                NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.recordStopped, recordingGuid, !cancelled && state == 3 ? 2 : 0);
+                NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.recordStopped, recordingGuid, reason);
                 int send;
                 if (cancelled) {
                     send = 0;
@@ -676,7 +712,7 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
                 cameraThread = null;
             }
             if (cancelled) {
-                NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.audioRecordTooShort, recordingGuid, true);
+                NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.audioRecordTooShort, recordingGuid, true, (int) recordedTime);
                 startAnimation(false);
                 MediaController.getInstance().requestAudioFocus(false);
             }
@@ -685,7 +721,7 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
 
     private void saveLastCameraBitmap() {
         Bitmap bitmap = textureView.getBitmap();
-        if (bitmap != null) {
+        if (bitmap != null && bitmap.getPixel(0, 0) != 0) {
             lastBitmap = Bitmap.createScaledBitmap(textureView.getBitmap(), 80, 80, true);
             if (lastBitmap != null) {
                 Utilities.blurBitmap(lastBitmap, 7, 1, lastBitmap.getWidth(), lastBitmap.getHeight(), lastBitmap.getRowBytes());
@@ -700,7 +736,7 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
         }
     }
 
-    public void cancel() {
+    public void cancel(boolean byGesture) {
         stopProgressTimer();
         if (videoPlayer != null) {
             videoPlayer.releasePlayer(true);
@@ -711,8 +747,7 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
         }
         cancelled = true;
         recording = false;
-        AndroidUtilities.cancelRunOnUIThread(timerRunnable);
-        NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.recordStopped, recordingGuid, 0);
+        NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.recordStopped, recordingGuid, byGesture ? 0 : 6);
         if (cameraThread != null) {
             saveLastCameraBitmap();
             cameraThread.shutdown(0);
@@ -724,13 +759,7 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
         }
         MediaController.getInstance().requestAudioFocus(false);
         startAnimation(false);
-    }
-
-    @Keep
-    @Override
-    public void setAlpha(float alpha) {
-        ColorDrawable colorDrawable = (ColorDrawable) getBackground();
-        colorDrawable.setAlpha((int) (0xc0 * alpha));
+        blurBehindDrawable.show(false);
         invalidate();
     }
 
@@ -748,11 +777,18 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
 
     public void hideCamera(boolean async) {
         destroy(async, null);
-        cameraContainer.removeView(textureView);
         cameraContainer.setTranslationX(0);
-        cameraContainer.setTranslationY(0);
         textureOverlayView.setTranslationX(0);
-        textureOverlayView.setTranslationY(0);
+        animationTranslationY = 0;
+        updateTranslationY();
+        MediaController.getInstance().playMessage(MediaController.getInstance().getPlayingMessageObject());
+
+        if (textureView != null) {
+            ViewGroup parent = (ViewGroup) textureView.getParent();
+            if (parent != null) {
+                parent.removeView(textureView);
+            }
+        }
         textureView = null;
     }
 
@@ -922,6 +958,27 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
         }
     }
 
+    public boolean blurFullyDrawing() {
+        return blurBehindDrawable != null && blurBehindDrawable.isFullyDrawing() && opened;
+    }
+
+    public void invalidateBlur() {
+        if (blurBehindDrawable != null) {
+            blurBehindDrawable.invalidate();
+        }
+    }
+
+    public void cancelBlur() {
+        blurBehindDrawable.show(false);
+        invalidate();
+    }
+
+    public void onPanTranslationUpdate(int y) {
+        panTranslationY = y / 2f;
+        updateTranslationY();
+        blurBehindDrawable.onPanTranslationUpdate(y);
+    }
+
     public class CameraGLThread extends DispatchQueue {
 
         private final static int EGL_CONTEXT_CLIENT_VERSION = 0x3098;
@@ -1000,7 +1057,7 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
 
             int[] configsCount = new int[1];
             EGLConfig[] configs = new EGLConfig[1];
-            int[] configSpec = new int[] {
+            int[] configSpec = new int[]{
                     EGL10.EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
                     EGL10.EGL_RED_SIZE, 8,
                     EGL10.EGL_GREEN_SIZE, 8,
@@ -1366,13 +1423,21 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
         }
     }
 
-    private class AudioBufferInfo {
-        byte[] buffer = new byte[2048 * 10];
-        long[] offset = new long[10];
-        int[] read = new int[10];
+    private static class AudioBufferInfo {
+        final static int MAX_SAMPLES = 10;
+        ByteBuffer[] buffer = new ByteBuffer[MAX_SAMPLES];
+        long[] offset = new long[MAX_SAMPLES];
+        int[] read = new int[MAX_SAMPLES];
         int results;
         int lastWroteBuffer;
         boolean last;
+
+        public AudioBufferInfo() {
+            for (int i = 0; i < MAX_SAMPLES; i++) {
+                buffer[i] = ByteBuffer.allocateDirect(2048);
+                buffer[i].order(ByteOrder.nativeOrder());
+            }
+        }
     }
 
     private class VideoRecorder implements Runnable {
@@ -1445,6 +1510,8 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
         private AudioRecord audioRecorder;
 
         private ArrayBlockingQueue<AudioBufferInfo> buffers = new ArrayBlockingQueue<>(10);
+        private ArrayList<Bitmap> keyframeThumbs = new ArrayList<>();
+        private int frameCount;
 
         private Runnable recorderRunnable = new Runnable() {
 
@@ -1471,12 +1538,27 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
                         buffer = buffers.poll();
                     }
                     buffer.lastWroteBuffer = 0;
-                    buffer.results = 10;
-                    for (int a = 0; a < 10; a++) {
+                    buffer.results = AudioBufferInfo.MAX_SAMPLES;
+                    for (int a = 0; a < AudioBufferInfo.MAX_SAMPLES; a++) {
                         if (audioPresentationTimeUs == -1) {
                             audioPresentationTimeUs = System.nanoTime() / 1000;
                         }
-                        readResult = audioRecorder.read(buffer.buffer, a * 2048, 2048);
+
+                        ByteBuffer byteBuffer = buffer.buffer[a];
+                        byteBuffer.rewind();
+                        readResult = audioRecorder.read(byteBuffer, 2048);
+
+                        if (readResult > 0 && a % 2 == 0) {
+                            byteBuffer.limit(readResult);
+                            double s = 0;
+                            for (int i = 0; i < readResult / 2; i++) {
+                                short p = byteBuffer.getShort();
+                                s += p * p;
+                            }
+                            double amplitude = Math.sqrt(s / readResult / 2);
+                            AndroidUtilities.runOnUIThread(() -> NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.recordProgressChanged, recordingGuid, amplitude));
+                            byteBuffer.position(0);
+                        }
                         if (readResult <= 0) {
                             buffer.results = a;
                             if (!running) {
@@ -1490,7 +1572,7 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
                         audioPresentationTimeUs += bufferDurationUs;
                     }
                     if (buffer.results >= 0 || buffer.last) {
-                        if (!running && buffer.results < 10) {
+                        if (!running && buffer.results < AudioBufferInfo.MAX_SAMPLES) {
                             done = true;
                         }
                         handler.sendMessage(handler.obtainMessage(MSG_AUDIOFRAME_AVAILABLE, buffer));
@@ -1552,6 +1634,8 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
                     }
                 }
             }
+            keyframeThumbs.clear();
+            frameCount = 0;
             handler.sendMessage(handler.obtainMessage(MSG_START_RECORDING));
         }
 
@@ -1695,7 +1779,7 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
                                     input = null;
                                     break;
                                 }
-                                inputBuffer.put(input.buffer, a * 2048, input.read[a]);
+                                inputBuffer.put(input.buffer[a]);
                             }
                             if (a >= input.results - 1) {
                                 buffersToWrite.remove(input);
@@ -1791,6 +1875,20 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
 
             EGLExt.eglPresentationTimeANDROID(eglDisplay, eglSurface, currentTimestamp);
             EGL14.eglSwapBuffers(eglDisplay, eglSurface);
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP && frameCount % 30 == 0) {
+                final TextureView textureViewFinal = textureView;
+                if (textureViewFinal != null) {
+                    Bitmap bitmap = textureViewFinal.getBitmap( AndroidUtilities.dp(56),  AndroidUtilities.dp(56));
+                    if ((bitmap == null || bitmap.getPixel(0,0) == 0) && keyframeThumbs.size() > 1) {
+                        keyframeThumbs.add(keyframeThumbs.get(keyframeThumbs.size() - 1));
+                    } else {
+                        keyframeThumbs.add(bitmap);
+                    }
+                }
+            }
+            frameCount++;
+
 
             if (oldCameraTexture[0] != 0 && cameraTextureAlpha < 1.0f) {
                 cameraTextureAlpha += alphaDt / 200000000.0f;
@@ -1918,13 +2016,13 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
                         AnimatorSet animatorSet = new AnimatorSet();
                         animatorSet.playTogether(
                                 ObjectAnimator.ofFloat(switchCameraButton, View.ALPHA, 0.0f),
-                                ObjectAnimator.ofInt(paint, "alpha", 0),
+                                ObjectAnimator.ofInt(paint, AnimationProperties.PAINT_ALPHA, 0),
                                 ObjectAnimator.ofFloat(muteImageView, View.ALPHA, 1.0f));
                         animatorSet.setDuration(180);
                         animatorSet.setInterpolator(new DecelerateInterpolator());
                         animatorSet.start();
-                        videoEditedInfo.estimatedDuration = duration;
-                        NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.audioDidSent, recordingGuid, videoEditedInfo, videoFile.getAbsolutePath());
+                        videoEditedInfo.estimatedDuration = recordedTime;
+                        NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.audioDidSent, recordingGuid, videoEditedInfo, videoFile.getAbsolutePath(), keyframeThumbs);
                     }
                     didWriteData(videoFile, 0, true);
                     MediaController.getInstance().requestAudioFocus(false);
@@ -1978,11 +2076,10 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
 
                 MediaFormat audioFormat = new MediaFormat();
                 audioFormat.setString(MediaFormat.KEY_MIME, AUDIO_MIME_TYPE);
-                audioFormat.setInteger(MediaFormat.KEY_AAC_PROFILE, MediaCodecInfo.CodecProfileLevel.AACObjectLC);
                 audioFormat.setInteger(MediaFormat.KEY_SAMPLE_RATE, 44100);
                 audioFormat.setInteger(MediaFormat.KEY_CHANNEL_COUNT, 1);
                 audioFormat.setInteger(MediaFormat.KEY_BIT_RATE, 32000);
-                audioFormat.setInteger(MediaFormat.KEY_MAX_INPUT_SIZE, 2048 * 10);
+                audioFormat.setInteger(MediaFormat.KEY_MAX_INPUT_SIZE, 2048 * AudioBufferInfo.MAX_SAMPLES);
 
                 audioEncoder = MediaCodec.createEncoderByType(AUDIO_MIME_TYPE);
                 audioEncoder.configure(audioFormat, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE);
@@ -2026,8 +2123,8 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
                     AndroidUtilities.lockOrientation(baseFragment.getParentActivity());
                     recording = true;
                     recordStartTime = System.currentTimeMillis();
-                    AndroidUtilities.runOnUIThread(timerRunnable);
-                    NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.recordStarted, recordingGuid);
+                    invalidate();
+                    NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.recordStarted, recordingGuid, false);
                 });
             } catch (Exception ioe) {
                 throw new RuntimeException(ioe);

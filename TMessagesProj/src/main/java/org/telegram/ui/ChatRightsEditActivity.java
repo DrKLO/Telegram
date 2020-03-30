@@ -14,7 +14,6 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
-import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Vibrator;
@@ -314,6 +313,10 @@ public class ChatRightsEditActivity extends BaseFragment {
             } else if (position == removeAdminRow) {
                 if (currentType == TYPE_ADMIN) {
                     MessagesController.getInstance(currentAccount).setUserAdminRole(chatId, currentUser, new TLRPC.TL_chatAdminRights(), currentRank, isChannel, getFragmentForAlert(0), isAddingNew);
+                    if (delegate != null) {
+                        delegate.didSetRights(0, adminRights, bannedRights, currentRank);
+                    }
+                    finishFragment();
                 } else if (currentType == TYPE_BANNED) {
                     bannedRights = new TLRPC.TL_chatBannedRights();
                     bannedRights.view_messages = true;
@@ -329,12 +332,8 @@ public class ChatRightsEditActivity extends BaseFragment {
                     bannedRights.invite_users = true;
                     bannedRights.change_info = true;
                     bannedRights.until_date = 0;
-                    MessagesController.getInstance(currentAccount).setUserBannedRole(chatId, currentUser, bannedRights, isChannel, getFragmentForAlert(0));
+                    onDonePressed();
                 }
-                if (delegate != null) {
-                    delegate.didSetRights(0, adminRights, bannedRights, currentRank);
-                }
-                finishFragment();
             } else if (position == transferOwnerRow) {
                 initTransfer(null, null);
             } else if (position == untilDateRow) {
@@ -347,7 +346,7 @@ public class ChatRightsEditActivity extends BaseFragment {
                 LinearLayout linearLayout = new LinearLayout(context);
                 linearLayout.setOrientation(LinearLayout.VERTICAL);
 
-                HeaderCell headerCell = new HeaderCell(context, true, 23, 15, false);
+                HeaderCell headerCell = new HeaderCell(context, Theme.key_dialogTextBlue2, 23, 15, false);
                 headerCell.setHeight(47);
                 headerCell.setText(LocaleController.getString("UserRestrictionsDuration", R.string.UserRestrictionsDuration));
                 linearLayout.addView(headerCell);
@@ -1028,7 +1027,7 @@ public class ChatRightsEditActivity extends BaseFragment {
                     view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
                     break;
                 case 3:
-                    view = new HeaderCell(mContext, false, 21, 15, true);
+                    view = new HeaderCell(mContext, Theme.key_windowBackgroundWhiteBlueHeader, 21, 15, true);
                     view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
                     break;
                 case 4:
@@ -1333,7 +1332,7 @@ public class ChatRightsEditActivity extends BaseFragment {
                 new ThemeDescription(listView, 0, new Class[]{UserCell2.class}, new String[]{"nameTextView"}, null, null, null, Theme.key_windowBackgroundWhiteBlackText),
                 new ThemeDescription(listView, 0, new Class[]{UserCell2.class}, new String[]{"statusColor"}, null, null, cellDelegate, Theme.key_windowBackgroundWhiteGrayText),
                 new ThemeDescription(listView, 0, new Class[]{UserCell2.class}, new String[]{"statusOnlineColor"}, null, null, cellDelegate, Theme.key_windowBackgroundWhiteBlueText),
-                new ThemeDescription(listView, 0, new Class[]{UserCell2.class}, null, new Drawable[]{Theme.avatar_savedDrawable}, null, Theme.key_avatar_text),
+                new ThemeDescription(listView, 0, new Class[]{UserCell2.class}, null, Theme.avatarDrawables, null, Theme.key_avatar_text),
                 new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundRed),
                 new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundOrange),
                 new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundViolet),

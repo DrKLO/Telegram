@@ -1,0 +1,10 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+
+Name: tgvoip
+Description: VoIP library for Telegram clients
+Version: 2.4.4
+Libs: -L${libdir} -ltgvoip
+Cflags: -I${includedir}/tgvoip

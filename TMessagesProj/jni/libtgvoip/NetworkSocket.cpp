@@ -364,8 +364,8 @@ bool NetworkSocketTCPObfuscated::IsFailed(){
 NetworkSocketSOCKS5Proxy::NetworkSocketSOCKS5Proxy(NetworkSocket *tcp, NetworkSocket *udp, std::string username, std::string password) : NetworkSocketWrapper(udp ? PROTO_UDP : PROTO_TCP){
 	this->tcp=tcp;
 	this->udp=udp;
-	this->username=username;
-	this->password=password;
+	this->username=std::move(username);
+	this->password=std::move(password);
 	connectedAddress=NULL;
 }
 

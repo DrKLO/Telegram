@@ -95,10 +95,18 @@ endif
 
 include $(PREBUILT_STATIC_LIBRARY)
 
+include $(CLEAR_VARS)
+
+TGVOIP_NATIVE_VERSION := 1.1
 TGVOIP_ADDITIONAL_CFLAGS := -DTGVOIP_NO_VIDEO
 include $(MY_LOCAL_PATH)/libtgvoip/Android.mk
 LOCAL_PATH := $(MY_LOCAL_PATH) # restore local path after include
+include $(CLEAR_VARS)
 
+TGVOIP_NATIVE_VERSION := 2.1
+TGVOIP_ADDITIONAL_CFLAGS := -DTGVOIP_NO_VIDEO
+include $(MY_LOCAL_PATH)/libtgvoip2/Android.mk
+LOCAL_PATH := $(MY_LOCAL_PATH) # restore local path after include
 include $(CLEAR_VARS)
 
 LOCAL_CPPFLAGS := -Wall -std=c++14 -DANDROID -frtti -DHAVE_PTHREAD -finline-functions -ffast-math -Os
@@ -351,7 +359,7 @@ LOCAL_CFLAGS 	+= -Drestrict='' -D__EMX__ -DOPUS_BUILD -DFIXED_POINT -DUSE_ALLOCA
 LOCAL_CFLAGS 	+= -DANDROID_NDK -DDISABLE_IMPORTGL -fno-strict-aliasing -fprefetch-loop-arrays -DAVOID_TABLES -DANDROID_TILE_BASED_DECODE -DANDROID_ARMV6_IDCT -ffast-math -D__STDC_CONSTANT_MACROS
 LOCAL_CPPFLAGS 	:= -DBSD=1 -ffast-math -Os -funroll-loops -std=c++14 -DPACKAGE_NAME='"drinkless/org/ton"'
 LOCAL_LDLIBS 	:= -ljnigraphics -llog -lz -lEGL -lGLESv2 -landroid
-LOCAL_STATIC_LIBRARIES := webp sqlite lz4 rlottie tgnet swscale avformat avcodec avresample avutil voip flac
+LOCAL_STATIC_LIBRARIES := webp sqlite lz4 rlottie tgnet swscale avformat avcodec avresample avutil flac
 
 LOCAL_SRC_FILES     := \
 ./opus/src/opus.c \

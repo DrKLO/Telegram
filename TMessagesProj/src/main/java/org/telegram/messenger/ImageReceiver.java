@@ -28,10 +28,12 @@ import org.telegram.ui.Components.AnimatedFileDrawable;
 import org.telegram.ui.Components.RLottieDrawable;
 import org.telegram.ui.Components.RecyclableDrawable;
 
+import androidx.annotation.Keep;
+
 public class ImageReceiver implements NotificationCenter.NotificationCenterDelegate {
 
     public interface ImageReceiverDelegate {
-        void didSetImage(ImageReceiver imageReceiver, boolean set, boolean thumb);
+        void didSetImage(ImageReceiver imageReceiver, boolean set, boolean thumb, boolean memCache);
         default void onAnimationReady(ImageReceiver imageReceiver) {
         }
     }
@@ -86,7 +88,7 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
         }
     }
 
-    private class SetImageBackup {
+    private static class SetImageBackup {
         public ImageLocation imageLocation;
         public String imageFilter;
         public ImageLocation thumbLocation;
@@ -324,7 +326,7 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
                 }
             }
             if (delegate != null) {
-                delegate.didSetImage(this, currentImageDrawable != null || currentThumbDrawable != null || staticThumbDrawable != null || currentMediaDrawable != null, currentImageDrawable == null && currentMediaDrawable == null);
+                delegate.didSetImage(this, currentImageDrawable != null || currentThumbDrawable != null || staticThumbDrawable != null || currentMediaDrawable != null, currentImageDrawable == null && currentMediaDrawable == null, false);
             }
             return;
         }
@@ -354,7 +356,7 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
 
         if (mediaKey == null && currentImageKey != null && currentImageKey.equals(imageKey) || currentMediaKey != null && currentMediaKey.equals(mediaKey)) {
             if (delegate != null) {
-                delegate.didSetImage(this, currentImageDrawable != null || currentThumbDrawable != null || staticThumbDrawable != null || currentMediaDrawable != null, currentImageDrawable == null && currentMediaDrawable == null);
+                delegate.didSetImage(this, currentImageDrawable != null || currentThumbDrawable != null || staticThumbDrawable != null || currentMediaDrawable != null, currentImageDrawable == null && currentMediaDrawable == null, false);
             }
             if (!canceledLoading && !forcePreview) {
                 return;
@@ -441,7 +443,7 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
         currentAlpha = 1.0f;
 
         if (delegate != null) {
-            delegate.didSetImage(this, currentImageDrawable != null || currentThumbDrawable != null || staticThumbDrawable != null || currentMediaDrawable != null, currentImageDrawable == null && currentMediaDrawable == null);
+            delegate.didSetImage(this, currentImageDrawable != null || currentThumbDrawable != null || staticThumbDrawable != null || currentMediaDrawable != null, currentImageDrawable == null && currentMediaDrawable == null, false);
         }
 
         ImageLoader.getInstance().loadImageForImageReceiver(this);
@@ -602,7 +604,7 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
         }
 
         if (delegate != null) {
-            delegate.didSetImage(this, currentThumbDrawable != null || staticThumbDrawable != null, true);
+            delegate.didSetImage(this, currentThumbDrawable != null || staticThumbDrawable != null, true, false);
         }
         if (parentView != null) {
             if (invalidateAll) {
@@ -1118,10 +1120,12 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
         manualAlphaAnimator = value;
     }
 
+    @Keep
     public float getCurrentAlpha() {
         return currentAlpha;
     }
 
+    @Keep
     public void setCurrentAlpha(float value) {
         currentAlpha = value;
     }
@@ -1267,8 +1271,14 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
         return isVisible;
     }
 
+    @Keep
     public void setAlpha(float value) {
         overrideAlpha = value;
+    }
+
+    @Keep
+    public float getAlpha() {
+        return overrideAlpha;
     }
 
     public void setCrossfadeAlpha(byte value) {
@@ -1710,6 +1720,9 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
                 currentAlpha = 1.0f;
             }
         }
+        if (delegate != null) {
+            delegate.didSetImage(this, currentImageDrawable != null || currentThumbDrawable != null || staticThumbDrawable != null || currentMediaDrawable != null, currentImageDrawable == null && currentMediaDrawable == null, memCache);
+        }
         if (drawable instanceof AnimatedFileDrawable) {
             AnimatedFileDrawable fileDrawable = (AnimatedFileDrawable) drawable;
             fileDrawable.setParentView(parentView);
@@ -1735,9 +1748,6 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
             } else {
                 parentView.invalidate(imageX, imageY, imageX + imageW, imageY + imageH);
             }
-        }
-        if (delegate != null) {
-            delegate.didSetImage(this, currentImageDrawable != null || currentThumbDrawable != null || staticThumbDrawable != null || currentMediaDrawable != null, currentImageDrawable == null && currentMediaDrawable == null);
         }
         return true;
     }

@@ -33,7 +33,7 @@ import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SendMessagesHelper;
 import org.telegram.messenger.UserConfig;
-import org.telegram.messenger.voip.VoIPController;
+import org.telegram.messenger.voip.TgVoip;
 import org.telegram.messenger.voip.VoIPService;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.RequestDelegate;
@@ -51,7 +51,10 @@ import org.telegram.ui.VoIPActivity;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Calendar;
 import java.util.Collections;
+import java.util.Locale;
 import java.util.Set;
 
 public class VoIPHelper {
@@ -498,16 +501,46 @@ public class VoIPHelper {
 				medium = DownloadController.getInstance(0).mediumPreset.lessCallData,
 				high = DownloadController.getInstance(0).highPreset.lessCallData;
 		if (!low && !medium && !high) {
-			return VoIPController.DATA_SAVING_NEVER;
+			return TgVoip.DATA_SAVING_NEVER;
 		} else if (low && !medium && !high) {
-			return VoIPController.DATA_SAVING_ROAMING;
+			return TgVoip.DATA_SAVING_ROAMING;
 		} else if (low && medium && !high) {
-			return VoIPController.DATA_SAVING_MOBILE;
+			return TgVoip.DATA_SAVING_MOBILE;
 		} else if (low && medium && high) {
-			return VoIPController.DATA_SAVING_ALWAYS;
+			return TgVoip.DATA_SAVING_ALWAYS;
 		}
 		if (BuildVars.LOGS_ENABLED)
 			FileLog.w("Invalid call data saving preset configuration: " + low + "/" + medium + "/" + high);
-		return VoIPController.DATA_SAVING_NEVER;
+		return TgVoip.DATA_SAVING_NEVER;
+	}
+
+
+	public static String getLogFilePath(String name) {
+		final Calendar c = Calendar.getInstance();
+		final File externalFilesDir = ApplicationLoader.applicationContext.getExternalFilesDir(null);
+		return new File(externalFilesDir, String.format(Locale.US, "logs/%02d_%02d_%04d_%02d_%02d_%02d_%s.txt",
+				c.get(Calendar.DATE), c.get(Calendar.MONTH) + 1, c.get(Calendar.YEAR), c.get(Calendar.HOUR_OF_DAY),
+				c.get(Calendar.MINUTE), c.get(Calendar.SECOND), name)).getAbsolutePath();
+	}
+
+	public static String getLogFilePath(long callId) {
+		final File logsDir = getLogsDir();
+		if (!BuildVars.DEBUG_VERSION) {
+			final File[] _logs = logsDir.listFiles();
+			if (_logs != null) {
+				final ArrayList<File> logs = new ArrayList<>(Arrays.asList(_logs));
+				while (logs.size() > 20) {
+					File oldest = logs.get(0);
+					for (File file : logs) {
+						if (file.getName().endsWith(".log") && file.lastModified() < oldest.lastModified()) {
+							oldest = file;
+						}
+					}
+					oldest.delete();
+					logs.remove(oldest);
+				}
+			}
+		}
+		return new File(logsDir, callId + ".log").getAbsolutePath();
 	}
 }

@@ -553,7 +553,7 @@ public class Theme {
 
     public static class PatternsLoader implements NotificationCenter.NotificationCenterDelegate {
 
-        private class LoadingPattern {
+        private static class LoadingPattern {
             public TLRPC.TL_wallPaper pattern;
             public ArrayList<ThemeAccent> accents = new ArrayList<>();
         }
@@ -1459,7 +1459,7 @@ public class Theme {
             }
             ThemeAccent defaultAccent = themeAccentsMap.get(DEFALT_THEME_ACCENT_ID);
             ThemeAccent accent = themeAccentsMap.get(currentAccentId);
-            return accent != null && defaultAccent.accentColor == accent.accentColor;
+            return accent != null && defaultAccent != null && defaultAccent.accentColor == accent.accentColor;
         }
 
         public boolean hasAccentColors() {
@@ -1918,8 +1918,7 @@ public class Theme {
     public static Paint avatar_backgroundPaint;
 
     public static Drawable listSelector;
-    public static Drawable avatar_savedDrawable;
-    public static Drawable avatar_ghostDrawable;
+    public static Drawable[] avatarDrawables = new Drawable[10];
 
     public static Drawable moveUpDrawable;
 
@@ -2263,7 +2262,6 @@ public class Theme {
     public static final String key_avatar_backgroundCyan = "avatar_backgroundCyan";
     public static final String key_avatar_backgroundBlue = "avatar_backgroundBlue";
     public static final String key_avatar_backgroundPink = "avatar_backgroundPink";
-    public static final String key_avatar_backgroundGroupCreateSpanBlue = "avatar_backgroundGroupCreateSpanBlue";
 
     public static final String key_avatar_backgroundInProfileBlue = "avatar_backgroundInProfileBlue";
     public static final String key_avatar_backgroundActionBarBlue = "avatar_backgroundActionBarBlue";
@@ -2367,6 +2365,8 @@ public class Theme {
     public static final String key_chats_actionUnreadPressedBackground = "chats_actionUnreadPressedBackground";
     public static final String key_chats_archivePullDownBackground = "chats_archivePullDownBackground";
     public static final String key_chats_archivePullDownBackgroundActive = "chats_archivePullDownBackgroundActive";
+    public static final String key_chats_tabUnreadActiveBackground = "chats_tabUnreadActiveBackground";
+    public static final String key_chats_tabUnreadUnactiveBackground = "chats_tabUnreadUnactiveBackground";
 
     public static final String key_chat_attachMediaBanBackground = "chat_attachMediaBanBackground";
     public static final String key_chat_attachMediaBanText = "chat_attachMediaBanText";
@@ -2663,6 +2663,7 @@ public class Theme {
     public static final String key_chat_secretTimerText = "chat_secretTimerText";
     public static final String key_chat_outTextSelectionHighlight = "chat_outTextSelectionHighlight";
     public static final String key_chat_inTextSelectionHighlight = "chat_inTextSelectionHighlight";
+    public static final String key_chat_recordedVoiceHighlight = "key_chat_recordedVoiceHighlight";
     public static final String key_chat_TextSelectionCursor = "chat_TextSelectionCursor";
 
     public static final String key_passport_authorizeBackground = "passport_authorizeBackground";
@@ -2799,6 +2800,28 @@ public class Theme {
     public static final String key_player_button = "player_button";
     public static final String key_player_buttonActive = "player_buttonActive";
 
+    public static final String key_statisticChartSignature = "statisticChartSignature";
+    public static final String key_statisticChartSignatureAlpha = "statisticChartSignatureAlpha";
+    public static final String key_statisticChartHintLine = "statisticChartHintLine";
+    public static final String key_statisticChartActiveLine = "statisticChartActiveLine";
+    public static final String key_statisticChartInactivePickerChart = "statisticChartInactivePickerChart";
+    public static final String key_statisticChartActivePickerChart = "statisticChartActivePickerChart";
+    public static final String key_statisticChartPopupBackground = "statisticChartPopupBackground";
+    public static final String key_statisticChartRipple = "statisticChartRipple";
+    public static final String key_statisticChartBackZoomColor = "statisticChartBackZoomColor";
+    public static final String key_statisticChartCheckboxInactive = "statisticChartCheckboxInactive";
+    public static final String key_statisticChartNightIconColor = "statisticChartNightIconColor";
+    public static final String key_statisticChartChevronColor = "statisticChartChevronColor";
+    public static final String key_statisticChartHighlightColor = "statisticChartHighlightColor";
+    public final static String key_statisticChartLine_blue = "statisticChartLine_blue";
+    public final static String key_statisticChartLine_green = "statisticChartLine_green";
+    public final static String key_statisticChartLine_red = "statisticChartLine_red";
+    public final static String key_statisticChartLine_golden = "statisticChartLine_golden";
+    public final static String key_statisticChartLine_lightblue = "statisticChartLine_lightblue";
+    public final static String key_statisticChartLine_lightgreen = "statisticChartLine_lightgreen";
+    public final static String key_statisticChartLine_orange = "statisticChartLine_orange";
+    public final static String key_statisticChartLine_indigo = "statisticChartLine_indigo";
+
     private static HashSet<String> myMessagesColorKeys = new HashSet<>();
     private static HashMap<String, Integer> defaultColors = new HashMap<>();
     private static HashMap<String, String> fallbackKeys = new HashMap<>();
@@ -2891,7 +2914,7 @@ public class Theme {
         defaultColors.put(key_windowBackgroundWhiteRedText5, 0xffed3939);
         defaultColors.put(key_windowBackgroundWhiteRedText6, 0xffff6666);
         defaultColors.put(key_windowBackgroundWhiteGrayText, 0xff838c96);
-        defaultColors.put(key_windowBackgroundWhiteGrayText2, 0xff8a8a8a);
+        defaultColors.put(key_windowBackgroundWhiteGrayText2, 0xff82868a);
         defaultColors.put(key_windowBackgroundWhiteGrayText3, 0xff999999);
         defaultColors.put(key_windowBackgroundWhiteGrayText4, 0xff808080);
         defaultColors.put(key_windowBackgroundWhiteGrayText5, 0xffa3a3a3);
@@ -2954,7 +2977,6 @@ public class Theme {
         defaultColors.put(key_avatar_backgroundCyan, 0xff5fbed5);
         defaultColors.put(key_avatar_backgroundBlue, 0xff549cdd);
         defaultColors.put(key_avatar_backgroundPink, 0xfff2749a);
-        defaultColors.put(key_avatar_backgroundGroupCreateSpanBlue, 0xffe6eff7);
 
         defaultColors.put(key_avatar_backgroundInProfileBlue, 0xff5085b1);
         defaultColors.put(key_avatar_backgroundActionBarBlue, 0xff598fba);
@@ -2978,7 +3000,7 @@ public class Theme {
         defaultColors.put(key_actionBarDefaultTitle, 0xffffffff);
         defaultColors.put(key_actionBarDefaultSubtitle, 0xffd5e8f7);
         defaultColors.put(key_actionBarDefaultSelector, 0xff406d94);
-        defaultColors.put(key_actionBarWhiteSelector, 0x2f000000);
+        defaultColors.put(key_actionBarWhiteSelector, 0x1d000000);
         defaultColors.put(key_actionBarDefaultSearch, 0xffffffff);
         defaultColors.put(key_actionBarDefaultSearchPlaceholder, 0x88ffffff);
         defaultColors.put(key_actionBarDefaultSubmenuItem, 0xff222222);
@@ -3293,15 +3315,16 @@ public class Theme {
         defaultColors.put(key_chat_recordedVoicePlayPause, 0xffffffff);
         defaultColors.put(key_chat_recordedVoicePlayPausePressed, 0xffd9eafb);
         defaultColors.put(key_chat_recordedVoiceDot, 0xffda564d);
-        defaultColors.put(key_chat_recordedVoiceBackground, 0xff67b2eb);
-        defaultColors.put(key_chat_recordedVoiceProgress, 0xffa2cef8);
+        defaultColors.put(key_chat_recordedVoiceBackground, 0xff5DADE8);
+        defaultColors.put(key_chat_recordedVoiceProgress, 0xffB1DEFF);
         defaultColors.put(key_chat_recordedVoiceProgressInner, 0xffffffff);
-        defaultColors.put(key_chat_recordVoiceCancel, 0xff999999);
+        defaultColors.put(key_chat_recordVoiceCancel, 0xff3A95D4);
+        defaultColors.put(key_chat_recordedVoiceHighlight, 0x64ffffff);
         defaultColors.put(key_chat_messagePanelSend, 0xff62b0eb);
         defaultColors.put(key_chat_messagePanelVoiceLock, 0xffa4a4a4);
         defaultColors.put(key_chat_messagePanelVoiceLockBackground, 0xffffffff);
         defaultColors.put(key_chat_messagePanelVoiceLockShadow, 0xff000000);
-        defaultColors.put(key_chat_recordTime, 0xff4d4c4b);
+        defaultColors.put(key_chat_recordTime, 0xff8e959b);
         defaultColors.put(key_chat_emojiPanelNewTrending, 0xff4da6ea);
         defaultColors.put(key_chat_gifSaveHintText, 0xffffffff);
         defaultColors.put(key_chat_gifSaveHintBackground, 0xcc111111);
@@ -3312,7 +3335,7 @@ public class Theme {
         defaultColors.put(key_chat_goDownButtonCounterBackground, 0xff4da2e8);
         defaultColors.put(key_chat_messagePanelCancelInlineBot, 0xffadadad);
         defaultColors.put(key_chat_messagePanelVoicePressed, 0xffffffff);
-        defaultColors.put(key_chat_messagePanelVoiceBackground, 0xff5795cc);
+        defaultColors.put(key_chat_messagePanelVoiceBackground, 0xff5DA6DE);
         defaultColors.put(key_chat_messagePanelVoiceShadow, 0x0d000000);
         defaultColors.put(key_chat_messagePanelVoiceDelete, 0xff737373);
         defaultColors.put(key_chat_messagePanelVoiceDuration, 0xffffffff);
@@ -3490,6 +3513,30 @@ public class Theme {
         defaultColors.put(key_chat_inTextSelectionHighlight, 0x5062A9E3);
         defaultColors.put(key_chat_TextSelectionCursor, 0xFF419FE8);
 
+        defaultColors.put(key_statisticChartSignature, 0x7f252529);
+        defaultColors.put(key_statisticChartSignatureAlpha, 0x7f252529);
+        defaultColors.put(key_statisticChartHintLine, 0x1a182D3B);
+        defaultColors.put(key_statisticChartActiveLine, 0x33000000);
+        defaultColors.put(key_statisticChartInactivePickerChart, 0x99e2eef9);
+        defaultColors.put(key_statisticChartActivePickerChart, 0xd8baccd9);
+
+        defaultColors.put(key_statisticChartRipple, 0x2c7e9db7);
+        defaultColors.put(key_statisticChartBackZoomColor, 0xff108BE3);
+        defaultColors.put(key_statisticChartCheckboxInactive, 0xffBDBDBD);
+        defaultColors.put(key_statisticChartNightIconColor, 0xff8E8E93);
+        defaultColors.put(key_statisticChartChevronColor, 0xffD2D5D7);
+        defaultColors.put(key_statisticChartHighlightColor, 0x20ececec);
+        defaultColors.put(key_statisticChartPopupBackground,0xffffffff);
+
+        defaultColors.put(key_statisticChartLine_blue, 0xff327FE5);
+        defaultColors.put(key_statisticChartLine_green, 0xff61C752);
+        defaultColors.put(key_statisticChartLine_red, 0xffE05356);
+        defaultColors.put(key_statisticChartLine_golden, 0xffDEBA08);
+        defaultColors.put(key_statisticChartLine_lightblue, 0xff58A8ED);
+        defaultColors.put(key_statisticChartLine_lightgreen, 0xff8FCF39);
+        defaultColors.put(key_statisticChartLine_orange, 0xffE3B727);
+        defaultColors.put(key_statisticChartLine_indigo, 0xff7F79F3);
+
         fallbackKeys.put(key_chat_adminText, key_chat_inTimeText);
         fallbackKeys.put(key_chat_adminSelectedText, key_chat_inTimeSelectedText);
         fallbackKeys.put(key_player_progressCachedBackground, key_player_progressBackground);
@@ -3607,6 +3654,7 @@ public class Theme {
         fallbackKeys.put(key_profile_tabSelectedText, key_windowBackgroundWhiteBlueHeader);
         fallbackKeys.put(key_profile_tabSelectedLine, key_windowBackgroundWhiteBlueHeader);
         fallbackKeys.put(key_profile_tabSelector, key_listSelector);
+        fallbackKeys.put(key_statisticChartPopupBackground, key_dialogBackground);
 
         themeAccentExclusionKeys.addAll(Arrays.asList(keys_avatar_background));
         themeAccentExclusionKeys.addAll(Arrays.asList(keys_avatar_nameInMessage));
@@ -4383,10 +4431,14 @@ public class Theme {
     }
 
     public static Drawable createSimpleSelectorRoundRectDrawable(int rad, int defaultColor, int pressedColor) {
+        return createSimpleSelectorRoundRectDrawable(rad, defaultColor, pressedColor, pressedColor);
+    }
+
+    public static Drawable createSimpleSelectorRoundRectDrawable(int rad, int defaultColor, int pressedColor, int maskColor) {
         ShapeDrawable defaultDrawable = new ShapeDrawable(new RoundRectShape(new float[]{rad, rad, rad, rad, rad, rad, rad, rad}, null, null));
         defaultDrawable.getPaint().setColor(defaultColor);
         ShapeDrawable pressedDrawable = new ShapeDrawable(new RoundRectShape(new float[]{rad, rad, rad, rad, rad, rad, rad, rad}, null, null));
-        pressedDrawable.getPaint().setColor(pressedColor);
+        pressedDrawable.getPaint().setColor(maskColor);
         if (Build.VERSION.SDK_INT >= 21) {
             ColorStateList colorStateList = new ColorStateList(
                     new int[][]{StateSet.WILD_CARD},
@@ -4999,9 +5051,9 @@ public class Theme {
         int g = (int) (Color.green(color) * amount);
         int b = (int) (Color.blue(color) * amount);
 
-        r = r < 0 ? 0 : r > 255 ? 255 : r;
-        g = g < 0 ? 0 : g > 255 ? 255 : g;
-        b = b < 0 ? 0 : b > 255 ? 255 : b;
+        r = r < 0 ? 0 : Math.min(r, 255);
+        g = g < 0 ? 0 : Math.min(g, 255);
+        b = b < 0 ? 0 : Math.min(b, 255);
         return Color.argb(Color.alpha(color), r, g, b);
     }
 
@@ -5049,7 +5101,7 @@ public class Theme {
             SharedPreferences.Editor editor = preferences.edit();
             if (!indexOnly) {
                 int N = theme.themeAccents.size();
-                int count = N - theme.defaultAccentCount;
+                int count = Math.max(0, N - theme.defaultAccentCount);
                 SerializedData data = new SerializedData(4 * (count * 15 + 2));
                 data.writeInt32(5);
                 data.writeInt32(count);
@@ -6268,8 +6320,17 @@ public class Theme {
 
             Resources resources = context.getResources();
 
-            avatar_savedDrawable = resources.getDrawable(R.drawable.chats_saved);
-            avatar_ghostDrawable = resources.getDrawable(R.drawable.ghost);
+            avatarDrawables[0] = resources.getDrawable(R.drawable.chats_saved);
+            avatarDrawables[1] = resources.getDrawable(R.drawable.ghost);
+            avatarDrawables[2] = resources.getDrawable(R.drawable.folders_private);
+            avatarDrawables[3] = resources.getDrawable(R.drawable.folders_requests);
+            avatarDrawables[4] = resources.getDrawable(R.drawable.folders_group);
+            avatarDrawables[5] = resources.getDrawable(R.drawable.folders_channel);
+            avatarDrawables[6] = resources.getDrawable(R.drawable.folders_bot);
+            avatarDrawables[7] = resources.getDrawable(R.drawable.folders_mute);
+            avatarDrawables[8] = resources.getDrawable(R.drawable.folders_read);
+            avatarDrawables[9] = resources.getDrawable(R.drawable.folders_archive);
+
 
             if (dialogs_archiveAvatarDrawable != null) {
                 dialogs_archiveAvatarDrawable.setCallback(null);
@@ -6304,7 +6365,9 @@ public class Theme {
         dividerPaint.setColor(getColor(key_divider));
         linkSelectionPaint.setColor(getColor(key_windowBackgroundWhiteLinkSelection));
 
-        setDrawableColorByKey(avatar_savedDrawable, key_avatar_text);
+        for (int a = 0; a < avatarDrawables.length; a++) {
+            setDrawableColorByKey(avatarDrawables[a], key_avatar_text);
+        }
 
         dialogs_archiveAvatarDrawable.beginApplyLayerColors();
         dialogs_archiveAvatarDrawable.setLayerColor("Arrow1.**", getNonAnimatedColor(key_avatar_backgroundArchived));
@@ -6384,7 +6447,7 @@ public class Theme {
             dialogs_halfCheckDrawable = resources.getDrawable(R.drawable.list_halfcheck);
             dialogs_clockDrawable = resources.getDrawable(R.drawable.msg_clock).mutate();
             dialogs_errorDrawable = resources.getDrawable(R.drawable.list_warning_sign);
-            dialogs_reorderDrawable = resources.getDrawable(R.drawable.list_reorder);
+            dialogs_reorderDrawable = resources.getDrawable(R.drawable.list_reorder).mutate();
             dialogs_groupDrawable = resources.getDrawable(R.drawable.list_group);
             dialogs_broadcastDrawable = resources.getDrawable(R.drawable.list_broadcast);
             dialogs_muteDrawable = resources.getDrawable(R.drawable.list_mute).mutate();
@@ -7251,6 +7314,10 @@ public class Theme {
         }
     }
 
+    public static void setDefaultColor(String key, int color) {
+        defaultColors.put(key, color);
+    }
+
     public static void setThemeWallpaper(ThemeInfo themeInfo, Bitmap bitmap, File path) {
         currentColors.remove(key_chat_wallpaper);
         currentColors.remove(key_chat_wallpaper_gradient_to);
@@ -7438,7 +7505,7 @@ public class Theme {
                 boolean overrideTheme = (!hasPreviousTheme || isApplyingAccent) && overrideWallpaper != null;
                 if (overrideWallpaper != null) {
                     isWallpaperMotion = overrideWallpaper != null && overrideWallpaper.isMotion;
-                    isPatternWallpaper = overrideWallpaper != null && overrideWallpaper.color != 0;
+                    isPatternWallpaper = overrideWallpaper != null && overrideWallpaper.color != 0 && !overrideWallpaper.isDefault() && !overrideWallpaper.isColor();
                 } else {
                     isWallpaperMotion = currentTheme.isMotion;
                     isPatternWallpaper = currentTheme.patternBgColor != 0;
@@ -7515,7 +7582,7 @@ public class Theme {
                         if (overrideWallpaper == null || overrideWallpaper.isDefault()) {
                             wallpaper = ApplicationLoader.applicationContext.getResources().getDrawable(R.drawable.background_hd);
                             isCustomTheme = false;
-                        } else if (!overrideWallpaper.isColor()) {
+                        } else if (!overrideWallpaper.isColor() || overrideWallpaper.gradientColor != 0) {
                             if (selectedColor != 0 && !isPatternWallpaper) {
                                 if (overrideWallpaper.gradientColor != 0) {
                                     final int[] colors = {selectedColor, overrideWallpaper.gradientColor};

@@ -58,7 +58,7 @@ static const int16_t hann[960]={
 		0x7FDE, 0x7FE1, 0x7FE4, 0x7FE7, 0x7FEA, 0x7FED, 0x7FEF, 0x7FF1, 0x7FF3, 0x7FF5, 0x7FF7, 0x7FF9, 0x7FFA, 0x7FFB, 0x7FFC, 0x7FFD, 0x7FFE, 0x7FFE, 0x7FFF, 0x7FFF
 };
 
-#define MIN(a, b) (a<b ? a : b)
+#define MIN(a, b) (((a)<(b)) ? (a) : (b))
 
 size_t Resampler::Convert48To44(int16_t *from, int16_t *to, size_t fromLen, size_t toLen){
 	size_t outLen=fromLen*147/160;
