@@ -250,7 +250,7 @@ public class SharedLinkCell extends FrameLayout {
                         }
                     }
                     if (link != null) {
-                        if (link.toLowerCase().indexOf("http") != 0 && link.toLowerCase().indexOf("mailto") != 0) {
+                        if (!link.contains("://") && link.toLowerCase().indexOf("http") != 0 && link.toLowerCase().indexOf("mailto") != 0) {
                             links.add("http://" + link);
                         } else {
                             links.add(link);

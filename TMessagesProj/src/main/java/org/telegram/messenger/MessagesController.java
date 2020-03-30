@@ -257,6 +257,7 @@ public class MessagesController extends BaseController implements NotificationCe
     public boolean backgroundConnection;
     public float animatedEmojisZoom;
     public boolean filtersEnabled;
+    public boolean showFiltersTooltip;
     public String venueSearchBot;
     public String gifSearchBot;
     public String imageSearchBot;
@@ -524,6 +525,7 @@ public class MessagesController extends BaseController implements NotificationCe
         animatedEmojisZoom = mainPreferences.getFloat("animatedEmojisZoom", 0.625f);
         qrLoginCamera = mainPreferences.getBoolean("qrLoginCamera", false);
         filtersEnabled = mainPreferences.getBoolean("filtersEnabled", false);
+        showFiltersTooltip = mainPreferences.getBoolean("showFiltersTooltip", false);
     }
 
     private void sendLoadPeersRequest(TLObject req, ArrayList<TLObject> requests, TLRPC.messages_Dialogs pinnedDialogs, TLRPC.messages_Dialogs pinnedRemoteDialogs, ArrayList<TLRPC.User> users, ArrayList<TLRPC.Chat> chats, ArrayList<MessagesController.DialogFilter> filtersToSave, SparseArray<MessagesController.DialogFilter> filtersToDelete, ArrayList<Integer> filtersOrder, HashMap<Integer, HashSet<Integer>> filterDialogRemovals, HashMap<Integer, HashSet<Integer>> filterUserRemovals, HashSet<Integer> filtersUnreadCounterReset) {
@@ -992,6 +994,15 @@ public class MessagesController extends BaseController implements NotificationCe
                             if (bool.value != filtersEnabled) {
                                 filtersEnabled = bool.value;
                                 editor.putBoolean("filtersEnabled", filtersEnabled);
+                                changed = true;
+                            }
+                        }
+                    } else if ("dialog_filters_tooltip".equals(value.key)) {
+                        if (value.value instanceof TLRPC.TL_jsonBool) {
+                            TLRPC.TL_jsonBool bool = (TLRPC.TL_jsonBool) value.value;
+                            if (bool.value != showFiltersTooltip) {
+                                showFiltersTooltip = bool.value;
+                                editor.putBoolean("showFiltersTooltip", showFiltersTooltip);
                                 changed = true;
                                 getNotificationCenter().postNotificationName(NotificationCenter.filterSettingsUpdated);
                             }
@@ -11630,9 +11641,13 @@ public class MessagesController extends BaseController implements NotificationCe
     }
 
     public boolean isDialogMuted(long dialog_id) {
+        return isDialogMuted(dialog_id, null);
+    }
+
+    public boolean isDialogMuted(long dialog_id, TLRPC.Chat chat) {
         int mute_type = notificationsPreferences.getInt("notify2_" + dialog_id, -1);
         if (mute_type == -1) {
-            return !getNotificationsController().isGlobalNotificationsEnabled(dialog_id);
+            return !getNotificationsController().isGlobalNotificationsEnabled(dialog_id, chat);
         }
         if (mute_type == 2) {
             return true;

@@ -1728,6 +1728,9 @@ public class MessagesStorage extends BaseController {
                 if (mentions > 0) {
                     dialogsWithMentions.put(did, mentions);
                 }
+                /*if (BuildVars.DEBUG_VERSION) {
+                    FileLog.d("unread chat " + did + " counters = " + unread + " and " + mentions);
+                }*/
                 dialogsByFolders.put(did, folderId);
                 int lower_id = (int) did;
                 int high_id = (int) (did >> 32);
@@ -1807,7 +1810,7 @@ public class MessagesStorage extends BaseController {
                         continue;
                     }
                     int idx1 = dialogsByFolders.get(-chat.id);
-                    int idx2 = getMessagesController().isDialogMuted(-chat.id) && dialogsWithMentions.indexOfKey(-chat.id) < 0 ? 1 : 0;
+                    int idx2 = getMessagesController().isDialogMuted(-chat.id, chat) && dialogsWithMentions.indexOfKey(-chat.id) < 0 ? 1 : 0;
                     if (ChatObject.isChannel(chat) && !chat.megagroup) {
                         channels[idx1][idx2]++;
                     } else {
@@ -1816,6 +1819,15 @@ public class MessagesStorage extends BaseController {
                     chatsDict.put(chat.id, chat);
                 }
             }
+            /*if (BuildVars.DEBUG_VERSION) {
+                for (int b = 0; b < 2; b++) {
+                    FileLog.d("contacts = " + contacts[b][0] + ", " + contacts[b][1]);
+                    FileLog.d("nonContacts = " + nonContacts[b][0] + ", " + nonContacts[b][1]);
+                    FileLog.d("groups = " + groups[b][0] + ", " + groups[b][1]);
+                    FileLog.d("channels = " + channels[b][0] + ", " + channels[b][1]);
+                    FileLog.d("bots = " + bots[b][0] + ", " + bots[b][1]);
+                }
+            }*/
             for (int a = 0, N = dialogFilters.size(); a < N + 2; a++) {
                 MessagesController.DialogFilter filter;
                 int flags;
@@ -1979,6 +1991,9 @@ public class MessagesStorage extends BaseController {
                         }
                     }
                     filter.pendingUnreadCount = unreadCount;
+                    /*if (BuildVars.DEBUG_VERSION) {
+                        FileLog.d("filter " + filter.name + " flags = " + filter.flags + " unread count = " + filter.pendingUnreadCount);
+                    }*/
                     if (apply) {
                         filter.unreadCount = unreadCount;
                     }
@@ -3610,17 +3625,32 @@ public class MessagesStorage extends BaseController {
                 if (read) {
                     if (b == 0) {
                         dialogsWithUnread.remove(did);
+                        /*if (BuildVars.DEBUG_VERSION) {
+                            FileLog.d("read remove = " + did);
+                        }*/
                     } else {
                         dialogsWithMentions.remove(did);
+                        /*if (BuildVars.DEBUG_VERSION) {
+                            FileLog.d("mention remove = " + did);
+                        }*/
                     }
                 } else {
                     if (b == 0) {
                         dialogsWithUnread.put(did, count);
+                        /*if (BuildVars.DEBUG_VERSION) {
+                            FileLog.d("read add = " + did);
+                        }*/
                     } else {
                         dialogsWithMentions.put(did, count);
+                        /*if (BuildVars.DEBUG_VERSION) {
+                            FileLog.d("mention add = " + did);
+                        }*/
                     }
                 }
                 if (b == 0 && dialogsWithMentions.indexOfKey(did) >= 0 || b == 1 && dialogsWithUnread.indexOfKey(did) >= 0) {
+                    /*if (BuildVars.DEBUG_VERSION) {
+                        FileLog.d("read = " + read + " ignore " + b);
+                    }*/
                     continue;
                 }
                 SQLiteCursor cursor = database.queryFinalized("SELECT folder_id FROM dialogs WHERE did = " + did);
@@ -3708,7 +3738,7 @@ public class MessagesStorage extends BaseController {
                     continue;
                 }
                 int idx1 = dialogsByFolders.get(-chat.id);
-                int idx2 = getMessagesController().isDialogMuted(-chat.id) && (dialogsToUpdateMentions == null || dialogsToUpdateMentions.indexOfKey(-chat.id) < 0) ? 1 : 0;
+                int idx2 = getMessagesController().isDialogMuted(-chat.id, chat) && (dialogsToUpdateMentions == null || dialogsToUpdateMentions.indexOfKey(-chat.id) < 0) ? 1 : 0;
                 if (ChatObject.isChannel(chat) && !chat.megagroup) {
                     channels[idx1][idx2]++;
                 } else {
@@ -3717,6 +3747,15 @@ public class MessagesStorage extends BaseController {
                 chatsDict.put(chat.id, chat);
             }
         }
+        /*if (BuildVars.DEBUG_VERSION) {
+            for (int b = 0; b < 2; b++) {
+                FileLog.d("read = " + read + " contacts = " + contacts[b][0] + ", " + contacts[b][1]);
+                FileLog.d("read = " + read + " nonContacts = " + nonContacts[b][0] + ", " + nonContacts[b][1]);
+                FileLog.d("read = " + read + " groups = " + groups[b][0] + ", " + groups[b][1]);
+                FileLog.d("read = " + read + " channels = " + channels[b][0] + ", " + channels[b][1]);
+                FileLog.d("read = " + read + " bots = " + bots[b][0] + ", " + bots[b][1]);
+            }
+        }*/
 
         for (int a = 0, N = dialogFilters.size(); a < N + 2; a++) {
             int unreadCount;
@@ -4033,6 +4072,9 @@ public class MessagesStorage extends BaseController {
             }
             if (filter != null) {
                 filter.pendingUnreadCount = unreadCount;
+                /*if (BuildVars.DEBUG_VERSION) {
+                    FileLog.d("filter " + filter.name + " flags = " + flags + " read = " + read + " unread count = " + filter.pendingUnreadCount);
+                }*/
             } else if (a == N) {
                 pendingMainUnreadCount = unreadCount;
             } else if (a == N + 1) {

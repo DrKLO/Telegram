@@ -3805,10 +3805,16 @@ public class NotificationsController extends BaseController {
     }
 
     public boolean isGlobalNotificationsEnabled(long did) {
+        return isGlobalNotificationsEnabled(did, null);
+    }
+
+    public boolean isGlobalNotificationsEnabled(long did, TLRPC.Chat chat) {
         int type;
         int lower_id = (int) did;
         if (lower_id < 0) {
-            TLRPC.Chat chat = getMessagesController().getChat(-lower_id);
+            if (chat == null) {
+                chat = getMessagesController().getChat(-lower_id);
+            }
             if (ChatObject.isChannel(chat) && !chat.megagroup) {
                 type = TYPE_CHANNEL;
             } else {

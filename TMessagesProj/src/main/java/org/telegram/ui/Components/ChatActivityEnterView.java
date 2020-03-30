@@ -944,7 +944,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
         @Override
         protected void onDraw(Canvas canvas) {
             float multilinTooltipOffset = 0;
-            if (tooltipLayout.getLineCount() > 1) {
+            if (tooltipLayout != null && tooltipLayout.getLineCount() > 1) {
                 multilinTooltipOffset = tooltipLayout.getHeight() - tooltipLayout.getLineBottom(0);
             }
             int cx = getMeasuredWidth() - AndroidUtilities.dp2(26);
@@ -1192,47 +1192,50 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                     }
                 }
 
+
                 int alphaInt = (int) (tooltipAlpha * 255);
 
                 tooltipBackground.setAlpha(alphaInt);
                 tooltipBackgroundArrow.setAlpha(alphaInt);
                 tooltipPaint.setAlpha(alphaInt);
 
-                canvas.save();
-                rectF.set(0, 0, getMeasuredWidth(), getMeasuredHeight());
-                canvas.translate(getMeasuredWidth() - tooltipWidth - AndroidUtilities.dp(44), AndroidUtilities.dpf2(16));
-                tooltipBackground.setBounds(
-                        -AndroidUtilities.dp(8), -AndroidUtilities.dp(2),
-                        (int) (tooltipWidth + AndroidUtilities.dp(36)), (int) (tooltipLayout.getHeight() + AndroidUtilities.dpf2(4))
-                );
-                tooltipBackground.draw(canvas);
-                tooltipLayout.draw(canvas);
-                canvas.restore();
+                if (tooltipLayout != null) {
+                    canvas.save();
+                    rectF.set(0, 0, getMeasuredWidth(), getMeasuredHeight());
+                    canvas.translate(getMeasuredWidth() - tooltipWidth - AndroidUtilities.dp(44), AndroidUtilities.dpf2(16));
+                    tooltipBackground.setBounds(
+                            -AndroidUtilities.dp(8), -AndroidUtilities.dp(2),
+                            (int) (tooltipWidth + AndroidUtilities.dp(36)), (int) (tooltipLayout.getHeight() + AndroidUtilities.dpf2(4))
+                    );
+                    tooltipBackground.draw(canvas);
+                    tooltipLayout.draw(canvas);
+                    canvas.restore();
 
-                canvas.save();
-                canvas.translate(cx, AndroidUtilities.dpf2(17) + tooltipLayout.getHeight() / 2f - idleProgress * AndroidUtilities.dpf2(3f));
-                path.reset();
-                path.setLastPoint(-AndroidUtilities.dpf2(5), AndroidUtilities.dpf2(4));
-                path.lineTo(0, 0);
-                path.lineTo(AndroidUtilities.dpf2(5), AndroidUtilities.dpf2(4));
+                    canvas.save();
+                    canvas.translate(cx, AndroidUtilities.dpf2(17) + tooltipLayout.getHeight() / 2f - idleProgress * AndroidUtilities.dpf2(3f));
+                    path.reset();
+                    path.setLastPoint(-AndroidUtilities.dpf2(5), AndroidUtilities.dpf2(4));
+                    path.lineTo(0, 0);
+                    path.lineTo(AndroidUtilities.dpf2(5), AndroidUtilities.dpf2(4));
 
-                Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
-                p.setColor(Color.WHITE);
-                p.setAlpha(alphaInt);
-                p.setStyle(Paint.Style.STROKE);
-                p.setStrokeCap(Paint.Cap.ROUND);
-                p.setStrokeJoin(Paint.Join.ROUND);
-                p.setStrokeWidth(AndroidUtilities.dpf2(1.5f));
-                canvas.drawPath(path, p);
-                canvas.restore();
+                    Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
+                    p.setColor(Color.WHITE);
+                    p.setAlpha(alphaInt);
+                    p.setStyle(Paint.Style.STROKE);
+                    p.setStrokeCap(Paint.Cap.ROUND);
+                    p.setStrokeJoin(Paint.Join.ROUND);
+                    p.setStrokeWidth(AndroidUtilities.dpf2(1.5f));
+                    canvas.drawPath(path, p);
+                    canvas.restore();
 
-                canvas.save();
-                tooltipBackgroundArrow.setBounds(
-                        cx - tooltipBackgroundArrow.getIntrinsicWidth() / 2, (int) (tooltipLayout.getHeight() + AndroidUtilities.dpf2(20)),
-                        cx + tooltipBackgroundArrow.getIntrinsicWidth() / 2, (int) (tooltipLayout.getHeight() + AndroidUtilities.dpf2(20)) + tooltipBackgroundArrow.getIntrinsicHeight()
-                );
-                tooltipBackgroundArrow.draw(canvas);
-                canvas.restore();
+                    canvas.save();
+                    tooltipBackgroundArrow.setBounds(
+                            cx - tooltipBackgroundArrow.getIntrinsicWidth() / 2, (int) (tooltipLayout.getHeight() + AndroidUtilities.dpf2(20)),
+                            cx + tooltipBackgroundArrow.getIntrinsicWidth() / 2, (int) (tooltipLayout.getHeight() + AndroidUtilities.dpf2(20)) + tooltipBackgroundArrow.getIntrinsicHeight()
+                    );
+                    tooltipBackgroundArrow.draw(canvas);
+                    canvas.restore();
+                }
             }
 
             canvas.save();
@@ -4437,9 +4440,12 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                             sendButton.setVisibility(GONE);
                             cancelBotButton.setVisibility(GONE);
                             setSlowModeButtonVisible(false);
-                            audioVideoButtonContainer.setVisibility(VISIBLE);
                             runningAnimation = null;
                             runningAnimationType = 0;
+
+                            if (audioVideoButtonContainer != null) {
+                                audioVideoButtonContainer.setVisibility(VISIBLE);
+                            }
                         }
                     }
 
@@ -5112,7 +5118,9 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                             messageEditText.requestFocus();
                         }
                         recordedAudioBackground.setAlpha(1f);
-                        attachLayout.setTranslationX(0);
+                        if (attachLayout != null) {
+                            attachLayout.setTranslationX(0);
+                        }
                         slideText.setCancelToProgress(0f);
 
                         delegate.onAudioVideoInterfaceUpdated();
