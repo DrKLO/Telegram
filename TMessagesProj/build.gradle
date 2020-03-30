@@ -18,6 +18,7 @@ configurations.all {
 }
 
 dependencies {
+    implementation 'androidx.interpolator:interpolator:1.0.0'
     implementation 'androidx.fragment:fragment:1.2.0'
     implementation 'androidx.core:core:1.10.1'
     implementation 'androidx.palette:palette:1.0.0'
