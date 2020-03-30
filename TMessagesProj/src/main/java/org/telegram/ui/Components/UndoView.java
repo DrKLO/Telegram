@@ -434,8 +434,8 @@ public class UndoView extends FrameLayout {
 
             layoutParams.leftMargin = AndroidUtilities.dp(58);
             layoutParams.rightMargin = margin;
-            layoutParams.topMargin = 0;
-            layoutParams.bottomMargin = AndroidUtilities.dp(1);
+            layoutParams.topMargin = AndroidUtilities.dp(6);
+            layoutParams.bottomMargin = AndroidUtilities.dp(7);
             layoutParams.height = TableLayout.LayoutParams.MATCH_PARENT;
 
             subinfoTextView.setVisibility(GONE);

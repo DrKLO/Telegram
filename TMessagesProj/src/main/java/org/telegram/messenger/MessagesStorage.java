@@ -1696,6 +1696,8 @@ public class MessagesStorage extends BaseController {
     private int[][] bots = new int[][]{new int[2], new int[2]};
     private int[][] channels = new int[][]{new int[2], new int[2]};
     private int[][] groups = new int[][]{new int[2], new int[2]};
+    private int[] mentionChannels = new int[2];
+    private int[] mentionGroups = new int[2];
     private LongSparseArray<Integer> dialogsWithMentions = new LongSparseArray<>();
     private LongSparseArray<Integer> dialogsWithUnread = new LongSparseArray<>();
     private void calcUnreadCounters(boolean apply) {
@@ -1755,12 +1757,17 @@ public class MessagesStorage extends BaseController {
             SparseArray<TLRPC.Chat> chatsDict = new SparseArray<>();
             SparseArray<TLRPC.User> encUsersDict = new SparseArray<>();
             SparseArray<Integer> encryptedChatsByUsersCount = new SparseArray<>();
+            SparseArray<Boolean> mutedDialogs = new SparseArray<>();
             if (!usersToLoad.isEmpty()) {
                 getUsersInternal(TextUtils.join(",", usersToLoad), users);
                 for (int a = 0, N = users.size(); a < N; a++) {
                     TLRPC.User user = users.get(a);
+                    boolean muted = getMessagesController().isDialogMuted(user.id);
                     int idx1 = dialogsByFolders.get(user.id);
-                    int idx2 = getMessagesController().isDialogMuted(user.id) && dialogsWithMentions.indexOfKey(user.id) < 0 ? 1 : 0;
+                    int idx2 = muted ? 1 : 0;
+                    if (muted) {
+                        mutedDialogs.put(user.id, true);
+                    }
                     if (user.bot) {
                         bots[idx1][idx2]++;
                     } else if (user.self || user.contact) {
@@ -1788,8 +1795,12 @@ public class MessagesStorage extends BaseController {
                             continue;
                         }
                         long did = ((long) encryptedChat.id) << 32;
+                        boolean muted = getMessagesController().isDialogMuted(did);
                         int idx1 = dialogsByFolders.get(did);
-                        int idx2 = getMessagesController().isDialogMuted(did) && dialogsWithMentions.indexOfKey(did) < 0 ? 1 : 0;
+                        int idx2 = muted ? 1 : 0;
+                        if (muted) {
+                            mutedDialogs.put(user.id, true);
+                        }
                         if (user.self || user.contact) {
                             contacts[idx1][idx2]++;
                         } else {
@@ -1809,8 +1820,12 @@ public class MessagesStorage extends BaseController {
                         dialogsWithMentions.remove(-chat.id);
                         continue;
                     }
+                    boolean muted = getMessagesController().isDialogMuted(-chat.id, chat);
                     int idx1 = dialogsByFolders.get(-chat.id);
-                    int idx2 = getMessagesController().isDialogMuted(-chat.id, chat) && dialogsWithMentions.indexOfKey(-chat.id) < 0 ? 1 : 0;
+                    int idx2 = muted && dialogsWithMentions.indexOfKey(-chat.id) < 0 ? 1 : 0;
+                    if (muted) {
+                        mutedDialogs.put(-chat.id, true);
+                    }
                     if (ChatObject.isChannel(chat) && !chat.megagroup) {
                         channels[idx1][idx2]++;
                     } else {
@@ -1926,47 +1941,59 @@ public class MessagesStorage extends BaseController {
                         if (did > 0) {
                             TLRPC.User user = usersDict.get(did);
                             if (user != null) {
-                                if (user.bot) {
-                                    if ((flags & MessagesController.DIALOG_FILTER_FLAG_BOTS) == 0) {
-                                        unreadCount++;
-                                    }
-                                } else if (user.self || user.contact) {
-                                    if ((flags & MessagesController.DIALOG_FILTER_FLAG_CONTACTS) == 0) {
-                                        unreadCount++;
-                                    }
+                                if ((flags & MessagesController.DIALOG_FILTER_FLAG_EXCLUDE_MUTED) != 0 && mutedDialogs.indexOfKey(user.id) >= 0) {
+                                    unreadCount++;
                                 } else {
-                                    if ((flags & MessagesController.DIALOG_FILTER_FLAG_NON_CONTACTS) == 0) {
-                                        unreadCount++;
+                                    if (user.bot) {
+                                        if ((flags & MessagesController.DIALOG_FILTER_FLAG_BOTS) == 0) {
+                                            unreadCount++;
+                                        }
+                                    } else if (user.self || user.contact) {
+                                        if ((flags & MessagesController.DIALOG_FILTER_FLAG_CONTACTS) == 0) {
+                                            unreadCount++;
+                                        }
+                                    } else {
+                                        if ((flags & MessagesController.DIALOG_FILTER_FLAG_NON_CONTACTS) == 0) {
+                                            unreadCount++;
+                                        }
                                     }
                                 }
                             }
                             user = encUsersDict.get(did);
                             if (user != null) {
                                 int count = encryptedChatsByUsersCount.get(did, 0);
-                                if (user.bot) {
-                                    if ((flags & MessagesController.DIALOG_FILTER_FLAG_BOTS) == 0) {
-                                        unreadCount += count;
-                                    }
-                                } else if (user.self || user.contact) {
-                                    if ((flags & MessagesController.DIALOG_FILTER_FLAG_CONTACTS) == 0) {
-                                        unreadCount += count;
-                                    }
+                                if ((flags & MessagesController.DIALOG_FILTER_FLAG_EXCLUDE_MUTED) != 0 && mutedDialogs.indexOfKey(user.id) >= 0) {
+                                    unreadCount += count;
                                 } else {
-                                    if ((flags & MessagesController.DIALOG_FILTER_FLAG_NON_CONTACTS) == 0) {
-                                        unreadCount += count;
+                                    if (user.bot) {
+                                        if ((flags & MessagesController.DIALOG_FILTER_FLAG_BOTS) == 0) {
+                                            unreadCount += count;
+                                        }
+                                    } else if (user.self || user.contact) {
+                                        if ((flags & MessagesController.DIALOG_FILTER_FLAG_CONTACTS) == 0) {
+                                            unreadCount += count;
+                                        }
+                                    } else {
+                                        if ((flags & MessagesController.DIALOG_FILTER_FLAG_NON_CONTACTS) == 0) {
+                                            unreadCount += count;
+                                        }
                                     }
                                 }
                             }
                         } else {
                             TLRPC.Chat chat = chatsDict.get(-did);
                             if (chat != null) {
-                                if (ChatObject.isChannel(chat) && !chat.megagroup) {
-                                    if ((flags & MessagesController.DIALOG_FILTER_FLAG_CHANNELS) == 0) {
-                                        unreadCount++;
-                                    }
+                                if ((flags & MessagesController.DIALOG_FILTER_FLAG_EXCLUDE_MUTED) != 0 && mutedDialogs.indexOfKey(-chat.id) >= 0 && dialogsWithMentions.indexOfKey(-chat.id) < 0) {
+                                    unreadCount++;
                                 } else {
-                                    if ((flags & MessagesController.DIALOG_FILTER_FLAG_GROUPS) == 0) {
-                                        unreadCount++;
+                                    if (ChatObject.isChannel(chat) && !chat.megagroup) {
+                                        if ((flags & MessagesController.DIALOG_FILTER_FLAG_CHANNELS) == 0) {
+                                            unreadCount++;
+                                        }
+                                    } else {
+                                        if ((flags & MessagesController.DIALOG_FILTER_FLAG_GROUPS) == 0) {
+                                            unreadCount++;
+                                        }
                                     }
                                 }
                             }
@@ -3601,6 +3628,7 @@ public class MessagesStorage extends BaseController {
             for (int b = 0; b < 2; b++) {
                 contacts[a][b] = nonContacts[a][b] = bots[a][b] = channels[a][b] = groups[a][b] = 0;
             }
+            mentionChannels[a] = mentionGroups[a] = 0;
         }
 
         final ArrayList<TLRPC.User> users = new ArrayList<>();
@@ -3610,6 +3638,7 @@ public class MessagesStorage extends BaseController {
         ArrayList<Integer> chatsToLoad = new ArrayList<>();
         ArrayList<Integer> encryptedToLoad = new ArrayList<>();
         LongSparseArray<Integer> dialogsByFolders = new LongSparseArray<>();
+        LongSparseArray<Integer> newUnreadDialogs = new LongSparseArray<>();
 
         for (int b = 0; b < 2; b++) {
             LongSparseArray<Integer> array = b == 0 ? dialogsToUpdate : dialogsToUpdateMentions;
@@ -3635,6 +3664,9 @@ public class MessagesStorage extends BaseController {
                         }*/
                     }
                 } else {
+                    if (dialogsWithMentions.indexOfKey(did) < 0 && dialogsWithUnread.indexOfKey(did) < 0) {
+                        newUnreadDialogs.put(did, count);
+                    }
                     if (b == 0) {
                         dialogsWithUnread.put(did, count);
                         /*if (BuildVars.DEBUG_VERSION) {
@@ -3647,20 +3679,16 @@ public class MessagesStorage extends BaseController {
                         }*/
                     }
                 }
-                if (b == 0 && dialogsWithMentions.indexOfKey(did) >= 0 || b == 1 && dialogsWithUnread.indexOfKey(did) >= 0) {
-                    /*if (BuildVars.DEBUG_VERSION) {
-                        FileLog.d("read = " + read + " ignore " + b);
-                    }*/
-                    continue;
-                }
-                SQLiteCursor cursor = database.queryFinalized("SELECT folder_id FROM dialogs WHERE did = " + did);
-                int folderId = 0;
-                if (cursor.next()) {
-                    folderId = cursor.intValue(0);
-                }
-                cursor.dispose();
 
-                dialogsByFolders.put(did, folderId);
+                if (dialogsByFolders.indexOfKey(did) < 0) {
+                    SQLiteCursor cursor = database.queryFinalized("SELECT folder_id FROM dialogs WHERE did = " + did);
+                    int folderId = 0;
+                    if (cursor.next()) {
+                        folderId = cursor.intValue(0);
+                    }
+                    cursor.dispose();
+                    dialogsByFolders.put(did, folderId);
+                }
 
                 int lowerId = (int) did;
                 int highId = (int) (did >> 32);
@@ -3685,12 +3713,17 @@ public class MessagesStorage extends BaseController {
         SparseArray<TLRPC.Chat> chatsDict = new SparseArray<>();
         SparseArray<TLRPC.User> encUsersDict = new SparseArray<>();
         SparseArray<Integer> encryptedChatsByUsersCount = new SparseArray<>();
+        SparseArray<Boolean> mutedDialogs = new SparseArray<>();
         if (!usersToLoad.isEmpty()) {
             getUsersInternal(TextUtils.join(",", usersToLoad), users);
             for (int a = 0, N = users.size(); a < N; a++) {
                 TLRPC.User user = users.get(a);
+                boolean muted = getMessagesController().isDialogMuted(user.id);
                 int idx1 = dialogsByFolders.get(user.id);
-                int idx2 = getMessagesController().isDialogMuted(user.id) && (dialogsToUpdateMentions == null || dialogsToUpdateMentions.indexOfKey(user.id) < 0) ? 1 : 0;
+                int idx2 = muted ? 1 : 0;
+                if (muted) {
+                    mutedDialogs.put(user.id, true);
+                }
                 if (user.bot) {
                     bots[idx1][idx2]++;
                 } else if (user.self || user.contact) {
@@ -3718,8 +3751,12 @@ public class MessagesStorage extends BaseController {
                         continue;
                     }
                     long did = ((long) encryptedChat.id) << 32;
+                    boolean muted = getMessagesController().isDialogMuted(did);
                     int idx1 = dialogsByFolders.get(did);
-                    int idx2 = getMessagesController().isDialogMuted(did) && (dialogsToUpdateMentions == null || dialogsToUpdateMentions.indexOfKey(did) < 0) ? 1 : 0;
+                    int idx2 = muted ? 1 : 0;
+                    if (muted) {
+                        mutedDialogs.put(user.id, true);
+                    }
                     if (user.self || user.contact) {
                         contacts[idx1][idx2]++;
                     } else {
@@ -3737,12 +3774,27 @@ public class MessagesStorage extends BaseController {
                 if (chat.migrated_to instanceof TLRPC.TL_inputChannel || ChatObject.isNotInChat(chat)) {
                     continue;
                 }
+                boolean muted = getMessagesController().isDialogMuted(-chat.id, chat);
+                boolean hasUnread = dialogsWithUnread.indexOfKey(-chat.id) >= 0;
+                boolean hasMention = dialogsWithMentions.indexOfKey(-chat.id) >= 0;
                 int idx1 = dialogsByFolders.get(-chat.id);
-                int idx2 = getMessagesController().isDialogMuted(-chat.id, chat) && (dialogsToUpdateMentions == null || dialogsToUpdateMentions.indexOfKey(-chat.id) < 0) ? 1 : 0;
-                if (ChatObject.isChannel(chat) && !chat.megagroup) {
-                    channels[idx1][idx2]++;
-                } else {
-                    groups[idx1][idx2]++;
+                int idx2 = muted ? 1 : 0;
+                if (muted) {
+                    mutedDialogs.put(-chat.id, true);
+                }
+                if (muted && dialogsToUpdateMentions != null && dialogsToUpdateMentions.indexOfKey(-chat.id) >= 0) {
+                    if (ChatObject.isChannel(chat) && !chat.megagroup) {
+                        mentionChannels[idx1]++;
+                    } else {
+                        mentionGroups[idx1]++;
+                    }
+                }
+                if (read && !hasUnread && !hasMention || !read && newUnreadDialogs.indexOfKey(-chat.id) >= 0) {
+                    if (ChatObject.isChannel(chat) && !chat.megagroup) {
+                        channels[idx1][idx2]++;
+                    } else {
+                        groups[idx1][idx2]++;
+                    }
                 }
                 chatsDict.put(chat.id, chat);
             }
@@ -3816,12 +3868,16 @@ public class MessagesStorage extends BaseController {
                         unreadCount -= groups[0][0];
                         if ((flags & MessagesController.DIALOG_FILTER_FLAG_EXCLUDE_MUTED) == 0) {
                             unreadCount -= groups[0][1];
+                        } else {
+                            unreadCount -= mentionGroups[0];
                         }
                     }
                     if ((flags & MessagesController.DIALOG_FILTER_FLAG_EXCLUDE_ARCHIVED) == 0) {
                         unreadCount -= groups[1][0];
                         if ((flags & MessagesController.DIALOG_FILTER_FLAG_EXCLUDE_MUTED) == 0) {
                             unreadCount -= groups[1][1];
+                        } else {
+                            unreadCount -= mentionGroups[1];
                         }
                     }
                 }
@@ -3830,12 +3886,16 @@ public class MessagesStorage extends BaseController {
                         unreadCount -= channels[0][0];
                         if ((flags & MessagesController.DIALOG_FILTER_FLAG_EXCLUDE_MUTED) == 0) {
                             unreadCount -= channels[0][1];
+                        } else {
+                            unreadCount -= mentionChannels[0];
                         }
                     }
                     if ((flags & MessagesController.DIALOG_FILTER_FLAG_EXCLUDE_ARCHIVED) == 0) {
                         unreadCount -= channels[1][0];
                         if ((flags & MessagesController.DIALOG_FILTER_FLAG_EXCLUDE_MUTED) == 0) {
                             unreadCount -= channels[1][1];
+                        } else {
+                            unreadCount -= mentionChannels[1];
                         }
                     }
                 }
@@ -3859,47 +3919,59 @@ public class MessagesStorage extends BaseController {
                         if (did > 0) {
                             TLRPC.User user = usersDict.get(did);
                             if (user != null) {
-                                if (user.bot) {
-                                    if ((flags & MessagesController.DIALOG_FILTER_FLAG_BOTS) == 0) {
-                                        unreadCount--;
-                                    }
-                                } else if (user.self || user.contact) {
-                                    if ((flags & MessagesController.DIALOG_FILTER_FLAG_CONTACTS) == 0) {
-                                        unreadCount--;
-                                    }
+                                if ((flags & MessagesController.DIALOG_FILTER_FLAG_EXCLUDE_MUTED) != 0 && mutedDialogs.indexOfKey(user.id) >= 0) {
+                                    unreadCount--;
                                 } else {
-                                    if ((flags & MessagesController.DIALOG_FILTER_FLAG_NON_CONTACTS) == 0) {
-                                        unreadCount--;
+                                    if (user.bot) {
+                                        if ((flags & MessagesController.DIALOG_FILTER_FLAG_BOTS) == 0) {
+                                            unreadCount--;
+                                        }
+                                    } else if (user.self || user.contact) {
+                                        if ((flags & MessagesController.DIALOG_FILTER_FLAG_CONTACTS) == 0) {
+                                            unreadCount--;
+                                        }
+                                    } else {
+                                        if ((flags & MessagesController.DIALOG_FILTER_FLAG_NON_CONTACTS) == 0) {
+                                            unreadCount--;
+                                        }
                                     }
                                 }
                             }
                             user = encUsersDict.get(did);
                             if (user != null) {
                                 int count = encryptedChatsByUsersCount.get(did, 0);
-                                if (user.bot) {
-                                    if ((flags & MessagesController.DIALOG_FILTER_FLAG_BOTS) == 0) {
-                                        unreadCount -= count;
-                                    }
-                                } else if (user.self || user.contact) {
-                                    if ((flags & MessagesController.DIALOG_FILTER_FLAG_CONTACTS) == 0) {
-                                        unreadCount -= count;
-                                    }
+                                if ((flags & MessagesController.DIALOG_FILTER_FLAG_EXCLUDE_MUTED) != 0 && mutedDialogs.indexOfKey(user.id) >= 0) {
+                                    unreadCount -= count;
                                 } else {
-                                    if ((flags & MessagesController.DIALOG_FILTER_FLAG_NON_CONTACTS) == 0) {
-                                        unreadCount -= count;
+                                    if (user.bot) {
+                                        if ((flags & MessagesController.DIALOG_FILTER_FLAG_BOTS) == 0) {
+                                            unreadCount -= count;
+                                        }
+                                    } else if (user.self || user.contact) {
+                                        if ((flags & MessagesController.DIALOG_FILTER_FLAG_CONTACTS) == 0) {
+                                            unreadCount -= count;
+                                        }
+                                    } else {
+                                        if ((flags & MessagesController.DIALOG_FILTER_FLAG_NON_CONTACTS) == 0) {
+                                            unreadCount -= count;
+                                        }
                                     }
                                 }
                             }
                         } else {
                             TLRPC.Chat chat = chatsDict.get(-did);
                             if (chat != null) {
-                                if (ChatObject.isChannel(chat) && !chat.megagroup) {
-                                    if ((flags & MessagesController.DIALOG_FILTER_FLAG_CHANNELS) == 0) {
-                                        unreadCount--;
-                                    }
+                                if ((flags & MessagesController.DIALOG_FILTER_FLAG_EXCLUDE_MUTED) != 0 && mutedDialogs.indexOfKey(-chat.id) >= 0 && dialogsWithMentions.indexOfKey(-chat.id) < 0 && dialogsWithUnread.indexOfKey(-chat.id) < 0) {
+                                    unreadCount--;
                                 } else {
-                                    if ((flags & MessagesController.DIALOG_FILTER_FLAG_GROUPS) == 0) {
-                                        unreadCount--;
+                                    if (ChatObject.isChannel(chat) && !chat.megagroup) {
+                                        if ((flags & MessagesController.DIALOG_FILTER_FLAG_CHANNELS) == 0) {
+                                            unreadCount--;
+                                        }
+                                    } else {
+                                        if ((flags & MessagesController.DIALOG_FILTER_FLAG_GROUPS) == 0) {
+                                            unreadCount--;
+                                        }
                                     }
                                 }
                             }
@@ -3907,6 +3979,9 @@ public class MessagesStorage extends BaseController {
                     }
                     for (int b = 0, N2 = filter.neverShow.size(); b < N2; b++) {
                         int did = filter.neverShow.get(b);
+                        if (dialogsToUpdateMentions != null && dialogsToUpdateMentions.indexOfKey(did) >= 0 && mutedDialogs.indexOfKey(did) < 0) {
+                            continue;
+                        }
                         if (did > 0) {
                             TLRPC.User user = usersDict.get(did);
                             if (user != null) {
@@ -3961,12 +4036,16 @@ public class MessagesStorage extends BaseController {
                         unreadCount += groups[0][0];
                         if ((flags & MessagesController.DIALOG_FILTER_FLAG_EXCLUDE_MUTED) == 0) {
                             unreadCount += groups[0][1];
+                        } else {
+                            unreadCount += mentionGroups[0];
                         }
                     }
                     if ((flags & MessagesController.DIALOG_FILTER_FLAG_EXCLUDE_ARCHIVED) == 0) {
                         unreadCount += groups[1][0];
                         if ((flags & MessagesController.DIALOG_FILTER_FLAG_EXCLUDE_MUTED) == 0) {
                             unreadCount += groups[1][1];
+                        } else {
+                            unreadCount += mentionGroups[1];
                         }
                     }
                 }
@@ -3975,12 +4054,16 @@ public class MessagesStorage extends BaseController {
                         unreadCount += channels[0][0];
                         if ((flags & MessagesController.DIALOG_FILTER_FLAG_EXCLUDE_MUTED) == 0) {
                             unreadCount += channels[0][1];
+                        } else {
+                            unreadCount += mentionChannels[0];
                         }
                     }
                     if ((flags & MessagesController.DIALOG_FILTER_FLAG_EXCLUDE_ARCHIVED) == 0) {
                         unreadCount += channels[1][0];
                         if ((flags & MessagesController.DIALOG_FILTER_FLAG_EXCLUDE_MUTED) == 0) {
                             unreadCount += channels[1][1];
+                        } else {
+                            unreadCount += mentionChannels[1];
                         }
                     }
                 }
@@ -3999,52 +4082,87 @@ public class MessagesStorage extends BaseController {
                     }
                 }
                 if (filter != null) {
-                    for (int b = 0, N2 = filter.alwaysShow.size(); b < N2; b++) {
-                        int did = filter.alwaysShow.get(b);
-                        if (did > 0) {
-                            TLRPC.User user = usersDict.get(did);
-                            if (user != null) {
-                                if (user.bot) {
-                                    if ((flags & MessagesController.DIALOG_FILTER_FLAG_BOTS) == 0) {
-                                        unreadCount++;
-                                    }
-                                } else if (user.self || user.contact) {
-                                    if ((flags & MessagesController.DIALOG_FILTER_FLAG_CONTACTS) == 0) {
-                                        unreadCount++;
-                                    }
-                                } else {
-                                    if ((flags & MessagesController.DIALOG_FILTER_FLAG_NON_CONTACTS) == 0) {
-                                        unreadCount++;
-                                    }
-                                }
-                            }
-                            user = encUsersDict.get(did);
-                            if (user != null) {
-                                int count = encryptedChatsByUsersCount.get(did, 0);
-                                if (user.bot) {
-                                    if ((flags & MessagesController.DIALOG_FILTER_FLAG_BOTS) == 0) {
-                                        unreadCount += count;
-                                    }
-                                } else if (user.self || user.contact) {
-                                    if ((flags & MessagesController.DIALOG_FILTER_FLAG_CONTACTS) == 0) {
-                                        unreadCount += count;
-                                    }
-                                } else {
-                                    if ((flags & MessagesController.DIALOG_FILTER_FLAG_NON_CONTACTS) == 0) {
-                                        unreadCount += count;
-                                    }
-                                }
-                            }
-                        } else {
-                            TLRPC.Chat chat = chatsDict.get(-did);
-                            if (chat != null) {
+                    if (!filter.alwaysShow.isEmpty()) {
+                        if ((flags & MessagesController.DIALOG_FILTER_FLAG_EXCLUDE_MUTED) != 0) {
+                            for (int b = 0, N2 = dialogsToUpdateMentions.size(); b < N2; b++) {
+                                int did = (int) dialogsToUpdateMentions.keyAt(b);
+                                TLRPC.Chat chat = chatsDict.get(-did);
                                 if (ChatObject.isChannel(chat) && !chat.megagroup) {
                                     if ((flags & MessagesController.DIALOG_FILTER_FLAG_CHANNELS) == 0) {
-                                        unreadCount++;
+                                        continue;
                                     }
                                 } else {
                                     if ((flags & MessagesController.DIALOG_FILTER_FLAG_GROUPS) == 0) {
+                                        continue;
+                                    }
+                                }
+                                if (mutedDialogs.indexOfKey(did) >= 0 && filter.alwaysShow.indexOf(did) >= 0) {
+                                    unreadCount--;
+                                }
+                            }
+                        }
+                        for (int b = 0, N2 = filter.alwaysShow.size(); b < N2; b++) {
+                            int did = filter.alwaysShow.get(b);
+                            if (newUnreadDialogs.indexOfKey(did) < 0) {
+                                continue;
+                            }
+                            if (did > 0) {
+                                TLRPC.User user = usersDict.get(did);
+                                if (user != null) {
+                                    if ((flags & MessagesController.DIALOG_FILTER_FLAG_EXCLUDE_MUTED) != 0 && mutedDialogs.indexOfKey(user.id) >= 0) {
                                         unreadCount++;
+                                    } else {
+                                        if (user.bot) {
+                                            if ((flags & MessagesController.DIALOG_FILTER_FLAG_BOTS) == 0) {
+                                                unreadCount++;
+                                            }
+                                        } else if (user.self || user.contact) {
+                                            if ((flags & MessagesController.DIALOG_FILTER_FLAG_CONTACTS) == 0) {
+                                                unreadCount++;
+                                            }
+                                        } else {
+                                            if ((flags & MessagesController.DIALOG_FILTER_FLAG_NON_CONTACTS) == 0) {
+                                                unreadCount++;
+                                            }
+                                        }
+                                    }
+                                }
+                                user = encUsersDict.get(did);
+                                if (user != null) {
+                                    int count = encryptedChatsByUsersCount.get(did, 0);
+                                    if ((flags & MessagesController.DIALOG_FILTER_FLAG_EXCLUDE_MUTED) != 0 && mutedDialogs.indexOfKey(user.id) >= 0) {
+                                        unreadCount += count;
+                                    } else {
+                                        if (user.bot) {
+                                            if ((flags & MessagesController.DIALOG_FILTER_FLAG_BOTS) == 0) {
+                                                unreadCount += count;
+                                            }
+                                        } else if (user.self || user.contact) {
+                                            if ((flags & MessagesController.DIALOG_FILTER_FLAG_CONTACTS) == 0) {
+                                                unreadCount += count;
+                                            }
+                                        } else {
+                                            if ((flags & MessagesController.DIALOG_FILTER_FLAG_NON_CONTACTS) == 0) {
+                                                unreadCount += count;
+                                            }
+                                        }
+                                    }
+                                }
+                            } else {
+                                TLRPC.Chat chat = chatsDict.get(-did);
+                                if (chat != null) {
+                                    if ((flags & MessagesController.DIALOG_FILTER_FLAG_EXCLUDE_MUTED) != 0 && mutedDialogs.indexOfKey(-chat.id) >= 0) {
+                                        unreadCount++;
+                                    } else {
+                                        if (ChatObject.isChannel(chat) && !chat.megagroup) {
+                                            if ((flags & MessagesController.DIALOG_FILTER_FLAG_CHANNELS) == 0) {
+                                                unreadCount++;
+                                            }
+                                        } else {
+                                            if ((flags & MessagesController.DIALOG_FILTER_FLAG_GROUPS) == 0) {
+                                                unreadCount++;
+                                            }
+                                        }
                                     }
                                 }
                             }
