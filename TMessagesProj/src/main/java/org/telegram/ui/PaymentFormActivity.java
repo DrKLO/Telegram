@@ -382,17 +382,7 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
     public void onResume() {
         super.onResume();
         AndroidUtilities.requestAdjustResize(getParentActivity(), classGuid);
-        if (Build.VERSION.SDK_INT >= 23) {
-            try {
-                if ((currentStep == 2 || currentStep == 6) && !paymentForm.invoice.test) {
-                    getParentActivity().getWindow().setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE);
-                } else if (SharedConfig.passcodeHash.length() == 0 || SharedConfig.allowScreenCapture) {
-                    getParentActivity().getWindow().clearFlags(WindowManager.LayoutParams.FLAG_SECURE);
-                }
-            } catch (Throwable e) {
-                FileLog.e(e);
-            }
-        }
+        
         if (googleApiClient != null) {
             googleApiClient.connect();
         }
@@ -2252,17 +2242,7 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
                 FileLog.e(e);
             }
         }
-        try {
-            if ((currentStep == 2 || currentStep == 6) && Build.VERSION.SDK_INT >= 23 && (SharedConfig.passcodeHash.length() == 0 || SharedConfig.allowScreenCapture)) {
-                getParentActivity().getWindow().clearFlags(WindowManager.LayoutParams.FLAG_SECURE);
-            }
-        } catch (Throwable e) {
-            FileLog.e(e);
-        }
-        super.onFragmentDestroy();
-        canceled = true;
-    }
-
+        
     @Override
     protected void onTransitionAnimationEnd(boolean isOpen, boolean backward) {
         if (isOpen && !backward) {
