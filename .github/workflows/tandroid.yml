@@ -22,6 +22,7 @@ jobs:
           result=$((ADDITIONAL_BUILD / 10000))
           echo "ADDITIONAL_BUILD_NUMBER = $result should be between 0 and 10!"
           echo "ADDITIONAL_BUILD_NUMBER=$result" >> $GITHUB_ENV
+          echo "USER_REPO=$GITHUB_REPOSITORY" >> $GITHUB_ENV
       - name: Add language.
         env:
           URL_LANG: ${{ secrets.URL_LANG }}
@@ -45,6 +46,7 @@ jobs:
           echo "RELEASE_KEY_ALIAS=${{ secrets.ALIAS_NAME }}" >> $vars
           echo "RELEASE_STORE_PASSWORD=${{ secrets.KEYSTORE_PASS }}" >> $vars
           echo "ADDITIONAL_BUILD_NUMBER=$ADDITIONAL_BUILD_NUMBER" >> $vars
+          echo "USER_REPO=$USER_REPO" >> $vars
           echo "USER_ID_OWNER=${{ secrets.USER_ID_OWNER }}" >> $vars
 
           ###
@@ -52,7 +54,10 @@ jobs:
           sudo apt update
           sudo apt install openjdk-17-jdk openjdk-17-jre ninja-build
           ./gradlew :TMessagesProj_App:assembleAfatDebug
-          grep BUILD_VERSION_STRING TMessagesProj/src/main/java/org/telegram/messenger/BuildVars.java | cut -d'"' -f 2 > ver.txt
+
+          #grep BUILD_VERSION_STRING TMessagesProj/src/main/java/org/telegram/messenger/BuildVars.java | cut -d'"' -f 2 > ver.txt
+          grep VERSION_NAME TMessagesProj/build/generated/source/buildConfig/debug/org/telegram/messenger/BuildConfig.java | cut -d'"' -f 2 > ver.txt
+
           mkdir artifact
           mv TMessagesProj_App/build/outputs/apk/afat/debug/app.apk app.apk
           cp app.apk "artifact/ForkClient $(cat ver.txt).apk"

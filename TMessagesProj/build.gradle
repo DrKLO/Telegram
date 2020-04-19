@@ -94,6 +94,7 @@ android {
         buildConfigField 'int', 'APP_ID', APP_ID
         buildConfigField 'String', 'APP_HASH', getStringForConfig(APP_HASH)
         buildConfigField 'int', 'USER_ID_OWNER', USER_ID_OWNER
+        buildConfigField 'String', 'USER_REPO', getStringForConfig(USER_REPO)
 
         vectorDrawables.generatedDensities = ['mdpi', 'hdpi', 'xhdpi', 'xxhdpi']
 
