@@ -8454,6 +8454,7 @@
     <string name="GoToFirstMessage">Go to Beginning</string>
     <!--fork settings view-->
     <string name="ForkSettingsTitle">Fork Client Settings</string>
+    <string name="ForkCheckUpdate">Check updates</string>
     <string name="SquareAvatars">Square Avatars</string>
     <string name="SquareAvatarsInfo">Restart required</string>
     <string name="InAppCamera">Enable In-App Camera</string>
