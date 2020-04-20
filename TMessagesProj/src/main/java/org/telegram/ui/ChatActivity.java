@@ -55,6 +55,7 @@ import android.text.style.CharacterStyle;
 import android.text.style.ClickableSpan;
 import android.text.style.ForegroundColorSpan;
 import android.text.style.URLSpan;
+import android.util.DisplayMetrics;
 import android.util.LongSparseArray;
 import android.util.Property;
 import android.util.SparseArray;
@@ -87,6 +88,7 @@ import androidx.core.content.FileProvider;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.GridLayoutManagerFixed;
 import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.LinearSmoothScroller;
 import androidx.recyclerview.widget.LinearSmoothScrollerCustom;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -3212,7 +3214,15 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
 
             @Override
             public void smoothScrollToPosition(RecyclerView recyclerView, RecyclerView.State state, int position) {
-                LinearSmoothScrollerCustom linearSmoothScroller = new LinearSmoothScrollerCustom(recyclerView.getContext(), LinearSmoothScrollerCustom.POSITION_MIDDLE);
+                LinearSmoothScroller linearSmoothScroller = new LinearSmoothScroller(recyclerView.getContext()) {
+                    private static final float MILLISECONDS_PER_INCH = 50f;
+
+                    @Override
+                    protected float calculateSpeedPerPixel(DisplayMetrics displayMetrics) {
+                        return MILLISECONDS_PER_INCH / displayMetrics.densityDpi;
+                    }
+                };
+
                 linearSmoothScroller.setTargetPosition(position);
                 startSmoothScroll(linearSmoothScroller);
             }
@@ -4159,7 +4169,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                         AlertsCreator.createScheduleDatePickerDialog(getParentActivity(), dialog_id, (notify, scheduleDate) -> {
                             getSendMessagesHelper().sendMessage((String) object, dialog_id, replyingMessageObject, null, false, null, null, null, notify, scheduleDate);
                             chatActivityEnterView.setFieldText("");
-                            hideFieldPanel(false);
+                            hideFieldPanel(true);
                         });
                     } else {
                         if (checkSlowMode(view)) {
@@ -4167,7 +4177,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                         }
                         getSendMessagesHelper().sendMessage((String) object, dialog_id, replyingMessageObject, null, false, null, null, null, true, 0);
                         chatActivityEnterView.setFieldText("");
-                        hideFieldPanel(false);
+                        hideFieldPanel(true);
                     }
                 } else {
                     chatActivityEnterView.replaceWithText(start, len, object + " ", false);
@@ -4431,7 +4441,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     }
                     updateScheduledInterface(false);
                 }
-                hideFieldPanel(notify, scheduleDate, false);
+                hideFieldPanel(notify, scheduleDate, true);
             }
 
             @Override
@@ -4556,7 +4566,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 if (!loading) {
                     mentionsAdapter.setNeedBotContext(currentEncryptedChat == null || AndroidUtilities.getPeerLayerVersion(currentEncryptedChat.layer) >= 46);
                     if (editingMessageObject != null) {
-                        hideFieldPanel(false);
+                        hideFieldPanel(true);
                     }
                     chatActivityEnterView.setAllowStickersAndGifs(currentEncryptedChat == null || AndroidUtilities.getPeerLayerVersion(currentEncryptedChat.layer) >= 23, currentEncryptedChat == null || AndroidUtilities.getPeerLayerVersion(currentEncryptedChat.layer) >= 46);
                     if (editingMessageObjectReqId != 0) {
@@ -5537,7 +5547,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         params.put("bot_name", mentionsAdapter.getContextBotName());
         SendMessagesHelper.prepareSendingBotContextResult(getAccountInstance(), result, params, dialog_id, replyingMessageObject, notify, scheduleDate);
         chatActivityEnterView.setFieldText("");
-        hideFieldPanel(false);
+        hideFieldPanel(true);
         getMediaDataController().increaseInlineRaiting(uid);
     }
 
@@ -5819,7 +5829,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
     }
 
     private void afterMessageSend() {
-        hideFieldPanel(false);
+        hideFieldPanel(true);
         if (!inScheduleMode) {
             getMediaDataController().cleanDraft(dialog_id, true);
         }
@@ -5995,7 +6005,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 } else {
                     getSendMessagesHelper().sendSticker(document, dialog_id, replyingMessageObject, parent, true, 0);
                 }
-                hideFieldPanel(false);
+                hideFieldPanel(true);
                 chatActivityEnterView.addStickerToRecent(document);
                 chatActivityEnterView.setFieldText("");
             } else if (item instanceof String) {
@@ -6035,7 +6045,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 if (!inScheduleMode) {
                     moveScrollToLastMessage();
                 }
-                hideFieldPanel(false);
+                hideFieldPanel(true);
             }
         });
         builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
@@ -7588,7 +7598,8 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
 
     private void moveScrollToLastMessage() {
         if (chatListView != null && !messages.isEmpty()) {
-            chatLayoutManager.scrollToPositionWithOffset(0, 0);
+            chatListView.smoothScrollToPosition(0);
+//            chatLayoutManager.scrollToPositionWithOffset(0, 0);
         }
     }
 
@@ -9195,7 +9206,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         }
         fillEditingMediaWithCaption(null, null);
         SendMessagesHelper.prepareSendingDocument(getAccountInstance(), tempPath, originalPath, null, null, null, dialog_id, replyingMessageObject, null, editingMessageObject, true, 0);
-        hideFieldPanel(false);
+        hideFieldPanel(true);
     }
 
     @Override
@@ -12419,7 +12430,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     if (chatActivityEnterView != null) {
                         if (replyingMessageObject != null && botReplyButtons == replyingMessageObject) {
                             botReplyButtons = null;
-                            hideFieldPanel(false);
+                            hideFieldPanel(true);
                         }
                         chatActivityEnterView.setButtons(botButtons, false);
                     }
@@ -15871,7 +15882,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                                 if (URLSpanBotCommand.enabled) {
                                     chatActivityEnterView.setCommand(messageObject, str, longPress, currentChat != null && currentChat.megagroup);
                                     if (!longPress && chatActivityEnterView.getFieldText() == null) {
-                                        hideFieldPanel(false);
+                                        hideFieldPanel(true);
                                     }
                                 }
                             } else if (str.startsWith("video")) {
@@ -16359,7 +16370,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     } else if (url.startsWith("/")) {
                         chatActivityEnterView.setCommand(null, url, false, false);
                         if (chatActivityEnterView.getFieldText() == null) {
-                            hideFieldPanel(false);
+                            hideFieldPanel(true);
                         }
                     }
                 });
