@@ -19,9 +19,6 @@ import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.StatisticActivity;
 
-import java.util.ArrayList;
-import java.util.Locale;
-
 public class StatisticPostInfoCell extends FrameLayout {
 
     private TextView message;
@@ -111,32 +108,8 @@ public class StatisticPostInfoCell extends FrameLayout {
         }
 
         message.setText(text.replace("\n", " ").trim());
-        views.setText(String.format(LocaleController.getPluralString("Views", postInfo.counters.views), formatCount(postInfo.counters.views)));
+        views.setText(String.format(LocaleController.getPluralString("Views", postInfo.counters.views), AndroidUtilities.formatCount(postInfo.counters.views)));
         date.setText(LocaleController.formatDateAudio(postInfo.message.messageOwner.date, false));
-        shares.setText(String.format(LocaleController.getPluralString("Shares", postInfo.counters.forwards), formatCount(postInfo.counters.forwards)));
-    }
-
-    public String formatCount(int count) {
-        if (count < 1000) return Integer.toString(count);
-
-        ArrayList<String> strings = new ArrayList<>();
-        while (count != 0) {
-            int mod = count % 1000;
-            count /= 1000;
-            if (count > 0) {
-                strings.add(String.format(Locale.ENGLISH, "%03d", mod));
-            } else {
-                strings.add(Integer.toString(mod));
-            }
-        }
-        StringBuilder stringBuilder = new StringBuilder();
-        for (int i = strings.size() - 1; i >= 0; i--) {
-            stringBuilder.append(strings.get(i));
-            if (i != 0) {
-                stringBuilder.append(",");
-            }
-        }
-
-        return stringBuilder.toString();
+        shares.setText(String.format(LocaleController.getPluralString("Shares", postInfo.counters.forwards), AndroidUtilities.formatCount(postInfo.counters.forwards)));
     }
 }

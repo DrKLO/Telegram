@@ -198,7 +198,7 @@
     <string name="SendGifPreview">إرسال الصورة المتحركة</string>
     <string name="ViewPackPreview">عرض الحزمة</string>
     <string name="PinToTop">تثبيت في الأعلى</string>
-    <string name="PinToTopLimitReached2">Sorry, you can only pin %1$s to the top in the main list. More chats can be pinned in Chat Folders and your Archive.</string>
+    <string name="PinToTopLimitReached2">عذرًا، يمكنك فقط تثبيت %1$s أعلى القائمة الرئيسية. يمكن تثبيت المزيد من المحادثات في مجلدات المحادثات ومجلد الأرشيف.</string>
     <string name="PinFolderLimitReached">عذرًا، لا يمكنك تثبيت أي محادثات أخرى في الأعلى.</string>
     <string name="UnpinFromTop">إلغاء التثبيت</string>
     <string name="MarkAsUnread">تعليم كغير مقروءة</string>
@@ -290,8 +290,8 @@
     <string name="MegaPrivateInfo">يمكن الانضمام للمجموعات الخاصة فقط في حال تمت دعوتك أو بواسطة رابط دعوة.</string>
     <string name="ChannelLinkTitle">رابط دائم</string>
     <string name="ChannelInviteLinkTitle">رابط الدعوة</string>
-    <string name="ChannelAddMembers">إضافة أعضاء</string>
     <string name="GroupAddMembers">إضافة أعضاء</string>
+    <string name="ChannelAddSubscribers">إضافة مشتركين</string>
     <string name="LeaveChannel">مغادرة القناة</string>
     <string name="LeaveChannelMenu">مغادرة القناة</string>
     <string name="ChannelSettings">الإعدادات</string>
@@ -330,7 +330,7 @@
     <string name="ChannelAdministrators">المشرفون</string>
     <string name="ChannelDelete">حذف القناة</string>
     <string name="ChannelDeleteMenu">حذف القناة</string>
-    <string name="ChannelDeleteAlert">مهلا! حذف هذه القناة سيزيل كافة أعضائها ويَحذف جميعَ رسائلها، هل ترغب حقًا في حذفها؟</string>
+    <string name="ChannelDeleteAlert">مهلا! حذف هذه القناة سيزيل كافة المشتركين وسيحذف كل الرسائل. هل مازلت ترغب في حذف القناة؟</string>
     <string name="ChannelLeaveAlert">هل ترغب حقًا في مغادرة القناة؟</string>
     <string name="ChannelLeaveAlertWithName">هل ترغب حقًا في مغادرة **%1$s**؟</string>
     <string name="ChannelDeleteInfo">ستَفقد كافة المنشورات في هذه القناة.</string>
@@ -398,7 +398,7 @@
     <string name="WhoCanAddMembersAllMembers">جميع الأعضاء</string>
     <string name="WhoCanAddMembersAdmins">المشرفون فقط</string>
     <string name="ChannelNotifyMembersInfoOn">سيتم إشعار المشتركين بالمنشورات الجديدة</string>
-    <string name="ChannelNotifyMembersInfoOff">سيتلقى الأعضاء إشعاراتٍ صامتة</string>
+    <string name="ChannelNotifyMembersInfoOff">سيتلقى المشتركون إشعاراتٍ صامتة</string>
     <string name="ChannelSignMessages">توقيع الرسائل</string>
     <string name="ChannelSignMessagesInfo">إضافة أسماء المشرفين للمنشورات التي ينشرونها.</string>
     <string name="EditAdmin">صلاحيات المشرف</string>
@@ -531,9 +531,9 @@
     <string name="NewPoll">استفتاء جديد</string>
     <string name="NewQuiz">اختبار جديد</string>
     <string name="Poll">استفتاء</string>
-    <string name="Question">السؤال</string>
+    <string name="PollQuestion">سؤال الاستفتاء</string>
     <string name="QuestionHint">اطرح سؤالًا</string>
-    <string name="PollOptions">خيارات الاستفتاء</string>
+    <string name="AnswerOptions">خيارات الإجابة</string>
     <string name="QuizAnswers">إجابات الاختبار</string>
     <string name="PollResults">نتائج الاستفتاء</string>
     <string name="PollAnonymous">استفتاء سري</string>
@@ -722,6 +722,7 @@
     <string name="SdCard">بطاقة التخزين الخارجية</string>
     <string name="Folder">مجلد</string>
     <string name="RecentFiles">الملفات الأخيرة</string>
+    <string name="RecentFilesAZ">Files A-Z</string>
     <string name="NoFilesFound">لم يتم العثور على نتائج</string>
     <string name="NoFilesFoundInfo">ما من ملفات باسم **%1$s** في هذا المجلد.</string>
     <string name="NoFilesInfo">هذا المجلد فارغ.</string>
@@ -730,6 +731,7 @@
     <string name="AppFolderInfo">استعراض مجلد التطبيق</string>
     <string name="InternalFolderInfo">استعراض جميع المجلدات</string>
     <string name="ExternalFolderInfo">استعراض ذاكرة التخزين الخارجية</string>
+    <string name="SearchMusic">Search music</string>
     <!--group stickers-->
     <string name="GroupStickers">ملصقات المجموعة</string>
     <string name="ChooseFromYourStickers">اختر من ملصقاتك</string>
@@ -799,7 +801,8 @@
     <string name="YouLeft">لقد قمت بمغادرة المجموعة</string>
     <string name="DeleteThisGroup">حذف هذه المحادثة</string>
     <string name="DeleteThisChat">حذف هذه المحادثة</string>
-    <string name="DeleteTheseChats">حذف المحادثات</string>
+    <string name="DeleteThisChatBothSides">حذف هذه المحادثة</string>
+    <string name="DeleteTheseChatsBothSides">حذف المحادثات</string>
     <string name="SlideToCancel">اسحب للإلغاء</string>
     <string name="SaveToDownloads">حفظ في الجهاز</string>
     <string name="SaveToGIFs">حفظ في الصور المتحركة</string>
@@ -932,6 +935,7 @@
     <string name="ApkRestricted">"تثبيت ملفات APK محظور لهذا التطبيق، يمكنك السماح بهذا من إعدادات النظام. "</string>
     <string name="UnreadMessages">الرسائل غير المقروءة</string>
     <string name="SearchStickersHint">بحث عن حزم الملصقات</string>
+    <string name="SearchTrendingStickersHint">بحث عن حزم الملصقات الشائعة</string>
     <string name="SearchEmojiHint">بحث الرموز التعبيرية</string>
     <string name="URL">الرابط</string>
     <string name="MapPreviewProvider">مزود معاينة الخرائط</string>
@@ -969,7 +973,10 @@
     <string name="TextSelectionHit">اضغط باستمرار على **كلمة** ما، ثم حرّك المؤشر لتحديد المزيد والنسخ.</string>
     <string name="CardNumberCopied">تم نسخ رقم البطاقة للحافظة</string>
     <string name="CopyCardNumber">نسخ</string>
-    <string name="DiceInfo">أرسل الرمز &#127922; إلى أية محادثة للحصول على رقم عشوائي من تيليجرام.</string>
+    <string name="DiceInfo2">أرسل الرمز التعبيري **&#127922;** لرمي حجر النرد.</string>
+    <string name="DartInfo">أرسل الرمز التعبيري **&#127919;** لتجربة حظك.</string>
+    <string name="DiceEmojiInfo">أرسل الرمز %1$s لتجربة حظك.</string>
+    <string name="SendDice">إرسال</string>Send a dart emoji
     <!--notification-->
     <string name="MessageLifetimeChanged">عيّن %1$s عداد التدمير الذاتي ليصبح %2$s</string>
     <string name="MessageLifetimeChangedOutgoing">قمت بتعيين عداد التدمير الذاتي ليصبح %1$s</string>
@@ -1096,6 +1103,7 @@
     <string name="TodayAt">في</string>
     <string name="YesterdayAt">يوم أمس عند</string>
     <string name="TodayAtFormatted">الساعة %1$s</string>
+    <string name="TodayAtFormattedWithToday">اليوم عند %1$s</string>
     <string name="YesterdayAtFormatted">يوم أمس عند %1$s</string>
     <string name="Online">متصل</string>
     <string name="LastSeen">آخر ظهور</string>
@@ -1121,7 +1129,7 @@
     <string name="PhoneNumberSearch">رقم الهاتف</string>
     <!--group create view-->
     <string name="SendMessageTo">إضافة أشخاص...</string>
-    <string name="SoftUserLimitAlert">ستتمكن من إضافة أعضاء أكثر إذا انتهيت من إنشاء المجموعة وقمت بتحويلها إلى مجموعة خارقة.</string>
+    <string name="SoftUserLimitAlert">ستتمكن من إضافة المزيد من الأعضاء بعد انتهاءك من إنشاء المجموعة.</string>
     <string name="EnterGroupNamePlaceholder">أدخل اسم للمجموعة</string>
     <string name="GroupName">اسم المجموعة</string>
     <string name="MembersCountZero">حتى %1$s</string>
@@ -1255,6 +1263,7 @@
     <string name="RecentStickers">مستخدمة حديثًا</string>
     <string name="FavoriteStickers">المفضلة</string>
     <string name="CurrentGroupStickers">ملصقات المجموعة</string>
+    <string name="OtherStickers">المزيد من الملصقات</string>
     <string name="DeleteFromFavorites">احذف من المفضلة</string>
     <string name="DeleteFromRecent">حذف من الأخيرة</string>
     <string name="AddToMasks">إضافة إلى الأقنعة</string>
@@ -1433,6 +1442,8 @@
     <string name="ResetNotificationsAlert">هل ترغب حقًا في إعادة تعيين جميع إعدادات الإشعارات إلى الوضع الافتراضي؟</string>
     <string name="TextSizeHeader">حجم خط الرسائل</string>
     <string name="AskAQuestion">اسأل سؤالًا</string>
+    <string name="AddAnExplanation">إضافة شرح</string>
+    <string name="AddAnExplanationInfo">Users will see this text after choosing the wrong answer, good for educational purposes.</string>
     <string name="EnableAnimations">تفعيل المؤثرات البصرية</string>
     <string name="ChatSettings">إعدادات المحادثات</string>
     <string name="Devices">الأجهزة</string>
@@ -2051,7 +2062,7 @@
     <!--filters-->
     <string name="Filters">المجلدات</string>
     <string name="FiltersSetup">إعداد</string>
-    <string name="FiltersSetupPinAlert">Set Up Folders</string>
+    <string name="FiltersSetupPinAlert">قم بإعداد المجلدات</string>
     <string name="CreateNewFilter">إنشاء مجلد جديد</string>
     <string name="CreateNewFilterInfo">أنشئ مجلدات لمختلف المجموعات والمحادثات وتنقّل بينها بسرعة.</string>
     <string name="FilterRecommended">المجلدات المقترحة</string>
@@ -2082,11 +2093,11 @@
     <string name="FilterChats">المحادثات</string>
     <string name="FilterInclude">المحادثات المضمنة</string>
     <string name="FilterExclude">المحادثات المستثناة</string>
-    <string name="FilterIncludeInfo">Choose chats and types of chats that will appear in this folder.</string>
-    <string name="FilterExcludeInfo">Choose chats and types of chats that will not appear in this folder.</string>
+    <string name="FilterIncludeInfo">اختر المحادثات وأنواع المحادثات التي ستظهر في هذا المجلد.</string>
+    <string name="FilterExcludeInfo">اختر المحادثات وأنواع المحادثات التي لن تظهر في هذا المجلد.</string>
     <string name="FilterSecretChats">المحادثات&#160;السرية</string>
     <string name="FilterBots">البوتات</string>
-    <string name="FilterAddingChats">إضافة الملصقات</string>
+    <string name="FilterAddingChats">يتم إضافة المحادثات</string>
     <string name="FilterAddingChatsInfo">يرجى الانتظار بضع لحظات ريثما نقوم بملء هذا المجلد لك...</string>
     <string name="FilterNoChatsToDisplay">ما من محادثات لعرضها</string>
     <string name="FilterNoChatsToDisplayInfo">ما من محادثات تنتمي لهذا المجلد حاليًّا.</string>
@@ -2118,6 +2129,8 @@
     <string name="FilterRemoveInclusionUserText">هل أنت متأكد أنك تريد إزالة «%1$s» من قائمة المستثناة دائمًا؟</string>
     <string name="FilterAvailableTitle">مجلدات المحادثات</string>
     <string name="FilterAvailableText">افتح *الإعدادات &gt; المجلدات* لتنظيم محادثاتك في مجلدات.</string>
+    <string name="FilterNameNonMuted">غير المكتومة</string>
+    <string name="FilterNameUnread">غير المقروءة</string>
     <!--passcode view-->
     <string name="Passcode">رمز القفل</string>
     <string name="ChangePasscode">تغيير رمز القفل</string>
@@ -2679,6 +2692,7 @@
     <string name="AreYouSureDeleteAndExitName">هل ترغب حقًا في حذف ومغادرة مجموعة **%1$s**؟</string>
     <string name="AreYouSureDeleteThisChat">هل ترغب حقًا في حذف هذه المحادثة؟</string>
     <string name="AreYouSureDeleteThisChatWithUser">هل ترغب حقًا في حذف المحادثة مع **%1$s**؟</string>
+    <string name="AreYouSureDeleteThisChatWithBot">Are you sure you want to delete the chat with **%1$s** and block them?</string>
     <string name="AreYouSureDeleteThisChatSavedMessages">هل ترغب حقًا في حذف **الرسائل المحفوظة**؟</string>
     <string name="AreYouSureDeleteThisChatWithSecretUser">هل ترغب حقًا في حذف المحادثة السرية مع **%1$s**؟</string>
     <string name="AreYouSureDeleteThisChatWithGroup">هل ترغب حقًا في حذف المحادثة **%1$s**؟</string>
@@ -2773,8 +2787,22 @@
     <string name="ZoomOut">تصغير</string>
     <string name="IVInteractionsChartTitle">تفاعلات الاستعراض الفوري</string>
     <string name="LoadingStats">يتم تحميل الإحصاءات...</string>
-    <string name="LoadingStatsDescription">يرجى الانتظار بضع لحظات ريثما ننشئ الرسوم البيانية.</string>
+    <string name="LoadingStatsDescription">يرجى الانتظار قليلًا ريثما ننشئ الرسوم البيانية.</string>
     <string name="TopHoursChartTitle">المشاهدات حسب التوقيت العالمي</string>
+    <string name="SlideUpToLock">اسحب للأعلى لتثبيت التسجيل</string>
+    <string name="NotificationsChartTitle">الإشعارات</string>
+    <string name="DeviceStorage">ذاكرة الجهاز</string>
+    <string name="TotalDeviceFreeSize">%s مساحة حرة</string>
+    <string name="ClearTelegramCache">مسح ذاكرة تيليجرام المؤقتة</string>
+    <string name="StatisticOverview">نظرة عامة</string>
+    <string name="ViewsPerPost">المشاهدات لكل منشور</string>
+    <string name="SharesPerPost">المشاركات لكل منشور</string>
+    <string name="EnabledNotifications">مكّنوا الإشعارات</string>
+    <string name="ClearLocalDatabase">مسح قاعدة البيانات المحلية</string>
+    <string name="TelegramCacheSize">%s ذاكرة تيليجرام المؤقتة</string>
+    <string name="LocalDatabaseSize">%s قاعدة بيانات تيليجرام المحلية</string>
+    <string name="CacheWasCleared">تم تحرير %s من جهازك!</string>
+    <string name="TotalDeviceSize">%s بيانات أخرى</string>
     <!--Intro view-->
     <string name="Page1Title">تيليجرام</string>
     <string name="Page2Title">سريع</string>
@@ -3425,5 +3453,4 @@
     <string name="RemindTodayAt">\'ذكّرني اليوم عند\' HH:mm</string>
     <string name="RemindDayAt">\'ذكّرني بتاريخ\' d MMM \'عند\' HH:mm</string>
     <string name="RemindDayYearAt">\'ذكّرني بتاريخ\' d MMM yyyy \'عند\' HH:mm</string>
-    <string name="SlideUpToLock">اسحب للأعلى لتثبيت التسجيل</string>
 </resources>

@@ -124,7 +124,7 @@ public class SizeNotifierFrameLayout extends AdjustPanFrameLayout {
             return 0;
         }
         int usableViewHeight = rootView.getHeight() - (rect.top != 0 ? AndroidUtilities.statusBarHeight : 0) - AndroidUtilities.getViewInset(rootView);
-        return Math.max(0, usableViewHeight - (rect.bottom - rect.top));
+        return keyboardHeight = Math.max(0, usableViewHeight - (rect.bottom - rect.top));
     }
 
     public void notifyHeightChanged() {
@@ -151,7 +151,7 @@ public class SizeNotifierFrameLayout extends AdjustPanFrameLayout {
     }
 
     public int getHeightWithKeyboard() {
-        return getKeyboardHeight() + getMeasuredHeight();
+        return keyboardHeight + getMeasuredHeight();
     }
 
     @Override
@@ -213,7 +213,7 @@ public class SizeNotifierFrameLayout extends AdjustPanFrameLayout {
                     int viewHeight = getMeasuredHeight() - actionBarHeight;
                     float scaleX = (float) getMeasuredWidth() / (float) drawable.getIntrinsicWidth();
                     float scaleY = (float) (viewHeight + kbHeight) / (float) drawable.getIntrinsicHeight();
-                    float scale = scaleX < scaleY ? scaleY : scaleX;
+                    float scale = Math.max(scaleX, scaleY);
                     int width = (int) Math.ceil(drawable.getIntrinsicWidth() * scale * parallaxScale);
                     int height = (int) Math.ceil(drawable.getIntrinsicHeight() * scale * parallaxScale);
                     int x = (getMeasuredWidth() - width) / 2 + (int) translationX;

@@ -257,6 +257,8 @@ public class CheckBoxBase {
                 if (drawBackgroundAsArc == 6 || drawBackgroundAsArc == 7) {
                     paint.setColor(Theme.getColor(background2ColorKey));
                     backgroundPaint.setColor(Theme.getColor(checkColorKey));
+                } else if (drawBackgroundAsArc == 10) {
+                    backgroundPaint.setColor(Theme.getColor(background2ColorKey));
                 } else {
                     paint.setColor((Theme.getServiceMessageColor() & 0x00ffffff) | 0x28000000);
                     backgroundPaint.setColor(Theme.getColor(checkColorKey));
@@ -278,7 +280,7 @@ public class CheckBoxBase {
         }
 
         if (drawUnchecked) {
-            if (drawBackgroundAsArc == 8) {
+            if (drawBackgroundAsArc == 8 || drawBackgroundAsArc == 10) {
                 canvas.drawCircle(cx, cy, rad - AndroidUtilities.dp(1.5f), backgroundPaint);
             } else if (drawBackgroundAsArc == 6 || drawBackgroundAsArc == 7) {
                 canvas.drawCircle(cx, cy, rad - AndroidUtilities.dp(1), paint);
@@ -288,7 +290,7 @@ public class CheckBoxBase {
             }
         }
         paint.setColor(Theme.getColor(checkColorKey));
-        if (drawBackgroundAsArc != 7 && drawBackgroundAsArc != 8 && drawBackgroundAsArc != 9) {
+        if (drawBackgroundAsArc != 7 && drawBackgroundAsArc != 8 && drawBackgroundAsArc != 9 && drawBackgroundAsArc != 10) {
             if (drawBackgroundAsArc == 0) {
                 canvas.drawCircle(cx, cy, rad, backgroundPaint);
             } else {
@@ -328,7 +330,7 @@ public class CheckBoxBase {
 
             if (drawBackgroundAsArc == 9) {
                 paint.setColor(Theme.getColor(background2ColorKey));
-            } else if (drawBackgroundAsArc == 6 || drawBackgroundAsArc == 7 || !drawUnchecked && backgroundColorKey != null) {
+            } else if (drawBackgroundAsArc == 6 || drawBackgroundAsArc == 7 || drawBackgroundAsArc == 10 || !drawUnchecked && backgroundColorKey != null) {
                 paint.setColor(Theme.getColor(backgroundColorKey));
             } else {
                 paint.setColor(Theme.getColor(enabled ? Theme.key_checkbox : Theme.key_checkboxDisabled));

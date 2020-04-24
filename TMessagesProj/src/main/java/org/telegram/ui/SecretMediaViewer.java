@@ -53,7 +53,6 @@ import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
-import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
@@ -61,6 +60,7 @@ import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.AnimationProperties;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.Scroller;
+import org.telegram.ui.Components.TimerParticles;
 import org.telegram.ui.Components.VideoPlayer;
 
 import java.io.File;
@@ -97,25 +97,11 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
         private Paint circlePaint;
         private Paint particlePaint;
         private RectF deleteProgressRect = new RectF();
+        private TimerParticles timerParticles = new TimerParticles();
 
         private long destroyTime;
-        private long lastAnimationTime;
         private long destroyTtl;
         private boolean useVideoProgress;
-
-        private class Particle {
-            float x;
-            float y;
-            float vx;
-            float vy;
-            float velocity;
-            float alpha;
-            float lifeTime;
-            float currentTime;
-        }
-
-        private ArrayList<Particle> particles = new ArrayList<>();
-        private ArrayList<Particle> freeParticles = new ArrayList<>();
 
         private Drawable drawable;
 
@@ -139,37 +125,13 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
             circlePaint.setColor(0x7f000000);
 
             drawable = context.getResources().getDrawable(R.drawable.flame_small);
-            for (int a = 0; a < 40; a++) {
-                freeParticles.add(new Particle());
-            }
         }
 
         private void setDestroyTime(long time, long ttl, boolean videoProgress) {
             destroyTime = time;
             destroyTtl = ttl;
             useVideoProgress = videoProgress;
-            lastAnimationTime = System.currentTimeMillis();
             invalidate();
-        }
-
-        private void updateParticles(long dt) {
-            int count = particles.size();
-            for (int a = 0; a < count; a++) {
-                Particle particle = particles.get(a);
-                if (particle.currentTime >= particle.lifeTime) {
-                    if (freeParticles.size() < 40) {
-                        freeParticles.add(particle);
-                    }
-                    particles.remove(a);
-                    a--;
-                    count--;
-                    continue;
-                }
-                particle.alpha = 1.0f - AndroidUtilities.decelerateInterpolator.getInterpolation(particle.currentTime / particle.lifeTime);
-                particle.x += particle.vx * particle.velocity * dt / 500.0f;
-                particle.y += particle.vy * particle.velocity * dt / 500.0f;
-                particle.currentTime += dt;
-            }
         }
 
         @Override
@@ -214,48 +176,7 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
             float radProgress = -360 * progress;
             canvas.drawArc(deleteProgressRect, -90, radProgress, false, afterDeleteProgressPaint);
 
-            int count = particles.size();
-            for (int a = 0; a < count; a++) {
-                Particle particle = particles.get(a);
-                particlePaint.setAlpha((int) (255 * particle.alpha));
-                canvas.drawPoint(particle.x, particle.y, particlePaint);
-            }
-
-            double vx = Math.sin(Math.PI / 180.0 * (radProgress - 90));
-            double vy = -Math.cos(Math.PI / 180.0 * (radProgress - 90));
-            int rad = AndroidUtilities.dp(14);
-            float cx = (float) (-vy * rad + deleteProgressRect.centerX());
-            float cy = (float) (vx * rad + deleteProgressRect.centerY());
-            for (int a = 0; a < 1; a++) {
-                Particle newParticle;
-                if (!freeParticles.isEmpty()) {
-                    newParticle = freeParticles.get(0);
-                    freeParticles.remove(0);
-                } else {
-                    newParticle = new Particle();
-                }
-                newParticle.x = cx;
-                newParticle.y = cy;
-
-                double angle = (Math.PI / 180.0) * (Utilities.random.nextInt(140) - 70);
-                if (angle < 0) {
-                    angle = Math.PI * 2 + angle;
-                }
-                newParticle.vx = (float) (vx * Math.cos(angle) - vy * Math.sin(angle));
-                newParticle.vy = (float) (vx * Math.sin(angle) + vy * Math.cos(angle));
-
-                newParticle.alpha = 1.0f;
-                newParticle.currentTime = 0;
-
-                newParticle.lifeTime = 400 + Utilities.random.nextInt(100);
-                newParticle.velocity = 20.0f + Utilities.random.nextFloat() * 4.0f;
-                particles.add(newParticle);
-            }
-
-            long newTime = System.currentTimeMillis();
-            long dt = (newTime - lastAnimationTime);
-            updateParticles(dt);
-            lastAnimationTime = newTime;
+            timerParticles.draw(canvas, particlePaint, deleteProgressRect, radProgress, 1.0f);
             invalidate();
         }
     }

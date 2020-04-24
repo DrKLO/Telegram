@@ -88,7 +88,7 @@ public class PhonebookShareAlert extends BottomSheet {
 
     private boolean isImport;
 
-    private PhonebookSelectShareAlert.PhonebookShareAlertDelegate delegate;
+    private ChatAttachAlertContactsLayout.PhonebookShareAlertDelegate delegate;
 
     private ArrayList<AndroidUtilities.VcardItem> other = new ArrayList<>();
     private ArrayList<AndroidUtilities.VcardItem> phones = new ArrayList<>();
@@ -240,9 +240,10 @@ public class PhonebookShareAlert extends BottomSheet {
         }
     }
 
-    public PhonebookShareAlert(BaseFragment parent, ContactsController.Contact contact, TLRPC.User user, Uri uri, File file, String name) {
+    public PhonebookShareAlert(BaseFragment parent, ContactsController.Contact contact, TLRPC.User user, Uri uri, File file, String firstName, String lastName) {
         super(parent.getParentActivity(), false);
 
+        String name = ContactsController.formatName(firstName, lastName);
         ArrayList<TLRPC.User> result = null;
         ArrayList<AndroidUtilities.VcardItem> items = new ArrayList<>();
         ArrayList<TLRPC.TL_restrictionReason> vcard = null;
@@ -300,6 +301,9 @@ public class PhonebookShareAlert extends BottomSheet {
             if (vcard != null) {
                 currentUser.restriction_reason = vcard;
             }
+        } else {
+            currentUser.first_name = firstName;
+            currentUser.last_name = lastName;
         }
 
         parentFragment = parent;
@@ -901,7 +905,7 @@ public class PhonebookShareAlert extends BottomSheet {
         });
     }
 
-    public void setDelegate(PhonebookSelectShareAlert.PhonebookShareAlertDelegate phonebookShareAlertDelegate) {
+    public void setDelegate(ChatAttachAlertContactsLayout.PhonebookShareAlertDelegate phonebookShareAlertDelegate) {
         delegate = phonebookShareAlertDelegate;
     }
 

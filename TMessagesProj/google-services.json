@@ -15,33 +15,23 @@
       },
       "oauth_client": [
         {
-          "client_id": "760348033671-jiv412evc1r36rl4k7vhl1ba83atdmot.apps.googleusercontent.com",
-          "client_type": 3
-        },
-        {
-          "client_id": "760348033671-7cj8o8gntcp2o052du67k1t0pi9frbso.apps.googleusercontent.com",
-          "client_type": 3
-        },
-        {
           "client_id": "760348033671-2hh8ebmuflsnjoc0kldkfells9rhtfni.apps.googleusercontent.com",
           "client_type": 3
         }
       ],
       "api_key": [
         {
-          "current_key": "AIzaSyAijSIM_t8bfdRrn2-mCumXRu37pPslqkU"
+          "current_key": "AIzaSyA-t0jLPjUt2FxrA8VPK2EiYHcYcboIR6k"
         }
       ],
       "services": {
-        "analytics_service": {
-          "status": 1
-        },
         "appinvite_service": {
-          "status": 1,
-          "other_platform_oauth_client": []
-        },
-        "ads_service": {
-          "status": 2
+          "other_platform_oauth_client": [
+            {
+              "client_id": "760348033671-jiv412evc1r36rl4k7vhl1ba83atdmot.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     },
@@ -54,33 +44,23 @@
       },
       "oauth_client": [
         {
-          "client_id": "760348033671-jiv412evc1r36rl4k7vhl1ba83atdmot.apps.googleusercontent.com",
-          "client_type": 3
-        },
-        {
-          "client_id": "760348033671-7cj8o8gntcp2o052du67k1t0pi9frbso.apps.googleusercontent.com",
-          "client_type": 3
-        },
-        {
           "client_id": "760348033671-2hh8ebmuflsnjoc0kldkfells9rhtfni.apps.googleusercontent.com",
           "client_type": 3
         }
       ],
       "api_key": [
         {
-          "current_key": "AIzaSyAijSIM_t8bfdRrn2-mCumXRu37pPslqkU"
+          "current_key": "AIzaSyA-t0jLPjUt2FxrA8VPK2EiYHcYcboIR6k"
         }
       ],
       "services": {
-        "analytics_service": {
-          "status": 1
-        },
         "appinvite_service": {
-          "status": 1,
-          "other_platform_oauth_client": []
-        },
-        "ads_service": {
-          "status": 2
+          "other_platform_oauth_client": [
+            {
+              "client_id": "760348033671-jiv412evc1r36rl4k7vhl1ba83atdmot.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }

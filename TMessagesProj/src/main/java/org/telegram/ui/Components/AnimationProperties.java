@@ -4,11 +4,14 @@ import android.graphics.Paint;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.ShapeDrawable;
 import android.util.Property;
+import android.view.animation.OvershootInterpolator;
 
 import org.telegram.ui.Cells.DialogCell;
 import org.telegram.ui.PhotoViewer;
 
 public class AnimationProperties {
+
+    public static OvershootInterpolator overshootInterpolator = new OvershootInterpolator(1.9f);
 
     public static abstract class FloatProperty<T> extends Property<T, Float> {
 

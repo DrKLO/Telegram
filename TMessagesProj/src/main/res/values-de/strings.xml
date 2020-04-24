@@ -198,7 +198,7 @@
     <string name="SendGifPreview">GIF senden</string>
     <string name="ViewPackPreview">Paket anzeigen</string>
     <string name="PinToTop">Oben anheften</string>
-    <string name="PinToTopLimitReached2">Sorry, you can only pin %1$s to the top in the main list. More chats can be pinned in Chat Folders and your Archive.</string>
+    <string name="PinToTopLimitReached2">Du kannst leider nur %1$s oben deiner Chatliste anheften. Mehr Chats können in Chat-Ordnern oder in deinem Archiv angeheftet werden.</string>
     <string name="PinFolderLimitReached">Mehr Chats kannst du oben leider nicht anheften.</string>
     <string name="UnpinFromTop">Oben loslösen</string>
     <string name="MarkAsUnread">Als ungelesen markieren</string>
@@ -290,8 +290,8 @@
     <string name="MegaPrivateInfo">Private Gruppen können nur durch direkte Einladungen oder über einen Einladungslink betreten werden.</string>
     <string name="ChannelLinkTitle">Dauerhafter Link</string>
     <string name="ChannelInviteLinkTitle">Einladungslink</string>
-    <string name="ChannelAddMembers">Mitglieder hinzufügen</string>
     <string name="GroupAddMembers">Mitglieder hinzufügen</string>
+    <string name="ChannelAddSubscribers">Abonnenten hinzufügen</string>
     <string name="LeaveChannel">Kanal verlassen</string>
     <string name="LeaveChannelMenu">Kanal verlassen</string>
     <string name="ChannelSettings">Einstellungen</string>
@@ -330,7 +330,7 @@
     <string name="ChannelAdministrators">Administratoren</string>
     <string name="ChannelDelete">Kanal löschen</string>
     <string name="ChannelDeleteMenu">Kanal löschen</string>
-    <string name="ChannelDeleteAlert">Wenn du diesen Kanal löschst, werden alle Mitglieder und alle Nachrichten entfernt. Wirklich löschen?</string>
+    <string name="ChannelDeleteAlert">Vorsicht! Wenn du diesen Kanal löschst, werden alle Abonnenten und alle Nachrichten entfernt. Möchtest du wirklich den Kanal löschen?</string>
     <string name="ChannelLeaveAlert">Möchtest du wirklich diesen Kanal verlassen?</string>
     <string name="ChannelLeaveAlertWithName">Wirklich **%1$s** verlassen?</string>
     <string name="ChannelDeleteInfo">Du verlierst dadurch alle Nachrichten des Kanals.</string>
@@ -398,7 +398,7 @@
     <string name="WhoCanAddMembersAllMembers">Alle Mitglieder</string>
     <string name="WhoCanAddMembersAdmins">Nur Admins</string>
     <string name="ChannelNotifyMembersInfoOn">Abonnenten werden benachrichtigt</string>
-    <string name="ChannelNotifyMembersInfoOff">Mitglieder erhalten stille Benachrichtigung</string>
+    <string name="ChannelNotifyMembersInfoOff">Stille Benachrichtigung wird gesendet</string>
     <string name="ChannelSignMessages">Nachrichten unterschreiben</string>
     <string name="ChannelSignMessagesInfo">Zeigt Namen der Admins in ausgehenden Nachrichten</string>
     <string name="EditAdmin">Adminrechte</string>
@@ -531,9 +531,9 @@
     <string name="NewPoll">Neue Umfrage</string>
     <string name="NewQuiz">Neues Quiz</string>
     <string name="Poll">Umfrage</string>
-    <string name="Question">Frage</string>
+    <string name="PollQuestion">Frage der Abstimmung</string>
     <string name="QuestionHint">Stelle eine Frage</string>
-    <string name="PollOptions">Umfrageoptionen</string>
+    <string name="AnswerOptions">Antwortoptionen</string>
     <string name="QuizAnswers">Quiz-Antworten</string>
     <string name="PollResults">Umfrageergebnis</string>
     <string name="PollAnonymous">Anonyme Stimmabgabe</string>
@@ -722,6 +722,7 @@
     <string name="SdCard">SD-Karte</string>
     <string name="Folder">Ordner</string>
     <string name="RecentFiles">Letzte Dateien</string>
+    <string name="RecentFilesAZ">Files A-Z</string>
     <string name="NoFilesFound">Nichts gefunden</string>
     <string name="NoFilesFoundInfo">**%1$s** konnte in diesem&#160;Verzeichnis leider nicht gefunden werden.</string>
     <string name="NoFilesInfo">Dieser Ordner ist leer.</string>
@@ -730,6 +731,7 @@
     <string name="AppFolderInfo">App-Ordner durchsuchen</string>
     <string name="InternalFolderInfo">Dateisystem durchsuchen</string>
     <string name="ExternalFolderInfo">SD-Karte durchsuchen</string>
+    <string name="SearchMusic">Search music</string>
     <!--group stickers-->
     <string name="GroupStickers">Gruppen-Sticker</string>
     <string name="ChooseFromYourStickers">Sticker-Paket auswählen</string>
@@ -799,7 +801,8 @@
     <string name="YouLeft">Du hast die Gruppe verlassen</string>
     <string name="DeleteThisGroup">Diese Gruppe löschen</string>
     <string name="DeleteThisChat">Diesen Chat löschen</string>
-    <string name="DeleteTheseChats">Chats löschen</string>
+    <string name="DeleteThisChatBothSides">Diesen Chat löschen</string>
+    <string name="DeleteTheseChatsBothSides">Chats löschen</string>
     <string name="SlideToCancel">WISCHEN UM ABZUBRECHEN</string>
     <string name="SaveToDownloads">In Downloads speichern</string>
     <string name="SaveToGIFs">GIF hinzufügen</string>
@@ -932,6 +935,7 @@
     <string name="ApkRestricted">APK Installation ist in dieser App eingeschränkt. Du kannst es in den System-Einstellungen aktivieren.</string>
     <string name="UnreadMessages">Ungelesene Nachrichten</string>
     <string name="SearchStickersHint">Sticker suchen</string>
+    <string name="SearchTrendingStickersHint">Angesagte Sticker durchsuchen</string>
     <string name="SearchEmojiHint">Emoji suchen</string>
     <string name="URL">URL</string>
     <string name="MapPreviewProvider">Kartenvorschau</string>
@@ -969,7 +973,10 @@
     <string name="TextSelectionHit">**Wort** gedrückt halten und Cursor bewegen, um noch mehr Text zu markieren.</string>
     <string name="CardNumberCopied">Kartennummer in Zwischenablage kopiert</string>
     <string name="CopyCardNumber">Kopieren</string>
-    <string name="DiceInfo">Sende ein &#127922; Emoji in jedem beliebigen Chat, um eine zufällige Nummer von Telegram zu erhalten.</string>
+    <string name="DiceInfo2">**:würfel:**-Emoji senden, um zu würfeln</string>
+    <string name="DartInfo">Sende einen **:dart:** Emoji, um dein Glück zu versuchen.</string>
+    <string name="DiceEmojiInfo">Sende ein %1$s Emoji, um dein Glück zu versuchen.</string>
+    <string name="SendDice">SENDEN</string>Send a dart emoji
     <!--notification-->
     <string name="MessageLifetimeChanged">%1$s hat den Selbstzerstörungs-Timer auf %2$s gesetzt</string>
     <string name="MessageLifetimeChangedOutgoing">Du hast den Selbstzerstörungs-Timer auf %1$s gesetzt</string>
@@ -1096,6 +1103,7 @@
     <string name="TodayAt">um</string>
     <string name="YesterdayAt">gestern um</string>
     <string name="TodayAtFormatted">um %1$s</string>
+    <string name="TodayAtFormattedWithToday">heute um %1$s</string>
     <string name="YesterdayAtFormatted">gestern um %1$s</string>
     <string name="Online">online</string>
     <string name="LastSeen">zul. online</string>
@@ -1121,7 +1129,7 @@
     <string name="PhoneNumberSearch">Telefonnummer</string>
     <!--group create view-->
     <string name="SendMessageTo">Leute hinzufügen...</string>
-    <string name="SoftUserLimitAlert">Sobald du diese Gruppe zu einer Supergruppe erweitert hast, kannst du mehr Nutzer einladen.</string>
+    <string name="SoftUserLimitAlert">Mehr Mitglieder kannst du hinzufügen, sobald die Gruppe erstellt wurde.</string>
     <string name="EnterGroupNamePlaceholder">Gruppenname</string>
     <string name="GroupName">Gruppenname</string>
     <string name="MembersCountZero">bis zu %1$s</string>
@@ -1255,6 +1263,7 @@
     <string name="RecentStickers">Kürzlich benutzt</string>
     <string name="FavoriteStickers">Favoriten</string>
     <string name="CurrentGroupStickers">Gruppen-Sticker</string>
+    <string name="OtherStickers">Mehr Sticker</string>
     <string name="DeleteFromFavorites">Aus Favoriten entfernen</string>
     <string name="DeleteFromRecent">Aus kürzlich entfernen</string>
     <string name="AddToMasks">Masken hinzufügen</string>
@@ -1433,6 +1442,8 @@
     <string name="ResetNotificationsAlert">Möchtest du wirklich alle Benachrichtigungseinstellungen auf die Standardeinstellungen zurücksetzen?</string>
     <string name="TextSizeHeader">Textgröße für Nachrichten</string>
     <string name="AskAQuestion">Eine Frage stellen</string>
+    <string name="AddAnExplanation">Eine Erklärung hinzufügen</string>
+    <string name="AddAnExplanationInfo">Nutzer sehen diesen Text, nachdem sie die falsche Antwort gewählt haben. Gut für Lehrzwecke.</string>
     <string name="EnableAnimations">Animationen aktivieren</string>
     <string name="ChatSettings">Chat-Einstellungen</string>
     <string name="Devices">Geräte</string>
@@ -2051,9 +2062,9 @@
     <!--filters-->
     <string name="Filters">Ordner</string>
     <string name="FiltersSetup">Bearbeiten</string>
-    <string name="FiltersSetupPinAlert">Set Up Folders</string>
+    <string name="FiltersSetupPinAlert">Ordner einrichten</string>
     <string name="CreateNewFilter">Neuen Ordner erstellen</string>
-    <string name="CreateNewFilterInfo">Erstelle Ordner für verschiedene Gruppen von Chats,\num schnell zwischen ihnen wechseln.</string>
+    <string name="CreateNewFilterInfo">Erstelle Ordner für verschiedene Gruppen von Chats, um schnell zwischen ihnen zu wechseln.</string>
     <string name="FilterRecommended">Empfohlene Ordner</string>
     <string name="FilterAllChats">Alle Chats</string>
     <string name="FilterAllChatsShort">Alle</string>
@@ -2082,8 +2093,8 @@
     <string name="FilterChats">Chats</string>
     <string name="FilterInclude">Enthaltene Chats</string>
     <string name="FilterExclude">Ausgeschlossene Chats</string>
-    <string name="FilterIncludeInfo">Choose chats and types of chats that will appear in this folder.</string>
-    <string name="FilterExcludeInfo">Choose chats and types of chats that will not appear in this folder.</string>
+    <string name="FilterIncludeInfo">Wähle einzelne Chats und Chatarten, die in diesem Ordner erscheinen sollen.</string>
+    <string name="FilterExcludeInfo">Wähle einzelne Chats und Chatarten, die in diesem Ordner nicht erscheinen sollen.</string>
     <string name="FilterSecretChats">Geheime Chats</string>
     <string name="FilterBots">Bots</string>
     <string name="FilterAddingChats">Chats werden hinzugefügt</string>
@@ -2118,6 +2129,8 @@
     <string name="FilterRemoveInclusionUserText">Wirklich \"%1$s\" aus der Liste \'immer enthalten\' entfernen?</string>
     <string name="FilterAvailableTitle">Chat-Ordner</string>
     <string name="FilterAvailableText">*Einstellungen &gt; Ordner* öffnen, um Chats in Ordnern zu sortieren.</string>
+    <string name="FilterNameNonMuted">Nicht stumm</string>
+    <string name="FilterNameUnread">Ungelesen</string>
     <!--passcode view-->
     <string name="Passcode">Pincode-Sperre</string>
     <string name="ChangePasscode">Pincode ändern</string>
@@ -2679,6 +2692,7 @@
     <string name="AreYouSureDeleteAndExitName">Wirklich Gruppe **%1$s** verlassen und löschen?</string>
     <string name="AreYouSureDeleteThisChat">Möchtest du wirklich diesen Chat löschen?</string>
     <string name="AreYouSureDeleteThisChatWithUser">Wirklich den Chat mit **%1$s** löschen?</string>
+    <string name="AreYouSureDeleteThisChatWithBot">Wirklich **%1$s** blockieren und den Chat löschen?</string>
     <string name="AreYouSureDeleteThisChatSavedMessages">Wirklich den Chat **Gespeichertes** löschen?</string>
     <string name="AreYouSureDeleteThisChatWithSecretUser">Wirklich den Geheimen Chat mit **%1$s** löschen?</string>
     <string name="AreYouSureDeleteThisChatWithGroup">Wirklich den Chat **%1$s** löschen?</string>
@@ -2774,7 +2788,21 @@
     <string name="IVInteractionsChartTitle">IV-Interaktionen</string>
     <string name="LoadingStats">Lade Statistiken...</string>
     <string name="LoadingStatsDescription">Bitte warte einen Augenblick, Diagramme werden erstellt.</string>
-    <string name="TopHoursChartTitle">Aufrufe nach Stunden (UTC)</string>
+    <string name="TopHoursChartTitle">Aufrufe nach Stunden (GMT)</string>
+    <string name="SlideUpToLock">Hochwischen, um Aufnahme zu sperren</string>
+    <string name="NotificationsChartTitle">Benachrichtigungen</string>
+    <string name="DeviceStorage">Gerätespeicher</string>
+    <string name="TotalDeviceFreeSize">%s frei</string>
+    <string name="ClearTelegramCache">Telegram Cache leeren</string>
+    <string name="StatisticOverview">Übersicht</string>
+    <string name="ViewsPerPost">Aufrufe nach Beitrag</string>
+    <string name="SharesPerPost">Weiterleitungen nach Beitrag</string>
+    <string name="EnabledNotifications">Aktivierte Benachrichtigungen</string>
+    <string name="ClearLocalDatabase">Lokale Datenbank leeren</string>
+    <string name="TelegramCacheSize">%s Telegram Cache</string>
+    <string name="LocalDatabaseSize">%s Telegrams lokale Datenbank</string>
+    <string name="CacheWasCleared">%s auf deinem Gerät freigegeben!</string>
+    <string name="TotalDeviceSize">%s Sonstige Daten</string>
     <!--Intro view-->
     <string name="Page1Title">Telegram</string>
     <string name="Page2Title">Schnell</string>
@@ -3425,5 +3453,4 @@
     <string name="RemindTodayAt">\'Heute um\' HH:mm \'erinnern\'</string>
     <string name="RemindDayAt">\'Am\' d MMM \'um\' HH:mm \'erinnern\'</string>
     <string name="RemindDayYearAt">\'Am\' d MMM yyyy \'um\' HH:mm \'erinnern\'</string>
-    <string name="SlideUpToLock">Hochwischen, um Aufnahme zu sperren</string>
 </resources>

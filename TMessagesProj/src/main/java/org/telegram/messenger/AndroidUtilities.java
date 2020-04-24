@@ -2331,6 +2331,58 @@ public class AndroidUtilities {
         }
     }
 
+    public static String formatCount(int count) {
+        if (count < 1000) return Integer.toString(count);
+
+        ArrayList<String> strings = new ArrayList<>();
+        while (count != 0) {
+            int mod = count % 1000;
+            count /= 1000;
+            if (count > 0) {
+                strings.add(String.format(Locale.ENGLISH, "%03d", mod));
+            } else {
+                strings.add(Integer.toString(mod));
+            }
+        }
+        StringBuilder stringBuilder = new StringBuilder();
+        for (int i = strings.size() - 1; i >= 0; i--) {
+            stringBuilder.append(strings.get(i));
+            if (i != 0) {
+                stringBuilder.append(",");
+            }
+        }
+
+        return stringBuilder.toString();
+    }
+
+    public static final String[] numbersSignatureArray = {"", "K", "M", "G", "T", "P"};
+
+    public static String formatWholeNumber(int v, int dif) {
+        if (v == 0) {
+            return "0";
+        }
+        float num_ = v;
+        int count = 0;
+        if (dif == 0) dif = v;
+        if (dif < 1000) {
+            return AndroidUtilities.formatCount(v);
+        }
+        while (dif >= 1000 && count < numbersSignatureArray.length - 1) {
+            dif /= 1000;
+            num_ /= 1000;
+            count++;
+        }
+        if (num_ < 0.1) {
+            return "0";
+        } else {
+            if (num_ == (int) num_) {
+                return String.format(Locale.ENGLISH, "%s%s", AndroidUtilities.formatCount((int) num_), numbersSignatureArray[count]);
+            } else {
+                return String.format(Locale.ENGLISH, "%.1f%s", (int) (num_ * 10) / 10f, numbersSignatureArray[count]);
+            }
+        }
+    }
+
     public static byte[] decodeQuotedPrintable(final byte[] bytes) {
         if (bytes == null) {
             return null;
@@ -3232,5 +3284,33 @@ public class AndroidUtilities {
             }
             decorView.setSystemUiVisibility(flags);
         }
+    }
+
+    public static boolean shouldShowUrlInAlert(String url) {
+        boolean hasLatin = false;
+        boolean hasNonLatin = false;
+        try {
+            Uri uri = Uri.parse(url);
+            url = uri.getHost();
+
+            for (int a = 0, N = url.length(); a < N; a++) {
+                char ch = url.charAt(a);
+                if (ch == '.' || ch == '-' || ch == '/' || ch == '+' || ch >= '0' && ch <= '9') {
+                    continue;
+                }
+                if (ch >= 'a' && ch < 'z' || ch >= 'A' && ch <= 'Z') {
+                    hasLatin = true;
+                } else {
+                    hasNonLatin = true;
+                }
+                if (hasLatin && hasNonLatin) {
+                    break;
+                }
+            }
+
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+        return hasLatin && hasNonLatin;
     }
 }

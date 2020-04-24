@@ -30,8 +30,8 @@ import dalvik.system.DexClassLoader;
 @SuppressWarnings({"WeakerAccess", "unused"})
 public final class TgVoip {
 
-    private static final List<String> AVAILABLE_VERSIONS = Arrays.asList("2.4.4", "2.6");
-    private static final List<Integer> AVAILABLE_VERSIONS_IDS = Arrays.asList(1, 2);
+    private static final List<String> AVAILABLE_VERSIONS = Arrays.asList("2.4.4", "2.7");
+    private static final List<Integer> AVAILABLE_VERSIONS_IDS = Arrays.asList(1, 3);
 
     private static final int LIB_REVISION = 1;
 

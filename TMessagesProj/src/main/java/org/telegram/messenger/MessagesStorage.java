@@ -80,7 +80,7 @@ public class MessagesStorage extends BaseController {
     private CountDownLatch openSync = new CountDownLatch(1);
 
     private static volatile MessagesStorage[] Instance = new MessagesStorage[UserConfig.MAX_ACCOUNT_COUNT];
-    private final static int LAST_DB_VERSION = 67;
+    private final static int LAST_DB_VERSION = 68;
 
     public static MessagesStorage getInstance(int num) {
         MessagesStorage localInstance = Instance[num];
@@ -349,8 +349,9 @@ public class MessagesStorage extends BaseController {
                 database.executeFast("CREATE TABLE user_photos(uid INTEGER, id INTEGER, data BLOB, PRIMARY KEY (uid, id))").stepThis().dispose();
                 database.executeFast("CREATE TABLE dialog_settings(did INTEGER PRIMARY KEY, flags INTEGER);").stepThis().dispose();
                 database.executeFast("CREATE TABLE web_recent_v3(id TEXT, type INTEGER, image_url TEXT, thumb_url TEXT, local_url TEXT, width INTEGER, height INTEGER, size INTEGER, date INTEGER, document BLOB, PRIMARY KEY (id, type));").stepThis().dispose();
-                database.executeFast("CREATE TABLE stickers_v2(id INTEGER PRIMARY KEY, data BLOB, date INTEGER, hash TEXT);").stepThis().dispose();
-                database.executeFast("CREATE TABLE stickers_featured(id INTEGER PRIMARY KEY, data BLOB, unread BLOB, date INTEGER, hash TEXT);").stepThis().dispose();
+                database.executeFast("CREATE TABLE stickers_v2(id INTEGER PRIMARY KEY, data BLOB, date INTEGER, hash INTEGER);").stepThis().dispose();
+                database.executeFast("CREATE TABLE stickers_featured(id INTEGER PRIMARY KEY, data BLOB, unread BLOB, date INTEGER, hash INTEGER);").stepThis().dispose();
+                database.executeFast("CREATE TABLE stickers_dice(emoji TEXT PRIMARY KEY, data BLOB, date INTEGER);").stepThis().dispose();
                 database.executeFast("CREATE TABLE hashtag_recent_v2(id TEXT PRIMARY KEY, date INTEGER);").stepThis().dispose();
                 database.executeFast("CREATE TABLE webpage_pending(id INTEGER, mid INTEGER, PRIMARY KEY (id, mid));").stepThis().dispose();
                 database.executeFast("CREATE TABLE sent_files_v2(uid TEXT, type INTEGER, data BLOB, parent TEXT, PRIMARY KEY (uid, type))").stepThis().dispose();
@@ -588,7 +589,7 @@ public class MessagesStorage extends BaseController {
                 }
                 if (version == 18) {
                     database.executeFast("DROP TABLE IF EXISTS stickers;").stepThis().dispose();
-                    database.executeFast("CREATE TABLE IF NOT EXISTS stickers_v2(id INTEGER PRIMARY KEY, data BLOB, date INTEGER, hash TEXT);").stepThis().dispose();
+                    database.executeFast("CREATE TABLE IF NOT EXISTS stickers_v2(id INTEGER PRIMARY KEY, data BLOB, date INTEGER, hash INTEGER);").stepThis().dispose();
                     database.executeFast("PRAGMA user_version = 19").stepThis().dispose();
                     version = 19;
                 }
@@ -702,7 +703,7 @@ public class MessagesStorage extends BaseController {
                     version = 34;
                 }
                 if (version == 34) {
-                    database.executeFast("CREATE TABLE IF NOT EXISTS stickers_featured(id INTEGER PRIMARY KEY, data BLOB, unread BLOB, date INTEGER, hash TEXT);").stepThis().dispose();
+                    database.executeFast("CREATE TABLE IF NOT EXISTS stickers_featured(id INTEGER PRIMARY KEY, data BLOB, unread BLOB, date INTEGER, hash INTEGER);").stepThis().dispose();
                     database.executeFast("PRAGMA user_version = 35").stepThis().dispose();
                     version = 35;
                 }
@@ -885,6 +886,11 @@ public class MessagesStorage extends BaseController {
                     version = 67;
                 }
                 if (version == 67) {
+                    database.executeFast("CREATE TABLE IF NOT EXISTS stickers_dice(emoji TEXT PRIMARY KEY, data BLOB, date INTEGER);").stepThis().dispose();
+                    database.executeFast("PRAGMA user_version = 68").stepThis().dispose();
+                    version = 68;
+                }
+                if (version == 68) {
 
                 }
             } catch (Exception e) {
@@ -3326,7 +3332,7 @@ public class MessagesStorage extends BaseController {
         });
     }
 
-    public void updateMessagePollResults(long pollId, TLRPC.TL_poll poll, TLRPC.PollResults results) {
+    public void updateMessagePollResults(long pollId, TLRPC.Poll poll, TLRPC.PollResults results) {
         storageQueue.postRunnable(() -> {
             try {
                 ArrayList<Long> mids = null;
@@ -3970,7 +3976,11 @@ public class MessagesStorage extends BaseController {
                                         }
                                     } else {
                                         if ((flags & MessagesController.DIALOG_FILTER_FLAG_GROUPS) == 0) {
-                                            unreadCount--;
+                                            boolean hasUnread = dialogsWithUnread.indexOfKey(did) >= 0;
+                                            boolean hasMention = dialogsWithMentions.indexOfKey(did) >= 0;
+                                            if (!hasUnread && !hasMention) {
+                                                unreadCount--;
+                                            }
                                         }
                                     }
                                 }
@@ -6868,6 +6878,7 @@ public class MessagesStorage extends BaseController {
                 cursor.dispose();
             }
             state.requery();
+            chat.flags |= 131072;
             NativeByteBuffer data = new NativeByteBuffer(chat.getObjectSize());
             chat.serializeToStream(data);
             state.bindInteger(1, chat.id);

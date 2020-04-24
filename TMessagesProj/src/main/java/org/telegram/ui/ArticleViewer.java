@@ -4487,7 +4487,11 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
                             webPageFinal.cached_page.flags |= 8;
                             for (int a = 0; a < adapter.length; a++) {
                                 if (adapter[a].currentPage == webPageFinal) {
-                                    adapter[a].notifyItemChanged(adapter[a].getItemCount() - 1);
+                                    int p = adapter[a].getItemCount() - 1;
+                                    RecyclerView.ViewHolder holder = listView[a].findViewHolderForAdapterPosition(p);
+                                    if (holder != null) {
+                                        adapter[a].onViewAttachedToWindow(holder);
+                                    }
                                 }
                             }
                             if (messageObject != null) {
@@ -5843,11 +5847,14 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
             if (position < localBlocks.size()) {
                 TLRPC.PageBlock block = localBlocks.get(position);
                 bindBlockToHolder(holder.getItemViewType(), holder, block, position, localBlocks.size());
-            } else {
-                if (holder.getItemViewType() == 90) {
-                    ReportCell cell = (ReportCell) holder.itemView;
-                    cell.setViews(currentPage.cached_page != null ? currentPage.cached_page.views : 0);
-                }
+            }
+        }
+
+        @Override
+        public void onViewAttachedToWindow(RecyclerView.ViewHolder holder) {
+            if (holder.getItemViewType() == 90) {
+                ReportCell cell = (ReportCell) holder.itemView;
+                cell.setViews(currentPage.cached_page != null ? currentPage.cached_page.views : 0);
             }
         }
 

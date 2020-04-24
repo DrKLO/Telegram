@@ -826,7 +826,7 @@ public:
 class initConnection : public TLObject {
 
 public:
-    static const uint32_t constructor = 0x785188b8;
+    static const uint32_t constructor = 0xc1cd5ea9;
 
     int32_t flags;
     int32_t api_id;

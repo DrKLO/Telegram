@@ -38,7 +38,6 @@ import org.telegram.ui.Components.ScrollSlidingTextTabStrip;
 import org.telegram.ui.Components.SizeNotifierFrameLayout;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -801,7 +800,7 @@ public class PhotoPickerSearchActivity extends BaseFragment {
     }
 
     @Override
-    public ThemeDescription[] getThemeDescriptions() {
+    public ArrayList<ThemeDescription> getThemeDescriptions() {
         ArrayList<ThemeDescription> arrayList = new ArrayList<>();
 
         arrayList.add(new ThemeDescription(fragmentView, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_dialogBackground));
@@ -818,9 +817,9 @@ public class PhotoPickerSearchActivity extends BaseFragment {
         arrayList.add(new ThemeDescription(scrollSlidingTextTabStrip.getTabsContainer(), ThemeDescription.FLAG_BACKGROUNDFILTER | ThemeDescription.FLAG_DRAWABLESELECTEDSTATE, new Class[]{TextView.class}, null, null, null, Theme.key_dialogButtonSelector));
         arrayList.add(new ThemeDescription(null, 0, null, null, new Drawable[]{scrollSlidingTextTabStrip.getSelectorDrawable()}, null, Theme.key_chat_attachActiveTab));
 
-        Collections.addAll(arrayList, imagesSearch.getThemeDescriptions());
-        Collections.addAll(arrayList, gifsSearch.getThemeDescriptions());
+        arrayList.addAll(imagesSearch.getThemeDescriptions());
+        arrayList.addAll(gifsSearch.getThemeDescriptions());
 
-        return arrayList.toArray(new ThemeDescription[0]);
+        return arrayList;
     }
 }

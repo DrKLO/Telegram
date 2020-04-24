@@ -179,7 +179,7 @@ public class TermsOfServiceView extends FrameLayout {
             setVisibility(VISIBLE);
         }
         SpannableStringBuilder builder = new SpannableStringBuilder(tos.text);
-        MessageObject.addEntitiesToText(builder, tos.entities, false, 0, false, false, false);
+        MessageObject.addEntitiesToText(builder, tos.entities, false, false, false, false);
         addBulletsToText(builder, '-', AndroidUtilities.dp(10f), 0xff50a8eb, AndroidUtilities.dp(4f));
         textView.setText(builder);
         currentTos = tos;

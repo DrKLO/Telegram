@@ -594,6 +594,9 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
             drawable.setLayerColor("Line 2.**", background);
             drawable.setLayerColor("Line 3.**", background);
             drawable.commitApplyLayerColors();
+            if (playPauseDrawable != null) {
+                playPauseDrawable.setColor(Theme.getColor(Theme.key_chat_recordedVoicePlayPause));
+            }
         }
 
         public void resetAlpha() {
@@ -666,6 +669,8 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
     private android.graphics.Rect sendRect = new Rect();
     private android.graphics.Rect rect = new Rect();
 
+    private Drawable lockShadowDrawable;
+
     private final static float MAX_AMPLITUDE = 1800f;
 
     private class RecordCircle extends View {
@@ -714,7 +719,6 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
         public WaveDrawable bigWaveDrawable;
         public WaveDrawable tinyWaveDrawable;
 
-        private Drawable lockShadowDrawable;
         private Drawable tooltipBackground;
         private Drawable tooltipBackgroundArrow;
         private String tooltipMessage;
@@ -2416,8 +2420,20 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                 }
             } else if (motionEvent.getAction() == MotionEvent.ACTION_UP || motionEvent.getAction() == MotionEvent.ACTION_CANCEL) {
                 if (motionEvent.getAction() == MotionEvent.ACTION_CANCEL && recordingAudioVideo) {
-                    recordCircle.sendButtonVisible = true;
-                    startLockTransition();
+                    if (recordCircle.slideToCancelProgress < 0.7f) {
+                        if (hasRecordVideo && videoSendButton.getTag() != null) {
+                            CameraController.getInstance().cancelOnInitRunnable(onFinishInitCameraRunnable);
+                            delegate.needStartRecordVideo(2, true, 0);
+                        } else {
+                            delegate.needStartRecordAudio(0);
+                            MediaController.getInstance().stopRecording(0, false, 0);
+                        }
+                        recordingAudioVideo = false;
+                        updateRecordIntefrace(RECORD_STATE_CANCEL_BY_GESTURE);
+                    } else {
+                        recordCircle.sendButtonVisible = true;
+                        startLockTransition();
+                    }
                     return false;
                 }
                 if (recordCircle.isSendButtonVisible() || recordedAudioPanel.getVisibility() == VISIBLE) {
@@ -2460,7 +2476,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                             MediaController.getInstance().stopRecording(isInScheduleMode() ? 3 : 1, true, 0);
                         }
                         recordingAudioVideo = false;
-                        updateRecordIntefrace(isInScheduleMode() ? 3 : RECORD_STATE_SENDING);
+                        updateRecordIntefrace(RECORD_STATE_SENDING);
                     }
                 }
             } else if (motionEvent.getAction() == MotionEvent.ACTION_MOVE && recordingAudioVideo) {
@@ -5725,7 +5741,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
         if (button instanceof TLRPC.TL_keyboardButton) {
             SendMessagesHelper.getInstance(currentAccount).sendMessage(button.text, dialog_id, replyMessageObject, null, false, null, null, null, true, 0);
         } else if (button instanceof TLRPC.TL_keyboardButtonUrl) {
-            parentFragment.showOpenUrlAlert(button.url, true);
+            parentFragment.showOpenUrlAlert(button.url, false, true);
         } else if (button instanceof TLRPC.TL_keyboardButtonRequestPhone) {
             parentFragment.shareMyContact(2, messageObject);
         } else if (button instanceof TLRPC.TL_keyboardButtonRequestPoll) {
@@ -5836,6 +5852,8 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
         emojiView.setVisibility(GONE);
         emojiView.setDelegate(new EmojiView.EmojiViewDelegate() {
 
+            private TrendingStickersAlert trendingStickersAlert;
+
             @Override
             public boolean onBackspace() {
                 if (messageEditText.length() == 0) {
@@ -5866,6 +5884,10 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
 
             @Override
             public void onStickerSelected(View view, TLRPC.Document sticker, Object parent, boolean notify, int scheduleDate) {
+                if (trendingStickersAlert != null) {
+                    trendingStickersAlert.dismiss();
+                    trendingStickersAlert = null;
+                }
                 if (slowModeTimer > 0 && !isInScheduleMode()) {
                     if (delegate != null) {
                         delegate.onUpdateSlowModeButton(view != null ? view : slowModeButton, true, slowModeButton.getText());
@@ -5968,6 +5990,10 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
 
             @Override
             public void onShowStickerSet(TLRPC.StickerSet stickerSet, TLRPC.InputStickerSet inputStickerSet) {
+                if (trendingStickersAlert != null && !trendingStickersAlert.isDismissed()) {
+                    trendingStickersAlert.getLayout().showStickerSet(stickerSet, inputStickerSet);
+                    return;
+                }
                 if (parentFragment == null || parentActivity == null) {
                     return;
                 }
@@ -6033,6 +6059,20 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
             @Override
             public long getDialogId() {
                 return dialog_id;
+            }
+
+            @Override
+            public void showTrendingStickersAlert(TrendingStickersLayout layout) {
+                if (parentActivity != null && parentFragment != null) {
+                    trendingStickersAlert = new TrendingStickersAlert(parentActivity, parentFragment, layout) {
+                        @Override
+                        public void dismiss() {
+                            super.dismiss();
+                            trendingStickersAlert = null;
+                        }
+                    };
+                    trendingStickersAlert.show();
+                }
             }
         });
         emojiView.setDragListener(new EmojiView.DragListener() {
@@ -7324,9 +7364,6 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                     startedDraggingX = -1;
                     delegate.needStartRecordVideo(3, true, 0);
                     stoppedInternal = true;
-                }
-                if (t > 60000) {
-                    t = 60000;
                 }
             }
 

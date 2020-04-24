@@ -12,14 +12,14 @@ import java.util.HashMap;
 
 public class FileRefController extends BaseController {
 
-    private class Requester {
+    private static class Requester {
         private TLRPC.InputFileLocation location;
         private Object[] args;
         private String locationKey;
         private boolean completed;
     }
 
-    private class CachedResult {
+    private static class CachedResult {
         private TLObject response;
         private long lastQueryTime;
         private long firstQueryTime;
@@ -394,12 +394,6 @@ public class FileRefController extends BaseController {
         } else {
             sendErrorToObject(args, 0);
         }
-
-        //TODO "sticker_search_" + emoji
-        //TODO MediaController.SearchImage
-        //TODO TLRPC.RecentMeUrl
-        //TODO TLRPC.ChatInvite
-        //TODO TLRPC.BotInlineResult
     }
 
     @SuppressWarnings("unchecked")

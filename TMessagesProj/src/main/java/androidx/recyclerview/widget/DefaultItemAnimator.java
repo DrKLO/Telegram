@@ -19,6 +19,7 @@ import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.TimeInterpolator;
 import android.animation.ValueAnimator;
+import android.os.Build;
 import android.view.View;
 import android.view.ViewPropertyAnimator;
 
@@ -280,6 +281,10 @@ public class DefaultItemAnimator extends SimpleItemAnimator {
         return true;
     }
 
+    protected void onMoveAnimationUpdate(RecyclerView.ViewHolder holder) {
+
+    }
+
     void animateMoveImpl(final RecyclerView.ViewHolder holder, int fromX, int fromY, int toX, int toY) {
         final View view = holder.itemView;
         final int deltaX = toX - fromX;
@@ -295,6 +300,9 @@ public class DefaultItemAnimator extends SimpleItemAnimator {
         // need listener functionality in VPACompat for this. Ick.
         final ViewPropertyAnimator animation = view.animate();
         mMoveAnimations.add(holder);
+        if (Build.VERSION.SDK_INT >= 19) {
+            animation.setUpdateListener(animation1 -> onMoveAnimationUpdate(holder));
+        }
         animation.setDuration(getMoveDuration()).setListener(new AnimatorListenerAdapter() {
             @Override
             public void onAnimationStart(Animator animator) {

@@ -64,9 +64,16 @@ public class RecyclerAnimationScrollHelper {
         int t = 0;
         final ArrayList<View> oldViews = new ArrayList<>();
         positionToOldView.clear();
+        final ArrayList<RecyclerView.ViewHolder> oldHolders = new ArrayList<>();
+        recyclerView.getRecycledViewPool().clear();
+
         for (int i = 0; i < n; i++) {
             View child = recyclerView.getChildAt(0);
             oldViews.add(child);
+            RecyclerView.ViewHolder holder = recyclerView.getChildViewHolder(child);
+            if (holder != null) {
+                oldHolders.add(holder);
+            }
             positionToOldView.put(layoutManager.getPosition(child), child);
 
             int bot = child.getBottom();
@@ -119,7 +126,9 @@ public class RecyclerAnimationScrollHelper {
                 }
 
                 for (View view : oldViews) {
-                    recyclerView.addView(view);
+                    if (view.getParent() == null) {
+                        recyclerView.addView(view);
+                    }
                     if (view instanceof ChatMessageCell) {
                         ((ChatMessageCell) view).setAnimationRunning(true, true);
                     }
@@ -205,7 +214,7 @@ public class RecyclerAnimationScrollHelper {
 
                 recyclerView.removeOnLayoutChangeListener(this);
 
-                long duration = ((scrollLength / recyclerView.getMeasuredHeight()) + 1) * 200;
+                long duration = (long) (((scrollLength / (float) recyclerView.getMeasuredHeight()) + 1f) * 200L);
 
                 duration = Math.min(duration, 1300);
 
@@ -300,6 +309,13 @@ public class RecyclerAnimationScrollHelper {
             } else {
                 rangeRemoved.add(positionStart);
                 rangeRemoved.add(itemCount);
+            }
+        }
+
+        @Override
+        public void notifyItemRangeChanged(int positionStart, int itemCount) {
+            if (!animationRunning) {
+                super.notifyItemRangeChanged(positionStart, itemCount);
             }
         }
 

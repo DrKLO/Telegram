@@ -60,14 +60,16 @@ public class LocationActivityAdapter extends BaseLocationAdapter implements Loca
     private TLRPC.TL_channelLocation chatLocation;
     private ArrayList<LocationActivity.LiveLocation> currentLiveLocations = new ArrayList<>();
     private boolean fetchingLocation;
+    private boolean needEmptyView;
 
     private Runnable updateRunnable;
 
-    public LocationActivityAdapter(Context context, int type, long did) {
+    public LocationActivityAdapter(Context context, int type, long did, boolean emptyView) {
         super();
         mContext = context;
         locationType = type;
         dialogId = did;
+        needEmptyView = emptyView;
     }
 
     public void setOverScrollHeight(int value) {
@@ -220,12 +222,12 @@ public class LocationActivityAdapter extends BaseLocationAdapter implements Loca
             return 2 + currentLiveLocations.size();
         } else {
             if (searching || !searching && places.isEmpty()) {
-                return locationType != 0 ? 6 : 5;
+                return (locationType != 0 ? 6 : 5) + (needEmptyView ? 1 : 0);
             }
             if (locationType == 1) {
-                return 5 + places.size() + (places.isEmpty() ? 0 : 1);
+                return 5 + places.size() + (places.isEmpty() ? 0 : 1) + (needEmptyView ? 1 : 0);
             } else {
-                return 4 + places.size() + (places.isEmpty() ? 0 : 1);
+                return 4 + places.size() + (places.isEmpty() ? 0 : 1) + (needEmptyView ? 1 : 0);
             }
         }
     }
@@ -280,13 +282,18 @@ public class LocationActivityAdapter extends BaseLocationAdapter implements Loca
                 view = cell;
                 break;
             }
-            case 9:
-            default: {
+            case 9: {
                 view = new ShadowSectionCell(mContext);
                 Drawable drawable = Theme.getThemedDrawable(mContext, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow);
                 CombinedDrawable combinedDrawable = new CombinedDrawable(new ColorDrawable(Theme.getColor(Theme.key_windowBackgroundGray)), drawable);
                 combinedDrawable.setFullsize(true);
                 view.setBackgroundDrawable(combinedDrawable);
+                break;
+            }
+            case 10:
+            default: {
+                view = new View(mContext);
+                break;
             }
         }
         return new RecyclerListView.Holder(view);
@@ -385,11 +392,16 @@ public class LocationActivityAdapter extends BaseLocationAdapter implements Loca
         if (position == 0) {
             return 0;
         }
+        if (needEmptyView && position == getItemCount() - 1) {
+            return 10;
+        }
         if (locationType == LocationActivity.LOCATION_TYPE_GROUP_VIEW) {
             return 7;
-        } else if (locationType == LocationActivity.LOCATION_TYPE_GROUP) {
+        }
+        if (locationType == LocationActivity.LOCATION_TYPE_GROUP) {
             return 1;
-        } else if (currentMessageObject != null) {
+        }
+        if (currentMessageObject != null) {
             if (currentLiveLocations.isEmpty()) {
                 if (position == 2) {
                     return 8;
@@ -405,14 +417,16 @@ public class LocationActivityAdapter extends BaseLocationAdapter implements Loca
                 }
             }
             return 7;
-        } else if (locationType == 2) {
+        }
+        if (locationType == 2) {
             if (position == 1) {
                 shareLiveLocationPotistion = position;
                 return 6;
             } else {
                 return 7;
             }
-        } else if (locationType == LocationActivity.LOCATION_TYPE_SEND_WITH_LIVE) {
+        }
+        if (locationType == LocationActivity.LOCATION_TYPE_SEND_WITH_LIVE) {
             if (position == 1) {
                 return 1;
             } else if (position == 2) {

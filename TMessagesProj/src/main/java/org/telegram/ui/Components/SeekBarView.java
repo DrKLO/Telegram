@@ -33,7 +33,7 @@ public class SeekBarView extends FrameLayout {
     private int thumbDX;
     private float progressToSet;
     private boolean pressed;
-    public SeekBarViewDelegate delegate;
+    private SeekBarViewDelegate delegate;
     private boolean reportChanges;
     private float bufferedProgress;
     private Drawable hoverDrawable;
@@ -113,6 +113,22 @@ public class SeekBarView extends FrameLayout {
             return true;
         } else if (ev.getAction() == MotionEvent.ACTION_UP || ev.getAction() == MotionEvent.ACTION_CANCEL) {
             captured = false;
+            if (ev.getAction() == MotionEvent.ACTION_UP) {
+                final ViewConfiguration vc = ViewConfiguration.get(getContext());
+                if (Math.abs(ev.getY() - sy) < vc.getScaledTouchSlop()) {
+                    int additionWidth = (getMeasuredHeight() - thumbSize) / 2;
+                    if (!(thumbX - additionWidth <= ev.getX() && ev.getX() <= thumbX + thumbSize + additionWidth)) {
+                        thumbX = (int) ev.getX() - thumbSize / 2;
+                        if (thumbX < 0) {
+                            thumbX = 0;
+                        } else if (thumbX > getMeasuredWidth() - selectorWidth) {
+                            thumbX = getMeasuredWidth() - selectorWidth;
+                        }
+                    }
+                    thumbDX = (int) (ev.getX() - thumbX);
+                    pressed = true;
+                }
+            }
             if (pressed) {
                 if (ev.getAction() == MotionEvent.ACTION_UP) {
                     delegate.onSeekBarDrag(true, (float) thumbX / (float) (getMeasuredWidth() - selectorWidth));

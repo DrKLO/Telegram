@@ -1039,7 +1039,7 @@ public class AlertDialog extends Dialog implements Drawable.Callback {
         AndroidUtilities.runOnUIThread(showRunnable, delay);
     }
 
-    public ThemeDescription[] getThemeDescriptions() {
+    public ArrayList<ThemeDescription> getThemeDescriptions() {
         return null;
     }
 

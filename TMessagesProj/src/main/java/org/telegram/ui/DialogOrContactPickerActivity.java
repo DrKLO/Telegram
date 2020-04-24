@@ -684,7 +684,7 @@ public class DialogOrContactPickerActivity extends BaseFragment {
     }
 
     @Override
-    public ThemeDescription[] getThemeDescriptions() {
+    public ArrayList<ThemeDescription> getThemeDescriptions() {
         ArrayList<ThemeDescription> arrayList = new ArrayList<>();
 
         arrayList.add(new ThemeDescription(fragmentView, 0, null, null, null, null, Theme.key_windowBackgroundWhite));
@@ -698,9 +698,9 @@ public class DialogOrContactPickerActivity extends BaseFragment {
         arrayList.add(new ThemeDescription(scrollSlidingTextTabStrip.getTabsContainer(), ThemeDescription.FLAG_BACKGROUNDFILTER | ThemeDescription.FLAG_DRAWABLESELECTEDSTATE, new Class[]{TextView.class}, null, null, null, Theme.key_actionBarTabLine));
         arrayList.add(new ThemeDescription(null, 0, null, null, new Drawable[]{scrollSlidingTextTabStrip.getSelectorDrawable()}, null, Theme.key_actionBarTabSelector));
 
-        Collections.addAll(arrayList, dialogsActivity.getThemeDescriptions());
-        Collections.addAll(arrayList, contactsActivity.getThemeDescriptions());
+        arrayList.addAll(dialogsActivity.getThemeDescriptions());
+        arrayList.addAll(contactsActivity.getThemeDescriptions());
 
-        return arrayList.toArray(new ThemeDescription[0]);
+        return arrayList;
     }
 }

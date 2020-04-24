@@ -710,7 +710,7 @@ public class ContentPreviewViewer {
             currentMoveY = 0;
             moveY = 0;
             lastUpdateTime = System.currentTimeMillis();
-            NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.stopAllHeavyOperations, 4);
+            NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.stopAllHeavyOperations, 8);
         }
     }
 
@@ -738,7 +738,7 @@ public class ContentPreviewViewer {
         currentStickerSet = null;
         delegate = null;
         isVisible = false;
-        NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.startAllHeavyOperations, 4);
+        NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.startAllHeavyOperations, 8);
     }
 
     public void destroy() {
@@ -767,7 +767,7 @@ public class ContentPreviewViewer {
             FileLog.e(e);
         }
         Instance = null;
-        NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.startAllHeavyOperations, 4);
+        NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.startAllHeavyOperations, 8);
     }
 
     private float rubberYPoisition(float offset, float factor) {

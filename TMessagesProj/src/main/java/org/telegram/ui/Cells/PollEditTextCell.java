@@ -74,6 +74,9 @@ public class PollEditTextCell extends FrameLayout {
                 if (!isEnabled()) {
                     return false;
                 }
+                if (event.getAction() == MotionEvent.ACTION_UP) {
+                    onFieldTouchUp(this);
+                }
                 return super.onTouchEvent(event);
             }
         };
@@ -84,6 +87,7 @@ public class PollEditTextCell extends FrameLayout {
         textView.setBackgroundDrawable(null);
         textView.setImeOptions(textView.getImeOptions() | EditorInfo.IME_FLAG_NO_EXTRACT_UI);
         textView.setInputType(textView.getInputType() | EditorInfo.TYPE_TEXT_FLAG_CAP_SENTENCES);
+        textView.setPadding(AndroidUtilities.dp(4), AndroidUtilities.dp(10), AndroidUtilities.dp(4), AndroidUtilities.dp(11));
 
         if (onDelete != null) {
             addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL, LocaleController.isRTL ? 58 : 64, 0, !LocaleController.isRTL ? 58 : 64, 0));
@@ -151,7 +155,15 @@ public class PollEditTextCell extends FrameLayout {
         if (checkBox != null) {
             checkBox.measure(MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(48), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(48), MeasureSpec.EXACTLY));
         }
-        textView.measure(MeasureSpec.makeMeasureSpec(width - getPaddingLeft() - getPaddingRight() - AndroidUtilities.dp(textView2 != null && textView.getBackground() == null ? 122 : 42), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED));
+        int right;
+        if (textView2 == null) {
+            right = 42;
+        } else if (deleteImageView == null) {
+            right = 70;
+        } else {
+            right = 122;
+        }
+        textView.measure(MeasureSpec.makeMeasureSpec(width - getPaddingLeft() - getPaddingRight() - AndroidUtilities.dp(right), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED));
         int h = textView.getMeasuredHeight();
         setMeasuredDimension(width, Math.max(AndroidUtilities.dp(50), textView.getMeasuredHeight()) + (needDivider ? 1 : 0));
         if (textView2 != null && !alwaysShowText2) {
@@ -270,6 +282,10 @@ public class PollEditTextCell extends FrameLayout {
 
     public void setEnabled(boolean value, ArrayList<Animator> animators) {
         setEnabled(value);
+    }
+
+    protected void onFieldTouchUp(EditTextBoldCursor editText) {
+
     }
 
     public void setText2(String text) {

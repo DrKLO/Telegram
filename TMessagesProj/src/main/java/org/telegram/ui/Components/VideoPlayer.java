@@ -13,6 +13,7 @@ import android.graphics.SurfaceTexture;
 import android.net.Uri;
 import android.os.Handler;
 import android.view.TextureView;
+import android.view.ViewGroup;
 
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.Player;
@@ -43,6 +44,7 @@ import com.google.android.exoplayer2.upstream.DataSource;
 import com.google.android.exoplayer2.upstream.DefaultAllocator;
 import com.google.android.exoplayer2.upstream.DefaultBandwidthMeter;
 import com.google.android.exoplayer2.upstream.DefaultHttpDataSourceFactory;
+import com.google.android.exoplayer2.video.SurfaceNotValidException;
 
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.secretmedia.ExtendedDefaultDataSourceFactory;
@@ -88,6 +90,10 @@ public class VideoPlayer implements ExoPlayer.EventListener, SimpleExoPlayer.Vid
     private static final int RENDERER_BUILDING_STATE_IDLE = 1;
     private static final int RENDERER_BUILDING_STATE_BUILDING = 2;
     private static final int RENDERER_BUILDING_STATE_BUILT = 3;
+
+    private Uri videoUri, audioUri;
+    private String videoType, audioType;
+    private boolean loop;
 
     private static final DefaultBandwidthMeter BANDWIDTH_METER = new DefaultBandwidthMeter();
 
@@ -193,6 +199,12 @@ public class VideoPlayer implements ExoPlayer.EventListener, SimpleExoPlayer.Vid
     }
 
     public void preparePlayerLoop(Uri videoUri, String videoType, Uri audioUri, String audioType) {
+        this.videoUri = videoUri;
+        this.audioUri = audioUri;
+        this.videoType = videoType;
+        this.audioType = audioType;
+        this.loop = true;
+
         mixedAudio = true;
         audioPlayerReady = false;
         videoPlayerReady = false;
@@ -235,6 +247,12 @@ public class VideoPlayer implements ExoPlayer.EventListener, SimpleExoPlayer.Vid
     }
 
     public void preparePlayer(Uri uri, String type) {
+        this.videoUri = uri;
+        this.videoType = type;
+        this.audioUri = null;
+        this.audioType = null;
+        this.loop = false;
+
         videoPlayerReady = false;
         mixedAudio = false;
         currentUri = uri;
@@ -481,7 +499,27 @@ public class VideoPlayer implements ExoPlayer.EventListener, SimpleExoPlayer.Vid
 
     @Override
     public void onPlayerError(ExoPlaybackException error) {
-        delegate.onError(error);
+        Throwable cause = error.getCause();
+        if (textureView != null && cause instanceof SurfaceNotValidException) {
+            if (player != null) {
+                ViewGroup parent = (ViewGroup) textureView.getParent();
+                if (parent != null) {
+                    int i = parent.indexOfChild(textureView);
+                    parent.removeView(textureView);
+                    parent.addView(textureView,i);
+                }
+                player.clearVideoTextureView(textureView);
+                player.setVideoTextureView(textureView);
+                if (loop) {
+                    preparePlayerLoop(videoUri, videoType, audioUri, audioType);
+                } else {
+                    preparePlayer(videoUri, videoType);
+                }
+                play();
+            }
+        } else {
+            delegate.onError(error);
+        }
     }
 
     @Override

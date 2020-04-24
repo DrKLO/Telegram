@@ -205,6 +205,10 @@ public class FireworksOverlay extends View {
         return particle;
     }
 
+    public boolean isStarted() {
+        return started;
+    }
+
     public void start() {
         particles.clear();
         if (Build.VERSION.SDK_INT >= 18) {

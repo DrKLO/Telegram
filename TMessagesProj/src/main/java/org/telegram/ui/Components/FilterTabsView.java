@@ -458,11 +458,12 @@ public class FilterTabsView extends FrameLayout {
                     @Override
                     protected void onTargetFound(View targetView, RecyclerView.State state, Action action) {
                         int dx = calculateDxToMakeVisible(targetView, getHorizontalSnapPreference());
-                        if (dx > 0) {
+                        if (dx > 0 || dx == 0 && targetView.getLeft() - AndroidUtilities.dp(21) < 0) {
                             dx += AndroidUtilities.dp(60);
-                        } else if (dx < 0) {
+                        } else if (dx < 0 || dx == 0 && targetView.getRight() + AndroidUtilities.dp(21) > getMeasuredWidth()) {
                             dx -= AndroidUtilities.dp(60);
                         }
+
                         final int dy = calculateDyToMakeVisible(targetView, getVerticalSnapPreference());
                         final int distance = (int) Math.sqrt(dx * dx + dy * dy);
                         final int time = Math.max(180, calculateTimeForDeceleration(distance));

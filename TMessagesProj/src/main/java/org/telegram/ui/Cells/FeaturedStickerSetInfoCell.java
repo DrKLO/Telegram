@@ -47,6 +47,7 @@ public class FeaturedStickerSetInfoCell extends FrameLayout {
 
     private AnimatorSet animatorSet;
 
+    private boolean needDivider;
     private boolean isInstalled;
     private boolean hasOnClick;
     private boolean isUnread;
@@ -55,7 +56,13 @@ public class FeaturedStickerSetInfoCell extends FrameLayout {
     private Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
     public FeaturedStickerSetInfoCell(Context context, int left) {
+        this(context, left, false);
+    }
+
+    public FeaturedStickerSetInfoCell(Context context, int left, boolean supportRtl) {
         super(context);
+
+        FrameLayout.LayoutParams lp;
 
         nameTextView = new TextView(context);
         nameTextView.setTextColor(Theme.getColor(Theme.key_chat_emojiPanelTrendingTitle));
@@ -63,21 +70,36 @@ public class FeaturedStickerSetInfoCell extends FrameLayout {
         nameTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
         nameTextView.setEllipsize(TextUtils.TruncateAt.END);
         nameTextView.setSingleLine(true);
-        addView(nameTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.LEFT, left, 8, 40, 0));
+        if (supportRtl) {
+            lp = LayoutHelper.createFrameRelatively(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.START, left, 8, 40, 0);
+        } else {
+            lp = LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.LEFT, left, 8, 40, 0);
+        }
+        addView(nameTextView, lp);
 
         infoTextView = new TextView(context);
         infoTextView.setTextColor(Theme.getColor(Theme.key_chat_emojiPanelTrendingDescription));
         infoTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
         infoTextView.setEllipsize(TextUtils.TruncateAt.END);
         infoTextView.setSingleLine(true);
-        addView(infoTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.LEFT, left, 30, 100, 0));
+        if (supportRtl) {
+            lp = LayoutHelper.createFrameRelatively(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.START, left, 30, 100, 0);
+        } else {
+            lp = LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.LEFT, left, 30, 100, 0);
+        }
+        addView(infoTextView, lp);
 
         addButton = new ProgressButton(context);
         addButton.setProgressColor(Theme.getColor(Theme.key_featuredStickers_buttonProgress));
         addButton.setTextColor(Theme.getColor(Theme.key_featuredStickers_buttonText));
         addButton.setBackgroundRoundRect(Theme.getColor(Theme.key_featuredStickers_addButton), Theme.getColor(Theme.key_featuredStickers_addButtonPressed));
         addButton.setText(LocaleController.getString("Add", R.string.Add));
-        addView(addButton, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 28, Gravity.TOP | Gravity.RIGHT, 0, 16, 14, 0));
+        if (supportRtl) {
+            lp = LayoutHelper.createFrameRelatively(LayoutHelper.WRAP_CONTENT, 28, Gravity.TOP | Gravity.END, 0, 16, 14, 0);
+        } else {
+            lp = LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 28, Gravity.TOP | Gravity.RIGHT, 0, 16, 14, 0);
+        }
+        addView(addButton, lp);
 
         delButton = new TextView(context);
         delButton.setGravity(Gravity.CENTER);
@@ -85,7 +107,12 @@ public class FeaturedStickerSetInfoCell extends FrameLayout {
         delButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         delButton.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
         delButton.setText(LocaleController.getString("StickersRemove", R.string.StickersRemove));
-        addView(delButton, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 28, Gravity.TOP | Gravity.RIGHT, 0, 16, 14, 0));
+        if (supportRtl) {
+            lp = LayoutHelper.createFrameRelatively(LayoutHelper.WRAP_CONTENT, 28, Gravity.TOP | Gravity.END, 0, 16, 14, 0);
+        } else {
+            lp = LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 28, Gravity.TOP | Gravity.RIGHT, 0, 16, 14, 0);
+        }
+        addView(delButton, lp);
 
         setWillNotDraw(false);
     }
@@ -225,11 +252,22 @@ public class FeaturedStickerSetInfoCell extends FrameLayout {
         return set;
     }
 
+    public boolean isNeedDivider() {
+        return needDivider;
+    }
+
+    public void setNeedDivider(boolean needDivider) {
+        this.needDivider = needDivider;
+    }
+
     @Override
     protected void onDraw(Canvas canvas) {
         if (isUnread) {
             paint.setColor(Theme.getColor(Theme.key_featuredStickers_unread));
             canvas.drawCircle(nameTextView.getRight() + AndroidUtilities.dp(12), AndroidUtilities.dp(20), AndroidUtilities.dp(4), paint);
+        }
+        if (needDivider) {
+            canvas.drawLine(0, 0, getWidth(), 0, Theme.dividerPaint);
         }
     }
 }

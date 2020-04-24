@@ -47,6 +47,7 @@ import org.telegram.ui.Cells.TextInfoPrivacyCell;
 import org.telegram.ui.Components.CombinedDrawable;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RecyclerListView;
+import org.telegram.ui.Components.SlideChooseView;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -93,196 +94,6 @@ public class DataAutoDownloadActivity extends BaseFragment {
 
     private String key;
     private String key2;
-
-    private class PresetChooseView extends View {
-
-        private Paint paint;
-        private TextPaint textPaint;
-
-        private int circleSize;
-        private int gapSize;
-        private int sideSide;
-        private int lineSize;
-
-        private boolean moving;
-        private boolean startMoving;
-        private float startX;
-
-        private int startMovingPreset;
-
-        private String low;
-        private int lowSize;
-        private String medium;
-        private int mediumSize;
-        private String high;
-        private int highSize;
-        private String custom;
-        private int customSize;
-
-        public PresetChooseView(Context context) {
-            super(context);
-
-            paint = new Paint(Paint.ANTI_ALIAS_FLAG);
-            textPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
-            textPaint.setTextSize(AndroidUtilities.dp(13));
-
-            low = LocaleController.getString("AutoDownloadLow", R.string.AutoDownloadLow);
-            lowSize = (int) Math.ceil(textPaint.measureText(low));
-            medium = LocaleController.getString("AutoDownloadMedium", R.string.AutoDownloadMedium);
-            mediumSize = (int) Math.ceil(textPaint.measureText(medium));
-            high = LocaleController.getString("AutoDownloadHigh", R.string.AutoDownloadHigh);
-            highSize = (int) Math.ceil(textPaint.measureText(high));
-            custom = LocaleController.getString("AutoDownloadCustom", R.string.AutoDownloadCustom);
-            customSize = (int) Math.ceil(textPaint.measureText(custom));
-        }
-
-        @Override
-        public boolean onTouchEvent(MotionEvent event) {
-            float x = event.getX();
-            if (event.getAction() == MotionEvent.ACTION_DOWN) {
-                getParent().requestDisallowInterceptTouchEvent(true);
-                for (int a = 0; a < presets.size(); a++) {
-                    int cx = sideSide + (lineSize + gapSize * 2 + circleSize) * a + circleSize / 2;
-                    if (x > cx - AndroidUtilities.dp(15) && x < cx + AndroidUtilities.dp(15)) {
-                        startMoving = a == selectedPreset;
-                        startX = x;
-                        startMovingPreset = selectedPreset;
-                        break;
-                    }
-                }
-            } else if (event.getAction() == MotionEvent.ACTION_MOVE) {
-                if (startMoving) {
-                    if (Math.abs(startX - x) >= AndroidUtilities.getPixelsInCM(0.5f, true)) {
-                        moving = true;
-                        startMoving = false;
-                    }
-                } else if (moving) {
-                    for (int a = 0; a < presets.size(); a++) {
-                        int cx = sideSide + (lineSize + gapSize * 2 + circleSize) * a + circleSize / 2;
-                        int diff = lineSize / 2 + circleSize / 2 + gapSize;
-                        if (x > cx - diff && x < cx + diff) {
-                            if (selectedPreset != a) {
-                                setPreset(a);
-                            }
-                            break;
-                        }
-                    }
-                }
-            } else if (event.getAction() == MotionEvent.ACTION_UP || event.getAction() == MotionEvent.ACTION_CANCEL) {
-                if (!moving) {
-                    for (int a = 0; a < 5; a++) {
-                        int cx = sideSide + (lineSize + gapSize * 2 + circleSize) * a + circleSize / 2;
-                        if (x > cx - AndroidUtilities.dp(15) && x < cx + AndroidUtilities.dp(15)) {
-                            if (selectedPreset != a) {
-                                setPreset(a);
-                            }
-                            break;
-                        }
-                    }
-                } else {
-                    if (selectedPreset != startMovingPreset) {
-                        setPreset(selectedPreset);
-                    }
-                }
-                startMoving = false;
-                moving = false;
-            }
-            return true;
-        }
-
-        private void setPreset(int index) {
-            selectedPreset = index;
-            DownloadController.Preset preset = presets.get(selectedPreset);
-            if (preset == lowPreset) {
-                currentPresetNum = 0;
-            } else if (preset == mediumPreset) {
-                currentPresetNum = 1;
-            } else if (preset == highPreset) {
-                currentPresetNum = 2;
-            } else {
-                currentPresetNum = 3;
-            }
-            if (currentType == 0) {
-                DownloadController.getInstance(currentAccount).currentMobilePreset = currentPresetNum;
-            } else if (currentType == 1) {
-                DownloadController.getInstance(currentAccount).currentWifiPreset = currentPresetNum;
-            } else {
-                DownloadController.getInstance(currentAccount).currentRoamingPreset = currentPresetNum;
-            }
-            SharedPreferences.Editor editor = MessagesController.getMainSettings(currentAccount).edit();
-            editor.putInt(key2, currentPresetNum);
-            editor.commit();
-            DownloadController.getInstance(currentAccount).checkAutodownloadSettings();
-            for (int a = 0; a < 3; a++) {
-                RecyclerView.ViewHolder holder = listView.findViewHolderForAdapterPosition(photosRow + a);
-                if (holder != null) {
-                    listAdapter.onBindViewHolder(holder, photosRow + a);
-                }
-            }
-            wereAnyChanges = true;
-            invalidate();
-        }
-
-        @Override
-        protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-            super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(74), MeasureSpec.EXACTLY));
-            int width = MeasureSpec.getSize(widthMeasureSpec);
-            circleSize = AndroidUtilities.dp(6);
-            gapSize = AndroidUtilities.dp(2);
-            sideSide = AndroidUtilities.dp(22);
-            lineSize = (getMeasuredWidth() - circleSize * presets.size() - gapSize * 2 * (presets.size() - 1)  - sideSide * 2) / (presets.size() - 1);
-        }
-
-        @Override
-        protected void onDraw(Canvas canvas) {
-            textPaint.setColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
-            int cy = getMeasuredHeight() / 2 + AndroidUtilities.dp(11);
-
-            for (int a = 0; a < presets.size(); a++) {
-                int cx = sideSide + (lineSize + gapSize * 2 + circleSize) * a + circleSize / 2;
-                if (a <= selectedPreset) {
-                    paint.setColor(Theme.getColor(Theme.key_switchTrackChecked));
-                } else {
-                    paint.setColor(Theme.getColor(Theme.key_switchTrack));
-                }
-                canvas.drawCircle(cx, cy, a == selectedPreset ? AndroidUtilities.dp(6) : circleSize / 2, paint);
-                if (a != 0) {
-                    int x = cx - circleSize / 2 - gapSize - lineSize;
-                    int width = lineSize;
-                    if (a == selectedPreset || a == selectedPreset + 1) {
-                        width -= AndroidUtilities.dp(3);
-                    }
-                    if (a == selectedPreset + 1) {
-                        x += AndroidUtilities.dp(3);
-                    }
-                    canvas.drawRect(x, cy - AndroidUtilities.dp(1), x + width, cy + AndroidUtilities.dp(1), paint);
-                }
-                DownloadController.Preset preset = presets.get(a);
-                int size;
-                String text;
-                if (preset == lowPreset) {
-                    text = low;
-                    size = lowSize;
-                } else if (preset == mediumPreset) {
-                    text = medium;
-                    size = mediumSize;
-                } else if (preset == highPreset) {
-                    text = high;
-                    size = highSize;
-                } else {
-                    text = custom;
-                    size = customSize;
-                }
-                if (a == 0) {
-                    canvas.drawText(text, AndroidUtilities.dp(22), AndroidUtilities.dp(28), textPaint);
-                } else if (a == presets.size() - 1) {
-                    canvas.drawText(text, getMeasuredWidth() - size - AndroidUtilities.dp(22), AndroidUtilities.dp(28), textPaint);
-                } else {
-                    canvas.drawText(text, cx - size / 2, AndroidUtilities.dp(28), textPaint);
-                }
-            }
-        }
-    }
 
     public DataAutoDownloadActivity(int type) {
         super();
@@ -783,14 +594,6 @@ public class DataAutoDownloadActivity extends BaseFragment {
             }
             return 0;
         });
-        if (listView != null) {
-            RecyclerView.ViewHolder holder = listView.findViewHolderForAdapterPosition(usageProgressRow);
-            if (holder != null) {
-                holder.itemView.requestLayout();
-            } else {
-                listAdapter.notifyItemChanged(usageProgressRow);
-            }
-        }
         if (currentPresetNum == 0 || currentPresetNum == 3 && typePreset.equals(lowPreset)) {
             selectedPreset = presets.indexOf(lowPreset);
         } else if (currentPresetNum == 1 || currentPresetNum == 3 && typePreset.equals(mediumPreset)) {
@@ -800,6 +603,15 @@ public class DataAutoDownloadActivity extends BaseFragment {
         } else {
             selectedPreset = presets.indexOf(typePreset);
         }
+        if (listView != null) {
+            RecyclerView.ViewHolder holder = listView.findViewHolderForAdapterPosition(usageProgressRow);
+            if (holder.itemView instanceof SlideChooseView) {
+                updatePresetChoseView((SlideChooseView) holder.itemView);
+            } else {
+                listAdapter.notifyItemChanged(usageProgressRow);
+            }
+        }
+
     }
 
     private void updateRows() {
@@ -860,6 +672,11 @@ public class DataAutoDownloadActivity extends BaseFragment {
                     } else if (position == typeHeaderRow) {
                         view.setText(LocaleController.getString("AutoDownloadTypes", R.string.AutoDownloadTypes));
                     }
+                    break;
+                }
+                case 3: {
+                    SlideChooseView slideChooseView = (SlideChooseView) holder.itemView;
+                    updatePresetChoseView(slideChooseView);
                     break;
                 }
                 case 4: {
@@ -987,7 +804,38 @@ public class DataAutoDownloadActivity extends BaseFragment {
                     break;
                 }
                 case 3: {
-                    view = new PresetChooseView(mContext);
+                    SlideChooseView slideChooseView = new SlideChooseView(mContext);
+                    view = slideChooseView;
+                    slideChooseView.setCallback(index -> {
+                        DownloadController.Preset preset = presets.get(index);
+                        if (preset == lowPreset) {
+                            currentPresetNum = 0;
+                        } else if (preset == mediumPreset) {
+                            currentPresetNum = 1;
+                        } else if (preset == highPreset) {
+                            currentPresetNum = 2;
+                        } else {
+                            currentPresetNum = 3;
+                        }
+                        if (currentType == 0) {
+                            DownloadController.getInstance(currentAccount).currentMobilePreset = currentPresetNum;
+                        } else if (currentType == 1) {
+                            DownloadController.getInstance(currentAccount).currentWifiPreset = currentPresetNum;
+                        } else {
+                            DownloadController.getInstance(currentAccount).currentRoamingPreset = currentPresetNum;
+                        }
+                        SharedPreferences.Editor editor = MessagesController.getMainSettings(currentAccount).edit();
+                        editor.putInt(key2, currentPresetNum);
+                        editor.commit();
+                        DownloadController.getInstance(currentAccount).checkAutodownloadSettings();
+                        for (int a = 0; a < 3; a++) {
+                            RecyclerView.ViewHolder holder = listView.findViewHolderForAdapterPosition(photosRow + a);
+                            if (holder != null) {
+                                listAdapter.onBindViewHolder(holder, photosRow + a);
+                            }
+                        }
+                        wereAnyChanges = true;
+                    });
                     view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
                     break;
                 }
@@ -1023,47 +871,67 @@ public class DataAutoDownloadActivity extends BaseFragment {
         }
     }
 
+    private void updatePresetChoseView(SlideChooseView slideChooseView) {
+        String[] presetsStr = new String[presets.size()];
+        for (int i = 0; i < presets.size(); i++) {
+            DownloadController.Preset preset = presets.get(i);
+            if (preset == lowPreset) {
+                presetsStr[i] = LocaleController.getString("AutoDownloadLow", R.string.AutoDownloadLow);
+            } else if (preset == mediumPreset) {
+                presetsStr[i] = LocaleController.getString("AutoDownloadMedium", R.string.AutoDownloadMedium);
+            } else if (preset == highPreset) {
+                presetsStr[i] = LocaleController.getString("AutoDownloadHigh", R.string.AutoDownloadHigh);
+            } else {
+                presetsStr[i] = LocaleController.getString("AutoDownloadCustom", R.string.AutoDownloadCustom);
+            }
+
+        }
+        slideChooseView.setOptions(selectedPreset, presetsStr);
+    }
+
     @Override
-    public ThemeDescription[] getThemeDescriptions() {
-        return new ThemeDescription[]{
-                new ThemeDescription(listView, ThemeDescription.FLAG_CELLBACKGROUNDCOLOR, new Class[]{HeaderCell.class, NotificationsCheckCell.class, PresetChooseView.class}, null, null, null, Theme.key_windowBackgroundWhite),
-                new ThemeDescription(fragmentView, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_windowBackgroundGray),
+    public ArrayList<ThemeDescription> getThemeDescriptions() {
+        ArrayList<ThemeDescription> themeDescriptions = new ArrayList<>();
 
-                new ThemeDescription(actionBar, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_actionBarDefault),
-                new ThemeDescription(listView, ThemeDescription.FLAG_LISTGLOWCOLOR, null, null, null, null, Theme.key_actionBarDefault),
-                new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_ITEMSCOLOR, null, null, null, null, Theme.key_actionBarDefaultIcon),
-                new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_TITLECOLOR, null, null, null, null, Theme.key_actionBarDefaultTitle),
-                new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_SELECTORCOLOR, null, null, null, null, Theme.key_actionBarDefaultSelector),
+        themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_CELLBACKGROUNDCOLOR, new Class[]{HeaderCell.class, NotificationsCheckCell.class, SlideChooseView.class}, null, null, null, Theme.key_windowBackgroundWhite));
+        themeDescriptions.add(new ThemeDescription(fragmentView, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_windowBackgroundGray));
 
-                new ThemeDescription(listView, ThemeDescription.FLAG_SELECTOR, null, null, null, null, Theme.key_listSelector),
+        themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_actionBarDefault));
+        themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_LISTGLOWCOLOR, null, null, null, null, Theme.key_actionBarDefault));
+        themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_ITEMSCOLOR, null, null, null, null, Theme.key_actionBarDefaultIcon));
+        themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_TITLECOLOR, null, null, null, null, Theme.key_actionBarDefaultTitle));
+        themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_SELECTORCOLOR, null, null, null, null, Theme.key_actionBarDefaultSelector));
 
-                new ThemeDescription(listView, 0, new Class[]{View.class}, Theme.dividerPaint, null, null, Theme.key_divider),
+        themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_SELECTOR, null, null, null, null, Theme.key_listSelector));
 
-                new ThemeDescription(listView, ThemeDescription.FLAG_BACKGROUNDFILTER, new Class[]{ShadowSectionCell.class}, null, null, null, Theme.key_windowBackgroundGrayShadow),
+        themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{View.class}, Theme.dividerPaint, null, null, Theme.key_divider));
 
-                new ThemeDescription(listView, 0, new Class[]{HeaderCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlueHeader),
+        themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_BACKGROUNDFILTER, new Class[]{ShadowSectionCell.class}, null, null, null, Theme.key_windowBackgroundGrayShadow));
 
-                new ThemeDescription(listView, ThemeDescription.FLAG_CELLBACKGROUNDCOLOR | ThemeDescription.FLAG_CHECKTAG, new Class[]{TextCheckCell.class}, null, null, null, Theme.key_windowBackgroundChecked),
-                new ThemeDescription(listView, ThemeDescription.FLAG_CELLBACKGROUNDCOLOR | ThemeDescription.FLAG_CHECKTAG, new Class[]{TextCheckCell.class}, null, null, null, Theme.key_windowBackgroundUnchecked),
-                new ThemeDescription(listView, 0, new Class[]{TextCheckCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundCheckText),
-                new ThemeDescription(listView, 0, new Class[]{TextCheckCell.class}, new String[]{"checkBox"}, null, null, null, Theme.key_switchTrackBlue),
-                new ThemeDescription(listView, 0, new Class[]{TextCheckCell.class}, new String[]{"checkBox"}, null, null, null, Theme.key_switchTrackBlueChecked),
-                new ThemeDescription(listView, 0, new Class[]{TextCheckCell.class}, new String[]{"checkBox"}, null, null, null, Theme.key_switchTrackBlueThumb),
-                new ThemeDescription(listView, 0, new Class[]{TextCheckCell.class}, new String[]{"checkBox"}, null, null, null, Theme.key_switchTrackBlueThumbChecked),
-                new ThemeDescription(listView, 0, new Class[]{TextCheckCell.class}, new String[]{"checkBox"}, null, null, null, Theme.key_switchTrackBlueSelector),
-                new ThemeDescription(listView, 0, new Class[]{TextCheckCell.class}, new String[]{"checkBox"}, null, null, null, Theme.key_switchTrackBlueSelectorChecked),
+        themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{HeaderCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlueHeader));
 
-                new ThemeDescription(listView, 0, new Class[]{NotificationsCheckCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlackText),
-                new ThemeDescription(listView, 0, new Class[]{NotificationsCheckCell.class}, new String[]{"valueTextView"}, null, null, null, Theme.key_windowBackgroundWhiteGrayText2),
-                new ThemeDescription(listView, 0, new Class[]{NotificationsCheckCell.class}, new String[]{"checkBox"}, null, null, null, Theme.key_switchTrack),
-                new ThemeDescription(listView, 0, new Class[]{NotificationsCheckCell.class}, new String[]{"checkBox"}, null, null, null, Theme.key_switchTrackChecked),
+        themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_CELLBACKGROUNDCOLOR | ThemeDescription.FLAG_CHECKTAG, new Class[]{TextCheckCell.class}, null, null, null, Theme.key_windowBackgroundChecked));
+        themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_CELLBACKGROUNDCOLOR | ThemeDescription.FLAG_CHECKTAG, new Class[]{TextCheckCell.class}, null, null, null, Theme.key_windowBackgroundUnchecked));
+        themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{TextCheckCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundCheckText));
+        themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{TextCheckCell.class}, new String[]{"checkBox"}, null, null, null, Theme.key_switchTrackBlue));
+        themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{TextCheckCell.class}, new String[]{"checkBox"}, null, null, null, Theme.key_switchTrackBlueChecked));
+        themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{TextCheckCell.class}, new String[]{"checkBox"}, null, null, null, Theme.key_switchTrackBlueThumb));
+        themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{TextCheckCell.class}, new String[]{"checkBox"}, null, null, null, Theme.key_switchTrackBlueThumbChecked));
+        themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{TextCheckCell.class}, new String[]{"checkBox"}, null, null, null, Theme.key_switchTrackBlueSelector));
+        themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{TextCheckCell.class}, new String[]{"checkBox"}, null, null, null, Theme.key_switchTrackBlueSelectorChecked));
 
-                new ThemeDescription(listView, ThemeDescription.FLAG_BACKGROUNDFILTER, new Class[]{TextInfoPrivacyCell.class}, null, null, null, Theme.key_windowBackgroundGrayShadow),
-                new ThemeDescription(listView, 0, new Class[]{TextInfoPrivacyCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteGrayText4),
+        themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{NotificationsCheckCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlackText));
+        themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{NotificationsCheckCell.class}, new String[]{"valueTextView"}, null, null, null, Theme.key_windowBackgroundWhiteGrayText2));
+        themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{NotificationsCheckCell.class}, new String[]{"checkBox"}, null, null, null, Theme.key_switchTrack));
+        themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{NotificationsCheckCell.class}, new String[]{"checkBox"}, null, null, null, Theme.key_switchTrackChecked));
 
-                new ThemeDescription(listView, 0, new Class[]{PresetChooseView.class}, null, null, null, Theme.key_switchTrack),
-                new ThemeDescription(listView, 0, new Class[]{PresetChooseView.class}, null, null, null, Theme.key_switchTrackChecked),
-                new ThemeDescription(listView, 0, new Class[]{PresetChooseView.class}, null, null, null, Theme.key_windowBackgroundWhiteGrayText),
-        };
+        themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_BACKGROUNDFILTER, new Class[]{TextInfoPrivacyCell.class}, null, null, null, Theme.key_windowBackgroundGrayShadow));
+        themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{TextInfoPrivacyCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteGrayText4));
+
+        themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{SlideChooseView.class}, null, null, null, Theme.key_switchTrack));
+        themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{SlideChooseView.class}, null, null, null, Theme.key_switchTrackChecked));
+        themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{SlideChooseView.class}, null, null, null, Theme.key_windowBackgroundWhiteGrayText));
+
+        return themeDescriptions;
     }
 }

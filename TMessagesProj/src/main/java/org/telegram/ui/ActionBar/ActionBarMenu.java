@@ -182,7 +182,7 @@ public class ActionBarMenu extends LinearLayout {
             View view = getChildAt(a);
             if (view instanceof ActionBarMenuItem) {
                 ActionBarMenuItem item = (ActionBarMenuItem) view;
-                if (item.isSearchField()) {
+                if (item.isSearchField() && item.isSearchFieldVisible()) {
                     if (item.listener == null || item.listener.canCollapseSearch()) {
                         parentActionBar.onSearchFieldVisibilityChanged(false);
                         item.toggleSearch(closeKeyboard);
@@ -220,7 +220,6 @@ public class ActionBarMenu extends LinearLayout {
                 if (item.isSearchField()) {
                     item.setSearchFieldText(text, false);
                     item.getSearchField().setSelection(text.length());
-                    break;
                 }
             }
         }
@@ -234,7 +233,6 @@ public class ActionBarMenu extends LinearLayout {
                 ActionBarMenuItem item = (ActionBarMenuItem) view;
                 if (item.isSearchField()) {
                     item.onSearchPressed();
-                    break;
                 }
             }
         }

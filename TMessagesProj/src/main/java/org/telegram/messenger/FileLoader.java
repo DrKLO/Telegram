@@ -255,7 +255,7 @@ public class FileLoader extends BaseController {
                     uploadSizes.remove(location);
                 }
             }
-            if (delegate != null) {
+            if (delegate != null && estimatedSize != 0) {
                 delegate.fileUploadProgressChanged(location, 0, estimatedSize, encrypted);
             }
             FileUploadOperation operation = new FileUploadOperation(currentAccount, location, encrypted, esimated, type);

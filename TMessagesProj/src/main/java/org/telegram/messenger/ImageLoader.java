@@ -117,7 +117,7 @@ public class ImageLoader {
         }
     }
 
-    private class ThumbGenerateInfo {
+    private static class ThumbGenerateInfo {
         private TLRPC.Document parentDocument;
         private String filter;
         private ArrayList<ImageReceiver> imageReceiverArray = new ArrayList<>();
@@ -790,7 +790,7 @@ public class ImageLoader {
                 boolean limitFps = false;
                 int autoRepeat = 1;
                 int[] colors = null;
-                boolean dice = false;
+                String diceEmoji = null;
                 if (cacheImage.filter != null) {
                     String[] args = cacheImage.filter.split("_");
                     if (args.length >= 2) {
@@ -812,7 +812,7 @@ public class ImageLoader {
                         } else if ("nrs".equals(args[2])) {
                             autoRepeat = 3;
                         } else if ("dice".equals(args[2])) {
-                            dice = true;
+                            diceEmoji = args[3];
                             autoRepeat = 2;
                         }
                     }
@@ -831,8 +831,8 @@ public class ImageLoader {
                     }
                 }
                 RLottieDrawable lottieDrawable;
-                if (dice) {
-                    lottieDrawable = new RLottieDrawable(R.raw.diceloop, w, h);
+                if (diceEmoji != null) {
+                    lottieDrawable = new RLottieDrawable(diceEmoji, w, h);
                 } else {
                     lottieDrawable = new RLottieDrawable(cacheImage.finalFilePath, w, h, precache, limitFps, colors);
                 }
@@ -1903,6 +1903,9 @@ public class ImageLoader {
         if (progress == null) {
             return null;
         }
+        if (progress[1] == 0) {
+            return 0.0f;
+        }
         return Math.min(1f, progress[0] / (float) progress[1]);
     }
 
@@ -2725,6 +2728,7 @@ public class ImageLoader {
                     cacheImage.secureDocument = img.secureDocument;
                     cacheImage.currentAccount = img.currentAccount;
                     cacheImage.finalFilePath = finalFile;
+                    cacheImage.parentObject = img.parentObject;
                     cacheImage.key = key;
                     cacheImage.imageLocation = img.imageLocation;
                     cacheImage.type = type;

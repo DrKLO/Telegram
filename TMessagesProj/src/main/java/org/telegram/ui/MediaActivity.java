@@ -2898,7 +2898,7 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
     }
 
     @Override
-    public ThemeDescription[] getThemeDescriptions() {
+    public ArrayList<ThemeDescription> getThemeDescriptions() {
         ArrayList<ThemeDescription> arrayList = new ArrayList<>();
 
         arrayList.add(new ThemeDescription(fragmentView, 0, null, null, null, null, Theme.key_windowBackgroundWhite));
@@ -2996,6 +2996,6 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
             arrayList.add(new ThemeDescription(mediaPages[a].listView, 0, null, null, new Drawable[]{pinnedHeaderShadowDrawable}, null, Theme.key_windowBackgroundGrayShadow));
         }
 
-        return arrayList.toArray(new ThemeDescription[0]);
+        return arrayList;
     }
 }

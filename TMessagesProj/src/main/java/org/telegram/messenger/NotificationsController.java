@@ -613,11 +613,16 @@ public class NotificationsController extends BaseController {
                 long dialog_id = messageObject.getDialogId();
                 int lower_id = (int) dialog_id;
                 boolean isChannel;
-                if (messageObject.messageOwner.to_id.channel_id != 0) {
-                    mid |= ((long) messageObject.messageOwner.to_id.channel_id) << 32;
-                    isChannel = true;
+                if (messageObject.isFcmMessage()) {
+                    isChannel = messageObject.localChannel;
+                } else if (lower_id < 0) {
+                    TLRPC.Chat chat = getMessagesController().getChat(-lower_id);
+                    isChannel = ChatObject.isChannel(chat) && !chat.megagroup;
                 } else {
                     isChannel = false;
+                }
+                if (messageObject.messageOwner.to_id.channel_id != 0) {
+                    mid |= ((long) messageObject.messageOwner.to_id.channel_id) << 32;
                 }
 
                 MessageObject oldMessageObject = pushMessagesDict.get(mid);
@@ -674,7 +679,10 @@ public class NotificationsController extends BaseController {
                 } else {
                     int notifyOverride = getNotifyOverride(preferences, dialog_id);
                     if (notifyOverride == -1) {
-                        value = isGlobalNotificationsEnabled(dialog_id);
+                        value = isGlobalNotificationsEnabled(dialog_id, isChannel);
+                        /*if (BuildVars.DEBUG_PRIVATE_VERSION && BuildVars.LOGS_ENABLED) {
+                            FileLog.d("global notify settings for " + dialog_id + " = " + value);
+                        }*/
                     } else {
                         value = notifyOverride != 2;
                     }
@@ -729,13 +737,23 @@ public class NotificationsController extends BaseController {
                     delayedPushMessages.clear();
                     showOrUpdateNotification(notifyCheck);
                 } else if (added) {
-                    long dialog_id = messageObjects.get(0).getDialogId();
+                    MessageObject messageObject = messageObjects.get(0);
+                    long dialog_id = messageObject.getDialogId();
+                    Boolean isChannel;
+                    if (messageObject.isFcmMessage()) {
+                        isChannel = messageObject.localChannel;
+                    } else {
+                        isChannel = null;
+                    }
                     int old_unread_count = total_unread_count;
 
                     int notifyOverride = getNotifyOverride(preferences, dialog_id);
                     boolean canAddValue;
                     if (notifyOverride == -1) {
-                        canAddValue = isGlobalNotificationsEnabled(dialog_id);
+                        canAddValue = isGlobalNotificationsEnabled(dialog_id, isChannel);
+                        /*if (BuildVars.DEBUG_PRIVATE_VERSION && BuildVars.LOGS_ENABLED) {
+                            FileLog.d("global notify settings for " + dialog_id + " = " + canAddValue);
+                        }*/
                     } else {
                         canAddValue = notifyOverride != 2;
                     }
@@ -2128,6 +2146,9 @@ public class NotificationsController extends BaseController {
                 notifyOverride = 2;
             }
         }
+        /*if (BuildVars.LOGS_ENABLED && BuildVars.DEBUG_VERSION) {
+            FileLog.d("notify override for " + dialog_id + " = " + notifyOverride);
+        }*/
         return notifyOverride;
     }
 
@@ -2490,7 +2511,11 @@ public class NotificationsController extends BaseController {
             TLRPC.Chat chat = null;
             if (chat_id != 0) {
                 chat = getMessagesController().getChat(chat_id);
-                isChannel = ChatObject.isChannel(chat) && !chat.megagroup;
+                if (chat == null && lastMessageObject.isFcmMessage()) {
+                    isChannel = lastMessageObject.localChannel;
+                } else {
+                    isChannel = ChatObject.isChannel(chat) && !chat.megagroup;
+                }
             }
             TLRPC.FileLocation photoPath = null;
 
@@ -2503,7 +2528,7 @@ public class NotificationsController extends BaseController {
             int notifyOverride = getNotifyOverride(preferences, override_dialog_id);
             boolean value;
             if (notifyOverride == -1) {
-                value = isGlobalNotificationsEnabled(dialog_id);
+                value = isGlobalNotificationsEnabled(dialog_id, isChannel);
             } else {
                 value = notifyOverride != 2;
             }
@@ -3808,17 +3833,23 @@ public class NotificationsController extends BaseController {
         return isGlobalNotificationsEnabled(did, null);
     }
 
-    public boolean isGlobalNotificationsEnabled(long did, TLRPC.Chat chat) {
+    public boolean isGlobalNotificationsEnabled(long did, Boolean forceChannel) {
         int type;
         int lower_id = (int) did;
         if (lower_id < 0) {
-            if (chat == null) {
-                chat = getMessagesController().getChat(-lower_id);
-            }
-            if (ChatObject.isChannel(chat) && !chat.megagroup) {
-                type = TYPE_CHANNEL;
+            if (forceChannel != null) {
+                if (forceChannel) {
+                    type = TYPE_CHANNEL;
+                } else {
+                    type = TYPE_GROUP;
+                }
             } else {
-                type = TYPE_GROUP;
+                TLRPC.Chat chat = getMessagesController().getChat(-lower_id);
+                if (ChatObject.isChannel(chat) && !chat.megagroup) {
+                    type = TYPE_CHANNEL;
+                } else {
+                    type = TYPE_GROUP;
+                }
             }
         } else {
             type = TYPE_PRIVATE;

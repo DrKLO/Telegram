@@ -1210,7 +1210,7 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
                                     if (data != null) {
                                         TLRPC.User user = TLRPC.User.TLdeserialize(data, data.readInt32(false), false);
                                         data.reuse();
-                                        DialogSearchResult dialogSearchResult = dialogsResult.get((long) user.id);
+                                        DialogSearchResult dialogSearchResult = dialogsResult.get(user.id);
                                         if (user.status != null) {
                                             user.status.expires = cursor.intValue(1);
                                         }
@@ -1271,7 +1271,7 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
                     cursor = MessagesStorage.getInstance(currentAccount).getDatabase().queryFinalized("SELECT u.data, u.status, u.name, u.uid FROM users as u INNER JOIN contacts as c ON u.uid = c.uid");
                     while (cursor.next()) {
                         int uid = cursor.intValue(3);
-                        if (dialogsResult.indexOfKey((long) uid) >= 0) {
+                        if (dialogsResult.indexOfKey(uid) >= 0) {
                             continue;
                         }
                         String name = cursor.stringValue(2);

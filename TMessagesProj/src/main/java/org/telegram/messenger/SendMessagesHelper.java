@@ -2167,10 +2167,10 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                         parentFragment.showRequestUrlAlert(res, (TLRPC.TL_messages_requestUrlAuth) request[0], button.url);
                     } else if (response instanceof TLRPC.TL_urlAuthResultAccepted) {
                         TLRPC.TL_urlAuthResultAccepted res = (TLRPC.TL_urlAuthResultAccepted) response;
-                        parentFragment.showOpenUrlAlert(res.url, false);
+                        parentFragment.showOpenUrlAlert(res.url, false, false);
                     } else if (response instanceof TLRPC.TL_urlAuthResultDefault) {
                         TLRPC.TL_urlAuthResultDefault res = (TLRPC.TL_urlAuthResultDefault) response;
-                        parentFragment.showOpenUrlAlert(button.url, true);
+                        parentFragment.showOpenUrlAlert(button.url, false, true);
                     }
                 } else if (button instanceof TLRPC.TL_keyboardButtonBuy) {
                     if (response instanceof TLRPC.TL_payments_paymentForm) {
@@ -2234,7 +2234,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                             }
                             parentFragment.showOpenGameAlert(game, messageObject, res.url, !verified && MessagesController.getNotificationsSettings(currentAccount).getBoolean("askgame_" + uid, true), uid);
                         } else {
-                            parentFragment.showOpenUrlAlert(res.url, false);
+                            parentFragment.showOpenUrlAlert(res.url, false, false);
                         }
                     }
                 }
@@ -2418,6 +2418,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                 } else {
                     if (retryMessageObject.isDice()) {
                         type = 11;
+                        message = retryMessageObject.getDiceEmoji();
                         caption = "";
                     } else if (retryMessageObject.type == 0 || retryMessageObject.isAnimatedEmoji()) {
                         if (retryMessageObject.messageOwner.media instanceof TLRPC.TL_messageMediaGame) {
@@ -2480,8 +2481,9 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                             webPage = null;
                         }
                     }
-                    if (webPage == null && (entities == null || entities.isEmpty()) && message.equals("\uD83C\uDFB2") && encryptedChat == null && scheduleDate == 0) {
+                    if (webPage == null && (entities == null || entities.isEmpty()) && getMessagesController().diceEmojies.contains(message) && encryptedChat == null && scheduleDate == 0) {
                         TLRPC.TL_messageMediaDice mediaDice = new TLRPC.TL_messageMediaDice();
+                        mediaDice.emoticon = message;
                         mediaDice.value = -1;
                         newMsg.media = mediaDice;
                         type = 11;
@@ -3106,9 +3108,14 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                                 inputMediaPoll.flags |= 1;
                             }
                         }
+                        if (poll.results != null && !TextUtils.isEmpty(poll.results.solution)) {
+                            inputMediaPoll.solution = poll.results.solution;
+                            inputMediaPoll.flags |= 2;
+                        }
                         inputMedia = inputMediaPoll;
                     } else if (type == 11) {
                         TLRPC.TL_inputMediaDice inputMediaDice = new TLRPC.TL_inputMediaDice();
+                        inputMediaDice.emoticon = message;
                         inputMedia = inputMediaDice;
                     }
 
@@ -5719,6 +5726,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
 
             ArrayList<String> sendAsDocuments = null;
             ArrayList<String> sendAsDocumentsOriginal = null;
+            ArrayList<Uri> sendAsDocumentsUri = null;
             ArrayList<String> sendAsDocumentsCaptions = null;
             ArrayList<ArrayList<TLRPC.MessageEntity>> sendAsDocumentsEntities = null;
 
@@ -6084,9 +6092,11 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                                 sendAsDocumentsOriginal = new ArrayList<>();
                                 sendAsDocumentsCaptions = new ArrayList<>();
                                 sendAsDocumentsEntities = new ArrayList<>();
+                                sendAsDocumentsUri = new ArrayList<>();
                             }
                             sendAsDocuments.add(tempPath);
                             sendAsDocumentsOriginal.add(originalPath);
+                            sendAsDocumentsUri.add(info.uri);
                             sendAsDocumentsCaptions.add(info.caption);
                             sendAsDocumentsEntities.add(info.entities);
                         } else {
@@ -6191,9 +6201,11 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                                     sendAsDocumentsOriginal = new ArrayList<>();
                                     sendAsDocumentsCaptions = new ArrayList<>();
                                     sendAsDocumentsEntities = new ArrayList<>();
+                                    sendAsDocumentsUri = new ArrayList<>();
                                 }
                                 sendAsDocuments.add(tempPath);
                                 sendAsDocumentsOriginal.add(originalPath);
+                                sendAsDocumentsUri.add(info.uri);
                                 sendAsDocumentsCaptions.add(info.caption);
                                 sendAsDocumentsEntities.add(info.entities);
                             }
@@ -6226,7 +6238,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
             }
             if (sendAsDocuments != null && !sendAsDocuments.isEmpty()) {
                 for (int a = 0; a < sendAsDocuments.size(); a++) {
-                    prepareSendingDocumentInternal(accountInstance, sendAsDocuments.get(a), sendAsDocumentsOriginal.get(a), null, extension, dialog_id, reply_to_msg, sendAsDocumentsCaptions.get(a), sendAsDocumentsEntities.get(a), editingMessageObject, forceDocument, notify, scheduleDate);
+                    prepareSendingDocumentInternal(accountInstance, sendAsDocuments.get(a), sendAsDocumentsOriginal.get(a), sendAsDocumentsUri.get(a), extension, dialog_id, reply_to_msg, sendAsDocumentsCaptions.get(a), sendAsDocumentsEntities.get(a), editingMessageObject, forceDocument, notify, scheduleDate);
                 }
             }
             if (BuildVars.LOGS_ENABLED) {

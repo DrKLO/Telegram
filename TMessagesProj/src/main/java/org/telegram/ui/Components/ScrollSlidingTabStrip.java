@@ -15,6 +15,7 @@ import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Paint.Style;
 import android.graphics.drawable.Drawable;
+import android.graphics.drawable.GradientDrawable;
 import android.os.Build;
 import android.os.SystemClock;
 import android.transition.AutoTransition;
@@ -50,6 +51,11 @@ public class ScrollSlidingTabStrip extends HorizontalScrollView {
         void onPageSelected(int page);
     }
 
+    public enum Type {
+        LINE, TAB
+    }
+
+    private Type type = Type.LINE;
     private LinearLayout.LayoutParams defaultTabLayoutParams;
     private LinearLayout.LayoutParams defaultExpandLayoutParams;
     private LinearLayout tabsContainer;
@@ -73,6 +79,7 @@ public class ScrollSlidingTabStrip extends HorizontalScrollView {
     private int indicatorColor = 0xff666666;
     private int underlineColor = 0x1a000000;
     private int indicatorHeight;
+    private GradientDrawable indicatorDrawable = new GradientDrawable();
 
     private int scrollOffset = AndroidUtilities.dp(52);
     private int underlineHeight = AndroidUtilities.dp(2);
@@ -103,6 +110,25 @@ public class ScrollSlidingTabStrip extends HorizontalScrollView {
 
     public void setDelegate(ScrollSlidingTabStripDelegate scrollSlidingTabStripDelegate) {
         delegate = scrollSlidingTabStripDelegate;
+    }
+
+    public Type getType() {
+        return type;
+    }
+
+    public void setType(Type type) {
+        if (type != null && this.type != type) {
+            this.type = type;
+            switch (type) {
+                case LINE:
+                    indicatorDrawable.setCornerRadius(0);
+                    break;
+                case TAB:
+                    float rad = AndroidUtilities.dpf2(3);
+                    indicatorDrawable.setCornerRadii(new float[]{rad, rad, rad, rad, 0, 0, 0, 0});
+                    break;
+            }
+        }
     }
 
     public void removeTabs() {
@@ -452,12 +478,20 @@ public class ScrollSlidingTabStrip extends HorizontalScrollView {
                 invalidate();
             }
 
-            rectPaint.setColor(indicatorColor);
-            if (indicatorHeight == 0) {
-                canvas.drawRect(lineLeft, 0, lineLeft + width, height, rectPaint);
-            } else {
-                canvas.drawRect(lineLeft, height - indicatorHeight, lineLeft + width, height, rectPaint);
+            switch (type) {
+                case LINE:
+                    if (indicatorHeight == 0) {
+                        indicatorDrawable.setBounds((int) lineLeft, 0, (int) lineLeft + width, height);
+                    } else {
+                        indicatorDrawable.setBounds((int) lineLeft, height - indicatorHeight, (int) lineLeft + width, height);
+                    }
+                    break;
+                case TAB:
+                    indicatorDrawable.setBounds((int) lineLeft + AndroidUtilities.dp(6), height - AndroidUtilities.dp(3), (int) lineLeft + width - AndroidUtilities.dp(6), height);
+                    break;
             }
+            indicatorDrawable.setColor(indicatorColor);
+            indicatorDrawable.draw(canvas);
         }
     }
 

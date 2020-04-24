@@ -79,15 +79,19 @@ public class HeaderCell extends FrameLayout {
         super.onMeasure(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED));
     }
 
-    public void setText(String text) {
+    public void setText(CharSequence text) {
         textView.setText(text);
     }
 
-    public void setText2(String text) {
+    public void setText2(CharSequence text) {
         if (textView2 == null) {
             return;
         }
         textView2.setText(text);
+    }
+
+    public TextView getTextView() {
+        return textView;
     }
 
     public SimpleTextView getTextView2() {

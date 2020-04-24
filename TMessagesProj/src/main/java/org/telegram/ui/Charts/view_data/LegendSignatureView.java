@@ -208,11 +208,11 @@ public class LegendSignatureView extends FrameLayout {
         if (v < 10_000) {
             return String.format("%d", v);
         }
-        while (num_ >= 10_000 && count < ChartHorizontalLinesData.s.length - 1) {
+        while (num_ >= 10_000 && count < AndroidUtilities.numbersSignatureArray.length - 1) {
             num_ /= 1000;
             count++;
         }
-        return String.format("%.2f", num_) + ChartHorizontalLinesData.s[count];
+        return String.format("%.2f", num_) + AndroidUtilities.numbersSignatureArray[count];
     }
 
 

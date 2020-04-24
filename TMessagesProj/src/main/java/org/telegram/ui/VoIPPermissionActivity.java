@@ -9,34 +9,34 @@ import android.os.Bundle;
 import org.telegram.messenger.voip.VoIPService;
 import org.telegram.ui.Components.voip.VoIPHelper;
 
-public class VoIPPermissionActivity extends Activity{
+public class VoIPPermissionActivity extends Activity {
 	@Override
-	protected void onCreate(Bundle savedInstanceState){
+	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 
 		requestPermissions(new String[]{Manifest.permission.RECORD_AUDIO}, 101);
 	}
 
 	@Override
-	public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults){
-		if(requestCode==101){
-			if(grantResults.length>0 && grantResults[0]==PackageManager.PERMISSION_GRANTED){
-				if(VoIPService.getSharedInstance()!=null)
+	public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+		if (requestCode == 101) {
+			if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+				if (VoIPService.getSharedInstance() != null)
 					VoIPService.getSharedInstance().acceptIncomingCall();
 				finish();
 				startActivity(new Intent(this, VoIPActivity.class));
-			}else{
-				if(!shouldShowRequestPermissionRationale(Manifest.permission.RECORD_AUDIO)){
-					if(VoIPService.getSharedInstance()!=null)
+			} else {
+				if (!shouldShowRequestPermissionRationale(Manifest.permission.RECORD_AUDIO)) {
+					if (VoIPService.getSharedInstance() != null)
 						VoIPService.getSharedInstance().declineIncomingCall();
-					VoIPHelper.permissionDenied(this, new Runnable(){
+					VoIPHelper.permissionDenied(this, new Runnable() {
 						@Override
-						public void run(){
+						public void run() {
 							finish();
 						}
 					});
 					return;
-				}else{
+				} else {
 					finish();
 				}
 			}

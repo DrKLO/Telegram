@@ -35,7 +35,7 @@ import java.util.Map;
 
 public class Track {
 
-    private class SamplePresentationTime {
+    private static class SamplePresentationTime {
 
         private int index;
         private long presentationTime;
@@ -297,7 +297,7 @@ public class Track {
             if (presentationTime.index != 0) {
                 duration += delta;
             }
-            if (delta != 0) {
+            if (delta > 0 && delta < Integer.MAX_VALUE) {
                 minDelta = Math.min(minDelta, delta);
             }
             if (presentationTime.index != a) {

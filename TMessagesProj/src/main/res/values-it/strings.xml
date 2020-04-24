@@ -26,7 +26,7 @@
     <string name="SentAppCode">Abbiamo inviato il codice su **Telegram** in un tuo altro dispositivo.</string>
     <string name="SentAppCodeTitle">Controlla i tuoi messaggi Telegram</string>
     <string name="SentSmsCodeTitle">Inserisci codice</string>
-    <string name="SentCallCode">" Stiamo chiamando il tuo numero **%1$s**.\n\nNon rispondere alla chiamata, Telegram farà tutto in automatico."</string>
+    <string name="SentCallCode">Stiamo chiamando il tuo numero **%1$s**.\n\nNon rispondere alla chiamata, Telegram farà tutto in automatico.</string>
     <string name="SentCallOnly">Chiameremo il tuo numero **%1$s** per dettarti un codice.</string>
     <string name="CallText">Telegram ti chiamerà tra %1$d:%2$02d</string>
     <string name="SmsText">Ti invieremo un SMS tra %1$d:%2$02d</string>
@@ -198,7 +198,7 @@
     <string name="SendGifPreview">Invia GIF</string>
     <string name="ViewPackPreview">Visualizza pacchetto</string>
     <string name="PinToTop">Fissa in alto</string>
-    <string name="PinToTopLimitReached2">Spiacenti, puoi fissare in alto solo %1$s nella lista principale. Puoi fissare in alto più chat nelle cartelle di chat e nel tuo archivio.</string>
+    <string name="PinToTopLimitReached2">Spiacenti, puoi fissare in alto solo %1$s nella lista principale. Puoi fissare più chat nelle cartelle chat e nel tuo archivio.</string>
     <string name="PinFolderLimitReached">Spiacenti, non puoi fissare in alto altre chat.</string>
     <string name="UnpinFromTop">Togli dall\'alto</string>
     <string name="MarkAsUnread">Segna come non letto</string>
@@ -290,8 +290,8 @@
     <string name="MegaPrivateInfo">È possibile unirsi ai gruppi privati solo se sei stato invitato o se hai un link d\'invito.</string>
     <string name="ChannelLinkTitle">Link permanente</string>
     <string name="ChannelInviteLinkTitle">Link d\'invito</string>
-    <string name="ChannelAddMembers">Aggiungi membri</string>
     <string name="GroupAddMembers">Aggiungi membri</string>
+    <string name="ChannelAddSubscribers">Aggiungi iscritti</string>
     <string name="LeaveChannel">Lascia il canale</string>
     <string name="LeaveChannelMenu">Lascia il canale</string>
     <string name="ChannelSettings">Impostazioni</string>
@@ -330,7 +330,7 @@
     <string name="ChannelAdministrators">Amministratori</string>
     <string name="ChannelDelete">Elimina canale</string>
     <string name="ChannelDeleteMenu">Elimina canale</string>
-    <string name="ChannelDeleteAlert">Aspetta! Eliminando il canale rimuoverai tutti i membri e tutti i messaggi saranno persi. Vuoi comunque eliminare il canale?</string>
+    <string name="ChannelDeleteAlert">Aspetta! Eliminando il canale rimuoverai tutti gli iscritti e tutti i messaggi saranno persi. Vuoi comunque eliminare il canale?</string>
     <string name="ChannelLeaveAlert">Sei sicuro di voler lasciare il canale?</string>
     <string name="ChannelLeaveAlertWithName">Sei sicuro di voler lasciare **%1$s**?</string>
     <string name="ChannelDeleteInfo">Perderai tutti i messaggi in questo canale.</string>
@@ -398,7 +398,7 @@
     <string name="WhoCanAddMembersAllMembers">Tutti i membri</string>
     <string name="WhoCanAddMembersAdmins">Solo gli amministratori</string>
     <string name="ChannelNotifyMembersInfoOn">I post saranno notificati agli iscritti</string>
-    <string name="ChannelNotifyMembersInfoOff">I membri riceveranno una notifica silenziosa</string>
+    <string name="ChannelNotifyMembersInfoOff">Gli iscritti riceveranno una notifica silenziosa</string>
     <string name="ChannelSignMessages">Firma messaggi</string>
     <string name="ChannelSignMessagesInfo">Aggiungi i nomi degli amministratori nei messaggi che pubblicano.</string>
     <string name="EditAdmin">Permessi amministratore</string>
@@ -531,9 +531,9 @@
     <string name="NewPoll">Nuovo sondaggio</string>
     <string name="NewQuiz">Nuovo quiz</string>
     <string name="Poll">Sondaggio</string>
-    <string name="Question">Domanda</string>
+    <string name="PollQuestion">Domanda sondaggio</string>
     <string name="QuestionHint">Fai una domanda</string>
-    <string name="PollOptions">Opzioni sondaggio</string>
+    <string name="AnswerOptions">Opzioni risposta</string>
     <string name="QuizAnswers">Risposte quiz</string>
     <string name="PollResults">Risultati sondaggio</string>
     <string name="PollAnonymous">Voto anonimo</string>
@@ -722,6 +722,7 @@
     <string name="SdCard">Scheda SD</string>
     <string name="Folder">Cartella</string>
     <string name="RecentFiles">File recenti</string>
+    <string name="RecentFilesAZ">File A-Z</string>
     <string name="NoFilesFound">Nessun risultato trovato</string>
     <string name="NoFilesFoundInfo">Non ci sono risultati per **%1$s** nella cartella corrente.</string>
     <string name="NoFilesInfo">Questa cartella è vuota.</string>
@@ -730,6 +731,7 @@
     <string name="AppFolderInfo">Sfoglia la cartella dell\'app</string>
     <string name="InternalFolderInfo">Sfoglia i tuoi file di sistema</string>
     <string name="ExternalFolderInfo">Sfoglia il tuo archivio esterno</string>
+    <string name="SearchMusic">Cerca musica</string>
     <!--group stickers-->
     <string name="GroupStickers">Sticker del gruppo</string>
     <string name="ChooseFromYourStickers">Scegli dai tuoi sticker</string>
@@ -799,7 +801,8 @@
     <string name="YouLeft">Hai lasciato il gruppo</string>
     <string name="DeleteThisGroup">Elimina questo gruppo</string>
     <string name="DeleteThisChat">Elimina questa chat</string>
-    <string name="DeleteTheseChats">Elimina chat</string>
+    <string name="DeleteThisChatBothSides">Elimina questa chat</string>
+    <string name="DeleteTheseChatsBothSides">Elimina chat</string>
     <string name="SlideToCancel">ANNULLA</string>
     <string name="SaveToDownloads">Salva nei download</string>
     <string name="SaveToGIFs">Salva nelle GIF</string>
@@ -916,10 +919,10 @@
     <string name="AttachMediaRestricted">Gli amministratori di questo gruppo ti hanno vietato di inviare media qui fino al %1$s</string>
     <string name="AttachInlineRestricted">Gli amministratori di questo gruppo ti hanno vietato di inviare contenuti inline qui fino al %1$s</string>
     <string name="AttachStickersRestricted">Gli amministratori di questo gruppo ti hanno vietato di inviare sticker qui fino al %1$s</string>
-    <string name="AttachGifRestricted">Gli amministratori di questo gruppo ti hanno vietato di inviare GIF qui fino a %1$s.</string>
+    <string name="AttachGifRestricted">Gli amministratori di questo gruppo ti hanno vietato di inviare GIF qui fino al %1$s.</string>
     <string name="SendMessageRestricted">Gli amministratori di questo gruppo ti hanno vietato di scrivere qui fino al %1$s</string>
     <string name="AttachMediaRestrictedForever">Gli amministratori di questo gruppo ti hanno vietato di inviare media qui.</string>
-    <string name="AttachInlineRestrictedForever">Gli amministratori di questo gruppo ti hanno vietato di inviare contenuti inline qui</string>
+    <string name="AttachInlineRestrictedForever">Gli amministratori di questo gruppo ti hanno vietato di inviare contenuti inline qui.</string>
     <string name="AttachStickersRestrictedForever">Gli amministratori di questo gruppo ti hanno vietato di inviare sticker.</string>
     <string name="AttachGifRestrictedForever">Gli amministratori di questo gruppo ti hanno vietato di inviare GIF.</string>
     <string name="SendMessageRestrictedForever">Gli amministratori di questo gruppo ti hanno vietato di scrivere qui.</string>
@@ -932,6 +935,7 @@
     <string name="ApkRestricted">L\'installazione di APK è disattivata per questa app. Puoi attivarla nelle impostazioni di sistema.</string>
     <string name="UnreadMessages">Messaggi non letti</string>
     <string name="SearchStickersHint">Cerca set di sticker</string>
+    <string name="SearchTrendingStickersHint">Cerca sticker in primo piano</string>
     <string name="SearchEmojiHint">Cerca emoji</string>
     <string name="URL">URL</string>
     <string name="MapPreviewProvider">Fornitore anteprima mappa</string>
@@ -969,7 +973,10 @@
     <string name="TextSelectionHit">Premi la **parola**, quindi muovi il cursore per selezionare altro testo da copiare.</string>
     <string name="CardNumberCopied">Numero carta copiato negli appunti</string>
     <string name="CopyCardNumber">Copia</string>
-    <string name="DiceInfo">Invia l\'emoji &#127922; in qualsiasi chat per ricevere un numero casuale da Telegram.</string>
+    <string name="DiceInfo2">Invia l\'emoji **:dice:** in qualsiasi chat per lanciare un dado.</string>
+    <string name="DartInfo">L\'invia l\'emoji **:darts:** per tentare la fortuna.</string>
+    <string name="DiceEmojiInfo">Invia l\'emoji %1$s per tentare la fortuna.</string>
+    <string name="SendDice">INVIA</string>Send a dart emoji
     <!--notification-->
     <string name="MessageLifetimeChanged">%1$s ha impostato il timer di autodistruzione a %2$s</string>
     <string name="MessageLifetimeChangedOutgoing">Hai impostato il timer di autodistruzione a %1$s</string>
@@ -1096,6 +1103,7 @@
     <string name="TodayAt">alle</string>
     <string name="YesterdayAt">ieri alle</string>
     <string name="TodayAtFormatted">alle %1$s</string>
+    <string name="TodayAtFormattedWithToday">oggi alle %1$s</string>
     <string name="YesterdayAtFormatted">ieri alle %1$s</string>
     <string name="Online">in linea</string>
     <string name="LastSeen">ultimo accesso</string>
@@ -1121,7 +1129,7 @@
     <string name="PhoneNumberSearch">Numero di telefono</string>
     <!--group create view-->
     <string name="SendMessageTo">Aggiungi persone...</string>
-    <string name="SoftUserLimitAlert">Potrai aggiungere più utenti dopo aver creato il gruppo e averlo convertito in supergruppo.</string>
+    <string name="SoftUserLimitAlert">Potrai aggiungere altri membri dopo aver creato il gruppo.</string>
     <string name="EnterGroupNamePlaceholder">Inserisci il nome del gruppo</string>
     <string name="GroupName">Nome del gruppo</string>
     <string name="MembersCountZero">fino a %1$s</string>
@@ -1255,6 +1263,7 @@
     <string name="RecentStickers">Usati di recente</string>
     <string name="FavoriteStickers">Preferiti</string>
     <string name="CurrentGroupStickers">Sticker del gruppo</string>
+    <string name="OtherStickers">Altri sticker</string>
     <string name="DeleteFromFavorites">Elimina dai preferiti</string>
     <string name="DeleteFromRecent">Elimina dai recenti</string>
     <string name="AddToMasks">Aggiungi alle maschere</string>
@@ -1433,6 +1442,8 @@
     <string name="ResetNotificationsAlert">Sei sicuro di voler ripristinare tutte le impostazioni di notifica sui valori di default?</string>
     <string name="TextSizeHeader">Dimensione testo messaggio</string>
     <string name="AskAQuestion">Fai una domanda</string>
+    <string name="AddAnExplanation">Aggiungi una spiegazione</string>
+    <string name="AddAnExplanationInfo">Gli utenti vedranno questo testo dopo aver scelto l\'opzione sbagliata, utile per scopi educativi.</string>
     <string name="EnableAnimations">Attiva animazioni</string>
     <string name="ChatSettings">Impostazioni chat</string>
     <string name="Devices">Dispositivi</string>
@@ -1928,7 +1939,7 @@
     <string name="PassportResidence">Residenza</string>
     <string name="PassportSelfie">Selfie</string>
     <string name="PassportRequiredDocuments">Documenti richiesti</string>
-    <string name="PassportSelfieInfo">Carica un tuo selfie mentre reggi il documento.</string>
+    <string name="PassportSelfieInfo">Carica un tuo selfie mentre reggi il documento</string>
     <string name="PassportTranslation">Traduzione</string>
     <string name="PassportFrontSide">Lato frontale</string>
     <string name="PassportFrontSideInfo">Carica una foto del lato frontale del documento</string>
@@ -2051,7 +2062,7 @@
     <!--filters-->
     <string name="Filters">Cartelle</string>
     <string name="FiltersSetup">Imposta</string>
-    <string name="FiltersSetupPinAlert">Set Up Folders</string>
+    <string name="FiltersSetupPinAlert">Imposta cartelle</string>
     <string name="CreateNewFilter">Crea nuova cartella</string>
     <string name="CreateNewFilterInfo">Crea cartelle per diversi gruppi di chat e passa velocemente da una all\'altra.</string>
     <string name="FilterRecommended">Cartelle consigliate</string>
@@ -2086,7 +2097,7 @@
     <string name="FilterExcludeInfo">Scegli le chat e i tipi di chat che non appariranno in questa cartella.</string>
     <string name="FilterSecretChats">Chat segrete</string>
     <string name="FilterBots">Bot</string>
-    <string name="FilterAddingChats">Aggiungo chat</string>
+    <string name="FilterAddingChats">Aggiungo le chat</string>
     <string name="FilterAddingChatsInfo">Per favore attendi qualche momento mentre riempiamo questa cartella per te...</string>
     <string name="FilterNoChatsToDisplay">Nessuna chat trovata</string>
     <string name="FilterNoChatsToDisplayInfo">Al momento non ci sono chat nella cartella.</string>
@@ -2118,6 +2129,8 @@
     <string name="FilterRemoveInclusionUserText">Sei sicuro di voler rimuovere \"%1$s\" dalla lista sempre incluse?</string>
     <string name="FilterAvailableTitle">Cartelle chat</string>
     <string name="FilterAvailableText">Apri *Impostazioni &gt; Cartelle* per organizzare le tue chat in cartelle.</string>
+    <string name="FilterNameNonMuted">Importanti</string>
+    <string name="FilterNameUnread">Non lette</string>
     <!--passcode view-->
     <string name="Passcode">Codice di blocco</string>
     <string name="ChangePasscode">Cambia codice</string>
@@ -2302,7 +2315,7 @@
     <string name="AreYouSureDeleteVideo">Sei sicuro di voler eliminare questo video?</string>
     <string name="AreYouSureDeleteGIFTitle">Elimina GIF</string>
     <string name="AreYouSureDeleteGIF">Sei sicuro di voler eliminare questa GIF?</string>
-    <string name="DiscardChanges">Annullare le modifiche?</string>
+    <string name="DiscardChanges">Scartare le modifiche?</string>
     <string name="ClearSearch">Cancellare la cronologia di ricerca?</string>
     <string name="ClearSearchAlert">Sei sicuro di voler cancellare la tua cronologia di ricerca?</string>
     <string name="ClearSearchAlertTitle">Cancella cronologia chat</string>
@@ -2679,6 +2692,7 @@
     <string name="AreYouSureDeleteAndExitName">Sei sicuro di voler eliminare e lasciare il gruppo **%1$s**?</string>
     <string name="AreYouSureDeleteThisChat">Sei sicuro di voler eliminare questa chat?</string>
     <string name="AreYouSureDeleteThisChatWithUser">Sei sicuro di voler eliminare la chat con **%1$s**?</string>
+    <string name="AreYouSureDeleteThisChatWithBot">Sei sicuro di voler eliminare la chat con **%1$s** e bloccarlo?</string>
     <string name="AreYouSureDeleteThisChatSavedMessages">Sei sicuro di voler eliminare i **Messaggi salvati**?</string>
     <string name="AreYouSureDeleteThisChatWithSecretUser">Sei sicuro di voler eliminare la chat segreta con **%1$s**?</string>
     <string name="AreYouSureDeleteThisChatWithGroup">Sei sicuro di voler eliminare la chat **%1$s**?</string>
@@ -2775,6 +2789,20 @@
     <string name="LoadingStats">Carico le statistiche...</string>
     <string name="LoadingStatsDescription">Per favore attendi qualche momento mentre generiamo i grafici.</string>
     <string name="TopHoursChartTitle">Visualizzazioni per orario (UTC)</string>
+    <string name="SlideUpToLock">Scorri in alto per continuare a registrare</string>
+    <string name="NotificationsChartTitle">Notifiche</string>
+    <string name="DeviceStorage">Archivio dispositivo</string>
+    <string name="TotalDeviceFreeSize">%s Liberi</string>
+    <string name="ClearTelegramCache">Svuota la cache di Telegram</string>
+    <string name="StatisticOverview">Panoramica</string>
+    <string name="ViewsPerPost">Visualizzazioni per post</string>
+    <string name="SharesPerPost">Condivisioni per post</string>
+    <string name="EnabledNotifications">Notifiche attivate</string>
+    <string name="ClearLocalDatabase">Cancella database locale</string>
+    <string name="TelegramCacheSize">%s Cache di Telegram</string>
+    <string name="LocalDatabaseSize">%s Database locale di Telegram</string>
+    <string name="CacheWasCleared">%s liberati sul tuo dispositivo!</string>
+    <string name="TotalDeviceSize">%s Altri dati</string>
     <!--Intro view-->
     <string name="Page1Title">Telegram</string>
     <string name="Page2Title">Veloce</string>
@@ -3425,5 +3453,4 @@
     <string name="RemindTodayAt">\'Ricorda oggi alle\' HH:mm</string>
     <string name="RemindDayAt">\'Ricorda il\' d MMM \'alle\' HH:mm</string>
     <string name="RemindDayYearAt">\'Ricorda il\' d MMM yyyy \'alle\' HH:mm</string>
-    <string name="SlideUpToLock">Scorri in alto per continuare a registrare</string>
 </resources>

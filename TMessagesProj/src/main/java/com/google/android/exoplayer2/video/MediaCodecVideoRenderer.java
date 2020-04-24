@@ -506,7 +506,11 @@ public class MediaCodecVideoRenderer extends MediaCodecRenderer {
       MediaCodec codec = getCodec();
       if (codec != null) {
         if (Util.SDK_INT >= 23 && surface != null && !codecNeedsSetOutputSurfaceWorkaround) {
-          setOutputSurfaceV23(codec, surface);
+          try {
+            setOutputSurfaceV23(codec, surface);
+          } catch (Throwable e) {
+            throw new SurfaceNotValidException(e);
+          }
         } else {
           releaseCodec();
           maybeInitCodec();
