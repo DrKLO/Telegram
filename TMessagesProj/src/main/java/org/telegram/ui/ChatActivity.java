@@ -15732,6 +15732,9 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     }
                     progressDialog[0] = null;
                     if (response instanceof TLRPC.TL_payments_bankCardData) {
+                        if (getParentActivity() == null) {
+                            return;
+                        }
                         TLRPC.TL_payments_bankCardData data = (TLRPC.TL_payments_bankCardData) response;
                         BottomSheet.Builder builder = new BottomSheet.Builder(getParentActivity());
                         ArrayList<CharSequence> arrayList = new ArrayList<>();

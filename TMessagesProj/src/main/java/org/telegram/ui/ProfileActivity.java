@@ -1453,7 +1453,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 int height = MeasureSpec.getSize(heightMeasureSpec);
                 boolean changed = false;
                 if (lastMeasuredContentWidth != getMeasuredWidth() || lastMeasuredContentHeight != getMeasuredHeight()) {
-                    changed = lastMeasuredContentWidth != 0;
+                    changed = lastMeasuredContentWidth != 0 && lastMeasuredContentWidth != getMeasuredWidth();
                     listContentHeight = 0;
                     int count = listAdapter.getItemCount();
                     lastMeasuredContentWidth = getMeasuredWidth();
@@ -1462,12 +1462,13 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     int hs = MeasureSpec.makeMeasureSpec(listView.getMeasuredHeight(), MeasureSpec.UNSPECIFIED);
                     positionToOffset.clear();
                     for (int i = 0; i < count; i++) {
-                        RecyclerView.ViewHolder holder = listAdapter.createViewHolder(null, listAdapter.getItemViewType(i));
-                        listAdapter.onBindViewHolder(holder, i);
+                        int type = listAdapter.getItemViewType(i);
                         positionToOffset.put(i, listContentHeight);
-                        if (holder.itemView instanceof SharedMediaLayout) {
+                        if (type == 13) {
                             listContentHeight += listView.getMeasuredHeight();
                         } else {
+                            RecyclerView.ViewHolder holder = listAdapter.createViewHolder(null, type);
+                            listAdapter.onBindViewHolder(holder, i);
                             holder.itemView.measure(ws, hs);
                             listContentHeight += holder.itemView.getMeasuredHeight();
                         }
@@ -1548,7 +1549,10 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                         top = view.getTop();
                     }
                     boolean layout = false;
-                    if (!changed && pos != RecyclerView.NO_POSITION) {
+                    if (actionBar.isSearchFieldVisible()) {
+                        layoutManager.scrollToPositionWithOffset(sharedMediaRow, -paddingTop);
+                        layout = true;
+                    } else if (!changed && pos != RecyclerView.NO_POSITION) {
                         layoutManager.scrollToPositionWithOffset(pos, top - paddingTop);
                         layout = true;
                     }

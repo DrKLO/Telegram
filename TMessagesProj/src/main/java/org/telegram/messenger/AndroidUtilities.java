@@ -2894,6 +2894,15 @@ public class AndroidUtilities {
         return null;
     }
 
+    public static void fixGoogleMapsBug() { //https://issuetracker.google.com/issues/154855417#comment301
+        SharedPreferences googleBug = ApplicationLoader.applicationContext.getSharedPreferences("google_bug_154855417", Context.MODE_PRIVATE);
+        if (!googleBug.contains("fixed")) {
+            File corruptedZoomTables = new File(ApplicationLoader.getFilesDirFixed(), "ZoomTables.data");
+            corruptedZoomTables.delete();
+            googleBug.edit().putBoolean("fixed", true).apply();
+        }
+    }
+
     public static CharSequence concat(CharSequence... text) {
         if (text.length == 0) {
             return "";

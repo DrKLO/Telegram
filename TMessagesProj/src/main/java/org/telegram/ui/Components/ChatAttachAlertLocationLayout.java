@@ -370,6 +370,7 @@ public class ChatAttachAlertLocationLayout extends ChatAttachAlert.AttachAlertLa
 
     public ChatAttachAlertLocationLayout(ChatAttachAlert alert, Context context) {
         super(alert, context);
+        AndroidUtilities.fixGoogleMapsBug();
         ChatActivity chatActivity = (ChatActivity) parentAlert.baseFragment;
         dialogId = chatActivity.getDialogId();
         if (chatActivity.getCurrentEncryptedChat() == null && !chatActivity.isInScheduleMode() && !UserObject.isUserSelf(chatActivity.getCurrentUser())) {
