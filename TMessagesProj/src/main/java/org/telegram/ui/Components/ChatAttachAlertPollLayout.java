@@ -94,9 +94,9 @@ public class ChatAttachAlertPollLayout extends ChatAttachAlert.AttachAlertLayout
 
     private int topPadding;
 
-    private static final int MAX_QUESTION_LENGTH = 255;
-    private static final int MAX_ANSWER_LENGTH = 100;
-    private static final int MAX_SOLUTION_LENGTH = 200;
+    public static final int MAX_QUESTION_LENGTH = 255;
+    public static final int MAX_ANSWER_LENGTH = 100;
+    public static final int MAX_SOLUTION_LENGTH = 200;
 
     private static final int done_button = 40;
 

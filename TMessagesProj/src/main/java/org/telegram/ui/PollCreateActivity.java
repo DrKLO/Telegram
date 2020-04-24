@@ -38,6 +38,7 @@ import org.telegram.ui.Cells.TextCell;
 import org.telegram.ui.Cells.TextCheckCell;
 import org.telegram.ui.Cells.TextInfoPrivacyCell;
 import org.telegram.ui.Components.AlertsCreator;
+import org.telegram.ui.Components.ChatAttachAlertPollLayout;
 import org.telegram.ui.Components.CombinedDrawable;
 import org.telegram.ui.Components.EditTextBoldCursor;
 import org.telegram.ui.Components.HintView;
@@ -92,10 +93,6 @@ public class PollCreateActivity extends BaseFragment {
     private int quizRow;
     private int settingsSectionRow;
     private int rowCount;
-
-    private static final int MAX_QUESTION_LENGTH = 255;
-    private static final int MAX_ANSWER_LENGTH = 100;
-    private static final int MAX_SOLUTION_LENGTH = 255;
 
     private static final int done_button = 1;
 
@@ -428,15 +425,15 @@ public class PollCreateActivity extends BaseFragment {
                 }
             }
         }
-        if (!TextUtils.isEmpty(getFixedString(solutionString)) && solutionString.length() > MAX_SOLUTION_LENGTH) {
+        if (!TextUtils.isEmpty(getFixedString(solutionString)) && solutionString.length() > ChatAttachAlertPollLayout.MAX_SOLUTION_LENGTH) {
             enabled = false;
-        } else if (TextUtils.isEmpty(getFixedString(questionString)) || questionString.length() > MAX_QUESTION_LENGTH) {
+        } else if (TextUtils.isEmpty(getFixedString(questionString)) || questionString.length() > ChatAttachAlertPollLayout.MAX_QUESTION_LENGTH) {
             enabled = false;
         } else {
             int count = 0;
             for (int a = 0; a < answers.length; a++) {
                 if (!TextUtils.isEmpty(getFixedString(answers[a]))) {
-                    if (answers[a].length() > MAX_ANSWER_LENGTH) {
+                    if (answers[a].length() > ChatAttachAlertPollLayout.MAX_ANSWER_LENGTH) {
                         count = 0;
                         break;
                     }
@@ -527,36 +524,33 @@ public class PollCreateActivity extends BaseFragment {
     }
 
     private void setTextLeft(View cell, int index) {
-        if (cell instanceof HeaderCell) {
-            HeaderCell headerCell = (HeaderCell) cell;
-            if (index == -1) {
-                int left = MAX_QUESTION_LENGTH - (questionString != null ? questionString.length() : 0);
-                if (left <= MAX_QUESTION_LENGTH - MAX_QUESTION_LENGTH * 0.7f) {
-                    headerCell.setText2(String.format("%d", left));
-                    SimpleTextView textView = headerCell.getTextView2();
-                    String key = left < 0 ? Theme.key_windowBackgroundWhiteRedText5 : Theme.key_windowBackgroundWhiteGrayText3;
-                    textView.setTextColor(Theme.getColor(key));
-                    textView.setTag(key);
-                } else {
-                    headerCell.setText2("");
-                }
-            } else {
-                headerCell.setText2("");
-            }
-        } else if (cell instanceof PollEditTextCell) {
-            if (index >= 0) {
-                PollEditTextCell textCell = (PollEditTextCell) cell;
-                int left = MAX_ANSWER_LENGTH - (answers[index] != null ? answers[index].length() : 0);
-                if (left <= MAX_ANSWER_LENGTH - MAX_ANSWER_LENGTH * 0.7f) {
-                    textCell.setText2(String.format("%d", left));
-                    SimpleTextView textView = textCell.getTextView2();
-                    String key = left < 0 ? Theme.key_windowBackgroundWhiteRedText5 : Theme.key_windowBackgroundWhiteGrayText3;
-                    textView.setTextColor(Theme.getColor(key));
-                    textView.setTag(key);
-                } else {
-                    textCell.setText2("");
-                }
-            }
+        if (!(cell instanceof PollEditTextCell)) {
+            return;
+        }
+        PollEditTextCell textCell = (PollEditTextCell) cell;
+        int max;
+        int left;
+        if (index == questionRow) {
+            max = ChatAttachAlertPollLayout.MAX_QUESTION_LENGTH;
+            left = ChatAttachAlertPollLayout.MAX_QUESTION_LENGTH - (questionString != null ? questionString.length() : 0);
+        } else if (index == solutionRow) {
+            max = ChatAttachAlertPollLayout.MAX_SOLUTION_LENGTH;
+            left = ChatAttachAlertPollLayout.MAX_SOLUTION_LENGTH - (solutionString != null ? solutionString.length() : 0);
+        } else if (index >= answerStartRow && index < answerStartRow + answersCount) {
+            index -= answerStartRow;
+            max = ChatAttachAlertPollLayout.MAX_ANSWER_LENGTH;
+            left = ChatAttachAlertPollLayout.MAX_ANSWER_LENGTH - (answers[index] != null ? answers[index].length() : 0);
+        } else {
+            return;
+        }
+        if (left <= max - max * 0.7f) {
+            textCell.setText2(String.format("%d", left));
+            SimpleTextView textView = textCell.getTextView2();
+            String key = left < 0 ? Theme.key_windowBackgroundWhiteRedText5 : Theme.key_windowBackgroundWhiteGrayText3;
+            textView.setTextColor(Theme.getColor(key));
+            textView.setTag(key);
+        } else {
+            textCell.setText2("");
         }
     }
 
@@ -605,11 +599,13 @@ public class PollCreateActivity extends BaseFragment {
                 }
                 case 2: {
                     TextInfoPrivacyCell cell = (TextInfoPrivacyCell) holder.itemView;
+                    cell.setFixedSize(0);
                     cell.setBackgroundDrawable(Theme.getThemedDrawable(mContext, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
                     if (position == solutionInfoRow) {
                         cell.setText(LocaleController.getString("AddAnExplanationInfo", R.string.AddAnExplanationInfo));
                     } else if (position == settingsSectionRow) {
                         if (quizOnly != 0) {
+                            cell.setFixedSize(12);
                             cell.setText(null);
                         } else {
                             cell.setText(LocaleController.getString("QuizInfo", R.string.QuizInfo));
@@ -651,14 +647,12 @@ public class PollCreateActivity extends BaseFragment {
         @Override
         public void onViewAttachedToWindow(RecyclerView.ViewHolder holder) {
             int viewType = holder.getItemViewType();
-            if (viewType == 0 || viewType == 5) {
-                setTextLeft(holder.itemView, holder.getAdapterPosition() == questionHeaderRow ? -1 : 0);
-            }
             if (viewType == 4) {
                 PollEditTextCell textCell = (PollEditTextCell) holder.itemView;
                 textCell.setTag(1);
                 textCell.setTextAndHint(questionString != null ? questionString : "", LocaleController.getString("QuestionHint", R.string.QuestionHint), false);
                 textCell.setTag(null);
+                setTextLeft(holder.itemView, holder.getAdapterPosition());
             } else if (viewType == 5) {
                 int position = holder.getAdapterPosition();
                 PollEditTextCell textCell = (PollEditTextCell) holder.itemView;
@@ -672,12 +666,13 @@ public class PollCreateActivity extends BaseFragment {
                     AndroidUtilities.showKeyboard(editText);
                     requestFieldFocusAtPosition = -1;
                 }
-                setTextLeft(holder.itemView, position - answerStartRow);
+                setTextLeft(holder.itemView, position);
             } else if (viewType == 7) {
                 PollEditTextCell textCell = (PollEditTextCell) holder.itemView;
                 textCell.setTag(1);
                 textCell.setTextAndHint(solutionString != null ? solutionString : "", LocaleController.getString("AddAnExplanation", R.string.AddAnExplanation), false);
                 textCell.setTag(null);
+                setTextLeft(holder.itemView, holder.getAdapterPosition());
             }
         }
 
@@ -704,7 +699,7 @@ public class PollCreateActivity extends BaseFragment {
             View view;
             switch (viewType) {
                 case 0:
-                    view = new HeaderCell(mContext, Theme.key_windowBackgroundWhiteBlueHeader, 21, 15, true);
+                    view = new HeaderCell(mContext, Theme.key_windowBackgroundWhiteBlueHeader, 21, 15, false);
                     view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
                     break;
                 case 1:
@@ -719,6 +714,7 @@ public class PollCreateActivity extends BaseFragment {
                     break;
                 case 4: {
                     PollEditTextCell cell = new PollEditTextCell(mContext, null);
+                    cell.createErrorTextView();
                     cell.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
                     cell.addTextWatcher(new TextWatcher() {
                         @Override
@@ -737,9 +733,9 @@ public class PollCreateActivity extends BaseFragment {
                                 return;
                             }
                             questionString = s.toString();
-                            RecyclerView.ViewHolder holder = listView.findViewHolderForAdapterPosition(questionHeaderRow);
+                            RecyclerView.ViewHolder holder = listView.findViewHolderForAdapterPosition(questionRow);
                             if (holder != null) {
-                                setTextLeft(holder.itemView, -1);
+                                setTextLeft(holder.itemView, questionRow);
                             }
                             checkDoneButton();
                         }
@@ -753,6 +749,7 @@ public class PollCreateActivity extends BaseFragment {
                     break;
                 case 7: {
                     PollEditTextCell cell = new PollEditTextCell(mContext, null);
+                    cell.createErrorTextView();
                     cell.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
                     cell.addTextWatcher(new TextWatcher() {
                         @Override
@@ -771,10 +768,10 @@ public class PollCreateActivity extends BaseFragment {
                                 return;
                             }
                             solutionString = s.toString();
-                            /*RecyclerView.ViewHolder holder = listView.findViewHolderForAdapterPosition(questionHeaderRow);
+                            RecyclerView.ViewHolder holder = listView.findViewHolderForAdapterPosition(solutionRow);
                             if (holder != null) {
-                                setTextLeft(holder.itemView, -1);
-                            }*/
+                                setTextLeft(holder.itemView, solutionRow);
+                            }
                             checkDoneButton();
                         }
                     });

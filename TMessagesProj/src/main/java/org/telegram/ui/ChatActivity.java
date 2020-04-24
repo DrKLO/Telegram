@@ -7821,7 +7821,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     }
                     maxUnreadDate = Math.max(maxUnreadDate, messageObject.messageOwner.date);
                 }
-                if (messageObject.type == MessageObject.TYPE_POLL) {
+                if (messageObject.type == MessageObject.TYPE_POLL && messageObject.getId() > 0) {
                     pollsToCheck.add(messageObject);
                 }
             }
