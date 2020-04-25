@@ -9196,6 +9196,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         Context context = actionBar.getContext();
         otherItem.removeAllSubItems();
         animatingItem = null;
+        otherItem.setOnLongClickListener(null);
 
         editItemVisible = false;
         callItemVisible = false;
@@ -9208,6 +9209,32 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 return;
             }
             if (UserObject.isUserSelf(user)) {
+
+                otherItem.setOnLongClickListener(v -> {
+                    AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+                    builder.setTitle("User info menu");
+                    String[] items = {
+                        "Change phone number",
+                        "Change username",
+                        "Change bio",
+                    };
+                    builder.setItems(items, (d, which) -> {
+                        if (which == 0) {
+                            presentFragment(new ActionIntroActivity(ActionIntroActivity.ACTION_TYPE_CHANGE_PHONE_NUMBER));
+                        } else if (which == 1) {
+                            presentFragment(new ChangeUsernameActivity());
+                        } else if (which == 2) {
+                            presentFragment(new ChangeBioActivity());
+                        }
+                    });
+                    builder.setNegativeButton(
+                        LocaleController.getString("Cancel", R.string.Cancel),
+                        null);
+                    showDialog(builder.create());
+
+                    return true;
+                });
+
                 otherItem.addSubItem(edit_name, R.drawable.msg_edit, LocaleController.getString(R.string.EditName));
                 otherItem.addSubItem(edit_color, R.drawable.msg_colors, LocaleController.getString(R.string.EditProfileColor));
                 selfUser = true;
