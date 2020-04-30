@@ -177,7 +177,7 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
                     searchResultMessages.clear();
                 }
                 searchWas = true;
-                if (!searchAdapterHelper.isSearchInProgress() && delegate != null) {
+                if (!searchAdapterHelper.isSearchInProgress() && delegate != null && reqId == 0) {
                     delegate.searchStateChanged(false);
                 }
                 notifyDataSetChanged();
@@ -220,6 +220,9 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
     }
 
     public void loadMoreSearchMessages() {
+        if (reqId != 0) {
+            return;
+        }
         searchMessagesInternal(lastMessagesSearchString, lastMessagesSearchId);
     }
 
@@ -315,10 +318,10 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
                     notifyDataSetChanged();
                 }
             }
-            if (delegate != null) {
+            reqId = 0;
+            if (!searchAdapterHelper.isSearchInProgress() && delegate != null) {
                 delegate.searchStateChanged(false);
             }
-            reqId = 0;
         }), ConnectionsManager.RequestFlagFailOnServerErrors);
     }
 

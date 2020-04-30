@@ -98,7 +98,7 @@ public class UndoView extends FrameLayout {
     public final static int ACTION_FILTERS_AVAILABLE = 15;
     public final static int ACTION_DICE_INFO = 16;
     public final static int ACTION_DICE_NO_SEND_INFO = 17;
-    public final static int ACTION_QUIZ_VOTE_INFO = 18;
+    public final static int ACTION_TEXT_INFO = 18;
     public final static int ACTION_CACHE_WAS_CLEARED = 19;
 
     private CharSequence infoText;
@@ -519,7 +519,7 @@ public class UndoView extends FrameLayout {
 
             subinfoTextView.setVisibility(GONE);
             leftImageView.setVisibility(VISIBLE);
-        } else if (currentAction == ACTION_QUIZ_VOTE_INFO) {
+        } else if (currentAction == ACTION_TEXT_INFO) {
             CharSequence info = (CharSequence) infoObject;
             timeLeft = Math.max(4000, Math.min(info.length() / 50 * 1600, 10000));
             infoTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
@@ -638,8 +638,8 @@ public class UndoView extends FrameLayout {
             }
             width -= AndroidUtilities.dp(16);
             measureChildWithMargins(infoTextView, MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY), 0, MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED), 0);
-            undoViewHeight = infoTextView.getMeasuredHeight() + AndroidUtilities.dp(currentAction == ACTION_DICE_INFO || currentAction == ACTION_DICE_NO_SEND_INFO || currentAction == ACTION_QUIZ_VOTE_INFO ? 14 : 28);
-            if (currentAction == ACTION_QUIZ_VOTE_INFO) {
+            undoViewHeight = infoTextView.getMeasuredHeight() + AndroidUtilities.dp(currentAction == ACTION_DICE_INFO || currentAction == ACTION_DICE_NO_SEND_INFO || currentAction == ACTION_TEXT_INFO ? 14 : 28);
+            if (currentAction == ACTION_TEXT_INFO) {
                 undoViewHeight = Math.max(undoViewHeight, AndroidUtilities.dp(52));
             }
         }

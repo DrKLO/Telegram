@@ -343,7 +343,8 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
     private UndoView topUndoView;
     private boolean openKeyboardOnAttachMenuClose;
 
-    private MessageObject pollHintMessageObject;
+    private MessageObject hintMessageObject;
+    private int hintMessageType;
 
     private RecyclerListView messagesSearchListView;
     private MessagesSearchAdapter messagesSearchAdapter;
@@ -11463,7 +11464,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                                     ((ChatMessageCell) pollView).shakeView();
                                     pollView.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
                                     showPollSolution(cell.getMessageObject(), results);
-                                    cell.showPollHintButton(false, true);
+                                    cell.showHintButton(false, true, 0);
                                 }
                                 break;
                             }
@@ -12206,16 +12207,9 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         }
     }
 
-    private void showPollSolution(MessageObject messageObject, TLRPC.PollResults results) {
-        if (results == null || topUndoView == null || TextUtils.isEmpty(results.solution)) {
+    private void showInfoHint(MessageObject messageObject, CharSequence text, int type) {
+        if (topUndoView == null) {
             return;
-        }
-        CharSequence text;
-        if (!results.solution_entities.isEmpty()) {
-            text = new SpannableStringBuilder(results.solution);
-            MessageObject.addEntitiesToText(text, results.solution_entities, false, true, true, false);
-        } else {
-            text = results.solution;
         }
         Runnable runnable = () -> {
             if (chatListView != null) {
@@ -12227,15 +12221,30 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     }
                     ChatMessageCell cell = (ChatMessageCell) view;
                     MessageObject message = cell.getMessageObject();
-                    if (message != null && message.equals(pollHintMessageObject)) {
-                        cell.showPollHintButton(true, true);
+                    if (message != null && message.equals(hintMessageObject)) {
+                        cell.showHintButton(true, true, type);
                     }
                 }
             }
-            pollHintMessageObject = null;
+            hintMessageObject = null;
         };
-        topUndoView.showWithAction(0, UndoView.ACTION_QUIZ_VOTE_INFO, text, runnable, runnable);
-        pollHintMessageObject = messageObject;
+        topUndoView.showWithAction(0, UndoView.ACTION_TEXT_INFO, text, runnable, runnable);
+        hintMessageObject = messageObject;
+        hintMessageType = type;
+    }
+
+    private void showPollSolution(MessageObject messageObject, TLRPC.PollResults results) {
+        if (results == null || TextUtils.isEmpty(results.solution)) {
+            return;
+        }
+        CharSequence text;
+        if (!results.solution_entities.isEmpty()) {
+            text = new SpannableStringBuilder(results.solution);
+            MessageObject.addEntitiesToText(text, results.solution_entities, false, true, true, false);
+        } else {
+            text = results.solution;
+        }
+        showInfoHint(messageObject, text, 0);
     }
 
     private void updateSearchButtons(int mask, int num, int count) {
@@ -12329,6 +12338,48 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             }
 
             showScheduledOrNoSoundHint();
+
+            if (!backward && firstOpen) {
+                if (getMessagesController().isPromoDialog(dialog_id, true)) {
+                    int type = getMessagesController().promoDialogType;
+                    String message;
+                    SharedPreferences preferences = MessagesController.getGlobalNotificationsSettings();
+                    boolean check;
+                    if (type == MessagesController.PROMO_TYPE_PROXY) {
+                        if (preferences.getLong("proxychannel", 0) != dialog_id) {
+                            message = LocaleController.getString("UseProxySponsorInfo", R.string.UseProxySponsorInfo);
+                        } else {
+                            message = null;
+                        }
+                    } else if (type == MessagesController.PROMO_TYPE_PSA) {
+                        String psaType = getMessagesController().promoPsaType;
+                        if (!preferences.getBoolean(psaType + "_shown", false)) {
+                            message = LocaleController.getString("PsaInfo_" + psaType);
+                            if (TextUtils.isEmpty(message)) {
+                                message = LocaleController.getString("PsaInfoDefault", R.string.PsaInfoDefault);
+                            }
+                        } else {
+                            message = null;
+                        }
+                    } else {
+                        message = null;
+                    }
+                    if (!TextUtils.isEmpty(message)) {
+                        if (topUndoView != null) {
+                            if (type == MessagesController.PROMO_TYPE_PROXY) {
+                                preferences.edit().putLong("proxychannel", dialog_id).commit();
+                            } else if (type == MessagesController.PROMO_TYPE_PSA) {
+                                String psaType = getMessagesController().promoPsaType;
+                                preferences.edit().putBoolean(psaType + "_shown", true).commit();
+                            }
+                            SpannableStringBuilder stringBuilder = new SpannableStringBuilder(message);
+                            MessageObject.addLinks(false, stringBuilder);
+                            topUndoView.showWithAction(0, UndoView.ACTION_TEXT_INFO, stringBuilder, null, null);
+                        }
+                    }
+                }
+                firstOpen = false;
+            }
         }
     }
 
@@ -13130,20 +13181,6 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             }
             return AndroidUtilities.dp(48);
         });
-
-        if (firstOpen) {
-            if (getMessagesController().isProxyDialog(dialog_id, true)) {
-                SharedPreferences preferences = MessagesController.getGlobalNotificationsSettings();
-                if (preferences.getLong("proxychannel", 0) != dialog_id) {
-                    preferences.edit().putLong("proxychannel", dialog_id).commit();
-                    AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-                    builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
-                    builder.setMessage(LocaleController.getString("UseProxySponsorInfo", R.string.UseProxySponsorInfo));
-                    builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), null);
-                    showDialog(builder.create());
-                }
-            }
-        }
 
         checkActionBarMenu();
         if (replyImageLocation != null && replyImageView != null) {
@@ -15963,13 +16000,24 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 chatMessageCell.setDelegate(new ChatMessageCell.ChatMessageCellDelegate() {
 
                     @Override
-                    public void didPressPollHint(ChatMessageCell cell, int x, int y) {
-                        if (getParentActivity() == null) {
-                            return;
+                    public void didPressHint(ChatMessageCell cell, int type) {
+                        if (type == 0) {
+                            TLRPC.TL_messageMediaPoll media = (TLRPC.TL_messageMediaPoll) cell.getMessageObject().messageOwner.media;
+                            showPollSolution(cell.getMessageObject(), media.results);
+                        } else if (type == 1) {
+                            MessageObject messageObject = cell.getMessageObject();
+                            if (TextUtils.isEmpty(messageObject.messageOwner.fwd_from.psa_type)) {
+                                return;
+                            }
+                            CharSequence text = LocaleController.getString("PsaMessageInfo_" + messageObject.messageOwner.fwd_from.psa_type);
+                            if (TextUtils.isEmpty(text)) {
+                                text = LocaleController.getString("PsaMessageInfoDefault", R.string.PsaMessageInfoDefault);
+                            }
+                            SpannableStringBuilder stringBuilder = new SpannableStringBuilder(text);
+                            MessageObject.addLinks(false, stringBuilder);
+                            showInfoHint(messageObject, stringBuilder, 1);
                         }
-                        TLRPC.TL_messageMediaPoll media = (TLRPC.TL_messageMediaPoll) cell.getMessageObject().messageOwner.media;
-                        showPollSolution(cell.getMessageObject(), media.results);
-                        cell.showPollHintButton(false, true);
+                        cell.showHintButton(false, true, type);
                     }
 
                     @Override
@@ -16654,10 +16702,9 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             if (holder.itemView instanceof ChatMessageCell) {
                 final ChatMessageCell messageCell = (ChatMessageCell) holder.itemView;
                 MessageObject message = messageCell.getMessageObject();
-                if (pollHintMessageObject != null && pollHintMessageObject.equals(message)) {
-                    messageCell.showPollHintButton(false, false);
-                } else {
-                    messageCell.showPollHintButton(true, false);
+                messageCell.showHintButton(true, false, -1);
+                if (hintMessageObject != null && hintMessageObject.equals(message)) {
+                    messageCell.showHintButton(false, false, hintMessageType);
                 }
 
                 boolean selected = false;
@@ -17139,6 +17186,8 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         themeDescriptions.add(new ThemeDescription(chatListView, 0, new Class[]{ChatMessageCell.class}, Theme.chat_timeBackgroundPaint, null, null, Theme.key_chat_mediaTimeBackground));
         themeDescriptions.add(new ThemeDescription(chatListView, 0, new Class[]{ChatMessageCell.class}, null, null, null, Theme.key_chat_inForwardedNameText));
         themeDescriptions.add(new ThemeDescription(chatListView, 0, new Class[]{ChatMessageCell.class}, null, null, null, Theme.key_chat_outForwardedNameText));
+        themeDescriptions.add(new ThemeDescription(chatListView, 0, new Class[]{ChatMessageCell.class}, null, null, null, Theme.key_chat_inPsaNameText));
+        themeDescriptions.add(new ThemeDescription(chatListView, 0, new Class[]{ChatMessageCell.class}, null, null, null, Theme.key_chat_outPsaNameText));
         themeDescriptions.add(new ThemeDescription(chatListView, 0, new Class[]{ChatMessageCell.class}, null, null, null, Theme.key_chat_inViaBotNameText));
         themeDescriptions.add(new ThemeDescription(chatListView, 0, new Class[]{ChatMessageCell.class}, null, null, null, Theme.key_chat_outViaBotNameText));
         themeDescriptions.add(new ThemeDescription(chatListView, 0, new Class[]{ChatMessageCell.class}, null, null, null, Theme.key_chat_stickerViaBotNameText));
@@ -17260,6 +17309,8 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         themeDescriptions.add(new ThemeDescription(chatListView, 0, new Class[]{ChatMessageCell.class}, null, null, null, Theme.key_chat_outPollWrongAnswer));
         themeDescriptions.add(new ThemeDescription(chatListView, 0, new Class[]{ChatMessageCell.class}, null, new Drawable[]{Theme.chat_pollHintDrawable[0]}, null, Theme.key_chat_inPreviewInstantText));
         themeDescriptions.add(new ThemeDescription(chatListView, 0, new Class[]{ChatMessageCell.class}, null, new Drawable[]{Theme.chat_pollHintDrawable[1]}, null, Theme.key_chat_outPreviewInstantText));
+        themeDescriptions.add(new ThemeDescription(chatListView, 0, new Class[]{ChatMessageCell.class}, null, new Drawable[]{Theme.chat_psaHelpDrawable[0]}, null, Theme.key_chat_inViews));
+        themeDescriptions.add(new ThemeDescription(chatListView, 0, new Class[]{ChatMessageCell.class}, null, new Drawable[]{Theme.chat_psaHelpDrawable[1]}, null, Theme.key_chat_outViews));
 
         themeDescriptions.add(new ThemeDescription(messagesSearchListView, 0, new Class[]{DialogCell.class}, null, Theme.avatarDrawables, null, Theme.key_avatar_text));
         themeDescriptions.add(new ThemeDescription(messagesSearchListView, 0, new Class[]{DialogCell.class}, Theme.dialogs_countPaint, null, null, Theme.key_chats_unreadCounter));

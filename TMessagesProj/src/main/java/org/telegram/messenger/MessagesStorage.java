@@ -3627,7 +3627,7 @@ public class MessagesStorage extends BaseController {
     }
 
     private void updateFiltersReadCounter(LongSparseArray<Integer> dialogsToUpdate, LongSparseArray<Integer> dialogsToUpdateMentions, boolean read) throws Exception {
-        if (dialogFilters.isEmpty() || (dialogsToUpdate == null || dialogsToUpdate.size() == 0) && (dialogsToUpdateMentions == null || dialogsToUpdateMentions.size() == 0)) {
+        if ((dialogsToUpdate == null || dialogsToUpdate.size() == 0) && (dialogsToUpdateMentions == null || dialogsToUpdateMentions.size() == 0)) {
             return;
         }
         for (int a = 0; a < 2; a++) {

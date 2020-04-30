@@ -1380,8 +1380,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             did = -chat_id;
         }
         ArrayList<Integer> users = chatInfo != null && chatInfo.participants != null && chatInfo.participants.participants.size() > 5 ? sortedUsers : null;
-        TLRPC.ChatFull chatFull = users != null ? chatInfo : null;
-        sharedMediaLayout = new SharedMediaLayout(context, did, sharedMediaPreloader, userInfo != null ? userInfo.common_chats_count : 0, sortedUsers, chatFull, this) {
+        sharedMediaLayout = new SharedMediaLayout(context, did, sharedMediaPreloader, userInfo != null ? userInfo.common_chats_count : 0, sortedUsers, chatInfo, users != null, this) {
             @Override
             protected void onSelectedTabChanged() {
                 updateSelectedMediaTabText();
@@ -3694,6 +3693,9 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         if (chatInfo != null && chatInfo.migrated_from_chat_id != 0 && mergeDialogId == 0) {
             mergeDialogId = -chatInfo.migrated_from_chat_id;
             MediaDataController.getInstance(currentAccount).getMediaCounts(mergeDialogId, classGuid);
+        }
+        if (sharedMediaLayout != null) {
+            sharedMediaLayout.setChatInfo(chatInfo);
         }
         fetchUsersFromChannelInfo();
     }

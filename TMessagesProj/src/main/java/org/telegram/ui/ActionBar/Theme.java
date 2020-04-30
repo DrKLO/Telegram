@@ -1995,7 +1995,9 @@ public class Theme {
     public static RLottieDrawable dialogs_unarchiveDrawable;
     public static RLottieDrawable dialogs_pinArchiveDrawable;
     public static RLottieDrawable dialogs_unpinArchiveDrawable;
+    public static RLottieDrawable dialogs_hidePsaDrawable;
     public static boolean dialogs_archiveDrawableRecolored;
+    public static boolean dialogs_hidePsaDrawableRecolored;
     public static boolean dialogs_archiveAvatarDrawableRecolored;
     private static int dialogs_holidayDrawableOffsetX;
     private static int dialogs_holidayDrawableOffsetY;
@@ -2121,6 +2123,7 @@ public class Theme {
     public static Drawable[] chat_pollCheckDrawable = new Drawable[2];
     public static Drawable[] chat_pollCrossDrawable = new Drawable[2];
     public static Drawable[] chat_pollHintDrawable = new Drawable[2];
+    public static Drawable[] chat_psaHelpDrawable = new Drawable[2];
 
     public static Drawable chat_msgCallUpGreenDrawable;
     public static Drawable chat_msgCallDownRedDrawable;
@@ -2508,6 +2511,8 @@ public class Theme {
     public static final String key_chat_botProgress = "chat_botProgress";
     public static final String key_chat_inForwardedNameText = "chat_inForwardedNameText";
     public static final String key_chat_outForwardedNameText = "chat_outForwardedNameText";
+    public static final String key_chat_inPsaNameText = "chat_inPsaNameText";
+    public static final String key_chat_outPsaNameText = "chat_outPsaNameText";
     public static final String key_chat_inViaBotNameText = "chat_inViaBotNameText";
     public static final String key_chat_outViaBotNameText = "chat_outViaBotNameText";
     public static final String key_chat_stickerViaBotNameText = "chat_stickerViaBotNameText";
@@ -3218,6 +3223,8 @@ public class Theme {
         defaultColors.put(key_chat_botProgress, 0xffffffff);
         defaultColors.put(key_chat_inForwardedNameText, 0xff3886c7);
         defaultColors.put(key_chat_outForwardedNameText, 0xff55ab4f);
+        defaultColors.put(key_chat_inPsaNameText, 0xff5a9c39);
+        defaultColors.put(key_chat_outPsaNameText, 0xff5a9c39);
         defaultColors.put(key_chat_inViaBotNameText, 0xff3a8ccf);
         defaultColors.put(key_chat_outViaBotNameText, 0xff55ab4f);
         defaultColors.put(key_chat_stickerViaBotNameText, 0xffffffff);
@@ -3706,6 +3713,9 @@ public class Theme {
         fallbackKeys.put(key_chat_attachContactText, key_chat_attachContactBackground);
         fallbackKeys.put(key_chat_attachLocationText, key_chat_attachLocationBackground);
         fallbackKeys.put(key_chat_attachPollText, key_chat_attachPollBackground);
+
+        fallbackKeys.put(key_chat_inPsaNameText, key_avatar_nameInMessageGreen);
+        fallbackKeys.put(key_chat_outPsaNameText, key_avatar_nameInMessageGreen);
 
         themeAccentExclusionKeys.addAll(Arrays.asList(keys_avatar_background));
         themeAccentExclusionKeys.addAll(Arrays.asList(keys_avatar_nameInMessage));
@@ -6403,11 +6413,15 @@ public class Theme {
             if (dialogs_unpinArchiveDrawable != null) {
                 dialogs_unpinArchiveDrawable.recycle();
             }
+            if (dialogs_hidePsaDrawable != null) {
+                dialogs_hidePsaDrawable.recycle();
+            }
             dialogs_archiveAvatarDrawable = new RLottieDrawable(R.raw.chats_archiveavatar, "chats_archiveavatar", AndroidUtilities.dp(36), AndroidUtilities.dp(36), false, null);
             dialogs_archiveDrawable = new RLottieDrawable(R.raw.chats_archive, "chats_archive", AndroidUtilities.dp(36), AndroidUtilities.dp(36));
             dialogs_unarchiveDrawable = new RLottieDrawable(R.raw.chats_unarchive, "chats_unarchive", AndroidUtilities.dp(AndroidUtilities.dp(36)), AndroidUtilities.dp(36));
             dialogs_pinArchiveDrawable = new RLottieDrawable(R.raw.chats_hide, "chats_hide", AndroidUtilities.dp(36), AndroidUtilities.dp(36));
             dialogs_unpinArchiveDrawable = new RLottieDrawable(R.raw.chats_unhide, "chats_unhide", AndroidUtilities.dp(36), AndroidUtilities.dp(36));
+            dialogs_hidePsaDrawable = new RLottieDrawable(R.raw.chat_audio_record_delete, "chats_psahide", AndroidUtilities.dp(30), AndroidUtilities.dp(30));
             
             applyCommonTheme();
         }
@@ -6442,6 +6456,15 @@ public class Theme {
         dialogs_unpinArchiveDrawable.setLayerColor("Arrow.**", getNonAnimatedColor(key_chats_archiveIcon));
         dialogs_unpinArchiveDrawable.setLayerColor("Line.**", getNonAnimatedColor(key_chats_archiveIcon));
         dialogs_unpinArchiveDrawable.commitApplyLayerColors();
+
+        dialogs_hidePsaDrawable.beginApplyLayerColors();
+        dialogs_hidePsaDrawable.setLayerColor("Line 1.**", getNonAnimatedColor(key_chats_archiveBackground));
+        dialogs_hidePsaDrawable.setLayerColor("Line 2.**", getNonAnimatedColor(key_chats_archiveBackground));
+        dialogs_hidePsaDrawable.setLayerColor("Line 3.**", getNonAnimatedColor(key_chats_archiveBackground));
+        dialogs_hidePsaDrawable.setLayerColor("Cup Red.**", getNonAnimatedColor(key_chats_archiveIcon));
+        dialogs_hidePsaDrawable.setLayerColor("Box.**", getNonAnimatedColor(key_chats_archiveIcon));
+        dialogs_hidePsaDrawable.commitApplyLayerColors();
+        dialogs_hidePsaDrawableRecolored = false;
 
         dialogs_archiveDrawable.beginApplyLayerColors();
         dialogs_archiveDrawable.setLayerColor("Arrow.**", getNonAnimatedColor(key_chats_archiveBackground));
@@ -6730,6 +6753,7 @@ public class Theme {
                 chat_pollCheckDrawable[a] = resources.getDrawable(R.drawable.poll_right).mutate();
                 chat_pollCrossDrawable[a] = resources.getDrawable(R.drawable.poll_wrong).mutate();
                 chat_pollHintDrawable[a] = resources.getDrawable(R.drawable.smiles_panel_objects).mutate();
+                chat_psaHelpDrawable[a] = resources.getDrawable(R.drawable.msg_psa).mutate();
             }
 
             calllog_msgCallUpRedDrawable = resources.getDrawable(R.drawable.ic_call_made_green_18dp).mutate();
@@ -7110,6 +7134,9 @@ public class Theme {
 
             setDrawableColor(chat_pollHintDrawable[0], getColor(key_chat_inPreviewInstantText));
             setDrawableColor(chat_pollHintDrawable[1], getColor(key_chat_outPreviewInstantText));
+
+            setDrawableColor(chat_psaHelpDrawable[0], getColor(key_chat_inViews));
+            setDrawableColor(chat_psaHelpDrawable[1], getColor(key_chat_outViews));
 
             setDrawableColorByKey(chat_composeShadowDrawable, key_chat_messagePanelShadow);
 

@@ -976,7 +976,18 @@
     <string name="DiceInfo2">Send a **:dice:** emoji to any chat to roll a die.</string>
     <string name="DartInfo">Send a **:darts:** emoji to try your luck.</string>
     <string name="DiceEmojiInfo">Send a %1$s emoji to try your luck.</string>
-    <string name="SendDice">SEND</string>Send a dart emoji
+    <string name="SendDice">SEND</string>
+    <string name="PsaType_covid">PSA</string>
+    <string name="PsaTypeDefault">PSA</string>
+    <string name="PsaInfo_covid">This message provides you with a public service announcement in relation to the ungoing Covid-19 pandemic. Learn more about this initiative at https://telegram.org/blog/coronavirus</string>
+    <string name="PsaInfoDefault">PSA info test</string>
+    <string name="PsaMessage_covid">Covid-19 Notification</string>
+    <string name="PsaMessageInfo_covid">This message provides you with a public service announcement in relation to the ungoing Covid-19 pandemic. Learn more about this initiative at https://telegram.org/blog/coronavirus</string>
+    <string name="PsaMessageDefault">Important Notification</string>
+    <string name="PsaMessageInfoDefault">This is an important notification.</string>
+    <string name="PsaHideChatAlertTitle">Hide chat</string>
+    <string name="PsaHideChatAlertText">Are you sure you want to hide the selected chat?</string>
+    <string name="PsaHide">Hide</string>
     <!--notification-->
     <string name="MessageLifetimeChanged">%1$s set the self-destruct timer to %2$s</string>
     <string name="MessageLifetimeChangedOutgoing">You set the self-destruct timer to %1$s</string>

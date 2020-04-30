@@ -217,6 +217,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
             notificationCenter.addObserver(this, NotificationCenter.mediaDidLoad);
             notificationCenter.addObserver(this, NotificationCenter.messagesDeleted);
             notificationCenter.addObserver(this, NotificationCenter.replaceMessagesObjects);
+            notificationCenter.addObserver(this, NotificationCenter.chatInfoDidLoad);
         }
 
         public void addDelegate(SharedMediaPreloaderDelegate delegate) {
@@ -240,6 +241,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
             notificationCenter.removeObserver(this, NotificationCenter.mediaDidLoad);
             notificationCenter.removeObserver(this, NotificationCenter.messagesDeleted);
             notificationCenter.removeObserver(this, NotificationCenter.replaceMessagesObjects);
+            notificationCenter.removeObserver(this, NotificationCenter.chatInfoDidLoad);
         }
 
         public int[] getLastMediaCount() {
@@ -439,12 +441,24 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                         }
                     }
                 }
+            } else if (id == NotificationCenter.chatInfoDidLoad) {
+                TLRPC.ChatFull chatFull = (TLRPC.ChatFull) args[0];
+                if (dialogId < 0 && chatFull.id == -dialogId) {
+                    setChatInfo(chatFull);
+                }
             }
         }
 
         private void loadMediaCounts() {
             parentFragment.getMediaDataController().getMediaCounts(dialogId, parentFragment.getClassGuid());
             if (mergeDialogId != 0) {
+                parentFragment.getMediaDataController().getMediaCounts(mergeDialogId, parentFragment.getClassGuid());
+            }
+        }
+
+        private void setChatInfo(TLRPC.ChatFull chatInfo) {
+            if (chatInfo != null && chatInfo.migrated_from_chat_id != 0 && mergeDialogId == 0) {
+                mergeDialogId = -chatInfo.migrated_from_chat_id;
                 parentFragment.getMediaDataController().getMediaCounts(mergeDialogId, parentFragment.getClassGuid());
             }
         }
@@ -638,13 +652,13 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
 
     private boolean isActionModeShowed;
 
-    public SharedMediaLayout(Context context, long did, SharedMediaPreloader preloader, int commonGroupsCount, ArrayList<Integer> sortedUsers, TLRPC.ChatFull chatInfo, ProfileActivity parent) {
+    public SharedMediaLayout(Context context, long did, SharedMediaPreloader preloader, int commonGroupsCount, ArrayList<Integer> sortedUsers, TLRPC.ChatFull chatInfo, boolean membersFirst, ProfileActivity parent) {
         super(context);
 
         sharedMediaPreloader = preloader;
         int[] mediaCount = preloader.getLastMediaCount();
         hasMedia = new int[]{mediaCount[0], mediaCount[1], mediaCount[2], mediaCount[3], mediaCount[4], mediaCount[5], commonGroupsCount};
-        if (chatInfo != null) {
+        if (membersFirst) {
             initialTab = 7;
         } else {
             for (int a = 0; a < hasMedia.length; a++) {
@@ -1360,7 +1374,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
             } else {
                 threshold = 6;
             }
-            if (visibleItemCount != 0 && firstVisibleItem + visibleItemCount > totalItemCount - threshold && !sharedMediaData[mediaPage.selectedType].loading) {
+            if (firstVisibleItem + visibleItemCount > totalItemCount - threshold && !sharedMediaData[mediaPage.selectedType].loading) {
                 int type;
                 if (mediaPage.selectedType == 0) {
                     type = MediaDataController.MEDIA_PHOTOVIDEO;

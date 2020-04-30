@@ -72,6 +72,7 @@ public class ThemesHorizontalListCell extends RecyclerListView implements Notifi
     private ArrayList<Theme.ThemeInfo> darkThemes;
     private ArrayList<Theme.ThemeInfo> defaultThemes;
     private int currentType;
+    private int prevCount;
 
     private class ThemesListAdapter extends RecyclerListView.SelectionAdapter {
 
@@ -107,7 +108,7 @@ public class ThemesHorizontalListCell extends RecyclerListView implements Notifi
 
         @Override
         public int getItemCount() {
-            return defaultThemes.size() + darkThemes.size();
+            return prevCount = defaultThemes.size() + darkThemes.size();
         }
     }
 
@@ -728,6 +729,9 @@ public class ThemesHorizontalListCell extends RecyclerListView implements Notifi
     }
 
     public void notifyDataSetChanged(int width) {
+        if (prevCount == adapter.getItemCount()) {
+            return;
+        }
         adapter.notifyDataSetChanged();
         Theme.ThemeInfo t = currentType == ThemeActivity.THEME_TYPE_NIGHT ? Theme.getCurrentNightTheme() : Theme.getCurrentTheme();
         if (prevThemeInfo != t) {

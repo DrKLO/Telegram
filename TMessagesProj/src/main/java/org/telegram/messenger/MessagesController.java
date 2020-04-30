@@ -195,13 +195,16 @@ public class MessagesController extends BaseController implements NotificationCe
     private int loadingNotificationSettings;
     private boolean loadingNotificationSignUpSettings;
 
-    private int nextProxyInfoCheckTime;
-    private boolean checkingProxyInfo;
-    private int checkingProxyInfoRequestId;
-    private int lastCheckProxyId;
-    private TLRPC.Dialog proxyDialog;
-    private boolean isLeftProxyChannel;
-    private long proxyDialogId;
+    private int nextPromoInfoCheckTime;
+    private boolean checkingPromoInfo;
+    private int checkingPromoInfoRequestId;
+    private int lastCheckPromoId;
+    private TLRPC.Dialog promoDialog;
+    private boolean isLeftPromoChannel;
+    private long promoDialogId;
+    public int promoDialogType;
+    public String promoPsaMessage;
+    public String promoPsaType;
     private String proxyDialogAddress;
 
     private boolean checkingTosUpdate;
@@ -323,6 +326,10 @@ public class MessagesController extends BaseController implements NotificationCe
     public static final int UPDATE_MASK_CHECK = 65536;
     public static final int UPDATE_MASK_REORDER = 131072;
     public static final int UPDATE_MASK_ALL = UPDATE_MASK_AVATAR | UPDATE_MASK_STATUS | UPDATE_MASK_NAME | UPDATE_MASK_CHAT_AVATAR | UPDATE_MASK_CHAT_NAME | UPDATE_MASK_CHAT_MEMBERS | UPDATE_MASK_USER_PRINT | UPDATE_MASK_USER_PHONE | UPDATE_MASK_READ_DIALOG_MESSAGE | UPDATE_MASK_PHONE;
+
+    public static final int PROMO_TYPE_PROXY = 0;
+    public static final int PROMO_TYPE_PSA = 1;
+    public static final int PROMO_TYPE_OTHER = 2;
 
     private static class ReadTask {
         public long dialogId;
@@ -537,7 +544,11 @@ public class MessagesController extends BaseController implements NotificationCe
         youtubePipType = mainPreferences.getString("youtubePipType", "disabled");
         keepAliveService = mainPreferences.getBoolean("keepAliveService", false);
         backgroundConnection = mainPreferences.getBoolean("keepAliveService", false);
-        proxyDialogId = mainPreferences.getLong("proxy_dialog", 0);
+        promoDialogId = mainPreferences.getLong("proxy_dialog", 0);
+        nextPromoInfoCheckTime = mainPreferences.getInt("nextPromoInfoCheckTime", 0);
+        promoDialogType = mainPreferences.getInt("promo_dialog_type", 0);
+        promoPsaMessage = mainPreferences.getString("promo_psa_message", null);
+        promoPsaType = mainPreferences.getString("promo_psa_type", null);
         proxyDialogAddress = mainPreferences.getString("proxyDialogAddress", null);
         nextTosCheckTime = notificationsPreferences.getInt("nextTosCheckTime", 0);
         venueSearchBot = mainPreferences.getString("venueSearchBot", "foursquare");
@@ -710,7 +721,7 @@ public class MessagesController extends BaseController implements NotificationCe
                 TLRPC.Message message = pinnedDialogs.messages.get(a);
                 if (message.to_id.channel_id != 0) {
                     TLRPC.Chat chat = chatsDict.get(message.to_id.channel_id);
-                    if (chat != null && chat.left && (proxyDialogId == 0 || proxyDialogId != -chat.id)) {
+                    if (chat != null && chat.left && (promoDialogId == 0 || promoDialogId != -chat.id)) {
                         continue;
                     }
                     if (chat != null && chat.megagroup) {
@@ -739,8 +750,8 @@ public class MessagesController extends BaseController implements NotificationCe
                         continue;
                     }
                 }
-                if (proxyDialogId != 0 && proxyDialogId == d.id) {
-                    proxyDialog = d;
+                if (promoDialogId != 0 && promoDialogId == d.id) {
+                    promoDialog = d;
                 }
                 if (d.last_message_date == 0) {
                     MessageObject mess = new_dialogMessage.get(d.id);
@@ -751,7 +762,7 @@ public class MessagesController extends BaseController implements NotificationCe
                 if (DialogObject.isChannel(d)) {
                     TLRPC.Chat chat = chatsDict.get(-(int) d.id);
                     if (chat != null) {
-                        if (chat.left && (proxyDialogId == 0 || proxyDialogId != d.id)) {
+                        if (chat.left && (promoDialogId == 0 || promoDialogId != d.id)) {
                             continue;
                         }
                     }
@@ -1867,8 +1878,8 @@ public class MessagesController extends BaseController implements NotificationCe
 
         checkingTosUpdate = false;
         nextTosCheckTime = 0;
-        nextProxyInfoCheckTime = 0;
-        checkingProxyInfo = false;
+        nextPromoInfoCheckTime = 0;
+        checkingPromoInfo = false;
         loadingUnreadDialogs = false;
 
         currentDeletingTaskTime = 0;
@@ -3724,6 +3735,24 @@ public class MessagesController extends BaseController implements NotificationCe
         }
     }
 
+    public void hidePromoDialog() {
+        if (promoDialog == null) {
+            return;
+        }
+        TLRPC.TL_help_hidePromoData req = new TLRPC.TL_help_hidePromoData();
+        req.peer = getInputPeer((int) promoDialog.id);
+        getConnectionsManager().sendRequest(req, (response, error) -> {
+
+        });
+        Utilities.stageQueue.postRunnable(() -> {
+            promoDialogId = 0;
+            proxyDialogAddress = null;
+            nextPromoInfoCheckTime = getConnectionsManager().getCurrentTime() + 60 * 60;
+            getGlobalMainSettings().edit().putLong("proxy_dialog", promoDialogId).remove("proxyDialogAddress").putInt("nextPromoInfoCheckTime", nextPromoInfoCheckTime).commit();
+        });
+        removePromoDialog();
+    }
+
     public void deleteDialog(final long did, final int onlyHistory) {
         deleteDialog(did, onlyHistory, false);
     }
@@ -3752,7 +3781,7 @@ public class MessagesController extends BaseController implements NotificationCe
         int max_id_delete = max_id;
 
         if (first) {
-            boolean isProxyDialog = false;
+            boolean isPromoDialog = false;
             boolean emptyMax = max_id_delete == 0;
             if (emptyMax) {
                 int max = getMessagesStorage().getDialogMaxMessageId(did);
@@ -3772,10 +3801,10 @@ public class MessagesController extends BaseController implements NotificationCe
                     max_id_delete = Math.max(max_id_delete, dialog.read_outbox_max_id);
                 }
                 if (onlyHistory == 0 || onlyHistory == 3) {
-                    if (isProxyDialog = (proxyDialog != null && proxyDialog.id == did)) {
-                        isLeftProxyChannel = true;
-                        if (proxyDialog.id < 0) {
-                            TLRPC.Chat chat = getChat(-(int) proxyDialog.id);
+                    if (isPromoDialog = (promoDialog != null && promoDialog.id == did)) {
+                        isLeftPromoChannel = true;
+                        if (promoDialog.id < 0) {
+                            TLRPC.Chat chat = getChat(-(int) promoDialog.id);
                             if (chat != null) {
                                 chat.left = true;
                             }
@@ -3791,7 +3820,7 @@ public class MessagesController extends BaseController implements NotificationCe
                 } else {
                     dialog.unread_count = 0;
                 }
-                if (!isProxyDialog) {
+                if (!isPromoDialog) {
                     int lastMessageId;
                     MessageObject object = dialogMessage.get(dialog.id);
                     dialogMessage.remove(dialog.id);
@@ -3852,7 +3881,7 @@ public class MessagesController extends BaseController implements NotificationCe
             }
 
             if (!dialogsInTransaction) {
-                if (isProxyDialog) {
+                if (isPromoDialog) {
                     getNotificationCenter().postNotificationName(NotificationCenter.dialogsNeedReload, true);
                 } else {
                     getNotificationCenter().postNotificationName(NotificationCenter.dialogsNeedReload);
@@ -4326,7 +4355,7 @@ public class MessagesController extends BaseController implements NotificationCe
             GcmPushListenerService.sendRegistrationToServer(SharedConfig.pushString);
         }
         getLocationController().update();
-        checkProxyInfoInternal(false);
+        checkPromoInfoInternal(false);
         checkTosUpdate();
     }
 
@@ -4352,268 +4381,283 @@ public class MessagesController extends BaseController implements NotificationCe
         });
     }
 
-    public void checkProxyInfo(final boolean reset) {
-        Utilities.stageQueue.postRunnable(() -> checkProxyInfoInternal(reset));
+    public void checkPromoInfo(final boolean reset) {
+        Utilities.stageQueue.postRunnable(() -> checkPromoInfoInternal(reset));
     }
 
-    private void checkProxyInfoInternal(boolean reset) {
-        if (reset && checkingProxyInfo) {
-            checkingProxyInfo = false;
+    private void checkPromoInfoInternal(boolean reset) {
+        if (reset && checkingPromoInfo) {
+            checkingPromoInfo = false;
         }
-        if (!reset && nextProxyInfoCheckTime > getConnectionsManager().getCurrentTime() || checkingProxyInfo) {
+        if (!reset && nextPromoInfoCheckTime > getConnectionsManager().getCurrentTime() || checkingPromoInfo) {
             return;
         }
-        if (checkingProxyInfoRequestId != 0) {
-            getConnectionsManager().cancelRequest(checkingProxyInfoRequestId, true);
-            checkingProxyInfoRequestId = 0;
+        if (checkingPromoInfoRequestId != 0) {
+            getConnectionsManager().cancelRequest(checkingPromoInfoRequestId, true);
+            checkingPromoInfoRequestId = 0;
         }
         SharedPreferences preferences = getGlobalMainSettings();
         boolean enabled = preferences.getBoolean("proxy_enabled", false);
         String proxyAddress = preferences.getString("proxy_ip", "");
         String proxySecret = preferences.getString("proxy_secret", "");
         int removeCurrent = 0;
-        if (proxyDialogId != 0 && proxyDialogAddress != null && !proxyDialogAddress.equals(proxyAddress + proxySecret)) {
+        if (promoDialogId != 0 && promoDialogType == PROMO_TYPE_PROXY && proxyDialogAddress != null && !proxyDialogAddress.equals(proxyAddress + proxySecret)) {
             removeCurrent = 1;
         }
-        lastCheckProxyId++;
-        if (enabled && !TextUtils.isEmpty(proxyAddress) && !TextUtils.isEmpty(proxySecret)) {
-            checkingProxyInfo = true;
-            int checkProxyId = lastCheckProxyId;
-            TLRPC.TL_help_getProxyData req = new TLRPC.TL_help_getProxyData();
-            checkingProxyInfoRequestId = getConnectionsManager().sendRequest(req, (response, error) -> {
-                if (checkProxyId != lastCheckProxyId) {
-                    return;
-                }
-                boolean noDialog = false;
-                if (response instanceof TLRPC.TL_help_proxyDataEmpty) {
-                    TLRPC.TL_help_proxyDataEmpty res = (TLRPC.TL_help_proxyDataEmpty) response;
-                    nextProxyInfoCheckTime = res.expires;
-                    noDialog = true;
-                } else if (response instanceof TLRPC.TL_help_proxyDataPromo) {
-                    final TLRPC.TL_help_proxyDataPromo res = (TLRPC.TL_help_proxyDataPromo) response;
+        lastCheckPromoId++;
 
-                    final long did;
-                    if (res.peer.user_id != 0) {
-                        did = res.peer.user_id;
-                    } else if (res.peer.chat_id != 0) {
-                        did = -res.peer.chat_id;
-                        for (int a = 0; a < res.chats.size(); a++) {
-                            TLRPC.Chat chat = res.chats.get(a);
-                            if (chat.id == res.peer.chat_id) {
-                                if (chat.kicked || chat.restricted) {
-                                    noDialog = true;
-                                }
-                                break;
+        checkingPromoInfo = true;
+        int checkPromoId = lastCheckPromoId;
+        TLRPC.TL_help_getPromoData req = new TLRPC.TL_help_getPromoData();
+        checkingPromoInfoRequestId = getConnectionsManager().sendRequest(req, (response, error) -> {
+            if (checkPromoId != lastCheckPromoId) {
+                return;
+            }
+            boolean noDialog = false;
+            if (response instanceof TLRPC.TL_help_promoDataEmpty) {
+                TLRPC.TL_help_promoDataEmpty res = (TLRPC.TL_help_promoDataEmpty) response;
+                nextPromoInfoCheckTime = res.expires;
+                noDialog = true;
+            } else if (response instanceof TLRPC.TL_help_promoData) {
+                final TLRPC.TL_help_promoData res = (TLRPC.TL_help_promoData) response;
+
+                final long did;
+                if (res.peer.user_id != 0) {
+                    did = res.peer.user_id;
+                } else if (res.peer.chat_id != 0) {
+                    did = -res.peer.chat_id;
+                    for (int a = 0; a < res.chats.size(); a++) {
+                        TLRPC.Chat chat = res.chats.get(a);
+                        if (chat.id == res.peer.chat_id) {
+                            if (chat.kicked || chat.restricted) {
+                                noDialog = true;
                             }
+                            break;
                         }
-                    } else {
-                        did = -res.peer.channel_id;
-                        for (int a = 0; a < res.chats.size(); a++) {
-                            TLRPC.Chat chat = res.chats.get(a);
-                            if (chat.id == res.peer.channel_id) {
-                                if (chat.kicked || chat.restricted) {
-                                    noDialog = true;
-                                }
-                                break;
-                            }
-                        }
-                    }
-                    proxyDialogId = did;
-                    proxyDialogAddress = proxyAddress + proxySecret;
-                    getGlobalMainSettings().edit().putLong("proxy_dialog", proxyDialogId).putString("proxyDialogAddress", proxyDialogAddress).commit();
-                    nextProxyInfoCheckTime = res.expires;
-                    if (!noDialog) {
-                        AndroidUtilities.runOnUIThread(() -> {
-                            if (proxyDialog != null && did != proxyDialog.id) {
-                                removeProxyDialog();
-                            }
-                            proxyDialog = dialogs_dict.get(did);
-
-                            if (proxyDialog != null) {
-                                checkingProxyInfo = false;
-                                sortDialogs(null);
-                                getNotificationCenter().postNotificationName(NotificationCenter.dialogsNeedReload, true);
-                            } else {
-                                final SparseArray<TLRPC.User> usersDict = new SparseArray<>();
-                                final SparseArray<TLRPC.Chat> chatsDict = new SparseArray<>();
-                                for (int a = 0; a < res.users.size(); a++) {
-                                    TLRPC.User u = res.users.get(a);
-                                    usersDict.put(u.id, u);
-                                }
-                                for (int a = 0; a < res.chats.size(); a++) {
-                                    TLRPC.Chat c = res.chats.get(a);
-                                    chatsDict.put(c.id, c);
-                                }
-
-                                TLRPC.TL_messages_getPeerDialogs req1 = new TLRPC.TL_messages_getPeerDialogs();
-                                TLRPC.TL_inputDialogPeer peer = new TLRPC.TL_inputDialogPeer();
-                                if (res.peer.user_id != 0) {
-                                    peer.peer = new TLRPC.TL_inputPeerUser();
-                                    peer.peer.user_id = res.peer.user_id;
-                                    TLRPC.User user = usersDict.get(res.peer.user_id);
-                                    if (user != null) {
-                                        peer.peer.access_hash = user.access_hash;
-                                    }
-                                } else if (res.peer.chat_id != 0) {
-                                    peer.peer = new TLRPC.TL_inputPeerChat();
-                                    peer.peer.chat_id = res.peer.chat_id;
-                                    TLRPC.Chat chat = chatsDict.get(res.peer.chat_id);
-                                    if (chat != null) {
-                                        peer.peer.access_hash = chat.access_hash;
-                                    }
-                                } else {
-                                    peer.peer = new TLRPC.TL_inputPeerChannel();
-                                    peer.peer.channel_id = res.peer.channel_id;
-                                    TLRPC.Chat chat = chatsDict.get(res.peer.channel_id);
-                                    if (chat != null) {
-                                        peer.peer.access_hash = chat.access_hash;
-                                    }
-                                }
-
-                                req1.peers.add(peer);
-                                checkingProxyInfoRequestId = getConnectionsManager().sendRequest(req1, (response1, error1) -> {
-                                    if (checkProxyId != lastCheckProxyId) {
-                                        return;
-                                    }
-                                    checkingProxyInfoRequestId = 0;
-                                    final TLRPC.TL_messages_peerDialogs res2 = (TLRPC.TL_messages_peerDialogs) response1;
-                                    if (res2 != null && !res2.dialogs.isEmpty()) {
-                                        getMessagesStorage().putUsersAndChats(res.users, res.chats, true, true);
-                                        TLRPC.TL_messages_dialogs dialogs = new TLRPC.TL_messages_dialogs();
-                                        dialogs.chats = res2.chats;
-                                        dialogs.users = res2.users;
-                                        dialogs.dialogs = res2.dialogs;
-                                        dialogs.messages = res2.messages;
-                                        getMessagesStorage().putDialogs(dialogs, 2);
-                                        AndroidUtilities.runOnUIThread(() -> {
-                                            putUsers(res.users, false);
-                                            putChats(res.chats, false);
-                                            putUsers(res2.users, false);
-                                            putChats(res2.chats, false);
-
-                                            if (proxyDialog != null) {
-                                                int lowerId = (int) proxyDialog.id;
-                                                if (lowerId < 0) {
-                                                    TLRPC.Chat chat = getChat(-lowerId);
-                                                    if (ChatObject.isNotInChat(chat) || chat.restricted) {
-                                                        removeDialog(proxyDialog);
-                                                    }
-                                                } else {
-                                                    removeDialog(proxyDialog);
-                                                }
-                                            }
-
-                                            proxyDialog = res2.dialogs.get(0);
-                                            proxyDialog.id = did;
-                                            proxyDialog.folder_id = 0;
-                                            if (DialogObject.isChannel(proxyDialog)) {
-                                                channelsPts.put(-(int) proxyDialog.id, proxyDialog.pts);
-                                            }
-                                            Integer value = dialogs_read_inbox_max.get(proxyDialog.id);
-                                            if (value == null) {
-                                                value = 0;
-                                            }
-                                            dialogs_read_inbox_max.put(proxyDialog.id, Math.max(value, proxyDialog.read_inbox_max_id));
-                                            value = dialogs_read_outbox_max.get(proxyDialog.id);
-                                            if (value == null) {
-                                                value = 0;
-                                            }
-                                            dialogs_read_outbox_max.put(proxyDialog.id, Math.max(value, proxyDialog.read_outbox_max_id));
-                                            dialogs_dict.put(did, proxyDialog);
-                                            if (!res2.messages.isEmpty()) {
-                                                final SparseArray<TLRPC.User> usersDict1 = new SparseArray<>();
-                                                final SparseArray<TLRPC.Chat> chatsDict1 = new SparseArray<>();
-                                                for (int a = 0; a < res2.users.size(); a++) {
-                                                    TLRPC.User u = res2.users.get(a);
-                                                    usersDict1.put(u.id, u);
-                                                }
-                                                for (int a = 0; a < res2.chats.size(); a++) {
-                                                    TLRPC.Chat c = res2.chats.get(a);
-                                                    chatsDict1.put(c.id, c);
-                                                }
-                                                MessageObject messageObject = new MessageObject(currentAccount, res2.messages.get(0), usersDict1, chatsDict1, false);
-                                                dialogMessage.put(did, messageObject);
-                                                if (proxyDialog.last_message_date == 0) {
-                                                    proxyDialog.last_message_date = messageObject.messageOwner.date;
-                                                }
-                                            }
-                                            sortDialogs(null);
-                                            getNotificationCenter().postNotificationName(NotificationCenter.dialogsNeedReload, true);
-                                        });
-                                    } else {
-                                        AndroidUtilities.runOnUIThread(() -> {
-                                            if (proxyDialog != null) {
-                                                int lowerId = (int) proxyDialog.id;
-                                                if (lowerId < 0) {
-                                                    TLRPC.Chat chat = getChat(-lowerId);
-                                                    if (ChatObject.isNotInChat(chat) || chat.restricted) {
-                                                        removeDialog(proxyDialog);
-                                                    }
-                                                } else {
-                                                    removeDialog(proxyDialog);
-                                                }
-                                                proxyDialog = null;
-                                                sortDialogs(null);
-                                                getNotificationCenter().postNotificationName(NotificationCenter.dialogsNeedReload);
-                                            }
-                                        });
-                                    }
-                                    checkingProxyInfo = false;
-                                });
-                            }
-                        });
                     }
                 } else {
-                    nextProxyInfoCheckTime = getConnectionsManager().getCurrentTime() + 60 * 60;
-                    noDialog = true;
+                    did = -res.peer.channel_id;
+                    for (int a = 0; a < res.chats.size(); a++) {
+                        TLRPC.Chat chat = res.chats.get(a);
+                        if (chat.id == res.peer.channel_id) {
+                            if (chat.kicked || chat.restricted) {
+                                noDialog = true;
+                            }
+                            break;
+                        }
+                    }
                 }
-                if (noDialog) {
-                    proxyDialogId = 0;
-                    getGlobalMainSettings().edit().putLong("proxy_dialog", proxyDialogId).remove("proxyDialogAddress").commit();
-                    checkingProxyInfoRequestId = 0;
-                    checkingProxyInfo = false;
-                    AndroidUtilities.runOnUIThread(this::removeProxyDialog);
+                promoDialogId = did;
+                if (res.proxy) {
+                    promoDialogType = PROMO_TYPE_PROXY;
+                } else if (!TextUtils.isEmpty(res.psa_type)) {
+                    promoDialogType = PROMO_TYPE_PSA;
+                    promoPsaType = res.psa_type;
+                } else {
+                    promoDialogType = PROMO_TYPE_OTHER;
                 }
-            });
-        } else {
-            removeCurrent = 2;
-        }
-        if (removeCurrent != 0) {
-            proxyDialogId = 0;
-            proxyDialogAddress = null;
-            getGlobalMainSettings().edit().putLong("proxy_dialog", proxyDialogId).remove("proxyDialogAddress").commit();
-            nextProxyInfoCheckTime = getConnectionsManager().getCurrentTime() + 60 * 60;
-            if (removeCurrent == 2) {
-                checkingProxyInfo = false;
-                if (checkingProxyInfoRequestId != 0) {
-                    getConnectionsManager().cancelRequest(checkingProxyInfoRequestId, true);
-                    checkingProxyInfoRequestId = 0;
+                proxyDialogAddress = proxyAddress + proxySecret;
+                promoPsaMessage = res.psa_message;
+                nextPromoInfoCheckTime = res.expires;
+                SharedPreferences.Editor editor = getGlobalMainSettings().edit();
+                editor.putLong("proxy_dialog", promoDialogId);
+                editor.putString("proxyDialogAddress", proxyDialogAddress);
+                editor.putInt("promo_dialog_type", promoDialogType);
+                if (promoPsaMessage != null) {
+                    editor.putString("promo_psa_message", promoPsaMessage);
+                } else {
+                    editor.remove("promo_psa_message");
                 }
+                if (promoPsaType != null) {
+                    editor.putString("promo_psa_type", promoPsaType);
+                } else {
+                    editor.remove("promo_psa_type");
+                }
+                editor.putInt("nextPromoInfoCheckTime", nextPromoInfoCheckTime);
+                editor.commit();
+
+                if (!noDialog) {
+                    AndroidUtilities.runOnUIThread(() -> {
+                        if (promoDialog != null && did != promoDialog.id) {
+                            removePromoDialog();
+                        }
+                        promoDialog = dialogs_dict.get(did);
+
+                        if (promoDialog != null) {
+                            checkingPromoInfo = false;
+                            sortDialogs(null);
+                            getNotificationCenter().postNotificationName(NotificationCenter.dialogsNeedReload, true);
+                        } else {
+                            final SparseArray<TLRPC.User> usersDict = new SparseArray<>();
+                            final SparseArray<TLRPC.Chat> chatsDict = new SparseArray<>();
+                            for (int a = 0; a < res.users.size(); a++) {
+                                TLRPC.User u = res.users.get(a);
+                                usersDict.put(u.id, u);
+                            }
+                            for (int a = 0; a < res.chats.size(); a++) {
+                                TLRPC.Chat c = res.chats.get(a);
+                                chatsDict.put(c.id, c);
+                            }
+
+                            TLRPC.TL_messages_getPeerDialogs req1 = new TLRPC.TL_messages_getPeerDialogs();
+                            TLRPC.TL_inputDialogPeer peer = new TLRPC.TL_inputDialogPeer();
+                            if (res.peer.user_id != 0) {
+                                peer.peer = new TLRPC.TL_inputPeerUser();
+                                peer.peer.user_id = res.peer.user_id;
+                                TLRPC.User user = usersDict.get(res.peer.user_id);
+                                if (user != null) {
+                                    peer.peer.access_hash = user.access_hash;
+                                }
+                            } else if (res.peer.chat_id != 0) {
+                                peer.peer = new TLRPC.TL_inputPeerChat();
+                                peer.peer.chat_id = res.peer.chat_id;
+                                TLRPC.Chat chat = chatsDict.get(res.peer.chat_id);
+                                if (chat != null) {
+                                    peer.peer.access_hash = chat.access_hash;
+                                }
+                            } else {
+                                peer.peer = new TLRPC.TL_inputPeerChannel();
+                                peer.peer.channel_id = res.peer.channel_id;
+                                TLRPC.Chat chat = chatsDict.get(res.peer.channel_id);
+                                if (chat != null) {
+                                    peer.peer.access_hash = chat.access_hash;
+                                }
+                            }
+
+                            req1.peers.add(peer);
+                            checkingPromoInfoRequestId = getConnectionsManager().sendRequest(req1, (response1, error1) -> {
+                                if (checkPromoId != lastCheckPromoId) {
+                                    return;
+                                }
+                                checkingPromoInfoRequestId = 0;
+                                final TLRPC.TL_messages_peerDialogs res2 = (TLRPC.TL_messages_peerDialogs) response1;
+                                if (res2 != null && !res2.dialogs.isEmpty()) {
+                                    getMessagesStorage().putUsersAndChats(res.users, res.chats, true, true);
+                                    TLRPC.TL_messages_dialogs dialogs = new TLRPC.TL_messages_dialogs();
+                                    dialogs.chats = res2.chats;
+                                    dialogs.users = res2.users;
+                                    dialogs.dialogs = res2.dialogs;
+                                    dialogs.messages = res2.messages;
+                                    getMessagesStorage().putDialogs(dialogs, 2);
+                                    AndroidUtilities.runOnUIThread(() -> {
+                                        putUsers(res.users, false);
+                                        putChats(res.chats, false);
+                                        putUsers(res2.users, false);
+                                        putChats(res2.chats, false);
+
+                                        if (promoDialog != null) {
+                                            int lowerId = (int) promoDialog.id;
+                                            if (lowerId < 0) {
+                                                TLRPC.Chat chat = getChat(-lowerId);
+                                                if (ChatObject.isNotInChat(chat) || chat.restricted) {
+                                                    removeDialog(promoDialog);
+                                                }
+                                            } else {
+                                                removeDialog(promoDialog);
+                                            }
+                                        }
+
+                                        promoDialog = res2.dialogs.get(0);
+                                        promoDialog.id = did;
+                                        promoDialog.folder_id = 0;
+                                        if (DialogObject.isChannel(promoDialog)) {
+                                            channelsPts.put(-(int) promoDialog.id, promoDialog.pts);
+                                        }
+                                        Integer value = dialogs_read_inbox_max.get(promoDialog.id);
+                                        if (value == null) {
+                                            value = 0;
+                                        }
+                                        dialogs_read_inbox_max.put(promoDialog.id, Math.max(value, promoDialog.read_inbox_max_id));
+                                        value = dialogs_read_outbox_max.get(promoDialog.id);
+                                        if (value == null) {
+                                            value = 0;
+                                        }
+                                        dialogs_read_outbox_max.put(promoDialog.id, Math.max(value, promoDialog.read_outbox_max_id));
+                                        dialogs_dict.put(did, promoDialog);
+                                        if (!res2.messages.isEmpty()) {
+                                            final SparseArray<TLRPC.User> usersDict1 = new SparseArray<>();
+                                            final SparseArray<TLRPC.Chat> chatsDict1 = new SparseArray<>();
+                                            for (int a = 0; a < res2.users.size(); a++) {
+                                                TLRPC.User u = res2.users.get(a);
+                                                usersDict1.put(u.id, u);
+                                            }
+                                            for (int a = 0; a < res2.chats.size(); a++) {
+                                                TLRPC.Chat c = res2.chats.get(a);
+                                                chatsDict1.put(c.id, c);
+                                            }
+                                            MessageObject messageObject = new MessageObject(currentAccount, res2.messages.get(0), usersDict1, chatsDict1, false);
+                                            dialogMessage.put(did, messageObject);
+                                            if (promoDialog.last_message_date == 0) {
+                                                promoDialog.last_message_date = messageObject.messageOwner.date;
+                                            }
+                                        }
+                                        sortDialogs(null);
+                                        getNotificationCenter().postNotificationName(NotificationCenter.dialogsNeedReload, true);
+                                    });
+                                } else {
+                                    AndroidUtilities.runOnUIThread(() -> {
+                                        if (promoDialog != null) {
+                                            int lowerId = (int) promoDialog.id;
+                                            if (lowerId < 0) {
+                                                TLRPC.Chat chat = getChat(-lowerId);
+                                                if (ChatObject.isNotInChat(chat) || chat.restricted) {
+                                                    removeDialog(promoDialog);
+                                                }
+                                            } else {
+                                                removeDialog(promoDialog);
+                                            }
+                                            promoDialog = null;
+                                            sortDialogs(null);
+                                            getNotificationCenter().postNotificationName(NotificationCenter.dialogsNeedReload);
+                                        }
+                                    });
+                                }
+                                checkingPromoInfo = false;
+                            });
+                        }
+                    });
+                }
+            } else {
+                nextPromoInfoCheckTime = getConnectionsManager().getCurrentTime() + 60 * 60;
+                noDialog = true;
             }
-            AndroidUtilities.runOnUIThread(this::removeProxyDialog);
+            if (noDialog) {
+                promoDialogId = 0;
+                getGlobalMainSettings().edit().putLong("proxy_dialog", promoDialogId).remove("proxyDialogAddress").putInt("nextPromoInfoCheckTime", nextPromoInfoCheckTime).commit();
+                checkingPromoInfoRequestId = 0;
+                checkingPromoInfo = false;
+                AndroidUtilities.runOnUIThread(this::removePromoDialog);
+            }
+        });
+        if (removeCurrent != 0) {
+            promoDialogId = 0;
+            proxyDialogAddress = null;
+            nextPromoInfoCheckTime = getConnectionsManager().getCurrentTime() + 60 * 60;
+            getGlobalMainSettings().edit().putLong("proxy_dialog", promoDialogId).remove("proxyDialogAddress").putInt("nextPromoInfoCheckTime", nextPromoInfoCheckTime).commit();
+            AndroidUtilities.runOnUIThread(this::removePromoDialog);
         }
     }
 
-    private void removeProxyDialog() {
-        if (proxyDialog == null) {
+    private void removePromoDialog() {
+        if (promoDialog == null) {
             return;
         }
-        int lowerId = (int) proxyDialog.id;
+        int lowerId = (int) promoDialog.id;
         if (lowerId < 0) {
             TLRPC.Chat chat = getChat(-lowerId);
             if (ChatObject.isNotInChat(chat) || chat.restricted) {
-                removeDialog(proxyDialog);
+                removeDialog(promoDialog);
             }
         } else {
-            removeDialog(proxyDialog);
+            removeDialog(promoDialog);
         }
-        proxyDialog = null;
+        promoDialog = null;
         sortDialogs(null);
         getNotificationCenter().postNotificationName(NotificationCenter.dialogsNeedReload);
     }
 
-    public boolean isProxyDialog(long did, boolean checkLeft) {
-        return proxyDialog != null && proxyDialog.id == did && (!checkLeft || isLeftProxyChannel);
+    public boolean isPromoDialog(long did, boolean checkLeft) {
+        return promoDialog != null && promoDialog.id == did && (!checkLeft || isLeftPromoChannel);
     }
 
     private String getUserNameForTyping(TLRPC.User user) {
@@ -5250,7 +5294,7 @@ public class MessagesController extends BaseController implements NotificationCe
         for (int a = 0; a < allDialogs.size(); a++) {
             TLRPC.Dialog d = allDialogs.get(a);
             if (!d.pinned) {
-                if (d.id != proxyDialogId) {
+                if (d.id != promoDialogId) {
                     break;
                 }
                 continue;
@@ -5317,7 +5361,7 @@ public class MessagesController extends BaseController implements NotificationCe
                 if (!DialogObject.isPeerDialogId(dialogId) && !DialogObject.isSecretDialogId(dialogId)) {
                     continue;
                 }
-                if (folderId == 1 && (dialogId == selfUserId || dialogId == 777000 || isProxyDialog(dialogId, false))) {
+                if (folderId == 1 && (dialogId == selfUserId || dialogId == 777000 || isPromoDialog(dialogId, false))) {
                     continue;
                 }
                 TLRPC.Dialog dialog = dialogs_dict.get(dialogId);
@@ -6204,7 +6248,7 @@ public class MessagesController extends BaseController implements NotificationCe
                 }
                 if (message.to_id.channel_id != 0) {
                     TLRPC.Chat chat = chatsDict.get(message.to_id.channel_id);
-                    if (chat != null && chat.left && (proxyDialogId == 0 || proxyDialogId != -chat.id)) {
+                    if (chat != null && chat.left && (promoDialogId == 0 || promoDialogId != -chat.id)) {
                         continue;
                     }
                     if (chat != null && chat.megagroup) {
@@ -6294,8 +6338,8 @@ public class MessagesController extends BaseController implements NotificationCe
                         continue;
                     }
                 }
-                if (proxyDialogId != 0 && proxyDialogId == d.id) {
-                    proxyDialog = d;
+                if (promoDialogId != 0 && promoDialogId == d.id) {
+                    promoDialog = d;
                 }
                 if (d.last_message_date == 0) {
                     MessageObject mess = new_dialogMessage.get(d.id);
@@ -6310,7 +6354,7 @@ public class MessagesController extends BaseController implements NotificationCe
                         if (!chat.megagroup) {
                             allowCheck = false;
                         }
-                        if (chat.left && (proxyDialogId == 0 || proxyDialogId != d.id)) {
+                        if (chat.left && (promoDialogId == 0 || promoDialogId != d.id)) {
                             continue;
                         }
                     }
@@ -6863,7 +6907,7 @@ public class MessagesController extends BaseController implements NotificationCe
 
             for (int a = 0; a < dialogsRes.messages.size(); a++) {
                 TLRPC.Message message = dialogsRes.messages.get(a);
-                if (proxyDialogId == 0 || proxyDialogId != message.dialog_id) {
+                if (promoDialogId == 0 || promoDialogId != message.dialog_id) {
                     if (message.to_id.channel_id != 0) {
                         TLRPC.Chat chat = chatsDict.get(message.to_id.channel_id);
                         if (chat != null && chat.left) {
@@ -6882,7 +6926,7 @@ public class MessagesController extends BaseController implements NotificationCe
             for (int a = 0; a < dialogsRes.dialogs.size(); a++) {
                 TLRPC.Dialog d = dialogsRes.dialogs.get(a);
                 DialogObject.initDialog(d);
-                if (proxyDialogId == 0 || proxyDialogId != d.id) {
+                if (promoDialogId == 0 || promoDialogId != d.id) {
                     if (DialogObject.isChannel(d)) {
                         TLRPC.Chat chat = chatsDict.get(-(int) d.id);
                         if (chat != null && chat.left) {
@@ -8970,7 +9014,7 @@ public class MessagesController extends BaseController implements NotificationCe
                     continue;
                 }
                 if (!dialog.pinned) {
-                    if (dialog.id != proxyDialogId) {
+                    if (dialog.id != promoDialogId) {
                         break;
                     }
                     continue;
@@ -9027,7 +9071,7 @@ public class MessagesController extends BaseController implements NotificationCe
                     continue;
                 }
                 if (!d.pinned) {
-                    if (d.id != proxyDialogId) {
+                    if (d.id != promoDialogId) {
                         break;
                     }
                     continue;
@@ -9193,7 +9237,7 @@ public class MessagesController extends BaseController implements NotificationCe
                             continue;
                         }
                         if (!dialog.pinned) {
-                            if (dialog.id != proxyDialogId) {
+                            if (dialog.id != promoDialogId) {
                                 break;
                             }
                             continue;
@@ -11321,7 +11365,7 @@ public class MessagesController extends BaseController implements NotificationCe
                         if (chat != null) {
                             if (dialog == null && chat instanceof TLRPC.TL_channel && !chat.left) {
                                 Utilities.stageQueue.postRunnable(() -> getChannelDifference(update.channel_id, 1, 0, null));
-                            } else if (chat.left && dialog != null && (proxyDialog == null || proxyDialog.id != dialog.id)) {
+                            } else if (chat.left && dialog != null && (promoDialog == null || promoDialog.id != dialog.id)) {
                                 deleteDialog(dialog.id, 0);
                             }
                         }
@@ -11822,7 +11866,13 @@ public class MessagesController extends BaseController implements NotificationCe
     public boolean isDialogMuted(long dialog_id, TLRPC.Chat chat) {
         int mute_type = notificationsPreferences.getInt("notify2_" + dialog_id, -1);
         if (mute_type == -1) {
-            return !getNotificationsController().isGlobalNotificationsEnabled(dialog_id, ChatObject.isChannel(chat) && !chat.megagroup);
+            Boolean forceChannel;
+            if (chat != null) {
+                forceChannel = ChatObject.isChannel(chat) && !chat.megagroup;
+            } else {
+                forceChannel = null;
+            }
+            return !getNotificationsController().isGlobalNotificationsEnabled(dialog_id, forceChannel);
         }
         if (mute_type == 2) {
             return true;
@@ -12157,11 +12207,11 @@ public class MessagesController extends BaseController implements NotificationCe
         }
 
         Collections.sort(allDialogs, dialogComparator);
-        isLeftProxyChannel = true;
-        if (proxyDialog != null && proxyDialog.id < 0) {
-            TLRPC.Chat chat = getChat(-(int) proxyDialog.id);
+        isLeftPromoChannel = true;
+        if (promoDialog != null && promoDialog.id < 0) {
+            TLRPC.Chat chat = getChat(-(int) promoDialog.id);
             if (chat != null && !chat.left) {
-                isLeftProxyChannel = false;
+                isLeftPromoChannel = false;
             }
         }
         for (int a = 0, N = allDialogs.size(); a < N; a++) {
@@ -12215,7 +12265,7 @@ public class MessagesController extends BaseController implements NotificationCe
             if ((d.unread_count != 0 || d.unread_mark) && !isDialogMuted(d.id)) {
                 unreadUnmutedDialogs++;
             }
-            if (proxyDialog != null && d.id == proxyDialog.id && isLeftProxyChannel) {
+            if (promoDialog != null && d.id == promoDialog.id && isLeftPromoChannel) {
                 allDialogs.remove(a);
                 a--;
                 N--;
@@ -12223,9 +12273,9 @@ public class MessagesController extends BaseController implements NotificationCe
             }
             addDialogToItsFolder(-1, d);
         }
-        if (proxyDialog != null && isLeftProxyChannel) {
-            allDialogs.add(0, proxyDialog);
-            addDialogToItsFolder(-2, proxyDialog);
+        if (promoDialog != null && isLeftPromoChannel) {
+            allDialogs.add(0, promoDialog);
+            addDialogToItsFolder(-2, promoDialog);
         }
         if (!selfAdded) {
             TLRPC.User user = getUserConfig().getCurrentUser();

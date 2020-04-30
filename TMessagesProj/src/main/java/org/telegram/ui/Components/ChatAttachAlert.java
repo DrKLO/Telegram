@@ -2111,6 +2111,7 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
             currentAttachLayout.setVisibility(View.GONE);
             currentAttachLayout.onHidden();
             currentAttachLayout = photoLayout;
+            setAllowNestedScroll(true);
             if (currentAttachLayout.getParent() == null) {
                 containerView.addView(currentAttachLayout, 0, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
             }

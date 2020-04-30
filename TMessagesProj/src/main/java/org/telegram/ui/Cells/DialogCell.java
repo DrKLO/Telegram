@@ -152,6 +152,8 @@ public class DialogCell extends BaseCell {
     private int timeTop;
     private StaticLayout timeLayout;
 
+    private boolean promoDialog;
+
     private boolean drawCheck1;
     private boolean drawCheck2;
     private boolean drawClock;
@@ -1007,9 +1009,22 @@ public class DialogCell extends BaseCell {
                 }
             }
 
-            if (dialogsType == 0 && MessagesController.getInstance(currentAccount).isProxyDialog(currentDialogId, true)) {
+            promoDialog = false;
+            MessagesController messagesController = MessagesController.getInstance(currentAccount);
+            if (dialogsType == 0 && messagesController.isPromoDialog(currentDialogId, true)) {
                 drawPinBackground = true;
-                timeString = LocaleController.getString("UseProxySponsor", R.string.UseProxySponsor);
+                promoDialog = true;
+                if (messagesController.promoDialogType == MessagesController.PROMO_TYPE_PROXY) {
+                    timeString = LocaleController.getString("UseProxySponsor", R.string.UseProxySponsor);
+                } else if (messagesController.promoDialogType == MessagesController.PROMO_TYPE_PSA) {
+                    timeString = LocaleController.getString("PsaType_" + messagesController.promoPsaType);
+                    if (TextUtils.isEmpty(timeString)) {
+                        timeString = LocaleController.getString("PsaTypeDefault", R.string.PsaTypeDefault);
+                    }
+                    if (!TextUtils.isEmpty(messagesController.promoPsaMessage)) {
+                        messageString = messagesController.promoPsaMessage;
+                    }
+                }
             }
 
             if (currentDialogFolderId != 0) {
@@ -1737,7 +1752,12 @@ public class DialogCell extends BaseCell {
                     translationDrawable = Theme.dialogs_pinArchiveDrawable;
                 }
             } else {
-                if (folderId == 0) {
+                if (promoDialog) {
+                    backgroundColor = Theme.getColor(Theme.key_chats_archiveBackground);
+                    revealBackgroundColor = Theme.getColor(Theme.key_chats_archivePinBackground);
+                    archive = LocaleController.getString("PsaHide", R.string.PsaHide);
+                    translationDrawable = Theme.dialogs_hidePsaDrawable;
+                } else if (folderId == 0) {
                     backgroundColor = Theme.getColor(Theme.key_chats_archiveBackground);
                     revealBackgroundColor = Theme.getColor(Theme.key_chats_archivePinBackground);
                     archive = LocaleController.getString("Archive", R.string.Archive);
@@ -1760,9 +1780,19 @@ public class DialogCell extends BaseCell {
             if (currentRevealProgress < 1.0f) {
                 Theme.dialogs_pinnedPaint.setColor(backgroundColor);
                 canvas.drawRect(tx - AndroidUtilities.dp(8), 0, getMeasuredWidth(), getMeasuredHeight(), Theme.dialogs_pinnedPaint);
-                if (currentRevealProgress == 0 && Theme.dialogs_archiveDrawableRecolored) {
-                    Theme.dialogs_archiveDrawable.setLayerColor("Arrow.**", Theme.getNonAnimatedColor(Theme.key_chats_archiveBackground));
-                    Theme.dialogs_archiveDrawableRecolored = false;
+                if (currentRevealProgress == 0) {
+                    if (Theme.dialogs_archiveDrawableRecolored) {
+                        Theme.dialogs_archiveDrawable.setLayerColor("Arrow.**", Theme.getNonAnimatedColor(Theme.key_chats_archiveBackground));
+                        Theme.dialogs_archiveDrawableRecolored = false;
+                    }
+                    if (Theme.dialogs_hidePsaDrawableRecolored) {
+                        Theme.dialogs_hidePsaDrawable.beginApplyLayerColors();
+                        Theme.dialogs_hidePsaDrawable.setLayerColor("Line 1.**", Theme.getNonAnimatedColor(Theme.key_chats_archiveBackground));
+                        Theme.dialogs_hidePsaDrawable.setLayerColor("Line 2.**", Theme.getNonAnimatedColor(Theme.key_chats_archiveBackground));
+                        Theme.dialogs_hidePsaDrawable.setLayerColor("Line 3.**", Theme.getNonAnimatedColor(Theme.key_chats_archiveBackground));
+                        Theme.dialogs_hidePsaDrawable.commitApplyLayerColors();
+                        Theme.dialogs_hidePsaDrawableRecolored = false;
+                    }
                 }
             }
             int drawableX = getMeasuredWidth() - AndroidUtilities.dp(43) - translationDrawable.getIntrinsicWidth() / 2;
@@ -1782,6 +1812,14 @@ public class DialogCell extends BaseCell {
                 if (!Theme.dialogs_archiveDrawableRecolored) {
                     Theme.dialogs_archiveDrawable.setLayerColor("Arrow.**", Theme.getNonAnimatedColor(Theme.key_chats_archivePinBackground));
                     Theme.dialogs_archiveDrawableRecolored = true;
+                }
+                if (!Theme.dialogs_hidePsaDrawableRecolored) {
+                    Theme.dialogs_hidePsaDrawable.beginApplyLayerColors();
+                    Theme.dialogs_hidePsaDrawable.setLayerColor("Line 1.**", Theme.getNonAnimatedColor(Theme.key_chats_archivePinBackground));
+                    Theme.dialogs_hidePsaDrawable.setLayerColor("Line 2.**", Theme.getNonAnimatedColor(Theme.key_chats_archivePinBackground));
+                    Theme.dialogs_hidePsaDrawable.setLayerColor("Line 3.**", Theme.getNonAnimatedColor(Theme.key_chats_archivePinBackground));
+                    Theme.dialogs_hidePsaDrawable.commitApplyLayerColors();
+                    Theme.dialogs_hidePsaDrawableRecolored = true;
                 }
             }
 
