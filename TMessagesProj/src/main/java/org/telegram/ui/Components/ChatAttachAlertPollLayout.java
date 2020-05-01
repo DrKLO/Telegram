@@ -10,8 +10,10 @@ import android.graphics.drawable.Drawable;
 import android.text.Editable;
 import android.text.TextUtils;
 import android.text.TextWatcher;
+import android.view.ActionMode;
 import android.view.Gravity;
 import android.view.KeyEvent;
+import android.view.Menu;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
@@ -19,6 +21,7 @@ import android.view.inputmethod.EditorInfo;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.SerializedData;
@@ -59,7 +62,7 @@ public class ChatAttachAlertPollLayout extends ChatAttachAlert.AttachAlertLayout
     private boolean[] answersChecks = new boolean[10];
     private int answersCount = 1;
     private String questionString;
-    private String solutionString;
+    private CharSequence solutionString;
     private boolean anonymousPoll = true;
     private boolean multipleChoise;
     private boolean quizPoll;
@@ -329,6 +332,9 @@ public class ChatAttachAlertPollLayout extends ChatAttachAlert.AttachAlertLayout
             @Override
             public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
                 parentAlert.updateLayout(ChatAttachAlertPollLayout.this, true);
+                if (dy != 0 && hintView != null) {
+                    hintView.hide();
+                }
             }
 
             @Override
@@ -393,14 +399,14 @@ public class ChatAttachAlertPollLayout extends ChatAttachAlert.AttachAlertLayout
             poll.poll.multiple_choice = multipleChoise;
             poll.poll.quiz = quizPoll;
             poll.poll.public_voters = !anonymousPoll;
-            poll.poll.question = getFixedString(questionString);
+            poll.poll.question = getFixedString(questionString).toString();
             SerializedData serializedData = new SerializedData(10);
             for (int a = 0; a < answers.length; a++) {
                 if (TextUtils.isEmpty(getFixedString(answers[a]))) {
                     continue;
                 }
                 TLRPC.TL_pollAnswer answer = new TLRPC.TL_pollAnswer();
-                answer.text = getFixedString(answers[a]);
+                answer.text = getFixedString(answers[a]).toString();
                 answer.option = new byte[1];
                 answer.option[0] = (byte) (48 + poll.poll.answers.size());
                 poll.poll.answers.add(answer);
@@ -411,7 +417,13 @@ public class ChatAttachAlertPollLayout extends ChatAttachAlert.AttachAlertLayout
             HashMap<String, String> params = new HashMap<>();
             params.put("answers", Utilities.bytesToHex(serializedData.toByteArray()));
             poll.results = new TLRPC.TL_pollResults();
-            poll.results.solution = getFixedString(solutionString);
+            CharSequence solution = getFixedString(solutionString);
+            poll.results.solution = solution.toString();
+            CharSequence[] message = new CharSequence[]{solution};
+            ArrayList<TLRPC.MessageEntity> entities = MediaDataController.getInstance(parentAlert.currentAccount).getEntities(message, true);
+            if (entities != null && !entities.isEmpty()) {
+                poll.results.solution_entities = entities;
+            }
             if (!TextUtils.isEmpty(poll.results.solution)) {
                 poll.results.flags |= 16;
             }
@@ -507,16 +519,16 @@ public class ChatAttachAlertPollLayout extends ChatAttachAlert.AttachAlertLayout
         listView.smoothScrollToPosition(1);
     }
 
-    private String getFixedString(String text) {
+    public static CharSequence getFixedString(CharSequence text) {
         if (TextUtils.isEmpty(text)) {
             return text;
         }
-        text = AndroidUtilities.getTrimmedString(text).toString();
-        while (text.contains("\n\n\n")) {
-            text = text.replace("\n\n\n", "\n\n");
+        text = AndroidUtilities.getTrimmedString(text);
+        while (TextUtils.indexOf(text, "\n\n\n") >= 0) {
+            text = TextUtils.replace(text, new String[]{"\n\n\n"}, new CharSequence[]{"\n\n"});
         }
-        while (text.startsWith("\n\n\n")) {
-            text = text.replace("\n\n\n", "\n\n");
+        while (TextUtils.indexOf(text, "\n\n\n") == 0) {
+            text = TextUtils.replace(text, new String[]{"\n\n\n"}, new CharSequence[]{"\n\n"});
         }
         return text;
     }
@@ -909,10 +921,21 @@ public class ChatAttachAlertPollLayout extends ChatAttachAlert.AttachAlertLayout
                     view = new TextCheckCell(mContext);
                     break;
                 case 7: {
-                    PollEditTextCell cell = new PollEditTextCell(mContext, null) {
+                    PollEditTextCell cell = new PollEditTextCell(mContext, true, null) {
                         @Override
                         protected void onFieldTouchUp(EditTextBoldCursor editText) {
                             parentAlert.makeFocusable(editText);
+                        }
+
+                        @Override
+                        protected void onActionModeStart(EditTextBoldCursor editText, ActionMode actionMode) {
+                            if (editText.isFocused() && editText.hasSelection()) {
+                                Menu menu = actionMode.getMenu();
+                                if (menu.findItem(android.R.id.copy) == null) {
+                                    return;
+                                }
+                                ((ChatActivity) parentAlert.baseFragment).fillActionModeMenu(menu);
+                            }
                         }
                     };
                     cell.createErrorTextView();
@@ -932,7 +955,7 @@ public class ChatAttachAlertPollLayout extends ChatAttachAlert.AttachAlertLayout
                             if (cell.getTag() != null) {
                                 return;
                             }
-                            solutionString = s.toString();
+                            solutionString = s;
                             RecyclerView.ViewHolder holder = listView.findViewHolderForAdapterPosition(solutionRow);
                             if (holder != null) {
                                 setTextLeft(holder.itemView, solutionRow);

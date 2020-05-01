@@ -308,7 +308,14 @@ public class AndroidUtilities {
         if (links.size() == 0) {
             return false;
         }
-        for (LinkSpec link : links) {
+        for (int a = 0, N = links.size(); a < N; a++) {
+            LinkSpec link = links.get(a);
+            URLSpan[] oldSpans = text.getSpans(link.start, link.end, URLSpan.class);
+            if (oldSpans != null && oldSpans.length > 0) {
+                for (int b = 0; b < oldSpans.length; b++) {
+                    text.removeSpan(oldSpans[b]);
+                }
+            }
             text.setSpan(new URLSpan(link.url), link.start, link.end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         }
         return true;
@@ -3307,7 +3314,7 @@ public class AndroidUtilities {
                 if (ch == '.' || ch == '-' || ch == '/' || ch == '+' || ch >= '0' && ch <= '9') {
                     continue;
                 }
-                if (ch >= 'a' && ch < 'z' || ch >= 'A' && ch <= 'Z') {
+                if (ch >= 'a' && ch <= 'z' || ch >= 'A' && ch <= 'Z') {
                     hasLatin = true;
                 } else {
                     hasNonLatin = true;

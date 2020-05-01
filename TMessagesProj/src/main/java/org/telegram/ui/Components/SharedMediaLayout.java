@@ -928,7 +928,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
         commonGroupsAdapter = new CommonGroupsAdapter(context);
         chatUsersAdapter = new ChatUsersAdapter(context);
         chatUsersAdapter.sortedUsers = sortedUsers;
-        chatUsersAdapter.chatInfo = chatInfo;
+        chatUsersAdapter.chatInfo = membersFirst ? chatInfo : null;
         linksAdapter = new SharedLinksAdapter(context);
 
         setWillNotDraw(false);

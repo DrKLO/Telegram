@@ -403,6 +403,7 @@ public class ChatAttachAlertDocumentLayout extends ChatAttachAlert.AttachAlertLa
         } catch (Exception e) {
             FileLog.e(e);
         }
+        parentAlert.actionBar.closeSearchField();
         ActionBarMenu menu = parentAlert.actionBar.createMenu();
         menu.removeView(sortItem);
         menu.removeView(searchItem);

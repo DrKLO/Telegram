@@ -9,8 +9,10 @@ import android.graphics.drawable.Drawable;
 import android.text.Editable;
 import android.text.TextUtils;
 import android.text.TextWatcher;
+import android.view.ActionMode;
 import android.view.Gravity;
 import android.view.KeyEvent;
+import android.view.Menu;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
@@ -49,7 +51,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 
-import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.DefaultItemAnimator;
 import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -67,7 +68,7 @@ public class PollCreateActivity extends BaseFragment {
     private boolean[] answersChecks = new boolean[10];
     private int answersCount = 1;
     private String questionString;
-    private String solutionString;
+    private CharSequence solutionString;
     private boolean anonymousPoll = true;
     private boolean multipleChoise;
     private boolean quizPoll;
@@ -195,7 +196,7 @@ public class PollCreateActivity extends BaseFragment {
                     if (quizPoll && doneItem.getAlpha() != 1.0f) {
                         int checksCount = 0;
                         for (int a = 0; a < answersChecks.length; a++) {
-                            if (!TextUtils.isEmpty(getFixedString(answers[a])) && answersChecks[a]) {
+                            if (!TextUtils.isEmpty(ChatAttachAlertPollLayout.getFixedString(answers[a])) && answersChecks[a]) {
                                 checksCount++;
                             }
                         }
@@ -209,18 +210,14 @@ public class PollCreateActivity extends BaseFragment {
                     poll.poll.multiple_choice = multipleChoise;
                     poll.poll.quiz = quizPoll;
                     poll.poll.public_voters = !anonymousPoll;
-                    poll.poll.question = getFixedString(questionString);
-                    /*poll.poll.close_period = 20;
-                    poll.poll.close_date = getConnectionsManager().getCurrentTime() + 20;
-                    poll.poll.flags |= 16;
-                    poll.poll.flags |= 32;*/
+                    poll.poll.question = ChatAttachAlertPollLayout.getFixedString(questionString).toString();
                     SerializedData serializedData = new SerializedData(10);
                     for (int a = 0; a < answers.length; a++) {
-                        if (TextUtils.isEmpty(getFixedString(answers[a]))) {
+                        if (TextUtils.isEmpty(ChatAttachAlertPollLayout.getFixedString(answers[a]))) {
                             continue;
                         }
                         TLRPC.TL_pollAnswer answer = new TLRPC.TL_pollAnswer();
-                        answer.text = getFixedString(answers[a]);
+                        answer.text = ChatAttachAlertPollLayout.getFixedString(answers[a]).toString();
                         answer.option = new byte[1];
                         answer.option[0] = (byte) (48 + poll.poll.answers.size());
                         poll.poll.answers.add(answer);
@@ -231,7 +228,13 @@ public class PollCreateActivity extends BaseFragment {
                     HashMap<String, String> params = new HashMap<>();
                     params.put("answers", Utilities.bytesToHex(serializedData.toByteArray()));
                     poll.results = new TLRPC.TL_pollResults();
-                    poll.results.solution = getFixedString(solutionString);
+                    CharSequence solution = ChatAttachAlertPollLayout.getFixedString(solutionString);
+                    poll.results.solution = solution.toString();
+                    CharSequence[] message = new CharSequence[]{solution};
+                    ArrayList<TLRPC.MessageEntity> entities = getMediaDataController().getEntities(message, true);
+                    if (entities != null && !entities.isEmpty()) {
+                        poll.results.solution_entities = entities;
+                    }
                     if (!TextUtils.isEmpty(poll.results.solution)) {
                         poll.results.flags |= 16;
                     }
@@ -357,13 +360,15 @@ public class PollCreateActivity extends BaseFragment {
         });
         listView.setOnScrollListener(new RecyclerView.OnScrollListener() {
             @Override
-            public void onScrollStateChanged(@NonNull RecyclerView recyclerView, int newState) {
-                super.onScrollStateChanged(recyclerView, newState);
+            public void onScrollStateChanged(RecyclerView recyclerView, int newState) {
+
             }
 
             @Override
-            public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
-                super.onScrolled(recyclerView, dx, dy);
+            public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
+                if (dy != 0 && hintView != null) {
+                    hintView.hide();
+                }
             }
         });
 
@@ -387,20 +392,6 @@ public class PollCreateActivity extends BaseFragment {
         AndroidUtilities.requestAdjustResize(getParentActivity(), classGuid, true);
     }
 
-    private String getFixedString(String text) {
-        if (TextUtils.isEmpty(text)) {
-            return text;
-        }
-        text = AndroidUtilities.getTrimmedString(text).toString();
-        while (text.contains("\n\n\n")) {
-            text = text.replace("\n\n\n", "\n\n");
-        }
-        while (text.startsWith("\n\n\n")) {
-            text = text.replace("\n\n\n", "\n\n");
-        }
-        return text;
-    }
-
     private void showQuizHint() {
         int count = listView.getChildCount();
         for (int a = answerStartRow; a < answerStartRow + answersCount; a++) {
@@ -420,19 +411,19 @@ public class PollCreateActivity extends BaseFragment {
         int checksCount = 0;
         if (quizPoll) {
             for (int a = 0; a < answersChecks.length; a++) {
-                if (!TextUtils.isEmpty(getFixedString(answers[a])) && answersChecks[a]) {
+                if (!TextUtils.isEmpty(ChatAttachAlertPollLayout.getFixedString(answers[a])) && answersChecks[a]) {
                     checksCount++;
                 }
             }
         }
-        if (!TextUtils.isEmpty(getFixedString(solutionString)) && solutionString.length() > ChatAttachAlertPollLayout.MAX_SOLUTION_LENGTH) {
+        if (!TextUtils.isEmpty(ChatAttachAlertPollLayout.getFixedString(solutionString)) && solutionString.length() > ChatAttachAlertPollLayout.MAX_SOLUTION_LENGTH) {
             enabled = false;
-        } else if (TextUtils.isEmpty(getFixedString(questionString)) || questionString.length() > ChatAttachAlertPollLayout.MAX_QUESTION_LENGTH) {
+        } else if (TextUtils.isEmpty(ChatAttachAlertPollLayout.getFixedString(questionString)) || questionString.length() > ChatAttachAlertPollLayout.MAX_QUESTION_LENGTH) {
             enabled = false;
         } else {
             int count = 0;
             for (int a = 0; a < answers.length; a++) {
-                if (!TextUtils.isEmpty(getFixedString(answers[a]))) {
+                if (!TextUtils.isEmpty(ChatAttachAlertPollLayout.getFixedString(answers[a]))) {
                     if (answers[a].length() > ChatAttachAlertPollLayout.MAX_ANSWER_LENGTH) {
                         count = 0;
                         break;
@@ -499,10 +490,10 @@ public class PollCreateActivity extends BaseFragment {
     }
 
     private boolean checkDiscard() {
-        boolean allowDiscard = TextUtils.isEmpty(getFixedString(questionString));
+        boolean allowDiscard = TextUtils.isEmpty(ChatAttachAlertPollLayout.getFixedString(questionString));
         if (allowDiscard) {
             for (int a = 0; a < answersCount; a++) {
-                allowDiscard = TextUtils.isEmpty(getFixedString(answers[a]));
+                allowDiscard = TextUtils.isEmpty(ChatAttachAlertPollLayout.getFixedString(answers[a]));
                 if (!allowDiscard) {
                     break;
                 }
@@ -748,7 +739,18 @@ public class PollCreateActivity extends BaseFragment {
                     view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
                     break;
                 case 7: {
-                    PollEditTextCell cell = new PollEditTextCell(mContext, null);
+                    PollEditTextCell cell = new PollEditTextCell(mContext, true, null) {
+                        @Override
+                        protected void onActionModeStart(EditTextBoldCursor editText, ActionMode actionMode) {
+                            if (editText.isFocused() && editText.hasSelection()) {
+                                Menu menu = actionMode.getMenu();
+                                if (menu.findItem(android.R.id.copy) == null) {
+                                    return;
+                                }
+                                parentFragment.fillActionModeMenu(menu);
+                            }
+                        }
+                    };
                     cell.createErrorTextView();
                     cell.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
                     cell.addTextWatcher(new TextWatcher() {
@@ -767,7 +769,7 @@ public class PollCreateActivity extends BaseFragment {
                             if (cell.getTag() != null) {
                                 return;
                             }
-                            solutionString = s.toString();
+                            solutionString = s;
                             RecyclerView.ViewHolder holder = listView.findViewHolderForAdapterPosition(solutionRow);
                             if (holder != null) {
                                 setTextLeft(holder.itemView, solutionRow);

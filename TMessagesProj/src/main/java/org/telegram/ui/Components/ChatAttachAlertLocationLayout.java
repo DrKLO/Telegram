@@ -968,6 +968,7 @@ public class ChatAttachAlertLocationLayout extends ChatAttachAlert.AttachAlertLa
         if (searchAdapter != null) {
             searchAdapter.destroy();
         }
+        parentAlert.actionBar.closeSearchField();
         ActionBarMenu menu = parentAlert.actionBar.createMenu();
         menu.removeView(searchItem);
     }

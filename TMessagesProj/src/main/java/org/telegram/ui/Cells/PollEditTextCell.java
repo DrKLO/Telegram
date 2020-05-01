@@ -18,6 +18,7 @@ import android.graphics.PorterDuffColorFilter;
 import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.util.TypedValue;
+import android.view.ActionMode;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
@@ -33,6 +34,7 @@ import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.CheckBox2;
 import org.telegram.ui.Components.EditTextBoldCursor;
+import org.telegram.ui.Components.EditTextCaption;
 import org.telegram.ui.Components.LayoutHelper;
 
 import java.util.ArrayList;
@@ -50,36 +52,84 @@ public class PollEditTextCell extends FrameLayout {
     private boolean alwaysShowText2;
 
     public PollEditTextCell(Context context, OnClickListener onDelete) {
+        this(context, false, onDelete);
+    }
+
+    public PollEditTextCell(Context context, boolean caption, OnClickListener onDelete) {
         super(context);
 
-        textView = new EditTextBoldCursor(context) {
-
-            @Override
-            public InputConnection onCreateInputConnection(EditorInfo outAttrs) {
-                InputConnection conn = super.onCreateInputConnection(outAttrs);
-                if (showNextButton) {
-                    outAttrs.imeOptions &= ~EditorInfo.IME_FLAG_NO_ENTER_ACTION;
+        if (caption) {
+            textView = new EditTextCaption(context) {
+                @Override
+                public InputConnection onCreateInputConnection(EditorInfo outAttrs) {
+                    InputConnection conn = super.onCreateInputConnection(outAttrs);
+                    if (showNextButton) {
+                        outAttrs.imeOptions &= ~EditorInfo.IME_FLAG_NO_ENTER_ACTION;
+                    }
+                    return conn;
                 }
-                return conn;
-            }
 
-            @Override
-            protected void onDraw(Canvas canvas) {
-                super.onDraw(canvas);
-                onEditTextDraw(this, canvas);
-            }
+                @Override
+                protected void onDraw(Canvas canvas) {
+                    super.onDraw(canvas);
+                    onEditTextDraw(this, canvas);
+                }
 
-            @Override
-            public boolean onTouchEvent(MotionEvent event) {
-                if (!isEnabled()) {
-                    return false;
+                @Override
+                public boolean onTouchEvent(MotionEvent event) {
+                    if (!isEnabled()) {
+                        return false;
+                    }
+                    if (event.getAction() == MotionEvent.ACTION_UP) {
+                        onFieldTouchUp(this);
+                    }
+                    return super.onTouchEvent(event);
                 }
-                if (event.getAction() == MotionEvent.ACTION_UP) {
-                    onFieldTouchUp(this);
+
+                @Override
+                public ActionMode startActionMode(ActionMode.Callback callback, int type) {
+                    ActionMode actionMode = super.startActionMode(callback, type);
+                    onActionModeStart(this, actionMode);
+                    return actionMode;
                 }
-                return super.onTouchEvent(event);
-            }
-        };
+
+                @Override
+                public ActionMode startActionMode(ActionMode.Callback callback) {
+                    ActionMode actionMode = super.startActionMode(callback);
+                    onActionModeStart(this, actionMode);
+                    return actionMode;
+                }
+            };
+            ((EditTextCaption) textView).setAllowTextEntitiesIntersection(true);
+        } else {
+            textView = new EditTextBoldCursor(context) {
+                @Override
+                public InputConnection onCreateInputConnection(EditorInfo outAttrs) {
+                    InputConnection conn = super.onCreateInputConnection(outAttrs);
+                    if (showNextButton) {
+                        outAttrs.imeOptions &= ~EditorInfo.IME_FLAG_NO_ENTER_ACTION;
+                    }
+                    return conn;
+                }
+
+                @Override
+                protected void onDraw(Canvas canvas) {
+                    super.onDraw(canvas);
+                    onEditTextDraw(this, canvas);
+                }
+
+                @Override
+                public boolean onTouchEvent(MotionEvent event) {
+                    if (!isEnabled()) {
+                        return false;
+                    }
+                    if (event.getAction() == MotionEvent.ACTION_UP) {
+                        onFieldTouchUp(this);
+                    }
+                    return super.onTouchEvent(event);
+                }
+            };
+        }
         textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
         textView.setHintTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteHintText));
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
@@ -186,6 +236,10 @@ public class PollEditTextCell extends FrameLayout {
 
     protected boolean isChecked(PollEditTextCell editText) {
         return false;
+    }
+
+    protected void onActionModeStart(EditTextBoldCursor editText, ActionMode actionMode) {
+
     }
 
     public void callOnDelete() {

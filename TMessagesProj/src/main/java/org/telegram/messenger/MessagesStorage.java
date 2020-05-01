@@ -9675,18 +9675,22 @@ public class MessagesStorage extends BaseController {
                 for (int a = 0; a < dialogs.dialogs.size(); a++) {
                     TLRPC.Dialog dialog = dialogs.dialogs.get(a);
 
+                    boolean exists = false;
                     DialogObject.initDialog(dialog);
                     if (check == 1) {
                         SQLiteCursor cursor = database.queryFinalized("SELECT did FROM dialogs WHERE did = " + dialog.id);
-                        boolean exists = cursor.next();
+                        exists = cursor.next();
                         cursor.dispose();
                         if (exists) {
                             continue;
                         }
-                    } else if (dialog.pinned && check == 2) {
+                    } else if (check == 2) {
                         SQLiteCursor cursor = database.queryFinalized("SELECT pinned FROM dialogs WHERE did = " + dialog.id);
                         if (cursor.next()) {
-                            dialog.pinnedNum = cursor.intValue(0);
+                            exists = true;
+                            if (dialog.pinned) {
+                                dialog.pinnedNum = cursor.intValue(0);
+                            }
                         }
                         cursor.dispose();
                     }
@@ -9745,7 +9749,12 @@ public class MessagesStorage extends BaseController {
                             state_polls.step();
                         }
 
-                        createFirstHoles(dialog.id, state_holes, state_media_holes, message.id);
+                        if (exists) {
+                            closeHolesInTable("messages_holes", dialog.id, message.id, message.id);
+                            closeHolesInMedia(dialog.id, message.id, message.id, -1);
+                        } else {
+                            createFirstHoles(dialog.id, state_holes, state_media_holes, message.id);
+                        }
                     }
 
                     long topMessage = dialog.top_message;
