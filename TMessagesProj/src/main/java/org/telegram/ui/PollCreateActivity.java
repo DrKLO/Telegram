@@ -229,14 +229,16 @@ public class PollCreateActivity extends BaseFragment {
                     params.put("answers", Utilities.bytesToHex(serializedData.toByteArray()));
                     poll.results = new TLRPC.TL_pollResults();
                     CharSequence solution = ChatAttachAlertPollLayout.getFixedString(solutionString);
-                    poll.results.solution = solution.toString();
-                    CharSequence[] message = new CharSequence[]{solution};
-                    ArrayList<TLRPC.MessageEntity> entities = getMediaDataController().getEntities(message, true);
-                    if (entities != null && !entities.isEmpty()) {
-                        poll.results.solution_entities = entities;
-                    }
-                    if (!TextUtils.isEmpty(poll.results.solution)) {
-                        poll.results.flags |= 16;
+                    if (solution != null) {
+                        poll.results.solution = solution.toString();
+                        CharSequence[] message = new CharSequence[]{solution};
+                        ArrayList<TLRPC.MessageEntity> entities = getMediaDataController().getEntities(message, true);
+                        if (entities != null && !entities.isEmpty()) {
+                            poll.results.solution_entities = entities;
+                        }
+                        if (!TextUtils.isEmpty(poll.results.solution)) {
+                            poll.results.flags |= 16;
+                        }
                     }
                     if (parentFragment.isInScheduleMode()) {
                         AlertsCreator.createScheduleDatePickerDialog(getParentActivity(), parentFragment.getDialogId(), (notify, scheduleDate) -> {

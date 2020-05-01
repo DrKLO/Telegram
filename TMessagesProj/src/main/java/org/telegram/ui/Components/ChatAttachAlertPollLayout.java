@@ -418,14 +418,16 @@ public class ChatAttachAlertPollLayout extends ChatAttachAlert.AttachAlertLayout
             params.put("answers", Utilities.bytesToHex(serializedData.toByteArray()));
             poll.results = new TLRPC.TL_pollResults();
             CharSequence solution = getFixedString(solutionString);
-            poll.results.solution = solution.toString();
-            CharSequence[] message = new CharSequence[]{solution};
-            ArrayList<TLRPC.MessageEntity> entities = MediaDataController.getInstance(parentAlert.currentAccount).getEntities(message, true);
-            if (entities != null && !entities.isEmpty()) {
-                poll.results.solution_entities = entities;
-            }
-            if (!TextUtils.isEmpty(poll.results.solution)) {
-                poll.results.flags |= 16;
+            if (solution != null) {
+                poll.results.solution = solution.toString();
+                CharSequence[] message = new CharSequence[]{solution};
+                ArrayList<TLRPC.MessageEntity> entities = MediaDataController.getInstance(parentAlert.currentAccount).getEntities(message, true);
+                if (entities != null && !entities.isEmpty()) {
+                    poll.results.solution_entities = entities;
+                }
+                if (!TextUtils.isEmpty(poll.results.solution)) {
+                    poll.results.flags |= 16;
+                }
             }
             ChatActivity chatActivity = (ChatActivity) parentAlert.baseFragment;
             if (chatActivity.isInScheduleMode()) {
