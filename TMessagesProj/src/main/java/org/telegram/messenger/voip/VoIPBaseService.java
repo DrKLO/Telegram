@@ -612,6 +612,7 @@ public abstract class VoIPBaseService extends Service implements SensorEventList
 		if(!USE_CONNECTION_SERVICE){
 			if(isBtHeadsetConnected && !playingSound){
 				am.stopBluetoothSco();
+				am.setBluetoothScoOn(false);
 				am.setSpeakerphoneOn(false);
 			}
 			try{
