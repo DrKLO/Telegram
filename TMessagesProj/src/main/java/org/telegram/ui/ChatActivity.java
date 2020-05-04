@@ -223,7 +223,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
 
     private ArrayList<ChatMessageCell> chatMessageCellsCache = new ArrayList<>();
 
-    private HashMap<MessageObject, Boolean> alredyPlayedStickers = new HashMap<>();
+    private HashMap<MessageObject, Boolean> alreadyPlayedStickers = new HashMap<>();
 
     private Dialog closeChatDialog;
     private FrameLayout progressView;
@@ -16423,12 +16423,12 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
 
                     @Override
                     public boolean shouldRepeatSticker(MessageObject message) {
-                        return !alredyPlayedStickers.containsKey(message);
+                        return !alreadyPlayedStickers.containsKey(message);
                     }
 
                     @Override
                     public void setShouldNotRepeatSticker(MessageObject message) {
-                        alredyPlayedStickers.put(message, true);
+                        alreadyPlayedStickers.put(message, true);
                     }
 
                     @Override
