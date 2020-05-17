@@ -11,6 +11,8 @@
                       android:smallScreens="true"
                       android:xlargeScreens="true"/>
 
+    <uses-sdk android:minSdkVersion="23" android:targetSdkVersion="28"/>
+
     <uses-feature android:glEsVersion="0x00020000" android:required="false"/>
     <uses-feature android:name="android.hardware.telephony" android:required="false" />
     <uses-feature android:name="android.hardware.wifi" android:required="false" />
