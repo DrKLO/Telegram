@@ -3290,14 +3290,13 @@ public class AlertsCreator {
                 long date = currentTime + (long) value * 86400000L;
                 calendar.setTimeInMillis(date);
                 int year = calendar.get(Calendar.YEAR);
+                LocaleController loc = LocaleController.getInstance();
+                final String week = loc.formatterWeek.format(date) + ", ";
+                
                 if (year == currentYear) {
-                    return (
-                        LocaleController.getInstance().formatterWeek.format(date) +
-                        ", " +
-                        LocaleController.getInstance().formatterScheduleDay.format(date)
-                    );
+                    return week + loc.formatterScheduleDay.format(date);
                 } else {
-                    return LocaleController.getInstance().formatterScheduleYear.format(date);
+                    return week + loc.formatterScheduleYear.format(date);
                 }
             }
         });
