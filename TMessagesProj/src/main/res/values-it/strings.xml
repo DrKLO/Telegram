@@ -10,7 +10,7 @@
     <!--signin view-->
     <string name="YourPhone">Il tuo numero</string>
     <string name="StartText">Conferma il prefisso internazionale e inserisci il tuo numero di telefono.</string>
-    <string name="ChooseCountry">Scegli un paese</string>
+    <string name="ChooseCountry">Scegli un Paese</string>
     <string name="WrongCountry">Prefisso internazionale non valido</string>
     <string name="AccountAlreadyLoggedIn">Questo account è già collegato in questa app.</string>
     <string name="AccountSwitch">Cambia</string>
@@ -408,8 +408,8 @@
     <string name="EditAdminChangeChannelInfo">Cambiare le info del canale</string>
     <string name="EditAdminChangeGroupInfo">Cambiare le info del gruppo</string>
     <string name="EditAdminPostMessages">Pubblicare messaggi</string>
-    <string name="EditAdminEditMessages">Modificare messaggi di altri</string>
-    <string name="EditAdminDeleteMessages">Eliminare messaggi di altri</string>
+    <string name="EditAdminEditMessages">Modificare messaggi altrui</string>
+    <string name="EditAdminDeleteMessages">Eliminare messaggi altrui</string>
     <string name="EditAdminGroupDeleteMessages">Eliminare messaggi</string>
     <string name="EditAdminAddAdmins">Aggiungere amministratori</string>
     <string name="EditAdminRemoveAdmin">Rimuovi amministratore</string>
@@ -501,7 +501,7 @@
     <string name="LinkedChannel">Canale collegato</string>
     <string name="DiscussionChannelHelp">Seleziona una chat di gruppo per la discussione che sarà mostrata nel tuo canale.</string>
     <string name="DiscussionChannelHelp2">Tutto ciò che pubblichi nel canale verrà inoltrato in questo gruppo.</string>
-    <string name="DiscussionChannelGroupSetHelp">A tutti gli iscritti viene mostrato un collegamento a **%1$s** nel pannello inferiore.</string>
+    <string name="DiscussionChannelGroupSetHelp">A tutti gli iscritti viene mostrato un link a **%1$s** nel pannello inferiore.</string>
     <string name="DiscussionGroupHelp">Il gruppo è collegato come chat di discussione di **%1$s**.</string>
     <string name="DiscussionGroupHelp2">Tutti i nuovi messaggi pubblicati in questo canale sono inoltrati nel gruppo.</string>
     <string name="DiscussionCreateGroup">Crea un nuovo gruppo</string>
@@ -764,7 +764,7 @@
     <string name="IsSendingGame">%1$s sta giocando a un gioco...</string>
     <string name="IsSendingVideo">%1$s sta inviando un video...</string>
     <string name="IsSendingFile">%1$s sta inviando un file...</string>
-    <string name="RecordingAudio">sta registrando un audio...</string>
+    <string name="RecordingAudio">sta registrando un vocale...</string>
     <string name="RecordingRound">sta registrando un videomessaggio...</string>
     <string name="SendingAudio">sta inviando un audio...</string>
     <string name="SendingPhoto">sta inviando una foto...</string>
@@ -801,9 +801,9 @@
     <string name="YouLeft">Hai lasciato il gruppo</string>
     <string name="DeleteThisGroup">Elimina questo gruppo</string>
     <string name="DeleteThisChat">Elimina questa chat</string>
-    <string name="DeleteThisChatBothSides">Elimina questa chat</string>
+    <string name="DeleteThisChatBothSides">Elimina questa chat per entrambi</string>
     <string name="DeleteTheseChatsBothSides">Elimina chat</string>
-    <string name="SlideToCancel">ANNULLA</string>
+    <string name="SlideToCancel">SCORRI PER ANNULLARE</string>
     <string name="SaveToDownloads">Salva nei download</string>
     <string name="SaveToGIFs">Salva nelle GIF</string>
     <string name="DeleteGif">Eliminare la GIF?</string>
@@ -909,6 +909,7 @@
     <string name="DeleteForUser">Elimina per %1$s</string>
     <string name="DeleteForAll">Elimina per tutti i membri</string>
     <string name="TextCopied">Testo copiato negli appunti</string>
+    <string name="HoldToAudioOnly">Hold to record audio.</string>
     <string name="HoldToAudio">Tieni premuto per l\'audio. Tocca per il video.</string>
     <string name="HoldToVideo">Tieni premuto per il video. Tocca per l\'audio.</string>
     <string name="DiscardVoiceMessageTitle">Scarta messaggio vocale</string>
@@ -973,10 +974,21 @@
     <string name="TextSelectionHit">Premi la **parola**, quindi muovi il cursore per selezionare altro testo da copiare.</string>
     <string name="CardNumberCopied">Numero carta copiato negli appunti</string>
     <string name="CopyCardNumber">Copia</string>
-    <string name="DiceInfo2">Invia l\'emoji **:dice:** in qualsiasi chat per lanciare un dado.</string>
-    <string name="DartInfo">L\'invia l\'emoji **:darts:** per tentare la fortuna.</string>
+    <string name="DiceInfo2">Invia l\'emoji **:dado:** in qualsiasi chat per lanciare un dado.</string>
+    <string name="DartInfo">Invia l\'emoji **:freccetta:** per tentare la fortuna.</string>
     <string name="DiceEmojiInfo">Invia l\'emoji %1$s per tentare la fortuna.</string>
-    <string name="SendDice">INVIA</string>Send a dart emoji
+    <string name="SendDice">INVIA</string>
+    <string name="PsaType_covid">COVID-19</string>
+    <string name="PsaTypeDefault">PSA</string>
+    <string name="PsaInfo_covid">Questo messaggio ti fornisce un annuncio di servizio pubblico in relazione alla pandemia COVID-19 in corso. Scopri di più su questa iniziativa su https://telegram.org/blog/coronavirus</string>
+    <string name="PsaInfoDefault">Test info PSA</string>
+    <string name="PsaMessage_covid">Notifica COVID-19</string>
+    <string name="PsaMessageInfo_covid">Questo messaggio ti fornisce un annuncio di servizio pubblico in relazione alla pandemia COVID-19 in corso. Scopri di più su questa iniziativa su https://telegram.org/blog/coronavirus</string>
+    <string name="PsaMessageDefault">Notifica importante</string>
+    <string name="PsaMessageInfoDefault">Questa è una notifica importante.</string>
+    <string name="PsaHideChatAlertTitle">Nascondi chat</string>
+    <string name="PsaHideChatAlertText">Sei sicuro di voler nascondere questa chat?</string>
+    <string name="PsaHide">Nascondi</string>
     <!--notification-->
     <string name="MessageLifetimeChanged">%1$s ha impostato il timer di autodistruzione a %2$s</string>
     <string name="MessageLifetimeChangedOutgoing">Hai impostato il timer di autodistruzione a %1$s</string>
@@ -1297,6 +1309,7 @@
     <string name="Masks">Maschere</string>
     <string name="MasksInfo">Puoi aggiungere maschere alle foto che invii. Per farlo, apri l\'editor fotografico prima di inviare una foto.</string>
     <string name="FeaturedStickers">Sticker in primo piano</string>
+    <string name="FeaturedGifs">GIF in primo piano</string>
     <string name="SuggestStickers">Suggerisci da emoji</string>
     <string name="SuggestStickersAll">Tutti i set</string>
     <string name="SuggestStickersInstalled">I miei set</string>
@@ -1443,7 +1456,7 @@
     <string name="TextSizeHeader">Dimensione testo messaggio</string>
     <string name="AskAQuestion">Fai una domanda</string>
     <string name="AddAnExplanation">Aggiungi una spiegazione</string>
-    <string name="AddAnExplanationInfo">Gli utenti vedranno questo testo dopo aver scelto l\'opzione sbagliata, utile per scopi educativi.</string>
+    <string name="AddAnExplanationInfo">Gli utenti vedranno questo testo dopo aver scelto l\'opzione sbagliata, utile per scopi didattici.</string>
     <string name="EnableAnimations">Attiva animazioni</string>
     <string name="ChatSettings">Impostazioni chat</string>
     <string name="Devices">Dispositivi</string>
@@ -1657,6 +1670,7 @@
     <string name="AutoplayMedia">Autoriproduzione media</string>
     <string name="RaiseToSpeak">Alza per registrare</string>
     <string name="SaveToGallerySettings">Salva nella galleria</string>
+    <string name="SoundMuted">Suono silenziato</string>
     <string name="EditName">Modifica nome</string>
     <string name="NotificationsCustomize">Personalizza</string>
     <string name="NotificationsCustom">Personalizzate</string>
@@ -1670,7 +1684,7 @@
     <string name="RepeatNotificationsNever">Mai</string>
     <string name="RepeatNotifications">Ripeti notifiche</string>
     <string name="PhoneNumberHelp">Puoi cambiare il tuo numero di telefono qui. Il tuo account e tutti i tuoi dati cloud — messaggi, media, contatti, etc. saranno trasferiti sul nuovo numero</string>
-    <string name="PhoneNumberAlert">Gli utenti vedranno il tuo nuovo numero se lo hanno nella loro rubrica o se le tue impostazioni sulla privacy lo consentono. Puoi modificarle in Impostazioni &gt; Privacy e sicurezza &gt; Numero di telefono.</string>
+    <string name="PhoneNumberAlert">Gli utenti vedranno il tuo nuovo numero se lo hanno in rubrica o se le tue impostazioni sulla privacy lo consentono. Puoi modificarle in Impostazioni &gt; Privacy e sicurezza &gt; Numero di telefono.</string>
     <string name="PhoneNumberChange2">Cambia numero</string>
     <string name="PhoneNumberChangeTitle">Cambia numero</string>
     <string name="ChangePhoneNewNumber">Nuovo numero</string>
@@ -1819,6 +1833,7 @@
     <string name="AuthAnotherClientInfo2">Avvia Telegram Desktop per ottenere il codice QR.</string>
     <string name="AuthAnotherClientInfo3">Scansiona il codice QR per connettere il tuo account.</string>
     <string name="AuthAnotherClientUrl">Questo codice può essere usato per consentire a qualcuno di accedere al tuo account Telegram.\n\nPer confermare l\'accesso a Telegram, vai in Impostazioni &gt; Dispositivi &gt; Scansiona QR e scansiona il codice.</string>
+    <string name="QRCodePermissionNoCamera">Telegram deve accedere alla tua fotocamera affinché tu possa scansionare i codici QR .</string>
     <!--cache view-->
     <string name="LocalDatabase">Database locale</string>
     <string name="LocalDatabaseClearTextTitle">Cancella database locale</string>
@@ -1899,7 +1914,7 @@
     <string name="PassportEmailVerifyInfo">Per favore inserisci il codice di conferma che abbiamo appena inviato a %1$s.</string>
     <string name="PassportSelfRequest">Per favore inserisci la tua password per accedere ai tuoi dati personali.</string>
     <string name="PassportRequest">%1$s richiede l\'accesso ai tuoi dati personali per l\'iscrizione ai suoi servizi.</string>
-    <string name="PassportRequestPasswordInfo">Per favore inserisci la tua password di Telegram per decriptare i tuoi dati.</string>
+    <string name="PassportRequestPasswordInfo">Per favore inserisci la tua password di Telegram per decifrare i tuoi dati.</string>
     <string name="PassportPolicy">Accetti l\'*Informativa sulla privacy di %1$s* e consenti a @%2$s di inviarti messaggi.</string>
     <string name="PassportNoPolicy">Stai inviando i tuoi documenti direttamente a %1$s e autorizzi il loro @%2$s a inviarti messaggi.</string>
     <string name="PassportAuthorize">AUTORIZZA</string>
@@ -1952,7 +1967,7 @@
     <string name="PassportNoExpireDate">Nessuna</string>
     <string name="PassportSelectBithdayDate">Seleziona data di nascita</string>
     <string name="PassportDeleteSelfie">Eliminare il selfie?</string>
-    <string name="PassportPersonalUploadInfo">Il documento deve contenere la tua foto, il nome, il cognome, la data di nascita, il numero del documento, il paese di emissione e la data di scadenza.</string>
+    <string name="PassportPersonalUploadInfo">Il documento deve contenere la tua foto, il nome, il cognome, la data di nascita, il numero del documento, il Paese di emissione e la data di scadenza.</string>
     <string name="PassportDiscardChanges">"Sei sicuro di voler scartare tutte le informazione che hai inserito? "</string>
     <string name="PassportDiscard">Scarta</string>
     <string name="PassportDocuments">Scansioni</string>
@@ -2131,6 +2146,18 @@
     <string name="FilterAvailableText">Apri *Impostazioni &gt; Cartelle* per organizzare le tue chat in cartelle.</string>
     <string name="FilterNameNonMuted">Importanti</string>
     <string name="FilterNameUnread">Non lette</string>
+    <string name="FilterAddTo">Aggiungi a una cartella</string>
+    <string name="FilterRemoveFrom">Rimuovi dalla cartella</string>
+    <string name="FilterChoose">Scegli una cartella</string>
+    <string name="FilterUserAddedToExisting">**%1$s** aggiunto a **%2$s**</string>
+    <string name="FilterChatAddedToExisting">**%1$s** aggiunta a **%2$s**</string>
+    <string name="FilterChatsAddedToExisting">**%1$s** aggiunte a **%2$s**</string>
+    <string name="FilterUserRemovedFrom">**%1$s** rimosso da **%2$s**</string>
+    <string name="FilterChatRemovedFrom">**%1$s** rimossa da **%2$s**</string>
+    <string name="FilterChatsRemovedFrom">**%1$s** rimosse da **%2$s**</string>
+    <string name="FilterAddToAlertFullTitle">Limite raggiunto</string>
+    <string name="FilterRemoveFromAlertFullText">Spiacenti, non puoi aggiungere più di 100 chat a una cartella.</string>
+    <string name="FilterAddToAlertFullText">Spiacenti, non puoi escludere più di 100 chat da una cartella.</string>
     <!--passcode view-->
     <string name="Passcode">Codice di blocco</string>
     <string name="ChangePasscode">Cambia codice</string>
@@ -2260,6 +2287,7 @@
     <string name="ShowAsList">Mostra come lista</string>
     <string name="ShowAsGrid">Mostra come griglia</string>
     <string name="ShowAllMedia">Mostra tutti i media</string>
+    <string name="ShowStickers">Mostra sticker</string>
     <string name="ShowAllFiles">Mostra tutti i file</string>
     <string name="ShowAllGIFs">Mostra tutte le GIF</string>
     <string name="TapToDownload">Tocca per scaricare</string>
@@ -2334,6 +2362,7 @@
     <string name="PaintDuplicate">Duplica</string>
     <string name="PaintOutlined">Contornato</string>
     <string name="PaintRegular">Normale</string>
+    <string name="PaintFramed">Incorniciato</string>
     <string name="CropReset">Ripristina</string>
     <string name="CropOriginal">Originale</string>
     <string name="CropSquare">Quadrato</string>
@@ -2344,15 +2373,24 @@
     <!--password view-->
     <string name="TwoStepVerification">Verifica in due passaggi</string>
     <string name="TwoStepVerificationTitle">Verifica in due passaggi</string>
+    <string name="TwoStepVerificationPasswordSet">Password impostata!</string>
+    <string name="TwoStepVerificationPasswordSetInfo">Questa password sarà richiesta quando accedi su un nuovo dispositivo in aggiunta al codice che ricevi via SMS.</string>
+    <string name="TwoStepVerificationPasswordReturnSettings">Ritorna alle Impostazioni</string>
+    <string name="TwoStepVerificationPasswordReturnPassport">Ritorna al Passport</string>
+    <string name="TwoStepVerificationSetPassword">Imposta password</string>
     <string name="SetAdditionalPassword">Imposta password aggiuntiva</string>
     <string name="SetAdditionalPasswordInfo">Puoi impostare una password che ti verrà richiesta quando ti connetti da un nuovo dispositivo in aggiunta al codice che riceverai via SMS.</string>
     <string name="YourPassword">La tua password</string>
+    <string name="PasswordOn">Sì</string>
+    <string name="PasswordOff">No</string>
     <string name="PleaseEnterCurrentPassword">Inserisci la tua password</string>
     <string name="PleaseEnterCurrentPasswordTransfer">Per favore inserisci la password per completare il trasferimento.</string>
     <string name="PleaseEnterFirstPassword">Inserisci una password</string>
+    <string name="PleaseEnterNewFirstPassword">Inserisci una nuova password</string>
     <string name="PleaseEnterPassword">Inserisci la tua nuova password</string>
     <string name="PleaseReEnterPassword">Ripeti la tua password</string>
     <string name="RecoveryEmail">Email di recupero</string>
+    <string name="RecoveryEmailTitle">Email di recupero</string>
     <string name="YourEmail">La tua email</string>
     <string name="YourEmailCode">Il tuo codice email</string>
     <string name="YourEmailCodeInfo">Per favore conferma il tuo indirizzo email inserendo il codice che hai appena ricevuto su %1$s.</string>
@@ -2364,23 +2402,27 @@
     <string name="YourEmailAlmostThereText">Controlla la tua email (non dimenticare lo spam) per completare la configurazione della verifica in due passaggi.</string>
     <string name="YourPasswordSuccess">Fatto!</string>
     <string name="YourPasswordSuccessText">La password per la verifica in due passaggi è ora attiva.</string>
+    <string name="YourPasswordChangedSuccessText">La tua password per la verifica in due passaggi è stata cambiata.</string>
     <string name="YourEmailSuccessText">La tua email di recupero per la verifica in due passaggi è ora attiva.</string>
+    <string name="YourEmailSuccessChangedText">Your recovery email for Two-Step Verification is changed.</string>
     <string name="ChangePassword">Cambia password</string>
     <string name="TurnPasswordOff">Disattiva password</string>
     <string name="SetRecoveryEmail">Imposta email di recupero</string>
     <string name="ChangeRecoveryEmail">Cambia email di recupero</string>
     <string name="TurnPasswordOffQuestionTitle">Disattiva password</string>
     <string name="TurnPasswordOffQuestion">Sei sicuro di voler disattivare la tua password?</string>
-    <string name="CancelPasswordQuestion">Sei sicuro di voler annullare la configurazione della verifica in due passaggi?</string>
-    <string name="CancelEmailQuestion">Sei sicuro di voler annullare la configurazione dell\'email di recupero?</string>
-    <string name="CancelEmailQuestionTitle">Annulla configurazione</string>
+    <string name="CancelPasswordQuestion">Sei sicuro di voler interrompere la configurazione della verifica in due passaggi?</string>
+    <string name="CancelEmailQuestion">Sei sicuro di voler interrompere la configurazione dell\'email di recupero?</string>
+    <string name="CancelEmailQuestionTitle">Interrompi configurazione</string>
     <string name="TurnPasswordOffPassport">Attenzione! Tutti i dati salvati nel tuo Telegram Passport andranno persi!</string>
     <string name="PasswordHint">Suggerimento password</string>
+    <string name="PasswordHintPlaceholder">Suggerimento</string>
     <string name="PasswordHintText">Crea un suggerimento per la tua password</string>
     <string name="PasswordDoNotMatch">Le password non corrispondono</string>
-    <string name="AbortPassword">Annulla configurazione verifica in due passaggi</string>
-    <string name="AbortEmail">Annulla impostazione email di recupero</string>
-    <string name="Abort">Annulla</string>
+    <string name="AbortPassword">Interrompi configurazione verifica in due passaggi</string>
+    <string name="AbortPasswordMenu">Interrompi configurazione</string>
+    <string name="AbortEmail">Interrompi configurazione email di recupero</string>
+    <string name="Abort">Interrompi</string>
     <string name="Disable">Disattiva</string>
     <string name="EmailPasswordConfirmText2">Per completare la configurazione della verifica in due passaggi, controlla la tua email (non dimenticare lo spam) e inserisci il codice che ti abbiamo appena inviato.</string>
     <string name="EmailPasswordConfirmText3">Per completare l\'impostazione dell\'email di recupero, controlla %1$s (non dimenticare lo spam) e inserisci il codice che ti abbiamo appena inviato.</string>
@@ -2406,6 +2448,8 @@
     <string name="PasswordCode">Codice</string>
     <string name="PasswordReset">Password disattivata</string>
     <string name="ResendCode">Reinvia codice</string>
+    <string name="VerificationCode">Codice di verifica</string>
+    <string name="EnterCode">Inserisci codice</string>
     <string name="ResendCodeInfo">Il codice di verifica è stato inviato alla tua email.</string>
     <string name="EnabledPasswordText">Hai attivato la verifica in due passaggi.\nAvrai bisogno della password che hai impostato per accedere al tuo account Telegram.</string>
     <!--data settings-->
@@ -2446,11 +2490,11 @@
     <string name="PrivacyPhoneInfo3">Gli utenti che aggiungono il tuo numero ai loro contatti lo vedranno su Telegram solo se sono tuoi contatti.</string>
     <string name="PrivacyPhoneInfo2">Puoi aggiungere utenti o interi gruppi come eccezioni che annulleranno le impostazioni precedenti.</string>
     <string name="PrivacyForwards">Messaggi inoltrati</string>
-    <string name="PrivacyForwardsEverybody">Collegato al tuo account</string>
-    <string name="PrivacyForwardsContacts">Collegato se permesso dalle impostazioni</string>
-    <string name="PrivacyForwardsNobody">Non collegato al tuo account</string>
-    <string name="PrivacyForwardsTitle">Chi può aggiungere un collegamento al mio account quando inoltra i miei messaggi?</string>
-    <string name="PrivacyForwardsInfo">I messaggi che invii non saranno ricollegati al tuo account quando inoltrati da altri utenti.</string>
+    <string name="PrivacyForwardsEverybody">Collega al tuo account</string>
+    <string name="PrivacyForwardsContacts">Collega se permesso dalle impostazioni</string>
+    <string name="PrivacyForwardsNobody">Non collega al tuo account</string>
+    <string name="PrivacyForwardsTitle">Chi può aggiungere un link al mio account quando inoltra i miei messaggi?</string>
+    <string name="PrivacyForwardsInfo">I messaggi che invii non rimanderanno al tuo account quando inoltrati da altri utenti.</string>
     <string name="PrivacyForwardsInfo2">Puoi aggiungere utenti o interi gruppi come eccezioni che annulleranno le impostazioni precedenti.</string>
     <string name="PrivacyForwardsMessageLine">Reinhardt, dobbiamo trovarti qualche nuova canzone &#127926;.</string>
     <string name="PrivacyP2PHeader">Peer-to-peer</string>
@@ -2648,6 +2692,7 @@
     <string name="UserChannelTooMuchJoin">Spiacenti, l\'utente selezionato è membro di troppi gruppi e canali. Per favore chiedigli di lasciarne qualcuno prima.</string>
     <!--Alert messages-->
     <string name="DeleteAllMessagesAlert">Attenzione! Questo **eliminerà tutti i messaggi** in questa chat per **entrambi** i partecipanti.</string>
+    <string name="DeleteAllMessagesSavedAlert">Attenzione! Questo **eliminerà tutti i messaggi** in questa chat.</string>
     <string name="DeleteAll">Elimina tutto</string>
     <string name="StopLoading">Arrestare il caricamento?</string>
     <string name="UpdateTelegram">Aggiorna Telegram</string>
@@ -2656,7 +2701,7 @@
     <string name="PleaseLoginPassport">Per favore accedi al tuo account Telegram per usare Telegram Passport.</string>
     <string name="BannedPhoneNumber">Questo numero è stato bloccato.</string>
     <string name="CodeExpired">Codice scaduto, per favore riprova l\'accesso</string>
-    <string name="FloodWait">Troppi tentativi, riprova più tardi</string>
+    <string name="FloodWait">Troppi tentativi, per favore riprova più tardi</string>
     <string name="FloodWaitTime">Troppi tentativi, per favore riprova tra %1$s</string>
     <string name="InvalidCode">Codice non valido</string>
     <string name="PhoneNumberFlood">Spiacenti, hai eliminato e ricreato il tuo account troppe volte di recente. Per favore attendi alcuni giorni prima di iscriverti di nuovo.</string>
@@ -2686,7 +2731,7 @@
     <string name="ClearFewChatsTitle">Svuota %1$s</string>
     <string name="ClearCacheFewChatsTitle">Svuota cache per %1$s</string>
     <string name="AreYouSureDeleteFewChats">Sei sicuro di voler eliminare le chat selezionate?</string>
-    <string name="AreYouSureClearHistoryFewChats">Sei sicuro di voler eliminare la cronologia nelle chat selezionate?</string>
+    <string name="AreYouSureClearHistoryFewChats">Sei sicuro di voler cancellare la cronologia nelle chat selezionate?</string>
     <string name="AreYouSureClearHistoryCacheFewChats">Eliminare tutti i testi e i media dalle chat selezionate?</string>
     <string name="AreYouSureDeleteAndExit">Sei sicuro di voler uscire ed eliminare il gruppo?</string>
     <string name="AreYouSureDeleteAndExitName">Sei sicuro di voler eliminare e lasciare il gruppo **%1$s**?</string>
@@ -2739,7 +2784,7 @@
     <string name="SendContactToGroupText">Vuoi inviare questo contatto a **%1$s**?</string>
     <string name="NoUsernameFound">Non esiste alcun account Telegram con questo username.</string>
     <string name="BotCantJoinGroups">Questo bot non può unirsi ai gruppi.</string>
-    <string name="SecretLinkPreviewAlert">Vuoi attivare le anteprime estese per i link nelle Chat Segrete? Nota che le anteprime dei link sono generate sui server di Telegram.</string>
+    <string name="SecretLinkPreviewAlert">Vuoi attivare le anteprime estese per i link nelle Chat segrete? Ricorda che le anteprime dei link sono generate sui server di Telegram.</string>
     <string name="SecretChatContextBotAlert">Per favore nota che i bot inline sono forniti da sviluppatori di terze parti. Per far funzionare il bot, i simboli che digiti dopo l\'username del bot sono inviati al rispettivo sviluppatore.</string>
     <string name="EditMessageError">Spiacenti, non puoi modificare questo messaggio.</string>
     <string name="AllowReadCall">Per favore consenti a Telegram di ricevere chiamate così potremo inserire in automatico il codice per te.</string>
@@ -2784,7 +2829,7 @@
     <string name="NewFollowersBySourceChartTitle">Nuovi follower per origine</string>
     <string name="LanguagesChartTitle">Lingue</string>
     <string name="RecentPosts">Post recenti</string>
-    <string name="ZoomOut">Rimpicciolisci</string>
+    <string name="ZoomOut">Riduci</string>
     <string name="IVInteractionsChartTitle">Interazioni AR</string>
     <string name="LoadingStats">Carico le statistiche...</string>
     <string name="LoadingStatsDescription">Per favore attendi qualche momento mentre generiamo i grafici.</string>
@@ -2819,7 +2864,7 @@
     <string name="StartMessaging">Inizia a messaggiare</string>
     <!-- VoIP -->
     <string name="AccountSettings">Impostazioni account</string>
-    <string name="VoipUseLessData">Utilizza meno dati per le chiamate</string>
+    <string name="VoipUseLessData">Usa meno dati per le chiamate</string>
     <string name="VoipIncoming">Chiamata in entrata</string>
     <string name="VoipConnecting">Connetto</string>
     <string name="VoipExchangingKeys">Scambio chiavi di crittografia</string>
@@ -3352,7 +3397,7 @@
     <string name="AccDescrMusicInfo">%2$s di %1$s</string>
     <string name="AccDescrMoreOptions">Altre opzioni</string>
     <string name="AccActionPlay">Play</string>
-    <string name="AccActionPause">Pausa</string>
+    <string name="AccActionPause">Sospendi</string>
     <string name="AccActionDownload">Download</string>
     <string name="AccActionCancelDownload">Annulla download</string>
     <string name="AccActionOpenFile">Apri file</string>

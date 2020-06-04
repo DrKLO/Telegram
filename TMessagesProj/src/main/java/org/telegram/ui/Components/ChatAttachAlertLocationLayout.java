@@ -1026,7 +1026,7 @@ public class ChatAttachAlertLocationLayout extends ChatAttachAlert.AttachAlertLa
     @Override
     void onPreMeasure(int availableWidth, int availableHeight) {
         int padding;
-        if (parentAlert.actionBar.isSearchFieldVisible() || parentAlert.sizeNotifierFrameLayout.getKeyboardHeight() > AndroidUtilities.dp(20)) {
+        if (parentAlert.actionBar.isSearchFieldVisible() || parentAlert.sizeNotifierFrameLayout.measureKeyboardHeight() > AndroidUtilities.dp(20)) {
             padding = mapHeight - overScrollHeight;
             parentAlert.setAllowNestedScroll(false);
         } else {

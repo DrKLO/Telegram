@@ -6,6 +6,7 @@ import android.content.res.Configuration;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
 import android.os.Build;
 import android.view.MotionEvent;
@@ -20,6 +21,9 @@ import org.telegram.messenger.NotificationCenter;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeDescription;
+
+import java.util.ArrayList;
 
 public class TrendingStickersAlert extends BottomSheet implements TrendingStickersLayout.AlertDelegate {
 
@@ -103,6 +107,15 @@ public class TrendingStickersAlert extends BottomSheet implements TrendingSticke
         }
     }
 
+    @Override
+    public ArrayList<ThemeDescription> getThemeDescriptions() {
+        final ArrayList<ThemeDescription> descriptions = new ArrayList<>();
+        layout.getThemeDescriptions(descriptions, layout::updateColors);
+        descriptions.add(new ThemeDescription(alertContainerView, 0, null, null, new Drawable[]{shadowDrawable}, null, Theme.key_dialogBackground));
+        descriptions.add(new ThemeDescription(alertContainerView, 0, null, null, null, null, Theme.key_sheet_scrollUp));
+        return descriptions;
+    }
+
     private class AlertContainerView extends SizeNotifierFrameLayout {
 
         private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -112,6 +125,7 @@ public class TrendingStickersAlert extends BottomSheet implements TrendingSticke
         private boolean statusBarVisible = false;
         private ValueAnimator statusBarAnimator;
         private float statusBarAlpha = 0f;
+        private float[] radii = new float[8];
 
         public AlertContainerView(@NonNull Context context) {
             super(context, true);
@@ -163,7 +177,7 @@ public class TrendingStickersAlert extends BottomSheet implements TrendingSticke
             final int statusBarHeight = Build.VERSION.SDK_INT >= 21 ? AndroidUtilities.statusBarHeight : 0;
             final int height = MeasureSpec.getSize(heightMeasureSpec) - statusBarHeight;
             final int padding = (int) (height * 0.2f);
-            final int keyboardHeight = getKeyboardHeight();
+            final int keyboardHeight = measureKeyboardHeight();
             ignoreLayout = true;
             if (keyboardHeight > AndroidUtilities.dp(20)) {
                 layout.setContentViewPaddingTop(0);
@@ -214,7 +228,8 @@ public class TrendingStickersAlert extends BottomSheet implements TrendingSticke
             if (fraction > 0f && fraction < 1f) {
                 final float radius = AndroidUtilities.dp(12) * fraction;
                 shapeDrawable.setColor(Theme.getColor(Theme.key_dialogBackground));
-                shapeDrawable.setCornerRadii(new float[]{radius, radius, radius, radius, 0, 0, 0, 0});
+                radii[0] = radii[1] = radii[2] = radii[3] = radius;
+                shapeDrawable.setCornerRadii(radii);
                 shapeDrawable.setBounds(backgroundPaddingLeft, scrollOffsetY + offset, getWidth() - backgroundPaddingLeft, scrollOffsetY + offset + AndroidUtilities.dp(24));
                 shapeDrawable.draw(canvas);
             }
@@ -236,7 +251,8 @@ public class TrendingStickersAlert extends BottomSheet implements TrendingSticke
             final int h = AndroidUtilities.dp(4);
             final int offset = (int) (h * 2f * (1f - fraction));
             shapeDrawable.setCornerRadius(AndroidUtilities.dp(2));
-            shapeDrawable.setColor(ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_sheet_scrollUp), (int) (255 * fraction)));
+            final int sheetScrollUpColor = Theme.getColor(Theme.key_sheet_scrollUp);
+            shapeDrawable.setColor(ColorUtils.setAlphaComponent(sheetScrollUpColor, (int) (Color.alpha(sheetScrollUpColor) * fraction)));
             shapeDrawable.setBounds((getWidth() - w) / 2, scrollOffsetY + AndroidUtilities.dp(10) + offset, (getWidth() + w) / 2, scrollOffsetY + AndroidUtilities.dp(10) + offset + h);
             shapeDrawable.draw(canvas);
 

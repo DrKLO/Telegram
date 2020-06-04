@@ -37,9 +37,14 @@ import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeDescription;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.ProgressButton;
+import org.telegram.ui.Components.RecyclerListView;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class FeaturedStickerSetCell2 extends FrameLayout {
 
@@ -87,8 +92,6 @@ public class FeaturedStickerSetCell2 extends FrameLayout {
         addButton = new ProgressButton(context);
         addButton.setText(LocaleController.getString("Add", R.string.Add));
         addButton.setTextColor(Theme.getColor(Theme.key_featuredStickers_buttonText));
-        addButton.setProgressColor(Theme.getColor(Theme.key_featuredStickers_buttonProgress));
-        addButton.setBackgroundRoundRect(Theme.getColor(Theme.key_featuredStickers_addButton), Theme.getColor(Theme.key_featuredStickers_addButtonPressed));
         addView(addButton, LayoutHelper.createFrameRelatively(LayoutHelper.WRAP_CONTENT, 28, Gravity.TOP | Gravity.END, 0, 18, 14, 0));
 
         delButton = new TextView(context);
@@ -98,6 +101,8 @@ public class FeaturedStickerSetCell2 extends FrameLayout {
         delButton.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
         delButton.setText(LocaleController.getString("StickersRemove", R.string.StickersRemove));
         addView(delButton, LayoutHelper.createFrameRelatively(LayoutHelper.WRAP_CONTENT, 28, Gravity.TOP | Gravity.END, 0, 16, 14, 0));
+
+        updateColors();
     }
 
     @Override
@@ -293,5 +298,20 @@ public class FeaturedStickerSetCell2 extends FrameLayout {
 
     public BackupImageView getImageView() {
         return imageView;
+    }
+
+    public void updateColors() {
+        addButton.setProgressColor(Theme.getColor(Theme.key_featuredStickers_buttonProgress));
+        addButton.setBackgroundRoundRect(Theme.getColor(Theme.key_featuredStickers_addButton), Theme.getColor(Theme.key_featuredStickers_addButtonPressed));
+    }
+
+    public static void createThemeDescriptions(List<ThemeDescription> descriptions, RecyclerListView listView, ThemeDescription.ThemeDescriptionDelegate delegate) {
+        descriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_TEXTCOLOR, new Class[]{FeaturedStickerSetCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlackText));
+        descriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_TEXTCOLOR, new Class[]{FeaturedStickerSetCell.class}, new String[]{"valueTextView"}, null, null, null, Theme.key_windowBackgroundWhiteGrayText2));
+        descriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_TEXTCOLOR, new Class[]{FeaturedStickerSetCell.class}, new String[]{"addButton"}, null, null, null, Theme.key_featuredStickers_buttonText));
+        descriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_TEXTCOLOR, new Class[]{FeaturedStickerSetCell.class}, new String[]{"delButton"}, null, null, null, Theme.key_featuredStickers_removeButtonText));
+        descriptions.add(new ThemeDescription(listView, 0, new Class[]{FeaturedStickerSetCell.class}, Theme.dividerPaint, null, null, Theme.key_divider));
+        descriptions.add(new ThemeDescription(null, 0, null, null, null, delegate, Theme.key_featuredStickers_buttonProgress));
+        descriptions.add(new ThemeDescription(null, 0, null, null, null, delegate, Theme.key_featuredStickers_addButtonPressed));
     }
 }

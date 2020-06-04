@@ -25,7 +25,7 @@ import java.util.ArrayList;
 
 public class FileUploadOperation {
 
-    private class UploadCachedResult {
+    private static class UploadCachedResult {
         private long bytesOffset;
         private byte[] iv;
     }

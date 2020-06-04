@@ -86,6 +86,7 @@ public class StickersActivity extends BaseFragment implements NotificationCenter
     private DefaultItemAnimator itemAnimator;
     private ItemTouchHelper itemTouchHelper;
     private NumberTextView selectedCountTextView;
+    private TrendingStickersAlert trendingStickersAlert;
 
     private ActionBarMenuItem archiveMenuItem;
     private ActionBarMenuItem deleteMenuItem;
@@ -281,7 +282,8 @@ public class StickersActivity extends BaseFragment implements NotificationCenter
                         MediaDataController.getInstance(currentAccount).toggleStickerSet(getParentActivity(), stickerSet, 0, StickersActivity.this, false, false);
                     }
                 };
-                new TrendingStickersAlert(context, this, new TrendingStickersLayout(context, trendingDelegate)).show();
+                trendingStickersAlert = new TrendingStickersAlert(context, this, new TrendingStickersLayout(context, trendingDelegate));
+                trendingStickersAlert.show();
             } else if (position == archivedRow) {
                 presentFragment(new ArchivedStickersActivity(currentType));
             } else if (position == masksRow) {
@@ -1011,6 +1013,10 @@ public class StickersActivity extends BaseFragment implements NotificationCenter
         themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{StickerSetCell.class}, new String[]{"reorderButton"}, null, null, null, Theme.key_stickers_menu));
         themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_CHECKBOX, new Class[]{StickerSetCell.class}, new String[]{"checkBox"}, null, null, null, Theme.key_windowBackgroundWhite));
         themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_CHECKBOXCHECK, new Class[]{StickerSetCell.class}, new String[]{"checkBox"}, null, null, null, Theme.key_checkboxCheck));
+
+        if (trendingStickersAlert != null) {
+            themeDescriptions.addAll(trendingStickersAlert.getThemeDescriptions());
+        }
 
         return themeDescriptions;
     }

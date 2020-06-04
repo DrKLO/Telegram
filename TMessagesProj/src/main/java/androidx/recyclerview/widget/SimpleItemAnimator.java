@@ -55,14 +55,14 @@ public abstract class SimpleItemAnimator extends RecyclerView.ItemAnimator {
      * If you set this property to false, actions on the data set which change the
      * contents of items will not be animated. What those animations do is left
      * up to the discretion of the ItemAnimator subclass, in its
-     * {@link #animateChange(RecyclerView.ViewHolder, RecyclerView.ViewHolder, int, int, int, int)} implementation.
+     * {@link #animateChange(RecyclerView.ViewHolder, RecyclerView.ViewHolder, RecyclerView.ItemAnimator.ItemHolderInfo, int, int, int, int)} implementation.
      * The value of this property is true by default.
      *
      * @param supportsChangeAnimations true if change animations are supported by
      *                                 this ItemAnimator, false otherwise. If the property is false,
      *                                 the ItemAnimator
      *                                 will not receive a call to
-     *                                 {@link #animateChange(RecyclerView.ViewHolder, RecyclerView.ViewHolder, int, int, int,
+     *                                 {@link #animateChange(RecyclerView.ViewHolder, RecyclerView.ViewHolder, RecyclerView.ItemAnimator.ItemHolderInfo, int, int, int,
      *                                 int)} when changes occur.
      * @see RecyclerView.Adapter#notifyItemChanged(int)
      * @see RecyclerView.Adapter#notifyItemRangeChanged(int, int)
@@ -99,14 +99,16 @@ public abstract class SimpleItemAnimator extends RecyclerView.ItemAnimator {
             if (DEBUG) {
                 Log.d(TAG, "DISAPPEARING: " + viewHolder + " with view " + disappearingItemView);
             }
-            return animateMove(viewHolder, oldLeft, oldTop, newLeft, newTop);
+            return animateMove(viewHolder, preLayoutInfo, oldLeft, oldTop, newLeft, newTop);
         } else {
             if (DEBUG) {
                 Log.d(TAG, "REMOVED: " + viewHolder + " with view " + disappearingItemView);
             }
-            return animateRemove(viewHolder);
+            return animateRemove(viewHolder, preLayoutInfo);
         }
     }
+
+
 
     @Override
     public boolean animateAppearance(@NonNull RecyclerView.ViewHolder viewHolder,
@@ -117,7 +119,7 @@ public abstract class SimpleItemAnimator extends RecyclerView.ItemAnimator {
             if (DEBUG) {
                 Log.d(TAG, "APPEARING: " + viewHolder + " with view " + viewHolder);
             }
-            return animateMove(viewHolder, preLayoutInfo.left, preLayoutInfo.top,
+            return animateMove(viewHolder,preLayoutInfo, preLayoutInfo.left, preLayoutInfo.top,
                     postLayoutInfo.left, postLayoutInfo.top);
         } else {
             if (DEBUG) {
@@ -135,7 +137,7 @@ public abstract class SimpleItemAnimator extends RecyclerView.ItemAnimator {
                 Log.d(TAG, "PERSISTENT: " + viewHolder
                         + " with view " + viewHolder.itemView);
             }
-            return animateMove(viewHolder,
+            return animateMove(viewHolder, preInfo,
                     preInfo.left, preInfo.top, postInfo.left, postInfo.top);
         }
         dispatchMoveFinished(viewHolder);
@@ -158,7 +160,7 @@ public abstract class SimpleItemAnimator extends RecyclerView.ItemAnimator {
             toLeft = postInfo.left;
             toTop = postInfo.top;
         }
-        return animateChange(oldHolder, newHolder, fromLeft, fromTop, toLeft, toTop);
+        return animateChange(oldHolder, newHolder, preInfo, fromLeft, fromTop, toLeft, toTop);
     }
 
     /**
@@ -170,9 +172,9 @@ public abstract class SimpleItemAnimator extends RecyclerView.ItemAnimator {
      * ItemAnimator's {@link #runPendingAnimations()} method should be called at the
      * next opportunity. This mechanism allows ItemAnimator to set up individual animations
      * as separate calls to {@link #animateAdd(RecyclerView.ViewHolder) animateAdd()},
-     * {@link #animateMove(RecyclerView.ViewHolder, int, int, int, int) animateMove()},
-     * {@link #animateRemove(RecyclerView.ViewHolder) animateRemove()}, and
-     * {@link #animateChange(RecyclerView.ViewHolder, RecyclerView.ViewHolder, int, int, int, int)} come in one by one,
+     * {@link #animateMove(RecyclerView.ViewHolder,RecyclerView.ItemAnimator.ItemHolderInfo, int, int, int, int) animateMove()},
+     * {@link #animateRemove(RecyclerView.ViewHolder, RecyclerView.ItemAnimator.ItemHolderInfo) animateRemove()}, and
+     * {@link #animateChange(RecyclerView.ViewHolder, RecyclerView.ViewHolder, RecyclerView.ItemAnimator.ItemHolderInfo, int, int, int, int)} come in one by one,
      * then start the animations together in the later call to {@link #runPendingAnimations()}.
      *
      * <p>This method may also be called for disappearing items which continue to exist in the
@@ -184,7 +186,7 @@ public abstract class SimpleItemAnimator extends RecyclerView.ItemAnimator {
      * @return true if a later call to {@link #runPendingAnimations()} is requested,
      * false otherwise.
      */
-    public abstract boolean animateRemove(RecyclerView.ViewHolder holder);
+    public abstract boolean animateRemove(RecyclerView.ViewHolder holder, ItemHolderInfo info);
 
     /**
      * Called when an item is added to the RecyclerView. Implementors can choose
@@ -195,9 +197,9 @@ public abstract class SimpleItemAnimator extends RecyclerView.ItemAnimator {
      * ItemAnimator's {@link #runPendingAnimations()} method should be called at the
      * next opportunity. This mechanism allows ItemAnimator to set up individual animations
      * as separate calls to {@link #animateAdd(RecyclerView.ViewHolder) animateAdd()},
-     * {@link #animateMove(RecyclerView.ViewHolder, int, int, int, int) animateMove()},
-     * {@link #animateRemove(RecyclerView.ViewHolder) animateRemove()}, and
-     * {@link #animateChange(RecyclerView.ViewHolder, RecyclerView.ViewHolder, int, int, int, int)} come in one by one,
+     * {@link #animateMove(RecyclerView.ViewHolder, RecyclerView.ItemAnimator.ItemHolderInfo, int, int, int, int) animateMove()},
+     * {@link #animateRemove(RecyclerView.ViewHolder, RecyclerView.ItemAnimator.ItemHolderInfo) animateRemove()}, and
+     * {@link #animateChange(RecyclerView.ViewHolder, RecyclerView.ViewHolder, RecyclerView.ItemAnimator.ItemHolderInfo, int, int, int, int)} come in one by one,
      * then start the animations together in the later call to {@link #runPendingAnimations()}.
      *
      * <p>This method may also be called for appearing items which were already in the
@@ -220,16 +222,16 @@ public abstract class SimpleItemAnimator extends RecyclerView.ItemAnimator {
      * ItemAnimator's {@link #runPendingAnimations()} method should be called at the
      * next opportunity. This mechanism allows ItemAnimator to set up individual animations
      * as separate calls to {@link #animateAdd(RecyclerView.ViewHolder) animateAdd()},
-     * {@link #animateMove(RecyclerView.ViewHolder, int, int, int, int) animateMove()},
-     * {@link #animateRemove(RecyclerView.ViewHolder) animateRemove()}, and
-     * {@link #animateChange(RecyclerView.ViewHolder, RecyclerView.ViewHolder, int, int, int, int)} come in one by one,
+     * {@link #animateMove(RecyclerView.ViewHolder, RecyclerView.ItemAnimator.ItemHolderInfo, int, int, int, int) animateMove()},
+     * {@link #animateRemove(RecyclerView.ViewHolder, RecyclerView.ItemAnimator.ItemHolderInfo) animateRemove()}, and
+     * {@link #animateChange(RecyclerView.ViewHolder, RecyclerView.ViewHolder, RecyclerView.ItemAnimator.ItemHolderInfo, int, int, int, int)} come in one by one,
      * then start the animations together in the later call to {@link #runPendingAnimations()}.
      *
      * @param holder The item that is being moved.
      * @return true if a later call to {@link #runPendingAnimations()} is requested,
      * false otherwise.
      */
-    public abstract boolean animateMove(RecyclerView.ViewHolder holder, int fromX, int fromY,
+    public abstract boolean animateMove(RecyclerView.ViewHolder holder, ItemHolderInfo info, int fromX, int fromY,
             int toX, int toY);
 
     /**
@@ -248,9 +250,9 @@ public abstract class SimpleItemAnimator extends RecyclerView.ItemAnimator {
      * ItemAnimator's {@link #runPendingAnimations()} method should be called at the
      * next opportunity. This mechanism allows ItemAnimator to set up individual animations
      * as separate calls to {@link #animateAdd(RecyclerView.ViewHolder) animateAdd()},
-     * {@link #animateMove(RecyclerView.ViewHolder, int, int, int, int) animateMove()},
-     * {@link #animateRemove(RecyclerView.ViewHolder) animateRemove()}, and
-     * {@link #animateChange(RecyclerView.ViewHolder, RecyclerView.ViewHolder, int, int, int, int)} come in one by one,
+     * {@link #animateMove(RecyclerView.ViewHolder, RecyclerView.ItemAnimator.ItemHolderInfo, int, int, int, int) animateMove()},
+     * {@link #animateRemove(RecyclerView.ViewHolder, RecyclerView.ItemAnimator.ItemHolderInfo) animateRemove()}, and
+     * {@link #animateChange(RecyclerView.ViewHolder, RecyclerView.ViewHolder,RecyclerView.ItemAnimator.ItemHolderInfo, int, int, int, int)} come in one by one,
      * then start the animations together in the later call to {@link #runPendingAnimations()}.
      *
      * @param oldHolder The original item that changed.
@@ -263,7 +265,7 @@ public abstract class SimpleItemAnimator extends RecyclerView.ItemAnimator {
      * false otherwise.
      */
     public abstract boolean animateChange(RecyclerView.ViewHolder oldHolder,
-            RecyclerView.ViewHolder newHolder, int fromLeft, int fromTop, int toLeft, int toTop);
+            RecyclerView.ViewHolder newHolder, ItemHolderInfo info, int fromLeft, int fromTop, int toLeft, int toTop);
 
     /**
      * Method to be called by subclasses when a remove animation is done.
@@ -307,10 +309,10 @@ public abstract class SimpleItemAnimator extends RecyclerView.ItemAnimator {
      *
      * @param item    The item which has been changed (this method must be called for
      *                each non-null ViewHolder passed into
-     *                {@link #animateChange(RecyclerView.ViewHolder, RecyclerView.ViewHolder, int, int, int, int)}).
+     *                {@link #animateChange(RecyclerView.ViewHolder, RecyclerView.ViewHolder, RecyclerView.ItemAnimator.ItemHolderInfo, int, int, int, int)}).
      * @param oldItem true if this is the old item that was changed, false if
      *                it is the new item that replaced the old item.
-     * @see #animateChange(RecyclerView.ViewHolder, RecyclerView.ViewHolder, int, int, int, int)
+     * @see #animateChange(RecyclerView.ViewHolder, RecyclerView.ViewHolder, RecyclerView.ItemAnimator.ItemHolderInfo, int, int, int, int)
      */
     public final void dispatchChangeFinished(RecyclerView.ViewHolder item, boolean oldItem) {
         onChangeFinished(item, oldItem);
@@ -349,7 +351,7 @@ public abstract class SimpleItemAnimator extends RecyclerView.ItemAnimator {
      *
      * @param item    The item which has been changed (this method must be called for
      *                each non-null ViewHolder passed into
-     *                {@link #animateChange(RecyclerView.ViewHolder, RecyclerView.ViewHolder, int, int, int, int)}).
+     *                {@link #animateChange(RecyclerView.ViewHolder, RecyclerView.ViewHolder, RecyclerView.ItemAnimator.ItemHolderInfo, int, int, int, int)}).
      * @param oldItem true if this is the old item that was changed, false if
      *                it is the new item that replaced the old item.
      */

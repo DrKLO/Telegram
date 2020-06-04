@@ -76,7 +76,7 @@ public class ColorPicker extends FrameLayout {
     private RectF rectF = new RectF();
 
     private float location;
-    private float weight = 0.27f;
+    private float weight = 0.016773745f;
     private float draggingFactor;
     private boolean dragging;
 
@@ -91,7 +91,7 @@ public class ColorPicker extends FrameLayout {
         settingsButton = new ImageView(context);
         settingsButton.setScaleType(ImageView.ScaleType.CENTER);
         settingsButton.setImageResource(R.drawable.photo_paint_brush);
-        addView(settingsButton, LayoutHelper.createFrame(60, 52));
+        addView(settingsButton, LayoutHelper.createFrame(46, 52));
         settingsButton.setOnClickListener(v -> {
             if (delegate != null) {
                 delegate.onSettingsPressed();
@@ -101,7 +101,7 @@ public class ColorPicker extends FrameLayout {
         undoButton = new ImageView(context);
         undoButton.setScaleType(ImageView.ScaleType.CENTER);
         undoButton.setImageResource(R.drawable.photo_undo);
-        addView(undoButton, LayoutHelper.createFrame(60, 52));
+        addView(undoButton, LayoutHelper.createFrame(46, 52));
         undoButton.setOnClickListener(v -> {
             if (delegate != null) {
                 delegate.onUndoPressed();

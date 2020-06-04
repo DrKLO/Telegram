@@ -29,7 +29,7 @@ public class SizeNotifierFrameLayout extends AdjustPanFrameLayout {
 
     private Rect rect = new Rect();
     private Drawable backgroundDrawable;
-    private int keyboardHeight;
+    protected int keyboardHeight;
     private int bottomClip;
     private SizeNotifierFrameLayoutDelegate delegate;
     private boolean occupyStatusBar = true;
@@ -117,7 +117,7 @@ public class SizeNotifierFrameLayout extends AdjustPanFrameLayout {
         notifyHeightChanged();
     }
 
-    public int getKeyboardHeight() {
+    public int measureKeyboardHeight() {
         View rootView = getRootView();
         getWindowVisibleDisplayFrame(rect);
         if (rect.bottom == 0 && rect.top == 0) {
@@ -127,12 +127,16 @@ public class SizeNotifierFrameLayout extends AdjustPanFrameLayout {
         return keyboardHeight = Math.max(0, usableViewHeight - (rect.bottom - rect.top));
     }
 
+    public int getKeyboardHeight() {
+        return keyboardHeight;
+    }
+
     public void notifyHeightChanged() {
         if (parallaxEffect != null) {
             parallaxScale = parallaxEffect.getScale(getMeasuredWidth(), getMeasuredHeight());
         }
         if (delegate != null) {
-            keyboardHeight = getKeyboardHeight();
+            keyboardHeight = measureKeyboardHeight();
             final boolean isWidthGreater = AndroidUtilities.displaySize.x > AndroidUtilities.displaySize.y;
             post(() -> {
                 if (delegate != null) {

@@ -310,7 +310,7 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
                     ignoreLayout = false;
                 }
                 int availableHeight = totalHeight - getPaddingTop();
-                int keyboardSize = SharedConfig.smoothKeyboard ? 0 : getKeyboardHeight();
+                int keyboardSize = SharedConfig.smoothKeyboard ? 0 : measureKeyboardHeight();
                 if (!AndroidUtilities.isInMultiwindow && keyboardSize <= AndroidUtilities.dp(20)) {
                     availableHeight -= commentTextView.getEmojiPadding();
                 }
@@ -334,7 +334,7 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
                 setMeasuredDimension(widthSize, heightSize);
                 widthSize -= backgroundPaddingLeft * 2;
 
-                int keyboardSize = SharedConfig.smoothKeyboard ? 0 : getKeyboardHeight();
+                int keyboardSize = SharedConfig.smoothKeyboard ? 0 : measureKeyboardHeight();
                 if (keyboardSize <= AndroidUtilities.dp(20)) {
                     if (!AndroidUtilities.isInMultiwindow) {
                         heightSize -= commentTextView.getEmojiPadding();
@@ -383,7 +383,7 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
             protected void onLayout(boolean changed, int l, int t, int r, int b) {
                 final int count = getChildCount();
 
-                int keyboardSize = SharedConfig.smoothKeyboard ? 0 : getKeyboardHeight();
+                int keyboardSize = SharedConfig.smoothKeyboard ? 0 : measureKeyboardHeight();
                 int paddingBottom = keyboardSize <= AndroidUtilities.dp(20) && !AndroidUtilities.isInMultiwindow && !AndroidUtilities.isTablet() ? commentTextView.getEmojiPadding() : 0;
                 setBottomClip(paddingBottom);
 
@@ -1028,6 +1028,7 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
                 dialogs.add(dialog);
                 dialogsMap.put(dialog.id, dialog);
             }
+            ArrayList<TLRPC.Dialog> archivedDialogs = new ArrayList<>();
             ArrayList<TLRPC.Dialog> allDialogs = MessagesController.getInstance(currentAccount).getAllDialogs();
             for (int a = 0; a < allDialogs.size(); a++) {
                 TLRPC.Dialog dialog = allDialogs.get(a);
@@ -1041,17 +1042,26 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
                 int high_id = (int) (dialog.id >> 32);
                 if (lower_id != 0 && high_id != 1) {
                     if (lower_id > 0) {
-                        dialogs.add(dialog);
+                        if (dialog.folder_id == 1) {
+                            archivedDialogs.add(dialog);
+                        } else {
+                            dialogs.add(dialog);
+                        }
                         dialogsMap.put(dialog.id, dialog);
                     } else {
                         TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-lower_id);
                         if (!(chat == null || ChatObject.isNotInChat(chat) || ChatObject.isChannel(chat) && !chat.creator && (chat.admin_rights == null || !chat.admin_rights.post_messages) && !chat.megagroup)) {
-                            dialogs.add(dialog);
+                            if (dialog.folder_id == 1) {
+                                archivedDialogs.add(dialog);
+                            } else {
+                                dialogs.add(dialog);
+                            }
                             dialogsMap.put(dialog.id, dialog);
                         }
                     }
                 }
             }
+            dialogs.addAll(archivedDialogs);
             notifyDataSetChanged();
         }
 

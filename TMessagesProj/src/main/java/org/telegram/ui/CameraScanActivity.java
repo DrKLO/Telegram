@@ -62,7 +62,6 @@ import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ActionBar.ThemeDescription;
-import org.telegram.ui.Components.AlertsCreator;
 import org.telegram.ui.Components.AnimationProperties;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LayoutHelper;
@@ -376,7 +375,7 @@ public class CameraScanActivity extends BaseFragment implements Camera.PreviewCa
             cameraView.addView(recognizedMrzView);
         } else {
             if (needGalleryButton) {
-                titleTextView.setText(LocaleController.getString("WalletScanCode", R.string.WalletScanCode));
+                //titleTextView.setText(LocaleController.getString("WalletScanCode", R.string.WalletScanCode));
             } else {
                 titleTextView.setText(LocaleController.getString("AuthAnotherClientScan", R.string.AuthAnotherClientScan));
             }
@@ -384,7 +383,7 @@ public class CameraScanActivity extends BaseFragment implements Camera.PreviewCa
             recognizedMrzView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
             recognizedMrzView.setPadding(AndroidUtilities.dp(10), 0, AndroidUtilities.dp(10), AndroidUtilities.dp(10));
             if (needGalleryButton) {
-                recognizedMrzView.setText(LocaleController.getString("WalletScanCodeNotFound", R.string.WalletScanCodeNotFound));
+                //recognizedMrzView.setText(LocaleController.getString("WalletScanCodeNotFound", R.string.WalletScanCodeNotFound));
             } else {
                 recognizedMrzView.setText(LocaleController.getString("AuthAnotherClientNotFound", R.string.AuthAnotherClientNotFound));
             }
@@ -542,32 +541,11 @@ public class CameraScanActivity extends BaseFragment implements Camera.PreviewCa
         });
     }
 
-    private void showErrorAlert() {
-        AlertsCreator.createSimpleAlert(getParentActivity(), LocaleController.getString("WalletQRCode", R.string.WalletQRCode), LocaleController.getString("WalletScanImageNotFound", R.string.WalletScanImageNotFound)).show();
-    }
-
-    private void onNoQrFound(boolean alert) {
+    private void onNoQrFound() {
         AndroidUtilities.runOnUIThread(() -> {
-            if (alert) {
-                showErrorAlert();
-                return;
-            }
             if (recognizedMrzView.getTag() != null) {
                 recognizedMrzView.setTag(null);
                 recognizedMrzView.animate().setDuration(200).alpha(0.0f).setInterpolator(CubicBezierInterpolator.DEFAULT).start();
-            }
-        });
-    }
-
-    private void onNoWalletFound(boolean alert) {
-        AndroidUtilities.runOnUIThread(() -> {
-            if (alert) {
-                showErrorAlert();
-                return;
-            }
-            if (recognizedMrzView.getTag() == null) {
-                recognizedMrzView.setTag(1);
-                recognizedMrzView.animate().setDuration(200).alpha(1.0f).setInterpolator(CubicBezierInterpolator.DEFAULT).start();
             }
         });
     }
@@ -610,7 +588,7 @@ public class CameraScanActivity extends BaseFragment implements Camera.PreviewCa
                     }
                 }
             } catch (Throwable ignore) {
-                onNoQrFound(false);
+                onNoQrFound();
             }
         });
     }
@@ -643,31 +621,31 @@ public class CameraScanActivity extends BaseFragment implements Camera.PreviewCa
 
                 Result result = qrReader.decode(new BinaryBitmap(new GlobalHistogramBinarizer(source)));
                 if (result == null) {
-                    onNoQrFound(bitmap != null);
+                    onNoQrFound();
                     return null;
                 }
                 text = result.getText();
             }
             if (TextUtils.isEmpty(text)) {
-                onNoQrFound(bitmap != null);
+                onNoQrFound();
                 return null;
             }
             if (needGalleryButton) {
                 if (!text.startsWith("ton://transfer/")) {
-                    onNoWalletFound(bitmap != null);
+                    //onNoWalletFound(bitmap != null);
                     return null;
                 }
                 Uri uri = Uri.parse(text);
                 String path = uri.getPath().replace("/", "");
             } else {
                 if (!text.startsWith("tg://login?token=")) {
-                    onNoWalletFound(false);
+                    onNoQrFound();
                     return null;
                 }
             }
             return text;
         } catch (Throwable ignore) {
-            onNoQrFound(bitmap != null);
+            onNoQrFound();
         }
         return null;
     }

@@ -19,7 +19,6 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.RandomAccessFile;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -592,6 +591,7 @@ public class FileLoader extends BaseController {
                     }
                 }
             }
+            operation.updateProgress();
             return operation;
         }
 
@@ -1029,13 +1029,13 @@ public class FileLoader extends BaseController {
                 continue;
             }
             if (byMinSide) {
-                int currentSide = obj.h >= obj.w ? obj.w : obj.h;
+                int currentSide = Math.min(obj.h, obj.w);
                 if (closestObject == null || side > 100 && closestObject.location != null && closestObject.location.dc_id == Integer.MIN_VALUE || obj instanceof TLRPC.TL_photoCachedSize || side > lastSide && lastSide < currentSide) {
                     closestObject = obj;
                     lastSide = currentSide;
                 }
             } else {
-                int currentSide = obj.w >= obj.h ? obj.w : obj.h;
+                int currentSide = Math.max(obj.w, obj.h);
                 if (closestObject == null || side > 100 && closestObject.location != null && closestObject.location.dc_id == Integer.MIN_VALUE || obj instanceof TLRPC.TL_photoCachedSize || currentSide <= side && lastSide < currentSide) {
                     closestObject = obj;
                     lastSide = currentSide;
@@ -1246,46 +1246,5 @@ public class FileLoader extends BaseController {
         out.getFD().sync();
         out.close();
         return true;
-    }
-
-    public static long getTempFileSize(TLRPC.Document documentLocation, boolean encrypt) {
-        long location_id = documentLocation.id;
-        long datacenterId = documentLocation.dc_id;
-
-        if (datacenterId == 0 || location_id == 0) {
-            return 0;
-        }
-
-        String fileName = datacenterId + "_" + location_id + (encrypt ? ".temp.enc" : ".temp");
-        String fileNameParts = datacenterId + "_" + location_id + ".pt";
-        File f = new File(getDirectory(MEDIA_DIR_CACHE), fileName);
-
-        long size = 0;
-        if (f.exists()) {
-            size = f.length();
-        }
-
-        if (size != 0) {
-            File cacheFileParts = new File(getDirectory(MEDIA_DIR_CACHE), fileNameParts);
-            try {
-                RandomAccessFile filePartsStream = new RandomAccessFile(cacheFileParts, "r");
-                long len = filePartsStream.length();
-                if (len % 8 == 4) {
-                    len -= 4;
-                    int count = filePartsStream.readInt();
-                    if (count <= len / 2) {
-                        size = documentLocation.size;
-                        for (int a = 0; a < count; a++) {
-                            int start = filePartsStream.readInt();
-                            int end = filePartsStream.readInt();
-                            size -= end - start;
-                        }
-                    }
-                }
-            } catch (Exception e) {
-                FileLog.e(e);
-            }
-        }
-        return size;
     }
 }

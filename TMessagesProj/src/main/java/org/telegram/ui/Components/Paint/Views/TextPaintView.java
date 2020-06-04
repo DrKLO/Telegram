@@ -24,10 +24,10 @@ public class TextPaintView extends EntityView {
 
     private EditTextOutline editText;
     private Swatch swatch;
-    private boolean stroke;
+    private int currentType;
     private int baseFontSize;
 
-    public TextPaintView(Context context, Point position, int fontSize, String text, Swatch swatch, boolean stroke) {
+    public TextPaintView(Context context, Point position, int fontSize, String text, Swatch swatch, int type) {
         super(context, position);
 
         baseFontSize = fontSize;
@@ -37,6 +37,7 @@ public class TextPaintView extends EntityView {
         editText.setPadding(AndroidUtilities.dp(7), AndroidUtilities.dp(7), AndroidUtilities.dp(7), AndroidUtilities.dp(7));
         editText.setClickable(false);
         editText.setEnabled(false);
+        editText.setCursorColor(0xffffffff);
         editText.setTextSize(TypedValue.COMPLEX_UNIT_PX, baseFontSize);
         editText.setText(text);
         editText.setTextColor(swatch.color);
@@ -53,7 +54,7 @@ public class TextPaintView extends EntityView {
         }
 
         setSwatch(swatch);
-        setStroke(stroke);
+        setType(type);
 
         updatePosition();
 
@@ -87,7 +88,7 @@ public class TextPaintView extends EntityView {
     }
 
     public TextPaintView(Context context, TextPaintView textPaintView, Point position) {
-        this(context, position, textPaintView.baseFontSize, textPaintView.getText(), textPaintView.getSwatch(), textPaintView.stroke);
+        this(context, position, textPaintView.baseFontSize, textPaintView.getText(), textPaintView.getSwatch(), textPaintView.currentType);
         setRotation(textPaintView.getRotation());
         setScale(textPaintView.getScale());
     }
@@ -119,6 +120,7 @@ public class TextPaintView extends EntityView {
         editText.setClickable(true);
         editText.requestFocus();
         editText.setSelection(editText.getText().length());
+        AndroidUtilities.runOnUIThread(() -> AndroidUtilities.showKeyboard(editText), 300);
     }
 
     public void endEditing() {
@@ -132,25 +134,40 @@ public class TextPaintView extends EntityView {
         return swatch;
     }
 
+    public int getTextSize() {
+        return (int) editText.getTextSize();
+    }
+
     public void setSwatch(Swatch swatch) {
         this.swatch = swatch;
         updateColor();
     }
 
-    public void setStroke(boolean stroke) {
-        this.stroke = stroke;
+    public void setType(int type) {
+        currentType = type;
         updateColor();
     }
 
+    public int getType() {
+        return currentType;
+    }
+
     private void updateColor() {
-        if (stroke) {
+        if (currentType == 0) {
             editText.setTextColor(0xffffffff);
             editText.setStrokeColor(swatch.color);
+            editText.setFrameColor(0);
             editText.setShadowLayer(0, 0, 0, 0);
-        } else {
+        } else if (currentType == 1) {
             editText.setTextColor(swatch.color);
-            editText.setStrokeColor(Color.TRANSPARENT);
-            editText.setShadowLayer(8, 0, 2, 0xaa000000);
+            editText.setStrokeColor(0);
+            editText.setFrameColor(0);
+            editText.setShadowLayer(5, 0, 1, 0x66000000);
+        } else if (currentType == 2) {
+            editText.setTextColor(0xff000000);
+            editText.setStrokeColor(0);
+            editText.setFrameColor(swatch.color);
+            editText.setShadowLayer(0, 0, 0, 0);
         }
     }
 
@@ -158,8 +175,8 @@ public class TextPaintView extends EntityView {
     protected Rect getSelectionBounds() {
         ViewGroup parentView = (ViewGroup) getParent();
         float scale = parentView.getScaleX();
-        float width = getWidth() * (getScale()) + AndroidUtilities.dp(46) / scale;
-        float height = getHeight() * (getScale()) + AndroidUtilities.dp(20) / scale;
+        float width = (getMeasuredWidth() - (currentType == 2 ? AndroidUtilities.dp(24) : 0)) * getScale() + AndroidUtilities.dp(46) / scale;
+        float height = getMeasuredHeight() * getScale() + AndroidUtilities.dp(20) / scale;
         return new Rect((position.x - width / 2.0f) * scale, (position.y - height / 2.0f) * scale, width * scale, height * scale);
     }
 
@@ -179,8 +196,8 @@ public class TextPaintView extends EntityView {
             float radius = AndroidUtilities.dp(19.5f);
 
             float inset = radius + thickness;
-            float width = getWidth() - inset * 2;
-            float height = getHeight() - inset * 2;
+            float width = getMeasuredWidth() - inset * 2;
+            float height = getMeasuredHeight() - inset * 2;
 
             float middle = inset + height / 2.0f;
 
@@ -208,8 +225,8 @@ public class TextPaintView extends EntityView {
 
             float inset = radius + thickness + AndroidUtilities.dp(15);
 
-            float width = getWidth() - inset * 2;
-            float height = getHeight() - inset * 2;
+            float width = getMeasuredWidth() - inset * 2;
+            float height = getMeasuredHeight() - inset * 2;
 
             int xCount = (int) (Math.floor(width / (space + length)));
             float xGap = (float) Math.ceil(((width - xCount * (space + length)) + space) / 2.0f);

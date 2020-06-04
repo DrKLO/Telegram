@@ -17,12 +17,16 @@ import android.widget.TextView;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeDescription;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.RecyclerListView;
+
+import java.util.List;
 
 public class GraySectionCell extends FrameLayout {
 
     private TextView textView;
-    private TextView righTextView;
+    private TextView rightTextView;
 
     public GraySectionCell(Context context) {
         super(context);
@@ -36,11 +40,11 @@ public class GraySectionCell extends FrameLayout {
         textView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL);
         addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, 16, 0, 16, 0));
 
-        righTextView = new TextView(getContext());
-        righTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-        righTextView.setTextColor(Theme.getColor(Theme.key_graySectionText));
-        righTextView.setGravity((LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.CENTER_VERTICAL);
-        addView(righTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.TOP, 16, 0, 16, 0));
+        rightTextView = new TextView(getContext());
+        rightTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+        rightTextView.setTextColor(Theme.getColor(Theme.key_graySectionText));
+        rightTextView.setGravity((LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.CENTER_VERTICAL);
+        addView(rightTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.TOP, 16, 0, 16, 0));
     }
 
     @Override
@@ -50,13 +54,19 @@ public class GraySectionCell extends FrameLayout {
 
     public void setText(String text) {
         textView.setText(text);
-        righTextView.setVisibility(GONE);
+        rightTextView.setVisibility(GONE);
     }
 
     public void setText(String left, String right, OnClickListener onClickListener) {
         textView.setText(left);
-        righTextView.setText(right);
-        righTextView.setOnClickListener(onClickListener);
-        righTextView.setVisibility(VISIBLE);
+        rightTextView.setText(right);
+        rightTextView.setOnClickListener(onClickListener);
+        rightTextView.setVisibility(VISIBLE);
+    }
+
+    public static void createThemeDescriptions(List<ThemeDescription> descriptions, RecyclerListView listView) {
+        descriptions.add(new ThemeDescription(listView, 0, new Class[]{GraySectionCell.class}, new String[]{"textView"}, null, null, null, Theme.key_graySectionText));
+        descriptions.add(new ThemeDescription(listView, 0, new Class[]{GraySectionCell.class}, new String[]{"rightTextView"}, null, null, null, Theme.key_graySectionText));
+        descriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_CELLBACKGROUNDCOLOR, new Class[]{GraySectionCell.class}, null, null, null, Theme.key_graySection));
     }
 }

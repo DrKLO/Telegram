@@ -23,6 +23,8 @@ import android.view.View;
 import android.view.animation.DecelerateInterpolator;
 import android.view.animation.LinearInterpolator;
 
+import org.telegram.messenger.BuildVars;
+
 /**
  * {@link RecyclerView.SmoothScroller} implementation which uses a {@link LinearInterpolator} until
  * the target position becomes a child of the RecyclerView and then uses a
@@ -35,7 +37,7 @@ import android.view.animation.LinearInterpolator;
  */
 public class LinearSmoothScroller extends RecyclerView.SmoothScroller {
 
-    private static final boolean DEBUG = false;
+    private static final boolean DEBUG = BuildVars.DEBUG_VERSION;
 
     private static final float MILLISECONDS_PER_INCH = 25f;
 

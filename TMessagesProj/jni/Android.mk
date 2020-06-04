@@ -624,7 +624,7 @@ endif
 LOCAL_SRC_FILES     += \
 ./jni.c \
 ./audio.c \
-./image.c \
+./image.cpp \
 ./video.c \
 ./intro/IntroRenderer.c \
 ./utilities.cpp \

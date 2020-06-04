@@ -18,15 +18,15 @@ public class CircleBezierDrawable {
 
     float globalRotate = 0f;
     public float idleStateDiff = 0f;
-    float radius;
-    float radiusDiff;
-    float cubicBezierK = 1f;
+    public float radius;
+    public float radiusDiff;
+    public float cubicBezierK = 1f;
 
     final Random random = new Random();
 
     float[] randomAdditionals;
 
-    float randomK;
+    public float randomK;
 
     public CircleBezierDrawable(int n) {
         N = n;
@@ -41,7 +41,14 @@ public class CircleBezierDrawable {
         }
     }
 
-    protected void draw(float cX, float cY, Canvas canvas, Paint paint) {
+    public void setAdditionals(int[] additionals) {
+        for (int i = 0; i < N; i += 2) {
+            randomAdditionals[i] = additionals[i / 2];
+            randomAdditionals[i + 1] = 0;
+        }
+    }
+
+    public void draw(float cX, float cY, Canvas canvas, Paint paint) {
         float r1 = radius - idleStateDiff / 2f - radiusDiff / 2f;
         float r2 = radius + radiusDiff / 2 + idleStateDiff / 2f;
 

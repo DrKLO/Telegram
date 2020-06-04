@@ -246,7 +246,7 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
 
                 measureChildWithMargins(actionBar, widthMeasureSpec, 0, heightMeasureSpec, 0);
 
-                int keyboardSize = SharedConfig.smoothKeyboard ? 0 : getKeyboardHeight();
+                int keyboardSize = SharedConfig.smoothKeyboard ? 0 : measureKeyboardHeight();
                 if (keyboardSize > AndroidUtilities.dp(20)) {
                     ignoreLayout = true;
                     editText.hideEmojiView();
@@ -279,7 +279,7 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
             protected void onLayout(boolean changed, int l, int t, int r, int b) {
                 final int count = getChildCount();
 
-                int keyboardSize = SharedConfig.smoothKeyboard ? 0 : getKeyboardHeight();
+                int keyboardSize = SharedConfig.smoothKeyboard ? 0 : measureKeyboardHeight();
                 int paddingBottom = keyboardSize <= AndroidUtilities.dp(20) && !AndroidUtilities.isInMultiwindow && !AndroidUtilities.isTablet() ? editText.getEmojiPadding() : 0;
                 setBottomClip(paddingBottom);
 
@@ -830,7 +830,7 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
                     view = headerCell;
                     break;
                 case 2:
-                    view = new GroupCreateUserCell(context, false, 3);
+                    view = new GroupCreateUserCell(context, false, 3, false);
                     break;
                 case 3:
                 default:

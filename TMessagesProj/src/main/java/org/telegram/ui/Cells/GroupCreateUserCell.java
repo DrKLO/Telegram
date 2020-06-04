@@ -52,10 +52,13 @@ public class GroupCreateUserCell extends FrameLayout {
     private boolean drawDivider;
     private int padding;
 
-    public GroupCreateUserCell(Context context, boolean needCheck, int padding) {
+    private boolean showSelfAsSaved;
+
+    public GroupCreateUserCell(Context context, boolean needCheck, int pad, boolean selfAsSaved) {
         super(context);
         drawDivider = false;
-        this.padding = padding;
+        padding = pad;
+        showSelfAsSaved = selfAsSaved;
         avatarDrawable = new AvatarDrawable();
 
         avatarImageView = new BackupImageView(context);
@@ -174,7 +177,11 @@ public class GroupCreateUserCell extends FrameLayout {
             statusTextView.setText(null);
             avatarImageView.setImage(null, "50_50", avatarDrawable);
         } else {
-            ((LayoutParams) nameTextView.getLayoutParams()).topMargin = AndroidUtilities.dp(10);
+            if (currentStatus != null && TextUtils.isEmpty(currentStatus)) {
+                ((LayoutParams) nameTextView.getLayoutParams()).topMargin = AndroidUtilities.dp(19);
+            } else {
+                ((LayoutParams) nameTextView.getLayoutParams()).topMargin = AndroidUtilities.dp(10);
+            }
             avatarImageView.getLayoutParams().width = avatarImageView.getLayoutParams().height = AndroidUtilities.dp(46);
             if (checkBox != null) {
                 ((LayoutParams) checkBox.getLayoutParams()).topMargin = AndroidUtilities.dp(33);
@@ -187,7 +194,7 @@ public class GroupCreateUserCell extends FrameLayout {
 
             if (currentObject instanceof TLRPC.User) {
                 TLRPC.User currentUser = (TLRPC.User) currentObject;
-                if (UserObject.isUserSelf(currentUser)) {
+                if (showSelfAsSaved && UserObject.isUserSelf(currentUser)) {
                     nameTextView.setText(LocaleController.getString("SavedMessages", R.string.SavedMessages), true);
                     statusTextView.setText(null);
                     avatarDrawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_SAVED);

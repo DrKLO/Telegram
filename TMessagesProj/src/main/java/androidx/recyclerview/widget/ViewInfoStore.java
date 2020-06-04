@@ -15,6 +15,8 @@
  */
 package androidx.recyclerview.widget;
 
+import org.telegram.messenger.BuildVars;
+
 import static androidx.recyclerview.widget.ViewInfoStore.InfoRecord.FLAG_APPEAR;
 import static androidx.recyclerview.widget.ViewInfoStore.InfoRecord.FLAG_APPEAR_AND_DISAPPEAR;
 import static androidx.recyclerview.widget.ViewInfoStore.InfoRecord.FLAG_APPEAR_PRE_AND_POST;
@@ -35,6 +37,8 @@ import androidx.core.util.Pools;
 class ViewInfoStore {
 
     private static final boolean DEBUG = false;
+
+    private boolean processing;
 
     /**
      * View data records for pre-layout
@@ -113,6 +117,12 @@ class ViewInfoStore {
             }
             // if not pre-post flag is left, clear.
             if ((record.flags & (FLAG_PRE | FLAG_POST)) == 0) {
+                if (processing) {
+                    if (BuildVars.DEBUG_VERSION) {
+                        throw new RuntimeException("popFromLayoutStep while processing");
+                    }
+                    return null;
+                }
                 mLayoutHolderMap.removeAt(index);
                 InfoRecord.recycle(record);
             }
@@ -214,6 +224,7 @@ class ViewInfoStore {
     }
 
     void process(ProcessCallback callback) {
+        processing = true;
         for (int index = mLayoutHolderMap.size() - 1; index >= 0; index--) {
             final RecyclerView.ViewHolder viewHolder = mLayoutHolderMap.keyAt(index);
             final InfoRecord record = mLayoutHolderMap.removeAt(index);
@@ -248,6 +259,7 @@ class ViewInfoStore {
             }
             InfoRecord.recycle(record);
         }
+        processing = false;
     }
 
     /**
@@ -261,8 +273,15 @@ class ViewInfoStore {
                 break;
             }
         }
-        final InfoRecord info = mLayoutHolderMap.remove(holder);
+        final InfoRecord info = mLayoutHolderMap.get(holder);
         if (info != null) {
+            if (processing) {
+                if (BuildVars.DEBUG_VERSION) {
+                    throw new RuntimeException("removeViewHolder while processing");
+                }
+                return;
+            }
+            mLayoutHolderMap.remove(holder);
             InfoRecord.recycle(info);
         }
     }

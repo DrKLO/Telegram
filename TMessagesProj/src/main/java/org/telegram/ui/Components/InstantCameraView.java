@@ -57,7 +57,6 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 
 import com.google.android.exoplayer2.ExoPlayer;
-import com.google.android.exoplayer2.util.Log;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
@@ -65,6 +64,7 @@ import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.DispatchQueue;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
+import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaController;
 import org.telegram.messenger.NotificationCenter;
@@ -107,7 +107,7 @@ import javax.microedition.khronos.opengles.GL;
 public class InstantCameraView extends FrameLayout implements NotificationCenter.NotificationCenterDelegate {
 
     private int currentAccount = UserConfig.selectedAccount;
-    private FrameLayout cameraContainer;
+    private InstantViewCameraContainer cameraContainer;
     private ChatActivity baseFragment;
     private Paint paint;
     private RectF rect;
@@ -256,7 +256,7 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
         rect = new RectF();
 
         if (Build.VERSION.SDK_INT >= 21) {
-            cameraContainer = new FrameLayout(context) {
+            cameraContainer = new InstantViewCameraContainer(context) {
                 @Override
                 public void setScaleX(float scaleX) {
                     super.setScaleX(scaleX);
@@ -283,7 +283,7 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
             final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
             paint.setColor(0xff000000);
             paint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.CLEAR));
-            cameraContainer = new FrameLayout(context) {
+            cameraContainer = new InstantViewCameraContainer(context) {
 
                 @Override
                 public void setScaleX(float scaleX) {
@@ -556,7 +556,7 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
         MediaController.getInstance().requestAudioFocus(true);
     }
 
-    public FrameLayout getCameraContainer() {
+    public InstantViewCameraContainer getCameraContainer() {
         return cameraContainer;
     }
 
@@ -790,13 +790,14 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
             }
         }
         textureView = null;
+        cameraContainer.setImageReceiver(null);
     }
 
     private void switchCamera() {
         saveLastCameraBitmap();
         if (lastBitmap != null) {
             textureOverlayView.setImageBitmap(lastBitmap);
-            textureOverlayView.animate().setDuration(120).alpha(1.0f).setInterpolator(new DecelerateInterpolator()).start();
+            textureOverlayView.setAlpha(1f);
         }
         if (cameraSession != null) {
             cameraSession.destroy();
@@ -977,6 +978,10 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
         panTranslationY = y / 2f;
         updateTranslationY();
         blurBehindDrawable.onPanTranslationUpdate(y);
+    }
+
+    public TextureView getTextureView() {
+        return textureView;
     }
 
     public class CameraGLThread extends DispatchQueue {
@@ -1965,6 +1970,8 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
                             AlertsCreator.createScheduleDatePickerDialog(baseFragment.getParentActivity(), baseFragment.getDialogId(), (notify, scheduleDate) -> {
                                 baseFragment.sendMedia(new MediaController.PhotoEntry(0, 0, 0, videoFile.getAbsolutePath(), 0, true, 0, 0, 0), videoEditedInfo, notify, scheduleDate);
                                 startAnimation(false);
+                            }, () -> {
+                                startAnimation(false);
                             });
                         } else {
                             baseFragment.sendMedia(new MediaController.PhotoEntry(0, 0, 0, videoFile.getAbsolutePath(), 0, true, 0, 0, 0), videoEditedInfo, true, 0);
@@ -1983,7 +1990,7 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
                             }
 
                             @Override
-                            public void onError(Exception e) {
+                            public void onError(VideoPlayer player, Exception e) {
                                 FileLog.e(e);
                             }
 
@@ -2397,6 +2404,46 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
                 }
             } finally {
                 super.finalize();
+            }
+        }
+    }
+
+    public class InstantViewCameraContainer extends FrameLayout {
+
+        ImageReceiver imageReceiver;
+        float imageProgress;
+
+        public InstantViewCameraContainer(Context context) {
+            super(context);
+            InstantCameraView.this.setWillNotDraw(false);
+        }
+
+        public void setImageReceiver(ImageReceiver imageReceiver) {
+            if (this.imageReceiver == null) {
+                imageProgress = 0;
+            }
+            this.imageReceiver = imageReceiver;
+            invalidate();
+        }
+
+        @Override
+        protected void dispatchDraw(Canvas canvas) {
+            super.dispatchDraw(canvas);
+            if (imageProgress != 1f) {
+                imageProgress += 16 / 250.0f;
+                if (imageProgress > 1f) {
+                    imageProgress = 1f;
+                }
+                invalidate();
+            }
+            if (imageReceiver != null) {
+                canvas.save();
+                canvas.translate(-imageReceiver.getImageX(), -imageReceiver.getImageY());
+                float oldAlpha = imageReceiver.getAlpha();
+                imageReceiver.setAlpha(imageProgress);
+                imageReceiver.draw(canvas);
+                imageReceiver.setAlpha(oldAlpha);
+                canvas.restore();
             }
         }
     }

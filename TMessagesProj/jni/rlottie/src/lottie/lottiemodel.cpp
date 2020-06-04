@@ -201,10 +201,13 @@ void LOTGradient::populate(VGradientStops &stops, int frameNo)
     int            size = gradData.mGradient.size();
     float *        ptr = gradData.mGradient.data();
     int            colorPoints = mColorPoints;
-    if (colorPoints == -1) {  // for legacy bodymovin (ref: lottie-android)
+    if (colorPoints < 0 || colorPoints * 4 > size) {  // for legacy bodymovin (ref: lottie-android)
         colorPoints = size / 4;
     }
     int    opacityArraySize = size - colorPoints * 4;
+    if (opacityArraySize % 2 != 0 || colorPoints > opacityArraySize / 2 && opacityArraySize < 4) {
+        opacityArraySize = 0;
+    }
     float *opacityPtr = ptr + (colorPoints * 4);
     stops.clear();
     int j = 0;
@@ -257,6 +260,9 @@ void LOTGradient::populate(VGradientStops &stops, int frameNo)
             stops.push_back(std::make_pair(colorStop, color.toColor()));
         }
         ptr += 4;
+        if (stops.empty()) {
+            stops.push_back(std::make_pair(0.0f, VColor(255, 255, 255, 255)));
+        }
     }
 }
 

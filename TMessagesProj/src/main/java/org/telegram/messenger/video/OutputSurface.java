@@ -20,8 +20,12 @@ import android.graphics.SurfaceTexture;
 import android.opengl.GLES20;
 import android.view.Surface;
 
+import org.telegram.messenger.MediaController;
+import org.telegram.messenger.VideoEditedInfo;
+
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.ArrayList;
 
 import javax.microedition.khronos.egl.EGL10;
 import javax.microedition.khronos.egl.EGLConfig;
@@ -58,15 +62,15 @@ public class OutputSurface implements SurfaceTexture.OnFrameAvailableListener {
         mPixelBuf.order(ByteOrder.LITTLE_ENDIAN);
         eglSetup(width, height);
         makeCurrent();
-        setup();
+        setup(null, null, null, null, 0, 0, 0, false);
     }
 
-    public OutputSurface() {
-        setup();
+    public OutputSurface(MediaController.SavedFilterState savedFilterState, String imagePath, String paintPath, ArrayList<VideoEditedInfo.MediaEntity> mediaEntities, int w, int h, float fps, boolean photo) {
+        setup(savedFilterState, imagePath, paintPath, mediaEntities, w, h, fps, photo);
     }
 
-    private void setup() {
-        mTextureRender = new TextureRenderer(rotateRender);
+    private void setup(MediaController.SavedFilterState savedFilterState, String imagePath, String paintPath, ArrayList<VideoEditedInfo.MediaEntity> mediaEntities, int w, int h, float fps, boolean photo) {
+        mTextureRender = new TextureRenderer(rotateRender, savedFilterState, imagePath, paintPath, mediaEntities, w, h, fps, photo);
         mTextureRender.surfaceCreated();
         mSurfaceTexture = new SurfaceTexture(mTextureRender.getTextureId());
         mSurfaceTexture.setOnFrameAvailableListener(this);
@@ -128,6 +132,9 @@ public class OutputSurface implements SurfaceTexture.OnFrameAvailableListener {
             }
             mEGL.eglDestroySurface(mEGLDisplay, mEGLSurface);
             mEGL.eglDestroyContext(mEGLDisplay, mEGLContext);
+        }
+        if (mTextureRender != null) {
+            mTextureRender.release();
         }
         mSurface.release();
         mEGLDisplay = null;

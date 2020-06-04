@@ -68,6 +68,7 @@ import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaController;
+import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
@@ -79,6 +80,7 @@ import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.SerializedData;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.Cells.ThemesHorizontalListCell;
+import org.telegram.ui.Components.AudioVisualizerDrawable;
 import org.telegram.ui.Components.BackgroundGradientDrawable;
 import org.telegram.ui.Components.CombinedDrawable;
 import org.telegram.ui.Components.RLottieDrawable;
@@ -127,7 +129,7 @@ public class Theme {
 
         private Rect backupRect = new Rect();
 
-        private boolean isOut;
+        private final boolean isOut;
 
         private int topY;
         private boolean isTopNear;
@@ -149,6 +151,8 @@ public class Theme {
         public static final int TYPE_MEDIA = 1;
         public static final int TYPE_PREVIEW = 2;
 
+        private int alpha;
+
         public MessageDrawable(int type, boolean out, boolean selected) {
             super();
             isOut = out;
@@ -156,6 +160,7 @@ public class Theme {
             isSelected = selected;
             path = new Path();
             selectedPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+            alpha = 255;
         }
 
         public boolean hasGradient() {
@@ -558,13 +563,22 @@ public class Theme {
 
         @Override
         public void setAlpha(int alpha) {
-            paint.setAlpha(alpha);
-            if (isOut) {
-                selectedPaint.setAlpha((int) (Color.alpha(getColor(key_chat_outBubbleGradientSelectedOverlay)) * (alpha / 255.0f)));
+            if (this.alpha != alpha) {
+                this.alpha = alpha;
+                paint.setAlpha(alpha);
+                if (isOut) {
+                    selectedPaint.setAlpha((int) (Color.alpha(getColor(key_chat_outBubbleGradientSelectedOverlay)) * (alpha / 255.0f)));
+                }
             }
             if (gradientShader == null) {
                 Drawable background = getBackgroundDrawable();
-                background.setAlpha(alpha);
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+                    if (background.getAlpha() != alpha) {
+                        background.setAlpha(alpha);
+                    }
+                } else {
+                    background.setAlpha(alpha);
+                }
             }
         }
 
@@ -2148,6 +2162,9 @@ public class Theme {
     public static Path[] chat_filePath = new Path[2];
     public static Drawable chat_flameIcon;
     public static Drawable chat_gifIcon;
+
+    private static AudioVisualizerDrawable chat_msgAudioVisualizeDrawable;
+    private static HashMap<MessageObject, AudioVisualizerDrawable> animatedOutVisualizerDrawables;
 
     public static final String key_dialogBackground = "dialogBackground";
     public static final String key_dialogBackgroundGray = "dialogBackgroundGray";
@@ -7293,6 +7310,9 @@ public class Theme {
                 color = defaultColors.get(key);
             }
         }
+        if (color != null && (key_windowBackgroundWhite.equals(key) || key_windowBackgroundGray.equals(key))) {
+            color |= 0xff000000;
+        }
         return color;
     }
 
@@ -7382,8 +7402,8 @@ public class Theme {
                 return getDefaultColor(key);
             }
         }
-        if (key.equals(key_windowBackgroundWhite) || key.equals(key_windowBackgroundGray)) {
-            return 0xff000000 | color;
+        if (key_windowBackgroundWhite.equals(key) || key_windowBackgroundGray.equals(key)) {
+            color |= 0xff000000;
         }
         return color;
     }
@@ -7926,5 +7946,41 @@ public class Theme {
 
     public static boolean isPatternWallpaper() {
         return isPatternWallpaper;
+    }
+
+    public static AudioVisualizerDrawable getCurrentAudiVisualizerDrawable() {
+        if (chat_msgAudioVisualizeDrawable == null) {
+            chat_msgAudioVisualizeDrawable = new AudioVisualizerDrawable();
+        }
+        return chat_msgAudioVisualizeDrawable;
+    }
+
+    public static void unrefAudioVisualizeDrawable(MessageObject messageObject) {
+        if (chat_msgAudioVisualizeDrawable == null) {
+            return;
+        }
+        if (chat_msgAudioVisualizeDrawable.getParentView() == null || messageObject == null) {
+            chat_msgAudioVisualizeDrawable.setParentView(null);
+        } else {
+            if (animatedOutVisualizerDrawables == null) {
+                animatedOutVisualizerDrawables = new HashMap<>();
+            }
+            animatedOutVisualizerDrawables.put(messageObject, chat_msgAudioVisualizeDrawable);
+            chat_msgAudioVisualizeDrawable.setWaveform(false, true, null);
+            AndroidUtilities.runOnUIThread(() -> {
+                AudioVisualizerDrawable drawable = animatedOutVisualizerDrawables.remove(messageObject);
+                if (drawable != null) {
+                    drawable.setParentView(null);
+                }
+            }, 200);
+            chat_msgAudioVisualizeDrawable = null;
+        }
+    }
+
+    public static AudioVisualizerDrawable getAnimatedOutAudioVisualizerDrawable(MessageObject messageObject) {
+        if (animatedOutVisualizerDrawables == null || messageObject == null) {
+            return null;
+        }
+        return animatedOutVisualizerDrawables.get(messageObject);
     }
 }

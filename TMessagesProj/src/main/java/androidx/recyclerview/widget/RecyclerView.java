@@ -59,6 +59,8 @@ import android.widget.LinearLayout;
 import android.widget.OverScroller;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.BuildConfig;
+import org.telegram.messenger.BuildVars;
 
 import androidx.annotation.CallSuper;
 import androidx.annotation.IntDef;
@@ -212,7 +214,7 @@ public class RecyclerView extends ViewGroup implements ScrollingView,
 
     static final String TAG = "RecyclerView";
 
-    static final boolean DEBUG = false;
+    static final boolean DEBUG = BuildVars.DEBUG_VERSION;
 
     static final boolean VERBOSE_TRACING = false;
 
@@ -363,7 +365,7 @@ public class RecyclerView extends ViewGroup implements ScrollingView,
 
     private final RecyclerViewDataObserver mObserver = new RecyclerViewDataObserver();
 
-    final Recycler mRecycler = new Recycler();
+    public final Recycler mRecycler = new Recycler();
 
     private SavedState mPendingSavedState;
 
@@ -375,7 +377,7 @@ public class RecyclerView extends ViewGroup implements ScrollingView,
     /**
      * Handles abstraction between LayoutManager children and RecyclerView children
      */
-    ChildHelper mChildHelper;
+    public ChildHelper mChildHelper;
 
     /**
      * Keeps data about views to be used for animations
@@ -11294,7 +11296,7 @@ public class RecyclerView extends ViewGroup implements ScrollingView,
             mIsRecyclableCount = recyclable ? mIsRecyclableCount - 1 : mIsRecyclableCount + 1;
             if (mIsRecyclableCount < 0) {
                 mIsRecyclableCount = 0;
-                if (DEBUG) {
+                if (BuildVars.DEBUG_VERSION) {
                     throw new RuntimeException("isRecyclable decremented below 0: "
                             + "unmatched pair of setIsRecyable() calls for " + this);
                 }

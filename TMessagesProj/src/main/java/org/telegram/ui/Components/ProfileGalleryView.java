@@ -9,7 +9,6 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.PointF;
 import android.util.SparseArray;
-import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewConfiguration;
@@ -55,7 +54,7 @@ public class ProfileGalleryView extends CircularViewPager implements Notificatio
 
     private final SparseArray<RadialProgress2> radialProgresses = new SparseArray<>();
 
-    private class Item {
+    private static class Item {
         private BackupImageView imageView;
     }
 
@@ -133,12 +132,13 @@ public class ProfileGalleryView extends CircularViewPager implements Notificatio
         } else if (action == MotionEvent.ACTION_MOVE) {
             final float dx = ev.getX() - downPoint.x;
             final float dy = ev.getY() - downPoint.y;
-            if (Math.abs(dy) >= touchSlop || Math.abs(dx) >= touchSlop) {
+            boolean move = Math.abs(dy) >= touchSlop || Math.abs(dx) >= touchSlop;
+            if (move) {
                 isDownReleased = true;
                 callback.onRelease();
             }
             if (isSwipingViewPager && isScrollingListView) {
-                if (Math.abs(dy) >= touchSlop || Math.abs(dx) >= touchSlop) {
+                if (move) {
                     if (Math.abs(dy) > Math.abs(dx)) {
                         isSwipingViewPager = false;
                         final MotionEvent cancelEvent = MotionEvent.obtain(ev);

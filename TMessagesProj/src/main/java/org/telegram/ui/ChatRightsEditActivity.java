@@ -640,7 +640,7 @@ public class ChatRightsEditActivity extends BaseFragment {
                         }
                         builder.setMessage(AndroidUtilities.replaceTags(LocaleController.formatString("EditAdminTransferReadyAlertText", R.string.EditAdminTransferReadyAlertText, currentChat.title, UserObject.getFirstName(currentUser))));
                         builder.setPositiveButton(LocaleController.getString("EditAdminTransferChangeOwner", R.string.EditAdminTransferChangeOwner), (dialogInterface, i) -> {
-                            TwoStepVerificationActivity fragment = new TwoStepVerificationActivity(0);
+                            TwoStepVerificationActivity fragment = new TwoStepVerificationActivity();
                             fragment.setDelegate(password -> initTransfer(password, fragment));
                             presentFragment(fragment);
                         });
@@ -715,7 +715,7 @@ public class ChatRightsEditActivity extends BaseFragment {
                     }
 
                     if ("PASSWORD_MISSING".equals(error.text)) {
-                        builder.setPositiveButton(LocaleController.getString("EditAdminTransferSetPassword", R.string.EditAdminTransferSetPassword), (dialogInterface, i) -> presentFragment(new TwoStepVerificationActivity(0)));
+                        builder.setPositiveButton(LocaleController.getString("EditAdminTransferSetPassword", R.string.EditAdminTransferSetPassword), (dialogInterface, i) -> presentFragment(new TwoStepVerificationSetupActivity(TwoStepVerificationSetupActivity.TYPE_INTRO, null)));
                         builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
                     } else {
                         messageTextView = new TextView(getParentActivity());

@@ -366,7 +366,7 @@
     <string name="ChannelUserCantAdd">المعذرة، لا يمكنك إضافة هذا المستخدم للقنوات.</string>
     <string name="ChannelUserCantAdmin">المعذرة، يوجد الكثير من المشرفين في هذه القناة.</string>
     <string name="ChannelUserCantBot">عذرًا، يوجد الكثير من البوتات في هذه القناة.</string>
-    <string name="ChannelUserAddLimit">المعذرة، يمكنك إضافة أول 200 عضو للقناة فقط. يمكن لعدد غير محدود من الناس الانضمامُ للقناة عبرَ رابطها.</string>
+    <string name="ChannelUserAddLimit">المعذرة، يمكنك إضافة أول 200 عضو فقط إلى القناة. يمكن لعدد غير محدود من الناس الانضمام عبر رابط القناة.</string>
     <string name="ChannelTooMuchTitle">الكثير من المُجتمعات</string>
     <string name="ChannelTooMuch">المعذرة، أنت عضو في الكثير من المجموعات والقنوات. الرجاء مغادرة بعض منها قبل إنشاء واحدة جديدة.</string>
     <string name="ChannelTooMuchJoin">المعذرة، أنت عضو في الكثير من المجموعات والقنوات. الرجاء مغادرة بعض منها قبل الانضمام لواحدة جديدة.</string>
@@ -403,7 +403,7 @@
     <string name="ChannelSignMessagesInfo">إضافة أسماء المشرفين للمنشورات التي ينشرونها.</string>
     <string name="EditAdmin">صلاحيات المشرف</string>
     <string name="EditAdminRank">لقب مخصص</string>
-    <string name="EditAdminRankInfo">قم باختيار لقب مخصص كي يظهر لجميع الأعضاء بدلًا من \'%1$s\'.</string>
+    <string name="EditAdminRankInfo">لقب مخصص سيكون مرئيًّا لجميع الأعضاء بدل من «%1$s».</string>
     <string name="EditAdminWhatCanDo">ما هي صلاحيات هذا المشرف؟</string>
     <string name="EditAdminChangeChannelInfo">تغيير معلومات القناة</string>
     <string name="EditAdminChangeGroupInfo">تغيير معلومات المجموعة</string>
@@ -412,7 +412,7 @@
     <string name="EditAdminDeleteMessages">حذف رسائل الآخرين</string>
     <string name="EditAdminGroupDeleteMessages">حذف الرسائل</string>
     <string name="EditAdminAddAdmins">إضافة مشرفين جدد</string>
-    <string name="EditAdminRemoveAdmin">إزالة المشرف</string>
+    <string name="EditAdminRemoveAdmin">إزالة الإشراف</string>
     <string name="EditAdminGroupTransfer">نقل ملكية المجموعة</string>
     <string name="EditAdminChannelTransfer">نقل ملكية القناة</string>
     <string name="EditAdminTransferAlertTitle">تأكيد أمني</string>
@@ -613,10 +613,10 @@
     <string name="EventLogLeftGroup">غادر un1 المجموعة</string>
     <string name="EventLogLeftChannel">غادر un1 القناة</string>
     <string name="EventLogAdded">un1 أضاف un2</string>
-    <string name="EventLogGroupJoined">un1 انضم للمجموعة</string>
+    <string name="EventLogGroupJoined">انضم un1 للمجموعة</string>
     <string name="EventLogChannelRestricted">حظر %1$s</string>
     <string name="EventLogChannelUnrestricted">ألغى حظر %1$s</string>
-    <string name="EventLogChannelJoined">un1 انضم للقناة</string>
+    <string name="EventLogChannelJoined">انضم un1 للقناة</string>
     <string name="EventLogEditedGroupPhoto">عيّن un1 صورة جديدة للمجموعة</string>
     <string name="EventLogEditedChannelPhoto">عيّن un1 صورة جديدة للقناة</string>
     <string name="EventLogRemovedWGroupPhoto">أزال un1 صورة المجموعة</string>
@@ -722,7 +722,7 @@
     <string name="SdCard">بطاقة التخزين الخارجية</string>
     <string name="Folder">مجلد</string>
     <string name="RecentFiles">الملفات الأخيرة</string>
-    <string name="RecentFilesAZ">Files A-Z</string>
+    <string name="RecentFilesAZ">الملفات أ-ي</string>
     <string name="NoFilesFound">لم يتم العثور على نتائج</string>
     <string name="NoFilesFoundInfo">ما من ملفات باسم **%1$s** في هذا المجلد.</string>
     <string name="NoFilesInfo">هذا المجلد فارغ.</string>
@@ -731,7 +731,7 @@
     <string name="AppFolderInfo">استعراض مجلد التطبيق</string>
     <string name="InternalFolderInfo">استعراض جميع المجلدات</string>
     <string name="ExternalFolderInfo">استعراض ذاكرة التخزين الخارجية</string>
-    <string name="SearchMusic">Search music</string>
+    <string name="SearchMusic">بحث الصوتيات</string>
     <!--group stickers-->
     <string name="GroupStickers">ملصقات المجموعة</string>
     <string name="ChooseFromYourStickers">اختر من ملصقاتك</string>
@@ -909,6 +909,7 @@
     <string name="DeleteForUser">حذف من عند %1$s</string>
     <string name="DeleteForAll">حذف من عند كافة الأعضاء</string>
     <string name="TextCopied">تم نسخ النص للحافظة</string>
+    <string name="HoldToAudioOnly">Hold to record audio.</string>
     <string name="HoldToAudio">اضغط مطولًا لتسجيل الصوت، انقر للتحويل للمرئي.</string>
     <string name="HoldToVideo">اضغط مطولًا لتسجيل مرئي، انقر للتحويل للصوتي.</string>
     <string name="DiscardVoiceMessageTitle">تجاهل الرسالة الصوتية</string>
@@ -935,7 +936,7 @@
     <string name="ApkRestricted">"تثبيت ملفات APK محظور لهذا التطبيق، يمكنك السماح بهذا من إعدادات النظام. "</string>
     <string name="UnreadMessages">الرسائل غير المقروءة</string>
     <string name="SearchStickersHint">بحث عن حزم الملصقات</string>
-    <string name="SearchTrendingStickersHint">بحث عن حزم الملصقات الشائعة</string>
+    <string name="SearchTrendingStickersHint">البحث عن الملصقات الشائعة</string>
     <string name="SearchEmojiHint">بحث الرموز التعبيرية</string>
     <string name="URL">الرابط</string>
     <string name="MapPreviewProvider">مزود معاينة الخرائط</string>
@@ -976,7 +977,18 @@
     <string name="DiceInfo2">أرسل الرمز التعبيري **&#127922;** لرمي حجر النرد.</string>
     <string name="DartInfo">أرسل الرمز التعبيري **&#127919;** لتجربة حظك.</string>
     <string name="DiceEmojiInfo">أرسل الرمز %1$s لتجربة حظك.</string>
-    <string name="SendDice">إرسال</string>Send a dart emoji
+    <string name="SendDice">إرسال</string>
+    <string name="PsaType_covid">كوفيد-19</string>
+    <string name="PsaTypeDefault">PSA</string>
+    <string name="PsaInfo_covid">تزودك هذه الرسالة بإعلان عام لمبادرة تتعلق بالجائحة الحالية كوفيد-19. تعرف على المزيد حول هذه المبادرة على https://telegram.org/blog/coronavirus</string>
+    <string name="PsaInfoDefault">PSA info test</string>
+    <string name="PsaMessage_covid">إشعار كوفيد-19</string>
+    <string name="PsaMessageInfo_covid">تزودك هذه الرسالة بإعلان عام لمبادرة تتعلق بالجائحة الحالية كوفيد-19. تعرف على المزيد حول هذه المبادرة على https://telegram.org/blog/coronavirus</string>
+    <string name="PsaMessageDefault">إشعار مهم</string>
+    <string name="PsaMessageInfoDefault">هذا إشعار&#160;مهم.</string>
+    <string name="PsaHideChatAlertTitle">إخفاء المحادثة</string>
+    <string name="PsaHideChatAlertText">هل أنت متأكد أنك تريد إخفاء هذه المحادثة؟</string>
+    <string name="PsaHide">إخفاء</string>
     <!--notification-->
     <string name="MessageLifetimeChanged">عيّن %1$s عداد التدمير الذاتي ليصبح %2$s</string>
     <string name="MessageLifetimeChangedOutgoing">قمت بتعيين عداد التدمير الذاتي ليصبح %1$s</string>
@@ -1029,7 +1041,7 @@
     <string name="NotificationMessageGroupSticker">أرسل %1$s ملصقًا لمجموعة %2$s</string>
     <string name="NotificationMessageGroupStickerEmoji">أرسل %1$s ملصق %3$s لمجموعة %2$s</string>
     <string name="NotificationInvitedToGroup">أضافك %1$s لمجموعة %2$s</string>
-    <string name="NotificationEditedGroupName">%1$s انضم للمجموعة %2$s</string>
+    <string name="NotificationEditedGroupName">انضم %1$s للمجموعة %2$s</string>
     <string name="NotificationEditedGroupPhoto">غيّرَ %1$s صورة مجموعة %2$s</string>
     <string name="NotificationGroupAddMember">%1$s أضاف %3$s للمجموعة %2$s</string>
     <string name="NotificationGroupAddSelf">عاد %1$s لمجموعة %2$s</string>
@@ -1297,6 +1309,7 @@
     <string name="Masks">الأقنعة</string>
     <string name="MasksInfo">يمكنك إضافة أقنعة للصور التي ترسلها، لعمل ذلك قم بفتح محرر الصور قبل إرسال الصورة.</string>
     <string name="FeaturedStickers">الملصقات الشائعة</string>
+    <string name="FeaturedGifs">الصور المتحركة الشائعة</string>
     <string name="SuggestStickers">اقتراح ملصقات عبر الرموز</string>
     <string name="SuggestStickersAll">جميع الحزم</string>
     <string name="SuggestStickersInstalled">حزمي</string>
@@ -1443,7 +1456,7 @@
     <string name="TextSizeHeader">حجم خط الرسائل</string>
     <string name="AskAQuestion">اسأل سؤالًا</string>
     <string name="AddAnExplanation">إضافة شرح</string>
-    <string name="AddAnExplanationInfo">Users will see this text after choosing the wrong answer, good for educational purposes.</string>
+    <string name="AddAnExplanationInfo">سيرى المستخدمون هذا النص بعد اختيار الإجابة الخاطئة وهذا جيد للأغراض التعليمية.</string>
     <string name="EnableAnimations">تفعيل المؤثرات البصرية</string>
     <string name="ChatSettings">إعدادات المحادثات</string>
     <string name="Devices">الأجهزة</string>
@@ -1657,6 +1670,7 @@
     <string name="AutoplayMedia">تشغيل الوسائط تلقائيًا</string>
     <string name="RaiseToSpeak">الرفع للتحدث</string>
     <string name="SaveToGallerySettings">حفظ في المعرض</string>
+    <string name="SoundMuted">Sound muted</string>
     <string name="EditName">تعديل الاسم</string>
     <string name="NotificationsCustomize">تخصيص</string>
     <string name="NotificationsCustom">مخصص</string>
@@ -1819,6 +1833,7 @@
     <string name="AuthAnotherClientInfo2">افتح تيليجرام على سطح المكتب للحصول على رمز QR.</string>
     <string name="AuthAnotherClientInfo3">امسح رمز الـ QR لربط حسابك.</string>
     <string name="AuthAnotherClientUrl">يمكن استخدام هذا الرمز للسماح لشخص ما بتسجيل الدخول إلى حسابك في تيليجرام.\n\nلتأكيد عملية تسجيل الدخول؛ يرجى الذهاب إلى الإعدادات &gt; الأجهزة &gt; مسح QR وامسح الرمز.</string>
+    <string name="QRCodePermissionNoCamera">يحتاج تيليجرام الوصول إلى الكاميرا لتتمكن من مسح رمز QR.</string>
     <!--cache view-->
     <string name="LocalDatabase">قاعدة البيانات على الجهاز</string>
     <string name="LocalDatabaseClearTextTitle">مسح قاعدة البيانات المحلية</string>
@@ -2126,11 +2141,23 @@
     <string name="FilterRemoveExclusionUserText">هل أنت متأكد أنك تريد إزالة «%1$s» من قائمة المستثناة دائمًا؟</string>
     <string name="FilterRemoveInclusionText">هل أنت متأكد أنك تريد إزالة «%1$s» من قائمة المضمّنة دائمًا؟</string>
     <string name="FilterRemoveInclusionChatText">هل أنت متأكد أنك تريد إزالة «%1$s» من قائمة المضمّنة دائمًا؟</string>
-    <string name="FilterRemoveInclusionUserText">هل أنت متأكد أنك تريد إزالة «%1$s» من قائمة المستثناة دائمًا؟</string>
+    <string name="FilterRemoveInclusionUserText">هل أنت متأكد أنك تريد إزالة «%1$s» من قائمة المُضمّنة دائمًا؟</string>
     <string name="FilterAvailableTitle">مجلدات المحادثات</string>
     <string name="FilterAvailableText">افتح *الإعدادات &gt; المجلدات* لتنظيم محادثاتك في مجلدات.</string>
     <string name="FilterNameNonMuted">غير المكتومة</string>
     <string name="FilterNameUnread">غير المقروءة</string>
+    <string name="FilterAddTo">إضافة إلى مجلد</string>
+    <string name="FilterRemoveFrom">إزالة من المجلد</string>
+    <string name="FilterChoose">اختر مجلّدا</string>
+    <string name="FilterUserAddedToExisting">تمت إضافة **%1$s** إلى **%2$s**</string>
+    <string name="FilterChatAddedToExisting">تمت إضافة **%1$s** إلى **%2$s**</string>
+    <string name="FilterChatsAddedToExisting">تمت إضافة **%1$s** إلى **%2$s**</string>
+    <string name="FilterUserRemovedFrom">تمت إزالة **%1$s** من **%2$s**</string>
+    <string name="FilterChatRemovedFrom">تمت إزالة **%1$s** من **%2$s**</string>
+    <string name="FilterChatsRemovedFrom">تمت إزالة **%1$s** من **%2$s**</string>
+    <string name="FilterAddToAlertFullTitle">وصلت الحد الأقصى</string>
+    <string name="FilterRemoveFromAlertFullText">عذرًا، لايمكنك إضافة أكثر من 100 محادثة إلى مجلد.</string>
+    <string name="FilterAddToAlertFullText">عذرًا، لايمكنك استثناء أكثر من 100 محادثة من مجلد.</string>
     <!--passcode view-->
     <string name="Passcode">رمز القفل</string>
     <string name="ChangePasscode">تغيير رمز القفل</string>
@@ -2260,6 +2287,7 @@
     <string name="ShowAsList">عرض في لائحة</string>
     <string name="ShowAsGrid">عرض كمصفوفة</string>
     <string name="ShowAllMedia">عرض كافة الوسائط</string>
+    <string name="ShowStickers">إظهار الملصقات</string>
     <string name="ShowAllFiles">عرض جميع الملفات</string>
     <string name="ShowAllGIFs">عرض كل الصور المتحركة</string>
     <string name="TapToDownload">انقر للتحميل</string>
@@ -2332,8 +2360,9 @@
     <string name="PaintDelete">حذف</string>
     <string name="PaintEdit">تعديل</string>
     <string name="PaintDuplicate">تكرار</string>
-    <string name="PaintOutlined">مرسوم</string>
+    <string name="PaintOutlined">حدود</string>
     <string name="PaintRegular">عادي</string>
+    <string name="PaintFramed">بإطار</string>
     <string name="CropReset">إعادة تعيين</string>
     <string name="CropOriginal">الأصلي</string>
     <string name="CropSquare">مربع</string>
@@ -2344,15 +2373,24 @@
     <!--password view-->
     <string name="TwoStepVerification">التحقق بخطوتين</string>
     <string name="TwoStepVerificationTitle">التحقق بخطوتين</string>
+    <string name="TwoStepVerificationPasswordSet">تم تعيين كلمة المرور!</string>
+    <string name="TwoStepVerificationPasswordSetInfo">سيتم طلب كلمة المرور هذه عندما تسجل الدخول في جهاز جديد بالإضافة إلى الرمز الذي نرسله برسالة نصية SMS.</string>
+    <string name="TwoStepVerificationPasswordReturnSettings">العودة للإعدادات</string>
+    <string name="TwoStepVerificationPasswordReturnPassport">Return to Passport</string>
+    <string name="TwoStepVerificationSetPassword">تعيين كلمة المرور</string>
     <string name="SetAdditionalPassword">تعيين كلمة مرور إضافية</string>
     <string name="SetAdditionalPasswordInfo">يمكنك تعيين كلمة مرور إضافية يتم طلبها عند تسجيل الدخول من جهاز غير معروف، إضافةً إلى الرمز الذي يصلك في رسالة SMS قصيرة.</string>
     <string name="YourPassword">كلمة مرورك</string>
+    <string name="PasswordOn">On</string>
+    <string name="PasswordOff">Off</string>
     <string name="PleaseEnterCurrentPassword">قم بإدخال كلمة مرورك</string>
     <string name="PleaseEnterCurrentPasswordTransfer">يرجى إدخال كلمة مرورك لإتمام عملية النقل.</string>
     <string name="PleaseEnterFirstPassword">قم بإدخال كلمة مرور</string>
+    <string name="PleaseEnterNewFirstPassword">أدخل كلمة مرور جديدة</string>
     <string name="PleaseEnterPassword">قم بإدخال كلمة مرورك الجديدة</string>
     <string name="PleaseReEnterPassword">قم بإعادة إدخال كلمة مرورك</string>
     <string name="RecoveryEmail">بريد الاسترداد</string>
+    <string name="RecoveryEmailTitle">بريد الاسترداد</string>
     <string name="YourEmail">بريدك الإلكتروني</string>
     <string name="YourEmailCode">رمز بريدك الإلكتروني</string>
     <string name="YourEmailCodeInfo">يرجى تأكيد بريدك الإلكتروني عبر إدخال الرمز الذي تلقيته للتوِّ على %1$s.</string>
@@ -2364,7 +2402,9 @@
     <string name="YourEmailAlmostThereText">يرجى تفقُّد بريدك الإلكتروني والضغطُ على رابط التأكيد لإتمام تفعيل التحقق بخطوتين. قم بتفقُّد مجلدِ الرسائل غير المرغوب بها أيضًا.</string>
     <string name="YourPasswordSuccess">نجح الأمر!</string>
     <string name="YourPasswordSuccessText">تم تفعيل كلمة المرور الخاصة بالتحقق بخطوتين.</string>
+    <string name="YourPasswordChangedSuccessText">تم تغيير كلمة مرور التحقق بخطوتين.</string>
     <string name="YourEmailSuccessText">تم تفعيل بريد الاسترداد الإلكتروني لعملية التحقق بخطوتين.</string>
+    <string name="YourEmailSuccessChangedText">Your recovery email for Two-Step Verification is changed.</string>
     <string name="ChangePassword">تغيير كلمة المرور</string>
     <string name="TurnPasswordOff">إيقاف كلمة المرور</string>
     <string name="SetRecoveryEmail">تعيين بريد استرداد</string>
@@ -2376,9 +2416,11 @@
     <string name="CancelEmailQuestionTitle">إلغاء عملية الإعداد</string>
     <string name="TurnPasswordOffPassport">تحذير! سيتم فقدان جميع البيانات المحفوظة في جواز تيليجرام!</string>
     <string name="PasswordHint">تلميح كلمة المرور</string>
+    <string name="PasswordHintPlaceholder">التلميح</string>
     <string name="PasswordHintText">قم بإنشاء تلميحٍ لكلمة مرورك</string>
     <string name="PasswordDoNotMatch">كلمتا المرور غير متطابقتين</string>
     <string name="AbortPassword">إلغاء عملية إعداد التحقق بخطوتين</string>
+    <string name="AbortPasswordMenu">"مقاطعة الإعدادات "</string>
     <string name="AbortEmail">إلغاء عملية إعداد بريد الاسترداد</string>
     <string name="Abort">إلغاء</string>
     <string name="Disable">تعطيل</string>
@@ -2406,6 +2448,8 @@
     <string name="PasswordCode">الرمز</string>
     <string name="PasswordReset">تم تعطيل كلمة المرور</string>
     <string name="ResendCode">إعادة إرسال الرمز</string>
+    <string name="VerificationCode">رمز التحقق</string>
+    <string name="EnterCode">أدخل الرمز</string>
     <string name="ResendCodeInfo">تم إرسال رمز التحقق إلى بريدك الإلكتروني.</string>
     <string name="EnabledPasswordText">لقد قمت بتفعيل التحقق بخطوتين.\nلتسجيل الدخول إلى حسابك هذا من أجهزة جديدةٍ ستحتاج إلى كلمة المرور التي قمت بتعيينها.</string>
     <!--data settings-->
@@ -2577,8 +2621,8 @@
     <string name="Next">التالي</string>
     <!--messages-->
     <string name="ActionInviteYou">انضممت للمجموعة عبر رابط دعوة</string>
-    <string name="ActionInviteUser">un1 انضم للمجموعة عبر رابط دعوة</string>
-    <string name="ActionKickUser">un1 أزال un2</string>
+    <string name="ActionInviteUser">انضم un1 للمجموعة عبر رابط دعوة</string>
+    <string name="ActionKickUser">أزالun1 un2</string>
     <string name="ActionLeftUser">غادر un1 المجموعة</string>
     <string name="ActionAddUser">un1 أضاف un2</string>
     <string name="ActionRemovedPhoto">أزال un1 صورة المجموعة</string>
@@ -2648,6 +2692,7 @@
     <string name="UserChannelTooMuchJoin">المعذرة، هذا المستخدم عضو في الكثير من المجموعات والقنوات. دعه يغادر بعض منها أولًا.</string>
     <!--Alert messages-->
     <string name="DeleteAllMessagesAlert">تحذير! سيؤدي هذا لحذف **جميع رسائل** هذه المحادثة من **كلا** الطرفين.</string>
+    <string name="DeleteAllMessagesSavedAlert">تحذير! سيؤدي هذا **لحذف جميع الرسائل** في هذه المحادثة.</string>
     <string name="DeleteAll">حذف الكل</string>
     <string name="StopLoading">إيقاف التحميل؟</string>
     <string name="UpdateTelegram">تحديث تيليجرام</string>
@@ -2692,7 +2737,7 @@
     <string name="AreYouSureDeleteAndExitName">هل ترغب حقًا في حذف ومغادرة مجموعة **%1$s**؟</string>
     <string name="AreYouSureDeleteThisChat">هل ترغب حقًا في حذف هذه المحادثة؟</string>
     <string name="AreYouSureDeleteThisChatWithUser">هل ترغب حقًا في حذف المحادثة مع **%1$s**؟</string>
-    <string name="AreYouSureDeleteThisChatWithBot">Are you sure you want to delete the chat with **%1$s** and block them?</string>
+    <string name="AreYouSureDeleteThisChatWithBot">هل أنت متأكد أنك تريد حذف المحادثة مع **%1$s** وحظره؟</string>
     <string name="AreYouSureDeleteThisChatSavedMessages">هل ترغب حقًا في حذف **الرسائل المحفوظة**؟</string>
     <string name="AreYouSureDeleteThisChatWithSecretUser">هل ترغب حقًا في حذف المحادثة السرية مع **%1$s**؟</string>
     <string name="AreYouSureDeleteThisChatWithGroup">هل ترغب حقًا في حذف المحادثة **%1$s**؟</string>

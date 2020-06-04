@@ -243,7 +243,7 @@ public class CheckBoxBase {
         drawBitmap.eraseColor(0);
         float rad = AndroidUtilities.dp(size / 2);
         float outerRad = rad;
-        if (drawBackgroundAsArc != 0) {
+        if (drawBackgroundAsArc != 0 && drawBackgroundAsArc != 11) {
             outerRad -= AndroidUtilities.dp(0.2f);
         }
 
@@ -291,7 +291,7 @@ public class CheckBoxBase {
         }
         paint.setColor(Theme.getColor(checkColorKey));
         if (drawBackgroundAsArc != 7 && drawBackgroundAsArc != 8 && drawBackgroundAsArc != 9 && drawBackgroundAsArc != 10) {
-            if (drawBackgroundAsArc == 0) {
+            if (drawBackgroundAsArc == 0 || drawBackgroundAsArc == 11) {
                 canvas.drawCircle(cx, cy, rad, backgroundPaint);
             } else {
                 rect.set(cx - outerRad, cy - outerRad, cx + outerRad, cy + outerRad);
@@ -330,7 +330,7 @@ public class CheckBoxBase {
 
             if (drawBackgroundAsArc == 9) {
                 paint.setColor(Theme.getColor(background2ColorKey));
-            } else if (drawBackgroundAsArc == 6 || drawBackgroundAsArc == 7 || drawBackgroundAsArc == 10 || !drawUnchecked && backgroundColorKey != null) {
+            } else if (drawBackgroundAsArc == 11 || drawBackgroundAsArc == 6 || drawBackgroundAsArc == 7 || drawBackgroundAsArc == 10 || !drawUnchecked && backgroundColorKey != null) {
                 paint.setColor(Theme.getColor(backgroundColorKey));
             } else {
                 paint.setColor(Theme.getColor(enabled ? Theme.key_checkbox : Theme.key_checkboxDisabled));

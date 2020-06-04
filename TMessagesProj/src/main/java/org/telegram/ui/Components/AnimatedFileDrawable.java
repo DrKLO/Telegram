@@ -42,7 +42,7 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable {
     private static native long createDecoder(String src, int[] params, int account, long streamFileSize, Object readCallback, boolean preview);
     private static native void destroyDecoder(long ptr);
     private static native void stopDecoder(long ptr);
-    private static native int getVideoFrame(long ptr, Bitmap bitmap, int[] params, int stride, boolean preview);
+    private static native int getVideoFrame(long ptr, Bitmap bitmap, int[] params, int stride, boolean preview, float startTimeSeconds, float endTimeSeconds);
     private static native void seekToMs(long ptr, long ms, boolean precise);
     private static native void prepareToSeek(long ptr);
     private static native void getVideoInfo(int sdkVersion, String src, int[] params);
@@ -108,6 +108,9 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable {
     private volatile boolean isRecycled;
     public volatile long nativePtr;
     private DispatchQueue decodeQueue;
+    private float startTime;
+    private float endTime;
+
 
     private View parentView;
     private View secondParentView;
@@ -115,6 +118,7 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable {
     private AnimatedFileDrawableStream stream;
 
     private boolean useSharedQueue;
+    private boolean invalidatePath = true;
 
     private static ScheduledThreadPoolExecutor executor = new ScheduledThreadPoolExecutor(2, new ThreadPoolExecutor.DiscardPolicy());
 
@@ -189,7 +193,7 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable {
             nextRenderingBitmapTime = backgroundBitmapTime;
             nextRenderingShader = backgroundShader;
             if (metaData[3] < lastTimeStamp) {
-                lastTimeStamp = 0;
+                lastTimeStamp = startTime > 0 ? (int) (startTime * 1000) : 0;
             }
             if (metaData[3] - lastTimeStamp != 0) {
                 invalidateAfter = metaData[3] - lastTimeStamp;
@@ -247,7 +251,7 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable {
                         }
                         if (backgroundBitmap != null) {
                             lastFrameDecodeTime = System.currentTimeMillis();
-                            if (getVideoFrame(nativePtr, backgroundBitmap, metaData, backgroundBitmap.getRowBytes(), false) == 0) {
+                            if (getVideoFrame(nativePtr, backgroundBitmap, metaData, backgroundBitmap.getRowBytes(), false, startTime, endTime) == 0) {
                                 AndroidUtilities.runOnUIThread(uiRunnableNoFrame);
                                 return;
                             }
@@ -306,7 +310,7 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable {
         if (backgroundBitmap == null) {
             backgroundBitmap = Bitmap.createBitmap(metaData[0], metaData[1], Bitmap.Config.ARGB_8888);
         }
-        int result = getVideoFrame(nativePtr, backgroundBitmap, metaData, backgroundBitmap.getRowBytes(), true);
+        int result = getVideoFrame(nativePtr, backgroundBitmap, metaData, backgroundBitmap.getRowBytes(), true, 0, 0);
         return result != 0 ? backgroundBitmap : null;
     }
 
@@ -571,13 +575,16 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable {
                 shaderMatrix.preScale(scaleX, scaleY);
 
                 renderingShader.setLocalMatrix(shaderMatrix);
-                for (int a = 0; a < roundRadius.length; a++) {
-                    radii[a * 2] = roundRadius[a];
-                    radii[a * 2 + 1] = roundRadius[a];
+                if (invalidatePath) {
+                    invalidatePath = false;
+                    for (int a = 0; a < roundRadius.length; a++) {
+                        radii[a * 2] = roundRadius[a];
+                        radii[a * 2 + 1] = roundRadius[a];
+                    }
+                    roundPath.reset();
+                    roundPath.addRoundRect(actualDrawRect, radii, Path.Direction.CW);
+                    roundPath.close();
                 }
-                roundPath.reset();
-                roundPath.addRoundRect(actualDrawRect, radii, Path.Direction.CW);
-                roundPath.close();
                 canvas.drawPath(roundPath, paint);
             } else {
                 canvas.translate(dstRect.left, dstRect.top);
@@ -642,7 +649,12 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable {
     }
 
     public void setActualDrawRect(float x, float y, float width, float height) {
-        actualDrawRect.set(x, y, x + width, y + height);
+        float bottom = y + height;
+        float right = x + width;
+        if (actualDrawRect.left != x || actualDrawRect.top != y || actualDrawRect.right != right || actualDrawRect.bottom != bottom) {
+            actualDrawRect.set(x, y, right, bottom);
+            invalidatePath = true;
+        }
     }
 
     public void setRoundRadius(int[] value) {
@@ -652,8 +664,13 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable {
             }
             System.arraycopy(roundRadius, 0, roundRadiusBackup, 0, roundRadiusBackup.length);
         }
-        System.arraycopy(value, 0, roundRadius, 0, roundRadius.length);
+        boolean changed = false;
+        for (int i = 0; i < 4; i++) {
+            changed = value[i] != roundRadius[i];
+            roundRadius[i] = value[i];
+        }
         getPaint().setFlags(Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG);
+        invalidatePath = changed;
     }
 
     private boolean hasRoundRadius() {
@@ -687,5 +704,17 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable {
 
     public static void getVideoInfo(String src, int[] params) {
         getVideoInfo(Build.VERSION.SDK_INT, src,  params);
+    }
+
+    public void setStartEndTime(long startTime, long endTime) {
+        this.startTime = startTime / 1000f;
+        this.endTime = endTime / 1000f;
+        if (getCurrentProgressMs() < startTime) {
+            seekTo(startTime, true);
+        }
+    }
+
+    public long getStartTime() {
+        return (long) (startTime * 1000);
     }
 }

@@ -19,13 +19,13 @@ import javax.microedition.khronos.opengles.GL10;
 public class Painting {
 
     public interface PaintingDelegate {
-        void contentChanged(RectF rect);
+        void contentChanged();
         void strokeCommited();
         UndoStore requestUndoStore();
         DispatchQueue requestDispatchQueue();
     }
 
-    public class PaintingData {
+    public static class PaintingData {
         public Bitmap bitmap;
         public ByteBuffer data;
 
@@ -56,15 +56,15 @@ public class Painting {
     private boolean paused;
     private Slice backupSlice;
 
-    private float projection[];
-    private float renderProjection[];
+    private float[] projection;
+    private float[] renderProjection;
 
     public Painting(Size sz) {
         renderState = new RenderState();
 
         size = sz;
 
-        dataBuffer = ByteBuffer.allocateDirect((int)size.width * (int)size.height * 4);
+        dataBuffer = ByteBuffer.allocateDirect((int) size.width * (int) size.height * 4);
 
         projection = GLMatrix.LoadOrtho(0, size.width, 0, size.height, -1.0f, 1.0f);
 
@@ -133,129 +133,141 @@ public class Painting {
         bitmapTexture = new Texture(bitmap);
     }
 
-    private void update(RectF bounds, Runnable action) {
-        GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, getReusableFramebuffer());
-        GLES20.glFramebufferTexture2D(GLES20.GL_FRAMEBUFFER, GLES20.GL_COLOR_ATTACHMENT0, GLES20.GL_TEXTURE_2D, getTexture(), 0);
-
-        int status = GLES20.glCheckFramebufferStatus(GLES20.GL_FRAMEBUFFER);
-        if (status == GLES20.GL_FRAMEBUFFER_COMPLETE) {
-            GLES20.glViewport(0, 0, (int) size.width, (int) size.height);
-            action.run();
-        }
-        GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, 0);
-
-        if (!isSuppressingChanges() && delegate != null) {
-            delegate.contentChanged(bounds);
-        }
-    }
-
     public void paintStroke(final Path path, final boolean clearBuffer, final Runnable action) {
-        renderView.performInContext(new Runnable() {
-            @Override
-            public void run() {
-                activePath = path;
+        renderView.performInContext(() -> {
+            activePath = path;
 
-                RectF bounds = null;
+            RectF bounds = null;
 
-                GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, getReusableFramebuffer());
-                GLES20.glFramebufferTexture2D(GLES20.GL_FRAMEBUFFER, GLES20.GL_COLOR_ATTACHMENT0, GLES20.GL_TEXTURE_2D, getPaintTexture(), 0);
+            GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, getReusableFramebuffer());
+            GLES20.glFramebufferTexture2D(GLES20.GL_FRAMEBUFFER, GLES20.GL_COLOR_ATTACHMENT0, GLES20.GL_TEXTURE_2D, getPaintTexture(), 0);
 
-                Utils.HasGLError();
+            Utils.HasGLError();
 
-                int status = GLES20.glCheckFramebufferStatus(GLES20.GL_FRAMEBUFFER);
-                if (status == GLES20.GL_FRAMEBUFFER_COMPLETE) {
-                    GLES20.glViewport(0, 0, (int) size.width, (int) size.height);
+            int status = GLES20.glCheckFramebufferStatus(GLES20.GL_FRAMEBUFFER);
+            if (status == GLES20.GL_FRAMEBUFFER_COMPLETE) {
+                GLES20.glViewport(0, 0, (int) size.width, (int) size.height);
 
-                    if (clearBuffer) {
-                        GLES20.glClearColor(0, 0, 0, 0);
-                        GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT);
-                    }
-
-                    if (shaders == null) {
-                        return;
-                    }
-                    Shader shader = shaders.get(brush.isLightSaber() ? "brushLight" : "brush");
-                    if (shader == null) {
-                        return;
-                    }
-
-                    GLES20.glUseProgram(shader.program);
-                    if (brushTexture == null) {
-                        brushTexture = new Texture(brush.getStamp());
-                    }
-                    GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
-                    GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, brushTexture.texture());
-                    GLES20.glUniformMatrix4fv(shader.getUniform("mvpMatrix"), 1, false, FloatBuffer.wrap(projection));
-                    GLES20.glUniform1i(shader.getUniform("texture"), 0);
-
-                    bounds = Render.RenderPath(path, renderState);
+                if (clearBuffer) {
+                    GLES20.glClearColor(0, 0, 0, 0);
+                    GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT);
                 }
 
-                GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, 0);
-
-                if (delegate != null) {
-                    delegate.contentChanged(bounds);
+                if (shaders == null) {
+                    return;
+                }
+                Shader shader = shaders.get(brush.isLightSaber() ? "brushLight" : "brush");
+                if (shader == null) {
+                    return;
                 }
 
-                if (activeStrokeBounds != null) {
-                    activeStrokeBounds.union(bounds);
-                } else {
-                    activeStrokeBounds = bounds;
+                GLES20.glUseProgram(shader.program);
+                if (brushTexture == null) {
+                    brushTexture = new Texture(brush.getStamp());
                 }
+                GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
+                GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, brushTexture.texture());
+                GLES20.glUniformMatrix4fv(shader.getUniform("mvpMatrix"), 1, false, FloatBuffer.wrap(projection));
+                GLES20.glUniform1i(shader.getUniform("texture"), 0);
 
-                if (action != null) {
-                    action.run();
-                }
+                bounds = Render.RenderPath(path, renderState);
+            }
+
+            GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, 0);
+
+            if (delegate != null) {
+                delegate.contentChanged();
+            }
+
+            if (activeStrokeBounds != null) {
+                activeStrokeBounds.union(bounds);
+            } else {
+                activeStrokeBounds = bounds;
+            }
+
+            if (action != null) {
+                action.run();
             }
         });
     }
 
     public void commitStroke(final int color) {
-        renderView.performInContext(new Runnable() {
-            @Override
-            public void run() {
-                registerUndo(activeStrokeBounds);
+        renderView.performInContext(() -> {
 
-                beginSuppressingChanges();
+            registerUndo(activeStrokeBounds);
 
-                update(null, new Runnable() {
-                    @Override
-                    public void run() {
-                        if (shaders == null) {
-                            return;
-                        }
-                        Shader shader = shaders.get(brush.isLightSaber() ? "compositeWithMaskLight" : "compositeWithMask");
-                        if (shader == null) {
-                            return;
-                        }
+            beginSuppressingChanges();
 
-                        GLES20.glUseProgram(shader.program);
+            GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, getReusableFramebuffer());
+            GLES20.glFramebufferTexture2D(GLES20.GL_FRAMEBUFFER, GLES20.GL_COLOR_ATTACHMENT0, GLES20.GL_TEXTURE_2D, getTexture(), 0);
 
-                        GLES20.glUniformMatrix4fv(shader.getUniform("mvpMatrix"), 1, false, FloatBuffer.wrap(projection));
-                        GLES20.glUniform1i(shader.getUniform("mask"), 0);
-                        Shader.SetColorUniform(shader.getUniform("color"), color);
+            GLES20.glViewport(0, 0, (int) size.width, (int) size.height);
 
-                        GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
-                        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, getPaintTexture());
+            Shader shader = shaders.get(brush.isLightSaber() ? "compositeWithMaskLight" : "compositeWithMask");
 
-                        GLES20.glBlendFuncSeparate(GLES20.GL_SRC_ALPHA, GLES20.GL_ONE_MINUS_SRC_ALPHA, GLES20.GL_SRC_ALPHA, GLES20.GL_ONE );
+            GLES20.glUseProgram(shader.program);
 
-                        GLES20.glVertexAttribPointer(0, 2, GLES20.GL_FLOAT, false, 8, vertexBuffer);
-                        GLES20.glEnableVertexAttribArray(0);
-                        GLES20.glVertexAttribPointer(1, 2, GLES20.GL_FLOAT, false, 8, textureBuffer);
-                        GLES20.glEnableVertexAttribArray(1);
+            GLES20.glUniformMatrix4fv(shader.getUniform("mvpMatrix"), 1, false, FloatBuffer.wrap(projection));
+            GLES20.glUniform1i(shader.getUniform("texture"), 0);
+            GLES20.glUniform1i(shader.getUniform("mask"), 1);
+            Shader.SetColorUniform(shader.getUniform("color"), color);
 
-                        GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4);
-                    }
-                });
+            GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
+            GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, getTexture());
+            GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MIN_FILTER, GLES20.GL_NEAREST);
 
-                endSuppressingChanges();
+            GLES20.glActiveTexture(GLES20.GL_TEXTURE1);
+            GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, getPaintTexture());
 
-                renderState.reset();
+            GLES20.glBlendFunc(GLES20.GL_ONE, GLES20.GL_ZERO);
 
-                activeStrokeBounds = null;
-                activePath = null;
+            GLES20.glVertexAttribPointer(0, 2, GLES20.GL_FLOAT, false, 8, vertexBuffer);
+            GLES20.glEnableVertexAttribArray(0);
+            GLES20.glVertexAttribPointer(1, 2, GLES20.GL_FLOAT, false, 8, textureBuffer);
+            GLES20.glEnableVertexAttribArray(1);
+
+            GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4);
+
+            GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, getTexture());
+            GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MIN_FILTER, GLES20.GL_LINEAR);
+
+            GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, 0);
+
+            if (!isSuppressingChanges() && delegate != null) {
+                delegate.contentChanged();
             }
+
+            endSuppressingChanges();
+
+            renderState.reset();
+
+            activeStrokeBounds = null;
+            activePath = null;
+        });
+    }
+
+    public void clearStroke() {
+        renderView.performInContext(() -> {
+            GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, getReusableFramebuffer());
+            GLES20.glFramebufferTexture2D(GLES20.GL_FRAMEBUFFER, GLES20.GL_COLOR_ATTACHMENT0, GLES20.GL_TEXTURE_2D, getPaintTexture(), 0);
+
+            Utils.HasGLError();
+
+            int status = GLES20.glCheckFramebufferStatus(GLES20.GL_FRAMEBUFFER);
+            if (status == GLES20.GL_FRAMEBUFFER_COMPLETE) {
+                GLES20.glViewport(0, 0, (int) size.width, (int) size.height);
+                GLES20.glClearColor(0, 0, 0, 0);
+                GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT);
+            }
+
+            GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, 0);
+
+            if (delegate != null) {
+                delegate.contentChanged();
+            }
+            renderState.reset();
+            activeStrokeBounds = null;
+            activePath = null;
         });
     }
 
@@ -273,28 +285,20 @@ public class Painting {
         ByteBuffer data = paintingData.data;
 
         final Slice slice = new Slice(data, rect, delegate.requestDispatchQueue());
-        delegate.requestUndoStore().registerUndo(UUID.randomUUID(), new Runnable() {
-            @Override
-            public void run() {
-                restoreSlice(slice);
-            }
-        });
+        delegate.requestUndoStore().registerUndo(UUID.randomUUID(), () -> restoreSlice(slice));
     }
 
     private void restoreSlice(final Slice slice) {
-        renderView.performInContext(new Runnable() {
-            @Override
-            public void run() {
-                ByteBuffer buffer = slice.getData();
+        renderView.performInContext(() -> {
+            ByteBuffer buffer = slice.getData();
 
-                GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, getTexture());
-                GLES20.glTexSubImage2D(GLES20.GL_TEXTURE_2D, 0, slice.getX(), slice.getY(), slice.getWidth(), slice.getHeight(), GLES20.GL_RGBA, GLES20.GL_UNSIGNED_BYTE, buffer);
-                if (!isSuppressingChanges() && delegate != null) {
-                    delegate.contentChanged(slice.getBounds());
-                }
-
-                slice.cleanResources();
+            GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, getTexture());
+            GLES20.glTexSubImage2D(GLES20.GL_TEXTURE_2D, 0, slice.getX(), slice.getY(), slice.getWidth(), slice.getHeight(), GLES20.GL_RGBA, GLES20.GL_UNSIGNED_BYTE, buffer);
+            if (!isSuppressingChanges() && delegate != null) {
+                delegate.contentChanged();
             }
+
+            slice.cleanResources();
         });
     }
 
@@ -406,8 +410,8 @@ public class Painting {
 
         Matrix translate = new Matrix();
         translate.preTranslate(-minX, -minY);
-        float effective[] = GLMatrix.LoadGraphicsMatrix(translate);
-        float finalProjection[] = GLMatrix.MultiplyMat4f(projection, effective);
+        float[] effective = GLMatrix.LoadGraphicsMatrix(translate);
+        float[] finalProjection = GLMatrix.MultiplyMat4f(projection, effective);
 
         GLES20.glUniformMatrix4fv(shader.getUniform("mvpMatrix"), 1, false, FloatBuffer.wrap(finalProjection));
 
@@ -472,18 +476,15 @@ public class Painting {
     }
 
     public void onPause(final Runnable completionRunnable) {
-        renderView.performInContext(new Runnable() {
-            @Override
-            public void run() {
-                paused = true;
-                PaintingData data = getPaintingData(getBounds(), true);
-                backupSlice = new Slice(data.data, getBounds(), delegate.requestDispatchQueue());
+        renderView.performInContext(() -> {
+            paused = true;
+            PaintingData data = getPaintingData(getBounds(), true);
+            backupSlice = new Slice(data.data, getBounds(), delegate.requestDispatchQueue());
 
-                cleanResources(false);
+            cleanResources(false);
 
-                if (completionRunnable != null)
-                    completionRunnable.run();
-            }
+            if (completionRunnable != null)
+                completionRunnable.run();
         });
     }
 

@@ -50,6 +50,7 @@ import org.telegram.ui.Components.RecyclerListView;
 
 import java.util.ArrayList;
 
+import static com.google.zxing.common.detector.MathUtils.distance;
 import static org.telegram.ui.ActionBar.FloatingToolbar.STYLE_THEME;
 import static org.telegram.ui.ActionBar.Theme.key_chat_inTextSelectionHighlight;
 
@@ -406,10 +407,6 @@ public abstract class TextSelectionHelper<Cell extends TextSelectionHelper.Selec
 
     public boolean isSelectionMode() {
         return selectionStart >= 0 && selectionEnd >= 0;
-    }
-
-    float distance(int x1, int y1, int x2, int y2) {
-        return (float) Math.sqrt((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2));
     }
 
     private ActionBarPopupWindow popupWindow;

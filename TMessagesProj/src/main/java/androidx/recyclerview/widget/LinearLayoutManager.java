@@ -34,6 +34,8 @@ import androidx.annotation.RestrictTo;
 import androidx.core.os.TraceCompat;
 import androidx.core.view.ViewCompat;
 
+import org.telegram.messenger.BuildVars;
+
 import java.util.List;
 
 /**
@@ -45,7 +47,7 @@ public class LinearLayoutManager extends RecyclerView.LayoutManager implements
 
     private static final String TAG = "LinearLayoutManager";
 
-    static final boolean DEBUG = false;
+    static final boolean DEBUG = BuildVars.DEBUG_VERSION;
 
     public static final int HORIZONTAL = RecyclerView.HORIZONTAL;
 

@@ -28,6 +28,7 @@ import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeDescription;
 import org.telegram.ui.Cells.EmptyCell;
 import org.telegram.ui.Cells.FeaturedStickerSetInfoCell;
 import org.telegram.ui.Cells.StickerEmojiCell;
@@ -85,6 +86,9 @@ public class StickersSearchAdapter extends RecyclerListView.SelectionAdapter {
     private HashMap<ArrayList<TLRPC.Document>, String> emojiStickers = new HashMap<>();
     private ArrayList<ArrayList<TLRPC.Document>> emojiArrays = new ArrayList<>();
     private SparseArray<TLRPC.StickerSetCovered> positionsToSets = new SparseArray<>();
+
+    private ImageView emptyImageView;
+    private TextView emptyTextView;
 
     private int reqId;
     private int reqId2;
@@ -371,19 +375,19 @@ public class StickersSearchAdapter extends RecyclerListView.SelectionAdapter {
                 layout.setOrientation(LinearLayout.VERTICAL);
                 layout.setGravity(Gravity.CENTER);
 
-                ImageView imageView = new ImageView(context);
-                imageView.setScaleType(ImageView.ScaleType.CENTER);
-                imageView.setImageResource(R.drawable.stickers_empty);
-                imageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_chat_emojiPanelEmptyText), PorterDuff.Mode.MULTIPLY));
-                layout.addView(imageView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
+                emptyImageView = new ImageView(context);
+                emptyImageView.setScaleType(ImageView.ScaleType.CENTER);
+                emptyImageView.setImageResource(R.drawable.stickers_empty);
+                emptyImageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_chat_emojiPanelEmptyText), PorterDuff.Mode.MULTIPLY));
+                layout.addView(emptyImageView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
 
                 layout.addView(new Space(context), LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 15));
 
-                TextView textView = new TextView(context);
-                textView.setText(LocaleController.getString("NoStickersFound", R.string.NoStickersFound));
-                textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
-                textView.setTextColor(Theme.getColor(Theme.key_chat_emojiPanelEmptyText));
-                layout.addView(textView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
+                emptyTextView = new TextView(context);
+                emptyTextView.setText(LocaleController.getString("NoStickersFound", R.string.NoStickersFound));
+                emptyTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
+                emptyTextView.setTextColor(Theme.getColor(Theme.key_chat_emojiPanelEmptyText));
+                layout.addView(emptyTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
 
                 view = layout;
                 view.setMinimumHeight(AndroidUtilities.dp(112));
@@ -651,5 +655,23 @@ public class StickersSearchAdapter extends RecyclerListView.SelectionAdapter {
 
     public TLRPC.StickerSetCovered getSetForPosition(int position) {
         return positionsToSets.get(position);
+    }
+
+    public void updateColors(RecyclerListView listView) {
+        for (int i = 0, size = listView.getChildCount(); i < size; i++) {
+            final View child = listView.getChildAt(i);
+            if (child instanceof FeaturedStickerSetInfoCell) {
+                ((FeaturedStickerSetInfoCell) child).updateColors();
+            } else if (child instanceof StickerSetNameCell) {
+                ((StickerSetNameCell) child).updateColors();
+            }
+        }
+    }
+
+    public void getThemeDescriptions(List<ThemeDescription> descriptions, RecyclerListView listView, ThemeDescription.ThemeDescriptionDelegate delegate) {
+        FeaturedStickerSetInfoCell.createThemeDescriptions(descriptions, listView, delegate);
+        StickerSetNameCell.createThemeDescriptions(descriptions, listView, delegate);
+        descriptions.add(new ThemeDescription(emptyImageView, ThemeDescription.FLAG_IMAGECOLOR, null, null, null, null, Theme.key_chat_emojiPanelEmptyText));
+        descriptions.add(new ThemeDescription(emptyTextView, ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_chat_emojiPanelEmptyText));
     }
 }

@@ -25,7 +25,6 @@ import androidx.annotation.NonNull;
 import androidx.collection.ArraySet;
 import androidx.core.graphics.ColorUtils;
 import androidx.interpolator.view.animation.FastOutSlowInInterpolator;
-import androidx.recyclerview.widget.DefaultItemAnimator;
 import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -166,7 +165,7 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
                 if (recentPostsAll.size() > 0) {
                     int lastPostId = recentPostsAll.get(0).counters.msg_id;
                     int count = recentPostsAll.size();
-                    getMessagesStorage().getMessages(-chat.id, count, lastPostId, 0, 0, classGuid, 0, true, false, 0);
+                    getMessagesStorage().getMessages(-chat.id, 0, false, count, lastPostId, 0, 0, classGuid, 0, true, false, 0);
                 }
 
                 AndroidUtilities.runOnUIThread(() -> {
@@ -219,6 +218,7 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
         super.onFragmentDestroy();
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     public void didReceivedNotification(int id, int account, Object... args) {
         if (id == NotificationCenter.messagesDidLoad) {
@@ -1737,11 +1737,11 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
 
         public OverviewData(TLRPC.TL_stats_broadcastStats stats) {
             int dif = (int) (stats.followers.current - stats.followers.previous);
-            float difPercent = Math.abs(dif / (float) stats.followers.previous * 100f);
+            float difPercent = stats.followers.previous == 0 ? 0 : Math.abs(dif / (float) stats.followers.previous * 100f);
             followersTitle = LocaleController.getString("FollowersChartTitle", R.string.FollowersChartTitle);
             followersPrimary = AndroidUtilities.formatWholeNumber((int) stats.followers.current, 0);
 
-            if (dif == 0) {
+            if (dif == 0 || difPercent == 0) {
                 followersSecondary = "";
             } else if (difPercent == (int) difPercent) {
                 followersSecondary = String.format(Locale.ENGLISH, "%s (%d%s)", (dif > 0 ? "+" : "") + AndroidUtilities.formatWholeNumber(dif, 0), (int) difPercent, "%");
@@ -1751,11 +1751,11 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
             followersUp = dif >= 0;
 
             dif = (int) (stats.shares_per_post.current - stats.shares_per_post.previous);
-            difPercent = Math.abs(dif / (float) stats.shares_per_post.previous * 100f);
+            difPercent = stats.shares_per_post.previous == 0 ? 0 : Math.abs(dif / (float) stats.shares_per_post.previous * 100f);
             sharesTitle = LocaleController.getString("SharesPerPost", R.string.SharesPerPost);
             sharesPrimary = AndroidUtilities.formatWholeNumber((int) stats.shares_per_post.current, 0);
 
-            if (dif == 0) {
+            if (dif == 0 || difPercent == 0) {
                 sharesSecondary = "";
             } else if (difPercent == (int) difPercent) {
                 sharesSecondary = String.format(Locale.ENGLISH, "%s (%d%s)", (dif > 0 ? "+" : "") + AndroidUtilities.formatWholeNumber(dif, 0), (int) difPercent, "%");
@@ -1765,10 +1765,10 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
             sharesUp = dif >= 0;
 
             dif = (int) (stats.views_per_post.current - stats.views_per_post.previous);
-            difPercent = Math.abs(dif / (float) stats.views_per_post.previous * 100f);
+            difPercent = stats.views_per_post.previous == 0 ? 0 : Math.abs(dif / (float) stats.views_per_post.previous * 100f);
             viewsTitle = LocaleController.getString("ViewsPerPost", R.string.ViewsPerPost);
             viewsPrimary = AndroidUtilities.formatWholeNumber((int) stats.views_per_post.current, 0);
-            if (dif == 0) {
+            if (dif == 0 || difPercent == 0) {
                 viewsSecondary = "";
             } else if (difPercent == (int) difPercent) {
                 viewsSecondary = String.format(Locale.ENGLISH, "%s (%d%s)", (dif > 0 ? "+" : "") + AndroidUtilities.formatWholeNumber(dif, 0), (int) difPercent, "%");
@@ -1782,7 +1782,7 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
             if (difPercent == (int) difPercent) {
                 notificationsPrimary = String.format(Locale.ENGLISH, "%d%s", (int) difPercent, "%");
             } else {
-                notificationsPrimary = String.format(Locale.ENGLISH, "%.1f%s", difPercent, "%");
+                notificationsPrimary = String.format(Locale.ENGLISH, "%.2f%s", difPercent, "%");
             }
         }
     }

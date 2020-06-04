@@ -16,6 +16,10 @@ public class AnimatedFileDrawableStream implements FileLoadOperationStream {
     private int lastOffset;
     private boolean waitingForLoad;
     private boolean preview;
+    private boolean finishedLoadingFile;
+    private String finishedFilePath;
+
+    private boolean ignored;
 
     public AnimatedFileDrawableStream(TLRPC.Document d, Object p, int a, boolean prev) {
         document = d;
@@ -23,6 +27,14 @@ public class AnimatedFileDrawableStream implements FileLoadOperationStream {
         currentAccount = a;
         preview = prev;
         loadOperation = FileLoader.getInstance(currentAccount).loadStreamFile(this, document, parentObject, 0, preview);
+    }
+
+    public boolean isFinishedLoadingFile() {
+        return finishedLoadingFile;
+    }
+
+    public String getFinishedFilePath() {
+        return finishedFilePath;
     }
 
     public int read(int offset, int readLength) {
@@ -37,7 +49,12 @@ public class AnimatedFileDrawableStream implements FileLoadOperationStream {
             int availableLength = 0;
             try {
                 while (availableLength == 0) {
-                    availableLength = loadOperation.getDownloadedLengthFromOffset(offset, readLength);
+                    int[] result = loadOperation.getDownloadedLengthFromOffset(offset, readLength);
+                    availableLength = result[0];
+                    if (!finishedLoadingFile && result[1] != 0) {
+                        finishedLoadingFile = true;
+                        finishedFilePath = loadOperation.getCacheFileFinal().getAbsolutePath();
+                    }
                     if (availableLength == 0) {
                         if (loadOperation.isPaused() || lastOffset != offset || preview) {
                             FileLoader.getInstance(currentAccount).loadStreamFile(this, document, parentObject, offset, preview);

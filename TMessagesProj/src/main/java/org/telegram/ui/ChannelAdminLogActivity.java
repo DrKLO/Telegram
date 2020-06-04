@@ -89,7 +89,6 @@ import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ActionBar.ThemeDescription;
-import org.telegram.ui.Cells.BotHelpCell;
 import org.telegram.ui.Cells.ChatActionCell;
 import org.telegram.ui.Cells.ChatLoadingCell;
 import org.telegram.ui.Cells.ChatMessageCell;
@@ -184,6 +183,8 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
     private SparseArray<TLRPC.User> selectedAdmins;
 
     private MessageObject scrollToMessage;
+
+    private int allowAnimationIndex;
 
     private PhotoViewer.PhotoViewerProvider provider = new PhotoViewer.EmptyPhotoViewerProvider() {
 
@@ -1737,9 +1738,8 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
     @Override
     public void onTransitionAnimationStart(boolean isOpen, boolean backward) {
         if (isOpen) {
-            NotificationCenter.getInstance(currentAccount).setAllowedNotificationsDutingAnimation(new int[]{NotificationCenter.chatInfoDidLoad, NotificationCenter.dialogsNeedReload,
+            allowAnimationIndex = NotificationCenter.getInstance(currentAccount).setAnimationInProgress(allowAnimationIndex, new int[]{NotificationCenter.chatInfoDidLoad, NotificationCenter.dialogsNeedReload,
                     NotificationCenter.closeChats, NotificationCenter.messagesDidLoad, NotificationCenter.botKeyboardDidLoad/*, NotificationCenter.botInfoDidLoad*/});
-            NotificationCenter.getInstance(currentAccount).setAnimationInProgress(true);
             openAnimationEnded = false;
         }
     }
@@ -1747,7 +1747,7 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
     @Override
     public void onTransitionAnimationEnd(boolean isOpen, boolean backward) {
         if (isOpen) {
-            NotificationCenter.getInstance(currentAccount).setAnimationInProgress(false);
+            NotificationCenter.getInstance(currentAccount).onAnimationFinish(allowAnimationIndex);
             openAnimationEnded = true;
         }
     }
@@ -2204,17 +2204,6 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
                 });
             } else if (viewType == 2) {
                 view = new ChatUnreadCell(mContext);
-            } else if (viewType == 3) {
-                view = new BotHelpCell(mContext);
-                ((BotHelpCell) view).setDelegate(url -> {
-                    if (url.startsWith("@")) {
-                        MessagesController.getInstance(currentAccount).openByUserName(url.substring(1), ChannelAdminLogActivity.this, 0);
-                    } else if (url.startsWith("#")) {
-                        DialogsActivity fragment = new DialogsActivity(null);
-                        fragment.setSearchString(url);
-                        presentFragment(fragment);
-                    }
-                });
             } else if (viewType == 4) {
                 view = new ChatLoadingCell(mContext);
             }

@@ -131,10 +131,14 @@ public class FilterCreateActivity extends BaseFragment {
     }
 
     public FilterCreateActivity() {
-        this(null);
+        this(null, null);
     }
 
     public FilterCreateActivity(MessagesController.DialogFilter dialogFilter) {
+        this(dialogFilter, null);
+    }
+
+    public FilterCreateActivity(MessagesController.DialogFilter dialogFilter, ArrayList<Integer> alwaysShow) {
         super();
         filter = dialogFilter;
         if (filter == null) {
@@ -149,6 +153,9 @@ public class FilterCreateActivity extends BaseFragment {
         newFilterName = filter.name;
         newFilterFlags = filter.flags;
         newAlwaysShow = new ArrayList<>(filter.alwaysShow);
+        if (alwaysShow != null) {
+            newAlwaysShow.addAll(alwaysShow);
+        }
         newNeverShow = new ArrayList<>(filter.neverShow);
         newPinned = filter.pinnedDialogs.clone();
     }
@@ -544,15 +551,18 @@ public class FilterCreateActivity extends BaseFragment {
     }
 
     private void processDone() {
-        saveFilterToServer(filter, newFilterFlags, newFilterName, newAlwaysShow, newNeverShow, newPinned, creatingNew, false, hasUserChanged, true, this, () -> {
+        saveFilterToServer(filter, newFilterFlags, newFilterName, newAlwaysShow, newNeverShow, newPinned, creatingNew, false, hasUserChanged, true, true, this, () -> {
             getNotificationCenter().postNotificationName(NotificationCenter.dialogFiltersUpdated);
             finishFragment();
         });
     }
 
-    private static void processAddFilter(MessagesController.DialogFilter filter, int newFilterFlags, String newFilterName, ArrayList<Integer> newAlwaysShow, ArrayList<Integer> newNeverShow, boolean creatingNew, boolean atBegin, boolean hasUserChanged, BaseFragment fragment, Runnable onFinish) {
+    private static void processAddFilter(MessagesController.DialogFilter filter, int newFilterFlags, String newFilterName, ArrayList<Integer> newAlwaysShow, ArrayList<Integer> newNeverShow, boolean creatingNew, boolean atBegin, boolean hasUserChanged, boolean resetUnreadCounter, BaseFragment fragment, Runnable onFinish) {
         if (filter.flags != newFilterFlags || hasUserChanged) {
-            filter.pendingUnreadCount = filter.unreadCount = -1;
+            filter.pendingUnreadCount = -1;
+            if (resetUnreadCounter) {
+                filter.unreadCount = -1;
+            }
         }
         filter.flags = newFilterFlags;
         filter.name = newFilterName;
@@ -569,7 +579,7 @@ public class FilterCreateActivity extends BaseFragment {
         }
     }
 
-    public static void saveFilterToServer(MessagesController.DialogFilter filter, int newFilterFlags, String newFilterName, ArrayList<Integer> newAlwaysShow, ArrayList<Integer> newNeverShow, LongSparseArray<Integer> newPinned, boolean creatingNew, boolean atBegin, boolean hasUserChanged, boolean progress, BaseFragment fragment, Runnable onFinish) {
+    public static void saveFilterToServer(MessagesController.DialogFilter filter, int newFilterFlags, String newFilterName, ArrayList<Integer> newAlwaysShow, ArrayList<Integer> newNeverShow, LongSparseArray<Integer> newPinned, boolean creatingNew, boolean atBegin, boolean hasUserChanged, boolean resetUnreadCounter, boolean progress, BaseFragment fragment, Runnable onFinish) {
         if (fragment == null || fragment.getParentActivity() == null) {
             return;
         }
@@ -671,11 +681,11 @@ public class FilterCreateActivity extends BaseFragment {
                 } catch (Exception e) {
                     FileLog.e(e);
                 }
-                processAddFilter(filter, newFilterFlags, newFilterName, newAlwaysShow, newNeverShow, creatingNew, atBegin, hasUserChanged, fragment, onFinish);
+                processAddFilter(filter, newFilterFlags, newFilterName, newAlwaysShow, newNeverShow, creatingNew, atBegin, hasUserChanged, resetUnreadCounter, fragment, onFinish);
             }
         }));
         if (!progress) {
-            processAddFilter(filter, newFilterFlags, newFilterName, newAlwaysShow, newNeverShow, creatingNew, atBegin, hasUserChanged, fragment, onFinish);
+            processAddFilter(filter, newFilterFlags, newFilterName, newAlwaysShow, newNeverShow, creatingNew, atBegin, hasUserChanged, resetUnreadCounter, fragment, onFinish);
         }
     }
 

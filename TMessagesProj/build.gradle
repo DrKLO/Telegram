@@ -25,15 +25,15 @@ dependencies {
 
     compileOnly 'org.checkerframework:checker-qual:2.5.2'
     compileOnly 'org.checkerframework:checker-compat-qual:2.5.0'
-    implementation 'com.google.firebase:firebase-messaging:20.1.6'
+    implementation 'com.google.firebase:firebase-messaging:20.2.0'
     implementation 'com.google.firebase:firebase-config:19.1.4'
     implementation 'com.google.android.gms:play-services-maps:17.0.0'
-    implementation 'com.google.android.gms:play-services-auth:17.0.0'
+    implementation 'com.google.android.gms:play-services-auth:18.0.0'
     implementation 'com.google.android.gms:play-services-vision:16.2.0'
     implementation 'com.google.android.gms:play-services-wearable:17.0.0'
     implementation 'com.google.android.gms:play-services-location:17.0.0'
-    implementation "com.microsoft.appcenter:appcenter-distribute:3.1.0"
-    implementation "com.microsoft.appcenter:appcenter-crashes:3.1.0"
+    implementation "com.microsoft.appcenter:appcenter-distribute:3.2.1"
+    implementation "com.microsoft.appcenter:appcenter-crashes:3.2.1"
     implementation 'com.googlecode.mp4parser:isoparser:1.0.6'
     implementation 'com.stripe:stripe-android:2.0.2'
     implementation files('libs/libgsaverification-client.aar')
@@ -42,7 +42,7 @@ dependencies {
 android {
     compileSdkVersion 29
     buildToolsVersion '29.0.3'
-    ndkVersion "20.0.5594570"
+    ndkVersion "21.1.6352462"
 
     defaultConfig.applicationId = "org.telegram.messenger"
 
@@ -102,6 +102,7 @@ android {
             signingConfig signingConfigs.debug
             applicationIdSuffix ".beta"
             minifyEnabled true
+            multiDexEnabled true
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
 
             packagingOptions {
@@ -123,12 +124,6 @@ android {
                 }
             }
         }*/
-
-        debugMultidex {
-            initWith debug
-            minifyEnabled false
-            multiDexEnabled true
-        }
 
         HA {
             debuggable false
@@ -158,11 +153,6 @@ android {
     /*sourceSets.debugAsan {
         manifest.srcFile 'config/debug/AndroidManifest.xml'
     }*/
-
-    sourceSets.debugMultidex {
-        manifest.srcFile 'config/debug/AndroidManifest.xml'
-        java.srcDirs = ['src/multidex/java']
-    }
 
     sourceSets.HA {
         manifest.srcFile 'config/debug/AndroidManifest.xml'
@@ -286,7 +276,7 @@ android {
         }
     }
 
-    defaultConfig.versionCode = 1947
+    defaultConfig.versionCode = 1984
 
     def tgVoipDexFileName = "libtgvoip.dex"
     def tgVoipDexClasses = ["AudioRecordJNI", "AudioTrackJNI", "NativeTgVoipDelegate", "NativeTgVoipInstance", "TgVoipNativeLoader", "Resampler", "VLog"]
@@ -381,13 +371,13 @@ android {
     defaultConfig {
         minSdkVersion 16
         targetSdkVersion 28
-        versionName "6.1.1"
+        versionName "6.2.0"
 
         vectorDrawables.generatedDensities = ['mdpi', 'hdpi', 'xhdpi', 'xxhdpi']
 
         externalNativeBuild {
             ndkBuild {
-                arguments "NDK_APPLICATION_MK:=jni/Application.mk", "APP_PLATFORM:=android-16", "--jobs=8"
+                arguments "NDK_APPLICATION_MK:=jni/Application.mk", "APP_PLATFORM:=android-16", "--jobs=8", "LOCAL_ARM_NEON:=false"
                 abiFilters "armeabi-v7a", "arm64-v8a", "x86", "x86_64"
             }
         }

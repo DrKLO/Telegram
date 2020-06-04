@@ -183,9 +183,10 @@ public class ImageUpdater implements NotificationCenter.NotificationCenterDelega
                         } else {
                             info.searchImage = searchImage;
                         }
+                        info.thumbPath = searchImage.thumbPath;
                         info.caption = searchImage.caption != null ? searchImage.caption.toString() : null;
                         info.entities = searchImage.entities;
-                        info.masks = !searchImage.stickers.isEmpty() ? new ArrayList<>(searchImage.stickers) : null;
+                        info.masks = searchImage.stickers;
                         info.ttl = searchImage.ttl;
                     }
                 }

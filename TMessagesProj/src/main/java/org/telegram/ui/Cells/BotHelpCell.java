@@ -28,7 +28,6 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
-import org.telegram.messenger.browser.Browser;
 import org.telegram.ui.Components.LinkPath;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.TypefaceSpan;
@@ -43,11 +42,14 @@ public class BotHelpCell extends View {
     private int height;
     private int textX;
     private int textY;
+    public boolean wasDraw;
 
     private ClickableSpan pressedLink;
     private LinkPath urlPath = new LinkPath();
 
     private BotHelpCellDelegate delegate;
+
+    private boolean animating;
 
     public interface BotHelpCellDelegate {
         void didPressUrl(String url);
@@ -167,7 +169,9 @@ public class BotHelpCell extends View {
                             }
                         } else {
                             if (pressedLink instanceof URLSpan) {
-                                Browser.openUrl(getContext(), ((URLSpan) pressedLink).getURL());
+                                if (delegate != null) {
+                                    delegate.didPressUrl(((URLSpan) pressedLink).getURL());
+                                }
                             } else {
                                 pressedLink.onClick(this);
                             }
@@ -218,11 +222,27 @@ public class BotHelpCell extends View {
             textLayout.draw(canvas);
         }
         canvas.restore();
+        wasDraw = true;
+    }
+
+
+    @Override
+    protected void onDetachedFromWindow() {
+        super.onDetachedFromWindow();
+        wasDraw = false;
     }
 
     @Override
     public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
         super.onInitializeAccessibilityNodeInfo(info);
         info.setText(textLayout.getText());
+    }
+
+    public boolean animating() {
+        return animating;
+    }
+
+    public void setAnimating(boolean animating) {
+        this.animating = animating;
     }
 }

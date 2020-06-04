@@ -1,7 +1,6 @@
 package org.telegram.ui.Components.Paint.Views;
 
 import android.content.Context;
-import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.RectF;
@@ -15,6 +14,7 @@ import org.telegram.messenger.ImageReceiver;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.Point;
+import org.telegram.ui.Components.RLottieDrawable;
 import org.telegram.ui.Components.Rect;
 import org.telegram.ui.Components.Size;
 
@@ -57,8 +57,9 @@ public class StickerView extends EntityView {
         for (int a = 0; a < sticker.attributes.size(); a++) {
             TLRPC.DocumentAttribute attribute = sticker.attributes.get(a);
             if (attribute instanceof TLRPC.TL_documentAttributeSticker) {
-                if (attribute.mask_coords != null)
+                if (attribute.mask_coords != null) {
                     anchor = attribute.mask_coords.n;
+                }
                 break;
             }
         }
@@ -82,6 +83,18 @@ public class StickerView extends EntityView {
         }
     }
 
+    @Override
+    protected void onDetachedFromWindow() {
+        super.onDetachedFromWindow();
+        centerImage.onDetachedFromWindow();
+    }
+
+    @Override
+    protected void onAttachedToWindow() {
+        super.onAttachedToWindow();
+        centerImage.onAttachedToWindow();
+    }
+
     public int getAnchor() {
         return anchor;
     }
@@ -89,6 +102,10 @@ public class StickerView extends EntityView {
     public void mirror() {
         mirrored = !mirrored;
         containerView.invalidate();
+    }
+
+    public boolean isMirrored() {
+        return mirrored;
     }
 
     protected void updatePosition() {
@@ -105,16 +122,21 @@ public class StickerView extends EntityView {
         }
 
         canvas.save();
-        Bitmap bitmap = centerImage.getBitmap();
-        if (bitmap != null) {
-            if (mirrored) {
-                canvas.scale(-1.0f, 1.0f);
-                canvas.translate(-baseSize.width, 0);
-            }
-            centerImage.setImageCoords(0, 0, (int) baseSize.width, (int) baseSize.height);
-            centerImage.draw(canvas);
+        if (mirrored) {
+            canvas.scale(-1.0f, 1.0f);
+            canvas.translate(-baseSize.width, 0);
         }
+        centerImage.setImageCoords(0, 0, (int) baseSize.width, (int) baseSize.height);
+        centerImage.draw(canvas);
         canvas.restore();
+    }
+
+    public long getDuration() {
+        RLottieDrawable drawable = centerImage.getLottieAnimation();
+        if (drawable == null) {
+            return 0;
+        }
+        return drawable.getDuration();
     }
 
     @Override
@@ -127,7 +149,7 @@ public class StickerView extends EntityView {
         ViewGroup parentView = (ViewGroup) getParent();
         float scale = parentView.getScaleX();
 
-        float side = getWidth() * (getScale() + 0.4f);
+        float side = getMeasuredWidth() * (getScale() + 0.4f);
         return new Rect((position.x - side / 2.0f) * scale, (position.y - side / 2.0f) * scale, side * scale, side * scale);
     }
 
@@ -138,6 +160,14 @@ public class StickerView extends EntityView {
 
     public TLRPC.Document getSticker() {
         return sticker;
+    }
+
+    public Object getParentObject() {
+        return parentObject;
+    }
+
+    public Size getBaseSize() {
+        return baseSize;
     }
 
     public class StickerViewSelectionView extends SelectionView {
@@ -159,15 +189,15 @@ public class StickerView extends EntityView {
             float radius = AndroidUtilities.dp(19.5f);
 
             float inset = radius + thickness;
-            float middle = inset + (getHeight() - inset * 2) / 2.0f;
+            float middle = inset + (getMeasuredHeight() - inset * 2) / 2.0f;
 
             if (x > inset - radius && y > middle - radius && x < inset + radius && y < middle + radius) {
                 return SELECTION_LEFT_HANDLE;
-            } else if (x > inset + (getWidth() - inset * 2) - radius && y > middle - radius && x < inset + (getWidth() - inset * 2) + radius && y < middle + radius) {
+            } else if (x > inset + (getMeasuredWidth() - inset * 2) - radius && y > middle - radius && x < inset + (getMeasuredWidth() - inset * 2) + radius && y < middle + radius) {
                 return SELECTION_RIGHT_HANDLE;
             }
 
-            float selectionRadius = getWidth() / 2.0f;
+            float selectionRadius = getMeasuredWidth() / 2.0f;
 
             if (Math.pow(x - selectionRadius, 2) + Math.pow(y - selectionRadius, 2) < Math.pow(selectionRadius, 2)) {
                 return SELECTION_WHOLE_HANDLE;
@@ -184,7 +214,7 @@ public class StickerView extends EntityView {
             float radius = AndroidUtilities.dp(4.5f);
 
             float inset = radius + thickness + AndroidUtilities.dp(15);
-            float mainRadius = getWidth() / 2 - inset;
+            float mainRadius = getMeasuredWidth() / 2 - inset;
 
             float space = 4.0f;
             float length = 4.0f;

@@ -460,7 +460,7 @@ public class ChatAttachAlertDocumentLayout extends ChatAttachAlert.AttachAlertLa
     @Override
     void onPreMeasure(int availableWidth, int availableHeight) {
         int padding;
-        if (parentAlert.actionBar.isSearchFieldVisible() || parentAlert.sizeNotifierFrameLayout.getKeyboardHeight() > AndroidUtilities.dp(20)) {
+        if (parentAlert.actionBar.isSearchFieldVisible() || parentAlert.sizeNotifierFrameLayout.measureKeyboardHeight() > AndroidUtilities.dp(20)) {
             padding = AndroidUtilities.dp(56);
             parentAlert.setAllowNestedScroll(false);
         } else {
@@ -578,18 +578,17 @@ public class ChatAttachAlertDocumentLayout extends ChatAttachAlert.AttachAlertLa
             media.add(info);
             if (object instanceof MediaController.PhotoEntry) {
                 MediaController.PhotoEntry photoEntry = (MediaController.PhotoEntry) object;
-                if (photoEntry.isVideo) {
-                    info.path = photoEntry.path;
-                    info.videoEditedInfo = photoEntry.editedInfo;
-                } else if (photoEntry.imagePath != null) {
+                if (photoEntry.imagePath != null) {
                     info.path = photoEntry.imagePath;
-                } else if (photoEntry.path != null) {
+                } else {
                     info.path = photoEntry.path;
                 }
+                info.thumbPath = photoEntry.thumbPath;
+                info.videoEditedInfo = photoEntry.editedInfo;
                 info.isVideo = photoEntry.isVideo;
                 info.caption = photoEntry.caption != null ? photoEntry.caption.toString() : null;
                 info.entities = photoEntry.entities;
-                info.masks = !photoEntry.stickers.isEmpty() ? new ArrayList<>(photoEntry.stickers) : null;
+                info.masks = photoEntry.stickers;
                 info.ttl = photoEntry.ttl;
             }
         }

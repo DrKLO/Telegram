@@ -168,6 +168,15 @@ public class ImageLocation {
         return imageLocation;
     }
 
+    public static ImageLocation getForDocument(TLRPC.TL_videoSize videoSize, TLRPC.Document document) {
+        if (videoSize == null || document == null) {
+            return null;
+        }
+        ImageLocation location = getForPhoto(videoSize.location, videoSize.size, null, document, null, false, document.dc_id, null, videoSize.type);
+        location.imageType = FileLoader.IMAGE_TYPE_ANIMATION;
+        return location;
+    }
+
     public static ImageLocation getForDocument(TLRPC.PhotoSize photoSize, TLRPC.Document document) {
         if (photoSize instanceof TLRPC.TL_photoStrippedSize) {
             ImageLocation imageLocation = new ImageLocation();

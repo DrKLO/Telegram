@@ -128,7 +128,7 @@ public class HintView extends FrameLayout {
         if (currentType == 0) {
             ImageReceiver imageReceiver = cell.getPhotoImage();
             top += imageReceiver.getImageY();
-            int height = imageReceiver.getImageHeight();
+            int height = (int) imageReceiver.getImageHeight();
             int bottom = top + height;
             int parentHeight = parentView.getMeasuredHeight();
             if (top <= getMeasuredHeight() + AndroidUtilities.dp(10) || bottom > parentHeight + height / 4) {

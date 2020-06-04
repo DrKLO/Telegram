@@ -3,8 +3,10 @@ package org.telegram.ui.Components.Crop;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.ValueAnimator;
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Matrix;
 import android.graphics.Paint;
@@ -18,9 +20,20 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.FileLoader;
+import org.telegram.messenger.FileLog;
+import org.telegram.messenger.ImageLoader;
 import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.MediaController;
 import org.telegram.messenger.R;
+import org.telegram.messenger.SharedConfig;
+import org.telegram.messenger.VideoEditedInfo;
 import org.telegram.ui.ActionBar.AlertDialog;
+import org.telegram.ui.Components.PaintingOverlay;
+
+import java.io.File;
+import java.io.FileOutputStream;
+import java.util.ArrayList;
 
 import static android.graphics.Paint.FILTER_BITMAP_FLAG;
 
@@ -34,6 +47,8 @@ public class CropView extends FrameLayout implements CropAreaView.AreaViewListen
     private CropAreaView areaView;
     private ImageView imageView;
     private Matrix presentationMatrix;
+    private Matrix overlayMatrix;
+    private PaintingOverlay paintingOverlay;
 
     private RectF previousAreaRect;
     private RectF initialAreaRect;
@@ -151,6 +166,10 @@ public class CropView extends FrameLayout implements CropAreaView.AreaViewListen
             return orientation + baseRotation;
         }
 
+        private float getOrientationOnly() {
+            return orientation;
+        }
+
         private float getBaseRotation() {
             return baseRotation;
         }
@@ -207,6 +226,7 @@ public class CropView extends FrameLayout implements CropAreaView.AreaViewListen
         previousAreaRect = new RectF();
         initialAreaRect = new RectF();
         presentationMatrix = new Matrix();
+        overlayMatrix = new Matrix();
         tempRect = new CropRectangle();
         tempMatrix = new Matrix();
         animating = false;
@@ -229,6 +249,18 @@ public class CropView extends FrameLayout implements CropAreaView.AreaViewListen
         addView(areaView);
     }
 
+    @Override
+    protected boolean drawChild(Canvas canvas, View child, long drawingTime) {
+        boolean result = super.drawChild(canvas, child, drawingTime);
+        if (child == imageView && paintingOverlay != null) {
+            canvas.save();
+            canvas.setMatrix(overlayMatrix);
+            paintingOverlay.draw(canvas);
+            canvas.restore();
+        }
+        return result;
+    }
+
     public boolean isReady() {
         return !detector.isScaling() && !detector.isDragging() && !areaView.isDragging();
     }
@@ -246,8 +278,9 @@ public class CropView extends FrameLayout implements CropAreaView.AreaViewListen
         areaView.setActualRect(ratio);
     }
 
-    public void setBitmap(Bitmap b, int rotation, boolean fform, boolean same) {
+    public void setBitmap(Bitmap b, int rotation, boolean fform, boolean same, PaintingOverlay overlay) {
         freeform = fform;
+        paintingOverlay = overlay;
         if (b == null) {
             bitmap = null;
             state = null;
@@ -329,8 +362,18 @@ public class CropView extends FrameLayout implements CropAreaView.AreaViewListen
         presentationMatrix.postRotate(state.getOrientation());
         state.getConcatMatrix(presentationMatrix);
         presentationMatrix.postTranslate(areaView.getCropCenterX(), areaView.getCropCenterY());
-
         imageView.setImageMatrix(presentationMatrix);
+
+        overlayMatrix.reset();
+        if (state.getBaseRotation() == 90 || state.getBaseRotation() == 270) {
+            overlayMatrix.postTranslate(-state.getHeight() / 2, -state.getWidth() / 2);
+        } else {
+            overlayMatrix.postTranslate(-state.getWidth() / 2, -state.getHeight() / 2);
+        }
+        overlayMatrix.postRotate(state.getOrientationOnly());
+        state.getConcatMatrix(overlayMatrix);
+        overlayMatrix.postTranslate(areaView.getCropCenterX(), areaView.getCropCenterY());
+        invalidate();
     }
 
     private void fillAreaView(RectF targetRect, boolean allowZoomOut) {
@@ -435,7 +478,7 @@ public class CropView extends FrameLayout implements CropAreaView.AreaViewListen
         return w;
     }
 
-    private class CropRectangle {
+    private static class CropRectangle {
         float[] coords = new float[8];
 
         CropRectangle() {
@@ -726,7 +769,71 @@ public class CropView extends FrameLayout implements CropAreaView.AreaViewListen
         fitContentInBounds(true, true, false);
     }
 
-    public Bitmap getResult() {
+    @SuppressLint("WrongThread")
+    private void editBitmap(String path, Bitmap b, Canvas canvas, Bitmap canvasBitmap, Bitmap.CompressFormat format, float scale, ArrayList<VideoEditedInfo.MediaEntity> entities, boolean clear) {
+        try {
+            if (clear) {
+                canvasBitmap.eraseColor(0);
+            }
+            if (b == null) {
+                b = BitmapFactory.decodeFile(path);
+            }
+            float sc = Math.max(b.getWidth(), b.getHeight()) / (float) Math.max(bitmap.getWidth(), bitmap.getHeight());
+            Matrix matrix = new Matrix();
+            matrix.postTranslate(-b.getWidth() / 2, -b.getHeight() / 2);
+            matrix.postScale(1.0f / sc, 1.0f / sc);
+            matrix.postRotate(state.getOrientationOnly());
+            state.getConcatMatrix(matrix);
+            matrix.postScale(scale, scale);
+            matrix.postTranslate(canvasBitmap.getWidth() / 2, canvasBitmap.getHeight() / 2);
+            canvas.drawBitmap(b, matrix, new Paint(FILTER_BITMAP_FLAG));
+            FileOutputStream stream = new FileOutputStream(new File(path));
+            canvasBitmap.compress(format, 83, stream);
+            stream.close();
+
+            if (entities != null && !entities.isEmpty()) {
+                float[] point = new float[4];
+                float newScale = 1.0f / sc * scale * state.scale;
+                for (int a = 0, N = entities.size(); a < N; a++) {
+                    VideoEditedInfo.MediaEntity entity = entities.get(a);
+
+                    point[0] = entity.x * b.getWidth() + entity.viewWidth * entity.scale / 2;
+                    point[1] = entity.y * b.getHeight() + entity.viewHeight * entity.scale / 2;
+                    point[2] = entity.textViewX * b.getWidth();
+                    point[3] = entity.textViewY * b.getHeight();
+                    matrix.mapPoints(point);
+
+                    float widthScale = b.getWidth() / (float) canvasBitmap.getWidth();
+                    newScale *= widthScale;
+                    if (entity.type == 0) {
+                        entity.viewWidth = entity.viewHeight = canvasBitmap.getWidth() / 2;
+                    } else if (entity.type == 1) {
+                        entity.fontSize = canvasBitmap.getWidth() / 9;
+                    }
+                    entity.scale *= newScale;
+
+                    entity.x = (point[0] - entity.viewWidth * entity.scale / 2) / canvasBitmap.getWidth();
+                    entity.y = (point[1] - entity.viewHeight * entity.scale / 2) / canvasBitmap.getHeight();
+                    entity.textViewX = point[2] / canvasBitmap.getWidth();
+                    entity.textViewY = point[3] / canvasBitmap.getHeight();
+
+                    entity.width = entity.viewWidth * entity.scale / canvasBitmap.getWidth();
+                    entity.height = entity.viewHeight * entity.scale / canvasBitmap.getHeight();
+
+                    entity.textViewWidth = entity.viewWidth / (float) canvasBitmap.getWidth();
+                    entity.textViewHeight = entity.viewHeight / (float) canvasBitmap.getHeight();
+
+                    entity.rotation -= (state.getRotation() + state.getOrientationOnly()) * (Math.PI / 180);
+                }
+            }
+
+            b.recycle();
+        } catch (Throwable e) {
+            FileLog.e(e);
+        }
+    }
+
+    public Bitmap getResult(MediaController.MediaEditState editState) {
         if (state == null || !state.hasChanges() && state.getBaseRotation() < EPSILON && freeform) {
             return bitmap;
         }
@@ -738,20 +845,35 @@ public class CropView extends FrameLayout implements CropAreaView.AreaViewListen
         float w = scaleWidthToMaxSize(cropRect, sizeRect);
         int width = (int) Math.ceil(w);
         int height = (int) (Math.ceil(width / areaView.getAspectRatio()));
+        float scale = width / areaView.getCropWidth();
 
         Bitmap resultBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
 
         Matrix matrix = new Matrix();
         matrix.postTranslate(-state.getWidth() / 2, -state.getHeight() / 2);
-
         matrix.postRotate(state.getOrientation());
         state.getConcatMatrix(matrix);
-
-        float scale = width / areaView.getCropWidth();
         matrix.postScale(scale, scale);
         matrix.postTranslate(width / 2, height / 2);
 
-        new Canvas(resultBitmap).drawBitmap(bitmap, matrix, new Paint(FILTER_BITMAP_FLAG));
+        Canvas canvas = new Canvas(resultBitmap);
+
+        if (editState.paintPath != null) {
+            editBitmap(editState.paintPath, null, canvas, resultBitmap, Bitmap.CompressFormat.PNG, scale, null, false);
+            if (!editState.paintPath.equals(editState.fullPaintPath)) {
+                editBitmap(editState.fullPaintPath, null, canvas, resultBitmap, Bitmap.CompressFormat.PNG, scale, editState.mediaEntities, true);
+            }
+        }
+        if (editState.filterPath != null) {
+            if (editState.croppedPath == null) {
+                File f = new File(FileLoader.getDirectory(FileLoader.MEDIA_DIR_CACHE), SharedConfig.getLastLocalId() + "_temp.jpg");
+                editState.croppedPath = f.getAbsolutePath();
+            }
+            Bitmap b = ImageLoader.loadBitmap(editState.getPath(), null, bitmap.getWidth(), bitmap.getHeight(), true);
+            editBitmap(editState.croppedPath, b, canvas, resultBitmap, Bitmap.CompressFormat.JPEG, scale, null, false);
+        }
+
+        canvas.drawBitmap(bitmap, matrix, new Paint(FILTER_BITMAP_FLAG));
         return resultBitmap;
     }
 
@@ -768,6 +890,9 @@ public class CropView extends FrameLayout implements CropAreaView.AreaViewListen
     }
 
     public void showAspectRatioDialog() {
+        if (state == null) {
+            return;
+        }
         if (areaView.getLockAspectRatio() > 0) {
             areaView.setLockedAspectRatio(0);
 
@@ -844,6 +969,9 @@ public class CropView extends FrameLayout implements CropAreaView.AreaViewListen
 
     public void updateLayout() {
         float w = areaView.getCropWidth();
+        if (w == 0) {
+            return;
+        }
         if (state != null) {
             areaView.calculateRect(initialAreaRect, state.getWidth() / state.getHeight());
             areaView.setActualRect(areaView.getAspectRatio());

@@ -193,7 +193,7 @@ public class PhotoAlbumPickerActivity extends BaseFragment implements Notificati
 
                 setMeasuredDimension(widthSize, heightSize);
 
-                int keyboardSize = SharedConfig.smoothKeyboard ? 0 : getKeyboardHeight();
+                int keyboardSize = SharedConfig.smoothKeyboard ? 0 : measureKeyboardHeight();
                 if (keyboardSize <= AndroidUtilities.dp(20)) {
                     if (!AndroidUtilities.isInMultiwindow) {
                         heightSize -= commentTextView.getEmojiPadding();
@@ -237,7 +237,7 @@ public class PhotoAlbumPickerActivity extends BaseFragment implements Notificati
                 }
                 final int count = getChildCount();
 
-                int keyboardSize = SharedConfig.smoothKeyboard ? 0 : getKeyboardHeight();
+                int keyboardSize = SharedConfig.smoothKeyboard ? 0 : measureKeyboardHeight();
                 int paddingBottom = keyboardSize <= AndroidUtilities.dp(20) && !AndroidUtilities.isInMultiwindow && !AndroidUtilities.isTablet() ? commentTextView.getEmojiPadding() : 0;
                 setBottomClip(paddingBottom);
 
@@ -633,18 +633,17 @@ public class PhotoAlbumPickerActivity extends BaseFragment implements Notificati
             media.add(info);
             if (object instanceof MediaController.PhotoEntry) {
                 MediaController.PhotoEntry photoEntry = (MediaController.PhotoEntry) object;
-                if (photoEntry.isVideo) {
-                    info.path = photoEntry.path;
-                    info.videoEditedInfo = photoEntry.editedInfo;
-                } else if (photoEntry.imagePath != null) {
+                if (photoEntry.imagePath != null) {
                     info.path = photoEntry.imagePath;
-                } else if (photoEntry.path != null) {
+                } else {
                     info.path = photoEntry.path;
                 }
+                info.thumbPath = photoEntry.thumbPath;
+                info.videoEditedInfo = photoEntry.editedInfo;
                 info.isVideo = photoEntry.isVideo;
                 info.caption = photoEntry.caption != null ? photoEntry.caption.toString() : null;
                 info.entities = photoEntry.entities;
-                info.masks = !photoEntry.stickers.isEmpty() ? new ArrayList<>(photoEntry.stickers) : null;
+                info.masks = photoEntry.stickers;
                 info.ttl = photoEntry.ttl;
             } else if (object instanceof MediaController.SearchImage) {
                 MediaController.SearchImage searchImage = (MediaController.SearchImage) object;
@@ -653,10 +652,11 @@ public class PhotoAlbumPickerActivity extends BaseFragment implements Notificati
                 } else {
                     info.searchImage = searchImage;
                 }
-
+                info.thumbPath = searchImage.thumbPath;
+                info.videoEditedInfo = searchImage.editedInfo;
                 info.caption = searchImage.caption != null ? searchImage.caption.toString() : null;
                 info.entities = searchImage.entities;
-                info.masks = !searchImage.stickers.isEmpty() ? new ArrayList<>(searchImage.stickers) : null;
+                info.masks = searchImage.stickers;
                 info.ttl = searchImage.ttl;
                 if (searchImage.inlineResult != null && searchImage.type == 1) {
                     info.inlineResult = searchImage.inlineResult;

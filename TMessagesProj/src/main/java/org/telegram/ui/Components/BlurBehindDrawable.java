@@ -12,7 +12,6 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.DispatchQueue;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.Utilities;
-import org.telegram.ui.ActionBar.BackDrawable;
 import org.telegram.ui.ActionBar.Theme;
 
 import static android.graphics.Canvas.ALL_SAVE_FLAG;
@@ -134,11 +133,11 @@ public class BlurBehindDrawable {
                 blurCanvas[i].scale(1f / DOWN_SCALE, 1f / DOWN_SCALE, 0, 0);
                 Drawable backDrawable = behindView.getBackground();
                 if (backDrawable == null) {
-                    backDrawable = Theme.getCachedWallpaperNonBlocking();;
+                    backDrawable = Theme.getCachedWallpaperNonBlocking();
                 }
                 behindView.setTag(TAG_DRAWING_AS_BACKGROUND, i);
                 if (i == STATIC_CONTENT) {
-                    blurCanvas[i].translate(0,-panTranslationY);
+                    blurCanvas[i].translate(0, -panTranslationY);
                     behindView.draw(blurCanvas[i]);
                 }
 
@@ -225,14 +224,16 @@ public class BlurBehindDrawable {
         blurBackgroundTask.canceled = true;
         blurBackgroundTask = new BlurBackgroundTask();
 
-        for (int i = 0; i < 2; i ++) {
+        for (int i = 0; i < 2; i++) {
             int lastH = parentView.getMeasuredHeight();
             int lastW = parentView.getMeasuredWidth();
             toolbarH = AndroidUtilities.statusBarHeight + AndroidUtilities.dp(100);
             int h = i == 0 ? toolbarH : lastH;
 
             if (bitmap[i].getHeight() != h || bitmap[i].getWidth() != parentView.getMeasuredWidth()) {
-                queue.cleanupQueue();
+                if (queue != null) {
+                    queue.cleanupQueue();
+                }
 
                 blurredBitmapTmp[i] = Bitmap.createBitmap((int) (lastW / DOWN_SCALE), (int) (h / DOWN_SCALE), Bitmap.Config.ARGB_8888);
                 blurCanvas[i] = new Canvas(blurredBitmapTmp[i]);
@@ -245,11 +246,11 @@ public class BlurBehindDrawable {
                 blurCanvas[i].scale(1f / DOWN_SCALE, 1f / DOWN_SCALE, 0, 0);
                 Drawable backDrawable = behindView.getBackground();
                 if (backDrawable == null) {
-                    backDrawable = Theme.getCachedWallpaperNonBlocking();;
+                    backDrawable = Theme.getCachedWallpaperNonBlocking();
                 }
                 behindView.setTag(TAG_DRAWING_AS_BACKGROUND, i);
                 if (i == STATIC_CONTENT) {
-                    blurCanvas[i].translate(0,-panTranslationY);
+                    blurCanvas[i].translate(0, -panTranslationY);
                     behindView.draw(blurCanvas[i]);
                 }
 

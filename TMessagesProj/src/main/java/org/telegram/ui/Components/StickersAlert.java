@@ -17,6 +17,7 @@ import android.app.Activity;
 import android.content.Context;
 import android.graphics.*;
 import android.graphics.Rect;
+import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.text.Selection;
 import android.text.Spannable;
@@ -47,11 +48,13 @@ import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.RequestDelegate;
+import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBarMenuItem;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeDescription;
 import org.telegram.ui.Cells.EmptyCell;
 import org.telegram.ui.Cells.FeaturedStickerSetInfoCell;
 import org.telegram.ui.Cells.StickerEmojiCell;
@@ -59,6 +62,7 @@ import org.telegram.ui.ChatActivity;
 import org.telegram.ui.ContentPreviewViewer;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -130,6 +134,7 @@ public class StickersAlert extends BottomSheet implements NotificationCenter.Not
     private boolean clearsInputField;
 
     private boolean showTooltipWhenToggle = true;
+    private String buttonTextColorKey;
 
     private ContentPreviewViewer.ContentPreviewViewerDelegate previewDelegate = new ContentPreviewViewer.ContentPreviewViewerDelegate() {
         @Override
@@ -175,19 +180,33 @@ public class StickersAlert extends BottomSheet implements NotificationCenter.Not
         }
     };
 
-    public StickersAlert(Context context, Object parentObject, TLRPC.Photo photo) {
+    public StickersAlert(Context context, Object parentObject, TLObject object) {
         super(context, false);
         parentActivity = (Activity) context;
         final TLRPC.TL_messages_getAttachedStickers req = new TLRPC.TL_messages_getAttachedStickers();
-        TLRPC.TL_inputStickeredMediaPhoto inputStickeredMediaPhoto = new TLRPC.TL_inputStickeredMediaPhoto();
-        inputStickeredMediaPhoto.id = new TLRPC.TL_inputPhoto();
-        inputStickeredMediaPhoto.id.id = photo.id;
-        inputStickeredMediaPhoto.id.access_hash = photo.access_hash;
-        inputStickeredMediaPhoto.id.file_reference = photo.file_reference;
-        if (inputStickeredMediaPhoto.id.file_reference == null) {
-            inputStickeredMediaPhoto.id.file_reference = new byte[0];
+        if (object instanceof TLRPC.Photo) {
+            TLRPC.Photo photo = (TLRPC.Photo) object;
+            TLRPC.TL_inputStickeredMediaPhoto inputStickeredMediaPhoto = new TLRPC.TL_inputStickeredMediaPhoto();
+            inputStickeredMediaPhoto.id = new TLRPC.TL_inputPhoto();
+            inputStickeredMediaPhoto.id.id = photo.id;
+            inputStickeredMediaPhoto.id.access_hash = photo.access_hash;
+            inputStickeredMediaPhoto.id.file_reference = photo.file_reference;
+            if (inputStickeredMediaPhoto.id.file_reference == null) {
+                inputStickeredMediaPhoto.id.file_reference = new byte[0];
+            }
+            req.media = inputStickeredMediaPhoto;
+        } else if (object instanceof TLRPC.Document) {
+            TLRPC.Document document = (TLRPC.Document) object;
+            TLRPC.TL_inputStickeredMediaDocument inputStickeredMediaDocument = new TLRPC.TL_inputStickeredMediaDocument();
+            inputStickeredMediaDocument.id = new TLRPC.TL_inputDocument();
+            inputStickeredMediaDocument.id.id = document.id;
+            inputStickeredMediaDocument.id.access_hash = document.access_hash;
+            inputStickeredMediaDocument.id.file_reference = document.file_reference;
+            if (inputStickeredMediaDocument.id.file_reference == null) {
+                inputStickeredMediaDocument.id.file_reference = new byte[0];
+            }
+            req.media = inputStickeredMediaDocument;
         }
-        req.media = inputStickeredMediaPhoto;
         RequestDelegate requestDelegate = (response, error) -> AndroidUtilities.runOnUIThread(() -> {
             reqId = 0;
             if (error == null) {
@@ -435,7 +454,12 @@ public class StickersAlert extends BottomSheet implements NotificationCenter.Not
             }
         };
         gridView.setTag(14);
-        gridView.setLayoutManager(layoutManager = new GridLayoutManager(getContext(), 5));
+        gridView.setLayoutManager(layoutManager = new GridLayoutManager(getContext(), 5) {
+            @Override
+            protected boolean isLayoutRTL() {
+                return stickerSetCovereds != null && LocaleController.isRTL;
+            }
+        });
         layoutManager.setSpanSizeLookup(new GridLayoutManager.SpanSizeLookup() {
             @Override
             public int getSpanSize(int position) {
@@ -533,7 +557,6 @@ public class StickersAlert extends BottomSheet implements NotificationCenter.Not
         titleTextView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
         titleTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
         titleTextView.setLinkTextColor(Theme.getColor(Theme.key_dialogTextLink));
-        titleTextView.setHighlightColor(Theme.getColor(Theme.key_dialogLinkSelection));
         titleTextView.setEllipsize(TextUtils.TruncateAt.END);
         titleTextView.setPadding(AndroidUtilities.dp(18), 0, AndroidUtilities.dp(18), 0);
         titleTextView.setGravity(Gravity.CENTER_VERTICAL);
@@ -564,7 +587,7 @@ public class StickersAlert extends BottomSheet implements NotificationCenter.Not
 
         pickerBottomLayout = new TextView(context);
         pickerBottomLayout.setBackgroundDrawable(Theme.createSelectorWithBackgroundDrawable(Theme.getColor(Theme.key_dialogBackground), Theme.getColor(Theme.key_listSelector)));
-        pickerBottomLayout.setTextColor(Theme.getColor(Theme.key_dialogTextBlue2));
+        pickerBottomLayout.setTextColor(Theme.getColor(buttonTextColorKey = Theme.key_dialogTextBlue2));
         pickerBottomLayout.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         pickerBottomLayout.setPadding(AndroidUtilities.dp(18), 0, AndroidUtilities.dp(18), 0);
         pickerBottomLayout.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
@@ -572,7 +595,6 @@ public class StickersAlert extends BottomSheet implements NotificationCenter.Not
         containerView.addView(pickerBottomLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.LEFT | Gravity.BOTTOM));
 
         stickerPreviewLayout = new FrameLayout(context);
-        stickerPreviewLayout.setBackgroundColor(Theme.getColor(Theme.key_dialogBackground) & 0xdfffffff);
         stickerPreviewLayout.setVisibility(View.GONE);
         stickerPreviewLayout.setSoundEffectsEnabled(false);
         containerView.addView(stickerPreviewLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
@@ -591,8 +613,8 @@ public class StickersAlert extends BottomSheet implements NotificationCenter.Not
         previewSendButton = new TextView(context);
         previewSendButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         previewSendButton.setTextColor(Theme.getColor(Theme.key_dialogTextBlue2));
+        previewSendButton.setBackground(Theme.createSelectorWithBackgroundDrawable(Theme.getColor(Theme.key_dialogBackground), Theme.getColor(Theme.key_listSelector)));
         previewSendButton.setGravity(Gravity.CENTER);
-        previewSendButton.setBackgroundColor(Theme.getColor(Theme.key_dialogBackground));
         previewSendButton.setPadding(AndroidUtilities.dp(29), 0, AndroidUtilities.dp(29), 0);
         previewSendButton.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
         stickerPreviewLayout.addView(previewSendButton, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.BOTTOM | Gravity.LEFT));
@@ -611,6 +633,7 @@ public class StickersAlert extends BottomSheet implements NotificationCenter.Not
 
         updateFields();
         updateSendButton();
+        updateColors();
         adapter.notifyDataSetChanged();
     }
 
@@ -729,7 +752,7 @@ public class StickersAlert extends BottomSheet implements NotificationCenter.Not
                         }
                         MediaDataController.getInstance(currentAccount).loadStickers(type, false, true);
                     }));
-                }, text, Theme.getColor(Theme.key_dialogTextBlue2));
+                }, text, Theme.key_dialogTextBlue2);
             } else {
                 String text;
                 if (stickerSet.set.masks) {
@@ -744,7 +767,7 @@ public class StickersAlert extends BottomSheet implements NotificationCenter.Not
                         }
                         dismiss();
                         MediaDataController.getInstance(currentAccount).toggleStickerSet(getContext(), stickerSet, 1, parentFragment, true, showTooltipWhenToggle);
-                    }, text, Theme.getColor(Theme.key_dialogTextRed));
+                    }, text, Theme.key_dialogTextRed);
                 } else {
                     setButton(v -> {
                         if (installDelegate != null) {
@@ -752,13 +775,13 @@ public class StickersAlert extends BottomSheet implements NotificationCenter.Not
                         }
                         dismiss();
                         MediaDataController.getInstance(currentAccount).toggleStickerSet(getContext(), stickerSet, 0, parentFragment, true, showTooltipWhenToggle);
-                    }, text, Theme.getColor(Theme.key_dialogTextRed));
+                    }, text, Theme.key_dialogTextRed);
                 }
             }
             adapter.notifyDataSetChanged();
         } else {
             String text = LocaleController.getString("Close", R.string.Close).toUpperCase();
-            setButton((v) -> dismiss(), text, Theme.getColor(Theme.key_dialogTextBlue2));
+            setButton((v) -> dismiss(), text, Theme.key_dialogTextBlue2);
         }
     }
 
@@ -871,7 +894,6 @@ public class StickersAlert extends BottomSheet implements NotificationCenter.Not
     @Override
     public void didReceivedNotification(int id, int account, Object... args) {
         if (id == NotificationCenter.emojiDidLoad) {
-
             if (gridView != null) {
                 int count = gridView.getChildCount();
                 for (int a = 0; a < count; a++) {
@@ -885,8 +907,8 @@ public class StickersAlert extends BottomSheet implements NotificationCenter.Not
         }
     }
 
-    private void setButton(View.OnClickListener onClickListener, String title, int color) {
-        pickerBottomLayout.setTextColor(color);
+    private void setButton(View.OnClickListener onClickListener, String title, String colorKey) {
+        pickerBottomLayout.setTextColor(Theme.getColor(buttonTextColorKey = colorKey));
         pickerBottomLayout.setText(title.toUpperCase());
         pickerBottomLayout.setOnClickListener(onClickListener);
     }
@@ -897,6 +919,78 @@ public class StickersAlert extends BottomSheet implements NotificationCenter.Not
 
     public void setShowTooltipWhenToggle(boolean showTooltipWhenToggle) {
         this.showTooltipWhenToggle = showTooltipWhenToggle;
+    }
+
+    public void updateColors() {
+        updateColors(false);
+    }
+
+    private List<ThemeDescription> animatingDescriptions;
+
+    public void updateColors(boolean applyDescriptions) {
+        adapter.updateColors();
+
+        titleTextView.setHighlightColor(Theme.getColor(Theme.key_dialogLinkSelection));
+        stickerPreviewLayout.setBackgroundColor(Theme.getColor(Theme.key_dialogBackground) & 0xdfffffff);
+
+        optionsButton.setIconColor(Theme.getColor(Theme.key_sheet_other));
+        optionsButton.setPopupItemsColor(Theme.getColor(Theme.key_actionBarDefaultSubmenuItem), false);
+        optionsButton.setPopupItemsColor(Theme.getColor(Theme.key_actionBarDefaultSubmenuItemIcon), true);
+        optionsButton.setPopupItemsSelectorColor(Theme.getColor(Theme.key_dialogButtonSelector));
+        optionsButton.redrawPopup(Theme.getColor(Theme.key_actionBarDefaultSubmenuBackground));
+
+        if (applyDescriptions) {
+            if (Theme.isAnimatingColor() && animatingDescriptions == null) {
+                animatingDescriptions = getThemeDescriptions();
+                for (int i = 0, N = animatingDescriptions.size(); i < N; i++) {
+                    animatingDescriptions.get(i).setDelegateDisabled();
+                }
+            }
+            for (int i = 0, N = animatingDescriptions.size(); i < N; i++) {
+                final ThemeDescription description = animatingDescriptions.get(i);
+                description.setColor(Theme.getColor(description.getCurrentKey()), false, false);
+            }
+        }
+
+        if (!Theme.isAnimatingColor() && animatingDescriptions != null) {
+            animatingDescriptions = null;
+        }
+    }
+
+    @Override
+    public ArrayList<ThemeDescription> getThemeDescriptions() {
+        final ArrayList<ThemeDescription> descriptions = new ArrayList<>();
+        final ThemeDescription.ThemeDescriptionDelegate delegate = this::updateColors;
+
+        descriptions.add(new ThemeDescription(containerView, 0, null, null, new Drawable[]{shadowDrawable}, null, Theme.key_dialogBackground));
+        descriptions.add(new ThemeDescription(containerView, 0, null, null, null, null, Theme.key_sheet_scrollUp));
+
+        adapter.getThemeDescriptions(descriptions, delegate);
+
+        descriptions.add(new ThemeDescription(shadow[0], ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_dialogShadowLine));
+        descriptions.add(new ThemeDescription(shadow[1], ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_dialogShadowLine));
+        descriptions.add(new ThemeDescription(gridView, ThemeDescription.FLAG_LISTGLOWCOLOR, null, null, null, null, Theme.key_dialogScrollGlow));
+        descriptions.add(new ThemeDescription(titleTextView, ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_dialogTextBlack));
+        descriptions.add(new ThemeDescription(titleTextView, ThemeDescription.FLAG_LINKCOLOR, null, null, null, null, Theme.key_dialogTextLink));
+        descriptions.add(new ThemeDescription(optionsButton, ThemeDescription.FLAG_BACKGROUNDFILTER | ThemeDescription.FLAG_DRAWABLESELECTEDSTATE, null, null, null, null, Theme.key_player_actionBarSelector));
+        descriptions.add(new ThemeDescription(pickerBottomLayout, ThemeDescription.FLAG_BACKGROUNDFILTER, null, null, null, null, Theme.key_dialogBackground));
+        descriptions.add(new ThemeDescription(pickerBottomLayout, ThemeDescription.FLAG_BACKGROUNDFILTER | ThemeDescription.FLAG_DRAWABLESELECTEDSTATE, null, null, null, null, Theme.key_listSelector));
+        descriptions.add(new ThemeDescription(pickerBottomLayout, ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, buttonTextColorKey));
+        descriptions.add(new ThemeDescription(previewSendButton, ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_dialogTextBlue2));
+        descriptions.add(new ThemeDescription(previewSendButton, ThemeDescription.FLAG_BACKGROUNDFILTER, null, null, null, null, Theme.key_dialogBackground));
+        descriptions.add(new ThemeDescription(previewSendButton, ThemeDescription.FLAG_BACKGROUNDFILTER | ThemeDescription.FLAG_DRAWABLESELECTEDSTATE, null, null, null, null, Theme.key_listSelector));
+        descriptions.add(new ThemeDescription(previewSendButtonShadow, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_dialogShadowLine));
+
+        descriptions.add(new ThemeDescription(null, 0, null, null, null, delegate, Theme.key_dialogLinkSelection));
+        descriptions.add(new ThemeDescription(null, 0, null, null, null, delegate, Theme.key_dialogBackground));
+
+        descriptions.add(new ThemeDescription(null, 0, null, null, null, delegate, Theme.key_sheet_other));
+        descriptions.add(new ThemeDescription(null, 0, null, null, null, delegate, Theme.key_actionBarDefaultSubmenuItem));
+        descriptions.add(new ThemeDescription(null, 0, null, null, null, delegate, Theme.key_actionBarDefaultSubmenuItemIcon));
+        descriptions.add(new ThemeDescription(null, 0, null, null, null, delegate, Theme.key_dialogButtonSelector));
+        descriptions.add(new ThemeDescription(null, 0, null, null, null, delegate, Theme.key_actionBarDefaultSubmenuBackground));
+
+        return descriptions;
     }
 
     private class GridAdapter extends RecyclerListView.SelectionAdapter {
@@ -955,7 +1049,7 @@ public class StickersAlert extends BottomSheet implements NotificationCenter.Not
                     view = new EmptyCell(context);
                     break;
                 case 2:
-                    view = new FeaturedStickerSetInfoCell(context, 8);
+                    view = new FeaturedStickerSetInfoCell(context, 8, true, false);
                     break;
             }
 
@@ -1037,6 +1131,23 @@ public class StickersAlert extends BottomSheet implements NotificationCenter.Not
                 totalItems = stickerSet != null ? stickerSet.documents.size() : 0;
             }
             super.notifyDataSetChanged();
+        }
+
+        public void updateColors() {
+            if (stickerSetCovereds != null) {
+                for (int i = 0, size = gridView.getChildCount(); i < size; i++) {
+                    final View child = gridView.getChildAt(i);
+                    if (child instanceof FeaturedStickerSetInfoCell) {
+                        ((FeaturedStickerSetInfoCell) child).updateColors();
+                    }
+                }
+            }
+        }
+
+        public void getThemeDescriptions(List<ThemeDescription> descriptions, ThemeDescription.ThemeDescriptionDelegate delegate) {
+            if (stickerSetCovereds != null) {
+                FeaturedStickerSetInfoCell.createThemeDescriptions(descriptions, gridView, delegate);
+            }
         }
     }
 }

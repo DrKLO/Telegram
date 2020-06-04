@@ -1891,6 +1891,14 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
         }
     }
 
+    public void setVisibleHeight(int height) {
+        height = Math.max(height, AndroidUtilities.dp(120));
+        for (int a = 0; a < mediaPages.length; a++) {
+            mediaPages[a].emptyView.setTranslationY(-(getMeasuredHeight() - height) / 2);
+            mediaPages[a].progressView.setTranslationY(-(getMeasuredHeight() - height) / 2);
+        }
+    }
+
     private AnimatorSet actionModeAnimation;
     private void showActionMode(boolean show) {
         if (isActionModeShowed == show) {
@@ -2833,12 +2841,20 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                         link = ((SharedLinkCell) view).getLink(0);
                     }
                     if (link != null) {
-                        Browser.openUrl(profileActivity.getParentActivity(), link);
+                        openUrl(link);
                     }
                 } catch (Exception e) {
                     FileLog.e(e);
                 }
             }
+        }
+    }
+
+    private void openUrl(String link) {
+        if (AndroidUtilities.shouldShowUrlInAlert(link)) {
+            AlertsCreator.showOpenUrlAlert(profileActivity, link, true, true);
+        } else {
+            Browser.openUrl(profileActivity.getParentActivity(), link);
         }
     }
 
@@ -2896,23 +2912,27 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
         }
 
         @Override
-        public void onLinkLongPress(final String urlFinal) {
-            BottomSheet.Builder builder = new BottomSheet.Builder(profileActivity.getParentActivity());
-            builder.setTitle(urlFinal);
-            builder.setItems(new CharSequence[]{LocaleController.getString("Open", R.string.Open), LocaleController.getString("Copy", R.string.Copy)}, (dialog, which) -> {
-                if (which == 0) {
-                    Browser.openUrl(profileActivity.getParentActivity(), urlFinal, true);
-                } else if (which == 1) {
-                    String url = urlFinal;
-                    if (url.startsWith("mailto:")) {
-                        url = url.substring(7);
-                    } else if (url.startsWith("tel:")) {
-                        url = url.substring(4);
+        public void onLinkPress(String urlFinal, boolean longPress) {
+            if (longPress) {
+                BottomSheet.Builder builder = new BottomSheet.Builder(profileActivity.getParentActivity());
+                builder.setTitle(urlFinal);
+                builder.setItems(new CharSequence[]{LocaleController.getString("Open", R.string.Open), LocaleController.getString("Copy", R.string.Copy)}, (dialog, which) -> {
+                    if (which == 0) {
+                        openUrl(urlFinal);
+                    } else if (which == 1) {
+                        String url = urlFinal;
+                        if (url.startsWith("mailto:")) {
+                            url = url.substring(7);
+                        } else if (url.startsWith("tel:")) {
+                            url = url.substring(4);
+                        }
+                        AndroidUtilities.addToClipboard(url);
                     }
-                    AndroidUtilities.addToClipboard(url);
-                }
-            });
-            profileActivity.showDialog(builder.create());
+                });
+                profileActivity.showDialog(builder.create());
+            } else {
+                openUrl(urlFinal);
+            }
         }
     };
 

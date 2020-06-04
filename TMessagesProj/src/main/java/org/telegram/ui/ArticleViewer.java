@@ -311,6 +311,8 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
     TextSelectionHelper.ArticleTextSelectionHelper textSelectionHelper;
     TextSelectionHelper.ArticleTextSelectionHelper textSelectionHelperBottomSheet;
 
+    int allowAnimationIndex = -1;
+
     private final String BOTTOM_SHEET_VIEW_TAG = "bottomSheet";
 
     @SuppressLint("StaticFieldLeak")
@@ -729,6 +731,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
             } else {
                 setMeasuredDimension(widthSize, heightSize);
             }
+            menuButton.setAdditionalYOffset(-(currentHeaderHeight - AndroidUtilities.dp(56)) / 2 + (Build.VERSION.SDK_INT < 21 ? AndroidUtilities.statusBarHeight : 0));
             keyboardVisible = heightSize < AndroidUtilities.displaySize.y - AndroidUtilities.dp(100);
             containerView.measure(View.MeasureSpec.makeMeasureSpec(widthSize, View.MeasureSpec.EXACTLY), View.MeasureSpec.makeMeasureSpec(heightSize, View.MeasureSpec.EXACTLY));
             photoContainerView.measure(View.MeasureSpec.makeMeasureSpec(widthSize, View.MeasureSpec.EXACTLY), View.MeasureSpec.makeMeasureSpec(heightSize, View.MeasureSpec.EXACTLY));
@@ -3826,6 +3829,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
         photoContainerView.addView(bottomLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.BOTTOM | Gravity.LEFT));
 
         groupedPhotosListView = new GroupedPhotosListView(parentActivity);
+        groupedPhotosListView.setAnimationsEnabled(false);
         photoContainerView.addView(groupedPhotosListView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 62, Gravity.BOTTOM | Gravity.LEFT, 0, 0, 0, 0));
         groupedPhotosListView.setDelegate(new GroupedPhotosListView.GroupedPhotosListViewDelegate() {
             @Override
@@ -4346,7 +4350,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
         titleTextView.setTranslationY((maxHeight - currentHeaderHeight) / 2);
         headerView.setTranslationY(currentHeaderHeight - maxHeight);
         searchShadow.setTranslationY(currentHeaderHeight - maxHeight);
-        menuButton.setAdditionalYOffset(-(currentHeaderHeight - maxHeight) / 2);
+        menuButton.setAdditionalYOffset(-(currentHeaderHeight - maxHeight) / 2 + (Build.VERSION.SDK_INT < 21 ? AndroidUtilities.statusBarHeight : 0));
         textSelectionHelper.setTopOffset(currentHeaderHeight);
         for (int i = 0; i < listView.length; i++) {
             listView[i].setTopGlowOffset(currentHeaderHeight);
@@ -4566,7 +4570,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
             @Override
             public void onAnimationEnd(Animator animation) {
                 AndroidUtilities.runOnUIThread(() -> {
-                    NotificationCenter.getInstance(currentAccount).setAnimationInProgress(false);
+                    NotificationCenter.getInstance(currentAccount).onAnimationFinish(allowAnimationIndex);
                     if (animationEndRunnable != null) {
                         animationEndRunnable.run();
                         animationEndRunnable = null;
@@ -4576,8 +4580,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
         });
         transitionAnimationStartTime = System.currentTimeMillis();
         AndroidUtilities.runOnUIThread(() -> {
-            NotificationCenter.getInstance(currentAccount).setAllowedNotificationsDutingAnimation(new int[]{NotificationCenter.dialogsNeedReload, NotificationCenter.closeChats});
-            NotificationCenter.getInstance(currentAccount).setAnimationInProgress(true);
+            allowAnimationIndex = NotificationCenter.getInstance(currentAccount).setAnimationInProgress(allowAnimationIndex, new int[]{NotificationCenter.dialogsNeedReload, NotificationCenter.closeChats});
             animatorSet.start();
         });
         if (Build.VERSION.SDK_INT >= 18) {
@@ -6410,7 +6413,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
                     buttonY = (int) (imageView.getImageY() + (imageView.getImageHeight() - size) / 2.0f);
                     radialProgress.setProgressRect(buttonX, buttonY, buttonX + size, buttonY + size);
                 }
-                textY = imageView.getImageY() + imageView.getImageHeight() + AndroidUtilities.dp(8);
+                textY = (int) (imageView.getImageY() + imageView.getImageHeight() + AndroidUtilities.dp(8));
                 if (currentType == 0) {
                     captionLayout = createLayoutForText(this, null, currentBlock.caption.text, textWidth, textY, currentBlock, parentAdapter);
                     if (captionLayout != null) {
@@ -10278,7 +10281,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
                     buttonY = (int) (imageView.getImageY() + (imageView.getImageHeight() - size) / 2.0f);
                     radialProgress.setProgressRect(buttonX, buttonY, buttonX + size, buttonY + size);
                 }
-                textY = imageView.getImageY() + imageView.getImageHeight() + AndroidUtilities.dp(8);
+                textY = (int) (imageView.getImageY() + imageView.getImageHeight() + AndroidUtilities.dp(8));
 
                 if (currentType == 0) {
                     captionLayout = createLayoutForText(this, null, currentBlock.caption.text, textWidth, textY, currentBlock, parentAdapter);
@@ -10330,7 +10333,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
             }
             if (!TextUtils.isEmpty(currentBlock.url)) {
                 int x = getMeasuredWidth() - AndroidUtilities.dp(11 + 24);
-                int y = imageView.getImageY() + AndroidUtilities.dp(11);
+                int y = (int) (imageView.getImageY() + AndroidUtilities.dp(11));
                 linkDrawable.setBounds(x, y, x + AndroidUtilities.dp(24), y + AndroidUtilities.dp(24));
                 linkDrawable.draw(canvas);
             }
@@ -10578,7 +10581,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
                 } else if (currentUrl != null) {
                     imageView.setImage(currentUrl, null, null, null, 0);
                 }
-                textY = imageView.getImageY() + imageView.getImageHeight() + AndroidUtilities.dp(8);
+                textY = (int) (imageView.getImageY() + imageView.getImageHeight() + AndroidUtilities.dp(8));
                 if (currentType == 0) {
                     captionLayout = createLayoutForText(this, null, currentBlock.caption.text, textWidth, textY, currentBlock, parentAdapter);
                     if (captionLayout != null) {
@@ -10624,8 +10627,8 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
             if (currentMapProvider == 2 && imageView.hasNotThumb()) {
                 int w = (int) (Theme.chat_redLocationIcon.getIntrinsicWidth() * 0.8f);
                 int h = (int) (Theme.chat_redLocationIcon.getIntrinsicHeight() * 0.8f);
-                int x = imageView.getImageX() + (imageView.getImageWidth() - w) / 2;
-                int y = imageView.getImageY() + (imageView.getImageHeight() / 2 - h);
+                int x = (int) (imageView.getImageX() + (imageView.getImageWidth() - w) / 2);
+                int y = (int) (imageView.getImageY() + (imageView.getImageHeight() / 2 - h));
                 Theme.chat_redLocationIcon.setAlpha((int) (255 * imageView.getCurrentAlpha()));
                 Theme.chat_redLocationIcon.setBounds(x, y, x + w, y + h);
                 Theme.chat_redLocationIcon.draw(canvas);
@@ -11446,7 +11449,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
                 hasViews = true;
                 viewsTextView.setVisibility(VISIBLE);
                 textView.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
-                viewsTextView.setText(LocaleController.formatPluralString("Views", count));
+                viewsTextView.setText(LocaleController.formatPluralStringComma("Views", count));
             }
             int color = Theme.getColor(Theme.key_switchTrack);
             textView.setTextColor(getGrayTextColor());
@@ -11915,7 +11918,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
                 }
 
                 @Override
-                public void onError(Exception e) {
+                public void onError(VideoPlayer player, Exception e) {
                     FileLog.e(e);
                 }
 
@@ -12670,7 +12673,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
             @Override
             public void onAnimationEnd(Animator animation) {
                 AndroidUtilities.runOnUIThread(() -> {
-                    NotificationCenter.getInstance(currentAccount).setAnimationInProgress(false);
+                    NotificationCenter.getInstance(currentAccount).onAnimationFinish(allowAnimationIndex);
                     if (photoAnimationEndRunnable != null) {
                         photoAnimationEndRunnable.run();
                         photoAnimationEndRunnable = null;
@@ -12680,8 +12683,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
         });
         photoTransitionAnimationStartTime = System.currentTimeMillis();
         AndroidUtilities.runOnUIThread(() -> {
-            NotificationCenter.getInstance(currentAccount).setAllowedNotificationsDutingAnimation(new int[]{NotificationCenter.dialogsNeedReload, NotificationCenter.closeChats});
-            NotificationCenter.getInstance(currentAccount).setAnimationInProgress(true);
+            allowAnimationIndex = NotificationCenter.getInstance(currentAccount).setAnimationInProgress(allowAnimationIndex, new int[]{NotificationCenter.dialogsNeedReload, NotificationCenter.closeChats});
             animatorSet.start();
         });
         if (Build.VERSION.SDK_INT >= 18) {
@@ -12738,8 +12740,8 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
                 layoutParams.height = (int) drawRegion.height();
                 animatingImageView.setImageBitmap(object.thumb);
             } else {
-                layoutParams.width = centerImage.getImageWidth();
-                layoutParams.height = centerImage.getImageHeight();
+                layoutParams.width = (int) centerImage.getImageWidth();
+                layoutParams.height = (int) centerImage.getImageHeight();
                 animatingImageView.setImageBitmap(centerImage.getBitmapSafe());
             }
             if (layoutParams.width == 0) {

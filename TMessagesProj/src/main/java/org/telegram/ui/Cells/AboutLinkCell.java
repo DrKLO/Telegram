@@ -31,6 +31,8 @@ import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.browser.Browser;
+import org.telegram.ui.ActionBar.BaseFragment;
+import org.telegram.ui.Components.AlertsCreator;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.LinkPath;
 import org.telegram.ui.ActionBar.Theme;
@@ -49,8 +51,12 @@ public class AboutLinkCell extends FrameLayout {
     private ClickableSpan pressedLink;
     private LinkPath urlPath = new LinkPath();
 
-    public AboutLinkCell(Context context) {
+    private BaseFragment parentFragment;
+
+    public AboutLinkCell(Context context, BaseFragment fragment) {
         super(context);
+
+        parentFragment = fragment;
 
         valueTextView = new TextView(context);
         valueTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2));
@@ -148,7 +154,12 @@ public class AboutLinkCell extends FrameLayout {
                             }
                         } else {
                             if (pressedLink instanceof URLSpan) {
-                                Browser.openUrl(getContext(), ((URLSpan) pressedLink).getURL());
+                                String url = ((URLSpan) pressedLink).getURL();
+                                if (AndroidUtilities.shouldShowUrlInAlert(url)) {
+                                    AlertsCreator.showOpenUrlAlert(parentFragment, url, true, true);
+                                } else {
+                                    Browser.openUrl(getContext(), url);
+                                }
                             } else {
                                 pressedLink.onClick(this);
                             }

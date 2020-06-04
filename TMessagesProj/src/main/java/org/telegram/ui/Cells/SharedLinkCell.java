@@ -31,7 +31,6 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
-import org.telegram.messenger.browser.Browser;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.Components.CheckBox2;
 import org.telegram.ui.Components.LayoutHelper;
@@ -46,10 +45,8 @@ public class SharedLinkCell extends FrameLayout {
 
     public interface SharedLinkCellDelegate {
         void needOpenWebView(TLRPC.WebPage webPage);
-
         boolean canPerformActions();
-
-        void onLinkLongPress(final String urlFinal);
+        void onLinkPress(final String urlFinal, boolean longPress);
     }
 
     private boolean checkingForLongPress = false;
@@ -75,7 +72,7 @@ public class SharedLinkCell extends FrameLayout {
                 checkingForLongPress = false;
                 performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
                 if (pressedLink >= 0) {
-                    delegate.onLinkLongPress(links.get(pressedLink));
+                    delegate.onLinkPress(links.get(pressedLink), true);
                 }
                 MotionEvent event = MotionEvent.obtain(0, 0, MotionEvent.ACTION_CANCEL, 0, 0, 0);
                 onTouchEvent(event);
@@ -430,7 +427,7 @@ public class SharedLinkCell extends FrameLayout {
                                     if (webPage != null && webPage.embed_url != null && webPage.embed_url.length() != 0) {
                                         delegate.needOpenWebView(webPage);
                                     } else {
-                                        Browser.openUrl(getContext(), links.get(pressedLink));
+                                        delegate.onLinkPress(links.get(pressedLink), false);
                                     }
                                 } catch (Exception e) {
                                     FileLog.e(e);

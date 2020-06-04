@@ -30,6 +30,8 @@ static const std::string av_make_error_str(int errnum) {
 jclass jclass_AnimatedFileDrawableStream;
 jmethodID jclass_AnimatedFileDrawableStream_read;
 jmethodID jclass_AnimatedFileDrawableStream_cancel;
+jmethodID jclass_AnimatedFileDrawableStream_isFinishedLoadingFile;
+jmethodID jclass_AnimatedFileDrawableStream_getFinishedFilePath;
 
 typedef struct VideoInfo {
     
@@ -189,6 +191,20 @@ void requestFd(VideoInfo *info) {
         attached = false;
     }
     jniEnv->CallIntMethod(info->stream, jclass_AnimatedFileDrawableStream_read, (jint) 0, (jint) 1);
+    jboolean loaded = jniEnv->CallBooleanMethod(info->stream, jclass_AnimatedFileDrawableStream_isFinishedLoadingFile);
+    if (loaded) {
+        delete[] info->src;
+        jstring src = (jstring) jniEnv->CallObjectMethod(info->stream, jclass_AnimatedFileDrawableStream_getFinishedFilePath);
+        char const *srcString = jniEnv->GetStringUTFChars(src, 0);
+        size_t len = strlen(srcString);
+        info->src = new char[len + 1];
+        memcpy(info->src, srcString, len);
+        info->src[len] = '\0';
+        if (srcString != 0) {
+            jniEnv->ReleaseStringUTFChars(src, srcString);
+        }
+    }
+
     if (attached) {
         javaVm->DetachCurrentThread();
     }
@@ -579,7 +595,7 @@ void Java_org_telegram_ui_Components_AnimatedFileDrawable_seekToMs(JNIEnv *env, 
     }
 }
     
-jint Java_org_telegram_ui_Components_AnimatedFileDrawable_getVideoFrame(JNIEnv *env, jclass clazz, jlong ptr, jobject bitmap, jintArray data, jint stride, jboolean preview) {
+jint Java_org_telegram_ui_Components_AnimatedFileDrawable_getVideoFrame(JNIEnv *env, jclass clazz, jlong ptr, jobject bitmap, jintArray data, jint stride, jboolean preview, jfloat start_time, jfloat end_time) {
     if (ptr == NULL || bitmap == nullptr) {
         return 0;
     }
@@ -592,9 +608,16 @@ jint Java_org_telegram_ui_Components_AnimatedFileDrawable_getVideoFrame(JNIEnv *
     while (!info->stopped && triesCount != 0) {
         if (info->pkt.size == 0) {
             ret = av_read_frame(info->fmt_ctx, &info->pkt);
-            //LOGD("got packet with size %d", info->pkt.size);
             if (ret >= 0) {
-                info->orig_pkt = info->pkt;
+                double pts = info->pkt.pts * av_q2d(info->video_stream->time_base);
+                if (end_time > 0 && info->pkt.stream_index == info->video_stream_idx && pts > end_time) {
+                    av_packet_unref(&info->pkt);
+                    info->pkt.data = NULL;
+                    info->pkt.size = 0;
+                } else {
+                    info->orig_pkt = info->pkt;
+                }
+
             }
         }
 
@@ -624,7 +647,11 @@ jint Java_org_telegram_ui_Components_AnimatedFileDrawable_getVideoFrame(JNIEnv *
             }
             if (!preview && got_frame == 0) {
                 if (info->has_decoded_frames) {
-                    if ((ret = av_seek_frame(info->fmt_ctx, info->video_stream_idx, 0, AVSEEK_FLAG_BACKWARD | AVSEEK_FLAG_FRAME)) < 0) {
+                    int64_t start_from = 0;
+                    if (start_time > 0) {
+                        start_from = (int64_t)(start_time / av_q2d(info->video_stream->time_base));
+                    }
+                    if ((ret = av_seek_frame(info->fmt_ctx, info->video_stream_idx, start_from, AVSEEK_FLAG_BACKWARD | AVSEEK_FLAG_FRAME)) < 0) {
                         LOGE("can't seek to begin of file %s, %s", info->src, av_err2str(ret));
                         return 0;
                     } else {
@@ -708,6 +735,14 @@ jint videoOnJNILoad(JavaVM *vm, JNIEnv *env) {
     }
     jclass_AnimatedFileDrawableStream_cancel = env->GetMethodID(jclass_AnimatedFileDrawableStream, "cancel", "()V");
     if (jclass_AnimatedFileDrawableStream_cancel == 0) {
+        return JNI_FALSE;
+    }
+    jclass_AnimatedFileDrawableStream_isFinishedLoadingFile = env->GetMethodID(jclass_AnimatedFileDrawableStream, "isFinishedLoadingFile", "()Z");
+    if (jclass_AnimatedFileDrawableStream_isFinishedLoadingFile == 0) {
+        return JNI_FALSE;
+    }
+    jclass_AnimatedFileDrawableStream_getFinishedFilePath = env->GetMethodID(jclass_AnimatedFileDrawableStream, "getFinishedFilePath", "()Ljava/lang/String;");
+    if (jclass_AnimatedFileDrawableStream_getFinishedFilePath == 0) {
         return JNI_FALSE;
     }
 

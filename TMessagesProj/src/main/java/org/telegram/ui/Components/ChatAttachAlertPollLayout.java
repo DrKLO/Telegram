@@ -479,7 +479,7 @@ public class ChatAttachAlertPollLayout extends ChatAttachAlert.AttachAlertLayout
     @Override
     void onPreMeasure(int availableWidth, int availableHeight) {
         int padding;
-        if (parentAlert.sizeNotifierFrameLayout.getKeyboardHeight() > AndroidUtilities.dp(20)) {
+        if (parentAlert.sizeNotifierFrameLayout.measureKeyboardHeight() > AndroidUtilities.dp(20)) {
             padding = AndroidUtilities.dp(52);
             parentAlert.setAllowNestedScroll(false);
         } else {

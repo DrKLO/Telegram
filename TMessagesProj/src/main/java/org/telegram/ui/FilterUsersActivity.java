@@ -1045,7 +1045,7 @@ public class FilterUsersActivity extends BaseFragment implements NotificationCen
             View view;
             switch (viewType) {
                 case 1:
-                    view = new GroupCreateUserCell(context, true, 0);
+                    view = new GroupCreateUserCell(context, true, 0, true);
                     break;
                 case 2:
                 default:
@@ -1164,7 +1164,6 @@ public class FilterUsersActivity extends BaseFragment implements NotificationCen
                         }
                         object = contacts.get(position - usersStartRow);
                     }
-                    cell.setObject(object, name, username);
                     int id;
                     if (object instanceof TLRPC.User) {
                         id = ((TLRPC.User) object).id;
@@ -1173,6 +1172,21 @@ public class FilterUsersActivity extends BaseFragment implements NotificationCen
                     } else {
                         id = 0;
                     }
+                    if (!searching) {
+                        StringBuilder builder = new StringBuilder();
+                        ArrayList<MessagesController.DialogFilter> filters = getMessagesController().dialogFilters;
+                        for (int a = 0, N = filters.size(); a < N; a++) {
+                            MessagesController.DialogFilter filter = filters.get(a);
+                            if (filter.includesDialog(getAccountInstance(), id)) {
+                                if (builder.length() > 0) {
+                                    builder.append(", ");
+                                }
+                                builder.append(filter.name);
+                            }
+                        }
+                        username = builder;
+                    }
+                    cell.setObject(object, name, username);
                     if (id != 0) {
                         cell.setChecked(selectedContacts.indexOfKey(id) >= 0, false);
                         cell.setCheckBoxEnabled(true);

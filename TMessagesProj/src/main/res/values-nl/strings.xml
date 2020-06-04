@@ -291,7 +291,7 @@
     <string name="ChannelLinkTitle">Permanente link</string>
     <string name="ChannelInviteLinkTitle">Uitnodigingslink</string>
     <string name="GroupAddMembers">Leden toevoegen</string>
-    <string name="ChannelAddSubscribers">Add Subscribers</string>
+    <string name="ChannelAddSubscribers">Abonnees toevoegen</string>
     <string name="LeaveChannel">Kanaal verlaten</string>
     <string name="LeaveChannelMenu">Kanaal verlaten</string>
     <string name="ChannelSettings">Instellingen</string>
@@ -531,11 +531,11 @@
     <string name="NewPoll">Nieuwe poll</string>
     <string name="NewQuiz">Nieuwe quiz</string>
     <string name="Poll">Poll</string>
-    <string name="PollQuestion">Poll question</string>
+    <string name="PollQuestion">Pollvraag</string>
     <string name="QuestionHint">Stel een vraag</string>
-    <string name="AnswerOptions">Answer options</string>
+    <string name="AnswerOptions">Antwoordopties</string>
     <string name="QuizAnswers">Quiz antwoorden</string>
-    <string name="PollResults">Poll resultaten</string>
+    <string name="PollResults">Pollresultaten</string>
     <string name="PollAnonymous">Anoniem stemmen</string>
     <string name="PollQuiz">Quiz-modus</string>
     <string name="PollSelectOption">Kies eerst een optie</string>
@@ -722,7 +722,7 @@
     <string name="SdCard">SD-kaart</string>
     <string name="Folder">Map</string>
     <string name="RecentFiles">Recente bestanden</string>
-    <string name="RecentFilesAZ">Files A-Z</string>
+    <string name="RecentFilesAZ">Bestanden A-Z</string>
     <string name="NoFilesFound">Geen resultaten</string>
     <string name="NoFilesFoundInfo">Geen resultaten voor **%1$s** in de huidige map.</string>
     <string name="NoFilesInfo">Deze map is leeg.</string>
@@ -731,7 +731,7 @@
     <string name="AppFolderInfo">Blader door de map van de App</string>
     <string name="InternalFolderInfo">Blader door je bestandssysteem</string>
     <string name="ExternalFolderInfo">Blader door je externe opslag</string>
-    <string name="SearchMusic">Search music</string>
+    <string name="SearchMusic">Zoek muziek</string>
     <!--group stickers-->
     <string name="GroupStickers">Groepsstickers</string>
     <string name="ChooseFromYourStickers">Kies uit je stickers</string>
@@ -801,8 +801,8 @@
     <string name="YouLeft">Je hebt deze groep verlaten</string>
     <string name="DeleteThisGroup">Deze groep verwijderen</string>
     <string name="DeleteThisChat">Chat verwijderen</string>
-    <string name="DeleteThisChatBothSides">Delete this chat</string>
-    <string name="DeleteTheseChatsBothSides">Delete chats</string>
+    <string name="DeleteThisChatBothSides">Deze chat verwijderen</string>
+    <string name="DeleteTheseChatsBothSides">Chats verwijderen</string>
     <string name="SlideToCancel">SLEEP OM TE ANNULEREN</string>
     <string name="SaveToDownloads">Opslaan in Downloads</string>
     <string name="SaveToGIFs">GIF opslaan</string>
@@ -909,6 +909,7 @@
     <string name="DeleteForUser">Verwijder voor %1$s</string>
     <string name="DeleteForAll">Verwijder voor iedereen</string>
     <string name="TextCopied">Tekst gekopieerd naar klembord.</string>
+    <string name="HoldToAudioOnly">Hold to record audio.</string>
     <string name="HoldToAudio">Hou vast voor audio-opname. Tik voor video</string>
     <string name="HoldToVideo">Hou vast voor video-opname. Tik voor audio</string>
     <string name="DiscardVoiceMessageTitle">Spraakbericht weggooien</string>
@@ -935,7 +936,7 @@
     <string name="ApkRestricted">APK-installatie is beperkt voor deze app. Je kunt dit inschakelen via de systeeminstellingen.</string>
     <string name="UnreadMessages">Ongelezen berichten</string>
     <string name="SearchStickersHint">Zoek stickerbundels</string>
-    <string name="SearchTrendingStickersHint">Search trending stickers</string>
+    <string name="SearchTrendingStickersHint">Zoek populaire stickers</string>
     <string name="SearchEmojiHint">Emoji zoeken</string>
     <string name="URL">URL</string>
     <string name="MapPreviewProvider">Kaartvoorvertoning</string>
@@ -974,9 +975,20 @@
     <string name="CardNumberCopied">Kaartnummer naar klembord gekopiëerd</string>
     <string name="CopyCardNumber">Kopiëren</string>
     <string name="DiceInfo2">Stuur een **:dice:**-emoji om een dobbelsteen te gebruiken in een chat.</string>
-    <string name="DartInfo">Send a **:darts:** emoji to try your luck.</string>
-    <string name="DiceEmojiInfo">Send a %1$s emoji to try your luck.</string>
-    <string name="SendDice">Sturen</string>Send a dart emoji
+    <string name="DartInfo">Stuur een **:darts:**-emoji om je geluk te beproeven</string>
+    <string name="DiceEmojiInfo">Stuur een %1$s-emoji om je geluk te beproeven.</string>
+    <string name="SendDice">Sturen</string>
+    <string name="PsaType_covid">COVID-19</string>
+    <string name="PsaTypeDefault">PSA</string>
+    <string name="PsaInfo_covid">Dit bericht geeft je een publieke dienstaankondiging betreft de huidige COVID-19-pandemie. Lees meer over dit initiatief op https://telegram.org/blog/coronavirus</string>
+    <string name="PsaInfoDefault">PSA info test</string>
+    <string name="PsaMessage_covid">Melding betreft COVID-19</string>
+    <string name="PsaMessageInfo_covid">Dit bericht geeft je een publieke dienstaankondiging betreft de huidige COVID-19-pandemie. Lees meer over dit initiatief op https://telegram.org/blog/coronavirus</string>
+    <string name="PsaMessageDefault">Belangrijke melding</string>
+    <string name="PsaMessageInfoDefault">Dit is een belangrijke melding.</string>
+    <string name="PsaHideChatAlertTitle">Chat verbergen</string>
+    <string name="PsaHideChatAlertText">Weet je zeker dat je deze chat wilt verbergen?</string>
+    <string name="PsaHide">Verbergen</string>
     <!--notification-->
     <string name="MessageLifetimeChanged">%1$s heeft de zelfvernietigingstimer ingesteld op %2$s</string>
     <string name="MessageLifetimeChangedOutgoing">Je hebt de zelfvernietigingstimer ingesteld op %1$s</string>
@@ -1263,7 +1275,7 @@
     <string name="RecentStickers">Recent gebruikt</string>
     <string name="FavoriteStickers">Favorieten</string>
     <string name="CurrentGroupStickers">Groepsstickers</string>
-    <string name="OtherStickers">More Stickers</string>
+    <string name="OtherStickers">Meer stickers</string>
     <string name="DeleteFromFavorites">Verwijder uit favorieten</string>
     <string name="DeleteFromRecent">Verwijder uit recente</string>
     <string name="AddToMasks">Maskers toevoegen</string>
@@ -1297,6 +1309,7 @@
     <string name="Masks">Maskers</string>
     <string name="MasksInfo">Je kunt maskers toevoegen aan foto\'s , gebruik de fotobewerkingsoptie en verstuur ze.</string>
     <string name="FeaturedStickers">Populaire stickers</string>
+    <string name="FeaturedGifs">Populaire GIF\'s</string>
     <string name="SuggestStickers">Stickersuggesties</string>
     <string name="SuggestStickersAll">Alle bundels</string>
     <string name="SuggestStickersInstalled">Mijn bundels</string>
@@ -1442,8 +1455,8 @@
     <string name="ResetNotificationsAlert">Alle meldingsinstellingen herstellen naar de standaardwaarden?</string>
     <string name="TextSizeHeader">Tekstgrootte berichten</string>
     <string name="AskAQuestion">Een vraag stellen</string>
-    <string name="AddAnExplanation">Add an explanation</string>
-    <string name="AddAnExplanationInfo">Users will see this text after choosing the wrong answer, good for educational purposes.</string>
+    <string name="AddAnExplanation">Uitleg toevoegen</string>
+    <string name="AddAnExplanationInfo">Gebruikers zien deze uitleg nadat ze een verkeerd antwoord hebben gekozen, goed voor educatieve doeleinden.</string>
     <string name="EnableAnimations">Animaties</string>
     <string name="ChatSettings">Chatinstellingen</string>
     <string name="Devices">Apparaten</string>
@@ -1657,6 +1670,7 @@
     <string name="AutoplayMedia">Autom. media afspelen</string>
     <string name="RaiseToSpeak">Houd bij oor</string>
     <string name="SaveToGallerySettings">Opslaan in galerij</string>
+    <string name="SoundMuted">Geluid gedempt</string>
     <string name="EditName">Naam wijzigen</string>
     <string name="NotificationsCustomize">Aanpassen</string>
     <string name="NotificationsCustom">Aangepast</string>
@@ -1670,7 +1684,7 @@
     <string name="RepeatNotificationsNever">Nooit</string>
     <string name="RepeatNotifications">Meldingen herhalen</string>
     <string name="PhoneNumberHelp">Je kan je telefoonnummer hier wijzigen. Al je clouddata — berichten, bestanden, groepen, contacten, etc. zullen worden verplaatst naar je nieuwe nummer.</string>
-    <string name="PhoneNumberAlert">Gebruikers zien je nieuwe nummer als ze deze in hun adresboek hebben of als je privacy-instellingen dat toestaat. Je kunt dit aanpassen via Instellingen &gt; Privacy en Veiligheid &gt; Telefoonnummer.</string>
+    <string name="PhoneNumberAlert">Gebruikers zien je nieuwe nummer als ze deze in hun adresboek hebben of als je privacy-instellingen dat toestaat. Je kunt dit aanpassen via Instellingen &gt; Privacy en veiligheid &gt; Telefoonnummer.</string>
     <string name="PhoneNumberChange2">Nummer wijzigen</string>
     <string name="PhoneNumberChangeTitle">Nummer wijzigen</string>
     <string name="ChangePhoneNewNumber">Nieuw nummer</string>
@@ -1819,6 +1833,7 @@
     <string name="AuthAnotherClientInfo2">Gebruik Telegram Desktop om de QR-code te krijgen.</string>
     <string name="AuthAnotherClientInfo3">Scan de QR-Code om met je account te verbinden.</string>
     <string name="AuthAnotherClientUrl">Met deze code kun je iemand toestaan om in te loggen op je Telegram-account\n\nOm de login te bevestigen ga naar, Instellingen &gt; Apparaten &gt; Scan QR en scan de code.</string>
+    <string name="QRCodePermissionNoCamera">Telegram heeft toegang tot je camera nodig om QR-codes te scannen.</string>
     <!--cache view-->
     <string name="LocalDatabase">Lokale database</string>
     <string name="LocalDatabaseClearTextTitle">Lokale database wissen</string>
@@ -2131,6 +2146,18 @@
     <string name="FilterAvailableText">Open *Instellingen&gt; Mappen* om je chats in mappen in te delen.</string>
     <string name="FilterNameNonMuted">Niet gedempt</string>
     <string name="FilterNameUnread">Ongelezen</string>
+    <string name="FilterAddTo">Toevoegen aan map</string>
+    <string name="FilterRemoveFrom">Verwijderen van map</string>
+    <string name="FilterChoose">Kies een map</string>
+    <string name="FilterUserAddedToExisting">**%1$s** toegevoegd aan **%2$s**</string>
+    <string name="FilterChatAddedToExisting">**%1$s** toegevoegd aan **%2$s**</string>
+    <string name="FilterChatsAddedToExisting">**%1$s** toegevoegd aan **%2$s**</string>
+    <string name="FilterUserRemovedFrom">**%1$s** verwijderd van **%2$s**</string>
+    <string name="FilterChatRemovedFrom">**%1$s** verwijderd van **%2$s**</string>
+    <string name="FilterChatsRemovedFrom">**%1$s** verwijderd van **%2$s**</string>
+    <string name="FilterAddToAlertFullTitle">Limiet bereikt</string>
+    <string name="FilterRemoveFromAlertFullText">Sorry, je kunt niet meer dan 100 chats aan een map toevoegen.</string>
+    <string name="FilterAddToAlertFullText">Sorry, je kunt niet meer dan 100 chats uitsluiten van een map</string>
     <!--passcode view-->
     <string name="Passcode">Toegangscode-vergrendeling</string>
     <string name="ChangePasscode">Toegangscode wijzigen</string>
@@ -2260,6 +2287,7 @@
     <string name="ShowAsList">Weergeven als lijst</string>
     <string name="ShowAsGrid">Weergeven als rooster</string>
     <string name="ShowAllMedia">Alle media weergeven</string>
+    <string name="ShowStickers">Stickers weergeven</string>
     <string name="ShowAllFiles">Alle bestanden</string>
     <string name="ShowAllGIFs">Alle GIF\'s tonen</string>
     <string name="TapToDownload">Tik om te downloaden</string>
@@ -2334,6 +2362,7 @@
     <string name="PaintDuplicate">Klonen</string>
     <string name="PaintOutlined">Omlijnd</string>
     <string name="PaintRegular">Normaal</string>
+    <string name="PaintFramed">Omlijst</string>
     <string name="CropReset">Resetten</string>
     <string name="CropOriginal">Origineel</string>
     <string name="CropSquare">Vierkant</string>
@@ -2344,15 +2373,24 @@
     <!--password view-->
     <string name="TwoStepVerification">Twee-staps-verificatie</string>
     <string name="TwoStepVerificationTitle">Twee-staps-verificatie</string>
+    <string name="TwoStepVerificationPasswordSet">Wachtwoord ingesteld!</string>
+    <string name="TwoStepVerificationPasswordSetInfo">Dit wachtwoord heb je nodig wanneer je inlogt op Telegram vanaf een nieuw apparaat, naast de code die je ontvangt per SMS.</string>
+    <string name="TwoStepVerificationPasswordReturnSettings">Terug naar instellingen</string>
+    <string name="TwoStepVerificationPasswordReturnPassport">Terug naar Passport</string>
+    <string name="TwoStepVerificationSetPassword">Wachtwoord instellen</string>
     <string name="SetAdditionalPassword">Extra wachtwoord instellen</string>
     <string name="SetAdditionalPasswordInfo">Naast de code die je per SMS ontvangt kun je een extra wachtwoord instellen voor als je inlogt op een nieuw apparaat.</string>
     <string name="YourPassword">Je wachtwoord</string>
+    <string name="PasswordOn">Aan</string>
+    <string name="PasswordOff">Uit</string>
     <string name="PleaseEnterCurrentPassword">Voer je wachtwoord in</string>
     <string name="PleaseEnterCurrentPasswordTransfer">Voer je wachtwoord in om de overdracht af te ronden</string>
     <string name="PleaseEnterFirstPassword">Wachtwoord invoeren</string>
+    <string name="PleaseEnterNewFirstPassword">Nieuw wachtwoord invoeren</string>
     <string name="PleaseEnterPassword">Nieuw wachtwoord invoeren</string>
     <string name="PleaseReEnterPassword">Wachtwoord opnieuw invoeren</string>
     <string name="RecoveryEmail">Herstel-e-mailadres</string>
+    <string name="RecoveryEmailTitle">Herstel-e-mailadres</string>
     <string name="YourEmail">Je e-mailadres</string>
     <string name="YourEmailCode">Je e-mailcode</string>
     <string name="YourEmailCodeInfo">Bevestig je e-mailadres door de code in te geven die je hebt ontvangen op %1$s.</string>
@@ -2364,7 +2402,9 @@
     <string name="YourEmailAlmostThereText">Controleer je e-mail en klik op de bevestigingslink om de twee-staps-verificatie in te schakelen. Kijk voor de zekerheid ook in de ongewenste post.</string>
     <string name="YourPasswordSuccess">Gelukt!</string>
     <string name="YourPasswordSuccessText">Je wachtwoord voor twee-staps-verificatie is nu actief.</string>
+    <string name="YourPasswordChangedSuccessText">Je tweestapsverificatiewachtwoord is aangepast.</string>
     <string name="YourEmailSuccessText">Je herstel-e-mailadres voor twee-staps-verificatie is nu actief.</string>
+    <string name="YourEmailSuccessChangedText">Your recovery email for Two-Step Verification is changed.</string>
     <string name="ChangePassword">Wachtwoord wijzigen</string>
     <string name="TurnPasswordOff">Wachtwoord uitschakelen</string>
     <string name="SetRecoveryEmail">Herstel-e-mailadres instellen</string>
@@ -2376,9 +2416,11 @@
     <string name="CancelEmailQuestionTitle">Installatie annuleren</string>
     <string name="TurnPasswordOffPassport">Let op! Alle opgeslagen gegevens in je Telegram Passport gaan verloren!</string>
     <string name="PasswordHint">Wachtwoordhint</string>
+    <string name="PasswordHintPlaceholder">Hint</string>
     <string name="PasswordHintText">Stel een hint voor je wachtwoord in</string>
     <string name="PasswordDoNotMatch">Wachtwoorden komen niet overeen</string>
     <string name="AbortPassword">Twee-staps-verificatie annuleren</string>
+    <string name="AbortPasswordMenu">Installatie annuleren</string>
     <string name="AbortEmail">Instellen annuleren</string>
     <string name="Abort">Annuleren</string>
     <string name="Disable">Uitschakelen</string>
@@ -2406,6 +2448,8 @@
     <string name="PasswordCode">Code</string>
     <string name="PasswordReset">Wachtwoord uitgeschakeld</string>
     <string name="ResendCode">Code opnieuw sturen</string>
+    <string name="VerificationCode">Verificatiecode</string>
+    <string name="EnterCode">Code invoeren</string>
     <string name="ResendCodeInfo">De verificatiecode is naar je e-mailadres gestuurd.</string>
     <string name="EnabledPasswordText">Je hebt twee-staps-verificatie ingeschakeld.\nAls je inlogt op je Telegram-account heb je het ingestelde wachtwoord nodig.</string>
     <!--data settings-->
@@ -2434,7 +2478,7 @@
     <!--privacy settings-->
     <string name="PrivacySettings">Privacy en veiligheid</string>
     <string name="PrivacyTitle">Privacy</string>
-    <string name="PrivacyLastSeen">Laatst gezien &amp; online</string>
+    <string name="PrivacyLastSeen">Laatst gezien en online</string>
     <string name="PrivacyProfilePhoto">Profielfoto</string>
     <string name="PrivacyProfilePhotoTitle">Wie kan mijn profielfoto zien</string>
     <string name="PrivacyProfilePhotoInfo">Je kunt nauwkeurig beperken wie je profielfoto kan zien.</string>
@@ -2648,6 +2692,7 @@
     <string name="UserChannelTooMuchJoin">Sorry, de doelgebruiker is lid van teveel groepen en kanalen, vraag eerst of ze uit enkele willen gaan.</string>
     <!--Alert messages-->
     <string name="DeleteAllMessagesAlert">Let op! Hiermee verwijder je **alle berichten** in deze chat voor **beide** deelnemers.</string>
+    <string name="DeleteAllMessagesSavedAlert">Let op! Hiermee **verwijder je alle berichten** uit deze chat.</string>
     <string name="DeleteAll">Alles verwijderen</string>
     <string name="StopLoading">Stopped met laden?</string>
     <string name="UpdateTelegram">Telegram bijwerken</string>
@@ -2692,7 +2737,7 @@
     <string name="AreYouSureDeleteAndExitName">Groep **%1$s** echt verwijderen en verlaten?</string>
     <string name="AreYouSureDeleteThisChat">Chat echt verwijderen?</string>
     <string name="AreYouSureDeleteThisChatWithUser">Chat met **%1$s** echt wissen?</string>
-    <string name="AreYouSureDeleteThisChatWithBot">Are you sure you want to delete the chat with **%1$s** and block them?</string>
+    <string name="AreYouSureDeleteThisChatWithBot">Echt **%1$s** blokkeren en de chat verwijderen?</string>
     <string name="AreYouSureDeleteThisChatSavedMessages">" **Bewaarde berichten** echt verwijderen?"</string>
     <string name="AreYouSureDeleteThisChatWithSecretUser">Geheime chat met **%1$s** echt wissen?</string>
     <string name="AreYouSureDeleteThisChatWithGroup">Chat **%1$s** echt wissen?</string>
@@ -2791,18 +2836,18 @@
     <string name="TopHoursChartTitle">Aantal keer bekeken per uur (UTC)</string>
     <string name="SlideUpToLock">Veeg omhoog om opnemen vast te zetten</string>
     <string name="NotificationsChartTitle">Meldingen</string>
-    <string name="DeviceStorage">Device storage</string>
-    <string name="TotalDeviceFreeSize">%s Free</string>
-    <string name="ClearTelegramCache">Clear Telegram Cache</string>
-    <string name="StatisticOverview">Overview</string>
-    <string name="ViewsPerPost">Views Per Post</string>
-    <string name="SharesPerPost">Shares Per Post</string>
-    <string name="EnabledNotifications">Enabled Notifications</string>
-    <string name="ClearLocalDatabase">Clear Local Database</string>
+    <string name="DeviceStorage">Apparaatopslag</string>
+    <string name="TotalDeviceFreeSize">%s vrij</string>
+    <string name="ClearTelegramCache">Telegram-cache wissen</string>
+    <string name="StatisticOverview">Overzicht</string>
+    <string name="ViewsPerPost">Aantal keer bekeken per post</string>
+    <string name="SharesPerPost">Aantal keer gedeeld per post</string>
+    <string name="EnabledNotifications">Meldingen ingeschakeld</string>
+    <string name="ClearLocalDatabase">Lokale database wissen</string>
     <string name="TelegramCacheSize">%s Telegram Cache</string>
-    <string name="LocalDatabaseSize">%s Telegram Local Database</string>
-    <string name="CacheWasCleared">%s freed on your device!</string>
-    <string name="TotalDeviceSize">%s Other Data</string>
+    <string name="LocalDatabaseSize">%s Telegram Lokale Database</string>
+    <string name="CacheWasCleared">%s vrijgemaakt op je apparaat!</string>
+    <string name="TotalDeviceSize">%s Andere Data</string>
     <!--Intro view-->
     <string name="Page1Title">Telegram</string>
     <string name="Page2Title">Snel</string>

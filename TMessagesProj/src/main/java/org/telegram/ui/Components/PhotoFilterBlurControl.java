@@ -200,12 +200,13 @@ public class PhotoFilterBlurControl extends FrameLayout {
         float locationX = event.getX();
         float locationY = event.getY();
         Point actualCenterPoint = getActualCenterPoint();
-        Point delta = new Point(locationX - actualCenterPoint.x, locationY - actualCenterPoint.y);
-        float radialDistance = (float) Math.sqrt(delta.x * delta.x + delta.y * delta.y);
-        float shorterSide = (actualAreaSize.width > actualAreaSize.height) ? actualAreaSize.height : actualAreaSize.width;
+        float dx = locationX - actualCenterPoint.x;
+        float dy = locationY - actualCenterPoint.y;
+        float radialDistance = (float) Math.sqrt(dx * dx + dy * dy);
+        float shorterSide = Math.min(actualAreaSize.width, actualAreaSize.height);
         float innerRadius = shorterSide * falloff;
         float outerRadius = shorterSide * size;
-        float distance = (float) Math.abs(delta.x * Math.cos(degreesToRadians(angle) + Math.PI / 2.0f) + delta.y * Math.sin(degreesToRadians(angle) + Math.PI / 2.0f));
+        float distance = (float) Math.abs(dx * Math.cos(degreesToRadians(angle) + Math.PI / 2.0f) + dy * Math.sin(degreesToRadians(angle) + Math.PI / 2.0f));
 
         switch (state) {
             case GestureStateBegan: {
@@ -255,7 +256,7 @@ public class PhotoFilterBlurControl extends FrameLayout {
                         case BlurViewActiveControlCenter: {
                             float translationX = locationX - pointerStartX;
                             float translationY = locationY - pointerStartY;
-                            Rect actualArea = new Rect((getWidth() - actualAreaSize.width) / 2, (getHeight() - actualAreaSize.height) / 2, actualAreaSize.width, actualAreaSize.height);
+                            Rect actualArea = new Rect((getWidth() - actualAreaSize.width) / 2, (Build.VERSION.SDK_INT >= 21 ? AndroidUtilities.statusBarHeight : 0) + (getHeight() - actualAreaSize.height) / 2, actualAreaSize.width, actualAreaSize.height);
                             Point newPoint = new Point(Math.max(actualArea.x, Math.min(actualArea.x + actualArea.width, startCenterPoint.x + translationX)), Math.max(actualArea.y, Math.min(actualArea.y + actualArea.height, startCenterPoint.y + translationY)));
                             centerPoint = new Point((newPoint.x - actualArea.x) / actualAreaSize.width, ((newPoint.y - actualArea.y) + (actualAreaSize.width - actualAreaSize.height) / 2) / actualAreaSize.width);
                         }
@@ -282,8 +283,9 @@ public class PhotoFilterBlurControl extends FrameLayout {
                             boolean right = locationX > actualCenterPoint.x;
                             boolean bottom = locationY > actualCenterPoint.y;
 
+                            final boolean b = Math.abs(translationY) > Math.abs(translationX);
                             if (!right && !bottom) {
-                                if (Math.abs(translationY) > Math.abs(translationX)) {
+                                if (b) {
                                     if (translationY < 0) {
                                         clockwise = true;
                                     }
@@ -293,7 +295,7 @@ public class PhotoFilterBlurControl extends FrameLayout {
                                     }
                                 }
                             } else if (right && !bottom) {
-                                if (Math.abs(translationY) > Math.abs(translationX)) {
+                                if (b) {
                                     if (translationY > 0) {
                                         clockwise = true;
                                     }
@@ -303,7 +305,7 @@ public class PhotoFilterBlurControl extends FrameLayout {
                                     }
                                 }
                             } else if (right && bottom) {
-                                if (Math.abs(translationY) > Math.abs(translationX)) {
+                                if (b) {
                                     if (translationY > 0) {
                                         clockwise = true;
                                     }
@@ -313,7 +315,7 @@ public class PhotoFilterBlurControl extends FrameLayout {
                                     }
                                 }
                             } else {
-                                if (Math.abs(translationY) > Math.abs(translationX)) {
+                                if (b) {
                                     if (translationY < 0) {
                                         clockwise = true;
                                     }
@@ -340,7 +342,7 @@ public class PhotoFilterBlurControl extends FrameLayout {
                         case BlurViewActiveControlCenter: {
                             float translationX = locationX - pointerStartX;
                             float translationY = locationY - pointerStartY;
-                            Rect actualArea = new Rect((getWidth() - actualAreaSize.width) / 2, (getHeight() - actualAreaSize.height) / 2, actualAreaSize.width, actualAreaSize.height);
+                            Rect actualArea = new Rect((getWidth() - actualAreaSize.width) / 2, (Build.VERSION.SDK_INT >= 21 ? AndroidUtilities.statusBarHeight : 0) + (getHeight() - actualAreaSize.height) / 2, actualAreaSize.width, actualAreaSize.height);
                             Point newPoint = new Point(Math.max(actualArea.x, Math.min(actualArea.x + actualArea.width, startCenterPoint.x + translationX)), Math.max(actualArea.y, Math.min(actualArea.y + actualArea.height, startCenterPoint.y + translationY)));
                             centerPoint = new Point((newPoint.x - actualArea.x) / actualAreaSize.width, ((newPoint.y - actualArea.y) + (actualAreaSize.width - actualAreaSize.height) / 2) / actualAreaSize.width);
                         }
@@ -455,19 +457,23 @@ public class PhotoFilterBlurControl extends FrameLayout {
             float thickness = AndroidUtilities.dp(1.5f);
             for (int i = 0; i < 30; i++) {
                 canvas.drawRect(i * (length + space), -innerRadius, i * (length + space) + length, thickness - innerRadius, paint);
-                canvas.drawRect(-i * (length + space) - space - length, -innerRadius, -i * (length + space) - space, thickness - innerRadius, paint);
+                float left = -i * (length + space) - space - length;
+                float right = -i * (length + space) - space;
+                canvas.drawRect(left, -innerRadius, right, thickness - innerRadius, paint);
 
                 canvas.drawRect(i * (length + space), innerRadius, length + i * (length + space), thickness + innerRadius, paint);
-                canvas.drawRect(-i * (length + space) - space - length, innerRadius, -i * (length + space) - space, thickness + innerRadius, paint);
+                canvas.drawRect(left, innerRadius, right, thickness + innerRadius, paint);
             }
 
             length = AndroidUtilities.dp(6.0f);
             for (int i = 0; i < 64; i++) {
                 canvas.drawRect(i * (length + space), -outerRadius, length + i * (length + space), thickness - outerRadius, paint);
-                canvas.drawRect(-i * (length + space) - space - length, -outerRadius, -i * (length + space) - space, thickness - outerRadius, paint);
+                float left = -i * (length + space) - space - length;
+                float right = -i * (length + space) - space;
+                canvas.drawRect(left, -outerRadius, right, thickness - outerRadius, paint);
 
                 canvas.drawRect(i * (length + space), outerRadius, length + i * (length + space), thickness + outerRadius, paint);
-                canvas.drawRect(-i * (length + space) - space - length, outerRadius, -i * (length + space) - space, thickness + outerRadius, paint);
+                canvas.drawRect(left, outerRadius, right, thickness + outerRadius, paint);
             }
         } else if (type == 1) {
             float radSpace = 6.15f;
@@ -492,10 +498,10 @@ public class PhotoFilterBlurControl extends FrameLayout {
     }
 
     private float getActualInnerRadius() {
-        return (actualAreaSize.width > actualAreaSize.height ? actualAreaSize.height : actualAreaSize.width) * falloff;
+        return (Math.min(actualAreaSize.width, actualAreaSize.height)) * falloff;
     }
 
     private float getActualOuterRadius() {
-        return (actualAreaSize.width > actualAreaSize.height ? actualAreaSize.height : actualAreaSize.width) * size;
+        return (Math.min(actualAreaSize.width, actualAreaSize.height)) * size;
     }
 }

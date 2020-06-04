@@ -982,6 +982,7 @@ public class SecretChatHelper extends BaseController {
                     newMessage.media.document.id = file.id;
                     newMessage.media.document.access_hash = file.access_hash;
                     newMessage.media.document.date = date;
+                    newMessage.media.document.mime_type = decryptedMessage.media.mime_type;
                     if (decryptedMessage.media instanceof TLRPC.TL_decryptedMessageMediaDocument_layer8) {
                         TLRPC.TL_documentAttributeFilename fileName = new TLRPC.TL_documentAttributeFilename();
                         fileName.file_name = decryptedMessage.media.file_name;
@@ -989,12 +990,13 @@ public class SecretChatHelper extends BaseController {
                     } else {
                         newMessage.media.document.attributes = decryptedMessage.media.attributes;
                     }
-                    newMessage.media.document.mime_type = decryptedMessage.media.mime_type;
                     newMessage.media.document.size = decryptedMessage.media.size != 0 ? Math.min(decryptedMessage.media.size, file.size) : file.size;
                     newMessage.media.document.key = decryptedMessage.media.key;
                     newMessage.media.document.iv = decryptedMessage.media.iv;
                     if (newMessage.media.document.mime_type == null) {
                         newMessage.media.document.mime_type = "";
+                    } else if (MessageObject.isAnimatedStickerDocument(newMessage.media.document, true)) {
+                        newMessage.media.document.mime_type = "application/x-bad_tgsticker";
                     }
                     byte[] thumb = ((TLRPC.TL_decryptedMessageMediaDocument) decryptedMessage.media).thumb;
                     TLRPC.PhotoSize photoSize;
@@ -1032,6 +1034,10 @@ public class SecretChatHelper extends BaseController {
                     newMessage.media.document.flags |= 1;
                     if (newMessage.media.document.mime_type == null) {
                         newMessage.media.document.mime_type = "";
+                    }
+                    if (MessageObject.isAnimatedStickerMessage(newMessage)) {
+                        newMessage.stickerVerified = 0;
+                        getMediaDataController().verifyAnimatedStickerMessage(newMessage, true);
                     }
                 } else if (decryptedMessage.media instanceof TLRPC.TL_decryptedMessageMediaAudio) {
                     if (decryptedMessage.media.key == null || decryptedMessage.media.key.length != 32 || decryptedMessage.media.iv == null || decryptedMessage.media.iv.length != 32) {

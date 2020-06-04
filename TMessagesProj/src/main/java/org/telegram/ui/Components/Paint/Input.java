@@ -34,7 +34,7 @@ public class Input {
         m.invert(invertMatrix);
     }
 
-    public void process(MotionEvent event) {
+    public void process(MotionEvent event, float scale) {
         int action = event.getActionMasked();
         float x = event.getX();
         float y = renderView.getHeight() - event.getY();
@@ -61,7 +61,7 @@ public class Input {
                     clearBuffer = true;
                 } else {
                     float distance = location.getDistanceTo(lastLocation);
-                    if (distance < AndroidUtilities.dp(5.0f)) {
+                    if (distance < AndroidUtilities.dp(5.0f) / scale) {
                         return;
                     }
 
@@ -79,9 +79,8 @@ public class Input {
 
                     lastLocation = location;
                 }
+                break;
             }
-            break;
-
             case MotionEvent.ACTION_UP: {
                 if (!hasMoved) {
                     if (renderView.shouldDraw()) {
@@ -99,8 +98,14 @@ public class Input {
                 beganDrawing = false;
 
                 renderView.onFinishedDrawing(hasMoved);
+                break;
             }
-            break;
+            case MotionEvent.ACTION_CANCEL: {
+                renderView.getPainting().clearStroke();
+                pointsCount = 0;
+                beganDrawing = false;
+                break;
+            }
         }
     }
 
@@ -158,8 +163,7 @@ public class Input {
             } else {
                 pointsCount = 2;
             }
-        }
-        else {
+        } else {
             Point[] result = new Point[pointsCount];
             System.arraycopy(this.points, 0, result, 0, pointsCount);
             Path path = new Path(result);
@@ -184,17 +188,7 @@ public class Input {
 
         path.remainder = lastRemainder;
 
-        renderView.getPainting().paintStroke(path, clearBuffer, new Runnable() {
-            @Override
-            public void run() {
-                AndroidUtilities.runOnUIThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        lastRemainder = path.remainder;
-                        clearBuffer = false;
-                    }
-                });
-            }
-        });
+        renderView.getPainting().paintStroke(path, clearBuffer, () -> AndroidUtilities.runOnUIThread(() -> lastRemainder = path.remainder));
+        clearBuffer = false;
     }
 }

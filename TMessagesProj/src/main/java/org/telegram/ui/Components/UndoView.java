@@ -100,6 +100,8 @@ public class UndoView extends FrameLayout {
     public final static int ACTION_DICE_NO_SEND_INFO = 17;
     public final static int ACTION_TEXT_INFO = 18;
     public final static int ACTION_CACHE_WAS_CLEARED = 19;
+    public final static int ACTION_ADDED_TO_FOLDER = 20;
+    public final static int ACTION_REMOVED_FROM_FOLDER = 21;
 
     private CharSequence infoText;
 
@@ -215,7 +217,8 @@ public class UndoView extends FrameLayout {
     private boolean isTooltipAction() {
         return currentAction == ACTION_ARCHIVE_HIDDEN || currentAction == ACTION_ARCHIVE_HINT || currentAction == ACTION_ARCHIVE_FEW_HINT ||
                 currentAction == ACTION_ARCHIVE_PINNED || currentAction == ACTION_CONTACT_ADDED || currentAction == ACTION_OWNER_TRANSFERED_CHANNEL ||
-                currentAction == ACTION_OWNER_TRANSFERED_GROUP || currentAction == ACTION_QUIZ_CORRECT || currentAction == ACTION_QUIZ_INCORRECT || currentAction == ACTION_CACHE_WAS_CLEARED;
+                currentAction == ACTION_OWNER_TRANSFERED_GROUP || currentAction == ACTION_QUIZ_CORRECT || currentAction == ACTION_QUIZ_INCORRECT || currentAction == ACTION_CACHE_WAS_CLEARED ||
+                currentAction == ACTION_ADDED_TO_FOLDER || currentAction == ACTION_REMOVED_FROM_FOLDER;
     }
 
     private boolean hasSubInfo() {
@@ -291,18 +294,22 @@ public class UndoView extends FrameLayout {
     }
 
     public void showWithAction(long did, int action, Runnable actionRunnable) {
-        showWithAction(did, action, null, actionRunnable, null);
+        showWithAction(did, action, null, null, actionRunnable, null);
     }
 
     public void showWithAction(long did, int action, Object infoObject) {
-        showWithAction(did, action, infoObject, null, null);
+        showWithAction(did, action, infoObject, null, null, null);
     }
 
     public void showWithAction(long did, int action, Runnable actionRunnable, Runnable cancelRunnable) {
-        showWithAction(did, action, null, actionRunnable, cancelRunnable);
+        showWithAction(did, action, null, null, actionRunnable, cancelRunnable);
     }
 
     public void showWithAction(long did, int action, Object infoObject, Runnable actionRunnable, Runnable cancelRunnable) {
+        showWithAction(did, action, infoObject, null, actionRunnable, cancelRunnable);
+    }
+
+    public void showWithAction(long did, int action, Object infoObject, Object infoObject2, Runnable actionRunnable, Runnable cancelRunnable) {
         if (currentActionRunnable != null) {
             currentActionRunnable.run();
         }
@@ -338,6 +345,7 @@ public class UndoView extends FrameLayout {
             String subInfoText;
             int icon;
             int size = 36;
+            boolean iconIsDrawable = false;
             if (action == ACTION_OWNER_TRANSFERED_CHANNEL || action == ACTION_OWNER_TRANSFERED_GROUP) {
                 TLRPC.User user = (TLRPC.User) infoObject;
                 if (action == ACTION_OWNER_TRANSFERED_CHANNEL) {
@@ -375,6 +383,44 @@ public class UndoView extends FrameLayout {
                     subInfoText = null;
                 }
                 icon = R.raw.chats_infotip;
+            } else if (action == ACTION_ADDED_TO_FOLDER || action == ACTION_REMOVED_FROM_FOLDER) {
+                MessagesController.DialogFilter filter = (MessagesController.DialogFilter) infoObject2;
+                if (did != 0) {
+                    int lowerId = (int) did;
+                    if (lowerId == 0) {
+                        TLRPC.EncryptedChat encryptedChat = MessagesController.getInstance(currentAccount).getEncryptedChat((int) (did >> 32));
+                        lowerId = encryptedChat.user_id;
+                    }
+                    if (lowerId > 0) {
+                        TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(lowerId);
+                        if (action == ACTION_ADDED_TO_FOLDER) {
+                            infoText = AndroidUtilities.replaceTags(LocaleController.formatString("FilterUserAddedToExisting", R.string.FilterUserAddedToExisting, UserObject.getFirstName(user), filter.name));
+                        } else {
+                            infoText = AndroidUtilities.replaceTags(LocaleController.formatString("FilterUserRemovedFrom", R.string.FilterUserRemovedFrom, UserObject.getFirstName(user), filter.name));
+                        }
+                    } else {
+                        TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-lowerId);
+                        if (action == ACTION_ADDED_TO_FOLDER) {
+                            infoText = AndroidUtilities.replaceTags(LocaleController.formatString("FilterChatAddedToExisting", R.string.FilterChatAddedToExisting, chat.title, filter.name));
+                        } else {
+                            infoText = AndroidUtilities.replaceTags(LocaleController.formatString("FilterChatRemovedFrom", R.string.FilterChatRemovedFrom, chat.title, filter.name));
+                        }
+                    }
+                } else {
+                    if (action == ACTION_ADDED_TO_FOLDER) {
+                        infoText = AndroidUtilities.replaceTags(LocaleController.formatString("FilterChatsAddedToExisting", R.string.FilterChatsAddedToExisting, LocaleController.formatPluralString("Chats", (Integer) infoObject), filter.name));
+                    } else {
+                        infoText = AndroidUtilities.replaceTags(LocaleController.formatString("FilterChatsRemovedFrom", R.string.FilterChatsRemovedFrom, LocaleController.formatPluralString("Chats", (Integer) infoObject), filter.name));
+                    }
+                }
+                subInfoText = null;
+                icon = R.raw.contact_check;
+                /*iconIsDrawable = true;
+                if (action == ACTION_ADDED_TO_FOLDER) {
+                    icon = R.drawable.toast_folder;
+                } else {
+                    icon = R.drawable.toast_folder_minus;
+                }*/
             } else if (action == ACTION_CACHE_WAS_CLEARED) {
                 infoText = this.infoText;
                 subInfoText = null;
@@ -394,7 +440,11 @@ public class UndoView extends FrameLayout {
             }
 
             infoTextView.setText(infoText);
-            leftImageView.setAnimation(icon, size, size);
+            if (iconIsDrawable) {
+                leftImageView.setImageResource(icon);
+            } else {
+                leftImageView.setAnimation(icon, size, size);
+            }
 
             if (subInfoText != null) {
                 layoutParams.leftMargin = AndroidUtilities.dp(58);
@@ -418,8 +468,10 @@ public class UndoView extends FrameLayout {
             undoButton.setVisibility(GONE);
             leftImageView.setVisibility(VISIBLE);
 
-            leftImageView.setProgress(0);
-            leftImageView.playAnimation();
+            if (!iconIsDrawable) {
+                leftImageView.setProgress(0);
+                leftImageView.playAnimation();
+            }
         } else if (currentAction == ACTION_QR_SESSION_ACCEPTED) {
             TLRPC.TL_authorization authorization = (TLRPC.TL_authorization) infoObject;
 

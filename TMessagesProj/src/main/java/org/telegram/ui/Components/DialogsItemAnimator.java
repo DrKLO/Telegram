@@ -110,7 +110,7 @@ public class DialogsItemAnimator extends SimpleItemAnimator {
             mPendingMoves.clear();
             Runnable mover = () -> {
                 for (MoveInfo moveInfo : moves) {
-                    animateMoveImpl(moveInfo.holder, moveInfo.fromX, moveInfo.fromY, moveInfo.toX, moveInfo.toY);
+                    animateMoveImpl(moveInfo.holder, null, moveInfo.fromX, moveInfo.fromY, moveInfo.toX, moveInfo.toY);
                 }
                 moves.clear();
                 mMovesList.remove(moves);
@@ -148,7 +148,7 @@ public class DialogsItemAnimator extends SimpleItemAnimator {
     }
 
     @Override
-    public boolean animateRemove(final ViewHolder holder) {
+    public boolean animateRemove(final ViewHolder holder, ItemHolderInfo info) {
         resetAnimation(holder);
         mPendingRemovals.add(holder);
         return true;
@@ -288,7 +288,7 @@ public class DialogsItemAnimator extends SimpleItemAnimator {
     }
 
     @Override
-    public boolean animateMove(final ViewHolder holder, int fromX, int fromY,
+    public boolean animateMove(final ViewHolder holder, ItemHolderInfo info, int fromX, int fromY,
                                int toX, int toY) {
         final View view = holder.itemView;
         fromX += (int) holder.itemView.getTranslationX();
@@ -325,7 +325,7 @@ public class DialogsItemAnimator extends SimpleItemAnimator {
         }
     }
 
-    void animateMoveImpl(final ViewHolder holder, int fromX, int fromY, int toX, int toY) {
+    void animateMoveImpl(final ViewHolder holder, ItemHolderInfo info, int fromX, int fromY, int toX, int toY) {
         final View view = holder.itemView;
         final int deltaX = toX - fromX;
         final int deltaY = toY - fromY;
@@ -383,7 +383,7 @@ public class DialogsItemAnimator extends SimpleItemAnimator {
     }
 
     @Override
-    public boolean animateChange(ViewHolder oldHolder, ViewHolder newHolder, int fromX, int fromY, int toX, int toY) {
+    public boolean animateChange(ViewHolder oldHolder, ViewHolder newHolder,ItemHolderInfo info, int fromX, int fromY, int toX, int toY) {
         if (oldHolder.itemView instanceof DialogCell) {
             resetAnimation(oldHolder);
             resetAnimation(newHolder);

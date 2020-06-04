@@ -535,6 +535,9 @@ LOTCompLayerItem::LOTCompLayerItem(LOTLayerData *layerModel)
 {
     // 1. create layer item
     for (auto &i : mLayerData->mChildren) {
+        if (i->type() != LOTData::Type::Layer) {
+            continue;
+        }
         LOTLayerData *layerModel = static_cast<LOTLayerData *>(i.get());
         auto          layerItem = LOTCompItem::createLayerItem(layerModel);
         if (layerItem) mLayers.push_back(std::move(layerItem));

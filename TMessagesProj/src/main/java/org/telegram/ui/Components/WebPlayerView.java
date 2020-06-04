@@ -1762,7 +1762,7 @@ public class WebPlayerView extends ViewGroup implements VideoPlayer.VideoPlayerD
     }
 
     @Override
-    public void onError(Exception e) {
+    public void onError(VideoPlayer player, Exception e) {
         FileLog.e(e);
         onInitFailed();
     }

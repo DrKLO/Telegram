@@ -697,6 +697,7 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter {
                     if (user.username != null && user.username.length() > 0 && (usernameString.length() > 0 && user.username.toLowerCase().startsWith(usernameString) || usernameString.length() == 0)) {
                         newResult.add(user);
                         newResultsHashMap.put(user.id, user);
+                        newMap.put(user.id, user);
                         count++;
                     }
                     if (count == 5) {
@@ -1075,7 +1076,7 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter {
                 if (hasTop) {
                     position--;
                 }
-                ((ContextLinkCell) holder.itemView).setLink(searchResultBotContext.get(position), contextMedia, position != searchResultBotContext.size() - 1, hasTop && position == 0);
+                ((ContextLinkCell) holder.itemView).setLink(searchResultBotContext.get(position), foundContextBot, contextMedia, position != searchResultBotContext.size() - 1, hasTop && position == 0, "gif".equals(searchingContextUsername));
             }
         } else {
             if (searchResultUsernames != null) {

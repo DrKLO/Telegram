@@ -2053,12 +2053,20 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                         link = ((SharedLinkCell) view).getLink(0);
                     }
                     if (link != null) {
-                        Browser.openUrl(getParentActivity(), link);
+                        openUrl(link);
                     }
                 } catch (Exception e) {
                     FileLog.e(e);
                 }
             }
+        }
+    }
+
+    private void openUrl(String link) {
+        if (AndroidUtilities.shouldShowUrlInAlert(link)) {
+            AlertsCreator.showOpenUrlAlert(this, link, true, true);
+        } else {
+            Browser.openUrl(getParentActivity(), link);
         }
     }
 
@@ -2136,23 +2144,27 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
         }
 
         @Override
-        public void onLinkLongPress(final String urlFinal) {
-            BottomSheet.Builder builder = new BottomSheet.Builder(getParentActivity());
-            builder.setTitle(urlFinal);
-            builder.setItems(new CharSequence[]{LocaleController.getString("Open", R.string.Open), LocaleController.getString("Copy", R.string.Copy)}, (dialog, which) -> {
-                if (which == 0) {
-                    Browser.openUrl(getParentActivity(), urlFinal, true);
-                } else if (which == 1) {
-                    String url = urlFinal;
-                    if (url.startsWith("mailto:")) {
-                        url = url.substring(7);
-                    } else if (url.startsWith("tel:")) {
-                        url = url.substring(4);
+        public void onLinkPress(String urlFinal, boolean longPress) {
+            if (longPress) {
+                BottomSheet.Builder builder = new BottomSheet.Builder(getParentActivity());
+                builder.setTitle(urlFinal);
+                builder.setItems(new CharSequence[]{LocaleController.getString("Open", R.string.Open), LocaleController.getString("Copy", R.string.Copy)}, (dialog, which) -> {
+                    if (which == 0) {
+                        openUrl(urlFinal);
+                    } else if (which == 1) {
+                        String url = urlFinal;
+                        if (url.startsWith("mailto:")) {
+                            url = url.substring(7);
+                        } else if (url.startsWith("tel:")) {
+                            url = url.substring(4);
+                        }
+                        AndroidUtilities.addToClipboard(url);
                     }
-                    AndroidUtilities.addToClipboard(url);
-                }
-            });
-            showDialog(builder.create());
+                });
+                showDialog(builder.create());
+            } else {
+                openUrl(urlFinal);
+            }
         }
     };
 

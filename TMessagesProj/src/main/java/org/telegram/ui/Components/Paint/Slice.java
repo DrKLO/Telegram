@@ -84,8 +84,7 @@ public class Slice {
 
                 if (inflater.finished()) {
                     break;
-                }
-                else if (inflater.needsInput()) {
+                } else if (inflater.needsInput()) {
                     continue;
                 }
             }

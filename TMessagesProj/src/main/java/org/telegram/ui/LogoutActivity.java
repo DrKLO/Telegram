@@ -12,7 +12,6 @@ import android.animation.AnimatorSet;
 import android.app.Dialog;
 import android.content.Context;
 import android.content.DialogInterface;
-import android.text.TextUtils;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
@@ -142,11 +141,7 @@ public class LogoutActivity extends BaseFragment {
                 }
                 AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
                 UserConfig userConfig = getUserConfig();
-                if (!TextUtils.isEmpty(userConfig.tonEncryptedData) && userConfig.tonCreationFinished) {
-                    builder.setMessage(AndroidUtilities.replaceTags(LocaleController.getString("WalletTelegramLogout", R.string.WalletTelegramLogout)));
-                } else {
-                    builder.setMessage(LocaleController.getString("AreYouSureLogout", R.string.AreYouSureLogout));
-                }
+                builder.setMessage(LocaleController.getString("AreYouSureLogout", R.string.AreYouSureLogout));
                 builder.setTitle(LocaleController.getString("LogOut", R.string.LogOut));
                 builder.setPositiveButton(LocaleController.getString("LogOut", R.string.LogOut), (dialogInterface, i) -> MessagesController.getInstance(currentAccount).performLogout(1));
                 builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);

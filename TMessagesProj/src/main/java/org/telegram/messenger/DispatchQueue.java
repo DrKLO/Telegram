@@ -11,6 +11,7 @@ package org.telegram.messenger;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
+import android.os.SystemClock;
 
 import java.util.concurrent.CountDownLatch;
 
@@ -18,10 +19,17 @@ public class DispatchQueue extends Thread {
 
     private volatile Handler handler = null;
     private CountDownLatch syncLatch = new CountDownLatch(1);
+    private long lastTaskTime;
 
     public DispatchQueue(final String threadName) {
+        this(threadName, true);
+    }
+
+    public DispatchQueue(final String threadName, boolean start) {
         setName(threadName);
-        start();
+        if (start) {
+            start();
+        }
     }
 
     public void sendMessage(Message msg, int delay) {
@@ -59,6 +67,7 @@ public class DispatchQueue extends Thread {
 
     public void postRunnable(Runnable runnable) {
         postRunnable(runnable, 0);
+        lastTaskTime = SystemClock.elapsedRealtime();
     }
 
     public void postRunnable(Runnable runnable, long delay) {
@@ -85,6 +94,10 @@ public class DispatchQueue extends Thread {
 
     public void handleMessage(Message inputMessage) {
 
+    }
+
+    public long getLastTaskTime() {
+        return lastTaskTime;
     }
 
     public void recycle() {

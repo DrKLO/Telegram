@@ -114,6 +114,10 @@ public class BaseFragment {
         }
     }
 
+    protected boolean hideKeyboardOnShow() {
+        return true;
+    }
+
     protected void clearViews() {
         if (fragmentView != null) {
             ViewGroup parent = (ViewGroup) fragmentView.getParent();
@@ -373,6 +377,10 @@ public class BaseFragment {
         if (actionBar != null) {
             actionBar.onPause();
         }
+    }
+
+    protected void onTransitionAnimationProgress(boolean isOpen, float progress) {
+
     }
 
     protected void onTransitionAnimationStart(boolean isOpen, boolean backward) {

@@ -20,6 +20,8 @@ import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 
+import org.telegram.messenger.BuildVars;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -33,9 +35,9 @@ import java.util.List;
  * When RecyclerView needs direct access to the view group children, it can call unfiltered
  * methods like get getUnfilteredChildCount or getUnfilteredChildAt.
  */
-class ChildHelper {
+public class ChildHelper {
 
-    private static final boolean DEBUG = false;
+    private static final boolean DEBUG = BuildVars.DEBUG_VERSION;
 
     private static final String TAG = "ChildrenHelper";
 
@@ -56,7 +58,7 @@ class ChildHelper {
      *
      * @param child  View to hide.
      */
-    private void hideViewInternal(View child) {
+    public void hideViewInternal(View child) {
         mHiddenViews.add(child);
         mCallback.onEnteredHiddenState(child);
     }
@@ -66,7 +68,7 @@ class ChildHelper {
      *
      * @param child  View to hide.
      */
-    private boolean unhideViewInternal(View child) {
+    public boolean unhideViewInternal(View child) {
         if (mHiddenViews.remove(child)) {
             mCallback.onLeftHiddenState(child);
             return true;
@@ -75,7 +77,7 @@ class ChildHelper {
         }
     }
 
-    protected int getHiddenChildCount() {
+    public int getHiddenChildCount() {
         return mHiddenViews.size();
     }
 
@@ -260,7 +262,7 @@ class ChildHelper {
      * @return Number of children that are not hidden.
      * @see #getChildAt(int)
      */
-    int getChildCount() {
+    public int getChildCount() {
         return mCallback.getChildCount() - mHiddenViews.size();
     }
 

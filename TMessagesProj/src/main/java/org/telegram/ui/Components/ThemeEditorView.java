@@ -571,6 +571,11 @@ public class ThemeEditorView {
                             startColorChange(true);
                             int color = getColor();
                             for (int a = 0; a < currentThemeDesription.size(); a++) {
+                                ThemeDescription description = currentThemeDesription.get(a);
+                                String key = description.getCurrentKey();
+                                if (a == 0 && key.equals(Theme.key_chat_wallpaper) || key.equals(Theme.key_chat_wallpaper_gradient_to) || key.equals(Theme.key_windowBackgroundWhite) || key.equals(Theme.key_windowBackgroundGray)) {
+                                    color = 0xff000000 | color;
+                                }
                                 currentThemeDesription.get(a).setColor(color, false);
                             }
                             int red = Color.red(color);

@@ -279,7 +279,7 @@ public class MessagesStorage extends BaseController {
                 database.executeFast("CREATE INDEX IF NOT EXISTS uid_date_idx_scheduled_messages ON scheduled_messages(uid, date);").stepThis().dispose();
 
                 database.executeFast("CREATE TABLE messages(mid INTEGER PRIMARY KEY, uid INTEGER, read_state INTEGER, send_state INTEGER, date INTEGER, data BLOB, out INTEGER, ttl INTEGER, media INTEGER, replydata BLOB, imp INTEGER, mention INTEGER)").stepThis().dispose();
-                database.executeFast("CREATE INDEX IF NOT EXISTS uid_mid_idx_messages ON messages(uid, mid);").stepThis().dispose();
+                database.executeFast("CREATE INDEX IF NOT EXISTS uid_mid_read_out_idx_messages ON messages(uid, mid, read_state, out);").stepThis().dispose();
                 database.executeFast("CREATE INDEX IF NOT EXISTS uid_date_mid_idx_messages ON messages(uid, date, mid);").stepThis().dispose();
                 database.executeFast("CREATE INDEX IF NOT EXISTS mid_out_idx_messages ON messages(mid, out);").stepThis().dispose();
                 database.executeFast("CREATE INDEX IF NOT EXISTS task_idx_messages ON messages(uid, out, read_state, ttl, date, send_state);").stepThis().dispose();
@@ -3312,7 +3312,13 @@ public class MessagesStorage extends BaseController {
                         } else {
                             state.bindInteger(9, getMessageMediaType(message));
                         }
-                        state.bindInteger(10, 0);
+                        int flags = 0;
+                        if (message.stickerVerified == 0) {
+                            flags |= 1;
+                        } else if (message.stickerVerified == 2) {
+                            flags |= 2;
+                        }
+                        state.bindInteger(10, flags);
                         state.bindInteger(11, message.mentioned ? 1 : 0);
                         state.step();
 
@@ -4895,95 +4901,99 @@ public class MessagesStorage extends BaseController {
         return result[0];
     }
 
-    public TLRPC.ChatFull loadChatInfo(final int chat_id, final CountDownLatch countDownLatch, final boolean force, final boolean byChannelUsers) {
-        TLRPC.ChatFull[] result = new TLRPC.ChatFull[1];
-        storageQueue.postRunnable(() -> {
-            MessageObject pinnedMessageObject = null;
-            TLRPC.ChatFull info = null;
-            ArrayList<TLRPC.User> loadedUsers = new ArrayList<>();
-            try {
-                SQLiteCursor cursor = database.queryFinalized("SELECT info, pinned, online FROM chat_settings_v2 WHERE uid = " + chat_id);
-                if (cursor.next()) {
-                    NativeByteBuffer data = cursor.byteBufferValue(0);
-                    if (data != null) {
-                        info = TLRPC.ChatFull.TLdeserialize(data, data.readInt32(false), false);
-                        data.reuse();
-                        info.pinned_msg_id = cursor.intValue(1);
-                        info.online_count = cursor.intValue(2);
+    private TLRPC.ChatFull loadChatInfoInternal(final int chat_id, final boolean force, final boolean byChannelUsers) {
+        MessageObject pinnedMessageObject = null;
+        TLRPC.ChatFull info = null;
+        ArrayList<TLRPC.User> loadedUsers = new ArrayList<>();
+        try {
+            SQLiteCursor cursor = database.queryFinalized("SELECT info, pinned, online FROM chat_settings_v2 WHERE uid = " + chat_id);
+            if (cursor.next()) {
+                NativeByteBuffer data = cursor.byteBufferValue(0);
+                if (data != null) {
+                    info = TLRPC.ChatFull.TLdeserialize(data, data.readInt32(false), false);
+                    data.reuse();
+                    info.pinned_msg_id = cursor.intValue(1);
+                    info.online_count = cursor.intValue(2);
+                }
+            }
+            cursor.dispose();
+
+            if (info instanceof TLRPC.TL_chatFull) {
+                StringBuilder usersToLoad = new StringBuilder();
+                for (int a = 0; a < info.participants.participants.size(); a++) {
+                    TLRPC.ChatParticipant c = info.participants.participants.get(a);
+                    if (usersToLoad.length() != 0) {
+                        usersToLoad.append(",");
+                    }
+                    usersToLoad.append(c.user_id);
+                }
+                if (usersToLoad.length() != 0) {
+                    getUsersInternal(usersToLoad.toString(), loadedUsers);
+                }
+            } else if (info instanceof TLRPC.TL_channelFull) {
+                cursor = database.queryFinalized("SELECT us.data, us.status, cu.data, cu.date FROM channel_users_v2 as cu LEFT JOIN users as us ON us.uid = cu.uid WHERE cu.did = " + (-chat_id) + " ORDER BY cu.date DESC");
+                info.participants = new TLRPC.TL_chatParticipants();
+                while (cursor.next()) {
+                    try {
+                        TLRPC.User user = null;
+                        TLRPC.ChannelParticipant participant = null;
+                        NativeByteBuffer data = cursor.byteBufferValue(0);
+                        if (data != null) {
+                            user = TLRPC.User.TLdeserialize(data, data.readInt32(false), false);
+                            data.reuse();
+                        }
+                        data = cursor.byteBufferValue(2);
+                        if (data != null) {
+                            participant = TLRPC.ChannelParticipant.TLdeserialize(data, data.readInt32(false), false);
+                            data.reuse();
+                        }
+                        if (user != null && participant != null) {
+                            if (user.status != null) {
+                                user.status.expires = cursor.intValue(1);
+                            }
+                            loadedUsers.add(user);
+                            participant.date = cursor.intValue(3);
+                            TLRPC.TL_chatChannelParticipant chatChannelParticipant = new TLRPC.TL_chatChannelParticipant();
+                            chatChannelParticipant.user_id = participant.user_id;
+                            chatChannelParticipant.date = participant.date;
+                            chatChannelParticipant.inviter_id = participant.inviter_id;
+                            chatChannelParticipant.channelParticipant = participant;
+                            info.participants.participants.add(chatChannelParticipant);
+                        }
+                    } catch (Exception e) {
+                        FileLog.e(e);
                     }
                 }
                 cursor.dispose();
+                StringBuilder usersToLoad = new StringBuilder();
+                for (int a = 0; a < info.bot_info.size(); a++) {
+                    TLRPC.BotInfo botInfo = info.bot_info.get(a);
+                    if (usersToLoad.length() != 0) {
+                        usersToLoad.append(",");
+                    }
+                    usersToLoad.append(botInfo.user_id);
+                }
+                if (usersToLoad.length() != 0) {
+                    getUsersInternal(usersToLoad.toString(), loadedUsers);
+                }
+            }
+            if (info != null && info.pinned_msg_id != 0) {
+                pinnedMessageObject = getMediaDataController().loadPinnedMessage(-chat_id, info instanceof TLRPC.TL_channelFull ? chat_id : 0, info.pinned_msg_id, false);
+            }
+        } catch (Exception e) {
+            FileLog.e(e);
+        } finally {
+            getMessagesController().processChatInfo(chat_id, info, loadedUsers, true, force, byChannelUsers, pinnedMessageObject);
+        }
+        return info;
+    }
 
-                if (info instanceof TLRPC.TL_chatFull) {
-                    StringBuilder usersToLoad = new StringBuilder();
-                    for (int a = 0; a < info.participants.participants.size(); a++) {
-                        TLRPC.ChatParticipant c = info.participants.participants.get(a);
-                        if (usersToLoad.length() != 0) {
-                            usersToLoad.append(",");
-                        }
-                        usersToLoad.append(c.user_id);
-                    }
-                    if (usersToLoad.length() != 0) {
-                        getUsersInternal(usersToLoad.toString(), loadedUsers);
-                    }
-                } else if (info instanceof TLRPC.TL_channelFull) {
-                    cursor = database.queryFinalized("SELECT us.data, us.status, cu.data, cu.date FROM channel_users_v2 as cu LEFT JOIN users as us ON us.uid = cu.uid WHERE cu.did = " + (-chat_id) + " ORDER BY cu.date DESC");
-                    info.participants = new TLRPC.TL_chatParticipants();
-                    while (cursor.next()) {
-                        try {
-                            TLRPC.User user = null;
-                            TLRPC.ChannelParticipant participant = null;
-                            NativeByteBuffer data = cursor.byteBufferValue(0);
-                            if (data != null) {
-                                user = TLRPC.User.TLdeserialize(data, data.readInt32(false), false);
-                                data.reuse();
-                            }
-                            data = cursor.byteBufferValue(2);
-                            if (data != null) {
-                                participant = TLRPC.ChannelParticipant.TLdeserialize(data, data.readInt32(false), false);
-                                data.reuse();
-                            }
-                            if (user != null && participant != null) {
-                                if (user.status != null) {
-                                    user.status.expires = cursor.intValue(1);
-                                }
-                                loadedUsers.add(user);
-                                participant.date = cursor.intValue(3);
-                                TLRPC.TL_chatChannelParticipant chatChannelParticipant = new TLRPC.TL_chatChannelParticipant();
-                                chatChannelParticipant.user_id = participant.user_id;
-                                chatChannelParticipant.date = participant.date;
-                                chatChannelParticipant.inviter_id = participant.inviter_id;
-                                chatChannelParticipant.channelParticipant = participant;
-                                info.participants.participants.add(chatChannelParticipant);
-                            }
-                        } catch (Exception e) {
-                            FileLog.e(e);
-                        }
-                    }
-                    cursor.dispose();
-                    StringBuilder usersToLoad = new StringBuilder();
-                    for (int a = 0; a < info.bot_info.size(); a++) {
-                        TLRPC.BotInfo botInfo = info.bot_info.get(a);
-                        if (usersToLoad.length() != 0) {
-                            usersToLoad.append(",");
-                        }
-                        usersToLoad.append(botInfo.user_id);
-                    }
-                    if (usersToLoad.length() != 0) {
-                        getUsersInternal(usersToLoad.toString(), loadedUsers);
-                    }
-                }
-                if (info != null && info.pinned_msg_id != 0) {
-                    pinnedMessageObject = getMediaDataController().loadPinnedMessage(-chat_id, info instanceof TLRPC.TL_channelFull ? chat_id : 0, info.pinned_msg_id, false);
-                }
-            } catch (Exception e) {
-                FileLog.e(e);
-            } finally {
-                result[0] = info;
-                getMessagesController().processChatInfo(chat_id, info, loadedUsers, true, force, byChannelUsers, pinnedMessageObject);
-                if (countDownLatch != null) {
-                    countDownLatch.countDown();
-                }
+    public TLRPC.ChatFull loadChatInfo(final int chat_id, final CountDownLatch countDownLatch, final boolean force, final boolean byChannelUsers) {
+        TLRPC.ChatFull[] result = new TLRPC.ChatFull[1];
+        storageQueue.postRunnable(() -> {
+            result[0] = loadChatInfoInternal(chat_id, force, byChannelUsers);
+            if (countDownLatch != null) {
+                countDownLatch.countDown();
             }
         });
         if (countDownLatch != null) {
@@ -5621,70 +5631,522 @@ public class MessagesStorage extends BaseController {
         });
     }
 
-    public void getMessages(final long dialog_id, final int count, final int max_id, final int offset_date, final int minDate, final int classGuid, final int load_type, final boolean isChannel, final boolean scheduled, final int loadIndex) {
-        storageQueue.postRunnable(() -> {
-            TLRPC.TL_messages_messages res = new TLRPC.TL_messages_messages();
-            int currentUserId = getUserConfig().clientUserId;
-            int count_unread = 0;
-            int mentions_unread = 0;
-            int count_query = count;
-            int offset_query = 0;
-            int min_unread_id = 0;
-            int last_message_id = 0;
-            boolean queryFromServer = false;
-            int max_unread_date = 0;
-            long messageMaxId = max_id;
-            int max_id_query = max_id;
-            boolean unreadCountIsLocal = false;
-            int max_id_override = max_id;
-            int channelId = 0;
-            if (isChannel) {
-                channelId = -(int) dialog_id;
-            }
-            if (messageMaxId != 0 && channelId != 0) {
-                messageMaxId |= ((long) channelId) << 32;
-            }
-            boolean isEnd = false;
-            int num = dialog_id == 777000 ? 10 : 1;
-            try {
-                ArrayList<Integer> usersToLoad = new ArrayList<>();
-                ArrayList<Integer> chatsToLoad = new ArrayList<>();
-                ArrayList<Long> replyMessages = new ArrayList<>();
-                SparseArray<ArrayList<TLRPC.Message>> replyMessageOwners = new SparseArray<>();
-                LongSparseArray<ArrayList<TLRPC.Message>> replyMessageRandomOwners = new LongSparseArray<>();
-                SQLiteCursor cursor;
-                if (scheduled) {
+    public Runnable getMessagesInternal(long dialogId, long mergeDialogId, int count, int max_id, int offset_date, int minDate, int classGuid, int load_type, boolean isChannel, boolean scheduled, int loadIndex) {
+        TLRPC.TL_messages_messages res = new TLRPC.TL_messages_messages();
+        int currentUserId = getUserConfig().clientUserId;
+        int count_unread = 0;
+        int mentions_unread = 0;
+        int count_query = count;
+        int offset_query = 0;
+        int min_unread_id = 0;
+        int last_message_id = 0;
+        boolean queryFromServer = false;
+        int max_unread_date = 0;
+        long messageMaxId = max_id;
+        int max_id_query = max_id;
+        boolean unreadCountIsLocal = false;
+        int max_id_override = max_id;
+        int channelId = 0;
+        if (isChannel) {
+            channelId = -(int) dialogId;
+        }
+        if (messageMaxId != 0 && channelId != 0) {
+            messageMaxId |= ((long) channelId) << 32;
+        }
+        boolean isEnd = false;
+        int num = dialogId == 777000 ? 10 : 1;
+        try {
+            ArrayList<Integer> usersToLoad = new ArrayList<>();
+            ArrayList<Integer> chatsToLoad = new ArrayList<>();
+            ArrayList<Long> replyMessages = new ArrayList<>();
+            SparseArray<ArrayList<TLRPC.Message>> replyMessageOwners = new SparseArray<>();
+            LongSparseArray<ArrayList<TLRPC.Message>> replyMessageRandomOwners = new LongSparseArray<>();
+            SQLiteCursor cursor;
+            if (scheduled) {
+                isEnd = true;
+                cursor = database.queryFinalized(String.format(Locale.US, "SELECT m.data, m.send_state, m.mid, m.date, r.random_id, m.replydata, m.ttl FROM scheduled_messages as m LEFT JOIN randoms as r ON r.mid = m.mid WHERE m.uid = %d ORDER BY m.date DESC", dialogId));
+                while (cursor.next()) {
+                    NativeByteBuffer data = cursor.byteBufferValue(0);
+                    if (data != null) {
+                        TLRPC.Message message = TLRPC.Message.TLdeserialize(data, data.readInt32(false), false);
+                        message.send_state = cursor.intValue(1);
+                        message.id = cursor.intValue(2);
+                        if (message.id > 0 && message.send_state != 0 && message.send_state != 3) {
+                            message.send_state = 0;
+                        }
+                        if (dialogId == currentUserId) {
+                            message.out = true;
+                            message.unread = false;
+                        } else {
+                            message.unread = true;
+                        }
+                        message.readAttachPath(data, currentUserId);
+                        data.reuse();
+                        message.date = cursor.intValue(3);
+                        message.dialog_id = dialogId;
+                        if (message.ttl == 0) {
+                            message.ttl = cursor.intValue(6);
+                        }
+                        res.messages.add(message);
+
+                        addUsersAndChatsFromMessage(message, usersToLoad, chatsToLoad);
+
+                        if (message.reply_to_msg_id != 0 || message.reply_to_random_id != 0) {
+                            if (!cursor.isNull(5)) {
+                                data = cursor.byteBufferValue(5);
+                                if (data != null) {
+                                    message.replyMessage = TLRPC.Message.TLdeserialize(data, data.readInt32(false), false);
+                                    message.replyMessage.readAttachPath(data, currentUserId);
+                                    data.reuse();
+                                    if (message.replyMessage != null) {
+                                        if (MessageObject.isMegagroup(message)) {
+                                            message.replyMessage.flags |= TLRPC.MESSAGE_FLAG_MEGAGROUP;
+                                        }
+                                        addUsersAndChatsFromMessage(message.replyMessage, usersToLoad, chatsToLoad);
+                                    }
+                                }
+                            }
+                            if (message.replyMessage == null) {
+                                if (message.reply_to_msg_id != 0) {
+                                    long messageId = message.reply_to_msg_id;
+                                    if (message.to_id.channel_id != 0) {
+                                        messageId |= ((long) message.to_id.channel_id) << 32;
+                                    }
+                                    if (!replyMessages.contains(messageId)) {
+                                        replyMessages.add(messageId);
+                                    }
+                                    ArrayList<TLRPC.Message> messages = replyMessageOwners.get(message.reply_to_msg_id);
+                                    if (messages == null) {
+                                        messages = new ArrayList<>();
+                                        replyMessageOwners.put(message.reply_to_msg_id, messages);
+                                    }
+                                    messages.add(message);
+                                } else {
+                                    if (!replyMessages.contains(message.reply_to_random_id)) {
+                                        replyMessages.add(message.reply_to_random_id);
+                                    }
+                                    ArrayList<TLRPC.Message> messages = replyMessageRandomOwners.get(message.reply_to_random_id);
+                                    if (messages == null) {
+                                        messages = new ArrayList<>();
+                                        replyMessageRandomOwners.put(message.reply_to_random_id, messages);
+                                    }
+                                    messages.add(message);
+                                }
+                            }
+                        }
+                    }
+                }
+                cursor.dispose();
+            } else {
+                int lower_id = (int) dialogId;
+                if (lower_id != 0) {
+                    if (load_type == 3 && minDate == 0) {
+                        cursor = database.queryFinalized("SELECT inbox_max, unread_count, date, unread_count_i FROM dialogs WHERE did = " + dialogId);
+                        if (cursor.next()) {
+                            min_unread_id = cursor.intValue(0) + 1;
+                            count_unread = cursor.intValue(1);
+                            max_unread_date = cursor.intValue(2);
+                            mentions_unread = cursor.intValue(3);
+                        }
+                        cursor.dispose();
+                    } else if (load_type != 1 && load_type != 3 && load_type != 4 && minDate == 0) {
+                        if (load_type == 2) {
+                            cursor = database.queryFinalized("SELECT inbox_max, unread_count, date, unread_count_i FROM dialogs WHERE did = " + dialogId);
+                            if (cursor.next()) {
+                                messageMaxId = max_id_query = min_unread_id = cursor.intValue(0);
+                                count_unread = cursor.intValue(1);
+                                max_unread_date = cursor.intValue(2);
+                                mentions_unread = cursor.intValue(3);
+                                queryFromServer = true;
+                                if (messageMaxId != 0 && channelId != 0) {
+                                    messageMaxId |= ((long) channelId) << 32;
+                                }
+                                if (dialogId == currentUserId) {
+                                    count_unread = 0;
+                                }
+                            }
+                            cursor.dispose();
+                            if (!queryFromServer) {
+                                cursor = database.queryFinalized(String.format(Locale.US, "SELECT min(mid), max(date) FROM messages WHERE uid = %d AND out = 0 AND read_state IN(0,2) AND mid > 0", dialogId));
+                                if (cursor.next()) {
+                                    min_unread_id = cursor.intValue(0);
+                                    max_unread_date = cursor.intValue(1);
+                                }
+                                cursor.dispose();
+                                if (min_unread_id != 0) {
+                                    cursor = database.queryFinalized(String.format(Locale.US, "SELECT COUNT(*) FROM messages WHERE uid = %d AND mid >= %d AND out = 0 AND read_state IN(0,2)", dialogId, min_unread_id));
+                                    if (cursor.next()) {
+                                        count_unread = cursor.intValue(0);
+                                    }
+                                    cursor.dispose();
+                                }
+                            } else if (max_id_query == 0) {
+                                int existingUnreadCount = 0;
+                                cursor = database.queryFinalized(String.format(Locale.US, "SELECT COUNT(*) FROM messages WHERE uid = %d AND mid > 0 AND out = 0 AND read_state IN(0,2)", dialogId));
+                                if (cursor.next()) {
+                                    existingUnreadCount = cursor.intValue(0);
+                                }
+                                cursor.dispose();
+                                if (existingUnreadCount == count_unread) {
+                                    cursor = database.queryFinalized(String.format(Locale.US, "SELECT min(mid) FROM messages WHERE uid = %d AND out = 0 AND read_state IN(0,2) AND mid > 0", dialogId));
+                                    if (cursor.next()) {
+                                        messageMaxId = max_id_query = min_unread_id = cursor.intValue(0);
+                                        if (messageMaxId != 0 && channelId != 0) {
+                                            messageMaxId |= ((long) channelId) << 32;
+                                        }
+                                    }
+                                    cursor.dispose();
+                                }
+                            } else {
+                                cursor = database.queryFinalized(String.format(Locale.US, "SELECT start, end FROM messages_holes WHERE uid = %d AND start < %d AND end > %d", dialogId, max_id_query, max_id_query));
+                                boolean containMessage = !cursor.next();
+                                cursor.dispose();
+
+                                if (containMessage) {
+                                    cursor = database.queryFinalized(String.format(Locale.US, "SELECT min(mid) FROM messages WHERE uid = %d AND out = 0 AND read_state IN(0,2) AND mid > %d", dialogId, max_id_query));
+                                    if (cursor.next()) {
+                                        messageMaxId = max_id_query = cursor.intValue(0);
+                                        if (messageMaxId != 0 && channelId != 0) {
+                                            messageMaxId |= ((long) channelId) << 32;
+                                        }
+                                    }
+                                    cursor.dispose();
+                                }
+                            }
+                        }
+
+                        if (count_query > count_unread || count_unread < num) {
+                            count_query = Math.max(count_query, count_unread + 10);
+                            if (count_unread < num) {
+                                count_unread = 0;
+                                min_unread_id = 0;
+                                messageMaxId = 0;
+                                last_message_id = 0;
+                                queryFromServer = false;
+                            }
+                        } else {
+                            offset_query = count_unread - count_query;
+                            count_query += 10;
+                        }
+                    }
+
+                    cursor = database.queryFinalized(String.format(Locale.US, "SELECT start FROM messages_holes WHERE uid = %d AND start IN (0, 1)", dialogId));
+                    if (cursor.next()) {
+                        isEnd = cursor.intValue(0) == 1;
+                        cursor.dispose();
+                    } else {
+                        cursor.dispose();
+                        cursor = database.queryFinalized(String.format(Locale.US, "SELECT min(mid) FROM messages WHERE uid = %d AND mid > 0", dialogId));
+                        if (cursor.next()) {
+                            int mid = cursor.intValue(0);
+                            if (mid != 0) {
+                                SQLitePreparedStatement state = database.executeFast("REPLACE INTO messages_holes VALUES(?, ?, ?)");
+                                state.requery();
+                                state.bindLong(1, dialogId);
+                                state.bindInteger(2, 0);
+                                state.bindInteger(3, mid);
+                                state.step();
+                                state.dispose();
+                            }
+                        }
+                        cursor.dispose();
+                    }
+
+                    if (load_type == 3 || load_type == 4 || queryFromServer && load_type == 2) {
+                        cursor = database.queryFinalized(String.format(Locale.US, "SELECT max(mid) FROM messages WHERE uid = %d AND mid > 0", dialogId));
+                        if (cursor.next()) {
+                            last_message_id = cursor.intValue(0);
+                        }
+                        cursor.dispose();
+
+                        if (load_type == 4 && offset_date != 0) {
+                            int startMid;
+                            int endMid;
+
+                            cursor = database.queryFinalized(String.format(Locale.US, "SELECT max(mid) FROM messages WHERE uid = %d AND date <= %d AND mid > 0", dialogId, offset_date));
+                            if (cursor.next()) {
+                                startMid = cursor.intValue(0);
+                            } else {
+                                startMid = -1;
+                            }
+                            cursor.dispose();
+                            cursor = database.queryFinalized(String.format(Locale.US, "SELECT min(mid) FROM messages WHERE uid = %d AND date >= %d AND mid > 0", dialogId, offset_date));
+                            if (cursor.next()) {
+                                endMid = cursor.intValue(0);
+                            } else {
+                                endMid = -1;
+                            }
+                            cursor.dispose();
+                            if (startMid != -1 && endMid != -1) {
+                                if (startMid == endMid) {
+                                    max_id_query = startMid;
+                                } else {
+                                    cursor = database.queryFinalized(String.format(Locale.US, "SELECT start FROM messages_holes WHERE uid = %d AND start <= %d AND end > %d", dialogId, startMid, startMid));
+                                    if (cursor.next()) {
+                                        startMid = -1;
+                                    }
+                                    cursor.dispose();
+                                    if (startMid != -1) {
+                                        cursor = database.queryFinalized(String.format(Locale.US, "SELECT start FROM messages_holes WHERE uid = %d AND start <= %d AND end > %d", dialogId, endMid, endMid));
+                                        if (cursor.next()) {
+                                            endMid = -1;
+                                        }
+                                        cursor.dispose();
+                                        if (endMid != -1) {
+                                            max_id_override = endMid;
+                                            messageMaxId = max_id_query = endMid;
+                                            if (messageMaxId != 0 && channelId != 0) {
+                                                messageMaxId |= ((long) channelId) << 32;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        boolean containMessage = max_id_query != 0;
+                        if (containMessage) {
+                            cursor = database.queryFinalized(String.format(Locale.US, "SELECT start FROM messages_holes WHERE uid = %d AND start < %d AND end > %d", dialogId, max_id_query, max_id_query));
+                            if (cursor.next()) {
+                                containMessage = false;
+                            }
+                            cursor.dispose();
+                        }
+
+                        if (containMessage) {
+                            long holeMessageMaxId = 0;
+                            long holeMessageMinId = 1;
+                            cursor = database.queryFinalized(String.format(Locale.US, "SELECT start FROM messages_holes WHERE uid = %d AND start >= %d ORDER BY start ASC LIMIT 1", dialogId, max_id_query));
+                            if (cursor.next()) {
+                                holeMessageMaxId = cursor.intValue(0);
+                                if (channelId != 0) {
+                                    holeMessageMaxId |= ((long) channelId) << 32;
+                                }
+                            }
+                            cursor.dispose();
+                            cursor = database.queryFinalized(String.format(Locale.US, "SELECT end FROM messages_holes WHERE uid = %d AND end <= %d ORDER BY end DESC LIMIT 1", dialogId, max_id_query));
+                            if (cursor.next()) {
+                                holeMessageMinId = cursor.intValue(0);
+                                if (channelId != 0) {
+                                    holeMessageMinId |= ((long) channelId) << 32;
+                                }
+                            }
+                            cursor.dispose();
+                            if (holeMessageMaxId != 0 || holeMessageMinId != 1) {
+                                if (holeMessageMaxId == 0) {
+                                    holeMessageMaxId = 1000000000;
+                                    if (channelId != 0) {
+                                        holeMessageMaxId |= ((long) channelId) << 32;
+                                    }
+                                }
+                                cursor = database.queryFinalized(String.format(Locale.US, "SELECT * FROM (SELECT m.read_state, m.data, m.send_state, m.mid, m.date, r.random_id, m.replydata, m.media, m.ttl, m.mention, m.imp FROM messages as m LEFT JOIN randoms as r ON r.mid = m.mid WHERE m.uid = %d AND m.mid <= %d AND (m.mid >= %d OR m.mid < 0) ORDER BY m.date DESC, m.mid DESC LIMIT %d) UNION " +
+                                        "SELECT * FROM (SELECT m.read_state, m.data, m.send_state, m.mid, m.date, r.random_id, m.replydata, m.media, m.ttl, m.mention, m.imp FROM messages as m LEFT JOIN randoms as r ON r.mid = m.mid WHERE m.uid = %d AND m.mid > %d AND (m.mid <= %d OR m.mid < 0) ORDER BY m.date ASC, m.mid ASC LIMIT %d)", dialogId, messageMaxId, holeMessageMinId, count_query / 2, dialogId, messageMaxId, holeMessageMaxId, count_query / 2));
+                            } else {
+                                cursor = database.queryFinalized(String.format(Locale.US, "SELECT * FROM (SELECT m.read_state, m.data, m.send_state, m.mid, m.date, r.random_id, m.replydata, m.media, m.ttl, m.mention, m.imp FROM messages as m LEFT JOIN randoms as r ON r.mid = m.mid WHERE m.uid = %d AND m.mid <= %d ORDER BY m.date DESC, m.mid DESC LIMIT %d) UNION " +
+                                        "SELECT * FROM (SELECT m.read_state, m.data, m.send_state, m.mid, m.date, r.random_id, m.replydata, m.media, m.ttl, m.mention, m.imp FROM messages as m LEFT JOIN randoms as r ON r.mid = m.mid WHERE m.uid = %d AND m.mid > %d ORDER BY m.date ASC, m.mid ASC LIMIT %d)", dialogId, messageMaxId, count_query / 2, dialogId, messageMaxId, count_query / 2));
+                            }
+                        } else {
+                            if (load_type == 2) {
+                                int existingUnreadCount = 0;
+                                cursor = database.queryFinalized(String.format(Locale.US, "SELECT COUNT(*) FROM messages WHERE uid = %d AND mid != 0 AND out = 0 AND read_state IN(0,2)", dialogId));
+                                if (cursor.next()) {
+                                    existingUnreadCount = cursor.intValue(0);
+                                }
+                                cursor.dispose();
+                                if (existingUnreadCount == count_unread) {
+                                    unreadCountIsLocal = true;
+                                    cursor = database.queryFinalized(String.format(Locale.US, "SELECT * FROM (SELECT m.read_state, m.data, m.send_state, m.mid, m.date, r.random_id, m.replydata, m.media, m.ttl, m.mention, m.imp FROM messages as m LEFT JOIN randoms as r ON r.mid = m.mid WHERE m.uid = %d AND m.mid <= %d ORDER BY m.date DESC, m.mid DESC LIMIT %d) UNION " +
+                                            "SELECT * FROM (SELECT m.read_state, m.data, m.send_state, m.mid, m.date, r.random_id, m.replydata, m.media, m.ttl, m.mention, m.imp FROM messages as m LEFT JOIN randoms as r ON r.mid = m.mid WHERE m.uid = %d AND m.mid > %d ORDER BY m.date ASC, m.mid ASC LIMIT %d)", dialogId, messageMaxId, count_query / 2, dialogId, messageMaxId, count_query / 2));
+                                } else {
+                                    cursor = null;
+                                }
+                            } else {
+                                cursor = null;
+                            }
+                        }
+                    } else if (load_type == 1) {
+                        long holeMessageId = 0;
+                        cursor = database.queryFinalized(String.format(Locale.US, "SELECT start, end FROM messages_holes WHERE uid = %d AND start >= %d AND start != 1 AND end != 1 ORDER BY start ASC LIMIT 1", dialogId, max_id));
+                        if (cursor.next()) {
+                            holeMessageId = cursor.intValue(0);
+                            if (channelId != 0) {
+                                holeMessageId |= ((long) channelId) << 32;
+                            }
+                        }
+                        cursor.dispose();
+                        if (holeMessageId != 0) {
+                            cursor = database.queryFinalized(String.format(Locale.US, "SELECT m.read_state, m.data, m.send_state, m.mid, m.date, r.random_id, m.replydata, m.media, m.ttl, m.mention, m.imp FROM messages as m LEFT JOIN randoms as r ON r.mid = m.mid WHERE m.uid = %d AND m.date >= %d AND m.mid > %d AND m.mid <= %d ORDER BY m.date ASC, m.mid ASC LIMIT %d", dialogId, minDate, messageMaxId, holeMessageId, count_query));
+                        } else {
+                            cursor = database.queryFinalized(String.format(Locale.US, "SELECT m.read_state, m.data, m.send_state, m.mid, m.date, r.random_id, m.replydata, m.media, m.ttl, m.mention, m.imp FROM messages as m LEFT JOIN randoms as r ON r.mid = m.mid WHERE m.uid = %d AND m.date >= %d AND m.mid > %d ORDER BY m.date ASC, m.mid ASC LIMIT %d", dialogId, minDate, messageMaxId, count_query));
+                        }
+                    } else if (minDate != 0) {
+                        if (messageMaxId != 0) {
+                            long holeMessageId = 0;
+                            cursor = database.queryFinalized(String.format(Locale.US, "SELECT end FROM messages_holes WHERE uid = %d AND end <= %d ORDER BY end DESC LIMIT 1", dialogId, max_id));
+                            if (cursor.next()) {
+                                holeMessageId = cursor.intValue(0);
+                                if (channelId != 0) {
+                                    holeMessageId |= ((long) channelId) << 32;
+                                }
+                            }
+                            cursor.dispose();
+                            if (holeMessageId != 0) {
+                                cursor = database.queryFinalized(String.format(Locale.US, "SELECT m.read_state, m.data, m.send_state, m.mid, m.date, r.random_id, m.replydata, m.media, m.ttl, m.mention, m.imp FROM messages as m LEFT JOIN randoms as r ON r.mid = m.mid WHERE m.uid = %d AND m.date <= %d AND m.mid < %d AND (m.mid >= %d OR m.mid < 0) ORDER BY m.date DESC, m.mid DESC LIMIT %d", dialogId, minDate, messageMaxId, holeMessageId, count_query));
+                            } else {
+                                cursor = database.queryFinalized(String.format(Locale.US, "SELECT m.read_state, m.data, m.send_state, m.mid, m.date, r.random_id, m.replydata, m.media, m.ttl, m.mention, m.imp FROM messages as m LEFT JOIN randoms as r ON r.mid = m.mid WHERE m.uid = %d AND m.date <= %d AND m.mid < %d ORDER BY m.date DESC, m.mid DESC LIMIT %d", dialogId, minDate, messageMaxId, count_query));
+                            }
+                        } else {
+                            cursor = database.queryFinalized(String.format(Locale.US, "SELECT m.read_state, m.data, m.send_state, m.mid, m.date, r.random_id, m.replydata, m.media, m.ttl, m.mention, m.imp FROM messages as m LEFT JOIN randoms as r ON r.mid = m.mid WHERE m.uid = %d AND m.date <= %d ORDER BY m.date DESC, m.mid DESC LIMIT %d,%d", dialogId, minDate, offset_query, count_query));
+                        }
+                    } else {
+                        cursor = database.queryFinalized(String.format(Locale.US, "SELECT max(mid) FROM messages WHERE uid = %d AND mid > 0", dialogId));
+                        if (cursor.next()) {
+                            last_message_id = cursor.intValue(0);
+                        }
+                        cursor.dispose();
+
+                        long holeMessageId = 0;
+                        cursor = database.queryFinalized(String.format(Locale.US, "SELECT max(end) FROM messages_holes WHERE uid = %d", dialogId));
+                        if (cursor.next()) {
+                            holeMessageId = cursor.intValue(0);
+                            if (channelId != 0) {
+                                holeMessageId |= ((long) channelId) << 32;
+                            }
+                        }
+                        cursor.dispose();
+                        if (holeMessageId != 0) {
+                            cursor = database.queryFinalized(String.format(Locale.US, "SELECT m.read_state, m.data, m.send_state, m.mid, m.date, r.random_id, m.replydata, m.media, m.ttl, m.mention, m.imp FROM messages as m LEFT JOIN randoms as r ON r.mid = m.mid WHERE m.uid = %d AND (m.mid >= %d OR m.mid < 0) ORDER BY m.date DESC, m.mid DESC LIMIT %d,%d", dialogId, holeMessageId, offset_query, count_query));
+                        } else {
+                            cursor = database.queryFinalized(String.format(Locale.US, "SELECT m.read_state, m.data, m.send_state, m.mid, m.date, r.random_id, m.replydata, m.media, m.ttl, m.mention, m.imp FROM messages as m LEFT JOIN randoms as r ON r.mid = m.mid WHERE m.uid = %d ORDER BY m.date DESC, m.mid DESC LIMIT %d,%d", dialogId, offset_query, count_query));
+                        }
+                    }
+                } else {
                     isEnd = true;
-                    cursor = database.queryFinalized(String.format(Locale.US, "SELECT m.data, m.send_state, m.mid, m.date, r.random_id, m.replydata, m.ttl FROM scheduled_messages as m LEFT JOIN randoms as r ON r.mid = m.mid WHERE m.uid = %d ORDER BY m.date DESC", dialog_id));
+
+                    if (load_type == 3 && minDate == 0) {
+                        cursor = database.queryFinalized(String.format(Locale.US, "SELECT min(mid) FROM messages WHERE uid = %d AND mid < 0", dialogId));
+                        if (cursor.next()) {
+                            min_unread_id = cursor.intValue(0);
+                        }
+                        cursor.dispose();
+
+                        int min_unread_id2 = 0;
+                        cursor = database.queryFinalized(String.format(Locale.US, "SELECT max(mid), max(date) FROM messages WHERE uid = %d AND out = 0 AND read_state IN(0,2) AND mid < 0", dialogId));
+                        if (cursor.next()) {
+                            min_unread_id2 = cursor.intValue(0);
+                            max_unread_date = cursor.intValue(1);
+                        }
+                        cursor.dispose();
+                        if (min_unread_id2 != 0) {
+                            min_unread_id = min_unread_id2;
+                            cursor = database.queryFinalized(String.format(Locale.US, "SELECT COUNT(*) FROM messages WHERE uid = %d AND mid <= %d AND out = 0 AND read_state IN(0,2)", dialogId, min_unread_id2));
+                            if (cursor.next()) {
+                                count_unread = cursor.intValue(0);
+                            }
+                            cursor.dispose();
+                        }
+                    }
+
+                    if (load_type == 3 || load_type == 4) {
+                        cursor = database.queryFinalized(String.format(Locale.US, "SELECT min(mid) FROM messages WHERE uid = %d AND mid < 0", dialogId));
+                        if (cursor.next()) {
+                            last_message_id = cursor.intValue(0);
+                        }
+                        cursor.dispose();
+
+                        cursor = database.queryFinalized(String.format(Locale.US, "SELECT * FROM (SELECT m.read_state, m.data, m.send_state, m.mid, m.date, r.random_id, m.replydata, m.media, m.ttl, m.mention, m.imp FROM messages as m LEFT JOIN randoms as r ON r.mid = m.mid WHERE m.uid = %d AND m.mid <= %d ORDER BY m.mid DESC LIMIT %d) UNION " +
+                                "SELECT * FROM (SELECT m.read_state, m.data, m.send_state, m.mid, m.date, r.random_id, m.replydata, m.media, m.ttl, m.mention, m.imp FROM messages as m LEFT JOIN randoms as r ON r.mid = m.mid WHERE m.uid = %d AND m.mid > %d ORDER BY m.mid ASC LIMIT %d)", dialogId, messageMaxId, count_query / 2, dialogId, messageMaxId, count_query / 2));
+                    } else if (load_type == 1) {
+                        cursor = database.queryFinalized(String.format(Locale.US, "SELECT m.read_state, m.data, m.send_state, m.mid, m.date, r.random_id, m.replydata, m.media, m.ttl, m.mention, m.imp FROM messages as m LEFT JOIN randoms as r ON r.mid = m.mid WHERE m.uid = %d AND m.mid < %d ORDER BY m.mid DESC LIMIT %d", dialogId, max_id, count_query));
+                    } else if (minDate != 0) {
+                        if (max_id != 0) {
+                            cursor = database.queryFinalized(String.format(Locale.US, "SELECT m.read_state, m.data, m.send_state, m.mid, m.date, r.random_id, m.replydata, m.media, m.ttl, m.mention, m.imp FROM messages as m LEFT JOIN randoms as r ON r.mid = m.mid WHERE m.uid = %d AND m.mid > %d ORDER BY m.mid ASC LIMIT %d", dialogId, max_id, count_query));
+                        } else {
+                            cursor = database.queryFinalized(String.format(Locale.US, "SELECT m.read_state, m.data, m.send_state, m.mid, m.date, r.random_id, m.replydata, m.media, m.ttl, m.mention, m.imp FROM messages as m LEFT JOIN randoms as r ON r.mid = m.mid WHERE m.uid = %d AND m.date <= %d ORDER BY m.mid ASC LIMIT %d,%d", dialogId, minDate, offset_query, count_query));
+                        }
+                    } else {
+                        if (load_type == 2) {
+                            cursor = database.queryFinalized(String.format(Locale.US, "SELECT min(mid) FROM messages WHERE uid = %d AND mid < 0", dialogId));
+                            if (cursor.next()) {
+                                last_message_id = cursor.intValue(0);
+                            }
+                            cursor.dispose();
+
+                            cursor = database.queryFinalized(String.format(Locale.US, "SELECT max(mid), max(date) FROM messages WHERE uid = %d AND out = 0 AND read_state IN(0,2) AND mid < 0", dialogId));
+                            if (cursor.next()) {
+                                min_unread_id = cursor.intValue(0);
+                                max_unread_date = cursor.intValue(1);
+                            }
+                            cursor.dispose();
+                            if (min_unread_id != 0) {
+                                cursor = database.queryFinalized(String.format(Locale.US, "SELECT COUNT(*) FROM messages WHERE uid = %d AND mid <= %d AND out = 0 AND read_state IN(0,2)", dialogId, min_unread_id));
+                                if (cursor.next()) {
+                                    count_unread = cursor.intValue(0);
+                                }
+                                cursor.dispose();
+                            }
+                        }
+
+                        if (count_query > count_unread || count_unread < num) {
+                            count_query = Math.max(count_query, count_unread + 10);
+                            if (count_unread < num) {
+                                count_unread = 0;
+                                min_unread_id = 0;
+                                last_message_id = 0;
+                            }
+                        } else {
+                            offset_query = count_unread - count_query;
+                            count_query += 10;
+                        }
+                        cursor = database.queryFinalized(String.format(Locale.US, "SELECT m.read_state, m.data, m.send_state, m.mid, m.date, r.random_id, m.replydata, m.media, m.ttl, m.mention, m.imp FROM messages as m LEFT JOIN randoms as r ON r.mid = m.mid WHERE m.uid = %d ORDER BY m.mid ASC LIMIT %d,%d", dialogId, offset_query, count_query));
+                    }
+                }
+                int minId = Integer.MAX_VALUE;
+                int maxId = Integer.MIN_VALUE;
+                if (cursor != null) {
                     while (cursor.next()) {
-                        NativeByteBuffer data = cursor.byteBufferValue(0);
+                        NativeByteBuffer data = cursor.byteBufferValue(1);
                         if (data != null) {
                             TLRPC.Message message = TLRPC.Message.TLdeserialize(data, data.readInt32(false), false);
-                            message.send_state = cursor.intValue(1);
-                            message.id = cursor.intValue(2);
+                            message.send_state = cursor.intValue(2);
+                            message.id = cursor.intValue(3);
                             if (message.id > 0 && message.send_state != 0 && message.send_state != 3) {
                                 message.send_state = 0;
                             }
-                            if (dialog_id == currentUserId) {
+                            if (dialogId == currentUserId) {
                                 message.out = true;
-                                message.unread = false;
-                            } else {
-                                message.unread = true;
                             }
                             message.readAttachPath(data, currentUserId);
                             data.reuse();
-                            message.date = cursor.intValue(3);
-                            message.dialog_id = dialog_id;
-                            if (message.ttl == 0) {
-                                message.ttl = cursor.intValue(6);
+                            MessageObject.setUnreadFlags(message, cursor.intValue(0));
+                            if (message.id > 0) {
+                                minId = Math.min(message.id, minId);
+                                maxId = Math.max(message.id, maxId);
+                            }
+                            message.date = cursor.intValue(4);
+                            message.dialog_id = dialogId;
+                            if ((message.flags & TLRPC.MESSAGE_FLAG_HAS_VIEWS) != 0) {
+                                message.views = cursor.intValue(7);
+                            }
+                            if (lower_id != 0 && message.ttl == 0) {
+                                message.ttl = cursor.intValue(8);
+                            }
+                            if (cursor.intValue(9) != 0) {
+                                message.mentioned = true;
+                            }
+                            int flags = cursor.intValue(10);
+                            if ((flags & 1) != 0) {
+                                message.stickerVerified = 0;
+                            } else if ((flags & 2) != 0) {
+                                message.stickerVerified = 2;
                             }
                             res.messages.add(message);
 
                             addUsersAndChatsFromMessage(message, usersToLoad, chatsToLoad);
 
                             if (message.reply_to_msg_id != 0 || message.reply_to_random_id != 0) {
-                                if (!cursor.isNull(5)) {
-                                    data = cursor.byteBufferValue(5);
+                                if (!cursor.isNull(6)) {
+                                    data = cursor.byteBufferValue(6);
                                     if (data != null) {
                                         message.replyMessage = TLRPC.Message.TLdeserialize(data, data.readInt32(false), false);
                                         message.replyMessage.readAttachPath(data, currentUserId);
@@ -5725,590 +6187,174 @@ public class MessagesStorage extends BaseController {
                                     }
                                 }
                             }
+                            if (lower_id == 0 && !cursor.isNull(5)) {
+                                message.random_id = cursor.longValue(5);
+                            }
+                            if (MessageObject.isSecretMedia(message)) {
+                                try {
+                                    SQLiteCursor cursor2 = database.queryFinalized(String.format(Locale.US, "SELECT date FROM enc_tasks_v2 WHERE mid = %d", message.id));
+                                    if (cursor2.next()) {
+                                        message.destroyTime = cursor2.intValue(0);
+                                    }
+                                    cursor2.dispose();
+                                } catch (Exception e) {
+                                    FileLog.e(e);
+                                }
+                            }
                         }
                     }
                     cursor.dispose();
-                } else {
-                    int lower_id = (int) dialog_id;
-                    if (lower_id != 0) {
-                        if (load_type == 3 && minDate == 0) {
-                            cursor = database.queryFinalized("SELECT inbox_max, unread_count, date, unread_count_i FROM dialogs WHERE did = " + dialog_id);
-                            if (cursor.next()) {
-                                min_unread_id = cursor.intValue(0) + 1;
-                                count_unread = cursor.intValue(1);
-                                max_unread_date = cursor.intValue(2);
-                                mentions_unread = cursor.intValue(3);
-                            }
-                            cursor.dispose();
-                        } else if (load_type != 1 && load_type != 3 && load_type != 4 && minDate == 0) {
-                            if (load_type == 2) {
-                                cursor = database.queryFinalized("SELECT inbox_max, unread_count, date, unread_count_i FROM dialogs WHERE did = " + dialog_id);
-                                if (cursor.next()) {
-                                    messageMaxId = max_id_query = min_unread_id = cursor.intValue(0);
-                                    count_unread = cursor.intValue(1);
-                                    max_unread_date = cursor.intValue(2);
-                                    mentions_unread = cursor.intValue(3);
-                                    queryFromServer = true;
-                                    if (messageMaxId != 0 && channelId != 0) {
-                                        messageMaxId |= ((long) channelId) << 32;
-                                    }
-                                    if (dialog_id == currentUserId) {
-                                        count_unread = 0;
-                                    }
-                                }
-                                cursor.dispose();
-                                if (!queryFromServer) {
-                                    cursor = database.queryFinalized(String.format(Locale.US, "SELECT min(mid), max(date) FROM messages WHERE uid = %d AND out = 0 AND read_state IN(0,2) AND mid > 0", dialog_id));
-                                    if (cursor.next()) {
-                                        min_unread_id = cursor.intValue(0);
-                                        max_unread_date = cursor.intValue(1);
-                                    }
-                                    cursor.dispose();
-                                    if (min_unread_id != 0) {
-                                        cursor = database.queryFinalized(String.format(Locale.US, "SELECT COUNT(*) FROM messages WHERE uid = %d AND mid >= %d AND out = 0 AND read_state IN(0,2)", dialog_id, min_unread_id));
-                                        if (cursor.next()) {
-                                            count_unread = cursor.intValue(0);
-                                        }
-                                        cursor.dispose();
-                                    }
-                                } else if (max_id_query == 0) {
-                                    int existingUnreadCount = 0;
-                                    cursor = database.queryFinalized(String.format(Locale.US, "SELECT COUNT(*) FROM messages WHERE uid = %d AND mid > 0 AND out = 0 AND read_state IN(0,2)", dialog_id));
-                                    if (cursor.next()) {
-                                        existingUnreadCount = cursor.intValue(0);
-                                    }
-                                    cursor.dispose();
-                                    if (existingUnreadCount == count_unread) {
-                                        cursor = database.queryFinalized(String.format(Locale.US, "SELECT min(mid) FROM messages WHERE uid = %d AND out = 0 AND read_state IN(0,2) AND mid > 0", dialog_id));
-                                        if (cursor.next()) {
-                                            messageMaxId = max_id_query = min_unread_id = cursor.intValue(0);
-                                            if (messageMaxId != 0 && channelId != 0) {
-                                                messageMaxId |= ((long) channelId) << 32;
-                                            }
-                                        }
-                                        cursor.dispose();
-                                    }
-                                } else {
-                                    cursor = database.queryFinalized(String.format(Locale.US, "SELECT start, end FROM messages_holes WHERE uid = %d AND start < %d AND end > %d", dialog_id, max_id_query, max_id_query));
-                                    boolean containMessage = !cursor.next();
-                                    cursor.dispose();
+                }
 
-                                    if (containMessage) {
-                                        cursor = database.queryFinalized(String.format(Locale.US, "SELECT min(mid) FROM messages WHERE uid = %d AND out = 0 AND read_state IN(0,2) AND mid > %d", dialog_id, max_id_query));
-                                        if (cursor.next()) {
-                                            messageMaxId = max_id_query = cursor.intValue(0);
-                                            if (messageMaxId != 0 && channelId != 0) {
-                                                messageMaxId |= ((long) channelId) << 32;
-                                            }
-                                        }
-                                        cursor.dispose();
-                                    }
-                                }
-                            }
-
-                            if (count_query > count_unread || count_unread < num) {
-                                count_query = Math.max(count_query, count_unread + 10);
-                                if (count_unread < num) {
-                                    count_unread = 0;
-                                    min_unread_id = 0;
-                                    messageMaxId = 0;
-                                    last_message_id = 0;
-                                    queryFromServer = false;
-                                }
-                            } else {
-                                offset_query = count_unread - count_query;
-                                count_query += 10;
-                            }
+                Collections.sort(res.messages, (lhs, rhs) -> {
+                    if (lhs.id > 0 && rhs.id > 0) {
+                        if (lhs.id > rhs.id) {
+                            return -1;
+                        } else if (lhs.id < rhs.id) {
+                            return 1;
                         }
-
-                        cursor = database.queryFinalized(String.format(Locale.US, "SELECT start FROM messages_holes WHERE uid = %d AND start IN (0, 1)", dialog_id));
-                        if (cursor.next()) {
-                            isEnd = cursor.intValue(0) == 1;
-                            cursor.dispose();
-                        } else {
-                            cursor.dispose();
-                            cursor = database.queryFinalized(String.format(Locale.US, "SELECT min(mid) FROM messages WHERE uid = %d AND mid > 0", dialog_id));
-                            if (cursor.next()) {
-                                int mid = cursor.intValue(0);
-                                if (mid != 0) {
-                                    SQLitePreparedStatement state = database.executeFast("REPLACE INTO messages_holes VALUES(?, ?, ?)");
-                                    state.requery();
-                                    state.bindLong(1, dialog_id);
-                                    state.bindInteger(2, 0);
-                                    state.bindInteger(3, mid);
-                                    state.step();
-                                    state.dispose();
-                                }
-                            }
-                            cursor.dispose();
-                        }
-
-                        if (load_type == 3 || load_type == 4 || queryFromServer && load_type == 2) {
-                            cursor = database.queryFinalized(String.format(Locale.US, "SELECT max(mid) FROM messages WHERE uid = %d AND mid > 0", dialog_id));
-                            if (cursor.next()) {
-                                last_message_id = cursor.intValue(0);
-                            }
-                            cursor.dispose();
-
-                            if (load_type == 4 && offset_date != 0) {
-                                int startMid;
-                                int endMid;
-
-                                cursor = database.queryFinalized(String.format(Locale.US, "SELECT max(mid) FROM messages WHERE uid = %d AND date <= %d AND mid > 0", dialog_id, offset_date));
-                                if (cursor.next()) {
-                                    startMid = cursor.intValue(0);
-                                } else {
-                                    startMid = -1;
-                                }
-                                cursor.dispose();
-                                cursor = database.queryFinalized(String.format(Locale.US, "SELECT min(mid) FROM messages WHERE uid = %d AND date >= %d AND mid > 0", dialog_id, offset_date));
-                                if (cursor.next()) {
-                                    endMid = cursor.intValue(0);
-                                } else {
-                                    endMid = -1;
-                                }
-                                cursor.dispose();
-                                if (startMid != -1 && endMid != -1) {
-                                    if (startMid == endMid) {
-                                        max_id_query = startMid;
-                                    } else {
-                                        cursor = database.queryFinalized(String.format(Locale.US, "SELECT start FROM messages_holes WHERE uid = %d AND start <= %d AND end > %d", dialog_id, startMid, startMid));
-                                        if (cursor.next()) {
-                                            startMid = -1;
-                                        }
-                                        cursor.dispose();
-                                        if (startMid != -1) {
-                                            cursor = database.queryFinalized(String.format(Locale.US, "SELECT start FROM messages_holes WHERE uid = %d AND start <= %d AND end > %d", dialog_id, endMid, endMid));
-                                            if (cursor.next()) {
-                                                endMid = -1;
-                                            }
-                                            cursor.dispose();
-                                            if (endMid != -1) {
-                                                max_id_override = endMid;
-                                                messageMaxId = max_id_query = endMid;
-                                                if (messageMaxId != 0 && channelId != 0) {
-                                                    messageMaxId |= ((long) channelId) << 32;
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-
-                            boolean containMessage = max_id_query != 0;
-                            if (containMessage) {
-                                cursor = database.queryFinalized(String.format(Locale.US, "SELECT start FROM messages_holes WHERE uid = %d AND start < %d AND end > %d", dialog_id, max_id_query, max_id_query));
-                                if (cursor.next()) {
-                                    containMessage = false;
-                                }
-                                cursor.dispose();
-                            }
-
-                            if (containMessage) {
-                                long holeMessageMaxId = 0;
-                                long holeMessageMinId = 1;
-                                cursor = database.queryFinalized(String.format(Locale.US, "SELECT start FROM messages_holes WHERE uid = %d AND start >= %d ORDER BY start ASC LIMIT 1", dialog_id, max_id_query));
-                                if (cursor.next()) {
-                                    holeMessageMaxId = cursor.intValue(0);
-                                    if (channelId != 0) {
-                                        holeMessageMaxId |= ((long) channelId) << 32;
-                                    }
-                                }
-                                cursor.dispose();
-                                cursor = database.queryFinalized(String.format(Locale.US, "SELECT end FROM messages_holes WHERE uid = %d AND end <= %d ORDER BY end DESC LIMIT 1", dialog_id, max_id_query));
-                                if (cursor.next()) {
-                                    holeMessageMinId = cursor.intValue(0);
-                                    if (channelId != 0) {
-                                        holeMessageMinId |= ((long) channelId) << 32;
-                                    }
-                                }
-                                cursor.dispose();
-                                if (holeMessageMaxId != 0 || holeMessageMinId != 1) {
-                                    if (holeMessageMaxId == 0) {
-                                        holeMessageMaxId = 1000000000;
-                                        if (channelId != 0) {
-                                            holeMessageMaxId |= ((long) channelId) << 32;
-                                        }
-                                    }
-                                    cursor = database.queryFinalized(String.format(Locale.US, "SELECT * FROM (SELECT m.read_state, m.data, m.send_state, m.mid, m.date, r.random_id, m.replydata, m.media, m.ttl, m.mention FROM messages as m LEFT JOIN randoms as r ON r.mid = m.mid WHERE m.uid = %d AND m.mid <= %d AND (m.mid >= %d OR m.mid < 0) ORDER BY m.date DESC, m.mid DESC LIMIT %d) UNION " +
-                                            "SELECT * FROM (SELECT m.read_state, m.data, m.send_state, m.mid, m.date, r.random_id, m.replydata, m.media, m.ttl, m.mention FROM messages as m LEFT JOIN randoms as r ON r.mid = m.mid WHERE m.uid = %d AND m.mid > %d AND (m.mid <= %d OR m.mid < 0) ORDER BY m.date ASC, m.mid ASC LIMIT %d)", dialog_id, messageMaxId, holeMessageMinId, count_query / 2, dialog_id, messageMaxId, holeMessageMaxId, count_query / 2));
-                                } else {
-                                    cursor = database.queryFinalized(String.format(Locale.US, "SELECT * FROM (SELECT m.read_state, m.data, m.send_state, m.mid, m.date, r.random_id, m.replydata, m.media, m.ttl, m.mention FROM messages as m LEFT JOIN randoms as r ON r.mid = m.mid WHERE m.uid = %d AND m.mid <= %d ORDER BY m.date DESC, m.mid DESC LIMIT %d) UNION " +
-                                            "SELECT * FROM (SELECT m.read_state, m.data, m.send_state, m.mid, m.date, r.random_id, m.replydata, m.media, m.ttl, m.mention FROM messages as m LEFT JOIN randoms as r ON r.mid = m.mid WHERE m.uid = %d AND m.mid > %d ORDER BY m.date ASC, m.mid ASC LIMIT %d)", dialog_id, messageMaxId, count_query / 2, dialog_id, messageMaxId, count_query / 2));
-                                }
-                            } else {
-                                if (load_type == 2) {
-                                    int existingUnreadCount = 0;
-                                    cursor = database.queryFinalized(String.format(Locale.US, "SELECT COUNT(*) FROM messages WHERE uid = %d AND mid != 0 AND out = 0 AND read_state IN(0,2)", dialog_id));
-                                    if (cursor.next()) {
-                                        existingUnreadCount = cursor.intValue(0);
-                                    }
-                                    cursor.dispose();
-                                    if (existingUnreadCount == count_unread) {
-                                        unreadCountIsLocal = true;
-                                        cursor = database.queryFinalized(String.format(Locale.US, "SELECT * FROM (SELECT m.read_state, m.data, m.send_state, m.mid, m.date, r.random_id, m.replydata, m.media, m.ttl, m.mention FROM messages as m LEFT JOIN randoms as r ON r.mid = m.mid WHERE m.uid = %d AND m.mid <= %d ORDER BY m.date DESC, m.mid DESC LIMIT %d) UNION " +
-                                                "SELECT * FROM (SELECT m.read_state, m.data, m.send_state, m.mid, m.date, r.random_id, m.replydata, m.media, m.ttl, m.mention FROM messages as m LEFT JOIN randoms as r ON r.mid = m.mid WHERE m.uid = %d AND m.mid > %d ORDER BY m.date ASC, m.mid ASC LIMIT %d)", dialog_id, messageMaxId, count_query / 2, dialog_id, messageMaxId, count_query / 2));
-                                    } else {
-                                        cursor = null;
-                                    }
-                                } else {
-                                    cursor = null;
-                                }
-                            }
-                        } else if (load_type == 1) {
-                            long holeMessageId = 0;
-                            cursor = database.queryFinalized(String.format(Locale.US, "SELECT start, end FROM messages_holes WHERE uid = %d AND start >= %d AND start != 1 AND end != 1 ORDER BY start ASC LIMIT 1", dialog_id, max_id));
-                            if (cursor.next()) {
-                                holeMessageId = cursor.intValue(0);
-                                if (channelId != 0) {
-                                    holeMessageId |= ((long) channelId) << 32;
-                                }
-                            }
-                            cursor.dispose();
-                            if (holeMessageId != 0) {
-                                cursor = database.queryFinalized(String.format(Locale.US, "SELECT m.read_state, m.data, m.send_state, m.mid, m.date, r.random_id, m.replydata, m.media, m.ttl, m.mention FROM messages as m LEFT JOIN randoms as r ON r.mid = m.mid WHERE m.uid = %d AND m.date >= %d AND m.mid > %d AND m.mid <= %d ORDER BY m.date ASC, m.mid ASC LIMIT %d", dialog_id, minDate, messageMaxId, holeMessageId, count_query));
-                            } else {
-                                cursor = database.queryFinalized(String.format(Locale.US, "SELECT m.read_state, m.data, m.send_state, m.mid, m.date, r.random_id, m.replydata, m.media, m.ttl, m.mention FROM messages as m LEFT JOIN randoms as r ON r.mid = m.mid WHERE m.uid = %d AND m.date >= %d AND m.mid > %d ORDER BY m.date ASC, m.mid ASC LIMIT %d", dialog_id, minDate, messageMaxId, count_query));
-                            }
-                        } else if (minDate != 0) {
-                            if (messageMaxId != 0) {
-                                long holeMessageId = 0;
-                                cursor = database.queryFinalized(String.format(Locale.US, "SELECT end FROM messages_holes WHERE uid = %d AND end <= %d ORDER BY end DESC LIMIT 1", dialog_id, max_id));
-                                if (cursor.next()) {
-                                    holeMessageId = cursor.intValue(0);
-                                    if (channelId != 0) {
-                                        holeMessageId |= ((long) channelId) << 32;
-                                    }
-                                }
-                                cursor.dispose();
-                                if (holeMessageId != 0) {
-                                    cursor = database.queryFinalized(String.format(Locale.US, "SELECT m.read_state, m.data, m.send_state, m.mid, m.date, r.random_id, m.replydata, m.media, m.ttl, m.mention FROM messages as m LEFT JOIN randoms as r ON r.mid = m.mid WHERE m.uid = %d AND m.date <= %d AND m.mid < %d AND (m.mid >= %d OR m.mid < 0) ORDER BY m.date DESC, m.mid DESC LIMIT %d", dialog_id, minDate, messageMaxId, holeMessageId, count_query));
-                                } else {
-                                    cursor = database.queryFinalized(String.format(Locale.US, "SELECT m.read_state, m.data, m.send_state, m.mid, m.date, r.random_id, m.replydata, m.media, m.ttl, m.mention FROM messages as m LEFT JOIN randoms as r ON r.mid = m.mid WHERE m.uid = %d AND m.date <= %d AND m.mid < %d ORDER BY m.date DESC, m.mid DESC LIMIT %d", dialog_id, minDate, messageMaxId, count_query));
-                                }
-                            } else {
-                                cursor = database.queryFinalized(String.format(Locale.US, "SELECT m.read_state, m.data, m.send_state, m.mid, m.date, r.random_id, m.replydata, m.media, m.ttl, m.mention FROM messages as m LEFT JOIN randoms as r ON r.mid = m.mid WHERE m.uid = %d AND m.date <= %d ORDER BY m.date DESC, m.mid DESC LIMIT %d,%d", dialog_id, minDate, offset_query, count_query));
-                            }
-                        } else {
-                            cursor = database.queryFinalized(String.format(Locale.US, "SELECT max(mid) FROM messages WHERE uid = %d AND mid > 0", dialog_id));
-                            if (cursor.next()) {
-                                last_message_id = cursor.intValue(0);
-                            }
-                            cursor.dispose();
-
-                            long holeMessageId = 0;
-                            cursor = database.queryFinalized(String.format(Locale.US, "SELECT max(end) FROM messages_holes WHERE uid = %d", dialog_id));
-                            if (cursor.next()) {
-                                holeMessageId = cursor.intValue(0);
-                                if (channelId != 0) {
-                                    holeMessageId |= ((long) channelId) << 32;
-                                }
-                            }
-                            cursor.dispose();
-                            if (holeMessageId != 0) {
-                                cursor = database.queryFinalized(String.format(Locale.US, "SELECT m.read_state, m.data, m.send_state, m.mid, m.date, r.random_id, m.replydata, m.media, m.ttl, m.mention FROM messages as m LEFT JOIN randoms as r ON r.mid = m.mid WHERE m.uid = %d AND (m.mid >= %d OR m.mid < 0) ORDER BY m.date DESC, m.mid DESC LIMIT %d,%d", dialog_id, holeMessageId, offset_query, count_query));
-                            } else {
-                                cursor = database.queryFinalized(String.format(Locale.US, "SELECT m.read_state, m.data, m.send_state, m.mid, m.date, r.random_id, m.replydata, m.media, m.ttl, m.mention FROM messages as m LEFT JOIN randoms as r ON r.mid = m.mid WHERE m.uid = %d ORDER BY m.date DESC, m.mid DESC LIMIT %d,%d", dialog_id, offset_query, count_query));
-                            }
+                    } else if (lhs.id < 0 && rhs.id < 0) {
+                        if (lhs.id < rhs.id) {
+                            return -1;
+                        } else if (lhs.id > rhs.id) {
+                            return 1;
                         }
                     } else {
-                        isEnd = true;
-
-                        if (load_type == 3 && minDate == 0) {
-                            cursor = database.queryFinalized(String.format(Locale.US, "SELECT min(mid) FROM messages WHERE uid = %d AND mid < 0", dialog_id));
-                            if (cursor.next()) {
-                                min_unread_id = cursor.intValue(0);
-                            }
-                            cursor.dispose();
-
-                            int min_unread_id2 = 0;
-                            cursor = database.queryFinalized(String.format(Locale.US, "SELECT max(mid), max(date) FROM messages WHERE uid = %d AND out = 0 AND read_state IN(0,2) AND mid < 0", dialog_id));
-                            if (cursor.next()) {
-                                min_unread_id2 = cursor.intValue(0);
-                                max_unread_date = cursor.intValue(1);
-                            }
-                            cursor.dispose();
-                            if (min_unread_id2 != 0) {
-                                min_unread_id = min_unread_id2;
-                                cursor = database.queryFinalized(String.format(Locale.US, "SELECT COUNT(*) FROM messages WHERE uid = %d AND mid <= %d AND out = 0 AND read_state IN(0,2)", dialog_id, min_unread_id2));
-                                if (cursor.next()) {
-                                    count_unread = cursor.intValue(0);
-                                }
-                                cursor.dispose();
-                            }
-                        }
-
-                        if (load_type == 3 || load_type == 4) {
-                            cursor = database.queryFinalized(String.format(Locale.US, "SELECT min(mid) FROM messages WHERE uid = %d AND mid < 0", dialog_id));
-                            if (cursor.next()) {
-                                last_message_id = cursor.intValue(0);
-                            }
-                            cursor.dispose();
-
-                            cursor = database.queryFinalized(String.format(Locale.US, "SELECT * FROM (SELECT m.read_state, m.data, m.send_state, m.mid, m.date, r.random_id, m.replydata, m.media, m.ttl, m.mention FROM messages as m LEFT JOIN randoms as r ON r.mid = m.mid WHERE m.uid = %d AND m.mid <= %d ORDER BY m.mid DESC LIMIT %d) UNION " +
-                                    "SELECT * FROM (SELECT m.read_state, m.data, m.send_state, m.mid, m.date, r.random_id, m.replydata, m.media, m.ttl, m.mention FROM messages as m LEFT JOIN randoms as r ON r.mid = m.mid WHERE m.uid = %d AND m.mid > %d ORDER BY m.mid ASC LIMIT %d)", dialog_id, messageMaxId, count_query / 2, dialog_id, messageMaxId, count_query / 2));
-                        } else if (load_type == 1) {
-                            cursor = database.queryFinalized(String.format(Locale.US, "SELECT m.read_state, m.data, m.send_state, m.mid, m.date, r.random_id, m.replydata, m.media, m.ttl, m.mention FROM messages as m LEFT JOIN randoms as r ON r.mid = m.mid WHERE m.uid = %d AND m.mid < %d ORDER BY m.mid DESC LIMIT %d", dialog_id, max_id, count_query));
-                        } else if (minDate != 0) {
-                            if (max_id != 0) {
-                                cursor = database.queryFinalized(String.format(Locale.US, "SELECT m.read_state, m.data, m.send_state, m.mid, m.date, r.random_id, m.replydata, m.media, m.ttl, m.mention FROM messages as m LEFT JOIN randoms as r ON r.mid = m.mid WHERE m.uid = %d AND m.mid > %d ORDER BY m.mid ASC LIMIT %d", dialog_id, max_id, count_query));
-                            } else {
-                                cursor = database.queryFinalized(String.format(Locale.US, "SELECT m.read_state, m.data, m.send_state, m.mid, m.date, r.random_id, m.replydata, m.media, m.ttl, m.mention FROM messages as m LEFT JOIN randoms as r ON r.mid = m.mid WHERE m.uid = %d AND m.date <= %d ORDER BY m.mid ASC LIMIT %d,%d", dialog_id, minDate, offset_query, count_query));
-                            }
-                        } else {
-                            if (load_type == 2) {
-                                cursor = database.queryFinalized(String.format(Locale.US, "SELECT min(mid) FROM messages WHERE uid = %d AND mid < 0", dialog_id));
-                                if (cursor.next()) {
-                                    last_message_id = cursor.intValue(0);
-                                }
-                                cursor.dispose();
-
-                                cursor = database.queryFinalized(String.format(Locale.US, "SELECT max(mid), max(date) FROM messages WHERE uid = %d AND out = 0 AND read_state IN(0,2) AND mid < 0", dialog_id));
-                                if (cursor.next()) {
-                                    min_unread_id = cursor.intValue(0);
-                                    max_unread_date = cursor.intValue(1);
-                                }
-                                cursor.dispose();
-                                if (min_unread_id != 0) {
-                                    cursor = database.queryFinalized(String.format(Locale.US, "SELECT COUNT(*) FROM messages WHERE uid = %d AND mid <= %d AND out = 0 AND read_state IN(0,2)", dialog_id, min_unread_id));
-                                    if (cursor.next()) {
-                                        count_unread = cursor.intValue(0);
-                                    }
-                                    cursor.dispose();
-                                }
-                            }
-
-                            if (count_query > count_unread || count_unread < num) {
-                                count_query = Math.max(count_query, count_unread + 10);
-                                if (count_unread < num) {
-                                    count_unread = 0;
-                                    min_unread_id = 0;
-                                    last_message_id = 0;
-                                }
-                            } else {
-                                offset_query = count_unread - count_query;
-                                count_query += 10;
-                            }
-                            cursor = database.queryFinalized(String.format(Locale.US, "SELECT m.read_state, m.data, m.send_state, m.mid, m.date, r.random_id, m.replydata, m.media, m.ttl, m.mention FROM messages as m LEFT JOIN randoms as r ON r.mid = m.mid WHERE m.uid = %d ORDER BY m.mid ASC LIMIT %d,%d", dialog_id, offset_query, count_query));
+                        if (lhs.date > rhs.date) {
+                            return -1;
+                        } else if (lhs.date < rhs.date) {
+                            return 1;
                         }
                     }
-                    int minId = Integer.MAX_VALUE;
-                    int maxId = Integer.MIN_VALUE;
-                    if (cursor != null) {
-                        while (cursor.next()) {
-                            NativeByteBuffer data = cursor.byteBufferValue(1);
-                            if (data != null) {
-                                TLRPC.Message message = TLRPC.Message.TLdeserialize(data, data.readInt32(false), false);
-                                message.send_state = cursor.intValue(2);
-                                message.id = cursor.intValue(3);
-                                if (message.id > 0 && message.send_state != 0 && message.send_state != 3) {
-                                    message.send_state = 0;
-                                }
-                                if (dialog_id == currentUserId) {
-                                    message.out = true;
-                                }
-                                message.readAttachPath(data, currentUserId);
-                                data.reuse();
-                                MessageObject.setUnreadFlags(message, cursor.intValue(0));
-                                if (message.id > 0) {
-                                    minId = Math.min(message.id, minId);
-                                    maxId = Math.max(message.id, maxId);
-                                }
-                                message.date = cursor.intValue(4);
-                                message.dialog_id = dialog_id;
-                                if ((message.flags & TLRPC.MESSAGE_FLAG_HAS_VIEWS) != 0) {
-                                    message.views = cursor.intValue(7);
-                                }
-                                if (lower_id != 0 && message.ttl == 0) {
-                                    message.ttl = cursor.intValue(8);
-                                }
-                                if (cursor.intValue(9) != 0) {
-                                    message.mentioned = true;
-                                }
-                                res.messages.add(message);
+                    return 0;
+                });
 
-                                addUsersAndChatsFromMessage(message, usersToLoad, chatsToLoad);
-
-                                if (message.reply_to_msg_id != 0 || message.reply_to_random_id != 0) {
-                                    if (!cursor.isNull(6)) {
-                                        data = cursor.byteBufferValue(6);
-                                        if (data != null) {
-                                            message.replyMessage = TLRPC.Message.TLdeserialize(data, data.readInt32(false), false);
-                                            message.replyMessage.readAttachPath(data, currentUserId);
-                                            data.reuse();
-                                            if (message.replyMessage != null) {
-                                                if (MessageObject.isMegagroup(message)) {
-                                                    message.replyMessage.flags |= TLRPC.MESSAGE_FLAG_MEGAGROUP;
-                                                }
-                                                addUsersAndChatsFromMessage(message.replyMessage, usersToLoad, chatsToLoad);
-                                            }
-                                        }
-                                    }
-                                    if (message.replyMessage == null) {
-                                        if (message.reply_to_msg_id != 0) {
-                                            long messageId = message.reply_to_msg_id;
-                                            if (message.to_id.channel_id != 0) {
-                                                messageId |= ((long) message.to_id.channel_id) << 32;
-                                            }
-                                            if (!replyMessages.contains(messageId)) {
-                                                replyMessages.add(messageId);
-                                            }
-                                            ArrayList<TLRPC.Message> messages = replyMessageOwners.get(message.reply_to_msg_id);
-                                            if (messages == null) {
-                                                messages = new ArrayList<>();
-                                                replyMessageOwners.put(message.reply_to_msg_id, messages);
-                                            }
-                                            messages.add(message);
-                                        } else {
-                                            if (!replyMessages.contains(message.reply_to_random_id)) {
-                                                replyMessages.add(message.reply_to_random_id);
-                                            }
-                                            ArrayList<TLRPC.Message> messages = replyMessageRandomOwners.get(message.reply_to_random_id);
-                                            if (messages == null) {
-                                                messages = new ArrayList<>();
-                                                replyMessageRandomOwners.put(message.reply_to_random_id, messages);
-                                            }
-                                            messages.add(message);
-                                        }
-                                    }
-                                }
-                                if (lower_id == 0 && !cursor.isNull(5)) {
-                                    message.random_id = cursor.longValue(5);
-                                }
-                                if (MessageObject.isSecretMedia(message)) {
-                                    try {
-                                        SQLiteCursor cursor2 = database.queryFinalized(String.format(Locale.US, "SELECT date FROM enc_tasks_v2 WHERE mid = %d", message.id));
-                                        if (cursor2.next()) {
-                                            message.destroyTime = cursor2.intValue(0);
-                                        }
-                                        cursor2.dispose();
-                                    } catch (Exception e) {
-                                        FileLog.e(e);
-                                    }
-                                }
-                            }
-                        }
-                        cursor.dispose();
-                    }
-
-                    Collections.sort(res.messages, (lhs, rhs) -> {
-                        if (lhs.id > 0 && rhs.id > 0) {
-                            if (lhs.id > rhs.id) {
-                                return -1;
-                            } else if (lhs.id < rhs.id) {
-                                return 1;
-                            }
-                        } else if (lhs.id < 0 && rhs.id < 0) {
-                            if (lhs.id < rhs.id) {
-                                return -1;
-                            } else if (lhs.id > rhs.id) {
-                                return 1;
-                            }
-                        } else {
-                            if (lhs.date > rhs.date) {
-                                return -1;
-                            } else if (lhs.date < rhs.date) {
-                                return 1;
-                            }
-                        }
-                        return 0;
-                    });
-
-                    if (lower_id != 0) {
-                        if ((load_type == 3 || load_type == 4 || load_type == 2 && queryFromServer && !unreadCountIsLocal) && !res.messages.isEmpty()) {
-                            if (!(minId <= max_id_query && maxId >= max_id_query)) {
-                                replyMessages.clear();
-                                usersToLoad.clear();
-                                chatsToLoad.clear();
-                                res.messages.clear();
-                            }
-                        }
-                        if ((load_type == 4 || load_type == 3) && res.messages.size() == 1) {
+                if (lower_id != 0) {
+                    if ((load_type == 3 || load_type == 4 || load_type == 2 && queryFromServer && !unreadCountIsLocal) && !res.messages.isEmpty()) {
+                        if (!(minId <= max_id_query && maxId >= max_id_query)) {
+                            replyMessages.clear();
+                            usersToLoad.clear();
+                            chatsToLoad.clear();
                             res.messages.clear();
                         }
                     }
-                    if (mentions_unread != 0) {
-                        cursor = database.queryFinalized(String.format(Locale.US, "SELECT COUNT(mid) FROM messages WHERE uid = %d AND mention = 1 AND read_state IN(0, 1)", dialog_id));
-                        if (cursor.next()) {
-                            if (mentions_unread != cursor.intValue(0)) {
-                                mentions_unread *= -1;
-                            }
-                        } else {
+                    if ((load_type == 4 || load_type == 3) && res.messages.size() == 1) {
+                        res.messages.clear();
+                    }
+                }
+                if (mentions_unread != 0) {
+                    cursor = database.queryFinalized(String.format(Locale.US, "SELECT COUNT(mid) FROM messages WHERE uid = %d AND mention = 1 AND read_state IN(0, 1)", dialogId));
+                    if (cursor.next()) {
+                        if (mentions_unread != cursor.intValue(0)) {
                             mentions_unread *= -1;
                         }
-                        cursor.dispose();
-                    }
-                }
-                if (!replyMessages.isEmpty()) {
-                    if (replyMessageOwners.size() > 0) {
-                        cursor = database.queryFinalized(String.format(Locale.US, "SELECT data, mid, date FROM messages WHERE mid IN(%s)", TextUtils.join(",", replyMessages)));
                     } else {
-                        cursor = database.queryFinalized(String.format(Locale.US, "SELECT m.data, m.mid, m.date, r.random_id FROM randoms as r INNER JOIN messages as m ON r.mid = m.mid WHERE r.random_id IN(%s)", TextUtils.join(",", replyMessages)));
-                    }
-                    while (cursor.next()) {
-                        NativeByteBuffer data = cursor.byteBufferValue(0);
-                        if (data != null) {
-                            TLRPC.Message message = TLRPC.Message.TLdeserialize(data, data.readInt32(false), false);
-                            message.readAttachPath(data, currentUserId);
-                            data.reuse();
-                            message.id = cursor.intValue(1);
-                            message.date = cursor.intValue(2);
-                            message.dialog_id = dialog_id;
-
-                            addUsersAndChatsFromMessage(message, usersToLoad, chatsToLoad);
-
-                            if (replyMessageOwners.size() > 0) {
-                                ArrayList<TLRPC.Message> arrayList = replyMessageOwners.get(message.id);
-                                if (arrayList != null) {
-                                    for (int a = 0; a < arrayList.size(); a++) {
-                                        TLRPC.Message object = arrayList.get(a);
-                                        object.replyMessage = message;
-                                        if (MessageObject.isMegagroup(object)) {
-                                            object.replyMessage.flags |= TLRPC.MESSAGE_FLAG_MEGAGROUP;
-                                        }
-                                    }
-                                }
-                            } else {
-                                long value = cursor.longValue(3);
-                                ArrayList<TLRPC.Message> arrayList = replyMessageRandomOwners.get(value);
-                                replyMessageRandomOwners.remove(value);
-                                if (arrayList != null) {
-                                    for (int a = 0; a < arrayList.size(); a++) {
-                                        TLRPC.Message object = arrayList.get(a);
-                                        object.replyMessage = message;
-                                        object.reply_to_msg_id = message.id;
-                                        if (MessageObject.isMegagroup(object)) {
-                                            object.replyMessage.flags |= TLRPC.MESSAGE_FLAG_MEGAGROUP;
-                                        }
-                                    }
-                                }
-                            }
-                        }
+                        mentions_unread *= -1;
                     }
                     cursor.dispose();
-                    if (replyMessageRandomOwners.size() > 0) {
-                        for (int b = 0; b < replyMessageRandomOwners.size(); b++) {
-                            ArrayList<TLRPC.Message> arrayList = replyMessageRandomOwners.valueAt(b);
-                            for (int a = 0; a < arrayList.size(); a++) {
-                                arrayList.get(a).reply_to_random_id = 0;
+                }
+            }
+            if (!replyMessages.isEmpty()) {
+                if (replyMessageOwners.size() > 0) {
+                    cursor = database.queryFinalized(String.format(Locale.US, "SELECT data, mid, date FROM messages WHERE mid IN(%s)", TextUtils.join(",", replyMessages)));
+                } else {
+                    cursor = database.queryFinalized(String.format(Locale.US, "SELECT m.data, m.mid, m.date, r.random_id FROM randoms as r INNER JOIN messages as m ON r.mid = m.mid WHERE r.random_id IN(%s)", TextUtils.join(",", replyMessages)));
+                }
+                while (cursor.next()) {
+                    NativeByteBuffer data = cursor.byteBufferValue(0);
+                    if (data != null) {
+                        TLRPC.Message message = TLRPC.Message.TLdeserialize(data, data.readInt32(false), false);
+                        message.readAttachPath(data, currentUserId);
+                        data.reuse();
+                        message.id = cursor.intValue(1);
+                        message.date = cursor.intValue(2);
+                        message.dialog_id = dialogId;
+
+                        addUsersAndChatsFromMessage(message, usersToLoad, chatsToLoad);
+
+                        if (replyMessageOwners.size() > 0) {
+                            ArrayList<TLRPC.Message> arrayList = replyMessageOwners.get(message.id);
+                            if (arrayList != null) {
+                                for (int a = 0; a < arrayList.size(); a++) {
+                                    TLRPC.Message object = arrayList.get(a);
+                                    object.replyMessage = message;
+                                    if (MessageObject.isMegagroup(object)) {
+                                        object.replyMessage.flags |= TLRPC.MESSAGE_FLAG_MEGAGROUP;
+                                    }
+                                }
+                            }
+                        } else {
+                            long value = cursor.longValue(3);
+                            ArrayList<TLRPC.Message> arrayList = replyMessageRandomOwners.get(value);
+                            replyMessageRandomOwners.remove(value);
+                            if (arrayList != null) {
+                                for (int a = 0; a < arrayList.size(); a++) {
+                                    TLRPC.Message object = arrayList.get(a);
+                                    object.replyMessage = message;
+                                    object.reply_to_msg_id = message.id;
+                                    if (MessageObject.isMegagroup(object)) {
+                                        object.replyMessage.flags |= TLRPC.MESSAGE_FLAG_MEGAGROUP;
+                                    }
+                                }
                             }
                         }
                     }
                 }
-                if (!usersToLoad.isEmpty()) {
-                    getUsersInternal(TextUtils.join(",", usersToLoad), res.users);
+                cursor.dispose();
+                if (replyMessageRandomOwners.size() > 0) {
+                    for (int b = 0; b < replyMessageRandomOwners.size(); b++) {
+                        ArrayList<TLRPC.Message> arrayList = replyMessageRandomOwners.valueAt(b);
+                        for (int a = 0; a < arrayList.size(); a++) {
+                            arrayList.get(a).reply_to_random_id = 0;
+                        }
+                    }
                 }
-                if (!chatsToLoad.isEmpty()) {
-                    getChatsInternal(TextUtils.join(",", chatsToLoad), res.chats);
-                }
-            } catch (Exception e) {
-                res.messages.clear();
-                res.chats.clear();
-                res.users.clear();
-                FileLog.e(e);
-            } finally {
-                getMessagesController().processLoadedMessages(res, dialog_id, count_query, max_id_override, offset_date, true, classGuid, min_unread_id, last_message_id, count_unread, max_unread_date, load_type, isChannel, isEnd, scheduled, loadIndex, queryFromServer, mentions_unread);
             }
+            if (!usersToLoad.isEmpty()) {
+                getUsersInternal(TextUtils.join(",", usersToLoad), res.users);
+            }
+            if (!chatsToLoad.isEmpty()) {
+                getChatsInternal(TextUtils.join(",", chatsToLoad), res.chats);
+            }
+        } catch (Exception e) {
+            res.messages.clear();
+            res.chats.clear();
+            res.users.clear();
+            FileLog.e(e);
+        }
+        int countQueryFinal = count_query;
+        int maxIdOverrideFinal = max_id_override;
+        int minUnreadIdFinal = min_unread_id;
+        int lastMessageIdFinal = last_message_id;
+        boolean isEndFinal = isEnd;
+        boolean queryFromServerFinal = queryFromServer;
+        int mentionsUnreadFinal = mentions_unread;
+        int countUnreadFinal = count_unread;
+        int maxUnreadDateFinal = max_unread_date;
+        if (!scheduled && mergeDialogId != 0 && res.messages.size() < count && isEnd && load_type == 2) {
+            Runnable runnable = getMessagesInternal(mergeDialogId, 0, count, Integer.MAX_VALUE, 0, 0, classGuid, 0, false, false, loadIndex);
+            return () -> {
+                getMessagesController().processLoadedMessages(res, dialogId, mergeDialogId, countQueryFinal, maxIdOverrideFinal, offset_date, true, classGuid, minUnreadIdFinal, lastMessageIdFinal, countUnreadFinal, maxUnreadDateFinal, load_type, isChannel, isEndFinal, scheduled, -loadIndex, queryFromServerFinal, mentionsUnreadFinal);
+                runnable.run();
+            };
+        } else {
+            return () -> getMessagesController().processLoadedMessages(res, dialogId, mergeDialogId, countQueryFinal, maxIdOverrideFinal, offset_date, true, classGuid, minUnreadIdFinal, lastMessageIdFinal, countUnreadFinal, maxUnreadDateFinal, load_type, isChannel, isEndFinal, scheduled, loadIndex, queryFromServerFinal, mentionsUnreadFinal);
+        }
+    }
+
+    public void getMessages(long dialogId, long mergeDialogId, boolean loadInfo, int count, int max_id, int offset_date, int minDate, int classGuid, int load_type, boolean isChannel, boolean scheduled, int loadIndex) {
+        storageQueue.postRunnable(() -> {
+            long mergeDialogIdFinal = mergeDialogId;
+            int lowerId = (int) dialogId;
+            if (loadInfo) {
+                if (lowerId < 0) {
+                    TLRPC.ChatFull info = loadChatInfoInternal(-lowerId, true, false);
+                    if (info != null) {
+                        mergeDialogIdFinal = -info.migrated_from_chat_id;
+                    }
+                }
+            }
+            Utilities.stageQueue.postRunnable(getMessagesInternal(dialogId, mergeDialogIdFinal, count, max_id, offset_date, minDate, classGuid, load_type, isChannel, scheduled, loadIndex));
         });
     }
 
@@ -7272,6 +7318,33 @@ public class MessagesStorage extends BaseController {
         return message.reply_markup != null && !(message.reply_markup instanceof TLRPC.TL_replyInlineMarkup) && (!message.reply_markup.selective || message.mentioned);
     }
 
+    public void updateMessageVerifyFlags(ArrayList<TLRPC.Message> messages) {
+        Utilities.stageQueue.postRunnable(() -> {
+            try {
+                database.beginTransaction();
+                SQLitePreparedStatement state = database.executeFast("UPDATE messages SET imp = ? WHERE mid = ?");
+                for (int a = 0, N = messages.size(); a < N; a++) {
+                    TLRPC.Message message = messages.get(a);
+                    state.requery();
+                    int flags = 0;
+                    if (message.stickerVerified == 0) {
+                        flags |= 1;
+                    } else if (message.stickerVerified == 2) {
+                        flags |= 2;
+                    }
+                    state.bindInteger(1, flags);
+                    state.bindLong(2, message.id);
+                    state.step();
+                }
+                state.dispose();
+                database.commitTransaction();
+            } catch (Exception e) {
+                FileLog.e(e);
+            }
+        });
+
+    }
+
     private void putMessagesInternal(final ArrayList<TLRPC.Message> messages, final boolean withTransaction, final boolean doNotUpdateDialogDate, final int downloadMask, boolean ifNoLastMessage, boolean scheduled) {
         try {
             if (scheduled) {
@@ -7563,7 +7636,13 @@ public class MessagesStorage extends BaseController {
                     } else {
                         state_messages.bindInteger(9, getMessageMediaType(message));
                     }
-                    state_messages.bindInteger(10, 0);
+                    int flags = 0;
+                    if (message.stickerVerified == 0) {
+                        flags |= 1;
+                    } else if (message.stickerVerified == 2) {
+                        flags |= 2;
+                    }
+                    state_messages.bindInteger(10, flags);
                     state_messages.bindInteger(11, message.mentioned ? 1 : 0);
                     state_messages.step();
 
@@ -8909,7 +8988,7 @@ public class MessagesStorage extends BaseController {
         }
     }
 
-    public void replaceMessageIfExists(final TLRPC.Message message, int currentAccount, ArrayList<TLRPC.User> users, ArrayList<TLRPC.Chat> chats, boolean broadcast) {
+    public void replaceMessageIfExists(final TLRPC.Message message, ArrayList<TLRPC.User> users, ArrayList<TLRPC.Chat> chats, boolean broadcast) {
         if (message == null) {
             return;
         }
@@ -8964,7 +9043,13 @@ public class MessagesStorage extends BaseController {
                 } else {
                     state.bindInteger(9, getMessageMediaType(message));
                 }
-                state.bindInteger(10, 0);
+                int flags = 0;
+                if (message.stickerVerified == 0) {
+                    flags |= 1;
+                } else if (message.stickerVerified == 2) {
+                    flags |= 2;
+                }
+                state.bindInteger(10, flags);
                 state.bindInteger(11, message.mentioned ? 1 : 0);
                 state.step();
 
@@ -9208,7 +9293,13 @@ public class MessagesStorage extends BaseController {
                         } else {
                             state_messages.bindInteger(9, getMessageMediaType(message));
                         }
-                        state_messages.bindInteger(10, 0);
+                        int flags = 0;
+                        if (message.stickerVerified == 0) {
+                            flags |= 1;
+                        } else if (message.stickerVerified == 2) {
+                            flags |= 2;
+                        }
+                        state_messages.bindInteger(10, flags);
                         state_messages.bindInteger(11, message.mentioned ? 1 : 0);
                         state_messages.step();
 
@@ -9723,7 +9814,13 @@ public class MessagesStorage extends BaseController {
                         state_messages.bindInteger(7, (MessageObject.isOut(message) || message.from_scheduled ? 1 : 0));
                         state_messages.bindInteger(8, 0);
                         state_messages.bindInteger(9, (message.flags & TLRPC.MESSAGE_FLAG_HAS_VIEWS) != 0 ? message.views : 0);
-                        state_messages.bindInteger(10, 0);
+                        int flags = 0;
+                        if (message.stickerVerified == 0) {
+                            flags |= 1;
+                        } else if (message.stickerVerified == 2) {
+                            flags |= 2;
+                        }
+                        state_messages.bindInteger(10, flags);
                         state_messages.bindInteger(11, message.mentioned ? 1 : 0);
                         state_messages.step();
 

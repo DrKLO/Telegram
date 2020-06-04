@@ -273,7 +273,7 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
 
         @Override
         public void onClick(View widget) {
-            presentFragment(new TwoStepVerificationActivity(0));
+            presentFragment(new TwoStepVerificationSetupActivity(TwoStepVerificationSetupActivity.TYPE_INTRO, currentPassword));
         }
     }
 
@@ -820,7 +820,7 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
                             }
                             phoneField.setText(builder);
                             if (start >= 0) {
-                                phoneField.setSelection(start <= phoneField.length() ? start : phoneField.length());
+                                phoneField.setSelection(Math.min(start, phoneField.length()));
                             }
                             phoneField.onTextChange();
                             ignoreOnPhoneChange = false;
@@ -1326,7 +1326,7 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
                                     editable.replace(0, editable.length(), builder);
                                 }
                                 if (start >= 0) {
-                                    phoneField.setSelection(start <= phoneField.length() ? start : phoneField.length());
+                                    phoneField.setSelection(Math.min(start, phoneField.length()));
                                 }
                                 ignoreOnCardChange = false;
                             }
@@ -1442,7 +1442,7 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
 
                                 phoneField.setText(builder);
                                 if (start >= 0) {
-                                    phoneField.setSelection(start <= phoneField.length() ? start : phoneField.length());
+                                    phoneField.setSelection(Math.min(start, phoneField.length()));
                                 }
                                 ignoreOnCardChange = false;
                             }
@@ -2219,7 +2219,7 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
 
     @Override
     public boolean onFragmentCreate() {
-        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.didSetTwoStepPassword);
+        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.twoStepPasswordChanged);
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.didRemoveTwoStepPassword);
         if (currentStep != 4) {
             NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.paymentFinished);
@@ -2232,7 +2232,7 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
         if (delegate != null) {
             delegate.onFragmentDestroyed();
         }
-        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.didSetTwoStepPassword);
+        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.twoStepPasswordChanged);
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.didRemoveTwoStepPassword);
         if (currentStep != 4) {
             NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.paymentFinished);
@@ -2287,7 +2287,7 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
 
     @Override
     public void didReceivedNotification(int id, int account, Object... args) {
-        if (id == NotificationCenter.didSetTwoStepPassword) {
+        if (id == NotificationCenter.twoStepPasswordChanged) {
             paymentForm.password_missing = false;
             paymentForm.can_save_credentials = true;
             updateSavePaymentField();

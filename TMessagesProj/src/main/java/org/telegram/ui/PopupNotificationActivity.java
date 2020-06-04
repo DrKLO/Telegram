@@ -187,7 +187,7 @@ public class PopupNotificationActivity extends Activity implements NotificationC
 
                 setMeasuredDimension(widthSize, heightSize);
 
-                int keyboardSize = getKeyboardHeight();
+                int keyboardSize = measureKeyboardHeight();
 
                 if (keyboardSize <= AndroidUtilities.dp(20)) {
                     heightSize -= chatActivityEnterView.getEmojiPadding();
@@ -213,7 +213,7 @@ public class PopupNotificationActivity extends Activity implements NotificationC
             protected void onLayout(boolean changed, int l, int t, int r, int b) {
                 final int count = getChildCount();
 
-                int paddingBottom = getKeyboardHeight() <= AndroidUtilities.dp(20) ? chatActivityEnterView.getEmojiPadding() : 0;
+                int paddingBottom = measureKeyboardHeight() <= AndroidUtilities.dp(20) ? chatActivityEnterView.getEmojiPadding() : 0;
 
                 for (int i = 0; i < count; i++) {
                     final View child = getChildAt(i);

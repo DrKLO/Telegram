@@ -930,7 +930,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
     public boolean onFragmentCreate() {
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.FileDidUpload);
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.FileDidFailUpload);
-        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.didSetTwoStepPassword);
+        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.twoStepPasswordChanged);
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.didRemoveTwoStepPassword);
         return super.onFragmentCreate();
     }
@@ -940,7 +940,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
         super.onFragmentDestroy();
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.FileDidUpload);
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.FileDidFailUpload);
-        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.didSetTwoStepPassword);
+        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.twoStepPasswordChanged);
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.didRemoveTwoStepPassword);
         callCallback(false);
         if (chatAttachAlert != null) {
@@ -1559,9 +1559,8 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
         noPasswordSetTextView.setText(LocaleController.getString("TelegramPassportCreatePassword", R.string.TelegramPassportCreatePassword));
         linearLayout2.addView(noPasswordSetTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 24, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, 21, 9, 21, 0));
         noPasswordSetTextView.setOnClickListener(v -> {
-            TwoStepVerificationActivity activity = new TwoStepVerificationActivity(currentAccount, 1);
+            TwoStepVerificationSetupActivity activity = new TwoStepVerificationSetupActivity(currentAccount, TwoStepVerificationSetupActivity.TYPE_ENTER_FIRST, currentPassword);
             activity.setCloseAfterSet(true);
-            activity.setCurrentPasswordInfo(new byte[0], currentPassword);
             presentFragment(activity);
         });
 
@@ -1640,9 +1639,8 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
                         builder.setMessage(LocaleController.formatString("RestoreEmailSent", R.string.RestoreEmailSent, res.email_pattern));
                         builder.setTitle(LocaleController.getString("RestoreEmailSentTitle", R.string.RestoreEmailSentTitle));
                         builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), (dialogInterface, i) -> {
-                            TwoStepVerificationActivity fragment = new TwoStepVerificationActivity(currentAccount, 1);
-                            fragment.setRecoveryParams(currentPassword);
                             currentPassword.email_unconfirmed_pattern = res.email_pattern;
+                            TwoStepVerificationSetupActivity fragment = new TwoStepVerificationSetupActivity(currentAccount, TwoStepVerificationSetupActivity.TYPE_EMAIL_RECOVERY, currentPassword);
                             presentFragment(fragment);
                         });
                         Dialog dialog = showDialog(builder.create());
@@ -6516,7 +6514,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
             }
         } else if (id == NotificationCenter.FileDidFailUpload) {
 
-        } else if (id == NotificationCenter.didSetTwoStepPassword) {
+        } else if (id == NotificationCenter.twoStepPasswordChanged) {
             if (args != null && args.length > 0) {
                 if (args[7] != null && inputFields[FIELD_PASSWORD] != null) {
                     inputFields[FIELD_PASSWORD].setText((String) args[7]);
@@ -6834,11 +6832,10 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
                             ArrayList<SendMessagesHelper.SendingMediaInfo> photos = new ArrayList<>();
                             for (int a = 0; a < selectedPhotosOrder.size(); a++) {
                                 MediaController.PhotoEntry photoEntry = (MediaController.PhotoEntry) selectedPhotos.get(selectedPhotosOrder.get(a));
-
                                 SendMessagesHelper.SendingMediaInfo info = new SendMessagesHelper.SendingMediaInfo();
                                 if (photoEntry.imagePath != null) {
                                     info.path = photoEntry.imagePath;
-                                } else if (photoEntry.path != null) {
+                                } else {
                                     info.path = photoEntry.path;
                                 }
                                 photos.add(info);
@@ -6871,6 +6868,11 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
                 @Override
                 public void needEnterComment() {
 
+                }
+
+                @Override
+                public void doOnIdle(Runnable runnable) {
+                    runnable.run();
                 }
             });
         }

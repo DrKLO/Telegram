@@ -6,6 +6,8 @@ import android.opengl.GLUtils;
 
 import org.telegram.ui.Components.Size;
 
+import java.nio.ByteBuffer;
+
 public class Texture {
 
     private Bitmap bitmap;
@@ -48,18 +50,17 @@ public class Texture {
 
         GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, texture);
 
-        boolean mipMappable = false; //isPOT(bitmap.getWidth()) && isPOT(bitmap.getHeight());
         GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_S, GLES20.GL_CLAMP_TO_EDGE);
         GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_T, GLES20.GL_CLAMP_TO_EDGE);
-
         GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MAG_FILTER, GLES20.GL_LINEAR);
-        GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MIN_FILTER, mipMappable ? GLES20.GL_LINEAR_MIPMAP_LINEAR : GLES20.GL_LINEAR);
+        GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MIN_FILTER, GLES20.GL_LINEAR);
 
         GLUtils.texImage2D(GLES20.GL_TEXTURE_2D, 0, bitmap, 0);
+        int px = bitmap.getPixel(0, 0);
 
-        if (mipMappable) {
-            GLES20.glGenerateMipmap(GLES20.GL_TEXTURE_2D);
-        }
+        ByteBuffer buffer = ByteBuffer.allocateDirect(4); //fix for android 9.0
+        buffer.putInt(px).position(0);
+        GLES20.glTexSubImage2D(GLES20.GL_TEXTURE_2D, 0, 0, 0, 1, 1, GLES20.GL_RGBA, GLES20.GL_UNSIGNED_BYTE, buffer);
 
         Utils.HasGLError();
 

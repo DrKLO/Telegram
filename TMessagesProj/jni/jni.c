@@ -10,11 +10,11 @@
 #include <dirent.h>
 #include <sys/stat.h>
 #include <libtgvoip/client/android/org_telegram_messenger_voip_TgVoip.h>
-#include "image.h"
 #include "libtgvoip/client/android/tg_voip_jni.h"
 
 int registerNativeTgNetFunctions(JavaVM *vm, JNIEnv *env);
 int videoOnJNILoad(JavaVM *vm, JNIEnv *env);
+int imageOnJNILoad(JavaVM *vm, JNIEnv *env);
 //int tonLibOnLoad(JavaVM *vm, JNIEnv *env);
 
 jint JNI_OnLoad(JavaVM *vm, void *reserved) {

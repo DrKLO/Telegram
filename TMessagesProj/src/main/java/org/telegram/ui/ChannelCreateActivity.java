@@ -300,7 +300,7 @@ public class ChannelCreateActivity extends BaseFragment implements NotificationC
 
                     measureChildWithMargins(actionBar, widthMeasureSpec, 0, heightMeasureSpec, 0);
 
-                    int keyboardSize = SharedConfig.smoothKeyboard ? 0 : getKeyboardHeight();
+                    int keyboardSize = SharedConfig.smoothKeyboard ? 0 : measureKeyboardHeight();
                     if (keyboardSize > AndroidUtilities.dp(20)) {
                         ignoreLayout = true;
                         nameTextView.hideEmojiView();
@@ -333,7 +333,7 @@ public class ChannelCreateActivity extends BaseFragment implements NotificationC
                 protected void onLayout(boolean changed, int l, int t, int r, int b) {
                     final int count = getChildCount();
 
-                    int keyboardSize = SharedConfig.smoothKeyboard ? 0 : getKeyboardHeight();
+                    int keyboardSize = SharedConfig.smoothKeyboard ? 0 : measureKeyboardHeight();
                     int paddingBottom = keyboardSize <= AndroidUtilities.dp(20) && !AndroidUtilities.isInMultiwindow && !AndroidUtilities.isTablet() ? nameTextView.getEmojiPadding() : 0;
                     setBottomClip(paddingBottom);
 

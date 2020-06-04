@@ -309,7 +309,7 @@ public class VideoTimelinePlayView extends View {
                         Canvas canvas = new Canvas(result);
                         float scaleX = (float) frameWidth / (float) bitmap.getWidth();
                         float scaleY = (float) frameHeight / (float) bitmap.getHeight();
-                        float scale = scaleX > scaleY ? scaleX : scaleY;
+                        float scale = Math.max(scaleX, scaleY);
                         int w = (int) (bitmap.getWidth() * scale);
                         int h = (int) (bitmap.getHeight() * scale);
                         Rect srcRect = new Rect(0, 0, bitmap.getWidth(), bitmap.getHeight());

@@ -125,6 +125,10 @@ ConnectionsManager::~ConnectionsManager() {
         close(epolFd);
         epolFd = 0;
     }
+    if (pipeFd != nullptr) {
+        delete[] pipeFd;
+        pipeFd = nullptr;
+    }
     pthread_mutex_destroy(&mutex);
 }
 
@@ -1645,6 +1649,7 @@ void ConnectionsManager::initDatacenters() {
         if (datacenters.find(2) == datacenters.end()) {
             datacenter = new Datacenter(instanceNum, 2);
             datacenter->addAddressAndPort("149.154.167.51", 443, 0, "");
+            datacenter->addAddressAndPort("95.161.76.100", 443, 0, "");
             datacenter->addAddressAndPort("2001:67c:4e8:f002:0000:0000:0000:000a", 443, 1, "");
             datacenters[2] = datacenter;
         }
@@ -2309,8 +2314,6 @@ void ConnectionsManager::processRequestQueue(uint32_t connectionTypes, uint32_t 
         if (genericConnection != nullptr && !sessionsToDestroy.empty() && genericConnection->getConnectionToken() != 0) {
             std::vector<int64_t>::iterator iter = sessionsToDestroy.begin();
 
-            sessionsToDestroy.erase(iter);
-
             if (abs(currentTime - lastDestroySessionRequestTime) > 2) {
                 lastDestroySessionRequestTime = currentTime;
                 TL_destroy_session *request = new TL_destroy_session();
@@ -2324,6 +2327,7 @@ void ConnectionsManager::processRequestQueue(uint32_t connectionTypes, uint32_t 
                 networkMessage->message->seqno = genericConnection->generateMessageSeqNo(false);
                 addMessageToDatacenter(defaultDatacenter->getDatacenterId(), networkMessage, genericMessagesToDatacenters);
             }
+            sessionsToDestroy.erase(iter);
         }
     }
 

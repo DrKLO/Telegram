@@ -344,9 +344,11 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
                 }
                 MediaController.SearchImage photoEntry = searchResult.get(index);
                 if ((num = addToSelectedPhotos(photoEntry, -1)) == -1) {
+                    photoEntry.editedInfo = videoEditedInfo;
                     num = selectedPhotosOrder.indexOf(photoEntry.id);
                 } else {
                     add = false;
+                    photoEntry.editedInfo = null;
                 }
             }
             int count = listView.getChildCount();
@@ -389,7 +391,9 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
                     if (index < 0 || index >= searchResult.size()) {
                         return;
                     }
-                    addToSelectedPhotos(searchResult.get(index), -1);
+                    MediaController.SearchImage searchImage = searchResult.get(index);
+                    searchImage.editedInfo = videoEditedInfo;
+                    addToSelectedPhotos(searchImage, -1);
                 }
             }
             sendSelectedPhotos(notify, scheduleDate);
@@ -488,9 +492,16 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
         if (isDocumentsPicker) {
             ActionBarMenu menu = actionBar.createMenu();
             ActionBarMenuItem menuItem = menu.addItem(0, R.drawable.ic_ab_other);
-            menuItem.setSubMenuDelegate(() -> {
-                showAsListItem.setText(listSort ? LocaleController.getString("ShowAsGrid", R.string.ShowAsGrid) : LocaleController.getString("ShowAsList", R.string.ShowAsList));
-                showAsListItem.setIcon(listSort ? R.drawable.msg_media : R.drawable.msg_list);
+            menuItem.setSubMenuDelegate(new ActionBarMenuItem.ActionBarSubMenuItemDelegate() {
+                @Override
+                public void onShowSubMenu() {
+                    showAsListItem.setText(listSort ? LocaleController.getString("ShowAsGrid", R.string.ShowAsGrid) : LocaleController.getString("ShowAsList", R.string.ShowAsList));
+                    showAsListItem.setIcon(listSort ? R.drawable.msg_media : R.drawable.msg_list);
+                }
+
+                @Override
+                public void onHideSubMenu() {
+                }
             });
             showAsListItem = menuItem.addSubItem(change_sort, R.drawable.msg_list, LocaleController.getString("ShowAsList", R.string.ShowAsList));
             menuItem.addSubItem(open_in, R.drawable.msg_openin, LocaleController.getString("OpenInExternalApp", R.string.OpenInExternalApp));
@@ -588,7 +599,7 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
 
                 setMeasuredDimension(widthSize, heightSize);
 
-                int kbHeight = getKeyboardHeight();
+                int kbHeight = measureKeyboardHeight();
                 int keyboardSize = SharedConfig.smoothKeyboard ? 0 : kbHeight;
                 if (keyboardSize <= AndroidUtilities.dp(20)) {
                     if (!AndroidUtilities.isInMultiwindow && commentTextView != null && frameLayout2.getParent() == this) {
@@ -643,7 +654,7 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
                 }
                 final int count = getChildCount();
 
-                int keyboardSize = SharedConfig.smoothKeyboard ? 0 : getKeyboardHeight();
+                int keyboardSize = SharedConfig.smoothKeyboard ? 0 : measureKeyboardHeight();
                 int paddingBottom = commentTextView != null && frameLayout2.getParent() == this && keyboardSize <= AndroidUtilities.dp(20) && !AndroidUtilities.isInMultiwindow && !AndroidUtilities.isTablet() ? commentTextView.getEmojiPadding() : 0;
                 setBottomClip(paddingBottom);
 

@@ -121,7 +121,6 @@ public class PhotoPickerSearchActivity extends BaseFragment {
                 imagesSearch.getActionBar().openSearchField("", false);
                 gifsSearch.getActionBar().openSearchField("", false);
                 searchItem.getSearchField().requestFocus();
-
             }
 
             @Override
@@ -241,7 +240,7 @@ public class PhotoPickerSearchActivity extends BaseFragment {
                 setMeasuredDimension(widthSize, heightSize);
 
                 measureChildWithMargins(actionBar, widthMeasureSpec, 0, heightMeasureSpec, 0);
-                int keyboardSize = SharedConfig.smoothKeyboard ? 0 : getKeyboardHeight();
+                int keyboardSize = SharedConfig.smoothKeyboard ? 0 : measureKeyboardHeight();
                 if (keyboardSize <= AndroidUtilities.dp(20)) {
                     if (!AndroidUtilities.isInMultiwindow) {
                         heightSize -= commentTextView.getEmojiPadding();
@@ -291,7 +290,7 @@ public class PhotoPickerSearchActivity extends BaseFragment {
             protected void onLayout(boolean changed, int l, int t, int r, int b) {
                 final int count = getChildCount();
 
-                int keyboardSize = SharedConfig.smoothKeyboard ? 0 : getKeyboardHeight();
+                int keyboardSize = SharedConfig.smoothKeyboard ? 0 : measureKeyboardHeight();
                 int paddingBottom = keyboardSize <= AndroidUtilities.dp(20) && !AndroidUtilities.isInMultiwindow && !AndroidUtilities.isTablet() ? commentTextView.getEmojiPadding() : 0;
                 setBottomClip(paddingBottom);
 

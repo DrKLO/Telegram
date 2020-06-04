@@ -96,7 +96,7 @@ public class FileStreamLoadOperation extends BaseDataSource implements FileLoadO
                     readLength = (int) bytesRemaining;
                 }
                 while (availableLength == 0 && opened) {
-                    availableLength = loadOperation.getDownloadedLengthFromOffset(currentOffset, readLength);
+                    availableLength = loadOperation.getDownloadedLengthFromOffset(currentOffset, readLength)[0];
                     if (availableLength == 0) {
                         FileLoader.getInstance(currentAccount).loadStreamFile(this, document, parentObject, currentOffset, false);
                         countDownLatch = new CountDownLatch(1);

@@ -217,11 +217,11 @@
     <string name="ContactsPermissionAlertContinue">계속</string>
     <string name="YourContacts">텔레그램에 있는 회원님의 연락처</string>
     <string name="ArchiveHintHeader1">회원님의 보관함입니다</string>
-    <string name="ArchiveHintText1">알림이 켜진 대화방은 새로운 메시지가 도착했을 때 보관이 해제됩니다.</string>
+    <string name="ArchiveHintText1">알림이 켜진 대화방은 새로운 메시지가 도착하면 보관이 해제됩니다.</string>
     <string name="ArchiveHintHeader2">알림이 꺼진 대화방</string>
     <string name="ArchiveHintText2">알림이 꺼진 대화방은 새로운 메시지가 도착해도 계속 보관됩니다.</string>
     <string name="ArchiveHintHeader3">고정된 대화방</string>
-    <string name="ArchiveHintText3">보관한 대화방을 무제한으로 맨 위에 고정하실 수 있습니다.</string>
+    <string name="ArchiveHintText3">보관한 대화방들은 개수 제한 없이 맨 위에 고정하실 수 있습니다.</string>
     <string name="ScheduledOrNoSoundHint">이 버튼을 길게 눌러 메시지를 예약하거나 메시지를 소리 없이 보내세요.</string>
     <!--channels-->
     <string name="SetAsAdmin">관리자로 승격</string>
@@ -291,7 +291,7 @@
     <string name="ChannelLinkTitle">영구 링크</string>
     <string name="ChannelInviteLinkTitle">초대 링크</string>
     <string name="GroupAddMembers">참가자 추가</string>
-    <string name="ChannelAddSubscribers">Add Subscribers</string>
+    <string name="ChannelAddSubscribers">구독자 추가</string>
     <string name="LeaveChannel">채널 나가기</string>
     <string name="LeaveChannelMenu">채널 나가기</string>
     <string name="ChannelSettings">설정</string>
@@ -531,9 +531,9 @@
     <string name="NewPoll">새로운 설문</string>
     <string name="NewQuiz">새로운 퀴즈</string>
     <string name="Poll">설문</string>
-    <string name="PollQuestion">Poll question</string>
+    <string name="PollQuestion">설문지 질문</string>
     <string name="QuestionHint">질문을 작성하세요</string>
-    <string name="AnswerOptions">Answer options</string>
+    <string name="AnswerOptions">답변 선택지</string>
     <string name="QuizAnswers">퀴즈 답</string>
     <string name="PollResults">설문 결과</string>
     <string name="PollAnonymous">익명 투표</string>
@@ -583,12 +583,12 @@
     <string name="Answer_few">답변자 %1$d명</string>
     <string name="Answer_many">답변자 %1$d명</string>
     <string name="Answer_other">답변자 %1$d명</string>
-    <string name="ShowVotes_zero">더 보기 (%1$d)</string>
-    <string name="ShowVotes_one">더 보기 (%1$d)</string>
-    <string name="ShowVotes_two">더 보기 (%1$d)</string>
-    <string name="ShowVotes_few">더 보기 (%1$d)</string>
-    <string name="ShowVotes_many">더 보기 (%1$d)</string>
-    <string name="ShowVotes_other">더 보기 (%1$d)</string>
+    <string name="ShowVotes_zero">더 보기 (%1$d명)</string>
+    <string name="ShowVotes_one">더 보기 (%1$d명)</string>
+    <string name="ShowVotes_two">더 보기 (%1$d명)</string>
+    <string name="ShowVotes_few">더 보기 (%1$d명)</string>
+    <string name="ShowVotes_many">더 보기 (%1$d명)</string>
+    <string name="ShowVotes_other">더 보기 (%1$d명)</string>
     <string name="Option_zero">선택지를 %1$d개 더</string>
     <string name="Option_one">선택지를 %1$d개 더</string>
     <string name="Option_two">선택지를 %1$d개 더</string>
@@ -722,7 +722,7 @@
     <string name="SdCard">SD 카드</string>
     <string name="Folder">폴더</string>
     <string name="RecentFiles">최근 파일</string>
-    <string name="RecentFilesAZ">Files A-Z</string>
+    <string name="RecentFilesAZ">파일 A-Z</string>
     <string name="NoFilesFound">검색 결과가 없습니다</string>
     <string name="NoFilesFoundInfo">현재 디렉토리에 **%1$s**와 같은 것이 없습니다.</string>
     <string name="NoFilesInfo">폴더가 비었습니다.</string>
@@ -731,7 +731,7 @@
     <string name="AppFolderInfo">앱 폴더 탐색</string>
     <string name="InternalFolderInfo">파일 시스템 탐색</string>
     <string name="ExternalFolderInfo">외부 저장 공간 탐색</string>
-    <string name="SearchMusic">Search music</string>
+    <string name="SearchMusic">음악 검색</string>
     <!--group stickers-->
     <string name="GroupStickers">그룹 스티커</string>
     <string name="ChooseFromYourStickers">내 스티커에서 선택</string>
@@ -801,8 +801,8 @@
     <string name="YouLeft">그룹에서 나오셨습니다</string>
     <string name="DeleteThisGroup">이 그룹 삭제</string>
     <string name="DeleteThisChat">대화방 삭제</string>
-    <string name="DeleteThisChatBothSides">Delete this chat</string>
-    <string name="DeleteTheseChatsBothSides">Delete chats</string>
+    <string name="DeleteThisChatBothSides">이 대화방 삭제</string>
+    <string name="DeleteTheseChatsBothSides">대화방 삭제</string>
     <string name="SlideToCancel">밀어서 취소</string>
     <string name="SaveToDownloads">다운로드 폴더에 저장</string>
     <string name="SaveToGIFs">GIF에 저장</string>
@@ -909,6 +909,7 @@
     <string name="DeleteForUser">%1$s 님에게서 삭제</string>
     <string name="DeleteForAll">모든 참가자에게서 삭제</string>
     <string name="TextCopied">텍스트를 클립보드에 복사했습니다</string>
+    <string name="HoldToAudioOnly">Hold to record audio.</string>
     <string name="HoldToAudio">꾹 눌러 녹음하세요. 살짝 눌러 동영상으로 바꾸세요.</string>
     <string name="HoldToVideo">꾹 눌러 녹화하세요. 살짝 눌러 음성으로 바꾸세요.</string>
     <string name="DiscardVoiceMessageTitle">음성 메시지 삭제</string>
@@ -966,7 +967,7 @@
     <string name="MessageScheduledLimitReached">죄송합니다. 메시지를 100개 이상 예약할 수 없습니다.</string>
     <string name="MessageScheduledBotAction">이 작업은 메시지가 공개된 뒤에 시행하실 수 있습니다.</string>
     <string name="MessageScheduledVote">투표는 메시지가 공개된 뒤에 이용할 수 있습니다.</string>
-    <string name="MessageScheduledVoteResults">설문 결과는 메시지가 게시된 뒤 열람하실 수 있습니다.</string>
+    <string name="MessageScheduledVoteResults">설문 결과는 메시지가 게시된 뒤에 열람하실 수 있습니다.</string>
     <string name="MessageScheduledReminderNotification">&#128197; 알림</string>
     <string name="OneResult">1건의 결과</string>
     <string name="VideoQualityIsTooLow">압축 설정을 바꾸기엔 동영상 품질이 너무 낮습니다.</string>
@@ -976,7 +977,18 @@
     <string name="DiceInfo2">대화방에 **:dice:**를 보내어 주사위를 굴리세요.</string>
     <string name="DartInfo">**:darts:** 이모지를 보내어 운수를 시험해 보세요.</string>
     <string name="DiceEmojiInfo">%1$s 이모지를 보내어 운수를 시험해 보세요.</string>
-    <string name="SendDice">보내기</string>Send a dart emoji
+    <string name="SendDice">보내기</string>
+    <string name="PsaType_covid">코로나19</string>
+    <string name="PsaTypeDefault">공공발표</string>
+    <string name="PsaInfo_covid">이 메시지는 세계적 유행 중인 코로나19 감염 질환에 관한 공공 서비스 발표를 제공드립니다. 아래 링크에서 이 계획에 대해 더 알아보세요.\nhttps://telegram.org/blog/coronavirus</string>
+    <string name="PsaInfoDefault">공공서비스발표 정보 테스트</string>
+    <string name="PsaMessage_covid">코로나바이러스감염증-19 알림</string>
+    <string name="PsaMessageInfo_covid">이 메시지는 세계적 유행 중인 코로나19 감염 질환에 관한 공공 서비스 발표를 제공드립니다. 아래 링크에서 이 계획에 대해 더 알아보세요.\nhttps://telegram.org/blog/coronavirus</string>
+    <string name="PsaMessageDefault">중요 알림</string>
+    <string name="PsaMessageInfoDefault">중요한 알림입니다.</string>
+    <string name="PsaHideChatAlertTitle">대화방 가리기</string>
+    <string name="PsaHideChatAlertText">정말 이 대화방을 가리시겠습니까?</string>
+    <string name="PsaHide">가리기</string>
     <!--notification-->
     <string name="MessageLifetimeChanged">%1$s 님이 자동 삭제 타이머를 %2$s(으)로 맞췄습니다</string>
     <string name="MessageLifetimeChangedOutgoing">자동 삭제 타이머를 %1$s(으)로 맞추셨습니다</string>
@@ -1212,11 +1224,11 @@
     <string name="CreateEncryptedChatError">오류가 발생했습니다.</string>
     <string name="EncryptionKey">암호화 키</string>
     <string name="MessageLifetime">자동 삭제 타이머</string>
-    <string name="MessageLifetimePhoto">타이머를 맞추시면, 사진이 열람된 뒤 자동으로 삭제됩니다.</string>
-    <string name="MessageLifetimeVideo">타이머를 맞추시면, 동영상이 열람된 뒤 자동으로 삭제됩니다.</string>
+    <string name="MessageLifetimePhoto">타이머를 맞추시면, 사진이 열람된 뒤에 자동으로 삭제됩니다.</string>
+    <string name="MessageLifetimeVideo">타이머를 맞추시면, 동영상이 열람된 뒤에 자동으로 삭제됩니다.</string>
     <string name="ShortMessageLifetimeForever">끔</string>
     <string name="EncryptionKeyDescription">이 이미지와 문자는 **%1$s** 님과의 비밀 대화에 사용된 암호화 키에서 파생되었습니다.\n\n이 이미지와 문자가 **%2$s** 님의 기기에서 똑같이 보인다면, 단대단 암호화가 보장됩니다.\n\ntelegram.org에서 자세히 알아보세요.</string>
-    <string name="EncryptionKeyLink">https://telegram.org/faq#secret-chats</string>
+    <string name="EncryptionKeyLink">https://telegram.org/faq/ko#1498786448</string>
     <string name="NumberUnknown">알 수 없음</string>
     <string name="PhoneHidden">알 수 없음</string>
     <string name="MobileHidden">전화번호 숨김</string>
@@ -1297,6 +1309,7 @@
     <string name="Masks">마스크</string>
     <string name="MasksInfo">보내고자 하는 사진에 마스크를 추가하실 수 있습니다. 사진을 보내기 전에 사진 편집기를 열어 보세요.</string>
     <string name="FeaturedStickers">인기 스티커</string>
+    <string name="FeaturedGifs">Trending GIFs</string>
     <string name="SuggestStickers">이모지에 맞춰 스티커 추천</string>
     <string name="SuggestStickersAll">모든 스티커</string>
     <string name="SuggestStickersInstalled">내 스티커</string>
@@ -1443,7 +1456,7 @@
     <string name="TextSizeHeader">메시지 글자 크기</string>
     <string name="AskAQuestion">질문하기</string>
     <string name="AddAnExplanation">설명 추가</string>
-    <string name="AddAnExplanationInfo">Users will see this text after choosing the wrong answer, good for educational purposes.</string>
+    <string name="AddAnExplanationInfo">사용자가 틀린 답을 선택하면 이 설명이 나타납니다. 교육용으로 활용하기 좋습니다.</string>
     <string name="EnableAnimations">화면 전환 효과 사용</string>
     <string name="ChatSettings">대화방 설정</string>
     <string name="Devices">디바이스</string>
@@ -1569,7 +1582,7 @@
     <string name="LanguageUnsupportedError">해당 언어가 없습니다.</string>
     <string name="LanguageSame">이미 이 언어 묶음(**%1$s**)을 사용하고 계십니다. 언제든 설정에서 언어를 바꾸실 수 있습니다.</string>
     <string name="LanguageUnknownCustomAlert">안타깝게도 이 맞춤 언어 묶음(**%1$s**)에는 Android 텔레그램용 데이터가 들어 있지 않습니다.</string>
-    <string name="AskAQuestionInfo">텔레그램 지원 사항은 자원봉사자들이 처리합니다. 신속하게 응답해 드리고자 노력하지만, 다소 시간이 걸릴 수 있습니다.\n\n<![CDATA[<a href=\"https://telegram.org/faq/ko#a\"> 자주 묻는 질문</a>]]>을 확인해 보세요. 잦은 질문에 대한 답과 <![CDATA[<a href=\"https://telegram.org/faq/ko#h\">문제 해결</a>]]>을 위한 중요한 조언이 있습니다.</string>
+    <string name="AskAQuestionInfo">텔레그램 지원 사항은 자원봉사자들이 처리합니다. 신속하게 응답해 드리고자 노력하지만, 다소 시간이 걸릴 수 있습니다.\n\n<![CDATA[<a href=\"https://telegram.org/faq/ko#325188137\"> 자주 묻는 질문</a>]]>을 확인해 보세요. 잦은 질문에 대한 답과 <![CDATA[<a href=\"https://telegram.org/faq/ko#1478791328\">문제 해결</a>]]>을 위한 중요한 조언이 있습니다.</string>
     <string name="AskButton">봉사자에게 질문하기</string>
     <string name="TelegramFAQ">자주 묻는 질문</string>
     <string name="TelegramFaq">자주 묻는 질문</string>
@@ -1657,6 +1670,7 @@
     <string name="AutoplayMedia">미디어 자동 재생</string>
     <string name="RaiseToSpeak">기기 들어 말하기</string>
     <string name="SaveToGallerySettings">갤러리에 저장</string>
+    <string name="SoundMuted">Sound muted</string>
     <string name="EditName">이름 수정</string>
     <string name="NotificationsCustomize">맞춤</string>
     <string name="NotificationsCustom">맞춤</string>
@@ -1819,6 +1833,7 @@
     <string name="AuthAnotherClientInfo2">QR 코드를 받으려면 텔레그램 데스크탑을 실행하세요.</string>
     <string name="AuthAnotherClientInfo3">회원님의 계정을 연결하려면 QR 코드를 스캔하세요.</string>
     <string name="AuthAnotherClientUrl">이 코드는 누군가가 회원님의 텔레그램 계정에 로그인할 수 있도록 하는 데 사용될 수 있습니다.\n\n텔레그램 로그인을 인증하려면, 설정 &gt; 디바이스 &gt; QR 코드 스캔으로 이동하여 코드를 스캔해 주세요.</string>
+    <string name="QRCodePermissionNoCamera">Telegram needs access to your camera so that you can scan QR codes.</string>
     <!--cache view-->
     <string name="LocalDatabase">로컬 데이터베이스</string>
     <string name="LocalDatabaseClearTextTitle">로컬 데이터베이스 비우기</string>
@@ -1846,7 +1861,7 @@
     <string name="PassportProvidedInformation">제공한 정보</string>
     <string name="PassportInfoTitle">텔레그램 패스포트가 무엇인가요?</string>
     <string name="PassportInfo2">텔레그램 패스포트와 함께라면, 신분 인증이 필요한 여러 웹 사이트와 서비스에 손쉽게 로그인하실 수 있습니다.\n\n회원님의 정보와 개인 데이터, 서류들은 단대단 암호화로 보호됩니다. 텔레그램을 포함하여, 그 누구도 회원님의 허가 없이 이들에 접근할 수 없습니다.\n\n*자주 묻는 질문*을 방문하여 자세히 알아보실 수 있습니다.</string>
-    <string name="PassportInfoUrl">https://telegram.org/faq#passport</string>
+    <string name="PassportInfoUrl">https://telegram.org/faq/ko#1660002760</string>
     <string name="TelegramPassportCreatePasswordInfo">단대단 암호화로 개인 데이터를 보호하려면 비밀번호를 만드셔야 합니다.\n\n새로운 기기로 텔레그램에 로그인할 때 이 비밀번호가 필요할 것입니다.</string>
     <string name="TelegramPassportCreatePassword">비밀번호 만들기</string>
     <string name="TelegramPassportDelete">텔레그램 패스포트 삭제</string>
@@ -2131,6 +2146,18 @@
     <string name="FilterAvailableText">*설정 &gt; 폴더*를 열어 대화방을 폴더로 정리하세요.</string>
     <string name="FilterNameNonMuted">알림 켜짐</string>
     <string name="FilterNameUnread">읽지 않음</string>
+    <string name="FilterAddTo">Add to folder</string>
+    <string name="FilterRemoveFrom">Remove from folder</string>
+    <string name="FilterChoose">Choose a folder</string>
+    <string name="FilterUserAddedToExisting">**%1$s** added to **%2$s**</string>
+    <string name="FilterChatAddedToExisting">**%1$s** added to **%2$s**</string>
+    <string name="FilterChatsAddedToExisting">**%1$s** added to **%2$s**</string>
+    <string name="FilterUserRemovedFrom">**%1$s** removed from **%2$s**</string>
+    <string name="FilterChatRemovedFrom">**%1$s** removed from **%2$s**</string>
+    <string name="FilterChatsRemovedFrom">**%1$s** removed from **%2$s**</string>
+    <string name="FilterAddToAlertFullTitle">Limit reached</string>
+    <string name="FilterRemoveFromAlertFullText">Sorry, you can\'t add more than 100 chats to a folder.</string>
+    <string name="FilterAddToAlertFullText">Sorry, you can\'t exclude more than 100 chats from a folder.</string>
     <!--passcode view-->
     <string name="Passcode">암호 잠금</string>
     <string name="ChangePasscode">암호 바꾸기</string>
@@ -2260,6 +2287,7 @@
     <string name="ShowAsList">목록으로 보기</string>
     <string name="ShowAsGrid">그리드로 보기</string>
     <string name="ShowAllMedia">모든 미디어 보기</string>
+    <string name="ShowStickers">Show stickers</string>
     <string name="ShowAllFiles">모든 파일 보기</string>
     <string name="ShowAllGIFs">GIF 모두 보기</string>
     <string name="TapToDownload">다운로드하려면 누르세요</string>
@@ -2334,6 +2362,7 @@
     <string name="PaintDuplicate">복제</string>
     <string name="PaintOutlined">외곽선</string>
     <string name="PaintRegular">일반</string>
+    <string name="PaintFramed">Framed</string>
     <string name="CropReset">초기화</string>
     <string name="CropOriginal">원본</string>
     <string name="CropSquare">정방형</string>
@@ -2344,15 +2373,24 @@
     <!--password view-->
     <string name="TwoStepVerification">2단계 인증</string>
     <string name="TwoStepVerificationTitle">2단계 인증</string>
+    <string name="TwoStepVerificationPasswordSet">Password Set!</string>
+    <string name="TwoStepVerificationPasswordSetInfo">This password will be required when you log in on a new device in addition to the code you get in the SMS.</string>
+    <string name="TwoStepVerificationPasswordReturnSettings">Return to Settings</string>
+    <string name="TwoStepVerificationPasswordReturnPassport">Return to Passport</string>
+    <string name="TwoStepVerificationSetPassword">Set Password</string>
     <string name="SetAdditionalPassword">추가 비밀번호 설정</string>
     <string name="SetAdditionalPasswordInfo">새로운 기기에 로그인할 때 SMS로 받는 코드와 별개로 입력해야 하는 비밀번호를 설정하실 수 있습니다.</string>
     <string name="YourPassword">비밀번호</string>
+    <string name="PasswordOn">On</string>
+    <string name="PasswordOff">Off</string>
     <string name="PleaseEnterCurrentPassword">비밀번호를 입력하세요</string>
     <string name="PleaseEnterCurrentPasswordTransfer">이전 작업을 완료하려면 비밀번호를 입력해 주세요.</string>
     <string name="PleaseEnterFirstPassword">비밀번호 입력</string>
+    <string name="PleaseEnterNewFirstPassword">Enter a new password</string>
     <string name="PleaseEnterPassword">새 비밀번호를 입력해 주세요</string>
     <string name="PleaseReEnterPassword">비밀번호를 다시 입력해 주세요</string>
     <string name="RecoveryEmail">복구 이메일</string>
+    <string name="RecoveryEmailTitle">Recovery Email</string>
     <string name="YourEmail">이메일</string>
     <string name="YourEmailCode">이메일 코드</string>
     <string name="YourEmailCodeInfo">%1$s 편으로 받은 코드를 입력하여 이메일 주소를 인증해 주세요.</string>
@@ -2364,7 +2402,9 @@
     <string name="YourEmailAlmostThereText">2단계 인증 설정을 완료하려면 이메일을 (스팸 메일함도 잊지 않고) 확인해 주세요.</string>
     <string name="YourPasswordSuccess">성공!</string>
     <string name="YourPasswordSuccessText">2단계 인증 비밀번호가 활성화되었습니다.</string>
+    <string name="YourPasswordChangedSuccessText">Your password for Two-Step Verification has been changed.</string>
     <string name="YourEmailSuccessText">2단계 인증용 복구 이메일이 이제 작동합니다.</string>
+    <string name="YourEmailSuccessChangedText">Your recovery email for Two-Step Verification is changed.</string>
     <string name="ChangePassword">비밀번호 바꾸기</string>
     <string name="TurnPasswordOff">비밀번호 끄기</string>
     <string name="SetRecoveryEmail">복구 이메일 설정하기</string>
@@ -2376,9 +2416,11 @@
     <string name="CancelEmailQuestionTitle">설치 중단</string>
     <string name="TurnPasswordOffPassport">경고! 텔레그램 패스포트에 저장된 데이터가 모두 사라집니다!</string>
     <string name="PasswordHint">비밀번호 힌트</string>
+    <string name="PasswordHintPlaceholder">Hint</string>
     <string name="PasswordHintText">비밀번호 힌트를 만드세요</string>
     <string name="PasswordDoNotMatch">비밀번호가 맞지 않습니다</string>
     <string name="AbortPassword">2단계 인증 설정 그만두기</string>
+    <string name="AbortPasswordMenu">Abort setup</string>
     <string name="AbortEmail">복구 이메일 설정 중단</string>
     <string name="Abort">중단</string>
     <string name="Disable">사용 안 함</string>
@@ -2406,6 +2448,8 @@
     <string name="PasswordCode">코드</string>
     <string name="PasswordReset">비밀번호 비활성화</string>
     <string name="ResendCode">코드 다시 보내기</string>
+    <string name="VerificationCode">Verification code</string>
+    <string name="EnterCode">Enter code</string>
     <string name="ResendCodeInfo">인증 코드를 이메일로 보냈습니다.</string>
     <string name="EnabledPasswordText">2단계 인증이 활성화되었습니다.\n회원님의 텔레그램 계정에 로그인하려면 여기서 설정하신 비밀번호가 필요합니다.</string>
     <!--data settings-->
@@ -2648,6 +2692,7 @@
     <string name="UserChannelTooMuchJoin">죄송합니다. 해당 사용자가 너무 많은 그룹과 채널에 들어가 있습니다.\n먼저 몇 곳을 나가도록 요청해 주세요.</string>
     <!--Alert messages-->
     <string name="DeleteAllMessagesAlert">잠깐! **참가자 서로에게서** 이 대화방의 **모든 메시지가 삭제**됩니다.</string>
+    <string name="DeleteAllMessagesSavedAlert">Warning! This will **delete all messages** in this chat.</string>
     <string name="DeleteAll">모두 삭제</string>
     <string name="StopLoading">불러오기를 중단할까요?</string>
     <string name="UpdateTelegram">텔레그램을 업데이트하세요</string>
@@ -2692,7 +2737,7 @@
     <string name="AreYouSureDeleteAndExitName">정말 **%1$s** 그룹을 삭제하고 나가시겠습니까?</string>
     <string name="AreYouSureDeleteThisChat">정말 이 대화방을 삭제하시겠습니까?</string>
     <string name="AreYouSureDeleteThisChatWithUser">정말 **%1$s** 님과의 대화방을 삭제하시겠습니까?</string>
-    <string name="AreYouSureDeleteThisChatWithBot">Are you sure you want to delete the chat with **%1$s** and block them?</string>
+    <string name="AreYouSureDeleteThisChatWithBot">정말 **%1$s** 대화방을 삭제하고 차단하시겠습니까?</string>
     <string name="AreYouSureDeleteThisChatSavedMessages">정말 **저장한 메시지**를 삭제하시겠습니까?</string>
     <string name="AreYouSureDeleteThisChatWithSecretUser">정말 **%1$s** 님과의 비밀 대화를 삭제하시겠습니까?</string>
     <string name="AreYouSureDeleteThisChatWithGroup">정말 **%1$s** 대화방을 삭제하시겠습니까?</string>
@@ -2763,8 +2808,8 @@
     <string name="TosAgeTitle">나이 인증</string>
     <string name="PrivacyPolicyAndTerms">개인 정보 정책 및 이용 약관</string>
     <string name="TosAgeText">귀하가 %1$s세 이상임을 인증하려면 동의를 누르세요.</string>
-    <string name="TosUpdateDecline">매우 유감스럽지만, 이는 곧 우리가 여기서 헤어져야 한다는 뜻입니다. 다른 서비스와 달리, 저희는 회원님의 정보를 광고 타게팅이나 다른 상업적 목적으로 이용하지 않습니다. 텔레그램은 다양한 기능을 가진 클라우드 서비스로서 작동하는 데 필요한 정보만을 저장합니다. 개인 정보 및 보안 설정에서 정보가 사용되는 방식을 조정(동기화된 연락처를 삭제하는 등)하실 수 있습니다.\n\n하지만 텔레그램의 간소한 요청이 회원님에게 만족스럽지 못하다면, 저희는 이 서비스를 제공해 드리기가 어렵습니다. 지금 계정을 비활성화하실 수 있습니다. 아니면 조금 더 살펴보고 정보 사용 방식이 끝내 마음에 들지 않을 때 비활성화하셔도 좋습니다.</string>
-    <string name="TosDeclineDeleteAccount">주의! 텔레그램 클라우드에 저장하신 모든 데이터와 함께 회원님의 텔레그램 계정이 삭제되며, 돌이킬 수 없습니다.\n\n중요: 지금 취소하거나 계정을 삭제하기 전에 데이터를 내보내실 수 있습니다. (최신 텔레그램 데스크탑을 열고 \'설정\' &gt; \'텔레그램 데이터 내보내기\'로 가서 이를 진행하실 수 있습니다.)</string>
+    <string name="TosUpdateDecline">유감스럽게도, 텔레그램에 가입하실 수 없습니다.\n\n다른 서비스와 달리 저희는 광고 타겟팅이나 다른 상업적 목적으로 귀하의 데이터를 사용하지 않습니다. 텔레그램이 안전하고 기능이 풍부한 클라우드 서비스로서 작동하는 데 필요한 정보만을 저장합니다. 개인 정보 및 보안 설정에서 데이터 사용 방식(동기화된 연락처 삭제 따위)을 설정하실 수 있습니다.\n\n하지만 텔레그램의 간소한 요구 사항에 두루 동의하실 수 없다면 저희로서 이 서비스를 제공해 드리기가 어렵습니다.</string>
+    <string name="TosDeclineDeleteAccount">주의! 텔레그램 클라우드에 저장하신 모든 데이터와 함께 회원님의 텔레그램 계정이 삭제되며, 되돌릴 수 없습니다.\n\n중요: 지금 취소하여 계정을 삭제하기 전에 데이터를 내보내실 수 있습니다. (최신 텔레그램 데스크톱을 열고 설정 &gt; 고급 설정 &gt; 텔레그램 데이터 내보내기에서 진행하실 수 있습니다.)</string>
     <!--permissions-->
     <string name="PermissionContacts">회원님이 모든 기기에서 친구들과 연락하실 수 있도록, 텔레그램의 단단히 암호화된 클라우드 서비스로 연락처가 계속 동기화됩니다.</string>
     <string name="PermissionStorage">사진, 동영상, 음악과 그 밖의 미디어를 보내고 저장하려면 텔레그램에게 저장 공간 접근 권한이 필요합니다.</string>
@@ -2863,7 +2908,7 @@
     <string name="CallMessageWithDuration">%1$s (%2$s)</string>
     <string name="NoCallLog">전화를 걸거나 받으신 적이 없습니다.</string>
     <string name="VoipPeerIncompatible">**%1$s** 님의 앱은 호환되지 않는 프로토콜을 사용하고 있습니다. 상대가 앱을 업데이트한 뒤에서야 전화하실 수 있습니다.</string>
-    <string name="VoipPeerOutdated">**%1$s** 님의 텔레그램은 전화를 지원하지 않습니다. 앱을 업데이트한 뒤 전화할 수 있습니다.</string>
+    <string name="VoipPeerOutdated">**%1$s** 님의 텔레그램은 전화를 지원하지 않습니다. 이 사용자의 앱을 업데이트한 뒤에 전화할 수 있습니다.</string>
     <string name="VoipRateCallAlert">텔레그램 전화의 품질을 평가해주세요.</string>
     <string name="VoipNeedMicPermission">전화를 걸려면 텔레그램에게 마이크 접근 권한을 부여하셔야 합니다.</string>
     <string name="VoipFeedbackCommentHint">코멘트를 입력하실 수 있습니다</string>

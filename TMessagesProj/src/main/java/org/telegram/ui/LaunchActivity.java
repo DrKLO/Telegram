@@ -2004,6 +2004,16 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                                             ChatActivity fragment = new ChatActivity(args);
                                             actionBarLayout.presentFragment(fragment);
                                         }
+                                    }, () -> {
+                                        if (!LaunchActivity.this.isFinishing()) {
+                                            BaseFragment fragment = mainFragmentsStack.get(mainFragmentsStack.size() - 1);
+                                            AlertsCreator.showSimpleAlert(fragment, LocaleController.getString("JoinToGroupErrorNotExist", R.string.JoinToGroupErrorNotExist));
+                                        }
+                                        try {
+                                            progressDialog.dismiss();
+                                        } catch (Exception e) {
+                                            FileLog.e(e);
+                                        }
                                     });
                                     hideProgressDialog = false;
                                 }
@@ -2057,6 +2067,16 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                                         }
                                         ChatActivity fragment = new ChatActivity(args);
                                         actionBarLayout.presentFragment(fragment);
+                                    }, () -> {
+                                        if (!LaunchActivity.this.isFinishing()) {
+                                            BaseFragment fragment = mainFragmentsStack.get(mainFragmentsStack.size() - 1);
+                                            AlertsCreator.showSimpleAlert(fragment, LocaleController.getString("JoinToGroupErrorNotExist", R.string.JoinToGroupErrorNotExist));
+                                        }
+                                        try {
+                                            progressDialog.dismiss();
+                                        } catch (Exception e) {
+                                            FileLog.e(e);
+                                        }
                                     });
                                     hideProgressDialog = false;
                                 }
@@ -2655,14 +2675,14 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
     }
 
     private void onFinish() {
-        if (finished) {
-            return;
-        }
-        finished = true;
         if (lockRunnable != null) {
             AndroidUtilities.cancelRunOnUIThread(lockRunnable);
             lockRunnable = null;
         }
+        if (finished) {
+            return;
+        }
+        finished = true;
         if (currentAccount != -1) {
             NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.appDidLogout);
             NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.mainUserInfoChanged);
