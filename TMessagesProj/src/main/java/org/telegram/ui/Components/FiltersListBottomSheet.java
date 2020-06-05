@@ -122,7 +122,7 @@ public class FiltersListBottomSheet extends BottomSheet implements NotificationC
             @Override
             protected void onDraw(Canvas canvas) {
                 int top = scrollOffsetY - backgroundPaddingTop - AndroidUtilities.dp(8);
-                int height = getMeasuredHeight() + AndroidUtilities.dp(28) + backgroundPaddingTop;
+                int height = getMeasuredHeight() + AndroidUtilities.dp(36) + backgroundPaddingTop;
                 int statusBarHeight = 0;
                 float radProgress = 1.0f;
                 if (Build.VERSION.SDK_INT >= 21) {
@@ -360,7 +360,11 @@ public class FiltersListBottomSheet extends BottomSheet implements NotificationC
 
         @Override
         public int getItemCount() {
-            return dialogFilters.size() + 1;
+            int count = dialogFilters.size();
+            if (count < 10) {
+                count++;
+            }
+            return count;
         }
 
         @Override

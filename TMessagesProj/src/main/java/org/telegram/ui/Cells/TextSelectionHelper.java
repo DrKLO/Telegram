@@ -967,6 +967,7 @@ public abstract class TextSelectionHelper<Cell extends TextSelectionHelper.Selec
                         showMagnifier(lastX);
                     }
                     break;
+                case MotionEvent.ACTION_CANCEL:
                 case MotionEvent.ACTION_UP:
                     hideMagnifier();
                     movingHandle = false;

@@ -156,6 +156,7 @@ public class VideoPlayer implements ExoPlayer.EventListener, SimpleExoPlayer.Vid
             } else {
                 factory = new DefaultRenderersFactory(ApplicationLoader.applicationContext);
             }
+            factory.setExtensionRendererMode(DefaultRenderersFactory.EXTENSION_RENDERER_MODE_PREFER);
             player = ExoPlayerFactory.newSimpleInstance(ApplicationLoader.applicationContext, factory, trackSelector, loadControl, null);
 
             player.addListener(this);
