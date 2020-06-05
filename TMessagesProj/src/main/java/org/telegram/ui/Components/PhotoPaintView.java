@@ -1135,7 +1135,7 @@ public class PhotoPaintView extends FrameLayout implements EntityView.EntityView
         }, entityView, Gravity.CENTER, x, y);
     }
 
-    private FrameLayout buttonForBrush(final int brush, int resource, boolean selected) {
+    private FrameLayout buttonForBrush(final int brush, int resource, boolean applyColor, boolean selected) {
         FrameLayout button = new FrameLayout(getContext());
         button.setBackgroundDrawable(Theme.getSelectorDrawable(false));
         button.setOnClickListener(v -> {
@@ -1148,6 +1148,9 @@ public class PhotoPaintView extends FrameLayout implements EntityView.EntityView
 
         ImageView preview = new ImageView(getContext());
         preview.setImageResource(resource);
+        if (applyColor) {
+            preview.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_actionBarDefaultSubmenuItem), PorterDuff.Mode.SRC_IN));
+        }
         button.addView(preview, LayoutHelper.createFrame(165, 44, Gravity.LEFT | Gravity.CENTER_VERTICAL, 46, 0, 8, 0));
 
         if (selected) {
@@ -1163,7 +1166,7 @@ public class PhotoPaintView extends FrameLayout implements EntityView.EntityView
 
     private void showBrushSettings() {
         showPopup(() -> {
-            View radial = buttonForBrush(0, R.drawable.paint_radial_preview, currentBrush == 0);
+            View radial = buttonForBrush(0, R.drawable.paint_radial_preview, true, currentBrush == 0);
             popupLayout.addView(radial);
 
             LinearLayout.LayoutParams layoutParams = (LinearLayout.LayoutParams) radial.getLayoutParams();
@@ -1171,7 +1174,7 @@ public class PhotoPaintView extends FrameLayout implements EntityView.EntityView
             layoutParams.height = AndroidUtilities.dp(52);
             radial.setLayoutParams(layoutParams);
 
-            View elliptical = buttonForBrush(1, R.drawable.paint_elliptical_preview, currentBrush == 1);
+            View elliptical = buttonForBrush(1, R.drawable.paint_elliptical_preview, true, currentBrush == 1);
             popupLayout.addView(elliptical);
 
             layoutParams = (LinearLayout.LayoutParams) elliptical.getLayoutParams();
@@ -1179,7 +1182,7 @@ public class PhotoPaintView extends FrameLayout implements EntityView.EntityView
             layoutParams.height = AndroidUtilities.dp(52);
             elliptical.setLayoutParams(layoutParams);
 
-            View neon = buttonForBrush(2, R.drawable.paint_neon_preview, currentBrush == 2);
+            View neon = buttonForBrush(2, R.drawable.paint_neon_preview, false, currentBrush == 2);
             popupLayout.addView(neon);
 
             layoutParams = (LinearLayout.LayoutParams) neon.getLayoutParams();

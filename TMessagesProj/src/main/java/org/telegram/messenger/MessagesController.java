@@ -272,6 +272,7 @@ public class MessagesController extends BaseController implements NotificationCe
     public int webFileDatacenterId;
     public String suggestedLangCode;
     public boolean qrLoginCamera;
+    public boolean saveGifsWithStickers;
     private String installReferer;
     public ArrayList<String> gifSearchEmojies = new ArrayList<>();
     public HashSet<String> diceEmojies;
@@ -621,6 +622,7 @@ public class MessagesController extends BaseController implements NotificationCe
         suggestedLangCode = mainPreferences.getString("suggestedLangCode", "en");
         animatedEmojisZoom = mainPreferences.getFloat("animatedEmojisZoom", 0.625f);
         qrLoginCamera = mainPreferences.getBoolean("qrLoginCamera", false);
+        saveGifsWithStickers = mainPreferences.getBoolean("saveGifsWithStickers", false);
         filtersEnabled = mainPreferences.getBoolean("filtersEnabled", false);
         showFiltersTooltip = mainPreferences.getBoolean("showFiltersTooltip", false);
 
@@ -1208,6 +1210,17 @@ public class MessagesController extends BaseController implements NotificationCe
                                 if (bool.value != qrLoginCamera) {
                                     qrLoginCamera = bool.value;
                                     editor.putBoolean("qrLoginCamera", qrLoginCamera);
+                                    changed = true;
+                                }
+                            }
+                            break;
+                        }
+                        case "save_gifs_with_stickers": {
+                            if (value.value instanceof TLRPC.TL_jsonBool) {
+                                TLRPC.TL_jsonBool bool = (TLRPC.TL_jsonBool) value.value;
+                                if (bool.value != saveGifsWithStickers) {
+                                    saveGifsWithStickers = bool.value;
+                                    editor.putBoolean("saveGifsWithStickers", saveGifsWithStickers);
                                     changed = true;
                                 }
                             }
@@ -12070,7 +12083,15 @@ public class MessagesController extends BaseController implements NotificationCe
                 }
                 if (message.isOut() && !message.isSending() && !message.isForwarded()) {
                     if (message.isNewGif()) {
-                        getMediaDataController().addRecentGif(message.messageOwner.media.document, message.messageOwner.date);
+                        boolean save;
+                        if (MessageObject.isDocumentHasAttachedStickers(message.messageOwner.media.document)) {
+                            save = getMessagesController().saveGifsWithStickers;
+                        } else {
+                            save = true;
+                        }
+                        if (save) {
+                            getMediaDataController().addRecentGif(message.messageOwner.media.document, message.messageOwner.date);
+                        }
                     } else if (!message.isAnimatedEmoji() && (message.isSticker() || message.isAnimatedSticker())) {
                         getMediaDataController().addRecentSticker(MediaDataController.TYPE_IMAGE, message, message.messageOwner.media.document, message.messageOwner.date, false);
                     }

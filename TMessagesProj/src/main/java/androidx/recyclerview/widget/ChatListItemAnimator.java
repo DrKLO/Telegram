@@ -141,14 +141,12 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
         if (additionsPending) {
             final ArrayList<RecyclerView.ViewHolder> additions = new ArrayList<>();
             additions.addAll(mPendingAdditions);
-            mAdditionsList.add(additions);
             mPendingAdditions.clear();
 
             for (RecyclerView.ViewHolder holder : additions) {
                 animateAddImpl(holder);
             }
             additions.clear();
-            mAdditionsList.remove(additions);
         }
     }
 
@@ -181,26 +179,22 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
         if (movesPending) {
             final ArrayList<MoveInfo> moves = new ArrayList<>();
             moves.addAll(mPendingMoves);
-            mMovesList.add(moves);
             mPendingMoves.clear();
             for (MoveInfo moveInfo : moves) {
                 animateMoveImpl(moveInfo.holder, moveInfo);
             }
             moves.clear();
-            mMovesList.remove(moves);
         }
 
         if (additionsPending) {
             final ArrayList<RecyclerView.ViewHolder> additions = new ArrayList<>();
             additions.addAll(mPendingAdditions);
-            mAdditionsList.add(additions);
             mPendingAdditions.clear();
 
             for (RecyclerView.ViewHolder holder : additions) {
                 animateAddImpl(holder, addedItemsHeight);
             }
             additions.clear();
-            mAdditionsList.remove(additions);
         }
     }
 

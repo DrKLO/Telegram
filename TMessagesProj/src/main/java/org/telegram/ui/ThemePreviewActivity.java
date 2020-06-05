@@ -1630,6 +1630,9 @@ public class ThemePreviewActivity extends BaseFragment implements DownloadContro
             saveButtonsContainer.addView(doneButton, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.RIGHT));
             doneButton.setOnClickListener(v -> {
                 Theme.ThemeInfo previousTheme = Theme.getPreviousTheme();
+                if (previousTheme == null) {
+                    return;
+                }
                 Theme.ThemeAccent previousAccent;
                 if (previousTheme != null && previousTheme.prevAccentId >= 0) {
                     previousAccent = previousTheme.themeAccentsMap.get(previousTheme.prevAccentId);

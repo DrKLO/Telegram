@@ -4766,7 +4766,15 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
 
             if ((sentMessage.flags & TLRPC.MESSAGE_FLAG_FWD) == 0 && MessageObject.isOut(sentMessage)) {
                 if (MessageObject.isNewGifDocument(sentMessage.media.document)) {
-                    getMediaDataController().addRecentGif(sentMessage.media.document, sentMessage.date);
+                    boolean save;
+                    if (MessageObject.isDocumentHasAttachedStickers(sentMessage.media.document)) {
+                        save = getMessagesController().saveGifsWithStickers;
+                    } else {
+                        save = true;
+                    }
+                    if (save) {
+                        getMediaDataController().addRecentGif(sentMessage.media.document, sentMessage.date);
+                    }
                 } else if (MessageObject.isStickerDocument(sentMessage.media.document) || MessageObject.isAnimatedStickerDocument(sentMessage.media.document, true)) {
                     getMediaDataController().addRecentSticker(MediaDataController.TYPE_IMAGE, sentMessage, sentMessage.media.document, sentMessage.date, false);
                 }

@@ -241,10 +241,6 @@ public class RecyclerAnimationScrollHelper {
                             if (recyclerView.mChildHelper.getHiddenChildCount() != 0) {
                                 throw new RuntimeException("hidden child count must be 0");
                             }
-
-                            if (recyclerView.getCachedChildCount() != 0) {
-                                throw new RuntimeException("cached child count must be 0");
-                            }
                         }
 
                         int n = recyclerView.getChildCount();

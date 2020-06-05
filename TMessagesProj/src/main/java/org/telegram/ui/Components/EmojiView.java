@@ -4629,7 +4629,7 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
 
         @MainThread
         private void processResponse(final String query, final String offset, boolean searchUser, boolean isEmoji, boolean cache, String key, TLObject response) {
-            if (!query.equals(lastSearchImageString)) {
+            if (query == null || !query.equals(lastSearchImageString)) {
                 return;
             }
             reqId = 0;

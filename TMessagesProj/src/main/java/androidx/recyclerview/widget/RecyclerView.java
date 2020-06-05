@@ -61,6 +61,7 @@ import android.widget.OverScroller;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.BuildConfig;
 import org.telegram.messenger.BuildVars;
+import org.telegram.messenger.FileLog;
 
 import androidx.annotation.CallSuper;
 import androidx.annotation.IntDef;
@@ -4473,8 +4474,8 @@ public class RecyclerView extends ViewGroup implements ScrollingView,
         for (int i = 0; i < childCount; i++) {
             final ViewHolder holder = getChildViewHolderInt(mChildHelper.getUnfilteredChildAt(i));
             if (DEBUG && holder.mPosition == -1 && !holder.isRemoved()) {
-                throw new IllegalStateException("view holder cannot have position -1 unless it"
-                        + " is removed" + exceptionLabel());
+                FileLog.e(new IllegalStateException("view holder cannot have position -1 unless it"
+                        + " is removed" + exceptionLabel()));
             }
             if (!holder.shouldIgnore()) {
                 holder.saveOldPosition();

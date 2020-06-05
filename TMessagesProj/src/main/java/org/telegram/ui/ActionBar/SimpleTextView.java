@@ -393,8 +393,9 @@ public class SimpleTextView extends View implements Drawable.Callback {
         int textOffsetX = 0;
 
         boolean fade = scrollNonFitText && (textDoesNotFit || scrollingOffset != 0);
+        int restore = Integer.MIN_VALUE;
         if (fade) {
-            canvas.saveLayerAlpha(0, 0, getMeasuredWidth(), getMeasuredHeight(), 255, Canvas.ALL_SAVE_FLAG);
+            restore = canvas.saveLayerAlpha(0, 0, getMeasuredWidth(), getMeasuredHeight(), 255, Canvas.ALL_SAVE_FLAG);
         }
 
         totalWidth = textWidth;
@@ -486,6 +487,9 @@ public class SimpleTextView extends View implements Drawable.Callback {
                 canvas.restore();
             }
             updateScrollAnimation();
+        }
+        if (fade) {
+            canvas.restoreToCount(restore);
         }
     }
 

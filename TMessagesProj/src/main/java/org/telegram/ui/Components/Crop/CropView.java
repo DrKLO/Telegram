@@ -788,7 +788,7 @@ public class CropView extends FrameLayout implements CropAreaView.AreaViewListen
             matrix.postTranslate(canvasBitmap.getWidth() / 2, canvasBitmap.getHeight() / 2);
             canvas.drawBitmap(b, matrix, new Paint(FILTER_BITMAP_FLAG));
             FileOutputStream stream = new FileOutputStream(new File(path));
-            canvasBitmap.compress(format, 83, stream);
+            canvasBitmap.compress(format, 87, stream);
             stream.close();
 
             if (entities != null && !entities.isEmpty()) {

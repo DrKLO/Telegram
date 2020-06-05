@@ -4802,13 +4802,17 @@ public class MessageObject {
         if (messageOwner.media instanceof TLRPC.TL_messageMediaPhoto) {
             return messageOwner.media.photo != null && messageOwner.media.photo.has_stickers;
         } else if (messageOwner.media instanceof TLRPC.TL_messageMediaDocument) {
-            TLRPC.Document document = messageOwner.media.document;
-            if (document != null) {
-                for (int a = 0; a < document.attributes.size(); a++) {
-                    TLRPC.DocumentAttribute attribute = document.attributes.get(a);
-                    if (attribute instanceof TLRPC.TL_documentAttributeHasStickers) {
-                        return true;
-                    }
+            return isDocumentHasAttachedStickers(messageOwner.media.document);
+        }
+        return false;
+    }
+
+    public static boolean isDocumentHasAttachedStickers(TLRPC.Document document) {
+        if (document != null) {
+            for (int a = 0; a < document.attributes.size(); a++) {
+                TLRPC.DocumentAttribute attribute = document.attributes.get(a);
+                if (attribute instanceof TLRPC.TL_documentAttributeHasStickers) {
+                    return true;
                 }
             }
         }

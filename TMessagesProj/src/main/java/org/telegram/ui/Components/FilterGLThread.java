@@ -298,7 +298,7 @@ public class FilterGLThread extends DispatchQueue {
                         videoHeight /= 2;
                     }
                 }
-                if (!renderDataSet && videoWidth != 0 && videoHeight != 0) {
+                if (!renderDataSet && videoWidth > 0 && videoHeight > 0) {
                     filterShaders.setRenderData(currentBitmap, orientation, videoTexture[0], videoWidth, videoHeight);
                     renderDataSet = true;
                     renderBufferWidth = filterShaders.getRenderBufferWidth();
@@ -382,8 +382,10 @@ public class FilterGLThread extends DispatchQueue {
     }
 
     public void setSurfaceTextureSize(int width, int height) {
-        surfaceWidth = width;
-        surfaceHeight = height;
+        postRunnable(() -> {
+            surfaceWidth = width;
+            surfaceHeight = height;
+        });
     }
 
     @Override

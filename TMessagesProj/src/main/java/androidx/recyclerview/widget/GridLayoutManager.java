@@ -25,6 +25,9 @@ import android.view.ViewGroup;
 
 import androidx.core.view.accessibility.AccessibilityNodeInfoCompat;
 
+import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.BuildVars;
+
 import java.util.Arrays;
 
 /**
@@ -35,7 +38,7 @@ import java.util.Arrays;
  */
 public class GridLayoutManager extends LinearLayoutManager {
 
-    private static final boolean DEBUG = false;
+    private static final boolean DEBUG = BuildVars.DEBUG_VERSION;
     private static final String TAG = "GridLayoutManager";
     public static final int DEFAULT_SPAN_COUNT = -1;
     /**
