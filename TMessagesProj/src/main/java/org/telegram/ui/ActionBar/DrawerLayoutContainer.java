@@ -470,7 +470,10 @@ public class DrawerLayoutContainer extends FrameLayout {
             }
             inLayout = false;
         } else {
-            AndroidUtilities.displaySize.y = heightSize - AndroidUtilities.statusBarHeight;
+            int newSize = heightSize - AndroidUtilities.statusBarHeight;
+            if (newSize > 0 && newSize < 4096) {
+                AndroidUtilities.displaySize.y = newSize;
+            }
         }
 
         final boolean applyInsets = lastInsets != null && Build.VERSION.SDK_INT >= 21;

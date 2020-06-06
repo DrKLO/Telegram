@@ -141,7 +141,7 @@ public class BlurBehindDrawable {
                     behindView.draw(blurCanvas[i]);
                 }
 
-                if (i == ADJUST_PAN_TRANSLATION_CONTENT) {
+                if (backDrawable != null && i == ADJUST_PAN_TRANSLATION_CONTENT) {
                     Rect oldBounds = backDrawable.getBounds();
                     backDrawable.setBounds(0, 0, behindView.getMeasuredWidth(), behindView.getMeasuredHeight());
                     backDrawable.draw(blurCanvas[i]);

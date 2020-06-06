@@ -1238,6 +1238,16 @@ public class RecyclerView extends ViewGroup implements ScrollingView,
         mState.mStructureChanged = true;
     }
 
+    public void prepareForFastScroll() {
+        stopScroll();
+        removeAndRecycleViews();
+        mAdapterHelper.reset();
+        mRecycler.onAdapterChanged(mAdapter, mAdapter, false);
+        mState.mStructureChanged = true;
+        mChildHelper.removeAllViewsUnfiltered();
+        mRecycler.updateViewCacheSize();
+    }
+
     /**
      * Retrieves the previously set adapter or null if no adapter is set.
      *
@@ -1562,7 +1572,7 @@ public class RecyclerView extends ViewGroup implements ScrollingView,
         if (state == mScrollState) {
             return;
         }
-        if (DEBUG) {
+        if (false) {
             Log.d(TAG, "setting scroll state to " + state + " from " + mScrollState,
                     new Exception());
         }

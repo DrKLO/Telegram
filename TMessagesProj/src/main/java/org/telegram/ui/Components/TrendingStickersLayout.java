@@ -79,10 +79,6 @@ public class TrendingStickersLayout extends FrameLayout implements NotificationC
         }
     }
 
-    public interface AlertDelegate {
-        void setHeavyOperationsEnabled(boolean enabled);
-    }
-
     private final int currentAccount = UserConfig.selectedAccount;
 
     private final Delegate delegate;
@@ -100,7 +96,6 @@ public class TrendingStickersLayout extends FrameLayout implements NotificationC
 
     private BaseFragment parentFragment;
     private RecyclerListView.OnScrollListener onScrollListener;
-    private AlertDelegate alertDelegate;
 
     private int topOffset;
     private boolean motionEventCatchedByListView;
@@ -361,23 +356,7 @@ public class TrendingStickersLayout extends FrameLayout implements NotificationC
         } else {
             stickersAlertDelegate = null;
         }
-        final StickersAlert stickersAlert = new StickersAlert(getContext(), parentFragment, inputStickerSet, null, stickersAlertDelegate) {
-            @Override
-            public void show() {
-                super.show();
-                if (alertDelegate != null) {
-                    alertDelegate.setHeavyOperationsEnabled(true);
-                }
-            }
-
-            @Override
-            public void dismiss() {
-                super.dismiss();
-                if (alertDelegate != null) {
-                    alertDelegate.setHeavyOperationsEnabled(false);
-                }
-            }
-        };
+        final StickersAlert stickersAlert = new StickersAlert(getContext(), parentFragment, inputStickerSet, null, stickersAlertDelegate);
         stickersAlert.setShowTooltipWhenToggle(false);
         stickersAlert.setInstallDelegate(new StickersAlert.StickersAlertInstallDelegate() {
             @Override
@@ -432,10 +411,6 @@ public class TrendingStickersLayout extends FrameLayout implements NotificationC
 
     public void setOnScrollListener(RecyclerListView.OnScrollListener onScrollListener) {
         this.onScrollListener = onScrollListener;
-    }
-
-    public void setAlertDelegate(AlertDelegate alertDelegate) {
-        this.alertDelegate = alertDelegate;
     }
 
     public void setParentFragment(BaseFragment parentFragment) {

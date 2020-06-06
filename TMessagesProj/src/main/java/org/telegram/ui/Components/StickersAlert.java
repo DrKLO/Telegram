@@ -602,7 +602,7 @@ public class StickersAlert extends BottomSheet implements NotificationCenter.Not
 
         stickerImageView = new BackupImageView(context);
         stickerImageView.setAspectFit(true);
-        stickerImageView.setLayerNum(5);
+        stickerImageView.setLayerNum(7);
         stickerPreviewLayout.addView(stickerImageView);
 
         stickerEmojiTextView = new TextView(context);
@@ -1042,7 +1042,7 @@ public class StickersAlert extends BottomSheet implements NotificationCenter.Not
                             super.onMeasure(MeasureSpec.makeMeasureSpec(itemSize, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(82), MeasureSpec.EXACTLY));
                         }
                     };
-                    cell.getImageView().setLayerNum(5);
+                    cell.getImageView().setLayerNum(7);
                     view = cell;
                     break;
                 case 1:

@@ -126,8 +126,8 @@ public class MediaDataController extends BaseController {
     public static final int TYPE_FEATURED = 3;
     public static final int TYPE_EMOJI = 4;
 
-    private ArrayList<TLRPC.TL_messages_stickerSet>[] stickerSets = new ArrayList[]{new ArrayList<>(), new ArrayList<>(), new ArrayList(0), new ArrayList(), new ArrayList()};
-    private LongSparseArray<TLRPC.Document>[] stickersByIds = new LongSparseArray[]{new LongSparseArray<>(), new LongSparseArray<>(), new LongSparseArray(), new LongSparseArray(), new LongSparseArray()};
+    private ArrayList<TLRPC.TL_messages_stickerSet>[] stickerSets = new ArrayList[]{new ArrayList<>(), new ArrayList<>(), new ArrayList<>(0), new ArrayList<>(), new ArrayList<>()};
+    private LongSparseArray<TLRPC.Document>[] stickersByIds = new LongSparseArray[]{new LongSparseArray<>(), new LongSparseArray<>(), new LongSparseArray<>(), new LongSparseArray<>(), new LongSparseArray<>()};
     private LongSparseArray<TLRPC.TL_messages_stickerSet> stickerSetsById = new LongSparseArray<>();
     private LongSparseArray<TLRPC.TL_messages_stickerSet> installedStickerSetsById = new LongSparseArray<>();
     private LongSparseArray<TLRPC.TL_messages_stickerSet> groupStickerSets = new LongSparseArray<>();
@@ -681,7 +681,7 @@ public class MediaDataController extends BaseController {
         return value != null ? value : "";
     }
 
-    private static int calcDocumentsHash(ArrayList<TLRPC.Document> arrayList) {
+    public static int calcDocumentsHash(ArrayList<TLRPC.Document> arrayList) {
         if (arrayList == null) {
             return 0;
         }
@@ -5071,7 +5071,7 @@ public class MediaDataController extends BaseController {
         }
         ArrayList<String> recentEmoji = new ArrayList<>(Emoji.recentEmoji);
         getMessagesStorage().getStorageQueue().postRunnable(() -> {
-            ArrayList<KeywordResult> result = new ArrayList();
+            ArrayList<KeywordResult> result = new ArrayList<>();
             HashMap<String, Boolean> resultMap = new HashMap<>();
             String alias = null;
             try {

@@ -144,6 +144,10 @@ public class AudioVisualizerDrawable {
 
         float enterProgress = current[7];
         float radiusProgress = current[6] * current[0];
+
+        if (enterProgress == 0 && radiusProgress == 0) {
+            return;
+        }
         // float idleProgress = radiusProgress > 0.4f ? 0 : (1f - radiusProgress / 0.4f);
 
         for (int i = 0; i < 3; i++) {

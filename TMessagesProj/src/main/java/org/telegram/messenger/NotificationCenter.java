@@ -355,7 +355,7 @@ public class NotificationCenter {
         ArrayList<NotificationCenterDelegate> objects = observers.get(id);
         if (objects != null && !objects.isEmpty()) {
             for (int a = 0; a < objects.size(); a++) {
-                NotificationCenterDelegate obj = objects.get(a);;
+                NotificationCenterDelegate obj = objects.get(a);
                 obj.didReceivedNotification(id, currentAccount, args);
             }
         }

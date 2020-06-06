@@ -2826,8 +2826,15 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                             heightSize = AndroidUtilities.displaySize.y;
                         }
                         heightSize += AndroidUtilities.statusBarHeight;
+                    } else {
+                        int insetBottom = insets.getStableInsetBottom();
+                        if (insetBottom >= 0 && AndroidUtilities.statusBarHeight >= 0) {
+                            int newSize = heightSize - AndroidUtilities.statusBarHeight - insets.getStableInsetBottom();
+                            if (newSize > 0 && newSize < 4096) {
+                                AndroidUtilities.displaySize.y = newSize;
+                            }
+                        }
                     }
-                    AndroidUtilities.displaySize.y = heightSize - AndroidUtilities.statusBarHeight - insets.getStableInsetBottom();
                     heightSize -= insets.getSystemWindowInsetBottom();
                 } else {
                     if (heightSize > AndroidUtilities.displaySize.y) {

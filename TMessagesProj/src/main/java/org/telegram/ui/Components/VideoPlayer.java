@@ -655,13 +655,14 @@ public class VideoPlayer implements ExoPlayer.EventListener, SimpleExoPlayer.Vid
     private class VisualizerBufferSink implements TeeAudioProcessor.AudioBufferSink {
 
         private final int BUFFER_SIZE = 1024;
+        private final int MAX_BUFFER_SIZE = BUFFER_SIZE * 8;
         FourierTransform.FFT fft = new FourierTransform.FFT(BUFFER_SIZE, 48000);
         float[] real = new float[BUFFER_SIZE];
         ByteBuffer byteBuffer;
         int position = 0;
 
         public VisualizerBufferSink() {
-            byteBuffer = ByteBuffer.allocateDirect(BUFFER_SIZE  * 8);
+            byteBuffer = ByteBuffer.allocateDirect(MAX_BUFFER_SIZE);
             byteBuffer.position(0);
         }
 
@@ -694,11 +695,22 @@ public class VideoPlayer implements ExoPlayer.EventListener, SimpleExoPlayer.Vid
                 return;
             }
 
-            byteBuffer.put(buffer);
-            position += buffer.limit();
+            int len = buffer.limit();
+            if (len > MAX_BUFFER_SIZE) {
+                audioUpdateHandler.removeCallbacksAndMessages(null);
+                audioVisualizerDelegate.onVisualizerUpdate(false, true, null);
+                return;
+//                len = MAX_BUFFER_SIZE;
+//                byte[] bytes = new byte[BUFFER_SIZE];
+//                buffer.get(bytes);
+//                byteBuffer.put(bytes, 0, BUFFER_SIZE);
+            } else {
+                byteBuffer.put(buffer);
+            }
+            position += len;
 
             if (position >= BUFFER_SIZE) {
-                int len = BUFFER_SIZE;
+                len = BUFFER_SIZE;
                 byteBuffer.position(0);
                 for (int i = 0; i < len; i++) {
                     real[i] = (byteBuffer.getShort()) / 32768.0F;

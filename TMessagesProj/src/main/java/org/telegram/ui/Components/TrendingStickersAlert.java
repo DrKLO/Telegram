@@ -25,7 +25,7 @@ import org.telegram.ui.ActionBar.ThemeDescription;
 
 import java.util.ArrayList;
 
-public class TrendingStickersAlert extends BottomSheet implements TrendingStickersLayout.AlertDelegate {
+public class TrendingStickersAlert extends BottomSheet {
 
     private final int topOffset = AndroidUtilities.dp(12);
 
@@ -45,7 +45,6 @@ public class TrendingStickersAlert extends BottomSheet implements TrendingSticke
         useSmoothKeyboard = true;
 
         layout = trendingStickersLayout;
-        layout.setAlertDelegate(this);
         layout.setParentFragment(parentFragment);
         layout.setOnScrollListener(new RecyclerListView.OnScrollListener() {
 
@@ -86,7 +85,6 @@ public class TrendingStickersAlert extends BottomSheet implements TrendingSticke
         setHeavyOperationsEnabled(true);
     }
 
-    @Override
     public void setHeavyOperationsEnabled(boolean enabled) {
         NotificationCenter.getGlobalInstance().postNotificationName(enabled ? NotificationCenter.startAllHeavyOperations : NotificationCenter.stopAllHeavyOperations, 2);
     }

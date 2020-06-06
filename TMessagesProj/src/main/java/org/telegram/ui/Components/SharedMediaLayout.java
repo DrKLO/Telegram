@@ -500,7 +500,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                 } else if (view instanceof ContextLinkCell) {
                     ContextLinkCell cell = (ContextLinkCell) view;
                     MessageObject message = (MessageObject) cell.getParentObject();
-                    if (message.getId() == messageObject.getId()) {
+                    if (message != null && messageObject != null && message.getId() == messageObject.getId()) {
                         imageReceiver = cell.getPhotoImage();
                         cell.getLocationInWindow(coords);
                     }
