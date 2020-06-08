@@ -1062,6 +1062,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL) {
                 if (!parentPage.itemTouchhelper.isIdle() && parentPage.swipeController.swipingFolder) {
                     parentPage.swipeController.swipeFolderBack = true;
+                    // TODO pirasalbe
                     if (parentPage.itemTouchhelper.checkHorizontalSwipe(null, ItemTouchHelper.LEFT) != 0) {
                         toggleArchiveHidden(false, null);
                     }
@@ -1219,6 +1220,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             if (viewHolder != null) {
                 DialogCell dialogCell = (DialogCell) viewHolder.itemView;
                 long dialogId = dialogCell.getDialogId();
+                // TODO pirasalbe
                 if (DialogObject.isFolderDialogId(dialogId)) {
                     parentPage.listView.toggleArchiveHidden(false, dialogCell);
                     return;
