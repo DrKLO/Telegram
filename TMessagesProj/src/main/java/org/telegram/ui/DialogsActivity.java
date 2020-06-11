@@ -155,8 +155,10 @@ import org.telegram.ui.Components.StickersAlert;
 import org.telegram.ui.Components.UndoView;
 
 import java.util.ArrayList;
+import java.util.logging.Logger;
 
 public class DialogsActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
+    static final Logger LOGGER = Logger.getLogger(DialogsActivity.class.getName());
 
     private class ViewPage extends FrameLayout {
         private DialogsRecyclerView listView;
@@ -314,7 +316,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
     private boolean canDeletePsaSelected;
 
     private int topPadding;
-    
+
     private int folderId;
 
     private final static int pin = 100;
@@ -665,7 +667,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
 
         @Override
         public boolean onTouchEvent(MotionEvent ev) {
-            if (filterTabsView != null  && !filterTabsView.isEditing() && !searching &&
+            if (filterTabsView != null && !filterTabsView.isEditing() && !searching &&
                     !parentLayout.checkTransitionAnimation() && !parentLayout.isInPreviewMode() && !parentLayout.isPreviewOpenAnimationInProgress() && !parentLayout.getDrawerLayoutContainer().isDrawerOpened() &&
                     (ev == null || startedTracking || ev.getY() > actionBar.getMeasuredHeight() + actionBar.getTranslationY())) {
                 if (ev != null) {
@@ -1062,7 +1064,6 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL) {
                 if (!parentPage.itemTouchhelper.isIdle() && parentPage.swipeController.swipingFolder) {
                     parentPage.swipeController.swipeFolderBack = true;
-                    // TODO pirasalbe
                     if (parentPage.itemTouchhelper.checkHorizontalSwipe(null, ItemTouchHelper.LEFT) != 0) {
                         toggleArchiveHidden(false, null);
                     }
@@ -1215,12 +1216,13 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             return super.convertToAbsoluteDirection(flags, layoutDirection);
         }
 
+        // TODO pirasalbe
         @Override
         public void onSwiped(RecyclerView.ViewHolder viewHolder, int direction) {
             if (viewHolder != null) {
                 DialogCell dialogCell = (DialogCell) viewHolder.itemView;
                 long dialogId = dialogCell.getDialogId();
-                // TODO pirasalbe
+                LOGGER.info("Dialog Id: " + dialogId);
                 if (DialogObject.isFolderDialogId(dialogId)) {
                     parentPage.listView.toggleArchiveHidden(false, dialogCell);
                     return;
@@ -1250,23 +1252,29 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                         dialogRemoveFinished = 2;
                     } else {
                         int added = getMessagesController().addDialogToFolder(dialog.id, folderId == 0 ? 1 : 0, -1, 0);
+                        LOGGER.info("Added (?): " + added);
                         if (added != 2 || position != 0) {
                             parentPage.dialogsItemAnimator.prepareForRemove();
                             parentPage.lastItemsCount--;
                             parentPage.dialogsAdapter.notifyItemRemoved(position);
                             dialogRemoveFinished = 2;
                         }
+                        LOGGER.info("folderId (?): " + folderId);
                         if (folderId == 0) {
                             if (added == 2) {
+                                LOGGER.info("1266");
                                 parentPage.dialogsItemAnimator.prepareForRemove();
                                 if (position == 0) {
+                                    LOGGER.info("1269");
                                     dialogChangeFinished = 2;
                                     setDialogsListFrozen(true);
                                     parentPage.dialogsAdapter.notifyItemChanged(0);
                                 } else {
+                                    LOGGER.info("1274");
                                     parentPage.lastItemsCount++;
                                     parentPage.dialogsAdapter.notifyItemInserted(0);
                                     if (!SharedConfig.archiveHidden && parentPage.layoutManager.findFirstVisibleItemPosition() == 0) {
+                                        LOGGER.info("1278");
                                         disableActionBarScrolling = true;
                                         parentPage.listView.smoothScrollBy(0, -AndroidUtilities.dp(SharedConfig.useThreeLinesLayout ? 78 : 72));
                                     }
@@ -1274,6 +1282,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                                 ArrayList<TLRPC.Dialog> dialogs = getDialogsArray(currentAccount, parentPage.dialogsType, folderId, false);
                                 frozenDialogsList.add(0, dialogs.get(0));
                             } else if (added == 1) {
+                                LOGGER.info("1286");
                                 RecyclerView.ViewHolder holder = parentPage.listView.findViewHolderForAdapterPosition(0);
                                 if (holder != null && holder.itemView instanceof DialogCell) {
                                     DialogCell cell = (DialogCell) holder.itemView;
@@ -1283,18 +1292,24 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                             }
                             SharedPreferences preferences = MessagesController.getGlobalMainSettings();
                             boolean hintShowed = preferences.getBoolean("archivehint_l", false) || SharedConfig.archiveHidden;
+                            LOGGER.info("SharedConfig.archiveHidden: " + SharedConfig.archiveHidden);
                             if (!hintShowed) {
+                                LOGGER.info("1298");
                                 preferences.edit().putBoolean("archivehint_l", true).commit();
                             }
                             getUndoView().showWithAction(dialog.id, hintShowed ? UndoView.ACTION_ARCHIVE : UndoView.ACTION_ARCHIVE_HINT, null, () -> {
+                                LOGGER.info("1302");
                                 dialogsListFrozen = true;
                                 getMessagesController().addDialogToFolder(dialog.id, 0, pinnedNum, 0);
                                 dialogsListFrozen = false;
                                 ArrayList<TLRPC.Dialog> dialogs = getMessagesController().getDialogs(0);
                                 int index = dialogs.indexOf(dialog);
+                                LOGGER.info("index: " + index);
                                 if (index >= 0) {
+                                    LOGGER.info("1310");
                                     ArrayList<TLRPC.Dialog> archivedDialogs = getMessagesController().getDialogs(1);
                                     if (!archivedDialogs.isEmpty() || index != 1) {
+                                        LOGGER.info("1313");
                                         dialogInsertFinished = 2;
                                         setDialogsListFrozen(true);
                                         parentPage.dialogsItemAnimator.prepareForRemove();
@@ -1302,12 +1317,15 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                                         parentPage.dialogsAdapter.notifyItemInserted(index);
                                     }
                                     if (archivedDialogs.isEmpty()) {
+                                        LOGGER.info("1321");
                                         dialogs.remove(0);
                                         if (index == 1) {
+                                            LOGGER.info("1324");
                                             dialogChangeFinished = 2;
                                             setDialogsListFrozen(true);
                                             parentPage.dialogsAdapter.notifyItemChanged(0);
                                         } else {
+                                            LOGGER.info("1329");
                                             frozenDialogsList.remove(0);
                                             parentPage.dialogsItemAnimator.prepareForRemove();
                                             parentPage.lastItemsCount--;
@@ -1315,11 +1333,13 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                                         }
                                     }
                                 } else {
+                                    LOGGER.info("1337");
                                     parentPage.dialogsAdapter.notifyDataSetChanged();
                                 }
                             });
                         }
                         if (folderId != 0 && frozenDialogsList.isEmpty()) {
+                            LOGGER.info("1343");
                             parentPage.listView.setEmptyView(null);
                             parentPage.progressView.setVisibility(View.INVISIBLE);
                         }
@@ -1327,15 +1347,18 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 };
                 setDialogsListFrozen(true);
                 if (Utilities.random.nextInt(1000) == 1) {
+                    LOGGER.info("1351 Pacman");
                     if (pacmanAnimation == null) {
                         pacmanAnimation = new PacmanAnimation(parentPage.listView);
                     }
                     pacmanAnimation.setFinishRunnable(finishRunnable);
                     pacmanAnimation.start();
                 } else {
+                    LOGGER.info("1358");
                     finishRunnable.run();
                 }
             } else {
+                LOGGER.info("1362");
                 slidingView = null;
             }
         }
@@ -2992,6 +3015,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
     }
 
     private boolean scrollBarVisible = true;
+
     private void showScrollbars(boolean show) {
         if (viewPages == null || scrollBarVisible == show) {
             return;
@@ -4681,6 +4705,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
     }
 
     private AnimatorSet doneItemAnimator;
+
     private void showDoneItem(boolean show) {
         if (doneItem == null) {
             return;
@@ -5132,7 +5157,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         }
         floatingHidden = hide;
         AnimatorSet animatorSet = new AnimatorSet();
-        ValueAnimator valueAnimator = ValueAnimator.ofFloat(floatingButtonHideProgress,floatingHidden ? 1f : 0f);
+        ValueAnimator valueAnimator = ValueAnimator.ofFloat(floatingButtonHideProgress, floatingHidden ? 1f : 0f);
         valueAnimator.addUpdateListener(animation -> {
             floatingButtonHideProgress = (float) animation.getAnimatedValue();
             floatingButtonTranslation = AndroidUtilities.dp(100) * floatingButtonHideProgress;
