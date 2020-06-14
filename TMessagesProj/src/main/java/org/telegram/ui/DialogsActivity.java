@@ -48,6 +48,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import androidx.viewpager.widget.ViewPager;
 
 import android.text.TextUtils;
+import android.util.Log;
 import android.util.Property;
 import android.util.StateSet;
 import android.view.Gravity;
@@ -155,7 +156,6 @@ import org.telegram.ui.Components.StickersAlert;
 import org.telegram.ui.Components.UndoView;
 
 import java.util.ArrayList;
-import android.util.Log;
 
 public class DialogsActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
     static final String PIRASALBE = "pirasalbe";
