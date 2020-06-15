@@ -380,6 +380,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         private int[] pos = new int[2];
 
         private boolean prepareForMoving(MotionEvent ev, boolean forward) {
+            Log.i(PIRASALBE, "prepareForMoving");
             int id = filterTabsView.getNextPageId(forward);
             if (id < 0) {
                 return false;
@@ -1151,18 +1152,30 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
 
         @Override
         public int getMovementFlags(RecyclerView recyclerView, RecyclerView.ViewHolder viewHolder) {
+            Log.i(PIRASALBE, "getMovementFlags");
             if (waitingForDialogsAnimationEnd(parentPage) || parentLayout != null && parentLayout.isInPreviewMode()) {
                 return 0;
             }
+            Log.i(PIRASALBE, "swipingFolder: " + swipingFolder);
+            Log.i(PIRASALBE, "swipeFolderBack: " + swipeFolderBack);
             if (swipingFolder && swipeFolderBack) {
                 swipingFolder = false;
                 return 0;
             }
+            Log.i(PIRASALBE, "onlySelect: " + onlySelect);
+            Log.i(PIRASALBE, "parentPage.isDefaultDialogType(): " + parentPage.isDefaultDialogType());
+            Log.i(PIRASALBE, "slidingView: " + slidingView);
             if (!onlySelect && parentPage.isDefaultDialogType() && slidingView == null && viewHolder.itemView instanceof DialogCell) {
+                Log.i(PIRASALBE, "1169");
                 DialogCell dialogCell = (DialogCell) viewHolder.itemView;
                 long dialogId = dialogCell.getDialogId();
+                Log.i(PIRASALBE, "actionBar.isActionModeShowed(): " + actionBar.isActionModeShowed());
                 if (actionBar.isActionModeShowed()) {
                     TLRPC.Dialog dialog = getMessagesController().dialogs_dict.get(dialogId);
+                    Log.i(PIRASALBE, "allowMoving: " + allowMoving);
+                    Log.i(PIRASALBE, "dialog: " + dialog);
+                    Log.i(PIRASALBE, "isDialogPinned: " + isDialogPinned);
+                    Log.i(PIRASALBE, "isFolderDialogId: " + DialogObject.isFolderDialogId(dialogId));
                     if (!allowMoving || dialog == null || !isDialogPinned(dialog) || DialogObject.isFolderDialogId(dialogId)) {
                         return 0;
                     }
@@ -1170,10 +1183,17 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                     movingView.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
                     return makeMovementFlags(ItemTouchHelper.UP | ItemTouchHelper.DOWN, 0);
                 } else {
+                    Log.i(PIRASALBE, "filterTabsView: " + filterTabsView);
+                    Log.i(PIRASALBE, "filterTabsView.getVisibility(): " + filterTabsView.getVisibility());
+                    Log.i(PIRASALBE, "allowSwipeDuringCurrentTouch: " + allowSwipeDuringCurrentTouch);
+                    Log.i(PIRASALBE, "dialogId: " + onlySelect + "==" + getUserConfig().clientUserId);
                     if (filterTabsView != null && filterTabsView.getVisibility() == View.VISIBLE || !allowSwipeDuringCurrentTouch || dialogId == getUserConfig().clientUserId || dialogId == 777000 || getMessagesController().isPromoDialog(dialogId, false) && getMessagesController().promoDialogType != MessagesController.PROMO_TYPE_PSA) {
                         return 0;
                     }
+                    Log.i(PIRASALBE, "swipeFolderBack: " + swipeFolderBack);
                     swipeFolderBack = false;
+                    Log.i(PIRASALBE, "SharedConfig.archiveHidden: " + SharedConfig.archiveHidden);
+                    Log.i(PIRASALBE, "DialogObject.isFolderDialogId(dialogCell.getDialogId(): " + DialogObject.isFolderDialogId(dialogCell.getDialogId());
                     swipingFolder = SharedConfig.archiveHidden && DialogObject.isFolderDialogId(dialogCell.getDialogId());
                     dialogCell.setSliding(true);
                     return makeMovementFlags(0, ItemTouchHelper.LEFT);
@@ -1184,6 +1204,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
 
         @Override
         public boolean onMove(RecyclerView recyclerView, RecyclerView.ViewHolder source, RecyclerView.ViewHolder target) {
+            Log.i(PIRASALBE, "onMove");
             if (!(target.itemView instanceof DialogCell)) {
                 return false;
             }
@@ -1210,6 +1231,8 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
 
         @Override
         public int convertToAbsoluteDirection(int flags, int layoutDirection) {
+            Log.i(PIRASALBE, "convertToAbsoluteDirection");
+            Log.i(PIRASALBE, "swipeFolderBack: " + swipeFolderBack);
             if (swipeFolderBack) {
                 return 0;
             }
@@ -1217,6 +1240,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         }
 
         // TODO pirasalbe
+        // https://github.com/pirasalbe/Telegram/commit/80c4acfa3bb588f843af2324c8ee0fa46f7ab0d7#diff-d107076f2725c063b3f18be593b8aa3f
         @Override
         public void onSwiped(RecyclerView.ViewHolder viewHolder, int direction) {
             if (viewHolder != null) {
@@ -1700,6 +1724,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             filterTabsView = new FilterTabsView(context) {
                 @Override
                 public boolean onInterceptTouchEvent(MotionEvent ev) {
+                    Log.i(PIRASALBE, "onInterceptTouchEvent");
                     getParent().requestDisallowInterceptTouchEvent(true);
                     maybeStartTracking = false;
                     return super.onInterceptTouchEvent(ev);
