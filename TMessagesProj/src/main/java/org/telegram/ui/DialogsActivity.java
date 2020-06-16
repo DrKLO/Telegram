@@ -1174,7 +1174,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                     TLRPC.Dialog dialog = getMessagesController().dialogs_dict.get(dialogId);
                     Log.i(PIRASALBE, "allowMoving: " + allowMoving);
                     Log.i(PIRASALBE, "dialog: " + dialog);
-                    Log.i(PIRASALBE, "isDialogPinned: " + isDialogPinned);
+                    Log.i(PIRASALBE, "isDialogPinned: " + isDialogPinned(dialog));
                     Log.i(PIRASALBE, "isFolderDialogId: " + DialogObject.isFolderDialogId(dialogId));
                     if (!allowMoving || dialog == null || !isDialogPinned(dialog) || DialogObject.isFolderDialogId(dialogId)) {
                         return 0;
