@@ -1184,10 +1184,11 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                     return makeMovementFlags(ItemTouchHelper.UP | ItemTouchHelper.DOWN, 0);
                 } else {
                     Log.i(PIRASALBE, "filterTabsView: " + filterTabsView);
-                    Log.i(PIRASALBE, "filterTabsView.getVisibility(): " + filterTabsView.getVisibility());
+                    Log.i(PIRASALBE, "SharedConfig.swipeToArchive: " + SharedConfig.swipeToArchive);
+                    Log.i(PIRASALBE, "filterTabsView.getVisibility(): " + (filterTabsView != null ? filterTabsView.getVisibility() : null) + "==" + View.VISIBLE);
                     Log.i(PIRASALBE, "allowSwipeDuringCurrentTouch: " + allowSwipeDuringCurrentTouch);
                     Log.i(PIRASALBE, "dialogId: " + onlySelect + "==" + getUserConfig().clientUserId);
-                    if (filterTabsView != null && filterTabsView.getVisibility() == View.VISIBLE || !allowSwipeDuringCurrentTouch || dialogId == getUserConfig().clientUserId || dialogId == 777000 || getMessagesController().isPromoDialog(dialogId, false) && getMessagesController().promoDialogType != MessagesController.PROMO_TYPE_PSA) {
+                    if (filterTabsView != null && !SharedConfig.swipeToArchive && filterTabsView.getVisibility() == View.VISIBLE || !allowSwipeDuringCurrentTouch || dialogId == getUserConfig().clientUserId || dialogId == 777000 || getMessagesController().isPromoDialog(dialogId, false) && getMessagesController().promoDialogType != MessagesController.PROMO_TYPE_PSA) {
                         return 0;
                     }
                     Log.i(PIRASALBE, "swipeFolderBack: " + swipeFolderBack);
@@ -1243,6 +1244,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         // https://github.com/pirasalbe/Telegram/commit/80c4acfa3bb588f843af2324c8ee0fa46f7ab0d7#diff-d107076f2725c063b3f18be593b8aa3f
         @Override
         public void onSwiped(RecyclerView.ViewHolder viewHolder, int direction) {
+            Log.i(PIRASALBE, "onSwiped");
             if (viewHolder != null) {
                 DialogCell dialogCell = (DialogCell) viewHolder.itemView;
                 long dialogId = dialogCell.getDialogId();
