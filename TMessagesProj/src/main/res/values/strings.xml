@@ -1670,6 +1670,7 @@
     <string name="AutoplayMedia">Auto-play media</string>
     <string name="RaiseToSpeak">Raise to Speak</string>
     <string name="SaveToGallerySettings">Save to Gallery</string>
+    <string name="SwipeToArchiveSettings">Swipe to Archive</string>
     <string name="SoundMuted">Sound muted</string>
     <string name="EditName">Edit name</string>
     <string name="NotificationsCustomize">Customize</string>
