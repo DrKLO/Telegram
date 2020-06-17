@@ -314,7 +314,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
     private boolean canDeletePsaSelected;
 
     private int topPadding;
-
+    
     private int folderId;
 
     private final static int pin = 100;
