@@ -48,6 +48,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import androidx.viewpager.widget.ViewPager;
 
 import android.text.TextUtils;
+import android.util.Log;
 import android.util.Property;
 import android.util.StateSet;
 import android.view.Gravity;
@@ -1168,6 +1169,10 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                     movingView.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
                     return makeMovementFlags(ItemTouchHelper.UP | ItemTouchHelper.DOWN, 0);
                 } else {
+                    Log.i("pirasalbe", " || " + !allowSwipeDuringCurrentTouch +" || " +
+                            dialogId +"==" + getUserConfig().clientUserId +" || dialogId =="+ 777000 +"|| "+
+                            getMessagesController().isPromoDialog(dialogId, false) +"&&"+ getMessagesController().promoDialogType
+                            +"!=" + MessagesController.PROMO_TYPE_PSA);
                     if (filterTabsView != null && !SharedConfig.swipeToArchive && filterTabsView.getVisibility() == View.VISIBLE || !allowSwipeDuringCurrentTouch || dialogId == getUserConfig().clientUserId || dialogId == 777000 || getMessagesController().isPromoDialog(dialogId, false) && getMessagesController().promoDialogType != MessagesController.PROMO_TYPE_PSA) {
                         return 0;
                     }
