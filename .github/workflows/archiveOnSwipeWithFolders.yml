@@ -24,11 +24,10 @@ jobs:
       
 
     - name: Install docker
-      run: apt update && apt install -y docker.io
+      run: sudo apt update && sudo apt install -y docker.io
       
     - name: Install docker
       run: apt update && apt install -y docker.io
       
     - name: See files
       run: ll
-      
