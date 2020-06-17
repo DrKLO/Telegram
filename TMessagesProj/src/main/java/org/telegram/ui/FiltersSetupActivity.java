@@ -37,6 +37,7 @@ import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ActionBar.ThemeDescription;
 import org.telegram.ui.Cells.HeaderCell;
 import org.telegram.ui.Cells.ShadowSectionCell;
+import org.telegram.ui.Cells.TextCheckCell;
 import org.telegram.ui.Components.CombinedDrawable;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.ProgressButton;
@@ -771,6 +772,7 @@ public class FiltersSetupActivity extends BaseFragment implements NotificationCe
                 case 7: {
                     if (position == swipeToArchiveRow) {
                         TextCheckCell textCheckCell = (TextCheckCell) holder.itemView;
+                        textCheckCell.setEnabled(filtersStartRow != -1, null);
                         textCheckCell.setTextAndValueAndCheck(LocaleController.getString("SwipeToArchiveSettings", R.string.SwipeToArchiveSettings), LocaleController.getString("SwipeToArchiveSettingsInfo", R.string.SwipeToArchiveSettingsInfo), SharedConfig.swipeToArchive, false, true);
                     }
                     break;

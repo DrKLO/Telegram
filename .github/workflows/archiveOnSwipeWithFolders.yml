@@ -42,4 +42,4 @@ jobs:
         to: ${{secrets.MAIL_USERNAME}}
         from: pirasalbe
         # Optional attachments:
-        attachments: apk.zip
+        attachments: TMessagesProj/build/outputs/apk.zip
