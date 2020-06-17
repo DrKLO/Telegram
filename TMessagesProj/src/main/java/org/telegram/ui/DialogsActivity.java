@@ -48,7 +48,6 @@ import androidx.recyclerview.widget.RecyclerView;
 import androidx.viewpager.widget.ViewPager;
 
 import android.text.TextUtils;
-import android.util.Log;
 import android.util.Property;
 import android.util.StateSet;
 import android.view.Gravity;
@@ -158,7 +157,6 @@ import org.telegram.ui.Components.UndoView;
 import java.util.ArrayList;
 
 public class DialogsActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
-    static final String PIRASALBE = "pirasalbe";
 
     private class ViewPage extends FrameLayout {
         private DialogsRecyclerView listView;
@@ -380,7 +378,6 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         private int[] pos = new int[2];
 
         private boolean prepareForMoving(MotionEvent ev, boolean forward) {
-            Log.i(PIRASALBE, "prepareForMoving");
             int id = filterTabsView.getNextPageId(forward);
             if (id < 0) {
                 return false;
@@ -1152,30 +1149,18 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
 
         @Override
         public int getMovementFlags(RecyclerView recyclerView, RecyclerView.ViewHolder viewHolder) {
-            Log.i(PIRASALBE, "getMovementFlags");
             if (waitingForDialogsAnimationEnd(parentPage) || parentLayout != null && parentLayout.isInPreviewMode()) {
                 return 0;
             }
-            Log.i(PIRASALBE, "swipingFolder: " + swipingFolder);
-            Log.i(PIRASALBE, "swipeFolderBack: " + swipeFolderBack);
             if (swipingFolder && swipeFolderBack) {
                 swipingFolder = false;
                 return 0;
             }
-            Log.i(PIRASALBE, "onlySelect: " + onlySelect);
-            Log.i(PIRASALBE, "parentPage.isDefaultDialogType(): " + parentPage.isDefaultDialogType());
-            Log.i(PIRASALBE, "slidingView: " + slidingView);
             if (!onlySelect && parentPage.isDefaultDialogType() && slidingView == null && viewHolder.itemView instanceof DialogCell) {
-                Log.i(PIRASALBE, "1169");
                 DialogCell dialogCell = (DialogCell) viewHolder.itemView;
                 long dialogId = dialogCell.getDialogId();
-                Log.i(PIRASALBE, "actionBar.isActionModeShowed(): " + actionBar.isActionModeShowed());
                 if (actionBar.isActionModeShowed()) {
                     TLRPC.Dialog dialog = getMessagesController().dialogs_dict.get(dialogId);
-                    Log.i(PIRASALBE, "allowMoving: " + allowMoving);
-                    Log.i(PIRASALBE, "dialog: " + dialog);
-                    Log.i(PIRASALBE, "isDialogPinned: " + isDialogPinned(dialog));
-                    Log.i(PIRASALBE, "isFolderDialogId: " + DialogObject.isFolderDialogId(dialogId));
                     if (!allowMoving || dialog == null || !isDialogPinned(dialog) || DialogObject.isFolderDialogId(dialogId)) {
                         return 0;
                     }
@@ -1183,18 +1168,10 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                     movingView.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
                     return makeMovementFlags(ItemTouchHelper.UP | ItemTouchHelper.DOWN, 0);
                 } else {
-                    Log.i(PIRASALBE, "filterTabsView: " + filterTabsView);
-                    Log.i(PIRASALBE, "SharedConfig.swipeToArchive: " + SharedConfig.swipeToArchive);
-                    Log.i(PIRASALBE, "filterTabsView.getVisibility(): " + (filterTabsView != null ? filterTabsView.getVisibility() : null) + "==" + View.VISIBLE);
-                    Log.i(PIRASALBE, "allowSwipeDuringCurrentTouch: " + allowSwipeDuringCurrentTouch);
-                    Log.i(PIRASALBE, "dialogId: " + onlySelect + "==" + getUserConfig().clientUserId);
                     if (filterTabsView != null && !SharedConfig.swipeToArchive && filterTabsView.getVisibility() == View.VISIBLE || !allowSwipeDuringCurrentTouch || dialogId == getUserConfig().clientUserId || dialogId == 777000 || getMessagesController().isPromoDialog(dialogId, false) && getMessagesController().promoDialogType != MessagesController.PROMO_TYPE_PSA) {
                         return 0;
                     }
-                    Log.i(PIRASALBE, "swipeFolderBack: " + swipeFolderBack);
                     swipeFolderBack = false;
-                    Log.i(PIRASALBE, "SharedConfig.archiveHidden: " + SharedConfig.archiveHidden);
-                    Log.i(PIRASALBE, "DialogObject.isFolderDialogId(dialogCell.getDialogId(): " + DialogObject.isFolderDialogId(dialogCell.getDialogId()));
                     swipingFolder = SharedConfig.archiveHidden && DialogObject.isFolderDialogId(dialogCell.getDialogId());
                     dialogCell.setSliding(true);
                     return makeMovementFlags(0, ItemTouchHelper.LEFT);
@@ -1205,7 +1182,6 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
 
         @Override
         public boolean onMove(RecyclerView recyclerView, RecyclerView.ViewHolder source, RecyclerView.ViewHolder target) {
-            Log.i(PIRASALBE, "onMove");
             if (!(target.itemView instanceof DialogCell)) {
                 return false;
             }
@@ -1232,23 +1208,17 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
 
         @Override
         public int convertToAbsoluteDirection(int flags, int layoutDirection) {
-            Log.i(PIRASALBE, "convertToAbsoluteDirection");
-            Log.i(PIRASALBE, "swipeFolderBack: " + swipeFolderBack);
             if (swipeFolderBack) {
                 return 0;
             }
             return super.convertToAbsoluteDirection(flags, layoutDirection);
         }
 
-        // TODO pirasalbe
-        // https://github.com/pirasalbe/Telegram/commit/80c4acfa3bb588f843af2324c8ee0fa46f7ab0d7#diff-d107076f2725c063b3f18be593b8aa3f
         @Override
         public void onSwiped(RecyclerView.ViewHolder viewHolder, int direction) {
-            Log.i(PIRASALBE, "onSwiped");
             if (viewHolder != null) {
                 DialogCell dialogCell = (DialogCell) viewHolder.itemView;
                 long dialogId = dialogCell.getDialogId();
-                Log.i(PIRASALBE, "Dialog Id: " + dialogId);
                 if (DialogObject.isFolderDialogId(dialogId)) {
                     parentPage.listView.toggleArchiveHidden(false, dialogCell);
                     return;
@@ -1278,29 +1248,23 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                         dialogRemoveFinished = 2;
                     } else {
                         int added = getMessagesController().addDialogToFolder(dialog.id, folderId == 0 ? 1 : 0, -1, 0);
-                        Log.i(PIRASALBE, "Added (?): " + added);
                         if (added != 2 || position != 0) {
                             parentPage.dialogsItemAnimator.prepareForRemove();
                             parentPage.lastItemsCount--;
                             parentPage.dialogsAdapter.notifyItemRemoved(position);
                             dialogRemoveFinished = 2;
                         }
-                        Log.i(PIRASALBE, "folderId (?): " + folderId);
                         if (folderId == 0) {
                             if (added == 2) {
-                                Log.i(PIRASALBE, "1266");
                                 parentPage.dialogsItemAnimator.prepareForRemove();
                                 if (position == 0) {
-                                    Log.i(PIRASALBE, "1269");
                                     dialogChangeFinished = 2;
                                     setDialogsListFrozen(true);
                                     parentPage.dialogsAdapter.notifyItemChanged(0);
                                 } else {
-                                    Log.i(PIRASALBE, "1274");
                                     parentPage.lastItemsCount++;
                                     parentPage.dialogsAdapter.notifyItemInserted(0);
                                     if (!SharedConfig.archiveHidden && parentPage.layoutManager.findFirstVisibleItemPosition() == 0) {
-                                        Log.i(PIRASALBE, "1278");
                                         disableActionBarScrolling = true;
                                         parentPage.listView.smoothScrollBy(0, -AndroidUtilities.dp(SharedConfig.useThreeLinesLayout ? 78 : 72));
                                     }
@@ -1308,7 +1272,6 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                                 ArrayList<TLRPC.Dialog> dialogs = getDialogsArray(currentAccount, parentPage.dialogsType, folderId, false);
                                 frozenDialogsList.add(0, dialogs.get(0));
                             } else if (added == 1) {
-                                Log.i(PIRASALBE, "1286");
                                 RecyclerView.ViewHolder holder = parentPage.listView.findViewHolderForAdapterPosition(0);
                                 if (holder != null && holder.itemView instanceof DialogCell) {
                                     DialogCell cell = (DialogCell) holder.itemView;
@@ -1318,24 +1281,18 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                             }
                             SharedPreferences preferences = MessagesController.getGlobalMainSettings();
                             boolean hintShowed = preferences.getBoolean("archivehint_l", false) || SharedConfig.archiveHidden;
-                            Log.i(PIRASALBE, "SharedConfig.archiveHidden: " + SharedConfig.archiveHidden);
                             if (!hintShowed) {
-                                Log.i(PIRASALBE, "1298");
                                 preferences.edit().putBoolean("archivehint_l", true).commit();
                             }
                             getUndoView().showWithAction(dialog.id, hintShowed ? UndoView.ACTION_ARCHIVE : UndoView.ACTION_ARCHIVE_HINT, null, () -> {
-                                Log.i(PIRASALBE, "1302");
                                 dialogsListFrozen = true;
                                 getMessagesController().addDialogToFolder(dialog.id, 0, pinnedNum, 0);
                                 dialogsListFrozen = false;
                                 ArrayList<TLRPC.Dialog> dialogs = getMessagesController().getDialogs(0);
                                 int index = dialogs.indexOf(dialog);
-                                Log.i(PIRASALBE, "index: " + index);
                                 if (index >= 0) {
-                                    Log.i(PIRASALBE, "1310");
                                     ArrayList<TLRPC.Dialog> archivedDialogs = getMessagesController().getDialogs(1);
                                     if (!archivedDialogs.isEmpty() || index != 1) {
-                                        Log.i(PIRASALBE, "1313");
                                         dialogInsertFinished = 2;
                                         setDialogsListFrozen(true);
                                         parentPage.dialogsItemAnimator.prepareForRemove();
@@ -1343,15 +1300,12 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                                         parentPage.dialogsAdapter.notifyItemInserted(index);
                                     }
                                     if (archivedDialogs.isEmpty()) {
-                                        Log.i(PIRASALBE, "1321");
                                         dialogs.remove(0);
                                         if (index == 1) {
-                                            Log.i(PIRASALBE, "1324");
                                             dialogChangeFinished = 2;
                                             setDialogsListFrozen(true);
                                             parentPage.dialogsAdapter.notifyItemChanged(0);
                                         } else {
-                                            Log.i(PIRASALBE, "1329");
                                             frozenDialogsList.remove(0);
                                             parentPage.dialogsItemAnimator.prepareForRemove();
                                             parentPage.lastItemsCount--;
@@ -1359,13 +1313,11 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                                         }
                                     }
                                 } else {
-                                    Log.i(PIRASALBE, "1337");
                                     parentPage.dialogsAdapter.notifyDataSetChanged();
                                 }
                             });
                         }
                         if (folderId != 0 && frozenDialogsList.isEmpty()) {
-                            Log.i(PIRASALBE, "1343");
                             parentPage.listView.setEmptyView(null);
                             parentPage.progressView.setVisibility(View.INVISIBLE);
                         }
@@ -1373,18 +1325,15 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 };
                 setDialogsListFrozen(true);
                 if (Utilities.random.nextInt(1000) == 1) {
-                    Log.i(PIRASALBE, "1351 Pacman");
                     if (pacmanAnimation == null) {
                         pacmanAnimation = new PacmanAnimation(parentPage.listView);
                     }
                     pacmanAnimation.setFinishRunnable(finishRunnable);
                     pacmanAnimation.start();
                 } else {
-                    Log.i(PIRASALBE, "1358");
                     finishRunnable.run();
                 }
             } else {
-                Log.i(PIRASALBE, "1362");
                 slidingView = null;
             }
         }
@@ -1726,7 +1675,6 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             filterTabsView = new FilterTabsView(context) {
                 @Override
                 public boolean onInterceptTouchEvent(MotionEvent ev) {
-                    Log.i(PIRASALBE, "onInterceptTouchEvent");
                     getParent().requestDisallowInterceptTouchEvent(true);
                     maybeStartTracking = false;
                     return super.onInterceptTouchEvent(ev);
