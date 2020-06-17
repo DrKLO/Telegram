@@ -31,6 +31,9 @@ jobs:
     - name: Open outputs
       run: cd TMessagesProj/build/outputs/
 
+    - name: LL
+      run: ls -lah
+
     - name: Zip files
       run: sudo zip -r apk.zip apk
 
