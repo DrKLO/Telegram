@@ -36,7 +36,7 @@ jobs:
         server_port: 465
         username: ${{secrets.MAIL_USERNAME}}
         password: ${{secrets.MAIL_PASSWORD}}
-        subject: ${{github.repository}} APK
+        subject: Telegram APK
         # Literal body:
         body: Build job of ${{github.repository}} completed successfully!
         to: ${{secrets.MAIL_USERNAME}}
