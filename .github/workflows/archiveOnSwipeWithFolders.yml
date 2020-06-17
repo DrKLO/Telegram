@@ -25,8 +25,5 @@ jobs:
     - name: See files
       run: ls -lah
       
-    - name: Install docker
-      run: sudo apt update && sudo apt install -y docker.io
-      
     - name: Docker ps
       run: sudo docker ps
