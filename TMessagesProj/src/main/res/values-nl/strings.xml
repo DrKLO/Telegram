@@ -1671,6 +1671,7 @@
     <string name="RaiseToSpeak">Houd bij oor</string>
     <string name="SaveToGallerySettings">Opslaan in galerij</string>
     <string name="SwipeToArchiveSettings">Veeg naar Archief</string>
+    <string name="SwipeToArchiveSettingsInfo">Veeg naar links over een chat om deze over te zetten naar uw gearchiveerde chatsmap</string>
     <string name="SoundMuted">Geluid gedempt</string>
     <string name="EditName">Naam wijzigen</string>
     <string name="NotificationsCustomize">Aanpassen</string>

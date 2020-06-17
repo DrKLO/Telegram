@@ -1671,6 +1671,7 @@
     <string name="RaiseToSpeak">Levantar para Falar</string>
     <string name="SaveToGallerySettings">Salvar na Galeria</string>
     <string name="SwipeToArchiveSettings">Deslize para arquivar</string>
+    <string name="SwipeToArchiveSettingsInfo">Deslize para a esquerda em um bate-papo para transferi-lo para a pasta de bate-papos arquivada</string>
     <string name="SoundMuted">Silenciado</string>
     <string name="EditName">Editar nome</string>
     <string name="NotificationsCustomize">Personalizar</string>
