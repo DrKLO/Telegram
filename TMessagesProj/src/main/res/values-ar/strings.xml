@@ -1670,6 +1670,7 @@
     <string name="AutoplayMedia">تشغيل الوسائط تلقائيًا</string>
     <string name="RaiseToSpeak">الرفع للتحدث</string>
     <string name="SaveToGallerySettings">حفظ في المعرض</string>
+    <string name="SwipeToArchiveSettings">اسحب للأرشفة</string>
     <string name="SoundMuted">Sound muted</string>
     <string name="EditName">تعديل الاسم</string>
     <string name="NotificationsCustomize">تخصيص</string>
