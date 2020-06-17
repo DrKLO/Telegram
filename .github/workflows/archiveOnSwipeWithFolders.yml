@@ -23,7 +23,7 @@ jobs:
     - uses: actions/checkout@v2
       
     - name: Prepare docker
-      run: mkdir TMessagesProj/build/outputs/apk/
+      run: mkdir TMessagesProj/build && mkdir TMessagesProj/build/outputs && mkdir TMessagesProj/build/outputs/apk
 
     - name: Telegram Build
       run: touch TMessagesProj/build/outputs/apk/test.txt
