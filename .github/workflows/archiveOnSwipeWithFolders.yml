@@ -22,8 +22,29 @@ jobs:
     # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
     - uses: actions/checkout@v2
       
-    - name: See files
-      run: ls -lah
-      
-    - name: Docker ps
-      run: sudo docker ps
+    - name: Prepare docker
+      run: mkdir TMessagesProj/build/outputs/apk/
+
+    - name: Telegram Build
+      run: touch TMessagesProj/build/outputs/apk/test.txt
+
+    - name: Open outputs
+      run: cd TMessagesProj/build/outputs/
+
+    - name: Zip files
+      run: sudo zip -r apk.zip apk
+
+    - name: Send mail
+      uses: dawidd6/action-send-mail@v2
+      with:
+        server_address: smtp.gmail.com
+        server_port: 465
+        username: ${{secrets.MAIL_USERNAME}}
+        password: ${{secrets.MAIL_PASSWORD}}
+        subject: ${{github.repository}} APK
+        # Literal body:
+        body: Build job of ${{github.repository}} completed successfully!
+        to: ${{secrets.MAIL_USERNAME}}
+        from: pirasalbe
+        # Optional attachments:
+        attachments: apk.zip
