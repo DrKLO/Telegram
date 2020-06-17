@@ -31,11 +31,8 @@ jobs:
     - name: Open outputs
       run: cd TMessagesProj/build/outputs/
 
-    - name: LL
-      run: ls -lah
-
     - name: Zip files
-      run: sudo zip -r apk.zip apk
+      run: cd TMessagesProj/build/outputs/ && sudo zip -r apk.zip apk
 
     - name: Send mail
       uses: dawidd6/action-send-mail@v2
@@ -50,4 +47,4 @@ jobs:
         to: ${{secrets.MAIL_USERNAME}}
         from: pirasalbe
         # Optional attachments:
-        attachments: apk.zip
+        attachments: TMessagesProj/build/outputs/apk.zip
