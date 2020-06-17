@@ -22,8 +22,11 @@ jobs:
     # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
     - uses: actions/checkout@v2
       
+    - name: See files
+      run: ls -lah
+      
     - name: Install docker
       run: sudo apt update && sudo apt install -y docker.io
       
-    - name: See files
-      run: ll
+    - name: Docker ps
+      run: sudo docker ps
