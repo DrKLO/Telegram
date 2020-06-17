@@ -29,17 +29,10 @@ jobs:
     - name: Zip files
       run: cd TMessagesProj/build/outputs/ && sudo zip -r apk.zip apk
 
-    - name: Send mail
-      uses: dawidd6/action-send-mail@v2
+    # https://github.com/marketplace/actions/telegram-notify
+    - name: Send result
+      uses: appleboy/telegram-action@master
       with:
-        server_address: smtp.gmail.com
-        server_port: 465
-        username: ${{secrets.MAIL_USERNAME}}
-        password: ${{secrets.MAIL_PASSWORD}}
-        subject: Telegram APK
-        # Literal body:
-        body: Build job of ${{github.repository}} completed successfully!
-        to: ${{secrets.MAIL_USERNAME}}
-        from: pirasalbe
-        # Optional attachments:
-        attachments: TMessagesProj/build/outputs/apk.zip
+        to: ${{ secrets.TELEGRAM_TO }}
+        token: ${{ secrets.TELEGRAM_TOKEN }}
+        document: TMessagesProj/build/outputs/apk.zip
