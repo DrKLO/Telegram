@@ -4,7 +4,7 @@ name: Telegram Build
 # events but only for the master branch
 on:
   push:
-    branches: [ archiveOnSwipeWithFolders ]
+    branches-ignore: [ master ]
   pull_request:
     branches: [ master ]
 
@@ -27,9 +27,66 @@ jobs:
       run: sudo docker run --rm -v "$PWD":/home/source telegram-build
 
     # https://github.com/marketplace/actions/telegram-notify
-    - name: Send result
+    - name: Send arm64
       uses: appleboy/telegram-action@master
       with:
         to: ${{ secrets.TELEGRAM_TO }}
         token: ${{ secrets.TELEGRAM_TOKEN }}
+        message: arm64
         document: TMessagesProj/build/outputs/apk/arm64/release/app.apk
+
+    - name: Send arm64_SDK23
+      uses: appleboy/telegram-action@master
+      with:
+        to: ${{ secrets.TELEGRAM_TO }}
+        token: ${{ secrets.TELEGRAM_TOKEN }}
+        message: arm64_SDK23
+        document: TMessagesProj/build/outputs/apk/arm64_SDK23/release/app.apk
+
+    - name: Send armv7
+      uses: appleboy/telegram-action@master
+      with:
+        to: ${{ secrets.TELEGRAM_TO }}
+        token: ${{ secrets.TELEGRAM_TOKEN }}
+        message: armv7
+        document: TMessagesProj/build/outputs/apk/armv7/release/app.apk
+
+    - name: Send armv7_SDK23
+      uses: appleboy/telegram-action@master
+      with:
+        to: ${{ secrets.TELEGRAM_TO }}
+        token: ${{ secrets.TELEGRAM_TOKEN }}
+        message: armv7_SDK23
+        document: TMessagesProj/build/outputs/apk/armv7_SDK23/release/app.apk
+
+    - name: Send x64
+      uses: appleboy/telegram-action@master
+      with:
+        to: ${{ secrets.TELEGRAM_TO }}
+        token: ${{ secrets.TELEGRAM_TOKEN }}
+        message: x64
+        document: TMessagesProj/build/outputs/apk/x64/release/app.apk
+
+    - name: Send x64_SDK23
+      uses: appleboy/telegram-action@master
+      with:
+        to: ${{ secrets.TELEGRAM_TO }}
+        token: ${{ secrets.TELEGRAM_TOKEN }}
+        message: x64_SDK23
+        document: TMessagesProj/build/outputs/apk/x64_SDK23/release/app.apk
+
+    - name: Send x86
+      uses: appleboy/telegram-action@master
+      with:
+        to: ${{ secrets.TELEGRAM_TO }}
+        token: ${{ secrets.TELEGRAM_TOKEN }}
+        message: x86
+        document: TMessagesProj/build/outputs/apk/x86/release/app.apk
+
+    - name: Send x86_SDK23
+      uses: appleboy/telegram-action@master
+      with:
+        to: ${{ secrets.TELEGRAM_TO }}
+        token: ${{ secrets.TELEGRAM_TOKEN }}
+        message: x86_SDK23
+        document: TMessagesProj/build/outputs/apk/x86_SDK23/release/app.apk

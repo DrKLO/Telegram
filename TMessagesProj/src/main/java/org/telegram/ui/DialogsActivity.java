@@ -1169,15 +1169,13 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                     movingView.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
                     return makeMovementFlags(ItemTouchHelper.UP | ItemTouchHelper.DOWN, 0);
                 } else {
-                    Log.i("pirasalbe", " || " + !allowSwipeDuringCurrentTouch +" || " +
-                            dialogId +"==" + getUserConfig().clientUserId +" || dialogId =="+ 777000 +"|| "+
-                            getMessagesController().isPromoDialog(dialogId, false) +"&&"+ getMessagesController().promoDialogType
-                            +"!=" + MessagesController.PROMO_TYPE_PSA);
                     if (filterTabsView != null && !SharedConfig.swipeToArchive && filterTabsView.getVisibility() == View.VISIBLE || !allowSwipeDuringCurrentTouch || dialogId == getUserConfig().clientUserId || dialogId == 777000 || getMessagesController().isPromoDialog(dialogId, false) && getMessagesController().promoDialogType != MessagesController.PROMO_TYPE_PSA) {
                         return 0;
                     }
                     swipeFolderBack = false;
                     swipingFolder = SharedConfig.archiveHidden && DialogObject.isFolderDialogId(dialogCell.getDialogId());
+                    Log.i("pirasalbe", "swipingFolder=" + swipingFolder + "; SharedConfig.archiveHidden=" + SharedConfig.archiveHidden +
+                            " && DialogObject.isFolderDialogId(dialogCell.getDialogId())=" + DialogObject.isFolderDialogId(dialogCell.getDialogId());
                     dialogCell.setSliding(true);
                     return makeMovementFlags(0, ItemTouchHelper.LEFT);
                 }
