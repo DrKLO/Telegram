@@ -1175,7 +1175,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                     swipeFolderBack = false;
                     swipingFolder = SharedConfig.archiveHidden && DialogObject.isFolderDialogId(dialogCell.getDialogId());
                     Log.i("pirasalbe", "swipingFolder=" + swipingFolder + "; SharedConfig.archiveHidden=" + SharedConfig.archiveHidden +
-                            " && DialogObject.isFolderDialogId(dialogCell.getDialogId())=" + DialogObject.isFolderDialogId(dialogCell.getDialogId());
+                                    " && DialogObject.isFolderDialogId(dialogCell.getDialogId())=" + DialogObject.isFolderDialogId(dialogCell.getDialogId()));
                     dialogCell.setSliding(true);
                     return makeMovementFlags(0, ItemTouchHelper.LEFT);
                 }
