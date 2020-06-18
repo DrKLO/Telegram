@@ -486,7 +486,11 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
             nightThemeRow = rowCount++;
             customTabsRow = rowCount++;
             directShareRow = rowCount++;
-            swipeToArchiveRow = rowCount++;
+
+            int count = getMessagesController().dialogFilters.size();
+            if (count != 0) {
+                swipeToArchiveRow = rowCount++;
+            }
             enableAnimationsRow = rowCount++;
             emojiRow = rowCount++;
             raiseToSpeakRow = rowCount++;
