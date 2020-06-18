@@ -26,13 +26,10 @@ jobs:
     - name: Telegram Build
       run: sudo docker run --rm -v "$PWD":/home/source telegram-build
 
-    - name: Zip files
-      run: cd TMessagesProj/build/outputs/ && sudo zip -r apk.zip apk
-
     # https://github.com/marketplace/actions/telegram-notify
     - name: Send result
       uses: appleboy/telegram-action@master
       with:
         to: ${{ secrets.TELEGRAM_TO }}
         token: ${{ secrets.TELEGRAM_TOKEN }}
-        document: TMessagesProj/build/outputs/apk.zip
+        document: TMessagesProj/build/outputs/apk/arm64/release/app.apk

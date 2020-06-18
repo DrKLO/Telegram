@@ -27,7 +27,6 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
-import org.telegram.messenger.SharedConfig;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.AlertDialog;
@@ -37,7 +36,6 @@ import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ActionBar.ThemeDescription;
 import org.telegram.ui.Cells.HeaderCell;
 import org.telegram.ui.Cells.ShadowSectionCell;
-import org.telegram.ui.Cells.TextCheckCell;
 import org.telegram.ui.Components.CombinedDrawable;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.ProgressButton;
@@ -64,7 +62,6 @@ public class FiltersSetupActivity extends BaseFragment implements NotificationCe
     private int recommendedStartRow;
     private int recommendedEndRow;
     private int recommendedSectionRow;
-    private int swipeToArchiveRow;
     private int filtersHeaderRow;
     private int filtersStartRow;
     private int filtersEndRow;
@@ -387,7 +384,6 @@ public class FiltersSetupActivity extends BaseFragment implements NotificationCe
         recommendedStartRow = -1;
         recommendedEndRow = -1;
         recommendedSectionRow = -1;
-        swipeToArchiveRow = -1;
 
         ArrayList<TLRPC.TL_dialogFilterSuggested> suggestedFilters = getMessagesController().suggestedFilters;
         rowCount = 0;
@@ -399,7 +395,6 @@ public class FiltersSetupActivity extends BaseFragment implements NotificationCe
             rowCount += suggestedFilters.size();
             recommendedEndRow = rowCount;
             recommendedSectionRow = rowCount++;
-            swipeToArchiveRow = rowCount++;
         }
 
         if (count != 0) {
@@ -475,11 +470,6 @@ public class FiltersSetupActivity extends BaseFragment implements NotificationCe
                 presentFragment(new FilterCreateActivity(getMessagesController().dialogFilters.get(position - filtersStartRow)));
             } else if (position == createFilterRow) {
                 presentFragment(new FilterCreateActivity());
-            } else if (position == swipeToArchiveRow) {
-                SharedConfig.toggleSwipeToArchive();
-                if (view instanceof TextCheckCell) {
-                    ((TextCheckCell) view).setChecked(SharedConfig.swipeToArchive);
-                }
             }
         });
 
@@ -769,14 +759,6 @@ public class FiltersSetupActivity extends BaseFragment implements NotificationCe
                     filterCell.setFilter(getMessagesController().suggestedFilters.get(position - recommendedStartRow), recommendedStartRow != recommendedEndRow - 1);
                     break;
                 }
-                case 7: {
-                    if (position == swipeToArchiveRow) {
-                        TextCheckCell textCheckCell = (TextCheckCell) holder.itemView;
-                        textCheckCell.setEnabled(filtersStartRow != -1, null);
-                        textCheckCell.setTextAndValueAndCheck(LocaleController.getString("SwipeToArchiveSettings", R.string.SwipeToArchiveSettings), LocaleController.getString("SwipeToArchiveSettingsInfo", R.string.SwipeToArchiveSettingsInfo), SharedConfig.swipeToArchive, false, true);
-                    }
-                    break;
-                }
             }
         }
 
@@ -792,8 +774,6 @@ public class FiltersSetupActivity extends BaseFragment implements NotificationCe
                 return 3;
             } else if (position == createFilterRow) {
                 return 4;
-            } else if (position == swipeToArchiveRow) {
-                return 7;
             } else {
                 return 5;
             }
