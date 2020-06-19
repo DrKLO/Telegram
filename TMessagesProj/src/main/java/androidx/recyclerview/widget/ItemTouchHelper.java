@@ -1187,7 +1187,6 @@ public class ItemTouchHelper extends RecyclerView.ItemDecoration
     }
 
     private int swipeIfNecessary(ViewHolder viewHolder) {
-        Log.i("pirasalbe", "swipeIfNecessary");
         if (mActionState == ACTION_STATE_DRAG) {
             return 0;
         }
