@@ -1176,7 +1176,6 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                     swipeFolderBack = false;
                     swipingFolder = SharedConfig.archiveHidden && DialogObject.isFolderDialogId(dialogCell.getDialogId());
                     dialogCell.setSliding(true);
-                    Log.i("pirasalbe", "makeMovementFlags(0, ItemTouchHelper.LEFT)=" + makeMovementFlags(0, ItemTouchHelper.LEFT));
                     return makeMovementFlags(0, ItemTouchHelper.LEFT);
                 }
             }
@@ -1185,7 +1184,6 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
 
         @Override
         public boolean onMove(RecyclerView recyclerView, RecyclerView.ViewHolder source, RecyclerView.ViewHolder target) {
-            Log.i("pirasalbe", "onMove");
             if (!(target.itemView instanceof DialogCell)) {
                 return false;
             }
@@ -1212,7 +1210,6 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
 
         @Override
         public int convertToAbsoluteDirection(int flags, int layoutDirection) {
-            Log.i("pirasalbe", "convertToAbsoluteDirection");
             if (swipeFolderBack) {
                 return 0;
             }
