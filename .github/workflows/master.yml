@@ -4,8 +4,6 @@ name: Telegram Build
 # events but only for the master branch
 on:
   push:
-    branches-ignore: [ master ]
-  pull_request:
     branches: [ master ]
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
@@ -27,6 +25,14 @@ jobs:
       run: sudo docker run --rm -v "$PWD":/home/source telegram-build
 
     # https://github.com/marketplace/actions/telegram-notify
+    - name: Send afat
+      uses: appleboy/telegram-action@master
+      with:
+        to: ${{ secrets.TELEGRAM_TO }}
+        token: ${{ secrets.TELEGRAM_TOKEN }}
+        message: afat
+        document: TMessagesProj/build/outputs/apk/afat/release/app.apk
+
     - name: Send arm64
       uses: appleboy/telegram-action@master
       with:
