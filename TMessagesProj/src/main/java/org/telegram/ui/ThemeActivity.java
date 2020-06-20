@@ -1901,7 +1901,7 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
                     } else if (position == saveToGalleryRow) {
                         textCheckCell.setTextAndCheck(LocaleController.getString("SaveToGallerySettings", R.string.SaveToGallerySettings), SharedConfig.saveToGallery, true);
                     } else if (position == swipeToArchiveRow) {
-                        textCheckCell.setTextAndValueAndCheck(LocaleController.getString("SwipeToArchiveSettings", R.string.SwipeToArchiveSettings), LocaleController.getString("SwipeToArchiveSettingsInfo", R.string.SwipeToArchiveSettingsInfo), SharedConfig.swipeToArchive, false, true);
+                        textCheckCell.setTextAndValueAndCheck(LocaleController.getString("SwipeToArchiveSettings", R.string.SwipeToArchiveSettings), LocaleController.getString("SwipeToArchiveSettingsInfo", R.string.SwipeToArchiveSettingsInfo), SharedConfig.swipeToArchive, true, true);
                     } else if (position == raiseToSpeakRow) {
                         textCheckCell.setTextAndCheck(LocaleController.getString("RaiseToSpeak", R.string.RaiseToSpeak), SharedConfig.raiseToSpeak, true);
                     } else if (position == customTabsRow) {
