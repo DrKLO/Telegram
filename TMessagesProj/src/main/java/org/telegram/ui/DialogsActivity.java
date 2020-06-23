@@ -1168,7 +1168,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                     movingView.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
                     return makeMovementFlags(ItemTouchHelper.UP | ItemTouchHelper.DOWN, 0);
                 } else {
-                    boolean swipeToArchive = SharedConfig.swipeToArchive && viewPages != null && viewPages.length > 0 && viewPages[0] != null && filterTabsView != null && viewPages[0].selectedType == filterTabsView.getFirstTabId();
+                    boolean swipeToArchive = SharedConfig.swipeToArchive && !DialogObject.isFolderDialogId(dialogId) && viewPages != null && viewPages.length > 0 && viewPages[0] != null && filterTabsView != null && viewPages[0].selectedType == filterTabsView.getFirstTabId();
                     if (filterTabsView != null && !swipeToArchive && filterTabsView.getVisibility() == View.VISIBLE || !allowSwipeDuringCurrentTouch || dialogId == getUserConfig().clientUserId || dialogId == 777000 || getMessagesController().isPromoDialog(dialogId, false) && getMessagesController().promoDialogType != MessagesController.PROMO_TYPE_PSA) {
                         return 0;
                     }
