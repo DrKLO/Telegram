@@ -1670,6 +1670,8 @@
     <string name="AutoplayMedia">Automatische Medienwiedergabe</string>
     <string name="RaiseToSpeak">Zum Sprechen ans Ohr</string>
     <string name="SaveToGallerySettings">In der Galerie speichern</string>
+    <string name="SwipeToArchiveSettings">Zum Archiv wischen</string>
+    <string name="SwipeToArchiveSettingsInfo">Wischen Sie in einem Chat nach links, um ihn in Ihren archivierten Chat-Ordner zu übertragen</string>
     <string name="SoundMuted">Ton stumm</string>
     <string name="EditName">Name bearbeiten</string>
     <string name="NotificationsCustomize">Anpassen</string>

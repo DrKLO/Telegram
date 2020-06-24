@@ -121,6 +121,7 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
     private int settingsRow;
     private int customTabsRow;
     private int directShareRow;
+    private int swipeToArchiveRow;
     private int raiseToSpeakRow;
     private int sendByEnterRow;
     private int saveToGalleryRow;
@@ -430,6 +431,7 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
         settingsRow = -1;
         customTabsRow = -1;
         directShareRow = -1;
+        swipeToArchiveRow = -1;
         enableAnimationsRow = -1;
         raiseToSpeakRow = -1;
         sendByEnterRow = -1;
@@ -484,6 +486,11 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
             nightThemeRow = rowCount++;
             customTabsRow = rowCount++;
             directShareRow = rowCount++;
+
+            int count = getMessagesController().dialogFilters.size();
+            if (count != 0) {
+                swipeToArchiveRow = rowCount++;
+            }
             enableAnimationsRow = rowCount++;
             emojiRow = rowCount++;
             raiseToSpeakRow = rowCount++;
@@ -820,6 +827,11 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
                 SharedConfig.toggleSaveToGallery();
                 if (view instanceof TextCheckCell) {
                     ((TextCheckCell) view).setChecked(SharedConfig.saveToGallery);
+                }
+            } else if (position == swipeToArchiveRow) {
+                SharedConfig.toggleSwipeToArchive();
+                if (view instanceof TextCheckCell) {
+                    ((TextCheckCell) view).setChecked(SharedConfig.swipeToArchive);
                 }
             } else if (position == distanceRow) {
                 if (getParentActivity() == null) {
@@ -1888,6 +1900,8 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
                         textCheckCell.setTextAndCheck(LocaleController.getString("SendByEnter", R.string.SendByEnter), preferences.getBoolean("send_by_enter", false), true);
                     } else if (position == saveToGalleryRow) {
                         textCheckCell.setTextAndCheck(LocaleController.getString("SaveToGallerySettings", R.string.SaveToGallerySettings), SharedConfig.saveToGallery, true);
+                    } else if (position == swipeToArchiveRow) {
+                        textCheckCell.setTextAndValueAndCheck(LocaleController.getString("SwipeToArchiveSettings", R.string.SwipeToArchiveSettings), LocaleController.getString("SwipeToArchiveSettingsInfo", R.string.SwipeToArchiveSettingsInfo), SharedConfig.swipeToArchive, true, true);
                     } else if (position == raiseToSpeakRow) {
                         textCheckCell.setTextAndCheck(LocaleController.getString("RaiseToSpeak", R.string.RaiseToSpeak), SharedConfig.raiseToSpeak, true);
                     } else if (position == customTabsRow) {
@@ -1974,8 +1988,8 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
             } else if (position == automaticBrightnessRow) {
                 return 6;
             } else if (position == scheduleLocationRow || position == enableAnimationsRow || position == sendByEnterRow ||
-                    position == saveToGalleryRow || position == raiseToSpeakRow || position == customTabsRow ||
-                    position == directShareRow || position == emojiRow) {
+                    position == saveToGalleryRow || position == swipeToArchiveRow || position == raiseToSpeakRow ||
+                    position == customTabsRow || position == directShareRow || position == emojiRow) {
                 return 7;
             } else if (position == textSizeRow) {
                 return 8;

@@ -105,6 +105,7 @@ public class SharedConfig {
     public static boolean drawDialogIcons;
     public static boolean useThreeLinesLayout;
     public static boolean archiveHidden;
+    public static boolean swipeToArchive;
 
     public static int distanceSystemType;
 
@@ -265,6 +266,7 @@ public class SharedConfig {
             directShareHash = preferences.getLong("directShareHash", 0);
             useThreeLinesLayout = preferences.getBoolean("useThreeLinesLayout", false);
             archiveHidden = preferences.getBoolean("archiveHidden", false);
+            swipeToArchive = preferences.getBoolean("swipeToArchive", false);
             distanceSystemType = preferences.getInt("distanceSystemType", 0);
             devicePerformanceClass = preferences.getInt("devicePerformanceClass", -1);
             loopStickers = preferences.getBoolean("loopStickers", true);
@@ -595,6 +597,14 @@ public class SharedConfig {
         SharedPreferences preferences = MessagesController.getGlobalMainSettings();
         SharedPreferences.Editor editor = preferences.edit();
         editor.putBoolean("archiveHidden", archiveHidden);
+        editor.commit();
+    }
+
+    public static void toggleSwipeToArchive() {
+        swipeToArchive = !swipeToArchive;
+        SharedPreferences preferences = MessagesController.getGlobalMainSettings();
+        SharedPreferences.Editor editor = preferences.edit();
+        editor.putBoolean("swipeToArchive", swipeToArchive);
         editor.commit();
     }
 

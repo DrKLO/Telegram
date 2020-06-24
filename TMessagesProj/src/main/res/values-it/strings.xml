@@ -1670,6 +1670,8 @@
     <string name="AutoplayMedia">Autoriproduzione media</string>
     <string name="RaiseToSpeak">Alza per registrare</string>
     <string name="SaveToGallerySettings">Salva nella galleria</string>
+    <string name="SwipeToArchiveSettings">Scorri per archiviare</string>
+    <string name="SwipeToArchiveSettingsInfo">Scorri verso sinistra su una chat per trasferirla nella cartella delle chat archiviate</string>
     <string name="SoundMuted">Suono silenziato</string>
     <string name="EditName">Modifica nome</string>
     <string name="NotificationsCustomize">Personalizza</string>

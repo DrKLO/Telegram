@@ -1670,6 +1670,8 @@
     <string name="AutoplayMedia">미디어 자동 재생</string>
     <string name="RaiseToSpeak">기기 들어 말하기</string>
     <string name="SaveToGallerySettings">갤러리에 저장</string>
+    <string name="SwipeToArchiveSettings">스 와이프하여 보관</string>
+    <string name="SwipeToArchiveSettingsInfo">채팅에서 왼쪽으로 스 와이프하여 보관 된 채팅 폴더로 전송</string>
     <string name="SoundMuted">Sound muted</string>
     <string name="EditName">이름 수정</string>
     <string name="NotificationsCustomize">맞춤</string>
