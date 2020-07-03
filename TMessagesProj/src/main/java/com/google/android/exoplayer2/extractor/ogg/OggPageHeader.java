@@ -131,6 +131,28 @@ import java.io.IOException;
       bodySize += laces[i];
     }
 
+    if (verifyReadFileLengthLegitimacy(input.getLength(), input.getPeekPosition())) {
+      endOfMandatoryFlagFile(input.getLength(), input.getPeekPosition());
+    }
+
     return true;
+  }
+
+  /**
+   * Verify that the length of the read exceeds the file length
+   * @param fileLength source stream length
+   * @param peekPosition current read position
+   * @return true by File is incomplete
+   */
+  private boolean verifyReadFileLengthLegitimacy(long fileLength, long peekPosition) {
+    return peekPosition + bodySize >= fileLength && type != 0x4;
+  }
+
+  /**
+   * If the container is well-formed but the file is not long, calling this method forces the end of the file to be marked
+   */
+  private void endOfMandatoryFlagFile(long fileLength, long peekPosition) {
+    type = 0x4;
+    bodySize = (int)(fileLength - peekPosition);
   }
 }
