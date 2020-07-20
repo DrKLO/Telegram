@@ -8479,4 +8479,5 @@
     <string name="StickerSize">Sticker Size</string>
     <string name="DisableFlipPhotos">Disable Flip Photos by Tapping</string>
     <string name="FormatWithSeconds">Format Message Time with Seconds</string>
+    <string name="DisableThumbsInDialogList">Disable Thumbs in Dialog List</string>
 </resources>

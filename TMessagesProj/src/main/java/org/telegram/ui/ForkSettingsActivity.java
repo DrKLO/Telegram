@@ -149,6 +149,7 @@ public class ForkSettingsActivity extends BaseFragment {
     private int hideBottomButton;
     private int disableFlipPhotos;
     private int formatWithSeconds;
+    private int disableThumbsInDialogList;
 
     private int stickerSizeRow;
 
@@ -198,6 +199,7 @@ public class ForkSettingsActivity extends BaseFragment {
         hideBottomButton = SharedConfig.isUserOwner() ? rowCount++ : -1;
         disableFlipPhotos = rowCount++;
         formatWithSeconds = rowCount++;
+        disableThumbsInDialogList = rowCount++;
     
         emptyRows.add(rowCount++);
         sectionRows.add(rowCount++);
@@ -303,6 +305,8 @@ public class ForkSettingsActivity extends BaseFragment {
                 toggleGlobalMainSetting("disableFlipPhotos", view, false);
             } else if (position == formatWithSeconds) {
                 toggleGlobalMainSetting("formatWithSeconds", view, false);
+            } else if (position == disableThumbsInDialogList) {
+                toggleGlobalMainSetting("disableThumbsInDialogList", view, false);
             } else if (position == hideBottomButton) {
                 toggleGlobalMainSetting("hideBottomButton", view, false);
             } else if (position == syncPinsRow) {
@@ -385,6 +389,9 @@ public class ForkSettingsActivity extends BaseFragment {
                     } else if (position == formatWithSeconds) {
                         String t = LocaleController.getString("FormatWithSeconds", R.string.FormatWithSeconds);
                         textCell.setTextAndCheck(t, preferences.getBoolean("formatWithSeconds", false), false);
+                    } else if (position == disableThumbsInDialogList) {
+                        String t = LocaleController.getString("DisableThumbsInDialogList", R.string.DisableThumbsInDialogList);
+                        textCell.setTextAndCheck(t, preferences.getBoolean("disableThumbsInDialogList", false), false);
                     } else if (position == hideBottomButton) {
                         String t = LocaleController.getString("HideBottomButton", R.string.HideBottomButton);
                         textCell.setTextAndCheck(t, preferences.getBoolean("hideBottomButton", false), false);
@@ -425,6 +432,7 @@ public class ForkSettingsActivity extends BaseFragment {
                         || position == openArchiveOnPull
                         || position == disableFlipPhotos
                         || position == formatWithSeconds
+                        || position == disableThumbsInDialogList
                         || position == hideBottomButton
                         || position == syncPinsRow
                         || position == photoHasStickerRow;
@@ -479,6 +487,7 @@ public class ForkSettingsActivity extends BaseFragment {
                 || position == openArchiveOnPull
                 || position == disableFlipPhotos
                 || position == formatWithSeconds
+                || position == disableThumbsInDialogList
                 || position == hideBottomButton
                 || position == photoHasStickerRow) {
                 return 3;
