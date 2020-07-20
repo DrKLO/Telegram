@@ -148,6 +148,7 @@ public class ForkSettingsActivity extends BaseFragment {
     private int openArchiveOnPull;
     private int hideBottomButton;
     private int disableFlipPhotos;
+    private int formatWithSeconds;
 
     private int stickerSizeRow;
 
@@ -196,6 +197,7 @@ public class ForkSettingsActivity extends BaseFragment {
         openArchiveOnPull = rowCount++;
         hideBottomButton = SharedConfig.isUserOwner() ? rowCount++ : -1;
         disableFlipPhotos = rowCount++;
+        formatWithSeconds = rowCount++;
     
         emptyRows.add(rowCount++);
         sectionRows.add(rowCount++);
@@ -299,6 +301,8 @@ public class ForkSettingsActivity extends BaseFragment {
                 toggleGlobalMainSetting("openArchiveOnPull", view, false);
             } else if (position == disableFlipPhotos) {
                 toggleGlobalMainSetting("disableFlipPhotos", view, false);
+            } else if (position == formatWithSeconds) {
+                toggleGlobalMainSetting("formatWithSeconds", view, false);
             } else if (position == hideBottomButton) {
                 toggleGlobalMainSetting("hideBottomButton", view, false);
             } else if (position == syncPinsRow) {
@@ -378,6 +382,9 @@ public class ForkSettingsActivity extends BaseFragment {
                     } else if (position == disableFlipPhotos) {
                         String t = LocaleController.getString("DisableFlipPhotos", R.string.DisableFlipPhotos);
                         textCell.setTextAndCheck(t, preferences.getBoolean("disableFlipPhotos", false), false);
+                    } else if (position == formatWithSeconds) {
+                        String t = LocaleController.getString("FormatWithSeconds", R.string.FormatWithSeconds);
+                        textCell.setTextAndCheck(t, preferences.getBoolean("formatWithSeconds", false), false);
                     } else if (position == hideBottomButton) {
                         String t = LocaleController.getString("HideBottomButton", R.string.HideBottomButton);
                         textCell.setTextAndCheck(t, preferences.getBoolean("hideBottomButton", false), false);
@@ -417,6 +424,7 @@ public class ForkSettingsActivity extends BaseFragment {
                         || position == mentionByName
                         || position == openArchiveOnPull
                         || position == disableFlipPhotos
+                        || position == formatWithSeconds
                         || position == hideBottomButton
                         || position == syncPinsRow
                         || position == photoHasStickerRow;
@@ -470,6 +478,7 @@ public class ForkSettingsActivity extends BaseFragment {
                 || position == mentionByName
                 || position == openArchiveOnPull
                 || position == disableFlipPhotos
+                || position == formatWithSeconds
                 || position == hideBottomButton
                 || position == photoHasStickerRow) {
                 return 3;
