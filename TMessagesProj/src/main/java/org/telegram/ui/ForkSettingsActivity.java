@@ -131,8 +131,8 @@ public class ForkSettingsActivity extends BaseFragment {
     private ListAdapter listAdapter;
 
     private ArrayList<Integer> sectionRows = new ArrayList<Integer>();
-    private String[] sectionStrings = {"General", "ChatCamera", "StickerSize"};
-    private int[] sectionInts = {0, 0, R.string.StickerSize};
+    private String[] sectionStrings = {"General", "ChatList", "FilterChats", "ChatCamera", "StickerSize"};
+    private int[] sectionInts = {0, R.string.ChatList, R.string.FilterChats, 0, R.string.StickerSize};
 
     private int rowCount;
 
@@ -191,15 +191,22 @@ public class ForkSettingsActivity extends BaseFragment {
         hideSensitiveDataRow = SharedConfig.isUserOwner() ? -1 : rowCount++;
         squareAvatarsRow = rowCount++;
         photoHasStickerRow = rowCount++;
-        unmutedOnTopRow = rowCount++;
-        rearVideoMessages = rowCount++;
-        replaceForward = rowCount++;
-        mentionByName = rowCount++;
-        openArchiveOnPull = rowCount++;
         hideBottomButton = SharedConfig.isUserOwner() ? rowCount++ : -1;
+    
+        emptyRows.add(rowCount++);
+        sectionRows.add(rowCount++);
+        syncPinsRow = rowCount++;
+        unmutedOnTopRow = rowCount++;
+        openArchiveOnPull = rowCount++;
+        disableThumbsInDialogList = rowCount++;
+    
+        emptyRows.add(rowCount++);
+        sectionRows.add(rowCount++);
         disableFlipPhotos = rowCount++;
         formatWithSeconds = rowCount++;
-        disableThumbsInDialogList = rowCount++;
+        mentionByName = rowCount++;
+        replaceForward = rowCount++;
+        rearVideoMessages = rowCount++;
     
         emptyRows.add(rowCount++);
         sectionRows.add(rowCount++);
@@ -209,9 +216,6 @@ public class ForkSettingsActivity extends BaseFragment {
         emptyRows.add(rowCount++);
         sectionRows.add(rowCount++);
         stickerSizeRow = rowCount++;
-
-        emptyRows.add(rowCount++);
-        syncPinsRow = rowCount++;
 
         return true;
     }
