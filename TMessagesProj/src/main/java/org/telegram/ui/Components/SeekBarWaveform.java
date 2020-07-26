@@ -124,6 +124,10 @@ public class SeekBarWaveform {
         return false;
     }
 
+    public float getProgress() {
+        return thumbX / (float) width;
+    }
+
     public void setProgress(float progress) {
         thumbX = (int) Math.ceil(width * progress);
         if (thumbX < 0) {

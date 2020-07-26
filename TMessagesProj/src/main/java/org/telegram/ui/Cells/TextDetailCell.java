@@ -13,6 +13,7 @@ import android.graphics.Canvas;
 import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
+import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.FrameLayout;
 import android.widget.TextView;
 
@@ -27,6 +28,7 @@ public class TextDetailCell extends FrameLayout {
     private TextView textView;
     private TextView valueTextView;
     private boolean needDivider;
+    private boolean contentDescriptionValueFirst;
 
     public TextDetailCell(Context context) {
         super(context);
@@ -39,6 +41,7 @@ public class TextDetailCell extends FrameLayout {
         textView.setMaxLines(1);
         textView.setSingleLine(true);
         textView.setEllipsize(TextUtils.TruncateAt.END);
+        textView.setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO);
         addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT, 23, 8, 23, 0));
 
         valueTextView = new TextView(context);
@@ -48,6 +51,7 @@ public class TextDetailCell extends FrameLayout {
         valueTextView.setMaxLines(1);
         valueTextView.setSingleLine(true);
         valueTextView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
+        valueTextView.setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO);
         addView(valueTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT, 23, 33, 23, 0));
     }
 
@@ -70,6 +74,10 @@ public class TextDetailCell extends FrameLayout {
         setWillNotDraw(!divider);
     }
 
+    public void setContentDescriptionValueFirst(boolean contentDescriptionValueFirst) {
+        this.contentDescriptionValueFirst = contentDescriptionValueFirst;
+    }
+
     @Override
     public void invalidate() {
         super.invalidate();
@@ -80,6 +88,16 @@ public class TextDetailCell extends FrameLayout {
     protected void onDraw(Canvas canvas) {
         if (needDivider) {
             canvas.drawLine(LocaleController.isRTL ? 0 : AndroidUtilities.dp(20), getMeasuredHeight() - 1, getMeasuredWidth() - (LocaleController.isRTL ? AndroidUtilities.dp(20) : 0), getMeasuredHeight() - 1, Theme.dividerPaint);
+        }
+    }
+
+    @Override
+    public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
+        super.onInitializeAccessibilityNodeInfo(info);
+        final CharSequence text = textView.getText();
+        final CharSequence valueText = valueTextView.getText();
+        if (!TextUtils.isEmpty(text) && !TextUtils.isEmpty(valueText)) {
+            info.setText((contentDescriptionValueFirst ? valueText : text) + ": " + (contentDescriptionValueFirst ? text : valueText));
         }
     }
 }

@@ -16,7 +16,6 @@
 package com.google.android.exoplayer2.ext.ffmpeg;
 
 import androidx.annotation.Nullable;
-import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.ExoPlayerLibraryInfo;
 import com.google.android.exoplayer2.util.LibraryLoader;
 import com.google.android.exoplayer2.util.Log;
@@ -44,10 +43,9 @@ public final class FfmpegLibrary {
    * Returns whether the underlying library supports the specified MIME type.
    *
    * @param mimeType The MIME type to check.
-   * @param encoding The PCM encoding for raw audio.
    */
-  public static boolean supportsFormat(String mimeType, @C.PcmEncoding int encoding) {
-    String codecName = getCodecName(mimeType, encoding);
+  public static boolean supportsFormat(String mimeType) {
+    String codecName = getCodecName(mimeType);
     if (codecName == null) {
       return false;
     }
@@ -62,7 +60,7 @@ public final class FfmpegLibrary {
    * Returns the name of the FFmpeg decoder that could be used to decode the format, or {@code null}
    * if it's unsupported.
    */
-  /* package */ static @Nullable String getCodecName(String mimeType, @C.PcmEncoding int encoding) {
+  /* package */ static @Nullable String getCodecName(String mimeType) {
     switch (mimeType) {
       case MimeTypes.AUDIO_AAC:
         return "aac";
@@ -92,14 +90,10 @@ public final class FfmpegLibrary {
         return "flac";
       case MimeTypes.AUDIO_ALAC:
         return "alac";
-      case MimeTypes.AUDIO_RAW:
-        if (encoding == C.ENCODING_PCM_MU_LAW) {
-          return "pcm_mulaw";
-        } else if (encoding == C.ENCODING_PCM_A_LAW) {
-          return "pcm_alaw";
-        } else {
-          return null;
-        }
+      case MimeTypes.AUDIO_MLAW:
+        return "pcm_mulaw";
+      case MimeTypes.AUDIO_ALAW:
+        return "pcm_alaw";
       default:
         return null;
     }

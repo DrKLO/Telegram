@@ -417,7 +417,7 @@ public class StickersAdapter extends RecyclerListView.SelectionAdapter implement
 
     public Object getItem(int i) {
         if (keywordResults != null && !keywordResults.isEmpty()) {
-            return keywordResults.get(i).emoji;
+            return i >= 0 && i < keywordResults.size() ? keywordResults.get(i).emoji : null;
         }
         return stickers != null && i >= 0 && i < stickers.size() ? stickers.get(i).sticker : null;
     }

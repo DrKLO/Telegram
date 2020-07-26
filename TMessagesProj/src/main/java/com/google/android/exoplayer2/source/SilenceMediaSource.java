@@ -33,6 +33,42 @@ import org.checkerframework.checker.nullness.compatqual.NullableType;
 /** Media source with a single period consisting of silent raw audio of a given duration. */
 public final class SilenceMediaSource extends BaseMediaSource {
 
+  /** Factory for {@link SilenceMediaSource SilenceMediaSources}. */
+  public static final class Factory {
+
+    private long durationUs;
+    @Nullable private Object tag;
+
+    /**
+     * Sets the duration of the silent audio.
+     *
+     * @param durationUs The duration of silent audio to output, in microseconds.
+     * @return This factory, for convenience.
+     */
+    public Factory setDurationUs(long durationUs) {
+      this.durationUs = durationUs;
+      return this;
+    }
+
+    /**
+     * Sets a tag for the media source which will be published in the {@link
+     * com.google.android.exoplayer2.Timeline} of the source as {@link
+     * com.google.android.exoplayer2.Timeline.Window#tag}.
+     *
+     * @param tag A tag for the media source.
+     * @return This factory, for convenience.
+     */
+    public Factory setTag(@Nullable Object tag) {
+      this.tag = tag;
+      return this;
+    }
+
+    /** Creates a new {@link SilenceMediaSource}. */
+    public SilenceMediaSource createMediaSource() {
+      return new SilenceMediaSource(durationUs, tag);
+    }
+  }
+
   private static final int SAMPLE_RATE_HZ = 44100;
   @C.PcmEncoding private static final int ENCODING = C.ENCODING_PCM_16BIT;
   private static final int CHANNEL_COUNT = 2;
@@ -54,6 +90,7 @@ public final class SilenceMediaSource extends BaseMediaSource {
       new byte[Util.getPcmFrameSize(ENCODING, CHANNEL_COUNT) * 1024];
 
   private final long durationUs;
+  @Nullable private final Object tag;
 
   /**
    * Creates a new media source providing silent audio of the given duration.
@@ -61,15 +98,25 @@ public final class SilenceMediaSource extends BaseMediaSource {
    * @param durationUs The duration of silent audio to output, in microseconds.
    */
   public SilenceMediaSource(long durationUs) {
+    this(durationUs, /* tag= */ null);
+  }
+
+  private SilenceMediaSource(long durationUs, @Nullable Object tag) {
     Assertions.checkArgument(durationUs >= 0);
     this.durationUs = durationUs;
+    this.tag = tag;
   }
 
   @Override
-  public void prepareSourceInternal(@Nullable TransferListener mediaTransferListener) {
+  protected void prepareSourceInternal(@Nullable TransferListener mediaTransferListener) {
     refreshSourceInfo(
-        new SinglePeriodTimeline(durationUs, /* isSeekable= */ true, /* isDynamic= */ false),
-        /* manifest= */ null);
+        new SinglePeriodTimeline(
+            durationUs,
+            /* isSeekable= */ true,
+            /* isDynamic= */ false,
+            /* isLive= */ false,
+            /* manifest= */ null,
+            tag));
   }
 
   @Override
@@ -84,7 +131,7 @@ public final class SilenceMediaSource extends BaseMediaSource {
   public void releasePeriod(MediaPeriod mediaPeriod) {}
 
   @Override
-  public void releaseSourceInternal() {}
+  protected void releaseSourceInternal() {}
 
   private static final class SilenceMediaPeriod implements MediaPeriod {
 
@@ -173,6 +220,11 @@ public final class SilenceMediaSource extends BaseMediaSource {
     }
 
     @Override
+    public boolean isLoading() {
+      return false;
+    }
+
+    @Override
     public void reevaluateBuffer(long positionUs) {}
 
     private long constrainSeekPosition(long positionUs) {
@@ -221,9 +273,9 @@ public final class SilenceMediaSource extends BaseMediaSource {
 
       int bytesToWrite = (int) Math.min(SILENCE_SAMPLE.length, bytesRemaining);
       buffer.ensureSpaceForWrite(bytesToWrite);
-      buffer.addFlag(C.BUFFER_FLAG_KEY_FRAME);
       buffer.data.put(SILENCE_SAMPLE, /* offset= */ 0, bytesToWrite);
       buffer.timeUs = getAudioPositionUs(positionBytes);
+      buffer.addFlag(C.BUFFER_FLAG_KEY_FRAME);
       positionBytes += bytesToWrite;
       return C.RESULT_BUFFER_READ;
     }

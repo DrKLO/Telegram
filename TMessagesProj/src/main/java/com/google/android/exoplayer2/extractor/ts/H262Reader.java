@@ -72,7 +72,7 @@ public final class H262Reader implements ElementaryStreamReader {
     this(null);
   }
 
-  public H262Reader(UserDataReader userDataReader) {
+  /* package */ H262Reader(UserDataReader userDataReader) {
     this.userDataReader = userDataReader;
     prefixFlags = new boolean[4];
     csdBuffer = new CsdBuffer(128);

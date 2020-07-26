@@ -12,7 +12,6 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.content.pm.ShortcutInfo;
 import android.content.pm.ShortcutManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -26,7 +25,6 @@ import android.graphics.PorterDuffXfermode;
 import android.graphics.RectF;
 import android.graphics.Shader;
 import android.graphics.drawable.Drawable;
-import android.graphics.drawable.Icon;
 import android.os.Build;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
@@ -66,11 +64,18 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 
+import androidx.core.content.pm.ShortcutInfoCompat;
+import androidx.core.content.pm.ShortcutManagerCompat;
+import androidx.core.graphics.drawable.IconCompat;
+
 @SuppressWarnings("unchecked")
 public class MediaDataController extends BaseController {
+
+    public static String SHORTCUT_CATEGORY = "org.telegram.messenger.SHORTCUT_SHARE";
 
     private static volatile MediaDataController[] Instance = new MediaDataController[UserConfig.MAX_ACCOUNT_COUNT];
     public static MediaDataController getInstance(int num) {
@@ -205,8 +210,7 @@ public class MediaDataController extends BaseController {
         if (Build.VERSION.SDK_INT >= 25) {
             Utilities.globalQueue.postRunnable(() -> {
                 try {
-                    ShortcutManager shortcutManager = ApplicationLoader.applicationContext.getSystemService(ShortcutManager.class);
-                    shortcutManager.removeAllDynamicShortcuts();
+                    ShortcutManagerCompat.removeAllDynamicShortcuts(ApplicationLoader.applicationContext);
                 } catch (Exception e) {
                     FileLog.e(e);
                 }
@@ -682,11 +686,15 @@ public class MediaDataController extends BaseController {
     }
 
     public static int calcDocumentsHash(ArrayList<TLRPC.Document> arrayList) {
+        return calcDocumentsHash(arrayList, 200);
+    }
+
+    public static int calcDocumentsHash(ArrayList<TLRPC.Document> arrayList, int maxCount) {
         if (arrayList == null) {
             return 0;
         }
         long acc = 0;
-        for (int a = 0; a < Math.min(200, arrayList.size()); a++) {
+        for (int a = 0, N = Math.min(maxCount, arrayList.size()); a < N; a++) {
             TLRPC.Document document = arrayList.get(a);
             if (document == null) {
                 continue;
@@ -2223,7 +2231,6 @@ public class MediaDataController extends BaseController {
             FileLog.d("load media did " + uid + " count = " + count + " max_id " + max_id + " type = " + type + " cache = " + fromCache + " classGuid = " + classGuid);
         }
         int lower_part = (int)uid;
-        fromCache = 0;
         if (fromCache != 0 || lower_part == 0) {
             loadMediaDatabase(uid, count, max_id, type, classGuid, isChannel, fromCache);
         } else {
@@ -2585,7 +2592,6 @@ public class MediaDataController extends BaseController {
                         cursor = database.queryFinalized(String.format(Locale.US, "SELECT start FROM media_holes_v2 WHERE uid = %d AND type = %d AND start IN (0, 1)", uid, type));
                         if (cursor.next()) {
                             isEnd = cursor.intValue(0) == 1;
-                            cursor.dispose();
                         } else {
                             cursor.dispose();
                             cursor = database.queryFinalized(String.format(Locale.US, "SELECT min(mid) FROM media_v2 WHERE uid = %d AND type = %d AND mid > 0", uid, type));
@@ -2602,11 +2608,11 @@ public class MediaDataController extends BaseController {
                                     state.dispose();
                                 }
                             }
-                            cursor.dispose();
                         }
+                        cursor.dispose();
 
+                        long holeMessageId = 0;
                         if (messageMaxId != 0) {
-                            long holeMessageId = 0;
                             cursor = database.queryFinalized(String.format(Locale.US, "SELECT end FROM media_holes_v2 WHERE uid = %d AND type = %d AND end <= %d ORDER BY end DESC LIMIT 1", uid, type, max_id));
                             if (cursor.next()) {
                                 holeMessageId = cursor.intValue(0);
@@ -2621,7 +2627,6 @@ public class MediaDataController extends BaseController {
                                 cursor = database.queryFinalized(String.format(Locale.US, "SELECT data, mid FROM media_v2 WHERE uid = %d AND mid > 0 AND mid < %d AND type = %d ORDER BY date DESC, mid DESC LIMIT %d", uid, messageMaxId, type, countToLoad));
                             }
                         } else {
-                            long holeMessageId = 0;
                             cursor = database.queryFinalized(String.format(Locale.US, "SELECT max(end) FROM media_holes_v2 WHERE uid = %d AND type = %d", uid, type));
                             if (cursor.next()) {
                                 holeMessageId = cursor.intValue(0);
@@ -2738,36 +2743,48 @@ public class MediaDataController extends BaseController {
         });
     }
 
-    public void loadMusic(final long uid, final long max_id) {
+    public void loadMusic(final long uid, final long maxId, final long minId) {
         getMessagesStorage().getStorageQueue().postRunnable(() -> {
-            final ArrayList<MessageObject> arrayList = new ArrayList<>();
+            final ArrayList<MessageObject> arrayListBegin = new ArrayList<>();
+            final ArrayList<MessageObject> arrayListEnd = new ArrayList<>();
             try {
                 int lower_id = (int) uid;
-                SQLiteCursor cursor;
-                if (lower_id != 0) {
-                    cursor = getMessagesStorage().getDatabase().queryFinalized(String.format(Locale.US, "SELECT data, mid FROM media_v2 WHERE uid = %d AND mid < %d AND type = %d ORDER BY date DESC, mid DESC LIMIT 1000", uid, max_id, MEDIA_MUSIC));
-                } else {
-                    cursor = getMessagesStorage().getDatabase().queryFinalized(String.format(Locale.US, "SELECT data, mid FROM media_v2 WHERE uid = %d AND mid > %d AND type = %d ORDER BY date DESC, mid DESC LIMIT 1000", uid, max_id, MEDIA_MUSIC));
-                }
-
-                while (cursor.next()) {
-                    NativeByteBuffer data = cursor.byteBufferValue(0);
-                    if (data != null) {
-                        TLRPC.Message message = TLRPC.Message.TLdeserialize(data, data.readInt32(false), false);
-                        message.readAttachPath(data, getUserConfig().clientUserId);
-                        data.reuse();
-                        if (MessageObject.isMusicMessage(message)) {
-                            message.id = cursor.intValue(1);
-                            message.dialog_id = uid;
-                            arrayList.add(0, new MessageObject(currentAccount, message, false));
+                for (int a = 0; a < 2; a++) {
+                    ArrayList<MessageObject> arrayList = a == 0 ? arrayListBegin : arrayListEnd;
+                    SQLiteCursor cursor;
+                    if (a == 0) {
+                        if (lower_id != 0) {
+                            cursor = getMessagesStorage().getDatabase().queryFinalized(String.format(Locale.US, "SELECT data, mid FROM media_v2 WHERE uid = %d AND mid < %d AND type = %d ORDER BY date DESC, mid DESC LIMIT 1000", uid, maxId, MEDIA_MUSIC));
+                        } else {
+                            cursor = getMessagesStorage().getDatabase().queryFinalized(String.format(Locale.US, "SELECT data, mid FROM media_v2 WHERE uid = %d AND mid > %d AND type = %d ORDER BY date DESC, mid DESC LIMIT 1000", uid, maxId, MEDIA_MUSIC));
+                        }
+                    } else {
+                        if (lower_id != 0) {
+                            cursor = getMessagesStorage().getDatabase().queryFinalized(String.format(Locale.US, "SELECT data, mid FROM media_v2 WHERE uid = %d AND mid > %d AND type = %d ORDER BY date DESC, mid DESC LIMIT 1000", uid, minId, MEDIA_MUSIC));
+                        } else {
+                            cursor = getMessagesStorage().getDatabase().queryFinalized(String.format(Locale.US, "SELECT data, mid FROM media_v2 WHERE uid = %d AND mid < %d AND type = %d ORDER BY date DESC, mid DESC LIMIT 1000", uid, minId, MEDIA_MUSIC));
                         }
                     }
+
+                    while (cursor.next()) {
+                        NativeByteBuffer data = cursor.byteBufferValue(0);
+                        if (data != null) {
+                            TLRPC.Message message = TLRPC.Message.TLdeserialize(data, data.readInt32(false), false);
+                            message.readAttachPath(data, getUserConfig().clientUserId);
+                            data.reuse();
+                            if (MessageObject.isMusicMessage(message)) {
+                                message.id = cursor.intValue(1);
+                                message.dialog_id = uid;
+                                arrayList.add(0, new MessageObject(currentAccount, message, false));
+                            }
+                        }
+                    }
+                    cursor.dispose();
                 }
-                cursor.dispose();
             } catch (Exception e) {
                 FileLog.e(e);
             }
-            AndroidUtilities.runOnUIThread(() -> getNotificationCenter().postNotificationName(NotificationCenter.musicDidLoad, uid, arrayList));
+            AndroidUtilities.runOnUIThread(() -> getNotificationCenter().postNotificationName(NotificationCenter.musicDidLoad, uid, arrayListBegin, arrayListEnd));
         });
     }
     //---------------- MEDIA END ----------------
@@ -2782,22 +2799,30 @@ public class MediaDataController extends BaseController {
     private static Path roundPath;
 
     public void buildShortcuts() {
-        if (Build.VERSION.SDK_INT < 25) {
+        if (Build.VERSION.SDK_INT < 23) {
             return;
+        }
+        int maxShortcuts = ShortcutManagerCompat.getMaxShortcutCountPerActivity(ApplicationLoader.applicationContext) - 2;
+        if (maxShortcuts <= 0) {
+            maxShortcuts = 5;
         }
         final ArrayList<TLRPC.TL_topPeer> hintsFinal = new ArrayList<>();
         if (SharedConfig.passcodeHash.length() <= 0) {
             for (int a = 0; a < hints.size(); a++) {
                 hintsFinal.add(hints.get(a));
-                if (hintsFinal.size() == 3) {
+                if (hintsFinal.size() == maxShortcuts - 2) {
                     break;
                 }
             }
         }
         Utilities.globalQueue.postRunnable(() -> {
             try {
-                ShortcutManager shortcutManager = ApplicationLoader.applicationContext.getSystemService(ShortcutManager.class);
-                List<ShortcutInfo> currentShortcuts = shortcutManager.getDynamicShortcuts();
+                if (SharedConfig.directShareHash == null) {
+                    SharedConfig.directShareHash = UUID.randomUUID().toString();
+                    ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE).edit().putString("directShareHash2", SharedConfig.directShareHash).commit();
+                }
+
+                List<ShortcutInfoCompat> currentShortcuts = ShortcutManagerCompat.getDynamicShortcuts(ApplicationLoader.applicationContext);
                 ArrayList<String> shortcutsToUpdate = new ArrayList<>();
                 ArrayList<String> newShortcutsIds = new ArrayList<>();
                 ArrayList<String> shortcutsToDelete = new ArrayList<>();
@@ -2815,7 +2840,7 @@ public class MediaDataController extends BaseController {
                                 did = -hint.peer.channel_id;
                             }
                         }
-                        newShortcutsIds.add("did" + did);
+                        newShortcutsIds.add("did3_" + did);
                     }
                     for (int a = 0; a < currentShortcuts.size(); a++) {
                         String id = currentShortcuts.get(a).getId();
@@ -2831,23 +2856,26 @@ public class MediaDataController extends BaseController {
 
                 Intent intent = new Intent(ApplicationLoader.applicationContext, LaunchActivity.class);
                 intent.setAction("new_dialog");
-                ArrayList<ShortcutInfo> arrayList = new ArrayList<>();
-                arrayList.add(new ShortcutInfo.Builder(ApplicationLoader.applicationContext, "compose")
+                ArrayList<ShortcutInfoCompat> arrayList = new ArrayList<>();
+                arrayList.add(new ShortcutInfoCompat.Builder(ApplicationLoader.applicationContext, "compose")
                         .setShortLabel(LocaleController.getString("NewConversationShortcut", R.string.NewConversationShortcut))
                         .setLongLabel(LocaleController.getString("NewConversationShortcut", R.string.NewConversationShortcut))
-                        .setIcon(Icon.createWithResource(ApplicationLoader.applicationContext, R.drawable.shortcut_compose))
+                        .setIcon(IconCompat.createWithResource(ApplicationLoader.applicationContext, R.drawable.shortcut_compose))
                         .setIntent(intent)
                         .build());
                 if (shortcutsToUpdate.contains("compose")) {
-                    shortcutManager.updateShortcuts(arrayList);
+                    ShortcutManagerCompat.updateShortcuts(ApplicationLoader.applicationContext, arrayList);
                 } else {
-                    shortcutManager.addDynamicShortcuts(arrayList);
+                    ShortcutManagerCompat.addDynamicShortcuts(ApplicationLoader.applicationContext, arrayList);
                 }
                 arrayList.clear();
 
                 if (!shortcutsToDelete.isEmpty()) {
-                    shortcutManager.removeDynamicShortcuts(shortcutsToDelete);
+                    ShortcutManagerCompat.removeDynamicShortcuts(ApplicationLoader.applicationContext, shortcutsToDelete);
                 }
+
+                HashSet<String> category = new HashSet<>(1);
+                category.add(SHORTCUT_CATEGORY);
 
                 for (int a = 0; a < hintsFinal.size(); a++) {
                     Intent shortcutIntent = new Intent(ApplicationLoader.applicationContext, OpenChatReceiver.class);
@@ -2890,6 +2918,8 @@ public class MediaDataController extends BaseController {
 
                     shortcutIntent.putExtra("currentAccount", currentAccount);
                     shortcutIntent.setAction("com.tmessages.openchat" + did);
+                    shortcutIntent.putExtra("dialogId", did);
+                    shortcutIntent.putExtra("hash", SharedConfig.directShareHash);
                     shortcutIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
 
                     Bitmap bitmap = null;
@@ -2925,24 +2955,27 @@ public class MediaDataController extends BaseController {
                         }
                     }
 
-                    String id = "did" + did;
+                    String id = "did3_" + did;
                     if (TextUtils.isEmpty(name)) {
                         name = " ";
                     }
-                    ShortcutInfo.Builder builder = new ShortcutInfo.Builder(ApplicationLoader.applicationContext, id)
+                    ShortcutInfoCompat.Builder builder = new ShortcutInfoCompat.Builder(ApplicationLoader.applicationContext, id)
                             .setShortLabel(name)
                             .setLongLabel(name)
                             .setIntent(shortcutIntent);
+                    if (SharedConfig.directShare) {
+                        builder.setCategories(category);
+                    }
                     if (bitmap != null) {
-                        builder.setIcon(Icon.createWithBitmap(bitmap));
+                        builder.setIcon(IconCompat.createWithBitmap(bitmap));
                     } else {
-                        builder.setIcon(Icon.createWithResource(ApplicationLoader.applicationContext, R.drawable.shortcut_user));
+                        builder.setIcon(IconCompat.createWithResource(ApplicationLoader.applicationContext, R.drawable.shortcut_user));
                     }
                     arrayList.add(builder.build());
                     if (shortcutsToUpdate.contains(id)) {
-                        shortcutManager.updateShortcuts(arrayList);
+                        ShortcutManagerCompat.updateShortcuts(ApplicationLoader.applicationContext, arrayList);
                     } else {
-                        shortcutManager.addDynamicShortcuts(arrayList);
+                        ShortcutManagerCompat.addDynamicShortcuts(ApplicationLoader.applicationContext, arrayList);
                     }
                     arrayList.clear();
                 }
@@ -3429,31 +3462,30 @@ public class MediaDataController extends BaseController {
                 }
             }
             if (Build.VERSION.SDK_INT >= 26) {
-                ShortcutInfo.Builder pinShortcutInfo =
-                        new ShortcutInfo.Builder(ApplicationLoader.applicationContext, "sdid_" + did)
+                ShortcutInfoCompat.Builder pinShortcutInfo =
+                        new ShortcutInfoCompat.Builder(ApplicationLoader.applicationContext, "sdid_" + did)
                                 .setShortLabel(name)
                                 .setIntent(shortcutIntent);
 
                 if (bitmap != null) {
-                    pinShortcutInfo.setIcon(Icon.createWithBitmap(bitmap));
+                    pinShortcutInfo.setIcon(IconCompat.createWithBitmap(bitmap));
                 } else {
                     if (user != null) {
                         if (user.bot) {
-                            pinShortcutInfo.setIcon(Icon.createWithResource(ApplicationLoader.applicationContext, R.drawable.book_bot));
+                            pinShortcutInfo.setIcon(IconCompat.createWithResource(ApplicationLoader.applicationContext, R.drawable.book_bot));
                         } else {
-                            pinShortcutInfo.setIcon(Icon.createWithResource(ApplicationLoader.applicationContext, R.drawable.book_user));
+                            pinShortcutInfo.setIcon(IconCompat.createWithResource(ApplicationLoader.applicationContext, R.drawable.book_user));
                         }
                     } else if (chat != null) {
                         if (ChatObject.isChannel(chat) && !chat.megagroup) {
-                            pinShortcutInfo.setIcon(Icon.createWithResource(ApplicationLoader.applicationContext, R.drawable.book_channel));
+                            pinShortcutInfo.setIcon(IconCompat.createWithResource(ApplicationLoader.applicationContext, R.drawable.book_channel));
                         } else {
-                            pinShortcutInfo.setIcon(Icon.createWithResource(ApplicationLoader.applicationContext, R.drawable.book_group));
+                            pinShortcutInfo.setIcon(IconCompat.createWithResource(ApplicationLoader.applicationContext, R.drawable.book_group));
                         }
                     }
                 }
 
-                ShortcutManager shortcutManager = ApplicationLoader.applicationContext.getSystemService(ShortcutManager.class);
-                shortcutManager.requestPinShortcut(pinShortcutInfo.build(), null);
+                ShortcutManagerCompat.requestPinShortcut(ApplicationLoader.applicationContext, pinShortcutInfo.build(), null);
             } else {
                 Intent addIntent = new Intent();
                 if (bitmap != null) {
@@ -3489,10 +3521,14 @@ public class MediaDataController extends BaseController {
     public void uninstallShortcut(long did) {
         try {
             if (Build.VERSION.SDK_INT >= 26) {
-                ShortcutManager shortcutManager = ApplicationLoader.applicationContext.getSystemService(ShortcutManager.class);
                 ArrayList<String> arrayList = new ArrayList<>();
                 arrayList.add("sdid_" + did);
-                shortcutManager.removeDynamicShortcuts(arrayList);
+                arrayList.add("ndid_" + did);
+                ShortcutManagerCompat.removeDynamicShortcuts(ApplicationLoader.applicationContext, arrayList);
+                if (Build.VERSION.SDK_INT >= 30) {
+                    ShortcutManager shortcutManager = ApplicationLoader.applicationContext.getSystemService(ShortcutManager.class);
+                    shortcutManager.removeLongLivedShortcuts(arrayList);
+                }
             } else {
                 int lower_id = (int) did;
                 int high_id = (int) (did >> 32);

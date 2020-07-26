@@ -32,7 +32,6 @@ import android.view.WindowInsets;
 import android.view.accessibility.AccessibilityEvent;
 import android.view.animation.DecelerateInterpolator;
 import android.widget.FrameLayout;
-import android.widget.ListView;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.BuildVars;
@@ -93,13 +92,16 @@ public class DrawerLayoutContainer extends FrameLayout {
         if (Build.VERSION.SDK_INT >= 21) {
             setFitsSystemWindows(true);
             setOnApplyWindowInsetsListener((v, insets) -> {
-                final DrawerLayoutContainer drawerLayout = (DrawerLayoutContainer) v;
+                final DrawerLayoutContainer drawerLayoutContainer = (DrawerLayoutContainer) v;
                 if (AndroidUtilities.statusBarHeight != insets.getSystemWindowInsetTop()) {
-                    drawerLayout.requestLayout();
+                    drawerLayoutContainer.requestLayout();
                 }
-                AndroidUtilities.statusBarHeight = insets.getSystemWindowInsetTop();
+                int newTopInset = insets.getSystemWindowInsetTop();
+                if ((newTopInset != 0 || AndroidUtilities.isInMultiwindow) && AndroidUtilities.statusBarHeight != newTopInset) {
+                    AndroidUtilities.statusBarHeight = newTopInset;
+                }
                 lastInsets = insets;
-                drawerLayout.setWillNotDraw(insets.getSystemWindowInsetTop() <= 0 && getBackground() == null);
+                drawerLayoutContainer.setWillNotDraw(insets.getSystemWindowInsetTop() <= 0 && getBackground() == null);
 
                 if (Build.VERSION.SDK_INT >= 28) {
                     DisplayCutout cutout = insets.getDisplayCutout();
@@ -161,6 +163,9 @@ public class DrawerLayoutContainer extends FrameLayout {
 
     @Keep
     public void setDrawerPosition(float value) {
+        if (drawerLayout == null) {
+            return;
+        }
         drawerPosition = value;
         if (drawerPosition > drawerLayout.getMeasuredWidth()) {
             drawerPosition = drawerLayout.getMeasuredWidth();
@@ -189,7 +194,7 @@ public class DrawerLayoutContainer extends FrameLayout {
     }
 
     public void openDrawer(boolean fast) {
-        if (!allowOpenDrawer) {
+        if (!allowOpenDrawer || drawerLayout == null) {
             return;
         }
         if (AndroidUtilities.isTablet() && parentActionBarLayout != null && parentActionBarLayout.parentActivity != null) {
@@ -215,6 +220,9 @@ public class DrawerLayoutContainer extends FrameLayout {
     }
 
     public void closeDrawer(boolean fast) {
+        if (drawerLayout == null) {
+            return;
+        }
         cancelCurrentAnimation();
         AnimatorSet animatorSet = new AnimatorSet();
         animatorSet.playTogether(
@@ -239,11 +247,6 @@ public class DrawerLayoutContainer extends FrameLayout {
         startedTracking = false;
         currentAnimation = null;
         drawerOpened = opened;
-        if (!opened) {
-            if (drawerLayout instanceof ListView) {
-                ((ListView) drawerLayout).setSelectionFromTop(0, 0);
-            }
-        }
         if (Build.VERSION.SDK_INT >= 19) {
             for (int i = 0; i < getChildCount(); i++) {
                 View child = getChildAt(i);
@@ -309,7 +312,7 @@ public class DrawerLayoutContainer extends FrameLayout {
     }
 
     public boolean onTouchEvent(MotionEvent ev) {
-        if (!parentActionBarLayout.checkTransitionAnimation()) {
+        if (drawerLayout != null && !parentActionBarLayout.checkTransitionAnimation()) {
             if (drawerOpened && ev != null && ev.getX() > drawerPosition && !startedTracking) {
                 if (ev.getAction() == MotionEvent.ACTION_UP) {
                     closeDrawer(false);

@@ -12,6 +12,7 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.ColorFilter;
 import android.graphics.Paint;
+import android.graphics.PixelFormat;
 import android.graphics.drawable.Drawable;
 import android.text.Layout;
 import android.text.StaticLayout;
@@ -19,6 +20,8 @@ import android.text.TextPaint;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.FileLog;
+import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.Theme;
 
 public class TimerDrawable extends Drawable {
@@ -46,31 +49,36 @@ public class TimerDrawable extends Drawable {
         if (time >= 1 && time < 60) {
             timeString = "" + value;
             if (timeString.length() < 2) {
-                timeString += "s";
+                timeString += LocaleController.getString("SecretChatTimerSeconds", R.string.SecretChatTimerSeconds);
             }
         } else if (time >= 60 && time < 60 * 60) {
             timeString = "" + value / 60;
             if (timeString.length() < 2) {
-                timeString += "m";
+                timeString += LocaleController.getString("SecretChatTimerMinutes", R.string.SecretChatTimerMinutes);
             }
         } else if (time >= 60 * 60 && time < 60 * 60 * 24) {
             timeString = "" + value / 60 / 60;
             if (timeString.length() < 2) {
-                timeString += "h";
+                timeString += LocaleController.getString("SecretChatTimerHours", R.string.SecretChatTimerHours);
             }
         } else if (time >= 60 * 60 * 24 && time < 60 * 60 * 24 * 7) {
             timeString = "" + value / 60 / 60 / 24;
             if (timeString.length() < 2) {
-                timeString += "d";
+                timeString += LocaleController.getString("SecretChatTimerDays", R.string.SecretChatTimerDays);
             }
         } else {
             timeString = "" + value / 60 / 60 / 24 / 7;
             if (timeString.length() < 2) {
-                timeString += "w";
+                timeString += LocaleController.getString("SecretChatTimerWeeks", R.string.SecretChatTimerWeeks);
             } else if (timeString.length() > 2) {
                 timeString = "c";
             }
         }
+        /*
+        <string name="SecretChatTimerDays">d</string>
+    <string name="SecretChatTimerSeconds">s</string>
+    <string name="SecretChatTimerMinutes">m</string>
+         */
 
         timeWidth = timePaint.measureText(timeString);
         try {
@@ -130,7 +138,7 @@ public class TimerDrawable extends Drawable {
 
     @Override
     public int getOpacity() {
-        return 0;
+        return PixelFormat.TRANSPARENT;
     }
 
     @Override

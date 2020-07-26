@@ -15,13 +15,17 @@
  */
 package com.google.android.exoplayer2.offline;
 
+import androidx.annotation.WorkerThread;
 import java.io.IOException;
 
 /** A writable index of {@link Download Downloads}. */
+@WorkerThread
 public interface WritableDownloadIndex extends DownloadIndex {
 
   /**
    * Adds or replaces a {@link Download}.
+   *
+   * <p>This method may be slow and shouldn't normally be called on the main thread.
    *
    * @param download The {@link Download} to be added.
    * @throws IOException If an error occurs setting the state.
@@ -32,6 +36,8 @@ public interface WritableDownloadIndex extends DownloadIndex {
    * Removes the download with the given ID. Does nothing if a download with the given ID does not
    * exist.
    *
+   * <p>This method may be slow and shouldn't normally be called on the main thread.
+   *
    * @param id The ID of the download to remove.
    * @throws IOException If an error occurs removing the state.
    */
@@ -40,12 +46,16 @@ public interface WritableDownloadIndex extends DownloadIndex {
   /**
    * Sets all {@link Download#STATE_DOWNLOADING} states to {@link Download#STATE_QUEUED}.
    *
+   * <p>This method may be slow and shouldn't normally be called on the main thread.
+   *
    * @throws IOException If an error occurs updating the state.
    */
   void setDownloadingStatesToQueued() throws IOException;
 
   /**
    * Sets all states to {@link Download#STATE_REMOVING}.
+   *
+   * <p>This method may be slow and shouldn't normally be called on the main thread.
    *
    * @throws IOException If an error occurs updating the state.
    */
@@ -54,6 +64,8 @@ public interface WritableDownloadIndex extends DownloadIndex {
   /**
    * Sets the stop reason of the downloads in a terminal state ({@link Download#STATE_COMPLETED},
    * {@link Download#STATE_FAILED}).
+   *
+   * <p>This method may be slow and shouldn't normally be called on the main thread.
    *
    * @param stopReason The stop reason.
    * @throws IOException If an error occurs updating the state.
@@ -64,6 +76,8 @@ public interface WritableDownloadIndex extends DownloadIndex {
    * Sets the stop reason of the download with the given ID in a terminal state ({@link
    * Download#STATE_COMPLETED}, {@link Download#STATE_FAILED}). Does nothing if a download with the
    * given ID does not exist, or if it's not in a terminal state.
+   *
+   * <p>This method may be slow and shouldn't normally be called on the main thread.
    *
    * @param id The ID of the download to update.
    * @param stopReason The stop reason.

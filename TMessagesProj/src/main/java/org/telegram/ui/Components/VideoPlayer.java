@@ -31,6 +31,7 @@ import com.google.android.exoplayer2.Player;
 import com.google.android.exoplayer2.Renderer;
 import com.google.android.exoplayer2.SimpleExoPlayer;
 import com.google.android.exoplayer2.Timeline;
+import com.google.android.exoplayer2.analytics.AnalyticsListener;
 import com.google.android.exoplayer2.audio.AudioProcessor;
 import com.google.android.exoplayer2.audio.AudioRendererEventListener;
 import com.google.android.exoplayer2.audio.TeeAudioProcessor;
@@ -67,7 +68,7 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 
 @SuppressLint("NewApi")
-public class VideoPlayer implements ExoPlayer.EventListener, SimpleExoPlayer.VideoListener, NotificationCenter.NotificationCenterDelegate {
+public class VideoPlayer implements ExoPlayer.EventListener, SimpleExoPlayer.VideoListener, AnalyticsListener, NotificationCenter.NotificationCenterDelegate {
 
     public interface VideoPlayerDelegate {
         void onStateChanged(boolean playWhenReady, int playbackState);
@@ -76,6 +77,15 @@ public class VideoPlayer implements ExoPlayer.EventListener, SimpleExoPlayer.Vid
         void onRenderedFirstFrame();
         void onSurfaceTextureUpdated(SurfaceTexture surfaceTexture);
         boolean onSurfaceDestroyed(SurfaceTexture surfaceTexture);
+        default void onRenderedFirstFrame(EventTime eventTime) {
+
+        }
+        default void onSeekStarted(EventTime eventTime) {
+
+        }
+        default void onSeekFinished(EventTime eventTime) {
+
+        }
     }
 
     public interface AudioVisualizerDelegate {
@@ -113,6 +123,7 @@ public class VideoPlayer implements ExoPlayer.EventListener, SimpleExoPlayer.Vid
     private String videoType, audioType;
     private boolean loopingMediaSource;
     private boolean looping;
+    private int repeatCount;
 
     Handler audioUpdateHandler = new Handler(Looper.getMainLooper());
 
@@ -159,6 +170,7 @@ public class VideoPlayer implements ExoPlayer.EventListener, SimpleExoPlayer.Vid
             factory.setExtensionRendererMode(DefaultRenderersFactory.EXTENSION_RENDERER_MODE_PREFER);
             player = ExoPlayerFactory.newSimpleInstance(ApplicationLoader.applicationContext, factory, trackSelector, loadControl, null);
 
+            player.addAnalyticsListener(this);
             player.addListener(this);
             player.setVideoListener(this);
             if (textureView != null) {
@@ -327,6 +339,27 @@ public class VideoPlayer implements ExoPlayer.EventListener, SimpleExoPlayer.Vid
         NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.playerDidStartPlaying);
     }
 
+    @Override
+    public void onSeekStarted(EventTime eventTime) {
+        if (delegate != null) {
+            delegate.onSeekStarted(eventTime);
+        }
+    }
+
+    @Override
+    public void onSeekProcessed(EventTime eventTime) {
+        if (delegate != null) {
+            delegate.onSeekFinished(eventTime);
+        }
+    }
+
+    @Override
+    public void onRenderedFirstFrame(EventTime eventTime, Surface surface) {
+        if (delegate != null) {
+            delegate.onRenderedFirstFrame(eventTime);
+        }
+    }
+
     public void setTextureView(TextureView texture) {
         if (textureView == texture) {
             return;
@@ -435,7 +468,7 @@ public class VideoPlayer implements ExoPlayer.EventListener, SimpleExoPlayer.Vid
     }
 
     public boolean isMuted() {
-        return player.getVolume() == 0.0f;
+        return player != null && player.getVolume() == 0.0f;
     }
 
     public void setMute(boolean value) {
@@ -536,7 +569,7 @@ public class VideoPlayer implements ExoPlayer.EventListener, SimpleExoPlayer.Vid
     @Override
     public void onPlayerStateChanged(boolean playWhenReady, int playbackState) {
         maybeReportPlayerState();
-        if (playWhenReady && playbackState == Player.STATE_READY) {
+        if (playWhenReady && playbackState == Player.STATE_READY && !isMuted()) {
             NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.playerDidStartPlaying, this);
         }
         if (!videoPlayerReady && playbackState == Player.STATE_READY) {
@@ -563,7 +596,9 @@ public class VideoPlayer implements ExoPlayer.EventListener, SimpleExoPlayer.Vid
 
     @Override
     public void onPositionDiscontinuity(int reason) {
-
+        if (reason == Player.DISCONTINUITY_REASON_PERIOD_TRANSITION) {
+            repeatCount++;
+        }
     }
 
     @Override
@@ -639,6 +674,10 @@ public class VideoPlayer implements ExoPlayer.EventListener, SimpleExoPlayer.Vid
         }
     }
 
+    public int getRepeatCount() {
+        return repeatCount;
+    }
+
     private class AudioVisualizerRenderersFactory extends DefaultRenderersFactory {
 
         public AudioVisualizerRenderersFactory(Context context) {
@@ -668,11 +707,7 @@ public class VideoPlayer implements ExoPlayer.EventListener, SimpleExoPlayer.Vid
 
         @Override
         public void flush(int sampleRateHz, int channelCount, int encoding) {
-            if (audioVisualizerDelegate == null) {
-                return;
-            }
-            audioUpdateHandler.removeCallbacksAndMessages(null);
-            audioVisualizerDelegate.onVisualizerUpdate(false, false, null);
+            
         }
 
 
@@ -757,18 +792,13 @@ public class VideoPlayer implements ExoPlayer.EventListener, SimpleExoPlayer.Vid
                 }
 
                 int updateInterval = 64;
-//                if (partsAmplitude[6] >= 0.5f) {
-//                    updateInterval -= 8 * partsAmplitude[6] - 0.5f;
-//                }
 
                 if (System.currentTimeMillis() - lastUpdateTime < updateInterval) {
                     return;
                 }
                 lastUpdateTime = System.currentTimeMillis();
 
-                audioUpdateHandler.postDelayed(() -> {
-                    audioVisualizerDelegate.onVisualizerUpdate(true, true, partsAmplitude);
-                }, 130);
+                audioUpdateHandler.postDelayed(() -> audioVisualizerDelegate.onVisualizerUpdate(true, true, partsAmplitude), 130);
             }
         }
     }

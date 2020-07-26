@@ -16,13 +16,17 @@
 package com.google.android.exoplayer2.offline;
 
 import androidx.annotation.Nullable;
+import androidx.annotation.WorkerThread;
 import java.io.IOException;
 
 /** An index of {@link Download Downloads}. */
+@WorkerThread
 public interface DownloadIndex {
 
   /**
    * Returns the {@link Download} with the given {@code id}, or null.
+   *
+   * <p>This method may be slow and shouldn't normally be called on the main thread.
    *
    * @param id ID of a {@link Download}.
    * @return The {@link Download} with the given {@code id}, or null if a download state with this
@@ -34,6 +38,8 @@ public interface DownloadIndex {
 
   /**
    * Returns a {@link DownloadCursor} to {@link Download}s with the given {@code states}.
+   *
+   * <p>This method may be slow and shouldn't normally be called on the main thread.
    *
    * @param states Returns only the {@link Download}s with this states. If empty, returns all.
    * @return A cursor to {@link Download}s with the given {@code states}.

@@ -9,6 +9,7 @@ public class AnimatedFileDrawableStream implements FileLoadOperationStream {
     private FileLoadOperation loadOperation;
     private CountDownLatch countDownLatch;
     private TLRPC.Document document;
+    private ImageLocation location;
     private Object parentObject;
     private int currentAccount;
     private volatile boolean canceled;
@@ -21,12 +22,13 @@ public class AnimatedFileDrawableStream implements FileLoadOperationStream {
 
     private boolean ignored;
 
-    public AnimatedFileDrawableStream(TLRPC.Document d, Object p, int a, boolean prev) {
+    public AnimatedFileDrawableStream(TLRPC.Document d, ImageLocation l, Object p, int a, boolean prev) {
         document = d;
+        location = l;
         parentObject = p;
         currentAccount = a;
         preview = prev;
-        loadOperation = FileLoader.getInstance(currentAccount).loadStreamFile(this, document, parentObject, 0, preview);
+        loadOperation = FileLoader.getInstance(currentAccount).loadStreamFile(this, document, location, parentObject, 0, preview);
     }
 
     public boolean isFinishedLoadingFile() {
@@ -57,7 +59,7 @@ public class AnimatedFileDrawableStream implements FileLoadOperationStream {
                     }
                     if (availableLength == 0) {
                         if (loadOperation.isPaused() || lastOffset != offset || preview) {
-                            FileLoader.getInstance(currentAccount).loadStreamFile(this, document, parentObject, offset, preview);
+                            FileLoader.getInstance(currentAccount).loadStreamFile(this, document, location, parentObject, offset, preview);
                         }
                         synchronized (sync) {
                             if (canceled) {
@@ -105,6 +107,10 @@ public class AnimatedFileDrawableStream implements FileLoadOperationStream {
 
     public TLRPC.Document getDocument() {
         return document;
+    }
+
+    public ImageLocation getLocation() {
+        return location;
     }
 
     public Object getParentObject() {

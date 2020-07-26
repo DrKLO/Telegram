@@ -32,6 +32,7 @@ import android.widget.TextView;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.BuildVars;
+import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaController;
@@ -98,7 +99,6 @@ public class ChatAttachAlertDocumentLayout extends ChatAttachAlert.AttachAlertLa
     private ArrayList<ListItem> items = new ArrayList<>();
     private boolean receiverRegistered = false;
     private ArrayList<HistoryEntry> history = new ArrayList<>();
-    private static final long sizeLimit = 1024 * 1024 * 1536;
     private DocumentSelectActivityDelegate delegate;
     private HashMap<String, ListItem> selectedFiles = new HashMap<>();
     private boolean scrolling;
@@ -534,11 +534,9 @@ public class ChatAttachAlertDocumentLayout extends ChatAttachAlert.AttachAlertLa
                 showErrorBox(LocaleController.formatString("PassportUploadNotImage", R.string.PassportUploadNotImage));
                 return false;
             }
-            if (sizeLimit != 0) {
-                if (item.file.length() > sizeLimit) {
-                    showErrorBox(LocaleController.formatString("FileUploadLimit", R.string.FileUploadLimit, AndroidUtilities.formatFileSize(sizeLimit)));
-                    return false;
-                }
+            if (item.file.length() > FileLoader.MAX_FILE_SIZE) {
+                showErrorBox(LocaleController.formatString("FileUploadLimit", R.string.FileUploadLimit, AndroidUtilities.formatFileSize(FileLoader.MAX_FILE_SIZE)));
+                return false;
             }
             if (maxSelectedFiles >= 0 && selectedFiles.size() >= maxSelectedFiles) {
                 showErrorBox(LocaleController.formatString("PassportUploadMaxReached", R.string.PassportUploadMaxReached, LocaleController.formatPluralString("Files", maxSelectedFiles)));

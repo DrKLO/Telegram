@@ -113,9 +113,12 @@ public class DefaultSsChunkSource implements SsChunkSource {
       Track track = new Track(manifestTrackIndex, streamElement.type, streamElement.timescale,
           C.TIME_UNSET, manifest.durationUs, format, Track.TRANSFORMATION_NONE,
           trackEncryptionBoxes, nalUnitLengthFieldLength, null, null);
-      FragmentedMp4Extractor extractor = new FragmentedMp4Extractor(
-          FragmentedMp4Extractor.FLAG_WORKAROUND_EVERY_VIDEO_FRAME_IS_SYNC_FRAME
-          | FragmentedMp4Extractor.FLAG_WORKAROUND_IGNORE_TFDT_BOX, null, track, null);
+      FragmentedMp4Extractor extractor =
+          new FragmentedMp4Extractor(
+              FragmentedMp4Extractor.FLAG_WORKAROUND_EVERY_VIDEO_FRAME_IS_SYNC_FRAME
+                  | FragmentedMp4Extractor.FLAG_WORKAROUND_IGNORE_TFDT_BOX,
+              /* timestampAdjuster= */ null,
+              track);
       extractorWrappers[i] = new ChunkExtractorWrapper(extractor, streamElement.type, format);
     }
   }

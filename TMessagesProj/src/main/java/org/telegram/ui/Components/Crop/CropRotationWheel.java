@@ -27,7 +27,8 @@ public class CropRotationWheel extends FrameLayout {
         void onEnd(float angle);
 
         void aspectRatioPressed();
-        void rotate90Pressed();
+        boolean rotate90Pressed();
+        boolean mirror();
     }
 
     private static final int MAX_ANGLE = 45;
@@ -37,6 +38,8 @@ public class CropRotationWheel extends FrameLayout {
     private Paint bluePaint;
 
     private ImageView aspectRatioButton;
+    private ImageView rotation90Button;
+    private ImageView mirrorButton;
     private TextView degreesLabel;
 
     protected float rotation;
@@ -62,24 +65,42 @@ public class CropRotationWheel extends FrameLayout {
         bluePaint.setAlpha(255);
         bluePaint.setAntiAlias(true);
 
+        mirrorButton = new ImageView(context);
+        mirrorButton.setImageResource(R.drawable.photo_flip);
+        mirrorButton.setBackgroundDrawable(Theme.createSelectorDrawable(Theme.ACTION_BAR_WHITE_SELECTOR_COLOR));
+        mirrorButton.setScaleType(ImageView.ScaleType.CENTER);
+        mirrorButton.setOnClickListener(v -> {
+            if (rotationListener != null) {
+                setMirrored(rotationListener.mirror());
+            }
+        });
+        mirrorButton.setOnLongClickListener(v -> {
+            aspectRatioButton.callOnClick();
+            return true;
+        });
+        mirrorButton.setContentDescription(LocaleController.getString("AccDescrMirror", R.string.AccDescrMirror));
+        addView(mirrorButton, LayoutHelper.createFrame(70, 64, Gravity.LEFT | Gravity.CENTER_VERTICAL));
+
         aspectRatioButton = new ImageView(context);
         aspectRatioButton.setImageResource(R.drawable.tool_cropfix);
         aspectRatioButton.setBackgroundDrawable(Theme.createSelectorDrawable(Theme.ACTION_BAR_WHITE_SELECTOR_COLOR));
         aspectRatioButton.setScaleType(ImageView.ScaleType.CENTER);
         aspectRatioButton.setOnClickListener(v -> {
-            if (rotationListener != null)
+            if (rotationListener != null) {
                 rotationListener.aspectRatioPressed();
+            }
         });
+        aspectRatioButton.setVisibility(GONE);
         aspectRatioButton.setContentDescription(LocaleController.getString("AccDescrAspectRatio", R.string.AccDescrAspectRatio));
         addView(aspectRatioButton, LayoutHelper.createFrame(70, 64, Gravity.LEFT | Gravity.CENTER_VERTICAL));
 
-        ImageView rotation90Button = new ImageView(context);
+        rotation90Button = new ImageView(context);
         rotation90Button.setImageResource(R.drawable.tool_rotate);
         rotation90Button.setBackgroundDrawable(Theme.createSelectorDrawable(Theme.ACTION_BAR_WHITE_SELECTOR_COLOR));
         rotation90Button.setScaleType(ImageView.ScaleType.CENTER);
         rotation90Button.setOnClickListener(v -> {
             if (rotationListener != null) {
-                rotationListener.rotate90Pressed();
+                setRotated(rotationListener.rotate90Pressed());
             }
         });
         rotation90Button.setContentDescription(LocaleController.getString("AccDescrRotate", R.string.AccDescrRotate));
@@ -95,7 +116,15 @@ public class CropRotationWheel extends FrameLayout {
     }
 
     public void setFreeform(boolean freeform) {
-        aspectRatioButton.setVisibility(freeform ? VISIBLE : GONE);
+        //aspectRatioButton.setVisibility(freeform ? VISIBLE : GONE);
+    }
+
+    public void setMirrored(boolean value) {
+        mirrorButton.setColorFilter(value ? new PorterDuffColorFilter(Theme.getColor(Theme.key_dialogFloatingButton), PorterDuff.Mode.MULTIPLY) : null);
+    }
+
+    public void setRotated(boolean value) {
+        rotation90Button.setColorFilter(value ? new PorterDuffColorFilter(Theme.getColor(Theme.key_dialogFloatingButton), PorterDuff.Mode.MULTIPLY) : null);
     }
 
     @Override
@@ -104,8 +133,12 @@ public class CropRotationWheel extends FrameLayout {
         super.onMeasure(MeasureSpec.makeMeasureSpec(Math.min(width, AndroidUtilities.dp(400)), MeasureSpec.EXACTLY), heightMeasureSpec);
     }
 
-    public void reset() {
+    public void reset(boolean resetMirror) {
         setRotation(0.0f, false);
+        if (resetMirror) {
+            setMirrored(false);
+        }
+        setRotated(false);
     }
 
     public void setListener(RotationWheelListener listener) {

@@ -114,7 +114,7 @@ public class WallpaperUpdater {
                     return;
                 }
             }
-            PhotoAlbumPickerActivity fragment = new PhotoAlbumPickerActivity(2, false, false, null);
+            PhotoAlbumPickerActivity fragment = new PhotoAlbumPickerActivity(PhotoAlbumPickerActivity.SELECT_TYPE_WALLPAPER, false, false, null);
             fragment.setAllowSearchImages(false);
             fragment.setDelegate(new PhotoAlbumPickerActivity.PhotoAlbumPickerActivityDelegate() {
                 @Override

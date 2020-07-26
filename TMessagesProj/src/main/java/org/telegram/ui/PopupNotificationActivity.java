@@ -114,6 +114,7 @@ public class PopupNotificationActivity extends Activity implements NotificationC
     private boolean finished = false;
     private CharSequence lastPrintString;
     private MessageObject currentMessageObject = null;
+    private MessageObject[] setMessageObjects = new MessageObject[3];
     private int currentMessageNum = 0;
     private PowerManager.WakeLock wakeLock = null;
     private boolean animationInProgress = false;
@@ -1125,6 +1126,21 @@ public class PopupNotificationActivity extends Activity implements NotificationC
                 }
             }
         }
+        for (int a = 0; a < 3; a++) {
+            int num = currentMessageNum - 1 + a;
+            MessageObject messageObject;
+            if (popupMessages.size() == 1 && (num < 0 || num >= popupMessages.size())) {
+                messageObject = null;
+            } else {
+                if (num == -1) {
+                    num = popupMessages.size() - 1;
+                } else if (num == popupMessages.size()) {
+                    num = 0;
+                }
+                messageObject = popupMessages.get(num);
+            }
+            setMessageObjects[a] = messageObject;
+        }
     }
 
     private void fixLayout() {
@@ -1442,6 +1458,25 @@ public class PopupNotificationActivity extends Activity implements NotificationC
                     }
                 }
                 getNewMessage();
+                if (!popupMessages.isEmpty()) {
+                    for (int a = 0; a < 3; a++) {
+                        int num = currentMessageNum - 1 + a;
+                        MessageObject messageObject;
+                        if (popupMessages.size() == 1 && (num < 0 || num >= popupMessages.size())) {
+                            messageObject = null;
+                        } else {
+                            if (num == -1) {
+                                num = popupMessages.size() - 1;
+                            } else if (num == popupMessages.size()) {
+                                num = 0;
+                            }
+                            messageObject = popupMessages.get(num);
+                        }
+                        if (setMessageObjects[a] != messageObject) {
+                            updateInterfaceForCurrentMessage(0);
+                        }
+                    }
+                }
             }
         } else if (id == NotificationCenter.updateInterfaces) {
             if (currentMessageObject == null || account != lastResumedAccount) {

@@ -15,6 +15,7 @@ import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.net.ConnectivityManager;
 import android.util.LongSparseArray;
+import android.util.Pair;
 import android.util.SparseArray;
 
 import org.telegram.tgnet.TLRPC;
@@ -54,6 +55,7 @@ public class DownloadController extends BaseController implements NotificationCe
     private ArrayList<DownloadObject> documentDownloadQueue = new ArrayList<>();
     private ArrayList<DownloadObject> videoDownloadQueue = new ArrayList<>();
     private HashMap<String, DownloadObject> downloadQueueKeys = new HashMap<>();
+    private HashMap<Pair<Long, Integer>, DownloadObject> downloadQueuePairs = new HashMap<>();
 
     private HashMap<String, ArrayList<WeakReference<FileDownloadProgressListener>>> loadingFileObservers = new HashMap<>();
     private HashMap<String, ArrayList<MessageObject>> loadingFileMessagesObservers = new HashMap<>();
@@ -413,6 +415,7 @@ public class DownloadController extends BaseController implements NotificationCe
         documentDownloadQueue.clear();
         videoDownloadQueue.clear();
         downloadQueueKeys.clear();
+        downloadQueuePairs.clear();
         typingTimes.clear();
     }
 
@@ -756,6 +759,26 @@ public class DownloadController extends BaseController implements NotificationCe
         });
     }
 
+    protected void cancelDownloading(ArrayList<Pair<Long, Integer>> arrayList) {
+        for (int a = 0, N = arrayList.size(); a < N; a++) {
+            Pair<Long, Integer> pair = arrayList.get(a);
+            DownloadObject downloadObject = downloadQueuePairs.get(pair);
+            if (downloadObject == null) {
+                continue;
+            }
+            if (downloadObject.object instanceof TLRPC.Document) {
+                TLRPC.Document document = (TLRPC.Document) downloadObject.object;
+                getFileLoader().cancelLoadFile(document);
+            } else if (downloadObject.object instanceof TLRPC.Photo) {
+                TLRPC.Photo photo = (TLRPC.Photo) downloadObject.object;
+                TLRPC.PhotoSize photoSize = FileLoader.getClosestPhotoSizeWithSize(photo.sizes, AndroidUtilities.getPhotoSize());
+                if (photoSize != null) {
+                    getFileLoader().cancelLoadFile(photoSize);
+                }
+            }
+        }
+    }
+
     protected void processDownloadObjects(int type, ArrayList<DownloadObject> objects) {
         if (objects.isEmpty()) {
             return;
@@ -808,6 +831,7 @@ public class DownloadController extends BaseController implements NotificationCe
             if (added) {
                 queue.add(downloadObject);
                 downloadQueueKeys.put(path, downloadObject);
+                downloadQueuePairs.put(new Pair<>(downloadObject.id, downloadObject.type), downloadObject);
             }
         }
     }
@@ -832,6 +856,7 @@ public class DownloadController extends BaseController implements NotificationCe
         DownloadObject downloadObject = downloadQueueKeys.get(fileName);
         if (downloadObject != null) {
             downloadQueueKeys.remove(fileName);
+            downloadQueuePairs.remove(new Pair<>(downloadObject.id, downloadObject.type));
             if (state == 0 || state == 2) {
                 getMessagesStorage().removeFromDownloadQueue(downloadObject.id, downloadObject.type, false /*state != 0*/);
             }

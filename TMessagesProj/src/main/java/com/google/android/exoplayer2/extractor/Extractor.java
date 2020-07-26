@@ -89,6 +89,10 @@ public interface Extractor {
    * {@link #RESULT_SEEK} is returned. If the extractor reached the end of the data provided by the
    * {@link ExtractorInput}, then {@link #RESULT_END_OF_INPUT} is returned.
    *
+   * <p>When this method throws an {@link IOException} or an {@link InterruptedException},
+   * extraction may continue by providing an {@link ExtractorInput} with an unchanged {@link
+   * ExtractorInput#getPosition() read position} to a subsequent call to this method.
+   *
    * @param input The {@link ExtractorInput} from which data should be read.
    * @param seekPosition If {@link #RESULT_SEEK} is returned, this holder is updated to hold the
    *     position of the required data.

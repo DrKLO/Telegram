@@ -17,10 +17,10 @@ package com.google.android.exoplayer2.text.ttml;
 
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import androidx.annotation.Nullable;
 import android.text.SpannableStringBuilder;
 import android.util.Base64;
 import android.util.Pair;
+import androidx.annotation.Nullable;
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.text.Cue;
 import com.google.android.exoplayer2.util.Assertions;

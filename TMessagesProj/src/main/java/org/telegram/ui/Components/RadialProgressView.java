@@ -40,6 +40,13 @@ public class RadialProgressView extends View {
     private static final float risingTime = 500;
     private int size;
 
+    private float currentProgress;
+    private float progressAnimationStart;
+    private int progressTime;
+    private float animatedProgress;
+
+    private boolean noProgress = true;
+
     public RadialProgressView(Context context) {
         super(context);
 
@@ -73,6 +80,20 @@ public class RadialProgressView extends View {
         }
     }
 
+    public void setNoProgress(boolean value) {
+        noProgress = value;
+    }
+
+    public void setProgress(float value) {
+        currentProgress = value;
+        if (animatedProgress > value) {
+            animatedProgress = value;
+        }
+        progressAnimationStart = animatedProgress;
+        currentProgress = value;
+        progressTime = 0;
+    }
+
     private void updateAnimation() {
         long newTime = System.currentTimeMillis();
         long dt = newTime - lastUpdateTime;
@@ -85,22 +106,36 @@ public class RadialProgressView extends View {
         int count = (int) (radOffset / 360);
         radOffset -= count * 360;
 
-        currentProgressTime += dt;
-        if (currentProgressTime >= risingTime) {
-            currentProgressTime = risingTime;
-        }
-        if (risingCircleLength) {
-            currentCircleLength = 4 + 266 * accelerateInterpolator.getInterpolation(currentProgressTime / risingTime);
-        } else {
-            currentCircleLength = 4 - 270 * (1.0f - decelerateInterpolator.getInterpolation(currentProgressTime / risingTime));
-        }
-        if (currentProgressTime == risingTime) {
-            if (risingCircleLength) {
-                radOffset += 270;
-                currentCircleLength = -266;
+        if (noProgress) {
+            currentProgressTime += dt;
+            if (currentProgressTime >= risingTime) {
+                currentProgressTime = risingTime;
             }
-            risingCircleLength = !risingCircleLength;
-            currentProgressTime = 0;
+            if (risingCircleLength) {
+                currentCircleLength = 4 + 266 * accelerateInterpolator.getInterpolation(currentProgressTime / risingTime);
+            } else {
+                currentCircleLength = 4 - 270 * (1.0f - decelerateInterpolator.getInterpolation(currentProgressTime / risingTime));
+            }
+            if (currentProgressTime == risingTime) {
+                if (risingCircleLength) {
+                    radOffset += 270;
+                    currentCircleLength = -266;
+                }
+                risingCircleLength = !risingCircleLength;
+                currentProgressTime = 0;
+            }
+        } else {
+            float progressDiff = currentProgress - progressAnimationStart;
+            if (progressDiff > 0) {
+                progressTime += dt;
+                if (progressTime >= 200.0f) {
+                    animatedProgress = progressAnimationStart = currentProgress;
+                    progressTime = 0;
+                } else {
+                    animatedProgress = progressAnimationStart + progressDiff * AndroidUtilities.decelerateInterpolator.getInterpolation(progressTime / 200.0f);
+                }
+            }
+            currentCircleLength = Math.max(4, 360 * animatedProgress);
         }
         invalidate();
     }

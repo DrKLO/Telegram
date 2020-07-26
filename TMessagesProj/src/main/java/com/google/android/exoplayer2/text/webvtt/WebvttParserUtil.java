@@ -15,6 +15,7 @@
  */
 package com.google.android.exoplayer2.text.webvtt;
 
+import androidx.annotation.Nullable;
 import com.google.android.exoplayer2.ParserException;
 import com.google.android.exoplayer2.util.ParsableByteArray;
 import com.google.android.exoplayer2.util.Util;
@@ -26,7 +27,7 @@ import java.util.regex.Pattern;
  */
 public final class WebvttParserUtil {
 
-  private static final Pattern COMMENT = Pattern.compile("^NOTE((\u0020|\u0009).*)?$");
+  private static final Pattern COMMENT = Pattern.compile("^NOTE([ \t].*)?$");
   private static final String WEBVTT_HEADER = "WEBVTT";
 
   private WebvttParserUtil() {}
@@ -51,7 +52,7 @@ public final class WebvttParserUtil {
    * @param input The input from which the line should be read.
    */
   public static boolean isWebvttHeaderLine(ParsableByteArray input) {
-    String line = input.readLine();
+    @Nullable String line = input.readLine();
     return line != null && line.startsWith(WEBVTT_HEADER);
   }
 
@@ -98,8 +99,9 @@ public final class WebvttParserUtil {
    *     reached without a cue header being found. In the case that a cue header is found, groups 1,
    *     2 and 3 of the returned matcher contain the start time, end time and settings list.
    */
+  @Nullable
   public static Matcher findNextCueHeader(ParsableByteArray input) {
-    String line;
+    @Nullable String line;
     while ((line = input.readLine()) != null) {
       if (COMMENT.matcher(line).matches()) {
         // Skip until the end of the comment block.

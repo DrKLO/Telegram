@@ -14,4 +14,10 @@ public class TransitionParams {
 
     public float progress;
 
+    public float startX[];
+    public float startY[];
+    public float endX[];
+    public float endY[];
+
+    public float angle[];
 }

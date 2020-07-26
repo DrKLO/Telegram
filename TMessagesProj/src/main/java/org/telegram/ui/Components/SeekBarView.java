@@ -17,6 +17,7 @@ import android.os.Build;
 import android.os.SystemClock;
 import android.util.StateSet;
 import android.view.MotionEvent;
+import android.view.View;
 import android.view.ViewConfiguration;
 import android.widget.FrameLayout;
 
@@ -24,6 +25,8 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.ui.ActionBar.Theme;
 
 public class SeekBarView extends FrameLayout {
+
+    private final SeekBarAccessibilityDelegate seekBarAccessibilityDelegate;
 
     private Paint innerPaint1;
     private Paint outerPaint1;
@@ -44,13 +47,22 @@ public class SeekBarView extends FrameLayout {
     public interface SeekBarViewDelegate {
         void onSeekBarDrag(boolean stop, float progress);
         void onSeekBarPressed(boolean pressed);
+        default CharSequence getContentDescription() {
+            return null;
+        }
+        default int getStepsCount() {
+            return 0;
+        }
     }
 
     public SeekBarView(Context context) {
+        this(context, false);
+    }
+
+    public SeekBarView(Context context, boolean inPercents) {
         super(context);
         setWillNotDraw(false);
         innerPaint1 = new Paint(Paint.ANTI_ALIAS_FLAG);
-        innerPaint1.setColor(Theme.getColor(Theme.key_player_progressBackground));
 
         outerPaint1 = new Paint(Paint.ANTI_ALIAS_FLAG);
         outerPaint1.setColor(Theme.getColor(Theme.key_player_progress));
@@ -65,6 +77,39 @@ public class SeekBarView extends FrameLayout {
             hoverDrawable.setCallback(this);
             hoverDrawable.setVisible(true, false);
         }
+
+        setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_YES);
+        setAccessibilityDelegate(seekBarAccessibilityDelegate = new FloatSeekBarAccessibilityDelegate(inPercents) {
+            @Override
+            public float getProgress() {
+                return SeekBarView.this.getProgress();
+            }
+
+            @Override
+            public void setProgress(float progress) {
+                pressed = true;
+                SeekBarView.this.setProgress(progress);
+                if (delegate != null) {
+                    delegate.onSeekBarDrag(true, progress);
+                }
+                pressed = false;
+            }
+
+            @Override
+            protected float getDelta() {
+                final int stepsCount = delegate.getStepsCount();
+                if (stepsCount > 0) {
+                    return 1f / stepsCount;
+                } else {
+                    return super.getDelta();
+                }
+            }
+
+            @Override
+            public CharSequence getContentDescription(View host) {
+                return delegate != null ? delegate.getContentDescription() : null;
+            }
+        });
     }
 
     public void setColors(int inner, int outer) {
@@ -220,6 +265,7 @@ public class SeekBarView extends FrameLayout {
 
     public void setBufferedProgress(float progress) {
         bufferedProgress = progress;
+        invalidate();
     }
 
     @Override
@@ -243,8 +289,10 @@ public class SeekBarView extends FrameLayout {
     @Override
     protected void onDraw(Canvas canvas) {
         int y = (getMeasuredHeight() - thumbSize) / 2;
+        innerPaint1.setColor(Theme.getColor(Theme.key_player_progressBackground));
         canvas.drawRect(selectorWidth / 2, getMeasuredHeight() / 2 - AndroidUtilities.dp(1), getMeasuredWidth() - selectorWidth / 2, getMeasuredHeight() / 2 + AndroidUtilities.dp(1), innerPaint1);
         if (bufferedProgress > 0) {
+            innerPaint1.setColor(Theme.getColor(Theme.key_player_progressCachedBackground));
             canvas.drawRect(selectorWidth / 2, getMeasuredHeight() / 2 - AndroidUtilities.dp(1), selectorWidth / 2 + bufferedProgress * (getMeasuredWidth() - selectorWidth), getMeasuredHeight() / 2 + AndroidUtilities.dp(1), innerPaint1);
         }
         canvas.drawRect(selectorWidth / 2, getMeasuredHeight() / 2 - AndroidUtilities.dp(1), selectorWidth / 2 + thumbX, getMeasuredHeight() / 2 + AndroidUtilities.dp(1), outerPaint1);
@@ -275,5 +323,9 @@ public class SeekBarView extends FrameLayout {
             invalidate();
         }
         canvas.drawCircle(thumbX + selectorWidth / 2, y + thumbSize / 2, currentRadius, outerPaint1);
+    }
+
+    public SeekBarAccessibilityDelegate getSeekBarAccessibilityDelegate() {
+        return seekBarAccessibilityDelegate;
     }
 }

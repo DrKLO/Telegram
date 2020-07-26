@@ -15,8 +15,8 @@
  */
 package com.google.android.exoplayer2.util;
 
-import androidx.annotation.Nullable;
 import android.text.TextUtils;
+import androidx.annotation.Nullable;
 import com.google.android.exoplayer2.C;
 import java.util.ArrayList;
 
@@ -122,24 +122,59 @@ public final class MimeTypes {
     customMimeTypes.add(customMimeType);
   }
 
-  /** Returns whether the given string is an audio mime type. */
+  /** Returns whether the given string is an audio MIME type. */
   public static boolean isAudio(@Nullable String mimeType) {
     return BASE_TYPE_AUDIO.equals(getTopLevelType(mimeType));
   }
 
-  /** Returns whether the given string is a video mime type. */
+  /** Returns whether the given string is a video MIME type. */
   public static boolean isVideo(@Nullable String mimeType) {
     return BASE_TYPE_VIDEO.equals(getTopLevelType(mimeType));
   }
 
-  /** Returns whether the given string is a text mime type. */
+  /** Returns whether the given string is a text MIME type. */
   public static boolean isText(@Nullable String mimeType) {
     return BASE_TYPE_TEXT.equals(getTopLevelType(mimeType));
   }
 
-  /** Returns whether the given string is an application mime type. */
+  /** Returns whether the given string is an application MIME type. */
   public static boolean isApplication(@Nullable String mimeType) {
     return BASE_TYPE_APPLICATION.equals(getTopLevelType(mimeType));
+  }
+
+  /**
+   * Returns true if it is known that all samples in a stream of the given sample MIME type are
+   * guaranteed to be sync samples (i.e., {@link C#BUFFER_FLAG_KEY_FRAME} is guaranteed to be set on
+   * every sample).
+   *
+   * @param mimeType The sample MIME type.
+   * @return True if it is known that all samples in a stream of the given sample MIME type are
+   *     guaranteed to be sync samples. False otherwise, including if {@code null} is passed.
+   */
+  public static boolean allSamplesAreSyncSamples(@Nullable String mimeType) {
+    if (mimeType == null) {
+      return false;
+    }
+    // TODO: Add additional audio MIME types. Also consider evaluating based on Format rather than
+    // just MIME type, since in some cases the property is true for a subset of the profiles
+    // belonging to a single MIME type. If we do this, we should move the method to a different
+    // class. See [Internal ref: http://go/exo-audio-format-random-access].
+    switch (mimeType) {
+      case AUDIO_MPEG:
+      case AUDIO_MPEG_L1:
+      case AUDIO_MPEG_L2:
+      case AUDIO_RAW:
+      case AUDIO_ALAW:
+      case AUDIO_MLAW:
+      case AUDIO_OPUS:
+      case AUDIO_FLAC:
+      case AUDIO_AC3:
+      case AUDIO_E_AC3:
+      case AUDIO_E_AC3_JOC:
+        return true;
+      default:
+        return false;
+    }
   }
 
   /**
@@ -148,13 +183,14 @@ public final class MimeTypes {
    * @param codecs The codecs attribute.
    * @return The derived video mimeType, or null if it could not be derived.
    */
-  public static @Nullable String getVideoMediaMimeType(@Nullable String codecs) {
+  @Nullable
+  public static String getVideoMediaMimeType(@Nullable String codecs) {
     if (codecs == null) {
       return null;
     }
     String[] codecList = Util.splitCodecs(codecs);
     for (String codec : codecList) {
-      String mimeType = getMediaMimeType(codec);
+      @Nullable String mimeType = getMediaMimeType(codec);
       if (mimeType != null && isVideo(mimeType)) {
         return mimeType;
       }
@@ -168,13 +204,14 @@ public final class MimeTypes {
    * @param codecs The codecs attribute.
    * @return The derived audio mimeType, or null if it could not be derived.
    */
-  public static @Nullable String getAudioMediaMimeType(@Nullable String codecs) {
+  @Nullable
+  public static String getAudioMediaMimeType(@Nullable String codecs) {
     if (codecs == null) {
       return null;
     }
     String[] codecList = Util.splitCodecs(codecs);
     for (String codec : codecList) {
-      String mimeType = getMediaMimeType(codec);
+      @Nullable String mimeType = getMediaMimeType(codec);
       if (mimeType != null && isAudio(mimeType)) {
         return mimeType;
       }
@@ -188,7 +225,8 @@ public final class MimeTypes {
    * @param codec The codec identifier to derive.
    * @return The mimeType, or null if it could not be derived.
    */
-  public static @Nullable String getMediaMimeType(@Nullable String codec) {
+  @Nullable
+  public static String getMediaMimeType(@Nullable String codec) {
     if (codec == null) {
       return null;
     }
@@ -209,7 +247,7 @@ public final class MimeTypes {
     } else if (codec.startsWith("vp8") || codec.startsWith("vp08")) {
       return MimeTypes.VIDEO_VP8;
     } else if (codec.startsWith("mp4a")) {
-      String mimeType = null;
+      @Nullable String mimeType = null;
       if (codec.startsWith("mp4a.")) {
         String objectTypeString = codec.substring(5); // remove the 'mp4a.' prefix
         if (objectTypeString.length() >= 2) {
@@ -218,7 +256,7 @@ public final class MimeTypes {
             int objectTypeInt = Integer.parseInt(objectTypeHexString, 16);
             mimeType = getMimeTypeFromMp4ObjectType(objectTypeInt);
           } catch (NumberFormatException ignored) {
-            // ignored
+            // Ignored.
           }
         }
       }
@@ -241,6 +279,10 @@ public final class MimeTypes {
       return MimeTypes.AUDIO_VORBIS;
     } else if (codec.startsWith("flac")) {
       return MimeTypes.AUDIO_FLAC;
+    } else if (codec.startsWith("stpp")) {
+      return MimeTypes.APPLICATION_TTML;
+    } else if (codec.startsWith("wvtt")) {
+      return MimeTypes.TEXT_VTT;
     } else {
       return getCustomMimeTypeForCodec(codec);
     }
@@ -345,6 +387,8 @@ public final class MimeTypes {
    */
   public static @C.Encoding int getEncoding(String mimeType) {
     switch (mimeType) {
+      case MimeTypes.AUDIO_MPEG:
+        return C.ENCODING_MP3;
       case MimeTypes.AUDIO_AC3:
         return C.ENCODING_AC3;
       case MimeTypes.AUDIO_E_AC3:
@@ -378,7 +422,8 @@ public final class MimeTypes {
    * Returns the top-level type of {@code mimeType}, or null if {@code mimeType} is null or does not
    * contain a forward slash character ({@code '/'}).
    */
-  private static @Nullable String getTopLevelType(@Nullable String mimeType) {
+  @Nullable
+  private static String getTopLevelType(@Nullable String mimeType) {
     if (mimeType == null) {
       return null;
     }
@@ -389,7 +434,8 @@ public final class MimeTypes {
     return mimeType.substring(0, indexOfSlash);
   }
 
-  private static @Nullable String getCustomMimeTypeForCodec(String codec) {
+  @Nullable
+  private static String getCustomMimeTypeForCodec(String codec) {
     int customMimeTypeCount = customMimeTypes.size();
     for (int i = 0; i < customMimeTypeCount; i++) {
       CustomMimeType customMimeType = customMimeTypes.get(i);

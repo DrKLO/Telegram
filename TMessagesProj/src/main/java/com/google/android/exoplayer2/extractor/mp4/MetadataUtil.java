@@ -16,6 +16,7 @@
 package com.google.android.exoplayer2.extractor.mp4;
 
 import androidx.annotation.Nullable;
+import androidx.annotation.VisibleForTesting;
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.Format;
 import com.google.android.exoplayer2.extractor.GaplessInfoHolder;
@@ -27,8 +28,6 @@ import com.google.android.exoplayer2.metadata.id3.InternalFrame;
 import com.google.android.exoplayer2.metadata.id3.TextInformationFrame;
 import com.google.android.exoplayer2.util.Log;
 import com.google.android.exoplayer2.util.ParsableByteArray;
-import com.google.android.exoplayer2.util.Util;
-import java.nio.ByteBuffer;
 
 /** Utilities for handling metadata in MP4. */
 /* package */ final class MetadataUtil {
@@ -36,72 +35,245 @@ import java.nio.ByteBuffer;
   private static final String TAG = "MetadataUtil";
 
   // Codes that start with the copyright character (omitted) and have equivalent ID3 frames.
-  private static final int SHORT_TYPE_NAME_1 = Util.getIntegerCodeForString("nam");
-  private static final int SHORT_TYPE_NAME_2 = Util.getIntegerCodeForString("trk");
-  private static final int SHORT_TYPE_COMMENT = Util.getIntegerCodeForString("cmt");
-  private static final int SHORT_TYPE_YEAR = Util.getIntegerCodeForString("day");
-  private static final int SHORT_TYPE_ARTIST = Util.getIntegerCodeForString("ART");
-  private static final int SHORT_TYPE_ENCODER = Util.getIntegerCodeForString("too");
-  private static final int SHORT_TYPE_ALBUM = Util.getIntegerCodeForString("alb");
-  private static final int SHORT_TYPE_COMPOSER_1 = Util.getIntegerCodeForString("com");
-  private static final int SHORT_TYPE_COMPOSER_2 = Util.getIntegerCodeForString("wrt");
-  private static final int SHORT_TYPE_LYRICS = Util.getIntegerCodeForString("lyr");
-  private static final int SHORT_TYPE_GENRE = Util.getIntegerCodeForString("gen");
+  private static final int SHORT_TYPE_NAME_1 = 0x006e616d;
+  private static final int SHORT_TYPE_NAME_2 = 0x0074726b;
+  private static final int SHORT_TYPE_COMMENT = 0x00636d74;
+  private static final int SHORT_TYPE_YEAR = 0x00646179;
+  private static final int SHORT_TYPE_ARTIST = 0x00415254;
+  private static final int SHORT_TYPE_ENCODER = 0x00746f6f;
+  private static final int SHORT_TYPE_ALBUM = 0x00616c62;
+  private static final int SHORT_TYPE_COMPOSER_1 = 0x00636f6d;
+  private static final int SHORT_TYPE_COMPOSER_2 = 0x00777274;
+  private static final int SHORT_TYPE_LYRICS = 0x006c7972;
+  private static final int SHORT_TYPE_GENRE = 0x0067656e;
 
   // Codes that have equivalent ID3 frames.
-  private static final int TYPE_COVER_ART = Util.getIntegerCodeForString("covr");
-  private static final int TYPE_GENRE = Util.getIntegerCodeForString("gnre");
-  private static final int TYPE_GROUPING = Util.getIntegerCodeForString("grp");
-  private static final int TYPE_DISK_NUMBER = Util.getIntegerCodeForString("disk");
-  private static final int TYPE_TRACK_NUMBER = Util.getIntegerCodeForString("trkn");
-  private static final int TYPE_TEMPO = Util.getIntegerCodeForString("tmpo");
-  private static final int TYPE_COMPILATION = Util.getIntegerCodeForString("cpil");
-  private static final int TYPE_ALBUM_ARTIST = Util.getIntegerCodeForString("aART");
-  private static final int TYPE_SORT_TRACK_NAME = Util.getIntegerCodeForString("sonm");
-  private static final int TYPE_SORT_ALBUM = Util.getIntegerCodeForString("soal");
-  private static final int TYPE_SORT_ARTIST = Util.getIntegerCodeForString("soar");
-  private static final int TYPE_SORT_ALBUM_ARTIST = Util.getIntegerCodeForString("soaa");
-  private static final int TYPE_SORT_COMPOSER = Util.getIntegerCodeForString("soco");
+  private static final int TYPE_COVER_ART = 0x636f7672;
+  private static final int TYPE_GENRE = 0x676e7265;
+  private static final int TYPE_GROUPING = 0x00677270;
+  private static final int TYPE_DISK_NUMBER = 0x6469736b;
+  private static final int TYPE_TRACK_NUMBER = 0x74726b6e;
+  private static final int TYPE_TEMPO = 0x746d706f;
+  private static final int TYPE_COMPILATION = 0x6370696c;
+  private static final int TYPE_ALBUM_ARTIST = 0x61415254;
+  private static final int TYPE_SORT_TRACK_NAME = 0x736f6e6d;
+  private static final int TYPE_SORT_ALBUM = 0x736f616c;
+  private static final int TYPE_SORT_ARTIST = 0x736f6172;
+  private static final int TYPE_SORT_ALBUM_ARTIST = 0x736f6161;
+  private static final int TYPE_SORT_COMPOSER = 0x736f636f;
 
   // Types that do not have equivalent ID3 frames.
-  private static final int TYPE_RATING = Util.getIntegerCodeForString("rtng");
-  private static final int TYPE_GAPLESS_ALBUM = Util.getIntegerCodeForString("pgap");
-  private static final int TYPE_TV_SORT_SHOW = Util.getIntegerCodeForString("sosn");
-  private static final int TYPE_TV_SHOW = Util.getIntegerCodeForString("tvsh");
+  private static final int TYPE_RATING = 0x72746e67;
+  private static final int TYPE_GAPLESS_ALBUM = 0x70676170;
+  private static final int TYPE_TV_SORT_SHOW = 0x736f736e;
+  private static final int TYPE_TV_SHOW = 0x74767368;
 
   // Type for items that are intended for internal use by the player.
-  private static final int TYPE_INTERNAL = Util.getIntegerCodeForString("----");
+  private static final int TYPE_INTERNAL = 0x2d2d2d2d;
 
   private static final int PICTURE_TYPE_FRONT_COVER = 3;
 
   // Standard genres.
-  private static final String[] STANDARD_GENRES = new String[] {
-      // These are the official ID3v1 genres.
-      "Blues", "Classic Rock", "Country", "Dance", "Disco", "Funk", "Grunge", "Hip-Hop", "Jazz",
-      "Metal", "New Age", "Oldies", "Other", "Pop", "R&B", "Rap", "Reggae", "Rock", "Techno",
-      "Industrial", "Alternative", "Ska", "Death Metal", "Pranks", "Soundtrack", "Euro-Techno",
-      "Ambient", "Trip-Hop", "Vocal", "Jazz+Funk", "Fusion", "Trance", "Classical", "Instrumental",
-      "Acid", "House", "Game", "Sound Clip", "Gospel", "Noise", "AlternRock", "Bass", "Soul",
-      "Punk", "Space", "Meditative", "Instrumental Pop", "Instrumental Rock", "Ethnic", "Gothic",
-      "Darkwave", "Techno-Industrial", "Electronic", "Pop-Folk", "Eurodance", "Dream",
-      "Southern Rock", "Comedy", "Cult", "Gangsta", "Top 40", "Christian Rap", "Pop/Funk", "Jungle",
-      "Native American", "Cabaret", "New Wave", "Psychadelic", "Rave", "Showtunes", "Trailer",
-      "Lo-Fi", "Tribal", "Acid Punk", "Acid Jazz", "Polka", "Retro", "Musical", "Rock & Roll",
-      "Hard Rock",
-      // These were made up by the authors of Winamp and later added to the ID3 spec.
-      "Folk", "Folk-Rock", "National Folk", "Swing", "Fast Fusion", "Bebob", "Latin", "Revival",
-      "Celtic", "Bluegrass", "Avantgarde", "Gothic Rock", "Progressive Rock", "Psychedelic Rock",
-      "Symphonic Rock", "Slow Rock", "Big Band", "Chorus", "Easy Listening", "Acoustic", "Humour",
-      "Speech", "Chanson", "Opera", "Chamber Music", "Sonata", "Symphony", "Booty Bass", "Primus",
-      "Porn Groove", "Satire", "Slow Jam", "Club", "Tango", "Samba", "Folklore", "Ballad",
-      "Power Ballad", "Rhythmic Soul", "Freestyle", "Duet", "Punk Rock", "Drum Solo", "A capella",
-      "Euro-House", "Dance Hall",
-      // These were med up by the authors of Winamp but have not been added to the ID3 spec.
-      "Goa", "Drum & Bass", "Club-House", "Hardcore", "Terror", "Indie", "BritPop", "Negerpunk",
-      "Polsk Punk", "Beat", "Christian Gangsta Rap", "Heavy Metal", "Black Metal", "Crossover",
-      "Contemporary Christian", "Christian Rock", "Merengue", "Salsa", "Thrash Metal", "Anime",
-      "Jpop", "Synthpop"
-  };
+  @VisibleForTesting
+  /* package */ static final String[] STANDARD_GENRES =
+      new String[] {
+        // These are the official ID3v1 genres.
+        "Blues",
+        "Classic Rock",
+        "Country",
+        "Dance",
+        "Disco",
+        "Funk",
+        "Grunge",
+        "Hip-Hop",
+        "Jazz",
+        "Metal",
+        "New Age",
+        "Oldies",
+        "Other",
+        "Pop",
+        "R&B",
+        "Rap",
+        "Reggae",
+        "Rock",
+        "Techno",
+        "Industrial",
+        "Alternative",
+        "Ska",
+        "Death Metal",
+        "Pranks",
+        "Soundtrack",
+        "Euro-Techno",
+        "Ambient",
+        "Trip-Hop",
+        "Vocal",
+        "Jazz+Funk",
+        "Fusion",
+        "Trance",
+        "Classical",
+        "Instrumental",
+        "Acid",
+        "House",
+        "Game",
+        "Sound Clip",
+        "Gospel",
+        "Noise",
+        "AlternRock",
+        "Bass",
+        "Soul",
+        "Punk",
+        "Space",
+        "Meditative",
+        "Instrumental Pop",
+        "Instrumental Rock",
+        "Ethnic",
+        "Gothic",
+        "Darkwave",
+        "Techno-Industrial",
+        "Electronic",
+        "Pop-Folk",
+        "Eurodance",
+        "Dream",
+        "Southern Rock",
+        "Comedy",
+        "Cult",
+        "Gangsta",
+        "Top 40",
+        "Christian Rap",
+        "Pop/Funk",
+        "Jungle",
+        "Native American",
+        "Cabaret",
+        "New Wave",
+        "Psychadelic",
+        "Rave",
+        "Showtunes",
+        "Trailer",
+        "Lo-Fi",
+        "Tribal",
+        "Acid Punk",
+        "Acid Jazz",
+        "Polka",
+        "Retro",
+        "Musical",
+        "Rock & Roll",
+        "Hard Rock",
+        // Genres made up by the authors of Winamp (v1.91) and later added to the ID3 spec.
+        "Folk",
+        "Folk-Rock",
+        "National Folk",
+        "Swing",
+        "Fast Fusion",
+        "Bebob",
+        "Latin",
+        "Revival",
+        "Celtic",
+        "Bluegrass",
+        "Avantgarde",
+        "Gothic Rock",
+        "Progressive Rock",
+        "Psychedelic Rock",
+        "Symphonic Rock",
+        "Slow Rock",
+        "Big Band",
+        "Chorus",
+        "Easy Listening",
+        "Acoustic",
+        "Humour",
+        "Speech",
+        "Chanson",
+        "Opera",
+        "Chamber Music",
+        "Sonata",
+        "Symphony",
+        "Booty Bass",
+        "Primus",
+        "Porn Groove",
+        "Satire",
+        "Slow Jam",
+        "Club",
+        "Tango",
+        "Samba",
+        "Folklore",
+        "Ballad",
+        "Power Ballad",
+        "Rhythmic Soul",
+        "Freestyle",
+        "Duet",
+        "Punk Rock",
+        "Drum Solo",
+        "A capella",
+        "Euro-House",
+        "Dance Hall",
+        // Genres made up by the authors of Winamp (v1.91) but have not been added to the ID3 spec.
+        "Goa",
+        "Drum & Bass",
+        "Club-House",
+        "Hardcore",
+        "Terror",
+        "Indie",
+        "BritPop",
+        "Afro-Punk",
+        "Polsk Punk",
+        "Beat",
+        "Christian Gangsta Rap",
+        "Heavy Metal",
+        "Black Metal",
+        "Crossover",
+        "Contemporary Christian",
+        "Christian Rock",
+        "Merengue",
+        "Salsa",
+        "Thrash Metal",
+        "Anime",
+        "Jpop",
+        "Synthpop",
+        // Genres made up by the authors of Winamp (v5.6) but have not been added to the ID3 spec.
+        "Abstract",
+        "Art Rock",
+        "Baroque",
+        "Bhangra",
+        "Big beat",
+        "Breakbeat",
+        "Chillout",
+        "Downtempo",
+        "Dub",
+        "EBM",
+        "Eclectic",
+        "Electro",
+        "Electroclash",
+        "Emo",
+        "Experimental",
+        "Garage",
+        "Global",
+        "IDM",
+        "Illbient",
+        "Industro-Goth",
+        "Jam Band",
+        "Krautrock",
+        "Leftfield",
+        "Lounge",
+        "Math Rock",
+        "New Romantic",
+        "Nu-Breakz",
+        "Post-Punk",
+        "Post-Rock",
+        "Psytrance",
+        "Shoegaze",
+        "Space Rock",
+        "Trop Rock",
+        "World Music",
+        "Neoclassical",
+        "Audiobook",
+        "Audio theatre",
+        "Neue Deutsche Welle",
+        "Podcast",
+        "Indie-Rock",
+        "G-Funk",
+        "Dubstep",
+        "Garage Rock",
+        "Psybient"
+      };
 
   private static final String LANGUAGE_UNDEFINED = "und";
 
@@ -109,7 +281,6 @@ import java.nio.ByteBuffer;
   private static final int TYPE_TOP_BYTE_REPLACEMENT = 0xFD; // Truncated value of \uFFFD.
 
   private static final String MDTA_KEY_ANDROID_CAPTURE_FPS = "com.android.capture.fps";
-  private static final int MDTA_TYPE_INDICATOR_FLOAT = 23;
 
   private MetadataUtil() {}
 
@@ -139,15 +310,8 @@ import java.nio.ByteBuffer;
         Metadata.Entry entry = mdtaMetadata.get(i);
         if (entry instanceof MdtaMetadataEntry) {
           MdtaMetadataEntry mdtaMetadataEntry = (MdtaMetadataEntry) entry;
-          if (MDTA_KEY_ANDROID_CAPTURE_FPS.equals(mdtaMetadataEntry.key)
-              && mdtaMetadataEntry.typeIndicator == MDTA_TYPE_INDICATOR_FLOAT) {
-            try {
-              float fps = ByteBuffer.wrap(mdtaMetadataEntry.value).asFloatBuffer().get();
-              format = format.copyWithFrameRate(fps);
-              format = format.copyWithMetadata(new Metadata(mdtaMetadataEntry));
-            } catch (NumberFormatException e) {
-              Log.w(TAG, "Ignoring invalid framerate");
-            }
+          if (MDTA_KEY_ANDROID_CAPTURE_FPS.equals(mdtaMetadataEntry.key)) {
+            format = format.copyWithMetadata(new Metadata(mdtaMetadataEntry));
           }
         }
       }

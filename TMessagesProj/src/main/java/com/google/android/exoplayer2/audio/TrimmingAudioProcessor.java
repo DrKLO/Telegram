@@ -24,11 +24,9 @@ import java.nio.ByteBuffer;
 
   @C.PcmEncoding private static final int OUTPUT_ENCODING = C.ENCODING_PCM_16BIT;
 
-  private boolean isActive;
   private int trimStartFrames;
   private int trimEndFrames;
-  private int bytesPerFrame;
-  private boolean receivedInputSinceConfigure;
+  private boolean reconfigurationPending;
 
   private int pendingTrimStartBytes;
   private byte[] endBuffer;
@@ -42,7 +40,7 @@ import java.nio.ByteBuffer;
 
   /**
    * Sets the number of audio frames to trim from the start and end of audio passed to this
-   * processor. After calling this method, call {@link #configure(int, int, int)} to apply the new
+   * processor. After calling this method, call {@link #configure(AudioFormat)} to apply the new
    * trimming frame counts.
    *
    * @param trimStartFrames The number of audio frames to trim from the start of audio.
@@ -68,28 +66,13 @@ import java.nio.ByteBuffer;
   }
 
   @Override
-  public boolean configure(int sampleRateHz, int channelCount, @C.PcmEncoding int encoding)
-      throws UnhandledFormatException {
-    if (encoding != OUTPUT_ENCODING) {
-      throw new UnhandledFormatException(sampleRateHz, channelCount, encoding);
+  public AudioFormat onConfigure(AudioFormat inputAudioFormat)
+      throws UnhandledAudioFormatException {
+    if (inputAudioFormat.encoding != OUTPUT_ENCODING) {
+      throw new UnhandledAudioFormatException(inputAudioFormat);
     }
-    if (endBufferSize > 0) {
-      trimmedFrameCount += endBufferSize / bytesPerFrame;
-    }
-    bytesPerFrame = Util.getPcmFrameSize(OUTPUT_ENCODING, channelCount);
-    endBuffer = new byte[trimEndFrames * bytesPerFrame];
-    endBufferSize = 0;
-    pendingTrimStartBytes = trimStartFrames * bytesPerFrame;
-    boolean wasActive = isActive;
-    isActive = trimStartFrames != 0 || trimEndFrames != 0;
-    receivedInputSinceConfigure = false;
-    setInputFormat(sampleRateHz, channelCount, encoding);
-    return wasActive != isActive;
-  }
-
-  @Override
-  public boolean isActive() {
-    return isActive;
+    reconfigurationPending = true;
+    return trimStartFrames != 0 || trimEndFrames != 0 ? inputAudioFormat : AudioFormat.NOT_SET;
   }
 
   @Override
@@ -101,11 +84,10 @@ import java.nio.ByteBuffer;
     if (remaining == 0) {
       return;
     }
-    receivedInputSinceConfigure = true;
 
     // Trim any pending start bytes from the input buffer.
     int trimBytes = Math.min(remaining, pendingTrimStartBytes);
-    trimmedFrameCount += trimBytes / bytesPerFrame;
+    trimmedFrameCount += trimBytes / inputAudioFormat.bytesPerFrame;
     pendingTrimStartBytes -= trimBytes;
     inputBuffer.position(position + trimBytes);
     if (pendingTrimStartBytes > 0) {
@@ -142,37 +124,51 @@ import java.nio.ByteBuffer;
     buffer.flip();
   }
 
-  @SuppressWarnings("ReferenceEquality")
   @Override
   public ByteBuffer getOutput() {
     if (super.isEnded() && endBufferSize > 0) {
       // Because audio processors may be drained in the middle of the stream we assume that the
-      // contents of the end buffer need to be output. For gapless transitions, configure will be
-      // always be called, which clears the end buffer as needed. When audio is actually ending we
-      // play the padding data which is incorrect. This behavior can be fixed once we have the
-      // timestamps associated with input buffers.
+      // contents of the end buffer need to be output. For gapless transitions, configure will
+      // always be called, so the end buffer is cleared in onQueueEndOfStream.
       replaceOutputBuffer(endBufferSize).put(endBuffer, 0, endBufferSize).flip();
       endBufferSize = 0;
     }
     return super.getOutput();
   }
 
-  @SuppressWarnings("ReferenceEquality")
   @Override
   public boolean isEnded() {
     return super.isEnded() && endBufferSize == 0;
   }
 
   @Override
-  protected void onFlush() {
-    if (receivedInputSinceConfigure) {
-      // Audio processors are flushed after initial configuration, so we leave the pending trim
-      // start byte count unmodified if the processor was just configured. Otherwise we (possibly
-      // incorrectly) assume that this is a seek to a non-zero position. We should instead check the
-      // timestamp of the first input buffer queued after flushing to decide whether to trim (see
-      // also [Internal: b/77292509]).
-      pendingTrimStartBytes = 0;
+  protected void onQueueEndOfStream() {
+    if (reconfigurationPending) {
+      // Trim audio in the end buffer.
+      if (endBufferSize > 0) {
+        trimmedFrameCount += endBufferSize / inputAudioFormat.bytesPerFrame;
+      }
+      endBufferSize = 0;
     }
+  }
+
+  @Override
+  protected void onFlush() {
+    if (reconfigurationPending) {
+      // Flushing activates the new configuration, so prepare to trim bytes from the start/end.
+      reconfigurationPending = false;
+      endBuffer = new byte[trimEndFrames * inputAudioFormat.bytesPerFrame];
+      pendingTrimStartBytes = trimStartFrames * inputAudioFormat.bytesPerFrame;
+    }
+
+    // TODO(internal b/77292509): Flushing occurs to activate a configuration (handled above) but
+    // also when seeking within a stream. This implementation currently doesn't handle seek to start
+    // (where we need to trim at the start again), nor seeks to non-zero positions before start
+    // trimming has occurred (where we should set pendingTrimStartBytes to zero). These cases can be
+    // fixed by trimming in queueInput based on timestamp, once that information is available.
+
+    // Any data in the end buffer should no longer be output if we are playing from a different
+    // position, so discard it and refill the buffer using new input.
     endBufferSize = 0;
   }
 

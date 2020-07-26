@@ -39,7 +39,7 @@ public final class FixedTrackSelection extends BaseTrackSelection {
   public static final class Factory implements TrackSelection.Factory {
 
     private final int reason;
-    private final @Nullable Object data;
+    @Nullable private final Object data;
 
     public Factory() {
       this.reason = C.SELECTION_REASON_UNKNOWN;
@@ -66,7 +66,7 @@ public final class FixedTrackSelection extends BaseTrackSelection {
   }
 
   private final int reason;
-  private final @Nullable Object data;
+  @Nullable private final Object data;
 
   /**
    * @param group The {@link TrackGroup}. Must not be null.
@@ -109,7 +109,8 @@ public final class FixedTrackSelection extends BaseTrackSelection {
   }
 
   @Override
-  public @Nullable Object getSelectionData() {
+  @Nullable
+  public Object getSelectionData() {
     return data;
   }
 

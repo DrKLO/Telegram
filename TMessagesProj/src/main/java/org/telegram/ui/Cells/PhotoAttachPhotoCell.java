@@ -236,7 +236,7 @@ public class PhotoAttachPhotoCell extends FrameLayout {
             imageView.setImage(location, null, thumb, searchImage);
         } else if (searchImage.document != null) {
             MessageObject.getDocumentVideoThumb(searchImage.document);
-            TLRPC.TL_videoSize videoSize = MessageObject.getDocumentVideoThumb(searchImage.document);
+            TLRPC.VideoSize videoSize = MessageObject.getDocumentVideoThumb(searchImage.document);
             if (videoSize != null) {
                 TLRPC.PhotoSize currentPhotoObject = FileLoader.getClosestPhotoSizeWithSize(searchImage.document.thumbs, 90);
                 imageView.setImage(ImageLocation.getForDocument(videoSize, searchImage.document), null, ImageLocation.getForDocument(currentPhotoObject, searchImage.document), "52_52", null, -1, 1, searchImage);
@@ -403,7 +403,7 @@ public class PhotoAttachPhotoCell extends FrameLayout {
         super.onInitializeAccessibilityNodeInfo(info);
         info.setEnabled(true);
         if (photoEntry != null && photoEntry.isVideo) {
-            info.setText(LocaleController.getString("AttachVideo", R.string.AttachVideo) + ", " + LocaleController.formatCallDuration(photoEntry.duration));
+            info.setText(LocaleController.getString("AttachVideo", R.string.AttachVideo) + ", " + LocaleController.formatDuration(photoEntry.duration));
         } else {
             info.setText(LocaleController.getString("AttachPhoto", R.string.AttachPhoto));
         }

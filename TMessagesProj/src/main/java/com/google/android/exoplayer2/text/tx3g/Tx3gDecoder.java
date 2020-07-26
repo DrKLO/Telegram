@@ -43,8 +43,8 @@ public final class Tx3gDecoder extends SimpleSubtitleDecoder {
   private static final char BOM_UTF16_BE = '\uFEFF';
   private static final char BOM_UTF16_LE = '\uFFFE';
 
-  private static final int TYPE_STYL = Util.getIntegerCodeForString("styl");
-  private static final int TYPE_TBOX = Util.getIntegerCodeForString("tbox");
+  private static final int TYPE_STYL = 0x7374796c;
+  private static final int TYPE_TBOX = 0x74626f78;
   private static final String TX3G_SERIF = "Serif";
 
   private static final int SIZE_ATOM_HEADER = 8;

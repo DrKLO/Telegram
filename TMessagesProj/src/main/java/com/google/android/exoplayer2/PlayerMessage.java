@@ -55,7 +55,7 @@ public final class PlayerMessage {
   private final Timeline timeline;
 
   private int type;
-  private @Nullable Object payload;
+  @Nullable private Object payload;
   private Handler handler;
   private int windowIndex;
   private long positionMs;
@@ -134,7 +134,8 @@ public final class PlayerMessage {
   }
 
   /** Returns the message payload forwarded to {@link Target#handleMessage(int, Object)}. */
-  public @Nullable Object getPayload() {
+  @Nullable
+  public Object getPayload() {
     return payload;
   }
 

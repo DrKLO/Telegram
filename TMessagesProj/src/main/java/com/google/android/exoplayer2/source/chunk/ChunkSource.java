@@ -102,7 +102,10 @@ public interface ChunkSource {
    * @param e The error.
    * @param blacklistDurationMs The duration for which the associated track may be blacklisted, or
    *     {@link C#TIME_UNSET} if the track may not be blacklisted.
-   * @return Whether the load should be canceled. Must be false if {@code cancelable} is false.
+   * @return Whether the load should be canceled so that a replacement chunk can be loaded instead.
+   *     Must be {@code false} if {@code cancelable} is {@code false}. If {@code true}, {@link
+   *     #getNextChunk(long, long, List, ChunkHolder)} will be called to obtain the replacement
+   *     chunk.
    */
   boolean onChunkLoadError(Chunk chunk, boolean cancelable, Exception e, long blacklistDurationMs);
 }

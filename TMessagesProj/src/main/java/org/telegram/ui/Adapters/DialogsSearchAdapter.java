@@ -924,6 +924,9 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
                 notifyDataSetChanged();
             }
             final int searchId = ++lastSearchId;
+            if (needMessagesSearch != 2 && delegate != null) {
+                delegate.searchStateChanged(true);
+            }
             Utilities.searchQueue.postRunnable(searchRunnable = () -> {
                 searchRunnable = null;
                 searchDialogsInternal(query, searchId);

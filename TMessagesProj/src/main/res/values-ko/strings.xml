@@ -37,7 +37,7 @@
     <string name="DidNotGetTheCode">코드를 받지 못하셨나요?</string>
     <string name="DidNotGetTheCodeSms">코드를 SMS로 보내기</string>
     <string name="CancelAccountReset">계정 초기화 취소</string>
-    <string name="CancelAccountResetInfo">전화번호 **%1$s**에 접근할 권한이 있는 누군가가 회원님의 텔레그램 계정을 삭제하고 2단계 인증 비밀번호를 초기화하도록 요청했습니다.\n\n본인이 아닌 경우, 방금 SMS를 통해 회원님의 번호로 보내 드린 코드를 입력해 주세요.</string>
+    <string name="CancelAccountResetInfo2">Somebody with access to **%1$s** has requested to delete your Telegram account and reset your 2-Step Verification password.\n\nIf this wasn\'t you, please enter the code we\'ve just sent you via SMS. You can also cancel this by *changing your phone number*.</string>
     <string name="ResetAccount">계정 초기화</string>
     <string name="ResetAccountInfo">계정 **%1$s**이 비밀번호로 보호되어 있기에, 보안 목적으로 1주일 뒤에 이 계정을 삭제할 것입니다.\n\n이 작업은 언제든지 취소하실 수 있습니다.</string>
     <string name="ResetAccountStatus">아래 시간이 지나야 계정을 초기화하실 수 있습니다:</string>
@@ -223,6 +223,9 @@
     <string name="ArchiveHintHeader3">고정된 대화방</string>
     <string name="ArchiveHintText3">보관한 대화방들은 개수 제한 없이 맨 위에 고정하실 수 있습니다.</string>
     <string name="ScheduledOrNoSoundHint">이 버튼을 길게 눌러 메시지를 예약하거나 메시지를 소리 없이 보내세요.</string>
+    <string name="HideNewChatsAlertTitle">Hide new chats?</string>
+    <string name="HideNewChatsAlertText">연락처 목록에 없는 사용자에게서 새로운 메시지를 많이 받고 계십니다. 해당 대화방에 **자동 알림 끄기**와 **보관**을 적용하시겠습니까?</string>
+    <string name="GoToSettings">GO TO SETTINGS</string>
     <!--channels-->
     <string name="SetAsAdmin">관리자로 승격</string>
     <string name="EditAdminRights">관리자 권한 수정</string>
@@ -326,6 +329,7 @@
     <string name="ChannelBots">봇</string>
     <string name="ChannelOtherMembers">나머지 참가자</string>
     <string name="ChannelOtherSubscribers">나머지 구독자</string>
+    <string name="ChannelOtherSubscriberJoined">joined %1$s</string>
     <string name="ChannelRestrictedUsers">제한된 사용자</string>
     <string name="ChannelAdministrators">관리자</string>
     <string name="ChannelDelete">채널 삭제</string>
@@ -339,6 +343,7 @@
     <string name="ChannelPublicEmptyUsername">사람들이 이 채널을 검색하여 찾고 공유할 수 있도록 링크를 설정해 주세요.\n\n이를 꺼리신다면, 비공개 채널을 추천해 드립니다.</string>
     <string name="ActionCreateChannel">채널이 만들어졌습니다</string>
     <string name="ActionChannelChangedPhoto">채널 사진이 바뀌었습니다</string>
+    <string name="ActionChannelChangedVideo">Channel video changed</string>
     <string name="ActionChannelRemovedPhoto">채널 사진이 제거되었습니다</string>
     <string name="ActionChannelChangedTitle">채널명이 un2(으)로 바뀌었습니다</string>
     <string name="ChangePublicLimitReached">죄송하지만, 공개 사용자명을 너무 많이 가지셨습니다. 다른 그룹이나 채널의 링크를 하나 폐기하거나, 비공개 그룹으로 바꾸세요.</string>
@@ -377,6 +382,7 @@
     <string name="ChannelCantSendMessage">죄송합니다. 이 채널에 메시지를 보내실 수 없습니다.</string>
     <string name="ChannelAddedByNotification">%1$s 님이 나를 %2$s 채널에 초대했습니다</string>
     <string name="ChannelPhotoEditNotification">%1$s 채널 사진이 업데이트되었습니다</string>
+    <string name="ChannelVideoEditNotification">Channel %1$s updated its video</string>
     <string name="ChannelMessageNoText">%1$s에서 메시지를 게시했습니다</string>
     <string name="ChannelMessagePhoto">%1$s에서 사진을 게시했습니다</string>
     <string name="ChannelMessageVideo">%1$s 채널이 동영상을 게시했습니다</string>
@@ -467,6 +473,8 @@
     <string name="ManageGroupMenu">그룹 관리</string>
     <string name="ManageChannelMenu">채널 관리</string>
     <string name="ChatHistory">새로운 참가자에게 기존 대화 내용을</string>
+    <string name="ChatSetNewPhoto">Set New Photo</string>
+    <string name="ChatSetPhotoOrVideo">Set Photo or Video</string>
     <string name="ChatHistoryVisible">보임</string>
     <string name="ChatHistoryVisibleInfo">새로운 참가자는 들어오기 전부터 있던 메시지를 볼 수 있습니다.</string>
     <string name="ChatHistoryHidden">숨김</string>
@@ -487,7 +495,10 @@
     <string name="TypeLocationGroup">링크</string>
     <string name="TypeLocationGroupEdit">영구 링크를 추가하려면 누르세요</string>
     <string name="ChoosePhoto">사진 선택</string>
+    <string name="ChoosePhotoOrVideo">Choose photo or video</string>
+    <string name="AddPhoto">Set new photo</string>
     <string name="ChooseTakePhoto">카메라</string>
+    <string name="ChooseRecordVideo">Record video</string>
     <string name="ChooseFromGallery">갤러리</string>
     <string name="SelectFromGallery">갤러리</string>
     <string name="ChooseFromSearch">웹 검색</string>
@@ -619,6 +630,8 @@
     <string name="EventLogChannelJoined">un1 님이 채널에 들어왔습니다</string>
     <string name="EventLogEditedGroupPhoto">un1 님이 그룹 사진을 새로 설정했습니다</string>
     <string name="EventLogEditedChannelPhoto">un1 님이 채널 사진을 새로 설정했습니다</string>
+    <string name="EventLogEditedGroupVideo">un1 set a new group video</string>
+    <string name="EventLogEditedChannelVideo">un1 set a new channel video</string>
     <string name="EventLogRemovedWGroupPhoto">un1 님이 그룹 사진을 제거했습니다</string>
     <string name="EventLogRemovedChannelPhoto">un1 님이 채널 사진을 제거했습니다</string>
     <string name="EventLogEditedMessages">un1 님이 아래 메시지를 수정했습니다:</string>
@@ -702,10 +715,13 @@
     <string name="NoAudioFilesInfo">음악 라이브러리가 비었습니다</string>
     <string name="NoAudioFound">검색 결과가 없습니다</string>
     <string name="NoAudioFoundInfo">음악 라이브러리에 **%1$s**와 같은 것이 없습니다.</string>
+    <string name="NoAudioFoundPlayerInfo">There are no matches for **%1$s**.</string>
     <string name="AttachMusic">음악</string>
     <string name="AudioUnknownArtist">알 수 없는 아티스트</string>
     <string name="AudioUnknownTitle">알 수 없는 제목</string>
-    <string name="Shuffle">섞기</string>
+    <string name="RepeatSong">Repeat song</string>
+    <string name="RepeatList">Repeat list</string>
+    <string name="ShuffleList">Shuffle list</string>
     <string name="ReverseOrder">역순</string>
     <!--documents view-->
     <string name="SelectFile">파일 선택</string>
@@ -971,7 +987,7 @@
     <string name="MessageScheduledReminderNotification">&#128197; 알림</string>
     <string name="OneResult">1건의 결과</string>
     <string name="VideoQualityIsTooLow">압축 설정을 바꾸기엔 동영상 품질이 너무 낮습니다.</string>
-    <string name="TextSelectionHit">**낱말**을 꾹 잡고선, 커서를 움직여 복사할 글을 늘리세요.</string>
+    <string name="TextSelectionHit">**낱말**을 꾹 잡고선, 커서를 움직여 복사할 글을 조정하세요.</string>
     <string name="CardNumberCopied">카드 번호가 클립보드에 복사되었습니다</string>
     <string name="CopyCardNumber">복사</string>
     <string name="DiceInfo2">대화방에 **:dice:**를 보내어 주사위를 굴리세요.</string>
@@ -989,6 +1005,15 @@
     <string name="PsaHideChatAlertTitle">대화방 가리기</string>
     <string name="PsaHideChatAlertText">정말 이 대화방을 가리시겠습니까?</string>
     <string name="PsaHide">가리기</string>
+    <string name="NearbyPeopleGreetingsDescription">Send a message or tap on the greeting below to show that you are ready to chat.</string>
+    <string name="NearbyPeopleGreetingsMessage">%1$s is %2$s</string>
+    <string name="ChatDistanceToPeer">%1$s is %2$s</string>
+    <string name="ChatWasMovedToMainList">The chat was moved to your main list.</string>
+    <string name="SecretChatTimerDays">d</string>
+    <string name="SecretChatTimerSeconds">s</string>
+    <string name="SecretChatTimerMinutes">m</string>
+    <string name="SecretChatTimerHours">h</string>
+    <string name="SecretChatTimerWeeks">w</string>
     <!--notification-->
     <string name="MessageLifetimeChanged">%1$s 님이 자동 삭제 타이머를 %2$s(으)로 맞췄습니다</string>
     <string name="MessageLifetimeChangedOutgoing">자동 삭제 타이머를 %1$s(으)로 맞추셨습니다</string>
@@ -1043,6 +1068,7 @@
     <string name="NotificationInvitedToGroup">%1$s님이 %2$s 그룹에 초대했습니다</string>
     <string name="NotificationEditedGroupName">%1$s 님이 %2$s 그룹명을 바꿨습니다</string>
     <string name="NotificationEditedGroupPhoto">%1$s 님이 %2$s 그룹 사진을 바꿨습니다</string>
+    <string name="NotificationEditedGroupVideo">%1$s changed the group video for %2$s</string>
     <string name="NotificationGroupAddMember">%1$s 님이 %3$s 님을 %2$s 그룹에 초대했습니다</string>
     <string name="NotificationGroupAddSelf">%1$s 님이 %2$s 그룹에 돌아왔습니다</string>
     <string name="NotificationGroupAddSelfMega">%1$s 님이 %2$s 그룹에 들어왔습니다</string>
@@ -1147,6 +1173,11 @@
     <string name="MembersCountZero">최대 %1$s</string>
     <string name="JoinToGroupErrorFull">죄송합니다. 이 그룹은 이미 가득 찼습니다.</string>
     <string name="JoinToGroupErrorNotExist">죄송하지만, 대화방이 없어진 모양입니다.</string>
+    <string name="JoinByPeekChannelText">This channel is private. Please join it to continue viewing its content.</string>
+    <string name="JoinByPeekGroupText">This group is private. Please join it to continue viewing its content.</string>
+    <string name="JoinByPeekChannelTitle">Join Channel</string>
+    <string name="JoinByPeekGroupTitle">Join Group</string>
+    <string name="JoinByPeekJoin">JOIN</string>
     <string name="LinkCopied">링크를 클립보드에 복사했습니다</string>
     <string name="LinkCopiedPrivate">링크가 클립보드에 복사되었습니다.\n이 링크는 이 대화방의 참가자에게만 작동합니다.</string>
     <string name="LinkNotFound">안타깝게도 이 메시지에 접근하실 수 없습니다. 회원님은 메시지가 게시된 대화방의 참가자가 아닙니다.</string>
@@ -1776,7 +1807,7 @@
     <string name="AutodownloadPrivateChats">개인 대화</string>
     <string name="AutodownloadGroupChats">그룹 대화</string>
     <string name="AutodownloadChannels">채널</string>
-    <string name="AutodownloadSizeLimit">용량 제한</string>
+    <string name="AutodownloadSizeLimit">크기 제한</string>
     <string name="AutodownloadSizeLimitUpTo">최대 %1$s</string>
     <string name="Streaming">스트리밍</string>
     <string name="EnableStreaming">동영상 및 음악 파일 스트리밍</string>
@@ -1834,6 +1865,7 @@
     <string name="AuthAnotherClientInfo3">회원님의 계정을 연결하려면 QR 코드를 스캔하세요.</string>
     <string name="AuthAnotherClientUrl">이 코드는 누군가가 회원님의 텔레그램 계정에 로그인할 수 있도록 하는 데 사용될 수 있습니다.\n\n텔레그램 로그인을 인증하려면, 설정 &gt; 디바이스 &gt; QR 코드 스캔으로 이동하여 코드를 스캔해 주세요.</string>
     <string name="QRCodePermissionNoCamera">Telegram needs access to your camera so that you can scan QR codes.</string>
+    <string name="SetProfilePhoto">Set Profile Photo</string>
     <!--cache view-->
     <string name="LocalDatabase">로컬 데이터베이스</string>
     <string name="LocalDatabaseClearTextTitle">로컬 데이터베이스 비우기</string>
@@ -1851,7 +1883,7 @@
     <string name="LocalCache">다른 파일</string>
     <string name="CacheEmpty">비어 있음</string>
     <string name="KeepMedia">미디어 저장 기간</string>
-    <string name="KeepMediaInfo">이 기간 동안 회원님이 **접근하지 않으신** 클라우드 대화방의 사진, 동영상과 그 밖의 파일들이 디스크 공간을 절약하기 위해 이 기기에서 제거됩니다.\n\n모든 미디어는 텔레그램 클라우드에 남으며 언제든지 다시 다운로드하실 수 있습니다.</string>
+    <string name="KeepMediaInfo">이 기간 동안 회원님이 **접근하지 않으신** 클라우드 대화방의 사진, 동영상과 그 밖의 파일들이 디스크 공간 확보를 위해 이 기기에서 제거됩니다.\n\n모든 미디어는 텔레그램 클라우드에 남으며 필요할 때 다시 다운로드하실 수 있습니다.</string>
     <string name="KeepMediaForever">무기한</string>
     <string name="AudioAutodownload">음성 메시지</string>
     <string name="VideoMessagesAutodownload">동영상 메시지</string>
@@ -2146,13 +2178,13 @@
     <string name="FilterAvailableText">*설정 &gt; 폴더*를 열어 대화방을 폴더로 정리하세요.</string>
     <string name="FilterNameNonMuted">알림 켜짐</string>
     <string name="FilterNameUnread">읽지 않음</string>
-    <string name="FilterAddTo">Add to folder</string>
-    <string name="FilterRemoveFrom">Remove from folder</string>
+    <string name="FilterAddTo">폴더에 추가</string>
+    <string name="FilterRemoveFrom">폴더에서 제거</string>
     <string name="FilterChoose">Choose a folder</string>
     <string name="FilterUserAddedToExisting">**%1$s** added to **%2$s**</string>
     <string name="FilterChatAddedToExisting">**%1$s** added to **%2$s**</string>
     <string name="FilterChatsAddedToExisting">**%1$s** added to **%2$s**</string>
-    <string name="FilterUserRemovedFrom">**%1$s** removed from **%2$s**</string>
+    <string name="FilterUserRemovedFrom">**%1$s**을(를) **%2$s**에서 제거했습니다</string>
     <string name="FilterChatRemovedFrom">**%1$s** removed from **%2$s**</string>
     <string name="FilterChatsRemovedFrom">**%1$s** removed from **%2$s**</string>
     <string name="FilterAddToAlertFullTitle">Limit reached</string>
@@ -2226,6 +2258,10 @@
     <string name="KMetersAway2">%1$s km 떨어짐</string>
     <string name="FootsAway">%1$s ft 떨어짐</string>
     <string name="MilesAway">%1$s mi 떨어짐</string>
+    <string name="MetersFromYou2">%1$s m from&#160;you</string>
+    <string name="KMetersFromYou2">%1$s km from&#160;you</string>
+    <string name="FootsFromYou">%1$s ft from&#160;you</string>
+    <string name="MilesFromYou">%1$s mi from&#160;you</string>
     <string name="Directions">가는 길</string>
     <string name="NoPlacesFound">장소를 찾지 못했습니다</string>
     <string name="NoPlacesFoundInfo">주변에 **%1$s** 같은 곳이 없습니다.</string>
@@ -2252,7 +2288,7 @@
     <string name="SendLiveLocationFor8h">8시간 동안</string>
     <string name="LocationUpdated">갱신됨</string>
     <string name="LocationUpdatedFormatted">%1$s 전 갱신됨</string>
-    <string name="LocationUpdatedJustNow">방금 갱신됨</string>
+    <string name="LocationUpdatedJustNow">방금 업데이트됨</string>
     <string name="SharingYouAndOtherName">나와 %1$s 님</string>
     <string name="AttachLiveLocationIsSharing">%1$s를 %2$s와 공유 중</string>
     <string name="StopAllLocationSharings">모두 중단</string>
@@ -2328,6 +2364,7 @@
     <string name="Grain">그레인</string>
     <string name="Sharpen">선명</string>
     <string name="Fade">흐림</string>
+    <string name="SoftenSkin">Soften Skin</string>
     <string name="TintShadows">그림자</string>
     <string name="TintHighlights">하이라이트</string>
     <string name="CurvesAll">모두</string>
@@ -2343,7 +2380,11 @@
     <string name="AreYouSureDeleteVideo">이 동영상을 정말 삭제하시겠습니까?</string>
     <string name="AreYouSureDeleteGIFTitle">GIF 삭제</string>
     <string name="AreYouSureDeleteGIF">정말 이 GIF를 삭제하시겠습니까?</string>
+    <string name="AreYouSureDeletePhotoEveryone">Are you sure you want to delete this photo for everyone?</string>
+    <string name="AreYouSureDeleteVideoEveryone">Are you sure you want to delete this video for everyone?</string>
+    <string name="AreYouSureDeleteGIFEveryone">Are you sure you want to delete this GIF for everyone?</string>
     <string name="DiscardChanges">변경 사항을 삭제할까요?</string>
+    <string name="PhotoEditorDiscardAlert">Are you sure you want to discard all changes?</string>
     <string name="ClearSearch">검색 기록을 비울까요?</string>
     <string name="ClearSearchAlert">정말 검색 기록을 비우시겠습니까?</string>
     <string name="ClearSearchAlertTitle">검색 기록 비우기</string>
@@ -2359,10 +2400,14 @@
     <string name="Caption">설명</string>
     <string name="PaintDelete">삭제</string>
     <string name="PaintEdit">수정</string>
+    <string name="PaintPen">Pen</string>
+    <string name="PaintMarker">Marker</string>
+    <string name="PaintNeon">Neon</string>
+    <string name="PaintArrow">Arrow</string>
     <string name="PaintDuplicate">복제</string>
     <string name="PaintOutlined">외곽선</string>
     <string name="PaintRegular">일반</string>
-    <string name="PaintFramed">Framed</string>
+    <string name="PaintFramed">프레임</string>
     <string name="CropReset">초기화</string>
     <string name="CropOriginal">원본</string>
     <string name="CropSquare">정방형</string>
@@ -2370,6 +2415,15 @@
     <string name="GroupPhotosHelp">미디어를 하나의 메시지로 묶기</string>
     <string name="SendWithoutGrouping">묶지 않고 보내기</string>
     <string name="SendWithoutCompression">압축 없이 보내기</string>
+    <string name="ChooseCover">Choose a cover for your profile video</string>
+    <string name="SetAsMain">Set as main</string>
+    <string name="EditPhoto">Open in editor</string>
+    <string name="MainProfilePhotoSetHint">This is your main profile photo now.</string>
+    <string name="MainProfileVideoSetHint">This is your main profile video now.</string>
+    <string name="MainChannelProfilePhotoSetHint">This is the main channel photo now.</string>
+    <string name="MainChannelProfileVideoSetHint">This is the main channel video now.</string>
+    <string name="MainGroupProfilePhotoSetHint">This is the main group photo now.</string>
+    <string name="MainGroupProfileVideoSetHint">This is the main group video now.</string>
     <!--password view-->
     <string name="TwoStepVerification">2단계 인증</string>
     <string name="TwoStepVerificationTitle">2단계 인증</string>
@@ -2404,7 +2458,7 @@
     <string name="YourPasswordSuccessText">2단계 인증 비밀번호가 활성화되었습니다.</string>
     <string name="YourPasswordChangedSuccessText">Your password for Two-Step Verification has been changed.</string>
     <string name="YourEmailSuccessText">2단계 인증용 복구 이메일이 이제 작동합니다.</string>
-    <string name="YourEmailSuccessChangedText">Your recovery email for Two-Step Verification is changed.</string>
+    <string name="YourEmailSuccessChangedText">Your recovery email for Two-Step Verification has been changed.</string>
     <string name="ChangePassword">비밀번호 바꾸기</string>
     <string name="TurnPasswordOff">비밀번호 끄기</string>
     <string name="SetRecoveryEmail">복구 이메일 설정하기</string>
@@ -2435,6 +2489,7 @@
     <string name="RestoreEmailSent">제공하신 이메일로 복구 코드를 보냈습니다:\n\n%1$s</string>
     <string name="RestoreEmailSentInfo">이메일을 확인하여 보내 드린 6자리 코드를 입력해 주세요.</string>
     <string name="RestoreEmailTrouble">%1$s 이메일에 접근하는 데 문제가 있으신가요?</string>
+    <string name="RestoreEmailTroubleNoEmail">Having trouble accessing your email?</string>
     <string name="RestoreEmailTroubleText">이메일에 접근하지 못한다면, 비밀번호를 기억해 내거나 계정을 초기화하시는 수밖에 없습니다.</string>
     <string name="ResetMyAccount">계정 초기화</string>
     <string name="ResetMyAccountText">계정 초기화를 진행하시면, 대화방, 메시지와 더불어 공유한 미디어와 파일이 모두 사라집니다.</string>
@@ -2527,8 +2582,12 @@
     <string name="P2PNobodyPlus">없음 (+%1$d)</string>
     <string name="SecurityTitle">보안</string>
     <string name="DeleteAccountTitle">계정 자동 탈퇴</string>
-    <string name="PrivacyAdvanced">고급</string>
+    <string name="NewChatsFromNonContacts">New chats from unknown users</string>
+    <string name="ArchiveAndMute">Archive and Mute</string>
+    <string name="ArchiveAndMuteInfo">Automatically archive and mute new chats, groups and channels from non-contacts.</string>
+    <string name="DeleteMyAccount">Delete my account</string>
     <string name="DeleteAccountIfAwayFor2">다음 기간 내 미접속 시 계정 탈퇴</string>
+    <string name="DeleteAccountIfAwayFor3">If away for</string>
     <string name="DeleteAccountHelp">이 기간 안에 한 번이라도 접속하지 않으시면, 모든 그룹, 메시지, 연락처와 더불어 회원님의 계정이 사라집니다.</string>
     <string name="LastSeenTitle">내 마지막 접속 시간을 볼 수 있는 사람</string>
     <string name="AddExceptions">예외 추가</string>
@@ -2627,6 +2686,7 @@
     <string name="ActionAddUser">un1 님이 un2 님을 추가했습니다</string>
     <string name="ActionRemovedPhoto">un1 님이 그룹 사진을 제거했습니다</string>
     <string name="ActionChangedPhoto">un1 님이 그룹 사진을 바꿨습니다</string>
+    <string name="ActionChangedVideo">un1 changed the group video</string>
     <string name="ActionChangedTitle">un1 님이 그룹명을 un2(으)로 바꿨습니다</string>
     <string name="ActionCreateGroup">un1 님이 그룹을 만들었습니다</string>
     <string name="ActionYouKickUser">un2 님을 추방하셨습니다</string>
@@ -2638,6 +2698,7 @@
     <string name="ActionUserScoredInGame">un1님이 un2에서 %1$s점 획득</string>
     <string name="ActionYouRemovedPhoto">그룹 사진을 삭제하셨습니다</string>
     <string name="ActionYouChangedPhoto">그룹 사진을 바꾸셨습니다</string>
+    <string name="ActionYouChangedVideo">You changed the group video</string>
     <string name="ActionYouChangedTitle">그룹명을 un2(으)로 바꾸셨습니다</string>
     <string name="ActionYouCreateGroup">그룹을 만드셨습니다</string>
     <string name="ActionKickUserYou">un1 님이 나를 추방했습니다</string>
@@ -2680,7 +2741,7 @@
     <string name="ActionTakeScreenshootYou">회원님이 스크린샷을 찍었습니다!</string>
     <string name="ActionTakeScreenshoot">un1 님이 스크린샷을 찍었습니다!</string>
     <!--too many communities-->
-    <string name="LimitReached">한계에 이름</string>
+    <string name="LimitReached">상한선에 다다름</string>
     <string name="InactiveChats">활동 없는 대화방</string>
     <string name="InactiveChannelSignature">채널, %1$s 간 활동 없음</string>
     <string name="InactiveChatSignature">%1$s, %2$s 간 활동 없음</string>
@@ -2692,7 +2753,7 @@
     <string name="UserChannelTooMuchJoin">죄송합니다. 해당 사용자가 너무 많은 그룹과 채널에 들어가 있습니다.\n먼저 몇 곳을 나가도록 요청해 주세요.</string>
     <!--Alert messages-->
     <string name="DeleteAllMessagesAlert">잠깐! **참가자 서로에게서** 이 대화방의 **모든 메시지가 삭제**됩니다.</string>
-    <string name="DeleteAllMessagesSavedAlert">Warning! This will **delete all messages** in this chat.</string>
+    <string name="DeleteAllMessagesSavedAlert">경고! 이 대화방의 **모든 메시지**가 삭제됩니다.</string>
     <string name="DeleteAll">모두 삭제</string>
     <string name="StopLoading">불러오기를 중단할까요?</string>
     <string name="UpdateTelegram">텔레그램을 업데이트하세요</string>
@@ -2848,6 +2909,52 @@
     <string name="LocalDatabaseSize">%s 텔레그램 로컬 데이터베이스</string>
     <string name="CacheWasCleared">%s를 회원님 기기에 확보했습니다!</string>
     <string name="TotalDeviceSize">%s 기타 데이터</string>
+    <string name="GroupMembersChartTitle">Group members</string>
+    <string name="NewMembersBySourceChartTitle">New members by source</string>
+    <string name="MembersLanguageChartTitle">Members\' primary language</string>
+    <string name="MessagesChartTitle">Messages</string>
+    <string name="ActionsChartTitle">Actions</string>
+    <string name="MembersOverviewTitle">Members</string>
+    <string name="MessagesOverview">Messages</string>
+    <string name="ViewingMembers">Viewing members</string>
+    <string name="PostingMembers">Posting Members</string>
+    <string name="Characters_zero">%1$d symbols</string>
+    <string name="Characters_one">%1$d symbol</string>
+    <string name="Characters_two">%1$d symbols</string>
+    <string name="Characters_few">%1$d symbols</string>
+    <string name="Characters_many">%1$d symbols</string>
+    <string name="Characters_other">%1$d symbols</string>
+    <string name="Deletions_zero">%1$d deletions</string>
+    <string name="Deletions_one">%1$d deletion</string>
+    <string name="Deletions_two">%1$d deletions</string>
+    <string name="Deletions_few">%1$d deletions</string>
+    <string name="Deletions_many">%1$d deletions</string>
+    <string name="Deletions_other">%1$d deletions</string>
+    <string name="Bans_zero">%1$d bans</string>
+    <string name="Bans_one">%1$d ban</string>
+    <string name="Bans_two">%1$d bans</string>
+    <string name="Bans_few">%1$d bans</string>
+    <string name="Bans_many">%1$d bans</string>
+    <string name="Bans_other">%1$d bans</string>
+    <string name="Restrictions_zero">%1$d restrictions</string>
+    <string name="Restrictions_one">%1$d restriction</string>
+    <string name="Restrictions_two">%1$d restrictions</string>
+    <string name="Restrictions_few">%1$d restrictions</string>
+    <string name="Restrictions_many">%1$d restrictions</string>
+    <string name="Restrictions_other">%1$d restrictions</string>
+    <string name="Invitations_zero">%1$d invitations</string>
+    <string name="Invitations_one">%1$d invitation</string>
+    <string name="Invitations_two">%1$d invitations</string>
+    <string name="Invitations_few">%1$d invitations</string>
+    <string name="Invitations_many">%1$d invitations</string>
+    <string name="Invitations_other">%1$d invitations</string>
+    <string name="TopAdmins">Top admins</string>
+    <string name="TopMembers">Top members</string>
+    <string name="TopInviters">Top inviters</string>
+    <string name="CharactersPerMessage">%s per message</string>
+    <string name="TopDaysOfWeekChartTitle">Top days of week</string>
+    <string name="StatisticSearchUserHistory">View Messages</string>
+    <string name="StatisticOpenProfile">Open Profile</string>
     <!--Intro view-->
     <string name="Page1Title">텔레그램</string>
     <string name="Page2Title">눈부신 속도</string>
@@ -3392,6 +3499,7 @@
     <string name="AccDescrSecretChat">비밀 대화</string>
     <string name="AccDescrSentDate">%s 보냄</string>
     <string name="AccDescrReceivedDate">%s 받음</string>
+    <string name="AccDescrScheduledDate">Scheduled for %s</string>
     <string name="AccDescrGoBack">돌아가기</string>
     <string name="AccDescrOpenMenu">네비게이션 메뉴 열기</string>
     <string name="AccDescrMusicInfo">%2$s로 %1$s</string>
@@ -3448,6 +3556,7 @@
     <string name="AccDescrCollapsePanel">패널 모으기</string>
     <string name="AccDescrUserOptions">사용자 옵션</string>
     <string name="AccDescrRotate">회전</string>
+    <string name="AccDescrMirror">Mirror</string>
     <string name="AccDescrPhotoEditor">사진 편집기</string>
     <string name="AccDescrPhotoAdjust">조정</string>
     <string name="AccDescrPhotoViewer">사진 뷰어</string>
@@ -3462,6 +3571,8 @@
     <string name="AccDescrTakeMorePics">사진 한 장 더 찍기</string>
     <string name="AccDescrMsgRead">접속함</string>
     <string name="AccDescrMsgUnread">접속 안 함</string>
+    <string name="AccDescrMsgSending">Sending</string>
+    <string name="AccDescrMsgSendingError">Sending error</string>
     <string name="AccDescrMsgNotPlayed">미재생</string>
     <string name="AccDescrSearchNext">다음 검색 결과</string>
     <string name="AccDescrSearchPrev">이전 검색 결과</string>
@@ -3472,6 +3583,36 @@
     <string name="AccReleaseForArchive">놓아서 보관함 보기</string>
     <string name="AccDescrVideoCompressLow">더 작은 크기</string>
     <string name="AccDescrVideoCompressHigh">나은 품질</string>
+    <string name="AccDescrPlayerDuration">%1$s of %2$s</string>
+    <string name="AccDescrDownloadProgress">Downloaded %1$s of %2$s</string>
+    <string name="AccDescrUploadProgress">Uploaded %1$s of %2$s</string>
+    <string name="AccDescrNumberOfViews_one">Viewed %1$d time</string>
+    <string name="AccDescrNumberOfViews_two">Viewed %1$d times</string>
+    <string name="AccDescrNumberOfViews_few">Viewed %1$d times</string>
+    <string name="AccDescrNumberOfViews_many">Viewed %1$d times</string>
+    <string name="AccDescrNumberOfViews_other">Viewed %1$d times</string>
+    <string name="AccDescrSendPhotos_one">Send %1$d photo</string>
+    <string name="AccDescrSendPhotos_two">Send %1$d photos</string>
+    <string name="AccDescrSendPhotos_few">Send %1$d photos</string>
+    <string name="AccDescrSendPhotos_many">Send %1$d photos</string>
+    <string name="AccDescrSendPhotos_other">Send %1$d photos</string>
+    <string name="AccDescrSendFiles_one">Send %1$d file</string>
+    <string name="AccDescrSendFiles_two">Send %1$d files</string>
+    <string name="AccDescrSendFiles_few">Send %1$d files</string>
+    <string name="AccDescrSendFiles_many">Send %1$d files</string>
+    <string name="AccDescrSendFiles_other">Send %1$d files</string>
+    <string name="AccDescrSendAudio_one">Send %1$d audio file</string>
+    <string name="AccDescrSendAudio_two">Send %1$d audio files</string>
+    <string name="AccDescrSendAudio_few">Send %1$d audio files</string>
+    <string name="AccDescrSendAudio_many">Send %1$d audio files</string>
+    <string name="AccDescrSendAudio_other">Send %1$d audio files</string>
+    <string name="AccDescrShareInChats_one">Share in %1$d chat</string>
+    <string name="AccDescrShareInChats_two">Share in %1$d chats</string>
+    <string name="AccDescrShareInChats_few">Share in %1$d chats</string>
+    <string name="AccDescrShareInChats_many">Share in %1$d chats</string>
+    <string name="AccDescrShareInChats_other">Share in %1$d chats</string>
+    <string name="AccDescrQuizCorrectAnswer">Correct answer</string>
+    <string name="AccDescrPipMode">Picture-in-Picture mode</string>
     <!--date formatters-->
     <string name="formatterStats12H">yyyy년 MMM dd일 h:mm a</string>
     <string name="formatterStats24H">yyyy년 MMM dd일 HH:mm</string>

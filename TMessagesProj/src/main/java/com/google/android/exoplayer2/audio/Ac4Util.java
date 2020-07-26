@@ -15,6 +15,7 @@
  */
 package com.google.android.exoplayer2.audio;
 
+import androidx.annotation.Nullable;
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.Format;
 import com.google.android.exoplayer2.drm.DrmInitData;
@@ -57,6 +58,11 @@ public final class Ac4Util {
   // TODO: Parse AC-4 stream channel count.
   private static final int CHANNEL_COUNT_2 = 2;
   /**
+   * The AC-4 sync frame header size for extractor. The seven bytes are 0xAC, 0x40, 0xFF, 0xFF,
+   * sizeByte1, sizeByte2, sizeByte3. See ETSI TS 103 190-1 V1.3.1, Annex G
+   */
+  public static final int SAMPLE_HEADER_SIZE = 7;
+  /**
    * The header size for AC-4 parser. Only needs to be as big as we need to read, not the full
    * header size.
    */
@@ -95,7 +101,7 @@ public final class Ac4Util {
    * @return The AC-4 format parsed from data in the header.
    */
   public static Format parseAc4AnnexEFormat(
-      ParsableByteArray data, String trackId, String language, DrmInitData drmInitData) {
+      ParsableByteArray data, String trackId, String language, @Nullable DrmInitData drmInitData) {
     data.skipBytes(1); // ac4_dsi_version, bitstream_version[0:5]
     int sampleRate = ((data.readUnsignedByte() & 0x20) >> 5 == 1) ? 48000 : 44100;
     return Format.createAudioSampleFormat(
@@ -217,7 +223,7 @@ public final class Ac4Util {
   /** Populates {@code buffer} with an AC-4 sample header for a sample of the specified size. */
   public static void getAc4SampleHeader(int size, ParsableByteArray buffer) {
     // See ETSI TS 103 190-1 V1.3.1, Annex G.
-    buffer.reset(/* limit= */ 7);
+    buffer.reset(SAMPLE_HEADER_SIZE);
     buffer.data[0] = (byte) 0xAC;
     buffer.data[1] = 0x40;
     buffer.data[2] = (byte) 0xFF;

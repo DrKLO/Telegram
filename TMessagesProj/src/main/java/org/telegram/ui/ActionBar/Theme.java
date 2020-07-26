@@ -83,6 +83,7 @@ import org.telegram.ui.Cells.ThemesHorizontalListCell;
 import org.telegram.ui.Components.AudioVisualizerDrawable;
 import org.telegram.ui.Components.BackgroundGradientDrawable;
 import org.telegram.ui.Components.CombinedDrawable;
+import org.telegram.ui.Components.PathAnimator;
 import org.telegram.ui.Components.RLottieDrawable;
 import org.telegram.ui.Components.ScamDrawable;
 import org.telegram.ui.Components.SvgHelper;
@@ -1988,6 +1989,7 @@ public class Theme {
     public static TextPaint dialogs_onlinePaint;
     public static TextPaint dialogs_offlinePaint;
     public static Drawable dialogs_checkDrawable;
+    public static Drawable dialogs_playDrawable;
     public static Drawable dialogs_checkReadDrawable;
     public static Drawable dialogs_halfCheckDrawable;
     public static Drawable dialogs_clockDrawable;
@@ -2081,6 +2083,7 @@ public class Theme {
     public static MessageDrawable chat_msgOutMediaDrawable;
     public static MessageDrawable chat_msgOutMediaSelectedDrawable;
 
+    public static PathAnimator playPauseAnimator;
     public static Drawable chat_msgOutCheckDrawable;
     public static Drawable chat_msgOutCheckSelectedDrawable;
     public static Drawable chat_msgOutCheckReadDrawable;
@@ -2857,8 +2860,6 @@ public class Theme {
     public static final String key_player_progressBackground2 = "player_progressBackground2";
     public static final String key_player_progressCachedBackground = "key_player_progressCachedBackground";
     public static final String key_player_progress = "player_progress";
-    public static final String key_player_placeholder = "player_placeholder";
-    public static final String key_player_placeholderBackground = "player_placeholderBackground";
     public static final String key_player_button = "player_button";
     public static final String key_player_buttonActive = "player_buttonActive";
 
@@ -2883,6 +2884,7 @@ public class Theme {
     public final static String key_statisticChartLine_lightgreen = "statisticChartLine_lightgreen";
     public final static String key_statisticChartLine_orange = "statisticChartLine_orange";
     public final static String key_statisticChartLine_indigo = "statisticChartLine_indigo";
+    public final static String key_statisticChartLineEmpty = "statisticChartLineEmpty";
 
     private static HashSet<String> myMessagesColorKeys = new HashSet<>();
     private static HashMap<String, Integer> defaultColors = new HashMap<>();
@@ -3455,12 +3457,10 @@ public class Theme {
         defaultColors.put(key_player_actionBarItems, 0xff8a8a8a);
         defaultColors.put(key_player_background, 0xffffffff);
         defaultColors.put(key_player_time, 0xff8c9296);
-        defaultColors.put(key_player_progressBackground, 0xffe9eff5);
+        defaultColors.put(key_player_progressBackground, 0xffEBEDF0);
         defaultColors.put(key_player_progressBackground2, 0xffCCD3DB);
-        defaultColors.put(key_player_progressCachedBackground, 0xffe9eff5);
-        defaultColors.put(key_player_progress, 0xff4b9fe3);
-        defaultColors.put(key_player_placeholder, 0xffa8a8a8);
-        defaultColors.put(key_player_placeholderBackground, 0xfff0f0f0);
+        defaultColors.put(key_player_progressCachedBackground, 0xffC5DCF0);
+        defaultColors.put(key_player_progress, 0xff54AAEB);
         defaultColors.put(key_player_button, 0xff333333);
         defaultColors.put(key_player_buttonActive, 0xff4ca8ea);
 
@@ -3604,6 +3604,7 @@ public class Theme {
         defaultColors.put(key_statisticChartLine_lightgreen, 0xff8FCF39);
         defaultColors.put(key_statisticChartLine_orange, 0xffE3B727);
         defaultColors.put(key_statisticChartLine_indigo, 0xff7F79F3);
+        defaultColors.put(key_statisticChartLineEmpty, 0xFFEEEEEE);
 
         fallbackKeys.put(key_chat_adminText, key_chat_inTimeText);
         fallbackKeys.put(key_chat_adminSelectedText, key_chat_inTimeSelectedText);
@@ -3742,6 +3743,14 @@ public class Theme {
         themeAccentExclusionKeys.add(key_chat_attachGalleryText);
         themeAccentExclusionKeys.add(key_chat_shareBackground);
         themeAccentExclusionKeys.add(key_chat_shareBackgroundSelected);
+        themeAccentExclusionKeys.add(key_statisticChartLine_blue);
+        themeAccentExclusionKeys.add(key_statisticChartLine_green);
+        themeAccentExclusionKeys.add(key_statisticChartLine_red);
+        themeAccentExclusionKeys.add(key_statisticChartLine_golden);
+        themeAccentExclusionKeys.add(key_statisticChartLine_lightblue);
+        themeAccentExclusionKeys.add(key_statisticChartLine_lightgreen);
+        themeAccentExclusionKeys.add(key_statisticChartLine_orange);
+        themeAccentExclusionKeys.add(key_statisticChartLine_indigo);
 
         myMessagesColorKeys.add(key_chat_outGreenCall);
         myMessagesColorKeys.add(key_chat_outBubble);
@@ -4584,18 +4593,26 @@ public class Theme {
 
     public static Drawable getSelectorDrawable(int color, boolean whiteBackground) {
         if (whiteBackground) {
+            return getSelectorDrawable(color, key_windowBackgroundWhite);
+        } else {
+            return createSelectorDrawable(color, 2);
+        }
+    }
+
+    public static Drawable getSelectorDrawable(int color, String backgroundColor) {
+        if (backgroundColor != null) {
             if (Build.VERSION.SDK_INT >= 21) {
                 Drawable maskDrawable = new ColorDrawable(0xffffffff);
                 ColorStateList colorStateList = new ColorStateList(
                         new int[][]{StateSet.WILD_CARD},
                         new int[]{color}
                 );
-                return new RippleDrawable(colorStateList, new ColorDrawable(getColor(key_windowBackgroundWhite)), maskDrawable);
+                return new RippleDrawable(colorStateList, new ColorDrawable(getColor(backgroundColor)), maskDrawable);
             } else {
                 StateListDrawable stateListDrawable = new StateListDrawable();
                 stateListDrawable.addState(new int[]{android.R.attr.state_pressed}, new ColorDrawable(color));
                 stateListDrawable.addState(new int[]{android.R.attr.state_selected}, new ColorDrawable(color));
-                stateListDrawable.addState(StateSet.WILD_CARD, new ColorDrawable(getColor(key_windowBackgroundWhite)));
+                stateListDrawable.addState(StateSet.WILD_CARD, new ColorDrawable(getColor(backgroundColor)));
                 return stateListDrawable;
             }
         } else {
@@ -4676,6 +4693,54 @@ public class Theme {
                 }
             }
             return rippleDrawable;
+        } else {
+            StateListDrawable stateListDrawable = new StateListDrawable();
+            stateListDrawable.addState(new int[]{android.R.attr.state_pressed}, new ColorDrawable(color));
+            stateListDrawable.addState(new int[]{android.R.attr.state_selected}, new ColorDrawable(color));
+            stateListDrawable.addState(StateSet.WILD_CARD, new ColorDrawable(0x00000000));
+            return stateListDrawable;
+        }
+    }
+
+    public static Drawable createRadSelectorDrawable(int color, int topRad, int bottomRad) {
+        Drawable drawable;
+        if (Build.VERSION.SDK_INT >= 21) {
+            maskPaint.setColor(0xffffffff);
+            Drawable maskDrawable = new Drawable() {
+
+                private Path path = new Path();
+                private RectF rect = new RectF();
+                private float[] radii = new float[8];
+
+                @Override
+                public void draw(Canvas canvas) {
+                    radii[0] = radii[1] = radii[2] = radii[3] = AndroidUtilities.dp(topRad);
+                    radii[4] = radii[5] = radii[6] = radii[7] = AndroidUtilities.dp(bottomRad);
+                    rect.set(getBounds());
+                    path.addRoundRect(rect, radii, Path.Direction.CW);
+                    canvas.drawPath(path, maskPaint);
+                }
+
+                @Override
+                public void setAlpha(int alpha) {
+
+                }
+
+                @Override
+                public void setColorFilter(ColorFilter colorFilter) {
+
+                }
+
+                @Override
+                public int getOpacity() {
+                    return PixelFormat.UNKNOWN;
+                }
+            };
+            ColorStateList colorStateList = new ColorStateList(
+                    new int[][]{StateSet.WILD_CARD},
+                    new int[]{color}
+            );
+            return new RippleDrawable(colorStateList, null, maskDrawable);
         } else {
             StateListDrawable stateListDrawable = new StateListDrawable();
             stateListDrawable.addState(new int[]{android.R.attr.state_pressed}, new ColorDrawable(color));
@@ -6538,6 +6603,7 @@ public class Theme {
 
             dialogs_lockDrawable = resources.getDrawable(R.drawable.list_secret);
             dialogs_checkDrawable = resources.getDrawable(R.drawable.list_check).mutate();
+            dialogs_playDrawable = resources.getDrawable(R.drawable.minithumb_play).mutate();
             dialogs_checkReadDrawable = resources.getDrawable(R.drawable.list_check).mutate();
             dialogs_halfCheckDrawable = resources.getDrawable(R.drawable.list_halfcheck);
             dialogs_clockDrawable = resources.getDrawable(R.drawable.msg_clock).mutate();
@@ -6724,6 +6790,15 @@ public class Theme {
             chat_msgInMediaSelectedDrawable = new MessageDrawable(MessageDrawable.TYPE_MEDIA, false, true);
             chat_msgOutMediaDrawable = new MessageDrawable(MessageDrawable.TYPE_MEDIA, true, false);
             chat_msgOutMediaSelectedDrawable = new MessageDrawable(MessageDrawable.TYPE_MEDIA, true, true);
+
+            playPauseAnimator = new PathAnimator(0.293f, -26, -28);
+            playPauseAnimator.addSvgKeyFrame("M 34.141 16.042 C 37.384 17.921 40.886 20.001 44.211 21.965 C 46.139 23.104 49.285 24.729 49.586 25.917 C 50.289 28.687 48.484 30 46.274 30 L 6 30.021 C 3.79 30.021 2.075 30.023 2 26.021 L 2.009 3.417 C 2.009 0.417 5.326 -0.58 7.068 0.417 C 10.545 2.406 25.024 10.761 34.141 16.042 Z", 166);
+            playPauseAnimator.addSvgKeyFrame("M 37.843 17.769 C 41.143 19.508 44.131 21.164 47.429 23.117 C 48.542 23.775 49.623 24.561 49.761 25.993 C 50.074 28.708 48.557 30 46.347 30 L 6 30.012 C 3.79 30.012 2 28.222 2 26.012 L 2.009 4.609 C 2.009 1.626 5.276 0.664 7.074 1.541 C 10.608 3.309 28.488 12.842 37.843 17.769 Z", 200);
+            playPauseAnimator.addSvgKeyFrame("M 40.644 18.756 C 43.986 20.389 49.867 23.108 49.884 25.534 C 49.897 27.154 49.88 24.441 49.894 26.059 C 49.911 28.733 48.6 30 46.39 30 L 6 30.013 C 3.79 30.013 2 28.223 2 26.013 L 2.008 5.52 C 2.008 2.55 5.237 1.614 7.079 2.401 C 10.656 4 31.106 14.097 40.644 18.756 Z", 217);
+            playPauseAnimator.addSvgKeyFrame("M 43.782 19.218 C 47.117 20.675 50.075 21.538 50.041 24.796 C 50.022 26.606 50.038 24.309 50.039 26.104 C 50.038 28.736 48.663 30 46.453 30 L 6 29.986 C 3.79 29.986 2 28.196 2 25.986 L 2.008 6.491 C 2.008 3.535 5.196 2.627 7.085 3.316 C 10.708 4.731 33.992 14.944 43.782 19.218 Z", 234);
+            playPauseAnimator.addSvgKeyFrame("M 47.421 16.941 C 50.544 18.191 50.783 19.91 50.769 22.706 C 50.761 24.484 50.76 23.953 50.79 26.073 C 50.814 27.835 49.334 30 47.124 30 L 5 30.01 C 2.79 30.01 1 28.22 1 26.01 L 1.001 10.823 C 1.001 8.218 3.532 6.895 5.572 7.26 C 7.493 8.01 47.421 16.941 47.421 16.941 Z", 284);
+            playPauseAnimator.addSvgKeyFrame("M 47.641 17.125 C 50.641 18.207 51.09 19.935 51.078 22.653 C 51.07 24.191 51.062 21.23 51.088 23.063 C 51.109 24.886 49.587 27 47.377 27 L 5 27.009 C 2.79 27.009 1 25.219 1 23.009 L 0.983 11.459 C 0.983 8.908 3.414 7.522 5.476 7.838 C 7.138 8.486 47.641 17.125 47.641 17.125 Z", 300);
+            playPauseAnimator.addSvgKeyFrame("M 48 7 C 50.21 7 52 8.79 52 11 C 52 19 52 19 52 19 C 52 21.21 50.21 23 48 23 L 4 23 C 1.79 23 0 21.21 0 19 L 0 11 C 0 8.79 1.79 7 4 7 C 48 7 48 7 48 7 Z", 400);
 
             chat_msgOutCheckDrawable = resources.getDrawable(R.drawable.msg_check).mutate();
             chat_msgOutCheckSelectedDrawable = resources.getDrawable(R.drawable.msg_check).mutate();

@@ -34,29 +34,30 @@ public class EmptyTextProgressView extends FrameLayout {
         super(context);
 
         progressBar = new RadialProgressView(context);
-        progressBar.setVisibility(INVISIBLE);
         addView(progressBar, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
 
         textView = new TextView(context);
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
         textView.setTextColor(Theme.getColor(Theme.key_emptyListPlaceholder));
         textView.setGravity(Gravity.CENTER);
-        textView.setVisibility(INVISIBLE);
         textView.setPadding(AndroidUtilities.dp(20), 0, AndroidUtilities.dp(20), 0);
         textView.setText(LocaleController.getString("NoResult", R.string.NoResult));
         addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
+
+        progressBar.setAlpha(0f);
+        textView.setAlpha(0f);
 
         setOnTouchListener((v, event) -> true);
     }
 
     public void showProgress() {
-        textView.setVisibility(INVISIBLE);
-        progressBar.setVisibility(VISIBLE);
+        textView.animate().alpha(0f).setDuration(150).start();
+        progressBar.animate().alpha(1f).setDuration(150).start();
     }
 
     public void showTextView() {
-        textView.setVisibility(VISIBLE);
-        progressBar.setVisibility(INVISIBLE);
+        textView.animate().alpha(1f).setDuration(150).start();
+        progressBar.animate().alpha(0f).setDuration(150).start();
     }
 
     public void setText(String text) {

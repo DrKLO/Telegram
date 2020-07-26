@@ -69,9 +69,20 @@ import java.util.Collections;
       } else if (audioFormat == AUDIO_FORMAT_ALAW || audioFormat == AUDIO_FORMAT_ULAW) {
         String type = audioFormat == AUDIO_FORMAT_ALAW ? MimeTypes.AUDIO_ALAW
             : MimeTypes.AUDIO_MLAW;
-        int pcmEncoding = (header & 0x01) == 1 ? C.ENCODING_PCM_16BIT : C.ENCODING_PCM_8BIT;
-        Format format = Format.createAudioSampleFormat(null, type, null, Format.NO_VALUE,
-            Format.NO_VALUE, 1, 8000, pcmEncoding, null, null, 0, null);
+        Format format =
+            Format.createAudioSampleFormat(
+                /* id= */ null,
+                /* sampleMimeType= */ type,
+                /* codecs= */ null,
+                /* bitrate= */ Format.NO_VALUE,
+                /* maxInputSize= */ Format.NO_VALUE,
+                /* channelCount= */ 1,
+                /* sampleRate= */ 8000,
+                /* pcmEncoding= */ Format.NO_VALUE,
+                /* initializationData= */ null,
+                /* drmInitData= */ null,
+                /* selectionFlags= */ 0,
+                /* language= */ null);
         output.format(format);
         hasOutputFormat = true;
       } else if (audioFormat != AUDIO_FORMAT_AAC) {

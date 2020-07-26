@@ -20,7 +20,7 @@ public class ChartPickerDelegate {
     private final static int CAPTURE_LEFT = 1;
     private final static int CAPTURE_RIGHT = 1 << 1;
     private final static int CAPTURE_MIDDLE = 1 << 2;
-    public int pickerWidth;
+    public float pickerWidth;
     public boolean tryMoveTo;
     public float moveToX;
     public float moveToY;

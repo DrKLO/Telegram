@@ -130,9 +130,9 @@ public final class Download {
       @FailureReason int failureReason,
       DownloadProgress progress) {
     Assertions.checkNotNull(progress);
-    Assertions.checkState((failureReason == FAILURE_REASON_NONE) == (state != STATE_FAILED));
+    Assertions.checkArgument((failureReason == FAILURE_REASON_NONE) == (state != STATE_FAILED));
     if (stopReason != 0) {
-      Assertions.checkState(state != STATE_DOWNLOADING && state != STATE_QUEUED);
+      Assertions.checkArgument(state != STATE_DOWNLOADING && state != STATE_QUEUED);
     }
     this.request = request;
     this.state = state;

@@ -18,6 +18,7 @@ public class Input {
 
     private Point lastLocation;
     private double lastRemainder;
+    private float lastAngle;
 
     private Point[] points = new Point[3];
     private int pointsCount;
@@ -74,6 +75,7 @@ public class Input {
                     pointsCount++;
 
                     if (pointsCount == 3) {
+                        lastAngle = (float) Math.atan2(points[2].y - points[1].y, points[2].x - points[1].x);
                         smoothenAndPaintPoints(false);
                     }
 
@@ -90,6 +92,24 @@ public class Input {
                     reset();
                 } else if (pointsCount > 0) {
                     smoothenAndPaintPoints(true);
+
+                    Brush brush = renderView.getCurrentBrush();
+                    if (brush instanceof Brush.Arrow) {
+                        float arrowLength = renderView.getCurrentWeight() * 4.5f;
+                        float angle = lastAngle;
+                        location = points[pointsCount - 1];
+
+                        Point tip = new Point(location.x, location.y, 0.8f);
+                        Point leftTip = new Point(location.x + Math.cos(angle - Math.PI / 4 * 3) * arrowLength, location.y + Math.sin(angle - Math.PI / 4 * 3.2) * arrowLength, 1.0);
+                        leftTip.edge = true;
+                        Path left = new Path(new Point[]{tip, leftTip});
+                        paintPath(left);
+
+                        Point rightTip = new Point(location.x + Math.cos(angle + Math.PI / 4 * 3) * arrowLength, location.y + Math.sin(angle + Math.PI / 4 * 3.2) * arrowLength, 1.0);
+                        rightTip.edge = true;
+                        Path right = new Path(new Point[]{tip, rightTip});
+                        paintPath(right);
+                    }
                 }
 
                 pointsCount = 0;

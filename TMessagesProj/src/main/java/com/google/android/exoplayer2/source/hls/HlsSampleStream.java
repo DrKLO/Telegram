@@ -62,8 +62,11 @@ import java.io.IOException;
     if (sampleQueueIndex == HlsSampleStreamWrapper.SAMPLE_QUEUE_INDEX_NO_MAPPING_FATAL) {
       throw new SampleQueueMappingException(
           sampleStreamWrapper.getTrackGroups().get(trackGroupIndex).getFormat(0).sampleMimeType);
+    } else if (sampleQueueIndex == HlsSampleStreamWrapper.SAMPLE_QUEUE_INDEX_PENDING) {
+      sampleStreamWrapper.maybeThrowError();
+    } else if (sampleQueueIndex != HlsSampleStreamWrapper.SAMPLE_QUEUE_INDEX_NO_MAPPING_NON_FATAL) {
+      sampleStreamWrapper.maybeThrowError(sampleQueueIndex);
     }
-    sampleStreamWrapper.maybeThrowError();
   }
 
   @Override

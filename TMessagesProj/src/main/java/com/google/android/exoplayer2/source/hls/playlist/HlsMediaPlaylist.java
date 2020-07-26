@@ -16,7 +16,6 @@
 package com.google.android.exoplayer2.source.hls.playlist;
 
 import androidx.annotation.IntDef;
-import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.drm.DrmInitData;
@@ -95,8 +94,8 @@ public final class HlsMediaPlaylist extends HlsPlaylist {
         String uri,
         long byterangeOffset,
         long byterangeLength,
-        String fullSegmentEncryptionKeyUri,
-        String encryptionIV) {
+        @Nullable String fullSegmentEncryptionKeyUri,
+        @Nullable String encryptionIV) {
       this(
           uri,
           /* initializationSegment= */ null,
@@ -154,7 +153,7 @@ public final class HlsMediaPlaylist extends HlsPlaylist {
     }
 
     @Override
-    public int compareTo(@NonNull Long relativeStartTimeUs) {
+    public int compareTo(Long relativeStartTimeUs) {
       return this.relativeStartTimeUs > relativeStartTimeUs
           ? 1 : (this.relativeStartTimeUs < relativeStartTimeUs ? -1 : 0);
     }

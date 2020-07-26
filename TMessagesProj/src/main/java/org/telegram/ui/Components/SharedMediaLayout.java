@@ -146,6 +146,10 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
     private Runnable hideFloatingDateRunnable = () -> hideFloatingDateView(true);
     private ArrayList<View> actionModeViews = new ArrayList<>();
 
+    private float additionalFloatingTranslation;
+
+    private FragmentContextView fragmentContextView;
+
     private int maximumVelocity;
 
     private Paint backgroundPaint = new Paint();
@@ -519,11 +523,17 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                     object.thumb = object.imageReceiver.getBitmapSafe();
                     object.parentView.getLocationInWindow(coords);
                     object.clipTopAddition = 0;
+                    if (fragmentContextView != null && fragmentContextView.getVisibility() == View.VISIBLE) {
+                        object.clipTopAddition += AndroidUtilities.dp(36);
+                    }
 
                     if (PhotoViewer.isShowingImage(messageObject)) {
                         final View pinnedHeader = listView.getPinnedHeader();
                         if (pinnedHeader != null) {
                             int top = 0;
+                            if (fragmentContextView != null && fragmentContextView.getVisibility() == View.VISIBLE) {
+                                top += fragmentContextView.getHeight() - AndroidUtilities.dp(2.5f);
+                            }
                             if (view instanceof SharedDocumentCell) {
                                 top += AndroidUtilities.dp(8f);
                             }
@@ -705,7 +715,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                             MediaController.getInstance().setVoiceMessagesPlaylist(result ? sharedMediaData[MediaDataController.MEDIA_MUSIC].messages : null, false);
                             return result;
                         } else if (messageObject.isMusic()) {
-                            return MediaController.getInstance().setPlaylist(sharedMediaData[MediaDataController.MEDIA_MUSIC].messages, messageObject);
+                            return MediaController.getInstance().setPlaylist(sharedMediaData[MediaDataController.MEDIA_MUSIC].messages, messageObject, mergeDialogId);
                         }
                         return false;
                     }
@@ -880,6 +890,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
         closeButton.setImageDrawable(backDrawable = new BackDrawable(true));
         backDrawable.setColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2));
         closeButton.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_actionBarActionModeDefaultSelector), 1));
+        closeButton.setContentDescription(LocaleController.getString("Close", R.string.Close));
         actionModeLayout.addView(closeButton, new LinearLayout.LayoutParams(AndroidUtilities.dp(54), ViewGroup.LayoutParams.MATCH_PARENT));
         actionModeViews.add(closeButton);
         closeButton.setOnClickListener(v -> closeActionMode());
@@ -1091,15 +1102,9 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                         int user_id;
                         TLObject object = groupUsersSearchAdapter.getItem(position);
                         if (object instanceof TLRPC.ChannelParticipant) {
-                            if (object instanceof TLRPC.TL_channelParticipantCreator) {
-                                return;
-                            }
                             TLRPC.ChannelParticipant channelParticipant = (TLRPC.ChannelParticipant) object;
                             user_id = channelParticipant.user_id;
                         } else if (object instanceof TLRPC.ChatParticipant) {
-                            if (object instanceof TLRPC.TL_chatParticipantCreator) {
-                                return;
-                            }
                             TLRPC.ChatParticipant chatParticipant = (TLRPC.ChatParticipant) object;
                             user_id = chatParticipant.user_id;
                         } else {
@@ -1232,6 +1237,23 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
         floatingDateView.setTranslationY(-AndroidUtilities.dp(48));
         addView(floatingDateView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.CENTER_HORIZONTAL, 0, 48 + 4, 0, 0));
 
+        addView(fragmentContextView = new FragmentContextView(context, parent, this, false), LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 39, Gravity.TOP | Gravity.LEFT, 0, 48, 0, 0));
+        fragmentContextView.setDelegate((start, show) -> {
+            if (show && !start) {
+                for (int a = 0; a < mediaPages.length; a++) {
+                    int translation = (int) mediaPages[a].getTranslationY();
+                    mediaPages[a].setTranslationY(0);
+                    mediaPages[a].setPadding(0, translation, 0, 0);
+                }
+            } else if (!show && start) {
+                for (int a = 0; a < mediaPages.length; a++) {
+                    int translation = mediaPages[a].getPaddingTop();
+                    mediaPages[a].setTranslationY(translation);
+                    mediaPages[a].setPadding(0, 0, 0, 0);
+                }
+            }
+        });
+
         addView(scrollSlidingTextTabStrip, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.LEFT | Gravity.TOP));
         addView(actionModeLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.LEFT | Gravity.TOP));
 
@@ -1278,7 +1300,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
         floatingDateAnimation.setDuration(180);
         floatingDateAnimation.playTogether(
                 ObjectAnimator.ofFloat(floatingDateView, View.ALPHA, 1.0f),
-                ObjectAnimator.ofFloat(floatingDateView, View.TRANSLATION_Y, 0));
+                ObjectAnimator.ofFloat(floatingDateView, View.TRANSLATION_Y, additionalFloatingTranslation));
         floatingDateAnimation.setInterpolator(CubicBezierInterpolator.EASE_OUT);
         floatingDateAnimation.addListener(new AnimatorListenerAdapter() {
             @Override
@@ -1304,7 +1326,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
             floatingDateAnimation.setDuration(180);
             floatingDateAnimation.playTogether(
                     ObjectAnimator.ofFloat(floatingDateView, View.ALPHA, 0.0f),
-                    ObjectAnimator.ofFloat(floatingDateView, View.TRANSLATION_Y, -AndroidUtilities.dp(48)));
+                    ObjectAnimator.ofFloat(floatingDateView, View.TRANSLATION_Y, -AndroidUtilities.dp(48) + additionalFloatingTranslation));
             floatingDateAnimation.setInterpolator(CubicBezierInterpolator.EASE_OUT);
             floatingDateAnimation.addListener(new AnimatorListenerAdapter() {
                 @Override
@@ -1639,6 +1661,16 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
     @Override
     public void forceHasOverlappingRendering(boolean hasOverlappingRendering) {
         super.forceHasOverlappingRendering(hasOverlappingRendering);
+    }
+
+    @Override
+    public void setPadding(int left, int top, int right, int bottom) {
+        for (int a = 0; a < mediaPages.length; a++) {
+            mediaPages[a].setTranslationY(top);
+        }
+        fragmentContextView.setTranslationY(AndroidUtilities.dp(48) + top);
+        additionalFloatingTranslation = top;
+        floatingDateView.setTranslationY((floatingDateView.getTag() == null ? -AndroidUtilities.dp(48) : 0) + additionalFloatingTranslation);
     }
 
     @Override
@@ -2859,7 +2891,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
     }
 
     private void openWebView(TLRPC.WebPage webPage) {
-        EmbedBottomSheet.show(profileActivity.getParentActivity(), webPage.site_name, webPage.description, webPage.url, webPage.embed_url, webPage.embed_width, webPage.embed_height);
+        EmbedBottomSheet.show(profileActivity.getParentActivity(), webPage.site_name, webPage.description, webPage.url, webPage.embed_url, webPage.embed_width, webPage.embed_height, false);
     }
 
     private void recycleAdapter(RecyclerView.Adapter adapter) {
@@ -3139,7 +3171,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                                     MediaController.getInstance().setVoiceMessagesPlaylist(result ? sharedMediaData[currentType].messages : null, false);
                                     return result;
                                 } else if (messageObject.isMusic()) {
-                                    return MediaController.getInstance().setPlaylist(sharedMediaData[currentType].messages, messageObject);
+                                    return MediaController.getInstance().setPlaylist(sharedMediaData[currentType].messages, messageObject, mergeDialogId);
                                 }
                                 return false;
                             }
@@ -3587,7 +3619,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                             }
                             return result;
                         } else if (messageObject.isMusic()) {
-                            return MediaController.getInstance().setPlaylist(searchResult, messageObject);
+                            return MediaController.getInstance().setPlaylist(searchResult, messageObject, mergeDialogId);
                         }
                         return false;
                     }
@@ -3648,7 +3680,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
 
         @Override
         public boolean isEnabled(RecyclerView.ViewHolder holder) {
-            return false;
+            return true;
         }
 
         @Override
@@ -3669,7 +3701,6 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
         @Override
         public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
             ContextLinkCell cell = new ContextLinkCell(mContext, true);
-            cell.setContentDescription(LocaleController.getString("AttachGif", R.string.AttachGif));
             cell.setCanPreviewGif(true);
             return new RecyclerListView.Holder(cell);
         }
@@ -4147,6 +4178,15 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
         arrayList.add(new ThemeDescription(scrollSlidingTextTabStrip.getTabsContainer(), ThemeDescription.FLAG_TEXTCOLOR | ThemeDescription.FLAG_CHECKTAG, new Class[]{TextView.class}, null, null, null, Theme.key_profile_tabSelectedText));
         arrayList.add(new ThemeDescription(scrollSlidingTextTabStrip.getTabsContainer(), ThemeDescription.FLAG_TEXTCOLOR | ThemeDescription.FLAG_CHECKTAG, new Class[]{TextView.class}, null, null, null, Theme.key_profile_tabText));
         arrayList.add(new ThemeDescription(scrollSlidingTextTabStrip.getTabsContainer(), ThemeDescription.FLAG_BACKGROUNDFILTER | ThemeDescription.FLAG_DRAWABLESELECTEDSTATE, new Class[]{TextView.class}, null, null, null, Theme.key_profile_tabSelector));
+
+        arrayList.add(new ThemeDescription(fragmentContextView, ThemeDescription.FLAG_BACKGROUND | ThemeDescription.FLAG_CHECKTAG, new Class[]{FragmentContextView.class}, new String[]{"frameLayout"}, null, null, null, Theme.key_inappPlayerBackground));
+        arrayList.add(new ThemeDescription(fragmentContextView, ThemeDescription.FLAG_IMAGECOLOR, new Class[]{FragmentContextView.class}, new String[]{"playButton"}, null, null, null, Theme.key_inappPlayerPlayPause));
+        arrayList.add(new ThemeDescription(fragmentContextView, ThemeDescription.FLAG_TEXTCOLOR | ThemeDescription.FLAG_CHECKTAG, new Class[]{FragmentContextView.class}, new String[]{"titleTextView"}, null, null, null, Theme.key_inappPlayerTitle));
+        arrayList.add(new ThemeDescription(fragmentContextView, ThemeDescription.FLAG_TEXTCOLOR | ThemeDescription.FLAG_FASTSCROLL, new Class[]{FragmentContextView.class}, new String[]{"titleTextView"}, null, null, null, Theme.key_inappPlayerPerformer));
+        arrayList.add(new ThemeDescription(fragmentContextView, ThemeDescription.FLAG_IMAGECOLOR, new Class[]{FragmentContextView.class}, new String[]{"closeButton"}, null, null, null, Theme.key_inappPlayerClose));
+
+        arrayList.add(new ThemeDescription(fragmentContextView, ThemeDescription.FLAG_BACKGROUND | ThemeDescription.FLAG_CHECKTAG, new Class[]{FragmentContextView.class}, new String[]{"frameLayout"}, null, null, null, Theme.key_returnToCallBackground));
+        arrayList.add(new ThemeDescription(fragmentContextView, ThemeDescription.FLAG_TEXTCOLOR | ThemeDescription.FLAG_CHECKTAG, new Class[]{FragmentContextView.class}, new String[]{"titleTextView"}, null, null, null, Theme.key_returnToCallText));
 
         for (int a = 0; a < mediaPages.length; a++) {
             final int num = a;

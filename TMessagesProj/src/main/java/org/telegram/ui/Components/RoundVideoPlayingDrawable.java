@@ -11,6 +11,7 @@ package org.telegram.ui.Components;
 import android.graphics.Canvas;
 import android.graphics.ColorFilter;
 import android.graphics.Paint;
+import android.graphics.PixelFormat;
 import android.graphics.drawable.Drawable;
 import android.view.View;
 
@@ -90,7 +91,7 @@ public class RoundVideoPlayingDrawable extends Drawable {
 
     @Override
     public void draw(Canvas canvas) {
-        paint.setColor(Theme.getColor(Theme.key_chat_mediaTimeText));
+        paint.setColor(Theme.getColor(Theme.key_chat_serviceText));
         int x = getBounds().left;
         int y = getBounds().top;
         for (int a = 0; a < 3; a++) {
@@ -115,7 +116,7 @@ public class RoundVideoPlayingDrawable extends Drawable {
 
     @Override
     public int getOpacity() {
-        return 0;
+        return PixelFormat.TRANSPARENT;
     }
 
     @Override

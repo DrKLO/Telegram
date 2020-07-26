@@ -40,45 +40,45 @@
           JNIEnv *env, jobject thiz, ##__VA_ARGS__)
 
 class JavaDataSource : public DataSource {
- public:
-  void setFlacDecoderJni(JNIEnv *env, jobject flacDecoderJni) {
-    this->env = env;
-    this->flacDecoderJni = flacDecoderJni;
-    if (mid == NULL) {
-      jclass cls = env->GetObjectClass(flacDecoderJni);
-      mid = env->GetMethodID(cls, "read", "(Ljava/nio/ByteBuffer;)I");
+public:
+    void setFlacDecoderJni(JNIEnv *env, jobject flacDecoderJni) {
+      this->env = env;
+      this->flacDecoderJni = flacDecoderJni;
+      if (mid == NULL) {
+        jclass cls = env->GetObjectClass(flacDecoderJni);
+        mid = env->GetMethodID(cls, "read", "(Ljava/nio/ByteBuffer;)I");
+      }
     }
-  }
 
-  ssize_t readAt(off64_t offset, void *const data, size_t size) {
-    jobject byteBuffer = env->NewDirectByteBuffer(data, size);
-    int result = env->CallIntMethod(flacDecoderJni, mid, byteBuffer);
-    if (env->ExceptionCheck()) {
-      // Exception is thrown in Java when returning from the native call.
-      result = -1;
+    ssize_t readAt(off64_t offset, void *const data, size_t size) {
+      jobject byteBuffer = env->NewDirectByteBuffer(data, size);
+      int result = env->CallIntMethod(flacDecoderJni, mid, byteBuffer);
+      if (env->ExceptionCheck()) {
+        // Exception is thrown in Java when returning from the native call.
+        result = -1;
+      }
+      return result;
     }
-    return result;
-  }
 
- private:
-  JNIEnv *env;
-  jobject flacDecoderJni;
-  jmethodID mid;
+private:
+    JNIEnv *env;
+    jobject flacDecoderJni;
+    jmethodID mid;
 };
 
 struct Context {
-  JavaDataSource *source;
-  FLACParser *parser;
+    JavaDataSource *source;
+    FLACParser *parser;
 
-  Context() {
-    source = new JavaDataSource();
-    parser = new FLACParser(source);
-  }
+    Context() {
+      source = new JavaDataSource();
+      parser = new FLACParser(source);
+    }
 
-  ~Context() {
-    delete parser;
-    delete source;
-  }
+    ~Context() {
+      delete parser;
+      delete source;
+    }
 };
 
 DECODER_FUNC(jlong, flacInit) {
@@ -99,16 +99,16 @@ DECODER_FUNC(jobject, flacDecodeMetadata, jlong jContext) {
 
   jclass arrayListClass = env->FindClass("java/util/ArrayList");
   jmethodID arrayListConstructor =
-      env->GetMethodID(arrayListClass, "<init>", "()V");
+          env->GetMethodID(arrayListClass, "<init>", "()V");
   jobject commentList = env->NewObject(arrayListClass, arrayListConstructor);
   jmethodID arrayListAddMethod =
-      env->GetMethodID(arrayListClass, "add", "(Ljava/lang/Object;)Z");
+          env->GetMethodID(arrayListClass, "add", "(Ljava/lang/Object;)Z");
 
   if (context->parser->areVorbisCommentsValid()) {
     std::vector<std::string> vorbisComments =
-        context->parser->getVorbisComments();
+            context->parser->getVorbisComments();
     for (std::vector<std::string>::const_iterator vorbisComment =
-             vorbisComments.begin();
+            vorbisComments.begin();
          vorbisComment != vorbisComments.end(); ++vorbisComment) {
       jstring commentString = env->NewStringUTF((*vorbisComment).c_str());
       env->CallBooleanMethod(commentList, arrayListAddMethod, commentString);
@@ -121,10 +121,10 @@ DECODER_FUNC(jobject, flacDecodeMetadata, jlong jContext) {
   if (picturesValid) {
     std::vector<FlacPicture> pictures = context->parser->getPictures();
     jclass pictureFrameClass = env->FindClass(
-        "com/google/android/exoplayer2/metadata/flac/PictureFrame");
+            "com/google/android/exoplayer2/metadata/flac/PictureFrame");
     jmethodID pictureFrameConstructor =
-        env->GetMethodID(pictureFrameClass, "<init>",
-                         "(ILjava/lang/String;Ljava/lang/String;IIII[B)V");
+            env->GetMethodID(pictureFrameClass, "<init>",
+                             "(ILjava/lang/String;Ljava/lang/String;IIII[B)V");
     for (std::vector<FlacPicture>::const_iterator picture = pictures.begin();
          picture != pictures.end(); ++picture) {
       jstring mimeType = env->NewStringUTF(picture->mimeType.c_str());
@@ -133,9 +133,9 @@ DECODER_FUNC(jobject, flacDecodeMetadata, jlong jContext) {
       env->SetByteArrayRegion(pictureData, 0, picture->data.size(),
                               (signed char *)&picture->data[0]);
       jobject pictureFrame = env->NewObject(
-          pictureFrameClass, pictureFrameConstructor, picture->type, mimeType,
-          description, picture->width, picture->height, picture->depth,
-          picture->colors, pictureData);
+              pictureFrameClass, pictureFrameConstructor, picture->type, mimeType,
+              description, picture->width, picture->height, picture->depth,
+              picture->colors, pictureData);
       env->CallBooleanMethod(pictureFrames, arrayListAddMethod, pictureFrame);
       env->DeleteLocalRef(mimeType);
       env->DeleteLocalRef(description);
@@ -144,14 +144,14 @@ DECODER_FUNC(jobject, flacDecodeMetadata, jlong jContext) {
   }
 
   const FLAC__StreamMetadata_StreamInfo &streamInfo =
-      context->parser->getStreamInfo();
+          context->parser->getStreamInfo();
 
   jclass flacStreamMetadataClass = env->FindClass(
-      "com/google/android/exoplayer2/util/"
-      "FlacStreamMetadata");
+          "com/google/android/exoplayer2/util/"
+          "FlacStreamMetadata");
   jmethodID flacStreamMetadataConstructor =
-      env->GetMethodID(flacStreamMetadataClass, "<init>",
-                       "(IIIIIIIJLjava/util/List;Ljava/util/List;)V");
+          env->GetMethodID(flacStreamMetadataClass, "<init>",
+                           "(IIIIIIIJLjava/util/ArrayList;Ljava/util/ArrayList;)V");
 
   return env->NewObject(flacStreamMetadataClass, flacStreamMetadataConstructor,
                         streamInfo.min_blocksize, streamInfo.max_blocksize,

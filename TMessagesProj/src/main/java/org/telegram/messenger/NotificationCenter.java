@@ -44,6 +44,7 @@ public class NotificationCenter {
     public static final int messagesReadEncrypted = totalEvents++;
     public static final int encryptedChatCreated = totalEvents++;
     public static final int dialogPhotosLoaded = totalEvents++;
+    public static final int reloadDialogPhotos = totalEvents++;
     public static final int folderBecomeEmpty = totalEvents++;
     public static final int removeAllMessagesFromDialog = totalEvents++;
     public static final int notificationsSettingsUpdated = totalEvents++;
@@ -74,6 +75,7 @@ public class NotificationCenter {
     public static final int chatSearchResultsAvailable = totalEvents++;
     public static final int chatSearchResultsLoading = totalEvents++;
     public static final int musicDidLoad = totalEvents++;
+    public static final int moreMusicDidLoad = totalEvents++;
     public static final int needShowAlert = totalEvents++;
     public static final int needShowPlayServicesAlert = totalEvents++;
     public static final int didUpdateMessagesViews = totalEvents++;
@@ -100,6 +102,7 @@ public class NotificationCenter {
     public static final int didUpdateReactions = totalEvents++;
     public static final int didVerifyMessagesStickers = totalEvents++;
     public static final int scheduledMessagesUpdated = totalEvents++;
+    public static final int newSuggestionsAvailable = totalEvents++;
 
     public static final int walletPendingTransactionsChanged = totalEvents++;
     public static final int walletSyncProgressChanged = totalEvents++;
@@ -194,6 +197,8 @@ public class NotificationCenter {
     private SparseArray<ArrayList<NotificationCenterDelegate>> removeAfterBroadcast = new SparseArray<>();
     private SparseArray<ArrayList<NotificationCenterDelegate>> addAfterBroadcast = new SparseArray<>();
     private ArrayList<DelayedPost> delayedPosts = new ArrayList<>(10);
+    private ArrayList<DelayedPost> delayedPostsTmp = new ArrayList<>(10);
+    private ArrayList<PostponeNotificationCallback> postponeCallbackList = new ArrayList<>(10);
 
     private int broadcasting = 0;
 
@@ -287,14 +292,21 @@ public class NotificationCenter {
             animationInProgressCount--;
             if (animationInProgressCount == 0) {
                 NotificationCenter.getGlobalInstance().postNotificationName(startAllHeavyOperations, 512);
-                if (!delayedPosts.isEmpty()) {
-                    for (int a = 0; a < delayedPosts.size(); a++) {
-                        DelayedPost delayedPost = delayedPosts.get(a);
-                        postNotificationNameInternal(delayedPost.id, true, delayedPost.args);
-                    }
-                    delayedPosts.clear();
-                }
+                runDelayedNotifications();
             }
+        }
+    }
+
+    public void runDelayedNotifications() {
+        if (!delayedPosts.isEmpty()) {
+            delayedPostsTmp.clear();
+            delayedPostsTmp.addAll(delayedPosts);
+            delayedPosts.clear();
+            for (int a = 0; a < delayedPostsTmp.size(); a++) {
+                DelayedPost delayedPost = delayedPostsTmp.get(a);
+                postNotificationNameInternal(delayedPost.id, true, delayedPost.args);
+            }
+            delayedPostsTmp.clear();
         }
     }
 
@@ -307,7 +319,7 @@ public class NotificationCenter {
     }
 
     public void postNotificationName(int id, Object... args) {
-        boolean allowDuringAnimation = id == startAllHeavyOperations || id == stopAllHeavyOperations;
+        boolean allowDuringAnimation = id == startAllHeavyOperations || id == stopAllHeavyOperations || id == didReplacedPhotoInMemCache;
         if (!allowDuringAnimation && !allowedNotifications.isEmpty()) {
             int size = allowedNotifications.size();
             int allowedCount = 0;
@@ -350,6 +362,14 @@ public class NotificationCenter {
                 FileLog.e("delay post notification " + id + " with args count = " + args.length);
             }
             return;
+        }
+        if (!postponeCallbackList.isEmpty()) {
+            for (int i = 0; i < postponeCallbackList.size(); i++) {
+                if (postponeCallbackList.get(i).needPostpone(id, currentAccount, args)) {
+                    delayedPosts.add(new DelayedPost(id, args));
+                    return;
+                }
+            }
         }
         broadcasting++;
         ArrayList<NotificationCenterDelegate> objects = observers.get(id);
@@ -432,5 +452,31 @@ public class NotificationCenter {
 
     public boolean hasObservers(int id) {
         return observers.indexOfKey(id) >= 0;
+    }
+
+    public void addPostponeNotificationsCallback(PostponeNotificationCallback callback) {
+        if (BuildVars.DEBUG_VERSION) {
+            if (Thread.currentThread() != ApplicationLoader.applicationHandler.getLooper().getThread()) {
+                throw new RuntimeException("PostponeNotificationsCallback allowed only from MAIN thread");
+            }
+        }
+        if (!postponeCallbackList.contains(callback)) {
+            postponeCallbackList.add(callback);
+        }
+    }
+
+    public void removePostponeNotificationsCallback(PostponeNotificationCallback callback) {
+        if (BuildVars.DEBUG_VERSION) {
+            if (Thread.currentThread() != ApplicationLoader.applicationHandler.getLooper().getThread()) {
+                throw new RuntimeException("removePostponeNotificationsCallback allowed only from MAIN thread");
+            }
+        }
+        if (postponeCallbackList.remove(callback)) {
+            runDelayedNotifications();
+        }
+    }
+
+    public interface PostponeNotificationCallback {
+        boolean needPostpone(int id, int currentAccount, Object[] args);
     }
 }

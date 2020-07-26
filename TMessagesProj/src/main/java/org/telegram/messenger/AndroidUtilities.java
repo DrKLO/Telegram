@@ -50,6 +50,7 @@ import android.provider.MediaStore;
 import android.provider.Settings;
 
 import androidx.core.content.FileProvider;
+import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.viewpager.widget.ViewPager;
 
 import android.telephony.TelephonyManager;
@@ -101,6 +102,7 @@ import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.ui.ActionBar.ActionBarLayout;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.BottomSheet;
@@ -110,6 +112,7 @@ import org.telegram.ui.Components.BackgroundGradientDrawable;
 import org.telegram.ui.Components.ForegroundDetector;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.PickerBottomLayout;
+import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.ShareAlert;
 import org.telegram.ui.Components.TypefaceSpan;
 import org.telegram.ui.ThemePreviewActivity;
@@ -463,8 +466,8 @@ public class AndroidUtilities {
         double rf = r / 255.0;
         double gf = g / 255.0;
         double bf = b / 255.0;
-        double max = (rf > gf && rf > bf) ? rf : (gf > bf) ? gf : bf;
-        double min = (rf < gf && rf < bf) ? rf : (gf < bf) ? gf : bf;
+        double max = (rf > gf && rf > bf) ? rf : Math.max(gf, bf);
+        double min = (rf < gf && rf < bf) ? rf : Math.min(gf, bf);
         double h, s;
         double d = max - min;
         s = max == 0 ? 0 : d / max;
@@ -2589,6 +2592,25 @@ public class AndroidUtilities {
         return false;
     }
 
+    public static CharSequence replaceNewLines(CharSequence original) {
+        if (original instanceof StringBuilder) {
+            StringBuilder stringBuilder = (StringBuilder) original;
+            for (int a = 0, N = original.length(); a < N; a++) {
+                if (original.charAt(a) == '\n') {
+                    stringBuilder.setCharAt(a, ' ');
+                }
+            }
+        } else if (original instanceof SpannableStringBuilder) {
+            SpannableStringBuilder stringBuilder = (SpannableStringBuilder) original;
+            for (int a = 0, N = original.length(); a < N; a++) {
+                if (original.charAt(a) == '\n') {
+                    stringBuilder.replace(a, a + 1, " ");
+                }
+            }
+        }
+        return original.toString().replace('\n', ' ');
+    }
+
     public static void openForView(TLObject media, Activity activity) {
         if (media == null || activity == null) {
             return;
@@ -2935,11 +2957,11 @@ public class AndroidUtilities {
     public static float[] RGBtoHSB(int r, int g, int b) {
         float hue, saturation, brightness;
         float[] hsbvals = new float[3];
-        int cmax = (r > g) ? r : g;
+        int cmax = Math.max(r, g);
         if (b > cmax) {
             cmax = b;
         }
-        int cmin = (r < g) ? r : g;
+        int cmin = Math.min(r, g);
         if (b < cmin) {
             cmin = b;
         }
@@ -3095,7 +3117,7 @@ public class AndroidUtilities {
     public static float distanceInfluenceForSnapDuration(float f) {
         f -= 0.5F;
         f *= 0.47123894F;
-        return (float) Math.sin((double) f);
+        return (float) Math.sin(f);
     }
 
     public static void makeAccessibilityAnnouncement(CharSequence what) {
@@ -3315,5 +3337,36 @@ public class AndroidUtilities {
             FileLog.e(e);
         }
         return hasLatin && hasNonLatin;
+    }
+
+    public static void scrollToFragmentRow(ActionBarLayout parentLayout, String rowName) {
+        if (parentLayout == null || rowName == null) {
+            return;
+        }
+        BaseFragment openingFragment = parentLayout.fragmentsStack.get(parentLayout.fragmentsStack.size() - 1);
+        try {
+            Field listViewField = openingFragment.getClass().getDeclaredField("listView");
+            listViewField.setAccessible(true);
+            RecyclerListView listView = (RecyclerListView) listViewField.get(openingFragment);
+            RecyclerListView.IntReturnCallback callback = () -> {
+                int position = -1;
+                try {
+                    Field rowField = openingFragment.getClass().getDeclaredField(rowName);
+                    rowField.setAccessible(true);
+                    LinearLayoutManager layoutManager = (LinearLayoutManager) listView.getLayoutManager();
+                    position = rowField.getInt(openingFragment);
+                    layoutManager.scrollToPositionWithOffset(position, AndroidUtilities.dp(60));
+                    rowField.setAccessible(false);
+                    return position;
+                } catch (Throwable ignore) {
+
+                }
+                return position;
+            };
+            listView.highlightRow(callback);
+            listViewField.setAccessible(false);
+        } catch (Throwable ignore) {
+
+        }
     }
 }

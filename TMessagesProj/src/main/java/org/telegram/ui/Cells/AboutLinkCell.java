@@ -22,8 +22,11 @@ import android.text.style.URLSpan;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.MotionEvent;
+import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.FrameLayout;
 import android.widget.TextView;
+
+import androidx.core.view.accessibility.AccessibilityNodeInfoCompat;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.Emoji;
@@ -65,6 +68,7 @@ public class AboutLinkCell extends FrameLayout {
         valueTextView.setMaxLines(1);
         valueTextView.setSingleLine(true);
         valueTextView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
+        valueTextView.setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO);
         addView(valueTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.BOTTOM, 23, 0, 23, 10));
 
         setWillNotDraw(false);
@@ -86,7 +90,7 @@ public class AboutLinkCell extends FrameLayout {
     }
 
     public void setTextAndValue(String text, String value, boolean parseLinks) {
-        if (TextUtils.isEmpty(text) || text != null && text.equals(oldText)) {
+        if (TextUtils.isEmpty(text) || TextUtils.equals(text, oldText)) {
             return;
         }
         oldText = text;
@@ -214,5 +218,19 @@ public class AboutLinkCell extends FrameLayout {
             FileLog.e(e);
         }
         canvas.restore();
+    }
+
+    @Override
+    public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
+        super.onInitializeAccessibilityNodeInfo(info);
+        if (textLayout != null) {
+            final CharSequence text = textLayout.getText();
+            final CharSequence valueText = valueTextView.getText();
+            if (TextUtils.isEmpty(valueText)) {
+                info.setText(text);
+            } else {
+                info.setText(valueText + ": " + text);
+            }
+        }
     }
 }

@@ -116,10 +116,11 @@ import java.util.regex.Pattern;
       File file, long length, long lastTouchTimestamp, CachedContentIndex index) {
     String name = file.getName();
     if (!name.endsWith(SUFFIX)) {
-      file = upgradeFile(file, index);
-      if (file == null) {
+      @Nullable File upgradedFile = upgradeFile(file, index);
+      if (upgradedFile == null) {
         return null;
       }
+      file = upgradedFile;
       name = file.getName();
     }
 
@@ -174,8 +175,12 @@ import java.util.regex.Pattern;
       key = matcher.group(1); // Keys were not escaped in version 1.
     }
 
-    File newCacheFile = getCacheFile(file.getParentFile(), index.assignIdForKey(key),
-        Long.parseLong(matcher.group(2)), Long.parseLong(matcher.group(3)));
+    File newCacheFile =
+        getCacheFile(
+            Assertions.checkStateNotNull(file.getParentFile()),
+            index.assignIdForKey(key),
+            Long.parseLong(matcher.group(2)),
+            Long.parseLong(matcher.group(3)));
     if (!file.renameTo(newCacheFile)) {
       return null;
     }

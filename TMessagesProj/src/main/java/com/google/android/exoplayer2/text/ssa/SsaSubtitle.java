@@ -28,14 +28,14 @@ import java.util.List;
  */
 /* package */ final class SsaSubtitle implements Subtitle {
 
-  private final Cue[] cues;
-  private final long[] cueTimesUs;
+  private final List<List<Cue>> cues;
+  private final List<Long> cueTimesUs;
 
   /**
    * @param cues The cues in the subtitle.
    * @param cueTimesUs The cue times, in microseconds.
    */
-  public SsaSubtitle(Cue[] cues, long[] cueTimesUs) {
+  public SsaSubtitle(List<List<Cue>> cues, List<Long> cueTimesUs) {
     this.cues = cues;
     this.cueTimesUs = cueTimesUs;
   }
@@ -43,30 +43,29 @@ import java.util.List;
   @Override
   public int getNextEventTimeIndex(long timeUs) {
     int index = Util.binarySearchCeil(cueTimesUs, timeUs, false, false);
-    return index < cueTimesUs.length ? index : C.INDEX_UNSET;
+    return index < cueTimesUs.size() ? index : C.INDEX_UNSET;
   }
 
   @Override
   public int getEventTimeCount() {
-    return cueTimesUs.length;
+    return cueTimesUs.size();
   }
 
   @Override
   public long getEventTime(int index) {
     Assertions.checkArgument(index >= 0);
-    Assertions.checkArgument(index < cueTimesUs.length);
-    return cueTimesUs[index];
+    Assertions.checkArgument(index < cueTimesUs.size());
+    return cueTimesUs.get(index);
   }
 
   @Override
   public List<Cue> getCues(long timeUs) {
     int index = Util.binarySearchFloor(cueTimesUs, timeUs, true, false);
-    if (index == -1 || cues[index] == Cue.EMPTY) {
-      // timeUs is earlier than the start of the first cue, or we have an empty cue.
+    if (index == -1) {
+      // timeUs is earlier than the start of the first cue.
       return Collections.emptyList();
     } else {
-      return Collections.singletonList(cues[index]);
+      return cues.get(index);
     }
   }
-
 }

@@ -799,6 +799,10 @@ public class EmojiData {
         return "❤".equals(emoji) || "🧡".equals(emoji) || "💛".equals(emoji) || "💚".equals(emoji) || "💙".equals(emoji) || "💜".equals(emoji) || "🖤".equals(emoji) || "🤍".equals(emoji) || "🤎".equals(emoji);
     }
 
+    public static boolean isPeachEmoji(String emoji) {
+        return "\uD83C\uDF51".equals(emoji);
+    }
+
     static {
         for (int a = 0; a < emojiToFE0F.length; a++) {
             emojiToFE0FMap.put(emojiToFE0F[a], true);

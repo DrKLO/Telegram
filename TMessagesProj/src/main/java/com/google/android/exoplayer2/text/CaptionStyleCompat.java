@@ -18,9 +18,10 @@ package com.google.android.exoplayer2.text;
 import android.annotation.TargetApi;
 import android.graphics.Color;
 import android.graphics.Typeface;
-import androidx.annotation.IntDef;
 import android.view.accessibility.CaptioningManager;
 import android.view.accessibility.CaptioningManager.CaptionStyle;
+import androidx.annotation.IntDef;
+import androidx.annotation.Nullable;
 import com.google.android.exoplayer2.util.Util;
 import java.lang.annotation.Documented;
 import java.lang.annotation.Retention;
@@ -72,11 +73,15 @@ public final class CaptionStyleCompat {
    */
   public static final int USE_TRACK_COLOR_SETTINGS = 1;
 
-  /**
-   * Default caption style.
-   */
-  public static final CaptionStyleCompat DEFAULT = new CaptionStyleCompat(
-      Color.WHITE, Color.BLACK, Color.TRANSPARENT, EDGE_TYPE_NONE, Color.WHITE, null);
+  /** Default caption style. */
+  public static final CaptionStyleCompat DEFAULT =
+      new CaptionStyleCompat(
+          Color.WHITE,
+          Color.BLACK,
+          Color.TRANSPARENT,
+          EDGE_TYPE_NONE,
+          Color.WHITE,
+          /* typeface= */ null);
 
   /**
    * The preferred foreground color.
@@ -110,10 +115,8 @@ public final class CaptionStyleCompat {
    */
   public final int edgeColor;
 
-  /**
-   * The preferred typeface.
-   */
-  public final Typeface typeface;
+  /** The preferred typeface, or {@code null} if unspecified. */
+  @Nullable public final Typeface typeface;
 
   /**
    * Creates a {@link CaptionStyleCompat} equivalent to a provided {@link CaptionStyle}.
@@ -141,8 +144,13 @@ public final class CaptionStyleCompat {
    * @param edgeColor See {@link #edgeColor}.
    * @param typeface See {@link #typeface}.
    */
-  public CaptionStyleCompat(int foregroundColor, int backgroundColor, int windowColor,
-      @EdgeType int edgeType, int edgeColor, Typeface typeface) {
+  public CaptionStyleCompat(
+      int foregroundColor,
+      int backgroundColor,
+      int windowColor,
+      @EdgeType int edgeType,
+      int edgeColor,
+      @Nullable Typeface typeface) {
     this.foregroundColor = foregroundColor;
     this.backgroundColor = backgroundColor;
     this.windowColor = windowColor;

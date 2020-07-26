@@ -24,7 +24,6 @@ import com.google.android.exoplayer2.extractor.ExtractorsFactory;
 import com.google.android.exoplayer2.extractor.PositionHolder;
 import com.google.android.exoplayer2.extractor.SeekMap;
 import com.google.android.exoplayer2.util.ParsableByteArray;
-import com.google.android.exoplayer2.util.Util;
 import java.io.IOException;
 import java.lang.annotation.Documented;
 import java.lang.annotation.Retention;
@@ -64,7 +63,7 @@ public final class FlvExtractor implements Extractor {
   private static final int TAG_TYPE_SCRIPT_DATA = 18;
 
   // FLV container identifier.
-  private static final int FLV_TAG = Util.getIntegerCodeForString("FLV");
+  private static final int FLV_TAG = 0x00464c56;
 
   private final ParsableByteArray scratch;
   private final ParsableByteArray headerBuffer;

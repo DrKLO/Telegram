@@ -33,6 +33,7 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaController;
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.BubbleActivity;
 import org.telegram.ui.Cells.PhotoEditRadioCell;
 import org.telegram.ui.Cells.PhotoEditToolCell;
 
@@ -57,6 +58,7 @@ public class PhotoFilterView extends FrameLayout implements FilterShaders.Filter
     private int saturationTool;
     private int warmthTool;
     private int fadeTool;
+    private int softenSkinTool;
     private int highlightsTool;
     private int shadowsTool;
     private int vignetteTool;
@@ -72,6 +74,7 @@ public class PhotoFilterView extends FrameLayout implements FilterShaders.Filter
     private float warmthValue; //-100 100
     private float saturationValue; //-100 100
     private float fadeValue; // 0 100
+    private float softenSkinValue; // 0 100
     private int tintShadowsColor; //0 0xffffffff
     private int tintHighlightsColor; //0 0xffffffff
     private float highlightsValue; //-100 100
@@ -104,6 +107,9 @@ public class PhotoFilterView extends FrameLayout implements FilterShaders.Filter
     private FrameLayout curveLayout;
     private RadioButton[] curveRadioButton = new RadioButton[4];
     private PaintingOverlay paintingOverlay;
+    private boolean isMirrored;
+
+    private boolean inBubbleMode;
 
     private int selectedTool;
 
@@ -263,12 +269,19 @@ public class PhotoFilterView extends FrameLayout implements FilterShaders.Filter
         }
     }
 
-    public PhotoFilterView(Context context, VideoEditTextureView videoTextureView, Bitmap bitmap, int rotation, MediaController.SavedFilterState state, PaintingOverlay overlay) {
+    public PhotoFilterView(Context context, VideoEditTextureView videoTextureView, Bitmap bitmap, int rotation, MediaController.SavedFilterState state, PaintingOverlay overlay, int hasFaces, boolean mirror) {
         super(context);
 
+        inBubbleMode = context instanceof BubbleActivity;
         paintingOverlay = overlay;
+        isMirrored = mirror;
 
         rowsCount = 0;
+        if (hasFaces == 1) {
+            softenSkinTool = rowsCount++;
+        } else if (hasFaces == 0) {
+            softenSkinTool = -1;
+        }
         enhanceTool = rowsCount++;
         exposureTool = rowsCount++;
         contrastTool = rowsCount++;
@@ -278,18 +291,21 @@ public class PhotoFilterView extends FrameLayout implements FilterShaders.Filter
         highlightsTool = rowsCount++;
         shadowsTool = rowsCount++;
         vignetteTool = rowsCount++;
+        if (hasFaces == 2) {
+            softenSkinTool = rowsCount++;
+        }
         if (videoTextureView == null) {
             grainTool = rowsCount++;
-            sharpenTool = rowsCount++;
         } else {
             grainTool = -1;
-            sharpenTool = -1;
         }
+        sharpenTool = rowsCount++;
         tintShadowsTool = rowsCount++;
         tintHighlightsTool = rowsCount++;
 
         if (state != null) {
             enhanceValue = state.enhanceValue;
+            softenSkinValue = state.softenSkinValue;
             exposureValue = state.exposureValue;
             contrastValue = state.contrastValue;
             warmthValue = state.warmthValue;
@@ -334,7 +350,7 @@ public class PhotoFilterView extends FrameLayout implements FilterShaders.Filter
                 @Override
                 public void onSurfaceTextureAvailable(SurfaceTexture surface, int width, int height) {
                     if (eglThread == null && surface != null) {
-                        eglThread = new FilterGLThread(surface, bitmapToEdit, orientation);
+                        eglThread = new FilterGLThread(surface, bitmapToEdit, orientation, isMirrored);
                         eglThread.setFilterGLThreadDelegate(PhotoFilterView.this);
                         eglThread.setSurfaceTextureSize(width, height);
                         eglThread.requestRender(true, true, false);
@@ -580,7 +596,7 @@ public class PhotoFilterView extends FrameLayout implements FilterShaders.Filter
 
         updateSelectedBlurType();
 
-        if (Build.VERSION.SDK_INT >= 21) {
+        if (Build.VERSION.SDK_INT >= 21 && !inBubbleMode) {
             if (ownsTextureView) {
                 ((LayoutParams) textureView.getLayoutParams()).topMargin = AndroidUtilities.statusBarHeight;
             }
@@ -649,6 +665,7 @@ public class PhotoFilterView extends FrameLayout implements FilterShaders.Filter
         state.warmthValue = warmthValue;
         state.saturationValue = saturationValue;
         state.fadeValue = fadeValue;
+        state.softenSkinValue = softenSkinValue;
         state.tintShadowsColor = tintShadowsColor;
         state.tintHighlightsColor = tintHighlightsColor;
         state.highlightsValue = highlightsValue;
@@ -678,12 +695,13 @@ public class PhotoFilterView extends FrameLayout implements FilterShaders.Filter
                     grainValue != lastState.grainValue ||
                     sharpenValue != lastState.sharpenValue ||
                     fadeValue != lastState.fadeValue ||
+                    softenSkinValue != lastState.softenSkinValue ||
                     tintHighlightsColor != lastState.tintHighlightsColor ||
                     tintShadowsColor != lastState.tintShadowsColor ||
                     !curvesToolValue.shouldBeSkipped();
         } else {
             return enhanceValue != 0 || contrastValue != 0 || highlightsValue != 0 || exposureValue != 0 || warmthValue != 0 || saturationValue != 0 || vignetteValue != 0 ||
-                    shadowsValue != 0 || grainValue != 0 || sharpenValue != 0 || fadeValue != 0 || tintHighlightsColor != 0 || tintShadowsColor != 0 || !curvesToolValue.shouldBeSkipped();
+                    shadowsValue != 0 || grainValue != 0 || sharpenValue != 0 || fadeValue != 0 || softenSkinValue != 0 || tintHighlightsColor != 0 || tintShadowsColor != 0 || !curvesToolValue.shouldBeSkipped();
         }
     }
 
@@ -774,7 +792,7 @@ public class PhotoFilterView extends FrameLayout implements FilterShaders.Filter
 
     private void fixLayout(int viewWidth, int viewHeight) {
         viewWidth -= AndroidUtilities.dp(28);
-        viewHeight -= AndroidUtilities.dp(14 + 140 + 60) + (Build.VERSION.SDK_INT >= 21 ? AndroidUtilities.statusBarHeight : 0);
+        viewHeight -= AndroidUtilities.dp(14 + 140 + 60) + (Build.VERSION.SDK_INT >= 21 && !inBubbleMode ? AndroidUtilities.statusBarHeight : 0);
 
         float bitmapW;
         float bitmapH;
@@ -801,7 +819,7 @@ public class PhotoFilterView extends FrameLayout implements FilterShaders.Filter
         }
 
         int bitmapX = (int) Math.ceil((viewWidth - bitmapW) / 2 + AndroidUtilities.dp(14));
-        int bitmapY = (int) Math.ceil((viewHeight - bitmapH) / 2 + AndroidUtilities.dp(14) + (Build.VERSION.SDK_INT >= 21 ? AndroidUtilities.statusBarHeight : 0));
+        int bitmapY = (int) Math.ceil((viewHeight - bitmapH) / 2 + AndroidUtilities.dp(14) + (Build.VERSION.SDK_INT >= 21 && !inBubbleMode ? AndroidUtilities.statusBarHeight : 0));
 
         int width = (int) bitmapW;
         int height = (int) bitmapH;
@@ -812,7 +830,7 @@ public class PhotoFilterView extends FrameLayout implements FilterShaders.Filter
             layoutParams.width = width;
             layoutParams.height = height;
         }
-        curvesControl.setActualArea(bitmapX, bitmapY - (Build.VERSION.SDK_INT >= 21 ? AndroidUtilities.statusBarHeight : 0), width, height);
+        curvesControl.setActualArea(bitmapX, bitmapY - (Build.VERSION.SDK_INT >= 21 && !inBubbleMode ? AndroidUtilities.statusBarHeight : 0), width, height);
 
         blurControl.setActualAreaSize(width, height);
         LayoutParams layoutParams = (LayoutParams) blurControl.getLayoutParams();
@@ -902,6 +920,11 @@ public class PhotoFilterView extends FrameLayout implements FilterShaders.Filter
     @Override
     public float getFadeValue() {
         return fadeValue / 100.0f;
+    }
+
+    @Override
+    public float getSoftenSkinValue() {
+        return softenSkinValue / 100.0f;
     }
 
     @Override
@@ -1041,8 +1064,10 @@ public class PhotoFilterView extends FrameLayout implements FilterShaders.Filter
                         grainValue = progress;
                     } else if (i1 == sharpenTool) {
                         sharpenValue = progress;
-                    }  else if (i1 == fadeTool) {
+                    } else if (i1 == fadeTool) {
                         fadeValue = progress;
+                    } else if (i1 == softenSkinTool) {
+                        softenSkinValue = progress;
                     }
                     if (eglThread != null) {
                         eglThread.requestRender(true);
@@ -1099,6 +1124,8 @@ public class PhotoFilterView extends FrameLayout implements FilterShaders.Filter
                         cell.setIconAndTextAndValue(LocaleController.getString("Sharpen", R.string.Sharpen), sharpenValue, 0, 100);
                     } else if (i == fadeTool) {
                         cell.setIconAndTextAndValue(LocaleController.getString("Fade", R.string.Fade), fadeValue, 0, 100);
+                    } else if (i == softenSkinTool) {
+                        cell.setIconAndTextAndValue(LocaleController.getString("SoftenSkin", R.string.SoftenSkin), softenSkinValue, 0, 100);
                     }
                     break;
                 }

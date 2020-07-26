@@ -18,6 +18,7 @@ package com.google.android.exoplayer2.drm;
 import android.media.MediaDrm;
 import androidx.annotation.IntDef;
 import androidx.annotation.Nullable;
+import java.io.IOException;
 import java.lang.annotation.Documented;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -29,9 +30,26 @@ import java.util.Map;
 public interface DrmSession<T extends ExoMediaCrypto> {
 
   /**
-   * Wraps the throwable which is the cause of the error state.
+   * Invokes {@code newSession's} {@link #acquire()} and {@code previousSession's} {@link
+   * #release()} in that order. Null arguments are ignored. Does nothing if {@code previousSession}
+   * and {@code newSession} are the same session.
    */
-  class DrmSessionException extends Exception {
+  static <T extends ExoMediaCrypto> void replaceSession(
+      @Nullable DrmSession<T> previousSession, @Nullable DrmSession<T> newSession) {
+    if (previousSession == newSession) {
+      // Do nothing.
+      return;
+    }
+    if (newSession != null) {
+      newSession.acquire();
+    }
+    if (previousSession != null) {
+      previousSession.release();
+    }
+  }
+
+  /** Wraps the throwable which is the cause of the error state. */
+  class DrmSessionException extends IOException {
 
     public DrmSessionException(Throwable cause) {
       super(cause);
@@ -59,13 +77,9 @@ public interface DrmSession<T extends ExoMediaCrypto> {
    * The session is being opened.
    */
   int STATE_OPENING = 2;
-  /**
-   * The session is open, but does not yet have the keys required for decryption.
-   */
+  /** The session is open, but does not have keys required for decryption. */
   int STATE_OPENED = 3;
-  /**
-   * The session is open and has the keys required for decryption.
-   */
+  /** The session is open and has keys required for decryption. */
   int STATE_OPENED_WITH_KEYS = 4;
 
   /**
@@ -74,6 +88,11 @@ public interface DrmSession<T extends ExoMediaCrypto> {
    * {@link #STATE_OPENED_WITH_KEYS}.
    */
   @State int getState();
+
+  /** Returns whether this session allows playback of clear samples prior to keys being loaded. */
+  default boolean playClearSamplesWithoutKeys() {
+    return false;
+  }
 
   /**
    * Returns the cause of the error state, or null if {@link #getState()} is not {@link
@@ -110,4 +129,16 @@ public interface DrmSession<T extends ExoMediaCrypto> {
    */
   @Nullable
   byte[] getOfflineLicenseKeySetId();
+
+  /**
+   * Increments the reference count. When the caller no longer needs to use the instance, it must
+   * call {@link #release()} to decrement the reference count.
+   */
+  void acquire();
+
+  /**
+   * Decrements the reference count. If the reference count drops to 0 underlying resources are
+   * released, and the instance cannot be re-used.
+   */
+  void release();
 }

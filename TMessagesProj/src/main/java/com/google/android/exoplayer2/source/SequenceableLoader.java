@@ -60,6 +60,9 @@ public interface SequenceableLoader {
    */
   boolean continueLoading(long positionUs);
 
+  /** Returns whether the loader is currently loading. */
+  boolean isLoading();
+
   /**
    * Re-evaluates the buffer given the playback position.
    *

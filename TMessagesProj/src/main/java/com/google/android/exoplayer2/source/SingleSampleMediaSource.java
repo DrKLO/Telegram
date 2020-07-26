@@ -60,7 +60,7 @@ public final class SingleSampleMediaSource extends BaseMediaSource {
     private LoadErrorHandlingPolicy loadErrorHandlingPolicy;
     private boolean treatLoadErrorsAsEndOfStream;
     private boolean isCreateCalled;
-    private @Nullable Object tag;
+    @Nullable private Object tag;
 
     /**
      * Creates a factory for {@link SingleSampleMediaSource}s.
@@ -186,7 +186,7 @@ public final class SingleSampleMediaSource extends BaseMediaSource {
   private final Timeline timeline;
   @Nullable private final Object tag;
 
-  private @Nullable TransferListener transferListener;
+  @Nullable private TransferListener transferListener;
 
   /**
    * @param uri The {@link Uri} of the media stream.
@@ -290,7 +290,13 @@ public final class SingleSampleMediaSource extends BaseMediaSource {
     this.tag = tag;
     dataSpec = new DataSpec(uri, DataSpec.FLAG_ALLOW_GZIP);
     timeline =
-        new SinglePeriodTimeline(durationUs, /* isSeekable= */ true, /* isDynamic= */ false, tag);
+        new SinglePeriodTimeline(
+            durationUs,
+            /* isSeekable= */ true,
+            /* isDynamic= */ false,
+            /* isLive= */ false,
+            /* manifest= */ null,
+            tag);
   }
 
   // MediaSource implementation.
@@ -302,9 +308,9 @@ public final class SingleSampleMediaSource extends BaseMediaSource {
   }
 
   @Override
-  public void prepareSourceInternal(@Nullable TransferListener mediaTransferListener) {
+  protected void prepareSourceInternal(@Nullable TransferListener mediaTransferListener) {
     transferListener = mediaTransferListener;
-    refreshSourceInfo(timeline, /* manifest= */ null);
+    refreshSourceInfo(timeline);
   }
 
   @Override
@@ -331,7 +337,7 @@ public final class SingleSampleMediaSource extends BaseMediaSource {
   }
 
   @Override
-  public void releaseSourceInternal() {
+  protected void releaseSourceInternal() {
     // Do nothing.
   }
 
@@ -341,7 +347,7 @@ public final class SingleSampleMediaSource extends BaseMediaSource {
    */
   @Deprecated
   @SuppressWarnings("deprecation")
-  private static final class EventListenerWrapper extends DefaultMediaSourceEventListener {
+  private static final class EventListenerWrapper implements MediaSourceEventListener {
 
     private final EventListener eventListener;
     private final int eventSourceId;

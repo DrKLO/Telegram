@@ -140,7 +140,7 @@ public class PhotoPickerPhotoCell extends FrameLayout {
             if (photoEntry.isVideo) {
                 videoInfoContainer.setVisibility(View.VISIBLE);
                 videoTextView.setText(AndroidUtilities.formatShortDuration(photoEntry.duration));
-                setContentDescription(LocaleController.getString("AttachVideo", R.string.AttachVideo) + ", " + LocaleController.formatCallDuration(photoEntry.duration));
+                setContentDescription(LocaleController.getString("AttachVideo", R.string.AttachVideo) + ", " + LocaleController.formatDuration(photoEntry.duration));
                 imageView.setImage("vthumb://" + photoEntry.imageId + ":" + photoEntry.path, null, thumb);
             } else {
                 videoInfoContainer.setVisibility(View.INVISIBLE);

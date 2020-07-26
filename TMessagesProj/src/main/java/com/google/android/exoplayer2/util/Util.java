@@ -40,11 +40,12 @@ import android.os.Handler;
 import android.os.Looper;
 import android.os.Parcel;
 import android.security.NetworkSecurityPolicy;
-import androidx.annotation.Nullable;
 import android.telephony.TelephonyManager;
 import android.text.TextUtils;
 import android.view.Display;
+import android.view.SurfaceView;
 import android.view.WindowManager;
+import androidx.annotation.Nullable;
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.ExoPlayerLibraryInfo;
 import com.google.android.exoplayer2.Format;
@@ -54,8 +55,6 @@ import com.google.android.exoplayer2.RendererCapabilities;
 import com.google.android.exoplayer2.RenderersFactory;
 import com.google.android.exoplayer2.SeekParameters;
 import com.google.android.exoplayer2.audio.AudioRendererEventListener;
-import com.google.android.exoplayer2.drm.DrmSessionManager;
-import com.google.android.exoplayer2.drm.FrameworkMediaCrypto;
 import com.google.android.exoplayer2.upstream.DataSource;
 import com.google.android.exoplayer2.video.VideoRendererEventListener;
 import java.io.ByteArrayOutputStream;
@@ -136,9 +135,8 @@ public final class Util {
           + "(T(([0-9]*)H)?(([0-9]*)M)?(([0-9.]*)S)?)?$");
   private static final Pattern ESCAPED_CHARACTER_PATTERN = Pattern.compile("%([A-Fa-f0-9]{2})");
 
-  // Android standardizes to ISO 639-1 2-letter codes and provides no way to map a 3-letter
-  // ISO 639-2 code back to the corresponding 2-letter code.
-  @Nullable private static HashMap<String, String> languageTagIso3ToIso2;
+  // Replacement map of ISO language codes used for normalization.
+  @Nullable private static HashMap<String, String> languageTagReplacementMap;
 
   private Util() {}
 
@@ -146,7 +144,7 @@ public final class Util {
    * Converts the entirety of an {@link InputStream} to a byte array.
    *
    * @param inputStream the {@link InputStream} to be read. The input stream is not closed by this
-   *    method.
+   *     method.
    * @return a byte array containing all of the inputStream's bytes.
    * @throws IOException if an error occurs reading from the stream.
    */
@@ -252,14 +250,14 @@ public final class Util {
   /**
    * Tests whether an {@code items} array contains an object equal to {@code item}, according to
    * {@link Object#equals(Object)}.
-   * <p>
-   * If {@code item} is null then true is returned if and only if {@code items} contains null.
+   *
+   * <p>If {@code item} is null then true is returned if and only if {@code items} contains null.
    *
    * @param items The array of items to search.
    * @param item The item to search for.
    * @return True if the array contains an object equal to the item being searched for.
    */
-  public static boolean contains(Object[] items, Object item) {
+  public static boolean contains(@NullableType Object[] items, @Nullable Object item) {
     for (Object arrayItem : items) {
       if (areEqual(arrayItem, item)) {
         return true;
@@ -321,7 +319,35 @@ public final class Util {
   }
 
   /**
-   * Concatenates two non-null type arrays.
+   * Copies a subset of an array.
+   *
+   * @param input The input array.
+   * @param from The start the range to be copied, inclusive
+   * @param to The end of the range to be copied, exclusive.
+   * @return The copied array.
+   */
+  @SuppressWarnings({"nullness:argument.type.incompatible", "nullness:return.type.incompatible"})
+  public static <T> T[] nullSafeArrayCopyOfRange(T[] input, int from, int to) {
+    Assertions.checkArgument(0 <= from);
+    Assertions.checkArgument(to <= input.length);
+    return Arrays.copyOfRange(input, from, to);
+  }
+
+  /**
+   * Creates a new array containing {@code original} with {@code newElement} appended.
+   *
+   * @param original The input array.
+   * @param newElement The element to append.
+   * @return The new array.
+   */
+  public static <T> T[] nullSafeArrayAppend(T[] original, T newElement) {
+    @NullableType T[] result = Arrays.copyOf(original, original.length + 1);
+    result[original.length] = newElement;
+    return castNonNullTypeArray(result);
+  }
+
+  /**
+   * Creates a new array containing the concatenation of two non-null type arrays.
    *
    * @param first The first array.
    * @param second The second array.
@@ -338,7 +364,6 @@ public final class Util {
         /* length= */ second.length);
     return concatenation;
   }
-
   /**
    * Creates a {@link Handler} with the specified {@link Handler.Callback} on the current {@link
    * Looper} thread. The method accepts partially initialized objects as callback under the
@@ -444,6 +469,20 @@ public final class Util {
   }
 
   /**
+   * Returns the language tag for a {@link Locale}.
+   *
+   * <p>For API levels &ge; 21, this tag is IETF BCP 47 compliant. Use {@link
+   * #normalizeLanguageCode(String)} to retrieve a normalized IETF BCP 47 language tag for all API
+   * levels if needed.
+   *
+   * @param locale A {@link Locale}.
+   * @return The language tag.
+   */
+  public static String getLocaleLanguageTag(Locale locale) {
+    return SDK_INT >= 21 ? getLocaleLanguageTagV21(locale) : locale.toString();
+  }
+
+  /**
    * Returns a normalized IETF BCP 47 language tag for {@code language}.
    *
    * @param language A case-insensitive language code supported by {@link
@@ -458,26 +497,23 @@ public final class Util {
     // Locale data (especially for API < 21) may produce tags with '_' instead of the
     // standard-conformant '-'.
     String normalizedTag = language.replace('_', '-');
-    if (Util.SDK_INT >= 21) {
-      // Filters out ill-formed sub-tags, replaces deprecated tags and normalizes all valid tags.
-      normalizedTag = normalizeLanguageCodeSyntaxV21(normalizedTag);
-    }
     if (normalizedTag.isEmpty() || "und".equals(normalizedTag)) {
       // Tag isn't valid, keep using the original.
       normalizedTag = language;
     }
     normalizedTag = Util.toLowerInvariant(normalizedTag);
     String mainLanguage = Util.splitAtFirst(normalizedTag, "-")[0];
-    if (mainLanguage.length() == 3) {
-      // 3-letter ISO 639-2/B or ISO 639-2/T language codes will not be converted to 2-letter ISO
-      // 639-1 codes automatically.
-      if (languageTagIso3ToIso2 == null) {
-        languageTagIso3ToIso2 = createIso3ToIso2Map();
-      }
-      String iso2Language = languageTagIso3ToIso2.get(mainLanguage);
-      if (iso2Language != null) {
-        normalizedTag = iso2Language + normalizedTag.substring(/* beginIndex= */ 3);
-      }
+    if (languageTagReplacementMap == null) {
+      languageTagReplacementMap = createIsoLanguageReplacementMap();
+    }
+    @Nullable String replacedLanguage = languageTagReplacementMap.get(mainLanguage);
+    if (replacedLanguage != null) {
+      normalizedTag =
+          replacedLanguage + normalizedTag.substring(/* beginIndex= */ mainLanguage.length());
+      mainLanguage = replacedLanguage;
+    }
+    if ("no".equals(mainLanguage) || "i".equals(mainLanguage) || "zh".equals(mainLanguage)) {
+      normalizedTag = maybeReplaceGrandfatheredLanguageTags(normalizedTag);
     }
     return normalizedTag;
   }
@@ -673,10 +709,46 @@ public final class Util {
   }
 
   /**
+   * Returns the index of the first occurrence of {@code value} in {@code array}, or {@link
+   * C#INDEX_UNSET} if {@code value} is not contained in {@code array}.
+   *
+   * @param array The array to search.
+   * @param value The value to search for.
+   * @return The index of the first occurrence of value in {@code array}, or {@link C#INDEX_UNSET}
+   *     if {@code value} is not contained in {@code array}.
+   */
+  public static int linearSearch(int[] array, int value) {
+    for (int i = 0; i < array.length; i++) {
+      if (array[i] == value) {
+        return i;
+      }
+    }
+    return C.INDEX_UNSET;
+  }
+
+  /**
+   * Returns the index of the first occurrence of {@code value} in {@code array}, or {@link
+   * C#INDEX_UNSET} if {@code value} is not contained in {@code array}.
+   *
+   * @param array The array to search.
+   * @param value The value to search for.
+   * @return The index of the first occurrence of value in {@code array}, or {@link C#INDEX_UNSET}
+   *     if {@code value} is not contained in {@code array}.
+   */
+  public static int linearSearch(long[] array, long value) {
+    for (int i = 0; i < array.length; i++) {
+      if (array[i] == value) {
+        return i;
+      }
+    }
+    return C.INDEX_UNSET;
+  }
+
+  /**
    * Returns the index of the largest element in {@code array} that is less than (or optionally
    * equal to) a specified {@code value}.
-   * <p>
-   * The search is performed using a binary search algorithm, so the array must be sorted. If the
+   *
+   * <p>The search is performed using a binary search algorithm, so the array must be sorted. If the
    * array contains multiple elements equal to {@code value} and {@code inclusive} is true, the
    * index of the first one will be returned.
    *
@@ -690,8 +762,8 @@ public final class Util {
    * @return The index of the largest element in {@code array} that is less than (or optionally
    *     equal to) {@code value}.
    */
-  public static int binarySearchFloor(int[] array, int value, boolean inclusive,
-      boolean stayInBounds) {
+  public static int binarySearchFloor(
+      int[] array, int value, boolean inclusive, boolean stayInBounds) {
     int index = Arrays.binarySearch(array, value);
     if (index < 0) {
       index = -(index + 2);
@@ -1151,6 +1223,29 @@ public final class Util {
   }
 
   /**
+   * Converts an integer to a long by unsigned conversion.
+   *
+   * <p>This method is equivalent to {@link Integer#toUnsignedLong(int)} for API 26+.
+   */
+  public static long toUnsignedLong(int x) {
+    // x is implicitly casted to a long before the bit operation is executed but this does not
+    // impact the method correctness.
+    return x & 0xFFFFFFFFL;
+  }
+
+  /**
+   * Return the long that is composed of the bits of the 2 specified integers.
+   *
+   * @param mostSignificantBits The 32 most significant bits of the long to return.
+   * @param leastSignificantBits The 32 least significant bits of the long to return.
+   * @return a long where its 32 most significant bits are {@code mostSignificantBits} bits and its
+   *     32 least significant bits are {@code leastSignificantBits}.
+   */
+  public static long toLong(int mostSignificantBits, int leastSignificantBits) {
+    return (toUnsignedLong(mostSignificantBits) << 32) | toUnsignedLong(leastSignificantBits);
+  }
+
+  /**
    * Returns a byte array containing values parsed from the hex string provided.
    *
    * @param hexString The hex string to convert to bytes.
@@ -1210,9 +1305,9 @@ public final class Util {
    * @param codecs A codec sequence string, as defined in RFC 6381.
    * @param trackType One of {@link C}{@code .TRACK_TYPE_*}.
    * @return A copy of {@code codecs} without the codecs whose track type doesn't match {@code
-   *     trackType}.
+   *     trackType}. If this ends up empty, or {@code codecs} is null, return null.
    */
-  public static @Nullable String getCodecsOfType(String codecs, int trackType) {
+  public static @Nullable String getCodecsOfType(@Nullable String codecs, int trackType) {
     String[] codecArray = splitCodecs(codecs);
     if (codecArray.length == 0) {
       return null;
@@ -1233,9 +1328,9 @@ public final class Util {
    * Splits a codecs sequence string, as defined in RFC 6381, into individual codec strings.
    *
    * @param codecs A codec sequence string, as defined in RFC 6381.
-   * @return The split codecs, or an array of length zero if the input was empty.
+   * @return The split codecs, or an array of length zero if the input was empty or null.
    */
-  public static String[] splitCodecs(String codecs) {
+  public static String[] splitCodecs(@Nullable String codecs) {
     if (TextUtils.isEmpty(codecs)) {
       return new String[0];
     }
@@ -1276,19 +1371,22 @@ public final class Util {
   public static boolean isEncodingLinearPcm(@C.Encoding int encoding) {
     return encoding == C.ENCODING_PCM_8BIT
         || encoding == C.ENCODING_PCM_16BIT
+        || encoding == C.ENCODING_PCM_16BIT_BIG_ENDIAN
         || encoding == C.ENCODING_PCM_24BIT
         || encoding == C.ENCODING_PCM_32BIT
         || encoding == C.ENCODING_PCM_FLOAT;
   }
 
   /**
-   * Returns whether {@code encoding} is high resolution (&gt; 16-bit) integer PCM.
+   * Returns whether {@code encoding} is high resolution (&gt; 16-bit) PCM.
    *
    * @param encoding The encoding of the audio data.
-   * @return Whether the encoding is high resolution integer PCM.
+   * @return Whether the encoding is high resolution PCM.
    */
-  public static boolean isEncodingHighResolutionIntegerPcm(@C.PcmEncoding int encoding) {
-    return encoding == C.ENCODING_PCM_24BIT || encoding == C.ENCODING_PCM_32BIT;
+  public static boolean isEncodingHighResolutionPcm(@C.PcmEncoding int encoding) {
+    return encoding == C.ENCODING_PCM_24BIT
+        || encoding == C.ENCODING_PCM_32BIT
+        || encoding == C.ENCODING_PCM_FLOAT;
   }
 
   /**
@@ -1344,14 +1442,13 @@ public final class Util {
       case C.ENCODING_PCM_8BIT:
         return channelCount;
       case C.ENCODING_PCM_16BIT:
+      case C.ENCODING_PCM_16BIT_BIG_ENDIAN:
         return channelCount * 2;
       case C.ENCODING_PCM_24BIT:
         return channelCount * 3;
       case C.ENCODING_PCM_32BIT:
       case C.ENCODING_PCM_FLOAT:
         return channelCount * 4;
-      case C.ENCODING_PCM_A_LAW:
-      case C.ENCODING_PCM_MU_LAW:
       case C.ENCODING_INVALID:
       case Format.NO_VALUE:
       default:
@@ -1471,7 +1568,7 @@ public final class Util {
    * @return The content type.
    */
   @C.ContentType
-  public static int inferContentType(Uri uri, String overrideExtension) {
+  public static int inferContentType(Uri uri, @Nullable String overrideExtension) {
     return TextUtils.isEmpty(overrideExtension)
         ? inferContentType(uri)
         : inferContentType("." + overrideExtension);
@@ -1667,8 +1764,8 @@ public final class Util {
   }
 
   /**
-   * Returns the result of updating a CRC with the specified bytes in a "most significant bit first"
-   * order.
+   * Returns the result of updating a CRC-32 with the specified bytes in a "most significant bit
+   * first" order.
    *
    * @param bytes Array containing the bytes to update the crc value with.
    * @param start The index to the first byte in the byte range to update the crc with.
@@ -1676,10 +1773,27 @@ public final class Util {
    * @param initialValue The initial value for the crc calculation.
    * @return The result of updating the initial value with the specified bytes.
    */
-  public static int crc(byte[] bytes, int start, int end, int initialValue) {
+  public static int crc32(byte[] bytes, int start, int end, int initialValue) {
     for (int i = start; i < end; i++) {
       initialValue = (initialValue << 8)
           ^ CRC32_BYTES_MSBF[((initialValue >>> 24) ^ (bytes[i] & 0xFF)) & 0xFF];
+    }
+    return initialValue;
+  }
+
+  /**
+   * Returns the result of updating a CRC-8 with the specified bytes in a "most significant bit
+   * first" order.
+   *
+   * @param bytes Array containing the bytes to update the crc value with.
+   * @param start The index to the first byte in the byte range to update the crc with.
+   * @param end The index after the last byte in the byte range to update the crc with.
+   * @param initialValue The initial value for the crc calculation.
+   * @return The result of updating the initial value with the specified bytes.
+   */
+  public static int crc8(byte[] bytes, int start, int end, int initialValue) {
+    for (int i = start; i < end; i++) {
+      initialValue = CRC8_BYTES_MSBF[initialValue ^ (bytes[i] & 0xFF)];
     }
     return initialValue;
   }
@@ -1822,25 +1936,37 @@ public final class Util {
   }
 
   /**
-   * Gets the physical size of the default display, in pixels.
+   * Gets the size of the current mode of the default display, in pixels.
+   *
+   * <p>Note that due to application UI scaling, the number of pixels made available to applications
+   * (as reported by {@link Display#getSize(Point)} may differ from the mode's actual resolution (as
+   * reported by this function). For example, applications running on a display configured with a 4K
+   * mode may have their UI laid out and rendered in 1080p and then scaled up. Applications can take
+   * advantage of the full mode resolution through a {@link SurfaceView} using full size buffers.
    *
    * @param context Any context.
-   * @return The physical display size, in pixels.
+   * @return The size of the current mode, in pixels.
    */
-  public static Point getPhysicalDisplaySize(Context context) {
+  public static Point getCurrentDisplayModeSize(Context context) {
     WindowManager windowManager = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
-    return getPhysicalDisplaySize(context, windowManager.getDefaultDisplay());
+    return getCurrentDisplayModeSize(context, windowManager.getDefaultDisplay());
   }
 
   /**
-   * Gets the physical size of the specified display, in pixels.
+   * Gets the size of the current mode of the specified display, in pixels.
+   *
+   * <p>Note that due to application UI scaling, the number of pixels made available to applications
+   * (as reported by {@link Display#getSize(Point)} may differ from the mode's actual resolution (as
+   * reported by this function). For example, applications running on a display configured with a 4K
+   * mode may have their UI laid out and rendered in 1080p and then scaled up. Applications can take
+   * advantage of the full mode resolution through a {@link SurfaceView} using full size buffers.
    *
    * @param context Any context.
    * @param display The display whose size is to be returned.
-   * @return The physical display size, in pixels.
+   * @return The size of the current mode, in pixels.
    */
-  public static Point getPhysicalDisplaySize(Context context, Display display) {
-    if (Util.SDK_INT <= 28 && display.getDisplayId() == Display.DEFAULT_DISPLAY && isTv(context)) {
+  public static Point getCurrentDisplayModeSize(Context context, Display display) {
+    if (Util.SDK_INT <= 29 && display.getDisplayId() == Display.DEFAULT_DISPLAY && isTv(context)) {
       // On Android TVs it is common for the UI to be configured for a lower resolution than
       // SurfaceViews can output. Before API 26 the Display object does not provide a way to
       // identify this case, and up to and including API 28 many devices still do not correctly set
@@ -1892,13 +2018,10 @@ public final class Util {
    * Extract renderer capabilities for the renderers created by the provided renderers factory.
    *
    * @param renderersFactory A {@link RenderersFactory}.
-   * @param drmSessionManager An optional {@link DrmSessionManager} used by the renderers.
    * @return The {@link RendererCapabilities} for each renderer created by the {@code
    *     renderersFactory}.
    */
-  public static RendererCapabilities[] getRendererCapabilities(
-      RenderersFactory renderersFactory,
-      @Nullable DrmSessionManager<FrameworkMediaCrypto> drmSessionManager) {
+  public static RendererCapabilities[] getRendererCapabilities(RenderersFactory renderersFactory) {
     Renderer[] renderers =
         renderersFactory.createRenderers(
             new Handler(),
@@ -1906,12 +2029,39 @@ public final class Util {
             new AudioRendererEventListener() {},
             (cues) -> {},
             (metadata) -> {},
-            drmSessionManager);
+            /* drmSessionManager= */ null);
     RendererCapabilities[] capabilities = new RendererCapabilities[renderers.length];
     for (int i = 0; i < renderers.length; i++) {
       capabilities[i] = renderers[i].getCapabilities();
     }
     return capabilities;
+  }
+
+  /**
+   * Returns a string representation of a {@code TRACK_TYPE_*} constant defined in {@link C}.
+   *
+   * @param trackType A {@code TRACK_TYPE_*} constant,
+   * @return A string representation of this constant.
+   */
+  public static String getTrackTypeString(int trackType) {
+    switch (trackType) {
+      case C.TRACK_TYPE_AUDIO:
+        return "audio";
+      case C.TRACK_TYPE_DEFAULT:
+        return "default";
+      case C.TRACK_TYPE_METADATA:
+        return "metadata";
+      case C.TRACK_TYPE_CAMERA_MOTION:
+        return "camera motion";
+      case C.TRACK_TYPE_NONE:
+        return "none";
+      case C.TRACK_TYPE_TEXT:
+        return "text";
+      case C.TRACK_TYPE_VIDEO:
+        return "video";
+      default:
+        return trackType >= C.TRACK_TYPE_CUSTOM_BASE ? "custom (" + trackType + ")" : "?";
+    }
   }
 
   @Nullable
@@ -1947,7 +2097,7 @@ public final class Util {
     Configuration config = Resources.getSystem().getConfiguration();
     return SDK_INT >= 24
         ? getSystemLocalesV24(config)
-        : SDK_INT >= 21 ? getSystemLocaleV21(config) : new String[] {config.locale.toString()};
+        : new String[] {getLocaleLanguageTag(config.locale)};
   }
 
   @TargetApi(24)
@@ -1956,13 +2106,8 @@ public final class Util {
   }
 
   @TargetApi(21)
-  private static String[] getSystemLocaleV21(Configuration config) {
-    return new String[] {config.locale.toLanguageTag()};
-  }
-
-  @TargetApi(21)
-  private static String normalizeLanguageCodeSyntaxV21(String languageTag) {
-    return Locale.forLanguageTag(languageTag).toLanguageTag();
+  private static String getLocaleLanguageTagV21(Locale locale) {
+    return locale.toLanguageTag();
   }
 
   private static @C.NetworkType int getMobileNetworkType(NetworkInfo networkInfo) {
@@ -1986,6 +2131,8 @@ public final class Util {
         return C.NETWORK_TYPE_3G;
       case TelephonyManager.NETWORK_TYPE_LTE:
         return C.NETWORK_TYPE_4G;
+      case TelephonyManager.NETWORK_TYPE_NR:
+        return C.NETWORK_TYPE_5G;
       case TelephonyManager.NETWORK_TYPE_IWLAN:
         return C.NETWORK_TYPE_WIFI;
       case TelephonyManager.NETWORK_TYPE_GSM:
@@ -1995,32 +2142,45 @@ public final class Util {
     }
   }
 
-  private static HashMap<String, String> createIso3ToIso2Map() {
+  private static HashMap<String, String> createIsoLanguageReplacementMap() {
     String[] iso2Languages = Locale.getISOLanguages();
-    HashMap<String, String> iso3ToIso2 =
+    HashMap<String, String> replacedLanguages =
         new HashMap<>(
-            /* initialCapacity= */ iso2Languages.length + iso3BibliographicalToIso2.length);
+            /* initialCapacity= */ iso2Languages.length + additionalIsoLanguageReplacements.length);
     for (String iso2 : iso2Languages) {
       try {
         // This returns the ISO 639-2/T code for the language.
         String iso3 = new Locale(iso2).getISO3Language();
         if (!TextUtils.isEmpty(iso3)) {
-          iso3ToIso2.put(iso3, iso2);
+          replacedLanguages.put(iso3, iso2);
         }
       } catch (MissingResourceException e) {
         // Shouldn't happen for list of known languages, but we don't want to throw either.
       }
     }
-    // Add additional ISO 639-2/B codes to mapping.
-    for (int i = 0; i < iso3BibliographicalToIso2.length; i += 2) {
-      iso3ToIso2.put(iso3BibliographicalToIso2[i], iso3BibliographicalToIso2[i + 1]);
+    // Add additional replacement mappings.
+    for (int i = 0; i < additionalIsoLanguageReplacements.length; i += 2) {
+      replacedLanguages.put(
+          additionalIsoLanguageReplacements[i], additionalIsoLanguageReplacements[i + 1]);
     }
-    return iso3ToIso2;
+    return replacedLanguages;
   }
 
-  // See https://en.wikipedia.org/wiki/List_of_ISO_639-2_codes.
-  private static final String[] iso3BibliographicalToIso2 =
+  private static String maybeReplaceGrandfatheredLanguageTags(String languageTag) {
+    for (int i = 0; i < isoGrandfatheredTagReplacements.length; i += 2) {
+      if (languageTag.startsWith(isoGrandfatheredTagReplacements[i])) {
+        return isoGrandfatheredTagReplacements[i + 1]
+            + languageTag.substring(/* beginIndex= */ isoGrandfatheredTagReplacements[i].length());
+      }
+    }
+    return languageTag;
+  }
+
+  // Additional mapping from ISO3 to ISO2 language codes.
+  private static final String[] additionalIsoLanguageReplacements =
       new String[] {
+        // Bibliographical codes defined in ISO 639-2/B, replaced by terminological code defined in
+        // ISO 639-2/T. See https://en.wikipedia.org/wiki/List_of_ISO_639-2_codes.
         "alb", "sq",
         "arm", "hy",
         "baq", "eu",
@@ -2039,52 +2199,118 @@ public final class Util {
         "may", "ms",
         "per", "fa",
         "rum", "ro",
+        "scc", "hbs-srp",
         "slo", "sk",
-        "wel", "cy"
+        "wel", "cy",
+        // Deprecated 2-letter codes, replaced by modern equivalent (including macrolanguage)
+        // See https://en.wikipedia.org/wiki/List_of_ISO_639-1_codes, "ISO 639:1988"
+        "id", "ms-ind",
+        "iw", "he",
+        "heb", "he",
+        "ji", "yi",
+        // Individual macrolanguage codes mapped back to full macrolanguage code.
+        // See https://en.wikipedia.org/wiki/ISO_639_macrolanguage
+        "in", "ms-ind",
+        "ind", "ms-ind",
+        "nb", "no-nob",
+        "nob", "no-nob",
+        "nn", "no-nno",
+        "nno", "no-nno",
+        "tw", "ak-twi",
+        "twi", "ak-twi",
+        "bs", "hbs-bos",
+        "bos", "hbs-bos",
+        "hr", "hbs-hrv",
+        "hrv", "hbs-hrv",
+        "sr", "hbs-srp",
+        "srp", "hbs-srp",
+        "cmn", "zh-cmn",
+        "hak", "zh-hak",
+        "nan", "zh-nan",
+        "hsn", "zh-hsn"
+      };
+
+  // "Grandfathered tags", replaced by modern equivalents (including macrolanguage)
+  // See https://www.iana.org/assignments/language-subtag-registry/language-subtag-registry.
+  private static final String[] isoGrandfatheredTagReplacements =
+      new String[] {
+        "i-lux", "lb",
+        "i-hak", "zh-hak",
+        "i-navajo", "nv",
+        "no-bok", "no-nob",
+        "no-nyn", "no-nno",
+        "zh-guoyu", "zh-cmn",
+        "zh-hakka", "zh-hak",
+        "zh-min-nan", "zh-nan",
+        "zh-xiang", "zh-hsn"
       };
 
   /**
-   * Allows the CRC calculation to be done byte by byte instead of bit per bit being the order
-   * "most significant bit first".
+   * Allows the CRC-32 calculation to be done byte by byte instead of bit per bit in the order "most
+   * significant bit first".
    */
   private static final int[] CRC32_BYTES_MSBF = {
-      0X00000000, 0X04C11DB7, 0X09823B6E, 0X0D4326D9, 0X130476DC, 0X17C56B6B, 0X1A864DB2,
-      0X1E475005, 0X2608EDB8, 0X22C9F00F, 0X2F8AD6D6, 0X2B4BCB61, 0X350C9B64, 0X31CD86D3,
-      0X3C8EA00A, 0X384FBDBD, 0X4C11DB70, 0X48D0C6C7, 0X4593E01E, 0X4152FDA9, 0X5F15ADAC,
-      0X5BD4B01B, 0X569796C2, 0X52568B75, 0X6A1936C8, 0X6ED82B7F, 0X639B0DA6, 0X675A1011,
-      0X791D4014, 0X7DDC5DA3, 0X709F7B7A, 0X745E66CD, 0X9823B6E0, 0X9CE2AB57, 0X91A18D8E,
-      0X95609039, 0X8B27C03C, 0X8FE6DD8B, 0X82A5FB52, 0X8664E6E5, 0XBE2B5B58, 0XBAEA46EF,
-      0XB7A96036, 0XB3687D81, 0XAD2F2D84, 0XA9EE3033, 0XA4AD16EA, 0XA06C0B5D, 0XD4326D90,
-      0XD0F37027, 0XDDB056FE, 0XD9714B49, 0XC7361B4C, 0XC3F706FB, 0XCEB42022, 0XCA753D95,
-      0XF23A8028, 0XF6FB9D9F, 0XFBB8BB46, 0XFF79A6F1, 0XE13EF6F4, 0XE5FFEB43, 0XE8BCCD9A,
-      0XEC7DD02D, 0X34867077, 0X30476DC0, 0X3D044B19, 0X39C556AE, 0X278206AB, 0X23431B1C,
-      0X2E003DC5, 0X2AC12072, 0X128E9DCF, 0X164F8078, 0X1B0CA6A1, 0X1FCDBB16, 0X018AEB13,
-      0X054BF6A4, 0X0808D07D, 0X0CC9CDCA, 0X7897AB07, 0X7C56B6B0, 0X71159069, 0X75D48DDE,
-      0X6B93DDDB, 0X6F52C06C, 0X6211E6B5, 0X66D0FB02, 0X5E9F46BF, 0X5A5E5B08, 0X571D7DD1,
-      0X53DC6066, 0X4D9B3063, 0X495A2DD4, 0X44190B0D, 0X40D816BA, 0XACA5C697, 0XA864DB20,
-      0XA527FDF9, 0XA1E6E04E, 0XBFA1B04B, 0XBB60ADFC, 0XB6238B25, 0XB2E29692, 0X8AAD2B2F,
-      0X8E6C3698, 0X832F1041, 0X87EE0DF6, 0X99A95DF3, 0X9D684044, 0X902B669D, 0X94EA7B2A,
-      0XE0B41DE7, 0XE4750050, 0XE9362689, 0XEDF73B3E, 0XF3B06B3B, 0XF771768C, 0XFA325055,
-      0XFEF34DE2, 0XC6BCF05F, 0XC27DEDE8, 0XCF3ECB31, 0XCBFFD686, 0XD5B88683, 0XD1799B34,
-      0XDC3ABDED, 0XD8FBA05A, 0X690CE0EE, 0X6DCDFD59, 0X608EDB80, 0X644FC637, 0X7A089632,
-      0X7EC98B85, 0X738AAD5C, 0X774BB0EB, 0X4F040D56, 0X4BC510E1, 0X46863638, 0X42472B8F,
-      0X5C007B8A, 0X58C1663D, 0X558240E4, 0X51435D53, 0X251D3B9E, 0X21DC2629, 0X2C9F00F0,
-      0X285E1D47, 0X36194D42, 0X32D850F5, 0X3F9B762C, 0X3B5A6B9B, 0X0315D626, 0X07D4CB91,
-      0X0A97ED48, 0X0E56F0FF, 0X1011A0FA, 0X14D0BD4D, 0X19939B94, 0X1D528623, 0XF12F560E,
-      0XF5EE4BB9, 0XF8AD6D60, 0XFC6C70D7, 0XE22B20D2, 0XE6EA3D65, 0XEBA91BBC, 0XEF68060B,
-      0XD727BBB6, 0XD3E6A601, 0XDEA580D8, 0XDA649D6F, 0XC423CD6A, 0XC0E2D0DD, 0XCDA1F604,
-      0XC960EBB3, 0XBD3E8D7E, 0XB9FF90C9, 0XB4BCB610, 0XB07DABA7, 0XAE3AFBA2, 0XAAFBE615,
-      0XA7B8C0CC, 0XA379DD7B, 0X9B3660C6, 0X9FF77D71, 0X92B45BA8, 0X9675461F, 0X8832161A,
-      0X8CF30BAD, 0X81B02D74, 0X857130C3, 0X5D8A9099, 0X594B8D2E, 0X5408ABF7, 0X50C9B640,
-      0X4E8EE645, 0X4A4FFBF2, 0X470CDD2B, 0X43CDC09C, 0X7B827D21, 0X7F436096, 0X7200464F,
-      0X76C15BF8, 0X68860BFD, 0X6C47164A, 0X61043093, 0X65C52D24, 0X119B4BE9, 0X155A565E,
-      0X18197087, 0X1CD86D30, 0X029F3D35, 0X065E2082, 0X0B1D065B, 0X0FDC1BEC, 0X3793A651,
-      0X3352BBE6, 0X3E119D3F, 0X3AD08088, 0X2497D08D, 0X2056CD3A, 0X2D15EBE3, 0X29D4F654,
-      0XC5A92679, 0XC1683BCE, 0XCC2B1D17, 0XC8EA00A0, 0XD6AD50A5, 0XD26C4D12, 0XDF2F6BCB,
-      0XDBEE767C, 0XE3A1CBC1, 0XE760D676, 0XEA23F0AF, 0XEEE2ED18, 0XF0A5BD1D, 0XF464A0AA,
-      0XF9278673, 0XFDE69BC4, 0X89B8FD09, 0X8D79E0BE, 0X803AC667, 0X84FBDBD0, 0X9ABC8BD5,
-      0X9E7D9662, 0X933EB0BB, 0X97FFAD0C, 0XAFB010B1, 0XAB710D06, 0XA6322BDF, 0XA2F33668,
-      0XBCB4666D, 0XB8757BDA, 0XB5365D03, 0XB1F740B4
+    0X00000000, 0X04C11DB7, 0X09823B6E, 0X0D4326D9, 0X130476DC, 0X17C56B6B, 0X1A864DB2,
+    0X1E475005, 0X2608EDB8, 0X22C9F00F, 0X2F8AD6D6, 0X2B4BCB61, 0X350C9B64, 0X31CD86D3,
+    0X3C8EA00A, 0X384FBDBD, 0X4C11DB70, 0X48D0C6C7, 0X4593E01E, 0X4152FDA9, 0X5F15ADAC,
+    0X5BD4B01B, 0X569796C2, 0X52568B75, 0X6A1936C8, 0X6ED82B7F, 0X639B0DA6, 0X675A1011,
+    0X791D4014, 0X7DDC5DA3, 0X709F7B7A, 0X745E66CD, 0X9823B6E0, 0X9CE2AB57, 0X91A18D8E,
+    0X95609039, 0X8B27C03C, 0X8FE6DD8B, 0X82A5FB52, 0X8664E6E5, 0XBE2B5B58, 0XBAEA46EF,
+    0XB7A96036, 0XB3687D81, 0XAD2F2D84, 0XA9EE3033, 0XA4AD16EA, 0XA06C0B5D, 0XD4326D90,
+    0XD0F37027, 0XDDB056FE, 0XD9714B49, 0XC7361B4C, 0XC3F706FB, 0XCEB42022, 0XCA753D95,
+    0XF23A8028, 0XF6FB9D9F, 0XFBB8BB46, 0XFF79A6F1, 0XE13EF6F4, 0XE5FFEB43, 0XE8BCCD9A,
+    0XEC7DD02D, 0X34867077, 0X30476DC0, 0X3D044B19, 0X39C556AE, 0X278206AB, 0X23431B1C,
+    0X2E003DC5, 0X2AC12072, 0X128E9DCF, 0X164F8078, 0X1B0CA6A1, 0X1FCDBB16, 0X018AEB13,
+    0X054BF6A4, 0X0808D07D, 0X0CC9CDCA, 0X7897AB07, 0X7C56B6B0, 0X71159069, 0X75D48DDE,
+    0X6B93DDDB, 0X6F52C06C, 0X6211E6B5, 0X66D0FB02, 0X5E9F46BF, 0X5A5E5B08, 0X571D7DD1,
+    0X53DC6066, 0X4D9B3063, 0X495A2DD4, 0X44190B0D, 0X40D816BA, 0XACA5C697, 0XA864DB20,
+    0XA527FDF9, 0XA1E6E04E, 0XBFA1B04B, 0XBB60ADFC, 0XB6238B25, 0XB2E29692, 0X8AAD2B2F,
+    0X8E6C3698, 0X832F1041, 0X87EE0DF6, 0X99A95DF3, 0X9D684044, 0X902B669D, 0X94EA7B2A,
+    0XE0B41DE7, 0XE4750050, 0XE9362689, 0XEDF73B3E, 0XF3B06B3B, 0XF771768C, 0XFA325055,
+    0XFEF34DE2, 0XC6BCF05F, 0XC27DEDE8, 0XCF3ECB31, 0XCBFFD686, 0XD5B88683, 0XD1799B34,
+    0XDC3ABDED, 0XD8FBA05A, 0X690CE0EE, 0X6DCDFD59, 0X608EDB80, 0X644FC637, 0X7A089632,
+    0X7EC98B85, 0X738AAD5C, 0X774BB0EB, 0X4F040D56, 0X4BC510E1, 0X46863638, 0X42472B8F,
+    0X5C007B8A, 0X58C1663D, 0X558240E4, 0X51435D53, 0X251D3B9E, 0X21DC2629, 0X2C9F00F0,
+    0X285E1D47, 0X36194D42, 0X32D850F5, 0X3F9B762C, 0X3B5A6B9B, 0X0315D626, 0X07D4CB91,
+    0X0A97ED48, 0X0E56F0FF, 0X1011A0FA, 0X14D0BD4D, 0X19939B94, 0X1D528623, 0XF12F560E,
+    0XF5EE4BB9, 0XF8AD6D60, 0XFC6C70D7, 0XE22B20D2, 0XE6EA3D65, 0XEBA91BBC, 0XEF68060B,
+    0XD727BBB6, 0XD3E6A601, 0XDEA580D8, 0XDA649D6F, 0XC423CD6A, 0XC0E2D0DD, 0XCDA1F604,
+    0XC960EBB3, 0XBD3E8D7E, 0XB9FF90C9, 0XB4BCB610, 0XB07DABA7, 0XAE3AFBA2, 0XAAFBE615,
+    0XA7B8C0CC, 0XA379DD7B, 0X9B3660C6, 0X9FF77D71, 0X92B45BA8, 0X9675461F, 0X8832161A,
+    0X8CF30BAD, 0X81B02D74, 0X857130C3, 0X5D8A9099, 0X594B8D2E, 0X5408ABF7, 0X50C9B640,
+    0X4E8EE645, 0X4A4FFBF2, 0X470CDD2B, 0X43CDC09C, 0X7B827D21, 0X7F436096, 0X7200464F,
+    0X76C15BF8, 0X68860BFD, 0X6C47164A, 0X61043093, 0X65C52D24, 0X119B4BE9, 0X155A565E,
+    0X18197087, 0X1CD86D30, 0X029F3D35, 0X065E2082, 0X0B1D065B, 0X0FDC1BEC, 0X3793A651,
+    0X3352BBE6, 0X3E119D3F, 0X3AD08088, 0X2497D08D, 0X2056CD3A, 0X2D15EBE3, 0X29D4F654,
+    0XC5A92679, 0XC1683BCE, 0XCC2B1D17, 0XC8EA00A0, 0XD6AD50A5, 0XD26C4D12, 0XDF2F6BCB,
+    0XDBEE767C, 0XE3A1CBC1, 0XE760D676, 0XEA23F0AF, 0XEEE2ED18, 0XF0A5BD1D, 0XF464A0AA,
+    0XF9278673, 0XFDE69BC4, 0X89B8FD09, 0X8D79E0BE, 0X803AC667, 0X84FBDBD0, 0X9ABC8BD5,
+    0X9E7D9662, 0X933EB0BB, 0X97FFAD0C, 0XAFB010B1, 0XAB710D06, 0XA6322BDF, 0XA2F33668,
+    0XBCB4666D, 0XB8757BDA, 0XB5365D03, 0XB1F740B4
   };
 
+  /**
+   * Allows the CRC-8 calculation to be done byte by byte instead of bit per bit in the order "most
+   * significant bit first".
+   */
+  private static final int[] CRC8_BYTES_MSBF = {
+    0x00, 0x07, 0x0E, 0x09, 0x1C, 0x1B, 0x12, 0x15, 0x38, 0x3F, 0x36, 0x31, 0x24, 0x23, 0x2A,
+    0x2D, 0x70, 0x77, 0x7E, 0x79, 0x6C, 0x6B, 0x62, 0x65, 0x48, 0x4F, 0x46, 0x41, 0x54, 0x53,
+    0x5A, 0x5D, 0xE0, 0xE7, 0xEE, 0xE9, 0xFC, 0xFB, 0xF2, 0xF5, 0xD8, 0xDF, 0xD6, 0xD1, 0xC4,
+    0xC3, 0xCA, 0xCD, 0x90, 0x97, 0x9E, 0x99, 0x8C, 0x8B, 0x82, 0x85, 0xA8, 0xAF, 0xA6, 0xA1,
+    0xB4, 0xB3, 0xBA, 0xBD, 0xC7, 0xC0, 0xC9, 0xCE, 0xDB, 0xDC, 0xD5, 0xD2, 0xFF, 0xF8, 0xF1,
+    0xF6, 0xE3, 0xE4, 0xED, 0xEA, 0xB7, 0xB0, 0xB9, 0xBE, 0xAB, 0xAC, 0xA5, 0xA2, 0x8F, 0x88,
+    0x81, 0x86, 0x93, 0x94, 0x9D, 0x9A, 0x27, 0x20, 0x29, 0x2E, 0x3B, 0x3C, 0x35, 0x32, 0x1F,
+    0x18, 0x11, 0x16, 0x03, 0x04, 0x0D, 0x0A, 0x57, 0x50, 0x59, 0x5E, 0x4B, 0x4C, 0x45, 0x42,
+    0x6F, 0x68, 0x61, 0x66, 0x73, 0x74, 0x7D, 0x7A, 0x89, 0x8E, 0x87, 0x80, 0x95, 0x92, 0x9B,
+    0x9C, 0xB1, 0xB6, 0xBF, 0xB8, 0xAD, 0xAA, 0xA3, 0xA4, 0xF9, 0xFE, 0xF7, 0xF0, 0xE5, 0xE2,
+    0xEB, 0xEC, 0xC1, 0xC6, 0xCF, 0xC8, 0xDD, 0xDA, 0xD3, 0xD4, 0x69, 0x6E, 0x67, 0x60, 0x75,
+    0x72, 0x7B, 0x7C, 0x51, 0x56, 0x5F, 0x58, 0x4D, 0x4A, 0x43, 0x44, 0x19, 0x1E, 0x17, 0x10,
+    0x05, 0x02, 0x0B, 0x0C, 0x21, 0x26, 0x2F, 0x28, 0x3D, 0x3A, 0x33, 0x34, 0x4E, 0x49, 0x40,
+    0x47, 0x52, 0x55, 0x5C, 0x5B, 0x76, 0x71, 0x78, 0x7F, 0x6A, 0x6D, 0x64, 0x63, 0x3E, 0x39,
+    0x30, 0x37, 0x22, 0x25, 0x2C, 0x2B, 0x06, 0x01, 0x08, 0x0F, 0x1A, 0x1D, 0x14, 0x13, 0xAE,
+    0xA9, 0xA0, 0xA7, 0xB2, 0xB5, 0xBC, 0xBB, 0x96, 0x91, 0x98, 0x9F, 0x8A, 0x8D, 0x84, 0x83,
+    0xDE, 0xD9, 0xD0, 0xD7, 0xC2, 0xC5, 0xCC, 0xCB, 0xE6, 0xE1, 0xE8, 0xEF, 0xFA, 0xFD, 0xF4,
+    0xF3
+  };
 }

@@ -15,9 +15,9 @@
  */
 package com.google.android.exoplayer2.upstream;
 
+import android.text.TextUtils;
 import androidx.annotation.IntDef;
 import androidx.annotation.Nullable;
-import android.text.TextUtils;
 import com.google.android.exoplayer2.util.Predicate;
 import com.google.android.exoplayer2.util.Util;
 import java.io.IOException;
@@ -183,18 +183,21 @@ public interface HttpDataSource extends DataSource {
       return defaultRequestProperties;
     }
 
+    /** @deprecated Use {@link #getDefaultRequestProperties} instead. */
     @Deprecated
     @Override
     public final void setDefaultRequestProperty(String name, String value) {
       defaultRequestProperties.set(name, value);
     }
 
+    /** @deprecated Use {@link #getDefaultRequestProperties} instead. */
     @Deprecated
     @Override
     public final void clearDefaultRequestProperty(String name) {
       defaultRequestProperties.remove(name);
     }
 
+    /** @deprecated Use {@link #getDefaultRequestProperties} instead. */
     @Deprecated
     @Override
     public final void clearAllDefaultRequestProperties() {
@@ -323,6 +326,13 @@ public interface HttpDataSource extends DataSource {
 
   }
 
+  /**
+   * Opens the source to read the specified data.
+   *
+   * <p>Note: {@link HttpDataSource} implementations are advised to set request headers passed via
+   * (in order of decreasing priority) the {@code dataSpec}, {@link #setRequestProperty} and the
+   * default parameters set in the {@link Factory}.
+   */
   @Override
   long open(DataSpec dataSpec) throws HttpDataSourceException;
 
@@ -335,6 +345,10 @@ public interface HttpDataSource extends DataSource {
   /**
    * Sets the value of a request header. The value will be used for subsequent connections
    * established by the source.
+   *
+   * <p>Note: If the same header is set as a default parameter in the {@link Factory}, then the
+   * header value set with this method should be preferred when connecting with the data source. See
+   * {@link #open}.
    *
    * @param name The name of the header field.
    * @param value The value of the field.

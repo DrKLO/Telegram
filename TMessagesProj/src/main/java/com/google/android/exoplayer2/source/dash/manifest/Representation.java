@@ -16,6 +16,7 @@
 package com.google.android.exoplayer2.source.dash.manifest;
 
 import android.net.Uri;
+import androidx.annotation.Nullable;
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.Format;
 import com.google.android.exoplayer2.source.dash.DashSegmentIndex;
@@ -53,9 +54,7 @@ public abstract class Representation {
    * The offset of the presentation timestamps in the media stream relative to media time.
    */
   public final long presentationTimeOffsetUs;
-  /**
-   * The in-band event streams in the representation. Never null, but may be empty.
-   */
+  /** The in-band event streams in the representation. May be empty. */
   public final List<Descriptor> inbandEventStreams;
 
   private final RangedUri initializationUri;
@@ -71,7 +70,7 @@ public abstract class Representation {
    */
   public static Representation newInstance(
       long revisionId, Format format, String baseUrl, SegmentBase segmentBase) {
-    return newInstance(revisionId, format, baseUrl, segmentBase, null);
+    return newInstance(revisionId, format, baseUrl, segmentBase, /* inbandEventStreams= */ null);
   }
 
   /**
@@ -89,8 +88,9 @@ public abstract class Representation {
       Format format,
       String baseUrl,
       SegmentBase segmentBase,
-      List<Descriptor> inbandEventStreams) {
-    return newInstance(revisionId, format, baseUrl, segmentBase, inbandEventStreams, null);
+      @Nullable List<Descriptor> inbandEventStreams) {
+    return newInstance(
+        revisionId, format, baseUrl, segmentBase, inbandEventStreams, /* cacheKey= */ null);
   }
 
   /**
@@ -110,8 +110,8 @@ public abstract class Representation {
       Format format,
       String baseUrl,
       SegmentBase segmentBase,
-      List<Descriptor> inbandEventStreams,
-      String cacheKey) {
+      @Nullable List<Descriptor> inbandEventStreams,
+      @Nullable String cacheKey) {
     if (segmentBase instanceof SingleSegmentBase) {
       return new SingleSegmentRepresentation(
           revisionId,
@@ -135,7 +135,7 @@ public abstract class Representation {
       Format format,
       String baseUrl,
       SegmentBase segmentBase,
-      List<Descriptor> inbandEventStreams) {
+      @Nullable List<Descriptor> inbandEventStreams) {
     this.revisionId = revisionId;
     this.format = format;
     this.baseUrl = baseUrl;
@@ -151,6 +151,7 @@ public abstract class Representation {
    * Returns a {@link RangedUri} defining the location of the representation's initialization data,
    * or null if no initialization data exists.
    */
+  @Nullable
   public RangedUri getInitializationUri() {
     return initializationUri;
   }
@@ -159,14 +160,15 @@ public abstract class Representation {
    * Returns a {@link RangedUri} defining the location of the representation's segment index, or
    * null if the representation provides an index directly.
    */
+  @Nullable
   public abstract RangedUri getIndexUri();
 
-  /**
-   * Returns an index if the representation provides one directly, or null otherwise.
-   */
+  /** Returns an index if the representation provides one directly, or null otherwise. */
+  @Nullable
   public abstract DashSegmentIndex getIndex();
 
   /** Returns a cache key for the representation if set, or null. */
+  @Nullable
   public abstract String getCacheKey();
 
   /**
@@ -184,9 +186,9 @@ public abstract class Representation {
      */
     public final long contentLength;
 
-    private final String cacheKey;
-    private final RangedUri indexUri;
-    private final SingleSegmentIndex segmentIndex;
+    @Nullable private final String cacheKey;
+    @Nullable private final RangedUri indexUri;
+    @Nullable private final SingleSegmentIndex segmentIndex;
 
     /**
      * @param revisionId Identifies the revision of the content.
@@ -209,7 +211,7 @@ public abstract class Representation {
         long indexStart,
         long indexEnd,
         List<Descriptor> inbandEventStreams,
-        String cacheKey,
+        @Nullable String cacheKey,
         long contentLength) {
       RangedUri rangedUri = new RangedUri(null, initializationStart,
           initializationEnd - initializationStart + 1);
@@ -233,8 +235,8 @@ public abstract class Representation {
         Format format,
         String baseUrl,
         SingleSegmentBase segmentBase,
-        List<Descriptor> inbandEventStreams,
-        String cacheKey,
+        @Nullable List<Descriptor> inbandEventStreams,
+        @Nullable String cacheKey,
         long contentLength) {
       super(revisionId, format, baseUrl, segmentBase, inbandEventStreams);
       this.uri = Uri.parse(baseUrl);
@@ -248,16 +250,19 @@ public abstract class Representation {
     }
 
     @Override
+    @Nullable
     public RangedUri getIndexUri() {
       return indexUri;
     }
 
     @Override
+    @Nullable
     public DashSegmentIndex getIndex() {
       return segmentIndex;
     }
 
     @Override
+    @Nullable
     public String getCacheKey() {
       return cacheKey;
     }
@@ -284,12 +289,13 @@ public abstract class Representation {
         Format format,
         String baseUrl,
         MultiSegmentBase segmentBase,
-        List<Descriptor> inbandEventStreams) {
+        @Nullable List<Descriptor> inbandEventStreams) {
       super(revisionId, format, baseUrl, segmentBase, inbandEventStreams);
       this.segmentBase = segmentBase;
     }
 
     @Override
+    @Nullable
     public RangedUri getIndexUri() {
       return null;
     }
@@ -300,6 +306,7 @@ public abstract class Representation {
     }
 
     @Override
+    @Nullable
     public String getCacheKey() {
       return null;
     }

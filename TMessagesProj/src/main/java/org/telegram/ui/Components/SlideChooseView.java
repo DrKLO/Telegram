@@ -3,14 +3,18 @@ package org.telegram.ui.Components;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
+import android.os.Bundle;
 import android.text.TextPaint;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.accessibility.AccessibilityNodeInfo;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.ui.ActionBar.Theme;
 
 public class SlideChooseView extends View {
+
+    private final SeekBarAccessibilityDelegate accessibilityDelegate;
 
     private Paint paint;
     private TextPaint textPaint;
@@ -39,11 +43,34 @@ public class SlideChooseView extends View {
         paint = new Paint(Paint.ANTI_ALIAS_FLAG);
         textPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
         textPaint.setTextSize(AndroidUtilities.dp(13));
+
+        accessibilityDelegate = new IntSeekBarAccessibilityDelegate() {
+            @Override
+            protected int getProgress() {
+                return selectedIndex;
+            }
+
+            @Override
+            protected void setProgress(int progress) {
+                setOption(progress);
+            }
+
+            @Override
+            protected int getMaxValue() {
+                return optionsStr.length - 1;
+            }
+
+            @Override
+            protected CharSequence getContentDescription(View host) {
+                return selectedIndex < optionsStr.length ? optionsStr[selectedIndex] : null;
+            }
+        };
     }
 
     public void setCallback(Callback callback) {
         this.callback = callback;
     }
+
     public void setOptions(int selected, String... options) {
         this.callback = callback;
         this.optionsStr = options;
@@ -163,6 +190,17 @@ public class SlideChooseView extends View {
                 canvas.drawText(text, cx - size / 2, AndroidUtilities.dp(28), textPaint);
             }
         }
+    }
+
+    @Override
+    public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
+        super.onInitializeAccessibilityNodeInfo(info);
+        accessibilityDelegate.onInitializeAccessibilityNodeInfoInternal(this, info);
+    }
+
+    @Override
+    public boolean performAccessibilityAction(int action, Bundle arguments) {
+        return super.performAccessibilityAction(action, arguments) || accessibilityDelegate.performAccessibilityActionInternal(this, action, arguments);
     }
 
     public interface Callback {

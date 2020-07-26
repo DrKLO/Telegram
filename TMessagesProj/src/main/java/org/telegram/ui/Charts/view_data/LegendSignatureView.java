@@ -3,7 +3,6 @@ package org.telegram.ui.Charts.view_data;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.content.Context;
-import android.graphics.Color;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.transition.ChangeBounds;
@@ -20,10 +19,10 @@ import android.widget.TextView;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Charts.data.ChartData;
 import org.telegram.ui.Components.CombinedDrawable;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RadialProgressView;
-import org.telegram.ui.Charts.data.ChartData;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -43,8 +42,11 @@ public class LegendSignatureView extends FrameLayout {
 
     SimpleDateFormat format = new SimpleDateFormat("E, ");
     SimpleDateFormat format2 = new SimpleDateFormat("MMM dd");
+    SimpleDateFormat format3 =  new SimpleDateFormat("d MMM yyyy");
+    SimpleDateFormat format4 =  new SimpleDateFormat("d MMM");
     SimpleDateFormat hourFormat = new SimpleDateFormat(" HH:mm");
 
+    public boolean useWeek;
     public boolean useHour;
     public boolean showPercentage;
     public boolean zoomEnabled;
@@ -127,10 +129,10 @@ public class LegendSignatureView extends FrameLayout {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
                 TransitionSet transition = new TransitionSet();
                 transition.
-                        addTransition(new Fade(Fade.OUT).setDuration(100)).
+                        addTransition(new Fade(Fade.OUT).setDuration(150)).
                         addTransition(new ChangeBounds().setDuration(150)).
-                        addTransition(new Fade(Fade.IN).setDuration(100));
-                transition.setOrdering(TransitionSet.ORDERING_SEQUENTIAL);
+                        addTransition(new Fade(Fade.IN).setDuration(150));
+                transition.setOrdering(TransitionSet.ORDERING_TOGETHER);
                 TransitionManager.beginDelayedTransition(this, transition);
             }
         }
@@ -138,7 +140,11 @@ public class LegendSignatureView extends FrameLayout {
         if (isTopHourChart) {
             time.setText(String.format(Locale.ENGLISH, "%02d:00", date));
         } else {
-            time.setText(formatData(new Date(date)));
+            if (useWeek) {
+                time.setText(String.format("%s — %s", format4.format(new Date(date)), format3.format(new Date(date + 86400000L * 7))));
+            } else {
+                time.setText(formatData(new Date(date)));
+            }
             if (useHour) hourTime.setText(hourFormat.format(date));
         }
 
@@ -235,6 +241,10 @@ public class LegendSignatureView extends FrameLayout {
                 }
             }
         }
+    }
+
+    public void setUseWeek(boolean useWeek) {
+        this.useWeek = useWeek;
     }
 
     class Holder {

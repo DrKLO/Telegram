@@ -99,6 +99,7 @@ import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.CombinedDrawable;
 import org.telegram.ui.Components.ContextProgressView;
 import org.telegram.ui.Components.EditTextBoldCursor;
+import org.telegram.ui.Components.VerticalPositionAutoAnimator;
 import org.telegram.ui.Components.HintEditText;
 import org.telegram.ui.Components.ImageUpdater;
 import org.telegram.ui.Components.LayoutHelper;
@@ -274,59 +275,7 @@ public class LoginActivity extends BaseFragment {
         doneItem.setContentDescription(LocaleController.getString("Done", R.string.Done));
         doneItem.setVisibility(doneButtonVisible[DONE_TYPE_ACTION] ? View.VISIBLE : View.GONE);
 
-        FrameLayout container = new FrameLayout(context) {
-
-            private ObjectAnimator floatingButtonAnimator;
-            private ObjectAnimator privacyViewAnimator;
-
-            @Override
-            public void onViewAdded(View child) {
-                if (child == floatingButtonContainer && floatingButtonAnimator == null) {
-                    floatingButtonAnimator = ObjectAnimator.ofFloat(child, View.TRANSLATION_Y, 0f);
-                    floatingButtonAnimator.setInterpolator(AndroidUtilities.decelerateInterpolator);
-                    floatingButtonAnimator.setStartDelay(150);
-                    floatingButtonAnimator.setDuration(200);
-                }
-            }
-
-            @Override
-            protected void onSizeChanged(int w, int h, int oldw, int oldh) {
-                if (privacyViewAnimator == null) {
-                    final TextView privacyView = ((LoginActivityRegisterView) views[5]).privacyView;
-                    privacyViewAnimator = ObjectAnimator.ofFloat(privacyView, View.TRANSLATION_Y, 0f);
-                    privacyViewAnimator.setInterpolator(AndroidUtilities.decelerateInterpolator);
-                    privacyViewAnimator.setStartDelay(150);
-                    privacyViewAnimator.setDuration(200);
-                }
-
-                if (oldh == 0 || h == oldh || pagesAnimation != null && pagesAnimation.isRunning()) {
-                    return;
-                }
-
-                final float marginBottom = AndroidUtilities.dp(16f);
-
-                if (floatingButtonAnimator != null) {
-                    final float yOffset = floatingButtonContainer.getTranslationY() + oldh - h;
-                    final float viewHeight = floatingButtonContainer.getHeight() + marginBottom;
-                    final float translationY = Math.min(yOffset, viewHeight);
-                    floatingButtonAnimator.cancel();
-                    floatingButtonContainer.setTranslationY(translationY);
-                    floatingButtonAnimator.setFloatValues(translationY, 0f);
-                    floatingButtonAnimator.start();
-                }
-
-                if (currentViewNum == 5) {
-                    final TextView privacyView = ((LoginActivityRegisterView) views[5]).privacyView;
-                    final float yOffset = privacyView.getTranslationY() + oldh - h;
-                    final float viewHeight = privacyView.getHeight() + marginBottom;
-                    final float translationY = Math.min(yOffset, viewHeight);
-                    privacyViewAnimator.cancel();
-                    privacyView.setTranslationY(translationY);
-                    privacyViewAnimator.setFloatValues(translationY, 0f);
-                    privacyViewAnimator.start();
-                }
-            }
-        };
+        FrameLayout container = new FrameLayout(context);
         fragmentView = container;
 
         ScrollView scrollView = new ScrollView(context) {
@@ -410,6 +359,7 @@ public class LoginActivity extends BaseFragment {
                 }
             });
         }
+        VerticalPositionAutoAnimator.attach(floatingButtonContainer);
         container.addView(floatingButtonContainer, LayoutHelper.createFrame(Build.VERSION.SDK_INT >= 21 ? 56 : 60, Build.VERSION.SDK_INT >= 21 ? 56 : 60, Gravity.RIGHT | Gravity.BOTTOM, 0, 0, 14, 14));
         floatingButtonContainer.setOnClickListener(view -> onDoneButtonPressed());
 
@@ -2013,10 +1963,8 @@ public class LoginActivity extends BaseFragment {
                 int maxHeight = AndroidUtilities.dp(291);
                 if (scrollHeight - innerHeight < requiredHeight) {
                     setMeasuredDimension(getMeasuredWidth(), innerHeight + requiredHeight);
-                } else if (scrollHeight > maxHeight) {
-                    setMeasuredDimension(getMeasuredWidth(), maxHeight);
                 } else {
-                    setMeasuredDimension(getMeasuredWidth(), scrollHeight);
+                    setMeasuredDimension(getMeasuredWidth(), Math.min(scrollHeight, maxHeight));
                 }
             }
         }
@@ -3490,7 +3438,6 @@ public class LoginActivity extends BaseFragment {
 
         private TLRPC.FileLocation avatar;
         private TLRPC.FileLocation avatarBig;
-        private TLRPC.InputFile uploadedAvatar;
 
         private boolean createAfterUpload;
 
@@ -3549,11 +3496,12 @@ public class LoginActivity extends BaseFragment {
 
             setOrientation(VERTICAL);
 
-            imageUpdater = new ImageUpdater();
+            imageUpdater = new ImageUpdater(false);
+            imageUpdater.setOpenWithFrontfaceCamera(true);
             imageUpdater.setSearchAvailable(false);
             imageUpdater.setUploadAfterSelect(false);
             imageUpdater.parentFragment = LoginActivity.this;
-            imageUpdater.delegate = this;
+            imageUpdater.setDelegate(this);
 
             textView = new TextView(context);
             textView.setText(LocaleController.getString("RegisterText2", R.string.RegisterText2));
@@ -3597,7 +3545,7 @@ public class LoginActivity extends BaseFragment {
                 protected void onDraw(Canvas canvas) {
                     if (avatarImage != null && avatarProgressView.getVisibility() == VISIBLE) {
                         paint.setAlpha((int) (0x55 * avatarImage.getImageReceiver().getCurrentAlpha() * avatarProgressView.getAlpha()));
-                        canvas.drawCircle(getMeasuredWidth() / 2, getMeasuredHeight() / 2, AndroidUtilities.dp(32), paint);
+                        canvas.drawCircle(getMeasuredWidth() / 2.0f, getMeasuredHeight() / 2.0f, getMeasuredWidth() / 2.0f, paint);
                     }
                 }
             };
@@ -3605,7 +3553,6 @@ public class LoginActivity extends BaseFragment {
             avatarOverlay.setOnClickListener(view -> imageUpdater.openMenu(avatar != null, () -> {
                 avatar = null;
                 avatarBig = null;
-                uploadedAvatar = null;
                 showAvatarProgress(false, true);
                 avatarImage.setImage(null, null, avatarDrawable, null);
                 avatarEditor.setImageResource(R.drawable.actions_setphoto);
@@ -3713,6 +3660,7 @@ public class LoginActivity extends BaseFragment {
             privacyView.setLinkTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteLinkText));
             privacyView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             privacyView.setLineSpacing(AndroidUtilities.dp(2), 1.0f);
+            VerticalPositionAutoAnimator.attach(privacyView);
             privacyLayout.addView(privacyView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.BOTTOM));
 
             String str = LocaleController.getString("TermsOfServiceLogin", R.string.TermsOfServiceLogin);
@@ -3728,7 +3676,7 @@ public class LoginActivity extends BaseFragment {
         }
 
         @Override
-        public void didUploadPhoto(final TLRPC.InputFile file, final TLRPC.PhotoSize bigSize, final TLRPC.PhotoSize smallSize) {
+        public void didUploadPhoto(final TLRPC.InputFile photo, final TLRPC.InputFile video, double videoStartTimestamp, String videoPath, final TLRPC.PhotoSize bigSize, final TLRPC.PhotoSize smallSize) {
             AndroidUtilities.runOnUIThread(() -> {
                 avatar = smallSize.location;
                 avatarBig = bigSize.location;

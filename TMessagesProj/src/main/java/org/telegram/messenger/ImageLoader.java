@@ -162,7 +162,6 @@ public class ImageLoader {
                 URL downloadUrl = new URL(url);
                 httpConnection = downloadUrl.openConnection();
                 httpConnection.addRequestProperty("User-Agent", "Mozilla/5.0 (iPhone; CPU iPhone OS 10_0 like Mac OS X) AppleWebKit/602.1.38 (KHTML, like Gecko) Version/10.0 Mobile/14A5297c Safari/602.1");
-                //httpConnection.addRequestProperty("Referer", "google.com");
                 httpConnection.setConnectTimeout(5000);
                 httpConnection.setReadTimeout(5000);
                 if (httpConnection instanceof HttpURLConnection) {
@@ -176,7 +175,6 @@ public class ImageLoader {
                         httpConnection = downloadUrl.openConnection();
                         httpConnection.setRequestProperty("Cookie", cookies);
                         httpConnection.addRequestProperty("User-Agent", "Mozilla/5.0 (iPhone; CPU iPhone OS 10_0 like Mac OS X) AppleWebKit/602.1.38 (KHTML, like Gecko) Version/10.0 Mobile/14A5297c Safari/602.1");
-                        //httpConnection.addRequestProperty("Referer", "google.com");
                     }
                 }
                 httpConnection.connect();
@@ -316,7 +314,7 @@ public class ImageLoader {
                 String location = cacheImage.imageLocation.path;
                 URL downloadUrl = new URL(location.replace("athumb://", "https://"));
                 httpConnection = (HttpURLConnection) downloadUrl.openConnection();
-                httpConnection.addRequestProperty("User-Agent", "Mozilla/5.0 (iPhone; CPU iPhone OS 10_0 like Mac OS X) AppleWebKit/602.1.38 (KHTML, like Gecko) Version/10.0 Mobile/14A5297c Safari/602.1");
+                //httpConnection.addRequestProperty("User-Agent", "Mozilla/5.0 (iPhone; CPU iPhone OS 10_0 like Mac OS X) AppleWebKit/602.1.38 (KHTML, like Gecko) Version/10.0 Mobile/14A5297c Safari/602.1");
                 httpConnection.setConnectTimeout(5000);
                 httpConnection.setReadTimeout(5000);
                 httpConnection.connect();
@@ -477,7 +475,6 @@ public class ImageLoader {
                     URL downloadUrl = new URL(overrideUrl != null ? overrideUrl : location);
                     httpConnection = (HttpURLConnection) downloadUrl.openConnection();
                     httpConnection.addRequestProperty("User-Agent", "Mozilla/5.0 (iPhone; CPU iPhone OS 10_0 like Mac OS X) AppleWebKit/602.1.38 (KHTML, like Gecko) Version/10.0 Mobile/14A5297c Safari/602.1");
-                    //httpConnection.addRequestProperty("Referer", "google.com");
                     httpConnection.setConnectTimeout(5000);
                     httpConnection.setReadTimeout(5000);
                     httpConnection.setInstanceFollowRedirects(true);
@@ -802,7 +799,7 @@ public class ImageLoader {
                             h = Math.min(h, 160);
                             limitFps = true;
                         }
-                        precache = SharedConfig.getDevicePerfomanceClass() != SharedConfig.PERFORMANCE_CLASS_HIGH;
+                        precache = SharedConfig.getDevicePerformanceClass() != SharedConfig.PERFORMANCE_CLASS_HIGH;
                     }
 
                     if (args.length >= 3) {
@@ -839,10 +836,18 @@ public class ImageLoader {
                 onPostExecute(lottieDrawable);
             } else if (cacheImage.imageType == FileLoader.IMAGE_TYPE_ANIMATION) {
                 AnimatedFileDrawable fileDrawable;
-                if (AUTOPLAY_FILTER.equals(cacheImage.filter) && !(cacheImage.imageLocation.document instanceof TLRPC.TL_documentEncrypted)) {
-                    fileDrawable = new AnimatedFileDrawable(cacheImage.finalFilePath, false, cacheImage.size, cacheImage.imageLocation.document instanceof TLRPC.Document ? cacheImage.imageLocation.document : null, cacheImage.parentObject, cacheImage.currentAccount, false);
+                long seekTo;
+                if (cacheImage.imageLocation != null) {
+                    seekTo = cacheImage.imageLocation.videoSeekTo;
                 } else {
-                    fileDrawable = new AnimatedFileDrawable(cacheImage.finalFilePath, "d".equals(cacheImage.filter), 0, null, null, cacheImage.currentAccount, false);
+                    seekTo = 0;
+                }
+                if (AUTOPLAY_FILTER.equals(cacheImage.filter) && !(cacheImage.imageLocation.document instanceof TLRPC.TL_documentEncrypted)) {
+                    TLRPC.Document document = cacheImage.imageLocation.document instanceof TLRPC.Document ? cacheImage.imageLocation.document : null;
+                    int size = document != null ? cacheImage.size : cacheImage.imageLocation.currentSize;
+                    fileDrawable = new AnimatedFileDrawable(cacheImage.finalFilePath, false, size, document, document == null ? cacheImage.imageLocation : null, cacheImage.parentObject, seekTo, cacheImage.currentAccount, false);
+                } else {
+                    fileDrawable = new AnimatedFileDrawable(cacheImage.finalFilePath, "d".equals(cacheImage.filter), 0, null, null, null, seekTo, cacheImage.currentAccount, false);
                 }
                 Thread.interrupted();
                 onPostExecute(fileDrawable);
@@ -2379,7 +2384,14 @@ public class ImageLoader {
                         } else if (imageLocation.webFile != null) {
                             cacheFile = new File(FileLoader.getDirectory(FileLoader.MEDIA_DIR_DOCUMENT), url);
                         } else {
-                            cacheFile = new File(FileLoader.getDirectory(FileLoader.MEDIA_DIR_IMAGE), url);
+                            if (cacheType == 1) {
+                                cacheFile = new File(FileLoader.getDirectory(FileLoader.MEDIA_DIR_CACHE), url);
+                            } else {
+                                cacheFile = new File(FileLoader.getDirectory(FileLoader.MEDIA_DIR_IMAGE), url);
+                            }
+                            if (AUTOPLAY_FILTER.equals(filter) && imageLocation.location != null && !cacheFile.exists()) {
+                                cacheFile = new File(FileLoader.getDirectory(FileLoader.MEDIA_DIR_CACHE), imageLocation.location.volume_id + "_" + imageLocation.location.local_id + ".temp");
+                            }
                         }
                         if (AUTOPLAY_FILTER.equals(filter)) {
                             img.imageType = FileLoader.IMAGE_TYPE_ANIMATION;
@@ -2533,8 +2545,9 @@ public class ImageLoader {
         String thumbFilter = imageReceiver.getThumbFilter();
         ImageLocation mediaLocation = imageReceiver.getMediaLocation();
         String mediaFilter = imageReceiver.getMediaFilter();
-        ImageLocation imageLocation = imageReceiver.getImageLocation();
+        ImageLocation originalImageLocation = imageReceiver.getImageLocation();
         String imageFilter = imageReceiver.getImageFilter();
+        ImageLocation imageLocation = originalImageLocation;
         if (imageLocation == null && imageReceiver.isNeedsQualityThumb() && imageReceiver.isCurrentKeyQuality()) {
             if (parentObject instanceof MessageObject) {
                 MessageObject messageObject = (MessageObject) parentObject;
@@ -2654,7 +2667,7 @@ public class ImageLoader {
         if (thumbLocation != null) {
             ImageLocation strippedLoc = imageReceiver.getStrippedLocation();
             if (strippedLoc == null) {
-                strippedLoc = mediaLocation != null ? mediaLocation : imageLocation;
+                strippedLoc = mediaLocation != null ? mediaLocation : originalImageLocation;
             }
             thumbKey = thumbLocation.getKey(parentObject, strippedLoc, false);
             thumbUrl = thumbLocation.getKey(parentObject, strippedLoc, true);

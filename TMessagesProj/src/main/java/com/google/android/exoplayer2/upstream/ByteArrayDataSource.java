@@ -26,7 +26,7 @@ public final class ByteArrayDataSource extends BaseDataSource {
 
   private final byte[] data;
 
-  private @Nullable Uri uri;
+  @Nullable private Uri uri;
   private int readPosition;
   private int bytesRemaining;
   private boolean opened;
@@ -58,7 +58,7 @@ public final class ByteArrayDataSource extends BaseDataSource {
   }
 
   @Override
-  public int read(byte[] buffer, int offset, int readLength) throws IOException {
+  public int read(byte[] buffer, int offset, int readLength) {
     if (readLength == 0) {
       return 0;
     } else if (bytesRemaining == 0) {
@@ -74,12 +74,13 @@ public final class ByteArrayDataSource extends BaseDataSource {
   }
 
   @Override
-  public @Nullable Uri getUri() {
+  @Nullable
+  public Uri getUri() {
     return uri;
   }
 
   @Override
-  public void close() throws IOException {
+  public void close() {
     if (opened) {
       opened = false;
       transferEnded();

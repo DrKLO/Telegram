@@ -26,6 +26,8 @@ import androidx.annotation.VisibleForTesting;
 import com.google.android.exoplayer2.database.DatabaseIOException;
 import com.google.android.exoplayer2.database.DatabaseProvider;
 import com.google.android.exoplayer2.database.VersionTable;
+import com.google.android.exoplayer2.offline.Download.FailureReason;
+import com.google.android.exoplayer2.offline.Download.State;
 import com.google.android.exoplayer2.util.Assertions;
 import com.google.android.exoplayer2.util.Util;
 import java.util.ArrayList;
@@ -239,6 +241,9 @@ public final class DefaultDownloadIndex implements WritableDownloadIndex {
     try {
       ContentValues values = new ContentValues();
       values.put(COLUMN_STATE, Download.STATE_REMOVING);
+      // Only downloads in STATE_FAILED are allowed a failure reason, so we need to clear it here in
+      // case we're moving downloads from STATE_FAILED to STATE_REMOVING.
+      values.put(COLUMN_FAILURE_REASON, Download.FAILURE_REASON_NONE);
       SQLiteDatabase writableDatabase = databaseProvider.getWritableDatabase();
       writableDatabase.update(tableName, values, /* whereClause= */ null, /* whereArgs= */ null);
     } catch (SQLException e) {
@@ -285,7 +290,7 @@ public final class DefaultDownloadIndex implements WritableDownloadIndex {
       int version = VersionTable.getVersion(readableDatabase, VersionTable.FEATURE_OFFLINE, name);
       if (version != TABLE_VERSION) {
         SQLiteDatabase writableDatabase = databaseProvider.getWritableDatabase();
-        writableDatabase.beginTransaction();
+        writableDatabase.beginTransactionNonExclusive();
         try {
           VersionTable.setVersion(
               writableDatabase, VersionTable.FEATURE_OFFLINE, name, TABLE_VERSION);
@@ -302,6 +307,8 @@ public final class DefaultDownloadIndex implements WritableDownloadIndex {
     }
   }
 
+  // incompatible types in argument.
+  @SuppressWarnings("nullness:argument.type.incompatible")
   private Cursor getCursor(String selection, @Nullable String[] selectionArgs)
       throws DatabaseIOException {
     try {
@@ -349,14 +356,22 @@ public final class DefaultDownloadIndex implements WritableDownloadIndex {
     DownloadProgress downloadProgress = new DownloadProgress();
     downloadProgress.bytesDownloaded = cursor.getLong(COLUMN_INDEX_BYTES_DOWNLOADED);
     downloadProgress.percentDownloaded = cursor.getFloat(COLUMN_INDEX_PERCENT_DOWNLOADED);
+    @State int state = cursor.getInt(COLUMN_INDEX_STATE);
+    // It's possible the database contains failure reasons for non-failed downloads, which is
+    // invalid. Clear them here. See https://github.com/google/ExoPlayer/issues/6785.
+    @FailureReason
+    int failureReason =
+        state == Download.STATE_FAILED
+            ? cursor.getInt(COLUMN_INDEX_FAILURE_REASON)
+            : Download.FAILURE_REASON_NONE;
     return new Download(
         request,
-        /* state= */ cursor.getInt(COLUMN_INDEX_STATE),
+        state,
         /* startTimeMs= */ cursor.getLong(COLUMN_INDEX_START_TIME_MS),
         /* updateTimeMs= */ cursor.getLong(COLUMN_INDEX_UPDATE_TIME_MS),
         /* contentLength= */ cursor.getLong(COLUMN_INDEX_CONTENT_LENGTH),
         /* stopReason= */ cursor.getInt(COLUMN_INDEX_STOP_REASON),
-        /* failureReason= */ cursor.getInt(COLUMN_INDEX_FAILURE_REASON),
+        failureReason,
         downloadProgress);
   }
 

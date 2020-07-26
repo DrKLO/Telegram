@@ -31,7 +31,7 @@ import java.nio.ByteBuffer;
 
 /**
  * Utility methods for parsing Dolby TrueHD and (E-)AC-3 syncframes. (E-)AC-3 parsing follows the
- * definition in ETSI TS 102 366 V1.2.1.
+ * definition in ETSI TS 102 366 V1.4.1.
  */
 public final class Ac3Util {
 
@@ -39,8 +39,8 @@ public final class Ac3Util {
   public static final class SyncFrameInfo {
 
     /**
-     * AC3 stream types. See also ETSI TS 102 366 E.1.3.1.1. One of {@link #STREAM_TYPE_UNDEFINED},
-     * {@link #STREAM_TYPE_TYPE0}, {@link #STREAM_TYPE_TYPE1} or {@link #STREAM_TYPE_TYPE2}.
+     * AC3 stream types. See also E.1.3.1.1. One of {@link #STREAM_TYPE_UNDEFINED}, {@link
+     * #STREAM_TYPE_TYPE0}, {@link #STREAM_TYPE_TYPE1} or {@link #STREAM_TYPE_TYPE2}.
      */
     @Documented
     @Retention(RetentionPolicy.SOURCE)
@@ -114,9 +114,7 @@ public final class Ac3Util {
    * The number of new samples per (E-)AC-3 audio block.
    */
   private static final int AUDIO_SAMPLES_PER_AUDIO_BLOCK = 256;
-  /**
-   * Each syncframe has 6 blocks that provide 256 new audio samples. See ETSI TS 102 366 4.1.
-   */
+  /** Each syncframe has 6 blocks that provide 256 new audio samples. See subsection 4.1. */
   private static final int AC3_SYNCFRAME_AUDIO_SAMPLE_COUNT = 6 * AUDIO_SAMPLES_PER_AUDIO_BLOCK;
   /**
    * Number of audio blocks per E-AC-3 syncframe, indexed by numblkscod.
@@ -134,20 +132,21 @@ public final class Ac3Util {
    * Channel counts, indexed by acmod.
    */
   private static final int[] CHANNEL_COUNT_BY_ACMOD = new int[] {2, 1, 2, 3, 3, 4, 4, 5};
-  /**
-   * Nominal bitrates in kbps, indexed by frmsizecod / 2. (See ETSI TS 102 366 table 4.13.)
-   */
-  private static final int[] BITRATE_BY_HALF_FRMSIZECOD = new int[] {32, 40, 48, 56, 64, 80, 96,
-      112, 128, 160, 192, 224, 256, 320, 384, 448, 512, 576, 640};
-  /**
-   * 16-bit words per syncframe, indexed by frmsizecod / 2. (See ETSI TS 102 366 table 4.13.)
-   */
-  private static final int[] SYNCFRAME_SIZE_WORDS_BY_HALF_FRMSIZECOD_44_1 = new int[] {69, 87, 104,
-      121, 139, 174, 208, 243, 278, 348, 417, 487, 557, 696, 835, 975, 1114, 1253, 1393};
+  /** Nominal bitrates in kbps, indexed by frmsizecod / 2. (See table 4.13.) */
+  private static final int[] BITRATE_BY_HALF_FRMSIZECOD =
+      new int[] {
+        32, 40, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224, 256, 320, 384, 448, 512, 576, 640
+      };
+  /** 16-bit words per syncframe, indexed by frmsizecod / 2. (See table 4.13.) */
+  private static final int[] SYNCFRAME_SIZE_WORDS_BY_HALF_FRMSIZECOD_44_1 =
+      new int[] {
+        69, 87, 104, 121, 139, 174, 208, 243, 278, 348, 417, 487, 557, 696, 835, 975, 1114, 1253,
+        1393
+      };
 
   /**
-   * Returns the AC-3 format given {@code data} containing the AC3SpecificBox according to ETSI TS
-   * 102 366 Annex F. The reading position of {@code data} will be modified.
+   * Returns the AC-3 format given {@code data} containing the AC3SpecificBox according to Annex F.
+   * The reading position of {@code data} will be modified.
    *
    * @param data The AC3SpecificBox to parse.
    * @param trackId The track identifier to set on the format.
@@ -156,7 +155,7 @@ public final class Ac3Util {
    * @return The AC-3 format parsed from data in the header.
    */
   public static Format parseAc3AnnexFFormat(
-      ParsableByteArray data, String trackId, String language, DrmInitData drmInitData) {
+      ParsableByteArray data, String trackId, String language, @Nullable DrmInitData drmInitData) {
     int fscod = (data.readUnsignedByte() & 0xC0) >> 6;
     int sampleRate = SAMPLE_RATE_BY_FSCOD[fscod];
     int nextByte = data.readUnsignedByte();
@@ -179,8 +178,8 @@ public final class Ac3Util {
   }
 
   /**
-   * Returns the E-AC-3 format given {@code data} containing the EC3SpecificBox according to ETSI TS
-   * 102 366 Annex F. The reading position of {@code data} will be modified.
+   * Returns the E-AC-3 format given {@code data} containing the EC3SpecificBox according to Annex
+   * F. The reading position of {@code data} will be modified.
    *
    * @param data The EC3SpecificBox to parse.
    * @param trackId The track identifier to set on the format.
@@ -189,7 +188,7 @@ public final class Ac3Util {
    * @return The E-AC-3 format parsed from data in the header.
    */
   public static Format parseEAc3AnnexFFormat(
-      ParsableByteArray data, String trackId, String language, DrmInitData drmInitData) {
+      ParsableByteArray data, String trackId, String language, @Nullable DrmInitData drmInitData) {
     data.skipBytes(2); // data_rate, num_ind_sub
 
     // Read the first independent substream.
@@ -243,9 +242,10 @@ public final class Ac3Util {
   public static SyncFrameInfo parseAc3SyncframeInfo(ParsableBitArray data) {
     int initialPosition = data.getPosition();
     data.skipBits(40);
-    boolean isEac3 = data.readBits(5) == 16; // See bsid in subsection E.1.3.1.6.
+    // Parse the bitstream ID for AC-3 and E-AC-3 (see subsections 4.3, E.1.2 and E.1.3.1.6).
+    boolean isEac3 = data.readBits(5) > 10;
     data.setPosition(initialPosition);
-    String mimeType;
+    @Nullable String mimeType;
     @StreamType int streamType = SyncFrameInfo.STREAM_TYPE_UNDEFINED;
     int sampleRate;
     int acmod;
@@ -254,7 +254,7 @@ public final class Ac3Util {
     boolean lfeon;
     int channelCount;
     if (isEac3) {
-      // Syntax from ETSI TS 102 366 V1.2.1 subsections E.1.2.1 and E.1.2.2.
+      // Subsection E.1.2.
       data.skipBits(16); // syncword
       switch (data.readBits(2)) { // strmtyp
         case 0:
@@ -472,7 +472,8 @@ public final class Ac3Util {
     if (data.length < 6) {
       return C.LENGTH_UNSET;
     }
-    boolean isEac3 = ((data[5] & 0xFF) >> 3) == 16; // See bsid in subsection E.1.3.1.6.
+    // Parse the bitstream ID for AC-3 and E-AC-3 (see subsections 4.3, E.1.2 and E.1.3.1.6).
+    boolean isEac3 = ((data[5] & 0xF8) >> 3) > 10;
     if (isEac3) {
       int frmsiz = (data[2] & 0x07) << 8; // Most significant 3 bits.
       frmsiz |= data[3] & 0xFF; // Least significant 8 bits.
@@ -485,24 +486,22 @@ public final class Ac3Util {
   }
 
   /**
-   * Returns the number of audio samples in an AC-3 syncframe.
-   */
-  public static int getAc3SyncframeAudioSampleCount() {
-    return AC3_SYNCFRAME_AUDIO_SAMPLE_COUNT;
-  }
-
-  /**
-   * Reads the number of audio samples represented by the given E-AC-3 syncframe. The buffer's
+   * Reads the number of audio samples represented by the given (E-)AC-3 syncframe. The buffer's
    * position is not modified.
    *
    * @param buffer The {@link ByteBuffer} from which to read the syncframe.
    * @return The number of audio samples represented by the syncframe.
    */
-  public static int parseEAc3SyncframeAudioSampleCount(ByteBuffer buffer) {
-    // See ETSI TS 102 366 subsection E.1.2.2.
-    int fscod = (buffer.get(buffer.position() + 4) & 0xC0) >> 6;
-    return AUDIO_SAMPLES_PER_AUDIO_BLOCK * (fscod == 0x03 ? 6
-        : BLOCKS_PER_SYNCFRAME_BY_NUMBLKSCOD[(buffer.get(buffer.position() + 4) & 0x30) >> 4]);
+  public static int parseAc3SyncframeAudioSampleCount(ByteBuffer buffer) {
+    // Parse the bitstream ID for AC-3 and E-AC-3 (see subsections 4.3, E.1.2 and E.1.3.1.6).
+    boolean isEac3 = ((buffer.get(buffer.position() + 5) & 0xF8) >> 3) > 10;
+    if (isEac3) {
+      int fscod = (buffer.get(buffer.position() + 4) & 0xC0) >> 6;
+      int numblkscod = fscod == 0x03 ? 3 : (buffer.get(buffer.position() + 4) & 0x30) >> 4;
+      return BLOCKS_PER_SYNCFRAME_BY_NUMBLKSCOD[numblkscod] * AUDIO_SAMPLES_PER_AUDIO_BLOCK;
+    } else {
+      return AC3_SYNCFRAME_AUDIO_SAMPLE_COUNT;
+    }
   }
 
   /**
@@ -535,8 +534,8 @@ public final class Ac3Util {
    *     contain the start of a syncframe.
    */
   public static int parseTrueHdSyncframeAudioSampleCount(byte[] syncframe) {
-    // TODO: Link to specification if available.
-    // The syncword ends 0xBA for TrueHD or 0xBB for MLP.
+    // See "Dolby TrueHD (MLP) high-level bitstream description" on the Dolby developer site,
+    // subsections 2.2 and 4.2.1. The syncword ends 0xBA for TrueHD or 0xBB for MLP.
     if (syncframe[4] != (byte) 0xF8
         || syncframe[5] != (byte) 0x72
         || syncframe[6] != (byte) 0x6F

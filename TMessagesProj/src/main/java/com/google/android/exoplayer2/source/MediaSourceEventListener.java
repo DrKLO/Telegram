@@ -101,7 +101,7 @@ public interface MediaSourceEventListener {
      * The format of the track to which the data belongs. Null if the data does not belong to a
      * specific track.
      */
-    public final @Nullable Format trackFormat;
+    @Nullable public final Format trackFormat;
     /**
      * One of the {@link C} {@code SELECTION_REASON_*} constants if the data belongs to a track.
      * {@link C#SELECTION_REASON_UNKNOWN} otherwise.
@@ -111,7 +111,7 @@ public interface MediaSourceEventListener {
      * Optional data associated with the selection of the track to which the data belongs. Null if
      * the data does not belong to a track.
      */
-    public final @Nullable Object trackSelectionData;
+    @Nullable public final Object trackSelectionData;
     /**
      * The start time of the media, or {@link C#TIME_UNSET} if the data does not belong to a
      * specific media period.
@@ -164,7 +164,7 @@ public interface MediaSourceEventListener {
    * @param windowIndex The window index in the timeline this media period belongs to.
    * @param mediaPeriodId The {@link MediaPeriodId} of the created media period.
    */
-  void onMediaPeriodCreated(int windowIndex, MediaPeriodId mediaPeriodId);
+  default void onMediaPeriodCreated(int windowIndex, MediaPeriodId mediaPeriodId) {}
 
   /**
    * Called when a media period is released by the media source.
@@ -172,7 +172,7 @@ public interface MediaSourceEventListener {
    * @param windowIndex The window index in the timeline this media period belongs to.
    * @param mediaPeriodId The {@link MediaPeriodId} of the released media period.
    */
-  void onMediaPeriodReleased(int windowIndex, MediaPeriodId mediaPeriodId);
+  default void onMediaPeriodReleased(int windowIndex, MediaPeriodId mediaPeriodId) {}
 
   /**
    * Called when a load begins.
@@ -185,11 +185,11 @@ public interface MediaSourceEventListener {
    *     LoadEventInfo#responseHeaders} will be empty.
    * @param mediaLoadData The {@link MediaLoadData} defining the data being loaded.
    */
-  void onLoadStarted(
+  default void onLoadStarted(
       int windowIndex,
       @Nullable MediaPeriodId mediaPeriodId,
       LoadEventInfo loadEventInfo,
-      MediaLoadData mediaLoadData);
+      MediaLoadData mediaLoadData) {}
 
   /**
    * Called when a load ends.
@@ -203,11 +203,11 @@ public interface MediaSourceEventListener {
    *     event.
    * @param mediaLoadData The {@link MediaLoadData} defining the data being loaded.
    */
-  void onLoadCompleted(
+  default void onLoadCompleted(
       int windowIndex,
       @Nullable MediaPeriodId mediaPeriodId,
       LoadEventInfo loadEventInfo,
-      MediaLoadData mediaLoadData);
+      MediaLoadData mediaLoadData) {}
 
   /**
    * Called when a load is canceled.
@@ -221,11 +221,11 @@ public interface MediaSourceEventListener {
    *     event.
    * @param mediaLoadData The {@link MediaLoadData} defining the data being loaded.
    */
-  void onLoadCanceled(
+  default void onLoadCanceled(
       int windowIndex,
       @Nullable MediaPeriodId mediaPeriodId,
       LoadEventInfo loadEventInfo,
-      MediaLoadData mediaLoadData);
+      MediaLoadData mediaLoadData) {}
 
   /**
    * Called when a load error occurs.
@@ -252,13 +252,13 @@ public interface MediaSourceEventListener {
    * @param error The load error.
    * @param wasCanceled Whether the load was canceled as a result of the error.
    */
-  void onLoadError(
+  default void onLoadError(
       int windowIndex,
       @Nullable MediaPeriodId mediaPeriodId,
       LoadEventInfo loadEventInfo,
       MediaLoadData mediaLoadData,
       IOException error,
-      boolean wasCanceled);
+      boolean wasCanceled) {}
 
   /**
    * Called when a media period is first being read from.
@@ -266,7 +266,7 @@ public interface MediaSourceEventListener {
    * @param windowIndex The window index in the timeline this media period belongs to.
    * @param mediaPeriodId The {@link MediaPeriodId} of the media period being read from.
    */
-  void onReadingStarted(int windowIndex, MediaPeriodId mediaPeriodId);
+  default void onReadingStarted(int windowIndex, MediaPeriodId mediaPeriodId) {}
 
   /**
    * Called when data is removed from the back of a media buffer, typically so that it can be
@@ -276,8 +276,8 @@ public interface MediaSourceEventListener {
    * @param mediaPeriodId The {@link MediaPeriodId} the media belongs to.
    * @param mediaLoadData The {@link MediaLoadData} defining the media being discarded.
    */
-  void onUpstreamDiscarded(
-      int windowIndex, MediaPeriodId mediaPeriodId, MediaLoadData mediaLoadData);
+  default void onUpstreamDiscarded(
+      int windowIndex, MediaPeriodId mediaPeriodId, MediaLoadData mediaLoadData) {}
 
   /**
    * Called when a downstream format change occurs (i.e. when the format of the media being read
@@ -287,8 +287,8 @@ public interface MediaSourceEventListener {
    * @param mediaPeriodId The {@link MediaPeriodId} the media belongs to.
    * @param mediaLoadData The {@link MediaLoadData} defining the newly selected downstream data.
    */
-  void onDownstreamFormatChanged(
-      int windowIndex, @Nullable MediaPeriodId mediaPeriodId, MediaLoadData mediaLoadData);
+  default void onDownstreamFormatChanged(
+      int windowIndex, @Nullable MediaPeriodId mediaPeriodId, MediaLoadData mediaLoadData) {}
 
   /** Dispatches events to {@link MediaSourceEventListener}s. */
   final class EventDispatcher {
@@ -296,7 +296,7 @@ public interface MediaSourceEventListener {
     /** The timeline window index reported with the events. */
     public final int windowIndex;
     /** The {@link MediaPeriodId} reported with the events. */
-    public final @Nullable MediaPeriodId mediaPeriodId;
+    @Nullable public final MediaPeriodId mediaPeriodId;
 
     private final CopyOnWriteArrayList<ListenerAndHandler> listenerAndHandlers;
     private final long mediaTimeOffsetMs;

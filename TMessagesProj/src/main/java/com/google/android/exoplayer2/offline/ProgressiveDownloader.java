@@ -29,6 +29,12 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * A downloader for progressive media streams.
+ *
+ * <p>The downloader attempts to download the entire media bytes referenced by a {@link Uri} into a
+ * cache as defined by {@link DownloaderConstructorHelper}. Callers can use the constructor to
+ * specify a custom cache key for the downloaded bytes.
+ *
+ * <p>The downloader will avoid downloading already-downloaded media bytes.
  */
 public final class ProgressiveDownloader implements Downloader {
 

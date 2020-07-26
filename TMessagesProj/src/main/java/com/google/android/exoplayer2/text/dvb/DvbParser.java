@@ -22,6 +22,7 @@ import android.graphics.Paint;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffXfermode;
 import android.util.SparseArray;
+import androidx.annotation.Nullable;
 import com.google.android.exoplayer2.text.Cue;
 import com.google.android.exoplayer2.util.Log;
 import com.google.android.exoplayer2.util.ParsableBitArray;
@@ -29,6 +30,7 @@ import com.google.android.exoplayer2.util.Util;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 
 /**
  * Parses {@link Cue}s from a DVB subtitle bitstream.
@@ -85,7 +87,7 @@ import java.util.List;
   private final ClutDefinition defaultClutDefinition;
   private final SubtitleService subtitleService;
 
-  private Bitmap bitmap;
+  @MonotonicNonNull private Bitmap bitmap;
 
   /**
    * Construct an instance for the given subtitle and ancillary page ids.
@@ -131,7 +133,8 @@ import java.util.List;
       parseSubtitlingSegment(dataBitArray, subtitleService);
     }
 
-    if (subtitleService.pageComposition == null) {
+    @Nullable PageComposition pageComposition = subtitleService.pageComposition;
+    if (pageComposition == null) {
       return Collections.emptyList();
     }
 
@@ -147,7 +150,7 @@ import java.util.List;
 
     // Build the cues.
     List<Cue> cues = new ArrayList<>();
-    SparseArray<PageRegion> pageRegions = subtitleService.pageComposition.regions;
+    SparseArray<PageRegion> pageRegions = pageComposition.regions;
     for (int i = 0; i < pageRegions.size(); i++) {
       // Save clean clipping state.
       canvas.save();
@@ -182,7 +185,7 @@ import java.util.List;
           objectData = subtitleService.ancillaryObjects.get(objectId);
         }
         if (objectData != null) {
-          Paint paint = objectData.nonModifyingColorFlag ? null : defaultPaint;
+          @Nullable Paint paint = objectData.nonModifyingColorFlag ? null : defaultPaint;
           paintPixelDataSubBlocks(objectData, clutDefinition, regionComposition.depth,
               baseHorizontalAddress + regionObject.horizontalPosition,
               baseVerticalAddress + regionObject.verticalPosition, paint, canvas);
@@ -248,7 +251,7 @@ import java.util.List;
         break;
       case SEGMENT_TYPE_PAGE_COMPOSITION:
         if (pageId == service.subtitlePageId) {
-          PageComposition current = service.pageComposition;
+          @Nullable PageComposition current = service.pageComposition;
           PageComposition pageComposition = parsePageComposition(data, dataFieldLength);
           if (pageComposition.state != PAGE_STATE_NORMAL) {
             service.pageComposition = pageComposition;
@@ -261,11 +264,15 @@ import java.util.List;
         }
         break;
       case SEGMENT_TYPE_REGION_COMPOSITION:
-        PageComposition pageComposition = service.pageComposition;
+        @Nullable PageComposition pageComposition = service.pageComposition;
         if (pageId == service.subtitlePageId && pageComposition != null) {
           RegionComposition regionComposition = parseRegionComposition(data, dataFieldLength);
           if (pageComposition.state == PAGE_STATE_NORMAL) {
-            regionComposition.mergeFrom(service.regions.get(regionComposition.id));
+            @Nullable
+            RegionComposition existingRegionComposition = service.regions.get(regionComposition.id);
+            if (existingRegionComposition != null) {
+              regionComposition.mergeFrom(existingRegionComposition);
+            }
           }
           service.regions.put(regionComposition.id, regionComposition);
         }
@@ -470,8 +477,8 @@ import java.util.List;
     boolean nonModifyingColorFlag = data.readBit();
     data.skipBits(1); // Skip reserved.
 
-    byte[] topFieldData = null;
-    byte[] bottomFieldData = null;
+    @Nullable byte[] topFieldData = null;
+    @Nullable byte[] bottomFieldData = null;
 
     if (objectCodingMethod == OBJECT_CODING_STRING) {
       int numberOfCodes = data.readBits(8);
@@ -577,11 +584,15 @@ import java.util.List;
 
   // Static drawing.
 
-  /**
-   * Draws a pixel data sub-block, as defined by ETSI EN 300 743 7.2.5.1, into a canvas.
-   */
-  private static void paintPixelDataSubBlocks(ObjectData objectData, ClutDefinition clutDefinition,
-      int regionDepth, int horizontalAddress, int verticalAddress, Paint paint, Canvas canvas) {
+  /** Draws a pixel data sub-block, as defined by ETSI EN 300 743 7.2.5.1, into a canvas. */
+  private static void paintPixelDataSubBlocks(
+      ObjectData objectData,
+      ClutDefinition clutDefinition,
+      int regionDepth,
+      int horizontalAddress,
+      int verticalAddress,
+      @Nullable Paint paint,
+      Canvas canvas) {
     int[] clutEntries;
     if (regionDepth == REGION_DEPTH_8_BIT) {
       clutEntries = clutDefinition.clutEntries8Bit;
@@ -596,23 +607,27 @@ import java.util.List;
         verticalAddress + 1, paint, canvas);
   }
 
-  /**
-   * Draws a pixel data sub-block, as defined by ETSI EN 300 743 7.2.5.1, into a canvas.
-   */
-  private static void paintPixelDataSubBlock(byte[] pixelData, int[] clutEntries, int regionDepth,
-      int horizontalAddress, int verticalAddress, Paint paint, Canvas canvas) {
+  /** Draws a pixel data sub-block, as defined by ETSI EN 300 743 7.2.5.1, into a canvas. */
+  private static void paintPixelDataSubBlock(
+      byte[] pixelData,
+      int[] clutEntries,
+      int regionDepth,
+      int horizontalAddress,
+      int verticalAddress,
+      @Nullable Paint paint,
+      Canvas canvas) {
     ParsableBitArray data = new ParsableBitArray(pixelData);
     int column = horizontalAddress;
     int line = verticalAddress;
-    byte[] clutMapTable2To4 = null;
-    byte[] clutMapTable2To8 = null;
-    byte[] clutMapTable4To8 = null;
+    @Nullable byte[] clutMapTable2To4 = null;
+    @Nullable byte[] clutMapTable2To8 = null;
+    @Nullable byte[] clutMapTable4To8 = null;
 
     while (data.bitsLeft() != 0) {
       int dataType = data.readBits(8);
       switch (dataType) {
         case DATA_TYPE_2BP_CODE_STRING:
-          byte[] clutMapTable2ToX;
+          @Nullable byte[] clutMapTable2ToX;
           if (regionDepth == REGION_DEPTH_8_BIT) {
             clutMapTable2ToX = clutMapTable2To8 == null ? defaultMap2To8 : clutMapTable2To8;
           } else if (regionDepth == REGION_DEPTH_4_BIT) {
@@ -625,7 +640,7 @@ import java.util.List;
           data.byteAlign();
           break;
         case DATA_TYPE_4BP_CODE_STRING:
-          byte[] clutMapTable4ToX;
+          @Nullable byte[] clutMapTable4ToX;
           if (regionDepth == REGION_DEPTH_8_BIT) {
             clutMapTable4ToX = clutMapTable4To8 == null ? defaultMap4To8 : clutMapTable4To8;
           } else {
@@ -636,7 +651,9 @@ import java.util.List;
           data.byteAlign();
           break;
         case DATA_TYPE_8BP_CODE_STRING:
-          column = paint8BitPixelCodeString(data, clutEntries, null, column, line, paint, canvas);
+          column =
+              paint8BitPixelCodeString(
+                  data, clutEntries, /* clutMapTable= */ null, column, line, paint, canvas);
           break;
         case DATA_TYPE_24_TABLE_DATA:
           clutMapTable2To4 = buildClutMapTable(4, 4, data);
@@ -645,7 +662,7 @@ import java.util.List;
           clutMapTable2To8 = buildClutMapTable(4, 8, data);
           break;
         case DATA_TYPE_48_TABLE_DATA:
-          clutMapTable2To8 = buildClutMapTable(16, 8, data);
+          clutMapTable4To8 = buildClutMapTable(16, 8, data);
           break;
         case DATA_TYPE_END_LINE:
           column = horizontalAddress;
@@ -658,11 +675,15 @@ import java.util.List;
     }
   }
 
-  /**
-   * Paint a 2-bit/pixel code string, as defined by ETSI EN 300 743 7.2.5.2, to a canvas.
-   */
-  private static int paint2BitPixelCodeString(ParsableBitArray data, int[] clutEntries,
-      byte[] clutMapTable, int column, int line, Paint paint, Canvas canvas) {
+  /** Paint a 2-bit/pixel code string, as defined by ETSI EN 300 743 7.2.5.2, to a canvas. */
+  private static int paint2BitPixelCodeString(
+      ParsableBitArray data,
+      int[] clutEntries,
+      @Nullable byte[] clutMapTable,
+      int column,
+      int line,
+      @Nullable Paint paint,
+      Canvas canvas) {
     boolean endOfPixelCodeString = false;
     do {
       int runLength = 0;
@@ -706,11 +727,15 @@ import java.util.List;
     return column;
   }
 
-  /**
-   * Paint a 4-bit/pixel code string, as defined by ETSI EN 300 743 7.2.5.2, to a canvas.
-   */
-  private static int paint4BitPixelCodeString(ParsableBitArray data, int[] clutEntries,
-      byte[] clutMapTable, int column, int line, Paint paint, Canvas canvas) {
+  /** Paint a 4-bit/pixel code string, as defined by ETSI EN 300 743 7.2.5.2, to a canvas. */
+  private static int paint4BitPixelCodeString(
+      ParsableBitArray data,
+      int[] clutEntries,
+      @Nullable byte[] clutMapTable,
+      int column,
+      int line,
+      @Nullable Paint paint,
+      Canvas canvas) {
     boolean endOfPixelCodeString = false;
     do {
       int runLength = 0;
@@ -760,11 +785,15 @@ import java.util.List;
     return column;
   }
 
-  /**
-   * Paint an 8-bit/pixel code string, as defined by ETSI EN 300 743 7.2.5.2, to a canvas.
-   */
-  private static int paint8BitPixelCodeString(ParsableBitArray data, int[] clutEntries,
-      byte[] clutMapTable, int column, int line, Paint paint, Canvas canvas) {
+  /** Paint an 8-bit/pixel code string, as defined by ETSI EN 300 743 7.2.5.2, to a canvas. */
+  private static int paint8BitPixelCodeString(
+      ParsableBitArray data,
+      int[] clutEntries,
+      @Nullable byte[] clutMapTable,
+      int column,
+      int line,
+      @Nullable Paint paint,
+      Canvas canvas) {
     boolean endOfPixelCodeString = false;
     do {
       int runLength = 0;
@@ -816,18 +845,23 @@ import java.util.List;
     public final int subtitlePageId;
     public final int ancillaryPageId;
 
-    public final SparseArray<RegionComposition> regions = new SparseArray<>();
-    public final SparseArray<ClutDefinition> cluts = new SparseArray<>();
-    public final SparseArray<ObjectData> objects = new SparseArray<>();
-    public final SparseArray<ClutDefinition> ancillaryCluts = new SparseArray<>();
-    public final SparseArray<ObjectData> ancillaryObjects = new SparseArray<>();
+    public final SparseArray<RegionComposition> regions;
+    public final SparseArray<ClutDefinition> cluts;
+    public final SparseArray<ObjectData> objects;
+    public final SparseArray<ClutDefinition> ancillaryCluts;
+    public final SparseArray<ObjectData> ancillaryObjects;
 
-    public DisplayDefinition displayDefinition;
-    public PageComposition pageComposition;
+    @Nullable public DisplayDefinition displayDefinition;
+    @Nullable public PageComposition pageComposition;
 
     public SubtitleService(int subtitlePageId, int ancillaryPageId) {
       this.subtitlePageId = subtitlePageId;
       this.ancillaryPageId = ancillaryPageId;
+      regions = new SparseArray<>();
+      cluts = new SparseArray<>();
+      objects = new SparseArray<>();
+      ancillaryCluts = new SparseArray<>();
+      ancillaryObjects = new SparseArray<>();
     }
 
     public void reset() {
@@ -944,9 +978,6 @@ import java.util.List;
     }
 
     public void mergeFrom(RegionComposition otherRegionComposition) {
-      if (otherRegionComposition == null) {
-        return;
-      }
       SparseArray<RegionObject> otherRegionObjects = otherRegionComposition.regionObjects;
       for (int i = 0; i < otherRegionObjects.size(); i++) {
         regionObjects.put(otherRegionObjects.keyAt(i), otherRegionObjects.valueAt(i));

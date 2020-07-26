@@ -27,6 +27,7 @@ import android.os.Parcel;
 import android.os.Parcelable;
 import android.os.PowerManager;
 import androidx.annotation.IntDef;
+import androidx.annotation.Nullable;
 import com.google.android.exoplayer2.util.Assertions;
 import com.google.android.exoplayer2.util.Util;
 import java.lang.annotation.Documented;
@@ -128,8 +129,9 @@ public final class Requirements implements Parcelable {
     }
 
     ConnectivityManager connectivityManager =
-        (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
-    NetworkInfo networkInfo = Assertions.checkNotNull(connectivityManager).getActiveNetworkInfo();
+        (ConnectivityManager)
+            Assertions.checkNotNull(context.getSystemService(Context.CONNECTIVITY_SERVICE));
+    @Nullable NetworkInfo networkInfo = connectivityManager.getActiveNetworkInfo();
     if (networkInfo == null
         || !networkInfo.isConnected()
         || !isInternetConnectivityValidated(connectivityManager)) {
@@ -155,32 +157,35 @@ public final class Requirements implements Parcelable {
   }
 
   private boolean isDeviceIdle(Context context) {
-    PowerManager powerManager = (PowerManager) context.getSystemService(Context.POWER_SERVICE);
+    PowerManager powerManager =
+        (PowerManager) Assertions.checkNotNull(context.getSystemService(Context.POWER_SERVICE));
     return Util.SDK_INT >= 23
         ? powerManager.isDeviceIdleMode()
         : Util.SDK_INT >= 20 ? !powerManager.isInteractive() : !powerManager.isScreenOn();
   }
 
   private static boolean isInternetConnectivityValidated(ConnectivityManager connectivityManager) {
-    if (Util.SDK_INT < 23) {
-      // TODO Check internet connectivity using http://clients3.google.com/generate_204 on API
-      // levels prior to 23.
+    // It's possible to check NetworkCapabilities.NET_CAPABILITY_VALIDATED from API level 23, but
+    // RequirementsWatcher only fires an event to re-check the requirements when NetworkCapabilities
+    // change from API level 24. We assume that network capability is validated for API level 23 to
+    // keep in sync.
+    if (Util.SDK_INT < 24) {
       return true;
     }
-    Network activeNetwork = connectivityManager.getActiveNetwork();
+
+    @Nullable Network activeNetwork = connectivityManager.getActiveNetwork();
     if (activeNetwork == null) {
       return false;
     }
+    @Nullable
     NetworkCapabilities networkCapabilities =
         connectivityManager.getNetworkCapabilities(activeNetwork);
-    boolean validated =
-        networkCapabilities == null
-            || !networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED);
-    return !validated;
+    return networkCapabilities != null
+        && networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED);
   }
 
   @Override
-  public boolean equals(Object o) {
+  public boolean equals(@Nullable Object o) {
     if (this == o) {
       return true;
     }

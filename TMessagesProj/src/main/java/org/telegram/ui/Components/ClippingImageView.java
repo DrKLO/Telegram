@@ -24,6 +24,8 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ImageReceiver;
 
+import java.util.Arrays;
+
 public class ClippingImageView extends View {
 
     private int clipBottom;
@@ -52,6 +54,7 @@ public class ClippingImageView extends View {
     private float[][] animationValues;
 
     private float additionalTranslationY;
+    private float additionalTranslationX;
 
     public ClippingImageView(Context context) {
         super(context);
@@ -72,6 +75,10 @@ public class ClippingImageView extends View {
 
     public void setAdditionalTranslationY(float value) {
         additionalTranslationY = value;
+    }
+
+    public void setAdditionalTranslationX(float value) {
+        additionalTranslationX = value;
     }
 
     @Override
@@ -95,7 +102,7 @@ public class ClippingImageView extends View {
 
         setScaleX(animationValues[0][0] + (animationValues[1][0] - animationValues[0][0]) * animationProgress);
         setScaleY(animationValues[0][1] + (animationValues[1][1] - animationValues[0][1]) * animationProgress);
-        setTranslationX(animationValues[0][2] + (animationValues[1][2] - animationValues[0][2]) * animationProgress);
+        setTranslationX(animationValues[0][2] + additionalTranslationX + (animationValues[1][2] + additionalTranslationX - animationValues[0][2] - additionalTranslationX) * animationProgress);
         setTranslationY(animationValues[0][3] + (animationValues[1][3] - animationValues[0][3]) * animationProgress);
         setClipHorizontal((int) (animationValues[0][4] + (animationValues[1][4] - animationValues[0][4]) * animationProgress));
         setClipTop((int) (animationValues[0][5] + (animationValues[1][5] - animationValues[0][5]) * animationProgress));
@@ -267,9 +274,7 @@ public class ClippingImageView extends View {
     public void setRadius(int[] value) {
         if (value == null) {
             needRadius = false;
-            for (int a = 0; a < radius.length; a++) {
-                radius[a] = 0;
-            }
+            Arrays.fill(radius, 0);
             return;
         }
         System.arraycopy(value, 0, radius, 0, value.length);

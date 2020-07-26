@@ -35,9 +35,11 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewOutlineProvider;
+import android.view.accessibility.AccessibilityNodeInfo;
 import android.view.animation.DecelerateInterpolator;
 import android.view.animation.OvershootInterpolator;
 import android.view.inputmethod.EditorInfo;
+import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -73,6 +75,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Locale;
 
+import androidx.core.view.ViewCompat;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -160,6 +163,9 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
                 public boolean dispatchTouchEvent(MotionEvent event) {
                     MotionEvent e = MotionEvent.obtain(event);
                     e.setLocation(e.getRawX(), e.getRawY() - containerView.getTranslationY());
+                    if (e.getAction() == MotionEvent.ACTION_UP) {
+                        e.setAction(MotionEvent.ACTION_CANCEL);
+                    }
                     gridView.dispatchTouchEvent(e);
                     e.recycle();
                     return super.dispatchTouchEvent(event);
@@ -234,11 +240,6 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
 
         public void hideKeyboard() {
             AndroidUtilities.hideKeyboard(searchEditText);
-        }
-
-        @Override
-        public void requestDisallowInterceptTouchEvent(boolean disallowIntercept) {
-            super.requestDisallowInterceptTouchEvent(disallowIntercept);
         }
     }
 
@@ -694,12 +695,22 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
         editText.setSingleLine(true);
         frameLayout2.addView(commentTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT, 0, 0, 84, 0));
 
-        writeButtonContainer = new FrameLayout(context);
+        writeButtonContainer = new FrameLayout(context) {
+            @Override
+            public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
+                super.onInitializeAccessibilityNodeInfo(info);
+                info.setText(LocaleController.formatPluralString("AccDescrShareInChats", selectedDialogs.size()));
+                info.setClassName(Button.class.getName());
+                info.setLongClickable(true);
+                info.setClickable(true);
+            }
+        };
+        writeButtonContainer.setFocusable(true);
+        writeButtonContainer.setFocusableInTouchMode(true);
         writeButtonContainer.setVisibility(View.INVISIBLE);
         writeButtonContainer.setScaleX(0.2f);
         writeButtonContainer.setScaleY(0.2f);
         writeButtonContainer.setAlpha(0.0f);
-        writeButtonContainer.setContentDescription(LocaleController.getString("Send", R.string.Send));
         containerView.addView(writeButtonContainer, LayoutHelper.createFrame(60, 60, Gravity.RIGHT | Gravity.BOTTOM, 0, 0, 6, 10));
 
         ImageView writeButton = new ImageView(context);
@@ -713,6 +724,7 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
         }
         writeButton.setBackgroundDrawable(drawable);
         writeButton.setImageResource(R.drawable.attach_send);
+        writeButton.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
         writeButton.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_dialogFloatingIcon), PorterDuff.Mode.MULTIPLY));
         writeButton.setScaleType(ImageView.ScaleType.CENTER);
         if (Build.VERSION.SDK_INT >= 21) {
@@ -934,6 +946,9 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
         if (show) {
             frameLayout2.setVisibility(View.VISIBLE);
             writeButtonContainer.setVisibility(View.VISIBLE);
+        }
+        if (pickerBottomLayout != null) {
+            ViewCompat.setImportantForAccessibility(pickerBottomLayout, show ? ViewCompat.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS : ViewCompat.IMPORTANT_FOR_ACCESSIBILITY_YES);
         }
         animatorSet = new AnimatorSet();
         ArrayList<Animator> animators = new ArrayList<>();

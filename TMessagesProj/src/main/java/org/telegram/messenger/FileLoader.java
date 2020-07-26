@@ -48,6 +48,8 @@ public class FileLoader extends BaseController {
     public static final int IMAGE_TYPE_SVG_WHITE = 4;
     public static final int IMAGE_TYPE_THEME_PREVIEW = 5;
 
+    public final static long MAX_FILE_SIZE = 1024L * 1024L * 2000L;
+
     private volatile static DispatchQueue fileLoaderQueue = new DispatchQueue("fileUploadQueue");
 
     private LinkedList<FileUploadOperation> uploadOperationQueue = new LinkedList<>();
@@ -751,11 +753,11 @@ public class FileLoader extends BaseController {
         fileLoaderQueue.postRunnable(() -> loadFileInternal(document, secureDocument, webDocument, location, imageLocation, parentObject, locationExt, locationSize, priority, null, 0, false, cacheType));
     }
 
-    protected FileLoadOperation loadStreamFile(final FileLoadOperationStream stream, final TLRPC.Document document, final Object parentObject, final int offset, final boolean priority) {
+    protected FileLoadOperation loadStreamFile(final FileLoadOperationStream stream, final TLRPC.Document document, final ImageLocation location, final Object parentObject, final int offset, final boolean priority) {
         final CountDownLatch semaphore = new CountDownLatch(1);
         final FileLoadOperation[] result = new FileLoadOperation[1];
         fileLoaderQueue.postRunnable(() -> {
-            result[0] = loadFileInternal(document, null, null, null, null, parentObject, null, 0, 1, stream, offset, priority,  0);
+            result[0] = loadFileInternal(document, null, null, document == null && location != null ? location.location : null, location, parentObject, document == null && location != null ? "mp4" : null, document == null && location != null ? location.currentSize : 0, 1, stream, offset, priority,  document == null ? 1 : 0);
             semaphore.countDown();
         });
         try {
@@ -985,6 +987,13 @@ public class FileLoader extends BaseController {
                 } else {
                     dir = getDirectory(MEDIA_DIR_IMAGE);
                 }
+            } else if (attach instanceof TLRPC.TL_videoSize) {
+                TLRPC.TL_videoSize videoSize = (TLRPC.TL_videoSize) attach;
+                if (videoSize.location == null || videoSize.location.key != null || videoSize.location.volume_id == Integer.MIN_VALUE && videoSize.location.local_id < 0 || videoSize.size < 0) {
+                    dir = getDirectory(MEDIA_DIR_CACHE);
+                } else {
+                    dir = getDirectory(MEDIA_DIR_IMAGE);
+                }
             } else if (attach instanceof TLRPC.FileLocation) {
                 TLRPC.FileLocation fileLocation = (TLRPC.FileLocation) attach;
                 if (fileLocation.key != null || fileLocation.volume_id == Integer.MIN_VALUE && fileLocation.local_id < 0) {
@@ -1162,6 +1171,12 @@ public class FileLoader extends BaseController {
                 return "";
             }
             return photo.location.volume_id + "_" + photo.location.local_id + "." + (ext != null ? ext : "jpg");
+        } else if (attach instanceof TLRPC.TL_videoSize) {
+            TLRPC.TL_videoSize video = (TLRPC.TL_videoSize) attach;
+            if (video.location == null || video.location instanceof TLRPC.TL_fileLocationUnavailable) {
+                return "";
+            }
+            return video.location.volume_id + "_" + video.location.local_id + "." + (ext != null ? ext : "mp4");
         } else if (attach instanceof TLRPC.FileLocation) {
             if (attach instanceof TLRPC.TL_fileLocationUnavailable) {
                 return "";
@@ -1246,5 +1261,18 @@ public class FileLoader extends BaseController {
         out.getFD().sync();
         out.close();
         return true;
+    }
+
+    public static boolean isSamePhoto(TLRPC.FileLocation location, TLRPC.Photo photo) {
+        if (location == null || !(photo instanceof TLRPC.TL_photo)) {
+            return false;
+        }
+        for (int b = 0, N = photo.sizes.size(); b < N; b++) {
+            TLRPC.PhotoSize size = photo.sizes.get(b);
+            if (size.location != null && size.location.local_id == location.local_id && size.location.volume_id == location.volume_id) {
+                return true;
+            }
+        }
+        return false;
     }
 }

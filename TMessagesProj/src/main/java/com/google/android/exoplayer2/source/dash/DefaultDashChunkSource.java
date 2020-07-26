@@ -67,7 +67,7 @@ public class DefaultDashChunkSource implements DashChunkSource {
     private final int maxSegmentsPerLoad;
 
     public Factory(DataSource.Factory dataSourceFactory) {
-      this(dataSourceFactory, 1);
+      this(dataSourceFactory, /* maxSegmentsPerLoad= */ 1);
     }
 
     public Factory(DataSource.Factory dataSourceFactory, int maxSegmentsPerLoad) {
@@ -622,7 +622,7 @@ public class DefaultDashChunkSource implements DashChunkSource {
     /* package */ final @Nullable ChunkExtractorWrapper extractorWrapper;
 
     public final Representation representation;
-    public final @Nullable DashSegmentIndex segmentIndex;
+    @Nullable public final DashSegmentIndex segmentIndex;
 
     private final long periodDurationUs;
     private final long segmentNumShift;
@@ -633,7 +633,7 @@ public class DefaultDashChunkSource implements DashChunkSource {
         Representation representation,
         boolean enableEventMessageTrack,
         List<Format> closedCaptionFormats,
-        TrackOutput playerEmsgTrackOutput) {
+        @Nullable TrackOutput playerEmsgTrackOutput) {
       this(
           periodDurationUs,
           representation,
@@ -795,7 +795,7 @@ public class DefaultDashChunkSource implements DashChunkSource {
         Representation representation,
         boolean enableEventMessageTrack,
         List<Format> closedCaptionFormats,
-        TrackOutput playerEmsgTrackOutput) {
+        @Nullable TrackOutput playerEmsgTrackOutput) {
       String containerMimeType = representation.format.containerMimeType;
       if (mimeTypeIsRawText(containerMimeType)) {
         return null;
@@ -812,10 +812,12 @@ public class DefaultDashChunkSource implements DashChunkSource {
         }
         extractor =
             new FragmentedMp4Extractor(
-                flags, null, null, null, closedCaptionFormats, playerEmsgTrackOutput);
+                flags,
+                /* timestampAdjuster= */ null,
+                /* sideloadedTrack= */ null,
+                closedCaptionFormats,
+                playerEmsgTrackOutput);
       }
-      // Prefer drmInitData obtained from the manifest over drmInitData obtained from the stream,
-      // as per DASH IF Interoperability Recommendations V3.0, 7.5.3.
       return new ChunkExtractorWrapper(extractor, trackType, representation.format);
     }
   }

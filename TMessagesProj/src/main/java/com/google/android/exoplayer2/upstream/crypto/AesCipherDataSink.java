@@ -15,6 +15,9 @@
  */
 package com.google.android.exoplayer2.upstream.crypto;
 
+import static com.google.android.exoplayer2.util.Util.castNonNull;
+
+import androidx.annotation.Nullable;
 import com.google.android.exoplayer2.upstream.DataSink;
 import com.google.android.exoplayer2.upstream.DataSpec;
 import java.io.IOException;
@@ -27,9 +30,9 @@ public final class AesCipherDataSink implements DataSink {
 
   private final DataSink wrappedDataSink;
   private final byte[] secretKey;
-  private final byte[] scratch;
+  @Nullable private final byte[] scratch;
 
-  private AesFlushingCipher cipher;
+  @Nullable private AesFlushingCipher cipher;
 
   /**
    * Create an instance whose {@code write} methods have the side effect of overwriting the input
@@ -55,7 +58,7 @@ public final class AesCipherDataSink implements DataSink {
    *     cipher calls will be required to complete the operation. If {@code null} then encryption
    *     will overwrite the input {@code data}.
    */
-  public AesCipherDataSink(byte[] secretKey, DataSink wrappedDataSink, byte[] scratch) {
+  public AesCipherDataSink(byte[] secretKey, DataSink wrappedDataSink, @Nullable byte[] scratch) {
     this.wrappedDataSink = wrappedDataSink;
     this.secretKey = secretKey;
     this.scratch = scratch;
@@ -73,15 +76,16 @@ public final class AesCipherDataSink implements DataSink {
   public void write(byte[] data, int offset, int length) throws IOException {
     if (scratch == null) {
       // In-place mode. Writes over the input data.
-      cipher.updateInPlace(data, offset, length);
+      castNonNull(cipher).updateInPlace(data, offset, length);
       wrappedDataSink.write(data, offset, length);
     } else {
       // Use scratch space. The original data remains intact.
       int bytesProcessed = 0;
       while (bytesProcessed < length) {
         int bytesToProcess = Math.min(length - bytesProcessed, scratch.length);
-        cipher.update(data, offset + bytesProcessed, bytesToProcess, scratch, 0);
-        wrappedDataSink.write(scratch, 0, bytesToProcess);
+        castNonNull(cipher)
+            .update(data, offset + bytesProcessed, bytesToProcess, scratch, /* outOffset= */ 0);
+        wrappedDataSink.write(scratch, /* offset= */ 0, bytesToProcess);
         bytesProcessed += bytesToProcess;
       }
     }

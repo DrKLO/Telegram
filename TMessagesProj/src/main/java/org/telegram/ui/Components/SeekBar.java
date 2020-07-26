@@ -70,7 +70,7 @@ public class SeekBar {
                     if (thumbX < 0) {
                         thumbX = 0;
                     } else if (thumbX > width - thumbWidth) {
-                        thumbX = thumbWidth - width;
+                        thumbX = width - thumbWidth;
                     }
                 }
                 pressed = true;

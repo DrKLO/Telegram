@@ -8,7 +8,6 @@
 
 package org.telegram.ui.Components;
 
-import android.annotation.TargetApi;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
@@ -20,6 +19,7 @@ import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.media.MediaMetadataRetriever;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.view.MotionEvent;
 import android.view.View;
 
@@ -29,7 +29,6 @@ import org.telegram.messenger.R;
 
 import java.util.ArrayList;
 
-@TargetApi(10)
 public class VideoTimelinePlayView extends View {
 
     private long videoLength;
@@ -41,7 +40,6 @@ public class VideoTimelinePlayView extends View {
     private boolean pressedRight;
     private boolean pressedPlay;
     private float playProgress = 0.5f;
-    private float bufferedProgress = 0.5f;
     private float pressDx;
     private MediaMetadataRetriever mediaMetadataRetriever;
     private VideoTimelineViewDelegate delegate;
@@ -54,21 +52,29 @@ public class VideoTimelinePlayView extends View {
     private int framesToLoad;
     private float maxProgressDiff = 1.0f;
     private float minProgressDiff = 0.0f;
-    private boolean isRoundFrames;
-    private Rect rect1;
-    private Rect rect2;
     private RectF rect3 = new RectF();
     private Drawable drawableLeft;
     private Drawable drawableRight;
     private int lastWidth;
+    private int currentMode = MODE_VIDEO;
+
+    private ArrayList<android.graphics.Rect> exclusionRects = new ArrayList<>();
+    private android.graphics.Rect exclustionRect = new Rect();
+
+    public final static int MODE_VIDEO = 0;
+    public final static int MODE_AVATAR = 1;
 
     public interface VideoTimelineViewDelegate {
         void onLeftProgressChanged(float progress);
         void onRightProgressChanged(float progress);
         void onPlayProgressChanged(float progress);
-        void didStartDragging();
-        void didStopDragging();
+        void didStartDragging(int type);
+        void didStopDragging(int type);
     }
+
+    public static int TYPE_LEFT = 0;
+    public static int TYPE_RIGHT = 1;
+    public static int TYPE_PROGRESS = 2;
 
     public VideoTimelinePlayView(Context context) {
         super(context);
@@ -80,6 +86,7 @@ public class VideoTimelinePlayView extends View {
         drawableLeft.setColorFilter(new PorterDuffColorFilter(0xff000000, PorterDuff.Mode.MULTIPLY));
         drawableRight = context.getResources().getDrawable(R.drawable.video_cropright);
         drawableRight.setColorFilter(new PorterDuffColorFilter(0xff000000, PorterDuff.Mode.MULTIPLY));
+        exclusionRects.add(exclustionRect);
     }
 
     public float getProgress() {
@@ -98,6 +105,14 @@ public class VideoTimelinePlayView extends View {
         minProgressDiff = value;
     }
 
+    public void setMode(int mode) {
+        if (currentMode == mode) {
+            return;
+        }
+        currentMode = mode;
+        invalidate();
+    }
+
     public void setMaxProgressDiff(float value) {
         maxProgressDiff = value;
         if (progressRight - progressLeft > maxProgressDiff) {
@@ -106,11 +121,12 @@ public class VideoTimelinePlayView extends View {
         }
     }
 
-    public void setRoundFrames(boolean value) {
-        isRoundFrames = value;
-        if (isRoundFrames) {
-            rect1 = new Rect(AndroidUtilities.dp(14), AndroidUtilities.dp(14), AndroidUtilities.dp(14 + 28), AndroidUtilities.dp(14 + 28));
-            rect2 = new Rect();
+    @Override
+    protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
+        super.onLayout(changed, left, top, right, bottom);
+        if (Build.VERSION.SDK_INT >= 29) {
+            exclustionRect.set(left, 0, right, getMeasuredHeight());
+            setSystemGestureExclusionRects(exclusionRects);
         }
     }
 
@@ -124,7 +140,7 @@ public class VideoTimelinePlayView extends View {
 
         int width = getMeasuredWidth() - AndroidUtilities.dp(32);
         int startX = (int) (width * progressLeft) + AndroidUtilities.dp(16);
-        int playX = (int) (width * (progressLeft + (progressRight - progressLeft) * playProgress)) + AndroidUtilities.dp(16);
+        int playX = (int) (width * playProgress) + AndroidUtilities.dp(16);
         int endX = (int) (width * progressRight) + AndroidUtilities.dp(16);
 
         if (event.getAction() == MotionEvent.ACTION_DOWN) {
@@ -136,15 +152,15 @@ public class VideoTimelinePlayView extends View {
             int additionWidthPlay = AndroidUtilities.dp(8);
             if (endX != startX && playX - additionWidthPlay <= x && x <= playX + additionWidthPlay && y >= 0 && y <= getMeasuredHeight()) {
                 if (delegate != null) {
-                    delegate.didStartDragging();
+                    delegate.didStartDragging(TYPE_PROGRESS);
                 }
                 pressedPlay = true;
                 pressDx = (int) (x - playX);
                 invalidate();
                 return true;
-            } else if (startX - additionWidth <= x && x <= Math.min(startX + additionWidth,endX) && y >= 0 && y <= getMeasuredHeight()) {
+            } else if (startX - additionWidth <= x && x <= Math.min(startX + additionWidth, endX) && y >= 0 && y <= getMeasuredHeight()) {
                 if (delegate != null) {
-                    delegate.didStartDragging();
+                    delegate.didStartDragging(TYPE_LEFT);
                 }
                 pressedLeft = true;
                 pressDx = (int) (x - startX);
@@ -152,7 +168,7 @@ public class VideoTimelinePlayView extends View {
                 return true;
             } else if (endX - additionWidth <= x && x <= endX + additionWidth && y >= 0 && y <= getMeasuredHeight()) {
                 if (delegate != null) {
-                    delegate.didStartDragging();
+                    delegate.didStartDragging(TYPE_RIGHT);
                 }
                 pressedRight = true;
                 pressDx = (int) (x - endX);
@@ -160,11 +176,13 @@ public class VideoTimelinePlayView extends View {
                 return true;
             } else if (startX <= x && x <= endX && y >= 0 && y <= getMeasuredHeight()) {
                 if (delegate != null) {
-                    delegate.didStartDragging();
+                    delegate.didStartDragging(TYPE_PROGRESS);
                 }
                 pressedPlay = true;
-                playX = (int) x;
-                playProgress = (playX - startX) / (float) (endX - startX);
+                playProgress = (x - AndroidUtilities.dp(16)) / width;
+                if (delegate != null) {
+                    delegate.onPlayProgressChanged(playProgress);
+                }
                 pressDx = 0;
                 invalidate();
                 return true;
@@ -172,19 +190,19 @@ public class VideoTimelinePlayView extends View {
         } else if (event.getAction() == MotionEvent.ACTION_UP || event.getAction() == MotionEvent.ACTION_CANCEL) {
             if (pressedLeft) {
                 if (delegate != null) {
-                    delegate.didStopDragging();
+                    delegate.didStopDragging(TYPE_LEFT);
                 }
                 pressedLeft = false;
                 return true;
             } else if (pressedRight) {
                 if (delegate != null) {
-                    delegate.didStopDragging();
+                    delegate.didStopDragging(TYPE_RIGHT);
                 }
                 pressedRight = false;
                 return true;
             } else if (pressedPlay) {
                 if (delegate != null) {
-                    delegate.didStopDragging();
+                    delegate.didStopDragging(TYPE_PROGRESS);
                 }
                 pressedPlay = false;
                 return true;
@@ -198,9 +216,8 @@ public class VideoTimelinePlayView extends View {
                 } else if (playProgress > progressRight) {
                     playProgress = progressRight;
                 }
-                playProgress = (playProgress - progressLeft) / (progressRight - progressLeft);
                 if (delegate != null) {
-                    delegate.onPlayProgressChanged(progressLeft + (progressRight - progressLeft) * playProgress);
+                    delegate.onPlayProgressChanged(playProgress);
                 }
                 invalidate();
                 return true;
@@ -219,6 +236,11 @@ public class VideoTimelinePlayView extends View {
                     if (progressLeft < 0) {
                         progressLeft = 0;
                     }
+                }
+                if (progressLeft > playProgress) {
+                    playProgress = progressLeft;
+                } else if (progressRight < playProgress) {
+                    playProgress = progressRight;
                 }
                 if (delegate != null) {
                     delegate.onLeftProgressChanged(progressLeft);
@@ -241,6 +263,11 @@ public class VideoTimelinePlayView extends View {
                         progressRight = 1.0f;
                     }
                 }
+                if (progressLeft > playProgress) {
+                    playProgress = progressLeft;
+                } else if (progressRight < playProgress) {
+                    playProgress = progressRight;
+                }
                 if (delegate != null) {
                     delegate.onRightProgressChanged(progressRight);
                 }
@@ -248,11 +275,7 @@ public class VideoTimelinePlayView extends View {
                 return true;
             }
         }
-        return false;
-    }
-
-    public void setColor(int color) {
-        paint.setColor(color);
+        return true;
     }
 
     public void setVideoPath(String path, float left, float right) {
@@ -270,6 +293,20 @@ public class VideoTimelinePlayView extends View {
         invalidate();
     }
 
+    public void setRightProgress(float value) {
+        progressRight = value;
+        if (delegate != null) {
+            delegate.didStartDragging(TYPE_RIGHT);
+        }
+        if (delegate != null) {
+            delegate.onRightProgressChanged(progressRight);
+        }
+        if (delegate != null) {
+            delegate.didStopDragging(TYPE_RIGHT);
+        }
+        invalidate();
+    }
+
     public void setDelegate(VideoTimelineViewDelegate delegate) {
         this.delegate = delegate;
     }
@@ -279,14 +316,9 @@ public class VideoTimelinePlayView extends View {
             return;
         }
         if (frameNum == 0) {
-            if (isRoundFrames) {
-                frameHeight = frameWidth = AndroidUtilities.dp(56);
-                framesToLoad = (int) Math.ceil((getMeasuredWidth() - AndroidUtilities.dp(16)) / (frameHeight / 2.0f));
-            } else {
-                frameHeight = AndroidUtilities.dp(40);
-                framesToLoad = (getMeasuredWidth() - AndroidUtilities.dp(16)) / frameHeight;
-                frameWidth = (int) Math.ceil((float) (getMeasuredWidth() - AndroidUtilities.dp(16)) / (float) framesToLoad);
-            }
+            frameHeight = AndroidUtilities.dp(40);
+            framesToLoad = (getMeasuredWidth() - AndroidUtilities.dp(16)) / frameHeight;
+            frameWidth = (int) Math.ceil((float) (getMeasuredWidth() - AndroidUtilities.dp(16)) / (float) framesToLoad);
             frameTimeOffset = videoLength / framesToLoad;
         }
         currentTask = new AsyncTask<Integer, Integer, Bitmap>() {
@@ -398,7 +430,7 @@ public class VideoTimelinePlayView extends View {
 
     @Override
     protected void onDraw(Canvas canvas) {
-        int width = getMeasuredWidth() - AndroidUtilities.dp(36);
+        int width = getMeasuredWidth() - AndroidUtilities.dp(32);
         int startX = (int) (width * progressLeft) + AndroidUtilities.dp(16);
         int endX = (int) (width * progressRight) + AndroidUtilities.dp(16);
 
@@ -411,14 +443,9 @@ public class VideoTimelinePlayView extends View {
             for (int a = 0; a < frames.size(); a++) {
                 Bitmap bitmap = frames.get(a);
                 if (bitmap != null) {
-                    int x = AndroidUtilities.dp(16) + offset * (isRoundFrames ? frameWidth / 2 : frameWidth);
+                    int x = AndroidUtilities.dp(16) + offset * frameWidth;
                     int y = AndroidUtilities.dp(2 + 4);
-                    if (isRoundFrames) {
-                        rect2.set(x, y, x + AndroidUtilities.dp(28), y + AndroidUtilities.dp(28));
-                        canvas.drawBitmap(bitmap, rect1, rect2, null);
-                    } else {
-                        canvas.drawBitmap(bitmap, x, y, null);
-                    }
+                    canvas.drawBitmap(bitmap, x, y, null);
                 }
                 offset++;
             }
@@ -446,7 +473,7 @@ public class VideoTimelinePlayView extends View {
         drawableRight.setBounds(endX + AndroidUtilities.dp(2), AndroidUtilities.dp(4) + (AndroidUtilities.dp(44) - AndroidUtilities.dp(18)) / 2, endX + AndroidUtilities.dp(12), (AndroidUtilities.dp(44) - AndroidUtilities.dp(18)) / 2 + AndroidUtilities.dp(18 + 4));
         drawableRight.draw(canvas);
 
-        float cx = AndroidUtilities.dp(18) + width * (progressLeft + (progressRight - progressLeft) * playProgress);
+        float cx = AndroidUtilities.dp(18) + width * playProgress;
         rect3.set(cx - AndroidUtilities.dp(1.5f), AndroidUtilities.dp(2), cx + AndroidUtilities.dp(1.5f), AndroidUtilities.dp(50));
         canvas.drawRoundRect(rect3, AndroidUtilities.dp(1), AndroidUtilities.dp(1), paint2);
         canvas.drawCircle(cx, AndroidUtilities.dp(52), AndroidUtilities.dp(3.5f), paint2);

@@ -31,7 +31,7 @@ public final class ApicFrame extends Id3Frame {
   public static final String ID = "APIC";
 
   public final String mimeType;
-  public final @Nullable String description;
+  @Nullable public final String description;
   public final int pictureType;
   public final byte[] pictureData;
 
@@ -47,7 +47,7 @@ public final class ApicFrame extends Id3Frame {
   /* package */ ApicFrame(Parcel in) {
     super(ID);
     mimeType = castNonNull(in.readString());
-    description = castNonNull(in.readString());
+    description = in.readString();
     pictureType = in.readInt();
     pictureData = castNonNull(in.createByteArray());
   }

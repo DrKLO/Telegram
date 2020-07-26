@@ -22,6 +22,8 @@ import android.graphics.Rect;
 import android.os.Build;
 import android.os.SystemClock;
 import androidx.annotation.Keep;
+import androidx.core.view.accessibility.AccessibilityNodeInfoCompat;
+
 import android.text.Layout;
 import android.text.StaticLayout;
 import android.text.TextPaint;
@@ -731,7 +733,7 @@ public class EditTextBoldCursor extends EditText {
         super.onInitializeAccessibilityNodeInfo(info);
         info.setClassName("android.widget.EditText");
         if (hintLayout != null) {
-            info.setContentDescription(hintLayout.getText());
+            AccessibilityNodeInfoCompat.wrap(info).setHintText(hintLayout.getText());
         }
     }
 }

@@ -15,13 +15,16 @@
  */
 package com.google.android.exoplayer2.upstream;
 
+import static com.google.android.exoplayer2.util.Util.castNonNull;
+
 import android.content.Context;
 import android.content.res.AssetFileDescriptor;
 import android.content.res.Resources;
 import android.net.Uri;
-import androidx.annotation.Nullable;
 import android.text.TextUtils;
+import androidx.annotation.Nullable;
 import com.google.android.exoplayer2.C;
+import com.google.android.exoplayer2.util.Assertions;
 import java.io.EOFException;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -64,9 +67,9 @@ public final class RawResourceDataSource extends BaseDataSource {
 
   private final Resources resources;
 
-  private @Nullable Uri uri;
-  private @Nullable AssetFileDescriptor assetFileDescriptor;
-  private @Nullable InputStream inputStream;
+  @Nullable private Uri uri;
+  @Nullable private AssetFileDescriptor assetFileDescriptor;
+  @Nullable private InputStream inputStream;
   private long bytesRemaining;
   private boolean opened;
 
@@ -78,38 +81,31 @@ public final class RawResourceDataSource extends BaseDataSource {
     this.resources = context.getResources();
   }
 
-  /**
-   * @param context A context.
-   * @param listener An optional listener.
-   * @deprecated Use {@link #RawResourceDataSource(Context)} and {@link
-   *     #addTransferListener(TransferListener)}.
-   */
-  @Deprecated
-  public RawResourceDataSource(Context context, @Nullable TransferListener listener) {
-    this(context);
-    if (listener != null) {
-      addTransferListener(listener);
-    }
-  }
-
   @Override
   public long open(DataSpec dataSpec) throws RawResourceDataSourceException {
     try {
-      uri = dataSpec.uri;
+      Uri uri = dataSpec.uri;
+      this.uri = uri;
       if (!TextUtils.equals(RAW_RESOURCE_SCHEME, uri.getScheme())) {
         throw new RawResourceDataSourceException("URI must use scheme " + RAW_RESOURCE_SCHEME);
       }
 
       int resourceId;
       try {
-        resourceId = Integer.parseInt(uri.getLastPathSegment());
+        resourceId = Integer.parseInt(Assertions.checkNotNull(uri.getLastPathSegment()));
       } catch (NumberFormatException e) {
         throw new RawResourceDataSourceException("Resource identifier must be an integer.");
       }
 
       transferInitializing(dataSpec);
-      assetFileDescriptor = resources.openRawResourceFd(resourceId);
-      inputStream = new FileInputStream(assetFileDescriptor.getFileDescriptor());
+      AssetFileDescriptor assetFileDescriptor = resources.openRawResourceFd(resourceId);
+      this.assetFileDescriptor = assetFileDescriptor;
+      if (assetFileDescriptor == null) {
+        throw new RawResourceDataSourceException("Resource is compressed: " + uri);
+      }
+      FileInputStream inputStream = new FileInputStream(assetFileDescriptor.getFileDescriptor());
+      this.inputStream = inputStream;
+
       inputStream.skip(assetFileDescriptor.getStartOffset());
       long skipped = inputStream.skip(dataSpec.position);
       if (skipped < dataSpec.position) {
@@ -147,7 +143,7 @@ public final class RawResourceDataSource extends BaseDataSource {
     try {
       int bytesToRead = bytesRemaining == C.LENGTH_UNSET ? readLength
           : (int) Math.min(bytesRemaining, readLength);
-      bytesRead = inputStream.read(buffer, offset, bytesToRead);
+      bytesRead = castNonNull(inputStream).read(buffer, offset, bytesToRead);
     } catch (IOException e) {
       throw new RawResourceDataSourceException(e);
     }
@@ -167,7 +163,8 @@ public final class RawResourceDataSource extends BaseDataSource {
   }
 
   @Override
-  public @Nullable Uri getUri() {
+  @Nullable
+  public Uri getUri() {
     return uri;
   }
 

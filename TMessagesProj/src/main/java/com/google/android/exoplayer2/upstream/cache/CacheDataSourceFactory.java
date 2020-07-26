@@ -18,7 +18,7 @@ package com.google.android.exoplayer2.upstream.cache;
 import androidx.annotation.Nullable;
 import com.google.android.exoplayer2.upstream.DataSink;
 import com.google.android.exoplayer2.upstream.DataSource;
-import com.google.android.exoplayer2.upstream.FileDataSourceFactory;
+import com.google.android.exoplayer2.upstream.FileDataSource;
 
 /** A {@link DataSource.Factory} that produces {@link CacheDataSource}. */
 public final class CacheDataSourceFactory implements DataSource.Factory {
@@ -49,7 +49,7 @@ public final class CacheDataSourceFactory implements DataSource.Factory {
     this(
         cache,
         upstreamFactory,
-        new FileDataSourceFactory(),
+        new FileDataSource.Factory(),
         new CacheDataSinkFactory(cache, CacheDataSink.DEFAULT_FRAGMENT_SIZE),
         flags,
         /* eventListener= */ null);

@@ -36,7 +36,7 @@ public final class DolbyVisionConfig {
     int dvProfile = (profileData >> 1);
     int dvLevel = ((profileData & 0x1) << 5) | ((data.readUnsignedByte() >> 3) & 0x1F);
     String codecsPrefix;
-    if (dvProfile == 4 || dvProfile == 5) {
+    if (dvProfile == 4 || dvProfile == 5 || dvProfile == 7) {
       codecsPrefix = "dvhe";
     } else if (dvProfile == 8) {
       codecsPrefix = "hev1";

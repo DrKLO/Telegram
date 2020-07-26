@@ -477,6 +477,9 @@ public class Emoji {
             FileLog.e(e);
             return cs;
         }
+        if (emojiOnly != null && emojiCode.length() != 0) {
+            emojiOnly[0] = 0;
+        }
         return s;
     }
 

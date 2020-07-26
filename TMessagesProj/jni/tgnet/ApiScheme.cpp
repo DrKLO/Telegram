@@ -1172,7 +1172,7 @@ UserProfilePhoto *UserProfilePhoto::TLdeserialize(NativeByteBuffer *stream, uint
         case 0x4f11bae1:
             result = new TL_userProfilePhotoEmpty();
             break;
-        case 0xecd75d8c:
+        case 0x69d3ab26:
             result = new TL_userProfilePhoto();
             break;
         default:
@@ -1189,6 +1189,8 @@ void TL_userProfilePhotoEmpty::serializeToStream(NativeByteBuffer *stream) {
 }
 
 void TL_userProfilePhoto::readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &error) {
+    flags = stream->readInt32(&error);
+    has_video = (flags & 1) != 0;
     photo_id = stream->readInt64(&error);
     photo_small = std::unique_ptr<FileLocation>(FileLocation::TLdeserialize(stream, stream->readUint32(&error), instanceNum, error));
     photo_big = std::unique_ptr<FileLocation>(FileLocation::TLdeserialize(stream, stream->readUint32(&error), instanceNum, error));
@@ -1197,6 +1199,8 @@ void TL_userProfilePhoto::readParams(NativeByteBuffer *stream, int32_t instanceN
 
 void TL_userProfilePhoto::serializeToStream(NativeByteBuffer *stream) {
     stream->writeInt32(constructor);
+    flags = has_video ? (flags | 1) : (flags &~ 1);
+    stream->writeInt32(flags);
     stream->writeInt64(photo_id);
     photo_small->serializeToStream(stream);
     photo_big->serializeToStream(stream);

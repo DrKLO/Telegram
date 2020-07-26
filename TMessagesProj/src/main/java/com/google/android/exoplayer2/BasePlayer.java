@@ -101,11 +101,15 @@ public abstract class BasePlayer implements Player {
   @Override
   @Nullable
   public final Object getCurrentTag() {
-    int windowIndex = getCurrentWindowIndex();
     Timeline timeline = getCurrentTimeline();
-    return windowIndex >= timeline.getWindowCount()
-        ? null
-        : timeline.getWindow(windowIndex, window, /* setTag= */ true).tag;
+    return timeline.isEmpty() ? null : timeline.getWindow(getCurrentWindowIndex(), window).tag;
+  }
+
+  @Override
+  @Nullable
+  public final Object getCurrentManifest() {
+    Timeline timeline = getCurrentTimeline();
+    return timeline.isEmpty() ? null : timeline.getWindow(getCurrentWindowIndex(), window).manifest;
   }
 
   @Override
@@ -121,6 +125,12 @@ public abstract class BasePlayer implements Player {
   public final boolean isCurrentWindowDynamic() {
     Timeline timeline = getCurrentTimeline();
     return !timeline.isEmpty() && timeline.getWindow(getCurrentWindowIndex(), window).isDynamic;
+  }
+
+  @Override
+  public final boolean isCurrentWindowLive() {
+    Timeline timeline = getCurrentTimeline();
+    return !timeline.isEmpty() && timeline.getWindow(getCurrentWindowIndex(), window).isLive;
   }
 
   @Override

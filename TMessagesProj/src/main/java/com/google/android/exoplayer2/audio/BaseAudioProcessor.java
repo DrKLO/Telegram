@@ -16,24 +16,23 @@
 package com.google.android.exoplayer2.audio;
 
 import androidx.annotation.CallSuper;
-import com.google.android.exoplayer2.C;
-import com.google.android.exoplayer2.Format;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
 /**
  * Base class for audio processors that keep an output buffer and an internal buffer that is reused
- * whenever input is queued.
+ * whenever input is queued. Subclasses should override {@link #onConfigure(AudioFormat)} to return
+ * the output audio format for the processor if it's active.
  */
 public abstract class BaseAudioProcessor implements AudioProcessor {
 
-  /** The configured input sample rate, in Hertz, or {@link Format#NO_VALUE} if not configured. */
-  protected int sampleRateHz;
-  /** The configured input channel count, or {@link Format#NO_VALUE} if not configured. */
-  protected int channelCount;
-  /** The configured input encoding, or {@link Format#NO_VALUE} if not configured. */
-  @C.PcmEncoding protected int encoding;
+  /** The current input audio format. */
+  protected AudioFormat inputAudioFormat;
+  /** The current output audio format. */
+  protected AudioFormat outputAudioFormat;
 
+  private AudioFormat pendingInputAudioFormat;
+  private AudioFormat pendingOutputAudioFormat;
   private ByteBuffer buffer;
   private ByteBuffer outputBuffer;
   private boolean inputEnded;
@@ -41,29 +40,23 @@ public abstract class BaseAudioProcessor implements AudioProcessor {
   public BaseAudioProcessor() {
     buffer = EMPTY_BUFFER;
     outputBuffer = EMPTY_BUFFER;
-    channelCount = Format.NO_VALUE;
-    sampleRateHz = Format.NO_VALUE;
-    encoding = Format.NO_VALUE;
+    pendingInputAudioFormat = AudioFormat.NOT_SET;
+    pendingOutputAudioFormat = AudioFormat.NOT_SET;
+    inputAudioFormat = AudioFormat.NOT_SET;
+    outputAudioFormat = AudioFormat.NOT_SET;
+  }
+
+  @Override
+  public final AudioFormat configure(AudioFormat inputAudioFormat)
+      throws UnhandledAudioFormatException {
+    pendingInputAudioFormat = inputAudioFormat;
+    pendingOutputAudioFormat = onConfigure(inputAudioFormat);
+    return isActive() ? pendingOutputAudioFormat : AudioFormat.NOT_SET;
   }
 
   @Override
   public boolean isActive() {
-    return sampleRateHz != Format.NO_VALUE;
-  }
-
-  @Override
-  public int getOutputChannelCount() {
-    return channelCount;
-  }
-
-  @Override
-  public int getOutputEncoding() {
-    return encoding;
-  }
-
-  @Override
-  public int getOutputSampleRateHz() {
-    return sampleRateHz;
+    return pendingOutputAudioFormat != AudioFormat.NOT_SET;
   }
 
   @Override
@@ -91,6 +84,8 @@ public abstract class BaseAudioProcessor implements AudioProcessor {
   public final void flush() {
     outputBuffer = EMPTY_BUFFER;
     inputEnded = false;
+    inputAudioFormat = pendingInputAudioFormat;
+    outputAudioFormat = pendingOutputAudioFormat;
     onFlush();
   }
 
@@ -98,24 +93,11 @@ public abstract class BaseAudioProcessor implements AudioProcessor {
   public final void reset() {
     flush();
     buffer = EMPTY_BUFFER;
-    sampleRateHz = Format.NO_VALUE;
-    channelCount = Format.NO_VALUE;
-    encoding = Format.NO_VALUE;
+    pendingInputAudioFormat = AudioFormat.NOT_SET;
+    pendingOutputAudioFormat = AudioFormat.NOT_SET;
+    inputAudioFormat = AudioFormat.NOT_SET;
+    outputAudioFormat = AudioFormat.NOT_SET;
     onReset();
-  }
-
-  /** Sets the input format of this processor, returning whether the input format has changed. */
-  protected final boolean setInputFormat(
-      int sampleRateHz, int channelCount, @C.PcmEncoding int encoding) {
-    if (sampleRateHz == this.sampleRateHz
-        && channelCount == this.channelCount
-        && encoding == this.encoding) {
-      return false;
-    }
-    this.sampleRateHz = sampleRateHz;
-    this.channelCount = channelCount;
-    this.encoding = encoding;
-    return true;
   }
 
   /**
@@ -136,6 +118,12 @@ public abstract class BaseAudioProcessor implements AudioProcessor {
   /** Returns whether the current output buffer has any data remaining. */
   protected final boolean hasPendingOutput() {
     return outputBuffer.hasRemaining();
+  }
+
+  /** Called when the processor is configured for a new input format. */
+  protected AudioFormat onConfigure(AudioFormat inputAudioFormat)
+      throws UnhandledAudioFormatException {
+    return AudioFormat.NOT_SET;
   }
 
   /** Called when the end-of-stream is queued to the processor. */

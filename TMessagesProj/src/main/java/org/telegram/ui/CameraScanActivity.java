@@ -405,7 +405,7 @@ public class CameraScanActivity extends BaseFragment implements Camera.PreviewCa
                             return;
                         }
                     }
-                    PhotoAlbumPickerActivity fragment = new PhotoAlbumPickerActivity(10, false, false, null);
+                    PhotoAlbumPickerActivity fragment = new PhotoAlbumPickerActivity(PhotoAlbumPickerActivity.SELECT_TYPE_QR, false, false, null);
                     fragment.setMaxSelectedPhotos(1, false);
                     fragment.setAllowSearchImages(false);
                     fragment.setDelegate(new PhotoAlbumPickerActivity.PhotoAlbumPickerActivityDelegate() {

@@ -15,8 +15,11 @@
  */
 package com.google.android.exoplayer2;
 
+import android.content.Context;
 import android.os.Looper;
 import androidx.annotation.Nullable;
+import androidx.annotation.VisibleForTesting;
+import com.google.android.exoplayer2.analytics.AnalyticsCollector;
 import com.google.android.exoplayer2.audio.MediaCodecAudioRenderer;
 import com.google.android.exoplayer2.metadata.MetadataRenderer;
 import com.google.android.exoplayer2.source.ClippingMediaSource;
@@ -29,12 +32,17 @@ import com.google.android.exoplayer2.source.SingleSampleMediaSource;
 import com.google.android.exoplayer2.text.TextRenderer;
 import com.google.android.exoplayer2.trackselection.DefaultTrackSelector;
 import com.google.android.exoplayer2.trackselection.TrackSelector;
+import com.google.android.exoplayer2.upstream.BandwidthMeter;
 import com.google.android.exoplayer2.upstream.DataSource;
+import com.google.android.exoplayer2.upstream.DefaultBandwidthMeter;
+import com.google.android.exoplayer2.util.Assertions;
+import com.google.android.exoplayer2.util.Clock;
+import com.google.android.exoplayer2.util.Util;
 import com.google.android.exoplayer2.video.MediaCodecVideoRenderer;
 
 /**
  * An extensible media player that plays {@link MediaSource}s. Instances can be obtained from {@link
- * ExoPlayerFactory}.
+ * SimpleExoPlayer.Builder} or {@link ExoPlayer.Builder}.
  *
  * <h3>Player components</h3>
  *
@@ -85,8 +93,8 @@ import com.google.android.exoplayer2.video.MediaCodecVideoRenderer;
  *
  * <p>The figure below shows ExoPlayer's threading model.
  *
- * <p align="center"><img src="doc-files/exoplayer-threading-model.svg" alt="ExoPlayer's threading
- * model">
+ * <p style="align:center"><img src="doc-files/exoplayer-threading-model.svg" alt="ExoPlayer's
+ * threading model">
  *
  * <ul>
  *   <li>ExoPlayer instances must be accessed from a single application thread. For the vast
@@ -117,27 +125,200 @@ import com.google.android.exoplayer2.video.MediaCodecVideoRenderer;
  */
 public interface ExoPlayer extends Player {
 
-  /** @deprecated Use {@link PlayerMessage.Target} instead. */
-  @Deprecated
-  interface ExoPlayerComponent extends PlayerMessage.Target {}
+  /**
+   * A builder for {@link ExoPlayer} instances.
+   *
+   * <p>See {@link #Builder(Context, Renderer...)} for the list of default values.
+   */
+  final class Builder {
 
-  /** @deprecated Use {@link PlayerMessage} instead. */
-  @Deprecated
-  final class ExoPlayerMessage {
+    private final Renderer[] renderers;
 
-    /** The target to receive the message. */
-    public final PlayerMessage.Target target;
-    /** The type of the message. */
-    public final int messageType;
-    /** The message. */
-    public final Object message;
+    private Clock clock;
+    private TrackSelector trackSelector;
+    private LoadControl loadControl;
+    private BandwidthMeter bandwidthMeter;
+    private Looper looper;
+    private AnalyticsCollector analyticsCollector;
+    private boolean useLazyPreparation;
+    private boolean buildCalled;
 
-    /** @deprecated Use {@link ExoPlayer#createMessage(PlayerMessage.Target)} instead. */
-    @Deprecated
-    public ExoPlayerMessage(PlayerMessage.Target target, int messageType, Object message) {
-      this.target = target;
-      this.messageType = messageType;
-      this.message = message;
+    /**
+     * Creates a builder with a list of {@link Renderer Renderers}.
+     *
+     * <p>The builder uses the following default values:
+     *
+     * <ul>
+     *   <li>{@link TrackSelector}: {@link DefaultTrackSelector}
+     *   <li>{@link LoadControl}: {@link DefaultLoadControl}
+     *   <li>{@link BandwidthMeter}: {@link DefaultBandwidthMeter#getSingletonInstance(Context)}
+     *   <li>{@link Looper}: The {@link Looper} associated with the current thread, or the {@link
+     *       Looper} of the application's main thread if the current thread doesn't have a {@link
+     *       Looper}
+     *   <li>{@link AnalyticsCollector}: {@link AnalyticsCollector} with {@link Clock#DEFAULT}
+     *   <li>{@code useLazyPreparation}: {@code true}
+     *   <li>{@link Clock}: {@link Clock#DEFAULT}
+     * </ul>
+     *
+     * @param context A {@link Context}.
+     * @param renderers The {@link Renderer Renderers} to be used by the player.
+     */
+    public Builder(Context context, Renderer... renderers) {
+      this(
+          renderers,
+          new DefaultTrackSelector(context),
+          new DefaultLoadControl(),
+          DefaultBandwidthMeter.getSingletonInstance(context),
+          Util.getLooper(),
+          new AnalyticsCollector(Clock.DEFAULT),
+          /* useLazyPreparation= */ true,
+          Clock.DEFAULT);
+    }
+
+    /**
+     * Creates a builder with the specified custom components.
+     *
+     * <p>Note that this constructor is only useful if you try to ensure that ExoPlayer's default
+     * components can be removed by ProGuard or R8. For most components except renderers, there is
+     * only a marginal benefit of doing that.
+     *
+     * @param renderers The {@link Renderer Renderers} to be used by the player.
+     * @param trackSelector A {@link TrackSelector}.
+     * @param loadControl A {@link LoadControl}.
+     * @param bandwidthMeter A {@link BandwidthMeter}.
+     * @param looper A {@link Looper} that must be used for all calls to the player.
+     * @param analyticsCollector An {@link AnalyticsCollector}.
+     * @param useLazyPreparation Whether media sources should be initialized lazily.
+     * @param clock A {@link Clock}. Should always be {@link Clock#DEFAULT}.
+     */
+    public Builder(
+        Renderer[] renderers,
+        TrackSelector trackSelector,
+        LoadControl loadControl,
+        BandwidthMeter bandwidthMeter,
+        Looper looper,
+        AnalyticsCollector analyticsCollector,
+        boolean useLazyPreparation,
+        Clock clock) {
+      Assertions.checkArgument(renderers.length > 0);
+      this.renderers = renderers;
+      this.trackSelector = trackSelector;
+      this.loadControl = loadControl;
+      this.bandwidthMeter = bandwidthMeter;
+      this.looper = looper;
+      this.analyticsCollector = analyticsCollector;
+      this.useLazyPreparation = useLazyPreparation;
+      this.clock = clock;
+    }
+
+    /**
+     * Sets the {@link TrackSelector} that will be used by the player.
+     *
+     * @param trackSelector A {@link TrackSelector}.
+     * @return This builder.
+     * @throws IllegalStateException If {@link #build()} has already been called.
+     */
+    public Builder setTrackSelector(TrackSelector trackSelector) {
+      Assertions.checkState(!buildCalled);
+      this.trackSelector = trackSelector;
+      return this;
+    }
+
+    /**
+     * Sets the {@link LoadControl} that will be used by the player.
+     *
+     * @param loadControl A {@link LoadControl}.
+     * @return This builder.
+     * @throws IllegalStateException If {@link #build()} has already been called.
+     */
+    public Builder setLoadControl(LoadControl loadControl) {
+      Assertions.checkState(!buildCalled);
+      this.loadControl = loadControl;
+      return this;
+    }
+
+    /**
+     * Sets the {@link BandwidthMeter} that will be used by the player.
+     *
+     * @param bandwidthMeter A {@link BandwidthMeter}.
+     * @return This builder.
+     * @throws IllegalStateException If {@link #build()} has already been called.
+     */
+    public Builder setBandwidthMeter(BandwidthMeter bandwidthMeter) {
+      Assertions.checkState(!buildCalled);
+      this.bandwidthMeter = bandwidthMeter;
+      return this;
+    }
+
+    /**
+     * Sets the {@link Looper} that must be used for all calls to the player and that is used to
+     * call listeners on.
+     *
+     * @param looper A {@link Looper}.
+     * @return This builder.
+     * @throws IllegalStateException If {@link #build()} has already been called.
+     */
+    public Builder setLooper(Looper looper) {
+      Assertions.checkState(!buildCalled);
+      this.looper = looper;
+      return this;
+    }
+
+    /**
+     * Sets the {@link AnalyticsCollector} that will collect and forward all player events.
+     *
+     * @param analyticsCollector An {@link AnalyticsCollector}.
+     * @return This builder.
+     * @throws IllegalStateException If {@link #build()} has already been called.
+     */
+    public Builder setAnalyticsCollector(AnalyticsCollector analyticsCollector) {
+      Assertions.checkState(!buildCalled);
+      this.analyticsCollector = analyticsCollector;
+      return this;
+    }
+
+    /**
+     * Sets whether media sources should be initialized lazily.
+     *
+     * <p>If false, all initial preparation steps (e.g., manifest loads) happen immediately. If
+     * true, these initial preparations are triggered only when the player starts buffering the
+     * media.
+     *
+     * @param useLazyPreparation Whether to use lazy preparation.
+     * @return This builder.
+     * @throws IllegalStateException If {@link #build()} has already been called.
+     */
+    public Builder setUseLazyPreparation(boolean useLazyPreparation) {
+      Assertions.checkState(!buildCalled);
+      this.useLazyPreparation = useLazyPreparation;
+      return this;
+    }
+
+    /**
+     * Sets the {@link Clock} that will be used by the player. Should only be set for testing
+     * purposes.
+     *
+     * @param clock A {@link Clock}.
+     * @return This builder.
+     * @throws IllegalStateException If {@link #build()} has already been called.
+     */
+    @VisibleForTesting
+    public Builder setClock(Clock clock) {
+      Assertions.checkState(!buildCalled);
+      this.clock = clock;
+      return this;
+    }
+
+    /**
+     * Builds an {@link ExoPlayer} instance.
+     *
+     * @throws IllegalStateException If {@link #build()} has already been called.
+     */
+    public ExoPlayer build() {
+      Assertions.checkState(!buildCalled);
+      buildCalled = true;
+      return new ExoPlayerImpl(
+          renderers, trackSelector, loadControl, bandwidthMeter, clock, looper);
     }
   }
 
@@ -151,8 +332,8 @@ public interface ExoPlayer extends Player {
   void retry();
 
   /**
-   * Prepares the player to play the provided {@link MediaSource}. Equivalent to
-   * {@code prepare(mediaSource, true, true)}.
+   * Prepares the player to play the provided {@link MediaSource}. Equivalent to {@code
+   * prepare(mediaSource, true, true)}.
    */
   void prepare(MediaSource mediaSource);
 
@@ -180,19 +361,6 @@ public interface ExoPlayer extends Player {
    * PlayerMessage#setPosition(int, long)}.
    */
   PlayerMessage createMessage(PlayerMessage.Target target);
-
-  /** @deprecated Use {@link #createMessage(PlayerMessage.Target)} instead. */
-  @Deprecated
-  @SuppressWarnings("deprecation")
-  void sendMessages(ExoPlayerMessage... messages);
-
-  /**
-   * @deprecated Use {@link #createMessage(PlayerMessage.Target)} with {@link
-   *     PlayerMessage#blockUntilDelivered()}.
-   */
-  @Deprecated
-  @SuppressWarnings("deprecation")
-  void blockingSendMessages(ExoPlayerMessage... messages);
 
   /**
    * Sets the parameters that control how seek operations are performed.

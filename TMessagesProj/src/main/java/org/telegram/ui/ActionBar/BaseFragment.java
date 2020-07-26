@@ -54,6 +54,7 @@ public class BaseFragment {
     protected ActionBarLayout parentLayout;
     protected ActionBar actionBar;
     protected boolean inPreviewMode;
+    protected boolean inBubbleMode;
     protected int classGuid;
     protected Bundle arguments;
     protected boolean hasOwnBackground = false;
@@ -101,6 +102,14 @@ public class BaseFragment {
 
     public boolean isSwipeBackEnabled(MotionEvent event) {
         return true;
+    }
+
+    public void setInBubbleMode(boolean value) {
+        inBubbleMode = value;
+    }
+
+    public boolean isInBubbleMode() {
+        return inBubbleMode;
     }
 
     protected void setInPreviewMode(boolean value) {
@@ -157,6 +166,7 @@ public class BaseFragment {
     protected void setParentLayout(ActionBarLayout layout) {
         if (parentLayout != layout) {
             parentLayout = layout;
+            inBubbleMode = parentLayout != null && parentLayout.isInBubbleMode();
             if (fragmentView != null) {
                 ViewGroup parent = (ViewGroup) fragmentView.getParent();
                 if (parent != null) {
@@ -201,7 +211,7 @@ public class BaseFragment {
         actionBar.setItemsBackgroundColor(Theme.getColor(Theme.key_actionBarActionModeDefaultSelector), true);
         actionBar.setItemsColor(Theme.getColor(Theme.key_actionBarDefaultIcon), false);
         actionBar.setItemsColor(Theme.getColor(Theme.key_actionBarActionModeDefaultIcon), true);
-        if (inPreviewMode) {
+        if (inPreviewMode || inBubbleMode) {
             actionBar.setOccupyStatusBar(false);
         }
         return actionBar;
@@ -345,7 +355,7 @@ public class BaseFragment {
         }
     }
 
-    public void dismissCurrentDialig() {
+    public void dismissCurrentDialog() {
         if (visibleDialog == null) {
             return;
         }

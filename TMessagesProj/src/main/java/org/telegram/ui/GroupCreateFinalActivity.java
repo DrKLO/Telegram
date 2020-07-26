@@ -14,6 +14,7 @@ import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
 import android.animation.StateListAnimator;
 import android.annotation.SuppressLint;
+import android.app.Dialog;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Canvas;
@@ -58,6 +59,7 @@ import org.telegram.ui.Cells.TextSettingsCell;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.CombinedDrawable;
 import org.telegram.ui.Components.EditTextEmoji;
+import org.telegram.ui.Components.VerticalPositionAutoAnimator;
 import org.telegram.ui.Components.ImageUpdater;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.ActionBar.BaseFragment;
@@ -95,7 +97,10 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
 
     private TLRPC.FileLocation avatar;
     private TLRPC.FileLocation avatarBig;
-    private TLRPC.InputFile uploadedAvatar;
+    private TLRPC.InputFile inputPhoto;
+    private TLRPC.InputFile inputVideo;
+    private String inputVideoPath;
+    private double videoTimestamp;
     private ArrayList<Integer> selectedContacts;
     private boolean createAfterUpload;
     private boolean donePressed;
@@ -131,9 +136,9 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.updateInterfaces);
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.chatDidCreated);
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.chatDidFailCreate);
-        imageUpdater = new ImageUpdater();
+        imageUpdater = new ImageUpdater(true);
         imageUpdater.parentFragment = this;
-        imageUpdater.delegate = this;
+        imageUpdater.setDelegate(this);
         selectedContacts = getArguments().getIntegerArrayList("result");
         final ArrayList<Integer> usersToLoad = new ArrayList<>();
         for (int a = 0; a < selectedContacts.size(); a++) {
@@ -193,6 +198,7 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
         if (adapter != null) {
             adapter.notifyDataSetChanged();
         }
+        imageUpdater.onResume();
         AndroidUtilities.requestAdjustResize(getParentActivity(), classGuid);
     }
 
@@ -202,6 +208,25 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
         if (editText != null) {
             editText.onPause();
         }
+        imageUpdater.onPause();
+    }
+
+    @Override
+    public void dismissCurrentDialog() {
+        if (imageUpdater.dismissCurrentDialog(visibleDialog)) {
+            return;
+        }
+        super.dismissCurrentDialog();
+    }
+
+    @Override
+    public boolean dismissDialogOnPause(Dialog dialog) {
+        return imageUpdater.dismissDialogOnPause(dialog) && super.dismissDialogOnPause(dialog);
+    }
+
+    @Override
+    public void onRequestPermissionsResultFragment(int requestCode, String[] permissions, int[] grantResults) {
+        imageUpdater.onRequestPermissionsResultFragment(requestCode, permissions, grantResults);
     }
 
     @Override
@@ -211,6 +236,11 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
             return false;
         }
         return true;
+    }
+
+    @Override
+    protected boolean hideKeyboardOnShow() {
+        return false;
     }
 
     @Override
@@ -406,7 +436,7 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
             protected void onDraw(Canvas canvas) {
                 if (avatarImage != null && avatarProgressView.getVisibility() == VISIBLE) {
                     paint.setAlpha((int) (0x55 * avatarImage.getImageReceiver().getCurrentAlpha() * avatarProgressView.getAlpha()));
-                    canvas.drawCircle(getMeasuredWidth() / 2, getMeasuredHeight() / 2, AndroidUtilities.dp(32), paint);
+                    canvas.drawCircle(getMeasuredWidth() / 2.0f, getMeasuredHeight() / 2.0f, getMeasuredWidth() / 2.0f, paint);
                 }
             }
         };
@@ -414,7 +444,10 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
         avatarOverlay.setOnClickListener(view -> imageUpdater.openMenu(avatar != null, () -> {
             avatar = null;
             avatarBig = null;
-            uploadedAvatar = null;
+            inputPhoto = null;
+            inputVideo = null;
+            inputVideoPath = null;
+            videoTimestamp = 0;
             showAvatarProgress(false, true);
             avatarImage.setImage(null, null, avatarDrawable, null);
             avatarEditor.setImageResource(R.drawable.actions_setphoto);
@@ -449,6 +482,7 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
         };
         avatarProgressView.setSize(AndroidUtilities.dp(30));
         avatarProgressView.setProgressColor(0xffffffff);
+        avatarProgressView.setNoProgress(false);
         editTextContainer.addView(avatarProgressView, LayoutHelper.createFrame(64, 64, Gravity.TOP | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT), LocaleController.isRTL ? 0 : 16, 16, LocaleController.isRTL ? 16 : 0, 16));
 
         showAvatarProgress(false, false);
@@ -522,6 +556,7 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
                 }
             });
         }
+        VerticalPositionAutoAnimator.attach(floatingButtonContainer);
         sizeNotifierFrameLayout.addView(floatingButtonContainer, LayoutHelper.createFrame(Build.VERSION.SDK_INT >= 21 ? 56 : 60, Build.VERSION.SDK_INT >= 21 ? 56 : 60, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.BOTTOM, LocaleController.isRTL ? 14 : 0, 0, LocaleController.isRTL ? 0 : 14, 14));
         floatingButtonContainer.setOnClickListener(view -> {
             if (donePressed) {
@@ -539,7 +574,7 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
             AndroidUtilities.hideKeyboard(editText);
             editText.setEnabled(false);
 
-            if (imageUpdater.uploadingImage != null) {
+            if (imageUpdater.isUploadingImage()) {
                 createAfterUpload = true;
             } else {
                 showEditDoneProgress(true);
@@ -566,10 +601,29 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
     }
 
     @Override
-    public void didUploadPhoto(final TLRPC.InputFile file, final TLRPC.PhotoSize bigSize, final TLRPC.PhotoSize smallSize) {
+    public void onUploadProgressChanged(float progress) {
+        if (avatarProgressView == null) {
+            return;
+        }
+        avatarProgressView.setProgress(progress);
+    }
+
+    @Override
+    public void didStartUpload(boolean isVideo) {
+        if (avatarProgressView == null) {
+            return;
+        }
+        avatarProgressView.setProgress(0.0f);
+    }
+
+    @Override
+    public void didUploadPhoto(final TLRPC.InputFile photo, final TLRPC.InputFile video, double videoStartTimestamp, String videoPath, final TLRPC.PhotoSize bigSize, final TLRPC.PhotoSize smallSize) {
         AndroidUtilities.runOnUIThread(() -> {
-            if (file != null) {
-                uploadedAvatar = file;
+            if (photo != null || video != null) {
+                inputPhoto = photo;
+                inputVideo = video;
+                inputVideoPath = videoPath;
+                videoTimestamp = videoStartTimestamp;
                 if (createAfterUpload) {
                     if (delegate != null) {
                         delegate.didStartChatCreation();
@@ -730,8 +784,8 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
                 args2.putInt("chat_id", chat_id);
                 presentFragment(new ChatActivity(args2), true);
             }
-            if (uploadedAvatar != null) {
-                MessagesController.getInstance(currentAccount).changeChatAvatar(chat_id, uploadedAvatar, avatar, avatarBig);
+            if (inputPhoto != null || inputVideo != null) {
+                MessagesController.getInstance(currentAccount).changeChatAvatar(chat_id, null, inputPhoto, inputVideo, videoTimestamp, inputVideoPath, avatar, avatarBig);
             }
         }
     }

@@ -822,8 +822,10 @@ void LottieParserImpl::parseLayers(LOTCompositionData *comp) {
             return;
         }
         std::shared_ptr<LOTData> layer = parseLayer(true);
-        staticFlag = staticFlag && layer->isStatic();
-        comp->mRootLayer->mChildren.push_back(layer);
+        if (layer) {
+            staticFlag = staticFlag && layer->isStatic();
+            comp->mRootLayer->mChildren.push_back(layer);
+        }
     }
     if (!IsValid()) {
         parsingError = true;

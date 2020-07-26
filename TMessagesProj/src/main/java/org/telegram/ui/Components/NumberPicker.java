@@ -104,6 +104,7 @@ public class NumberPicker extends LinearLayout {
     private boolean mDecrementVirtualButtonPressed;
     private PressedStateHelper mPressedStateHelper;
     private int mLastHandledDownDpadKeyCode = -1;
+    private SeekBarAccessibilityDelegate accessibilityDelegate;
 
     public interface OnValueChangeListener {
         void onValueChange(NumberPicker picker, int oldVal, int newVal);
@@ -188,6 +189,33 @@ public class NumberPicker extends LinearLayout {
         mAdjustScroller = new Scroller(getContext(), new DecelerateInterpolator(2.5f));
 
         updateInputTextView();
+
+        setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_YES);
+        setAccessibilityDelegate(accessibilityDelegate = new SeekBarAccessibilityDelegate() {
+            @Override
+            protected void doScroll(View host, boolean backward) {
+                changeValueByOne(!backward);
+            }
+
+            @Override
+            protected boolean canScrollBackward(View host) {
+                return true;
+            }
+
+            @Override
+            protected boolean canScrollForward(View host) {
+                return true;
+            }
+
+            @Override
+            public CharSequence getContentDescription(View host) {
+                return NumberPicker.this.getContentDescription(mValue);
+            }
+        });
+    }
+
+    protected CharSequence getContentDescription(int value) {
+        return mInputText.getText();
     }
 
     public void setTextColor(int color) {

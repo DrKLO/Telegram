@@ -35,7 +35,6 @@ import com.google.android.exoplayer2.metadata.id3.Id3Decoder;
 import com.google.android.exoplayer2.metadata.id3.Id3Decoder.FramePredicate;
 import com.google.android.exoplayer2.metadata.id3.MlltFrame;
 import com.google.android.exoplayer2.util.ParsableByteArray;
-import com.google.android.exoplayer2.util.Util;
 import java.io.EOFException;
 import java.io.IOException;
 import java.lang.annotation.Documented;
@@ -95,9 +94,9 @@ public final class Mp3Extractor implements Extractor {
    */
   private static final int MPEG_AUDIO_HEADER_MASK = 0xFFFE0C00;
 
-  private static final int SEEK_HEADER_XING = Util.getIntegerCodeForString("Xing");
-  private static final int SEEK_HEADER_INFO = Util.getIntegerCodeForString("Info");
-  private static final int SEEK_HEADER_VBRI = Util.getIntegerCodeForString("VBRI");
+  private static final int SEEK_HEADER_XING = 0x58696e67;
+  private static final int SEEK_HEADER_INFO = 0x496e666f;
+  private static final int SEEK_HEADER_VBRI = 0x56425249;
   private static final int SEEK_HEADER_UNSET = 0;
 
   @Flags private final int flags;

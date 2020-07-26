@@ -119,4 +119,39 @@ public interface Brush {
             return BitmapFactory.decodeResource(ApplicationLoader.applicationContext.getResources(), R.drawable.paint_neon_brush, options);
         }
     }
+
+    class Arrow implements Brush {
+
+        @Override
+        public float getSpacing() {
+            return 0.15f;
+        }
+
+        @Override
+        public float getAlpha() {
+            return 0.85f;
+        }
+
+        @Override
+        public float getAngle() {
+            return 0.0f;
+        }
+
+        @Override
+        public float getScale() {
+            return 1.0f;
+        }
+
+        @Override
+        public boolean isLightSaber() {
+            return false;
+        }
+
+        @Override
+        public Bitmap getStamp() {
+            BitmapFactory.Options options = new BitmapFactory.Options();
+            options.inScaled = false;
+            return BitmapFactory.decodeResource(ApplicationLoader.applicationContext.getResources(), R.drawable.paint_radial_brush, options);
+        }
+    }
 }

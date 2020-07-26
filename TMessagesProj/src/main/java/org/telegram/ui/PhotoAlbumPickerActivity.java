@@ -31,6 +31,8 @@ import android.view.ViewGroup;
 import android.view.ViewOutlineProvider;
 import android.view.ViewTreeObserver;
 import android.view.WindowManager;
+import android.view.accessibility.AccessibilityNodeInfo;
+import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -118,6 +120,12 @@ public class PhotoAlbumPickerActivity extends BaseFragment implements Notificati
 
     private PhotoAlbumPickerActivityDelegate delegate;
 
+    public static int SELECT_TYPE_ALL = 0;
+    public static int SELECT_TYPE_AVATAR = 1;
+    public static int SELECT_TYPE_WALLPAPER = 2;
+    public static int SELECT_TYPE_AVATAR_VIDEO = 3;
+    public static int SELECT_TYPE_QR = 10;
+
     public PhotoAlbumPickerActivity(int selectPhotoType, boolean allowGifs, boolean allowCaption, ChatActivity chatActivity) {
         super();
         this.chatActivity = chatActivity;
@@ -128,7 +136,7 @@ public class PhotoAlbumPickerActivity extends BaseFragment implements Notificati
 
     @Override
     public boolean onFragmentCreate() {
-        if (selectPhotoType != 0 || !allowSearchImages) {
+        if (selectPhotoType == SELECT_TYPE_AVATAR || selectPhotoType == SELECT_TYPE_WALLPAPER || selectPhotoType == SELECT_TYPE_QR || !allowSearchImages) {
             albumsSorted = MediaController.allPhotoAlbums;
         } else {
             albumsSorted = MediaController.allMediaAlbums;
@@ -370,12 +378,22 @@ public class PhotoAlbumPickerActivity extends BaseFragment implements Notificati
             commentTextView.setText(caption);
         }
 
-        writeButtonContainer = new FrameLayout(context);
+        writeButtonContainer = new FrameLayout(context) {
+            @Override
+            public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
+                super.onInitializeAccessibilityNodeInfo(info);
+                info.setText(LocaleController.formatPluralString("AccDescrSendPhotos", selectedPhotos.size()));
+                info.setClassName(Button.class.getName());
+                info.setLongClickable(true);
+                info.setClickable(true);
+            }
+        };
+        writeButtonContainer.setFocusable(true);
+        writeButtonContainer.setFocusableInTouchMode(true);
         writeButtonContainer.setVisibility(View.INVISIBLE);
         writeButtonContainer.setScaleX(0.2f);
         writeButtonContainer.setScaleY(0.2f);
         writeButtonContainer.setAlpha(0.0f);
-        writeButtonContainer.setContentDescription(LocaleController.getString("Send", R.string.Send));
         sizeNotifierFrameLayout.addView(writeButtonContainer, LayoutHelper.createFrame(60, 60, Gravity.RIGHT | Gravity.BOTTOM, 0, 0, 12, 10));
 
         writeButton = new ImageView(context);
@@ -389,6 +407,7 @@ public class PhotoAlbumPickerActivity extends BaseFragment implements Notificati
         }
         writeButton.setBackgroundDrawable(writeButtonDrawable);
         writeButton.setImageResource(R.drawable.attach_send);
+        writeButton.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
         writeButton.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_dialogFloatingIcon), PorterDuff.Mode.MULTIPLY));
         writeButton.setScaleType(ImageView.ScaleType.CENTER);
         if (Build.VERSION.SDK_INT >= 21) {
@@ -467,7 +486,7 @@ public class PhotoAlbumPickerActivity extends BaseFragment implements Notificati
                     }
                     itemCells[a].setMinimumWidth(AndroidUtilities.dp(196));
 
-                    sendPopupLayout.addView(itemCells[a], LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT, 0, 48 * a, 0, 0));
+                    sendPopupLayout.addView(itemCells[a], LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48));
                     itemCells[a].setOnClickListener(v -> {
                         if (sendPopupWindow != null && sendPopupWindow.isShowing()) {
                             sendPopupWindow.dismiss();
@@ -483,6 +502,7 @@ public class PhotoAlbumPickerActivity extends BaseFragment implements Notificati
                         }
                     });
                 }
+                sendPopupLayout.setupRadialSelectors(Theme.getColor(Theme.key_dialogButtonSelector));
 
                 sendPopupWindow = new ActionBarPopupWindow(sendPopupLayout, LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT);
                 sendPopupWindow.setAnimationEnabled(false);
@@ -533,7 +553,7 @@ public class PhotoAlbumPickerActivity extends BaseFragment implements Notificati
         selectedCountView.setScaleX(0.2f);
         selectedCountView.setScaleY(0.2f);
         sizeNotifierFrameLayout.addView(selectedCountView, LayoutHelper.createFrame(42, 24, Gravity.RIGHT | Gravity.BOTTOM, 0, 0, -2, 9));
-        if (selectPhotoType != 0) {
+        if (selectPhotoType != SELECT_TYPE_ALL) {
             commentTextView.setVisibility(View.GONE);
         }
 
@@ -577,7 +597,7 @@ public class PhotoAlbumPickerActivity extends BaseFragment implements Notificati
         if (id == NotificationCenter.albumsDidLoad) {
             int guid = (Integer) args[0];
             if (classGuid == guid) {
-                if (selectPhotoType != 0 || !allowSearchImages) {
+                if (selectPhotoType == SELECT_TYPE_AVATAR || selectPhotoType == SELECT_TYPE_WALLPAPER || selectPhotoType == SELECT_TYPE_QR || !allowSearchImages) {
                     albumsSorted = (ArrayList<MediaController.AlbumEntry>) args[2];
                 } else {
                     albumsSorted = (ArrayList<MediaController.AlbumEntry>) args[1];

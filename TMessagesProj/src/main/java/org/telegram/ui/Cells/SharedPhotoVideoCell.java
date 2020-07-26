@@ -223,7 +223,7 @@ public class SharedPhotoVideoCell extends FrameLayout {
         public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
             super.onInitializeAccessibilityNodeInfo(info);
             if (currentMessageObject.isVideo()) {
-                info.setText(LocaleController.getString("AttachVideo", R.string.AttachVideo) + ", " + LocaleController.formatCallDuration(currentMessageObject.getDuration()));
+                info.setText(LocaleController.getString("AttachVideo", R.string.AttachVideo) + ", " + LocaleController.formatDuration(currentMessageObject.getDuration()));
             } else {
                 info.setText(LocaleController.getString("AttachPhoto", R.string.AttachPhoto));
             }

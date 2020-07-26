@@ -40,7 +40,8 @@ public interface MediaCodecSelector {
         }
 
         @Override
-        public @Nullable MediaCodecInfo getPassthroughDecoderInfo() throws DecoderQueryException {
+        @Nullable
+        public MediaCodecInfo getPassthroughDecoderInfo() throws DecoderQueryException {
           return MediaCodecUtil.getPassthroughDecoderInfo();
         }
       };

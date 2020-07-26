@@ -17,8 +17,8 @@ package com.google.android.exoplayer2.drm;
 
 import android.os.Parcel;
 import android.os.Parcelable;
-import androidx.annotation.Nullable;
 import android.text.TextUtils;
+import androidx.annotation.Nullable;
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.drm.DrmInitData.SchemeData;
 import com.google.android.exoplayer2.util.Assertions;
@@ -87,7 +87,7 @@ public final class DrmInitData implements Comparator<SchemeData>, Parcelable {
   private int hashCode;
 
   /** The protection scheme type, or null if not applicable or unknown. */
-  public final @Nullable String schemeType;
+  @Nullable public final String schemeType;
 
   /**
    * Number of {@link SchemeData}s.
@@ -152,7 +152,8 @@ public final class DrmInitData implements Comparator<SchemeData>, Parcelable {
    * @return The initialization data for the scheme, or null if the scheme is not supported.
    */
   @Deprecated
-  public @Nullable SchemeData get(UUID uuid) {
+  @Nullable
+  public SchemeData get(UUID uuid) {
     for (SchemeData schemeData : schemeDatas) {
       if (schemeData.matches(uuid)) {
         return schemeData;
@@ -286,15 +287,11 @@ public final class DrmInitData implements Comparator<SchemeData>, Parcelable {
      */
     private final UUID uuid;
     /** The URL of the server to which license requests should be made. May be null if unknown. */
-    public final @Nullable String licenseServerUrl;
+    @Nullable public final String licenseServerUrl;
     /** The mimeType of {@link #data}. */
     public final String mimeType;
     /** The initialization data. May be null for scheme support checks only. */
-    public final @Nullable byte[] data;
-    /**
-     * Whether secure decryption is required.
-     */
-    public final boolean requiresSecureDecryption;
+    @Nullable public final byte[] data;
 
     /**
      * @param uuid The {@link UUID} of the DRM scheme, or {@link C#UUID_NIL} if the data is
@@ -303,19 +300,7 @@ public final class DrmInitData implements Comparator<SchemeData>, Parcelable {
      * @param data See {@link #data}.
      */
     public SchemeData(UUID uuid, String mimeType, @Nullable byte[] data) {
-      this(uuid, mimeType, data, false);
-    }
-
-    /**
-     * @param uuid The {@link UUID} of the DRM scheme, or {@link C#UUID_NIL} if the data is
-     *     universal (i.e. applies to all schemes).
-     * @param mimeType See {@link #mimeType}.
-     * @param data See {@link #data}.
-     * @param requiresSecureDecryption See {@link #requiresSecureDecryption}.
-     */
-    public SchemeData(
-        UUID uuid, String mimeType, @Nullable byte[] data, boolean requiresSecureDecryption) {
-      this(uuid, /* licenseServerUrl= */ null, mimeType, data, requiresSecureDecryption);
+      this(uuid, /* licenseServerUrl= */ null, mimeType, data);
     }
 
     /**
@@ -324,19 +309,13 @@ public final class DrmInitData implements Comparator<SchemeData>, Parcelable {
      * @param licenseServerUrl See {@link #licenseServerUrl}.
      * @param mimeType See {@link #mimeType}.
      * @param data See {@link #data}.
-     * @param requiresSecureDecryption See {@link #requiresSecureDecryption}.
      */
     public SchemeData(
-        UUID uuid,
-        @Nullable String licenseServerUrl,
-        String mimeType,
-        @Nullable byte[] data,
-        boolean requiresSecureDecryption) {
+        UUID uuid, @Nullable String licenseServerUrl, String mimeType, @Nullable byte[] data) {
       this.uuid = Assertions.checkNotNull(uuid);
       this.licenseServerUrl = licenseServerUrl;
       this.mimeType = Assertions.checkNotNull(mimeType);
       this.data = data;
-      this.requiresSecureDecryption = requiresSecureDecryption;
     }
 
     /* package */ SchemeData(Parcel in) {
@@ -344,7 +323,6 @@ public final class DrmInitData implements Comparator<SchemeData>, Parcelable {
       licenseServerUrl = in.readString();
       mimeType = Util.castNonNull(in.readString());
       data = in.createByteArray();
-      requiresSecureDecryption = in.readByte() != 0;
     }
 
     /**
@@ -381,7 +359,7 @@ public final class DrmInitData implements Comparator<SchemeData>, Parcelable {
      * @return The new instance.
      */
     public SchemeData copyWithData(@Nullable byte[] data) {
-      return new SchemeData(uuid, licenseServerUrl, mimeType, data, requiresSecureDecryption);
+      return new SchemeData(uuid, licenseServerUrl, mimeType, data);
     }
 
     @Override
@@ -425,10 +403,8 @@ public final class DrmInitData implements Comparator<SchemeData>, Parcelable {
       dest.writeString(licenseServerUrl);
       dest.writeString(mimeType);
       dest.writeByteArray(data);
-      dest.writeByte((byte) (requiresSecureDecryption ? 1 : 0));
     }
 
-    @SuppressWarnings("hiding")
     public static final Parcelable.Creator<SchemeData> CREATOR =
         new Parcelable.Creator<SchemeData>() {
 

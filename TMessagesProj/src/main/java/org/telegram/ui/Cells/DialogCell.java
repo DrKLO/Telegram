@@ -31,8 +31,8 @@ import android.view.accessibility.AccessibilityNodeInfo;
 import android.view.animation.Interpolator;
 
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.ChatObject;
+import org.telegram.messenger.DownloadController;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.DialogObject;
@@ -65,12 +65,11 @@ import java.util.ArrayList;
 
 public class DialogCell extends BaseCell {
 
-
-    public static class FixedWidthSize extends ReplacementSpan {
+    public static class FixedWidthSpan extends ReplacementSpan {
 
         private int width;
 
-        public FixedWidthSize(int w) {
+        public FixedWidthSpan(int w) {
             width = w;
         }
 
@@ -148,11 +147,9 @@ public class DialogCell extends BaseCell {
     private float currentRevealBounceProgress;
     private float archiveBackgroundProgress;
 
-    private static String[] newLine = new String[]{"\n"};
-    private static String[] space = new String[]{" "};
-
     private boolean hasMessageThumb;
     private ImageReceiver thumbImage = new ImageReceiver(this);
+    private boolean drawPlay;
 
     private ImageReceiver avatarImage = new ImageReceiver(this);
     private AvatarDrawable avatarDrawable = new AvatarDrawable();
@@ -845,17 +842,25 @@ public class DialogCell extends BaseCell {
                             currentMessagePaint = Theme.dialogs_messagePrintingPaint[paintIndex];
                         } else {
                             boolean needEmoji = true;
-                            if (BuildVars.DEBUG_VERSION && encryptedChat == null && !message.needDrawBluredPreview() && (message.isPhoto() || message.isNewGif() || message.isVideo())) {
-                                TLRPC.PhotoSize smallThumb = FileLoader.getClosestPhotoSizeWithSize(message.photoThumbs, 40);
-                                TLRPC.PhotoSize bigThumb = FileLoader.getClosestPhotoSizeWithSize(message.photoThumbs, AndroidUtilities.getPhotoSize());
-                                if (smallThumb == bigThumb) {
-                                    bigThumb = null;
-                                }
-                                if (smallThumb != null) {
-                                    hasMessageThumb = true;
-                                    //TODO respect autodownload settings?
-                                    thumbImage.setImage(ImageLocation.getForObject(bigThumb, message.photoThumbsObject), "20_20", ImageLocation.getForObject(smallThumb, message.photoThumbsObject), "20_20", null, message, 0);
-                                    needEmoji = false;
+                            if (currentDialogFolderId == 0 && encryptedChat == null && !message.needDrawBluredPreview() && (message.isPhoto() || message.isNewGif() || message.isVideo())) {
+                                String type = message.isWebpage() ? message.messageOwner.media.webpage.type : null;
+                                if (!("app".equals(type) || "profile".equals(type) || "article".equals(type))) {
+                                    TLRPC.PhotoSize smallThumb = FileLoader.getClosestPhotoSizeWithSize(message.photoThumbs, 40);
+                                    TLRPC.PhotoSize bigThumb = FileLoader.getClosestPhotoSizeWithSize(message.photoThumbs, AndroidUtilities.getPhotoSize());
+                                    if (smallThumb == bigThumb) {
+                                        bigThumb = null;
+                                    }
+                                    if (smallThumb != null) {
+                                        hasMessageThumb = true;
+                                        drawPlay = message.isVideo();
+                                        String fileName = FileLoader.getAttachFileName(bigThumb);
+                                        if (message.mediaExists || DownloadController.getInstance(currentAccount).canDownloadMedia(message) || FileLoader.getInstance(currentAccount).isLoadingFile(fileName)) {
+                                            thumbImage.setImage(ImageLocation.getForObject(bigThumb, message.photoThumbsObject), "20_20", ImageLocation.getForObject(smallThumb, message.photoThumbsObject), "20_20", null, message, 0);
+                                        } else {
+                                            thumbImage.setImage(null, null, ImageLocation.getForObject(smallThumb, message.photoThumbsObject), "20_20", null, message, 0);
+                                        }
+                                        needEmoji = false;
+                                    }
                                 }
                             }
                             if (chat != null && chat.id > 0 && fromChat == null) {
@@ -956,7 +961,7 @@ public class DialogCell extends BaseCell {
                                     checkMessage = false;
                                     SpannableStringBuilder builder = (SpannableStringBuilder) messageString;
                                     builder.insert(thumbInsertIndex, " ");
-                                    builder.setSpan(new FixedWidthSize(AndroidUtilities.dp(thumbSize + 6)), thumbInsertIndex, thumbInsertIndex + 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                                    builder.setSpan(new FixedWidthSpan(AndroidUtilities.dp(thumbSize + 6)), thumbInsertIndex, thumbInsertIndex + 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                                 }
                             } else {
                                 if (message.messageOwner.media instanceof TLRPC.TL_messageMediaPhoto && message.messageOwner.media.photo instanceof TLRPC.TL_photoEmpty && message.messageOwner.media.ttl_seconds != 0) {
@@ -998,14 +1003,14 @@ public class DialogCell extends BaseCell {
                                     if (messageString.length() > 150) {
                                         messageString = messageString.subSequence(0, 150);
                                     }
-                                    messageString = TextUtils.replace(messageString, newLine, space);
+                                    messageString = AndroidUtilities.replaceNewLines(messageString);
                                     if (!(messageString instanceof SpannableStringBuilder)) {
                                         messageString = new SpannableStringBuilder(messageString);
                                     }
                                     checkMessage = false;
                                     SpannableStringBuilder builder = (SpannableStringBuilder) messageString;
                                     builder.insert(0, " ");
-                                    builder.setSpan(new FixedWidthSize(AndroidUtilities.dp(thumbSize + 6)), 0, 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                                    builder.setSpan(new FixedWidthSpan(AndroidUtilities.dp(thumbSize + 6)), 0, 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                                     Emoji.replaceEmoji(builder, Theme.dialogs_messagePaint[paintIndex].getFontMetricsInt(), AndroidUtilities.dp(17), false);
                                 }
                             }
@@ -1391,12 +1396,15 @@ public class DialogCell extends BaseCell {
             }
             if (useForceThreeLines || SharedConfig.useThreeLinesLayout) {
                 if (hasMessageThumb && messageNameString != null) {
-                    messageWidth += AndroidUtilities.dp(4);
+                    messageWidth += AndroidUtilities.dp(6);
                 }
                 messageLayout = StaticLayoutEx.createStaticLayout(messageStringFinal, currentMessagePaint, messageWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, AndroidUtilities.dp(1), false, TextUtils.TruncateAt.END, messageWidth, messageNameString != null ? 1 : 2);
             } else {
                 if (hasMessageThumb) {
-                    messageWidth += AndroidUtilities.dp(4);
+                    messageWidth += thumbSize + AndroidUtilities.dp(6);
+                    if (LocaleController.isRTL) {
+                        messageLeft -= thumbSize + AndroidUtilities.dp(6);
+                    }
                 }
                 messageLayout = new StaticLayout(messageStringFinal, currentMessagePaint, messageWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
             }
@@ -2186,6 +2194,12 @@ public class DialogCell extends BaseCell {
 
         if (hasMessageThumb) {
             thumbImage.draw(canvas);
+            if (drawPlay) {
+                int x = (int) (thumbImage.getCenterX() - Theme.dialogs_playDrawable.getIntrinsicWidth() / 2);
+                int y = (int) (thumbImage.getCenterY() - Theme.dialogs_playDrawable.getIntrinsicHeight() / 2);
+                setDrawableBounds(Theme.dialogs_playDrawable, x, y);
+                Theme.dialogs_playDrawable.draw(canvas);
+            }
         }
 
         if (animatingArchiveAvatar) {

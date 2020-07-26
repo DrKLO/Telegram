@@ -17,8 +17,8 @@ package com.google.android.exoplayer2.drm;
 
 import android.annotation.TargetApi;
 import android.net.Uri;
-import androidx.annotation.Nullable;
 import android.text.TextUtils;
+import androidx.annotation.Nullable;
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.drm.ExoMediaDrm.KeyRequest;
 import com.google.android.exoplayer2.drm.ExoMediaDrm.ProvisionRequest;
@@ -111,7 +111,7 @@ public final class HttpMediaDrmCallback implements MediaDrmCallback {
   public byte[] executeProvisionRequest(UUID uuid, ProvisionRequest request) throws IOException {
     String url =
         request.getDefaultUrl() + "&signedRequest=" + Util.fromUtf8Bytes(request.getData());
-    return executePost(dataSourceFactory, url, Util.EMPTY_BYTE_ARRAY, null);
+    return executePost(dataSourceFactory, url, /* httpBody= */ null, /* requestProperties= */ null);
   }
 
   @Override
@@ -139,7 +139,7 @@ public final class HttpMediaDrmCallback implements MediaDrmCallback {
   private static byte[] executePost(
       HttpDataSource.Factory dataSourceFactory,
       String url,
-      byte[] data,
+      @Nullable byte[] httpBody,
       @Nullable Map<String, String> requestProperties)
       throws IOException {
     HttpDataSource dataSource = dataSourceFactory.createDataSource();
@@ -154,7 +154,8 @@ public final class HttpMediaDrmCallback implements MediaDrmCallback {
       DataSpec dataSpec =
           new DataSpec(
               Uri.parse(url),
-              data,
+              DataSpec.HTTP_METHOD_POST,
+              httpBody,
               /* absoluteStreamPosition= */ 0,
               /* position= */ 0,
               /* length= */ C.LENGTH_UNSET,

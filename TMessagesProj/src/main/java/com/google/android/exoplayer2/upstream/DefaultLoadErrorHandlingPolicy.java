@@ -71,6 +71,7 @@ public class DefaultLoadErrorHandlingPolicy implements LoadErrorHandlingPolicy {
       int responseCode = ((InvalidResponseCodeException) exception).responseCode;
       return responseCode == 404 // HTTP 404 Not Found.
               || responseCode == 410 // HTTP 410 Gone.
+              || responseCode == 416 // HTTP 416 Range Not Satisfiable.
           ? DEFAULT_TRACK_BLACKLIST_MS
           : C.TIME_UNSET;
     }

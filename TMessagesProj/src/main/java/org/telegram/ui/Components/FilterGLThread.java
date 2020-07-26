@@ -13,6 +13,8 @@ import org.telegram.messenger.DispatchQueue;
 import org.telegram.messenger.FileLog;
 
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.nio.FloatBuffer;
 import java.util.concurrent.CountDownLatch;
 
 import javax.microedition.khronos.egl.EGL10;
@@ -58,6 +60,8 @@ public class FilterGLThread extends DispatchQueue {
     private int videoWidth;
     private int videoHeight;
 
+    private FloatBuffer textureBuffer;
+
     private boolean renderDataSet;
 
     private long lastRenderCallTime;
@@ -68,12 +72,35 @@ public class FilterGLThread extends DispatchQueue {
 
     private FilterGLThreadVideoDelegate videoDelegate;
 
-    public FilterGLThread(SurfaceTexture surface, Bitmap bitmap, int bitmapOrientation) {
+    public FilterGLThread(SurfaceTexture surface, Bitmap bitmap, int bitmapOrientation, boolean mirror) {
         super("PhotoFilterGLThread", false);
         surfaceTexture = surface;
         currentBitmap = bitmap;
         orientation = bitmapOrientation;
         filterShaders = new FilterShaders(false);
+
+        float[] textureCoordinates = {
+                0.0f, 0.0f,
+                1.0f, 0.0f,
+                0.0f, 1.0f,
+                1.0f, 1.0f,
+        };
+        if (mirror) {
+            float temp = textureCoordinates[2];
+            textureCoordinates[2] = textureCoordinates[0];
+            textureCoordinates[0] = temp;
+
+            temp = textureCoordinates[6];
+            textureCoordinates[6] = textureCoordinates[4];
+            textureCoordinates[4] = temp;
+        }
+
+        ByteBuffer bb = ByteBuffer.allocateDirect(textureCoordinates.length * 4);
+        bb.order(ByteOrder.nativeOrder());
+        textureBuffer = bb.asFloatBuffer();
+        textureBuffer.put(textureCoordinates);
+        textureBuffer.position(0);
+
         start();
     }
 
@@ -248,6 +275,8 @@ public class FilterGLThread extends DispatchQueue {
                 videoHeight /= 2;
             }
             renderDataSet = false;
+            setRenderData();
+            drawRunnable.run();
         });
     }
 
@@ -271,6 +300,16 @@ public class FilterGLThread extends DispatchQueue {
         }
     }
 
+    private void setRenderData() {
+        if (renderDataSet || videoWidth <= 0 || videoHeight <= 0) {
+            return;
+        }
+        filterShaders.setRenderData(currentBitmap, orientation, videoTexture[0], videoWidth, videoHeight);
+        renderDataSet = true;
+        renderBufferWidth = filterShaders.getRenderBufferWidth();
+        renderBufferHeight = filterShaders.getRenderBufferHeight();
+    }
+
     private Runnable drawRunnable = new Runnable() {
         @Override
         public void run() {
@@ -290,20 +329,7 @@ public class FilterGLThread extends DispatchQueue {
             if (updateSurface) {
                 videoSurfaceTexture.updateTexImage();
                 videoSurfaceTexture.getTransformMatrix(videoTextureMatrix);
-                if (videoWidth == 0 || videoHeight == 0) {
-                    videoWidth = surfaceWidth;
-                    videoHeight = surfaceHeight;
-                    if (videoWidth > 1280 || videoHeight > 1280) {
-                        videoWidth /= 2;
-                        videoHeight /= 2;
-                    }
-                }
-                if (!renderDataSet && videoWidth > 0 && videoHeight > 0) {
-                    filterShaders.setRenderData(currentBitmap, orientation, videoTexture[0], videoWidth, videoHeight);
-                    renderDataSet = true;
-                    renderBufferWidth = filterShaders.getRenderBufferWidth();
-                    renderBufferHeight = filterShaders.getRenderBufferHeight();
-                }
+                setRenderData();
                 updateSurface = false;
                 filterShaders.onVideoFrameUpdate(videoTextureMatrix);
                 videoFrameAvailable = true;
@@ -315,6 +341,7 @@ public class FilterGLThread extends DispatchQueue {
 
             if (videoDelegate == null || videoFrameAvailable) {
                 GLES20.glViewport(0, 0, renderBufferWidth, renderBufferHeight);
+                filterShaders.drawSkinSmoothPass();
                 filterShaders.drawEnhancePass();
                 if (videoDelegate == null) {
                     filterShaders.drawSharpenPass();
@@ -332,7 +359,7 @@ public class FilterGLThread extends DispatchQueue {
 
             GLES20.glUniform1i(simpleSourceImageHandle, 0);
             GLES20.glEnableVertexAttribArray(simpleInputTexCoordHandle);
-            GLES20.glVertexAttribPointer(simpleInputTexCoordHandle, 2, GLES20.GL_FLOAT, false, 8, filterShaders.getTextureBuffer());
+            GLES20.glVertexAttribPointer(simpleInputTexCoordHandle, 2, GLES20.GL_FLOAT, false, 8, textureBuffer != null ? textureBuffer : filterShaders.getTextureBuffer());
             GLES20.glEnableVertexAttribArray(simplePositionHandle);
             GLES20.glVertexAttribPointer(simplePositionHandle, 2, GLES20.GL_FLOAT, false, 8, filterShaders.getVertexBuffer());
             GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4);
@@ -341,6 +368,9 @@ public class FilterGLThread extends DispatchQueue {
     };
 
     private Bitmap getRenderBufferBitmap() {
+        if (renderBufferWidth == 0 || renderBufferHeight == 0) {
+            return null;
+        }
         ByteBuffer buffer = ByteBuffer.allocateDirect(renderBufferWidth * renderBufferHeight * 4);
         GLES20.glReadPixels(0, 0, renderBufferWidth, renderBufferHeight, GLES20.GL_RGBA, GLES20.GL_UNSIGNED_BYTE, buffer);
         Bitmap bitmap = Bitmap.createBitmap(renderBufferWidth, renderBufferHeight, Bitmap.Config.ARGB_8888);

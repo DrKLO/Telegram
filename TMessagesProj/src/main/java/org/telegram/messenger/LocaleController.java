@@ -1215,6 +1215,32 @@ public class LocaleController {
         }
     }
 
+    public static String formatDuration(int duration) {
+        if (duration <= 0) {
+            return formatPluralString("Seconds", 0);
+        }
+        final int hours = duration / 3600;
+        final int minutes = duration / 60 % 60;
+        final int seconds = duration % 60;
+        final StringBuilder stringBuilder = new StringBuilder();
+        if (hours > 0) {
+            stringBuilder.append(formatPluralString("Hours", hours));
+        }
+        if (minutes > 0) {
+            if (stringBuilder.length() > 0) {
+                stringBuilder.append(' ');
+            }
+            stringBuilder.append(formatPluralString("Minutes", minutes));
+        }
+        if (seconds > 0) {
+            if (stringBuilder.length() > 0) {
+                stringBuilder.append(' ');
+            }
+            stringBuilder.append(formatPluralString("Seconds", seconds));
+        }
+        return stringBuilder.toString();
+    }
+
     public static String formatCallDuration(int duration) {
         if (duration > 3600) {
             String result = LocaleController.formatPluralString("Hours", duration / 3600);
@@ -1616,6 +1642,22 @@ public class LocaleController {
 
     public static String formatUserStatus(int currentAccount, TLRPC.User user) {
         return formatUserStatus(currentAccount, user, null);
+    }
+
+    public static String formatJoined(long date) {
+        try {
+            date *= 1000;
+            String format;
+            if (Math.abs(System.currentTimeMillis() - date) < 31536000000L) {
+                format = LocaleController.formatString("formatDateAtTime", R.string.formatDateAtTime, getInstance().formatterDayMonth.format(new Date(date)), getInstance().formatterDay.format(new Date(date)));
+            } else {
+                format = LocaleController.formatString("formatDateAtTime", R.string.formatDateAtTime, getInstance().formatterYear.format(new Date(date)), getInstance().formatterDay.format(new Date(date)));
+            }
+            return formatString("ChannelOtherSubscriberJoined", R.string.ChannelOtherSubscriberJoined, format);
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+        return "LOC_ERR";
     }
 
     public static String formatUserStatus(int currentAccount, TLRPC.User user, boolean[] isOnline) {
@@ -2769,7 +2811,7 @@ public class LocaleController {
         useImperialSystemType = null;
     }
 
-    public static String formatDistance(float distance) {
+    public static String formatDistance(float distance, int type) {
         if (useImperialSystemType == null) {
             if (SharedConfig.distanceSystemType == 0) {
                 try {
@@ -2789,7 +2831,13 @@ public class LocaleController {
         if (useImperialSystemType) {
             distance *= 3.28084f;
             if (distance < 1000) {
-                return formatString("FootsAway", R.string.FootsAway, String.format("%d", (int) Math.max(1, distance)));
+                switch (type) {
+                    case 0:
+                        return formatString("FootsAway", R.string.FootsAway, String.format("%d", (int) Math.max(1, distance)));
+                    case 1:
+                    default:
+                        return formatString("FootsFromYou", R.string.FootsFromYou, String.format("%d", (int) Math.max(1, distance)));
+                }
             } else {
                 String arg;
                 if (distance % 5280 == 0) {
@@ -2797,11 +2845,24 @@ public class LocaleController {
                 } else {
                     arg = String.format("%.2f", distance / 5280.0f);
                 }
-                return formatString("MilesAway", R.string.MilesAway, arg);
+                switch (type) {
+                    case 0:
+                        return formatString("MilesAway", R.string.MilesAway, arg);
+                    case 1:
+                    default:
+                        return formatString("MilesFromYou", R.string.MilesFromYou, arg);
+                }
+
             }
         } else {
             if (distance < 1000) {
-                return formatString("MetersAway2", R.string.MetersAway2, String.format("%d", (int) Math.max(1, distance)));
+                switch (type) {
+                    case 0:
+                        return formatString("MetersAway2", R.string.MetersAway2, String.format("%d", (int) Math.max(1, distance)));
+                    case 1:
+                    default:
+                        return formatString("MetersFromYou2", R.string.MetersFromYou2, String.format("%d", (int) Math.max(1, distance)));
+                }
             } else {
                 String arg;
                 if (distance % 1000 == 0) {
@@ -2809,7 +2870,13 @@ public class LocaleController {
                 } else {
                     arg = String.format("%.2f", distance / 1000.0f);
                 }
-                return formatString("KMetersAway2", R.string.KMetersAway2, arg);
+                switch (type) {
+                    case 0:
+                        return formatString("KMetersAway2", R.string.KMetersAway2, arg);
+                    case 1:
+                    default:
+                        return formatString("KMetersFromYou2", R.string.KMetersFromYou2, arg);
+                }
             }
         }
     }

@@ -16,12 +16,19 @@
 package com.google.android.exoplayer2.audio;
 
 import com.google.android.exoplayer2.C;
+import com.google.android.exoplayer2.Format;
 import com.google.android.exoplayer2.util.Util;
 import java.nio.ByteBuffer;
 
 /**
- * An {@link AudioProcessor} that converts 24-bit and 32-bit integer PCM audio to 32-bit float PCM
- * audio.
+ * An {@link AudioProcessor} that converts high resolution PCM audio to 32-bit float. The following
+ * encodings are supported as input:
+ *
+ * <ul>
+ *   <li>{@link C#ENCODING_PCM_24BIT}
+ *   <li>{@link C#ENCODING_PCM_32BIT}
+ *   <li>{@link C#ENCODING_PCM_FLOAT} ({@link #isActive()} will return {@code false})
+ * </ul>
  */
 /* package */ final class FloatResamplingAudioProcessor extends BaseAudioProcessor {
 
@@ -29,50 +36,56 @@ import java.nio.ByteBuffer;
   private static final double PCM_32_BIT_INT_TO_PCM_32_BIT_FLOAT_FACTOR = 1.0 / 0x7FFFFFFF;
 
   @Override
-  public boolean configure(int sampleRateHz, int channelCount, @C.PcmEncoding int encoding)
-      throws UnhandledFormatException {
-    if (!Util.isEncodingHighResolutionIntegerPcm(encoding)) {
-      throw new UnhandledFormatException(sampleRateHz, channelCount, encoding);
+  public AudioFormat onConfigure(AudioFormat inputAudioFormat)
+      throws UnhandledAudioFormatException {
+    @C.PcmEncoding int encoding = inputAudioFormat.encoding;
+    if (!Util.isEncodingHighResolutionPcm(encoding)) {
+      throw new UnhandledAudioFormatException(inputAudioFormat);
     }
-    return setInputFormat(sampleRateHz, channelCount, encoding);
-  }
-
-  @Override
-  public boolean isActive() {
-    return Util.isEncodingHighResolutionIntegerPcm(encoding);
-  }
-
-  @Override
-  public int getOutputEncoding() {
-    return C.ENCODING_PCM_FLOAT;
+    return encoding != C.ENCODING_PCM_FLOAT
+        ? new AudioFormat(
+            inputAudioFormat.sampleRate, inputAudioFormat.channelCount, C.ENCODING_PCM_FLOAT)
+        : AudioFormat.NOT_SET;
   }
 
   @Override
   public void queueInput(ByteBuffer inputBuffer) {
-    boolean isInput32Bit = encoding == C.ENCODING_PCM_32BIT;
     int position = inputBuffer.position();
     int limit = inputBuffer.limit();
     int size = limit - position;
 
-    int resampledSize = isInput32Bit ? size : (size / 3) * 4;
-    ByteBuffer buffer = replaceOutputBuffer(resampledSize);
-    if (isInput32Bit) {
-      for (int i = position; i < limit; i += 4) {
-        int pcm32BitInteger =
-            (inputBuffer.get(i) & 0xFF)
-                | ((inputBuffer.get(i + 1) & 0xFF) << 8)
-                | ((inputBuffer.get(i + 2) & 0xFF) << 16)
-                | ((inputBuffer.get(i + 3) & 0xFF) << 24);
-        writePcm32BitFloat(pcm32BitInteger, buffer);
-      }
-    } else {
-      for (int i = position; i < limit; i += 3) {
-        int pcm32BitInteger =
-            ((inputBuffer.get(i) & 0xFF) << 8)
-                | ((inputBuffer.get(i + 1) & 0xFF) << 16)
-                | ((inputBuffer.get(i + 2) & 0xFF) << 24);
-        writePcm32BitFloat(pcm32BitInteger, buffer);
-      }
+    ByteBuffer buffer;
+    switch (inputAudioFormat.encoding) {
+      case C.ENCODING_PCM_24BIT:
+        buffer = replaceOutputBuffer((size / 3) * 4);
+        for (int i = position; i < limit; i += 3) {
+          int pcm32BitInteger =
+              ((inputBuffer.get(i) & 0xFF) << 8)
+                  | ((inputBuffer.get(i + 1) & 0xFF) << 16)
+                  | ((inputBuffer.get(i + 2) & 0xFF) << 24);
+          writePcm32BitFloat(pcm32BitInteger, buffer);
+        }
+        break;
+      case C.ENCODING_PCM_32BIT:
+        buffer = replaceOutputBuffer(size);
+        for (int i = position; i < limit; i += 4) {
+          int pcm32BitInteger =
+              (inputBuffer.get(i) & 0xFF)
+                  | ((inputBuffer.get(i + 1) & 0xFF) << 8)
+                  | ((inputBuffer.get(i + 2) & 0xFF) << 16)
+                  | ((inputBuffer.get(i + 3) & 0xFF) << 24);
+          writePcm32BitFloat(pcm32BitInteger, buffer);
+        }
+        break;
+      case C.ENCODING_PCM_8BIT:
+      case C.ENCODING_PCM_16BIT:
+      case C.ENCODING_PCM_16BIT_BIG_ENDIAN:
+      case C.ENCODING_PCM_FLOAT:
+      case C.ENCODING_INVALID:
+      case Format.NO_VALUE:
+      default:
+        // Never happens.
+        throw new IllegalStateException();
     }
 
     inputBuffer.position(inputBuffer.limit());

@@ -43,10 +43,22 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
         private String key;
         private boolean recycleOnRelease;
         public Bitmap bitmap;
+        public Drawable drawable;
+        public int orientation;
 
-        public BitmapHolder(Bitmap b, String k) {
+        public BitmapHolder(Bitmap b, String k, int o) {
             bitmap = b;
             key = k;
+            orientation = o;
+            if (key != null) {
+                ImageLoader.getInstance().incrementUseCount(key);
+            }
+        }
+
+        public BitmapHolder(Drawable d, String k, int o) {
+            drawable = d;
+            key = k;
+            orientation = o;
             if (key != null) {
                 ImageLoader.getInstance().incrementUseCount(key);
             }
@@ -75,16 +87,31 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
                     bitmap.recycle();
                 }
                 bitmap = null;
+                drawable = null;
                 return;
             }
             boolean canDelete = ImageLoader.getInstance().decrementUseCount(key);
             if (!ImageLoader.getInstance().isInMemCache(key, false)) {
                 if (canDelete) {
-                    bitmap.recycle();
+                    if (bitmap != null) {
+                        bitmap.recycle();
+                    } else if (drawable != null) {
+                        if (drawable instanceof RLottieDrawable) {
+                            RLottieDrawable fileDrawable = (RLottieDrawable) drawable;
+                            fileDrawable.recycle();
+                        } else if (drawable instanceof AnimatedFileDrawable) {
+                            AnimatedFileDrawable fileDrawable = (AnimatedFileDrawable) drawable;
+                            fileDrawable.recycle();
+                        } else if (drawable instanceof BitmapDrawable) {
+                            Bitmap bitmap = ((BitmapDrawable) drawable).getBitmap();
+                            bitmap.recycle();
+                        }
+                    }
                 }
             }
             key = null;
             bitmap = null;
+            drawable = null;
         }
     }
 
@@ -903,7 +930,7 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
                         roundPaint.setAlpha(alpha);
 
                         if (isRoundRect) {
-                            canvas.drawRoundRect(roundRect,roundRadius[0], roundRadius[0],roundPaint);
+                            canvas.drawRoundRect(roundRect, roundRadius[0], roundRadius[0], roundPaint);
                         } else {
                             for (int a = 0; a < roundRadius.length; a++) {
                                 radii[a * 2] = roundRadius[a];
@@ -1083,6 +1110,9 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
             AnimatedFileDrawable animation = getAnimation();
             RLottieDrawable lottieDrawable = getLottieAnimation();
             boolean animationNotReady = animation != null && !animation.hasBitmap() || lottieDrawable != null && !lottieDrawable.hasBitmap();
+            if (animation != null) {
+                animation.setRoundRadius(roundRadius);
+            }
             if (lottieDrawable != null) {
                 lottieDrawable.setCurrentParentView(parentView);
             }
@@ -1222,10 +1252,15 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
         String key = null;
         AnimatedFileDrawable animation = getAnimation();
         RLottieDrawable lottieDrawable = getLottieAnimation();
+        int orientation = 0;
         if (lottieDrawable != null && lottieDrawable.hasBitmap()) {
             bitmap = lottieDrawable.getAnimatedBitmap();
         } else if (animation != null && animation.hasBitmap()) {
             bitmap = animation.getAnimatedBitmap();
+            orientation = animation.getOrientation();
+            if (orientation != 0) {
+                return new BitmapHolder(Bitmap.createBitmap(bitmap), null, orientation);
+            }
         } else if (currentMediaDrawable instanceof BitmapDrawable && !(currentMediaDrawable instanceof AnimatedFileDrawable) && !(currentMediaDrawable instanceof RLottieDrawable)) {
             bitmap = ((BitmapDrawable) currentMediaDrawable).getBitmap();
             key = currentMediaKey;
@@ -1239,7 +1274,28 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
             bitmap = ((BitmapDrawable) staticThumbDrawable).getBitmap();
         }
         if (bitmap != null) {
-            return new BitmapHolder(bitmap, key);
+            return new BitmapHolder(bitmap, key, orientation);
+        }
+        return null;
+    }
+
+    public BitmapHolder getDrawableSafe() {
+        Drawable drawable = null;
+        String key = null;
+        if (currentMediaDrawable instanceof BitmapDrawable && !(currentMediaDrawable instanceof AnimatedFileDrawable) && !(currentMediaDrawable instanceof RLottieDrawable)) {
+            drawable = currentMediaDrawable;
+            key = currentMediaKey;
+        } else if (currentImageDrawable instanceof BitmapDrawable && !(currentImageDrawable instanceof AnimatedFileDrawable) && !(currentMediaDrawable instanceof RLottieDrawable)) {
+            drawable = currentImageDrawable;
+            key = currentImageKey;
+        } else if (currentThumbDrawable instanceof BitmapDrawable && !(currentThumbDrawable instanceof AnimatedFileDrawable) && !(currentMediaDrawable instanceof RLottieDrawable)) {
+            drawable = currentThumbDrawable;
+            key = currentThumbKey;
+        } else if (staticThumbDrawable instanceof BitmapDrawable) {
+            drawable = staticThumbDrawable;
+        }
+        if (drawable != null) {
+            return new BitmapHolder(drawable, key, 0);
         }
         return null;
     }
@@ -1263,7 +1319,7 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
             bitmap = ((BitmapDrawable) staticThumbDrawable).getBitmap();
         }
         if (bitmap != null) {
-            return new BitmapHolder(bitmap, key);
+            return new BitmapHolder(bitmap, key, 0);
         }
         return null;
     }
@@ -1593,6 +1649,10 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
         allowStartAnimation = value;
     }
 
+    public boolean getAllowStartAnimation() {
+        return allowStartAnimation;
+    }
+
     public void setAllowStartLottieAnimation(boolean value) {
         allowStartLottieAnimation = value;
     }
@@ -1712,7 +1772,7 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
             }
             updateDrawableRadius(drawable);
 
-            if (!memCache && !forcePreview || forceCrossfade) {
+            if (isVisible && (!memCache && !forcePreview || forceCrossfade)) {
                 boolean allowCorssfade = true;
                 if (currentMediaDrawable instanceof AnimatedFileDrawable && ((AnimatedFileDrawable) currentMediaDrawable).hasBitmap()) {
                     allowCorssfade = false;
@@ -1844,7 +1904,7 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
             key = currentImageKey;
             image = currentImageDrawable;
         }
-        if (key != null && key.startsWith("-")) {
+        if (key != null && (key.startsWith("-") || key.startsWith("strippedmessage-"))) {
             String replacedKey = ImageLoader.getInstance().getReplacedKey(key);
             if (replacedKey != null) {
                 key = replacedKey;
@@ -1854,7 +1914,6 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
             RLottieDrawable lottieDrawable = (RLottieDrawable) image;
             lottieDrawable.removeParentView(parentView);
         }
-        String replacedKey = ImageLoader.getInstance().getReplacedKey(key);
         if (key != null && (newKey == null || !newKey.equals(key)) && image != null) {
             if (image instanceof RLottieDrawable) {
                 RLottieDrawable fileDrawable = (RLottieDrawable) image;

@@ -56,14 +56,14 @@ static int channelCount;
 static int errorCode;
 
 DECODER_FUNC(jlong, opusInit, jint sampleRate, jint channelCount,
-     jint numStreams, jint numCoupled, jint gain, jbyteArray jStreamMap) {
+             jint numStreams, jint numCoupled, jint gain, jbyteArray jStreamMap) {
   int status = OPUS_INVALID_STATE;
   ::channelCount = channelCount;
   errorCode = 0;
   jbyte* streamMapBytes = env->GetByteArrayElements(jStreamMap, 0);
   uint8_t* streamMap = reinterpret_cast<uint8_t*>(streamMapBytes);
   OpusMSDecoder* decoder = opus_multistream_decoder_create(
-      sampleRate, channelCount, numStreams, numCoupled, streamMap, &status);
+          sampleRate, channelCount, numStreams, numCoupled, streamMap, &status);
   env->ReleaseByteArrayElements(jStreamMap, streamMapBytes, 0);
   if (!decoder || status != OPUS_OK) {
     LOGE("Failed to create Opus Decoder; status=%s", opus_strerror(status));
@@ -77,22 +77,22 @@ DECODER_FUNC(jlong, opusInit, jint sampleRate, jint channelCount,
 
   // Populate JNI References.
   const jclass outputBufferClass = env->FindClass(
-      "com/google/android/exoplayer2/decoder/SimpleOutputBuffer");
+          "com/google/android/exoplayer2/decoder/SimpleOutputBuffer");
   outputBufferInit = env->GetMethodID(outputBufferClass, "init",
-      "(JI)Ljava/nio/ByteBuffer;");
+                                      "(JI)Ljava/nio/ByteBuffer;");
 
   return reinterpret_cast<intptr_t>(decoder);
 }
 
 DECODER_FUNC(jint, opusDecode, jlong jDecoder, jlong jTimeUs,
-     jobject jInputBuffer, jint inputSize, jobject jOutputBuffer) {
+             jobject jInputBuffer, jint inputSize, jobject jOutputBuffer) {
   OpusMSDecoder* decoder = reinterpret_cast<OpusMSDecoder*>(jDecoder);
   const uint8_t* inputBuffer =
-      reinterpret_cast<const uint8_t*>(
-          env->GetDirectBufferAddress(jInputBuffer));
+          reinterpret_cast<const uint8_t*>(
+                  env->GetDirectBufferAddress(jInputBuffer));
 
   const jint outputSize =
-      kMaxOpusOutputPacketSizeSamples * kBytesPerSample * channelCount;
+          kMaxOpusOutputPacketSizeSamples * kBytesPerSample * channelCount;
 
   env->CallObjectMethod(jOutputBuffer, outputBufferInit, jTimeUs, outputSize);
   if (env->ExceptionCheck()) {
@@ -100,27 +100,27 @@ DECODER_FUNC(jint, opusDecode, jlong jDecoder, jlong jTimeUs,
     return -1;
   }
   const jobject jOutputBufferData = env->CallObjectMethod(jOutputBuffer,
-      outputBufferInit, jTimeUs, outputSize);
+                                                          outputBufferInit, jTimeUs, outputSize);
   if (env->ExceptionCheck()) {
     // Exception is thrown in Java when returning from the native call.
     return -1;
   }
 
   int16_t* outputBufferData = reinterpret_cast<int16_t*>(
-      env->GetDirectBufferAddress(jOutputBufferData));
+          env->GetDirectBufferAddress(jOutputBufferData));
   int sampleCount = opus_multistream_decode(decoder, inputBuffer, inputSize,
-      outputBufferData, kMaxOpusOutputPacketSizeSamples, 0);
+                                            outputBufferData, kMaxOpusOutputPacketSizeSamples, 0);
   // record error code
   errorCode = (sampleCount < 0) ? sampleCount : 0;
   return (sampleCount < 0) ? sampleCount
-      : sampleCount * kBytesPerSample * channelCount;
+                           : sampleCount * kBytesPerSample * channelCount;
 }
 
 DECODER_FUNC(jint, opusSecureDecode, jlong jDecoder, jlong jTimeUs,
-     jobject jInputBuffer, jint inputSize, jobject jOutputBuffer,
-     jint sampleRate, jobject mediaCrypto, jint inputMode, jbyteArray key,
-     jbyteArray javaIv, jint inputNumSubSamples, jintArray numBytesOfClearData,
-     jintArray numBytesOfEncryptedData) {
+             jobject jInputBuffer, jint inputSize, jobject jOutputBuffer,
+             jint sampleRate, jobject mediaCrypto, jint inputMode, jbyteArray key,
+             jbyteArray javaIv, jint inputNumSubSamples, jintArray numBytesOfClearData,
+             jintArray numBytesOfEncryptedData) {
   // Doesn't support
   // Java client should have checked vpxSupportSecureDecode
   // and avoid calling this

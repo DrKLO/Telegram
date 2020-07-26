@@ -100,8 +100,7 @@ public final class DownloadRequest implements Parcelable {
     }
     streamKeys = Collections.unmodifiableList(mutableStreamKeys);
     customCacheKey = in.readString();
-    data = new byte[in.readInt()];
-    in.readByteArray(data);
+    data = castNonNull(in.createByteArray());
   }
 
   /**
@@ -194,7 +193,6 @@ public final class DownloadRequest implements Parcelable {
       dest.writeParcelable(streamKeys.get(i), /* parcelableFlags= */ 0);
     }
     dest.writeString(customCacheKey);
-    dest.writeInt(data.length);
     dest.writeByteArray(data);
   }
 

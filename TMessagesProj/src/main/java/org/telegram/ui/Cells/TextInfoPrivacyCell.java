@@ -17,6 +17,7 @@ import android.text.method.LinkMovementMethod;
 import android.text.style.AbsoluteSizeSpan;
 import android.util.TypedValue;
 import android.view.Gravity;
+import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.FrameLayout;
 import android.widget.TextView;
 
@@ -51,6 +52,7 @@ public class TextInfoPrivacyCell extends FrameLayout {
         textView.setMovementMethod(LinkMovementMethod.getInstance());
         textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText4));
         textView.setLinkTextColor(Theme.getColor(linkTextColorKey));
+        textView.setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO);
         addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, padding, 0, padding, 0));
     }
 
@@ -125,5 +127,12 @@ public class TextInfoPrivacyCell extends FrameLayout {
         } else {
             textView.setAlpha(value ? 1.0f : 0.5f);
         }
+    }
+
+    @Override
+    public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
+        super.onInitializeAccessibilityNodeInfo(info);
+        info.setClassName(TextView.class.getName());
+        info.setText(text);
     }
 }

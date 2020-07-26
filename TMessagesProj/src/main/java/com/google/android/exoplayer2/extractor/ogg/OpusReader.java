@@ -19,7 +19,6 @@ import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.Format;
 import com.google.android.exoplayer2.util.MimeTypes;
 import com.google.android.exoplayer2.util.ParsableByteArray;
-import com.google.android.exoplayer2.util.Util;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
@@ -38,7 +37,7 @@ import java.util.List;
    */
   private static final int SAMPLE_RATE = 48000;
 
-  private static final int OPUS_CODE = Util.getIntegerCodeForString("Opus");
+  private static final int OPUS_CODE = 0x4f707573;
   private static final byte[] OPUS_SIGNATURE = {'O', 'p', 'u', 's', 'H', 'e', 'a', 'd'};
 
   private boolean headerRead;

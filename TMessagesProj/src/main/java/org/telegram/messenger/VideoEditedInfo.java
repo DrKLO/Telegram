@@ -23,11 +23,13 @@ public class VideoEditedInfo {
 
     public long startTime;
     public long endTime;
+    public long avatarStartTime = -1;
     public float start;
     public float end;
     public int rotationValue;
     public int originalWidth;
     public int originalHeight;
+    public int originalBitrate;
     public int resultWidth;
     public int resultHeight;
     public int bitrate;
@@ -45,6 +47,7 @@ public class VideoEditedInfo {
     public MediaController.SavedFilterState filterState;
     public String paintPath;
     public ArrayList<MediaEntity> mediaEntities;
+    public MediaController.CropState cropState;
     public boolean isPhoto;
 
     public boolean canceled;
@@ -115,12 +118,34 @@ public class VideoEditedInfo {
             data.writeInt32(viewWidth);
             data.writeInt32(viewHeight);
         }
+
+        public MediaEntity copy() {
+            MediaEntity entity = new MediaEntity();
+            entity.type = type;
+            entity.subType = subType;
+            entity.x = x;
+            entity.y = y;
+            entity.rotation = rotation;
+            entity.width = width;
+            entity.height = height;
+            entity.text = text;
+            entity.color = color;
+            entity.fontSize = fontSize;
+            entity.viewWidth = viewWidth;
+            entity.viewHeight = viewHeight;
+            entity.scale = scale;
+            entity.textViewWidth = textViewWidth;
+            entity.textViewHeight = textViewHeight;
+            entity.textViewX = textViewX;
+            entity.textViewY = textViewY;
+            return entity;
+        }
     }
 
     public String getString() {
         String filters;
-        if (filterState != null || paintPath != null || mediaEntities != null && !mediaEntities.isEmpty()) {
-            int len = 2;
+        if (avatarStartTime != -1 || filterState != null || paintPath != null || mediaEntities != null && !mediaEntities.isEmpty() || cropState != null) {
+            int len = 10;
             if (filterState != null) {
                 len += 160;
             }
@@ -132,10 +157,13 @@ public class VideoEditedInfo {
                 paintPathBytes = null;
             }
             SerializedData serializedData = new SerializedData(len);
-            serializedData.writeInt32(1);
+            serializedData.writeInt32(5);
+            serializedData.writeInt64(avatarStartTime);
+            serializedData.writeInt32(originalBitrate);
             if (filterState != null) {
                 serializedData.writeByte(1);
                 serializedData.writeFloat(filterState.enhanceValue);
+                serializedData.writeFloat(filterState.softenSkinValue);
                 serializedData.writeFloat(filterState.exposureValue);
                 serializedData.writeFloat(filterState.contrastValue);
                 serializedData.writeFloat(filterState.warmthValue);
@@ -196,6 +224,21 @@ public class VideoEditedInfo {
             } else {
                 serializedData.writeByte(0);
             }
+            if (cropState != null) {
+                serializedData.writeByte(1);
+                serializedData.writeFloat(cropState.cropPx);
+                serializedData.writeFloat(cropState.cropPy);
+                serializedData.writeFloat(cropState.cropPw);
+                serializedData.writeFloat(cropState.cropPh);
+                serializedData.writeFloat(cropState.cropScale);
+                serializedData.writeFloat(cropState.cropRotate);
+                serializedData.writeInt32(cropState.transformWidth);
+                serializedData.writeInt32(cropState.transformHeight);
+                serializedData.writeInt32(cropState.transformRotation);
+                serializedData.writeBool(cropState.mirrored);
+            } else {
+                serializedData.writeByte(0);
+            }
             filters = Utilities.bytesToHex(serializedData.toByteArray());
             serializedData.cleanup();
         } else {
@@ -229,10 +272,17 @@ public class VideoEditedInfo {
                     if (s.length() > 0) {
                         SerializedData serializedData = new SerializedData(Utilities.hexToBytes(s));
                         int version = serializedData.readInt32(false);
+                        if (version >= 3) {
+                            avatarStartTime = serializedData.readInt64(false);
+                            originalBitrate = serializedData.readInt32(false);
+                        }
                         byte has = serializedData.readByte(false);
                         if (has != 0) {
                             filterState = new MediaController.SavedFilterState();
                             filterState.enhanceValue = serializedData.readFloat(false);
+                            if (version >= 5) {
+                                filterState.softenSkinValue = serializedData.readFloat(false);
+                            }
                             filterState.exposureValue = serializedData.readFloat(false);
                             filterState.contrastValue = serializedData.readFloat(false);
                             filterState.warmthValue = serializedData.readFloat(false);
@@ -284,6 +334,24 @@ public class VideoEditedInfo {
                             }
                             isPhoto = serializedData.readByte(false) == 1;
                         }
+                        if (version >= 2) {
+                            has = serializedData.readByte(false);
+                            if (has != 0) {
+                                cropState = new MediaController.CropState();
+                                cropState.cropPx = serializedData.readFloat(false);
+                                cropState.cropPy = serializedData.readFloat(false);
+                                cropState.cropPw = serializedData.readFloat(false);
+                                cropState.cropPh = serializedData.readFloat(false);
+                                cropState.cropScale = serializedData.readFloat(false);
+                                cropState.cropRotate = serializedData.readFloat(false);
+                                cropState.transformWidth = serializedData.readInt32(false);
+                                cropState.transformHeight = serializedData.readInt32(false);
+                                cropState.transformRotation = serializedData.readInt32(false);
+                                if (version >= 4) {
+                                    cropState.mirrored = serializedData.readBool(false);
+                                }
+                            }
+                        }
                         serializedData.cleanup();
                     }
                 } else {
@@ -306,10 +374,10 @@ public class VideoEditedInfo {
     }
 
     public boolean needConvert() {
-        return !roundVideo || roundVideo && (startTime > 0 || endTime != -1 && endTime != estimatedDuration);
+        return mediaEntities != null || paintPath != null || filterState != null || cropState != null || !roundVideo || roundVideo && (startTime > 0 || endTime != -1 && endTime != estimatedDuration);
     }
 
     public boolean canAutoPlaySourceVideo() {
-        return roundVideo;// || (Math.max(originalHeight,originalWidth) <= 1920 && filterState == null) ;
+        return roundVideo;
     }
 }

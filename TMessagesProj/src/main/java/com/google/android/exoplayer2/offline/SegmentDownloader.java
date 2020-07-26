@@ -16,9 +16,8 @@
 package com.google.android.exoplayer2.offline;
 
 import android.net.Uri;
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import android.util.Pair;
+import androidx.annotation.Nullable;
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.upstream.DataSource;
 import com.google.android.exoplayer2.upstream.DataSpec;
@@ -57,7 +56,7 @@ public abstract class SegmentDownloader<M extends FilterableManifest<M>> impleme
     }
 
     @Override
-    public int compareTo(@NonNull Segment other) {
+    public int compareTo(Segment other) {
       return Util.compareLong(startTimeUs, other.startTimeUs);
     }
   }
@@ -138,7 +137,7 @@ public abstract class SegmentDownloader<M extends FilterableManifest<M>> impleme
       Collections.sort(segments);
 
       // Download the segments.
-      ProgressNotifier progressNotifier = null;
+      @Nullable ProgressNotifier progressNotifier = null;
       if (progressListener != null) {
         progressNotifier =
             new ProgressNotifier(

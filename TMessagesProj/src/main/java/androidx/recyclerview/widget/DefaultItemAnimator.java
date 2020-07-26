@@ -30,7 +30,6 @@ import androidx.core.view.ViewCompat;
 import org.telegram.messenger.BuildVars;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 
 /**
@@ -186,13 +185,17 @@ public class DefaultItemAnimator extends SimpleItemAnimator {
                 long removeDuration = removalsPending ? getRemoveDuration() : 0;
                 long moveDuration = movesPending ? getMoveDuration() : 0;
                 long changeDuration = changesPending ? getChangeDuration() : 0;
-                long totalDelay = removeDuration + Math.max(moveDuration, changeDuration);
+                long totalDelay = getAddAnimationDelay(removeDuration,moveDuration,changeDuration);
                 View view = additions.get(0).itemView;
                 ViewCompat.postOnAnimationDelayed(view, adder, totalDelay);
             } else {
                 adder.run();
             }
         }
+    }
+
+    protected long getAddAnimationDelay(long removeDuration, long moveDuration, long changeDuration) {
+        return removeDuration + Math.max(moveDuration, changeDuration);
     }
 
     protected long getMoveAnimationDelay() {

@@ -25,27 +25,41 @@ import com.google.android.exoplayer2.util.Util;
 public final class CryptoInfo {
 
   /**
+   * The 16 byte initialization vector. If the initialization vector of the content is shorter than
+   * 16 bytes, 0 byte padding is appended to extend the vector to the required 16 byte length.
+   *
    * @see android.media.MediaCodec.CryptoInfo#iv
    */
   public byte[] iv;
   /**
+   * The 16 byte key id.
+   *
    * @see android.media.MediaCodec.CryptoInfo#key
    */
   public byte[] key;
   /**
+   * The type of encryption that has been applied. Must be one of the {@link C.CryptoMode} values.
+   *
    * @see android.media.MediaCodec.CryptoInfo#mode
    */
-  @C.CryptoMode
-  public int mode;
+  @C.CryptoMode public int mode;
   /**
+   * The number of leading unencrypted bytes in each sub-sample. If null, all bytes are treated as
+   * encrypted and {@link #numBytesOfEncryptedData} must be specified.
+   *
    * @see android.media.MediaCodec.CryptoInfo#numBytesOfClearData
    */
   public int[] numBytesOfClearData;
   /**
+   * The number of trailing encrypted bytes in each sub-sample. If null, all bytes are treated as
+   * clear and {@link #numBytesOfClearData} must be specified.
+   *
    * @see android.media.MediaCodec.CryptoInfo#numBytesOfEncryptedData
    */
   public int[] numBytesOfEncryptedData;
   /**
+   * The number of subSamples that make up the buffer's contents.
+   *
    * @see android.media.MediaCodec.CryptoInfo#numSubSamples
    */
   public int numSubSamples;

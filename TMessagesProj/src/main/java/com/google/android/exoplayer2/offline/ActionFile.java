@@ -68,7 +68,7 @@ import java.util.List;
     if (!exists()) {
       return new DownloadRequest[0];
     }
-    InputStream inputStream = null;
+    @Nullable InputStream inputStream = null;
     try {
       inputStream = atomicFile.openRead();
       DataInputStream dataInputStream = new DataInputStream(inputStream);
@@ -99,7 +99,7 @@ import java.util.List;
     boolean isRemoveAction = input.readBoolean();
 
     int dataLength = input.readInt();
-    byte[] data;
+    @Nullable byte[] data;
     if (dataLength != 0) {
       data = new byte[dataLength];
       input.readFully(data);
@@ -123,7 +123,7 @@ import java.util.List;
             && (DownloadRequest.TYPE_DASH.equals(type)
                 || DownloadRequest.TYPE_HLS.equals(type)
                 || DownloadRequest.TYPE_SS.equals(type));
-    String customCacheKey = null;
+    @Nullable String customCacheKey = null;
     if (!isLegacySegmented) {
       customCacheKey = input.readBoolean() ? input.readUTF() : null;
     }

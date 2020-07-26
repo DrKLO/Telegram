@@ -729,7 +729,7 @@ public class StickersAlert extends BottomSheet implements NotificationCenter.Not
                     if (installDelegate != null) {
                         installDelegate.onStickerSetInstalled();
                     }
-                    if (MediaDataController.getInstance(currentAccount).cancelRemovingStickerSet(inputStickerSet.id)) {
+                    if (inputStickerSet == null || MediaDataController.getInstance(currentAccount).cancelRemovingStickerSet(inputStickerSet.id)) {
                         return;
                     }
                     TLRPC.TL_messages_installStickerSet req = new TLRPC.TL_messages_installStickerSet();

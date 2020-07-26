@@ -18,6 +18,7 @@ package com.google.android.exoplayer2.offline;
 import static com.google.android.exoplayer2.offline.Download.STATE_QUEUED;
 
 import androidx.annotation.Nullable;
+import androidx.annotation.WorkerThread;
 import com.google.android.exoplayer2.C;
 import java.io.File;
 import java.io.IOException;
@@ -47,6 +48,8 @@ public final class ActionFileUpgradeUtil {
    * <p>This method must not be called while the {@link DefaultDownloadIndex} is being used by a
    * {@link DownloadManager}.
    *
+   * <p>This method may be slow and shouldn't normally be called on the main thread.
+   *
    * @param actionFilePath The action file path.
    * @param downloadIdProvider A download ID provider, or {@code null}. If {@code null} then ID of
    *     each download will be its custom cache key if one is specified, or else its URL.
@@ -55,6 +58,7 @@ public final class ActionFileUpgradeUtil {
    * @param addNewDownloadsAsCompleted Whether to add new downloads as completed.
    * @throws IOException If an error occurs loading or merging the requests.
    */
+  @WorkerThread
   @SuppressWarnings("deprecation")
   public static void upgradeAndDelete(
       File actionFilePath,
@@ -97,7 +101,7 @@ public final class ActionFileUpgradeUtil {
       boolean addNewDownloadAsCompleted,
       long nowMs)
       throws IOException {
-    Download download = downloadIndex.getDownload(request.id);
+    @Nullable Download download = downloadIndex.getDownload(request.id);
     if (download != null) {
       download = DownloadManager.mergeRequest(download, request, download.stopReason, nowMs);
     } else {

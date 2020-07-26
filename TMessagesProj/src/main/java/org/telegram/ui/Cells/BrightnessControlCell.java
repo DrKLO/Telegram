@@ -11,8 +11,10 @@ package org.telegram.ui.Cells;
 import android.content.Context;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
+import android.os.Bundle;
 import android.view.Gravity;
 import android.view.MotionEvent;
+import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 
@@ -35,7 +37,7 @@ public class BrightnessControlCell extends FrameLayout {
         leftImageView.setImageResource(R.drawable.brightness_low);
         addView(leftImageView, LayoutHelper.createFrame(24, 24, Gravity.LEFT | Gravity.TOP, 17, 12, 0, 0));
 
-        seekBarView = new SeekBarView(context) {
+        seekBarView = new SeekBarView(context, /* inPercents = */ true) {
             @Override
             public boolean onTouchEvent(MotionEvent event) {
                 if (event.getAction() == MotionEvent.ACTION_DOWN) {
@@ -53,9 +55,14 @@ public class BrightnessControlCell extends FrameLayout {
 
             @Override
             public void onSeekBarPressed(boolean pressed) {
+            }
 
+            @Override
+            public CharSequence getContentDescription() {
+                return " ";
             }
         });
+        seekBarView.setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO);
         addView(seekBarView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 38, Gravity.TOP | Gravity.LEFT, 54, 5, 54, 0));
 
         rightImageView = new ImageView(context);
@@ -81,5 +88,16 @@ public class BrightnessControlCell extends FrameLayout {
 
     public void setProgress(float value) {
         seekBarView.setProgress(value);
+    }
+
+    @Override
+    public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
+        super.onInitializeAccessibilityNodeInfo(info);
+        seekBarView.getSeekBarAccessibilityDelegate().onInitializeAccessibilityNodeInfoInternal(this, info);
+    }
+
+    @Override
+    public boolean performAccessibilityAction(int action, Bundle arguments) {
+        return super.performAccessibilityAction(action, arguments) || seekBarView.getSeekBarAccessibilityDelegate().performAccessibilityActionInternal(this, action, arguments);
     }
 }

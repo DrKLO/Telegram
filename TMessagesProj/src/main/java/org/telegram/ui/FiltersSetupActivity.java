@@ -253,6 +253,7 @@ public class FiltersSetupActivity extends BaseFragment implements NotificationCe
             moveImageView.setScaleType(ImageView.ScaleType.CENTER);
             moveImageView.setImageResource(R.drawable.list_reorder);
             moveImageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_stickers_menu), PorterDuff.Mode.MULTIPLY));
+            moveImageView.setContentDescription(LocaleController.getString("FilterReorder", R.string.FilterReorder));
             moveImageView.setClickable(true);
             addView(moveImageView, LayoutHelper.createFrame(48, 48, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL, 6, 0, 6, 0));
 
@@ -284,6 +285,7 @@ public class FiltersSetupActivity extends BaseFragment implements NotificationCe
             optionsImageView.setBackgroundDrawable(Theme.createSelectorDrawable(Theme.getColor(Theme.key_stickers_menuSelector)));
             optionsImageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_stickers_menu), PorterDuff.Mode.MULTIPLY));
             optionsImageView.setImageResource(R.drawable.msg_actions);
+            optionsImageView.setContentDescription(LocaleController.getString("AccDescrMoreOptions", R.string.AccDescrMoreOptions));
             addView(optionsImageView, LayoutHelper.createFrame(40, 40, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.CENTER_VERTICAL, 6, 0, 6, 0));
         }
 

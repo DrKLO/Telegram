@@ -16,16 +16,20 @@
 package com.google.android.exoplayer2.util;
 
 import android.os.SystemClock;
-import androidx.annotation.Nullable;
+import android.text.TextUtils;
 import android.view.Surface;
+import androidx.annotation.Nullable;
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.ExoPlaybackException;
 import com.google.android.exoplayer2.Format;
 import com.google.android.exoplayer2.PlaybackParameters;
 import com.google.android.exoplayer2.Player;
+import com.google.android.exoplayer2.Player.PlaybackSuppressionReason;
 import com.google.android.exoplayer2.RendererCapabilities;
+import com.google.android.exoplayer2.RendererCapabilities.AdaptiveSupport;
 import com.google.android.exoplayer2.Timeline;
 import com.google.android.exoplayer2.analytics.AnalyticsListener;
+import com.google.android.exoplayer2.audio.AudioAttributes;
 import com.google.android.exoplayer2.decoder.DecoderCounters;
 import com.google.android.exoplayer2.metadata.Metadata;
 import com.google.android.exoplayer2.source.MediaSourceEventListener.LoadEventInfo;
@@ -54,7 +58,7 @@ public class EventLogger implements AnalyticsListener {
     TIME_FORMAT.setGroupingUsed(false);
   }
 
-  private final @Nullable MappingTrackSelector trackSelector;
+  @Nullable private final MappingTrackSelector trackSelector;
   private final String tag;
   private final Timeline.Window window;
   private final Timeline.Period period;
@@ -93,8 +97,23 @@ public class EventLogger implements AnalyticsListener {
   }
 
   @Override
-  public void onPlayerStateChanged(EventTime eventTime, boolean playWhenReady, int state) {
+  public void onPlayerStateChanged(
+      EventTime eventTime, boolean playWhenReady, @Player.State int state) {
     logd(eventTime, "state", playWhenReady + ", " + getStateString(state));
+  }
+
+  @Override
+  public void onPlaybackSuppressionReasonChanged(
+      EventTime eventTime, @PlaybackSuppressionReason int playbackSuppressionReason) {
+    logd(
+        eventTime,
+        "playbackSuppressionReason",
+        getPlaybackSuppressionReasonString(playbackSuppressionReason));
+  }
+
+  @Override
+  public void onIsPlayingChanged(EventTime eventTime, boolean isPlaying) {
+    logd(eventTime, "isPlaying", Boolean.toString(isPlaying));
   }
 
   @Override
@@ -133,7 +152,7 @@ public class EventLogger implements AnalyticsListener {
     int periodCount = eventTime.timeline.getPeriodCount();
     int windowCount = eventTime.timeline.getWindowCount();
     logd(
-        "timelineChanged ["
+        "timeline ["
             + getEventTimeString(eventTime)
             + ", periodCount="
             + periodCount
@@ -177,10 +196,10 @@ public class EventLogger implements AnalyticsListener {
     MappedTrackInfo mappedTrackInfo =
         trackSelector != null ? trackSelector.getCurrentMappedTrackInfo() : null;
     if (mappedTrackInfo == null) {
-      logd(eventTime, "tracksChanged", "[]");
+      logd(eventTime, "tracks", "[]");
       return;
     }
-    logd("tracksChanged [" + getEventTimeString(eventTime) + ", ");
+    logd("tracks [" + getEventTimeString(eventTime));
     // Log tracks associated to renderers.
     int rendererCount = mappedTrackInfo.getRendererCount();
     for (int rendererIndex = 0; rendererIndex < rendererCount; rendererIndex++) {
@@ -193,12 +212,13 @@ public class EventLogger implements AnalyticsListener {
           String adaptiveSupport =
               getAdaptiveSupportString(
                   trackGroup.length,
-                  mappedTrackInfo.getAdaptiveSupport(rendererIndex, groupIndex, false));
+                  mappedTrackInfo.getAdaptiveSupport(
+                      rendererIndex, groupIndex, /* includeCapabilitiesExceededTracks= */ false));
           logd("    Group:" + groupIndex + ", adaptive_supported=" + adaptiveSupport + " [");
           for (int trackIndex = 0; trackIndex < trackGroup.length; trackIndex++) {
             String status = getTrackStatusString(trackSelection, trackGroup, trackIndex);
             String formatSupport =
-                getFormatSupportString(
+                RendererCapabilities.getFormatSupportString(
                     mappedTrackInfo.getTrackSupport(rendererIndex, groupIndex, trackIndex));
             logd(
                 "      "
@@ -237,7 +257,8 @@ public class EventLogger implements AnalyticsListener {
         for (int trackIndex = 0; trackIndex < trackGroup.length; trackIndex++) {
           String status = getTrackStatusString(false);
           String formatSupport =
-              getFormatSupportString(RendererCapabilities.FORMAT_UNSUPPORTED_TYPE);
+              RendererCapabilities.getFormatSupportString(
+                  RendererCapabilities.FORMAT_UNSUPPORTED_TYPE);
           logd(
               "      "
                   + status
@@ -262,14 +283,14 @@ public class EventLogger implements AnalyticsListener {
 
   @Override
   public void onMetadata(EventTime eventTime, Metadata metadata) {
-    logd("metadata [" + getEventTimeString(eventTime) + ", ");
+    logd("metadata [" + getEventTimeString(eventTime));
     printMetadata(metadata, "  ");
     logd("]");
   }
 
   @Override
   public void onDecoderEnabled(EventTime eventTime, int trackType, DecoderCounters counters) {
-    logd(eventTime, "decoderEnabled", getTrackTypeString(trackType));
+    logd(eventTime, "decoderEnabled", Util.getTrackTypeString(trackType));
   }
 
   @Override
@@ -278,22 +299,41 @@ public class EventLogger implements AnalyticsListener {
   }
 
   @Override
+  public void onAudioAttributesChanged(EventTime eventTime, AudioAttributes audioAttributes) {
+    logd(
+        eventTime,
+        "audioAttributes",
+        audioAttributes.contentType
+            + ","
+            + audioAttributes.flags
+            + ","
+            + audioAttributes.usage
+            + ","
+            + audioAttributes.allowedCapturePolicy);
+  }
+
+  @Override
+  public void onVolumeChanged(EventTime eventTime, float volume) {
+    logd(eventTime, "volume", Float.toString(volume));
+  }
+
+  @Override
   public void onDecoderInitialized(
       EventTime eventTime, int trackType, String decoderName, long initializationDurationMs) {
-    logd(eventTime, "decoderInitialized", getTrackTypeString(trackType) + ", " + decoderName);
+    logd(eventTime, "decoderInitialized", Util.getTrackTypeString(trackType) + ", " + decoderName);
   }
 
   @Override
   public void onDecoderInputFormatChanged(EventTime eventTime, int trackType, Format format) {
     logd(
         eventTime,
-        "decoderInputFormatChanged",
-        getTrackTypeString(trackType) + ", " + Format.toLogString(format));
+        "decoderInputFormat",
+        Util.getTrackTypeString(trackType) + ", " + Format.toLogString(format));
   }
 
   @Override
   public void onDecoderDisabled(EventTime eventTime, int trackType, DecoderCounters counters) {
-    logd(eventTime, "decoderDisabled", getTrackTypeString(trackType));
+    logd(eventTime, "decoderDisabled", Util.getTrackTypeString(trackType));
   }
 
   @Override
@@ -318,7 +358,7 @@ public class EventLogger implements AnalyticsListener {
       int height,
       int unappliedRotationDegrees,
       float pixelWidthHeightRatio) {
-    logd(eventTime, "videoSizeChanged", width + ", " + height);
+    logd(eventTime, "videoSize", width + ", " + height);
   }
 
   @Override
@@ -377,7 +417,7 @@ public class EventLogger implements AnalyticsListener {
 
   @Override
   public void onSurfaceSizeChanged(EventTime eventTime, int width, int height) {
-    logd(eventTime, "surfaceSizeChanged", width + ", " + height);
+    logd(eventTime, "surfaceSize", width + ", " + height);
   }
 
   @Override
@@ -387,7 +427,7 @@ public class EventLogger implements AnalyticsListener {
 
   @Override
   public void onDownstreamFormatChanged(EventTime eventTime, MediaLoadData mediaLoadData) {
-    logd(eventTime, "downstreamFormatChanged", Format.toLogString(mediaLoadData.trackFormat));
+    logd(eventTime, "downstreamFormat", Format.toLogString(mediaLoadData.trackFormat));
   }
 
   @Override
@@ -430,27 +470,26 @@ public class EventLogger implements AnalyticsListener {
   }
 
   /**
-   * Logs an error message and exception.
+   * Logs an error message.
    *
    * @param msg The message to log.
-   * @param tr The exception to log.
    */
-  protected void loge(String msg, @Nullable Throwable tr) {
-    Log.e(tag, msg, tr);
+  protected void loge(String msg) {
+    Log.e(tag, msg);
   }
 
   // Internal methods
 
   private void logd(EventTime eventTime, String eventName) {
-    logd(getEventString(eventTime, eventName));
+    logd(getEventString(eventTime, eventName, /* eventDescription= */ null, /* throwable= */ null));
   }
 
   private void logd(EventTime eventTime, String eventName, String eventDescription) {
-    logd(getEventString(eventTime, eventName, eventDescription));
+    logd(getEventString(eventTime, eventName, eventDescription, /* throwable= */ null));
   }
 
   private void loge(EventTime eventTime, String eventName, @Nullable Throwable throwable) {
-    loge(getEventString(eventTime, eventName), throwable);
+    loge(getEventString(eventTime, eventName, /* eventDescription= */ null, throwable));
   }
 
   private void loge(
@@ -458,7 +497,7 @@ public class EventLogger implements AnalyticsListener {
       String eventName,
       String eventDescription,
       @Nullable Throwable throwable) {
-    loge(getEventString(eventTime, eventName, eventDescription), throwable);
+    loge(getEventString(eventTime, eventName, eventDescription, throwable));
   }
 
   private void printInternalError(EventTime eventTime, String type, Exception e) {
@@ -471,12 +510,21 @@ public class EventLogger implements AnalyticsListener {
     }
   }
 
-  private String getEventString(EventTime eventTime, String eventName) {
-    return eventName + " [" + getEventTimeString(eventTime) + "]";
-  }
-
-  private String getEventString(EventTime eventTime, String eventName, String eventDescription) {
-    return eventName + " [" + getEventTimeString(eventTime) + ", " + eventDescription + "]";
+  private String getEventString(
+      EventTime eventTime,
+      String eventName,
+      @Nullable String eventDescription,
+      @Nullable Throwable throwable) {
+    String eventString = eventName + " [" + getEventTimeString(eventTime);
+    if (eventDescription != null) {
+      eventString += ", " + eventDescription;
+    }
+    @Nullable String throwableString = Log.getThrowableString(throwable);
+    if (!TextUtils.isEmpty(throwableString)) {
+      eventString += "\n  " + throwableString.replace("\n", "\n  ") + '\n';
+    }
+    eventString += "]";
+    return eventString;
   }
 
   private String getEventTimeString(EventTime eventTime) {
@@ -489,8 +537,9 @@ public class EventLogger implements AnalyticsListener {
         windowPeriodString += ", ad=" + eventTime.mediaPeriodId.adIndexInAdGroup;
       }
     }
-    return getTimeString(eventTime.realtimeMs - startTimeMs)
-        + ", "
+    return "eventTime="
+        + getTimeString(eventTime.realtimeMs - startTimeMs)
+        + ", mediaPos="
         + getTimeString(eventTime.currentPlaybackPositionMs)
         + ", "
         + windowPeriodString;
@@ -515,24 +564,8 @@ public class EventLogger implements AnalyticsListener {
     }
   }
 
-  private static String getFormatSupportString(int formatSupport) {
-    switch (formatSupport) {
-      case RendererCapabilities.FORMAT_HANDLED:
-        return "YES";
-      case RendererCapabilities.FORMAT_EXCEEDS_CAPABILITIES:
-        return "NO_EXCEEDS_CAPABILITIES";
-      case RendererCapabilities.FORMAT_UNSUPPORTED_DRM:
-        return "NO_UNSUPPORTED_DRM";
-      case RendererCapabilities.FORMAT_UNSUPPORTED_SUBTYPE:
-        return "NO_UNSUPPORTED_TYPE";
-      case RendererCapabilities.FORMAT_UNSUPPORTED_TYPE:
-        return "NO";
-      default:
-        return "?";
-    }
-  }
-
-  private static String getAdaptiveSupportString(int trackCount, int adaptiveSupport) {
+  private static String getAdaptiveSupportString(
+      int trackCount, @AdaptiveSupport int adaptiveSupport) {
     if (trackCount < 2) {
       return "N/A";
     }
@@ -544,7 +577,7 @@ public class EventLogger implements AnalyticsListener {
       case RendererCapabilities.ADAPTIVE_NOT_SUPPORTED:
         return "NO";
       default:
-        return "?";
+        throw new IllegalStateException();
     }
   }
 
@@ -604,24 +637,15 @@ public class EventLogger implements AnalyticsListener {
     }
   }
 
-  private static String getTrackTypeString(int trackType) {
-    switch (trackType) {
-      case C.TRACK_TYPE_AUDIO:
-        return "audio";
-      case C.TRACK_TYPE_DEFAULT:
-        return "default";
-      case C.TRACK_TYPE_METADATA:
-        return "metadata";
-      case C.TRACK_TYPE_CAMERA_MOTION:
-        return "camera motion";
-      case C.TRACK_TYPE_NONE:
-        return "none";
-      case C.TRACK_TYPE_TEXT:
-        return "text";
-      case C.TRACK_TYPE_VIDEO:
-        return "video";
+  private static String getPlaybackSuppressionReasonString(
+      @PlaybackSuppressionReason int playbackSuppressionReason) {
+    switch (playbackSuppressionReason) {
+      case Player.PLAYBACK_SUPPRESSION_REASON_NONE:
+        return "NONE";
+      case Player.PLAYBACK_SUPPRESSION_REASON_TRANSIENT_AUDIO_FOCUS_LOSS:
+        return "TRANSIENT_AUDIO_FOCUS_LOSS";
       default:
-        return trackType >= C.TRACK_TYPE_CUSTOM_BASE ? "custom (" + trackType + ")" : "?";
+        return "?";
     }
   }
 }

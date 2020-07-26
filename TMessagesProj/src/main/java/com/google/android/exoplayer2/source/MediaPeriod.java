@@ -20,6 +20,7 @@ import com.google.android.exoplayer2.ExoPlayer;
 import com.google.android.exoplayer2.SeekParameters;
 import com.google.android.exoplayer2.Timeline;
 import com.google.android.exoplayer2.offline.StreamKey;
+import com.google.android.exoplayer2.source.MediaSource.MediaSourceCaller;
 import com.google.android.exoplayer2.trackselection.TrackSelection;
 import java.io.IOException;
 import java.util.Collections;
@@ -57,9 +58,8 @@ public interface MediaPeriod extends SequenceableLoader {
    * {@link #maybeThrowPrepareError()} will throw an {@link IOException}.
    *
    * <p>If preparation succeeds and results in a source timeline change (e.g. the period duration
-   * becoming known), {@link
-   * MediaSource.SourceInfoRefreshListener#onSourceInfoRefreshed(MediaSource, Timeline, Object)}
-   * will be called before {@code callback.onPrepared}.
+   * becoming known), {@link MediaSourceCaller#onSourceInfoRefreshed(MediaSource, Timeline)} will be
+   * called before {@code callback.onPrepared}.
    *
    * @param callback Callback to receive updates from this period, including being notified when
    *     preparation completes.
@@ -113,15 +113,17 @@ public interface MediaPeriod extends SequenceableLoader {
    * corresponding flag in {@code streamResetFlags} will be set to true. This flag will also be set
    * if a new sample stream is created.
    *
-   * <p>Note that previously received {@link TrackSelection TrackSelections} are no longer valid and
-   * references need to be replaced even if the corresponding {@link SampleStream} is kept.
+   * <p>Note that previously passed {@link TrackSelection TrackSelections} are no longer valid, and
+   * any references to them must be updated to point to the new selections.
    *
    * <p>This method is only called after the period has been prepared.
    *
    * @param selections The renderer track selections.
    * @param mayRetainStreamFlags Flags indicating whether the existing sample stream can be retained
-   *     for each selection. A {@code true} value indicates that the selection is unchanged, and
-   *     that the caller does not require that the sample stream be recreated.
+   *     for each track selection. A {@code true} value indicates that the selection is equivalent
+   *     to the one that was previously passed, and that the caller does not require that the sample
+   *     stream be recreated. If a retained sample stream holds any references to the track
+   *     selection then they must be updated to point to the new selection.
    * @param streams The existing sample streams, which will be updated to reflect the provided
    *     selections.
    * @param streamResetFlags Will be updated to indicate new sample streams, and sample streams that
@@ -228,6 +230,9 @@ public interface MediaPeriod extends SequenceableLoader {
    */
   @Override
   boolean continueLoading(long positionUs);
+
+  /** Returns whether the media period is currently loading. */
+  boolean isLoading();
 
   /**
    * Re-evaluates the buffer given the playback position.

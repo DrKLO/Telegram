@@ -20,6 +20,7 @@ import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
 import android.net.Uri;
+import android.os.Build;
 import android.os.SystemClock;
 import android.text.TextPaint;
 import android.text.TextUtils;
@@ -28,6 +29,8 @@ import android.view.HapticFeedbackConstants;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.accessibility.AccessibilityNodeInfo;
+import android.widget.Button;
 import android.widget.FrameLayout;
 
 import org.telegram.messenger.AndroidUtilities;
@@ -511,10 +514,7 @@ public class ThemesHorizontalListCell extends RecyclerListView implements Notifi
             int y = AndroidUtilities.dp(11);
             rect.set(x, y, x + AndroidUtilities.dp(76), y + AndroidUtilities.dp(97));
 
-            String name = themeInfo.getName();
-            if (name.toLowerCase().endsWith(".attheme")) {
-                name = name.substring(0, name.lastIndexOf('.'));
-            }
+            String name = getThemeName();
             int maxWidth = getMeasuredWidth() - AndroidUtilities.dp(isFirst ? 10 : 15) - (isLast ? AndroidUtilities.dp(7) : 0);
             String text = TextUtils.ellipsize(name, textPaint, maxWidth, TextUtils.TruncateAt.END).toString();
             int width = (int) Math.ceil(textPaint.measureText(text));
@@ -633,11 +633,33 @@ public class ThemesHorizontalListCell extends RecyclerListView implements Notifi
             }
         }
 
+        private String getThemeName() {
+            String name = themeInfo.getName();
+            if (name.toLowerCase().endsWith(".attheme")) {
+                name = name.substring(0, name.lastIndexOf('.'));
+            }
+            return name;
+        }
+
         private int blend(int color1, int color2) {
             if (accentState == 1.0f) {
                 return color2;
             } else {
                 return (int) evaluator.evaluate(accentState, color1, color2);
+            }
+        }
+
+        @Override
+        public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
+            super.onInitializeAccessibilityNodeInfo(info);
+            info.setText(getThemeName());
+            info.setClassName(Button.class.getName());
+            info.setChecked(button.isChecked());
+            info.setCheckable(true);
+            info.setEnabled(true);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                info.addAction(AccessibilityNodeInfo.AccessibilityAction.ACTION_CLICK);
+                info.addAction(new AccessibilityNodeInfo.AccessibilityAction(AccessibilityNodeInfo.ACTION_LONG_CLICK, LocaleController.getString("AccDescrMoreOptions", R.string.AccDescrMoreOptions)));
             }
         }
     }

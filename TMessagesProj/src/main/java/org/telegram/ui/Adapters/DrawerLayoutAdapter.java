@@ -276,7 +276,7 @@ public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter {
         return item != null ? item.id : -1;
     }
 
-    private class Item {
+    private static class Item {
         public int icon;
         public String text;
         public int id;

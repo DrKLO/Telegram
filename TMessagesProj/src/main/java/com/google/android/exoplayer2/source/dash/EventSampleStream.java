@@ -115,9 +115,9 @@ import java.io.IOException;
     byte[] serializedEvent = eventMessageEncoder.encode(eventStream.events[sampleIndex]);
     if (serializedEvent != null) {
       buffer.ensureSpaceForWrite(serializedEvent.length);
-      buffer.setFlags(C.BUFFER_FLAG_KEY_FRAME);
       buffer.data.put(serializedEvent);
       buffer.timeUs = eventTimesUs[sampleIndex];
+      buffer.setFlags(C.BUFFER_FLAG_KEY_FRAME);
       return C.RESULT_BUFFER_READ;
     } else {
       return C.RESULT_NOTHING_READ;

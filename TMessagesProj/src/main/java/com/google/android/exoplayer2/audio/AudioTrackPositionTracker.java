@@ -123,6 +123,8 @@ import java.lang.reflect.Method;
    * <p>This is a fail safe that should not be required on correctly functioning devices.
    */
   private static final long MAX_LATENCY_US = 5 * C.MICROS_PER_SECOND;
+  /** The duration of time used to smooth over an adjustment between position sampling modes. */
+  private static final long MODE_SWITCH_SMOOTHING_DURATION_US = C.MICROS_PER_SECOND;
 
   private static final long FORCE_RESET_WORKAROUND_TIMEOUT_MS = 200;
 
@@ -133,10 +135,10 @@ import java.lang.reflect.Method;
   private final Listener listener;
   private final long[] playheadOffsets;
 
-  private @Nullable AudioTrack audioTrack;
+  @Nullable private AudioTrack audioTrack;
   private int outputPcmFrameSize;
   private int bufferSize;
-  private @Nullable AudioTimestampPoller audioTimestampPoller;
+  @Nullable private AudioTimestampPoller audioTimestampPoller;
   private int outputSampleRate;
   private boolean needsPassthroughWorkarounds;
   private long bufferSizeUs;
@@ -144,7 +146,7 @@ import java.lang.reflect.Method;
   private long smoothedPlayheadOffsetUs;
   private long lastPlayheadSampleTimeUs;
 
-  private @Nullable Method getLatencyMethod;
+  @Nullable private Method getLatencyMethod;
   private long latencyUs;
   private boolean hasData;
 
@@ -159,6 +161,15 @@ import java.lang.reflect.Method;
   private long forceResetWorkaroundTimeMs;
   private long stopPlaybackHeadPosition;
   private long endPlaybackHeadPosition;
+
+  // Results from the previous call to getCurrentPositionUs.
+  private long lastPositionUs;
+  private long lastSystemTimeUs;
+  private boolean lastSampleUsedGetTimestampMode;
+
+  // Results from the last call to getCurrentPositionUs that used a different sample mode.
+  private long previousModePositionUs;
+  private long previousModeSystemTimeUs;
 
   /**
    * Creates a new audio track position tracker.
@@ -206,6 +217,7 @@ import java.lang.reflect.Method;
     hasData = false;
     stopTimestampUs = C.TIME_UNSET;
     forceResetWorkaroundTimeMs = C.TIME_UNSET;
+    lastLatencySampleTimeUs = 0;
     latencyUs = 0;
   }
 
@@ -217,18 +229,16 @@ import java.lang.reflect.Method;
     // If the device supports it, use the playback timestamp from AudioTrack.getTimestamp.
     // Otherwise, derive a smoothed position by sampling the track's frame position.
     long systemTimeUs = System.nanoTime() / 1000;
+    long positionUs;
     AudioTimestampPoller audioTimestampPoller = Assertions.checkNotNull(this.audioTimestampPoller);
-    if (audioTimestampPoller.hasTimestamp()) {
+    boolean useGetTimestampMode = audioTimestampPoller.hasAdvancingTimestamp();
+    if (useGetTimestampMode) {
       // Calculate the speed-adjusted position using the timestamp (which may be in the future).
       long timestampPositionFrames = audioTimestampPoller.getTimestampPositionFrames();
       long timestampPositionUs = framesToDurationUs(timestampPositionFrames);
-      if (!audioTimestampPoller.isTimestampAdvancing()) {
-        return timestampPositionUs;
-      }
       long elapsedSinceTimestampUs = systemTimeUs - audioTimestampPoller.getTimestampSystemTimeUs();
-      return timestampPositionUs + elapsedSinceTimestampUs;
+      positionUs = timestampPositionUs + elapsedSinceTimestampUs;
     } else {
-      long positionUs;
       if (playheadOffsetCount == 0) {
         // The AudioTrack has started, but we don't have any samples to compute a smoothed position.
         positionUs = getPlaybackHeadPositionUs();
@@ -239,10 +249,31 @@ import java.lang.reflect.Method;
         positionUs = systemTimeUs + smoothedPlayheadOffsetUs;
       }
       if (!sourceEnded) {
-        positionUs -= latencyUs;
+        positionUs = Math.max(0, positionUs - latencyUs);
       }
-      return positionUs;
     }
+
+    if (lastSampleUsedGetTimestampMode != useGetTimestampMode) {
+      // We've switched sampling mode.
+      previousModeSystemTimeUs = lastSystemTimeUs;
+      previousModePositionUs = lastPositionUs;
+    }
+    long elapsedSincePreviousModeUs = systemTimeUs - previousModeSystemTimeUs;
+    if (elapsedSincePreviousModeUs < MODE_SWITCH_SMOOTHING_DURATION_US) {
+      // Use a ramp to smooth between the old mode and the new one to avoid introducing a sudden
+      // jump if the two modes disagree.
+      long previousModeProjectedPositionUs = previousModePositionUs + elapsedSincePreviousModeUs;
+      // A ramp consisting of 1000 points distributed over MODE_SWITCH_SMOOTHING_DURATION_US.
+      long rampPoint = (elapsedSincePreviousModeUs * 1000) / MODE_SWITCH_SMOOTHING_DURATION_US;
+      positionUs *= rampPoint;
+      positionUs += (1000 - rampPoint) * previousModeProjectedPositionUs;
+      positionUs /= 1000;
+    }
+
+    lastSystemTimeUs = systemTimeUs;
+    lastPositionUs = positionUs;
+    lastSampleUsedGetTimestampMode = useGetTimestampMode;
+    return positionUs;
   }
 
   /** Starts position tracking. Must be called immediately before {@link AudioTrack#play()}. */
@@ -353,7 +384,7 @@ import java.lang.reflect.Method;
   }
 
   /**
-   * Resets the position tracker. Should be called when the audio track previous passed to {@link
+   * Resets the position tracker. Should be called when the audio track previously passed to {@link
    * #setAudioTrack(AudioTrack, int, int, int)} is no longer in use.
    */
   public void reset() {
@@ -457,6 +488,8 @@ import java.lang.reflect.Method;
     playheadOffsetCount = 0;
     nextPlayheadOffsetIndex = 0;
     lastPlayheadSampleTimeUs = 0;
+    lastSystemTimeUs = 0;
+    previousModeSystemTimeUs = 0;
   }
 
   /**

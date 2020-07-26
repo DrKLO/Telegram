@@ -367,7 +367,7 @@ void setSystemLangCode(JNIEnv *env, jclass c, jint instanceNum, jstring langCode
     }
 }
 
-void init(JNIEnv *env, jclass c, jint instanceNum, jint version, jint layer, jint apiId, jstring deviceModel, jstring systemVersion, jstring appVersion, jstring langCode, jstring systemLangCode, jstring configPath, jstring logPath, jstring regId, jstring cFingerprint, jint timezoneOffset, jint userId, jboolean enablePushConnection, jboolean hasNetwork, jint networkType) {
+void init(JNIEnv *env, jclass c, jint instanceNum, jint version, jint layer, jint apiId, jstring deviceModel, jstring systemVersion, jstring appVersion, jstring langCode, jstring systemLangCode, jstring configPath, jstring logPath, jstring regId, jstring cFingerprint, jstring installerId, jint timezoneOffset, jint userId, jboolean enablePushConnection, jboolean hasNetwork, jint networkType) {
     const char *deviceModelStr = env->GetStringUTFChars(deviceModel, 0);
     const char *systemVersionStr = env->GetStringUTFChars(systemVersion, 0);
     const char *appVersionStr = env->GetStringUTFChars(appVersion, 0);
@@ -377,8 +377,9 @@ void init(JNIEnv *env, jclass c, jint instanceNum, jint version, jint layer, jin
     const char *logPathStr = env->GetStringUTFChars(logPath, 0);
     const char *regIdStr = env->GetStringUTFChars(regId, 0);
     const char *cFingerprintStr = env->GetStringUTFChars(cFingerprint, 0);
+    const char *installerIdStr = env->GetStringUTFChars(installerId, 0);
 
-    ConnectionsManager::getInstance(instanceNum).init((uint32_t) version, layer, apiId, std::string(deviceModelStr), std::string(systemVersionStr), std::string(appVersionStr), std::string(langCodeStr), std::string(systemLangCodeStr), std::string(configPathStr), std::string(logPathStr), std::string(regIdStr), std::string(cFingerprintStr), timezoneOffset, userId, true, enablePushConnection, hasNetwork, networkType);
+    ConnectionsManager::getInstance(instanceNum).init((uint32_t) version, layer, apiId, std::string(deviceModelStr), std::string(systemVersionStr), std::string(appVersionStr), std::string(langCodeStr), std::string(systemLangCodeStr), std::string(configPathStr), std::string(logPathStr), std::string(regIdStr), std::string(cFingerprintStr), std::string(installerIdStr), timezoneOffset, userId, true, enablePushConnection, hasNetwork, networkType);
 
     if (deviceModelStr != 0) {
         env->ReleaseStringUTFChars(deviceModel, deviceModelStr);
@@ -407,6 +408,9 @@ void init(JNIEnv *env, jclass c, jint instanceNum, jint version, jint layer, jin
     if (cFingerprintStr != 0) {
         env->ReleaseStringUTFChars(cFingerprint, cFingerprintStr);
     }
+    if (installerIdStr != 0) {
+        env->ReleaseStringUTFChars(installerId, installerIdStr);
+    }
 }
 
 void setJava(JNIEnv *env, jclass c, jboolean useJavaByteBuffers) {
@@ -431,7 +435,7 @@ static JNINativeMethod ConnectionsManagerMethods[] = {
         {"native_setProxySettings", "(ILjava/lang/String;ILjava/lang/String;Ljava/lang/String;Ljava/lang/String;)V", (void *) setProxySettings},
         {"native_getConnectionState", "(I)I", (void *) getConnectionState},
         {"native_setUserId", "(II)V", (void *) setUserId},
-        {"native_init", "(IIIILjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;IIZZI)V", (void *) init},
+        {"native_init", "(IIIILjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;IIZZI)V", (void *) init},
         {"native_setLangCode", "(ILjava/lang/String;)V", (void *) setLangCode},
         {"native_setRegId", "(ILjava/lang/String;)V", (void *) setRegId},
         {"native_setSystemLangCode", "(ILjava/lang/String;)V", (void *) setSystemLangCode},

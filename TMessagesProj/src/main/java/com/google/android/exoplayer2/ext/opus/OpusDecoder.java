@@ -23,6 +23,7 @@ import com.google.android.exoplayer2.decoder.SimpleDecoder;
 import com.google.android.exoplayer2.decoder.SimpleOutputBuffer;
 import com.google.android.exoplayer2.drm.DecryptionException;
 import com.google.android.exoplayer2.drm.ExoMediaCrypto;
+import com.google.android.exoplayer2.util.Util;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.List;
@@ -44,7 +45,7 @@ import java.util.List;
   private static final int DECODE_ERROR = -1;
   private static final int DRM_ERROR = -2;
 
-  private final ExoMediaCrypto exoMediaCrypto;
+  @Nullable private final ExoMediaCrypto exoMediaCrypto;
 
   private final int channelCount;
   private final int headerSkipSamples;
@@ -66,8 +67,13 @@ import java.util.List;
    *     content. Maybe null and can be ignored if decoder does not handle encrypted content.
    * @throws OpusDecoderException Thrown if an exception occurs when initializing the decoder.
    */
-  public OpusDecoder(int numInputBuffers, int numOutputBuffers, int initialInputBufferSize,
-      List<byte[]> initializationData, ExoMediaCrypto exoMediaCrypto) throws OpusDecoderException {
+  public OpusDecoder(
+      int numInputBuffers,
+      int numOutputBuffers,
+      int initialInputBufferSize,
+      List<byte[]> initializationData,
+      @Nullable ExoMediaCrypto exoMediaCrypto)
+      throws OpusDecoderException {
     super(new DecoderInputBuffer[numInputBuffers], new SimpleOutputBuffer[numOutputBuffers]);
     this.exoMediaCrypto = exoMediaCrypto;
     if (exoMediaCrypto != null && !OpusLibrary.opusIsSecureDecodeSupported()) {
@@ -81,8 +87,8 @@ import java.util.List;
     if (channelCount > 8) {
       throw new OpusDecoderException("Invalid channel count: " + channelCount);
     }
-    int preskip = readLittleEndian16(headerBytes, 10);
-    int gain = readLittleEndian16(headerBytes, 16);
+    int preskip = readUnsignedLittleEndian16(headerBytes, 10);
+    int gain = readSignedLittleEndian16(headerBytes, 16);
 
     byte[] streamMap = new byte[8];
     int numStreams;
@@ -157,7 +163,7 @@ import java.util.List;
       // any other time, skip number of samples as specified by seek preroll.
       skipSamples = (inputBuffer.timeUs == 0) ? headerSkipSamples : headerSeekPreRollSamples;
     }
-    ByteBuffer inputData = inputBuffer.data;
+    ByteBuffer inputData = Util.castNonNull(inputBuffer.data);
     CryptoInfo cryptoInfo = inputBuffer.cryptoInfo;
     int result = inputBuffer.isEncrypted()
         ? opusSecureDecode(nativeDecoderContext, inputBuffer.timeUs, inputData, inputData.limit(),
@@ -177,7 +183,7 @@ import java.util.List;
       }
     }
 
-    ByteBuffer outputData = outputBuffer.data;
+    ByteBuffer outputData = Util.castNonNull(outputBuffer.data);
     outputData.position(0);
     outputData.limit(result);
     if (skipSamples > 0) {
@@ -219,20 +225,36 @@ import java.util.List;
     return (int) (ns * SAMPLE_RATE / 1000000000);
   }
 
-  private static int readLittleEndian16(byte[] input, int offset) {
+  private static int readUnsignedLittleEndian16(byte[] input, int offset) {
     int value = input[offset] & 0xFF;
     value |= (input[offset + 1] & 0xFF) << 8;
     return value;
+  }
+
+  private static int readSignedLittleEndian16(byte[] input, int offset) {
+    return (short) readUnsignedLittleEndian16(input, offset);
   }
 
   private native long opusInit(int sampleRate, int channelCount, int numStreams, int numCoupled,
       int gain, byte[] streamMap);
   private native int opusDecode(long decoder, long timeUs, ByteBuffer inputBuffer, int inputSize,
       SimpleOutputBuffer outputBuffer);
-  private native int opusSecureDecode(long decoder, long timeUs, ByteBuffer inputBuffer,
-      int inputSize, SimpleOutputBuffer outputBuffer, int sampleRate,
-      ExoMediaCrypto mediaCrypto, int inputMode, byte[] key, byte[] iv,
-      int numSubSamples, int[] numBytesOfClearData, int[] numBytesOfEncryptedData);
+
+  private native int opusSecureDecode(
+      long decoder,
+      long timeUs,
+      ByteBuffer inputBuffer,
+      int inputSize,
+      SimpleOutputBuffer outputBuffer,
+      int sampleRate,
+      @Nullable ExoMediaCrypto mediaCrypto,
+      int inputMode,
+      byte[] key,
+      byte[] iv,
+      int numSubSamples,
+      int[] numBytesOfClearData,
+      int[] numBytesOfEncryptedData);
+
   private native void opusClose(long decoder);
   private native void opusReset(long decoder);
   private native int opusGetErrorCode(long decoder);

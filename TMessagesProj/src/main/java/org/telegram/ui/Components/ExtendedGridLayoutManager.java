@@ -14,6 +14,7 @@ import android.util.SparseIntArray;
 import org.telegram.messenger.AndroidUtilities;
 
 import androidx.recyclerview.widget.GridLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 public class ExtendedGridLayoutManager extends GridLayoutManager {
 
@@ -166,5 +167,15 @@ public class ExtendedGridLayoutManager extends GridLayoutManager {
 
     protected int getFlowItemCount() {
         return getItemCount();
+    }
+
+    @Override
+    public int getRowCountForAccessibility(RecyclerView.Recycler recycler, RecyclerView.State state) {
+        return state.getItemCount();
+    }
+
+    @Override
+    public int getColumnCountForAccessibility(RecyclerView.Recycler recycler, RecyclerView.State state) {
+        return 1;
     }
 }

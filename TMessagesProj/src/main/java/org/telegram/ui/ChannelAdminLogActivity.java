@@ -48,6 +48,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewOutlineProvider;
 import android.view.ViewTreeObserver;
+import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.DatePicker;
 import android.widget.EditText;
 import android.widget.FrameLayout;
@@ -847,6 +848,7 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
 
         floatingDateView = new ChatActionCell(context);
         floatingDateView.setAlpha(0.0f);
+        floatingDateView.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
         contentView.addView(floatingDateView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.CENTER_HORIZONTAL, 0, 4, 0, 0));
 
         contentView.addView(actionBar);
@@ -1926,7 +1928,7 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
                             MediaController.getInstance().setVoiceMessagesPlaylist(null, false);
                             return result;
                         } else if (messageObject.isMusic()) {
-                            return MediaController.getInstance().setPlaylist(messages, messageObject);
+                            return MediaController.getInstance().setPlaylist(messages, messageObject, 0);
                         }
                         return false;
                     }
@@ -2026,7 +2028,7 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
                                     if (messageObject.messageOwner.media instanceof TLRPC.TL_messageMediaWebPage && messageObject.messageOwner.media.webpage != null && messageObject.messageOwner.media.webpage.cached_page != null) {
                                         String lowerUrl = urlFinal.toLowerCase();
                                         String lowerUrl2 = messageObject.messageOwner.media.webpage.url.toLowerCase();
-                                        if ((lowerUrl.contains("telegra.ph") || lowerUrl.contains("t.me/iv")) && (lowerUrl.contains(lowerUrl2) || lowerUrl2.contains(lowerUrl))) {
+                                        if ((Browser.isTelegraphUrl(lowerUrl, false) || lowerUrl.contains("t.me/iv")) && (lowerUrl.contains(lowerUrl2) || lowerUrl2.contains(lowerUrl))) {
                                             ArticleViewer.getInstance().setParentActivity(getParentActivity(), ChannelAdminLogActivity.this);
                                             ArticleViewer.getInstance().open(messageObject);
                                             return;
@@ -2042,7 +2044,7 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
 
                     @Override
                     public void needOpenWebView(String url, String title, String description, String originalUrl, int w, int h) {
-                        EmbedBottomSheet.show(mContext, title, description, originalUrl, url, w, h);
+                        EmbedBottomSheet.show(mContext, title, description, originalUrl, url, w, h, false);
                     }
 
                     @Override
@@ -2154,7 +2156,15 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
                 });
                 chatMessageCell.setAllowAssistant(true);
             } else if (viewType == 1) {
-                view = new ChatActionCell(mContext);
+                view = new ChatActionCell(mContext) {
+                    @Override
+                    public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
+                        super.onInitializeAccessibilityNodeInfo(info);
+                        // if alpha == 0, then visibleToUser == false, so we need to override it
+                        // to keep accessibility working correctly
+                        info.setVisibleToUser(true);
+                    }
+                };
                 ((ChatActionCell) view).setDelegate(new ChatActionCell.ChatActionCellDelegate() {
                     @Override
                     public void didClickImage(ChatActionCell cell) {

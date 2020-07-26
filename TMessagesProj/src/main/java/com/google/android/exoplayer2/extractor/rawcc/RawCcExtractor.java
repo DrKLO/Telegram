@@ -25,7 +25,6 @@ import com.google.android.exoplayer2.extractor.PositionHolder;
 import com.google.android.exoplayer2.extractor.SeekMap;
 import com.google.android.exoplayer2.extractor.TrackOutput;
 import com.google.android.exoplayer2.util.ParsableByteArray;
-import com.google.android.exoplayer2.util.Util;
 import java.io.IOException;
 
 /**
@@ -35,7 +34,7 @@ public final class RawCcExtractor implements Extractor {
 
   private static final int SCRATCH_SIZE = 9;
   private static final int HEADER_SIZE = 8;
-  private static final int HEADER_ID = Util.getIntegerCodeForString("RCC\u0001");
+  private static final int HEADER_ID = 0x52434301;
   private static final int TIMESTAMP_SIZE_V0 = 4;
   private static final int TIMESTAMP_SIZE_V1 = 8;
 

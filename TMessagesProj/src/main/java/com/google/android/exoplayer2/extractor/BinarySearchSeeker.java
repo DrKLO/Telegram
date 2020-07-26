@@ -24,7 +24,6 @@ import java.io.IOException;
 import java.lang.annotation.Documented;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
-import java.nio.ByteBuffer;
 
 /**
  * A seeker that supports seeking within a stream by searching for the target frame using binary
@@ -48,36 +47,15 @@ public abstract class BinarySearchSeeker {
      *
      * @param input The {@link ExtractorInput} from which data should be peeked.
      * @param targetTimestamp The target timestamp.
-     * @param outputFrameHolder If {@link TimestampSearchResult#TYPE_TARGET_TIMESTAMP_FOUND} is
-     *     returned, this holder may be updated to hold the extracted frame that contains the target
-     *     frame/sample associated with the target timestamp.
      * @return A {@link TimestampSearchResult} that describes the result of the search.
      * @throws IOException If an error occurred reading from the input.
      * @throws InterruptedException If the thread was interrupted.
      */
-    TimestampSearchResult searchForTimestamp(
-        ExtractorInput input, long targetTimestamp, OutputFrameHolder outputFrameHolder)
+    TimestampSearchResult searchForTimestamp(ExtractorInput input, long targetTimestamp)
         throws IOException, InterruptedException;
 
     /** Called when a seek operation finishes. */
     default void onSeekFinished() {}
-  }
-
-  /**
-   * Holds a frame extracted from a stream, together with the time stamp of the frame in
-   * microseconds.
-   */
-  public static final class OutputFrameHolder {
-
-    public final ByteBuffer byteBuffer;
-
-    public long timeUs;
-
-    /** Constructs an instance, wrapping the given byte buffer. */
-    public OutputFrameHolder(ByteBuffer outputByteBuffer) {
-      this.timeUs = 0;
-      this.byteBuffer = outputByteBuffer;
-    }
   }
 
   /**
@@ -189,15 +167,11 @@ public abstract class BinarySearchSeeker {
    * @param input The {@link ExtractorInput} from which data should be read.
    * @param seekPositionHolder If {@link Extractor#RESULT_SEEK} is returned, this holder is updated
    *     to hold the position of the required seek.
-   * @param outputFrameHolder If {@link Extractor#RESULT_CONTINUE} is returned, this holder may be
-   *     updated to hold the extracted frame that contains the target sample. The caller needs to
-   *     check the byte buffer limit to see if an extracted frame is available.
    * @return One of the {@code RESULT_} values defined in {@link Extractor}.
    * @throws IOException If an error occurred reading from the input.
    * @throws InterruptedException If the thread was interrupted.
    */
-  public int handlePendingSeek(
-      ExtractorInput input, PositionHolder seekPositionHolder, OutputFrameHolder outputFrameHolder)
+  public int handlePendingSeek(ExtractorInput input, PositionHolder seekPositionHolder)
       throws InterruptedException, IOException {
     TimestampSeeker timestampSeeker = Assertions.checkNotNull(this.timestampSeeker);
     while (true) {
@@ -217,8 +191,7 @@ public abstract class BinarySearchSeeker {
 
       input.resetPeekPosition();
       TimestampSearchResult timestampSearchResult =
-          timestampSeeker.searchForTimestamp(
-              input, seekOperationParams.getTargetTimePosition(), outputFrameHolder);
+          timestampSeeker.searchForTimestamp(input, seekOperationParams.getTargetTimePosition());
 
       switch (timestampSearchResult.type) {
         case TimestampSearchResult.TYPE_POSITION_OVERESTIMATED:
@@ -419,7 +392,7 @@ public abstract class BinarySearchSeeker {
 
   /**
    * Represents possible search results for {@link
-   * TimestampSeeker#searchForTimestamp(ExtractorInput, long, OutputFrameHolder)}.
+   * TimestampSeeker#searchForTimestamp(ExtractorInput, long)}.
    */
   public static final class TimestampSearchResult {
 
@@ -495,10 +468,6 @@ public abstract class BinarySearchSeeker {
     /**
      * Returns a result to signal that the target timestamp has been found at {@code
      * resultBytePosition}, and the seek operation can stop.
-     *
-     * <p>Note that when this value is returned from {@link
-     * TimestampSeeker#searchForTimestamp(ExtractorInput, long, OutputFrameHolder)}, the {@link
-     * OutputFrameHolder} may be updated to hold the target frame as an optimization.
      */
     public static TimestampSearchResult targetFoundResult(long resultBytePosition) {
       return new TimestampSearchResult(

@@ -166,6 +166,7 @@ public class PollEditTextCell extends FrameLayout {
 
             checkBox = new CheckBox2(context, 21);
             checkBox.setColor(null, Theme.key_windowBackgroundWhiteGrayIcon, Theme.key_checkboxCheck);
+            checkBox.setContentDescription(LocaleController.getString("AccDescrQuizCorrectAnswer", R.string.AccDescrQuizCorrectAnswer));
             checkBox.setDrawUnchecked(true);
             checkBox.setChecked(true, false);
             checkBox.setAlpha(0.0f);

@@ -102,6 +102,8 @@ public class UndoView extends FrameLayout {
     public final static int ACTION_CACHE_WAS_CLEARED = 19;
     public final static int ACTION_ADDED_TO_FOLDER = 20;
     public final static int ACTION_REMOVED_FROM_FOLDER = 21;
+    public final static int ACTION_PROFILE_PHOTO_CHANGED = 22;
+    public final static int ACTION_CHAT_UNARCHIVED = 23;
 
     private CharSequence infoText;
 
@@ -214,11 +216,20 @@ public class UndoView extends FrameLayout {
         setVisibility(INVISIBLE);
     }
 
+    public void setColors(int background, int text) {
+        Theme.setDrawableColor(getBackground(), background);
+        infoTextView.setTextColor(text);
+        subinfoTextView.setTextColor(text);
+        leftImageView.setLayerColor("info1.**", background | 0xff000000);
+        leftImageView.setLayerColor("info2.**", background | 0xff000000);
+    }
+
     private boolean isTooltipAction() {
         return currentAction == ACTION_ARCHIVE_HIDDEN || currentAction == ACTION_ARCHIVE_HINT || currentAction == ACTION_ARCHIVE_FEW_HINT ||
                 currentAction == ACTION_ARCHIVE_PINNED || currentAction == ACTION_CONTACT_ADDED || currentAction == ACTION_OWNER_TRANSFERED_CHANNEL ||
                 currentAction == ACTION_OWNER_TRANSFERED_GROUP || currentAction == ACTION_QUIZ_CORRECT || currentAction == ACTION_QUIZ_INCORRECT || currentAction == ACTION_CACHE_WAS_CLEARED ||
-                currentAction == ACTION_ADDED_TO_FOLDER || currentAction == ACTION_REMOVED_FROM_FOLDER;
+                currentAction == ACTION_ADDED_TO_FOLDER || currentAction == ACTION_REMOVED_FROM_FOLDER || currentAction == ACTION_PROFILE_PHOTO_CHANGED ||
+                currentAction == ACTION_CHAT_UNARCHIVED;
     }
 
     private boolean hasSubInfo() {
@@ -358,6 +369,35 @@ public class UndoView extends FrameLayout {
             } else if (action == ACTION_CONTACT_ADDED) {
                 TLRPC.User user = (TLRPC.User) infoObject;
                 infoText = LocaleController.formatString("NowInContacts", R.string.NowInContacts, UserObject.getFirstName(user));
+                subInfoText = null;
+                icon = R.raw.contact_check;
+            } else if (action == ACTION_PROFILE_PHOTO_CHANGED) {
+                if (did > 0) {
+                    if (infoObject == null) {
+                        infoText = LocaleController.getString("MainProfilePhotoSetHint", R.string.MainProfilePhotoSetHint);
+                    } else {
+                        infoText = LocaleController.getString("MainProfileVideoSetHint", R.string.MainProfileVideoSetHint);
+                    }
+                } else {
+                    TLRPC.Chat chat = MessagesController.getInstance(UserConfig.selectedAccount).getChat((int) -did);
+                    if (ChatObject.isChannel(chat) && !chat.megagroup) {
+                        if (infoObject == null) {
+                            infoText = LocaleController.getString("MainChannelProfilePhotoSetHint", R.string.MainChannelProfilePhotoSetHint);
+                        } else {
+                            infoText = LocaleController.getString("MainChannelProfileVideoSetHint", R.string.MainChannelProfileVideoSetHint);
+                        }
+                    } else {
+                        if (infoObject == null) {
+                            infoText = LocaleController.getString("MainGroupProfilePhotoSetHint", R.string.MainGroupProfilePhotoSetHint);
+                        } else {
+                            infoText = LocaleController.getString("MainGroupProfileVideoSetHint", R.string.MainGroupProfileVideoSetHint);
+                        }
+                    }
+                }
+                subInfoText = null;
+                icon = R.raw.contact_check;
+            } else if (action == ACTION_CHAT_UNARCHIVED) {
+                infoText = LocaleController.getString("ChatWasMovedToMainList", R.string.ChatWasMovedToMainList);
                 subInfoText = null;
                 icon = R.raw.contact_check;
             } else if (action == ACTION_ARCHIVE_HIDDEN) {
@@ -538,7 +578,12 @@ public class UndoView extends FrameLayout {
                 if ("\uD83C\uDFAF".equals(emoji)) {
                     infoTextView.setText(AndroidUtilities.replaceTags(LocaleController.getString("DartInfo", R.string.DartInfo)));
                 } else {
-                    infoTextView.setText(Emoji.replaceEmoji(LocaleController.formatString("DiceEmojiInfo", R.string.DiceEmojiInfo, emoji), infoTextView.getPaint().getFontMetricsInt(), AndroidUtilities.dp(14), false));
+                    String info = LocaleController.getServerString("DiceEmojiInfo_" + emoji);
+                    if (!TextUtils.isEmpty(info)) {
+                        infoTextView.setText(Emoji.replaceEmoji(info, infoTextView.getPaint().getFontMetricsInt(), AndroidUtilities.dp(14), false));
+                    } else {
+                        infoTextView.setText(Emoji.replaceEmoji(LocaleController.formatString("DiceEmojiInfo", R.string.DiceEmojiInfo, emoji), infoTextView.getPaint().getFontMetricsInt(), AndroidUtilities.dp(14), false));
+                    }
                 }
                 leftImageView.setImageDrawable(Emoji.getEmojiDrawable(emoji));
                 leftImageView.setScaleType(ImageView.ScaleType.FIT_XY);

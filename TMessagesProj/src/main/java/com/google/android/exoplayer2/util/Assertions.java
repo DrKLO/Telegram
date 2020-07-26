@@ -16,8 +16,8 @@
 package com.google.android.exoplayer2.util;
 
 import android.os.Looper;
-import androidx.annotation.Nullable;
 import android.text.TextUtils;
+import androidx.annotation.Nullable;
 import com.google.android.exoplayer2.ExoPlayerLibraryInfo;
 import org.checkerframework.checker.nullness.qual.EnsuresNonNull;
 
@@ -94,6 +94,42 @@ public final class Assertions {
     if (ExoPlayerLibraryInfo.ASSERTIONS_ENABLED && !expression) {
       throw new IllegalStateException(String.valueOf(errorMessage));
     }
+  }
+
+  /**
+   * Throws {@link IllegalStateException} if {@code reference} is null.
+   *
+   * @param <T> The type of the reference.
+   * @param reference The reference.
+   * @return The non-null reference that was validated.
+   * @throws IllegalStateException If {@code reference} is null.
+   */
+  @SuppressWarnings({"contracts.postcondition.not.satisfied", "return.type.incompatible"})
+  @EnsuresNonNull({"#1"})
+  public static <T> T checkStateNotNull(@Nullable T reference) {
+    if (ExoPlayerLibraryInfo.ASSERTIONS_ENABLED && reference == null) {
+      throw new IllegalStateException();
+    }
+    return reference;
+  }
+
+  /**
+   * Throws {@link IllegalStateException} if {@code reference} is null.
+   *
+   * @param <T> The type of the reference.
+   * @param reference The reference.
+   * @param errorMessage The exception message to use if the check fails. The message is converted
+   *     to a string using {@link String#valueOf(Object)}.
+   * @return The non-null reference that was validated.
+   * @throws IllegalStateException If {@code reference} is null.
+   */
+  @SuppressWarnings({"contracts.postcondition.not.satisfied", "return.type.incompatible"})
+  @EnsuresNonNull({"#1"})
+  public static <T> T checkStateNotNull(@Nullable T reference, Object errorMessage) {
+    if (ExoPlayerLibraryInfo.ASSERTIONS_ENABLED && reference == null) {
+      throw new IllegalStateException(String.valueOf(errorMessage));
+    }
+    return reference;
   }
 
   /**

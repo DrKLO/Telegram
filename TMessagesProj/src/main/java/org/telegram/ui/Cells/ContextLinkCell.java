@@ -324,7 +324,7 @@ public class ContextLinkCell extends FrameLayout implements DownloadController.F
 
             if (documentAttachType == DOCUMENT_ATTACH_TYPE_GIF) {
                 if (documentAttach != null) {
-                    TLRPC.TL_videoSize thumb = MessageObject.getDocumentVideoThumb(documentAttach);
+                    TLRPC.VideoSize thumb = MessageObject.getDocumentVideoThumb(documentAttach);
                     if (thumb != null) {
                         linkImageView.setImage(ImageLocation.getForDocument(thumb, documentAttach), null, ImageLocation.getForDocument(currentPhotoObject, documentAttach), currentPhotoFilter, -1, ext, parentObject, 1);
                     } else {
@@ -985,10 +985,6 @@ public class ContextLinkCell extends FrameLayout implements DownloadController.F
                 break;
             case DOCUMENT_ATTACH_TYPE_MUSIC:
                 sbuf.append(LocaleController.getString("AttachMusic", R.string.AttachMusic));
-                if (descriptionLayout != null && titleLayout != null) {
-                    sbuf.append(", ");
-                    sbuf.append(LocaleController.formatString("AccDescrMusicInfo", R.string.AccDescrMusicInfo, descriptionLayout.getText(), titleLayout.getText()));
-                }
                 break;
             case DOCUMENT_ATTACH_TYPE_STICKER:
                 sbuf.append(LocaleController.getString("AttachSticker", R.string.AttachSticker));
@@ -999,16 +995,25 @@ public class ContextLinkCell extends FrameLayout implements DownloadController.F
             case DOCUMENT_ATTACH_TYPE_GEO:
                 sbuf.append(LocaleController.getString("AttachLocation", R.string.AttachLocation));
                 break;
-            default:
-                if (titleLayout != null && !TextUtils.isEmpty(titleLayout.getText())) {
-                    sbuf.append(titleLayout.getText());
+        }
+        final boolean hasTitle = titleLayout != null && !TextUtils.isEmpty(titleLayout.getText());
+        final boolean hasDescription = descriptionLayout != null && !TextUtils.isEmpty(descriptionLayout.getText());
+        if (documentAttachType == DOCUMENT_ATTACH_TYPE_MUSIC && hasTitle && hasDescription) {
+            sbuf.append(", ");
+            sbuf.append(LocaleController.formatString("AccDescrMusicInfo", R.string.AccDescrMusicInfo, descriptionLayout.getText(), titleLayout.getText()));
+        } else {
+            if (hasTitle) {
+                if (sbuf.length() > 0) {
+                    sbuf.append(", ");
                 }
-                if (descriptionLayout != null && !TextUtils.isEmpty(descriptionLayout.getText())) {
-                    if (sbuf.length() > 0)
-                        sbuf.append(", ");
-                    sbuf.append(descriptionLayout.getText());
+                sbuf.append(titleLayout.getText());
+            }
+            if (hasDescription) {
+                if (sbuf.length() > 0) {
+                    sbuf.append(", ");
                 }
-                break;
+                sbuf.append(descriptionLayout.getText());
+            }
         }
         info.setText(sbuf);
         if (checkBox != null && checkBox.isChecked()) {

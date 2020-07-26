@@ -8,36 +8,40 @@
 
 package org.telegram.ui.Components;
 
+import android.Manifest;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
 import android.graphics.Canvas;
-import android.graphics.Paint;
+import android.graphics.Color;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.RectF;
+import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
-import androidx.annotation.Keep;
 import androidx.core.content.FileProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import android.os.SystemClock;
 import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.animation.DecelerateInterpolator;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
@@ -48,6 +52,7 @@ import org.telegram.messenger.DownloadController;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ImageLoader;
+import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaController;
 import org.telegram.messenger.MessageObject;
@@ -63,10 +68,13 @@ import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.ActionBar.ActionBarMenuItem;
+import org.telegram.ui.ActionBar.ActionBarMenuSubItem;
 import org.telegram.ui.ActionBar.AlertDialog;
+import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeDescription;
 import org.telegram.ui.Cells.AudioPlayerCell;
 import org.telegram.ui.ChatActivity;
 import org.telegram.ui.DialogsActivity;
@@ -74,27 +82,28 @@ import org.telegram.ui.LaunchActivity;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Timer;
-import java.util.TimerTask;
 
 public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.NotificationCenterDelegate, DownloadController.FileDownloadProgressListener {
 
     private ActionBar actionBar;
-    private View shadow;
-    private View shadow2;
-    private ChatAvatarContainer avatarContainer;
-    private ActionBarMenuItem searchItem;
-    private ActionBarMenuItem menuItem;
+    private View actionBarShadow;
+    private View playerShadow;
     private boolean searchWas;
     private boolean searching;
 
     private RecyclerListView listView;
     private LinearLayoutManager layoutManager;
     private ListAdapter listAdapter;
+    private LinearLayout emptyView;
+    private ImageView emptyImageView;
+    private TextView emptyTitleTextView;
+    private TextView emptySubtitleTextView;
 
     private FrameLayout playerLayout;
     private BackupImageView placeholderImageView;
     private TextView titleTextView;
+    private ImageView prevButton;
+    private ImageView nextButton;
     private TextView authorTextView;
     private ActionBarMenuItem optionsButton;
     private LineProgressView progressView;
@@ -102,47 +111,42 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
     private SimpleTextView timeTextView;
     private ImageView playbackSpeedButton;
     private TextView durationTextView;
-    private ActionBarMenuItem shuffleButton;
+    private ActionBarMenuItem repeatButton;
+    private ActionBarMenuSubItem repeatSongItem;
+    private ActionBarMenuSubItem repeatListItem;
+    private ActionBarMenuSubItem shuffleListItem;
+    private ActionBarMenuSubItem reverseOrderItem;
     private ImageView playButton;
-    private ImageView repeatButton;
+    private FrameLayout blurredView;
+    private BackupImageView bigAlbumConver;
+    private ActionBarMenuItem searchItem;
+    private boolean blurredAnimationInProgress;
     private View[] buttons = new View[5];
-    private Drawable[] playOrderButtons = new Drawable[2];
-    private boolean hasOptions = true;
 
     private boolean draggingSeekBar;
 
-    private boolean scrollToSong = true;
+    private long lastBufferedPositionCheck;
+    private boolean currentAudioFinishedLoading;
 
-    private boolean isInFullMode;
-    private AnimatorSet animatorSet;
-    private float fullAnimationProgress;
-    private float startTranslation;
-    private float endTranslation;
-    private float panelStartTranslation;
-    private float panelEndTranslation;
+    private boolean scrollToSong = true;
 
     private int searchOpenPosition = -1;
     private int searchOpenOffset;
-
-    private int hasNoCover;
-    private Drawable noCoverDrawable;
-    private Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
-
-    private float thumbMaxScale;
-    private int thumbMaxX;
-    private int thumbMaxY;
 
     private ArrayList<MessageObject> playlist;
 
     private int scrollOffsetY = Integer.MAX_VALUE;
     private int topBeforeSwitch;
-    private Drawable shadowDrawable;
 
     private boolean inFullSize;
+
+    private String currentFile;
 
     private AnimatorSet actionBarAnimation;
 
     private int lastTime;
+    private int lastDuration;
+
     private int TAG;
 
     private LaunchActivity parentActivity;
@@ -158,32 +162,23 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
         }
 
         parentActivity = (LaunchActivity) context;
-        noCoverDrawable = context.getResources().getDrawable(R.drawable.nocover).mutate();
-        noCoverDrawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_player_placeholder), PorterDuff.Mode.MULTIPLY));
 
         TAG = DownloadController.getInstance(currentAccount).generateObserverTag();
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.messagePlayingDidReset);
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.messagePlayingPlayStateChanged);
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.messagePlayingDidStart);
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.messagePlayingProgressDidChanged);
+        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.fileDidLoad);
+        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.FileLoadProgressChanged);
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.musicDidLoad);
-
-        shadowDrawable = context.getResources().getDrawable(R.drawable.sheet_shadow).mutate();
-        shadowDrawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_player_background), PorterDuff.Mode.MULTIPLY));
-        paint.setColor(Theme.getColor(Theme.key_player_placeholderBackground));
+        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.moreMusicDidLoad);
 
         containerView = new FrameLayout(context) {
 
+            private RectF rect = new RectF();
             private boolean ignoreLayout = false;
-
-            @Override
-            public boolean onInterceptTouchEvent(MotionEvent ev) {
-                if (ev.getAction() == MotionEvent.ACTION_DOWN && scrollOffsetY != 0 && ev.getY() < scrollOffsetY && placeholderImageView.getTranslationX() == 0) {
-                    dismiss();
-                    return true;
-                }
-                return super.onInterceptTouchEvent(ev);
-            }
+            private int lastMeasturedHeight;
+            private int lastMeasturedWidth;
 
             @Override
             public boolean onTouchEvent(MotionEvent e) {
@@ -192,49 +187,78 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
 
             @Override
             protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-                int height = MeasureSpec.getSize(heightMeasureSpec);
-                int contentSize = AndroidUtilities.dp(178) + playlist.size() * AndroidUtilities.dp(56) + backgroundPaddingTop + ActionBar.getCurrentActionBarHeight() + AndroidUtilities.statusBarHeight;
-                int padding;
-                heightMeasureSpec = MeasureSpec.makeMeasureSpec(height, MeasureSpec.EXACTLY);
-                if (searching) {
-                    padding = AndroidUtilities.dp(178) + ActionBar.getCurrentActionBarHeight() + (Build.VERSION.SDK_INT >= 21 ? AndroidUtilities.statusBarHeight : 0);
-                } else {
-                    if (contentSize < height) {
-                        padding = height - contentSize;
-                    } else {
-                        padding = (contentSize < height ? 0 : height - (height / 5 * 3));
+                int totalHeight = MeasureSpec.getSize(heightMeasureSpec);
+                int w = MeasureSpec.getSize(widthMeasureSpec);
+                if (totalHeight != lastMeasturedHeight || w != lastMeasturedWidth) {
+                    if (blurredView.getTag() != null) {
+                        showAlbumCover(false, false);
                     }
-                    padding += ActionBar.getCurrentActionBarHeight() + (Build.VERSION.SDK_INT >= 21 ? AndroidUtilities.statusBarHeight : 0);
+                    lastMeasturedWidth = w;
+                    lastMeasturedHeight = totalHeight;
+                }
+                ignoreLayout = true;
+                if (Build.VERSION.SDK_INT >= 21 && !isFullscreen) {
+                    setPadding(backgroundPaddingLeft, AndroidUtilities.statusBarHeight, backgroundPaddingLeft, 0);
+                }
+                playerLayout.setVisibility(searchWas || keyboardVisible ? INVISIBLE : VISIBLE);
+                playerShadow.setVisibility(playerLayout.getVisibility());
+                int availableHeight = totalHeight - getPaddingTop();
+
+                LayoutParams layoutParams = (LayoutParams) listView.getLayoutParams();
+                layoutParams.topMargin = ActionBar.getCurrentActionBarHeight();
+
+                layoutParams = (LayoutParams) actionBarShadow.getLayoutParams();
+                layoutParams.topMargin = ActionBar.getCurrentActionBarHeight();
+
+                layoutParams = (LayoutParams) blurredView.getLayoutParams();
+                layoutParams.topMargin = -getPaddingTop();
+
+                int contentSize = AndroidUtilities.dp(179);
+                if (playlist.size() > 1) {
+                    contentSize += backgroundPaddingTop + playlist.size() * AndroidUtilities.dp(56);
+                }
+                int padding;
+                if (searching || keyboardVisible) {
+                    padding = AndroidUtilities.dp(8);
+                } else {
+                    padding = (contentSize < availableHeight ? availableHeight - contentSize : availableHeight - (int) (availableHeight / 5 * 3.5f)) + AndroidUtilities.dp(8);
+                    if (padding > availableHeight - AndroidUtilities.dp(179 + 150)) {
+                        padding = availableHeight - AndroidUtilities.dp(179 + 150);
+                    }
+                    if (padding < 0) {
+                        padding = 0;
+                    }
                 }
                 if (listView.getPaddingTop() != padding) {
-                    ignoreLayout = true;
-                    listView.setPadding(0, padding, 0, AndroidUtilities.dp(8));
-                    ignoreLayout = false;
+                    listView.setPadding(0, padding, 0, searching && keyboardVisible ? 0 : listView.getPaddingBottom());
                 }
-                super.onMeasure(widthMeasureSpec, heightMeasureSpec);
-                inFullSize = getMeasuredHeight() >= height;
-                int availableHeight = height - ActionBar.getCurrentActionBarHeight() - (Build.VERSION.SDK_INT >= 21 ? AndroidUtilities.statusBarHeight : 0) - AndroidUtilities.dp(120);
-                int maxSize = Math.max(availableHeight, getMeasuredWidth());
-                thumbMaxX = (getMeasuredWidth() - maxSize) / 2 - AndroidUtilities.dp(17);
-                thumbMaxY = AndroidUtilities.dp(19);
-                panelEndTranslation = getMeasuredHeight() - playerLayout.getMeasuredHeight();
-                thumbMaxScale = maxSize / (float) placeholderImageView.getMeasuredWidth() - 1.0f;
-
-                endTranslation = ActionBar.getCurrentActionBarHeight() + (AndroidUtilities.statusBarHeight - AndroidUtilities.dp(19));
-                int scaledHeight = (int) Math.ceil(placeholderImageView.getMeasuredHeight() * (1.0f + thumbMaxScale));
-                if (scaledHeight > availableHeight) {
-                    endTranslation -= (scaledHeight - availableHeight);
-                }
+                ignoreLayout = false;
+                super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(totalHeight, MeasureSpec.EXACTLY));
+                inFullSize = getMeasuredHeight() >= totalHeight;
             }
 
             @Override
             protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
                 super.onLayout(changed, left, top, right, bottom);
-                int y = actionBar.getMeasuredHeight();
-                shadow.layout(shadow.getLeft(), y, shadow.getRight(), y + shadow.getMeasuredHeight());
                 updateLayout();
+                updateEmptyViewPosition();
+            }
 
-                setFullAnimationProgress(fullAnimationProgress);
+            @Override
+            public boolean onInterceptTouchEvent(MotionEvent ev) {
+                if (ev.getAction() == MotionEvent.ACTION_DOWN && scrollOffsetY != 0 && actionBar.getAlpha() == 0.0f) {
+                    boolean dismiss;
+                    if (listAdapter.getItemCount() > 0) {
+                        dismiss = ev.getY() < scrollOffsetY + AndroidUtilities.dp(12);
+                    } else {
+                        dismiss = ev.getY() < getMeasuredHeight() - AndroidUtilities.dp(179 + 12);
+                    }
+                    if (dismiss) {
+                        dismiss();
+                        return true;
+                    }
+                }
+                return super.onInterceptTouchEvent(ev);
             }
 
             @Override
@@ -247,28 +271,84 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
 
             @Override
             protected void onDraw(Canvas canvas) {
-                shadowDrawable.setBounds(0, Math.max(actionBar.getMeasuredHeight(), scrollOffsetY) - backgroundPaddingTop, getMeasuredWidth(), getMeasuredHeight());
-                shadowDrawable.draw(canvas);
+                if (playlist.size() <= 1) {
+                    shadowDrawable.setBounds(0, getMeasuredHeight() - playerLayout.getMeasuredHeight() - backgroundPaddingTop, getMeasuredWidth(), getMeasuredHeight());
+                    shadowDrawable.draw(canvas);
+                } else {
+                    int offset = AndroidUtilities.dp(13);
+                    int top = scrollOffsetY - backgroundPaddingTop - offset;
+                    if (currentSheetAnimationType == 1) {
+                        top += listView.getTranslationY();
+                    }
+                    int y = top + AndroidUtilities.dp(20);
+
+                    int height = getMeasuredHeight() + AndroidUtilities.dp(15) + backgroundPaddingTop;
+                    float rad = 1.0f;
+
+                    if (top + backgroundPaddingTop < ActionBar.getCurrentActionBarHeight()) {
+                        float toMove = offset + AndroidUtilities.dp(11 - 7);
+                        float moveProgress = Math.min(1.0f, (ActionBar.getCurrentActionBarHeight() - top - backgroundPaddingTop) / toMove);
+                        float availableToMove = ActionBar.getCurrentActionBarHeight() - toMove;
+
+                        int diff = (int) (availableToMove * moveProgress);
+                        top -= diff;
+                        y -= diff;
+                        height += diff;
+                        rad = 1.0f - moveProgress;
+                    }
+
+                    if (Build.VERSION.SDK_INT >= 21) {
+                        top += AndroidUtilities.statusBarHeight;
+                        y += AndroidUtilities.statusBarHeight;
+                    }
+
+                    shadowDrawable.setBounds(0, top, getMeasuredWidth(), height);
+                    shadowDrawable.draw(canvas);
+
+                    if (rad != 1.0f) {
+                        Theme.dialogs_onlineCirclePaint.setColor(Theme.getColor(Theme.key_dialogBackground));
+                        rect.set(backgroundPaddingLeft, backgroundPaddingTop + top, getMeasuredWidth() - backgroundPaddingLeft, backgroundPaddingTop + top + AndroidUtilities.dp(24));
+                        canvas.drawRoundRect(rect, AndroidUtilities.dp(12) * rad, AndroidUtilities.dp(12) * rad, Theme.dialogs_onlineCirclePaint);
+                    }
+
+                    if (rad != 0) {
+                        float alphaProgress = 1.0f;
+                        int w = AndroidUtilities.dp(36);
+                        rect.set((getMeasuredWidth() - w) / 2, y, (getMeasuredWidth() + w) / 2, y + AndroidUtilities.dp(4));
+                        int color = Theme.getColor(Theme.key_sheet_scrollUp);
+                        int alpha = Color.alpha(color);
+                        Theme.dialogs_onlineCirclePaint.setColor(color);
+                        Theme.dialogs_onlineCirclePaint.setAlpha((int) (alpha * alphaProgress * rad));
+                        canvas.drawRoundRect(rect, AndroidUtilities.dp(2), AndroidUtilities.dp(2), Theme.dialogs_onlineCirclePaint);
+                    }
+
+                    int color1 = Theme.getColor(Theme.key_dialogBackground);
+                    int finalColor = Color.argb((int) (255 * actionBar.getAlpha()), (int) (Color.red(color1) * 0.8f), (int) (Color.green(color1) * 0.8f), (int) (Color.blue(color1) * 0.8f));
+                    Theme.dialogs_onlineCirclePaint.setColor(finalColor);
+                    canvas.drawRect(backgroundPaddingLeft, 0, getMeasuredWidth() - backgroundPaddingLeft, AndroidUtilities.statusBarHeight, Theme.dialogs_onlineCirclePaint);
+                }
             }
         };
         containerView.setWillNotDraw(false);
         containerView.setPadding(backgroundPaddingLeft, 0, backgroundPaddingLeft, 0);
 
-        actionBar = new ActionBar(context);
+        actionBar = new ActionBar(context) {
+            @Override
+            public void setAlpha(float alpha) {
+                super.setAlpha(alpha);
+                containerView.invalidate();
+            }
+        };
         actionBar.setBackgroundColor(Theme.getColor(Theme.key_player_actionBar));
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
-        actionBar.setItemsColor(Theme.getColor(Theme.key_player_actionBarItems), false);
+        actionBar.setItemsColor(Theme.getColor(Theme.key_player_actionBarTitle), false);
         actionBar.setItemsBackgroundColor(Theme.getColor(Theme.key_player_actionBarSelector), false);
         actionBar.setTitleColor(Theme.getColor(Theme.key_player_actionBarTitle));
+        actionBar.setTitle(LocaleController.getString("AttachMusic", R.string.AttachMusic));
         actionBar.setSubtitleColor(Theme.getColor(Theme.key_player_actionBarSubtitle));
+        actionBar.setOccupyStatusBar(false);
         actionBar.setAlpha(0.0f);
-        actionBar.setTitle("1");
-        actionBar.setSubtitle("1");
-        actionBar.getTitleTextView().setAlpha(0.0f);
-        actionBar.getSubtitleTextView().setAlpha(0.0f);
-        avatarContainer = new ChatAvatarContainer(context, null, false);
-        avatarContainer.setEnabled(false);
-        avatarContainer.setTitleColors(Theme.getColor(Theme.key_player_actionBarTitle), Theme.getColor(Theme.key_player_actionBarSubtitle));
+
         if (messageObject != null) {
             long did = messageObject.getDialogId();
             int lower_id = (int) did;
@@ -277,14 +357,12 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
                 if (lower_id > 0) {
                     TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(lower_id);
                     if (user != null) {
-                        avatarContainer.setTitle(ContactsController.formatName(user.first_name, user.last_name));
-                        avatarContainer.setUserAvatar(user);
+                        actionBar.setTitle(ContactsController.formatName(user.first_name, user.last_name));
                     }
                 } else {
                     TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-lower_id);
                     if (chat != null) {
-                        avatarContainer.setTitle(chat.title);
-                        avatarContainer.setChatAvatar(chat);
+                        actionBar.setTitle(chat.title);
                     }
                 }
             } else {
@@ -292,31 +370,16 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
                 if (encryptedChat != null) {
                     TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(encryptedChat.user_id);
                     if (user != null) {
-                        avatarContainer.setTitle(ContactsController.formatName(user.first_name, user.last_name));
-                        avatarContainer.setUserAvatar(user);
+                        actionBar.setTitle(ContactsController.formatName(user.first_name, user.last_name));
                     }
                 }
             }
         }
-        avatarContainer.setSubtitle(LocaleController.getString("AudioTitle", R.string.AudioTitle));
-        actionBar.addView(avatarContainer, 0, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT, 56, 0, 40, 0));
 
         ActionBarMenu menu = actionBar.createMenu();
-        menuItem = menu.addItem(0, R.drawable.ic_ab_other);
-        menuItem.addSubItem(1, R.drawable.msg_forward, LocaleController.getString("Forward", R.string.Forward));
-        menuItem.addSubItem(2, R.drawable.msg_shareout, LocaleController.getString("ShareFile", R.string.ShareFile));
-        menuItem.addSubItem(4, R.drawable.msg_message, LocaleController.getString("ShowInChat", R.string.ShowInChat));
-        menuItem.setContentDescription(LocaleController.getString("AccDescrMoreOptions", R.string.AccDescrMoreOptions));
-        menuItem.setTranslationX(AndroidUtilities.dp(48));
-        menuItem.setAlpha(0.0f);
-
         searchItem = menu.addItem(0, R.drawable.ic_ab_search).setIsSearchField(true).setActionBarMenuItemSearchListener(new ActionBarMenuItem.ActionBarMenuItemSearchListener() {
             @Override
             public void onSearchCollapse() {
-                avatarContainer.setVisibility(View.VISIBLE);
-                if (hasOptions) {
-                    menuItem.setVisibility(View.INVISIBLE);
-                }
                 if (searching) {
                     searchWas = false;
                     searching = false;
@@ -329,12 +392,7 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
             public void onSearchExpand() {
                 searchOpenPosition = layoutManager.findLastVisibleItemPosition();
                 View firstVisView = layoutManager.findViewByPosition(searchOpenPosition);
-                searchOpenOffset = ((firstVisView == null) ? 0 : firstVisView.getTop()) - listView.getPaddingTop();
-
-                avatarContainer.setVisibility(View.GONE);
-                if (hasOptions) {
-                    menuItem.setVisibility(View.GONE);
-                }
+                searchOpenOffset = firstVisView == null ? 0 : firstVisView.getTop();
                 searching = true;
                 setAllowNestedScroll(false);
                 listAdapter.notifyDataSetChanged();
@@ -357,10 +415,6 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
         editText.setHintTextColor(Theme.getColor(Theme.key_player_time));
         editText.setCursorColor(Theme.getColor(Theme.key_player_actionBarTitle));
 
-        if (!AndroidUtilities.isTablet()) {
-            actionBar.showActionModeTop();
-            actionBar.setActionModeTopColor(Theme.getColor(Theme.key_player_actionBarTop));
-        }
         actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
             @Override
             public void onItemClick(int id) {
@@ -372,14 +426,13 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
             }
         });
 
-        shadow = new View(context);
-        shadow.setAlpha(0.0f);
-        shadow.setBackgroundResource(R.drawable.header_shadow);
+        actionBarShadow = new View(context);
+        actionBarShadow.setAlpha(0.0f);
+        actionBarShadow.setBackgroundResource(R.drawable.header_shadow);
 
-        shadow2 = new View(context);
-        shadow2.setAlpha(0.0f);
-        shadow2.setBackgroundResource(R.drawable.header_shadow);
-
+        playerShadow = new View(context);
+        playerShadow.setBackgroundColor(Theme.getColor(Theme.key_dialogShadowLine));
+        
         playerLayout = new FrameLayout(context) {
             @Override
             protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
@@ -390,109 +443,49 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
                 }
             }
         };
-        playerLayout.setBackgroundColor(Theme.getColor(Theme.key_player_background));
 
         placeholderImageView = new BackupImageView(context) {
 
-            private RectF rect = new RectF();
+            private long pressTime;
 
             @Override
-            protected void onDraw(Canvas canvas) {
-                if (hasNoCover == 1 || hasNoCover == 2 && (!getImageReceiver().hasBitmapImage() || getImageReceiver().getCurrentAlpha() != 1.0f)) {
-                    rect.set(0, 0, getMeasuredWidth(), getMeasuredHeight());
-                    canvas.drawRoundRect(rect, getRoundRadius()[0], getRoundRadius()[0], paint);
-                    float plusScale = thumbMaxScale / getScaleX() / 3;
-                    int s = (int) (AndroidUtilities.dp(63) * Math.max(plusScale / thumbMaxScale, 1.0f / thumbMaxScale));
-                    int x = (int) (rect.centerX() - s / 2);
-                    int y = (int) (rect.centerY() - s / 2);
-                    noCoverDrawable.setBounds(x, y, x + s, y + s);
-                    noCoverDrawable.draw(canvas);
-                }
-                if (hasNoCover != 1) {
-                    super.onDraw(canvas);
-                }
-            }
-        };
-        placeholderImageView.setRoundRadius(AndroidUtilities.dp(20));
-        placeholderImageView.setPivotX(0);
-        placeholderImageView.setPivotY(0);
-        placeholderImageView.setOnClickListener(view -> {
-            if (animatorSet != null) {
-                animatorSet.cancel();
-                animatorSet = null;
-            }
-            animatorSet = new AnimatorSet();
-            if (scrollOffsetY <= actionBar.getMeasuredHeight()) {
-                animatorSet.playTogether(ObjectAnimator.ofFloat(AudioPlayerAlert.this, "fullAnimationProgress", isInFullMode ? 0.0f : 1.0f));
-            } else {
-                animatorSet.playTogether(ObjectAnimator.ofFloat(AudioPlayerAlert.this, "fullAnimationProgress", isInFullMode ? 0.0f : 1.0f),
-                        ObjectAnimator.ofFloat(actionBar, "alpha", isInFullMode ? 0.0f : 1.0f),
-                        ObjectAnimator.ofFloat(shadow, "alpha", isInFullMode ? 0.0f : 1.0f),
-                        ObjectAnimator.ofFloat(shadow2, "alpha", isInFullMode ? 0.0f : 1.0f));
-            }
-
-            animatorSet.setInterpolator(new DecelerateInterpolator());
-            animatorSet.setDuration(250);
-            animatorSet.addListener(new AnimatorListenerAdapter() {
-                @Override
-                public void onAnimationEnd(Animator animation) {
-                    if (animation.equals(animatorSet)) {
-                        if (!isInFullMode) {
-                            listView.setScrollEnabled(true);
-                            if (hasOptions) {
-                                menuItem.setVisibility(View.INVISIBLE);
-                            }
-                            searchItem.setVisibility(View.VISIBLE);
-                        } else {
-                            if (hasOptions) {
-                                menuItem.setVisibility(View.VISIBLE);
-                            }
-                            searchItem.setVisibility(View.INVISIBLE);
-                        }
-                        animatorSet = null;
+            public boolean onTouchEvent(MotionEvent event) {
+                int action = event.getAction();
+                if (action == MotionEvent.ACTION_DOWN) {
+                    if (imageReceiver.hasBitmapImage()) {
+                        showAlbumCover(true, true);
+                        pressTime = SystemClock.elapsedRealtime();
+                    }
+                } else if (action != MotionEvent.ACTION_MOVE) {
+                    if (SystemClock.elapsedRealtime() - pressTime >= 400) {
+                        showAlbumCover(false, true);
                     }
                 }
-            });
-            animatorSet.start();
-            if (hasOptions) {
-                menuItem.setVisibility(View.VISIBLE);
+                return true;
             }
-            searchItem.setVisibility(View.VISIBLE);
-            isInFullMode = !isInFullMode;
-            listView.setScrollEnabled(false);
-            if (isInFullMode) {
-                shuffleButton.setAdditionalYOffset(-AndroidUtilities.dp(20 + 48));
-            } else {
-                shuffleButton.setAdditionalYOffset(-AndroidUtilities.dp(10));
+        };
+        placeholderImageView.getImageReceiver().setDelegate((imageReceiver, set, thumb, memCache) -> {
+            if (blurredView.getTag() != null) {
+                bigAlbumConver.setImageBitmap(placeholderImageView.imageReceiver.getBitmap());
             }
         });
+        placeholderImageView.setRoundRadius(AndroidUtilities.dp(4));
+        playerLayout.addView(placeholderImageView, LayoutHelper.createFrame(44, 44, Gravity.TOP | Gravity.RIGHT, 0, 20, 20, 0));
 
         titleTextView = new TextView(context);
         titleTextView.setTextColor(Theme.getColor(Theme.key_player_actionBarTitle));
-        titleTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
+        titleTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 17);
         titleTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
         titleTextView.setEllipsize(TextUtils.TruncateAt.END);
         titleTextView.setSingleLine(true);
-        playerLayout.addView(titleTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.LEFT, 72, 18, 60, 0));
+        playerLayout.addView(titleTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.LEFT, 20, 20, 72, 0));
 
         authorTextView = new TextView(context);
         authorTextView.setTextColor(Theme.getColor(Theme.key_player_time));
-        authorTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+        authorTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
         authorTextView.setEllipsize(TextUtils.TruncateAt.END);
         authorTextView.setSingleLine(true);
-        playerLayout.addView(authorTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.LEFT, 72, 40, 60, 0));
-
-        optionsButton = new ActionBarMenuItem(context, null, 0, Theme.getColor(Theme.key_player_actionBarItems));
-        optionsButton.setLongClickEnabled(false);
-        optionsButton.setIcon(R.drawable.ic_ab_other);
-        optionsButton.setAdditionalYOffset(-AndroidUtilities.dp(120));
-        playerLayout.addView(optionsButton, LayoutHelper.createFrame(40, 40, Gravity.TOP | Gravity.RIGHT, 0, 19, 10, 0));
-        optionsButton.addSubItem(1, R.drawable.msg_forward, LocaleController.getString("Forward", R.string.Forward));
-        optionsButton.addSubItem(2, R.drawable.msg_shareout, LocaleController.getString("ShareFile", R.string.ShareFile));
-        optionsButton.addSubItem(4, R.drawable.msg_message, LocaleController.getString("ShowInChat", R.string.ShowInChat));
-        optionsButton.setOnClickListener(v -> optionsButton.toggleSubMenu());
-        optionsButton.setDelegate(this::onSubItemClick);
-        optionsButton.setContentDescription(LocaleController.getString("AccDescrMoreOptions", R.string.AccDescrMoreOptions));
+        playerLayout.addView(authorTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.LEFT, 20, 47, 72, 0));
 
         seekBarView = new SeekBarView(context);
         seekBarView.setDelegate(new SeekBarView.SeekBarViewDelegate() {
@@ -511,27 +504,36 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
             public void onSeekBarPressed(boolean pressed) {
                 draggingSeekBar = pressed;
             }
+
+            @Override
+            public CharSequence getContentDescription() {
+                final String time = LocaleController.formatPluralString("Minutes", lastTime / 60) + ' ' + LocaleController.formatPluralString("Seconds", lastTime % 60);
+                final String totalTime = LocaleController.formatPluralString("Minutes", lastDuration / 60) + ' ' + LocaleController.formatPluralString("Seconds", lastDuration % 60);
+                return LocaleController.formatString("AccDescrPlayerDuration", R.string.AccDescrPlayerDuration, time, totalTime);
+            }
         });
         seekBarView.setReportChanges(true);
-        playerLayout.addView(seekBarView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 38, Gravity.TOP | Gravity.LEFT, 4, 58, 4, 0));
+        playerLayout.addView(seekBarView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 38, Gravity.TOP | Gravity.LEFT, 5, 70, 5, 0));
 
         progressView = new LineProgressView(context);
         progressView.setVisibility(View.INVISIBLE);
         progressView.setBackgroundColor(Theme.getColor(Theme.key_player_progressBackground));
         progressView.setProgressColor(Theme.getColor(Theme.key_player_progress));
-        playerLayout.addView(progressView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 2, Gravity.TOP | Gravity.LEFT, 20, 78, 20, 0));
+        playerLayout.addView(progressView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 2, Gravity.TOP | Gravity.LEFT, 21, 90, 21, 0));
 
         timeTextView = new SimpleTextView(context);
         timeTextView.setTextSize(12);
         timeTextView.setText("0:00");
         timeTextView.setTextColor(Theme.getColor(Theme.key_player_time));
-        playerLayout.addView(timeTextView, LayoutHelper.createFrame(100, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.LEFT, 20, 92, 0, 0));
+        timeTextView.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+        playerLayout.addView(timeTextView, LayoutHelper.createFrame(100, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.LEFT, 20, 98, 0, 0));
 
         durationTextView = new TextView(context);
         durationTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
         durationTextView.setTextColor(Theme.getColor(Theme.key_player_time));
         durationTextView.setGravity(Gravity.CENTER);
-        playerLayout.addView(durationTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.RIGHT, 0, 90, 20, 0));
+        durationTextView.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+        playerLayout.addView(durationTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.RIGHT, 0, 96, 20, 0));
 
         playbackSpeedButton = new ImageView(context);
         playbackSpeedButton.setScaleType(ImageView.ScaleType.CENTER);
@@ -540,7 +542,7 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
         if (AndroidUtilities.density >= 3.0f) {
             playbackSpeedButton.setPadding(0, 1, 0, 0);
         }
-        playerLayout.addView(playbackSpeedButton, LayoutHelper.createFrame(36, 36, Gravity.TOP | Gravity.RIGHT, 0, 80, 20, 0));
+        playerLayout.addView(playbackSpeedButton, LayoutHelper.createFrame(36, 36, Gravity.TOP | Gravity.RIGHT, 0, 86, 20, 0));
         playbackSpeedButton.setOnClickListener(v -> {
             float currentPlaybackSpeed = MediaController.getInstance().getPlaybackSpeed(true);
             if (currentPlaybackSpeed > 1) {
@@ -563,43 +565,75 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
                 }
             }
         };
-        playerLayout.addView(bottomView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 66, Gravity.TOP | Gravity.LEFT, 0, 106, 0, 0));
+        playerLayout.addView(bottomView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 66, Gravity.TOP | Gravity.LEFT, 0, 111, 0, 0));
 
-        buttons[0] = shuffleButton = new ActionBarMenuItem(context, null, 0, 0);
-        shuffleButton.setLongClickEnabled(false);
-        shuffleButton.setAdditionalYOffset(-AndroidUtilities.dp(10));
-        bottomView.addView(shuffleButton, LayoutHelper.createFrame(48, 48, Gravity.LEFT | Gravity.TOP));
-        shuffleButton.setOnClickListener(v -> shuffleButton.toggleSubMenu());
+        buttons[0] = repeatButton = new ActionBarMenuItem(context, null, 0, 0);
+        repeatButton.setLongClickEnabled(false);
+        repeatButton.setShowSubmenuByMove(false);
+        repeatButton.setAdditionalYOffset(-AndroidUtilities.dp(166));
+        if (Build.VERSION.SDK_INT >= 21) {
+            repeatButton.setBackgroundDrawable(Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector), 1, AndroidUtilities.dp(18)));
+        }
+        bottomView.addView(repeatButton, LayoutHelper.createFrame(48, 48, Gravity.LEFT | Gravity.TOP));
+        repeatButton.setOnClickListener(v -> {
+            updateSubMenu();
+            repeatButton.toggleSubMenu();
+        });
+        repeatSongItem = repeatButton.addSubItem(3, R.drawable.player_new_repeatone, LocaleController.getString("RepeatSong", R.string.RepeatSong));
+        repeatListItem = repeatButton.addSubItem(4, R.drawable.player_new_repeatall, LocaleController.getString("RepeatList", R.string.RepeatList));
+        shuffleListItem = repeatButton.addSubItem(2, R.drawable.player_new_shuffle, LocaleController.getString("ShuffleList", R.string.ShuffleList));
+        reverseOrderItem = repeatButton.addSubItem(1, R.drawable.player_new_order, LocaleController.getString("ReverseOrder", R.string.ReverseOrder));
+        repeatButton.setShowedFromBottom(true);
 
-        TextView textView = shuffleButton.addSubItem(1, LocaleController.getString("ReverseOrder", R.string.ReverseOrder));
-        textView.setPadding(AndroidUtilities.dp(8), 0, AndroidUtilities.dp(16), 0);
-        playOrderButtons[0] = context.getResources().getDrawable(R.drawable.music_reverse).mutate();
-        textView.setCompoundDrawablePadding(AndroidUtilities.dp(8));
-        textView.setCompoundDrawablesWithIntrinsicBounds(playOrderButtons[0], null, null, null);
-
-        textView = shuffleButton.addSubItem(2, LocaleController.getString("Shuffle", R.string.Shuffle));
-        textView.setPadding(AndroidUtilities.dp(8), 0, AndroidUtilities.dp(16), 0);
-        playOrderButtons[1] = context.getResources().getDrawable(R.drawable.pl_shuffle).mutate();
-        textView.setCompoundDrawablePadding(AndroidUtilities.dp(8));
-        textView.setCompoundDrawablesWithIntrinsicBounds(playOrderButtons[1], null, null, null);
-
-        shuffleButton.setDelegate(id -> {
-            MediaController.getInstance().toggleShuffleMusic(id);
-            updateShuffleButton();
-            listAdapter.notifyDataSetChanged();
+        repeatButton.setDelegate(id -> {
+            if (id == 1 || id == 2) {
+                boolean oldReversed = SharedConfig.playOrderReversed;
+                if (SharedConfig.playOrderReversed && id == 1 || SharedConfig.shuffleMusic && id == 2) {
+                    MediaController.getInstance().setPlaybackOrderType(0);
+                } else {
+                    MediaController.getInstance().setPlaybackOrderType(id);
+                }
+                listAdapter.notifyDataSetChanged();
+                if (oldReversed != SharedConfig.playOrderReversed) {
+                    listView.stopScroll();
+                    scrollToCurrentSong(false);
+                }
+            } else {
+                if (id == 4) {
+                    if (SharedConfig.repeatMode == 1) {
+                        SharedConfig.setRepeatMode(0);
+                    } else {
+                        SharedConfig.setRepeatMode(1);
+                    }
+                } else {
+                    if (SharedConfig.repeatMode == 2) {
+                        SharedConfig.setRepeatMode(0);
+                    } else {
+                        SharedConfig.setRepeatMode(2);
+                    }
+                }
+            }
+            updateRepeatButton();
         });
 
-        ImageView prevButton;
         buttons[1] = prevButton = new ImageView(context);
         prevButton.setScaleType(ImageView.ScaleType.CENTER);
-        prevButton.setImageDrawable(Theme.createSimpleSelectorDrawable(context, R.drawable.pl_previous, Theme.getColor(Theme.key_player_button), Theme.getColor(Theme.key_player_buttonActive)));
+        prevButton.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_player_button), PorterDuff.Mode.MULTIPLY));
+        prevButton.setImageResource(R.drawable.player_new_previous);
+        if (Build.VERSION.SDK_INT >= 21) {
+            prevButton.setBackgroundDrawable(Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector), 1, AndroidUtilities.dp(22)));
+        }
         bottomView.addView(prevButton, LayoutHelper.createFrame(48, 48, Gravity.LEFT | Gravity.TOP));
         prevButton.setOnClickListener(v -> MediaController.getInstance().playPreviousMessage());
         prevButton.setContentDescription(LocaleController.getString("AccDescrPrevious", R.string.AccDescrPrevious));
 
         buttons[2] = playButton = new ImageView(context);
         playButton.setScaleType(ImageView.ScaleType.CENTER);
-        playButton.setImageDrawable(Theme.createSimpleSelectorDrawable(context, R.drawable.pl_play, Theme.getColor(Theme.key_player_button), Theme.getColor(Theme.key_player_buttonActive)));
+        playButton.setImageResource(R.drawable.player_new_play);
+        playButton.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_player_button), PorterDuff.Mode.MULTIPLY));
+        if (Build.VERSION.SDK_INT >= 21) {
+            playButton.setBackgroundDrawable(Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector), 1, AndroidUtilities.dp(24)));
+        }
         bottomView.addView(playButton, LayoutHelper.createFrame(48, 48, Gravity.LEFT | Gravity.TOP));
         playButton.setOnClickListener(v -> {
             if (MediaController.getInstance().isDownloadingCurrentMessage()) {
@@ -612,22 +646,63 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
             }
         });
 
-        ImageView nextButton;
         buttons[3] = nextButton = new ImageView(context);
         nextButton.setScaleType(ImageView.ScaleType.CENTER);
-        nextButton.setImageDrawable(Theme.createSimpleSelectorDrawable(context, R.drawable.pl_next, Theme.getColor(Theme.key_player_button), Theme.getColor(Theme.key_player_buttonActive)));
+        nextButton.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_player_button), PorterDuff.Mode.MULTIPLY));
+        nextButton.setImageResource(R.drawable.player_new_next);
+        if (Build.VERSION.SDK_INT >= 21) {
+            nextButton.setBackgroundDrawable(Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector), 1, AndroidUtilities.dp(22)));
+        }
         bottomView.addView(nextButton, LayoutHelper.createFrame(48, 48, Gravity.LEFT | Gravity.TOP));
         nextButton.setOnClickListener(v -> MediaController.getInstance().playNextMessage());
         nextButton.setContentDescription(LocaleController.getString("Next", R.string.Next));
 
-        buttons[4] = repeatButton = new ImageView(context);
-        repeatButton.setScaleType(ImageView.ScaleType.CENTER);
-        repeatButton.setPadding(0, 0, AndroidUtilities.dp(8), 0);
-        bottomView.addView(repeatButton, LayoutHelper.createFrame(50, 48, Gravity.LEFT | Gravity.TOP));
-        repeatButton.setOnClickListener(v -> {
-            SharedConfig.toggleRepeatMode();
-            updateRepeatButton();
-        });
+        buttons[4] = optionsButton = new ActionBarMenuItem(context, null, 0, Theme.getColor(Theme.key_player_button));
+        optionsButton.setLongClickEnabled(false);
+        optionsButton.setShowSubmenuByMove(false);
+        optionsButton.setIcon(R.drawable.ic_ab_other);
+        optionsButton.setSubMenuOpenSide(2);
+        optionsButton.setAdditionalYOffset(-AndroidUtilities.dp(157));
+        if (Build.VERSION.SDK_INT >= 21) {
+            optionsButton.setBackgroundDrawable(Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector), 1, AndroidUtilities.dp(18)));
+        }
+        bottomView.addView(optionsButton, LayoutHelper.createFrame(48, 48, Gravity.LEFT | Gravity.TOP));
+        optionsButton.addSubItem(1, R.drawable.msg_forward, LocaleController.getString("Forward", R.string.Forward));
+        optionsButton.addSubItem(2, R.drawable.msg_shareout, LocaleController.getString("ShareFile", R.string.ShareFile));
+        optionsButton.addSubItem(5, R.drawable.msg_download, LocaleController.getString("SaveToMusic", R.string.SaveToMusic));
+        optionsButton.addSubItem(4, R.drawable.msg_message, LocaleController.getString("ShowInChat", R.string.ShowInChat));
+        optionsButton.setShowedFromBottom(true);
+        optionsButton.setOnClickListener(v -> optionsButton.toggleSubMenu());
+        optionsButton.setDelegate(this::onSubItemClick);
+        optionsButton.setContentDescription(LocaleController.getString("AccDescrMoreOptions", R.string.AccDescrMoreOptions));
+
+        emptyView = new LinearLayout(context);
+        emptyView.setOrientation(LinearLayout.VERTICAL);
+        emptyView.setGravity(Gravity.CENTER);
+        emptyView.setVisibility(View.GONE);
+        containerView.addView(emptyView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+        emptyView.setOnTouchListener((v, event) -> true);
+
+        emptyImageView = new ImageView(context);
+        emptyImageView.setImageResource(R.drawable.music_empty);
+        emptyImageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_dialogEmptyImage), PorterDuff.Mode.MULTIPLY));
+        emptyView.addView(emptyImageView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
+
+        emptyTitleTextView = new TextView(context);
+        emptyTitleTextView.setTextColor(Theme.getColor(Theme.key_dialogEmptyText));
+        emptyTitleTextView.setGravity(Gravity.CENTER);
+        emptyTitleTextView.setText(LocaleController.getString("NoAudioFound", R.string.NoAudioFound));
+        emptyTitleTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        emptyTitleTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 17);
+        emptyTitleTextView.setPadding(AndroidUtilities.dp(40), 0, AndroidUtilities.dp(40), 0);
+        emptyView.addView(emptyTitleTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER, 0, 11, 0, 0));
+
+        emptySubtitleTextView = new TextView(context);
+        emptySubtitleTextView.setTextColor(Theme.getColor(Theme.key_dialogEmptyText));
+        emptySubtitleTextView.setGravity(Gravity.CENTER);
+        emptySubtitleTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
+        emptySubtitleTextView.setPadding(AndroidUtilities.dp(40), 0, AndroidUtilities.dp(40), 0);
+        emptyView.addView(emptySubtitleTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER, 0, 6, 0, 0));
 
         listView = new RecyclerListView(context) {
 
@@ -639,42 +714,23 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
 
                 if (searchOpenPosition != -1 && !actionBar.isSearchFieldVisible()) {
                     ignoreLayout = true;
-                    layoutManager.scrollToPositionWithOffset(searchOpenPosition, searchOpenOffset);
+                    layoutManager.scrollToPositionWithOffset(searchOpenPosition, searchOpenOffset - listView.getPaddingTop());
                     super.onLayout(false, l, t, r, b);
                     ignoreLayout = false;
                     searchOpenPosition = -1;
                 } else if (scrollToSong) {
                     scrollToSong = false;
-                    boolean found = false;
-                    MessageObject playingMessageObject = MediaController.getInstance().getPlayingMessageObject();
-                    if (playingMessageObject != null) {
-                        int count = listView.getChildCount();
-                        for (int a = 0; a < count; a++) {
-                            View child = listView.getChildAt(a);
-                            if (child instanceof AudioPlayerCell) {
-                                if (((AudioPlayerCell) child).getMessageObject() == playingMessageObject) {
-                                    if (child.getBottom() <= getMeasuredHeight()) {
-                                        found = true;
-                                    }
-                                    break;
-                                }
-                            }
-                        }
-                        if (!found) {
-                            int idx = playlist.indexOf(playingMessageObject);
-                            if (idx >= 0) {
-                                ignoreLayout = true;
-                                if (SharedConfig.playOrderReversed) {
-                                    layoutManager.scrollToPosition(idx);
-                                } else {
-                                    layoutManager.scrollToPosition(playlist.size() - idx);
-                                }
-                                super.onLayout(false, l, t, r, b);
-                                ignoreLayout = false;
-                            }
-                        }
+                    ignoreLayout = true;
+                    if (scrollToCurrentSong(true)) {
+                        super.onLayout(false, l, t, r, b);
                     }
+                    ignoreLayout = false;
                 }
+            }
+
+            @Override
+            protected boolean allowSelectChildAtPosition(float x, float y) {
+                return y < playerLayout.getY() - listView.getTop();
             }
 
             @Override
@@ -684,22 +740,7 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
                 }
                 super.requestLayout();
             }
-
-            @Override
-            protected boolean allowSelectChildAtPosition(float x, float y) {
-                return playerLayout == null || y > playerLayout.getY() + playerLayout.getMeasuredHeight();
-            }
-
-            @Override
-            public boolean drawChild(Canvas canvas, View child, long drawingTime) {
-                canvas.save();
-                canvas.clipRect(0, (actionBar != null ? actionBar.getMeasuredHeight() : 0) + AndroidUtilities.dp(50), getMeasuredWidth(), getMeasuredHeight());
-                boolean result = super.drawChild(canvas, child, drawingTime);
-                canvas.restore();
-                return result;
-            }
         };
-        listView.setPadding(0, 0, 0, AndroidUtilities.dp(8));
         listView.setClipToPadding(false);
         listView.setLayoutManager(layoutManager = new LinearLayoutManager(getContext(), LinearLayoutManager.VERTICAL, false));
         listView.setHorizontalScrollBarEnabled(false);
@@ -715,7 +756,17 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
         listView.setOnScrollListener(new RecyclerView.OnScrollListener() {
             @Override
             public void onScrollStateChanged(RecyclerView recyclerView, int newState) {
-                if (newState == RecyclerView.SCROLL_STATE_DRAGGING) {
+                if (newState == RecyclerView.SCROLL_STATE_IDLE) {
+                    int offset = AndroidUtilities.dp(13);
+                    int top = scrollOffsetY - backgroundPaddingTop - offset;
+                    if (top + backgroundPaddingTop < ActionBar.getCurrentActionBarHeight() && listView.canScrollVertically(1)) {
+                        View child = listView.getChildAt(0);
+                        RecyclerListView.Holder holder = (RecyclerListView.Holder) listView.findViewHolderForAdapterPosition(0);
+                        if (holder != null && holder.itemView.getTop() > AndroidUtilities.dp(7)) {
+                            listView.smoothScrollBy(0, holder.itemView.getTop() - AndroidUtilities.dp(7));
+                        }
+                    }
+                } else if (newState == RecyclerView.SCROLL_STATE_DRAGGING) {
                     AndroidUtilities.hideKeyboard(getCurrentFocus());
                 }
             }
@@ -723,52 +774,152 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
             @Override
             public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
                 updateLayout();
+                updateEmptyViewPosition();
+
+                if (!searchWas) {
+                    int firstVisibleItem = layoutManager.findFirstVisibleItemPosition();
+                    int visibleItemCount = firstVisibleItem == RecyclerView.NO_POSITION ? 0 : Math.abs(layoutManager.findLastVisibleItemPosition() - firstVisibleItem) + 1;
+                    int totalItemCount = recyclerView.getAdapter().getItemCount();
+
+                    MessageObject playingMessageObject = MediaController.getInstance().getPlayingMessageObject();
+                    if (SharedConfig.playOrderReversed) {
+                        if (firstVisibleItem < 10) {
+                            MediaController.getInstance().loadMoreMusic();
+                        }
+                    } else {
+                        if (firstVisibleItem + visibleItemCount > totalItemCount - 10) {
+                            MediaController.getInstance().loadMoreMusic();
+                        }
+                    }
+                }
             }
         });
 
         playlist = MediaController.getInstance().getPlaylist();
         listAdapter.notifyDataSetChanged();
 
-        containerView.addView(playerLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 178));
-        containerView.addView(shadow2, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 3));
-        containerView.addView(placeholderImageView, LayoutHelper.createFrame(40, 40, Gravity.TOP | Gravity.LEFT, 17, 19, 0, 0));
-        containerView.addView(shadow, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 3));
+        containerView.addView(playerLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 179, Gravity.LEFT | Gravity.BOTTOM));
+        containerView.addView(playerShadow, new FrameLayout.LayoutParams(LayoutHelper.MATCH_PARENT, AndroidUtilities.getShadowHeight(), Gravity.LEFT | Gravity.BOTTOM));
+        FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) playerShadow.getLayoutParams();
+        layoutParams.bottomMargin = AndroidUtilities.dp(179);
+        containerView.addView(actionBarShadow, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 3));
         containerView.addView(actionBar);
+
+        blurredView = new FrameLayout(context) {
+            @Override
+            public boolean onTouchEvent(MotionEvent event) {
+                if (blurredView.getTag() != null) {
+                    showAlbumCover(false, true);
+                }
+                return true;
+            }
+        };
+        blurredView.setAlpha(0.0f);
+        blurredView.setVisibility(View.INVISIBLE);
+        getContainer().addView(blurredView);
+
+        bigAlbumConver = new BackupImageView(context);
+        bigAlbumConver.setAspectFit(true);
+        bigAlbumConver.setRoundRadius(AndroidUtilities.dp(8));
+        blurredView.addView(bigAlbumConver, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.LEFT | Gravity.TOP, 30, 30, 30, 30));
 
         updateTitle(false);
         updateRepeatButton();
-        updateShuffleButton();
+        updateEmptyView();
     }
 
-    @Keep
-    public void setFullAnimationProgress(float value) {
-        fullAnimationProgress = value;
-        placeholderImageView.setRoundRadius(AndroidUtilities.dp(20 * (1.0f - fullAnimationProgress)));
-        float scale = 1.0f + thumbMaxScale * fullAnimationProgress;
-        placeholderImageView.setScaleX(scale);
-        placeholderImageView.setScaleY(scale);
-        float translationY = placeholderImageView.getTranslationY();
-        placeholderImageView.setTranslationX(thumbMaxX * fullAnimationProgress);
-        placeholderImageView.setTranslationY(startTranslation + (endTranslation - startTranslation) * fullAnimationProgress);
-        playerLayout.setTranslationY(panelStartTranslation + (panelEndTranslation - panelStartTranslation) * fullAnimationProgress);
-        shadow2.setTranslationY(panelStartTranslation + (panelEndTranslation - panelStartTranslation) * fullAnimationProgress + playerLayout.getMeasuredHeight());
-        menuItem.setAlpha(fullAnimationProgress);
-        searchItem.setAlpha(1.0f - fullAnimationProgress);
-        avatarContainer.setAlpha(1.0f - fullAnimationProgress);
-        actionBar.getTitleTextView().setAlpha(fullAnimationProgress);
-        actionBar.getSubtitleTextView().setAlpha(fullAnimationProgress);
+    private void updateEmptyViewPosition() {
+        if (emptyView.getVisibility() != View.VISIBLE) {
+            return;
+        }
+        int h = playerLayout.getVisibility() == View.VISIBLE ? AndroidUtilities.dp(150) : -AndroidUtilities.dp(30);
+        emptyView.setTranslationY((emptyView.getMeasuredHeight() - containerView.getMeasuredHeight() - h) / 2);
     }
 
-    @Keep
-    public float getFullAnimationProgress() {
-        return fullAnimationProgress;
+    private void updateEmptyView() {
+        emptyView.setVisibility(searching && listAdapter.getItemCount() == 0 ? View.VISIBLE : View.GONE);
+        updateEmptyViewPosition();
+    }
+
+    private boolean scrollToCurrentSong(boolean search) {
+        MessageObject playingMessageObject = MediaController.getInstance().getPlayingMessageObject();
+        if (playingMessageObject != null) {
+            boolean found = false;
+            if (search) {
+                int count = listView.getChildCount();
+                for (int a = 0; a < count; a++) {
+                    View child = listView.getChildAt(a);
+                    if (child instanceof AudioPlayerCell) {
+                        if (((AudioPlayerCell) child).getMessageObject() == playingMessageObject) {
+                            if (child.getBottom() <= listView.getMeasuredHeight()) {
+                                found = true;
+                            }
+                            break;
+                        }
+                    }
+                }
+            }
+            if (!found) {
+                int idx = playlist.indexOf(playingMessageObject);
+                if (idx >= 0) {
+                    if (SharedConfig.playOrderReversed) {
+                        layoutManager.scrollToPosition(idx);
+                    } else {
+                        layoutManager.scrollToPosition(playlist.size() - idx);
+                    }
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    @Override
+    public boolean onCustomMeasure(View view, int width, int height) {
+        boolean isPortrait = width < height;
+        if (view == blurredView) {
+            blurredView.measure(View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.EXACTLY), View.MeasureSpec.makeMeasureSpec(height, View.MeasureSpec.EXACTLY));
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    protected boolean onCustomLayout(View view, int left, int top, int right, int bottom) {
+        int width = (right - left);
+        int height = (bottom - top);
+        boolean isPortrait = width < height;
+        if (view == blurredView) {
+            blurredView.layout(left, 0, left + width, height);
+            return true;
+        }
+        return false;
+    }
+
+    private void setMenuItemChecked(ActionBarMenuSubItem item, boolean checked) {
+        if (checked) {
+            item.setTextColor(Theme.getColor(Theme.key_player_buttonActive));
+            item.setIconColor(Theme.getColor(Theme.key_player_buttonActive));
+        } else {
+            item.setTextColor(Theme.getColor(Theme.key_actionBarDefaultSubmenuItem));
+            item.setIconColor(Theme.getColor(Theme.key_actionBarDefaultSubmenuItem));
+        }
+    }
+
+    private void updateSubMenu() {
+        setMenuItemChecked(shuffleListItem, SharedConfig.shuffleMusic);
+        setMenuItemChecked(reverseOrderItem, SharedConfig.playOrderReversed);
+        setMenuItemChecked(repeatListItem, SharedConfig.repeatMode == 1);
+        setMenuItemChecked(repeatSongItem, SharedConfig.repeatMode == 2);
     }
 
     private void updatePlaybackButton() {
         float currentPlaybackSpeed = MediaController.getInstance().getPlaybackSpeed(true);
         if (currentPlaybackSpeed > 1) {
+            playbackSpeedButton.setTag(Theme.key_inappPlayerPlayPause);
             playbackSpeedButton.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_inappPlayerPlayPause), PorterDuff.Mode.MULTIPLY));
         } else {
+            playbackSpeedButton.setTag(Theme.key_inappPlayerClose);
             playbackSpeedButton.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_inappPlayerClose), PorterDuff.Mode.MULTIPLY));
         }
     }
@@ -895,18 +1046,77 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
             NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.closeChats);
             parentActivity.presentFragment(new ChatActivity(args), false, false);
             dismiss();
+        } else if (id == 5) {
+            if (Build.VERSION.SDK_INT >= 23 && parentActivity.checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+                parentActivity.requestPermissions(new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 4);
+                return;
+            }
+            String fileName = FileLoader.getDocumentFileName(messageObject.getDocument());
+            if (TextUtils.isEmpty(fileName)) {
+                fileName = messageObject.getFileName();
+            }
+            String path = messageObject.messageOwner.attachPath;
+            if (path != null && path.length() > 0) {
+                File temp = new File(path);
+                if (!temp.exists()) {
+                    path = null;
+                }
+            }
+            if (path == null || path.length() == 0) {
+                path = FileLoader.getPathToMessage(messageObject.messageOwner).toString();
+            }
+            MediaController.saveFile(path, parentActivity, 3, fileName, messageObject.getDocument() != null ? messageObject.getDocument().mime_type : "");
         }
     }
 
-    private int getCurrentTop() {
-        if (listView.getChildCount() != 0) {
-            View child = listView.getChildAt(0);
-            RecyclerListView.Holder holder = (RecyclerListView.Holder) listView.findContainingViewHolder(child);
-            if (holder != null) {
-                return listView.getPaddingTop() - (holder.getAdapterPosition() == 0 && child.getTop() >= 0 ? child.getTop() : 0);
+    private void showAlbumCover(boolean show, boolean animated) {
+        if (show) {
+            if (blurredView.getVisibility() == View.VISIBLE || blurredAnimationInProgress) {
+                return;
+            }
+            blurredView.setTag(1);
+            bigAlbumConver.setImageBitmap(placeholderImageView.imageReceiver.getBitmap());
+            blurredAnimationInProgress = true;
+            BaseFragment fragment = parentActivity.getActionBarLayout().fragmentsStack.get(parentActivity.getActionBarLayout().fragmentsStack.size() - 1);
+            View fragmentView = fragment.getFragmentView();
+            int w = (int) (fragmentView.getMeasuredWidth() / 6.0f);
+            int h = (int) (fragmentView.getMeasuredHeight() / 6.0f);
+            Bitmap bitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
+            Canvas canvas = new Canvas(bitmap);
+            canvas.scale(1.0f / 6.0f, 1.0f / 6.0f);
+            fragmentView.draw(canvas);
+            canvas.translate(containerView.getLeft() - getLeftInset(), 0);
+            containerView.draw(canvas);
+            Utilities.stackBlurBitmap(bitmap, Math.max(7, Math.max(w, h) / 180));
+            blurredView.setBackground(new BitmapDrawable(bitmap));
+            blurredView.setVisibility(View.VISIBLE);
+            blurredView.animate().alpha(1.0f).setDuration(180).setListener(new AnimatorListenerAdapter() {
+                @Override
+                public void onAnimationEnd(Animator animation) {
+                    blurredAnimationInProgress = false;
+                }
+            }).start();
+        } else {
+            if (blurredView.getVisibility() != View.VISIBLE) {
+                return;
+            }
+            blurredView.setTag(null);
+            if (animated) {
+                blurredAnimationInProgress = true;
+                blurredView.animate().alpha(0.0f).setDuration(180).setListener(new AnimatorListenerAdapter() {
+                    @Override
+                    public void onAnimationEnd(Animator animation) {
+                        blurredView.setVisibility(View.INVISIBLE);
+                        bigAlbumConver.setImageBitmap(null);
+                        blurredAnimationInProgress = false;
+                    }
+                }).start();
+            } else {
+                blurredView.setAlpha(0.0f);
+                blurredView.setVisibility(View.INVISIBLE);
+                bigAlbumConver.setImageBitmap(null);
             }
         }
-        return -1000;
     }
 
     @Override
@@ -950,6 +1160,51 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
         } else if (id == NotificationCenter.musicDidLoad) {
             playlist = MediaController.getInstance().getPlaylist();
             listAdapter.notifyDataSetChanged();
+        } else if (id == NotificationCenter.moreMusicDidLoad) {
+            playlist = MediaController.getInstance().getPlaylist();
+            listAdapter.notifyDataSetChanged();
+            if (SharedConfig.playOrderReversed) {
+                listView.stopScroll();
+                int addedCount = (Integer) args[0];
+                int firstVisibleItem = layoutManager.findFirstVisibleItemPosition();
+                int position = layoutManager.findLastVisibleItemPosition();
+                if (position != RecyclerView.NO_POSITION) {
+                    View firstVisView = layoutManager.findViewByPosition(position);
+                    int offset = firstVisView == null ? 0 : firstVisView.getTop();
+                    layoutManager.scrollToPositionWithOffset(position + addedCount, offset);
+                }
+            }
+        } else if (id == NotificationCenter.fileDidLoad) {
+            String name = (String) args[0];
+            if (name.equals(currentFile)) {
+                updateTitle(false);
+                currentAudioFinishedLoading = true;
+            }
+        } else if (id == NotificationCenter.FileLoadProgressChanged) {
+            String name = (String) args[0];
+            if (name.equals(currentFile)) {
+                MessageObject messageObject = MediaController.getInstance().getPlayingMessageObject();
+                if (messageObject == null) {
+                    return;
+                }
+                Long loadedSize = (Long) args[1];
+                Long totalSize = (Long) args[2];
+                float bufferedProgress;
+                if (currentAudioFinishedLoading) {
+                    bufferedProgress = 1.0f;
+                } else {
+                    long newTime = SystemClock.elapsedRealtime();
+                    if (Math.abs(newTime - lastBufferedPositionCheck) >= 500) {
+                        bufferedProgress = MediaController.getInstance().isStreamingCurrentAudio() ? FileLoader.getInstance(currentAccount).getBufferedProgressFromPosition(messageObject.audioProgress, currentFile) : 1.0f;
+                        lastBufferedPositionCheck = newTime;
+                    } else {
+                        bufferedProgress = -1;
+                    }
+                }
+                if (bufferedProgress != -1) {
+                    seekBarView.setBufferedProgress(bufferedProgress);
+                }
+            }
         }
     }
 
@@ -960,55 +1215,48 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
 
     private void updateLayout() {
         if (listView.getChildCount() <= 0) {
+            listView.setTopGlowOffset(scrollOffsetY = listView.getPaddingTop());
+            containerView.invalidate();
             return;
         }
         View child = listView.getChildAt(0);
         RecyclerListView.Holder holder = (RecyclerListView.Holder) listView.findContainingViewHolder(child);
         int top = child.getTop();
-        int newOffset = top > 0 && holder != null && holder.getAdapterPosition() == 0 ? top : 0;
-        if (searchWas || searching) {
-            newOffset = 0;
+        int newOffset = AndroidUtilities.dp(7);
+        if (top >= AndroidUtilities.dp(7) && holder != null && holder.getAdapterPosition() == 0) {
+            newOffset = top;
         }
-        if (scrollOffsetY != newOffset) {
-            listView.setTopGlowOffset(scrollOffsetY = newOffset);
-            playerLayout.setTranslationY(Math.max(actionBar.getMeasuredHeight(), scrollOffsetY));
-            placeholderImageView.setTranslationY(Math.max(actionBar.getMeasuredHeight(), scrollOffsetY));
-            shadow2.setTranslationY(Math.max(actionBar.getMeasuredHeight(), scrollOffsetY) + playerLayout.getMeasuredHeight());
-            containerView.invalidate();
-
-            if (inFullSize && scrollOffsetY <= actionBar.getMeasuredHeight() || searchWas) {
-                if (actionBar.getTag() == null) {
-                    if (actionBarAnimation != null) {
-                        actionBarAnimation.cancel();
-                    }
-                    actionBar.setTag(1);
-                    actionBarAnimation = new AnimatorSet();
-                    actionBarAnimation.playTogether(
-                            ObjectAnimator.ofFloat(actionBar, "alpha", 1.0f),
-                            ObjectAnimator.ofFloat(shadow, "alpha", 1.0f),
-                            ObjectAnimator.ofFloat(shadow2, "alpha", 1.0f));
-                    actionBarAnimation.setDuration(180);
-                    actionBarAnimation.start();
-                }
-            } else {
-                if (actionBar.getTag() != null) {
-                    if (actionBarAnimation != null) {
-                        actionBarAnimation.cancel();
-                    }
-                    actionBar.setTag(null);
-                    actionBarAnimation = new AnimatorSet();
-                    actionBarAnimation.playTogether(
-                            ObjectAnimator.ofFloat(actionBar, "alpha", 0.0f),
-                            ObjectAnimator.ofFloat(shadow, "alpha", 0.0f),
-                            ObjectAnimator.ofFloat(shadow2, "alpha", 0.0f));
-                    actionBarAnimation.setDuration(180);
-                    actionBarAnimation.start();
-                }
+        boolean show = newOffset <= AndroidUtilities.dp(12);
+        if (show && actionBar.getTag() == null || !show && actionBar.getTag() != null) {
+            actionBar.setTag(show ? 1 : null);
+            if (actionBarAnimation != null) {
+                actionBarAnimation.cancel();
+                actionBarAnimation = null;
             }
-        }
+            actionBarAnimation = new AnimatorSet();
+            actionBarAnimation.setDuration(180);
+            actionBarAnimation.playTogether(
+                    ObjectAnimator.ofFloat(actionBar, View.ALPHA, show ? 1.0f : 0.0f),
+                    ObjectAnimator.ofFloat(actionBarShadow, View.ALPHA, show ? 1.0f : 0.0f));
+            actionBarAnimation.addListener(new AnimatorListenerAdapter() {
+                @Override
+                public void onAnimationEnd(Animator animation) {
 
-        startTranslation = Math.max(actionBar.getMeasuredHeight(), scrollOffsetY);
-        panelStartTranslation = Math.max(actionBar.getMeasuredHeight(), scrollOffsetY);
+                }
+
+                @Override
+                public void onAnimationCancel(Animator animation) {
+                    actionBarAnimation = null;
+                }
+            });
+            actionBarAnimation.start();
+        }
+        FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) listView.getLayoutParams();
+        newOffset += layoutParams.topMargin - AndroidUtilities.dp(11);
+        if (scrollOffsetY != newOffset) {
+            listView.setTopGlowOffset((scrollOffsetY = newOffset) - layoutParams.topMargin);
+            containerView.invalidate();
+        }
     }
 
     @Override
@@ -1018,7 +1266,10 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.messagePlayingPlayStateChanged);
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.messagePlayingDidStart);
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.messagePlayingProgressDidChanged);
+        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.fileDidLoad);
+        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.FileLoadProgressChanged);
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.musicDidLoad);
+        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.moreMusicDidLoad);
         DownloadController.getInstance(currentAccount).removeLoadingFileObserver(this);
     }
 
@@ -1026,6 +1277,10 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
     public void onBackPressed() {
         if (actionBar != null && actionBar.isSearchFieldVisible()) {
             actionBar.closeSearchField();
+            return;
+        }
+        if (blurredView.getTag() != null) {
+            showAlbumCover(false, true);
             return;
         }
         super.onBackPressed();
@@ -1056,43 +1311,48 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
         return TAG;
     }
 
-    private void updateShuffleButton() {
-        if (SharedConfig.shuffleMusic) {
-            Drawable drawable = getContext().getResources().getDrawable(R.drawable.pl_shuffle).mutate();
-            drawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_player_buttonActive), PorterDuff.Mode.MULTIPLY));
-            shuffleButton.setIcon(drawable);
-            shuffleButton.setContentDescription(LocaleController.getString("Shuffle", R.string.Shuffle));
-        } else {
-            Drawable drawable = getContext().getResources().getDrawable(R.drawable.music_reverse).mutate();
-            if (SharedConfig.playOrderReversed) {
-                drawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_player_buttonActive), PorterDuff.Mode.MULTIPLY));
-            } else {
-                drawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_player_button), PorterDuff.Mode.MULTIPLY));
-            }
-            shuffleButton.setIcon(drawable);
-            shuffleButton.setContentDescription(LocaleController.getString("ReverseOrder", R.string.ReverseOrder));
-        }
-
-        playOrderButtons[0].setColorFilter(new PorterDuffColorFilter(Theme.getColor(SharedConfig.playOrderReversed ? Theme.key_player_buttonActive : Theme.key_player_button), PorterDuff.Mode.MULTIPLY));
-        playOrderButtons[1].setColorFilter(new PorterDuffColorFilter(Theme.getColor(SharedConfig.shuffleMusic ? Theme.key_player_buttonActive : Theme.key_player_button), PorterDuff.Mode.MULTIPLY));
-    }
-
     private void updateRepeatButton() {
         int mode = SharedConfig.repeatMode;
-        if (mode == 0) {
-            repeatButton.setImageResource(R.drawable.pl_repeat);
-            repeatButton.setTag(Theme.key_player_button);
-            repeatButton.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_player_button), PorterDuff.Mode.MULTIPLY));
-            repeatButton.setContentDescription(LocaleController.getString("AccDescrRepeatOff", R.string.AccDescrRepeatOff));
-        } else if (mode == 1) {
-            repeatButton.setImageResource(R.drawable.pl_repeat);
-            repeatButton.setTag(Theme.key_player_buttonActive);
-            repeatButton.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_player_buttonActive), PorterDuff.Mode.MULTIPLY));
-            repeatButton.setContentDescription(LocaleController.getString("AccDescrRepeatList", R.string.AccDescrRepeatList));
+        if (mode == 0 || mode == 1) {
+            if (SharedConfig.shuffleMusic) {
+                if (mode == 0) {
+                    repeatButton.setIcon(R.drawable.player_new_shuffle);
+                } else {
+                    repeatButton.setIcon(R.drawable.player_new_repeat_shuffle);
+                }
+            } else if (SharedConfig.playOrderReversed) {
+                if (mode == 0) {
+                    repeatButton.setIcon(R.drawable.player_new_order);
+                } else {
+                    repeatButton.setIcon(R.drawable.player_new_repeat_reverse);
+                }
+            } else {
+                repeatButton.setIcon(R.drawable.player_new_repeatall);
+            }
+            if (mode == 0 && !SharedConfig.shuffleMusic && !SharedConfig.playOrderReversed) {
+                repeatButton.setTag(Theme.key_player_button);
+                repeatButton.setIconColor(Theme.getColor(Theme.key_player_button));
+                Theme.setSelectorDrawableColor(repeatButton.getBackground(), Theme.getColor(Theme.key_listSelector), true);
+                repeatButton.setContentDescription(LocaleController.getString("AccDescrRepeatOff", R.string.AccDescrRepeatOff));
+            } else {
+                repeatButton.setTag(Theme.key_player_buttonActive);
+                repeatButton.setIconColor(Theme.getColor(Theme.key_player_buttonActive));
+                Theme.setSelectorDrawableColor(repeatButton.getBackground(), Theme.getColor(Theme.key_player_buttonActive) & 0x19ffffff, true);
+                if (mode == 0) {
+                    if (SharedConfig.shuffleMusic) {
+                        repeatButton.setContentDescription(LocaleController.getString("ShuffleList", R.string.ShuffleList));
+                    } else {
+                        repeatButton.setContentDescription(LocaleController.getString("ReverseOrder", R.string.ReverseOrder));
+                    }
+                } else {
+                    repeatButton.setContentDescription(LocaleController.getString("AccDescrRepeatList", R.string.AccDescrRepeatList));
+                }
+            }
         } else if (mode == 2) {
-            repeatButton.setImageResource(R.drawable.pl_repeat1);
+            repeatButton.setIcon(R.drawable.player_new_repeatone);
             repeatButton.setTag(Theme.key_player_buttonActive);
-            repeatButton.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_player_buttonActive), PorterDuff.Mode.MULTIPLY));
+            repeatButton.setIconColor(Theme.getColor(Theme.key_player_buttonActive));
+            Theme.setSelectorDrawableColor(repeatButton.getBackground(), Theme.getColor(Theme.key_player_buttonActive) & 0x19ffffff, true);
             repeatButton.setContentDescription(LocaleController.getString("AccDescrRepeatOne", R.string.AccDescrRepeatOne));
         }
     }
@@ -1104,7 +1364,22 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
                 newTime = (int) (messageObject.getDuration() * seekBarView.getProgress());
             } else {
                 seekBarView.setProgress(messageObject.audioProgress);
-                seekBarView.setBufferedProgress(messageObject.bufferedProgress);
+
+                float bufferedProgress;
+                if (currentAudioFinishedLoading) {
+                    bufferedProgress = 1.0f;
+                } else {
+                    long time = SystemClock.elapsedRealtime();
+                    if (Math.abs(time - lastBufferedPositionCheck) >= 500) {
+                        bufferedProgress = MediaController.getInstance().isStreamingCurrentAudio() ? FileLoader.getInstance(currentAccount).getBufferedProgressFromPosition(messageObject.audioProgress, currentFile) : 1.0f;
+                        lastBufferedPositionCheck = time;
+                    } else {
+                        bufferedProgress = -1;
+                    }
+                }
+                if (bufferedProgress != -1) {
+                    seekBarView.setBufferedProgress(bufferedProgress);
+                }
                 newTime = messageObject.audioProgressSec;
             }
             if (lastTime != newTime) {
@@ -1151,51 +1426,56 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
                 return;
             }
             if (messageObject.eventId != 0 || messageObject.getId() <= -2000000000) {
-                hasOptions = false;
-                menuItem.setVisibility(View.INVISIBLE);
                 optionsButton.setVisibility(View.INVISIBLE);
             } else {
-                hasOptions = true;
-                if (!actionBar.isSearchFieldVisible()) {
-                    menuItem.setVisibility(View.VISIBLE);
-                }
                 optionsButton.setVisibility(View.VISIBLE);
             }
             checkIfMusicDownloaded(messageObject);
             updateProgress(messageObject);
 
             if (MediaController.getInstance().isMessagePaused()) {
-                playButton.setImageDrawable(Theme.createSimpleSelectorDrawable(playButton.getContext(), R.drawable.pl_play, Theme.getColor(Theme.key_player_button), Theme.getColor(Theme.key_player_buttonActive)));
+                playButton.setImageResource(R.drawable.player_new_play);
                 playButton.setContentDescription(LocaleController.getString("AccActionPlay", R.string.AccActionPlay));
             } else {
-                playButton.setImageDrawable(Theme.createSimpleSelectorDrawable(playButton.getContext(), R.drawable.pl_pause, Theme.getColor(Theme.key_player_button), Theme.getColor(Theme.key_player_buttonActive)));
+                playButton.setImageResource(R.drawable.player_new_pause);
                 playButton.setContentDescription(LocaleController.getString("AccActionPause", R.string.AccActionPause));
             }
             String title = messageObject.getMusicTitle();
             String author = messageObject.getMusicAuthor();
             titleTextView.setText(title);
             authorTextView.setText(author);
-            actionBar.setTitle(title);
-            actionBar.setSubtitle(author);
 
             String loadTitle = author + " " + title;
             AudioInfo audioInfo = MediaController.getInstance().getAudioInfo();
             if (audioInfo != null && audioInfo.getCover() != null) {
-                hasNoCover = 0;
                 placeholderImageView.setImageBitmap(audioInfo.getCover());
+                currentFile = null;
+                currentAudioFinishedLoading = true;
             } else {
+                TLRPC.Document document = messageObject.getDocument();
+                currentFile = FileLoader.getAttachFileName(document);
+                currentAudioFinishedLoading = false;
+                TLRPC.PhotoSize thumb = document != null ? FileLoader.getClosestPhotoSizeWithSize(document.thumbs, 240) : null;
+                if (!(thumb instanceof TLRPC.TL_photoSize)) {
+                    thumb = null;
+                }
                 String artworkUrl = messageObject.getArtworkUrl(false);
                 if (!TextUtils.isEmpty(artworkUrl)) {
-                    placeholderImageView.setImage(artworkUrl, null, null);
-                    hasNoCover = 2;
+                    if (thumb != null) {
+                        placeholderImageView.setImage(ImageLocation.getForPath(artworkUrl), null, ImageLocation.getForDocument(thumb, document), null, null, 0, 1, messageObject);
+                    } else {
+                        placeholderImageView.setImage(artworkUrl, null, null);
+                    }
+                } else if (thumb != null) {
+                    placeholderImageView.setImage(null, null, ImageLocation.getForDocument(thumb, document), null, null, 0, 1, messageObject);
                 } else {
                     placeholderImageView.setImageDrawable(null);
-                    hasNoCover = 1;
                 }
                 placeholderImageView.invalidate();
             }
 
-            int duration = messageObject.getDuration();
+            int duration = lastDuration = messageObject.getDuration();
+
             if (durationTextView != null) {
                 durationTextView.setText(duration != 0 ? AndroidUtilities.formatShortDuration(duration) : "-:--");
             }
@@ -1212,101 +1492,78 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
 
         private Context context;
         private ArrayList<MessageObject> searchResult = new ArrayList<>();
-        private Timer searchTimer;
+        private Runnable searchRunnable;
 
         public ListAdapter(Context context) {
             this.context = context;
         }
 
         @Override
+        public void notifyDataSetChanged() {
+            super.notifyDataSetChanged();
+            if (playlist.size() > 1) {
+                playerLayout.setBackgroundColor(Theme.getColor(Theme.key_player_background));
+                playerShadow.setVisibility(View.VISIBLE);
+                listView.setPadding(0, listView.getPaddingTop(), 0, AndroidUtilities.dp(179));
+            } else {
+                playerLayout.setBackground(null);
+                playerShadow.setVisibility(View.INVISIBLE);
+                listView.setPadding(0, listView.getPaddingTop(), 0, 0);
+            }
+            updateEmptyView();
+        }
+
+        @Override
         public int getItemCount() {
             if (searchWas) {
                 return searchResult.size();
-            } else if (searching) {
-                return playlist.size();
             }
-            return 1 + playlist.size();
+            return playlist.size() > 1 ? playlist.size() : 0;
         }
 
         @Override
         public boolean isEnabled(RecyclerView.ViewHolder holder) {
-            return searchWas || holder.getAdapterPosition() > 0;
+            return true;
         }
 
         @Override
         public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-            View view;
-            switch (viewType) {
-                case 0:
-                    view = new View(context);
-                    view.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, AndroidUtilities.dp(178)));
-                    break;
-                case 1:
-                default:
-                    view = new AudioPlayerCell(context);
-                    break;
-            }
+            View view = new AudioPlayerCell(context);
             return new RecyclerListView.Holder(view);
         }
 
         @Override
         public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
-            if (holder.getItemViewType() == 1) {
-                AudioPlayerCell cell = (AudioPlayerCell) holder.itemView;
-                if (searchWas) {
-                    cell.setMessageObject(searchResult.get(position));
-                } else if (searching) {
-                    if (SharedConfig.playOrderReversed) {
-                        cell.setMessageObject(playlist.get(position));
-                    } else {
-                        cell.setMessageObject(playlist.get(playlist.size() - position - 1));
-                    }
-                } else if (position > 0) {
-                    if (SharedConfig.playOrderReversed) {
-                        cell.setMessageObject(playlist.get(position - 1));
-                    } else {
-                        cell.setMessageObject(playlist.get(playlist.size() - position));
-                    }
+            AudioPlayerCell cell = (AudioPlayerCell) holder.itemView;
+            if (searchWas) {
+                cell.setMessageObject(searchResult.get(position));
+            } else {
+                if (SharedConfig.playOrderReversed) {
+                    cell.setMessageObject(playlist.get(position));
+                } else {
+                    cell.setMessageObject(playlist.get(playlist.size() - position - 1));
                 }
             }
         }
 
         @Override
         public int getItemViewType(int i) {
-            if (searchWas || searching) {
-                return 1;
-            }
-            if (i == 0) {
-                return 0;
-            }
-            return 1;
+            return 0;
         }
 
         public void search(final String query) {
-            try {
-                if (searchTimer != null) {
-                    searchTimer.cancel();
-                }
-            } catch (Exception e) {
-                FileLog.e(e);
+            if (searchRunnable != null) {
+                Utilities.searchQueue.cancelRunnable(searchRunnable);
+                searchRunnable = null;
             }
             if (query == null) {
                 searchResult.clear();
                 notifyDataSetChanged();
             } else {
-                searchTimer = new Timer();
-                searchTimer.schedule(new TimerTask() {
-                    @Override
-                    public void run() {
-                        try {
-                            searchTimer.cancel();
-                            searchTimer = null;
-                        } catch (Exception e) {
-                            FileLog.e(e);
-                        }
-                        processSearch(query);
-                    }
-                }, 200, 300);
+                Utilities.searchQueue.postRunnable(searchRunnable = () -> {
+                    searchRunnable = null;
+                    processSearch(query);
+                }, 300);
             }
         }
 
@@ -1316,7 +1573,7 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
                 Utilities.searchQueue.postRunnable(() -> {
                     String search1 = query.trim().toLowerCase();
                     if (search1.length() == 0) {
-                        updateSearchResults(new ArrayList<>());
+                        updateSearchResults(new ArrayList<>(), query);
                         return;
                     }
                     String search2 = LocaleController.getInstance().getTranslitString(search1);
@@ -1370,12 +1627,12 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
                         }
                     }
 
-                    updateSearchResults(resultArray);
+                    updateSearchResults(resultArray, query);
                 });
             });
         }
 
-        private void updateSearchResults(final ArrayList<MessageObject> documents) {
+        private void updateSearchResults(final ArrayList<MessageObject> documents, String query) {
             AndroidUtilities.runOnUIThread(() -> {
                 if (!searching) {
                     return;
@@ -1384,7 +1641,106 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
                 searchResult = documents;
                 notifyDataSetChanged();
                 layoutManager.scrollToPosition(0);
+                emptySubtitleTextView.setText(AndroidUtilities.replaceTags(LocaleController.formatString("NoAudioFoundPlayerInfo", R.string.NoAudioFoundPlayerInfo, query)));
             });
         }
+    }
+
+    @Override
+    public ArrayList<ThemeDescription> getThemeDescriptions() {
+        ArrayList<ThemeDescription> themeDescriptions = new ArrayList<>();
+
+        ThemeDescription.ThemeDescriptionDelegate delegate = () -> {
+            EditTextBoldCursor editText = searchItem.getSearchField();
+            editText.setCursorColor(Theme.getColor(Theme.key_player_actionBarTitle));
+
+            repeatButton.setIconColor(Theme.getColor((String) repeatButton.getTag()));
+            Theme.setSelectorDrawableColor(repeatButton.getBackground(), Theme.getColor(Theme.key_listSelector), true);
+
+            optionsButton.setIconColor(Theme.getColor(Theme.key_player_button));
+            Theme.setSelectorDrawableColor(optionsButton.getBackground(), Theme.getColor(Theme.key_listSelector), true);
+
+            progressView.setBackgroundColor(Theme.getColor(Theme.key_player_progressBackground));
+            progressView.setProgressColor(Theme.getColor(Theme.key_player_progress));
+
+            updateSubMenu();
+            repeatButton.redrawPopup(Theme.getColor(Theme.key_actionBarDefaultSubmenuBackground));
+
+            optionsButton.setPopupItemsColor(Theme.getColor(Theme.key_actionBarDefaultSubmenuItem), false);
+            optionsButton.setPopupItemsColor(Theme.getColor(Theme.key_actionBarDefaultSubmenuItem), true);
+            optionsButton.redrawPopup(Theme.getColor(Theme.key_actionBarDefaultSubmenuBackground));
+        };
+
+        themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_player_actionBar));
+        themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_ITEMSCOLOR, null, null, null, delegate, Theme.key_player_actionBarTitle));
+        themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_TITLECOLOR, null, null, null, null, Theme.key_player_actionBarTitle));
+        themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_SUBTITLECOLOR, null, null, null, null, Theme.key_player_actionBarTitle));
+        themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_SELECTORCOLOR, null, null, null, null, Theme.key_player_actionBarSelector));
+        themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_SEARCH, null, null, null, null, Theme.key_player_actionBarTitle));
+        themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_SEARCHPLACEHOLDER, null, null, null, null, Theme.key_player_time));
+
+        themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{AudioPlayerCell.class}, null, null, null, Theme.key_chat_inLoader));
+        themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{AudioPlayerCell.class}, null, null, null, Theme.key_chat_outLoader));
+        themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{AudioPlayerCell.class}, null, null, null, Theme.key_chat_inLoaderSelected));
+        themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{AudioPlayerCell.class}, null, null, null, Theme.key_chat_inMediaIcon));
+        themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{AudioPlayerCell.class}, null, null, null, Theme.key_chat_inMediaIconSelected));
+        themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{AudioPlayerCell.class}, null, null, null, Theme.key_windowBackgroundWhiteGrayText2));
+        themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{AudioPlayerCell.class}, null, null, null, Theme.key_chat_inAudioSelectedProgress));
+        themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{AudioPlayerCell.class}, null, null, null, Theme.key_chat_inAudioProgress));
+
+        themeDescriptions.add(new ThemeDescription(containerView, 0, null, null, new Drawable[]{shadowDrawable}, null, Theme.key_dialogBackground));
+
+        themeDescriptions.add(new ThemeDescription(progressView, 0, null, null, null, null, Theme.key_player_progressBackground));
+        themeDescriptions.add(new ThemeDescription(progressView, 0, null, null, null, null, Theme.key_player_progress));
+        themeDescriptions.add(new ThemeDescription(seekBarView, 0, null, null, null, null, Theme.key_player_progressBackground));
+        themeDescriptions.add(new ThemeDescription(seekBarView, 0, null, null, null, null, Theme.key_player_progress));
+        themeDescriptions.add(new ThemeDescription(seekBarView, 0, null, null, null, null, Theme.key_player_progressCachedBackground));
+
+        themeDescriptions.add(new ThemeDescription(playbackSpeedButton, ThemeDescription.FLAG_CHECKTAG | ThemeDescription.FLAG_IMAGECOLOR, null, null, null, null, Theme.key_inappPlayerPlayPause));
+        themeDescriptions.add(new ThemeDescription(playbackSpeedButton, ThemeDescription.FLAG_CHECKTAG | ThemeDescription.FLAG_IMAGECOLOR, null, null, null, null, Theme.key_inappPlayerClose));
+
+        themeDescriptions.add(new ThemeDescription(repeatButton, 0, null, null, null, delegate, Theme.key_player_button));
+        themeDescriptions.add(new ThemeDescription(repeatButton, 0, null, null, null, delegate, Theme.key_player_buttonActive));
+        themeDescriptions.add(new ThemeDescription(repeatButton, 0, null, null, null, delegate, Theme.key_listSelector));
+        themeDescriptions.add(new ThemeDescription(repeatButton, 0, null, null, null, delegate, Theme.key_actionBarDefaultSubmenuItem));
+        themeDescriptions.add(new ThemeDescription(repeatButton, 0, null, null, null, delegate, Theme.key_actionBarDefaultSubmenuBackground));
+        themeDescriptions.add(new ThemeDescription(optionsButton, 0, null, null, null, delegate, Theme.key_player_button));
+        themeDescriptions.add(new ThemeDescription(optionsButton, 0, null, null, null, delegate, Theme.key_listSelector));
+        themeDescriptions.add(new ThemeDescription(optionsButton, 0, null, null, null, delegate, Theme.key_actionBarDefaultSubmenuItem));
+        themeDescriptions.add(new ThemeDescription(optionsButton, 0, null, null, null, delegate, Theme.key_actionBarDefaultSubmenuBackground));
+
+        themeDescriptions.add(new ThemeDescription(prevButton, ThemeDescription.FLAG_IMAGECOLOR, null, null, null, null, Theme.key_player_button));
+        themeDescriptions.add(new ThemeDescription(prevButton, ThemeDescription.FLAG_IMAGECOLOR | ThemeDescription.FLAG_USEBACKGROUNDDRAWABLE, null, null, null, null, Theme.key_listSelector));
+
+        themeDescriptions.add(new ThemeDescription(playButton, ThemeDescription.FLAG_IMAGECOLOR, null, null, null, null, Theme.key_player_button));
+        themeDescriptions.add(new ThemeDescription(playButton, ThemeDescription.FLAG_IMAGECOLOR | ThemeDescription.FLAG_USEBACKGROUNDDRAWABLE, null, null, null, null, Theme.key_listSelector));
+
+        themeDescriptions.add(new ThemeDescription(nextButton, ThemeDescription.FLAG_IMAGECOLOR, null, null, null, null, Theme.key_player_button));
+        themeDescriptions.add(new ThemeDescription(nextButton, ThemeDescription.FLAG_IMAGECOLOR | ThemeDescription.FLAG_USEBACKGROUNDDRAWABLE, null, null, null, null, Theme.key_listSelector));
+
+        themeDescriptions.add(new ThemeDescription(playerLayout, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_player_background));
+
+        themeDescriptions.add(new ThemeDescription(playerShadow, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_dialogShadowLine));
+
+        themeDescriptions.add(new ThemeDescription(emptyImageView, ThemeDescription.FLAG_IMAGECOLOR, null, null, null, null, Theme.key_dialogEmptyImage));
+        themeDescriptions.add(new ThemeDescription(emptyTitleTextView, ThemeDescription.FLAG_IMAGECOLOR, null, null, null, null, Theme.key_dialogEmptyText));
+        themeDescriptions.add(new ThemeDescription(emptySubtitleTextView, ThemeDescription.FLAG_IMAGECOLOR, null, null, null, null, Theme.key_dialogEmptyText));
+
+        themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_LISTGLOWCOLOR, null, null, null, null, Theme.key_dialogScrollGlow));
+
+        themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_SELECTOR, null, null, null, null, Theme.key_listSelector));
+        themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{View.class}, Theme.dividerPaint, null, null, Theme.key_divider));
+
+        themeDescriptions.add(new ThemeDescription(progressView, ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_emptyListPlaceholder));
+        themeDescriptions.add(new ThemeDescription(progressView, ThemeDescription.FLAG_PROGRESSBAR, null, null, null, null, Theme.key_progressCircle));
+
+        themeDescriptions.add(new ThemeDescription(durationTextView, ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_player_time));
+        themeDescriptions.add(new ThemeDescription(timeTextView, ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_player_time));
+        themeDescriptions.add(new ThemeDescription(titleTextView, ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_player_actionBarTitle));
+        themeDescriptions.add(new ThemeDescription(authorTextView, ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_player_time));
+
+        themeDescriptions.add(new ThemeDescription(containerView, 0, null, null, null, null, Theme.key_sheet_scrollUp));
+
+        return themeDescriptions;
     }
 }

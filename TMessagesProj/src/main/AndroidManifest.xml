@@ -148,8 +148,17 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <data android:scheme="ton" />
             </intent-filter>
-            <meta-data android:name="android.service.chooser.chooser_target_service" android:value=".TgChooserTargetService" />
+            <meta-data android:name="android.service.chooser.chooser_target_service" android:value="androidx.sharetarget.ChooserTargetServiceCompat" />
+            <meta-data android:name="android.app.shortcuts" android:resource="@xml/shortcuts" />
         </activity>
+        <activity
+            android:name="org.telegram.ui.BubbleActivity"
+            android:configChanges="keyboard|keyboardHidden|orientation|screenSize|uiMode"
+            android:hardwareAccelerated="@bool/useHardwareAcceleration"
+            android:windowSoftInputMode="adjustResize"
+            android:allowEmbedded="true"
+            android:documentLaunchMode="always"
+            android:resizeableActivity="true"/>
         <activity
             android:name="org.telegram.ui.ShareActivity"
             android:configChanges="keyboard|keyboardHidden|orientation|screenSize|uiMode"
@@ -275,15 +284,6 @@
                 android:resource="@xml/sync_contacts" />
             <meta-data android:name="android.provider.CONTACTS_STRUCTURE"
                 android:resource="@xml/contacts" />
-        </service>
-
-        <service
-            android:name="org.telegram.messenger.TgChooserTargetService"
-            android:label="@string/AppName"
-            android:permission="android.permission.BIND_CHOOSER_TARGET_SERVICE">
-            <intent-filter>
-                <action android:name="android.service.chooser.ChooserTargetService" />
-            </intent-filter>
         </service>
 
         <service android:name=".KeepAliveJob"

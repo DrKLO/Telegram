@@ -33,6 +33,7 @@ import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.LocationController;
+import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
@@ -55,6 +56,7 @@ import org.telegram.ui.Components.UndoView;
 
 import java.util.ArrayList;
 
+import androidx.recyclerview.widget.DefaultItemAnimator;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -124,16 +126,17 @@ public class PeopleNearbyActivity extends BaseFragment implements NotificationCe
     private int chatsCreateRow;
     private int chatsSectionRow;
     private int rowCount;
+    private DefaultItemAnimator itemAnimator;
 
     public PeopleNearbyActivity() {
         super();
         users = new ArrayList<>(getLocationController().getCachedNearbyUsers());
         chats = new ArrayList<>(getLocationController().getCachedNearbyChats());
         checkForExpiredLocations(false);
-        updateRows();
+        updateRows(true);
     }
 
-    private void updateRows() {
+    private void updateRows(boolean notifyDataSetChanged) {
         rowCount = 0;
         usersStartRow = -1;
         usersEndRow = -1;
@@ -172,7 +175,8 @@ public class PeopleNearbyActivity extends BaseFragment implements NotificationCe
         }
         chatsSectionRow = rowCount++;
 
-        if (listViewAdapter != null) {
+        if (notifyDataSetChanged && listViewAdapter != null) {
+            listView.setItemAnimator(null);
             listViewAdapter.notifyDataSetChanged();
         }
     }
@@ -262,6 +266,12 @@ public class PeopleNearbyActivity extends BaseFragment implements NotificationCe
         listView.setVerticalScrollbarPosition(LocaleController.isRTL ? RecyclerListView.SCROLLBAR_POSITION_LEFT : RecyclerListView.SCROLLBAR_POSITION_RIGHT);
         frameLayout.addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
 
+        itemAnimator = new DefaultItemAnimator() {
+            @Override
+            protected long getAddAnimationDelay(long removeDuration, long moveDuration, long changeDuration) {
+                return removeDuration;
+            }
+        };
         listView.setOnItemClickListener((view, position) -> {
             if (getParentActivity() == null) {
                 return;
@@ -275,6 +285,8 @@ public class PeopleNearbyActivity extends BaseFragment implements NotificationCe
                     if (cell.hasAvatarSet()) {
                         args1.putBoolean("expandPhoto", true);
                     }
+                    args1.putInt("nearby_distance", peerLocated.distance);
+                    MessagesController.getInstance(currentAccount).ensureMessagesLoaded(peerLocated.peer.user_id, false, 0, null, null);
                     presentFragment(new ProfileActivity(args1));
                 }
             } else if (position >= chatsStartRow && position < chatsEndRow) {
@@ -303,7 +315,7 @@ public class PeopleNearbyActivity extends BaseFragment implements NotificationCe
                     userConfig.sharingMyLocationUntil = 0;
                     userConfig.saveConfig(false);
                     sendRequest(false, 2);
-                    updateRows();
+                    updateRows(true);
                 } else {
                     AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
                     builder.setTitle(LocaleController.getString("MakeMyselfVisibleTitle", R.string.MakeMyselfVisibleTitle));
@@ -312,15 +324,19 @@ public class PeopleNearbyActivity extends BaseFragment implements NotificationCe
                         userConfig.sharingMyLocationUntil = 0x7fffffff;
                         userConfig.saveConfig(false);
                         sendRequest(false, 1);
-                        updateRows();
+                        updateRows(true);
                     });
                     builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
                     showDialog(builder.create());
                 }
                 userConfig.saveConfig(false);
             } else if (position == showMoreRow) {
+                int newCount = users.size() - Math.min(5, users.size());
                 expanded = true;
-                updateRows();
+                updateRows(false);
+                listView.setItemAnimator(itemAnimator);
+                listViewAdapter.notifyItemRemoved(position);
+                listViewAdapter.notifyItemRangeInserted(position, newCount);
             }
         });
         listView.setOnScrollListener(new RecyclerView.OnScrollListener() {
@@ -349,7 +365,7 @@ public class PeopleNearbyActivity extends BaseFragment implements NotificationCe
         undoView = new UndoView(context);
         frameLayout.addView(undoView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.BOTTOM | Gravity.LEFT, 8, 0, 8, 8));
 
-        updateRows();
+        updateRows(true);
         return fragmentView;
     }
 
@@ -524,7 +540,7 @@ public class PeopleNearbyActivity extends BaseFragment implements NotificationCe
             if (share == 1 && error != null) {
                 userConfig.sharingMyLocationUntil = 0;
                 saveConfig = true;
-                updateRows();
+                updateRows(true);
             }
             if (response != null && share != 2) {
                 TLRPC.Updates updates = (TLRPC.TL_updates) response;
@@ -567,7 +583,7 @@ public class PeopleNearbyActivity extends BaseFragment implements NotificationCe
                 }
 
                 checkForExpiredLocations(true);
-                updateRows();
+                updateRows(true);
             }
             if (saveConfig) {
                 userConfig.saveConfig(false);
@@ -661,7 +677,7 @@ public class PeopleNearbyActivity extends BaseFragment implements NotificationCe
                 }
             }
             checkForExpiredLocations(true);
-            updateRows();
+            updateRows(true);
         } else if (id == NotificationCenter.needDeleteDialog) {
             if (fragmentView == null || isPaused) {
                 return;
@@ -712,7 +728,7 @@ public class PeopleNearbyActivity extends BaseFragment implements NotificationCe
             }
         }
         if (changed && listViewAdapter != null) {
-            updateRows();
+            updateRows(true);
         }
         if (changed || cache) {
             getLocationController().setCachedNearbyUsersAndChats(users, chats);
@@ -848,7 +864,7 @@ public class PeopleNearbyActivity extends BaseFragment implements NotificationCe
         }
 
         private String formatDistance(TLRPC.TL_peerLocated located) {
-            return LocaleController.formatDistance(located.distance);
+            return LocaleController.formatDistance(located.distance, 0);
         }
 
         @Override

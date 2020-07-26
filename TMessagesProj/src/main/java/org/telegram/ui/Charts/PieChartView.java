@@ -18,6 +18,7 @@ import org.telegram.ui.Charts.view_data.ChartHorizontalLinesData;
 import org.telegram.ui.Charts.view_data.LegendSignatureView;
 import org.telegram.ui.Charts.view_data.LineViewData;
 import org.telegram.ui.Charts.view_data.PieLegendView;
+import org.telegram.ui.Charts.view_data.TransitionParams;
 
 
 public class PieChartView extends StackLinearChartView<PieChartViewData> {
@@ -62,13 +63,11 @@ public class PieChartView extends StackLinearChartView<PieChartViewData> {
 
         int transitionAlpha = 255;
 
-        canvas.save();
+        if (canvas != null) {
+            canvas.save();
+        }
         if (transitionMode == TRANSITION_MODE_CHILD) {
             transitionAlpha = (int) (transitionParams.progress * transitionParams.progress * 255);
-            canvas.scale(transitionParams.progress, transitionParams.progress,
-                    chartArea.centerX(),
-                    chartArea.centerY()
-            );
         }
 
         if (isEmpty) {
@@ -91,10 +90,12 @@ public class PieChartView extends StackLinearChartView<PieChartViewData> {
 
         transitionAlpha = (int) (transitionAlpha * emptyDataAlpha);
         float sc = 0.4f + emptyDataAlpha * 0.6f;
-        canvas.scale(sc, sc,
-                chartArea.centerX(),
-                chartArea.centerY()
-        );
+        if (canvas != null) {
+            canvas.scale(sc, sc,
+                    chartArea.centerX(),
+                    chartArea.centerY()
+            );
+        }
 
         int radius = (int) ((chartArea.width() > chartArea.height() ? chartArea.height() : chartArea.width()) * 0.45f);
         rectF.set(
@@ -116,7 +117,9 @@ public class PieChartView extends StackLinearChartView<PieChartViewData> {
             localSum += v;
         }
         if (localSum == 0) {
-            canvas.restore();
+            if (canvas != null) {
+                canvas.restore();
+            }
             return;
         }
         for (int i = 0; i < n; i++) {
@@ -130,72 +133,78 @@ public class PieChartView extends StackLinearChartView<PieChartViewData> {
                 continue;
             }
 
-            canvas.save();
+            if (canvas != null) {
+                canvas.save();
+            }
 
             double textAngle = a + (currentPercent / 2f) * 360f;
 
             if (lines.get(i).selectionA > 0f) {
                 float ai = INTERPOLATOR.getInterpolation(lines.get(i).selectionA);
-                canvas.translate(
-                        (float) (Math.cos(Math.toRadians(textAngle)) * AndroidUtilities.dp(8) * ai),
-                        (float) (Math.sin(Math.toRadians(textAngle)) * AndroidUtilities.dp(8) * ai)
-                );
+                if (canvas != null) {
+                    canvas.translate(
+                            (float) (Math.cos(Math.toRadians(textAngle)) * AndroidUtilities.dp(8) * ai),
+                            (float) (Math.sin(Math.toRadians(textAngle)) * AndroidUtilities.dp(8) * ai)
+                    );
+                }
             }
 
             lines.get(i).paint.setStyle(Paint.Style.FILL_AND_STROKE);
             lines.get(i).paint.setStrokeWidth(1);
             lines.get(i).paint.setAntiAlias(!USE_LINES);
 
-            canvas.drawArc(
-                    rectF,
-                    a,
-                    (currentPercent) * 360f,
-                    true,
-                    lines.get(i).paint);
-
-            lines.get(i).paint.setStyle(Paint.Style.STROKE);
-
-            canvas.restore();
+            if (canvas != null && transitionMode != TRANSITION_MODE_CHILD) {
+                canvas.drawArc(
+                        rectF,
+                        a,
+                        (currentPercent) * 360f,
+                        true,
+                        lines.get(i).paint);
+                lines.get(i).paint.setStyle(Paint.Style.STROKE);
+                canvas.restore();
+            }
 
             lines.get(i).paint.setAlpha(255);
             a += currentPercent * 360f;
         }
         a = -90f;
 
-        for (int i = 0; i < n; i++) {
-            if (lines.get(i).alpha <= 0 && !lines.get(i).enabled) continue;
-            float currentPercent = (lines.get(i).drawingPart * lines.get(i).alpha / localSum);
-            canvas.save();
+        if (canvas != null) {
+            for (int i = 0; i < n; i++) {
+                if (lines.get(i).alpha <= 0 && !lines.get(i).enabled) continue;
+                float currentPercent = (lines.get(i).drawingPart * lines.get(i).alpha / localSum);
 
-            double textAngle = a + (currentPercent / 2f) * 360f;
+                canvas.save();
+                double textAngle = a + (currentPercent / 2f) * 360f;
 
-            if (lines.get(i).selectionA > 0f) {
-                float ai = INTERPOLATOR.getInterpolation(lines.get(i).selectionA);
-                canvas.translate(
-                        (float) (Math.cos(Math.toRadians(textAngle)) * AndroidUtilities.dp(8) * ai),
-                        (float) (Math.sin(Math.toRadians(textAngle)) * AndroidUtilities.dp(8) * ai)
-                );
-            }
+                if (lines.get(i).selectionA > 0f) {
+                    float ai = INTERPOLATOR.getInterpolation(lines.get(i).selectionA);
+                    canvas.translate(
+                            (float) (Math.cos(Math.toRadians(textAngle)) * AndroidUtilities.dp(8) * ai),
+                            (float) (Math.sin(Math.toRadians(textAngle)) * AndroidUtilities.dp(8) * ai)
+                    );
+                }
 
-            int percent = (int) (100f * currentPercent);
-            if (currentPercent >= 0.02f && percent > 0 && percent <= 100) {
-                rText = (float) (rectF.width() * 0.42f * Math.sqrt(1f - currentPercent));
-                textPaint.setTextSize(MIN_TEXT_SIZE + currentPercent * MAX_TEXT_SIZE);
-                textPaint.setAlpha((int) (transitionAlpha * lines.get(i).alpha));
-                canvas.drawText(
-                        lookupTable[percent],
-                        (float) (rectF.centerX() + rText * Math.cos(Math.toRadians(textAngle))),
-                        (float) (rectF.centerY() + rText * Math.sin(Math.toRadians(textAngle))) - ((textPaint.descent() + textPaint.ascent()) / 2),
-                        textPaint);
+                int percent = (int) (100f * currentPercent);
+                if (currentPercent >= 0.02f && percent > 0 && percent <= 100) {
+                    rText = (float) (rectF.width() * 0.42f * Math.sqrt(1f - currentPercent));
+                    textPaint.setTextSize(MIN_TEXT_SIZE + currentPercent * MAX_TEXT_SIZE);
+                    textPaint.setAlpha((int) (transitionAlpha * lines.get(i).alpha));
+                    canvas.drawText(
+                            lookupTable[percent],
+                            (float) (rectF.centerX() + rText * Math.cos(Math.toRadians(textAngle))),
+                            (float) (rectF.centerY() + rText * Math.sin(Math.toRadians(textAngle))) - ((textPaint.descent() + textPaint.ascent()) / 2),
+                            textPaint);
+                }
+
+                canvas.restore();
+
+                lines.get(i).paint.setAlpha(255);
+                a += currentPercent * 360f;
             }
 
             canvas.restore();
-
-            lines.get(i).paint.setAlpha(255);
-            a += currentPercent * 360f;
         }
-
-        canvas.restore();
     }
 
     @Override
@@ -350,6 +359,7 @@ public class PieChartView extends StackLinearChartView<PieChartViewData> {
             LineViewData l = lines.get(newSelection);
 
             pieLegendView.setData(l.line.name, (int) values[currentSelection], l.lineColor);
+            pieLegendView.measure(MeasureSpec.makeMeasureSpec(getMeasuredWidth(), MeasureSpec.AT_MOST), MeasureSpec.makeMeasureSpec(getMeasuredHeight(), MeasureSpec.AT_MOST));
 
             float r = rectF.width() / 2;
             int xl = (int) Math.min(
@@ -358,6 +368,9 @@ public class PieChartView extends StackLinearChartView<PieChartViewData> {
             );
 
             if (xl < 0) xl = 0;
+            if (xl + pieLegendView.getMeasuredWidth() > getMeasuredWidth() - AndroidUtilities.dp((16))) {
+                xl -= xl + pieLegendView.getMeasuredWidth() - (getMeasuredWidth() - AndroidUtilities.dp(16));
+            }
 
             int yl = (int) Math.min(
                     (rectF.centerY() + r * Math.sin(Math.toRadians((selectionStartA * 360f) - 90f))),
@@ -561,6 +574,16 @@ public class PieChartView extends StackLinearChartView<PieChartViewData> {
         } else {
             updateIndexes();
             invalidate();
+        }
+    }
+
+    @Override
+    public void fillTransitionParams(TransitionParams params) {
+        drawChart(null);
+        float p = 0;
+        for (int i = 0; i < darawingValuesPercentage.length; i++) {
+            p += darawingValuesPercentage[i];
+            params.angle[i] = p * 360 - 180;
         }
     }
 }

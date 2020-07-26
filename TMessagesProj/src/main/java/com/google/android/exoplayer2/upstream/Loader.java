@@ -32,6 +32,7 @@ import java.lang.annotation.Documented;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Manages the background loading of {@link Loadable}s.
@@ -56,6 +57,21 @@ public final class Loader implements LoaderErrorThrower {
 
     /**
      * Cancels the load.
+     *
+     * <p>Loadable implementations should ensure that a currently executing {@link #load()} call
+     * will exit reasonably quickly after this method is called. The {@link #load()} call may exit
+     * either by returning or by throwing an {@link IOException}.
+     *
+     * <p>If there is a currently executing {@link #load()} call, then the thread on which that call
+     * is being made will be interrupted immediately after the call to this method. Hence
+     * implementations do not need to (and should not attempt to) interrupt the loading thread
+     * themselves.
+     *
+     * <p>Although the loading thread will be interrupted, Loadable implementations should not use
+     * the interrupted status of the loading thread in {@link #load()} to determine whether the load
+     * has been canceled. This approach is not robust [Internal ref: b/79223737]. Instead,
+     * implementations should use their own flag to signal cancelation (for example, using {@link
+     * AtomicBoolean}).
      */
     void cancelLoad();
 
@@ -158,12 +174,12 @@ public final class Loader implements LoaderErrorThrower {
   /** Retries the load using the default delay and resets the error count. */
   public static final LoadErrorAction RETRY_RESET_ERROR_COUNT =
       createRetryAction(/* resetErrorCount= */ true, C.TIME_UNSET);
-  /** Discards the failed loading task and ignores any errors that have occurred. */
+  /** Discards the failed {@link Loadable} and ignores any errors that have occurred. */
   public static final LoadErrorAction DONT_RETRY =
       new LoadErrorAction(ACTION_TYPE_DONT_RETRY, C.TIME_UNSET);
   /**
-   * Discards the failed load. The next call to {@link #maybeThrowError()} will throw the last load
-   * error.
+   * Discards the failed {@link Loadable}. The next call to {@link #maybeThrowError()} will throw
+   * the last load error.
    */
   public static final LoadErrorAction DONT_RETRY_FATAL =
       new LoadErrorAction(ACTION_TYPE_DONT_RETRY_FATAL, C.TIME_UNSET);
@@ -190,8 +206,8 @@ public final class Loader implements LoaderErrorThrower {
 
   private final ExecutorService downloadExecutorService;
 
-  private LoadTask<? extends Loadable> currentTask;
-  private IOException fatalError;
+  @Nullable private LoadTask<? extends Loadable> currentTask;
+  @Nullable private IOException fatalError;
 
   /**
    * @param threadName A name for the loader's thread.
@@ -242,39 +258,34 @@ public final class Loader implements LoaderErrorThrower {
    */
   public <T extends Loadable> long startLoading(
       T loadable, Callback<T> callback, int defaultMinRetryCount) {
-    Looper looper = Looper.myLooper();
-    Assertions.checkState(looper != null);
+    Looper looper = Assertions.checkStateNotNull(Looper.myLooper());
     fatalError = null;
     long startTimeMs = SystemClock.elapsedRealtime();
     new LoadTask<>(looper, loadable, callback, defaultMinRetryCount, startTimeMs).start(0);
     return startTimeMs;
   }
 
-  /**
-   * Returns whether the {@link Loader} is currently loading a {@link Loadable}.
-   */
+  /** Returns whether the loader is currently loading. */
   public boolean isLoading() {
     return currentTask != null;
   }
 
   /**
-   * Cancels the current load. This method should only be called when a load is in progress.
+   * Cancels the current load.
+   *
+   * @throws IllegalStateException If the loader is not currently loading.
    */
   public void cancelLoading() {
-    currentTask.cancel(false);
+    Assertions.checkStateNotNull(currentTask).cancel(false);
   }
 
-  /**
-   * Releases the {@link Loader}. This method should be called when the {@link Loader} is no longer
-   * required.
-   */
+  /** Releases the loader. This method should be called when the loader is no longer required. */
   public void release() {
     release(null);
   }
 
   /**
-   * Releases the {@link Loader}. This method should be called when the {@link Loader} is no longer
-   * required.
+   * Releases the loader. This method should be called when the loader is no longer required.
    *
    * @param callback An optional callback to be called on the loading thread once the loader has
    *     been released.
@@ -314,22 +325,21 @@ public final class Loader implements LoaderErrorThrower {
     private static final String TAG = "LoadTask";
 
     private static final int MSG_START = 0;
-    private static final int MSG_CANCEL = 1;
-    private static final int MSG_END_OF_SOURCE = 2;
-    private static final int MSG_IO_EXCEPTION = 3;
-    private static final int MSG_FATAL_ERROR = 4;
+    private static final int MSG_FINISH = 1;
+    private static final int MSG_IO_EXCEPTION = 2;
+    private static final int MSG_FATAL_ERROR = 3;
 
     public final int defaultMinRetryCount;
 
     private final T loadable;
     private final long startTimeMs;
 
-    private @Nullable Loader.Callback<T> callback;
-    private IOException currentError;
+    @Nullable private Loader.Callback<T> callback;
+    @Nullable private IOException currentError;
     private int errorCount;
 
-    private volatile Thread executorThread;
-    private volatile boolean canceled;
+    @Nullable private Thread executorThread;
+    private boolean canceled;
     private volatile boolean released;
 
     public LoadTask(Looper looper, T loadable, Loader.Callback<T> callback,
@@ -361,21 +371,28 @@ public final class Loader implements LoaderErrorThrower {
       this.released = released;
       currentError = null;
       if (hasMessages(MSG_START)) {
+        // The task has not been given to the executor yet.
+        canceled = true;
         removeMessages(MSG_START);
         if (!released) {
-          sendEmptyMessage(MSG_CANCEL);
+          sendEmptyMessage(MSG_FINISH);
         }
       } else {
-        canceled = true;
-        loadable.cancelLoad();
-        if (executorThread != null) {
-          executorThread.interrupt();
+        // The task has been given to the executor.
+        synchronized (this) {
+          canceled = true;
+          loadable.cancelLoad();
+          @Nullable Thread executorThread = this.executorThread;
+          if (executorThread != null) {
+            executorThread.interrupt();
+          }
         }
       }
       if (released) {
         finish();
         long nowMs = SystemClock.elapsedRealtime();
-        callback.onLoadCanceled(loadable, nowMs, nowMs - startTimeMs, true);
+        Assertions.checkNotNull(callback)
+            .onLoadCanceled(loadable, nowMs, nowMs - startTimeMs, true);
         // If loading, this task will be referenced from a GC root (the loading thread) until
         // cancellation completes. The time taken for cancellation to complete depends on the
         // implementation of the Loadable that the task is loading. We null the callback reference
@@ -387,8 +404,12 @@ public final class Loader implements LoaderErrorThrower {
     @Override
     public void run() {
       try {
-        executorThread = Thread.currentThread();
-        if (!canceled) {
+        boolean shouldLoad;
+        synchronized (this) {
+          shouldLoad = !canceled;
+          executorThread = Thread.currentThread();
+        }
+        if (shouldLoad) {
           TraceUtil.beginSection("load:" + loadable.getClass().getSimpleName());
           try {
             loadable.load();
@@ -396,8 +417,13 @@ public final class Loader implements LoaderErrorThrower {
             TraceUtil.endSection();
           }
         }
+        synchronized (this) {
+          executorThread = null;
+          // Clear the interrupted flag if set, to avoid it leaking into a subsequent task.
+          Thread.interrupted();
+        }
         if (!released) {
-          sendEmptyMessage(MSG_END_OF_SOURCE);
+          sendEmptyMessage(MSG_FINISH);
         }
       } catch (IOException e) {
         if (!released) {
@@ -407,7 +433,7 @@ public final class Loader implements LoaderErrorThrower {
         // The load was canceled.
         Assertions.checkState(canceled);
         if (!released) {
-          sendEmptyMessage(MSG_END_OF_SOURCE);
+          sendEmptyMessage(MSG_FINISH);
         }
       } catch (Exception e) {
         // This should never happen, but handle it anyway.
@@ -450,15 +476,13 @@ public final class Loader implements LoaderErrorThrower {
       finish();
       long nowMs = SystemClock.elapsedRealtime();
       long durationMs = nowMs - startTimeMs;
+      Loader.Callback<T> callback = Assertions.checkNotNull(this.callback);
       if (canceled) {
         callback.onLoadCanceled(loadable, nowMs, durationMs, false);
         return;
       }
       switch (msg.what) {
-        case MSG_CANCEL:
-          callback.onLoadCanceled(loadable, nowMs, durationMs, false);
-          break;
-        case MSG_END_OF_SOURCE:
+        case MSG_FINISH:
           try {
             callback.onLoadCompleted(loadable, nowMs, durationMs);
           } catch (RuntimeException e) {
@@ -492,7 +516,7 @@ public final class Loader implements LoaderErrorThrower {
 
     private void execute() {
       currentError = null;
-      downloadExecutorService.execute(currentTask);
+      downloadExecutorService.execute(Assertions.checkNotNull(currentTask));
     }
 
     private void finish() {

@@ -168,8 +168,7 @@ public final class PsExtractor implements Extractor {
     }
     maybeOutputSeekMap(inputLength);
     if (psBinarySearchSeeker != null && psBinarySearchSeeker.isSeeking()) {
-      return psBinarySearchSeeker.handlePendingSeek(
-          input, seekPosition, /* outputFrameHolder= */ null);
+      return psBinarySearchSeeker.handlePendingSeek(input, seekPosition);
     }
 
     input.resetPeekPosition();

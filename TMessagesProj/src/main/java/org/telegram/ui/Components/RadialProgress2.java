@@ -162,6 +162,10 @@ public class RadialProgress2 {
         }
     }
 
+    public float getProgress() {
+        return drawMiniIcon ? miniMediaActionDrawable.getProgress() : mediaActionDrawable.getProgress();
+    }
+
     private void invalidateParent() {
         int offset = AndroidUtilities.dp(2);
         parent.invalidate((int) progressRect.left - offset, (int) progressRect.top - offset, (int) progressRect.right + offset * 2, (int) progressRect.bottom + offset * 2);

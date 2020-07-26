@@ -52,11 +52,11 @@ public final class UdpDataSource extends BaseDataSource {
   private final byte[] packetBuffer;
   private final DatagramPacket packet;
 
-  private @Nullable Uri uri;
-  private @Nullable DatagramSocket socket;
-  private @Nullable MulticastSocket multicastSocket;
-  private @Nullable InetAddress address;
-  private @Nullable InetSocketAddress socketAddress;
+  @Nullable private Uri uri;
+  @Nullable private DatagramSocket socket;
+  @Nullable private MulticastSocket multicastSocket;
+  @Nullable private InetAddress address;
+  @Nullable private InetSocketAddress socketAddress;
   private boolean opened;
 
   private int packetRemaining;
@@ -86,50 +86,6 @@ public final class UdpDataSource extends BaseDataSource {
     this.socketTimeoutMillis = socketTimeoutMillis;
     packetBuffer = new byte[maxPacketSize];
     packet = new DatagramPacket(packetBuffer, 0, maxPacketSize);
-  }
-
-  /**
-   * Constructs a new instance.
-   *
-   * @param listener An optional listener.
-   * @deprecated Use {@link #UdpDataSource()} and {@link #addTransferListener(TransferListener)}.
-   */
-  @Deprecated
-  @SuppressWarnings("deprecation")
-  public UdpDataSource(@Nullable TransferListener listener) {
-    this(listener, DEFAULT_MAX_PACKET_SIZE);
-  }
-
-  /**
-   * Constructs a new instance.
-   *
-   * @param listener An optional listener.
-   * @param maxPacketSize The maximum datagram packet size, in bytes.
-   * @deprecated Use {@link #UdpDataSource(int)} and {@link #addTransferListener(TransferListener)}.
-   */
-  @Deprecated
-  @SuppressWarnings("deprecation")
-  public UdpDataSource(@Nullable TransferListener listener, int maxPacketSize) {
-    this(listener, maxPacketSize, DEFAULT_SOCKET_TIMEOUT_MILLIS);
-  }
-
-  /**
-   * Constructs a new instance.
-   *
-   * @param listener An optional listener.
-   * @param maxPacketSize The maximum datagram packet size, in bytes.
-   * @param socketTimeoutMillis The socket timeout in milliseconds. A timeout of zero is interpreted
-   *     as an infinite timeout.
-   * @deprecated Use {@link #UdpDataSource(int, int)} and {@link
-   *     #addTransferListener(TransferListener)}.
-   */
-  @Deprecated
-  public UdpDataSource(
-      @Nullable TransferListener listener, int maxPacketSize, int socketTimeoutMillis) {
-    this(maxPacketSize, socketTimeoutMillis);
-    if (listener != null) {
-      addTransferListener(listener);
-    }
   }
 
   @Override
@@ -188,7 +144,8 @@ public final class UdpDataSource extends BaseDataSource {
   }
 
   @Override
-  public @Nullable Uri getUri() {
+  @Nullable
+  public Uri getUri() {
     return uri;
   }
 

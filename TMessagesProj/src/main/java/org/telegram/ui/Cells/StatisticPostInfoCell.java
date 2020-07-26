@@ -4,6 +4,7 @@ import android.content.Context;
 import android.graphics.Color;
 import android.text.TextUtils;
 import android.view.Gravity;
+import android.view.View;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -15,6 +16,7 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.StatisticActivity;
@@ -26,6 +28,7 @@ public class StatisticPostInfoCell extends FrameLayout {
     private TextView shares;
     private TextView date;
     private BackupImageView imageView;
+    private AvatarDrawable avatarDrawable = new AvatarDrawable();
 
     private final TLRPC.ChatFull chat;
 
@@ -76,8 +79,8 @@ public class StatisticPostInfoCell extends FrameLayout {
 
         message.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
         views.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
-        date.setTextColor(Theme.getColor(Theme.key_dialogTextGray4));
-        shares.setTextColor(Theme.getColor(Theme.key_dialogTextGray4));
+        date.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText3));
+        shares.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText3));
     }
 
 
@@ -111,5 +114,16 @@ public class StatisticPostInfoCell extends FrameLayout {
         views.setText(String.format(LocaleController.getPluralString("Views", postInfo.counters.views), AndroidUtilities.formatCount(postInfo.counters.views)));
         date.setText(LocaleController.formatDateAudio(postInfo.message.messageOwner.date, false));
         shares.setText(String.format(LocaleController.getPluralString("Shares", postInfo.counters.forwards), AndroidUtilities.formatCount(postInfo.counters.forwards)));
+    }
+
+    public void setData(StatisticActivity.MemberData memberData) {
+        avatarDrawable.setInfo(memberData.user);
+        imageView.setImage(ImageLocation.getForUser(memberData.user, false), "50_50", avatarDrawable, memberData.user);
+        imageView.setRoundRadius(AndroidUtilities.dp(46) >> 1);
+        message.setText(memberData.user.first_name);
+        date.setText(memberData.description);
+
+        views.setVisibility(View.GONE);
+        shares.setVisibility(View.GONE);
     }
 }

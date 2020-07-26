@@ -13,18 +13,24 @@ import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.R;
 import org.telegram.ui.Components.LayoutHelper;
 
 public class ActionBarMenuSubItem extends FrameLayout {
 
     private TextView textView;
     private ImageView imageView;
+    private ImageView checkView;
 
     private int textColor = Theme.getColor(Theme.key_actionBarDefaultSubmenuItem);
     private int iconColor = Theme.getColor(Theme.key_actionBarDefaultSubmenuItemIcon);
     private int selectorColor = Theme.getColor(Theme.key_dialogButtonSelector);
 
     public ActionBarMenuSubItem(Context context) {
+        this(context, false);
+    }
+
+    public ActionBarMenuSubItem(Context context, boolean needCheck) {
         super(context);
 
         setBackground(Theme.createSelectorDrawable(selectorColor, 2));
@@ -38,16 +44,44 @@ public class ActionBarMenuSubItem extends FrameLayout {
         textView = new TextView(context);
         textView.setLines(1);
         textView.setSingleLine(true);
-        textView.setGravity(Gravity.CENTER_HORIZONTAL);
+        textView.setGravity(Gravity.LEFT);
         textView.setEllipsize(TextUtils.TruncateAt.END);
         textView.setTextColor(textColor);
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
         addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL));
+
+        if (needCheck) {
+            checkView = new ImageView(context);
+            checkView.setImageResource(R.drawable.msg_text_check);
+            checkView.setScaleType(ImageView.ScaleType.CENTER);
+            checkView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_radioBackgroundChecked), PorterDuff.Mode.MULTIPLY));
+            addView(checkView, LayoutHelper.createFrame(26, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT));
+        }
     }
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         super.onMeasure(widthMeasureSpec, View.MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(48), View.MeasureSpec.EXACTLY));
+    }
+
+    @Override
+    protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
+        super.onLayout(changed, left, top, right, bottom);
+        if (checkView != null) {
+            if (LocaleController.isRTL) {
+                left = getPaddingRight();
+            } else {
+                left = getMeasuredWidth() - checkView.getMeasuredWidth() - getPaddingLeft();
+            }
+            checkView.layout(left, checkView.getTop(), left + checkView.getMeasuredWidth(), checkView.getBottom());
+        }
+    }
+
+    public void setChecked(boolean checked) {
+        if (checkView == null) {
+            return;
+        }
+        checkView.setVisibility(checked ? VISIBLE : INVISIBLE);
     }
 
     public void setTextAndIcon(CharSequence text, int icon) {
@@ -85,6 +119,10 @@ public class ActionBarMenuSubItem extends FrameLayout {
 
     public void setText(String text) {
         textView.setText(text);
+    }
+
+    public TextView getTextView() {
+        return textView;
     }
 
     public void setSelectorColor(int selectorColor) {

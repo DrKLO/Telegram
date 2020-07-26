@@ -71,7 +71,7 @@ public class FileLoadOperation {
     private final static int maxDownloadRequests = 4;
     private final static int maxDownloadRequestsBig = 4;
     private final static int bigFileSizeFrom = 1024 * 1024;
-    private final static int maxCdnParts = 1024 * 1024 * 1536 / downloadChunkSizeBig;
+    private final static int maxCdnParts = (int) (FileLoader.MAX_FILE_SIZE / downloadChunkSizeBig);
 
     private final static int preloadMaxBytes = 2 * 1024 * 1024;
 
@@ -205,6 +205,9 @@ public class FileLoadOperation {
                 location.access_hash = imageLocation.access_hash;
                 location.file_reference = imageLocation.file_reference;
                 location.thumb_size = imageLocation.thumbSize;
+                if (imageLocation.imageType == FileLoader.IMAGE_TYPE_ANIMATION) {
+                    allowDisordererFileSave = true;
+                }
             } else {
                 location = new TLRPC.TL_inputDocumentFileLocation();
                 location.id = imageLocation.documentId;

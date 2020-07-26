@@ -24,7 +24,7 @@ public interface DefaultDrmSessionEventListener {
   default void onDrmSessionAcquired() {}
 
   /** Called each time keys are loaded. */
-  void onDrmKeysLoaded();
+  default void onDrmKeysLoaded() {}
 
   /**
    * Called when a drm error occurs.
@@ -38,13 +38,13 @@ public interface DefaultDrmSessionEventListener {
    *
    * @param error The corresponding exception.
    */
-  void onDrmSessionManagerError(Exception error);
+  default void onDrmSessionManagerError(Exception error) {}
 
   /** Called each time offline keys are restored. */
-  void onDrmKeysRestored();
+  default void onDrmKeysRestored() {}
 
   /** Called each time offline keys are removed. */
-  void onDrmKeysRemoved();
+  default void onDrmKeysRemoved() {}
 
   /** Called each time a drm session is released. */
   default void onDrmSessionReleased() {}

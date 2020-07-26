@@ -17,31 +17,32 @@ configurations.all {
 }
 
 dependencies {
-    implementation 'androidx.core:core:1.1.0-beta01'
+    implementation 'androidx.core:core:1.3.1'
     implementation 'androidx.palette:palette:1.0.0'
     implementation 'androidx.exifinterface:exifinterface:1.2.0'
     implementation 'androidx.dynamicanimation:dynamicanimation:1.0.0'
-    implementation 'com.android.support:multidex:1.0.3'
+    implementation 'androidx.multidex:multidex:2.0.1'
+    implementation "androidx.sharetarget:sharetarget:1.0.0"
 
     compileOnly 'org.checkerframework:checker-qual:2.5.2'
     compileOnly 'org.checkerframework:checker-compat-qual:2.5.0'
-    implementation 'com.google.firebase:firebase-messaging:20.2.0'
-    implementation 'com.google.firebase:firebase-config:19.1.4'
+    implementation 'com.google.firebase:firebase-messaging:20.2.3'
+    implementation 'com.google.firebase:firebase-config:19.2.0'
     implementation 'com.google.android.gms:play-services-maps:17.0.0'
-    implementation 'com.google.android.gms:play-services-auth:18.0.0'
+    implementation 'com.google.android.gms:play-services-auth:18.1.0'
     implementation 'com.google.android.gms:play-services-vision:16.2.0'
     implementation 'com.google.android.gms:play-services-wearable:17.0.0'
     implementation 'com.google.android.gms:play-services-location:17.0.0'
-    implementation "com.microsoft.appcenter:appcenter-distribute:3.2.1"
-    implementation "com.microsoft.appcenter:appcenter-crashes:3.2.1"
+    implementation "com.microsoft.appcenter:appcenter-distribute:3.2.2"
+    implementation "com.microsoft.appcenter:appcenter-crashes:3.2.2"
     implementation 'com.googlecode.mp4parser:isoparser:1.0.6'
     implementation 'com.stripe:stripe-android:2.0.2'
     implementation files('libs/libgsaverification-client.aar')
 }
 
 android {
-    compileSdkVersion 29
-    buildToolsVersion '29.0.3'
+    compileSdkVersion 30
+    buildToolsVersion '30.0.1'
     ndkVersion "21.1.6352462"
 
     defaultConfig.applicationId = "org.telegram.messenger"
@@ -276,7 +277,7 @@ android {
         }
     }
 
-    defaultConfig.versionCode = 1988
+    defaultConfig.versionCode = 2040
 
     def tgVoipDexFileName = "libtgvoip.dex"
     def tgVoipDexClasses = ["AudioRecordJNI", "AudioTrackJNI", "NativeTgVoipDelegate", "NativeTgVoipInstance", "TgVoipNativeLoader", "Resampler", "VLog"]
@@ -371,7 +372,7 @@ android {
     defaultConfig {
         minSdkVersion 16
         targetSdkVersion 28
-        versionName "6.2.0"
+        versionName "6.3.0"
 
         vectorDrawables.generatedDensities = ['mdpi', 'hdpi', 'xhdpi', 'xxhdpi']
 

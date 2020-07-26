@@ -75,7 +75,7 @@ public class FileRefController extends BaseController {
         } else if (parentObject instanceof TLRPC.Message) {
             TLRPC.Message message = (TLRPC.Message) parentObject;
             int channelId = message.to_id != null ? message.to_id.channel_id : 0;
-            return "message" + message.id + "_" + channelId;
+            return "message" + message.id + "_" + channelId + "_" + message.from_scheduled;
         } else if (parentObject instanceof TLRPC.WebPage) {
             TLRPC.WebPage webPage = (TLRPC.WebPage) parentObject;
             return "webpage" + webPage.id;

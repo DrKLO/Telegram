@@ -1893,7 +1893,7 @@ public class ThemePreviewActivity extends BaseFragment implements DownloadContro
             NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.didSetNewWallpapper);
         }
         if (screenType != SCREEN_TYPE_PREVIEW || accent != null) {
-            if (SharedConfig.getDevicePerfomanceClass() == SharedConfig.PERFORMANCE_CLASS_LOW) {
+            if (SharedConfig.getDevicePerformanceClass() == SharedConfig.PERFORMANCE_CLASS_LOW) {
                 int w = Math.min(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y);
                 int h = Math.max(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y);
                 imageFilter = (int) (w / AndroidUtilities.density) + "_" + (int) (h / AndroidUtilities.density) + "_f";

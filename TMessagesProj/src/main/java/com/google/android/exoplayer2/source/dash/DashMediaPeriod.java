@@ -15,13 +15,16 @@
  */
 package com.google.android.exoplayer2.source.dash;
 
+import android.util.Pair;
+import android.util.SparseArray;
+import android.util.SparseIntArray;
 import androidx.annotation.IntDef;
 import androidx.annotation.Nullable;
-import android.util.Pair;
-import android.util.SparseIntArray;
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.Format;
 import com.google.android.exoplayer2.SeekParameters;
+import com.google.android.exoplayer2.drm.DrmInitData;
+import com.google.android.exoplayer2.drm.DrmSessionManager;
 import com.google.android.exoplayer2.offline.StreamKey;
 import com.google.android.exoplayer2.source.CompositeSequenceableLoaderFactory;
 import com.google.android.exoplayer2.source.EmptySampleStream;
@@ -58,6 +61,7 @@ import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.checkerframework.checker.nullness.compatqual.NullableType;
 
 /** A DASH {@link MediaPeriod}. */
 /* package */ final class DashMediaPeriod
@@ -69,7 +73,8 @@ import java.util.regex.Pattern;
 
   /* package */ final int id;
   private final DashChunkSource.Factory chunkSourceFactory;
-  private final @Nullable TransferListener transferListener;
+  @Nullable private final TransferListener transferListener;
+  private final DrmSessionManager<?> drmSessionManager;
   private final LoadErrorHandlingPolicy loadErrorHandlingPolicy;
   private final long elapsedRealtimeOffsetMs;
   private final LoaderErrorThrower manifestLoaderErrorThrower;
@@ -82,7 +87,7 @@ import java.util.regex.Pattern;
       trackEmsgHandlerBySampleStream;
   private final EventDispatcher eventDispatcher;
 
-  private @Nullable Callback callback;
+  @Nullable private Callback callback;
   private ChunkSampleStream<DashChunkSource>[] sampleStreams;
   private EventSampleStream[] eventSampleStreams;
   private SequenceableLoader compositeSequenceableLoader;
@@ -97,6 +102,7 @@ import java.util.regex.Pattern;
       int periodIndex,
       DashChunkSource.Factory chunkSourceFactory,
       @Nullable TransferListener transferListener,
+      DrmSessionManager<?> drmSessionManager,
       LoadErrorHandlingPolicy loadErrorHandlingPolicy,
       EventDispatcher eventDispatcher,
       long elapsedRealtimeOffsetMs,
@@ -109,6 +115,7 @@ import java.util.regex.Pattern;
     this.periodIndex = periodIndex;
     this.chunkSourceFactory = chunkSourceFactory;
     this.transferListener = transferListener;
+    this.drmSessionManager = drmSessionManager;
     this.loadErrorHandlingPolicy = loadErrorHandlingPolicy;
     this.eventDispatcher = eventDispatcher;
     this.elapsedRealtimeOffsetMs = elapsedRealtimeOffsetMs;
@@ -123,8 +130,8 @@ import java.util.regex.Pattern;
         compositeSequenceableLoaderFactory.createCompositeSequenceableLoader(sampleStreams);
     Period period = manifest.getPeriod(periodIndex);
     eventStreams = period.eventStreams;
-    Pair<TrackGroupArray, TrackGroupInfo[]> result = buildTrackGroups(period.adaptationSets,
-        eventStreams);
+    Pair<TrackGroupArray, TrackGroupInfo[]> result =
+        buildTrackGroups(drmSessionManager, period.adaptationSets, eventStreams);
     trackGroups = result.first;
     trackGroupInfos = result.second;
     eventDispatcher.mediaPeriodCreated();
@@ -219,9 +226,8 @@ import java.util.regex.Pattern;
       int totalTracksInPreviousAdaptationSets = 0;
       int tracksInCurrentAdaptationSet =
           manifestAdaptationSets.get(adaptationSetIndices[0]).representations.size();
-      for (int i = 0; i < trackIndices.length; i++) {
-        while (trackIndices[i]
-            >= totalTracksInPreviousAdaptationSets + tracksInCurrentAdaptationSet) {
+      for (int trackIndex : trackIndices) {
+        while (trackIndex >= totalTracksInPreviousAdaptationSets + tracksInCurrentAdaptationSet) {
           currentAdaptationSetIndex++;
           totalTracksInPreviousAdaptationSets += tracksInCurrentAdaptationSet;
           tracksInCurrentAdaptationSet =
@@ -234,15 +240,19 @@ import java.util.regex.Pattern;
             new StreamKey(
                 periodIndex,
                 adaptationSetIndices[currentAdaptationSetIndex],
-                trackIndices[i] - totalTracksInPreviousAdaptationSets));
+                trackIndex - totalTracksInPreviousAdaptationSets));
       }
     }
     return streamKeys;
   }
 
   @Override
-  public long selectTracks(TrackSelection[] selections, boolean[] mayRetainStreamFlags,
-      SampleStream[] streams, boolean[] streamResetFlags, long positionUs) {
+  public long selectTracks(
+      @NullableType TrackSelection[] selections,
+      boolean[] mayRetainStreamFlags,
+      @NullableType SampleStream[] streams,
+      boolean[] streamResetFlags,
+      long positionUs) {
     int[] streamIndexToTrackGroupIndex = getStreamIndexToTrackGroupIndex(selections);
     releaseDisabledStreams(selections, mayRetainStreamFlags, streams);
     releaseOrphanEmbeddedStreams(selections, streams, streamIndexToTrackGroupIndex);
@@ -286,6 +296,11 @@ import java.util.regex.Pattern;
   @Override
   public boolean continueLoading(long positionUs) {
     return compositeSequenceableLoader.continueLoading(positionUs);
+  }
+
+  @Override
+  public boolean isLoading() {
+    return compositeSequenceableLoader.isLoading();
   }
 
   @Override
@@ -466,7 +481,9 @@ import java.util.regex.Pattern;
   }
 
   private static Pair<TrackGroupArray, TrackGroupInfo[]> buildTrackGroups(
-      List<AdaptationSet> adaptationSets, List<EventStream> eventStreams) {
+      DrmSessionManager<?> drmSessionManager,
+      List<AdaptationSet> adaptationSets,
+      List<EventStream> eventStreams) {
     int[][] groupedAdaptationSetIndices = getGroupedAdaptationSetIndices(adaptationSets);
 
     int primaryGroupCount = groupedAdaptationSetIndices.length;
@@ -486,6 +503,7 @@ import java.util.regex.Pattern;
 
     int trackGroupCount =
         buildPrimaryAndEmbeddedTrackGroupInfos(
+            drmSessionManager,
             adaptationSets,
             groupedAdaptationSetIndices,
             primaryGroupCount,
@@ -499,51 +517,94 @@ import java.util.regex.Pattern;
     return Pair.create(new TrackGroupArray(trackGroups), trackGroupInfos);
   }
 
+  /**
+   * Groups adaptation sets. Two adaptations sets belong to the same group if either:
+   *
+   * <ul>
+   *   <li>One is a trick-play adaptation set and uses a {@code
+   *       http://dashif.org/guidelines/trickmode} essential or supplemental property to indicate
+   *       that the other is the main adaptation set to which it corresponds.
+   *   <li>The two adaptation sets are marked as safe for switching using {@code
+   *       urn:mpeg:dash:adaptation-set-switching:2016} supplemental properties.
+   * </ul>
+   *
+   * @param adaptationSets The adaptation sets to merge.
+   * @return An array of groups, where each group is an array of adaptation set indices.
+   */
   private static int[][] getGroupedAdaptationSetIndices(List<AdaptationSet> adaptationSets) {
     int adaptationSetCount = adaptationSets.size();
-    SparseIntArray idToIndexMap = new SparseIntArray(adaptationSetCount);
+    SparseIntArray adaptationSetIdToIndex = new SparseIntArray(adaptationSetCount);
+    List<List<Integer>> adaptationSetGroupedIndices = new ArrayList<>(adaptationSetCount);
+    SparseArray<List<Integer>> adaptationSetIndexToGroupedIndices =
+        new SparseArray<>(adaptationSetCount);
+
+    // Initially make each adaptation set belong to its own group. Also build the
+    // adaptationSetIdToIndex map.
     for (int i = 0; i < adaptationSetCount; i++) {
-      idToIndexMap.put(adaptationSets.get(i).id, i);
+      adaptationSetIdToIndex.put(adaptationSets.get(i).id, i);
+      List<Integer> initialGroup = new ArrayList<>();
+      initialGroup.add(i);
+      adaptationSetGroupedIndices.add(initialGroup);
+      adaptationSetIndexToGroupedIndices.put(i, initialGroup);
     }
 
-    int[][] groupedAdaptationSetIndices = new int[adaptationSetCount][];
-    boolean[] adaptationSetUsedFlags = new boolean[adaptationSetCount];
-
-    int groupCount = 0;
+    // Merge adaptation set groups.
     for (int i = 0; i < adaptationSetCount; i++) {
-      if (adaptationSetUsedFlags[i]) {
-        // This adaptation set has already been included in a group.
-        continue;
+      int mergedGroupIndex = i;
+      AdaptationSet adaptationSet = adaptationSets.get(i);
+
+      // Trick-play adaptation sets are merged with their corresponding main adaptation sets.
+      @Nullable
+      Descriptor trickPlayProperty = findTrickPlayProperty(adaptationSet.essentialProperties);
+      if (trickPlayProperty == null) {
+        // Trick-play can also be specified using a supplemental property.
+        trickPlayProperty = findTrickPlayProperty(adaptationSet.supplementalProperties);
       }
-      adaptationSetUsedFlags[i] = true;
-      Descriptor adaptationSetSwitchingProperty = findAdaptationSetSwitchingProperty(
-          adaptationSets.get(i).supplementalProperties);
-      if (adaptationSetSwitchingProperty == null) {
-        groupedAdaptationSetIndices[groupCount++] = new int[] {i};
-      } else {
-        String[] extraAdaptationSetIds = Util.split(adaptationSetSwitchingProperty.value, ",");
-        int[] adaptationSetIndices = new int[1 + extraAdaptationSetIds.length];
-        adaptationSetIndices[0] = i;
-        int outputIndex = 1;
-        for (int j = 0; j < extraAdaptationSetIds.length; j++) {
-          int extraIndex =
-              idToIndexMap.get(
-                  Integer.parseInt(extraAdaptationSetIds[j]), /* valueIfKeyNotFound= */ -1);
-          if (extraIndex != -1) {
-            adaptationSetUsedFlags[extraIndex] = true;
-            adaptationSetIndices[outputIndex] = extraIndex;
-            outputIndex++;
+      if (trickPlayProperty != null) {
+        int mainAdaptationSetId = Integer.parseInt(trickPlayProperty.value);
+        int mainAdaptationSetIndex =
+            adaptationSetIdToIndex.get(mainAdaptationSetId, /* valueIfKeyNotFound= */ -1);
+        if (mainAdaptationSetIndex != -1) {
+          mergedGroupIndex = mainAdaptationSetIndex;
+        }
+      }
+
+      // Adaptation sets that are safe for switching are merged, using the smallest index for the
+      // merged group.
+      if (mergedGroupIndex == i) {
+        @Nullable
+        Descriptor adaptationSetSwitchingProperty =
+            findAdaptationSetSwitchingProperty(adaptationSet.supplementalProperties);
+        if (adaptationSetSwitchingProperty != null) {
+          String[] otherAdaptationSetIds = Util.split(adaptationSetSwitchingProperty.value, ",");
+          for (String adaptationSetId : otherAdaptationSetIds) {
+            int otherAdaptationSetId =
+                adaptationSetIdToIndex.get(
+                    Integer.parseInt(adaptationSetId), /* valueIfKeyNotFound= */ -1);
+            if (otherAdaptationSetId != -1) {
+              mergedGroupIndex = Math.min(mergedGroupIndex, otherAdaptationSetId);
+            }
           }
         }
-        if (outputIndex < adaptationSetIndices.length) {
-          adaptationSetIndices = Arrays.copyOf(adaptationSetIndices, outputIndex);
-        }
-        groupedAdaptationSetIndices[groupCount++] = adaptationSetIndices;
+      }
+
+      // Merge the groups if necessary.
+      if (mergedGroupIndex != i) {
+        List<Integer> thisGroup = adaptationSetIndexToGroupedIndices.get(i);
+        List<Integer> mergedGroup = adaptationSetIndexToGroupedIndices.get(mergedGroupIndex);
+        mergedGroup.addAll(thisGroup);
+        adaptationSetIndexToGroupedIndices.put(i, mergedGroup);
+        adaptationSetGroupedIndices.remove(thisGroup);
       }
     }
 
-    return groupCount < adaptationSetCount
-        ? Arrays.copyOf(groupedAdaptationSetIndices, groupCount) : groupedAdaptationSetIndices;
+    int[][] groupedAdaptationSetIndices = new int[adaptationSetGroupedIndices.size()][];
+    for (int i = 0; i < groupedAdaptationSetIndices.length; i++) {
+      groupedAdaptationSetIndices[i] = Util.toArray(adaptationSetGroupedIndices.get(i));
+      // Restore the original adaptation set order within each group.
+      Arrays.sort(groupedAdaptationSetIndices[i]);
+    }
+    return groupedAdaptationSetIndices;
   }
 
   /**
@@ -581,6 +642,7 @@ import java.util.regex.Pattern;
   }
 
   private static int buildPrimaryAndEmbeddedTrackGroupInfos(
+      DrmSessionManager<?> drmSessionManager,
       List<AdaptationSet> adaptationSets,
       int[][] groupedAdaptationSetIndices,
       int primaryGroupCount,
@@ -597,7 +659,14 @@ import java.util.regex.Pattern;
       }
       Format[] formats = new Format[representations.size()];
       for (int j = 0; j < formats.length; j++) {
-        formats[j] = representations.get(j).format;
+        Format format = representations.get(j).format;
+        DrmInitData drmInitData = format.drmInitData;
+        if (drmInitData != null) {
+          format =
+              format.copyWithExoMediaCryptoType(
+                  drmSessionManager.getExoMediaCryptoType(drmInitData));
+        }
+        formats[j] = format;
       }
 
       AdaptationSet firstAdaptationSet = adaptationSets.get(adaptationSetIndices[0]);
@@ -704,6 +773,7 @@ import java.util.regex.Pattern;
             this,
             allocator,
             positionUs,
+            drmSessionManager,
             loadErrorHandlingPolicy,
             eventDispatcher);
     synchronized (this) {
@@ -714,9 +784,19 @@ import java.util.regex.Pattern;
   }
 
   private static Descriptor findAdaptationSetSwitchingProperty(List<Descriptor> descriptors) {
+    return findDescriptor(descriptors, "urn:mpeg:dash:adaptation-set-switching:2016");
+  }
+
+  @Nullable
+  private static Descriptor findTrickPlayProperty(List<Descriptor> descriptors) {
+    return findDescriptor(descriptors, "http://dashif.org/guidelines/trickmode");
+  }
+
+  @Nullable
+  private static Descriptor findDescriptor(List<Descriptor> descriptors, String schemeIdUri) {
     for (int i = 0; i < descriptors.size(); i++) {
       Descriptor descriptor = descriptors.get(i);
-      if ("urn:mpeg:dash:adaptation-set-switching:2016".equals(descriptor.schemeIdUri)) {
+      if (schemeIdUri.equals(descriptor.schemeIdUri)) {
         return descriptor;
       }
     }
@@ -793,7 +873,8 @@ import java.util.regex.Pattern;
         /* initializationData= */ null);
   }
 
-  @SuppressWarnings("unchecked")
+  // We won't assign the array to a variable that erases the generic type, and then write into it.
+  @SuppressWarnings({"unchecked", "rawtypes"})
   private static ChunkSampleStream<DashChunkSource>[] newSampleStreamArray(int length) {
     return new ChunkSampleStream[length];
   }

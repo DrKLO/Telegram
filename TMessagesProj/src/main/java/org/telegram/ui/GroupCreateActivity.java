@@ -77,6 +77,7 @@ import org.telegram.ui.Cells.TextCell;
 import org.telegram.ui.Components.CombinedDrawable;
 import org.telegram.ui.Components.EditTextBoldCursor;
 import org.telegram.ui.Components.EmptyTextProgressView;
+import org.telegram.ui.Components.VerticalPositionAutoAnimator;
 import org.telegram.ui.Components.GroupCreateDividerItemDecoration;
 import org.telegram.ui.Components.GroupCreateSpan;
 import org.telegram.ui.Components.LayoutHelper;
@@ -423,6 +424,24 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
         });
 
         fragmentView = new ViewGroup(context) {
+
+            private VerticalPositionAutoAnimator verticalPositionAutoAnimator;
+
+            @Override
+            public void onViewAdded(View child) {
+                if (child == floatingButton && verticalPositionAutoAnimator == null) {
+                    verticalPositionAutoAnimator = VerticalPositionAutoAnimator.attach(child);
+                }
+            }
+
+            @Override
+            protected void onAttachedToWindow() {
+                super.onAttachedToWindow();
+                if (verticalPositionAutoAnimator != null) {
+                    verticalPositionAutoAnimator.ignoreNextLayout();
+                }
+            }
+
             @Override
             protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
                 int width = MeasureSpec.getSize(widthMeasureSpec);

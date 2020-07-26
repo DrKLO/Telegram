@@ -18,8 +18,8 @@ package com.google.android.exoplayer2.upstream;
 import static com.google.android.exoplayer2.util.Util.castNonNull;
 
 import android.net.Uri;
-import androidx.annotation.Nullable;
 import android.util.Base64;
+import androidx.annotation.Nullable;
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.ParserException;
 import com.google.android.exoplayer2.util.Util;
@@ -36,6 +36,8 @@ public final class DataSchemeDataSource extends BaseDataSource {
   private int endPosition;
   private int readPosition;
 
+  // the constructor does not initialize fields: data
+  @SuppressWarnings("nullness:initialization.fields.uninitialized")
   public DataSchemeDataSource() {
     super(/* isNetwork= */ false);
   }

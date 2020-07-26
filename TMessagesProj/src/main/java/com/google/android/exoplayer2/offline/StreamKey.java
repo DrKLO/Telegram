@@ -17,7 +17,6 @@ package com.google.android.exoplayer2.offline;
 
 import android.os.Parcel;
 import android.os.Parcelable;
-import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 /**
@@ -92,7 +91,7 @@ public final class StreamKey implements Comparable<StreamKey>, Parcelable {
   // Comparable implementation.
 
   @Override
-  public int compareTo(@NonNull StreamKey o) {
+  public int compareTo(StreamKey o) {
     int result = periodIndex - o.periodIndex;
     if (result == 0) {
       result = groupIndex - o.groupIndex;

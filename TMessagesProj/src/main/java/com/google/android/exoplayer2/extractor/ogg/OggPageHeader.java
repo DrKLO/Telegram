@@ -19,7 +19,6 @@ import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.ParserException;
 import com.google.android.exoplayer2.extractor.ExtractorInput;
 import com.google.android.exoplayer2.util.ParsableByteArray;
-import com.google.android.exoplayer2.util.Util;
 import java.io.EOFException;
 import java.io.IOException;
 
@@ -34,7 +33,7 @@ import java.io.IOException;
   public static final int MAX_PAGE_SIZE = EMPTY_PAGE_HEADER_SIZE + MAX_SEGMENT_COUNT
       + MAX_PAGE_PAYLOAD;
 
-  private static final int TYPE_OGGS = Util.getIntegerCodeForString("OggS");
+  private static final int TYPE_OGGS = 0x4f676753;
 
   public int revision;
   public int type;

@@ -12,6 +12,7 @@ import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
+import android.app.Dialog;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Canvas;
@@ -118,7 +119,10 @@ public class ChannelCreateActivity extends BaseFragment implements NotificationC
     private int currentStep;
     private int chatId;
     private boolean canCreatePublic = true;
-    private TLRPC.InputFile uploadedAvatar;
+    private TLRPC.InputFile inputPhoto;
+    private TLRPC.InputFile inputVideo;
+    private String inputVideoPath;
+    private double videoTimestamp;
 
     private boolean createAfterUpload;
     private boolean donePressed;
@@ -130,7 +134,7 @@ public class ChannelCreateActivity extends BaseFragment implements NotificationC
         currentStep = args.getInt("step", 0);
         if (currentStep == 0) {
             avatarDrawable = new AvatarDrawable();
-            imageUpdater = new ImageUpdater();
+            imageUpdater = new ImageUpdater(true);
 
             TLRPC.TL_channels_checkUsername req = new TLRPC.TL_channels_checkUsername();
             req.username = "1";
@@ -157,7 +161,7 @@ public class ChannelCreateActivity extends BaseFragment implements NotificationC
         }
         if (imageUpdater != null) {
             imageUpdater.parentFragment = this;
-            imageUpdater.delegate = this;
+            imageUpdater.setDelegate(this);
         }
         return super.onFragmentCreate();
     }
@@ -183,6 +187,9 @@ public class ChannelCreateActivity extends BaseFragment implements NotificationC
             nameTextView.onResume();
         }
         AndroidUtilities.requestAdjustResize(getParentActivity(), classGuid);
+        if (imageUpdater != null) {
+            imageUpdater.onResume();
+        }
     }
 
     @Override
@@ -190,6 +197,29 @@ public class ChannelCreateActivity extends BaseFragment implements NotificationC
         super.onPause();
         if (nameTextView != null) {
             nameTextView.onPause();
+        }
+        if (imageUpdater != null) {
+            imageUpdater.onPause();
+        }
+    }
+
+    @Override
+    public void dismissCurrentDialog() {
+        if (imageUpdater != null && imageUpdater.dismissCurrentDialog(visibleDialog)) {
+            return;
+        }
+        super.dismissCurrentDialog();
+    }
+
+    @Override
+    public boolean dismissDialogOnPause(Dialog dialog) {
+        return (imageUpdater == null || imageUpdater.dismissDialogOnPause(dialog)) && super.dismissDialogOnPause(dialog);
+    }
+
+    @Override
+    public void onRequestPermissionsResultFragment(int requestCode, String[] permissions, int[] grantResults) {
+        if (imageUpdater != null) {
+            imageUpdater.onRequestPermissionsResultFragment(requestCode, permissions, grantResults);
         }
     }
 
@@ -230,7 +260,7 @@ public class ChannelCreateActivity extends BaseFragment implements NotificationC
                             return;
                         }
                         donePressed = true;
-                        if (imageUpdater.uploadingImage != null) {
+                        if (imageUpdater.isUploadingImage()) {
                             createAfterUpload = true;
                             progressDialog = new AlertDialog(getParentActivity(), 3);
                             progressDialog.setOnCancelListener(dialog -> {
@@ -447,7 +477,7 @@ public class ChannelCreateActivity extends BaseFragment implements NotificationC
                 protected void onDraw(Canvas canvas) {
                     if (avatarImage != null && avatarImage.getImageReceiver().hasNotThumb()) {
                         paint.setAlpha((int) (0x55 * avatarImage.getImageReceiver().getCurrentAlpha()));
-                        canvas.drawCircle(getMeasuredWidth() / 2, getMeasuredHeight() / 2, AndroidUtilities.dp(32), paint);
+                        canvas.drawCircle(getMeasuredWidth() / 2.0f, getMeasuredHeight() / 2.0f, getMeasuredWidth() / 2.0f, paint);
                     }
                 }
             };
@@ -455,7 +485,10 @@ public class ChannelCreateActivity extends BaseFragment implements NotificationC
             avatarOverlay.setOnClickListener(view -> imageUpdater.openMenu(avatar != null, () -> {
                 avatar = null;
                 avatarBig = null;
-                uploadedAvatar = null;
+                inputPhoto = null;
+                inputVideo = null;
+                inputVideoPath = null;
+                videoTimestamp = 0;
                 showAvatarProgress(false, true);
                 avatarImage.setImage(null, null, avatarDrawable, null);
             }));
@@ -482,6 +515,7 @@ public class ChannelCreateActivity extends BaseFragment implements NotificationC
             avatarProgressView = new RadialProgressView(context);
             avatarProgressView.setSize(AndroidUtilities.dp(30));
             avatarProgressView.setProgressColor(0xffffffff);
+            avatarProgressView.setNoProgress(false);
             frameLayout.addView(avatarProgressView, LayoutHelper.createFrame(64, 64, Gravity.TOP | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT), LocaleController.isRTL ? 0 : 16, 12, LocaleController.isRTL ? 16 : 0, 12));
 
             showAvatarProgress(false, false);
@@ -760,10 +794,29 @@ public class ChannelCreateActivity extends BaseFragment implements NotificationC
     }
 
     @Override
-    public void didUploadPhoto(final TLRPC.InputFile file, final TLRPC.PhotoSize bigSize, final TLRPC.PhotoSize smallSize) {
+    public void onUploadProgressChanged(float progress) {
+        if (avatarProgressView == null) {
+            return;
+        }
+        avatarProgressView.setProgress(progress);
+    }
+
+    @Override
+    public void didStartUpload(boolean isVideo) {
+        if (avatarProgressView == null) {
+            return;
+        }
+        avatarProgressView.setProgress(0.0f);
+    }
+
+    @Override
+    public void didUploadPhoto(final TLRPC.InputFile photo, final TLRPC.InputFile video, double videoStartTimestamp, String videoPath, final TLRPC.PhotoSize bigSize, final TLRPC.PhotoSize smallSize) {
         AndroidUtilities.runOnUIThread(() -> {
-            if (file != null) {
-                uploadedAvatar = file;
+            if (photo != null || video != null) {
+                inputPhoto = photo;
+                inputVideo = video;
+                inputVideoPath = videoPath;
+                videoTimestamp = videoStartTimestamp;
                 if (createAfterUpload) {
                     try {
                         if (progressDialog != null && progressDialog.isShowing()) {
@@ -919,8 +972,8 @@ public class ChannelCreateActivity extends BaseFragment implements NotificationC
             bundle.putInt("step", 1);
             bundle.putInt("chat_id", chat_id);
             bundle.putBoolean("canCreatePublic", canCreatePublic);
-            if (uploadedAvatar != null) {
-                MessagesController.getInstance(currentAccount).changeChatAvatar(chat_id, uploadedAvatar, avatar, avatarBig);
+            if (inputPhoto != null || inputVideo != null) {
+                MessagesController.getInstance(currentAccount).changeChatAvatar(chat_id, null, inputPhoto, inputVideo, videoTimestamp, inputVideoPath, avatar, avatarBig);
             }
             presentFragment(new ChannelCreateActivity(bundle), true);
         }

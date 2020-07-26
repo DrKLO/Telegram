@@ -31,11 +31,14 @@ import com.google.android.exoplayer2.upstream.Loader.LoadErrorAction;
 import com.google.android.exoplayer2.upstream.Loader.Loadable;
 import com.google.android.exoplayer2.upstream.StatsDataSource;
 import com.google.android.exoplayer2.upstream.TransferListener;
+import com.google.android.exoplayer2.util.Assertions;
 import com.google.android.exoplayer2.util.MimeTypes;
 import com.google.android.exoplayer2.util.Util;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import org.checkerframework.checker.nullness.compatqual.NullableType;
+import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 
 /**
  * A {@link MediaPeriod} with a single sample.
@@ -50,7 +53,7 @@ import java.util.Arrays;
 
   private final DataSpec dataSpec;
   private final DataSource.Factory dataSourceFactory;
-  private final @Nullable TransferListener transferListener;
+  @Nullable private final TransferListener transferListener;
   private final LoadErrorHandlingPolicy loadErrorHandlingPolicy;
   private final EventDispatcher eventDispatcher;
   private final TrackGroupArray tracks;
@@ -64,8 +67,7 @@ import java.util.Arrays;
 
   /* package */ boolean notifiedReadingStarted;
   /* package */ boolean loadingFinished;
-  /* package */ boolean loadingSucceeded;
-  /* package */ byte[] sampleData;
+  /* package */ byte @MonotonicNonNull [] sampleData;
   /* package */ int sampleSize;
 
   public SingleSampleMediaPeriod(
@@ -112,8 +114,12 @@ import java.util.Arrays;
   }
 
   @Override
-  public long selectTracks(TrackSelection[] selections, boolean[] mayRetainStreamFlags,
-      SampleStream[] streams, boolean[] streamResetFlags, long positionUs) {
+  public long selectTracks(
+      @NullableType TrackSelection[] selections,
+      boolean[] mayRetainStreamFlags,
+      @NullableType SampleStream[] streams,
+      boolean[] streamResetFlags,
+      long positionUs) {
     for (int i = 0; i < selections.length; i++) {
       if (streams[i] != null && (selections[i] == null || !mayRetainStreamFlags[i])) {
         sampleStreams.remove(streams[i]);
@@ -167,6 +173,11 @@ import java.util.Arrays;
   }
 
   @Override
+  public boolean isLoading() {
+    return loader.isLoading();
+  }
+
+  @Override
   public long readDiscontinuity() {
     if (!notifiedReadingStarted) {
       eventDispatcher.readingStarted();
@@ -204,9 +215,8 @@ import java.util.Arrays;
   public void onLoadCompleted(SourceLoadable loadable, long elapsedRealtimeMs,
       long loadDurationMs) {
     sampleSize = (int) loadable.dataSource.getBytesRead();
-    sampleData = loadable.sampleData;
+    sampleData = Assertions.checkNotNull(loadable.sampleData);
     loadingFinished = true;
-    loadingSucceeded = true;
     eventDispatcher.loadCompleted(
         loadable.dataSpec,
         loadable.dataSource.getLastOpenedUri(),
@@ -325,7 +335,7 @@ import java.util.Arrays;
         streamState = STREAM_STATE_SEND_SAMPLE;
         return C.RESULT_FORMAT_READ;
       } else if (loadingFinished) {
-        if (loadingSucceeded) {
+        if (sampleData != null) {
           buffer.addFlag(C.BUFFER_FLAG_KEY_FRAME);
           buffer.timeUs = 0;
           if (buffer.isFlagsOnly()) {
@@ -371,8 +381,10 @@ import java.util.Arrays;
 
     private final StatsDataSource dataSource;
 
-    private byte[] sampleData;
+    @Nullable private byte[] sampleData;
 
+    // the constructor does not initialize fields: sampleData
+    @SuppressWarnings("nullness:initialization.fields.uninitialized")
     public SourceLoadable(DataSpec dataSpec, DataSource dataSource) {
       this.dataSpec = dataSpec;
       this.dataSource = new StatsDataSource(dataSource);

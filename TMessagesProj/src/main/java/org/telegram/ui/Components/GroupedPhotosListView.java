@@ -44,6 +44,7 @@ public class GroupedPhotosListView extends View implements GestureDetector.OnGes
     private int animateToDX;
     private int animateToDXStart;
     private int animateToItem = -1;
+    private boolean animateToItemFast;
     private android.widget.Scroller scroll;
     private GestureDetector gestureDetector;
     private boolean scrolling;
@@ -51,12 +52,14 @@ public class GroupedPhotosListView extends View implements GestureDetector.OnGes
     private boolean ignoreChanges;
     private boolean animationsEnabled = true;
     private int nextPhotoScrolling = -1;
+    private boolean hasPhotos;
+    private boolean animateBackground = true;
 
     private GroupedPhotosListViewDelegate delegate;
 
     private ValueAnimator showAnimator;
     private ValueAnimator hideAnimator;
-    private float drawAlpha = 0f;
+    private float drawAlpha;
 
     public interface GroupedPhotosListViewDelegate {
         int getCurrentIndex();
@@ -68,6 +71,8 @@ public class GroupedPhotosListView extends View implements GestureDetector.OnGes
         ArrayList<TLRPC.PageBlock> getPageBlockArr();
         Object getParentObject();
         void setCurrentIndex(int index);
+        void onShowAnimationStart();
+        void onStopScrolling();
     }
 
     public GroupedPhotosListView(Context context) {
@@ -104,6 +109,7 @@ public class GroupedPhotosListView extends View implements GestureDetector.OnGes
         int slideshowMessageId = delegate.getSlideshowMessageId();
         int currentAccount = delegate.getCurrentAccount();
 
+        hasPhotos = false;
         boolean changed = false;
         int newCount = 0;
         Object currentObject = null;
@@ -111,6 +117,7 @@ public class GroupedPhotosListView extends View implements GestureDetector.OnGes
             ImageLocation location = imagesArrLocations.get(currentIndex);
             newCount = imagesArrLocations.size();
             currentObject = location;
+            hasPhotos = true;
         } else if (imagesArr != null && !imagesArr.isEmpty()) {
             MessageObject messageObject = imagesArr.get(currentIndex);
             currentObject = messageObject;
@@ -119,6 +126,7 @@ public class GroupedPhotosListView extends View implements GestureDetector.OnGes
                 currentGroupId = messageObject.getGroupIdForUse();
             }
             if (currentGroupId != 0) {
+                hasPhotos = true;
                 int max = Math.min(currentIndex + 10, imagesArr.size());
                 for (int a = currentIndex; a < max; a++) {
                     MessageObject object = imagesArr.get(a);
@@ -146,6 +154,7 @@ public class GroupedPhotosListView extends View implements GestureDetector.OnGes
                 currentGroupId = pageBlock.groupId;
             }
             if (currentGroupId != 0) {
+                hasPhotos = true;
                 for (int a = currentIndex, size = pageBlockArr.size(); a < size; a++) {
                     TLRPC.PageBlock object = pageBlockArr.get(a);
                     if (object.groupId == currentGroupId) {
@@ -168,9 +177,10 @@ public class GroupedPhotosListView extends View implements GestureDetector.OnGes
             return;
         }
         if (animationsEnabled) {
-            if (newCount <= 1) {
+            if (!hasPhotos) {
                 if (showAnimator != null) {
                     showAnimator.cancel();
+                    showAnimator = null;
                 }
                 if (drawAlpha > 0f && currentPhotos.size() > 1) {
                     if (hideAnimator == null) {
@@ -204,6 +214,13 @@ public class GroupedPhotosListView extends View implements GestureDetector.OnGes
                     showAnimator.setDuration((long) (200 * (1f - drawAlpha)));
                     showAnimator.addListener(new AnimatorListenerAdapter() {
                         @Override
+                        public void onAnimationStart(Animator animation) {
+                            if (delegate != null) {
+                                delegate.onShowAnimationStart();
+                            }
+                        }
+
+                        @Override
                         public void onAnimationEnd(Animator animation) {
                             if (showAnimator == animation) {
                                 showAnimator = null;
@@ -214,7 +231,6 @@ public class GroupedPhotosListView extends View implements GestureDetector.OnGes
                         drawAlpha = (float) a.getAnimatedValue();
                         invalidate();
                     });
-                    showAnimator.start();
                 }
             }
         }
@@ -224,7 +240,12 @@ public class GroupedPhotosListView extends View implements GestureDetector.OnGes
             } else {
                 int newImageIndex = currentObjects.indexOf(currentObject);
                 if (currentImage != newImageIndex && newImageIndex != -1) {
-                    if (animateAllLine) {
+                    boolean animate = animateAllLine;
+                    if (!animate && !moving && (newImageIndex == currentImage - 1 || newImageIndex == currentImage + 1)) {
+                        animate = true;
+                        animateToItemFast = true;
+                    }
+                    if (animate) {
                         nextImage = animateToItem = newImageIndex;
                         animateToDX = (currentImage - newImageIndex) * (itemWidth + itemSpacing);
                         moving = true;
@@ -250,6 +271,7 @@ public class GroupedPhotosListView extends View implements GestureDetector.OnGes
                 currentPhotos.addAll(imagesArrLocations);
                 currentImage = currentIndex;
                 animateToItem = -1;
+                animateToItemFast = false;
             } else if (imagesArr != null && !imagesArr.isEmpty()) {
                 if (currentGroupId != 0 || slideshowMessageId != 0) {
                     int max = Math.min(currentIndex + 10, imagesArr.size());
@@ -264,6 +286,7 @@ public class GroupedPhotosListView extends View implements GestureDetector.OnGes
                     }
                     currentImage = 0;
                     animateToItem = -1;
+                    animateToItemFast = false;
                     int min = Math.max(currentIndex - 10, 0);
                     for (int a = currentIndex - 1; a >= min; a--) {
                         MessageObject object = imagesArr.get(a);
@@ -289,6 +312,7 @@ public class GroupedPhotosListView extends View implements GestureDetector.OnGes
                     }
                     currentImage = 0;
                     animateToItem = -1;
+                    animateToItemFast = false;
                     for (int a = currentIndex - 1; a >= 0; a--) {
                         TLRPC.PageBlock object = pageBlockArr.get(a);
                         if (object.groupId == currentGroupId) {
@@ -434,6 +458,9 @@ public class GroupedPhotosListView extends View implements GestureDetector.OnGes
                 }
             }
         }
+        if (showAnimator != null && !showAnimator.isStarted()) {
+            showAnimator.start();
+        }
     }
 
     @Override
@@ -442,6 +469,7 @@ public class GroupedPhotosListView extends View implements GestureDetector.OnGes
             scroll.abortAnimation();
         }
         animateToItem = -1;
+        animateToItemFast = false;
         return true;
     }
 
@@ -580,12 +608,15 @@ public class GroupedPhotosListView extends View implements GestureDetector.OnGes
         }
         if (nextPhotoScrolling >= 0 && nextPhotoScrolling < currentObjects.size()) {
             stopedScrolling = true;
-
+            animateToItemFast = false;
             nextImage = animateToItem = nextPhotoScrolling;
             animateToDX = (currentImage - nextPhotoScrolling) * (itemWidth + itemSpacing);
             animateToDXStart = drawDx;
             moveLineProgress = 1.0f;
             nextPhotoScrolling = -1;
+            if (delegate != null) {
+                delegate.onStopScrolling();
+            }
         }
         invalidate();
     }
@@ -618,11 +649,18 @@ public class GroupedPhotosListView extends View implements GestureDetector.OnGes
 
     @Override
     protected void onDraw(Canvas canvas) {
+        if (!hasPhotos && imagesToDraw.isEmpty()) {
+            return;
+        }
+        float bgAlpha = drawAlpha;
+        if (!animateBackground) {
+            bgAlpha = hasPhotos ? 1f : 0f;
+        }
+        backgroundPaint.setAlpha((int) (0x7F * bgAlpha));
+        canvas.drawRect(0, 0, getMeasuredWidth(), getMeasuredHeight(), backgroundPaint);
         if (imagesToDraw.isEmpty()) {
             return;
         }
-        backgroundPaint.setAlpha((int) (0x7F * drawAlpha));
-        canvas.drawRect(0, 0, getMeasuredWidth(), getMeasuredHeight(), backgroundPaint);
         int count = imagesToDraw.size();
 
         int moveX = drawDx;
@@ -707,7 +745,7 @@ public class GroupedPhotosListView extends View implements GestureDetector.OnGes
         lastUpdateTime = newTime;
         if (animateToItem >= 0) {
             if (moveLineProgress > 0.0f) {
-                moveLineProgress -= dt / 200.0f;
+                moveLineProgress -= dt / (animateToItemFast ? 100.0f : 200.0f);
                 if (animateToItem == currentImage) {
                     if (currentItemProgress < 1.0f) {
                         currentItemProgress += dt / 200.0f;
@@ -740,6 +778,7 @@ public class GroupedPhotosListView extends View implements GestureDetector.OnGes
                     stopedScrolling = false;
                     drawDx = 0;
                     animateToItem = -1;
+                    animateToItemFast = false;
                 }
             }
             fillImages(true, drawDx);
@@ -769,7 +808,7 @@ public class GroupedPhotosListView extends View implements GestureDetector.OnGes
     }
 
     public boolean hasPhotos() {
-        return !currentPhotos.isEmpty() && hideAnimator == null;
+        return hasPhotos && hideAnimator == null && (drawAlpha > 0f || !animateBackground || (showAnimator != null && showAnimator.isStarted()));
     }
 
     public boolean isAnimationsEnabled() {
@@ -788,13 +827,18 @@ public class GroupedPhotosListView extends View implements GestureDetector.OnGes
                     hideAnimator.cancel();
                     hideAnimator = null;
                 }
-                drawAlpha = 1f;
+                drawAlpha = 0f;
                 invalidate();
             }
         }
     }
 
+    public void setAnimateBackground(boolean animateBackground) {
+        this.animateBackground = animateBackground;
+    }
+
     public void reset() {
+        hasPhotos = false;
         if (animationsEnabled) {
             drawAlpha = 0f;
         }

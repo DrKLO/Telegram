@@ -21,10 +21,10 @@ import androidx.annotation.Nullable;
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.Player;
 import com.google.android.exoplayer2.Timeline;
+import com.google.android.exoplayer2.drm.DrmSessionManager;
 import com.google.android.exoplayer2.extractor.DefaultExtractorsFactory;
 import com.google.android.exoplayer2.extractor.Extractor;
 import com.google.android.exoplayer2.extractor.ExtractorsFactory;
-import com.google.android.exoplayer2.source.ads.AdsMediaSource;
 import com.google.android.exoplayer2.upstream.Allocator;
 import com.google.android.exoplayer2.upstream.DataSource;
 import com.google.android.exoplayer2.upstream.DefaultLoadErrorHandlingPolicy;
@@ -36,8 +36,7 @@ import java.io.IOException;
 /** @deprecated Use {@link ProgressiveMediaSource} instead. */
 @Deprecated
 @SuppressWarnings("deprecation")
-public final class ExtractorMediaSource extends BaseMediaSource
-    implements MediaSource.SourceInfoRefreshListener {
+public final class ExtractorMediaSource extends CompositeMediaSource<Void> {
 
   /** @deprecated Use {@link MediaSourceEventListener} instead. */
   @Deprecated
@@ -59,15 +58,15 @@ public final class ExtractorMediaSource extends BaseMediaSource
 
   }
 
-  /** Use {@link ProgressiveMediaSource.Factory} instead. */
+  /** @deprecated Use {@link ProgressiveMediaSource.Factory} instead. */
   @Deprecated
-  public static final class Factory implements AdsMediaSource.MediaSourceFactory {
+  public static final class Factory implements MediaSourceFactory {
 
     private final DataSource.Factory dataSourceFactory;
 
-    private @Nullable ExtractorsFactory extractorsFactory;
-    private @Nullable String customCacheKey;
-    private @Nullable Object tag;
+    @Nullable private ExtractorsFactory extractorsFactory;
+    @Nullable private String customCacheKey;
+    @Nullable private Object tag;
     private LoadErrorHandlingPolicy loadErrorHandlingPolicy;
     private int continueLoadingCheckIntervalBytes;
     private boolean isCreateCalled;
@@ -180,6 +179,13 @@ public final class ExtractorMediaSource extends BaseMediaSource
       return this;
     }
 
+    /** @deprecated Use {@link ProgressiveMediaSource.Factory#setDrmSessionManager} instead. */
+    @Override
+    @Deprecated
+    public Factory setDrmSessionManager(DrmSessionManager<?> drmSessionManager) {
+      throw new UnsupportedOperationException();
+    }
+
     /**
      * Returns a new {@link ExtractorMediaSource} using the current parameters.
      *
@@ -222,6 +228,9 @@ public final class ExtractorMediaSource extends BaseMediaSource
     }
   }
 
+  /**
+   * @deprecated Use {@link ProgressiveMediaSource#DEFAULT_LOADING_CHECK_INTERVAL_BYTES} instead.
+   */
   @Deprecated
   public static final int DEFAULT_LOADING_CHECK_INTERVAL_BYTES =
       ProgressiveMediaSource.DEFAULT_LOADING_CHECK_INTERVAL_BYTES;
@@ -243,8 +252,8 @@ public final class ExtractorMediaSource extends BaseMediaSource
       Uri uri,
       DataSource.Factory dataSourceFactory,
       ExtractorsFactory extractorsFactory,
-      Handler eventHandler,
-      EventListener eventListener) {
+      @Nullable Handler eventHandler,
+      @Nullable EventListener eventListener) {
     this(uri, dataSourceFactory, extractorsFactory, eventHandler, eventListener, null);
   }
 
@@ -265,9 +274,9 @@ public final class ExtractorMediaSource extends BaseMediaSource
       Uri uri,
       DataSource.Factory dataSourceFactory,
       ExtractorsFactory extractorsFactory,
-      Handler eventHandler,
-      EventListener eventListener,
-      String customCacheKey) {
+      @Nullable Handler eventHandler,
+      @Nullable EventListener eventListener,
+      @Nullable String customCacheKey) {
     this(
         uri,
         dataSourceFactory,
@@ -297,9 +306,9 @@ public final class ExtractorMediaSource extends BaseMediaSource
       Uri uri,
       DataSource.Factory dataSourceFactory,
       ExtractorsFactory extractorsFactory,
-      Handler eventHandler,
-      EventListener eventListener,
-      String customCacheKey,
+      @Nullable Handler eventHandler,
+      @Nullable EventListener eventListener,
+      @Nullable String customCacheKey,
       int continueLoadingCheckIntervalBytes) {
     this(
         uri,
@@ -327,6 +336,7 @@ public final class ExtractorMediaSource extends BaseMediaSource
             uri,
             dataSourceFactory,
             extractorsFactory,
+            DrmSessionManager.getDummyDrmSessionManager(),
             loadableLoadErrorHandlingPolicy,
             customCacheKey,
             continueLoadingCheckIntervalBytes,
@@ -340,13 +350,15 @@ public final class ExtractorMediaSource extends BaseMediaSource
   }
 
   @Override
-  public void prepareSourceInternal(@Nullable TransferListener mediaTransferListener) {
-    progressiveMediaSource.prepareSource(/* listener= */ this, mediaTransferListener);
+  protected void prepareSourceInternal(@Nullable TransferListener mediaTransferListener) {
+    super.prepareSourceInternal(mediaTransferListener);
+    prepareChildSource(/* id= */ null, progressiveMediaSource);
   }
 
   @Override
-  public void maybeThrowSourceInfoRefreshError() throws IOException {
-    progressiveMediaSource.maybeThrowSourceInfoRefreshError();
+  protected void onChildSourceInfoRefreshed(
+      @Nullable Void id, MediaSource mediaSource, Timeline timeline) {
+    refreshSourceInfo(timeline);
   }
 
   @Override
@@ -359,19 +371,8 @@ public final class ExtractorMediaSource extends BaseMediaSource
     progressiveMediaSource.releasePeriod(mediaPeriod);
   }
 
-  @Override
-  public void releaseSourceInternal() {
-    progressiveMediaSource.releaseSource(/* listener= */ this);
-  }
-
-  @Override
-  public void onSourceInfoRefreshed(
-      MediaSource source, Timeline timeline, @Nullable Object manifest) {
-    refreshSourceInfo(timeline, manifest);
-  }
-
   @Deprecated
-  private static final class EventListenerWrapper extends DefaultMediaSourceEventListener {
+  private static final class EventListenerWrapper implements MediaSourceEventListener {
 
     private final EventListener eventListener;
 

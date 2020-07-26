@@ -17,6 +17,7 @@ import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
+import android.os.Build;
 import android.text.TextPaint;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -755,6 +756,7 @@ public class DataAutoDownloadActivity extends BaseFragment {
                         view.setText(LocaleController.getString("AutoDownloadAudioInfo", R.string.AutoDownloadAudioInfo));
                         view.setBackgroundDrawable(Theme.getThemedDrawable(mContext, R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow));
                         view.setFixedSize(0);
+                        view.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_YES);
                     } else if (position == autoDownloadSectionRow) {
                         if (usageHeaderRow == -1) {
                             view.setBackgroundDrawable(Theme.getThemedDrawable(mContext, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
@@ -765,10 +767,16 @@ public class DataAutoDownloadActivity extends BaseFragment {
                             } else if (currentType == 2) {
                                 view.setText(LocaleController.getString("AutoDownloadOnRoamingDataInfo", R.string.AutoDownloadOnRoamingDataInfo));
                             }
+                            view.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_YES);
                         } else {
                             view.setBackgroundDrawable(Theme.getThemedDrawable(mContext, R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow));
                             view.setText(null);
                             view.setFixedSize(12);
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+                                view.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS);
+                            } else {
+                                view.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+                            }
                         }
                         break;
                     }

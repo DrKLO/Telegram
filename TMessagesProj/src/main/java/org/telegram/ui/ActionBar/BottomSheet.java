@@ -548,6 +548,11 @@ public class BottomSheet extends Dialog {
         boolean canDismiss();
     }
 
+    public void setCalcMandatoryInsets(boolean value) {
+        calcMandatoryInsets = value;
+        drawNavigationBar = value;
+    }
+
     public static class BottomSheetDelegate implements BottomSheetDelegateInterface {
         @Override
         public void onOpenAnimationStart() {

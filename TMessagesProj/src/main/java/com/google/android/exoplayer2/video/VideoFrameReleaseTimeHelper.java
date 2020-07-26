@@ -21,11 +21,11 @@ import android.hardware.display.DisplayManager;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Message;
-import androidx.annotation.Nullable;
 import android.view.Choreographer;
 import android.view.Choreographer.FrameCallback;
 import android.view.Display;
 import android.view.WindowManager;
+import androidx.annotation.Nullable;
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.util.Util;
 

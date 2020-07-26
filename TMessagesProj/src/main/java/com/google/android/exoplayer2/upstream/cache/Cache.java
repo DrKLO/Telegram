@@ -16,6 +16,7 @@
 package com.google.android.exoplayer2.upstream.cache;
 
 import androidx.annotation.Nullable;
+import androidx.annotation.WorkerThread;
 import com.google.android.exoplayer2.C;
 import java.io.File;
 import java.io.IOException;
@@ -100,7 +101,10 @@ public interface Cache {
   /**
    * Releases the cache. This method must be called when the cache is no longer required. The cache
    * must not be used after calling this method.
+   *
+   * <p>This method may be slow and shouldn't normally be called on the main thread.
    */
+  @WorkerThread
   void release();
 
   /**
@@ -162,29 +166,37 @@ public interface Cache {
    * calling {@link #commitFile(File, long)}. When the caller has finished writing, it must release
    * the lock by calling {@link #releaseHoleSpan}.
    *
+   * <p>This method may be slow and shouldn't normally be called on the main thread.
+   *
    * @param key The key of the data being requested.
    * @param position The position of the data being requested.
    * @return The {@link CacheSpan}.
    * @throws InterruptedException If the thread was interrupted.
    * @throws CacheException If an error is encountered.
    */
+  @WorkerThread
   CacheSpan startReadWrite(String key, long position) throws InterruptedException, CacheException;
 
   /**
    * Same as {@link #startReadWrite(String, long)}. However, if the cache entry is locked, then
    * instead of blocking, this method will return null as the {@link CacheSpan}.
    *
+   * <p>This method may be slow and shouldn't normally be called on the main thread.
+   *
    * @param key The key of the data being requested.
    * @param position The position of the data being requested.
    * @return The {@link CacheSpan}. Or null if the cache entry is locked.
    * @throws CacheException If an error is encountered.
    */
+  @WorkerThread
   @Nullable
   CacheSpan startReadWriteNonBlocking(String key, long position) throws CacheException;
 
   /**
    * Obtains a cache file into which data can be written. Must only be called when holding a
    * corresponding hole {@link CacheSpan} obtained from {@link #startReadWrite(String, long)}.
+   *
+   * <p>This method may be slow and shouldn't normally be called on the main thread.
    *
    * @param key The cache key for the data.
    * @param position The starting position of the data.
@@ -193,16 +205,20 @@ public interface Cache {
    * @return The file into which data should be written.
    * @throws CacheException If an error is encountered.
    */
+  @WorkerThread
   File startFile(String key, long position, long length) throws CacheException;
 
   /**
    * Commits a file into the cache. Must only be called when holding a corresponding hole {@link
-   * CacheSpan} obtained from {@link #startReadWrite(String, long)}
+   * CacheSpan} obtained from {@link #startReadWrite(String, long)}.
+   *
+   * <p>This method may be slow and shouldn't normally be called on the main thread.
    *
    * @param file A newly written cache file.
    * @param length The length of the newly written cache file in bytes.
    * @throws CacheException If an error is encountered.
    */
+  @WorkerThread
   void commitFile(File file, long length) throws CacheException;
 
   /**
@@ -216,19 +232,22 @@ public interface Cache {
   /**
    * Removes a cached {@link CacheSpan} from the cache, deleting the underlying file.
    *
+   * <p>This method may be slow and shouldn't normally be called on the main thread.
+   *
    * @param span The {@link CacheSpan} to remove.
    * @throws CacheException If an error is encountered.
    */
+  @WorkerThread
   void removeSpan(CacheSpan span) throws CacheException;
 
- /**
-  * Queries if a range is entirely available in the cache.
-  *
-  * @param key The cache key for the data.
-  * @param position The starting position of the data.
-  * @param length The length of the data.
-  * @return true if the data is available in the Cache otherwise false;
-  */
+  /**
+   * Queries if a range is entirely available in the cache.
+   *
+   * @param key The cache key for the data.
+   * @param position The starting position of the data.
+   * @param length The length of the data.
+   * @return true if the data is available in the Cache otherwise false;
+   */
   boolean isCached(String key, long position, long length);
 
   /**
@@ -247,10 +266,13 @@ public interface Cache {
    * Applies {@code mutations} to the {@link ContentMetadata} for the given key. A new {@link
    * CachedContent} is added if there isn't one already with the given key.
    *
+   * <p>This method may be slow and shouldn't normally be called on the main thread.
+   *
    * @param key The cache key for the data.
    * @param mutations Contains mutations to be applied to the metadata.
    * @throws CacheException If an error is encountered.
    */
+  @WorkerThread
   void applyContentMetadataMutations(String key, ContentMetadataMutations mutations)
       throws CacheException;
 

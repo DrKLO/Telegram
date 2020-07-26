@@ -51,6 +51,12 @@ import java.nio.ByteBuffer;
   @Nullable private byte[] tempBuffer;
   private boolean endOfExtractorInput;
 
+  // the constructor does not initialize fields: tempBuffer
+  // call to flacInit() not allowed on the given receiver.
+  @SuppressWarnings({
+    "nullness:initialization.fields.uninitialized",
+    "nullness:method.invocation.invalid"
+  })
   public FlacDecoderJni() throws FlacDecoderException {
     nativeDecoderContext = flacInit();
     if (nativeDecoderContext == 0) {

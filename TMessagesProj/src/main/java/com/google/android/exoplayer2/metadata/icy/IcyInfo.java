@@ -20,34 +20,34 @@ import android.os.Parcelable;
 import androidx.annotation.Nullable;
 import com.google.android.exoplayer2.metadata.Metadata;
 import com.google.android.exoplayer2.util.Assertions;
-import com.google.android.exoplayer2.util.Util;
+import java.util.Arrays;
 
 /** ICY in-stream information. */
 public final class IcyInfo implements Metadata.Entry {
 
-  /** The complete metadata string used to construct this IcyInfo. */
-  public final String rawMetadata;
-  /** The stream title if present, or {@code null}. */
+  /** The complete metadata bytes used to construct this IcyInfo. */
+  public final byte[] rawMetadata;
+  /** The stream title if present and decodable, or {@code null}. */
   @Nullable public final String title;
-  /** The stream URL if present, or {@code null}. */
+  /** The stream URL if present and decodable, or {@code null}. */
   @Nullable public final String url;
 
   /**
-   * Construct a new IcyInfo from the source metadata string, and optionally a StreamTitle and
-   * StreamUrl that have been extracted.
+   * Construct a new IcyInfo from the source metadata, and optionally a StreamTitle and StreamUrl
+   * that have been extracted.
    *
    * @param rawMetadata See {@link #rawMetadata}.
    * @param title See {@link #title}.
    * @param url See {@link #url}.
    */
-  public IcyInfo(String rawMetadata, @Nullable String title, @Nullable String url) {
+  public IcyInfo(byte[] rawMetadata, @Nullable String title, @Nullable String url) {
     this.rawMetadata = rawMetadata;
     this.title = title;
     this.url = url;
   }
 
   /* package */ IcyInfo(Parcel in) {
-    rawMetadata = Assertions.checkNotNull(in.readString());
+    rawMetadata = Assertions.checkNotNull(in.createByteArray());
     title = in.readString();
     url = in.readString();
   }
@@ -62,26 +62,26 @@ public final class IcyInfo implements Metadata.Entry {
     }
     IcyInfo other = (IcyInfo) obj;
     // title & url are derived from rawMetadata, so no need to include them in the comparison.
-    return Util.areEqual(rawMetadata, other.rawMetadata);
+    return Arrays.equals(rawMetadata, other.rawMetadata);
   }
 
   @Override
   public int hashCode() {
     // title & url are derived from rawMetadata, so no need to include them in the hash.
-    return rawMetadata.hashCode();
+    return Arrays.hashCode(rawMetadata);
   }
 
   @Override
   public String toString() {
     return String.format(
-        "ICY: title=\"%s\", url=\"%s\", rawMetadata=\"%s\"", title, url, rawMetadata);
+        "ICY: title=\"%s\", url=\"%s\", rawMetadata.length=\"%s\"", title, url, rawMetadata.length);
   }
 
   // Parcelable implementation.
 
   @Override
   public void writeToParcel(Parcel dest, int flags) {
-    dest.writeString(rawMetadata);
+    dest.writeByteArray(rawMetadata);
     dest.writeString(title);
     dest.writeString(url);
   }

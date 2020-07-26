@@ -41,6 +41,8 @@ import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.accessibility.AccessibilityNodeInfo;
+import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.TextView;
 
@@ -237,12 +239,25 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
 
                 @Override
                 public void onSeekBarPressed(boolean pressed) {
+                }
 
+                @Override
+                public CharSequence getContentDescription() {
+                    return String.valueOf(Math.round(startFontSize + (endFontSize - startFontSize) * sizeBar.getProgress()));
+                }
+
+                @Override
+                public int getStepsCount() {
+                    return endFontSize - startFontSize;
                 }
             });
+            sizeBar.setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO);
             addView(sizeBar, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 38, Gravity.LEFT | Gravity.TOP, 5, 5, 39, 0));
 
             messagesCell = new ThemePreviewMessagesCell(context, parentLayout, 0);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+                messagesCell.setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS);
+            }
             addView(messagesCell, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 0, 53, 0, 0));
         }
 
@@ -267,6 +282,17 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
             super.invalidate();
             messagesCell.invalidate();
             sizeBar.invalidate();
+        }
+
+        @Override
+        public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
+            super.onInitializeAccessibilityNodeInfo(info);
+            sizeBar.getSeekBarAccessibilityDelegate().onInitializeAccessibilityNodeInfoInternal(this, info);
+        }
+
+        @Override
+        public boolean performAccessibilityAction(int action, Bundle arguments) {
+            return super.performAccessibilityAction(action, arguments) || sizeBar.getSeekBarAccessibilityDelegate().performAccessibilityActionInternal(this, action, arguments);
         }
     }
 
@@ -296,9 +322,19 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
 
                 @Override
                 public void onSeekBarPressed(boolean pressed) {
+                }
 
+                @Override
+                public CharSequence getContentDescription() {
+                    return String.valueOf(Math.round(startRadius + (endRadius - startRadius) * sizeBar.getProgress()));
+                }
+
+                @Override
+                public int getStepsCount() {
+                    return endRadius - startRadius;
                 }
             });
+            sizeBar.setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO);
             addView(sizeBar, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 38, Gravity.LEFT | Gravity.TOP, 5, 5, 39, 0));
         }
 
@@ -318,6 +354,17 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
         public void invalidate() {
             super.invalidate();
             sizeBar.invalidate();
+        }
+
+        @Override
+        public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
+            super.onInitializeAccessibilityNodeInfo(info);
+            sizeBar.getSeekBarAccessibilityDelegate().onInitializeAccessibilityNodeInfoInternal(this, info);
+        }
+
+        @Override
+        public boolean performAccessibilityAction(int action, Bundle arguments) {
+            return super.performAccessibilityAction(action, arguments) || sizeBar.getSeekBarAccessibilityDelegate().performAccessibilityActionInternal(this, action, arguments);
         }
     }
 
@@ -1191,6 +1238,7 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
         private float checkedState;
         private Theme.ThemeInfo currentTheme;
         private Theme.ThemeAccent currentAccent;
+        private boolean checked;
 
         InnerAccentView(Context context) {
             super(context);
@@ -1203,7 +1251,7 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
         }
 
         void updateCheckedState(boolean animate) {
-            boolean checked = currentTheme.currentAccentId == currentAccent.id;
+            checked = currentTheme.currentAccentId == currentAccent.id;
 
             if (checkAnimator != null) {
                 checkAnimator.cancel();
@@ -1270,8 +1318,17 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
                 canvas.drawCircle(cx, cy, AndroidUtilities.dp(8) * (1.0f - checkedState), paint);
             }
         }
-    }
 
+        @Override
+        public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
+            super.onInitializeAccessibilityNodeInfo(info);
+            info.setText(LocaleController.getString("ColorPickerMainColor", R.string.ColorPickerMainColor));
+            info.setClassName(Button.class.getName());
+            info.setChecked(checked);
+            info.setCheckable(true);
+            info.setEnabled(true);
+        }
+    }
 
     private static class InnerCustomAccentView extends View {
         private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -1320,6 +1377,14 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
 
                 angle += Math.PI / 3;
             }
+        }
+
+        @Override
+        public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
+            super.onInitializeAccessibilityNodeInfo(info);
+            info.setText(LocaleController.getString("ColorPickerMainColor", R.string.ColorPickerMainColor));
+            info.setClassName(Button.class.getName());
+            info.setEnabled(true);
         }
     }
 

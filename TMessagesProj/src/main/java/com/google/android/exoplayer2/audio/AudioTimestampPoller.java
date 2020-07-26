@@ -37,7 +37,7 @@ import java.lang.annotation.RetentionPolicy;
  *
  * <p>If {@link #hasTimestamp()} returns {@code true}, call {@link #getTimestampSystemTimeUs()} to
  * get the system time at which the latest timestamp was sampled and {@link
- * #getTimestampPositionFrames()} to get its position in frames. If {@link #isTimestampAdvancing()}
+ * #getTimestampPositionFrames()} to get its position in frames. If {@link #hasAdvancingTimestamp()}
  * returns {@code true}, the caller should assume that the timestamp has been increasing in real
  * time since it was sampled. Otherwise, it may be stationary.
  *
@@ -68,7 +68,7 @@ import java.lang.annotation.RetentionPolicy;
   private static final int STATE_ERROR = 4;
 
   /** The polling interval for {@link #STATE_INITIALIZING} and {@link #STATE_TIMESTAMP}. */
-  private static final int FAST_POLL_INTERVAL_US = 5_000;
+  private static final int FAST_POLL_INTERVAL_US = 10_000;
   /**
    * The polling interval for {@link #STATE_TIMESTAMP_ADVANCING} and {@link #STATE_NO_TIMESTAMP}.
    */
@@ -82,7 +82,7 @@ import java.lang.annotation.RetentionPolicy;
    */
   private static final int INITIALIZING_DURATION_US = 500_000;
 
-  private final @Nullable AudioTimestampV19 audioTimestamp;
+  @Nullable private final AudioTimestampV19 audioTimestamp;
 
   private @State int state;
   private long initializeSystemTimeUs;
@@ -110,7 +110,7 @@ import java.lang.annotation.RetentionPolicy;
    * timestamp is available via {@link #getTimestampSystemTimeUs()} and {@link
    * #getTimestampPositionFrames()}, and the caller should call {@link #acceptTimestamp()} if the
    * timestamp was valid, or {@link #rejectTimestamp()} otherwise. The values returned by {@link
-   * #hasTimestamp()} and {@link #isTimestampAdvancing()} may be updated.
+   * #hasTimestamp()} and {@link #hasAdvancingTimestamp()} may be updated.
    *
    * @param systemTimeUs The current system time, in microseconds.
    * @return Whether the timestamp was updated.
@@ -200,12 +200,12 @@ import java.lang.annotation.RetentionPolicy;
   }
 
   /**
-   * Returns whether the timestamp appears to be advancing. If {@code true}, call {@link
+   * Returns whether this instance has an advancing timestamp. If {@code true}, call {@link
    * #getTimestampSystemTimeUs()} and {@link #getTimestampSystemTimeUs()} to access the timestamp. A
    * current position for the track can be extrapolated based on elapsed real time since the system
    * time at which the timestamp was sampled.
    */
-  public boolean isTimestampAdvancing() {
+  public boolean hasAdvancingTimestamp() {
     return state == STATE_TIMESTAMP_ADVANCING;
   }
 

@@ -2729,6 +2729,13 @@ std::unique_ptr<TLObject> ConnectionsManager::wrapInLayer(TLObject *object, Data
 
             TL_jsonObjectValue *objectValue = new TL_jsonObjectValue();
             jsonObject->value.push_back(std::unique_ptr<TL_jsonObjectValue>(objectValue));
+            TL_jsonString *jsonString = new TL_jsonString();
+            jsonString->value = installer;
+            objectValue->key = "installer";
+            objectValue->value = std::unique_ptr<JSONValue>(jsonString);
+
+            objectValue = new TL_jsonObjectValue();
+            jsonObject->value.push_back(std::unique_ptr<TL_jsonObjectValue>(objectValue));
 
             TL_jsonNumber *jsonNumber = new TL_jsonNumber();
             jsonNumber->value = currentDeviceTimezone;
@@ -3175,7 +3182,7 @@ void ConnectionsManager::applyDnsConfig(NativeByteBuffer *buffer, std::string ph
     });
 }
 
-void ConnectionsManager::init(uint32_t version, int32_t layer, int32_t apiId, std::string deviceModel, std::string systemVersion, std::string appVersion, std::string langCode, std::string systemLangCode, std::string configPath, std::string logPath, std::string regId, std::string cFingerpting, int32_t timezoneOffset, int32_t userId, bool isPaused, bool enablePushConnection, bool hasNetwork, int32_t networkType) {
+void ConnectionsManager::init(uint32_t version, int32_t layer, int32_t apiId, std::string deviceModel, std::string systemVersion, std::string appVersion, std::string langCode, std::string systemLangCode, std::string configPath, std::string logPath, std::string regId, std::string cFingerpting, std::string installerId, int32_t timezoneOffset, int32_t userId, bool isPaused, bool enablePushConnection, bool hasNetwork, int32_t networkType) {
     currentVersion = version;
     currentLayer = layer;
     currentApiId = apiId;
@@ -3186,6 +3193,7 @@ void ConnectionsManager::init(uint32_t version, int32_t layer, int32_t apiId, st
     currentLangCode = langCode;
     currentRegId = regId;
     certFingerprint = cFingerpting;
+    installer = installerId;
     currentDeviceTimezone = timezoneOffset;
     currentSystemLangCode = systemLangCode;
     currentUserId = userId;

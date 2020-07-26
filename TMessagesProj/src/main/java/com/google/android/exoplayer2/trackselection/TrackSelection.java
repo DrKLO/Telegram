@@ -21,7 +21,6 @@ import com.google.android.exoplayer2.Format;
 import com.google.android.exoplayer2.source.TrackGroup;
 import com.google.android.exoplayer2.source.chunk.MediaChunk;
 import com.google.android.exoplayer2.source.chunk.MediaChunkIterator;
-import com.google.android.exoplayer2.trackselection.TrackSelectionUtil.AdaptiveTrackSelectionFactory;
 import com.google.android.exoplayer2.upstream.BandwidthMeter;
 import java.util.List;
 import org.checkerframework.checker.nullness.compatqual.NullableType;
@@ -77,32 +76,19 @@ public interface TrackSelection {
   interface Factory {
 
     /**
-     * @deprecated Implement {@link #createTrackSelections(Definition[], BandwidthMeter)} instead.
-     *     Calling {@link TrackSelectionUtil#createTrackSelectionsForDefinitions(Definition[],
-     *     AdaptiveTrackSelectionFactory)} helps to create a single adaptive track selection in the
-     *     same way as using this deprecated method.
-     */
-    @Deprecated
-    default TrackSelection createTrackSelection(
-        TrackGroup group, BandwidthMeter bandwidthMeter, int... tracks) {
-      throw new UnsupportedOperationException();
-    }
-
-    /**
-     * Creates a new selection for each {@link Definition}.
+     * Creates track selections for the provided {@link Definition Definitions}.
+     *
+     * <p>Implementations that create at most one adaptive track selection may use {@link
+     * TrackSelectionUtil#createTrackSelectionsForDefinitions}.
      *
      * @param definitions A {@link Definition} array. May include null values.
      * @param bandwidthMeter A {@link BandwidthMeter} which can be used to select tracks.
      * @return The created selections. Must have the same length as {@code definitions} and may
      *     include null values.
      */
-    @SuppressWarnings("deprecation")
-    default @NullableType TrackSelection[] createTrackSelections(
-        @NullableType Definition[] definitions, BandwidthMeter bandwidthMeter) {
-      return TrackSelectionUtil.createTrackSelectionsForDefinitions(
-          definitions,
-          definition -> createTrackSelection(definition.group, bandwidthMeter, definition.tracks));
-    }
+    @NullableType
+    TrackSelection[] createTrackSelections(
+        @NullableType Definition[] definitions, BandwidthMeter bandwidthMeter);
   }
 
   /**
@@ -214,16 +200,6 @@ public interface TrackSelection {
   default void onDiscontinuity() {}
 
   /**
-   * @deprecated Use and implement {@link #updateSelectedTrack(long, long, long, List,
-   *     MediaChunkIterator[])} instead.
-   */
-  @Deprecated
-  default void updateSelectedTrack(
-      long playbackPositionUs, long bufferedDurationUs, long availableDurationUs) {
-    throw new UnsupportedOperationException();
-  }
-
-  /**
    * Updates the selected track for sources that load media in discrete {@link MediaChunk}s.
    *
    * <p>This method may only be called when the selection is enabled.
@@ -247,14 +223,12 @@ public interface TrackSelection {
    *     that this information may not be available for all tracks, and so some iterators may be
    *     empty.
    */
-  default void updateSelectedTrack(
+  void updateSelectedTrack(
       long playbackPositionUs,
       long bufferedDurationUs,
       long availableDurationUs,
       List<? extends MediaChunk> queue,
-      MediaChunkIterator[] mediaChunkIterators) {
-    updateSelectedTrack(playbackPositionUs, bufferedDurationUs, availableDurationUs);
-  }
+      MediaChunkIterator[] mediaChunkIterators);
 
   /**
    * May be called periodically by sources that load media in discrete {@link MediaChunk}s and

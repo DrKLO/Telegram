@@ -41,10 +41,8 @@ public class CacheSpan implements Comparable<CacheSpan> {
    * Whether the {@link CacheSpan} is cached.
    */
   public final boolean isCached;
-  /**
-   * The file corresponding to this {@link CacheSpan}, or null if {@link #isCached} is false.
-   */
-  public final @Nullable File file;
+  /** The file corresponding to this {@link CacheSpan}, or null if {@link #isCached} is false. */
+  @Nullable public final File file;
   /** The last touch timestamp, or {@link C#TIME_UNSET} if {@link #isCached} is false. */
   public final long lastTouchTimestamp;
 

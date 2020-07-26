@@ -21,7 +21,10 @@ import com.google.android.exoplayer2.source.SampleQueue;
 import com.google.android.exoplayer2.source.chunk.ChunkExtractorWrapper.TrackOutputProvider;
 import com.google.android.exoplayer2.util.Log;
 
-/** An output for {@link BaseMediaChunk}s. */
+/**
+ * A {@link TrackOutputProvider} that provides {@link TrackOutput TrackOutputs} based on a
+ * predefined mapping from track type to output.
+ */
 public final class BaseMediaChunkOutput implements TrackOutputProvider {
 
   private static final String TAG = "BaseMediaChunkOutput";

@@ -328,6 +328,10 @@ public class Track {
         return samples;
     }
 
+    public long getLastFrameTimestamp() {
+        return ((duration - sampleDurations[sampleDurations.length - 1]) * 1000000 - 500000) / timeScale;
+    }
+
     public long getDuration() {
         return duration;
     }

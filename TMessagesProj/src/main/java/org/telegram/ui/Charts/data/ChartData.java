@@ -1,6 +1,7 @@
 package org.telegram.ui.Charts.data;
 
 import android.graphics.Color;
+import android.text.TextUtils;
 
 import androidx.core.graphics.ColorUtils;
 
@@ -77,7 +78,7 @@ public class ChartData {
                 Matcher matcher = colorPattern.matcher(colors.getString(line.id));
                 if (matcher.matches()) {
                     String key = matcher.group(1);
-                    if (key != null) {
+                    if (!TextUtils.isEmpty(key)) {
                         line.colorKey = "statisticChartLine_" + matcher.group(1).toLowerCase();
                     }
 

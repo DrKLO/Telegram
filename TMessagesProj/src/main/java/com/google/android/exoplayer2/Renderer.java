@@ -16,6 +16,7 @@
 package com.google.android.exoplayer2;
 
 import androidx.annotation.IntDef;
+import androidx.annotation.Nullable;
 import com.google.android.exoplayer2.source.SampleStream;
 import com.google.android.exoplayer2.util.MediaClock;
 import java.io.IOException;
@@ -31,7 +32,8 @@ import java.lang.annotation.RetentionPolicy;
  * valid state transitions are shown below, annotated with the methods that are called during each
  * transition.
  *
- * <p align="center"><img src="doc-files/renderer-states.svg" alt="Renderer state transitions">
+ * <p style="align:center"><img src="doc-files/renderer-states.svg" alt="Renderer state
+ * transitions">
  */
 public interface Renderer extends PlayerMessage.Target {
 
@@ -87,11 +89,12 @@ public interface Renderer extends PlayerMessage.Target {
   /**
    * If the renderer advances its own playback position then this method returns a corresponding
    * {@link MediaClock}. If provided, the player will use the returned {@link MediaClock} as its
-   * source of time during playback. A player may have at most one renderer that returns a
-   * {@link MediaClock} from this method.
+   * source of time during playback. A player may have at most one renderer that returns a {@link
+   * MediaClock} from this method.
    *
    * @return The {@link MediaClock} tracking the playback position of the renderer, or null.
    */
+  @Nullable
   MediaClock getMediaClock();
 
   /**
@@ -147,9 +150,8 @@ public interface Renderer extends PlayerMessage.Target {
   void replaceStream(Format[] formats, SampleStream stream, long offsetUs)
       throws ExoPlaybackException;
 
-  /**
-   * Returns the {@link SampleStream} being consumed, or null if the renderer is disabled.
-   */
+  /** Returns the {@link SampleStream} being consumed, or null if the renderer is disabled. */
+  @Nullable
   SampleStream getStream();
 
   /**

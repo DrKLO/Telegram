@@ -3004,21 +3004,24 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
 
         if (hasRecent) {
             gifRecentTabNum = gifTabsCount++;
-            gifTabs.addIconTab(0, gifIcons[0]);
+            gifTabs.addIconTab(0, gifIcons[0]).setContentDescription(LocaleController.getString("RecentStickers", R.string.RecentStickers));
         }
 
         gifTrendingTabNum = gifTabsCount++;
-        gifTabs.addIconTab(1, gifIcons[1]);
+        gifTabs.addIconTab(1, gifIcons[1]).setContentDescription(LocaleController.getString("FeaturedGifs", R.string.FeaturedGifs));
 
         gifFirstEmojiTabNum = gifTabsCount;
         final int hPadding = AndroidUtilities.dp(13);
         final int vPadding = AndroidUtilities.dp(11);
         final List<String> gifSearchEmojies = MessagesController.getInstance(currentAccount).gifSearchEmojies;
         for (int i = 0, N = gifSearchEmojies.size(); i < N; i++) {
-            final Emoji.EmojiDrawable emojiDrawable = Emoji.getEmojiDrawable(gifSearchEmojies.get(i));
+            final String emoji = gifSearchEmojies.get(i);
+            final Emoji.EmojiDrawable emojiDrawable = Emoji.getEmojiDrawable(emoji);
             if (emojiDrawable != null) {
                 gifTabsCount++;
-                gifTabs.addIconTab(3 + i, emojiDrawable).setPadding(hPadding, vPadding, hPadding, vPadding);
+                final ImageView iconTab = gifTabs.addIconTab(3 + i, emojiDrawable);
+                iconTab.setPadding(hPadding, vPadding, hPadding, vPadding);
+                iconTab.setContentDescription(emoji);
             }
         }
 
@@ -3403,14 +3406,14 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
     }
 
     private void updateRecentGifs() {
-        final boolean wasEmpty = recentGifs.isEmpty();
-        int prevHash = MediaDataController.calcDocumentsHash(recentGifs);
+        final int prevSize = recentGifs.size();
+        int prevHash = MediaDataController.calcDocumentsHash(recentGifs, Integer.MAX_VALUE);
         recentGifs = MediaDataController.getInstance(currentAccount).getRecentGifs();
-        int newHash = MediaDataController.calcDocumentsHash(recentGifs);
-        if (gifTabs != null && wasEmpty && !recentGifs.isEmpty() || !wasEmpty && recentGifs.isEmpty()) {
+        int newHash = MediaDataController.calcDocumentsHash(recentGifs, Integer.MAX_VALUE);
+        if (gifTabs != null && prevSize == 0 && !recentGifs.isEmpty() || prevSize != 0 && recentGifs.isEmpty()) {
             updateGifTabs();
         }
-        if (prevHash != newHash && gifAdapter != null) {
+        if ((prevSize != recentGifs.size() || prevHash != newHash) && gifAdapter != null) {
             gifAdapter.notifyDataSetChanged();
         }
     }
@@ -4343,7 +4346,7 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
 
         @Override
         public boolean isEnabled(RecyclerView.ViewHolder holder) {
-            return false;
+            return holder.getItemViewType() == 0;
         }
 
         @Override
@@ -4369,7 +4372,6 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
             switch (viewType) {
                 case 0:
                     ContextLinkCell cell = new ContextLinkCell(context);
-                    cell.setContentDescription(LocaleController.getString("AttachGif", R.string.AttachGif));
                     cell.setCanPreviewGif(true);
                     view = cell;
                     break;
@@ -4702,85 +4704,6 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
                 }
                 if (isEmoji && !TextUtils.isEmpty(query) && TextUtils.isEmpty(offset)) {
                     scrollGifsToTop();
-                }
-            }
-        }
-    }
-
-    private class GifSavedAdapter extends RecyclerListView.SelectionAdapter {
-
-        private Context mContext;
-
-        public GifSavedAdapter(Context context) {
-            mContext = context;
-        }
-
-        @Override
-        public boolean isEnabled(RecyclerView.ViewHolder holder) {
-            return false;
-        }
-
-        @Override
-        public int getItemCount() {
-            return recentGifs.size() + 1;
-        }
-
-        @Override
-        public long getItemId(int i) {
-            return i;
-        }
-
-        @Override
-        public int getItemViewType(int position) {
-            if (position == 0) {
-                return 1;
-            }
-            return 0;
-        }
-
-        @Override
-        public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-            View view;
-            switch (viewType) {
-                case 0:
-                    ContextLinkCell cell = new ContextLinkCell(mContext);
-                    cell.setContentDescription(LocaleController.getString("AttachGif", R.string.AttachGif));
-                    cell.setCanPreviewGif(true);
-                    view = cell;
-                    break;
-                case 1:
-                default:
-                    view = new View(getContext());
-                    view.setLayoutParams(new RecyclerView.LayoutParams(LayoutHelper.MATCH_PARENT, searchFieldHeight));
-                    break;
-            }
-            return new RecyclerListView.Holder(view);
-        }
-
-        @Override
-        public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
-            switch (holder.getItemViewType()) {
-                case 0: {
-                    TLRPC.Document document = recentGifs.get(position - 1);
-                    if (document != null) {
-                        ((ContextLinkCell) holder.itemView).setGif(document, false);
-                    }
-                    break;
-                }
-            }
-        }
-
-        @Override
-        public void onViewAttachedToWindow(RecyclerView.ViewHolder holder) {
-            if (holder.itemView instanceof ContextLinkCell) {
-                ContextLinkCell cell = (ContextLinkCell) holder.itemView;
-                ImageReceiver imageReceiver = cell.getPhotoImage();
-                if (pager.getCurrentItem() == 1) {
-                    imageReceiver.setAllowStartAnimation(true);
-                    imageReceiver.startAnimation();
-                } else {
-                    imageReceiver.setAllowStartAnimation(false);
-                    imageReceiver.stopAnimation();
                 }
             }
         }

@@ -15,9 +15,9 @@
  */
 package com.google.android.exoplayer2.source.ads;
 
-import androidx.annotation.Nullable;
 import android.view.View;
 import android.view.ViewGroup;
+import androidx.annotation.Nullable;
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.Player;
 import com.google.android.exoplayer2.source.ads.AdsMediaSource.AdLoadException;

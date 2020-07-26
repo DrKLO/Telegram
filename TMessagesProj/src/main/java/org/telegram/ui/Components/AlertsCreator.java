@@ -33,6 +33,7 @@ import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
+import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -862,7 +863,7 @@ public class AlertsCreator {
             span = new URLSpanNoUnderline(span.getURL()) {
                 @Override
                 public void onClick(View widget) {
-                    fragment.dismissCurrentDialig();
+                    fragment.dismissCurrentDialog();
                     super.onClick(widget);
                 }
             };
@@ -1430,10 +1431,20 @@ public class AlertsCreator {
         final NumberPicker dayPicker = new NumberPicker(context);
         dayPicker.setTextOffset(AndroidUtilities.dp(10));
         dayPicker.setItemCount(5);
-        final NumberPicker hourPicker = new NumberPicker(context);
+        final NumberPicker hourPicker = new NumberPicker(context) {
+            @Override
+            protected CharSequence getContentDescription(int value) {
+                return LocaleController.formatPluralString("Hours", value);
+            }
+        };
         hourPicker.setItemCount(5);
         hourPicker.setTextOffset(-AndroidUtilities.dp(10));
-        final NumberPicker minutePicker = new NumberPicker(context);
+        final NumberPicker minutePicker = new NumberPicker(context) {
+            @Override
+            protected CharSequence getContentDescription(int value) {
+                return LocaleController.formatPluralString("Minutes", value);
+            }
+        };
         minutePicker.setItemCount(5);
         minutePicker.setTextOffset(-AndroidUtilities.dp(34));
 
@@ -1521,7 +1532,12 @@ public class AlertsCreator {
         calendar.setTimeInMillis(currentTime);
         int currentYear = calendar.get(Calendar.YEAR);
 
-        TextView buttonTextView = new TextView(context);
+        TextView buttonTextView = new TextView(context) {
+            @Override
+            public CharSequence getAccessibilityClassName() {
+                return Button.class.getName();
+            }
+        };
 
         linearLayout.addView(dayPicker, LayoutHelper.createLinear(0, 54 * 5, 0.5f));
         dayPicker.setMinValue(0);
@@ -1561,6 +1577,8 @@ public class AlertsCreator {
             currentDate *= 1000;
             calendar.setTimeInMillis(System.currentTimeMillis());
             calendar.set(Calendar.MINUTE, 0);
+            calendar.set(Calendar.SECOND, 0);
+            calendar.set(Calendar.MILLISECOND, 0);
             calendar.set(Calendar.HOUR_OF_DAY, 0);
             int days = (int) ((currentDate - calendar.getTimeInMillis()) / (24 * 60 * 60 * 1000));
             calendar.setTimeInMillis(currentDate);
@@ -1603,7 +1621,7 @@ public class AlertsCreator {
         return builder;
     }
 
-    public static Dialog createMuteAlert(Context context, final long dialog_id) {
+    public static BottomSheet createMuteAlert(Context context, final long dialog_id) {
         if (context == null) {
             return null;
         }
@@ -2551,6 +2569,22 @@ public class AlertsCreator {
             dialogId = -chat.id;
         }
 
+        int currentDate = ConnectionsManager.getInstance(currentAccount).getCurrentTime();
+        boolean hasNonDiceMessages = false;
+        if (selectedMessage != null) {
+            hasNonDiceMessages = !selectedMessage.isDice() || Math.abs(currentDate - selectedMessage.messageOwner.date) > 24 * 60 * 60;
+        } else {
+            for (int a = 0; a < 2; a++) {
+                for (int b = 0; b < selectedMessages[a].size(); b++) {
+                    MessageObject msg = selectedMessages[a].valueAt(b);
+                    if (!msg.isDice() || Math.abs(currentDate - msg.messageOwner.date) > 24 * 60 * 60) {
+                        hasNonDiceMessages = true;
+                        break;
+                    }
+                }
+            }
+        }
+
         final boolean[] checks = new boolean[3];
         final boolean[] deleteForAll = new boolean[1];
         TLRPC.User actionUser = null;
@@ -2567,7 +2601,6 @@ public class AlertsCreator {
         boolean canDeleteInbox = encryptedChat == null && user != null && canRevokeInbox && revokeTimeLimit == 0x7fffffff;
         if (chat != null && chat.megagroup && !scheduled) {
             boolean canBan = ChatObject.canBlockUsers(chat);
-            int currentDate = ConnectionsManager.getInstance(currentAccount).getCurrentTime();
             if (selectedMessage != null) {
                 if (selectedMessage.messageOwner.action == null || selectedMessage.messageOwner.action instanceof TLRPC.TL_messageActionEmpty ||
                         selectedMessage.messageOwner.action instanceof TLRPC.TL_messageActionChatDeleteUser ||
@@ -2675,7 +2708,7 @@ public class AlertsCreator {
                     num++;
                 }
                 builder.setView(frameLayout);
-            } else if (!hasNotOut && myMessagesCount > 0) {
+            } else if (!hasNotOut && myMessagesCount > 0 && hasNonDiceMessages) {
                 hasDeleteForAllCheck = true;
                 FrameLayout frameLayout = new FrameLayout(activity);
                 CheckBoxCell cell = new CheckBoxCell(activity, 1);
@@ -2698,7 +2731,6 @@ public class AlertsCreator {
                 actionUser = null;
             }
         } else if (!scheduled && !ChatObject.isChannel(chat) && encryptedChat == null) {
-            int currentDate = ConnectionsManager.getInstance(currentAccount).getCurrentTime();
             if (user != null && user.id != UserConfig.getInstance(currentAccount).getClientUserId() && !user.bot || chat != null) {
                 if (selectedMessage != null) {
                     boolean hasOutgoing = !selectedMessage.isSendError() && (selectedMessage.messageOwner.action == null || selectedMessage.messageOwner.action instanceof TLRPC.TL_messageActionEmpty || selectedMessage.messageOwner.action instanceof TLRPC.TL_messageActionPhoneCall) && (selectedMessage.isOut() || canRevokeInbox || ChatObject.hasAdminRights(chat)) && (currentDate - selectedMessage.messageOwner.date) <= revokeTimeLimit;
@@ -2725,7 +2757,7 @@ public class AlertsCreator {
                     }
                 }
             }
-            if (myMessagesCount > 0) {
+            if (myMessagesCount > 0 && hasNonDiceMessages) {
                 hasDeleteForAllCheck = true;
                 FrameLayout frameLayout = new FrameLayout(activity);
                 CheckBoxCell cell = new CheckBoxCell(activity, 1);

@@ -22,7 +22,6 @@ import com.google.android.exoplayer2.Format;
 import com.google.android.exoplayer2.util.Util;
 import java.util.Arrays;
 import java.util.List;
-import org.checkerframework.checker.nullness.compatqual.NullableType;
 
 /**
  * A collection of metadata entries.
@@ -57,19 +56,15 @@ public final class Metadata implements Parcelable {
    * @param entries The metadata entries.
    */
   public Metadata(Entry... entries) {
-    this.entries = entries == null ? new Entry[0] : entries;
+    this.entries = entries;
   }
 
   /**
    * @param entries The metadata entries.
    */
   public Metadata(List<? extends Entry> entries) {
-    if (entries != null) {
-      this.entries = new Entry[entries.size()];
-      entries.toArray(this.entries);
-    } else {
-      this.entries = new Entry[0];
-    }
+    this.entries = new Entry[entries.size()];
+    entries.toArray(this.entries);
   }
 
   /* package */ Metadata(Parcel in) {
@@ -118,9 +113,10 @@ public final class Metadata implements Parcelable {
    * @return The metadata instance with the appended entries.
    */
   public Metadata copyWithAppendedEntries(Entry... entriesToAppend) {
-    @NullableType Entry[] merged = Arrays.copyOf(entries, entries.length + entriesToAppend.length);
-    System.arraycopy(entriesToAppend, 0, merged, entries.length, entriesToAppend.length);
-    return new Metadata(Util.castNonNullTypeArray(merged));
+    if (entriesToAppend.length == 0) {
+      return this;
+    }
+    return new Metadata(Util.nullSafeArrayConcatenation(entries, entriesToAppend));
   }
 
   @Override

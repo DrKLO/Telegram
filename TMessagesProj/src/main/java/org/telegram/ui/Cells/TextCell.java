@@ -13,7 +13,9 @@ import android.graphics.Canvas;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.drawable.Drawable;
+import android.text.TextUtils;
 import android.view.Gravity;
+import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 
@@ -46,12 +48,14 @@ public class TextCell extends FrameLayout {
         textView.setTextColor(Theme.getColor(dialog ? Theme.key_dialogTextBlack : Theme.key_windowBackgroundWhiteBlackText));
         textView.setTextSize(16);
         textView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
+        textView.setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO);
         addView(textView);
 
         valueTextView = new SimpleTextView(context);
         valueTextView.setTextColor(Theme.getColor(dialog ? Theme.key_dialogTextBlue2 : Theme.key_windowBackgroundWhiteValueText));
         valueTextView.setTextSize(16);
         valueTextView.setGravity(LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT);
+        valueTextView.setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO);
         addView(valueTextView);
 
         imageView = new ImageView(context);
@@ -216,6 +220,20 @@ public class TextCell extends FrameLayout {
     protected void onDraw(Canvas canvas) {
         if (needDivider) {
             canvas.drawLine(LocaleController.isRTL ? 0 : AndroidUtilities.dp(imageView.getVisibility() == VISIBLE ? 68 : 20), getMeasuredHeight() - 1, getMeasuredWidth() - (LocaleController.isRTL ? AndroidUtilities.dp(imageView.getVisibility() == VISIBLE ? 68 : 20) : 0), getMeasuredHeight() - 1, Theme.dividerPaint);
+        }
+    }
+
+    @Override
+    public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
+        super.onInitializeAccessibilityNodeInfo(info);
+        final CharSequence text = textView.getText();
+        if (!TextUtils.isEmpty(text)) {
+            final CharSequence valueText = valueTextView.getText();
+            if (!TextUtils.isEmpty(valueText)) {
+                info.setText(text + ": " + valueText);
+            } else {
+                info.setText(text);
+            }
         }
     }
 }

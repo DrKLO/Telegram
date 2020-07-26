@@ -276,19 +276,23 @@ public class MusicPlayerService extends Service implements NotificationCenter.No
                 bldr.setLargeIcon(albumArtPlaceholder);
             }
 
+            final String nextDescription = LocaleController.getString("Next", R.string.Next);
+            final String previousDescription = LocaleController.getString("AccDescrPrevious", R.string.AccDescrPrevious);
+
             if (MediaController.getInstance().isDownloadingCurrentMessage()) {
                 playbackState.setState(PlaybackState.STATE_BUFFERING, 0, 1).setActions(0);
-                bldr.addAction(new Notification.Action.Builder(R.drawable.ic_action_previous, "", pendingPrev).build())
-                        .addAction(new Notification.Action.Builder(R.drawable.loading_animation2, "", null).build())
-                        .addAction(new Notification.Action.Builder(R.drawable.ic_action_next, "", pendingNext).build());
+                bldr.addAction(new Notification.Action.Builder(R.drawable.ic_action_previous, previousDescription, pendingPrev).build())
+                        .addAction(new Notification.Action.Builder(R.drawable.loading_animation2, LocaleController.getString("Loading", R.string.Loading), null).build())
+                        .addAction(new Notification.Action.Builder(R.drawable.ic_action_next, nextDescription, pendingNext).build());
             } else {
                 playbackState.setState(isPlaying ? PlaybackState.STATE_PLAYING : PlaybackState.STATE_PAUSED,
                         MediaController.getInstance().getPlayingMessageObject().audioProgressSec * 1000L,
                         isPlaying ? 1 : 0)
                         .setActions(PlaybackState.ACTION_PLAY_PAUSE | PlaybackState.ACTION_PLAY | PlaybackState.ACTION_PAUSE | PlaybackState.ACTION_SEEK_TO | PlaybackState.ACTION_SKIP_TO_PREVIOUS | PlaybackState.ACTION_SKIP_TO_NEXT);
-                bldr.addAction(new Notification.Action.Builder(R.drawable.ic_action_previous, "", pendingPrev).build())
-                        .addAction(new Notification.Action.Builder(isPlaying ? R.drawable.ic_action_pause : R.drawable.ic_action_play, "", pendingPlaypause).build())
-                        .addAction(new Notification.Action.Builder(R.drawable.ic_action_next, "", pendingNext).build());
+                final String playPauseTitle = isPlaying ? LocaleController.getString("AccActionPause", R.string.AccActionPause) : LocaleController.getString("AccActionPlay", R.string.AccActionPlay);
+                bldr.addAction(new Notification.Action.Builder(R.drawable.ic_action_previous, previousDescription, pendingPrev).build())
+                        .addAction(new Notification.Action.Builder(isPlaying ? R.drawable.ic_action_pause : R.drawable.ic_action_play, playPauseTitle, pendingPlaypause).build())
+                        .addAction(new Notification.Action.Builder(R.drawable.ic_action_next, nextDescription, pendingNext).build());
             }
 
             mediaSession.setPlaybackState(playbackState.build());
@@ -396,7 +400,6 @@ public class MusicPlayerService extends Service implements NotificationCenter.No
             }
             notification.flags |= Notification.FLAG_ONGOING_EVENT;
             startForeground(ID_NOTIFICATION, notification);
-
         }
 
         if (remoteControlClient != null) {

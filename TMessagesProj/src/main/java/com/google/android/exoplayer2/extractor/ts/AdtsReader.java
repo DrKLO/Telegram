@@ -345,42 +345,44 @@ public final class AdtsReader implements ElementaryStreamReader {
   }
 
   /**
-   * Returns whether the given syncPositionCandidate is a real SYNC word.
-   *
-   * <p>SYNC word pattern can occur within AAC data, so we perform a few checks to make sure this is
-   * really a SYNC word. This includes:
+   * Checks whether a candidate SYNC word position is likely to be the position of a real SYNC word.
+   * The caller must check that the first byte of the SYNC word is 0xFF before calling this method.
+   * This method performs the following checks:
    *
    * <ul>
-   *   <li>Checking if MPEG version of this frame matches the first detected version.
-   *   <li>Checking if the sample rate index of this frame matches the first detected sample rate
-   *       index.
-   *   <li>Checking if the bytes immediately after the current package also match a SYNC-word.
+   *   <li>The MPEG version of this frame must match the previously detected version.
+   *   <li>The sample rate index of this frame must match the previously detected sample rate index.
+   *   <li>The frame size must be at least 7 bytes
+   *   <li>The bytes following the frame must be either another SYNC word with the same MPEG
+   *       version, or the start of an ID3 header.
    * </ul>
    *
-   * If the buffer runs out of data for any check, optimistically skip that check, because
-   * AdtsReader consumes each buffer as a whole. We will still run a header validity check later.
+   * With the exception of the first check, if there is insufficient data in the buffer then checks
+   * are optimistically skipped and {@code true} is returned.
+   *
+   * @param pesBuffer The buffer containing at data to check.
+   * @param syncPositionCandidate The candidate SYNC word position. May be -1 if the first byte of
+   *     the candidate was the last byte of the previously consumed buffer.
+   * @return True if all checks were passed or skipped, indicating the position is likely to be the
+   *     position of a real SYNC word. False otherwise.
    */
   private boolean checkSyncPositionValid(ParsableByteArray pesBuffer, int syncPositionCandidate) {
-    // The SYNC word contains 2 bytes, and the first byte may be in the previously consumed buffer.
-    // Hence the second byte of the SYNC word may be byte 0 of this buffer, and
-    // syncPositionCandidate (which indicates position of the first byte of the SYNC word) may be
-    // -1.
-    // Since the first byte of the SYNC word is always FF, which does not contain any informational
-    // bits, we set the byte position to be the second byte in the SYNC word to ensure it's always
-    // within this buffer.
     pesBuffer.setPosition(syncPositionCandidate + 1);
     if (!tryRead(pesBuffer, adtsScratch.data, 1)) {
       return false;
     }
 
+    // The MPEG version of this frame must match the previously detected version.
     adtsScratch.setPosition(4);
     int currentFrameVersion = adtsScratch.readBits(1);
     if (firstFrameVersion != VERSION_UNSET && currentFrameVersion != firstFrameVersion) {
       return false;
     }
 
+    // The sample rate index of this frame must match the previously detected sample rate index.
     if (firstFrameSampleRateIndex != C.INDEX_UNSET) {
       if (!tryRead(pesBuffer, adtsScratch.data, 1)) {
+        // Insufficient data for further checks.
         return true;
       }
       adtsScratch.setPosition(2);
@@ -391,24 +393,50 @@ public final class AdtsReader implements ElementaryStreamReader {
       pesBuffer.setPosition(syncPositionCandidate + 2);
     }
 
-    // Optionally check the byte after this frame matches SYNC word.
-
+    // The frame size must be at least 7 bytes.
     if (!tryRead(pesBuffer, adtsScratch.data, 4)) {
+      // Insufficient data for further checks.
       return true;
     }
     adtsScratch.setPosition(14);
     int frameSize = adtsScratch.readBits(13);
-    if (frameSize <= 6) {
-      // Not a frame.
+    if (frameSize < 7) {
       return false;
     }
+
+    // The bytes following the frame must be either another SYNC word with the same MPEG version, or
+    // the start of an ID3 header.
+    byte[] data = pesBuffer.data;
+    int dataLimit = pesBuffer.limit();
     int nextSyncPosition = syncPositionCandidate + frameSize;
-    if (nextSyncPosition + 1 >= pesBuffer.limit()) {
+    if (nextSyncPosition >= dataLimit) {
+      // Insufficient data for further checks.
       return true;
     }
-    return (isAdtsSyncBytes(pesBuffer.data[nextSyncPosition], pesBuffer.data[nextSyncPosition + 1])
-        && (firstFrameVersion == VERSION_UNSET
-            || ((pesBuffer.data[nextSyncPosition + 1] & 0x8) >> 3) == currentFrameVersion));
+    if (data[nextSyncPosition] == (byte) 0xFF) {
+      if (nextSyncPosition + 1 == dataLimit) {
+        // Insufficient data for further checks.
+        return true;
+      }
+      return isAdtsSyncBytes((byte) 0xFF, data[nextSyncPosition + 1])
+          && ((data[nextSyncPosition + 1] & 0x8) >> 3) == currentFrameVersion;
+    } else {
+      if (data[nextSyncPosition] != 'I') {
+        return false;
+      }
+      if (nextSyncPosition + 1 == dataLimit) {
+        // Insufficient data for further checks.
+        return true;
+      }
+      if (data[nextSyncPosition + 1] != 'D') {
+        return false;
+      }
+      if (nextSyncPosition + 2 == dataLimit) {
+        // Insufficient data for further checks.
+        return true;
+      }
+      return data[nextSyncPosition + 2] == '3';
+    }
   }
 
   private boolean isAdtsSyncBytes(byte firstByte, byte secondByte) {

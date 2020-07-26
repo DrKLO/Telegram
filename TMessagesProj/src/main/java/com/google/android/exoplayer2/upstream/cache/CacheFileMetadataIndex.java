@@ -19,6 +19,7 @@ import android.content.ContentValues;
 import android.database.Cursor;
 import android.database.SQLException;
 import android.database.sqlite.SQLiteDatabase;
+import androidx.annotation.WorkerThread;
 import com.google.android.exoplayer2.database.DatabaseIOException;
 import com.google.android.exoplayer2.database.DatabaseProvider;
 import com.google.android.exoplayer2.database.VersionTable;
@@ -42,7 +43,7 @@ import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
   private static final int COLUMN_INDEX_LENGTH = 1;
   private static final int COLUMN_INDEX_LAST_TOUCH_TIMESTAMP = 2;
 
-  private static final String WHERE_NAME_EQUALS = COLUMN_INDEX_NAME + " = ?";
+  private static final String WHERE_NAME_EQUALS = COLUMN_NAME + " = ?";
 
   private static final String[] COLUMNS =
       new String[] {
@@ -59,22 +60,25 @@ import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 
   private final DatabaseProvider databaseProvider;
 
-  @MonotonicNonNull private String tableName;
+  private @MonotonicNonNull String tableName;
 
   /**
    * Deletes index data for the specified cache.
+   *
+   * <p>This method may be slow and shouldn't normally be called on the main thread.
    *
    * @param databaseProvider Provides the database in which the index is stored.
    * @param uid The cache UID.
    * @throws DatabaseIOException If an error occurs deleting the index data.
    */
+  @WorkerThread
   public static void delete(DatabaseProvider databaseProvider, long uid)
       throws DatabaseIOException {
     String hexUid = Long.toHexString(uid);
     try {
       String tableName = getTableName(hexUid);
       SQLiteDatabase writableDatabase = databaseProvider.getWritableDatabase();
-      writableDatabase.beginTransaction();
+      writableDatabase.beginTransactionNonExclusive();
       try {
         VersionTable.removeVersion(
             writableDatabase, VersionTable.FEATURE_CACHE_FILE_METADATA, hexUid);
@@ -96,9 +100,12 @@ import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
   /**
    * Initializes the index for the given cache UID.
    *
+   * <p>This method may be slow and shouldn't normally be called on the main thread.
+   *
    * @param uid The cache UID.
    * @throws DatabaseIOException If an error occurs initializing the index.
    */
+  @WorkerThread
   public void initialize(long uid) throws DatabaseIOException {
     try {
       String hexUid = Long.toHexString(uid);
@@ -109,7 +116,7 @@ import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
               readableDatabase, VersionTable.FEATURE_CACHE_FILE_METADATA, hexUid);
       if (version != TABLE_VERSION) {
         SQLiteDatabase writableDatabase = databaseProvider.getWritableDatabase();
-        writableDatabase.beginTransaction();
+        writableDatabase.beginTransactionNonExclusive();
         try {
           VersionTable.setVersion(
               writableDatabase, VersionTable.FEATURE_CACHE_FILE_METADATA, hexUid, TABLE_VERSION);
@@ -129,9 +136,12 @@ import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
    * Returns all file metadata keyed by file name. The returned map is mutable and may be modified
    * by the caller.
    *
+   * <p>This method may be slow and shouldn't normally be called on the main thread.
+   *
    * @return The file metadata keyed by file name.
    * @throws DatabaseIOException If an error occurs loading the metadata.
    */
+  @WorkerThread
   public Map<String, CacheFileMetadata> getAll() throws DatabaseIOException {
     try (Cursor cursor = getCursor()) {
       Map<String, CacheFileMetadata> fileMetadata = new HashMap<>(cursor.getCount());
@@ -150,11 +160,14 @@ import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
   /**
    * Sets metadata for a given file.
    *
+   * <p>This method may be slow and shouldn't normally be called on the main thread.
+   *
    * @param name The name of the file.
    * @param length The file length.
    * @param lastTouchTimestamp The file last touch timestamp.
    * @throws DatabaseIOException If an error occurs setting the metadata.
    */
+  @WorkerThread
   public void set(String name, long length, long lastTouchTimestamp) throws DatabaseIOException {
     Assertions.checkNotNull(tableName);
     try {
@@ -172,9 +185,12 @@ import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
   /**
    * Removes metadata.
    *
+   * <p>This method may be slow and shouldn't normally be called on the main thread.
+   *
    * @param name The name of the file whose metadata is to be removed.
    * @throws DatabaseIOException If an error occurs removing the metadata.
    */
+  @WorkerThread
   public void remove(String name) throws DatabaseIOException {
     Assertions.checkNotNull(tableName);
     try {
@@ -188,14 +204,17 @@ import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
   /**
    * Removes metadata.
    *
+   * <p>This method may be slow and shouldn't normally be called on the main thread.
+   *
    * @param names The names of the files whose metadata is to be removed.
    * @throws DatabaseIOException If an error occurs removing the metadata.
    */
+  @WorkerThread
   public void removeAll(Set<String> names) throws DatabaseIOException {
     Assertions.checkNotNull(tableName);
     try {
       SQLiteDatabase writableDatabase = databaseProvider.getWritableDatabase();
-      writableDatabase.beginTransaction();
+      writableDatabase.beginTransactionNonExclusive();
       try {
         for (String name : names) {
           writableDatabase.delete(tableName, WHERE_NAME_EQUALS, new String[] {name});

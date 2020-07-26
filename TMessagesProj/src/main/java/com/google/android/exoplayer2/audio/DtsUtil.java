@@ -15,6 +15,7 @@
  */
 package com.google.android.exoplayer2.audio;
 
+import androidx.annotation.Nullable;
 import com.google.android.exoplayer2.Format;
 import com.google.android.exoplayer2.drm.DrmInitData;
 import com.google.android.exoplayer2.util.MimeTypes;
@@ -80,7 +81,7 @@ public final class DtsUtil {
    * @return The DTS format parsed from data in the header.
    */
   public static Format parseDtsFormat(
-      byte[] frame, String trackId, String language, DrmInitData drmInitData) {
+      byte[] frame, String trackId, @Nullable String language, @Nullable DrmInitData drmInitData) {
     ParsableBitArray frameBits = getNormalizedFrameHeader(frame);
     frameBits.skipBits(32 + 1 + 5 + 1 + 7 + 14); // SYNC, FTYPE, SHORT, CPF, NBLKS, FSIZE
     int amode = frameBits.readBits(6);

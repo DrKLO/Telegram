@@ -169,6 +169,10 @@ public class MP4Builder {
         return 0;
     }
 
+    public long getLastFrameTimestamp(int trackIndex) {
+        return currentMp4Movie.getLastFrameTimestamp(trackIndex);
+    }
+
     public int addTrack(MediaFormat mediaFormat, boolean isAudio) {
         return currentMp4Movie.addTrack(mediaFormat, isAudio);
     }

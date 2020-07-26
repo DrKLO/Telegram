@@ -15,8 +15,10 @@
  */
 package com.google.android.exoplayer2.upstream.cache;
 
+import static com.google.android.exoplayer2.util.Assertions.checkArgument;
+import static com.google.android.exoplayer2.util.Assertions.checkState;
+
 import androidx.annotation.Nullable;
-import com.google.android.exoplayer2.util.Assertions;
 import com.google.android.exoplayer2.util.Log;
 import java.io.File;
 import java.util.TreeSet;
@@ -115,12 +117,18 @@ import java.util.TreeSet;
    * @return the length of the cached or not cached data block length.
    */
   public long getCachedBytesLength(long position, long length) {
+    checkArgument(position >= 0);
+    checkArgument(length >= 0);
     SimpleCacheSpan span = getSpan(position);
     if (span.isHoleSpan()) {
       // We don't have a span covering the start of the queried region.
       return -Math.min(span.isOpenEnded() ? Long.MAX_VALUE : span.length, length);
     }
     long queryEndPosition = position + length;
+    if (queryEndPosition < 0) {
+      // The calculation rolled over (length is probably Long.MAX_VALUE).
+      queryEndPosition = Long.MAX_VALUE;
+    }
     long currentEndPosition = span.position + span.length;
     if (currentEndPosition < queryEndPosition) {
       for (SimpleCacheSpan next : cachedSpans.tailSet(span, false)) {
@@ -151,7 +159,7 @@ import java.util.TreeSet;
    */
   public SimpleCacheSpan setLastTouchTimestamp(
       SimpleCacheSpan cacheSpan, long lastTouchTimestamp, boolean updateFile) {
-    Assertions.checkState(cachedSpans.remove(cacheSpan));
+    checkState(cachedSpans.remove(cacheSpan));
     File file = cacheSpan.file;
     if (updateFile) {
       File directory = file.getParentFile();

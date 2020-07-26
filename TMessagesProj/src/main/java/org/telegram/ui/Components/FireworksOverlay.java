@@ -32,8 +32,8 @@ public class FireworksOverlay extends View {
     private float speedCoef = 1.0f;
     private int fallingDownCount;
     private static Drawable[] heartDrawable;
-    private static final int particlesCount = SharedConfig.getDevicePerfomanceClass() == SharedConfig.PERFORMANCE_CLASS_LOW ? 50 : 60;
-    private static final int fallParticlesCount = SharedConfig.getDevicePerfomanceClass() == SharedConfig.PERFORMANCE_CLASS_LOW ? 20 : 30;
+    private static final int particlesCount = SharedConfig.getDevicePerformanceClass() == SharedConfig.PERFORMANCE_CLASS_LOW ? 50 : 60;
+    private static final int fallParticlesCount = SharedConfig.getDevicePerformanceClass() == SharedConfig.PERFORMANCE_CLASS_LOW ? 20 : 30;
     private boolean isFebruary14;
 
     private static int[] colors = new int[] {

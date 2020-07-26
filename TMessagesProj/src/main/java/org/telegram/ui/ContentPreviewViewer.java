@@ -675,7 +675,7 @@ public class ContentPreviewViewer {
         } else {
             if (document != null) {
                 TLRPC.PhotoSize thumb = FileLoader.getClosestPhotoSizeWithSize(document.thumbs, 90);
-                TLRPC.TL_videoSize videoSize = MessageObject.getDocumentVideoThumb(document);
+                TLRPC.VideoSize videoSize = MessageObject.getDocumentVideoThumb(document);
                 ImageLocation location = ImageLocation.getForDocument(document);
                 location.imageType = FileLoader.IMAGE_TYPE_ANIMATION;
                 if (videoSize != null) {

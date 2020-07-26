@@ -73,6 +73,7 @@ public class ChangeBioActivity extends BaseFragment {
 
         ActionBarMenu menu = actionBar.createMenu();
         doneButton = menu.addItemWithWidth(done_button, R.drawable.ic_done, AndroidUtilities.dp(56));
+        doneButton.setContentDescription(LocaleController.getString("Done", R.string.Done));
 
         fragmentView = new LinearLayout(context);
         LinearLayout linearLayout = (LinearLayout) fragmentView;
@@ -148,9 +149,11 @@ public class ChangeBioActivity extends BaseFragment {
         checkTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
         checkTextView.setText(String.format("%d", 70));
         checkTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText4));
+        checkTextView.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
         fieldContainer.addView(checkTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT, 0, 4, 4, 0));
 
         helpTextView = new TextView(context);
+        helpTextView.setFocusable(true);
         helpTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
         helpTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText8));
         helpTextView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);

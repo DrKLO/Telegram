@@ -42,7 +42,8 @@ public final class TrackSelectionArray {
    * @param index The index of the selection.
    * @return The selection.
    */
-  public @Nullable TrackSelection get(int index) {
+  @Nullable
+  public TrackSelection get(int index) {
     return trackSelections[index];
   }
 

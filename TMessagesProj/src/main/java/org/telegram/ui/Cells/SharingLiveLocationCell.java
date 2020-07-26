@@ -193,9 +193,9 @@ public class SharingLiveLocationCell extends FrameLayout {
         if (userLocation != null) {
             float distance = location.distanceTo(userLocation);
             if (address != null) {
-                distanceTextView.setText(String.format("%s - %s", address, LocaleController.formatDistance(distance)));
+                distanceTextView.setText(String.format("%s - %s", address, LocaleController.formatDistance(distance, 0)));
             } else {
-                distanceTextView.setText(LocaleController.formatDistance(distance));
+                distanceTextView.setText(LocaleController.formatDistance(distance, 0));
             }
         } else {
             if (address != null) {
@@ -231,7 +231,7 @@ public class SharingLiveLocationCell extends FrameLayout {
 
         String time = LocaleController.formatLocationUpdateDate(info.object.edit_date != 0 ? info.object.edit_date : info.object.date);
         if (userLocation != null) {
-            distanceTextView.setText(String.format("%s - %s", time, LocaleController.formatDistance(location.distanceTo(userLocation))));
+            distanceTextView.setText(String.format("%s - %s", time, LocaleController.formatDistance(location.distanceTo(userLocation), 0)));
         } else {
             distanceTextView.setText(time);
         }

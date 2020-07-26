@@ -7,6 +7,7 @@ import android.graphics.Paint;
 import android.graphics.RectF;
 import android.text.TextPaint;
 import android.view.Gravity;
+import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 
@@ -32,6 +33,7 @@ public class ChatListCell extends LinearLayout {
             setWillNotDraw(false);
 
             isThreeLines = threeLines;
+            setContentDescription(threeLines ? LocaleController.getString("ChatListExpanded", R.string.ChatListExpanded) : LocaleController.getString("ChatListDefault", R.string.ChatListDefault));
 
             textPaint.setTextSize(AndroidUtilities.dp(13));
 
@@ -86,6 +88,14 @@ public class ChatListCell extends LinearLayout {
                     }
                 }
             }
+        }
+
+        @Override
+        public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
+            super.onInitializeAccessibilityNodeInfo(info);
+            info.setClassName(RadioButton.class.getName());
+            info.setChecked(button.isChecked());
+            info.setCheckable(true);
         }
     }
 

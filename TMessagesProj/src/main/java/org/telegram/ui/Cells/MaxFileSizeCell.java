@@ -20,6 +20,7 @@ import android.widget.FrameLayout;
 import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.Theme;
@@ -49,6 +50,7 @@ public class MaxFileSizeCell extends FrameLayout {
         textView.setSingleLine(true);
         textView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP);
         textView.setEllipsize(TextUtils.TruncateAt.END);
+        textView.setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO);
         addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, 21, 13, 21, 0));
 
         sizeTextView = new TextView(context);
@@ -58,6 +60,7 @@ public class MaxFileSizeCell extends FrameLayout {
         sizeTextView.setMaxLines(1);
         sizeTextView.setSingleLine(true);
         sizeTextView.setGravity((LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.TOP);
+        sizeTextView.setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO);
         addView(sizeTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.TOP, 21, 13, 21, 0));
 
         seekBarView = new SeekBarView(context) {
@@ -92,7 +95,7 @@ public class MaxFileSizeCell extends FrameLayout {
                             progress -= 0.25f;
                             size += 90 * 1024 * 1024;
 
-                            size += 1436 * 1024 * 1024 * (progress / 0.25f);
+                            size += (FileLoader.MAX_FILE_SIZE - size) * (progress / 0.25f);
                         }
                     }
                 }
@@ -103,10 +106,18 @@ public class MaxFileSizeCell extends FrameLayout {
 
             @Override
             public void onSeekBarPressed(boolean pressed) {
+            }
 
+            @Override
+            public CharSequence getContentDescription() {
+                return textView.getText() + " " + sizeTextView.getText();
             }
         });
+        seekBarView.setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO);
         addView(seekBarView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 38, Gravity.TOP | Gravity.LEFT, 6, 36, 6, 0));
+
+        setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_YES);
+        setAccessibilityDelegate(seekBarView.getSeekBarAccessibilityDelegate());
     }
 
     protected void didChangedSizeValue(int value) {
@@ -185,11 +196,11 @@ public class MaxFileSizeCell extends FrameLayout {
                     progress += 0.25f;
                     size -= 90 * 1024 * 1024;
 
-                    progress += Math.max(0, size / (float) (1436 * 1024 * 1024)) * 0.25f;
+                    progress += Math.max(0, size / (float) (FileLoader.MAX_FILE_SIZE - 100 * 1024 * 1024)) * 0.25f;
                 }
             }
         }
-        seekBarView.setProgress(progress);
+        seekBarView.setProgress(Math.min(1.0f, progress));
     }
 
     public void setEnabled(boolean value, ArrayList<Animator> animators) {

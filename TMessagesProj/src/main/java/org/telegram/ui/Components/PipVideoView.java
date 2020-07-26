@@ -66,7 +66,6 @@ public class PipVideoView {
         private Paint progressInnerPaint;
         private boolean isVisible = true;
         private AnimatorSet currentAnimation;
-        private ImageView inlineButton;
         private ImageView playButton;
         private float progress;
         private boolean isCompleted;
@@ -96,7 +95,7 @@ public class PipVideoView {
         public MiniControlsView(Context context, boolean fullControls) {
             super(context);
 
-            inlineButton = new ImageView(context);
+            ImageView inlineButton = new ImageView(context);
             inlineButton.setScaleType(ImageView.ScaleType.CENTER);
             inlineButton.setImageResource(R.drawable.ic_outinline);
             addView(inlineButton, LayoutHelper.createFrame(56, 48, Gravity.RIGHT | Gravity.TOP));
@@ -135,7 +134,7 @@ public class PipVideoView {
                 });
             }
 
-            //setOnTouchListener((v, event) -> true);
+            setOnTouchListener((v, event) -> true);
             updatePlayButton();
             show(false, false);
         }
@@ -294,7 +293,7 @@ public class PipVideoView {
             private boolean dragging;
 
             @Override
-            public boolean onInterceptTouchEvent(MotionEvent event) {
+            public boolean dispatchTouchEvent(MotionEvent event) {
                 float x = event.getRawX();
                 float y = event.getRawY();
                 if (event.getAction() == MotionEvent.ACTION_DOWN) {
@@ -311,50 +310,50 @@ public class PipVideoView {
                         return true;
                     }
                 }
-                return super.onInterceptTouchEvent(event);
+
+                if (dragging) {
+                    if (event.getAction() == MotionEvent.ACTION_MOVE) {
+                        float dx = (x - startX);
+                        float dy = (y - startY);
+                        windowLayoutParams.x += dx;
+                        windowLayoutParams.y += dy;
+                        int maxDiff = videoWidth / 2;
+                        if (windowLayoutParams.x < -maxDiff) {
+                            windowLayoutParams.x = -maxDiff;
+                        } else if (windowLayoutParams.x > AndroidUtilities.displaySize.x - windowLayoutParams.width + maxDiff) {
+                            windowLayoutParams.x = AndroidUtilities.displaySize.x - windowLayoutParams.width + maxDiff;
+                        }
+                        float alpha = 1.0f;
+                        if (windowLayoutParams.x < 0) {
+                            alpha = 1.0f + windowLayoutParams.x / (float) maxDiff * 0.5f;
+                        } else if (windowLayoutParams.x > AndroidUtilities.displaySize.x - windowLayoutParams.width) {
+                            alpha = 1.0f - (windowLayoutParams.x - AndroidUtilities.displaySize.x + windowLayoutParams.width) / (float) maxDiff * 0.5f;
+                        }
+                        if (windowView.getAlpha() != alpha) {
+                            windowView.setAlpha(alpha);
+                        }
+                        maxDiff = 0;
+                        if (windowLayoutParams.y < -maxDiff) {
+                            windowLayoutParams.y = -maxDiff;
+                        } else if (windowLayoutParams.y > AndroidUtilities.displaySize.y - windowLayoutParams.height + maxDiff) {
+                            windowLayoutParams.y = AndroidUtilities.displaySize.y - windowLayoutParams.height + maxDiff;
+                        }
+                        windowManager.updateViewLayout(windowView, windowLayoutParams);
+                        startX = x;
+                        startY = y;
+                    } else if (event.getAction() == MotionEvent.ACTION_UP || event.getAction() == MotionEvent.ACTION_CANCEL) {
+                        dragging = false;
+                        animateToBoundsMaybe();
+                    }
+                    return true;
+                } else {
+                    return super.dispatchTouchEvent(event);
+                }
             }
 
             @Override
-            public boolean onTouchEvent(MotionEvent event) {
-                if (!dragging) {
-                    return false;
-                }
-                float x = event.getRawX();
-                float y = event.getRawY();
-                if (event.getAction() == MotionEvent.ACTION_MOVE) {
-                    float dx = (x - startX);
-                    float dy = (y - startY);
-                    windowLayoutParams.x += dx;
-                    windowLayoutParams.y += dy;
-                    int maxDiff = videoWidth / 2;
-                    if (windowLayoutParams.x < -maxDiff) {
-                        windowLayoutParams.x = -maxDiff;
-                    } else if (windowLayoutParams.x > AndroidUtilities.displaySize.x - windowLayoutParams.width + maxDiff) {
-                        windowLayoutParams.x = AndroidUtilities.displaySize.x - windowLayoutParams.width + maxDiff;
-                    }
-                    float alpha = 1.0f;
-                    if (windowLayoutParams.x < 0) {
-                        alpha = 1.0f + windowLayoutParams.x / (float) maxDiff * 0.5f;
-                    } else if (windowLayoutParams.x > AndroidUtilities.displaySize.x - windowLayoutParams.width) {
-                        alpha = 1.0f - (windowLayoutParams.x - AndroidUtilities.displaySize.x + windowLayoutParams.width) / (float) maxDiff * 0.5f;
-                    }
-                    if (windowView.getAlpha() != alpha) {
-                        windowView.setAlpha(alpha);
-                    }
-                    maxDiff = 0;
-                    if (windowLayoutParams.y < -maxDiff) {
-                        windowLayoutParams.y = -maxDiff;
-                    } else if (windowLayoutParams.y > AndroidUtilities.displaySize.y - windowLayoutParams.height + maxDiff) {
-                        windowLayoutParams.y = AndroidUtilities.displaySize.y - windowLayoutParams.height + maxDiff;
-                    }
-                    windowManager.updateViewLayout(windowView, windowLayoutParams);
-                    startX = x;
-                    startY = y;
-                } else if (event.getAction() == MotionEvent.ACTION_UP) {
-                    dragging = false;
-                    animateToBoundsMaybe();
-                }
-                return super.onTouchEvent(event);
+            public boolean onInterceptTouchEvent(MotionEvent event) {
+                return super.onInterceptTouchEvent(event);
             }
         };
 
@@ -420,7 +419,7 @@ public class PipVideoView {
                     windowLayoutParams.type = WindowManager.LayoutParams.TYPE_SYSTEM_ALERT;
                 }
             }
-            windowLayoutParams.flags = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE | WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED | WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS;
+            windowLayoutParams.flags = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE | WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED | WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS | WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN;
             windowManager.addView(windowView, windowLayoutParams);
         } catch (Exception e) {
             FileLog.e(e);
@@ -462,7 +461,7 @@ public class PipVideoView {
         if (isX) {
             total = AndroidUtilities.displaySize.x - sideSize;
         } else {
-            total = AndroidUtilities.displaySize.y - sideSize - ActionBar.getCurrentActionBarHeight();
+            total = AndroidUtilities.displaySize.y - sideSize - (ActionBar.getCurrentActionBarHeight() + AndroidUtilities.statusBarHeight);
         }
         int result;
         if (side == 0) {
@@ -473,7 +472,7 @@ public class PipVideoView {
             result = Math.round((total - AndroidUtilities.dp(20)) * p) + AndroidUtilities.dp(10);
         }
         if (!isX) {
-            result += ActionBar.getCurrentActionBarHeight();
+            result += ActionBar.getCurrentActionBarHeight() + AndroidUtilities.statusBarHeight;
         }
         return result;
     }
@@ -514,7 +513,7 @@ public class PipVideoView {
             }
             editor.putInt("sidex", 0);
             if (windowView.getAlpha() != 1.0f) {
-                animators.add(ObjectAnimator.ofFloat(windowView, "alpha", 1.0f));
+                animators.add(ObjectAnimator.ofFloat(windowView, View.ALPHA, 1.0f));
             }
             animators.add(ObjectAnimator.ofInt(this, "x", startX));
         } else if (Math.abs(endX - windowLayoutParams.x) <= maxDiff || windowLayoutParams.x > AndroidUtilities.displaySize.x - videoWidth && windowLayoutParams.x < AndroidUtilities.displaySize.x - videoWidth / 4 * 3) {
@@ -523,7 +522,7 @@ public class PipVideoView {
             }
             editor.putInt("sidex", 1);
             if (windowView.getAlpha() != 1.0f) {
-                animators.add(ObjectAnimator.ofFloat(windowView, "alpha", 1.0f));
+                animators.add(ObjectAnimator.ofFloat(windowView, View.ALPHA, 1.0f));
             }
             animators.add(ObjectAnimator.ofInt(this, "x", endX));
         } else if (windowView.getAlpha() != 1.0f) {
@@ -541,7 +540,7 @@ public class PipVideoView {
             editor.putInt("sidex", 2);
         }
         if (!slideOut) {
-            if (Math.abs(startY - windowLayoutParams.y) <= maxDiff || windowLayoutParams.y <= ActionBar.getCurrentActionBarHeight()) {
+            if (Math.abs(startY - windowLayoutParams.y) <= maxDiff || windowLayoutParams.y <= (ActionBar.getCurrentActionBarHeight() + AndroidUtilities.statusBarHeight)) {
                 if (animators == null) {
                     animators = new ArrayList<>();
                 }
@@ -567,7 +566,7 @@ public class PipVideoView {
             animatorSet.setInterpolator(decelerateInterpolator);
             animatorSet.setDuration(150);
             if (slideOut) {
-                animators.add(ObjectAnimator.ofFloat(windowView, "alpha", 0.0f));
+                animators.add(ObjectAnimator.ofFloat(windowView, View.ALPHA, 0.0f));
                 animatorSet.addListener(new AnimatorListenerAdapter() {
                     @Override
                     public void onAnimationEnd(Animator animation) {
@@ -623,6 +622,28 @@ public class PipVideoView {
     @Keep
     public void setY(int value) {
         windowLayoutParams.y = value;
+        windowManager.updateViewLayout(windowView, windowLayoutParams);
+    }
+
+    @Keep
+    public int getWidth() {
+        return windowLayoutParams.width;
+    }
+
+    @Keep
+    public int getHeight() {
+        return windowLayoutParams.height;
+    }
+
+    @Keep
+    public void setWidth(int value) {
+        windowLayoutParams.width = videoWidth = value;
+        windowManager.updateViewLayout(windowView, windowLayoutParams);
+    }
+
+    @Keep
+    public void setHeight(int value) {
+        windowLayoutParams.height = videoHeight = value;
         windowManager.updateViewLayout(windowView, windowLayoutParams);
     }
 }

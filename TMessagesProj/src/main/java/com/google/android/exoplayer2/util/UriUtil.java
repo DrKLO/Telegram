@@ -17,6 +17,7 @@ package com.google.android.exoplayer2.util;
 
 import android.net.Uri;
 import android.text.TextUtils;
+import androidx.annotation.Nullable;
 
 /**
  * Utility methods for manipulating URIs.
@@ -69,19 +70,19 @@ public final class UriUtil {
    * @param baseUri The base URI.
    * @param referenceUri The reference URI to resolve.
    */
-  public static Uri resolveToUri(String baseUri, String referenceUri) {
+  public static Uri resolveToUri(@Nullable String baseUri, @Nullable String referenceUri) {
     return Uri.parse(resolve(baseUri, referenceUri));
   }
 
   /**
    * Performs relative resolution of a {@code referenceUri} with respect to a {@code baseUri}.
-   * <p>
-   * The resolution is performed as specified by RFC-3986.
+   *
+   * <p>The resolution is performed as specified by RFC-3986.
    *
    * @param baseUri The base URI.
    * @param referenceUri The reference URI to resolve.
    */
-  public static String resolve(String baseUri, String referenceUri) {
+  public static String resolve(@Nullable String baseUri, @Nullable String referenceUri) {
     StringBuilder uri = new StringBuilder();
 
     // Map null onto empty string, to make the following logic simpler.

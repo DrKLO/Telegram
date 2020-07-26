@@ -16,8 +16,35 @@ public class StackLinearChartData extends ChartData {
     public int simplifiedSize;
 
 
-    public StackLinearChartData(JSONObject jsonObject) throws JSONException {
+    public StackLinearChartData(JSONObject jsonObject,boolean isLanguages) throws JSONException {
         super(jsonObject);
+
+        if (isLanguages) {
+            long[] totalCount = new long[lines.size()];
+            int[] emptyCount = new int[lines.size()];
+            long total = 0;
+            for (int k = 0; k < lines.size(); k++) {
+                int n = x.length;
+                for (int i = 0; i < n; i++) {
+                    int v = lines.get(k).y[i];
+                    totalCount[k] += v;
+                    if (v == 0) {
+                        emptyCount[k]++;
+                    }
+                }
+                total += totalCount[k];
+            }
+
+            ArrayList<Line> removed = new ArrayList<>();
+            for (int k = 0; k < lines.size(); k++) {
+                if ((totalCount[k] / (double) total) < 0.01 && emptyCount[k] > (x.length / 2f)) {
+                    removed.add(lines.get(k));
+                }
+            }
+            for (Line r : removed) {
+                lines.remove(r);
+            }
+        }
 
         int n = lines.get(0).y.length;
         int k = lines.size();

@@ -15,8 +15,8 @@
  */
 package com.google.android.exoplayer2.extractor.ts;
 
-import androidx.annotation.IntDef;
 import android.util.SparseArray;
+import androidx.annotation.IntDef;
 import com.google.android.exoplayer2.Format;
 import com.google.android.exoplayer2.extractor.ts.TsPayloadReader.EsInfo;
 import com.google.android.exoplayer2.text.cea.Cea708InitializationData;

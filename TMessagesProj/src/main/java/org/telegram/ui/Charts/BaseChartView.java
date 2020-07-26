@@ -46,7 +46,7 @@ public abstract class BaseChartView<T extends ChartData, L extends LineViewData>
     public ArrayList<L> lines = new ArrayList<>();
 
     private final int ANIM_DURATION = 400;
-    public final static int HORIZONTAL_PADDING = AndroidUtilities.dp(16f);
+    public final static float HORIZONTAL_PADDING = AndroidUtilities.dpf2(16f);
     private final static float LINE_WIDTH = 1;
     private final static float SELECTED_LINE_WIDTH = AndroidUtilities.dpf2(1.5f);
     private final static float SIGNATURE_TEXT_SIZE = AndroidUtilities.dpf2(12f);
@@ -155,12 +155,12 @@ public abstract class BaseChartView<T extends ChartData, L extends LineViewData>
     private final int touchSlop;
 
     public int pikerHeight = AndroidUtilities.dp(46);
-    public int pickerWidth;
-    public int chartStart;
-    public int chartEnd;
-    public int chartWidth;
+    public float pickerWidth;
+    public float chartStart;
+    public float chartEnd;
+    public float chartWidth;
     public float chartFullWidth;
-    public Rect chartArea = new Rect();
+    public RectF chartArea = new RectF();
 
     private ValueAnimator.AnimatorUpdateListener pickerHeightUpdateListener = new ValueAnimator.AnimatorUpdateListener() {
         @Override
@@ -312,10 +312,10 @@ public abstract class BaseChartView<T extends ChartData, L extends LineViewData>
         if (getMeasuredWidth() != lastW || getMeasuredHeight() != lastH) {
             lastW = getMeasuredWidth();
             lastH = getMeasuredHeight();
-            bottomChartBitmap = Bitmap.createBitmap(getMeasuredWidth() - (HORIZONTAL_PADDING << 1), pikerHeight, Bitmap.Config.ARGB_4444);
+            bottomChartBitmap = Bitmap.createBitmap((int) (getMeasuredWidth() - (HORIZONTAL_PADDING * 2f)), pikerHeight, Bitmap.Config.ARGB_4444);
             bottomChartCanvas = new Canvas(bottomChartBitmap);
 
-            sharedUiComponents.getPickerMaskBitmap(pikerHeight, getMeasuredWidth() - HORIZONTAL_PADDING * 2);
+            sharedUiComponents.getPickerMaskBitmap(pikerHeight, (int) (getMeasuredWidth() - HORIZONTAL_PADDING * 2));
             measureSizes();
 
             if (legendShowing)
@@ -705,7 +705,7 @@ public abstract class BaseChartView<T extends ChartData, L extends LineViewData>
         }
 
         canvas.drawBitmap(
-                sharedUiComponents.getPickerMaskBitmap(pikerHeight, getMeasuredWidth() - HORIZONTAL_PADDING * 2),
+                sharedUiComponents.getPickerMaskBitmap(pikerHeight, (int) (getMeasuredWidth() - HORIZONTAL_PADDING * 2)),
                 HORIZONTAL_PADDING, getMeasuredHeight() - PICKER_PADDING - pikerHeight, emptyPaint);
 
         if (chartData != null) {
@@ -1093,7 +1093,7 @@ public abstract class BaseChartView<T extends ChartData, L extends LineViewData>
                 MeasureSpec.makeMeasureSpec(getMeasuredHeight(), MeasureSpec.AT_MOST)
         );
         float lXPoint = chartData.xPercentage[selectedIndex] * chartFullWidth - offset;
-        if (lXPoint > (chartStart + chartWidth) >> 1) {
+        if (lXPoint > (chartStart + chartWidth) / 2f) {
             lXPoint -= (legendSignatureView.getWidth() + DP_5);
         } else {
             lXPoint += DP_5;
@@ -1265,6 +1265,9 @@ public abstract class BaseChartView<T extends ChartData, L extends LineViewData>
         endXIndex = chartData.findEndIndex(startXIndex, Math.min(
                 pickerDelegate.pickerEnd, 1f
         ));
+        if (endXIndex < startXIndex) {
+            endXIndex = startXIndex;
+        }
         if (chartHeaderView != null) {
             chartHeaderView.setDates(chartData.x[startXIndex], chartData.x[endXIndex]);
         }
@@ -1592,5 +1595,9 @@ public abstract class BaseChartView<T extends ChartData, L extends LineViewData>
         public void invalidate(){
             invalidate = true;
         }
+    }
+
+    public void fillTransitionParams(TransitionParams params) {
+
     }
 }

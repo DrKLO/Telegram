@@ -51,7 +51,7 @@ public final class ColorInfo implements Parcelable {
   public final int colorTransfer;
 
   /** HdrStaticInfo as defined in CTA-861.3, or null if none specified. */
-  public final @Nullable byte[] hdrStaticInfo;
+  @Nullable public final byte[] hdrStaticInfo;
 
   // Lazily initialized hashcode.
   private int hashCode;

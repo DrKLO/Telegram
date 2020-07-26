@@ -76,6 +76,7 @@ public class TwoStepVerificationSetupActivity extends BaseFragment {
     private TextView titleTextView;
     private TextView descriptionText;
     private TextView descriptionText2;
+    private TextView descriptionText3;
     private TextView topButton;
     private EditTextBoldCursor passwordEditText;
     private ScrollView scrollView;
@@ -110,6 +111,19 @@ public class TwoStepVerificationSetupActivity extends BaseFragment {
 
     private RLottieDrawable[] animationDrawables;
     private Runnable setAnimationRunnable;
+
+    private Runnable finishCallback = () -> {
+        if (passwordEditText == null) {
+            return;
+        }
+        if (passwordEditText.length() != 0) {
+            animationDrawables[2].setCustomEndFrame(49);
+            animationDrawables[2].setProgress(0.0f, false);
+            imageView.playAnimation();
+        } else {
+            setRandomMonkeyIdleAnimation(true);
+        }
+    };
 
     public static final int TYPE_ENTER_FIRST = 0;
     public static final int TYPE_ENTER_SECOND = 1;
@@ -796,10 +810,22 @@ public class TwoStepVerificationSetupActivity extends BaseFragment {
                 });
 
                 FrameLayout frameLayout2 = new FrameLayout(context);
-                scrollViewLinearLayout.addView(frameLayout2, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 0, 36, 0, 33));
+                scrollViewLinearLayout.addView(frameLayout2, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 0, 36, 0, 22));
 
                 frameLayout2.addView(buttonTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 42, Gravity.CENTER_HORIZONTAL | Gravity.TOP));
                 frameLayout2.addView(descriptionText2, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL | Gravity.TOP));
+
+                if (currentType == TYPE_EMAIL_RECOVERY) {
+                    descriptionText3 = new TextView(context);
+                    descriptionText3.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteLinkText));
+                    descriptionText3.setGravity(Gravity.CENTER_HORIZONTAL);
+                    descriptionText3.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+                    descriptionText3.setLineSpacing(AndroidUtilities.dp(2), 1);
+                    descriptionText3.setPadding(AndroidUtilities.dp(32), 0, AndroidUtilities.dp(32), 0);
+                    descriptionText3.setText(LocaleController.getString("RestoreEmailTroubleNoEmail", R.string.RestoreEmailTroubleNoEmail));
+                    scrollViewLinearLayout.addView(descriptionText3, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 0, 0, 0, 25));
+                    descriptionText3.setOnClickListener(v -> showAlertWithText(LocaleController.getString("RestorePasswordNoEmailTitle", R.string.RestorePasswordNoEmailTitle), LocaleController.getString("RestoreEmailTroubleText", R.string.RestoreEmailTroubleText)));
+                }
 
                 fragmentView = container;
 
@@ -874,15 +900,7 @@ public class TwoStepVerificationSetupActivity extends BaseFragment {
                 animationDrawables[3] = new RLottieDrawable(R.raw.tsv_setup_monkey_peek, "" + R.raw.tsv_setup_monkey_peek, AndroidUtilities.dp(120), AndroidUtilities.dp(120), true, null);
                 animationDrawables[4] = new RLottieDrawable(R.raw.tsv_setup_monkey_close_and_peek_to_idle, "" + R.raw.tsv_setup_monkey_close_and_peek_to_idle, AndroidUtilities.dp(120), AndroidUtilities.dp(120), true, null);
                 animationDrawables[5] = new RLottieDrawable(R.raw.tsv_setup_monkey_close_and_peek, "" + R.raw.tsv_setup_monkey_close_and_peek, AndroidUtilities.dp(120), AndroidUtilities.dp(120), true, null);
-                animationDrawables[2].setOnFinishCallback(() -> {
-                    if (passwordEditText.length() != 0) {
-                        animationDrawables[2].setCustomEndFrame(49);
-                        animationDrawables[2].setProgress(0.0f, false);
-                        imageView.playAnimation();
-                    } else {
-                        setRandomMonkeyIdleAnimation(true);
-                    }
-                }, 97);
+                animationDrawables[2].setOnFinishCallback(finishCallback, 97);
                 setRandomMonkeyIdleAnimation(true);
                 break;
             }

@@ -15,19 +15,14 @@
  */
 package com.google.android.exoplayer2.text.cea;
 
-import androidx.annotation.NonNull;
 import android.text.Layout.Alignment;
+import androidx.annotation.NonNull;
 import com.google.android.exoplayer2.text.Cue;
 
 /**
  * A {@link Cue} for CEA-708.
  */
 /* package */ final class Cea708Cue extends Cue implements Comparable<Cea708Cue> {
-
-  /**
-   * An unset priority.
-   */
-  public static final int PRIORITY_UNSET = -1;
 
   /**
    * The priority of the cue box.
@@ -64,5 +59,4 @@ import com.google.android.exoplayer2.text.Cue;
     }
     return 0;
   }
-
 }

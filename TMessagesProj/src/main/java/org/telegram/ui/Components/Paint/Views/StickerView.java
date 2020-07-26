@@ -72,6 +72,14 @@ public class StickerView extends EntityView {
         centerImage.setParentView(containerView);
         TLRPC.PhotoSize thumb = FileLoader.getClosestPhotoSizeWithSize(sticker.thumbs, 90);
         centerImage.setImage(ImageLocation.getForDocument(sticker), null, ImageLocation.getForDocument(thumb, sticker), null, "webp", parentObject, 1);
+        centerImage.setDelegate((imageReceiver, set, isThumb, memCache) -> {
+            if (set && !isThumb) {
+                RLottieDrawable drawable = imageReceiver.getLottieAnimation();
+                if (drawable != null) {
+                    didSetAnimatedSticker(drawable);
+                }
+            }
+        });
 
         updatePosition();
     }
@@ -114,6 +122,10 @@ public class StickerView extends EntityView {
         setX(position.x - halfWidth);
         setY(position.y - halfHeight);
         updateSelectionView();
+    }
+
+    protected void didSetAnimatedSticker(RLottieDrawable drawable) {
+
     }
 
     protected void stickerDraw(Canvas canvas) {

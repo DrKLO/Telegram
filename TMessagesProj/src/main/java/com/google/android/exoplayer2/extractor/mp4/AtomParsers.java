@@ -17,8 +17,8 @@ package com.google.android.exoplayer2.extractor.mp4;
 
 import static com.google.android.exoplayer2.util.MimeTypes.getMimeTypeFromMp4ObjectType;
 
-import androidx.annotation.Nullable;
 import android.util.Pair;
+import androidx.annotation.Nullable;
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.Format;
 import com.google.android.exoplayer2.ParserException;
@@ -42,19 +42,34 @@ import java.util.Collections;
 import java.util.List;
 
 /** Utility methods for parsing MP4 format atom payloads according to ISO 14496-12. */
-@SuppressWarnings({"ConstantField", "ConstantCaseForConstants"})
+@SuppressWarnings({"ConstantField"})
 /* package */ final class AtomParsers {
 
   private static final String TAG = "AtomParsers";
 
-  private static final int TYPE_vide = Util.getIntegerCodeForString("vide");
-  private static final int TYPE_soun = Util.getIntegerCodeForString("soun");
-  private static final int TYPE_text = Util.getIntegerCodeForString("text");
-  private static final int TYPE_sbtl = Util.getIntegerCodeForString("sbtl");
-  private static final int TYPE_subt = Util.getIntegerCodeForString("subt");
-  private static final int TYPE_clcp = Util.getIntegerCodeForString("clcp");
-  private static final int TYPE_meta = Util.getIntegerCodeForString("meta");
-  private static final int TYPE_mdta = Util.getIntegerCodeForString("mdta");
+  @SuppressWarnings("ConstantCaseForConstants")
+  private static final int TYPE_vide = 0x76696465;
+
+  @SuppressWarnings("ConstantCaseForConstants")
+  private static final int TYPE_soun = 0x736f756e;
+
+  @SuppressWarnings("ConstantCaseForConstants")
+  private static final int TYPE_text = 0x74657874;
+
+  @SuppressWarnings("ConstantCaseForConstants")
+  private static final int TYPE_sbtl = 0x7362746c;
+
+  @SuppressWarnings("ConstantCaseForConstants")
+  private static final int TYPE_subt = 0x73756274;
+
+  @SuppressWarnings("ConstantCaseForConstants")
+  private static final int TYPE_clcp = 0x636c6370;
+
+  @SuppressWarnings("ConstantCaseForConstants")
+  private static final int TYPE_meta = 0x6d657461;
+
+  @SuppressWarnings("ConstantCaseForConstants")
+  private static final int TYPE_mdta = 0x6d647461;
 
   /**
    * The threshold number of samples to trim from the start/end of an audio track when applying an
@@ -348,9 +363,7 @@ import java.util.List;
     }
     long durationUs = Util.scaleLargeTimestamp(duration, C.MICROS_PER_SECOND, track.timescale);
 
-    if (track.editListDurations == null || gaplessInfoHolder.hasGaplessInfo()) {
-      // There is no edit list, or we are ignoring it as we already have gapless metadata to apply.
-      // This implementation does not support applying both gapless metadata and an edit list.
+    if (track.editListDurations == null) {
       Util.scaleLargeTimestampsInPlace(timestamps, C.MICROS_PER_SECOND, track.timescale);
       return new TrackSampleTable(
           track, offsets, sizes, maximumSize, timestamps, flags, durationUs);
@@ -420,10 +433,15 @@ import java.util.List;
         long editDuration =
             Util.scaleLargeTimestamp(
                 track.editListDurations[i], track.timescale, track.movieTimescale);
-        startIndices[i] = Util.binarySearchCeil(timestamps, editMediaTime, true, true);
+        startIndices[i] =
+            Util.binarySearchFloor(
+                timestamps, editMediaTime, /* inclusive= */ true, /* stayInBounds= */ true);
         endIndices[i] =
             Util.binarySearchCeil(
-                timestamps, editMediaTime + editDuration, omitClippedSample, false);
+                timestamps,
+                editMediaTime + editDuration,
+                /* inclusive= */ omitClippedSample,
+                /* stayInBounds= */ false);
         while (startIndices[i] < endIndices[i]
             && (flags[startIndices[i]] & C.BUFFER_FLAG_KEY_FRAME) == 0) {
           // Applying the edit correctly would require prerolling from the previous sync sample. In
@@ -461,7 +479,7 @@ import java.util.List;
         long ptsUs = Util.scaleLargeTimestamp(pts, C.MICROS_PER_SECOND, track.movieTimescale);
         long timeInSegmentUs =
             Util.scaleLargeTimestamp(
-                timestamps[j] - editMediaTime, C.MICROS_PER_SECOND, track.timescale);
+                Math.max(0, timestamps[j] - editMediaTime), C.MICROS_PER_SECOND, track.timescale);
         editedTimestamps[sampleIndex] = ptsUs + timeInSegmentUs;
         if (copyMetadata && editedSizes[sampleIndex] > editedMaximumSize) {
           editedMaximumSize = sizes[j];
@@ -766,6 +784,7 @@ import java.util.List;
           || childAtomType == Atom.TYPE_sawb
           || childAtomType == Atom.TYPE_lpcm
           || childAtomType == Atom.TYPE_sowt
+          || childAtomType == Atom.TYPE_twos
           || childAtomType == Atom.TYPE__mp3
           || childAtomType == Atom.TYPE_alac
           || childAtomType == Atom.TYPE_alaw
@@ -897,8 +916,7 @@ import java.util.List;
         out.nalUnitLengthFieldLength = hevcConfig.nalUnitLengthFieldLength;
       } else if (childAtomType == Atom.TYPE_dvcC || childAtomType == Atom.TYPE_dvvC) {
         DolbyVisionConfig dolbyVisionConfig = DolbyVisionConfig.parse(parent);
-        // TODO: Support profiles 4, 8 and 9 once we have a way to fall back to AVC/HEVC decoding.
-        if (dolbyVisionConfig != null && dolbyVisionConfig.profile == 5) {
+        if (dolbyVisionConfig != null) {
           codecs = dolbyVisionConfig.codecs;
           mimeType = MimeTypes.VIDEO_DOLBY_VISION;
         }
@@ -1027,6 +1045,7 @@ import java.util.List;
 
     int channelCount;
     int sampleRate;
+    @C.PcmEncoding int pcmEncoding = Format.NO_VALUE;
 
     if (quickTimeSoundDescriptionVersion == 0 || quickTimeSoundDescriptionVersion == 1) {
       channelCount = parent.readUnsignedShort();
@@ -1087,6 +1106,10 @@ import java.util.List;
       mimeType = MimeTypes.AUDIO_AMR_WB;
     } else if (atomType == Atom.TYPE_lpcm || atomType == Atom.TYPE_sowt) {
       mimeType = MimeTypes.AUDIO_RAW;
+      pcmEncoding = C.ENCODING_PCM_16BIT;
+    } else if (atomType == Atom.TYPE_twos) {
+      mimeType = MimeTypes.AUDIO_RAW;
+      pcmEncoding = C.ENCODING_PCM_16BIT_BIG_ENDIAN;
     } else if (atomType == Atom.TYPE__mp3) {
       mimeType = MimeTypes.AUDIO_MPEG;
     } else if (atomType == Atom.TYPE_alac) {
@@ -1116,8 +1139,8 @@ import java.util.List;
           mimeType = mimeTypeAndInitializationData.first;
           initializationData = mimeTypeAndInitializationData.second;
           if (MimeTypes.AUDIO_AAC.equals(mimeType)) {
-            // TODO: Do we really need to do this? See [Internal: b/10903778]
-            // Update sampleRate and channelCount from the AudioSpecificConfig initialization data.
+            // Update sampleRate and channelCount from the AudioSpecificConfig initialization data,
+            // which is more reliable. See [Internal: b/10903778].
             Pair<Integer, Integer> audioSpecificConfig =
                 CodecSpecificDataUtil.parseAacAudioSpecificConfig(initializationData);
             sampleRate = audioSpecificConfig.first;
@@ -1162,14 +1185,17 @@ import java.util.List;
         initializationData = new byte[childAtomBodySize];
         parent.setPosition(childPosition + Atom.FULL_HEADER_SIZE);
         parent.readBytes(initializationData, /* offset= */ 0, childAtomBodySize);
+        // Update sampleRate and channelCount from the AudioSpecificConfig initialization data,
+        // which is more reliable. See https://github.com/google/ExoPlayer/pull/6629.
+        Pair<Integer, Integer> audioSpecificConfig =
+            CodecSpecificDataUtil.parseAlacAudioSpecificConfig(initializationData);
+        sampleRate = audioSpecificConfig.first;
+        channelCount = audioSpecificConfig.second;
       }
       childPosition += childAtomSize;
     }
 
     if (out.format == null && mimeType != null) {
-      // TODO: Determine the correct PCM encoding.
-      @C.PcmEncoding int pcmEncoding =
-          MimeTypes.AUDIO_RAW.equals(mimeType) ? C.ENCODING_PCM_16BIT : Format.NO_VALUE;
       out.format = Format.createAudioSampleFormat(Integer.toString(trackId), mimeType, null,
           Format.NO_VALUE, Format.NO_VALUE, channelCount, sampleRate, pcmEncoding,
           initializationData == null ? null : Collections.singletonList(initializationData),

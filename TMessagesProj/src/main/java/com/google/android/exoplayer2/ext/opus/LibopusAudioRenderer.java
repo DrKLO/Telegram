@@ -16,6 +16,7 @@
 package com.google.android.exoplayer2.ext.opus;
 
 import android.os.Handler;
+import androidx.annotation.Nullable;
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.Format;
 import com.google.android.exoplayer2.audio.AudioProcessor;
@@ -23,22 +24,22 @@ import com.google.android.exoplayer2.audio.AudioRendererEventListener;
 import com.google.android.exoplayer2.audio.SimpleDecoderAudioRenderer;
 import com.google.android.exoplayer2.drm.DrmSessionManager;
 import com.google.android.exoplayer2.drm.ExoMediaCrypto;
+import com.google.android.exoplayer2.source.MediaSource;
 import com.google.android.exoplayer2.util.MimeTypes;
 
-/**
- * Decodes and renders audio using the native Opus decoder.
- */
-public final class LibopusAudioRenderer extends SimpleDecoderAudioRenderer {
+/** Decodes and renders audio using the native Opus decoder. */
+public class LibopusAudioRenderer extends SimpleDecoderAudioRenderer {
 
   /** The number of input and output buffers. */
   private static final int NUM_BUFFERS = 16;
   /** The default input buffer size. */
   private static final int DEFAULT_INPUT_BUFFER_SIZE = 960 * 6;
 
-  private OpusDecoder decoder;
+  private int channelCount;
+  private int sampleRate;
 
   public LibopusAudioRenderer() {
-    this(null, null);
+    this(/* eventHandler= */ null, /* eventListener= */ null);
   }
 
   /**
@@ -48,8 +49,8 @@ public final class LibopusAudioRenderer extends SimpleDecoderAudioRenderer {
    * @param audioProcessors Optional {@link AudioProcessor}s that will process audio before output.
    */
   public LibopusAudioRenderer(
-      Handler eventHandler,
-      AudioRendererEventListener eventListener,
+      @Nullable Handler eventHandler,
+      @Nullable AudioRendererEventListener eventListener,
       AudioProcessor... audioProcessors) {
     super(eventHandler, eventListener, audioProcessors);
   }
@@ -66,22 +67,35 @@ public final class LibopusAudioRenderer extends SimpleDecoderAudioRenderer {
    *     permitted to play clear regions of encrypted media files before {@code drmSessionManager}
    *     has obtained the keys necessary to decrypt encrypted regions of the media.
    * @param audioProcessors Optional {@link AudioProcessor}s that will process audio before output.
+   * @deprecated Use {@link #LibopusAudioRenderer(Handler, AudioRendererEventListener,
+   *     AudioProcessor...)} instead, and pass DRM-related parameters to the {@link MediaSource}
+   *     factories.
    */
-  public LibopusAudioRenderer(Handler eventHandler, AudioRendererEventListener eventListener,
-      DrmSessionManager<ExoMediaCrypto> drmSessionManager, boolean playClearSamplesWithoutKeys,
+  @Deprecated
+  public LibopusAudioRenderer(
+      @Nullable Handler eventHandler,
+      @Nullable AudioRendererEventListener eventListener,
+      @Nullable DrmSessionManager<ExoMediaCrypto> drmSessionManager,
+      boolean playClearSamplesWithoutKeys,
       AudioProcessor... audioProcessors) {
     super(eventHandler, eventListener, null, drmSessionManager, playClearSamplesWithoutKeys,
         audioProcessors);
   }
 
   @Override
-  protected int supportsFormatInternal(DrmSessionManager<ExoMediaCrypto> drmSessionManager,
-      Format format) {
+  @FormatSupport
+  protected int supportsFormatInternal(
+      @Nullable DrmSessionManager<ExoMediaCrypto> drmSessionManager, Format format) {
+    boolean drmIsSupported =
+        format.drmInitData == null
+            || OpusLibrary.matchesExpectedExoMediaCryptoType(format.exoMediaCryptoType)
+            || (format.exoMediaCryptoType == null
+                && supportsFormatDrm(drmSessionManager, format.drmInitData));
     if (!MimeTypes.AUDIO_OPUS.equalsIgnoreCase(format.sampleMimeType)) {
       return FORMAT_UNSUPPORTED_TYPE;
     } else if (!supportsOutput(format.channelCount, C.ENCODING_PCM_16BIT)) {
       return FORMAT_UNSUPPORTED_SUBTYPE;
-    } else if (!supportsFormatDrm(drmSessionManager, format.drmInitData)) {
+    } else if (!drmIsSupported) {
       return FORMAT_UNSUPPORTED_DRM;
     } else {
       return FORMAT_HANDLED;
@@ -89,25 +103,36 @@ public final class LibopusAudioRenderer extends SimpleDecoderAudioRenderer {
   }
 
   @Override
-  protected OpusDecoder createDecoder(Format format, ExoMediaCrypto mediaCrypto)
+  protected OpusDecoder createDecoder(Format format, @Nullable ExoMediaCrypto mediaCrypto)
       throws OpusDecoderException {
     int initialInputBufferSize =
         format.maxInputSize != Format.NO_VALUE ? format.maxInputSize : DEFAULT_INPUT_BUFFER_SIZE;
-    decoder =
+    OpusDecoder decoder =
         new OpusDecoder(
             NUM_BUFFERS,
             NUM_BUFFERS,
             initialInputBufferSize,
             format.initializationData,
             mediaCrypto);
+    channelCount = decoder.getChannelCount();
+    sampleRate = decoder.getSampleRate();
     return decoder;
   }
 
   @Override
   protected Format getOutputFormat() {
-    return Format.createAudioSampleFormat(null, MimeTypes.AUDIO_RAW, null, Format.NO_VALUE,
-        Format.NO_VALUE, decoder.getChannelCount(), decoder.getSampleRate(), C.ENCODING_PCM_16BIT,
-        null, null, 0, null);
+    return Format.createAudioSampleFormat(
+        /* id= */ null,
+        MimeTypes.AUDIO_RAW,
+        /* codecs= */ null,
+        Format.NO_VALUE,
+        Format.NO_VALUE,
+        channelCount,
+        sampleRate,
+        C.ENCODING_PCM_16BIT,
+        /* initializationData= */ null,
+        /* drmInitData= */ null,
+        /* selectionFlags= */ 0,
+        /* language= */ null);
   }
-
 }

@@ -64,6 +64,7 @@ public final class PlatformScheduler implements Scheduler {
    */
   @RequiresPermission(android.Manifest.permission.RECEIVE_BOOT_COMPLETED)
   public PlatformScheduler(Context context, int jobId) {
+    context = context.getApplicationContext();
     this.jobId = jobId;
     jobServiceComponentName = new ComponentName(context, PlatformSchedulerService.class);
     jobScheduler = (JobScheduler) context.getSystemService(Context.JOB_SCHEDULER_SERVICE);

@@ -302,7 +302,7 @@ public class GestureDetector2 {
                 final float scrollX = mLastFocusX - focusX;
                 final float scrollY = mLastFocusY - focusY;
                 if (mIsDoubleTapping) {
-                    handled |= mDoubleTapListener.onDoubleTapEvent(ev);
+                    handled |= mDoubleTapListener != null && mDoubleTapListener.onDoubleTapEvent(ev);
                 } else if (mAlwaysInTapRegion) {
                     final int deltaX = (int) (focusX - mDownFocusX);
                     final int deltaY = (int) (focusY - mDownFocusY);
@@ -353,7 +353,7 @@ public class GestureDetector2 {
                 mListener.onUp(ev);
                 MotionEvent currentUpEvent = MotionEvent.obtain(ev);
                 if (mIsDoubleTapping) {
-                    handled |= mDoubleTapListener.onDoubleTapEvent(ev);
+                    handled |= mDoubleTapListener != null && mDoubleTapListener.onDoubleTapEvent(ev);
                 } else if (mInLongPress) {
                     mHandler.removeMessages(TAP);
                     mInLongPress = false;

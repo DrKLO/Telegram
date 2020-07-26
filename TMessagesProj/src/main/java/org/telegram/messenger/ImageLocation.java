@@ -19,6 +19,8 @@ public class ImageLocation {
 
     public TLRPC.Document document;
 
+    public long videoSeekTo;
+
     public TLRPC.PhotoSize photoSize;
     public TLRPC.Photo photo;
     public boolean photoPeerBig;
@@ -168,12 +170,24 @@ public class ImageLocation {
         return imageLocation;
     }
 
-    public static ImageLocation getForDocument(TLRPC.TL_videoSize videoSize, TLRPC.Document document) {
+    public static ImageLocation getForDocument(TLRPC.VideoSize videoSize, TLRPC.Document document) {
         if (videoSize == null || document == null) {
             return null;
         }
         ImageLocation location = getForPhoto(videoSize.location, videoSize.size, null, document, null, false, document.dc_id, null, videoSize.type);
         location.imageType = FileLoader.IMAGE_TYPE_ANIMATION;
+        return location;
+    }
+
+    public static ImageLocation getForPhoto(TLRPC.VideoSize videoSize, TLRPC.Photo photo) {
+        if (videoSize == null || photo == null) {
+            return null;
+        }
+        ImageLocation location = getForPhoto(videoSize.location, videoSize.size, photo, null, null, false, photo.dc_id, null, videoSize.type);
+        location.imageType = FileLoader.IMAGE_TYPE_ANIMATION;
+        if ((videoSize.flags & 1) != 0) {
+            location.videoSeekTo = (int) (videoSize.video_start_ts * 1000);
+        }
         return location;
     }
 

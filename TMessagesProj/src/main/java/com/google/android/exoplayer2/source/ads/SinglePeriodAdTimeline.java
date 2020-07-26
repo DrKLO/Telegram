@@ -44,24 +44,16 @@ public final class SinglePeriodAdTimeline extends ForwardingTimeline {
   @Override
   public Period getPeriod(int periodIndex, Period period, boolean setIds) {
     timeline.getPeriod(periodIndex, period, setIds);
+    long durationUs =
+        period.durationUs == C.TIME_UNSET ? adPlaybackState.contentDurationUs : period.durationUs;
     period.set(
         period.id,
         period.uid,
         period.windowIndex,
-        period.durationUs,
+        durationUs,
         period.getPositionInWindowUs(),
         adPlaybackState);
     return period;
-  }
-
-  @Override
-  public Window getWindow(
-      int windowIndex, Window window, boolean setTag, long defaultPositionProjectionUs) {
-    window = super.getWindow(windowIndex, window, setTag, defaultPositionProjectionUs);
-    if (window.durationUs == C.TIME_UNSET) {
-      window.durationUs = adPlaybackState.contentDurationUs;
-    }
-    return window;
   }
 
 }

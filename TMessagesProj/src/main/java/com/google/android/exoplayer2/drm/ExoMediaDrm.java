@@ -21,6 +21,7 @@ import android.media.MediaDrm;
 import android.media.MediaDrmException;
 import android.media.NotProvisionedException;
 import android.os.Handler;
+import android.os.PersistableBundle;
 import androidx.annotation.Nullable;
 import com.google.android.exoplayer2.drm.DrmInitData.SchemeData;
 import java.util.HashMap;
@@ -30,12 +31,54 @@ import java.util.UUID;
 
 /**
  * Used to obtain keys for decrypting protected media streams. See {@link android.media.MediaDrm}.
+ *
+ * <h3>Reference counting</h3>
+ *
+ * <p>Access to an instance is managed by reference counting, where {@link #acquire()} increments
+ * the reference count and {@link #release()} decrements it. When the reference count drops to 0
+ * underlying resources are released, and the instance cannot be re-used.
+ *
+ * <p>Each new instance has an initial reference count of 1. Hence application code that creates a
+ * new instance does not normally need to call {@link #acquire()}, and must call {@link #release()}
+ * when the instance is no longer required.
  */
 public interface ExoMediaDrm<T extends ExoMediaCrypto> {
 
+  /** {@link ExoMediaDrm} instances provider. */
+  interface Provider<T extends ExoMediaCrypto> {
+
+    /**
+     * Returns an {@link ExoMediaDrm} instance with an incremented reference count. When the caller
+     * no longer needs to use the instance, it must call {@link ExoMediaDrm#release()} to decrement
+     * the reference count.
+     */
+    ExoMediaDrm<T> acquireExoMediaDrm(UUID uuid);
+  }
+
   /**
-   * @see MediaDrm#EVENT_KEY_REQUIRED
+   * Provides an {@link ExoMediaDrm} instance owned by the app.
+   *
+   * <p>Note that when using this provider the app will have instantiated the {@link ExoMediaDrm}
+   * instance, and remains responsible for calling {@link ExoMediaDrm#release()} on the instance
+   * when it's no longer being used.
    */
+  final class AppManagedProvider<T extends ExoMediaCrypto> implements Provider<T> {
+
+    private final ExoMediaDrm<T> exoMediaDrm;
+
+    /** Creates an instance that provides the given {@link ExoMediaDrm}. */
+    public AppManagedProvider(ExoMediaDrm<T> exoMediaDrm) {
+      this.exoMediaDrm = exoMediaDrm;
+    }
+
+    @Override
+    public ExoMediaDrm<T> acquireExoMediaDrm(UUID uuid) {
+      exoMediaDrm.acquire();
+      return exoMediaDrm;
+    }
+  }
+
+  /** @see MediaDrm#EVENT_KEY_REQUIRED */
   @SuppressWarnings("InlinedApi")
   int EVENT_KEY_REQUIRED = MediaDrm.EVENT_KEY_REQUIRED;
   /**
@@ -235,7 +278,17 @@ public interface ExoMediaDrm<T extends ExoMediaCrypto> {
   Map<String, String> queryKeyStatus(byte[] sessionId);
 
   /**
-   * @see MediaDrm#release()
+   * Increments the reference count. When the caller no longer needs to use the instance, it must
+   * call {@link #release()} to decrement the reference count.
+   *
+   * <p>A new instance will have an initial reference count of 1, and therefore it is not normally
+   * necessary for application code to call this method.
+   */
+  void acquire();
+
+  /**
+   * Decrements the reference count. If the reference count drops to 0 underlying resources are
+   * released, and the instance cannot be re-used.
    */
   void release();
 
@@ -243,6 +296,14 @@ public interface ExoMediaDrm<T extends ExoMediaCrypto> {
    * @see MediaDrm#restoreKeys(byte[], byte[])
    */
   void restoreKeys(byte[] sessionId, byte[] keySetId);
+
+  /**
+   * Returns drm metrics. May be null if unavailable.
+   *
+   * @see MediaDrm#getMetrics()
+   */
+  @Nullable
+  PersistableBundle getMetrics();
 
   /**
    * @see MediaDrm#getPropertyString(String)
@@ -271,4 +332,11 @@ public interface ExoMediaDrm<T extends ExoMediaCrypto> {
    * @throws MediaCryptoException If the instance can't be created.
    */
   T createMediaCrypto(byte[] sessionId) throws MediaCryptoException;
+
+  /**
+   * Returns the {@link ExoMediaCrypto} type created by {@link #createMediaCrypto(byte[])}, or null
+   * if this instance cannot create any {@link ExoMediaCrypto} instances.
+   */
+  @Nullable
+  Class<T> getExoMediaCryptoType();
 }
