@@ -244,7 +244,14 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
     protected void onDetachedFromWindow() {
         super.onDetachedFromWindow();
         DownloadController.getInstance(currentAccount).removeLoadingFileObserver(this);
+        imageReceiver.onDetachedFromWindow();
         wasLayout = false;
+    }
+
+    @Override
+    protected void onAttachedToWindow() {
+        super.onAttachedToWindow();
+        imageReceiver.onAttachedToWindow();
     }
 
     @Override

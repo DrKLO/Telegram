@@ -73,7 +73,7 @@ public class StatisticPostInfoCell extends FrameLayout {
 
         linearLayout.addView(date, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1f, Gravity.NO_GRAVITY, 0, 0, 8, 0));
         linearLayout.addView(shares, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
-        contentLayout.addView(linearLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.START | Gravity.TOP, 0, 2, 0, 0));
+        contentLayout.addView(linearLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.START | Gravity.TOP, 0, 2, 0, 8));
 
         addView(contentLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.NO_GRAVITY, 72, 0, 12, 0));
 
@@ -81,12 +81,6 @@ public class StatisticPostInfoCell extends FrameLayout {
         views.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
         date.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText3));
         shares.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText3));
-    }
-
-
-    @Override
-    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(56), MeasureSpec.EXACTLY));
     }
 
     public void setData(StatisticActivity.RecentPostInfo postInfo) {

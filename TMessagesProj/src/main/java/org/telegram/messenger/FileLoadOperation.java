@@ -75,6 +75,9 @@ public class FileLoadOperation {
 
     private final static int preloadMaxBytes = 2 * 1024 * 1024;
 
+    private String fileName;
+    private int currentQueueType;
+
     private SparseArray<PreloadRange> preloadedBytesRanges;
     private SparseIntArray requestedPreloadedBytesRanges;
     private RandomAccessFile preloadStream;
@@ -130,6 +133,8 @@ public class FileLoadOperation {
 
     private SparseArray<TLRPC.TL_fileHash> cdnHashes;
 
+    private boolean forceBig;
+
     private byte[] encryptKey;
     private byte[] encryptIv;
 
@@ -174,6 +179,7 @@ public class FileLoadOperation {
 
     public FileLoadOperation(ImageLocation imageLocation, Object parent, String extension, int size) {
         parentObject = parent;
+        forceBig = imageLocation.imageType == FileLoader.IMAGE_TYPE_ANIMATION;
         if (imageLocation.isEncrypted()) {
             location = new TLRPC.TL_inputEncryptedFileLocation();
             location.id = imageLocation.location.volume_id;
@@ -357,10 +363,16 @@ public class FileLoadOperation {
         return priority;
     }
 
-    public void setPaths(int instance, File store, File temp) {
+    public void setPaths(int instance, String name, int queueType, File store, File temp) {
         storePath = store;
         tempPath = temp;
         currentAccount = instance;
+        fileName = name;
+        currentQueueType = queueType;
+    }
+
+    public int getQueueType() {
+        return currentQueueType;
     }
 
     public boolean wasStarted() {
@@ -555,11 +567,7 @@ public class FileLoadOperation {
     }
 
     public String getFileName() {
-        if (location != null) {
-            return location.volume_id + "_" + location.local_id + "." + ext;
-        } else {
-            return Utilities.MD5(webFile.url) + "." + ext;
-        }
+        return fileName;
     }
 
     protected void removeStreamListener(final FileLoadOperationStream operation) {
@@ -591,8 +599,8 @@ public class FileLoadOperation {
 
     public boolean start(final FileLoadOperationStream stream, final int streamOffset, final boolean steamPriority) {
         if (currentDownloadChunkSize == 0) {
-            currentDownloadChunkSize = totalBytesCount >= bigFileSizeFrom ? downloadChunkSizeBig : downloadChunkSize;
-            currentMaxDownloadRequests = totalBytesCount >= bigFileSizeFrom ? maxDownloadRequestsBig : maxDownloadRequests;
+            currentDownloadChunkSize = totalBytesCount >= bigFileSizeFrom || forceBig ? downloadChunkSizeBig : downloadChunkSize;
+            currentMaxDownloadRequests = totalBytesCount >= bigFileSizeFrom || forceBig ? maxDownloadRequestsBig : maxDownloadRequests;
         }
         final boolean alreadyStarted = state != stateIdle;
         final boolean wasPaused = paused;
@@ -1449,7 +1457,7 @@ public class FileLoadOperation {
                                         if (location != null) {
                                             FileLog.e("invalid cdn hash " + location + " id = " + location.id + " local_id = " + location.local_id + " access_hash = " + location.access_hash + " volume_id = " + location.volume_id + " secret = " + location.secret);
                                         } else if (webLocation != null) {
-                                            FileLog.e("invalid cdn hash  " + webLocation + " id = " + getFileName());
+                                            FileLog.e("invalid cdn hash  " + webLocation + " id = " + fileName);
                                         }
                                     }
                                     onFail(false, 0);
@@ -1536,7 +1544,7 @@ public class FileLoadOperation {
                     if (location != null) {
                         FileLog.e(error.text + " " + location + " id = " + location.id + " local_id = " + location.local_id + " access_hash = " + location.access_hash + " volume_id = " + location.volume_id + " secret = " + location.secret);
                     } else if (webLocation != null) {
-                        FileLog.e(error.text + " " + webLocation + " id = " + getFileName());
+                        FileLog.e(error.text + " " + webLocation + " id = " + fileName);
                     }
                 }
                 onFail(false, 0);

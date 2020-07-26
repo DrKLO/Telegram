@@ -2019,7 +2019,11 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     }
                     if (layout) {
                         measureChildWithMargins(listView, widthMeasureSpec, 0, heightMeasureSpec, 0);
-                        listView.layout(0, actionBarHeight, listView.getMeasuredWidth(), actionBarHeight + listView.getMeasuredHeight());
+                        try {
+                            listView.layout(0, actionBarHeight, listView.getMeasuredWidth(), actionBarHeight + listView.getMeasuredHeight());
+                        } catch (Exception e) {
+                            FileLog.e(e);
+                        }
                     }
                     ignoreLayout = false;
                 }

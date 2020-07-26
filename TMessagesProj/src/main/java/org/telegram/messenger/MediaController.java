@@ -1270,7 +1270,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
             }
         } else if (id == NotificationCenter.mediaDidLoad) {
             int guid = (Integer) args[3];
-            if (guid == playlistClassGuid) {
+            if (guid == playlistClassGuid && playingMessageObject != null) {
                 long did = (Long) args[0];
                 int type = (Integer) args[4];
 

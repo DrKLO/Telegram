@@ -111,6 +111,10 @@ public class ProfileGalleryView extends CircularViewPager implements Notificatio
                                 imageReceiver.setAllowStartAnimation(true);
                                 imageReceiver.startAnimation();
                             }
+                            ImageLocation location = videoLocations.get(p);
+                            if (location != null) {
+                                FileLoader.getInstance(currentAccount).setForceStreamLoadingFile(location.location, "mp4");
+                            }
                         } else {
                             if (currentAllow) {
                                 AnimatedFileDrawable fileDrawable = imageReceiver.getAnimation();

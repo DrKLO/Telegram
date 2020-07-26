@@ -379,13 +379,13 @@ public class FilterGLThread extends DispatchQueue {
     }
 
     public Bitmap getTexture() {
-        if (!initied) {
+        if (!initied || !isAlive()) {
             return null;
         }
         final CountDownLatch countDownLatch = new CountDownLatch(1);
         final Bitmap[] object = new Bitmap[1];
         try {
-            postRunnable(() -> {
+            if (postRunnable(() -> {
                 GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, filterShaders.getRenderFrameBuffer());
                 GLES20.glFramebufferTexture2D(GLES20.GL_FRAMEBUFFER, GLES20.GL_COLOR_ATTACHMENT0, GLES20.GL_TEXTURE_2D, filterShaders.getRenderTexture(blurred ? 0 : 1), 0);
                 GLES20.glClear(0);
@@ -393,8 +393,9 @@ public class FilterGLThread extends DispatchQueue {
                 countDownLatch.countDown();
                 GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, 0);
                 GLES20.glClear(0);
-            });
-            countDownLatch.await();
+            })) {
+                countDownLatch.await();
+            }
         } catch (Exception e) {
             FileLog.e(e);
         }

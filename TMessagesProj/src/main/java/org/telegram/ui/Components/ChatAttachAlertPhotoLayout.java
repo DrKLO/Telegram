@@ -780,7 +780,7 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
                 };
                 AndroidUtilities.lockOrientation(parentAlert.baseFragment.getParentActivity());
                 CameraController.getInstance().recordVideo(cameraView.getCameraSession(), outputFile, parentAlert.avatarPicker != 0, (thumbPath, duration) -> {
-                    if (outputFile == null || parentAlert.baseFragment == null) {
+                    if (outputFile == null || parentAlert.baseFragment == null || cameraView == null) {
                         return;
                     }
                     mediaFromExternalCamera = false;

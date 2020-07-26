@@ -480,7 +480,7 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
         recyclerListView.setOnItemLongClickListener((view, position) -> {
             if (position >= adapter.topAdminsStartRow && position <= adapter.topAdminsEndRow) {
                 int i = position - adapter.topAdminsStartRow;
-                topMembersVisible.get(i).onLongClick(chat, this, progressDialog);
+                topAdmins.get(i).onLongClick(chat, this, progressDialog);
                 return true;
             } else if (position >= adapter.topMembersStartRow && position <= adapter.topMembersEndRow) {
                 int i = position - adapter.topMembersStartRow;
@@ -1355,6 +1355,9 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
         }
 
         private void zoomOut(boolean animated) {
+            if (data.chartData.x == null) {
+                return;
+            }
             chartHeaderView.zoomOut(chartView, animated);
             chartView.legendSignatureView.chevron.setAlpha(1f);
             zoomedChartView.setHeader(null);
