@@ -23,6 +23,7 @@ import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Scanner;
 import java.util.concurrent.CountDownLatch;
 import java.util.zip.GZIPInputStream;
@@ -45,6 +46,10 @@ public class FileLoadOperation {
         private Range(int s, int e) {
             start = s;
             end = e;
+        }
+
+        int getStart() {
+            return start;
         }
     }
 
@@ -402,14 +407,7 @@ public class FileLoadOperation {
                 break;
             }
         }
-        Collections.sort(ranges, (o1, o2) -> {
-            if (o1.start > o2.start) {
-                return 1;
-            } else if (o1.start < o2.start) {
-                return -1;
-            }
-            return 0;
-        });
+        Collections.sort(ranges, Comparator.comparingInt(Range::getStart));
         for (int a = 0; a < ranges.size() - 1; a++) {
             Range r1 = ranges.get(a);
             Range r2 = ranges.get(a + 1);

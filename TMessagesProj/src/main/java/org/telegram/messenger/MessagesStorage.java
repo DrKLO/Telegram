@@ -29,6 +29,7 @@ import org.telegram.ui.ActionBar.Theme;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -1656,14 +1657,7 @@ public class MessagesStorage extends BaseController {
                 }
                 filtersCursor.dispose();
 
-                Collections.sort(dialogFilters, (o1, o2) -> {
-                    if (o1.order > o2.order) {
-                        return 1;
-                    } else if (o1.order < o2.order) {
-                        return -1;
-                    }
-                    return 0;
-                });
+                Collections.sort(dialogFilters, Comparator.comparingInt(MessagesController.DialogFilter::getOrder));
 
                 if (updateCounters) {
                     calcUnreadCounters(true);
@@ -2219,16 +2213,7 @@ public class MessagesStorage extends BaseController {
                             if (hasSecret) {
                                 secretChatsMap = new LinkedHashMap<>();
                                 LongSparseArray<Integer> pinnedDialogs = filter.pinnedDialogs;
-                                Collections.sort(pinArray, (o1, o2) -> {
-                                    int idx1 = pinnedDialogs.get(o1);
-                                    int idx2 = pinnedDialogs.get(o2);
-                                    if (idx1 > idx2) {
-                                        return 1;
-                                    } else if (idx1 < idx2) {
-                                        return -1;
-                                    }
-                                    return 0;
-                                });
+                                Collections.sort(pinArray, (o1, o2) -> Integer.compare(pinnedDialogs.get(o1), pinnedDialogs.get(o2)));
                                 for (int c = 0, N2 = pinArray.size(); c < N2; c++) {
                                     long did = pinArray.get(c);
                                     if ((int) did != 0) {
@@ -2480,14 +2465,7 @@ public class MessagesStorage extends BaseController {
             }
         }
         if (orderChanged) {
-            Collections.sort(dialogFilters, (o1, o2) -> {
-                if (o1.order > o2.order) {
-                    return 1;
-                } else if (o1.order < o2.order) {
-                    return -1;
-                }
-                return 0;
-            });
+            Collections.sort(dialogFilters, Comparator.comparingInt(MessagesController.DialogFilter::getOrder));
             saveDialogFiltersOrderInternal();
         }
         int remote = anythingChanged ? 1 : 2;
@@ -3177,16 +3155,7 @@ public class MessagesStorage extends BaseController {
                         }
                     }
                 }
-                Collections.sort(oldPinnedOrder, (o1, o2) -> {
-                    Integer val1 = oldPinnedDialogNums.get(o1);
-                    Integer val2 = oldPinnedDialogNums.get(o2);
-                    if (val1 < val2) {
-                        return 1;
-                    } else if (val1 > val2) {
-                        return -1;
-                    }
-                    return 0;
-                });
+                Collections.sort(oldPinnedOrder, (o1, o2) -> Integer.compare(oldPinnedDialogNums.get(o1), oldPinnedDialogNums.get(o2)));
                 while (oldPinnedOrder.size() < totalPinnedCount) {
                     oldPinnedOrder.add(0, 0L);
                 }
@@ -6317,25 +6286,12 @@ public class MessagesStorage extends BaseController {
 
                 Collections.sort(res.messages, (lhs, rhs) -> {
                     if (lhs.id > 0 && rhs.id > 0) {
-                        if (lhs.id > rhs.id) {
-                            return -1;
-                        } else if (lhs.id < rhs.id) {
-                            return 1;
-                        }
+                        return Integer.compare(rhs.id, lhs.id);
                     } else if (lhs.id < 0 && rhs.id < 0) {
-                        if (lhs.id < rhs.id) {
-                            return -1;
-                        } else if (lhs.id > rhs.id) {
-                            return 1;
-                        }
+                        return Integer.compare(lhs.id, rhs.id);
                     } else {
-                        if (lhs.date > rhs.date) {
-                            return -1;
-                        } else if (lhs.date < rhs.date) {
-                            return 1;
-                        }
+                        return Integer.compare(rhs.date, lhs.date);
                     }
-                    return 0;
                 });
 
                 if (lower_id != 0) {

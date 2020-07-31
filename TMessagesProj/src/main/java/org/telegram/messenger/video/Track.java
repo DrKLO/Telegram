@@ -28,6 +28,7 @@ import com.googlecode.mp4parser.boxes.mp4.objectdescriptors.SLConfigDescriptor;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -44,6 +45,10 @@ public class Track {
         public SamplePresentationTime(int idx, long time) {
             index = idx;
             presentationTime = time;
+        }
+
+        long getPresentationTime() {
+            return presentationTime;
         }
     }
 
@@ -277,14 +282,7 @@ public class Track {
 
     public void prepare() {
         ArrayList<SamplePresentationTime> original = new ArrayList<>(samplePresentationTimes);
-        Collections.sort(samplePresentationTimes, (o1, o2) -> {
-            if (o1.presentationTime > o2.presentationTime) {
-                return 1;
-            } else if (o1.presentationTime < o2.presentationTime) {
-                return -1;
-            }
-            return 0;
-        });
+        Collections.sort(samplePresentationTimes, Comparator.comparingLong(SamplePresentationTime::getPresentationTime));
         long lastPresentationTimeUs = 0;
         sampleDurations = new long[samplePresentationTimes.size()];
         long minDelta = Long.MAX_VALUE;

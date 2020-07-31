@@ -245,6 +245,14 @@ public class AndroidUtilities {
         String url;
         int start;
         int end;
+
+        int getStart() {
+            return start;
+        }
+
+        int getEnd() {
+            return end;
+        }
     }
 
     private static String makeUrl(String url, String[] prefixes, Matcher matcher) {
@@ -325,23 +333,8 @@ public class AndroidUtilities {
     }
 
     private static void pruneOverlaps(ArrayList<LinkSpec> links) {
-        Comparator<LinkSpec> c = (a, b) -> {
-            if (a.start < b.start) {
-                return -1;
-            }
-            if (a.start > b.start) {
-                return 1;
-            }
-            if (a.end < b.end) {
-                return 1;
-            }
-            if (a.end > b.end) {
-                return -1;
-            }
-            return 0;
-        };
-
-        Collections.sort(links, c);
+        Collections.sort(links, Comparator.comparingInt(LinkSpec::getStart)
+                .thenComparing(Comparator.comparingInt(LinkSpec::getEnd).reversed()));
 
         int len = links.size();
         int i = 0;
@@ -1339,15 +1332,6 @@ public class AndroidUtilities {
             return 0;
         }
         return (int) Math.floor(density * value);
-    }
-
-    public static int compare(int lhs, int rhs) {
-        if (lhs == rhs) {
-            return 0;
-        } else if (lhs > rhs) {
-            return 1;
-        }
-        return -1;
     }
 
     public static float dpf2(float value) {

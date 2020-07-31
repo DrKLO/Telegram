@@ -44,6 +44,7 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
@@ -942,16 +943,7 @@ public class ConnectionsManager extends BaseController {
                         }
                         arrayList.add(object.getString("data"));
                     }
-                    Collections.sort(arrayList, (o1, o2) -> {
-                        int l1 = o1.length();
-                        int l2 = o2.length();
-                        if (l1 > l2) {
-                            return -1;
-                        } else if (l1 < l2) {
-                            return 1;
-                        }
-                        return 0;
-                    });
+                    Collections.sort(arrayList, Comparator.comparingInt(String::length));
                     StringBuilder builder = new StringBuilder();
                     for (int a = 0; a < arrayList.size(); a++) {
                         builder.append(arrayList.get(a).replace("\"", ""));
@@ -1061,16 +1053,7 @@ public class ConnectionsManager extends BaseController {
                     }
                     arrayList.add(object.getString("data"));
                 }
-                Collections.sort(arrayList, (o1, o2) -> {
-                    int l1 = o1.length();
-                    int l2 = o2.length();
-                    if (l1 > l2) {
-                        return -1;
-                    } else if (l1 < l2) {
-                        return 1;
-                    }
-                    return 0;
-                });
+                Collections.sort(arrayList, Comparator.comparingInt(String::length));
                 StringBuilder builder = new StringBuilder();
                 for (int a = 0; a < arrayList.size(); a++) {
                     builder.append(arrayList.get(a).replace("\"", ""));
@@ -1180,16 +1163,7 @@ public class ConnectionsManager extends BaseController {
                     }
                     arrayList.add(object.getString("data"));
                 }
-                Collections.sort(arrayList, (o1, o2) -> {
-                    int l1 = o1.length();
-                    int l2 = o2.length();
-                    if (l1 > l2) {
-                        return -1;
-                    } else if (l1 < l2) {
-                        return 1;
-                    }
-                    return 0;
-                });
+                Collections.sort(arrayList, Comparator.comparingInt(String::length));
                 StringBuilder builder = new StringBuilder();
                 for (int a = 0; a < arrayList.size(); a++) {
                     builder.append(arrayList.get(a).replace("\"", ""));

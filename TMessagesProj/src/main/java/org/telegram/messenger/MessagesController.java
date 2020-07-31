@@ -417,6 +417,10 @@ public class MessagesController extends BaseController implements NotificationCe
         public LongSparseArray<Integer> pinnedDialogs = new LongSparseArray<>();
         public ArrayList<TLRPC.Dialog> dialogs = new ArrayList<>();
 
+        int getOrder() {
+            return order;
+        }
+
         public boolean includesDialog(AccountInstance accountInstance, int lowerId) {
             MessagesController messagesController = accountInstance.getMessagesController();
             TLRPC.Dialog dialog = messagesController.dialogs_dict.get(lowerId);
@@ -491,23 +495,12 @@ public class MessagesController extends BaseController implements NotificationCe
         } else if (pinnedNum1 != Integer.MIN_VALUE && pinnedNum2 == Integer.MIN_VALUE) {
             return -1;
         } else if (pinnedNum1 != Integer.MIN_VALUE && pinnedNum2 != Integer.MIN_VALUE) {
-            if (pinnedNum1 > pinnedNum2) {
-                return 1;
-            } else if (pinnedNum1 < pinnedNum2) {
-                return -1;
-            } else {
-                return 0;
-            }
+            return Integer.compare(pinnedNum1, pinnedNum2);
         }
         final MediaDataController mediaDataController = getMediaDataController();
         final long date1 = DialogObject.getLastMessageOrDraftDate(dialog1, mediaDataController.getDraft(dialog1.id));
         final long date2 = DialogObject.getLastMessageOrDraftDate(dialog2, mediaDataController.getDraft(dialog2.id));
-        if (date1 < date2) {
-            return 1;
-        } else if (date1 > date2) {
-            return -1;
-        }
-        return 0;
+        return Long.compare(date2, date1);
     };
 
     private final Comparator<TLRPC.Dialog> dialogComparator = (dialog1, dialog2) -> {
@@ -520,41 +513,30 @@ public class MessagesController extends BaseController implements NotificationCe
         } else if (dialog1.pinned && !dialog2.pinned) {
             return -1;
         } else if (dialog1.pinned && dialog2.pinned) {
-            if (dialog1.pinnedNum < dialog2.pinnedNum) {
-                return 1;
-            } else if (dialog1.pinnedNum > dialog2.pinnedNum) {
-                return -1;
-            } else {
-                return 0;
-            }
+            return Integer.compare(dialog2.pinnedNum, dialog1.pinnedNum);
         }
         final MediaDataController mediaDataController = getMediaDataController();
         final long date1 = DialogObject.getLastMessageOrDraftDate(dialog1, mediaDataController.getDraft(dialog1.id));
         final long date2 = DialogObject.getLastMessageOrDraftDate(dialog2, mediaDataController.getDraft(dialog2.id));
-        if (date1 < date2) {
-            return 1;
-        } else if (date1 > date2) {
-            return -1;
-        }
-        return 0;
+        return Long.compare(date2, date1);
     };
 
     private final Comparator<TLRPC.Update> updatesComparator = (lhs, rhs) -> {
         int ltype = getUpdateType(lhs);
         int rtype = getUpdateType(rhs);
         if (ltype != rtype) {
-            return AndroidUtilities.compare(ltype, rtype);
+            return Integer.compare(ltype, rtype);
         } else if (ltype == 0) {
-            return AndroidUtilities.compare(getUpdatePts(lhs), getUpdatePts(rhs));
+            return Integer.compare(getUpdatePts(lhs), getUpdatePts(rhs));
         } else if (ltype == 1) {
-            return AndroidUtilities.compare(getUpdateQts(lhs), getUpdateQts(rhs));
+            return Integer.compare(getUpdateQts(lhs), getUpdateQts(rhs));
         } else if (ltype == 2) {
             int lChannel = getUpdateChannelId(lhs);
             int rChannel = getUpdateChannelId(rhs);
             if (lChannel == rChannel) {
-                return AndroidUtilities.compare(getUpdatePts(lhs), getUpdatePts(rhs));
+                return Integer.compare(getUpdatePts(lhs), getUpdatePts(rhs));
             } else {
-                return AndroidUtilities.compare(lChannel, rChannel);
+                return Integer.compare(lChannel, rChannel);
             }
         }
         return 0;
@@ -969,14 +951,7 @@ public class MessagesController extends BaseController implements NotificationCe
                         DialogFilter filter = dialogFilters.get(a);
                         dialogFiltersById.put(filter.id, filter);
                     }
-                    Collections.sort(dialogFilters, (o1, o2) -> {
-                        if (o1.order > o2.order) {
-                            return 1;
-                        } else if (o1.order < o2.order) {
-                            return -1;
-                        }
-                        return 0;
-                    });
+                    Collections.sort(dialogFilters, Comparator.comparingInt(DialogFilter::getOrder));
                     putUsers(users, true);
                     putChats(chats, true);
                     dialogFiltersLoaded = true;
@@ -8459,7 +8434,7 @@ public class MessagesController extends BaseController implements NotificationCe
             updatesQueueChannels.remove(channelId);
             return;
         }
-        Collections.sort(updatesQueue, (updates, updates2) -> AndroidUtilities.compare(updates.pts, updates2.pts));
+        Collections.sort(updatesQueue, Comparator.comparingInt(TLRPC.Updates::getPts));
         boolean anyProceed = false;
         if (state == 2) {
             channelsPts.put(channelId, updatesQueue.get(0).pts);
@@ -8513,13 +8488,13 @@ public class MessagesController extends BaseController implements NotificationCe
         ArrayList<TLRPC.Updates> updatesQueue = null;
         if (type == 0) {
             updatesQueue = updatesQueueSeq;
-            Collections.sort(updatesQueue, (updates, updates2) -> AndroidUtilities.compare(getUpdateSeq(updates), getUpdateSeq(updates2)));
+            Collections.sort(updatesQueue, (updates, updates2) -> Integer.compare(getUpdateSeq(updates), getUpdateSeq(updates2)));
         } else if (type == 1) {
             updatesQueue = updatesQueuePts;
-            Collections.sort(updatesQueue, (updates, updates2) -> AndroidUtilities.compare(updates.pts, updates2.pts));
+            Collections.sort(updatesQueue, Comparator.comparingInt(TLRPC.Updates::getPts));
         } else if (type == 2) {
             updatesQueue = updatesQueueQts;
-            Collections.sort(updatesQueue, (updates, updates2) -> AndroidUtilities.compare(updates.pts, updates2.pts));
+            Collections.sort(updatesQueue, Comparator.comparingInt(TLRPC.Updates::getPts));
         }
         if (updatesQueue != null && !updatesQueue.isEmpty()) {
             boolean anyProceed = false;

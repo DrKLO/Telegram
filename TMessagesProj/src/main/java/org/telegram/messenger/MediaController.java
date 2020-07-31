@@ -82,6 +82,7 @@ import java.nio.ByteOrder;
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Timer;
@@ -271,6 +272,10 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
         public boolean isVideo;
         public boolean isMuted;
         public boolean canDeleteAfter;
+
+        public long getDateTaken() {
+            return dateTaken;
+        }
 
         public PhotoEntry(int bucketId, int imageId, long dateTaken, String path, int orientation, boolean isVideo, int width, int height, long size) {
             this.bucketId = bucketId;
@@ -3638,14 +3643,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                 }
             }
             for (int a = 0; a < mediaAlbumsSorted.size(); a++) {
-                Collections.sort(mediaAlbumsSorted.get(a).photos, (o1, o2) -> {
-                    if (o1.dateTaken < o2.dateTaken) {
-                        return 1;
-                    } else if (o1.dateTaken > o2.dateTaken) {
-                        return -1;
-                    }
-                    return 0;
-                });
+                Collections.sort(mediaAlbumsSorted.get(a).photos, Comparator.comparingLong(PhotoEntry::getDateTaken).reversed());
             }
             broadcastNewPhotos(guid, mediaAlbumsSorted, photoAlbumsSorted, mediaCameraAlbumId, allMediaAlbum, allPhotosAlbum, allVideosAlbum, 0);
         });

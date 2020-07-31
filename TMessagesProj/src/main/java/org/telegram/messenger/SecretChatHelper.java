@@ -29,6 +29,7 @@ import java.io.File;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Locale;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -1428,7 +1429,7 @@ public class SecretChatHelper extends BaseController {
                     }
                     getUserConfig().saveConfig(false);
                 }
-                Collections.sort(messages, (lhs, rhs) -> AndroidUtilities.compare(lhs.seq_out, rhs.seq_out));
+                Collections.sort(messages, Comparator.comparingInt(TLRPC.Message::getSeqOut));
                 ArrayList<TLRPC.EncryptedChat> encryptedChats = new ArrayList<>();
                 encryptedChats.add(encryptedChat);
 
@@ -1454,14 +1455,7 @@ public class SecretChatHelper extends BaseController {
         if (holes == null) {
             return;
         }
-        Collections.sort(holes, (lhs, rhs) -> {
-            if (lhs.layer.out_seq_no > rhs.layer.out_seq_no) {
-                return 1;
-            } else if (lhs.layer.out_seq_no < rhs.layer.out_seq_no) {
-                return -1;
-            }
-            return 0;
-        });
+        Collections.sort(holes, (lhs, rhs) -> Integer.compare(lhs.layer.out_seq_no, rhs.layer.out_seq_no));
 
         boolean update = false;
         for (int a = 0; a < holes.size(); a++) {

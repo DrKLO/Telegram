@@ -936,16 +936,8 @@ public class MediaDataController extends BaseController {
     }
 
     public void reorderStickers(int type, final ArrayList<Long> order) {
-        Collections.sort(stickerSets[type], (lhs, rhs) -> {
-            int index1 = order.indexOf(lhs.set.id);
-            int index2 = order.indexOf(rhs.set.id);
-            if (index1 > index2) {
-                return 1;
-            } else if (index1 < index2) {
-                return -1;
-            }
-            return 0;
-        });
+        Collections.sort(stickerSets[type], (lhs, rhs) -> Integer.compare(order.indexOf(lhs.set.id),
+                order.indexOf(rhs.set.id)));
         loadHash[type] = calcStickersHash(stickerSets[type]);
         getNotificationCenter().postNotificationName(NotificationCenter.stickersDidLoad, type);
         loadStickers(type, false, true);
@@ -3193,14 +3185,7 @@ public class MediaDataController extends BaseController {
             inlineBots.add(peer);
         }
         peer.rating += Math.exp(dt / getMessagesController().ratingDecay);
-        Collections.sort(inlineBots, (lhs, rhs) -> {
-            if (lhs.rating > rhs.rating) {
-                return -1;
-            } else if (lhs.rating < rhs.rating) {
-                return 1;
-            }
-            return 0;
-        });
+        Collections.sort(inlineBots, Comparator.comparingDouble(TLRPC.TL_topPeer::getRating).reversed());
         if (inlineBots.size() > 20) {
             inlineBots.remove(inlineBots.size() - 1);
         }
@@ -3296,14 +3281,7 @@ public class MediaDataController extends BaseController {
                     hints.add(peer);
                 }
                 peer.rating += Math.exp(dtFinal / getMessagesController().ratingDecay);
-                Collections.sort(hints, (lhs, rhs) -> {
-                    if (lhs.rating > rhs.rating) {
-                        return -1;
-                    } else if (lhs.rating < rhs.rating) {
-                        return 1;
-                    }
-                    return 0;
-                });
+                Collections.sort(hints, Comparator.comparingDouble(TLRPC.TL_topPeer::getRating).reversed());
 
                 savePeer((int) did, 0, peer.rating);
 
@@ -4182,14 +4160,7 @@ public class MediaDataController extends BaseController {
         ArrayList<TextStyleSpan.TextStyleRun> runs = new ArrayList<>();
         ArrayList<TLRPC.MessageEntity> entitiesCopy = new ArrayList<>(entities);
 
-        Collections.sort(entitiesCopy, (o1, o2) -> {
-            if (o1.offset > o2.offset) {
-                return 1;
-            } else if (o1.offset < o2.offset) {
-                return -1;
-            }
-            return 0;
-        });
+        Collections.sort(entitiesCopy, Comparator.comparingInt(TLRPC.MessageEntity::getOffset));
         for (int a = 0, N = entitiesCopy.size(); a < N; a++) {
             TLRPC.MessageEntity entity = entitiesCopy.get(a);
             if (entity.length <= 0 || entity.offset < 0 || entity.offset >= text.length()) {
