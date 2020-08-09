@@ -2373,10 +2373,14 @@ public class NotificationsController extends BaseController {
             }
         });
     }
+    
+    private boolean unsupportedNotificationShortcut() {
+        return Build.VERSION.SDK_INT < 29 || !SharedConfig.chatBubbles;
+    }
 
     @SuppressLint("RestrictedApi")
     private void createNotificationShortcut(NotificationCompat.Builder builder, int did, String name, TLRPC.User user, TLRPC.Chat chat, Person person) {
-        if (Build.VERSION.SDK_INT < 29 || ChatObject.isChannel(chat) && !chat.megagroup || !SharedConfig.chatBubbles) {
+        if (unsupportedNotificationShortcut() || ChatObject.isChannel(chat) && !chat.megagroup) {
             return;
         }
         try {
@@ -2397,10 +2401,7 @@ public class NotificationsController extends BaseController {
             }
             ArrayList<ShortcutInfoCompat> arrayList = new ArrayList<>(1);
             arrayList.add(shortcutBuilder.build());
-            ArrayList<String> ids = new ArrayList<>(1);
-            ids.add(id);
             ShortcutManagerCompat.addDynamicShortcuts(ApplicationLoader.applicationContext, arrayList);
-            ShortcutManagerCompat.removeDynamicShortcuts(ApplicationLoader.applicationContext, ids);
             builder.setShortcutId(id);
             NotificationCompat.BubbleMetadata.Builder bubbleBuilder = new NotificationCompat.BubbleMetadata.Builder();
             Intent intent = new Intent(ApplicationLoader.applicationContext, BubbleActivity.class);
@@ -3737,8 +3738,14 @@ public class NotificationsController extends BaseController {
                 notificationManager.cancel(notificationId);
             }
         }
+        ArrayList<String> ids = new ArrayList<>(holders.size());
         for (int a = 0, size = holders.size(); a < size; a++) {
-            holders.get(a).call();
+            NotificationHolder holder = holders.get(a);
+            holder.call();
+            ids.add(holder.notification.getShortcutId());
+        }
+        if (!unsupportedNotificationShortcut()) {
+            ShortcutManagerCompat.removeDynamicShortcuts(ApplicationLoader.applicationContext, ids);
         }
 
         for (int a = 0; a < oldIdsWear.size(); a++) {
