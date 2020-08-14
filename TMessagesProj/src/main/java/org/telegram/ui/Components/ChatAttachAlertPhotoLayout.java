@@ -2516,7 +2516,7 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
         for (int a = 0; a < count; a++) {
             View child = gridView.getChildAt(a);
             if (child instanceof PhotoAttachCameraCell) {
-                child.setVisibility(View.INVISIBLE);
+                if (cameraView != null) child.setVisibility(View.INVISIBLE);
                 break;
             }
         }
