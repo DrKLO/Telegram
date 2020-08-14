@@ -1805,7 +1805,7 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
             if (response instanceof TLRPC.messages_Messages) {
                 ArrayList<TLRPC.Message> messages = ((TLRPC.messages_Messages) response).messages;
                 for (int i = 0; i < messages.size(); i++) {
-                    messageObjects.add(new MessageObject(currentAccount, messages.get(i), false));
+                    messageObjects.add(new MessageObject(currentAccount, messages.get(i), false, true));
                 }
                 getMessagesStorage().putMessages(messages, false, true, true, 0, false);
             }

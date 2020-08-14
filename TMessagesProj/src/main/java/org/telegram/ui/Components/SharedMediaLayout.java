@@ -1238,6 +1238,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
         addView(floatingDateView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.CENTER_HORIZONTAL, 0, 48 + 4, 0, 0));
 
         addView(fragmentContextView = new FragmentContextView(context, parent, this, false), LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 39, Gravity.TOP | Gravity.LEFT, 0, 48, 0, 0));
+        fragmentContextView.setSupportsCalls(false);
         fragmentContextView.setDelegate((start, show) -> {
             if (show && !start) {
                 for (int a = 0; a < mediaPages.length; a++) {
@@ -2023,20 +2024,15 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                         if (oldItemCount > 1) {
                             adapter.notifyItemRangeChanged(oldItemCount - 2, 2);
                         }
-                        if (newItemCount > oldItemCount) {
-                            adapter.notifyItemRangeInserted(oldItemCount, newItemCount);
-                        } else if (newItemCount < oldItemCount) {
-                            adapter.notifyItemRangeRemoved(newItemCount, (oldItemCount - newItemCount));
-                        }
                     } else {
                         if (oldItemCount > 1) {
                             adapter.notifyItemChanged(oldItemCount - 2);
                         }
-                        if (newItemCount > oldItemCount) {
-                            adapter.notifyItemRangeInserted(oldItemCount, newItemCount);
-                        } else if (newItemCount < oldItemCount) {
-                            adapter.notifyItemRangeRemoved(newItemCount, (oldItemCount - newItemCount));
-                        }
+                    }
+                    if (newItemCount > oldItemCount) {
+                        adapter.notifyItemRangeInserted(oldItemCount, newItemCount);
+                    } else if (newItemCount < oldItemCount) {
+                        adapter.notifyItemRangeRemoved(newItemCount, (oldItemCount - newItemCount));
                     }
                 }
                 scrolling = true;
@@ -2666,11 +2662,10 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                         if (canShowSearchItem()) {
                             searchItemState = 1;
                             searchItem.setVisibility(View.VISIBLE);
-                            searchItem.setAlpha(0.0f);
                         } else {
                             searchItem.setVisibility(INVISIBLE);
-                            searchItem.setAlpha(0.0f);
                         }
+                        searchItem.setAlpha(0.0f);
                     } else {
                         searchItemState = 0;
                     }
@@ -3412,7 +3407,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                         if (max_id != 0 && message.id > max_id) {
                             continue;
                         }
-                        messageObjects.add(new MessageObject(profileActivity.getCurrentAccount(), message, false));
+                        messageObjects.add(new MessageObject(profileActivity.getCurrentAccount(), message, false, true));
                     }
                 }
                 AndroidUtilities.runOnUIThread(() -> {

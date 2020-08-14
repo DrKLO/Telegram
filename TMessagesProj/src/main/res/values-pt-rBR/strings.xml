@@ -223,7 +223,7 @@
     <string name="ArchiveHintHeader3">Chats fixados</string>
     <string name="ArchiveHintText3">Você pode fixar uma quantidade ilimitada de chats arquivados no topo.</string>
     <string name="ScheduledOrNoSoundHint">Toque e segure neste botão para agendar a mensagem ou enviar sem som.</string>
-    <string name="HideNewChatsAlertTitle">Arquivar novos chats?</string>
+    <string name="HideNewChatsAlertTitle">Ocultar novos chats?</string>
     <string name="HideNewChatsAlertText">Parece que você está recebendo muitas mensagens de pessoas que não estão na sua agenda. Quer **silenciar** e **arquivar** essas conversas automaticamente?</string>
     <string name="GoToSettings">ABRIR CONFIGURAÇÕES</string>
     <!--channels-->
@@ -430,8 +430,8 @@
     <string name="EditAdminTransferSetPassword">Definir Senha</string>
     <string name="EditAdminTransferReadyAlertText">Isso transferirá os direitos de **dono** de **%1$s** para **%2$s**.</string>
     <string name="EditAdminTransferChangeOwner">Alterar Dono</string>
-    <string name="EditAdminTransferGroupToast">**%1$s** agora é o dono do grupo.</string>
-    <string name="EditAdminTransferChannelToast">**%1$s** agora é o dono do canal.</string>
+    <string name="EditAdminTransferGroupToast">**%1$s** agora tem a posse do grupo.</string>
+    <string name="EditAdminTransferChannelToast">**%1$s** agora tem a posse do canal.</string>
     <string name="EditAdminBanUsers">Banir Usuários</string>
     <string name="EditAdminAddUsers">Adicionar Usuários</string>
     <string name="EditAdminAddUsersViaLink">Convidar Usuários via Link</string>
@@ -2650,6 +2650,7 @@
     <string name="Edit">Editar</string>
     <string name="Send">Enviar</string>
     <string name="Call">Ligar</string>
+    <string name="VideoCall">Video Call</string>
     <string name="Copy">Copiar</string>
     <string name="Delete">Apagar</string>
     <string name="Start">Iniciar</string>
@@ -2918,12 +2919,12 @@
     <string name="MessagesOverview">Mensagens</string>
     <string name="ViewingMembers">Membros que visualizam</string>
     <string name="PostingMembers">Membros que postam</string>
-    <string name="Characters_zero">%1$d símbolos</string>
-    <string name="Characters_one">%1$d símbolo</string>
-    <string name="Characters_two">%1$d símbolos</string>
-    <string name="Characters_few">%1$d símbolos</string>
-    <string name="Characters_many">%1$d símbolos</string>
-    <string name="Characters_other">%1$d símbolos</string>
+    <string name="Characters_zero">%1$d caracteres</string>
+    <string name="Characters_one">%1$d caractere</string>
+    <string name="Characters_two">%1$d caracteres</string>
+    <string name="Characters_few">%1$d caracteres</string>
+    <string name="Characters_many">%1$d caracteres</string>
+    <string name="Characters_other">%1$d caracteres</string>
     <string name="Deletions_zero">%1$d exclusões</string>
     <string name="Deletions_one">%1$d exclusão</string>
     <string name="Deletions_two">%1$d exclusões</string>
@@ -2952,7 +2953,7 @@
     <string name="TopMembers">Top membros</string>
     <string name="TopInviters">Top promotores</string>
     <string name="CharactersPerMessage">%s por mensagem</string>
-    <string name="TopDaysOfWeekChartTitle">Top dias da semana</string>
+    <string name="TopDaysOfWeekChartTitle">Dias da semana</string>
     <string name="StatisticSearchUserHistory">Ver Mensagens</string>
     <string name="StatisticOpenProfile">Ver Perfil</string>
     <!--Intro view-->
@@ -2983,6 +2984,7 @@
     <string name="VoipRinging">Tocando</string>
     <string name="VoipBusy">Linha ocupada</string>
     <string name="VoipInCallBranding">Chamada do Telegram</string>
+    <string name="VoipInVideoCallBranding">Telegram Video Call</string>
     <string name="VoipOutgoingCall">Chamada do Telegram em andamento</string>
     <string name="VoipEndCall">Encerrar Chamada</string>
     <string name="VoipOngoingAlertTitle">Outra chamada em andamento</string>
@@ -3009,24 +3011,32 @@
     <string name="VoipOfflineOpenSettings">Configurações</string>
     <string name="CallMessageOutgoing">Chamada efetuada</string>
     <string name="CallMessageIncoming">Chamada recebida</string>
+    <string name="CallMessageVideoOutgoing">Outgoing Video Call</string>
+    <string name="CallMessageVideoIncoming">Incoming Video Call</string>
     <string name="CallMessageIncomingMissed">Chamada perdida</string>
     <string name="CallMessageOutgoingMissed">Chamada cancelada</string>
     <string name="CallMessageIncomingDeclined">Chamada recusada</string>
+    <string name="CallMessageVideoIncomingMissed">Missed Video Call</string>
+    <string name="CallMessageVideoOutgoingMissed">Cancelled Video Call</string>
+    <string name="CallMessageVideoIncomingDeclined">Declined Video Call</string>
     <string name="CallMessageWithDuration">%1$s (%2$s)</string>
     <string name="NoCallLog">Você ainda não realizou chamadas.</string>
     <string name="VoipPeerIncompatible">O aplicativo de **%1$s** está usando um protocolo incompatível. O aplicativo desse usuário precisa ser atualizado para que você possa chamá-lo.</string>
     <string name="VoipPeerOutdated">O aplicativo de **%1$s** não suporta chamadas. O aplicativo desse usuário precisa ser atualizado para que você possa chamá-lo.</string>
     <string name="VoipRateCallAlert">Como estava a qualidade da sua chamada no Telegram?</string>
     <string name="VoipNeedMicPermission">O Telegram precisa acessar seu microfone para poder fazer chamadas.</string>
+    <string name="VoipNeedMicCameraPermission">Telegram needs access to your microphone and camera so that you can make video calls.</string>
     <string name="VoipFeedbackCommentHint">Adicionar um comentário opcional</string>
     <string name="CallBack">Ligar de Volta</string>
     <string name="CallAgain">Ligar Novamente</string>
     <string name="DefaultRingtone">Padrão</string>
     <string name="ConfirmDeleteCallLog">Deseja apagar essa entrada do registro de chamadas?</string>
     <string name="CallViaTelegram">Chamada do Telegram</string>
+    <string name="VideoCallViaTelegram">Telegram Video Call</string>
     <string name="VoipAudioRoutingEarpiece">Auricular</string>
     <string name="VoipAudioRoutingSpeaker">Alto-falante</string>
     <string name="VoipAudioRoutingBluetooth">Bluetooth</string>
+    <string name="VoipOutputDevices">Output Devices</string>
     <string name="ReturnToCall">RETORNAR À LIGAÇÃO</string>
     <string name="CallNotAvailable">Desculpe, você não pode realizar essa chamada por conta das configurações de privacidade de %1$s.</string>
     <string name="CallEmojiKeyTooltip">Se os emojis na tela de %1$s são os mesmos, esta chamada é 100%% segura.</string>
@@ -3045,6 +3055,7 @@
     <string name="QuickReplyCustom">Mensagem Customizada...</string>
     <string name="AllowCustomQuickReply">Permitir Personalização</string>
     <string name="VoipInCallBrandingWithName">Chamada do Telegram para %s</string>
+    <string name="VoipInVideoCallBrandingWithName">Telegram Video Call to %s</string>
     <string name="VoipErrorUnknown">Não é possível realizar chamadas no momento.</string>
     <string name="RateCallEcho">Ouvi minha própria voz</string>
     <string name="RateCallNoise">Ouvi barulho no fundo</string>
@@ -3053,6 +3064,24 @@
     <string name="RateCallSilentLocal">Não consegui ouvir a outra pessoa</string>
     <string name="RateCallSilentRemote">A outra pessoa não conseguiu me ouvir</string>
     <string name="RateCallDropped">Chamada encerrada do nada</string>
+    <string name="TapToTurnCamera">Tap here to turn on your camera</string>
+    <string name="VoipUnmute">Unmute</string>
+    <string name="VoipMute">Mute</string>
+    <string name="VoipStartVideo">Start Video</string>
+    <string name="VoipStopVideo">Stop Video</string>
+    <string name="VoipSpeaker">Speaker</string>
+    <string name="VoipFlip">Flip</string>
+    <string name="VoipSwitchToVideoCall">Switch to video call?</string>
+    <string name="VoipSwitch">SWITCH</string>
+    <string name="VoipUserMicrophoneIsOff">%s\'s microphone is off</string>
+    <string name="VoipUserCameraIsOff">%s\'s camera is off</string>
+    <string name="AcceptCall">Accept</string>
+    <string name="DeclineCall">Decline</string>
+    <string name="RetryCall">Retry</string>
+    <!--contacts shortcuts-->
+    <string name="ContactShortcutMessage">Message %1$s</string>
+    <string name="ContactShortcutVoiceCall">Voice call %1$s</string>
+    <string name="ContactShortcutVideoCall">Video call %1$s</string>
     <!--plural-->
     <string name="DeleteBackground_zero">Apagar %1$d papéis de parede</string>
     <string name="DeleteBackground_one">Apagar papel de parede</string>
@@ -3613,6 +3642,12 @@
     <string name="AccDescrShareInChats_other">Encaminhar em %1$d chats</string>
     <string name="AccDescrQuizCorrectAnswer">Resposta correta</string>
     <string name="AccDescrPipMode">Modo de Janela Flutuante</string>
+    <string name="AccDescrVoipMicOn">Microphone is on</string>
+    <string name="AccDescrVoipMicOff">Microphone is off</string>
+    <string name="AccDescrVoipCamSwitchedToFront">Switched to front camera</string>
+    <string name="AccDescrVoipCamSwitchedToBack">Switched to rear camera</string>
+    <string name="AccDescrVoipCamOn">Camera is on</string>
+    <string name="AccDescrVoipCamOff">Camera is off</string>
     <!--date formatters-->
     <string name="formatterStats12H">dd \'de\' MMM \'de\' yyyy, h:mm a</string>
     <string name="formatterStats24H">dd \'de\' MMM \'de\' yyyy, HH:mm</string>

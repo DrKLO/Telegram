@@ -3,6 +3,9 @@
 -keepclassmembernames class * {
     @com.google.android.gms.common.annotation.KeepName *;
 }
+-keep class org.webrtc.* { *; }
+-keep class org.webrtc.audio.* { *; }
+-keep class org.webrtc.voiceengine.* { *; }
 -keep class org.telegram.messenger.* { *; }
 -keep class org.telegram.messenger.camera.* { *; }
 -keep class org.telegram.messenger.secretmedia.* { *; }

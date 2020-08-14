@@ -16,35 +16,40 @@ import org.telegram.messenger.FileLog;
  */
 
 @TargetApi(Build.VERSION_CODES.O)
-public class TelegramConnectionService extends ConnectionService{
+public class TelegramConnectionService extends ConnectionService {
 
 	@Override
-	public void onCreate(){
+	public void onCreate() {
 		super.onCreate();
-		if(BuildVars.LOGS_ENABLED)
+		if (BuildVars.LOGS_ENABLED) {
 			FileLog.w("ConnectionService created");
+		}
 	}
 
 	@Override
-	public void onDestroy(){
+	public void onDestroy() {
 		super.onDestroy();
-		if(BuildVars.LOGS_ENABLED)
+		if (BuildVars.LOGS_ENABLED) {
 			FileLog.w("ConnectionService destroyed");
+		}
 	}
 
 	@Override
-	public Connection onCreateIncomingConnection(PhoneAccountHandle connectionManagerPhoneAccount, ConnectionRequest request){
-		if(BuildVars.LOGS_ENABLED)
+	public Connection onCreateIncomingConnection(PhoneAccountHandle connectionManagerPhoneAccount, ConnectionRequest request) {
+		if (BuildVars.LOGS_ENABLED) {
 			FileLog.d("onCreateIncomingConnection "/*+request*/);
-		Bundle extras=request.getExtras();
-		if(extras.getInt("call_type")==1){ // private
-			VoIPService svc=VoIPService.getSharedInstance();
-			if(svc==null)
+		}
+		Bundle extras = request.getExtras();
+		if (extras.getInt("call_type") == 1) { // private
+			VoIPService svc = VoIPService.getSharedInstance();
+			if (svc == null) {
 				return null;
-			if(svc.isOutgoing())
+			}
+			if (svc.isOutgoing()) {
 				return null;
+			}
 			return svc.getConnectionAndStartCall();
-		}else if(extras.getInt("call_type")==2){ // group
+		} else if (extras.getInt("call_type") == 2) { // group
 			/*VoIPGroupService svc=VoIPGroupService.getSharedInstance();
 			if(svc==null)
 				return null;
@@ -54,34 +59,37 @@ public class TelegramConnectionService extends ConnectionService{
 	}
 
 	@Override
-	public void onCreateIncomingConnectionFailed(PhoneAccountHandle connectionManagerPhoneAccount, ConnectionRequest request){
-		if(BuildVars.LOGS_ENABLED)
+	public void onCreateIncomingConnectionFailed(PhoneAccountHandle connectionManagerPhoneAccount, ConnectionRequest request) {
+		if (BuildVars.LOGS_ENABLED) {
 			FileLog.e("onCreateIncomingConnectionFailed "/*+request*/);
-		if(VoIPBaseService.getSharedInstance()!=null){
+		}
+		if (VoIPBaseService.getSharedInstance() != null) {
 			VoIPBaseService.getSharedInstance().callFailedFromConnectionService();
 		}
 	}
 
 	@Override
-	public void onCreateOutgoingConnectionFailed(PhoneAccountHandle connectionManagerPhoneAccount, ConnectionRequest request){
-		if(BuildVars.LOGS_ENABLED)
+	public void onCreateOutgoingConnectionFailed(PhoneAccountHandle connectionManagerPhoneAccount, ConnectionRequest request) {
+		if (BuildVars.LOGS_ENABLED) {
 			FileLog.e("onCreateOutgoingConnectionFailed "/*+request*/);
-		if(VoIPBaseService.getSharedInstance()!=null){
+		}
+		if (VoIPBaseService.getSharedInstance() != null) {
 			VoIPBaseService.getSharedInstance().callFailedFromConnectionService();
 		}
 	}
 
 	@Override
-	public Connection onCreateOutgoingConnection(PhoneAccountHandle connectionManagerPhoneAccount, ConnectionRequest request){
-		if(BuildVars.LOGS_ENABLED)
+	public Connection onCreateOutgoingConnection(PhoneAccountHandle connectionManagerPhoneAccount, ConnectionRequest request) {
+		if (BuildVars.LOGS_ENABLED)
 			FileLog.d("onCreateOutgoingConnection "/*+request*/);
-		Bundle extras=request.getExtras();
-		if(extras.getInt("call_type")==1){ // private
-			VoIPService svc=VoIPService.getSharedInstance();
-			if(svc==null)
+		Bundle extras = request.getExtras();
+		if (extras.getInt("call_type") == 1) { // private
+			VoIPService svc = VoIPService.getSharedInstance();
+			if (svc == null) {
 				return null;
+			}
 			return svc.getConnectionAndStartCall();
-		}else if(extras.getInt("call_type")==2){ // group
+		} else if (extras.getInt("call_type") == 2) { // group
 			/*VoIPGroupService svc=VoIPGroupService.getSharedInstance();
 			if(svc==null)
 				return null;

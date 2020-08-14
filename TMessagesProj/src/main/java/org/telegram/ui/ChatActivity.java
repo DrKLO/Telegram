@@ -961,6 +961,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
     private final static int bot_help = 30;
     private final static int bot_settings = 31;
     private final static int call = 32;
+    private final static int video_call = 33;
 
     private final static int attach_photo = 0;
     private final static int attach_gallery = 1;
@@ -1656,9 +1657,9 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     getSendMessagesHelper().sendMessage("/settings", dialog_id, null, null, false, null, null, null, true, 0);
                 } else if (id == search) {
                     openSearchWithText(null);
-                } else if (id == call) {
+                } else if (id == call || id == video_call) {
                     if (currentUser != null && getParentActivity() != null) {
-                        VoIPHelper.startCall(currentUser, getParentActivity(), getMessagesController().getUserFull(currentUser.id));
+                        VoIPHelper.startCall(currentUser, id == video_call, userInfo != null && userInfo.video_calls_available, getParentActivity(), getMessagesController().getUserFull(currentUser.id));
                     }
                 } else if (id == text_bold) {
                     if (chatActivityEnterView != null) {
@@ -1848,11 +1849,20 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             headerItem.setContentDescription(LocaleController.getString("AccDescrMoreOptions", R.string.AccDescrMoreOptions));
             if (currentUser != null) {
                 headerItem.addSubItem(call, R.drawable.msg_callback, LocaleController.getString("Call", R.string.Call));
+                if (Build.VERSION.SDK_INT >= 18) {
+                    headerItem.addSubItem(video_call, R.drawable.msg_videocall, LocaleController.getString("VideoCall", R.string.VideoCall));
+                }
                 TLRPC.UserFull userFull = getMessagesController().getUserFull(currentUser.id);
                 if (userFull != null && userFull.phone_calls_available) {
                     headerItem.showSubItem(call);
+                    if (userFull.video_calls_available) {
+                        headerItem.showSubItem(video_call);
+                    } else {
+                        headerItem.hideSubItem(video_call);
+                    }
                 } else {
                     headerItem.hideSubItem(call);
+                    headerItem.hideSubItem(video_call);
                 }
             }
 
@@ -7477,7 +7487,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
 
             ChatMessageCell cell = (ChatMessageCell) child;
             MessageObject object = cell.getMessageObject();
-            if (object == null || object.mediaExists || !object.isSent()) {
+            if (object == null || object.mediaExists || !object.isSent() || object.loadingCancelled) {
                 continue;
             }
             TLRPC.Document document = object.getDocument();
@@ -8477,8 +8487,12 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         waitingForLoad.clear();
         groupedMessagesMap.clear();
 
-        progressView.setVisibility(chatAdapter.botInfoRow == -1 ? View.VISIBLE : View.INVISIBLE);
-        chatListView.setEmptyView(null);
+        if (progressView != null && chatAdapter != null) {
+            progressView.setVisibility(chatAdapter.botInfoRow == -1 ? View.VISIBLE : View.INVISIBLE);
+        }
+        if (chatListView != null) {
+            chatListView.setEmptyView(null);
+        }
         for (int a = 0; a < 2; a++) {
             messagesDict[a].clear();
             if (currentEncryptedChat == null) {
@@ -8506,7 +8520,9 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         createUnreadMessageAfterId = 0;
         createUnreadMessageAfterIdLoading = false;
         needSelectFromMessageId = false;
-        chatAdapter.notifyDataSetChanged();
+        if (chatAdapter != null) {
+            chatAdapter.notifyDataSetChanged();
+        }
     }
 
     private void scrollToLastMessage() {
@@ -9301,11 +9317,18 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             processSelectedAttach(attach_photo);
         } else if (requestCode == 20 && grantResults != null && grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
             processSelectedAttach(attach_video);
-        } else if (requestCode == 101 && currentUser != null) {
-            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                VoIPHelper.startCall(currentUser, getParentActivity(), getMessagesController().getUserFull(currentUser.id));
+        } else if ((requestCode == 101 || requestCode == 102) && currentUser != null) {
+            boolean allGranted = true;
+            for (int a = 0; a < grantResults.length; a++) {
+                if (grantResults[a] != PackageManager.PERMISSION_GRANTED) {
+                    allGranted = false;
+                    break;
+                }
+            }
+            if (grantResults.length > 0 && allGranted) {
+                VoIPHelper.startCall(currentUser, requestCode == 102, userInfo != null && userInfo.video_calls_available, getParentActivity(), getMessagesController().getUserFull(currentUser.id));
             } else {
-                VoIPHelper.permissionDenied(getParentActivity(), null);
+                VoIPHelper.permissionDenied(getParentActivity(), null, requestCode);
             }
         }
     }
@@ -10396,7 +10419,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                         calendar.set(Calendar.HOUR_OF_DAY, 0);
                         calendar.set(Calendar.MINUTE, 0);
                         dateMsg.date = (int) (calendar.getTimeInMillis() / 1000);
-                        MessageObject dateObj = new MessageObject(currentAccount, dateMsg, false);
+                        MessageObject dateObj = new MessageObject(currentAccount, dateMsg, false, false);
                         dateObj.type = 10;
                         dateObj.contentType = 1;
                         dateObj.isDateObject = true;
@@ -10488,7 +10511,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                             TLRPC.Message dateMsg = new TLRPC.TL_message();
                             dateMsg.message = "";
                             dateMsg.id = 0;
-                            MessageObject dateObj = new MessageObject(currentAccount, dateMsg, false);
+                            MessageObject dateObj = new MessageObject(currentAccount, dateMsg, false, false);
                             dateObj.type = 6;
                             dateObj.contentType = 2;
                             dateObj.stableId = lastStableId++;
@@ -10521,7 +10544,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                         TLRPC.Message dateMsg = new TLRPC.TL_message();
                         dateMsg.message = "";
                         dateMsg.id = 0;
-                        MessageObject dateObj = new MessageObject(currentAccount, dateMsg, false);
+                        MessageObject dateObj = new MessageObject(currentAccount, dateMsg, false, false);
                         dateObj.type = 6;
                         dateObj.contentType = 2;
                         dateObj.stableId = lastStableId++;
@@ -11293,7 +11316,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                             calendar.set(Calendar.HOUR_OF_DAY, 0);
                             calendar.set(Calendar.MINUTE, 0);
                             dateMsg.date = (int) (calendar.getTimeInMillis() / 1000);
-                            MessageObject dateObj = new MessageObject(currentAccount, dateMsg, false);
+                            MessageObject dateObj = new MessageObject(currentAccount, dateMsg, false, false);
                             dateObj.type = 10;
                             dateObj.contentType = 1;
                             dateObj.isDateObject = true;
@@ -11316,7 +11339,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                                     TLRPC.Message dateMsg = new TLRPC.TL_message();
                                     dateMsg.message = "";
                                     dateMsg.id = 0;
-                                    MessageObject dateObj = new MessageObject(currentAccount, dateMsg, false);
+                                    MessageObject dateObj = new MessageObject(currentAccount, dateMsg, false, false);
                                     dateObj.type = 6;
                                     dateObj.contentType = 2;
                                     dateObj.stableId = lastStableId++;
@@ -12552,7 +12575,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             if (dialog_id == (Long) args[1]) {
                 TLRPC.Message message = (TLRPC.Message) args[0];
                 if (message != null && !userBlocked) {
-                    botButtons = new MessageObject(currentAccount, message, false);
+                    botButtons = new MessageObject(currentAccount, message, false, false);
                     checkBotKeyboard();
                 } else {
                     botButtons = null;
@@ -12655,8 +12678,14 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 if (headerItem != null) {
                     if (userInfo.phone_calls_available) {
                         headerItem.showSubItem(call);
+                        if (userInfo.video_calls_available) {
+                            headerItem.showSubItem(video_call);
+                        } else {
+                            headerItem.hideSubItem(video_call);
+                        }
                     } else {
                         headerItem.hideSubItem(call);
+                        headerItem.hideSubItem(video_call);
                     }
                 }
                 if (args[2] instanceof MessageObject) {
@@ -14396,7 +14425,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             hideFieldPanel(true);
         }
         if (replyingMessageObject == null && draftReplyMessage != null) {
-            replyingMessageObject = new MessageObject(currentAccount, draftReplyMessage, getMessagesController().getUsers(), false);
+            replyingMessageObject = new MessageObject(currentAccount, draftReplyMessage, getMessagesController().getUsers(), false, false);
             showFieldPanelForReply(replyingMessageObject);
         }
     }
@@ -15796,7 +15825,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             }
             case 18: {
                 if (currentUser != null) {
-                    VoIPHelper.startCall(currentUser, getParentActivity(), getMessagesController().getUserFull(currentUser.id));
+                    VoIPHelper.startCall(currentUser, selectedObject.isVideoCall(), userInfo != null && userInfo.video_calls_available, getParentActivity(), getMessagesController().getUserFull(currentUser.id));
                 }
                 break;
             }
@@ -17077,9 +17106,10 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
 
                     @Override
                     public void didPressOther(ChatMessageCell cell, float otherX, float otherY) {
-                        if (cell.getMessageObject().type == 16) {
+                        MessageObject messageObject = cell.getMessageObject();
+                        if (messageObject.type == 16) {
                             if (currentUser != null) {
-                                VoIPHelper.startCall(currentUser, getParentActivity(), getMessagesController().getUserFull(currentUser.id));
+                                VoIPHelper.startCall(currentUser, messageObject.isVideoCall(), userInfo != null && userInfo.video_calls_available, getParentActivity(), getMessagesController().getUserFull(currentUser.id));
                             }
                         } else {
                             createMenu(cell, true, false, otherX, otherY, false);
@@ -18214,10 +18244,12 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         themeDescriptions.add(new ThemeDescription(chatListView, 0, new Class[]{ChatMessageCell.class}, null, new Drawable[]{Theme.chat_msgInMenuDrawable}, null, Theme.key_chat_inMenu));
         themeDescriptions.add(new ThemeDescription(chatListView, 0, new Class[]{ChatMessageCell.class}, null, new Drawable[]{Theme.chat_msgInMenuSelectedDrawable}, null, Theme.key_chat_inMenuSelected));
         themeDescriptions.add(new ThemeDescription(chatListView, 0, new Class[]{ChatMessageCell.class}, null, new Drawable[]{Theme.chat_msgMediaMenuDrawable}, null, Theme.key_chat_mediaMenu));
-        themeDescriptions.add(new ThemeDescription(chatListView, 0, new Class[]{ChatMessageCell.class}, null, new Drawable[]{Theme.chat_msgOutInstantDrawable, Theme.chat_msgOutCallDrawable}, null, Theme.key_chat_outInstant));
-        themeDescriptions.add(new ThemeDescription(chatListView, 0, new Class[]{ChatMessageCell.class}, null, new Drawable[]{Theme.chat_msgOutCallSelectedDrawable}, null, Theme.key_chat_outInstantSelected));
-        themeDescriptions.add(new ThemeDescription(chatListView, 0, new Class[]{ChatMessageCell.class}, null, new Drawable[]{Theme.chat_msgInInstantDrawable, Theme.chat_msgInCallDrawable}, null, Theme.key_chat_inInstant));
-        themeDescriptions.add(new ThemeDescription(chatListView, 0, new Class[]{ChatMessageCell.class}, null, new Drawable[]{Theme.chat_msgInCallSelectedDrawable}, null, Theme.key_chat_inInstantSelected));
+        themeDescriptions.add(new ThemeDescription(chatListView, 0, new Class[]{ChatMessageCell.class}, null, new Drawable[]{Theme.chat_msgOutInstantDrawable}, null, Theme.key_chat_outInstant));
+        themeDescriptions.add(new ThemeDescription(chatListView, 0, new Class[]{ChatMessageCell.class}, null, new Drawable[]{Theme.chat_msgInInstantDrawable}, null, Theme.key_chat_inInstant));
+        themeDescriptions.add(new ThemeDescription(chatListView, 0, new Class[]{ChatMessageCell.class}, null, Theme.chat_msgOutCallDrawable, null, Theme.key_chat_outInstant));
+        themeDescriptions.add(new ThemeDescription(chatListView, 0, new Class[]{ChatMessageCell.class}, null, Theme.chat_msgOutCallSelectedDrawable, null, Theme.key_chat_outInstantSelected));
+        themeDescriptions.add(new ThemeDescription(chatListView, 0, new Class[]{ChatMessageCell.class}, null, Theme.chat_msgInCallDrawable, null, Theme.key_chat_inInstant));
+        themeDescriptions.add(new ThemeDescription(chatListView, 0, new Class[]{ChatMessageCell.class}, null, Theme.chat_msgInCallSelectedDrawable, null, Theme.key_chat_inInstantSelected));
         themeDescriptions.add(new ThemeDescription(chatListView, 0, new Class[]{ChatMessageCell.class}, null, new Drawable[]{Theme.chat_msgCallUpGreenDrawable}, null, Theme.key_chat_outGreenCall));
         themeDescriptions.add(new ThemeDescription(chatListView, 0, new Class[]{ChatMessageCell.class}, null, new Drawable[]{Theme.chat_msgCallDownRedDrawable}, null, Theme.key_chat_inRedCall));
         themeDescriptions.add(new ThemeDescription(chatListView, 0, new Class[]{ChatMessageCell.class}, null, new Drawable[]{Theme.chat_msgCallDownGreenDrawable}, null, Theme.key_chat_inGreenCall));

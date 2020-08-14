@@ -113,6 +113,7 @@ public class CallLogActivity extends BaseFragment implements NotificationCenter.
 					row.calls.add(msg.messageOwner);
 					row.user = MessagesController.getInstance(currentAccount).getUser(userID);
 					row.type = callType;
+					row.video = msg.isVideoCall();
 					calls.add(0, row);
 					listViewAdapter.notifyItemInserted(0);
 				}
@@ -159,7 +160,6 @@ public class CallLogActivity extends BaseFragment implements NotificationCenter.
 			addView(profileSearchCell, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
 
 			imageView = new ImageView(context);
-			imageView.setImageResource(R.drawable.profile_phone);
 			imageView.setAlpha(214);
 			imageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_featuredStickers_addButton), PorterDuff.Mode.MULTIPLY));
 			imageView.setBackgroundDrawable(Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector), 1));
@@ -174,7 +174,8 @@ public class CallLogActivity extends BaseFragment implements NotificationCenter.
 		@Override
 		public void onClick(View v) {
 			CallLogRow row = (CallLogRow) v.getTag();
-			VoIPHelper.startCall(lastCallUser = row.user, getParentActivity(), null);
+			TLRPC.UserFull userFull = getMessagesController().getUserFull(row.user.id);
+			VoIPHelper.startCall(lastCallUser = row.user, row.video, row.video || userFull != null && userFull.video_calls_available, getParentActivity(), null);
 		}
 	};
 
@@ -356,7 +357,10 @@ public class CallLogActivity extends BaseFragment implements NotificationCenter.
 			args.putBoolean("onlyUsers", true);
 			args.putBoolean("allowSelf", false);
 			ContactsActivity contactsFragment = new ContactsActivity(args);
-			contactsFragment.setDelegate((user, param, activity) -> VoIPHelper.startCall(user, getParentActivity(), null));
+			contactsFragment.setDelegate((user, param, activity) -> {
+				TLRPC.UserFull userFull = getMessagesController().getUserFull(user.id);
+				VoIPHelper.startCall(lastCallUser = user, false, userFull != null && userFull.video_calls_available, getParentActivity(), null);
+			});
 			presentFragment(contactsFragment);
 		});
 
@@ -420,6 +424,7 @@ public class CallLogActivity extends BaseFragment implements NotificationCenter.
 						row.calls = new ArrayList<>();
 						row.user = users.get(userID);
 						row.type = callType;
+						row.video = msg.action != null && msg.action.video;
 						currentRow = row;
 					}
 					currentRow.calls.add(msg);
@@ -443,8 +448,9 @@ public class CallLogActivity extends BaseFragment implements NotificationCenter.
 	}
 
 	private void confirmAndDelete(final CallLogRow row) {
-		if (getParentActivity() == null)
+		if (getParentActivity() == null) {
 			return;
+		}
 		new AlertDialog.Builder(getParentActivity())
 				.setTitle(LocaleController.getString("AppName", R.string.AppName))
 				.setMessage(LocaleController.getString("ConfirmDeleteCallLog", R.string.ConfirmDeleteCallLog))
@@ -470,11 +476,19 @@ public class CallLogActivity extends BaseFragment implements NotificationCenter.
 
 	@Override
 	public void onRequestPermissionsResultFragment(int requestCode, String[] permissions, int[] grantResults) {
-		if (requestCode == 101) {
-			if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-				VoIPHelper.startCall(lastCallUser, getParentActivity(), null);
+		if (requestCode == 101 || requestCode == 102) {
+			boolean allGranted = true;
+			for (int a = 0; a < grantResults.length; a++) {
+				if (grantResults[a] != PackageManager.PERMISSION_GRANTED) {
+					allGranted = false;
+					break;
+				}
+			}
+			if (grantResults.length > 0 && allGranted) {
+				TLRPC.UserFull userFull = lastCallUser != null ? getMessagesController().getUserFull(lastCallUser.id) : null;
+				VoIPHelper.startCall(lastCallUser, requestCode == 102, requestCode == 102 || userFull != null && userFull.video_calls_available, getParentActivity(), null);
 			} else {
-				VoIPHelper.permissionDenied(getParentActivity(), null);
+				VoIPHelper.permissionDenied(getParentActivity(), null, requestCode);
 			}
 		}
 	}
@@ -527,9 +541,11 @@ public class CallLogActivity extends BaseFragment implements NotificationCenter.
 		@Override
 		public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
 			if (holder.getItemViewType() == 0) {
-				ViewItem viewItem = (ViewItem) holder.itemView.getTag();
-				ProfileSearchCell cell = viewItem.cell;
+				CustomCell customCell = (CustomCell) holder.itemView;
+				ViewItem viewItem = (ViewItem) customCell.getTag();
 				CallLogRow row = calls.get(position);
+				customCell.imageView.setImageResource(row.video ? R.drawable.profile_video : R.drawable.profile_phone);
+				ProfileSearchCell cell = viewItem.cell;
 				TLRPC.Message last = row.calls.get(0);
 				SpannableString subtitle;
 				String ldir = LocaleController.isRTL ? "\u202b" : "";
@@ -583,6 +599,7 @@ public class CallLogActivity extends BaseFragment implements NotificationCenter.
 		public TLRPC.User user;
 		public List<TLRPC.Message> calls;
 		public int type;
+		public boolean video;
 	}
 
 	@Override

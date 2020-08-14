@@ -2646,7 +2646,7 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                         if (max_id != 0 && message.id > max_id) {
                             continue;
                         }
-                        messageObjects.add(new MessageObject(currentAccount, message, false));
+                        messageObjects.add(new MessageObject(currentAccount, message, false, true));
                     }
                 }
                 AndroidUtilities.runOnUIThread(() -> {

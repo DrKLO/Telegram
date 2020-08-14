@@ -1,5 +1,4 @@
-MY_LOCAL_PATH := $(call my-dir)
-LOCAL_PATH := $(MY_LOCAL_PATH)
+LOCAL_PATH := $(call my-dir)
 
 LOCAL_MODULE    := avutil 
 
@@ -97,18 +96,23 @@ include $(PREBUILT_STATIC_LIBRARY)
 
 include $(CLEAR_VARS)
 
-TGVOIP_NATIVE_VERSION := 1.1
-TGVOIP_ADDITIONAL_CFLAGS := -DTGVOIP_NO_VIDEO
-include $(MY_LOCAL_PATH)/libtgvoip/Android.mk
-LOCAL_PATH := $(MY_LOCAL_PATH) # restore local path after include
-include $(CLEAR_VARS)
+LOCAL_MODULE    := ssl
 
-TGVOIP_NATIVE_VERSION := 3.1
-TGVOIP_ADDITIONAL_CFLAGS := -DTGVOIP_NO_VIDEO
-include $(MY_LOCAL_PATH)/libtgvoip3/Android.mk
-LOCAL_PATH := $(MY_LOCAL_PATH) # restore local path after include
-include $(CLEAR_VARS)
+ifeq ($(TARGET_ARCH_ABI),armeabi-v7a)
+    LOCAL_SRC_FILES := ./boringssl/lib/libssl_armeabi-v7a.a
+else ifeq ($(TARGET_ARCH_ABI),arm64-v8a)
+    LOCAL_SRC_FILES := ./boringssl/lib/libssl_arm64-v8a.a
+else ifeq ($(TARGET_ARCH_ABI),x86)
+    LOCAL_SRC_FILES := ./boringssl/lib/libssl_x86.a
+else ifeq ($(TARGET_ARCH_ABI),x86_64)
+    LOCAL_SRC_FILES := ./boringssl/lib/libssl_x86_64.a
+endif
 
+include $(PREBUILT_STATIC_LIBRARY)
+
+include ./jni/TgCalls.mk
+
+include $(CLEAR_VARS)
 LOCAL_CPPFLAGS := -Wall -std=c++14 -DANDROID -frtti -DHAVE_PTHREAD -finline-functions -ffast-math -Os
 
 LOCAL_C_INCLUDES += ./jni/boringssl/include/
@@ -294,8 +298,8 @@ LOCAL_ARM_MODE  := arm
 LOCAL_MODULE := rlottie
 LOCAL_CPPFLAGS := -DNDEBUG -Wall -std=c++14 -DANDROID -fno-rtti -DHAVE_PTHREAD -finline-functions -ffast-math -Os -fno-exceptions -fno-unwind-tables -fno-asynchronous-unwind-tables -Wnon-virtual-dtor -Woverloaded-virtual -Wno-unused-parameter -fvisibility=hidden
 ifeq ($(TARGET_ARCH_ABI),$(filter $(TARGET_ARCH_ABI),armeabi-v7a))
- LOCAL_CFLAGS := -DUSE_ARM_NEON  -fno-integrated-as
- LOCAL_CPPFLAGS += -DUSE_ARM_NEON  -fno-integrated-as
+ LOCAL_CFLAGS := -DUSE_ARM_NEON -fno-integrated-as
+ LOCAL_CPPFLAGS += -DUSE_ARM_NEON -fno-integrated-as
 else ifeq ($(TARGET_ARCH_ABI),$(filter $(TARGET_ARCH_ABI),arm64-v8a))
  LOCAL_CFLAGS := -DUSE_ARM_NEON -D__ARM64_NEON__ -fno-integrated-as
  LOCAL_CPPFLAGS += -DUSE_ARM_NEON -D__ARM64_NEON__ -fno-integrated-as
@@ -353,13 +357,15 @@ include $(BUILD_STATIC_LIBRARY)
 include $(CLEAR_VARS)
 LOCAL_PRELINK_MODULE := false
 
-LOCAL_MODULE 	:= tmessages.31
+LOCAL_MODULE 	:= tmessages.32
 LOCAL_CFLAGS 	:= -w -std=c11 -Os -DNULL=0 -DSOCKLEN_T=socklen_t -DLOCALE_NOT_USED -D_LARGEFILE_SOURCE=1
 LOCAL_CFLAGS 	+= -Drestrict='' -D__EMX__ -DOPUS_BUILD -DFIXED_POINT -DUSE_ALLOCA -DHAVE_LRINT -DHAVE_LRINTF -fno-math-errno
 LOCAL_CFLAGS 	+= -DANDROID_NDK -DDISABLE_IMPORTGL -fno-strict-aliasing -fprefetch-loop-arrays -DAVOID_TABLES -DANDROID_TILE_BASED_DECODE -DANDROID_ARMV6_IDCT -ffast-math -D__STDC_CONSTANT_MACROS
 LOCAL_CPPFLAGS 	:= -DBSD=1 -ffast-math -Os -funroll-loops -std=c++14
-LOCAL_LDLIBS 	:= -ljnigraphics -llog -lz -lEGL -lGLESv2 -landroid
+LOCAL_LDLIBS 	:= -ljnigraphics -llog -lz -lEGL -lGLESv2 -landroid -lOpenSLES
 LOCAL_STATIC_LIBRARIES := webp sqlite lz4 rlottie tgnet swscale avformat avcodec avresample avutil flac
+LOCAL_WHOLE_STATIC_LIBRARIES := tgcalls
+LOCAL_ARM_NEON  := false
 
 LOCAL_SRC_FILES     := \
 ./opus/src/opus.c \
@@ -399,7 +405,7 @@ else
  	    LOCAL_CPPFLAGS += -Dx86fix
 	    LOCAL_ARM_MODE  := arm
 #	    LOCAL_SRC_FILES += \
-#	    ./libyuv/source/row_x86.asm
+#	    ./third_party/libyuv/source/row_x86.asm
 
 #	    LOCAL_SRC_FILES += \
 #	    ./opus/celt/x86/celt_lpc_sse.c \
@@ -560,7 +566,7 @@ LOCAL_C_INCLUDES    := \
 ./jni/opus/celt \
 ./jni/opus/ \
 ./jni/opus/opusfile \
-./jni/libyuv/include \
+./jni/third_party/libyuv/include \
 ./jni/boringssl/include \
 ./jni/ffmpeg/include \
 ./jni/emoji \
@@ -568,57 +574,55 @@ LOCAL_C_INCLUDES    := \
 ./jni/exoplayer/libFLAC/include \
 ./jni/intro \
 ./jni/rlottie/inc \
-./jni/ton \
+./jni/tgcalls/ \
+./jni/webrtc/ \
 ./jni/lz4
 
 LOCAL_SRC_FILES     += \
-./libyuv/source/compare_common.cc \
-./libyuv/source/compare_gcc.cc \
-./libyuv/source/compare_neon64.cc \
-./libyuv/source/compare_win.cc \
-./libyuv/source/compare.cc \
-./libyuv/source/convert_argb.cc \
-./libyuv/source/convert_from_argb.cc \
-./libyuv/source/convert_from.cc \
-./libyuv/source/convert_jpeg.cc \
-./libyuv/source/convert_to_argb.cc \
-./libyuv/source/convert_to_i420.cc \
-./libyuv/source/convert.cc \
-./libyuv/source/cpu_id.cc \
-./libyuv/source/mjpeg_decoder.cc \
-./libyuv/source/mjpeg_validate.cc \
-./libyuv/source/planar_functions.cc \
-./libyuv/source/rotate_any.cc \
-./libyuv/source/rotate_argb.cc \
-./libyuv/source/rotate_common.cc \
-./libyuv/source/rotate_gcc.cc \
-./libyuv/source/rotate_mips.cc \
-./libyuv/source/rotate_neon64.cc \
-./libyuv/source/rotate_win.cc \
-./libyuv/source/rotate.cc \
-./libyuv/source/row_any.cc \
-./libyuv/source/row_common.cc \
-./libyuv/source/row_gcc.cc \
-./libyuv/source/row_mips.cc \
-./libyuv/source/row_neon64.cc \
-./libyuv/source/row_win.cc \
-./libyuv/source/scale_any.cc \
-./libyuv/source/scale_argb.cc \
-./libyuv/source/scale_common.cc \
-./libyuv/source/scale_gcc.cc \
-./libyuv/source/scale_mips.cc \
-./libyuv/source/scale_neon64.cc \
-./libyuv/source/scale_win.cc \
-./libyuv/source/scale.cc \
-./libyuv/source/video_common.cc
+./third_party/libyuv/source/compare_common.cc \
+./third_party/libyuv/source/compare_gcc.cc \
+./third_party/libyuv/source/compare_neon64.cc \
+./third_party/libyuv/source/compare_win.cc \
+./third_party/libyuv/source/compare.cc \
+./third_party/libyuv/source/convert_argb.cc \
+./third_party/libyuv/source/convert_from_argb.cc \
+./third_party/libyuv/source/convert_from.cc \
+./third_party/libyuv/source/convert_jpeg.cc \
+./third_party/libyuv/source/convert_to_argb.cc \
+./third_party/libyuv/source/convert_to_i420.cc \
+./third_party/libyuv/source/convert.cc \
+./third_party/libyuv/source/cpu_id.cc \
+./third_party/libyuv/source/mjpeg_decoder.cc \
+./third_party/libyuv/source/mjpeg_validate.cc \
+./third_party/libyuv/source/planar_functions.cc \
+./third_party/libyuv/source/rotate_any.cc \
+./third_party/libyuv/source/rotate_argb.cc \
+./third_party/libyuv/source/rotate_common.cc \
+./third_party/libyuv/source/rotate_gcc.cc \
+./third_party/libyuv/source/rotate_neon64.cc \
+./third_party/libyuv/source/rotate_win.cc \
+./third_party/libyuv/source/rotate.cc \
+./third_party/libyuv/source/row_any.cc \
+./third_party/libyuv/source/row_common.cc \
+./third_party/libyuv/source/row_gcc.cc \
+./third_party/libyuv/source/row_neon64.cc \
+./third_party/libyuv/source/row_win.cc \
+./third_party/libyuv/source/scale_any.cc \
+./third_party/libyuv/source/scale_argb.cc \
+./third_party/libyuv/source/scale_common.cc \
+./third_party/libyuv/source/scale_gcc.cc \
+./third_party/libyuv/source/scale_neon64.cc \
+./third_party/libyuv/source/scale_win.cc \
+./third_party/libyuv/source/scale.cc \
+./third_party/libyuv/source/video_common.cc
 
 ifeq ($(TARGET_ARCH_ABI),armeabi-v7a)
     LOCAL_CFLAGS += -DLIBYUV_NEON
     LOCAL_SRC_FILES += \
-        ./libyuv/source/compare_neon.cc.neon    \
-        ./libyuv/source/rotate_neon.cc.neon     \
-        ./libyuv/source/row_neon.cc.neon        \
-        ./libyuv/source/scale_neon.cc.neon
+        ./third_party/libyuv/source/compare_neon.cc.neon    \
+        ./third_party/libyuv/source/rotate_neon.cc.neon     \
+        ./third_party/libyuv/source/row_neon.cc.neon        \
+        ./third_party/libyuv/source/scale_neon.cc.neon
 endif
 
 LOCAL_SRC_FILES     += \

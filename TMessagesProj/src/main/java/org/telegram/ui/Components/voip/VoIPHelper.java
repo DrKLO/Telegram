@@ -33,11 +33,9 @@ import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SendMessagesHelper;
 import org.telegram.messenger.UserConfig;
-import org.telegram.messenger.voip.TgVoip;
+import org.telegram.messenger.voip.Instance;
 import org.telegram.messenger.voip.VoIPService;
 import org.telegram.tgnet.ConnectionsManager;
-import org.telegram.tgnet.RequestDelegate;
-import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.Theme;
@@ -47,7 +45,6 @@ import org.telegram.ui.Components.BetterRatingView;
 import org.telegram.ui.Components.EditTextBoldCursor;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.LaunchActivity;
-import org.telegram.ui.VoIPActivity;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -63,7 +60,7 @@ public class VoIPHelper {
 
 	private static final int VOIP_SUPPORT_ID = 4244000;
 
-	public static void startCall(TLRPC.User user, final Activity activity, TLRPC.UserFull userFull) {
+	public static void startCall(TLRPC.User user, boolean videoCall, boolean canVideoCall, final Activity activity, TLRPC.UserFull userFull) {
 		if (userFull != null && userFull.phone_calls_private) {
 			new AlertDialog.Builder(activity)
 					.setTitle(LocaleController.getString("VoipFailed", R.string.VoipFailed))
@@ -88,14 +85,26 @@ public class VoIPHelper {
 			bldr.show();
 			return;
 		}
-		if (Build.VERSION.SDK_INT >= 23 && activity.checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
-			activity.requestPermissions(new String[]{Manifest.permission.RECORD_AUDIO}, 101);
+
+		if (Build.VERSION.SDK_INT >= 23) {
+			ArrayList<String> permissions = new ArrayList<>();
+			if (activity.checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+				permissions.add(Manifest.permission.RECORD_AUDIO);
+			}
+			if (videoCall && activity.checkSelfPermission(Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+				permissions.add(Manifest.permission.CAMERA);
+			}
+			if (permissions.isEmpty()) {
+				initiateCall(user, videoCall, canVideoCall, activity);
+			} else {
+				activity.requestPermissions(permissions.toArray(new String[0]), videoCall ? 102 : 101);
+			}
 		} else {
-			initiateCall(user, activity);
+			initiateCall(user, videoCall, canVideoCall, activity);
 		}
 	}
 
-	private static void initiateCall(final TLRPC.User user, final Activity activity) {
+	private static void initiateCall(final TLRPC.User user, boolean videoCall, boolean canVideoCall, final Activity activity) {
 		if (activity == null || user == null) {
 			return;
 		}
@@ -109,32 +118,35 @@ public class VoIPHelper {
 								ContactsController.formatName(user.first_name, user.last_name))))
 						.setPositiveButton(LocaleController.getString("OK", R.string.OK), (dialog, which) -> {
 							if (VoIPService.getSharedInstance() != null) {
-								VoIPService.getSharedInstance().hangUp(() -> doInitiateCall(user, activity));
+								VoIPService.getSharedInstance().hangUp(() -> doInitiateCall(user, videoCall, canVideoCall, activity));
 							} else {
-								doInitiateCall(user, activity);
+								doInitiateCall(user, videoCall, canVideoCall, activity);
 							}
 						})
 						.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null)
 						.show();
 			} else {
-				activity.startActivity(new Intent(activity, VoIPActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+				activity.startActivity(new Intent(activity, LaunchActivity.class).setAction("voip"));
 			}
 		} else if (VoIPService.callIShouldHavePutIntoIntent == null) {
-			doInitiateCall(user, activity);
+			doInitiateCall(user, videoCall, canVideoCall, activity);
 		}
 	}
 
-	private static void doInitiateCall(TLRPC.User user, Activity activity) {
+	private static void doInitiateCall(TLRPC.User user, boolean videoCall, boolean canVideoCall, Activity activity) {
 		if (activity == null || user == null) {
 			return;
 		}
-		if (System.currentTimeMillis() - lastCallTime < 2000)
+		if (System.currentTimeMillis() - lastCallTime < 2000) {
 			return;
+		}
 		lastCallTime = System.currentTimeMillis();
 		Intent intent = new Intent(activity, VoIPService.class);
 		intent.putExtra("user_id", user.id);
 		intent.putExtra("is_outgoing", true);
 		intent.putExtra("start_incall_activity", true);
+		intent.putExtra("video_call", Build.VERSION.SDK_INT >= 18 && videoCall);
+		intent.putExtra("can_video_call", Build.VERSION.SDK_INT >= 18 && canVideoCall);
 		intent.putExtra("account", UserConfig.selectedAccount);
 		try {
 			activity.startService(intent);
@@ -144,11 +156,11 @@ public class VoIPHelper {
 	}
 
 	@TargetApi(Build.VERSION_CODES.M)
-	public static void permissionDenied(final Activity activity, final Runnable onFinish) {
-		if (!activity.shouldShowRequestPermissionRationale(Manifest.permission.RECORD_AUDIO)) {
+	public static void permissionDenied(final Activity activity, final Runnable onFinish, int code) {
+		if (!activity.shouldShowRequestPermissionRationale(Manifest.permission.RECORD_AUDIO) || code == 102 && !activity.shouldShowRequestPermissionRationale(Manifest.permission.CAMERA)) {
 			AlertDialog dlg = new AlertDialog.Builder(activity)
 					.setTitle(LocaleController.getString("AppName", R.string.AppName))
-					.setMessage(LocaleController.getString("VoipNeedMicPermission", R.string.VoipNeedMicPermission))
+					.setMessage(code == 102 ? LocaleController.getString("VoipNeedMicCameraPermission", R.string.VoipNeedMicCameraPermission) : LocaleController.getString("VoipNeedMicPermission", R.string.VoipNeedMicPermission))
 					.setPositiveButton(LocaleController.getString("OK", R.string.OK), null)
 					.setNegativeButton(LocaleController.getString("Settings", R.string.Settings), (dialog, which) -> {
 						Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
@@ -165,10 +177,10 @@ public class VoIPHelper {
 	}
 
 	public static File getLogsDir() {
-		//File logsDir=new File(ApplicationLoader.applicationContext.getExternalCacheDir(), "voip_logs");
 		File logsDir = new File(ApplicationLoader.applicationContext.getCacheDir(), "voip_logs");
-		if (!logsDir.exists())
+		if (!logsDir.exists()) {
 			logsDir.mkdirs();
+		}
 		return logsDir;
 	}
 
@@ -178,8 +190,9 @@ public class VoIPHelper {
 			Set<String> hashes = prefs.getStringSet("calls_access_hashes", (Set<String>) Collections.EMPTY_SET);
 			for (String hash : hashes) {
 				String[] d = hash.split(" ");
-				if (d.length < 2)
+				if (d.length < 2) {
 					continue;
+				}
 				if (d[0].equals(call.call_id + "")) {
 					return true;
 				}
@@ -228,12 +241,9 @@ public class VoIPHelper {
 		final LinearLayout problemsWrap = new LinearLayout(context);
 		problemsWrap.setOrientation(LinearLayout.VERTICAL);
 
-		View.OnClickListener problemCheckboxClickListener = new View.OnClickListener() {
-			@Override
-			public void onClick(View v) {
-				CheckBoxCell check = (CheckBoxCell) v;
-				check.setChecked(!check.isChecked(), true);
-			}
+		View.OnClickListener problemCheckboxClickListener = v -> {
+			CheckBoxCell check = (CheckBoxCell) v;
+			check.setChecked(!check.isChecked(), true);
 		};
 
 		final String[] problems = {"echo", "noise", "interruptions", "distorted_speech", "silent_local", "silent_remote", "dropped"};
@@ -286,12 +296,9 @@ public class VoIPHelper {
 
 		final boolean[] includeLogs = {true};
 		final CheckBoxCell checkbox = new CheckBoxCell(context, 1);
-		View.OnClickListener checkClickListener = new View.OnClickListener() {
-			@Override
-			public void onClick(View v) {
-				includeLogs[0] = !includeLogs[0];
-				checkbox.setChecked(includeLogs[0], true);
-			}
+		View.OnClickListener checkClickListener = v -> {
+			includeLogs[0] = !includeLogs[0];
+			checkbox.setChecked(includeLogs[0], true);
 		};
 		checkbox.setText(LocaleController.getString("CallReportIncludeLogs", R.string.CallReportIncludeLogs), null, true, false);
 		checkbox.setClipToPadding(false);
@@ -315,30 +322,21 @@ public class VoIPHelper {
 		final AlertDialog alert = new AlertDialog.Builder(context)
 				.setTitle(LocaleController.getString("CallMessageReportProblem", R.string.CallMessageReportProblem))
 				.setView(alertView)
-				.setPositiveButton(LocaleController.getString("Send", R.string.Send), new DialogInterface.OnClickListener() {
-					@Override
-					public void onClick(DialogInterface dialog, int which) {
-						//SendMessagesHelper.getInstance(currentAccount).sendMessage(commentBox.getText().toString(), VOIP_SUPPORT_ID, null, null, true, null, null, null);
-					}
+				.setPositiveButton(LocaleController.getString("Send", R.string.Send), (dialog, which) -> {
+					//SendMessagesHelper.getInstance(currentAccount).sendMessage(commentBox.getText().toString(), VOIP_SUPPORT_ID, null, null, true, null, null, null);
 				})
 				.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null)
-				.setOnDismissListener(new DialogInterface.OnDismissListener() {
-					@Override
-					public void onDismiss(DialogInterface dialog) {
-						if (onDismiss != null)
-							onDismiss.run();
-					}
+				.setOnDismissListener(dialog -> {
+					if (onDismiss != null)
+						onDismiss.run();
 				})
 				.create();
 		if (BuildVars.DEBUG_VERSION && log.exists()) {
-			alert.setNeutralButton("Send log", new DialogInterface.OnClickListener() {
-				@Override
-				public void onClick(DialogInterface dialog, int which) {
-					Intent intent = new Intent(context, LaunchActivity.class);
-					intent.setAction(Intent.ACTION_SEND);
-					intent.putExtra(Intent.EXTRA_STREAM, Uri.fromFile(log));
-					context.startActivity(intent);
-				}
+			alert.setNeutralButton("Send log", (dialog, which) -> {
+				Intent intent = new Intent(context, LaunchActivity.class);
+				intent.setAction(Intent.ACTION_SEND);
+				intent.putExtra(Intent.EXTRA_STREAM, Uri.fromFile(log));
+				context.startActivity(intent);
 			});
 		}
 		alert.show();
@@ -346,74 +344,65 @@ public class VoIPHelper {
 
 		final View btn = alert.getButton(DialogInterface.BUTTON_POSITIVE);
 		btn.setEnabled(false);
-		bar.setOnRatingChangeListener(new BetterRatingView.OnRatingChangeListener() {
-			@Override
-			public void onRatingChanged(int rating) {
-				btn.setEnabled(rating > 0);
-				/*commentBox.setHint(rating<4 ? LocaleController.getString("CallReportHint", R.string.CallReportHint) : LocaleController.getString("VoipFeedbackCommentHint", R.string.VoipFeedbackCommentHint));
-				commentBox.setVisibility(rating < 5 && rating > 0 ? View.VISIBLE : View.GONE);
-				if (commentBox.getVisibility() == View.GONE) {
-					((InputMethodManager) context.getSystemService(Context.INPUT_METHOD_SERVICE)).hideSoftInputFromWindow(commentBox.getWindowToken(), 0);
-				}
-				*/
-				((TextView) btn).setText((rating < 4 ? LocaleController.getString("Next", R.string.Next) : LocaleController.getString("Send", R.string.Send)).toUpperCase());
+		bar.setOnRatingChangeListener(rating -> {
+			btn.setEnabled(rating > 0);
+			/*commentBox.setHint(rating<4 ? LocaleController.getString("CallReportHint", R.string.CallReportHint) : LocaleController.getString("VoipFeedbackCommentHint", R.string.VoipFeedbackCommentHint));
+			commentBox.setVisibility(rating < 5 && rating > 0 ? View.VISIBLE : View.GONE);
+			if (commentBox.getVisibility() == View.GONE) {
+				((InputMethodManager) context.getSystemService(Context.INPUT_METHOD_SERVICE)).hideSoftInputFromWindow(commentBox.getWindowToken(), 0);
 			}
+			*/
+			((TextView) btn).setText((rating < 4 ? LocaleController.getString("Next", R.string.Next) : LocaleController.getString("Send", R.string.Send)).toUpperCase());
 		});
-		btn.setOnClickListener(new View.OnClickListener() {
-			@Override
-			public void onClick(View v) {
-				int rating = bar.getRating();
-				if (rating >= 4 || page[0] == 1) {
-					final int currentAccount = UserConfig.selectedAccount;
-					final TLRPC.TL_phone_setCallRating req = new TLRPC.TL_phone_setCallRating();
-					req.rating = bar.getRating();
-					ArrayList<String> problemTags = new ArrayList<>();
-					for (int i = 0; i < problemsWrap.getChildCount(); i++) {
-						CheckBoxCell check = (CheckBoxCell) problemsWrap.getChildAt(i);
-						if (check.isChecked())
-							problemTags.add("#" + check.getTag());
-					}
-
-					if (req.rating < 5)
-						req.comment = commentBox.getText().toString();
-					else
-						req.comment = "";
-					if (!problemTags.isEmpty() && !includeLogs[0]) {
-						req.comment += " " + TextUtils.join(" ", problemTags);
-					}
-					req.peer = new TLRPC.TL_inputPhoneCall();
-					req.peer.access_hash = accessHash;
-					req.peer.id = callID;
-					req.user_initiative = userInitiative;
-					ConnectionsManager.getInstance(account).sendRequest(req, new RequestDelegate() {
-						@Override
-						public void run(TLObject response, TLRPC.TL_error error) {
-							if (response instanceof TLRPC.TL_updates) {
-								TLRPC.TL_updates updates = (TLRPC.TL_updates) response;
-								MessagesController.getInstance(currentAccount).processUpdates(updates, false);
-							}
-							if (includeLogs[0] && log.exists() && req.rating < 4) {
-								AccountInstance accountInstance = AccountInstance.getInstance(UserConfig.selectedAccount);
-								SendMessagesHelper.prepareSendingDocument(accountInstance, log.getAbsolutePath(), log.getAbsolutePath(), null, TextUtils.join(" ", problemTags), "text/plain", VOIP_SUPPORT_ID, null, null, null, true, 0);
-								Toast.makeText(context, LocaleController.getString("CallReportSent", R.string.CallReportSent), Toast.LENGTH_LONG).show();
-							}
-						}
-					});
-					alert.dismiss();
-				} else {
-					page[0] = 1;
-					bar.setVisibility(View.GONE);
-					//text.setText(LocaleController.getString("CallReportHint", R.string.CallReportHint));
-					text.setVisibility(View.GONE);
-					alert.setTitle(LocaleController.getString("CallReportHint", R.string.CallReportHint));
-					commentBox.setVisibility(View.VISIBLE);
-					if (log.exists()) {
-						checkbox.setVisibility(View.VISIBLE);
-						logsText.setVisibility(View.VISIBLE);
-					}
-					problemsWrap.setVisibility(View.VISIBLE);
-					((TextView) btn).setText(LocaleController.getString("Send", R.string.Send).toUpperCase());
+		btn.setOnClickListener(v -> {
+			int rating = bar.getRating();
+			if (rating >= 4 || page[0] == 1) {
+				final int currentAccount = UserConfig.selectedAccount;
+				final TLRPC.TL_phone_setCallRating req = new TLRPC.TL_phone_setCallRating();
+				req.rating = bar.getRating();
+				ArrayList<String> problemTags = new ArrayList<>();
+				for (int i = 0; i < problemsWrap.getChildCount(); i++) {
+					CheckBoxCell check = (CheckBoxCell) problemsWrap.getChildAt(i);
+					if (check.isChecked())
+						problemTags.add("#" + check.getTag());
 				}
+
+				if (req.rating < 5)
+					req.comment = commentBox.getText().toString();
+				else
+					req.comment = "";
+				if (!problemTags.isEmpty() && !includeLogs[0]) {
+					req.comment += " " + TextUtils.join(" ", problemTags);
+				}
+				req.peer = new TLRPC.TL_inputPhoneCall();
+				req.peer.access_hash = accessHash;
+				req.peer.id = callID;
+				req.user_initiative = userInitiative;
+				ConnectionsManager.getInstance(account).sendRequest(req, (response, error) -> {
+					if (response instanceof TLRPC.TL_updates) {
+						TLRPC.TL_updates updates = (TLRPC.TL_updates) response;
+						MessagesController.getInstance(currentAccount).processUpdates(updates, false);
+					}
+					if (includeLogs[0] && log.exists() && req.rating < 4) {
+						AccountInstance accountInstance = AccountInstance.getInstance(UserConfig.selectedAccount);
+						SendMessagesHelper.prepareSendingDocument(accountInstance, log.getAbsolutePath(), log.getAbsolutePath(), null, TextUtils.join(" ", problemTags), "text/plain", VOIP_SUPPORT_ID, null, null, null, true, 0);
+						Toast.makeText(context, LocaleController.getString("CallReportSent", R.string.CallReportSent), Toast.LENGTH_LONG).show();
+					}
+				});
+				alert.dismiss();
+			} else {
+				page[0] = 1;
+				bar.setVisibility(View.GONE);
+				//text.setText(LocaleController.getString("CallReportHint", R.string.CallReportHint));
+				text.setVisibility(View.GONE);
+				alert.setTitle(LocaleController.getString("CallReportHint", R.string.CallReportHint));
+				commentBox.setVisibility(View.VISIBLE);
+				if (log.exists()) {
+					checkbox.setVisibility(View.VISIBLE);
+					logsText.setVisibility(View.VISIBLE);
+				}
+				problemsWrap.setVisibility(View.VISIBLE);
+				((TextView) btn).setText(LocaleController.getString("Send", R.string.Send).toUpperCase());
 			}
 		});
 	}
@@ -446,30 +435,24 @@ public class VoIPHelper {
 
 		final TextCheckCell tcpCell = new TextCheckCell(context);
 		tcpCell.setTextAndCheck("Force TCP", preferences.getBoolean("dbg_force_tcp_in_calls", false), false);
-		tcpCell.setOnClickListener(new View.OnClickListener() {
-			@Override
-			public void onClick(View v) {
-				boolean force = preferences.getBoolean("dbg_force_tcp_in_calls", false);
-				SharedPreferences.Editor editor = preferences.edit();
-				editor.putBoolean("dbg_force_tcp_in_calls", !force);
-				editor.commit();
-				tcpCell.setChecked(!force);
-			}
+		tcpCell.setOnClickListener(v -> {
+			boolean force = preferences.getBoolean("dbg_force_tcp_in_calls", false);
+			SharedPreferences.Editor editor = preferences.edit();
+			editor.putBoolean("dbg_force_tcp_in_calls", !force);
+			editor.commit();
+			tcpCell.setChecked(!force);
 		});
 		ll.addView(tcpCell);
 
 		if (BuildVars.DEBUG_VERSION && BuildVars.LOGS_ENABLED) {
 			final TextCheckCell dumpCell = new TextCheckCell(context);
 			dumpCell.setTextAndCheck("Dump detailed stats", preferences.getBoolean("dbg_dump_call_stats", false), false);
-			dumpCell.setOnClickListener(new View.OnClickListener() {
-				@Override
-				public void onClick(View v) {
-					boolean force = preferences.getBoolean("dbg_dump_call_stats", false);
-					SharedPreferences.Editor editor = preferences.edit();
-					editor.putBoolean("dbg_dump_call_stats", !force);
-					editor.commit();
-					dumpCell.setChecked(!force);
-				}
+			dumpCell.setOnClickListener(v -> {
+				boolean force = preferences.getBoolean("dbg_dump_call_stats", false);
+				SharedPreferences.Editor editor = preferences.edit();
+				editor.putBoolean("dbg_dump_call_stats", !force);
+				editor.commit();
+				dumpCell.setChecked(!force);
 			});
 			ll.addView(dumpCell);
 		}
@@ -477,15 +460,12 @@ public class VoIPHelper {
 		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
 			final TextCheckCell connectionServiceCell = new TextCheckCell(context);
 			connectionServiceCell.setTextAndCheck("Enable ConnectionService", preferences.getBoolean("dbg_force_connection_service", false), false);
-			connectionServiceCell.setOnClickListener(new View.OnClickListener() {
-				@Override
-				public void onClick(View v) {
-					boolean force = preferences.getBoolean("dbg_force_connection_service", false);
-					SharedPreferences.Editor editor = preferences.edit();
-					editor.putBoolean("dbg_force_connection_service", !force);
-					editor.commit();
-					connectionServiceCell.setChecked(!force);
-				}
+			connectionServiceCell.setOnClickListener(v -> {
+				boolean force = preferences.getBoolean("dbg_force_connection_service", false);
+				SharedPreferences.Editor editor = preferences.edit();
+				editor.putBoolean("dbg_force_connection_service", !force);
+				editor.commit();
+				connectionServiceCell.setChecked(!force);
 			});
 			ll.addView(connectionServiceCell);
 		}
@@ -501,17 +481,17 @@ public class VoIPHelper {
 				medium = DownloadController.getInstance(0).mediumPreset.lessCallData,
 				high = DownloadController.getInstance(0).highPreset.lessCallData;
 		if (!low && !medium && !high) {
-			return TgVoip.DATA_SAVING_NEVER;
+			return Instance.DATA_SAVING_NEVER;
 		} else if (low && !medium && !high) {
-			return TgVoip.DATA_SAVING_ROAMING;
+			return Instance.DATA_SAVING_ROAMING;
 		} else if (low && medium && !high) {
-			return TgVoip.DATA_SAVING_MOBILE;
+			return Instance.DATA_SAVING_MOBILE;
 		} else if (low && medium && high) {
-			return TgVoip.DATA_SAVING_ALWAYS;
+			return Instance.DATA_SAVING_ALWAYS;
 		}
 		if (BuildVars.LOGS_ENABLED)
 			FileLog.w("Invalid call data saving preset configuration: " + low + "/" + medium + "/" + high);
-		return TgVoip.DATA_SAVING_NEVER;
+		return Instance.DATA_SAVING_NEVER;
 	}
 
 

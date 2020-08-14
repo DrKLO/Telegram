@@ -1539,7 +1539,6 @@ public class AndroidUtilities {
         }
     }*/
 
-    private static ContentObserver callLogContentObserver;
     private static Runnable unregisterRunnable;
     private static boolean hasCallPermissions = Build.VERSION.SDK_INT >= 23;
 
@@ -3368,5 +3367,12 @@ public class AndroidUtilities {
         } catch (Throwable ignore) {
 
         }
+    }
+
+    public static boolean checkInlinePermissions(Context context) {
+        if (Build.VERSION.SDK_INT < 23 || Settings.canDrawOverlays(context)) {
+            return true;
+        }
+        return false;
     }
 }

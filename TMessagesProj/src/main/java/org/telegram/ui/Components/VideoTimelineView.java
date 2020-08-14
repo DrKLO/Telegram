@@ -285,10 +285,10 @@ public class VideoTimelineView extends View {
         if (frameNum == 0) {
             if (isRoundFrames) {
                 frameHeight = frameWidth = AndroidUtilities.dp(56);
-                framesToLoad = (int) Math.ceil((getMeasuredWidth() - AndroidUtilities.dp(16)) / (frameHeight / 2.0f));
+                framesToLoad = Math.max(1, (int) Math.ceil((getMeasuredWidth() - AndroidUtilities.dp(16)) / (frameHeight / 2.0f)));
             } else {
                 frameHeight = AndroidUtilities.dp(40);
-                framesToLoad = (getMeasuredWidth() - AndroidUtilities.dp(16)) / frameHeight;
+                framesToLoad = Math.max(1, (getMeasuredWidth() - AndroidUtilities.dp(16)) / frameHeight);
                 frameWidth = (int) Math.ceil((float) (getMeasuredWidth() - AndroidUtilities.dp(16)) / (float) framesToLoad);
             }
             frameTimeOffset = videoLength / framesToLoad;

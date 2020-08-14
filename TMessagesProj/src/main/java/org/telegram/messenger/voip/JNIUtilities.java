@@ -26,69 +26,74 @@ import java.util.Enumeration;
  * Created by grishka on 16.01.2018.
  */
 
-public class JNIUtilities{
+public class JNIUtilities {
 	@TargetApi(23)
-	public static String getCurrentNetworkInterfaceName(){
-		ConnectivityManager cm=(ConnectivityManager) ApplicationLoader.applicationContext.getSystemService(Context.CONNECTIVITY_SERVICE);
-		Network net=cm.getActiveNetwork();
-		if(net==null)
+	public static String getCurrentNetworkInterfaceName() {
+		ConnectivityManager cm = (ConnectivityManager) ApplicationLoader.applicationContext.getSystemService(Context.CONNECTIVITY_SERVICE);
+		Network net = cm.getActiveNetwork();
+		if (net == null) {
 			return null;
-		LinkProperties props=cm.getLinkProperties(net);
-		if(props==null)
+		}
+		LinkProperties props = cm.getLinkProperties(net);
+		if (props == null) {
 			return null;
+		}
 		return props.getInterfaceName();
 	}
 
-	public static String[] getLocalNetworkAddressesAndInterfaceName(){
-		ConnectivityManager cm=(ConnectivityManager) ApplicationLoader.applicationContext.getSystemService(Context.CONNECTIVITY_SERVICE);
-		if(Build.VERSION.SDK_INT>=Build.VERSION_CODES.M){
-			Network net=cm.getActiveNetwork();
-			if(net==null)
+	public static String[] getLocalNetworkAddressesAndInterfaceName() {
+		ConnectivityManager cm = (ConnectivityManager) ApplicationLoader.applicationContext.getSystemService(Context.CONNECTIVITY_SERVICE);
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+			Network net = cm.getActiveNetwork();
+			if (net == null) {
 				return null;
-			LinkProperties linkProps=cm.getLinkProperties(net);
-			if(linkProps==null)
+			}
+			LinkProperties linkProps = cm.getLinkProperties(net);
+			if (linkProps == null) {
 				return null;
-			String ipv4=null, ipv6=null;
-			for(LinkAddress addr:linkProps.getLinkAddresses()){
-				InetAddress a=addr.getAddress();
-				if(a instanceof Inet4Address){
-					if(!a.isLinkLocalAddress()){
-						ipv4=a.getHostAddress();
+			}
+			String ipv4 = null, ipv6 = null;
+			for (LinkAddress addr : linkProps.getLinkAddresses()) {
+				InetAddress a = addr.getAddress();
+				if (a instanceof Inet4Address) {
+					if (!a.isLinkLocalAddress()) {
+						ipv4 = a.getHostAddress();
 					}
-				}else if(a instanceof Inet6Address){
-					if(!a.isLinkLocalAddress() && (a.getAddress()[0] & 0xF0) != 0xF0){
-						ipv6=a.getHostAddress();
+				} else if (a instanceof Inet6Address) {
+					if (!a.isLinkLocalAddress() && (a.getAddress()[0] & 0xF0) != 0xF0) {
+						ipv6 = a.getHostAddress();
 					}
 				}
 			}
 			return new String[]{linkProps.getInterfaceName(), ipv4, ipv6};
-		}else{
-			try{
-				Enumeration<NetworkInterface> itfs=NetworkInterface.getNetworkInterfaces();
-				if(itfs==null)
+		} else {
+			try {
+				Enumeration<NetworkInterface> itfs = NetworkInterface.getNetworkInterfaces();
+				if (itfs == null)
 					return null;
-				while(itfs.hasMoreElements()){
-					NetworkInterface itf=itfs.nextElement();
-					if(itf.isLoopback() || !itf.isUp())
+				while (itfs.hasMoreElements()) {
+					NetworkInterface itf = itfs.nextElement();
+					if (itf.isLoopback() || !itf.isUp()) {
 						continue;
-					Enumeration<InetAddress> addrs=itf.getInetAddresses();
-					String ipv4=null, ipv6=null;
-					while(addrs.hasMoreElements()){
-						InetAddress a=addrs.nextElement();
-						if(a instanceof Inet4Address){
-							if(!a.isLinkLocalAddress()){
-								ipv4=a.getHostAddress();
+					}
+					Enumeration<InetAddress> addrs = itf.getInetAddresses();
+					String ipv4 = null, ipv6 = null;
+					while (addrs.hasMoreElements()) {
+						InetAddress a = addrs.nextElement();
+						if (a instanceof Inet4Address) {
+							if (!a.isLinkLocalAddress()) {
+								ipv4 = a.getHostAddress();
 							}
-						}else if(a instanceof Inet6Address){
-							if(!a.isLinkLocalAddress() && (a.getAddress()[0] & 0xF0) != 0xF0){
-								ipv6=a.getHostAddress();
+						} else if (a instanceof Inet6Address) {
+							if (!a.isLinkLocalAddress() && (a.getAddress()[0] & 0xF0) != 0xF0) {
+								ipv6 = a.getHostAddress();
 							}
 						}
 					}
 					return new String[]{itf.getName(), ipv4, ipv6};
 				}
 				return null;
-			}catch(Exception x){
+			} catch (Exception x) {
 				FileLog.e(x);
 				return null;
 			}
@@ -96,29 +101,30 @@ public class JNIUtilities{
 	}
 
 	// [name, country, mcc, mnc]
-	public static String[] getCarrierInfo(){
-		TelephonyManager tm=(TelephonyManager) ApplicationLoader.applicationContext.getSystemService(Context.TELEPHONY_SERVICE);
-		if(Build.VERSION.SDK_INT>=24){
-			tm=tm.createForSubscriptionId(SubscriptionManager.getDefaultDataSubscriptionId());
+	public static String[] getCarrierInfo() {
+		TelephonyManager tm = (TelephonyManager) ApplicationLoader.applicationContext.getSystemService(Context.TELEPHONY_SERVICE);
+		if (Build.VERSION.SDK_INT >= 24) {
+			tm = tm.createForSubscriptionId(SubscriptionManager.getDefaultDataSubscriptionId());
 		}
-		if(!TextUtils.isEmpty(tm.getNetworkOperatorName())){
-			String mnc="", mcc="";
-			String carrierID=tm.getNetworkOperator();
-			if(carrierID!=null && carrierID.length()>3){
-				mcc=carrierID.substring(0, 3);
-				mnc=carrierID.substring(3);
+		if (!TextUtils.isEmpty(tm.getNetworkOperatorName())) {
+			String mnc = "", mcc = "";
+			String carrierID = tm.getNetworkOperator();
+			if (carrierID != null && carrierID.length() > 3) {
+				mcc = carrierID.substring(0, 3);
+				mnc = carrierID.substring(3);
 			}
 			return new String[]{tm.getNetworkOperatorName(), tm.getNetworkCountryIso().toUpperCase(), mcc, mnc};
 		}
 		return null;
 	}
 
-	public static int[] getWifiInfo(){
-		try{
-			WifiManager wmgr=(WifiManager) ApplicationLoader.applicationContext.getSystemService(Context.WIFI_SERVICE);
-			WifiInfo info=wmgr.getConnectionInfo();
+	public static int[] getWifiInfo() {
+		try {
+			WifiManager wmgr = (WifiManager) ApplicationLoader.applicationContext.getSystemService(Context.WIFI_SERVICE);
+			WifiInfo info = wmgr.getConnectionInfo();
 			return new int[]{info.getRssi(), info.getLinkSpeed()};
-		}catch(Exception ignore){}
+		} catch (Exception ignore) {
+		}
 		return null;
 	}
 

@@ -6903,7 +6903,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                     message.media.flags |= 3;
                     message.media.document = audioToSend;
                     message.flags |= TLRPC.MESSAGE_FLAG_HAS_MEDIA | TLRPC.MESSAGE_FLAG_HAS_FROM_ID;
-                    audioToSendMessageObject = new MessageObject(UserConfig.selectedAccount, message, false);
+                    audioToSendMessageObject = new MessageObject(UserConfig.selectedAccount, message, false, true);
 
                     recordedAudioPanel.setAlpha(1.0f);
                     recordedAudioPanel.setVisibility(VISIBLE);

@@ -72,7 +72,7 @@ public class ShareActivity extends Activity {
             return;
         }
         String link = sharedPreferences.getString(hash + "_link", null);
-        MessageObject messageObject = new MessageObject(UserConfig.selectedAccount, mess, false);
+        MessageObject messageObject = new MessageObject(UserConfig.selectedAccount, mess, false, true);
         messageObject.messageOwner.with_my_score = true;
 
         try {

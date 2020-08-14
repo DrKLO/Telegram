@@ -569,7 +569,7 @@ public class LocationController extends BaseController implements NotificationCe
         info.mid = mid;
         info.period = period;
         info.account = currentAccount;
-        info.messageObject = new MessageObject(currentAccount, message, false);
+        info.messageObject = new MessageObject(currentAccount, message, false, false);
         info.stopTime = getConnectionsManager().getCurrentTime() + period;
         final SharingLocationInfo old = sharingLocationsMap.get(did);
         sharingLocationsMap.put(did, info);
@@ -616,7 +616,7 @@ public class LocationController extends BaseController implements NotificationCe
                     info.account = currentAccount;
                     NativeByteBuffer data = cursor.byteBufferValue(4);
                     if (data != null) {
-                        info.messageObject = new MessageObject(currentAccount, TLRPC.Message.TLdeserialize(data, data.readInt32(false), false), false);
+                        info.messageObject = new MessageObject(currentAccount, TLRPC.Message.TLdeserialize(data, data.readInt32(false), false), false, false);
                         MessagesStorage.addUsersAndChatsFromMessage(info.messageObject.messageOwner, usersToLoad, chatsToLoad);
                         data.reuse();
                     }

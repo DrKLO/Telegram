@@ -1264,7 +1264,7 @@ std::shared_ptr<LOTData> LottieParserImpl::parseGroupObject() {
                 parsingError = true;
                 return sharedGroup;
             }
-            if (group->mChildren.back()->type() == LOTData::Type::Transform) {
+            if (!group->mChildren.empty() && group->mChildren.back()->type() == LOTData::Type::Transform) {
                 group->mTransform = std::static_pointer_cast<LOTTransformData>(
                         group->mChildren.back());
                 group->mChildren.pop_back();

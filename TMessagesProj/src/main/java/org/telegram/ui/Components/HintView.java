@@ -43,6 +43,7 @@ public class HintView extends FrameLayout {
     private String overrideText;
     private int shownY;
 
+    private int bottomOffset;
     private long showingDuration = 2000;
 
     public HintView(Context context, int type) {
@@ -285,6 +286,8 @@ public class HintView extends FrameLayout {
         centerX -= position[0];
         top -= position[1];
 
+        top -= bottomOffset;
+
         int parentWidth = parentView.getMeasuredWidth();
         if (isTopArrow) {
             setTranslationY(AndroidUtilities.dp(44));
@@ -402,5 +405,9 @@ public class HintView extends FrameLayout {
 
     public void setShowingDuration(long showingDuration) {
         this.showingDuration = showingDuration;
+    }
+
+    public void setBottomOffset(int offset) {
+        this.bottomOffset = offset;
     }
 }

@@ -2650,6 +2650,7 @@
     <string name="Edit">Edit</string>
     <string name="Send">Send</string>
     <string name="Call">Call</string>
+    <string name="VideoCall">Video Call</string>
     <string name="Copy">Copy</string>
     <string name="Delete">Delete</string>
     <string name="Start">Start</string>
@@ -2983,6 +2984,7 @@
     <string name="VoipRinging">Ringing</string>
     <string name="VoipBusy">Line busy</string>
     <string name="VoipInCallBranding">Telegram Call</string>
+    <string name="VoipInVideoCallBranding">Telegram Video Call</string>
     <string name="VoipOutgoingCall">Ongoing Telegram call</string>
     <string name="VoipEndCall">End call</string>
     <string name="VoipOngoingAlertTitle">Another call in progress</string>
@@ -3009,24 +3011,32 @@
     <string name="VoipOfflineOpenSettings">Settings</string>
     <string name="CallMessageOutgoing">Outgoing Call</string>
     <string name="CallMessageIncoming">Incoming Call</string>
+    <string name="CallMessageVideoOutgoing">Outgoing Video Call</string>
+    <string name="CallMessageVideoIncoming">Incoming Video Call</string>
     <string name="CallMessageIncomingMissed">Missed Call</string>
     <string name="CallMessageOutgoingMissed">Cancelled Call</string>
     <string name="CallMessageIncomingDeclined">Declined Call</string>
+    <string name="CallMessageVideoIncomingMissed">Missed Video Call</string>
+    <string name="CallMessageVideoOutgoingMissed">Cancelled Video Call</string>
+    <string name="CallMessageVideoIncomingDeclined">Declined Video Call</string>
     <string name="CallMessageWithDuration">%1$s (%2$s)</string>
     <string name="NoCallLog">You haven\'t made any calls yet.</string>
     <string name="VoipPeerIncompatible">**%1$s**\'s app is using an incompatible protocol. They need to update their app before you can call them.</string>
     <string name="VoipPeerOutdated">**%1$s**\'s app does not support calls. They need to update their app before you can call them.</string>
     <string name="VoipRateCallAlert">Please rate the quality of your Telegram call</string>
     <string name="VoipNeedMicPermission">Telegram needs access to your microphone so that you can make calls.</string>
+    <string name="VoipNeedMicCameraPermission">Telegram needs access to your microphone and camera so that you can make video calls.</string>
     <string name="VoipFeedbackCommentHint">Add an optional comment</string>
     <string name="CallBack">Call Back</string>
     <string name="CallAgain">Call Again</string>
     <string name="DefaultRingtone">Default</string>
     <string name="ConfirmDeleteCallLog">Do you want to delete this entry from the calls log?</string>
     <string name="CallViaTelegram">Telegram Call</string>
+    <string name="VideoCallViaTelegram">Telegram Video Call</string>
     <string name="VoipAudioRoutingEarpiece">Earpiece</string>
     <string name="VoipAudioRoutingSpeaker">Speaker</string>
     <string name="VoipAudioRoutingBluetooth">Bluetooth</string>
+    <string name="VoipOutputDevices">Output Devices</string>
     <string name="ReturnToCall">RETURN TO CALL</string>
     <string name="CallNotAvailable">Sorry, **%1$s** doesn\'t accept calls.</string>
     <string name="CallEmojiKeyTooltip">If emoji on %1$s\'s screen are the same, this call is 100%% secure.</string>
@@ -3045,6 +3055,7 @@
     <string name="QuickReplyCustom">Custom Message...</string>
     <string name="AllowCustomQuickReply">Allow Custom</string>
     <string name="VoipInCallBrandingWithName">Telegram Call to %s</string>
+    <string name="VoipInVideoCallBrandingWithName">Telegram Video Call to %s</string>
     <string name="VoipErrorUnknown">Can\'t place a Telegram call at the moment.</string>
     <string name="RateCallEcho">I heard my own voice</string>
     <string name="RateCallNoise">I heard background noise</string>
@@ -3053,6 +3064,24 @@
     <string name="RateCallSilentLocal">I couldn\'t hear the other side</string>
     <string name="RateCallSilentRemote">The other side couldn\'t hear me</string>
     <string name="RateCallDropped">Call ended unexpectedly</string>
+    <string name="TapToTurnCamera">Tap here to turn on your camera</string>
+    <string name="VoipUnmute">Unmute</string>
+    <string name="VoipMute">Mute</string>
+    <string name="VoipStartVideo">Start Video</string>
+    <string name="VoipStopVideo">Stop Video</string>
+    <string name="VoipSpeaker">Speaker</string>
+    <string name="VoipFlip">Flip</string>
+    <string name="VoipSwitchToVideoCall">Switch to video call?</string>
+    <string name="VoipSwitch">SWITCH</string>
+    <string name="VoipUserMicrophoneIsOff">%s\'s microphone is off</string>
+    <string name="VoipUserCameraIsOff">%s\'s camera is off</string>
+    <string name="AcceptCall">Accept</string>
+    <string name="DeclineCall">Decline</string>
+    <string name="RetryCall">Retry</string>
+    <!--contacts shortcuts-->
+    <string name="ContactShortcutMessage">Message %1$s</string>
+    <string name="ContactShortcutVoiceCall">Voice call %1$s</string>
+    <string name="ContactShortcutVideoCall">Video call %1$s</string>
     <!--plural-->
     <string name="DeleteBackground_zero">Delete %1$d backgrounds</string>
     <string name="DeleteBackground_one">Delete background</string>
@@ -3613,6 +3642,12 @@
     <string name="AccDescrShareInChats_other">Share in %1$d chats</string>
     <string name="AccDescrQuizCorrectAnswer">Correct answer</string>
     <string name="AccDescrPipMode">Picture-in-Picture mode</string>
+    <string name="AccDescrVoipMicOn">Microphone is on</string>
+    <string name="AccDescrVoipMicOff">Microphone is off</string>
+    <string name="AccDescrVoipCamSwitchedToFront">Switched to front camera</string>
+    <string name="AccDescrVoipCamSwitchedToBack">Switched to rear camera</string>
+    <string name="AccDescrVoipCamOn">Camera is on</string>
+    <string name="AccDescrVoipCamOff">Camera is off</string>
     <!--date formatters-->
     <string name="formatterStats12H">MMM dd yyyy, h:mm a</string>
     <string name="formatterStats24H">MMM dd yyyy, HH:mm</string>

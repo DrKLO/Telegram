@@ -431,7 +431,7 @@ public class ImageUpdater implements NotificationCenter.NotificationCenterDelega
                 message.media = new TLRPC.TL_messageMediaEmpty();
                 message.action = new TLRPC.TL_messageActionEmpty();
                 message.dialog_id = 0;
-                avatarObject = new MessageObject(UserConfig.selectedAccount, message, false);
+                avatarObject = new MessageObject(UserConfig.selectedAccount, message, false, false);
                 avatarObject.messageOwner.attachPath = new File(FileLoader.getDirectory(FileLoader.MEDIA_DIR_CACHE), SharedConfig.getLastLocalId() + "_avatar.mp4").getAbsolutePath();
                 avatarObject.videoEditedInfo = info.videoEditedInfo;
                 bitmap = ImageLoader.loadBitmap(info.thumbPath, null, 800, 800, true);
@@ -622,7 +622,7 @@ public class ImageUpdater implements NotificationCenter.NotificationCenterDelega
                     message.media = new TLRPC.TL_messageMediaEmpty();
                     message.action = new TLRPC.TL_messageActionEmpty();
                     message.dialog_id = 0;
-                    avatarObject = new MessageObject(UserConfig.selectedAccount, message, false);
+                    avatarObject = new MessageObject(UserConfig.selectedAccount, message, false, false);
                     avatarObject.messageOwner.attachPath = new File(FileLoader.getDirectory(FileLoader.MEDIA_DIR_CACHE), SharedConfig.getLastLocalId() + "_avatar.mp4").getAbsolutePath();
                     avatarObject.videoEditedInfo = photoEntry.editedInfo;
                     bitmap = ImageLoader.loadBitmap(photoEntry.thumbPath, null, 800, 800, true);

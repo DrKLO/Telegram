@@ -19,8 +19,8 @@ public class BuildVars {
     public static boolean USE_CLOUD_STRINGS = true;
     public static boolean CHECK_UPDATES = true;
     public static boolean TON_WALLET_STANDALONE = false;
-    public static int BUILD_VERSION = 2042;
-    public static String BUILD_VERSION_STRING = "6.3.0";
+    public static int BUILD_VERSION = 2060;
+    public static String BUILD_VERSION_STRING = "7.0.0";
     public static int APP_ID = 4;
     public static String APP_HASH = "014b35b6184100b085b0d0572f9b5103";
     public static String APPCENTER_HASH = "a5b5c4f5-51da-dedc-9918-d9766a22ca7c";

@@ -1085,7 +1085,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
         }
         req.random_id = message.random_id;
 
-        MessageObject newMsgObj = new MessageObject(currentAccount, message, false);
+        MessageObject newMsgObj = new MessageObject(currentAccount, message, false, true);
         newMsgObj.messageOwner.send_state = MessageObject.MESSAGE_SEND_STATE_SENDING;
         newMsgObj.wasJustSent = true;
         ArrayList<MessageObject> objArr = new ArrayList<>();
@@ -1453,7 +1453,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                 if (msgObj.messageOwner.to_id instanceof TLRPC.TL_peerChannel) {
                     newMsg.ttl = -msgObj.messageOwner.to_id.channel_id;
                 }
-                MessageObject newMsgObj = new MessageObject(currentAccount, newMsg, true);
+                MessageObject newMsgObj = new MessageObject(currentAccount, newMsg, true, true);
                 newMsgObj.scheduled = scheduleDate != 0;
                 newMsgObj.messageOwner.send_state = MessageObject.MESSAGE_SEND_STATE_SENDING;
                 newMsgObj.wasJustSent = true;
@@ -1586,7 +1586,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                                                     getMessagesStorage().putMessages(sentMessages, true, false, false, 0, false);
                                                     AndroidUtilities.runOnUIThread(() -> {
                                                         ArrayList<MessageObject> messageObjects = new ArrayList<>();
-                                                        messageObjects.add(new MessageObject(msgObj.currentAccount, msgObj.messageOwner, true));
+                                                        messageObjects.add(new MessageObject(msgObj.currentAccount, msgObj.messageOwner, true, true));
                                                         getMessagesController().updateInterfaceWithMessages(newMsgObj1.dialog_id, messageObjects, false);
                                                         getMediaDataController().increasePeerRaiting(newMsgObj1.dialog_id);
                                                         processSentMessage(oldId);
@@ -2831,7 +2831,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
             }
 
             newMsg.send_state = MessageObject.MESSAGE_SEND_STATE_SENDING;
-            newMsgObj = new MessageObject(currentAccount, newMsg, reply_to_msg, true);
+            newMsgObj = new MessageObject(currentAccount, newMsg, reply_to_msg, true, true);
             newMsgObj.wasJustSent = true;
             newMsgObj.scheduled = scheduleDate != 0;
             if (!newMsgObj.isForwarded() && (newMsgObj.type == 3 || videoEditedInfo != null || newMsgObj.type == 2) && !TextUtils.isEmpty(newMsg.attachPath)) {
@@ -4563,7 +4563,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                                     getMessagesStorage().putMessages(sentMessages, true, false, false, 0, false);
                                     AndroidUtilities.runOnUIThread(() -> {
                                         ArrayList<MessageObject> messageObjects = new ArrayList<>();
-                                        messageObjects.add(new MessageObject(msgObj.currentAccount, msgObj.messageOwner, true));
+                                        messageObjects.add(new MessageObject(msgObj.currentAccount, msgObj.messageOwner, true, true));
                                         getMessagesController().updateInterfaceWithMessages(newMsgObj.dialog_id, messageObjects, false);
                                         getMediaDataController().increasePeerRaiting(newMsgObj.dialog_id);
                                         processSentMessage(oldId);
@@ -4873,12 +4873,12 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
             getMessagesController().putChats(chats, true);
             getMessagesController().putEncryptedChats(encryptedChats, true);
             for (int a = 0; a < messages.size(); a++) {
-                MessageObject messageObject = new MessageObject(currentAccount, messages.get(a), false);
+                MessageObject messageObject = new MessageObject(currentAccount, messages.get(a), false, true);
                 retrySendMessage(messageObject, true);
             }
             if (scheduledMessages != null) {
                 for (int a = 0; a < scheduledMessages.size(); a++) {
-                    MessageObject messageObject = new MessageObject(currentAccount, scheduledMessages.get(a), false);
+                    MessageObject messageObject = new MessageObject(currentAccount, scheduledMessages.get(a), false, true);
                     messageObject.scheduled = true;
                     retrySendMessage(messageObject, true);
                 }

@@ -1,0 +1,10 @@
+agrieve@chromium.org
+lizeb@chromium.org
+nyquist@chromium.org
+pasko@chromium.org
+rmcilroy@chromium.org
+torne@chromium.org
+yfriedman@chromium.org
+
+per-file *.aidl=set noparent
+per-file *.aidl=file://ipc/SECURITY_OWNERS

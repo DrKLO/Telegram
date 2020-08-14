@@ -122,7 +122,11 @@ public class ActionBarLayout extends FrameLayout {
             for (int a = 0; a < count; a++) {
                 View child = getChildAt(a);
                 if (!(child instanceof ActionBar)) {
-                    measureChildWithMargins(child, widthMeasureSpec, 0, heightMeasureSpec, actionBarHeight);
+                    if (child.getFitsSystemWindows()) {
+                        measureChildWithMargins(child, widthMeasureSpec, 0, heightMeasureSpec, 0);
+                    } else {
+                        measureChildWithMargins(child, widthMeasureSpec, 0, heightMeasureSpec, actionBarHeight);
+                    }
                 }
             }
             setMeasuredDimension(width, height);
@@ -144,7 +148,11 @@ public class ActionBarLayout extends FrameLayout {
                 View child = getChildAt(a);
                 if (!(child instanceof ActionBar)) {
                     FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) child.getLayoutParams();
-                    child.layout(layoutParams.leftMargin, layoutParams.topMargin + actionBarHeight, layoutParams.leftMargin + child.getMeasuredWidth(), layoutParams.topMargin + actionBarHeight + child.getMeasuredHeight());
+                    if (child.getFitsSystemWindows()) {
+                        child.layout(layoutParams.leftMargin, layoutParams.topMargin, layoutParams.leftMargin + child.getMeasuredWidth(), layoutParams.topMargin + child.getMeasuredHeight());
+                    } else {
+                        child.layout(layoutParams.leftMargin, layoutParams.topMargin + actionBarHeight, layoutParams.leftMargin + child.getMeasuredWidth(), layoutParams.topMargin + actionBarHeight + child.getMeasuredHeight());
+                    }
                 }
             }
 
@@ -378,6 +386,14 @@ public class ActionBarLayout extends FrameLayout {
             if (currentAnimation != null) {
                 currentAnimation.cancel();
                 currentAnimation = null;
+            }
+            if (animationRunnable != null) {
+                AndroidUtilities.cancelRunOnUIThread(animationRunnable);
+                animationRunnable = null;
+            }
+            if (waitingForKeyboardCloseRunnable != null) {
+                AndroidUtilities.cancelRunOnUIThread(waitingForKeyboardCloseRunnable);
+                waitingForKeyboardCloseRunnable = null;
             }
             if (onCloseAnimationEndRunnable != null) {
                 onCloseAnimationEnd();

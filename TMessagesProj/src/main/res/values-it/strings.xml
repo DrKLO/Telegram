@@ -212,7 +212,7 @@
     <string name="Strike">Barrato</string>
     <string name="Underline">Sottolineato</string>
     <string name="Regular">Normale</string>
-    <string name="ContactsPermissionAlert">**Telegram** ha bisogno di accedere ai tuoi contatti per farti connettere con gli amici su tutti i tuoi dispositivi. I tuoi contatti saranno sincronizzati continuamente con i server cloud fortemente criptati di Telegram.</string>
+    <string name="ContactsPermissionAlert">**Telegram** ha bisogno di accedere ai tuoi contatti affinché tu possa connetterti con gli amici su tutti i tuoi dispositivi. I tuoi contatti saranno sincronizzati continuamente con i server cloud fortemente criptati di Telegram.</string>
     <string name="ContactsPermissionAlertNotNow">NON ADESSO</string>
     <string name="ContactsPermissionAlertContinue">CONTINUA</string>
     <string name="YourContacts">I tuoi contatti su Telegram</string>
@@ -1134,7 +1134,7 @@
     <string name="SelectContact">Seleziona contatto</string>
     <string name="SelectContacts">Seleziona contatti</string>
     <string name="ContactShare">CONDIVIDI CONTATTO</string>
-    <string name="ShareContactTitle">Condivi contatto</string>
+    <string name="ShareContactTitle">Condividi contatto</string>
     <string name="AddContactPhonebookTitle">Aggiungi contatto</string>
     <string name="NoContacts">Ancora nessun contatto</string>
     <string name="InviteText2">Ehi, sto usando Telegram per messaggiare. Unisciti a me! Scaricalo qui: %1$s</string>
@@ -2650,6 +2650,7 @@
     <string name="Edit">Modifica</string>
     <string name="Send">Invia</string>
     <string name="Call">Chiama</string>
+    <string name="VideoCall">Videochiamata</string>
     <string name="Copy">Copia</string>
     <string name="Delete">Elimina</string>
     <string name="Start">Avvia</string>
@@ -2761,7 +2762,7 @@
     <string name="InvalidPhoneNumber">Numero di telefono non valido. Per favore controlla il numero e riprova.</string>
     <string name="PleaseLoginPassport">Per favore accedi al tuo account Telegram per usare Telegram Passport.</string>
     <string name="BannedPhoneNumber">Questo numero è stato bloccato.</string>
-    <string name="CodeExpired">Codice scaduto, per favore riprova l\'accesso</string>
+    <string name="CodeExpired">Codice scaduto, per favore riprova l\'accesso.</string>
     <string name="FloodWait">Troppi tentativi, per favore riprova più tardi</string>
     <string name="FloodWaitTime">Troppi tentativi, per favore riprova tra %1$s</string>
     <string name="InvalidCode">Codice non valido</string>
@@ -2846,7 +2847,7 @@
     <string name="NoUsernameFound">Non esiste alcun account Telegram con questo username.</string>
     <string name="BotCantJoinGroups">Questo bot non può unirsi ai gruppi.</string>
     <string name="SecretLinkPreviewAlert">Vuoi attivare le anteprime estese per i link nelle Chat segrete? Ricorda che le anteprime dei link sono generate sui server di Telegram.</string>
-    <string name="SecretChatContextBotAlert">Per favore nota che i bot inline sono forniti da sviluppatori di terze parti. Per far funzionare il bot, i simboli che digiti dopo l\'username del bot sono inviati al rispettivo sviluppatore.</string>
+    <string name="SecretChatContextBotAlert">Per favore nota che i bot inline sono forniti da sviluppatori di terze parti. Per far funzionare il bot, i caratteri che digiti dopo l\'username del bot sono inviati al rispettivo sviluppatore.</string>
     <string name="EditMessageError">Spiacenti, non puoi modificare questo messaggio.</string>
     <string name="AllowReadCall">Per favore consenti a Telegram di ricevere chiamate così potremo inserire in automatico il codice per te.</string>
     <string name="AllowReadCallAndLog">Per favore permetti a Telegram di ricevere chiamate e leggere il registro delle chiamate in modo da poter inserire il codice per te automaticamente.</string>
@@ -2874,10 +2875,10 @@
     <!--permissions-->
     <string name="PermissionContacts">Per farti connettere con i tuoi amici su tutti i tuoi dispositivi, i tuoi contatti saranno sincronizzati di continuo con i server cloud fortemente criptati di Telegram.</string>
     <string name="PermissionStorage">Telegram deve accedere alla tua memoria per poter inviare e salvare foto, video, musica e altri media.</string>
-    <string name="PermissionNoAudio">Telegram deve accedere al microfono per poter inviare messaggi vocali.</string>
-    <string name="PermissionNoAudioVideo">Telegram deve accedere al microfono per poter registrare video.</string>
-    <string name="PermissionNoCamera">Telegram deve avere accesso alla fotocamera per scattare foto e registrare video. Per favore attivalo nelle Impostazioni.</string>
-    <string name="PermissionNoLocation">Telegram deve accedere alla tua posizione per poterla condividere con i tuoi amici.</string>
+    <string name="PermissionNoAudio">Telegram deve accedere al microfono affinché tu possa inviare messaggi vocali.</string>
+    <string name="PermissionNoAudioVideo">Telegram deve accedere al microfono affinché tu possa registrare video.</string>
+    <string name="PermissionNoCamera">Telegram deve avere accesso alla fotocamera affinché tu possa scattare foto e registrare video. Per favore attivalo nelle Impostazioni.</string>
+    <string name="PermissionNoLocation">Telegram deve accedere alla tua posizione affinché tu possa condividerla con i tuoi amici.</string>
     <string name="PermissionNoLocationPosition">Telegram deve accedere alla tua posizione.</string>
     <string name="PermissionDrawAboveOtherApps">Telegram deve accedere allo spostamento su altre app per riprodurre i video in modalità PiP.</string>
     <string name="PermissionOpenSettings">IMPOSTAZIONI</string>
@@ -2918,12 +2919,12 @@
     <string name="MessagesOverview">Messaggi</string>
     <string name="ViewingMembers">Membri che visualizzano</string>
     <string name="PostingMembers">Membri che pubblicano</string>
-    <string name="Characters_zero">%1$d simboli</string>
-    <string name="Characters_one">%1$d simbolo</string>
-    <string name="Characters_two">%1$d simboli</string>
-    <string name="Characters_few">%1$d simboli</string>
-    <string name="Characters_many">%1$d simboli</string>
-    <string name="Characters_other">%1$d simboli</string>
+    <string name="Characters_zero">%1$d caratteri</string>
+    <string name="Characters_one">%1$d carattere</string>
+    <string name="Characters_two">%1$d caratteri</string>
+    <string name="Characters_few">%1$d caratteri</string>
+    <string name="Characters_many">%1$d caratteri</string>
+    <string name="Characters_other">%1$d caratteri</string>
     <string name="Deletions_zero">%1$d eliminazioni</string>
     <string name="Deletions_one">%1$d eliminazione</string>
     <string name="Deletions_two">%1$d eliminazioni</string>
@@ -2950,7 +2951,7 @@
     <string name="Invitations_other">%1$d inviti</string>
     <string name="TopAdmins">Amministratori migliori</string>
     <string name="TopMembers">Membri migliori</string>
-    <string name="TopInviters">Top inviters</string>
+    <string name="TopInviters">Classifica inviti</string>
     <string name="CharactersPerMessage">%s per messaggio</string>
     <string name="TopDaysOfWeekChartTitle">Giorni migliori della settimana</string>
     <string name="StatisticSearchUserHistory">Visualizza messaggi</string>
@@ -2983,6 +2984,7 @@
     <string name="VoipRinging">Squillo</string>
     <string name="VoipBusy">Linea occupata</string>
     <string name="VoipInCallBranding">Chiamata Telegram</string>
+    <string name="VoipInVideoCallBranding">Videochiamata Telegram</string>
     <string name="VoipOutgoingCall">Chiamata Telegram in corso</string>
     <string name="VoipEndCall">Termina chiamata</string>
     <string name="VoipOngoingAlertTitle">Altra chiamata in corso</string>
@@ -3009,24 +3011,32 @@
     <string name="VoipOfflineOpenSettings">Impostazioni</string>
     <string name="CallMessageOutgoing">Chiamata in uscita</string>
     <string name="CallMessageIncoming">Chiamata in entrata</string>
+    <string name="CallMessageVideoOutgoing">Videochiamata in uscita</string>
+    <string name="CallMessageVideoIncoming">Videochiamata in entrata</string>
     <string name="CallMessageIncomingMissed">Chiamata persa</string>
     <string name="CallMessageOutgoingMissed">Chiamata annullata</string>
     <string name="CallMessageIncomingDeclined">Chiamata rifiutata</string>
+    <string name="CallMessageVideoIncomingMissed">Videochiamata persa</string>
+    <string name="CallMessageVideoOutgoingMissed">Videochiamata annullata</string>
+    <string name="CallMessageVideoIncomingDeclined">Videochiamata rifiutata</string>
     <string name="CallMessageWithDuration">%1$s (%2$s)</string>
     <string name="NoCallLog">Non hai ancora effettuato alcuna chiamata.</string>
     <string name="VoipPeerIncompatible">L\'app di **%1$s** sta usando un protocollo non compatibile. Deve aggiornare la sua app prima che tu possa chiamarlo.</string>
     <string name="VoipPeerOutdated">L\'app di **%1$s** non supporta le chiamate. Deve aggiornare la sua app prima che tu possa chiamarlo.</string>
     <string name="VoipRateCallAlert">Per favore valuta la qualità della tua chiamata Telegram</string>
-    <string name="VoipNeedMicPermission">Telegram deve accedere al microfono per poter effettuare chiamate.</string>
+    <string name="VoipNeedMicPermission">Telegram deve accedere al microfono affinché tu possa effettuare chiamate.</string>
+    <string name="VoipNeedMicCameraPermission">Telegram deve accedere al tuo microfono e alla tua videocamera affinché tu possa effettuare videochiamate.</string>
     <string name="VoipFeedbackCommentHint">Aggiungi un commento facoltativo</string>
     <string name="CallBack">Richiama</string>
     <string name="CallAgain">Richiama</string>
     <string name="DefaultRingtone">Default</string>
     <string name="ConfirmDeleteCallLog">Vuoi eliminare questa voce dal registro delle chiamate?</string>
     <string name="CallViaTelegram">Chiamata Telegram</string>
+    <string name="VideoCallViaTelegram">Videochiamata Telegram</string>
     <string name="VoipAudioRoutingEarpiece">Auricolare</string>
-    <string name="VoipAudioRoutingSpeaker">Altoparlante</string>
+    <string name="VoipAudioRoutingSpeaker">Vivavoce</string>
     <string name="VoipAudioRoutingBluetooth">Bluetooth</string>
+    <string name="VoipOutputDevices">Dispositivi di output</string>
     <string name="ReturnToCall">RITORNA ALLA CHIAMATA</string>
     <string name="CallNotAvailable">Spiacenti, non puoi chiamare **%1$s** a causa delle sue impostazioni di privacy.</string>
     <string name="CallEmojiKeyTooltip">Se le emoji sono uguali sullo schermo di %1$s, la chiamata è sicura al 100%%.</string>
@@ -3045,6 +3055,7 @@
     <string name="QuickReplyCustom">Messaggio personalizzato...</string>
     <string name="AllowCustomQuickReply">Consenti personalizzazione</string>
     <string name="VoipInCallBrandingWithName">Chiamata Telegram a %s</string>
+    <string name="VoipInVideoCallBrandingWithName">Videochiamata Telegram a %s</string>
     <string name="VoipErrorUnknown">Impossibile effettuare una chiamata Telegram al momento.</string>
     <string name="RateCallEcho">Sentivo la mia stessa voce</string>
     <string name="RateCallNoise">Sentivo dei rumori di fondo</string>
@@ -3053,6 +3064,24 @@
     <string name="RateCallSilentLocal">Non riuscivo a sentire gli altri</string>
     <string name="RateCallSilentRemote">Gli altri non riuscivano a sentirmi</string>
     <string name="RateCallDropped">Chiamata terminata inaspettatamente</string>
+    <string name="TapToTurnCamera">Tocca qui per attivare la tua videocamera</string>
+    <string name="VoipUnmute">Suona</string>
+    <string name="VoipMute">Muto</string>
+    <string name="VoipStartVideo">Avvia video</string>
+    <string name="VoipStopVideo">Ferma video</string>
+    <string name="VoipSpeaker">Vivavoce</string>
+    <string name="VoipFlip">Inverti</string>
+    <string name="VoipSwitchToVideoCall">Passa a videochiamata?</string>
+    <string name="VoipSwitch">PASSA</string>
+    <string name="VoipUserMicrophoneIsOff">Il microfono di %s è spento</string>
+    <string name="VoipUserCameraIsOff">La videocamera di %s è spenta</string>
+    <string name="AcceptCall">Accetta</string>
+    <string name="DeclineCall">Rifiuta</string>
+    <string name="RetryCall">Riprova</string>
+    <!--contacts shortcuts-->
+    <string name="ContactShortcutMessage">Invia messaggio a %1$s</string>
+    <string name="ContactShortcutVoiceCall">Chiama %1$s</string>
+    <string name="ContactShortcutVideoCall">Videochiama %1$s</string>
     <!--plural-->
     <string name="DeleteBackground_zero">Elimina %1$d sfondi</string>
     <string name="DeleteBackground_one">Elimina sfondo</string>
@@ -3613,6 +3642,12 @@
     <string name="AccDescrShareInChats_other">Condividi in %1$d chat</string>
     <string name="AccDescrQuizCorrectAnswer">Risposta corretta</string>
     <string name="AccDescrPipMode">Modalità Picture-in-Picture</string>
+    <string name="AccDescrVoipMicOn">Il microfono è acceso</string>
+    <string name="AccDescrVoipMicOff">Il microfono è spento</string>
+    <string name="AccDescrVoipCamSwitchedToFront">Passato a videocamera frontale</string>
+    <string name="AccDescrVoipCamSwitchedToBack">Passato a videocamera posteriore</string>
+    <string name="AccDescrVoipCamOn">La videocamera è accesa</string>
+    <string name="AccDescrVoipCamOff">La videocamera è spenta</string>
     <!--date formatters-->
     <string name="formatterStats12H">dd MMM yyyy, h:mm a</string>
     <string name="formatterStats24H">dd MMM yyyy, HH:mm</string>

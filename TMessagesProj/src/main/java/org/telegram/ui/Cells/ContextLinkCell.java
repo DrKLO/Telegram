@@ -464,7 +464,7 @@ public class ContextLinkCell extends FrameLayout implements DownloadController.F
                 message.attachPath = new File(FileLoader.getDirectory(FileLoader.MEDIA_DIR_CACHE), Utilities.MD5(inlineResult.content.url) + "." + ImageLoader.getHttpUrlExtension(inlineResult.content.url, documentAttachType == DOCUMENT_ATTACH_TYPE_MUSIC ? "mp3" : "ogg")).getAbsolutePath();
             }
 
-            currentMessageObject = new MessageObject(currentAccount, message, false);
+            currentMessageObject = new MessageObject(currentAccount, message, false, true);
         }
     }
 

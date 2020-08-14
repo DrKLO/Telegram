@@ -1,0 +1,15 @@
+include_rules = [
+  "+third_party/libyuv",
+  "+call/callfactoryinterface.h",
+  "+common_video",
+  "+logging/rtc_event_log/rtc_event_log_factory.h",
+  "+media/base",
+  "+media/engine",
+  "+modules/audio_device/include/audio_device.h",
+  "+modules/audio_processing/include/audio_processing.h",
+  "+modules/include",
+  "+modules/utility/include/jvm_android.h",
+  "+modules/video_coding",
+  "+pc",
+  "+system_wrappers/include",
+]

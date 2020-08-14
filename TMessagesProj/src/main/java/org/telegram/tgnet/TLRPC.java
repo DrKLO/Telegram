@@ -61,7 +61,7 @@ public class TLRPC {
 	public static final int MESSAGE_FLAG_EDITED             = 0x00008000;
 	public static final int MESSAGE_FLAG_MEGAGROUP          = 0x80000000;
 
-    public static final int LAYER = 116;
+    public static final int LAYER = 117;
 
     public static class TL_stats_megagroupStats extends TLObject {
         public static int constructor = 0xef7ff916;
@@ -14293,7 +14293,7 @@ public class TLRPC {
         public byte[] g_a_or_b;
         public long key_fingerprint;
         public PhoneCallProtocol protocol;
-        public ArrayList<TL_phoneConnection> connections = new ArrayList<>();
+        public ArrayList<PhoneConnection> connections = new ArrayList<>();
         public int start_date;
         public boolean need_rating;
         public boolean need_debug;
@@ -14342,19 +14342,19 @@ public class TLRPC {
 
         public void readParams(AbstractSerializedData stream, boolean exception) {
             flags = stream.readInt32(exception);
-            video = (flags & 32) != 0;
+            video = (flags & 64) != 0;
             id = stream.readInt64(exception);
             access_hash = stream.readInt64(exception);
             date = stream.readInt32(exception);
             admin_id = stream.readInt32(exception);
             participant_id = stream.readInt32(exception);
             g_a_hash = stream.readByteArray(exception);
-            protocol = TL_phoneCallProtocol.TLdeserialize(stream, stream.readInt32(exception), exception);
+            protocol = PhoneCallProtocol.TLdeserialize(stream, stream.readInt32(exception), exception);
         }
 
         public void serializeToStream(AbstractSerializedData stream) {
             stream.writeInt32(constructor);
-            flags = video ? (flags | 32) : (flags &~ 32);
+            flags = video ? (flags | 64) : (flags &~ 64);
             stream.writeInt32(flags);
             stream.writeInt64(id);
             stream.writeInt64(access_hash);
@@ -14373,6 +14373,7 @@ public class TLRPC {
         public void readParams(AbstractSerializedData stream, boolean exception) {
             flags = stream.readInt32(exception);
             p2p_allowed = (flags & 32) != 0;
+            video = (flags & 64) != 0;
             id = stream.readInt64(exception);
             access_hash = stream.readInt64(exception);
             date = stream.readInt32(exception);
@@ -14380,7 +14381,7 @@ public class TLRPC {
             participant_id = stream.readInt32(exception);
             g_a_or_b = stream.readByteArray(exception);
             key_fingerprint = stream.readInt64(exception);
-            protocol = TL_phoneCallProtocol.TLdeserialize(stream, stream.readInt32(exception), exception);
+            protocol = PhoneCallProtocol.TLdeserialize(stream, stream.readInt32(exception), exception);
             int magic = stream.readInt32(exception);
             if (magic != 0x1cb5c415) {
                 if (exception) {
@@ -14390,7 +14391,7 @@ public class TLRPC {
             }
             int count = stream.readInt32(exception);
             for (int a = 0; a < count; a++) {
-                TL_phoneConnection object = TL_phoneConnection.TLdeserialize(stream, stream.readInt32(exception), exception);
+                PhoneConnection object = PhoneConnection.TLdeserialize(stream, stream.readInt32(exception), exception);
                 if (object == null) {
                     return;
                 }
@@ -14402,6 +14403,7 @@ public class TLRPC {
         public void serializeToStream(AbstractSerializedData stream) {
             stream.writeInt32(constructor);
             flags = p2p_allowed ? (flags | 32) : (flags &~ 32);
+            flags = video ? (flags | 64) : (flags &~ 64);
             stream.writeInt32(flags);
             stream.writeInt64(id);
             stream.writeInt64(access_hash);
@@ -14441,19 +14443,19 @@ public class TLRPC {
 
         public void readParams(AbstractSerializedData stream, boolean exception) {
             flags = stream.readInt32(exception);
-            video = (flags & 32) != 0;
+            video = (flags & 64) != 0;
             id = stream.readInt64(exception);
             access_hash = stream.readInt64(exception);
             date = stream.readInt32(exception);
             admin_id = stream.readInt32(exception);
             participant_id = stream.readInt32(exception);
             g_b = stream.readByteArray(exception);
-            protocol = TL_phoneCallProtocol.TLdeserialize(stream, stream.readInt32(exception), exception);
+            protocol = PhoneCallProtocol.TLdeserialize(stream, stream.readInt32(exception), exception);
         }
 
         public void serializeToStream(AbstractSerializedData stream) {
             stream.writeInt32(constructor);
-            flags = video ? (flags | 32) : (flags &~ 32);
+            flags = video ? (flags | 64) : (flags &~ 64);
             stream.writeInt32(flags);
             stream.writeInt64(id);
             stream.writeInt64(access_hash);
@@ -14471,7 +14473,7 @@ public class TLRPC {
 
         public void readParams(AbstractSerializedData stream, boolean exception) {
             flags = stream.readInt32(exception);
-            video = (flags & 32) != 0;
+            video = (flags & 64) != 0;
             id = stream.readInt64(exception);
             access_hash = stream.readInt64(exception);
             date = stream.readInt32(exception);
@@ -14485,7 +14487,7 @@ public class TLRPC {
 
         public void serializeToStream(AbstractSerializedData stream) {
             stream.writeInt32(constructor);
-            flags = video ? (flags | 32) : (flags &~ 32);
+            flags = video ? (flags | 64) : (flags &~ 64);
             stream.writeInt32(flags);
             stream.writeInt64(id);
             stream.writeInt64(access_hash);
@@ -14507,7 +14509,7 @@ public class TLRPC {
             flags = stream.readInt32(exception);
             need_rating = (flags & 4) != 0;
             need_debug = (flags & 8) != 0;
-            video = (flags & 32) != 0;
+            video = (flags & 64) != 0;
             id = stream.readInt64(exception);
             if ((flags & 1) != 0) {
                 reason = PhoneCallDiscardReason.TLdeserialize(stream, stream.readInt32(exception), exception);
@@ -14521,7 +14523,7 @@ public class TLRPC {
             stream.writeInt32(constructor);
             flags = need_rating ? (flags | 4) : (flags &~ 4);
             flags = need_debug ? (flags | 8) : (flags &~ 8);
-            flags = video ? (flags | 32) : (flags &~ 32);
+            flags = video ? (flags | 64) : (flags &~ 64);
             stream.writeInt32(flags);
             stream.writeInt64(id);
             if ((flags & 1) != 0) {
@@ -14556,6 +14558,7 @@ public class TLRPC {
 		public boolean bot_inline_geo;
         public boolean support;
         public boolean scam;
+        public boolean apply_min_photo;
 		public int bot_info_version;
 		public String bot_inline_placeholder;
 		public String lang_code;
@@ -14698,6 +14701,7 @@ public class TLRPC {
             bot_inline_geo = (flags & 2097152) != 0;
             support = (flags & 8388608) != 0;
             scam = (flags & 16777216) != 0;
+            apply_min_photo = (flags & 33554432) != 0;
             id = stream.readInt32(exception);
             if ((flags & 1) != 0) {
                 access_hash = stream.readInt64(exception);
@@ -26029,45 +26033,90 @@ public class TLRPC {
         }
     }
 
-	public static class TL_phoneConnection extends TLObject {
-		public static int constructor = 0x9d4c17c0;
+    public static abstract class PhoneConnection extends TLObject {
 
-		public long id;
-		public String ip;
-		public String ipv6;
-		public int port;
-		public byte[] peer_tag;
+        public int flags;
+        public boolean turn;
+        public boolean stun;
+        public long id;
+        public String ip;
+        public String ipv6;
+        public int port;
+        public String username;
+        public String password;
+        public byte[] peer_tag;
 
-		public static TL_phoneConnection TLdeserialize(AbstractSerializedData stream, int constructor, boolean exception) {
-			if (TL_phoneConnection.constructor != constructor) {
-				if (exception) {
-					throw new RuntimeException(String.format("can't parse magic %x in TL_phoneConnection", constructor));
-				} else {
-					return null;
-				}
-			}
-			TL_phoneConnection result = new TL_phoneConnection();
-			result.readParams(stream, exception);
-			return result;
-		}
+        public static PhoneConnection TLdeserialize(AbstractSerializedData stream, int constructor, boolean exception) {
+            PhoneConnection result = null;
+            switch (constructor) {
+                case 0x9d4c17c0:
+                    result = new TL_phoneConnection();
+                    break;
+                case 0x635fe375:
+                    result = new TL_phoneConnectionWebrtc();
+                    break;
+            }
+            if (result == null && exception) {
+                throw new RuntimeException(String.format("can't parse magic %x in PhoneConnection", constructor));
+            }
+            if (result != null) {
+                result.readParams(stream, exception);
+            }
+            return result;
+        }
+    }
 
-		public void readParams(AbstractSerializedData stream, boolean exception) {
-			id = stream.readInt64(exception);
-			ip = stream.readString(exception);
-			ipv6 = stream.readString(exception);
-			port = stream.readInt32(exception);
-			peer_tag = stream.readByteArray(exception);
-		}
+    public static class TL_phoneConnection extends PhoneConnection {
+        public static int constructor = 0x9d4c17c0;
 
-		public void serializeToStream(AbstractSerializedData stream) {
-			stream.writeInt32(constructor);
-			stream.writeInt64(id);
-			stream.writeString(ip);
-			stream.writeString(ipv6);
-			stream.writeInt32(port);
-			stream.writeByteArray(peer_tag);
-		}
-	}
+
+        public void readParams(AbstractSerializedData stream, boolean exception) {
+            id = stream.readInt64(exception);
+            ip = stream.readString(exception);
+            ipv6 = stream.readString(exception);
+            port = stream.readInt32(exception);
+            peer_tag = stream.readByteArray(exception);
+        }
+
+        public void serializeToStream(AbstractSerializedData stream) {
+            stream.writeInt32(constructor);
+            stream.writeInt64(id);
+            stream.writeString(ip);
+            stream.writeString(ipv6);
+            stream.writeInt32(port);
+            stream.writeByteArray(peer_tag);
+        }
+    }
+
+    public static class TL_phoneConnectionWebrtc extends PhoneConnection {
+        public static int constructor = 0x635fe375;
+
+
+        public void readParams(AbstractSerializedData stream, boolean exception) {
+            flags = stream.readInt32(exception);
+            turn = (flags & 1) != 0;
+            stun = (flags & 2) != 0;
+            id = stream.readInt64(exception);
+            ip = stream.readString(exception);
+            ipv6 = stream.readString(exception);
+            port = stream.readInt32(exception);
+            username = stream.readString(exception);
+            password = stream.readString(exception);
+        }
+
+        public void serializeToStream(AbstractSerializedData stream) {
+            stream.writeInt32(constructor);
+            flags = turn ? (flags | 1) : (flags &~ 1);
+            flags = stun ? (flags | 2) : (flags &~ 2);
+            stream.writeInt32(flags);
+            stream.writeInt64(id);
+            stream.writeString(ip);
+            stream.writeString(ipv6);
+            stream.writeInt32(port);
+            stream.writeString(username);
+            stream.writeString(password);
+        }
+    }
 
 	public static class TL_inputBotInlineMessageID extends TLObject {
 		public static int constructor = 0x890c3d89;
@@ -32622,6 +32671,7 @@ public class TLRPC {
         public boolean phone_calls_private;
         public boolean can_pin_message;
         public boolean has_scheduled;
+        public boolean video_calls_available;
         public User user;
         public String about;
         public TL_contacts_link_layer101 link;
@@ -32781,6 +32831,7 @@ public class TLRPC {
             phone_calls_private = (flags & 32) != 0;
             can_pin_message = (flags & 128) != 0;
             has_scheduled = (flags & 4096) != 0;
+            video_calls_available = (flags & 8192) != 0;
             user = User.TLdeserialize(stream, stream.readInt32(exception), exception);
             if ((flags & 2) != 0) {
                 about = stream.readString(exception);
@@ -40967,6 +41018,23 @@ public class TLRPC {
 			peer.serializeToStream(stream);
 		}
 	}
+
+    public static class TL_phone_sendSignalingData extends TLObject {
+        public static int constructor = 0xff7a9383;
+
+        public TL_inputPhoneCall peer;
+        public byte[] data;
+
+        public TLObject deserializeResponse(AbstractSerializedData stream, int constructor, boolean exception) {
+            return Bool.TLdeserialize(stream, constructor, exception);
+        }
+
+        public void serializeToStream(AbstractSerializedData stream) {
+            stream.writeInt32(constructor);
+            peer.serializeToStream(stream);
+            stream.writeByteArray(data);
+        }
+    }
 
 	public static class TL_payments_getPaymentForm extends TLObject {
 		public static int constructor = 0x99f09745;

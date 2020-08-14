@@ -6848,7 +6848,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             if (recycle && paintBitmap != null) {
                 paintBitmap.recycle();
             }
-            if (recycleCropped) {
+            if (recycleCropped && croppedBitmap != null) {
                 croppedBitmap.recycle();
             }
             if (sendPhotoType == SELECT_TYPE_AVATAR && videoPlayer != null && isCurrentVideo && getAnimatedMediaEntitiesCount(false) == 1 && videoTimelineView.getLeftProgress() <= 0.0f && videoTimelineView.getRightProgress() >= 1.0f) {
@@ -10267,10 +10267,13 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
     }
 
     private void initCropView() {
-        if (sendPhotoType != SELECT_TYPE_AVATAR) {
+        if (photoCropView == null) {
             return;
         }
         photoCropView.setBitmap(null, 0, false, false, null, null, null, null);
+        if (sendPhotoType != SELECT_TYPE_AVATAR) {
+            return;
+        }
         photoCropView.onAppear();
         photoCropView.setVisibility(View.VISIBLE);
         photoCropView.setAlpha(1.0f);
@@ -12829,7 +12832,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                     message.media = new TLRPC.TL_messageMediaEmpty();
                     message.action = new TLRPC.TL_messageActionEmpty();
                     message.dialog_id = currentDialogId;
-                    videoPreviewMessageObject = new MessageObject(UserConfig.selectedAccount, message, false);
+                    videoPreviewMessageObject = new MessageObject(UserConfig.selectedAccount, message, false, false);
                     videoPreviewMessageObject.messageOwner.attachPath = new File(FileLoader.getDirectory(FileLoader.MEDIA_DIR_CACHE), "video_preview.mp4").getAbsolutePath();
                     videoPreviewMessageObject.videoEditedInfo = new VideoEditedInfo();
                     videoPreviewMessageObject.videoEditedInfo.rotationValue = rotationValue;

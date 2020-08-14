@@ -1,0 +1,21 @@
+This directory holds a Java implementation of the webrtc::PeerConnection API, as
+well as the JNI glue C++ code that lets the Java implementation reuse the C++
+implementation of the same API.
+
+To build the Java API and related tests, make sure you have a WebRTC checkout
+with Android specific parts. This can be used for linux development as well by
+configuring gn appropriately, as it is a superset of the webrtc checkout:
+fetch --nohooks webrtc_android
+gclient sync
+
+You also must generate GN projects with:
+--args='target_os="android" target_cpu="arm"'
+
+More information on getting the code, compiling and running the AppRTCMobile
+app can be found at:
+https://webrtc.org/native-code/android/
+
+To use the Java API, start by looking at the public interface of
+org.webrtc.PeerConnection{,Factory} and the org.webrtc.PeerConnectionTest.
+
+To understand the implementation of the API, see the native code in src/jni/pc/.

@@ -1,0 +1,68 @@
+diff --git a/base/third_party/cityhash_v103/src/city_v103.cc b/base/third_party/cityhash_v103/src/city_v103.cc
+index 8248068209cf..1f99751c1a60 100644
+--- a/base/third_party/cityhash_v103/src/city_v103.cc
++++ b/base/third_party/cityhash_v103/src/city_v103.cc
+@@ -32,6 +32,13 @@
+ #include <algorithm>
+ #include <string.h>  // for memcpy and memset
+ 
++#include "base/compiler_specific.h"
++#include "build/build_config.h"
++
++namespace base {
++namespace internal {
++namespace cityhash_v103 {
++
+ using namespace std;
+ 
+ static uint64 UNALIGNED_LOAD64(const char *p) {
+@@ -46,7 +53,7 @@ static uint32 UNALIGNED_LOAD32(const char *p) {
+   return result;
+ }
+ 
+-#if !defined(WORDS_BIGENDIAN)
++#if defined(ARCH_CPU_LITTLE_ENDIAN)
+ 
+ #define uint32_in_expected_order(x) (x)
+ #define uint64_in_expected_order(x) (x)
+@@ -71,7 +78,7 @@ static uint32 UNALIGNED_LOAD32(const char *p) {
+ #define uint32_in_expected_order(x) (bswap_32(x))
+ #define uint64_in_expected_order(x) (bswap_64(x))
+ 
+-#endif  // WORDS_BIGENDIAN
++#endif  // defined(ARCH_CPU_LITTLE_ENDIAN)
+ 
+ #if !defined(LIKELY)
+ #if HAVE_BUILTIN_EXPECT
+@@ -350,3 +357,7 @@ uint128 CityHash128(const char *s, size_t len) {
+     return CityHash128WithSeed(s, len, uint128(k0, k1));
+   }
+ }
++
++}  // namespace cityhash_v103
++}  // namespace internal
++}  // namespace base
+diff --git a/base/third_party/cityhash_v103/src/city_v103.h b/base/third_party/cityhash_v103/src/city_v103.h
+index 7a827fbea4ff..3828a78feb54 100644
+--- a/base/third_party/cityhash_v103/src/city_v103.h
++++ b/base/third_party/cityhash_v103/src/city_v103.h
+@@ -47,6 +47,10 @@
+ #include <stdint.h>
+ #include <utility>
+ 
++namespace base {
++namespace internal {
++namespace cityhash_v103 {
++
+ typedef uint8_t uint8;
+ typedef uint32_t uint32;
+ typedef uint64_t uint64;
+@@ -87,4 +91,8 @@ inline uint64 Hash128to64(const uint128& x) {
+   return b;
+ }
+ 
++}  // namespace cityhash_v103
++}  // namespace internal
++}  // namespace base
++
+ #endif  // BASE_THIRD_PARTY_CITYHASH_V103_SRC_CITY_V103_H_

@@ -13,15 +13,11 @@ import android.animation.AnimatorListenerAdapter;
 import android.animation.AnimatorSet;
 import android.content.Context;
 import android.content.SharedPreferences;
-import android.graphics.Canvas;
-import android.graphics.Paint;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
-import android.text.TextPaint;
 import android.util.TypedValue;
 import android.view.Gravity;
-import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
@@ -606,13 +602,12 @@ public class DataAutoDownloadActivity extends BaseFragment {
         }
         if (listView != null) {
             RecyclerView.ViewHolder holder = listView.findViewHolderForAdapterPosition(usageProgressRow);
-            if (holder.itemView instanceof SlideChooseView) {
+            if (holder != null && holder.itemView instanceof SlideChooseView) {
                 updatePresetChoseView((SlideChooseView) holder.itemView);
             } else {
                 listAdapter.notifyItemChanged(usageProgressRow);
             }
         }
-
     }
 
     private void updateRows() {

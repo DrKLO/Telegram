@@ -551,7 +551,7 @@ public class ChatAttachAlertAudioLayout extends ChatAttachAlert.AttachAlertLayou
                     fileName.file_name = file.getName();
                     message.media.document.attributes.add(fileName);
 
-                    audioEntry.messageObject = new MessageObject(parentAlert.currentAccount, message, false);
+                    audioEntry.messageObject = new MessageObject(parentAlert.currentAccount, message, false, true);
 
                     newAudioEntries.add(audioEntry);
                     id--;

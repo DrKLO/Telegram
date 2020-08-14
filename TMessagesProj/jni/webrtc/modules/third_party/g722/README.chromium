@@ -1,0 +1,11 @@
+Name: The ITU G.722 codec, encode and decode part.
+Short Name: g722
+URL:
+Version: 0
+Date: 2018-06-25
+License: Custom license
+License File: LICENSE
+Security Critical: yes
+
+Description:
+The ITU G.722 codec, encode and decode part.

@@ -119,6 +119,8 @@ public class MessageObject {
     public boolean isRestrictedMessage;
     public long loadedFileSize;
 
+    public boolean loadingCancelled;
+
     public int stableId;
 
     public boolean wasUnread;
@@ -814,35 +816,35 @@ public class MessageObject {
         localEdit = edit;
     }
 
-    public MessageObject(int accountNum, TLRPC.Message message, AbstractMap<Integer, TLRPC.User> users, boolean generateLayout) {
-        this(accountNum, message, users, null, generateLayout);
+    public MessageObject(int accountNum, TLRPC.Message message, AbstractMap<Integer, TLRPC.User> users, boolean generateLayout, boolean checkMediaExists) {
+        this(accountNum, message, users, null, generateLayout, checkMediaExists);
     }
 
-    public MessageObject(int accountNum, TLRPC.Message message, SparseArray<TLRPC.User> users, boolean generateLayout) {
-        this(accountNum, message, users, null, generateLayout);
+    public MessageObject(int accountNum, TLRPC.Message message, SparseArray<TLRPC.User> users, boolean generateLayout, boolean checkMediaExists) {
+        this(accountNum, message, users, null, generateLayout, checkMediaExists);
     }
 
-    public MessageObject(int accountNum, TLRPC.Message message, boolean generateLayout) {
-        this(accountNum, message, null, null, null, null, null, generateLayout, 0);
+    public MessageObject(int accountNum, TLRPC.Message message, boolean generateLayout, boolean checkMediaExists) {
+        this(accountNum, message, null, null, null, null, null, generateLayout, checkMediaExists, 0);
     }
 
-    public MessageObject(int accountNum, TLRPC.Message message, MessageObject replyToMessage, boolean generateLayout) {
-        this(accountNum, message, replyToMessage, null, null, null, null, generateLayout, 0);
+    public MessageObject(int accountNum, TLRPC.Message message, MessageObject replyToMessage, boolean generateLayout, boolean checkMediaExists) {
+        this(accountNum, message, replyToMessage, null, null, null, null, generateLayout, checkMediaExists, 0);
     }
 
-    public MessageObject(int accountNum, TLRPC.Message message, AbstractMap<Integer, TLRPC.User> users, AbstractMap<Integer, TLRPC.Chat> chats, boolean generateLayout) {
-        this(accountNum, message, users, chats, generateLayout, 0);
+    public MessageObject(int accountNum, TLRPC.Message message, AbstractMap<Integer, TLRPC.User> users, AbstractMap<Integer, TLRPC.Chat> chats, boolean generateLayout, boolean checkMediaExists) {
+        this(accountNum, message, users, chats, generateLayout, checkMediaExists, 0);
     }
 
-    public MessageObject(int accountNum, TLRPC.Message message, SparseArray<TLRPC.User> users, SparseArray<TLRPC.Chat> chats, boolean generateLayout) {
-        this(accountNum, message, null, null, null, users, chats, generateLayout, 0);
+    public MessageObject(int accountNum, TLRPC.Message message, SparseArray<TLRPC.User> users, SparseArray<TLRPC.Chat> chats, boolean generateLayout, boolean checkMediaExists) {
+        this(accountNum, message, null, null, null, users, chats, generateLayout, checkMediaExists, 0);
     }
 
-    public MessageObject(int accountNum, TLRPC.Message message, AbstractMap<Integer, TLRPC.User> users, AbstractMap<Integer, TLRPC.Chat> chats, boolean generateLayout, long eid) {
-        this(accountNum, message, null, users, chats, null, null, generateLayout, eid);
+    public MessageObject(int accountNum, TLRPC.Message message, AbstractMap<Integer, TLRPC.User> users, AbstractMap<Integer, TLRPC.Chat> chats, boolean generateLayout, boolean checkMediaExists, long eid) {
+        this(accountNum, message, null, users, chats, null, null, generateLayout, checkMediaExists, eid);
     }
 
-    public MessageObject(int accountNum, TLRPC.Message message, MessageObject replyToMessage, AbstractMap<Integer, TLRPC.User> users, AbstractMap<Integer, TLRPC.Chat> chats, SparseArray<TLRPC.User> sUsers, SparseArray<TLRPC.Chat> sChats, boolean generateLayout, long eid) {
+    public MessageObject(int accountNum, TLRPC.Message message, MessageObject replyToMessage, AbstractMap<Integer, TLRPC.User> users, AbstractMap<Integer, TLRPC.Chat> chats, SparseArray<TLRPC.User> sUsers, SparseArray<TLRPC.Chat> sChats, boolean generateLayout, boolean checkMediaExists, long eid) {
         Theme.createChatResources(null, true);
 
         currentAccount = accountNum;
@@ -852,7 +854,7 @@ public class MessageObject {
         wasUnread = !messageOwner.out && messageOwner.unread;
 
         if (message.replyMessage != null) {
-            replyMessageObject = new MessageObject(currentAccount, message.replyMessage, null, users, chats, sUsers, sChats, false, eid);
+            replyMessageObject = new MessageObject(currentAccount, message.replyMessage, null, users, chats, sUsers, sChats, false, checkMediaExists, eid);
         }
 
         TLRPC.User fromUser = null;
@@ -930,7 +932,9 @@ public class MessageObject {
         }
         layoutCreated = generateLayout;
         generateThumbs(false);
-        checkMediaExistance();
+        if (checkMediaExists) {
+            checkMediaExistance();
+        }
     }
 
     private void createDateArray(int accountNum, TLRPC.TL_channelAdminLogEvent event, ArrayList<MessageObject> messageObjects, HashMap<String, ArrayList<MessageObject>> messagesByDays) {
@@ -942,7 +946,7 @@ public class MessageObject {
             dateMsg.message = LocaleController.formatDateChat(event.date);
             dateMsg.id = 0;
             dateMsg.date = event.date;
-            MessageObject dateObj = new MessageObject(accountNum, dateMsg, false);
+            MessageObject dateObj = new MessageObject(accountNum, dateMsg, false, false);
             dateObj.type = 10;
             dateObj.contentType = 1;
             dateObj.isDateObject = true;
@@ -1608,7 +1612,7 @@ public class MessageObject {
             if (chat.megagroup) {
                 message.flags |= TLRPC.MESSAGE_FLAG_MEGAGROUP;
             }
-            MessageObject messageObject = new MessageObject(currentAccount, message, null, null, true, eventId);
+            MessageObject messageObject = new MessageObject(currentAccount, message, null, null, true, true, eventId);
             if (messageObject.contentType >= 0) {
                 if (mediaController.isPlayingMessage(messageObject)) {
                     MessageObject player = mediaController.getPlayingMessageObject();
@@ -2034,7 +2038,7 @@ public class MessageObject {
         message.to_id = messageOwner.to_id;
         message.out = messageOwner.out;
         message.from_id = messageOwner.from_id;
-        return new MessageObject(currentAccount, message, false);
+        return new MessageObject(currentAccount, message, false, true);
     }
 
     public ArrayList<MessageObject> getWebPagePhotos(ArrayList<MessageObject> array, ArrayList<TLRPC.PageBlock> blocksToSearch) {
@@ -2416,17 +2420,37 @@ public class MessageObject {
                     boolean isMissed = call.reason instanceof TLRPC.TL_phoneCallDiscardReasonMissed;
                     if (messageOwner.from_id == UserConfig.getInstance(currentAccount).getClientUserId()) {
                         if (isMissed) {
-                            messageText = LocaleController.getString("CallMessageOutgoingMissed", R.string.CallMessageOutgoingMissed);
-                        }else {
-                            messageText = LocaleController.getString("CallMessageOutgoing", R.string.CallMessageOutgoing);
+                            if (call.video) {
+                                messageText = LocaleController.getString("CallMessageVideoOutgoingMissed", R.string.CallMessageVideoOutgoingMissed);
+                            } else {
+                                messageText = LocaleController.getString("CallMessageOutgoingMissed", R.string.CallMessageOutgoingMissed);
+                            }
+                        } else {
+                            if (call.video) {
+                                messageText = LocaleController.getString("CallMessageVideoOutgoing", R.string.CallMessageVideoOutgoing);
+                            } else {
+                                messageText = LocaleController.getString("CallMessageOutgoing", R.string.CallMessageOutgoing);
+                            }
                         }
                     } else {
                         if (isMissed) {
-                            messageText = LocaleController.getString("CallMessageIncomingMissed", R.string.CallMessageIncomingMissed);
+                            if (call.video) {
+                                messageText = LocaleController.getString("CallMessageVideoIncomingMissed", R.string.CallMessageVideoIncomingMissed);
+                            } else {
+                                messageText = LocaleController.getString("CallMessageIncomingMissed", R.string.CallMessageIncomingMissed);
+                            }
                         } else if (call.reason instanceof TLRPC.TL_phoneCallDiscardReasonBusy) {
-                            messageText = LocaleController.getString("CallMessageIncomingDeclined", R.string.CallMessageIncomingDeclined);
+                            if (call.video) {
+                                messageText = LocaleController.getString("CallMessageVideoIncomingDeclined", R.string.CallMessageVideoIncomingDeclined);
+                            } else {
+                                messageText = LocaleController.getString("CallMessageIncomingDeclined", R.string.CallMessageIncomingDeclined);
+                            }
                         } else {
-                            messageText = LocaleController.getString("CallMessageIncoming", R.string.CallMessageIncoming);
+                            if (call.video) {
+                                messageText = LocaleController.getString("CallMessageVideoIncoming", R.string.CallMessageVideoIncoming);
+                            } else {
+                                messageText = LocaleController.getString("CallMessageIncoming", R.string.CallMessageIncoming);
+                            }
                         }
                     }
                     if (call.duration > 0) {
@@ -4738,6 +4762,10 @@ public class MessageObject {
             }
         }
         return null;
+    }
+
+    public boolean isVideoCall() {
+        return messageOwner.action instanceof TLRPC.TL_messageActionPhoneCall && messageOwner.action.video;
     }
 
     public boolean isAnimatedEmoji() {

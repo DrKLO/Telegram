@@ -78,6 +78,8 @@ public class DrawerLayoutContainer extends FrameLayout {
     private boolean drawerOpened;
     private boolean allowDrawContent = true;
 
+    private boolean firstLayout = true;
+
     private AdjustPanLayoutHelper adjustPanLayoutHelper;
 
     public DrawerLayoutContainer(Context context) {
@@ -97,9 +99,10 @@ public class DrawerLayoutContainer extends FrameLayout {
                     drawerLayoutContainer.requestLayout();
                 }
                 int newTopInset = insets.getSystemWindowInsetTop();
-                if ((newTopInset != 0 || AndroidUtilities.isInMultiwindow) && AndroidUtilities.statusBarHeight != newTopInset) {
+                if ((newTopInset != 0 || AndroidUtilities.isInMultiwindow || firstLayout) && AndroidUtilities.statusBarHeight != newTopInset) {
                     AndroidUtilities.statusBarHeight = newTopInset;
                 }
+                firstLayout = false;
                 lastInsets = insets;
                 drawerLayoutContainer.setWillNotDraw(insets.getSystemWindowInsetTop() <= 0 && getBackground() == null);
 

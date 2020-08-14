@@ -1,0 +1,4 @@
+per-file androidhistogram.cc=sakal@webrtc.org
+per-file androidmetrics.cc=sakal@webrtc.org
+per-file androidvideotracksource.*=sakal@webrtc.org
+per-file androidvideotracksource.cc=sakal@webrtc.org

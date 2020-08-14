@@ -152,7 +152,7 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
             message.out = false;
             message.to_id = new TLRPC.TL_peerUser();
             message.to_id.user_id = UserConfig.getInstance(currentAccount).getClientUserId();
-            messageObject = new MessageObject(currentAccount, message, true);
+            messageObject = new MessageObject(currentAccount, message, true, false);
             messageObject.eventId = 1;
             messageObject.resetLayout();
 
@@ -199,13 +199,11 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
                     float scale = 2.0f / AndroidUtilities.density;
                     canvas.scale(scale, scale);
                     backgroundDrawable.setBounds(0, 0, (int) Math.ceil(getMeasuredWidth() / scale), (int) Math.ceil(getMeasuredHeight() / scale));
-                    backgroundDrawable.draw(canvas);
-                    canvas.restore();
                 } else {
                     int viewHeight = getMeasuredHeight();
                     float scaleX = (float) getMeasuredWidth() / (float) backgroundDrawable.getIntrinsicWidth();
                     float scaleY = (float) (viewHeight) / (float) backgroundDrawable.getIntrinsicHeight();
-                    float scale = scaleX < scaleY ? scaleY : scaleX;
+                    float scale = Math.max(scaleX, scaleY);
                     int width = (int) Math.ceil(backgroundDrawable.getIntrinsicWidth() * scale);
                     int height = (int) Math.ceil(backgroundDrawable.getIntrinsicHeight() * scale);
                     int x = (getMeasuredWidth() - width) / 2;
@@ -213,9 +211,9 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
                     canvas.save();
                     canvas.clipRect(0, 0, width, getMeasuredHeight());
                     backgroundDrawable.setBounds(x, y, x + width, y + height);
-                    backgroundDrawable.draw(canvas);
-                    canvas.restore();
                 }
+                backgroundDrawable.draw(canvas);
+                canvas.restore();
             } else {
                 super.onDraw(canvas);
             }

@@ -144,6 +144,7 @@ public class EmbedBottomSheet extends BottomSheet {
             "                              \"events\" : {" +
             "                              \"onReady\" : \"onReady\"," +
             "                              \"onError\" : \"onError\"," +
+            "                              \"onStateChange\" : \"onStateChange\"," +
             "                              }," +
             "                              \"videoId\" : \"%1$s\"," +
             "                              \"height\" : \"100%%\"," +
@@ -180,30 +181,20 @@ public class EmbedBottomSheet extends BottomSheet {
             "            posted = true;" +
             "       }" +
             "    }" +
+            "    function onStateChange(event) {" +
+            "       if (event.data == YT.PlayerState.PLAYING && !posted) {" +
+            "            if (window.YoutubeProxy !== undefined) {" +
+            "                   YoutubeProxy.postEvent(\"loaded\", null); " +
+            "            }" +
+            "            posted = true;" +
+            "       }" +
+            "    }" +
             "    function onReady(event) {" +
             "       player.playVideo();" +
-            "       videoEl = player.getIframe().contentDocument.getElementsByTagName('video')[0];\n" +
-            "       videoEl.addEventListener(\"canplay\", function() { " +
-            "           if (playing) {" +
-            "               videoEl.play(); " +
-            "           }" +
-            "       }, true);" +
-            "       videoEl.addEventListener(\"timeupdate\", function() { " +
-            "           if (!posted && videoEl.currentTime > 0) {" +
-            "               if (window.YoutubeProxy !== undefined) {" +
-            "                   YoutubeProxy.postEvent(\"loaded\", null); " +
-            "               }" +
-            "               posted = true;" +
-            "           }" +
-            "       }, true);" +
-            "       observer = new MutationObserver(function() {\n" +
-            "          if (videoEl.controls) {\n" +
-            "               videoEl.controls = 0;\n" +
-            "          }" +
-            "       });\n" +
             "    }" +
             "    window.onresize = function() {" +
-            "        player.setSize(window.innerWidth, window.innerHeight);" +
+            "       player.setSize(window.innerWidth, window.innerHeight);" +
+            "       player.playVideo();" +
             "    }" +
             "    </script>" +
             "</body>" +
@@ -418,7 +409,7 @@ public class EmbedBottomSheet extends BottomSheet {
                 }
                 videoView.loadVideo(null, null, null, null, false);
                 HashMap<String, String> args = new HashMap<>();
-                args.put("Referer", ApplicationLoader.applicationContext.getPackageName());
+                args.put("Referer", "messenger.telegram.org");
                 try {
                     webView.loadUrl(embedUrl, args);
                 } catch (Exception e) {
@@ -865,7 +856,7 @@ public class EmbedBottomSheet extends BottomSheet {
                     }
                     videoView.loadVideo(null, null, null, null, false);
                     HashMap<String, String> args = new HashMap<>();
-                    args.put("Referer", ApplicationLoader.applicationContext.getPackageName());
+                    args.put("Referer", "messenger.telegram.org");
                     try {
                         String currentYoutubeId = videoView.getYoutubeId();
                         if (currentYoutubeId != null) {
@@ -897,7 +888,7 @@ public class EmbedBottomSheet extends BottomSheet {
                                     FileLog.e(e);
                                 }
                             }
-                            webView.loadDataWithBaseURL("https://www.youtube.com", String.format(Locale.US, youtubeFrame, currentYoutubeId, seekToTime), "text/html", "UTF-8", "http://youtube.com");
+                            webView.loadDataWithBaseURL("https://messenger.telegram.org/", String.format(Locale.US, youtubeFrame, currentYoutubeId, seekToTime), "text/html", "UTF-8", "https://youtube.com");
                         } else {
                             webView.loadUrl(embedUrl, args);
                         }

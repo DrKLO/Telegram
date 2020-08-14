@@ -3918,9 +3918,9 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
 
         if (framerate == 0) {
             framerate = 25;
-        } else if (framerate > 59) {
+        }/* else if (framerate > 59) {
             framerate = 59;
-        }
+        }*/
 
         if (rotationValue == 90 || rotationValue == 270) {
             int temp = resultHeight;

@@ -53,7 +53,6 @@ import org.telegram.ui.ChatActivity;
 import org.telegram.ui.DialogsActivity;
 import org.telegram.ui.LaunchActivity;
 import org.telegram.ui.LocationActivity;
-import org.telegram.ui.VoIPActivity;
 
 import java.util.ArrayList;
 
@@ -77,6 +76,7 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
     private int currentStyle = -1;
     private String lastString;
     private boolean isMusic;
+    private boolean supportsCalls = true;
 
     private boolean isLocation;
 
@@ -250,8 +250,7 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
                     }
                 }
             } else if (currentStyle == 1) {
-                Intent intent = new Intent(getContext(), VoIPActivity.class);
-                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+                Intent intent = new Intent(getContext(), LaunchActivity.class).setAction("voip");
                 getContext().startActivity(intent);
             } else if (currentStyle == 2) {
                 long did = 0;
@@ -279,6 +278,10 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
                 }
             }
         });
+    }
+
+    public void setSupportsCalls(boolean value) {
+        supportsCalls = value;
     }
 
     public void setDelegate(FragmentContextViewDelegate fragmentContextViewDelegate) {
@@ -680,7 +683,7 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
         }
         if (messageObject == null || messageObject.getId() == 0 || messageObject.isVideo()) {
             lastMessageObject = null;
-            boolean callAvailable = VoIPService.getSharedInstance() != null && VoIPService.getSharedInstance().getCallState() != VoIPService.STATE_WAITING_INCOMING;
+            boolean callAvailable = supportsCalls && VoIPService.getSharedInstance() != null && VoIPService.getSharedInstance().getCallState() != VoIPService.STATE_WAITING_INCOMING;
             if (callAvailable) {
                 checkCall(false);
                 return;
@@ -820,7 +823,7 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
                 create = true;
             }
         }
-        boolean callAvailable = VoIPService.getSharedInstance() != null && VoIPService.getSharedInstance().getCallState() != VoIPService.STATE_WAITING_INCOMING;
+        boolean callAvailable = supportsCalls && VoIPService.getSharedInstance() != null && VoIPService.getSharedInstance().getCallState() != VoIPService.STATE_WAITING_INCOMING;
         if (!callAvailable) {
             if (visible) {
                 visible = false;

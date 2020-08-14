@@ -317,7 +317,7 @@ public class VideoTimelinePlayView extends View {
         }
         if (frameNum == 0) {
             frameHeight = AndroidUtilities.dp(40);
-            framesToLoad = (getMeasuredWidth() - AndroidUtilities.dp(16)) / frameHeight;
+            framesToLoad = Math.max(1, (getMeasuredWidth() - AndroidUtilities.dp(16)) / frameHeight);
             frameWidth = (int) Math.ceil((float) (getMeasuredWidth() - AndroidUtilities.dp(16)) / (float) framesToLoad);
             frameTimeOffset = videoLength / framesToLoad;
         }

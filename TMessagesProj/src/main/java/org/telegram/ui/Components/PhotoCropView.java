@@ -372,16 +372,12 @@ public class PhotoCropView extends FrameLayout {
     @Override
     protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
         super.onLayout(changed, left, top, right, bottom);
-        if (cropView != null) {
-            cropView.updateLayout();
-        }
+        cropView.updateLayout();
     }
 
     @Override
     public void invalidate() {
         super.invalidate();
-        if (cropView != null) {
-            cropView.invalidate();
-        }
+        cropView.invalidate();
     }
 }

@@ -1,0 +1,12 @@
+Name: Portaudio library for mac
+Short Name: portaudio
+URL: https://app.assembla.com/spaces/portaudio/git/source/master/src/common
+Version: 0
+Date: 2018-02-01
+License: Custom license
+License File: LICENSE
+Security Critical: yes
+
+Description:
+Part of portaudio library to operate with memory barriers and ring buffer.
+

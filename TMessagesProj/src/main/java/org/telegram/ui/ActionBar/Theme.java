@@ -2133,10 +2133,10 @@ public class Theme {
     public static Drawable chat_botLinkDrawalbe;
     public static Drawable chat_botInlineDrawable;
     public static Drawable chat_systemDrawable;
-    public static Drawable chat_msgInCallDrawable;
-    public static Drawable chat_msgInCallSelectedDrawable;
-    public static Drawable chat_msgOutCallDrawable;
-    public static Drawable chat_msgOutCallSelectedDrawable;
+    public static Drawable[] chat_msgInCallDrawable = new Drawable[2];
+    public static Drawable[] chat_msgInCallSelectedDrawable = new Drawable[2];
+    public static Drawable[] chat_msgOutCallDrawable = new Drawable[2];
+    public static Drawable[] chat_msgOutCallSelectedDrawable = new Drawable[2];
     public static Drawable[] chat_pollCheckDrawable = new Drawable[2];
     public static Drawable[] chat_pollCrossDrawable = new Drawable[2];
     public static Drawable[] chat_pollHintDrawable = new Drawable[2];
@@ -6834,13 +6834,17 @@ public class Theme {
             chat_lockIconDrawable = resources.getDrawable(R.drawable.ic_lock_header);
             chat_msgBroadcastDrawable = resources.getDrawable(R.drawable.broadcast3).mutate();
             chat_msgBroadcastMediaDrawable = resources.getDrawable(R.drawable.broadcast3).mutate();
-            chat_msgInCallDrawable = resources.getDrawable(R.drawable.ic_call).mutate();
-            chat_msgInCallSelectedDrawable = resources.getDrawable(R.drawable.ic_call).mutate();
-            chat_msgOutCallDrawable = resources.getDrawable(R.drawable.ic_call).mutate();
-            chat_msgOutCallSelectedDrawable = resources.getDrawable(R.drawable.ic_call).mutate();
-            chat_msgCallUpGreenDrawable = resources.getDrawable(R.drawable.ic_call_made_green_18dp).mutate();
-            chat_msgCallDownRedDrawable = resources.getDrawable(R.drawable.ic_call_received_green_18dp).mutate();
-            chat_msgCallDownGreenDrawable = resources.getDrawable(R.drawable.ic_call_received_green_18dp).mutate();
+            chat_msgInCallDrawable[0] = resources.getDrawable(R.drawable.chat_calls_voice).mutate();
+            chat_msgInCallSelectedDrawable[0] = resources.getDrawable(R.drawable.chat_calls_voice).mutate();
+            chat_msgOutCallDrawable[0] = resources.getDrawable(R.drawable.chat_calls_voice).mutate();
+            chat_msgOutCallSelectedDrawable[0] = resources.getDrawable(R.drawable.chat_calls_voice).mutate();
+            chat_msgInCallDrawable[1] = resources.getDrawable(R.drawable.chat_calls_video).mutate();
+            chat_msgInCallSelectedDrawable[1] = resources.getDrawable(R.drawable.chat_calls_video).mutate();
+            chat_msgOutCallDrawable[1] = resources.getDrawable(R.drawable.chat_calls_video).mutate();
+            chat_msgOutCallSelectedDrawable[1] = resources.getDrawable(R.drawable.chat_calls_video).mutate();
+            chat_msgCallUpGreenDrawable = resources.getDrawable(R.drawable.chat_calls_outgoing).mutate();
+            chat_msgCallDownRedDrawable = resources.getDrawable(R.drawable.chat_calls_incoming).mutate();
+            chat_msgCallDownGreenDrawable = resources.getDrawable(R.drawable.chat_calls_incoming).mutate();
             for (int a = 0; a < 2; a++) {
                 chat_pollCheckDrawable[a] = resources.getDrawable(R.drawable.poll_right).mutate();
                 chat_pollCrossDrawable[a] = resources.getDrawable(R.drawable.poll_wrong).mutate();
@@ -7153,10 +7157,12 @@ public class Theme {
             setDrawableColorByKey(chat_inlineResultFile, key_chat_inlineResultIcon);
             setDrawableColorByKey(chat_inlineResultAudio, key_chat_inlineResultIcon);
             setDrawableColorByKey(chat_inlineResultLocation, key_chat_inlineResultIcon);
-            setDrawableColorByKey(chat_msgInCallDrawable, key_chat_inInstant);
-            setDrawableColorByKey(chat_msgInCallSelectedDrawable, key_chat_inInstantSelected);
-            setDrawableColorByKey(chat_msgOutCallDrawable, key_chat_outInstant);
-            setDrawableColorByKey(chat_msgOutCallSelectedDrawable, key_chat_outInstantSelected);
+            for (int a = 0; a < 2; a++) {
+                setDrawableColorByKey(chat_msgInCallDrawable[a], key_chat_inInstant);
+                setDrawableColorByKey(chat_msgInCallSelectedDrawable[a], key_chat_inInstantSelected);
+                setDrawableColorByKey(chat_msgOutCallDrawable[a], key_chat_outInstant);
+                setDrawableColorByKey(chat_msgOutCallSelectedDrawable[a], key_chat_outInstantSelected);
+            }
 
             setDrawableColorByKey(chat_msgCallUpGreenDrawable, key_chat_outGreenCall);
             setDrawableColorByKey(chat_msgCallDownRedDrawable, key_chat_inRedCall);

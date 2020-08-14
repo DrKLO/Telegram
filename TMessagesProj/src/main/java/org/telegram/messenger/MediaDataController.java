@@ -2185,7 +2185,7 @@ public class MediaDataController extends BaseController {
                     for (int a = 0; a < N; a++) {
                         TLRPC.Message message = res.messages.get(a);
                         added = true;
-                        MessageObject messageObject = new MessageObject(currentAccount, message, false);
+                        MessageObject messageObject = new MessageObject(currentAccount, message, false, false);
                         searchResultMessages.add(messageObject);
                         searchResultMessagesMap[queryWithDialogFinal == dialogId ? 0 : 1].put(messageObject.getId(), messageObject);
                     }
@@ -2489,7 +2489,7 @@ public class MediaDataController extends BaseController {
                 final ArrayList<MessageObject> objects = new ArrayList<>();
                 for (int a = 0; a < res.messages.size(); a++) {
                     TLRPC.Message message = res.messages.get(a);
-                    objects.add(new MessageObject(currentAccount, message, usersDict, true));
+                    objects.add(new MessageObject(currentAccount, message, usersDict, true, true));
                 }
 
                 AndroidUtilities.runOnUIThread(() -> {
@@ -2775,7 +2775,7 @@ public class MediaDataController extends BaseController {
                             if (MessageObject.isMusicMessage(message)) {
                                 message.id = cursor.intValue(1);
                                 message.dialog_id = uid;
-                                arrayList.add(0, new MessageObject(currentAccount, message, false));
+                                arrayList.add(0, new MessageObject(currentAccount, message, false, true));
                             }
                         }
                     }
@@ -3749,12 +3749,12 @@ public class MediaDataController extends BaseController {
             chatsDict.put(chat.id, chat);
         }
         if (returnValue) {
-            return new MessageObject(currentAccount, result, usersDict, chatsDict, false);
+            return new MessageObject(currentAccount, result, usersDict, chatsDict, false, false);
         } else {
             AndroidUtilities.runOnUIThread(() -> {
                 getMessagesController().putUsers(users, isCache);
                 getMessagesController().putChats(chats, isCache);
-                getNotificationCenter().postNotificationName(NotificationCenter.pinnedMessageDidLoad, new MessageObject(currentAccount, result, usersDict, chatsDict, false));
+                getNotificationCenter().postNotificationName(NotificationCenter.pinnedMessageDidLoad, new MessageObject(currentAccount, result, usersDict, chatsDict, false, false));
             });
         }
         return null;
@@ -3813,7 +3813,7 @@ public class MediaDataController extends BaseController {
                             ArrayList<MessageObject> arrayList = replyMessageRandomOwners.get(value);
                             replyMessageRandomOwners.remove(value);
                             if (arrayList != null) {
-                                MessageObject messageObject = new MessageObject(currentAccount, message, false);
+                                MessageObject messageObject = new MessageObject(currentAccount, message, false, false);
                                 for (int b = 0; b < arrayList.size(); b++) {
                                     MessageObject object = arrayList.get(b);
                                     object.replyMessageObject = messageObject;
@@ -3995,7 +3995,7 @@ public class MediaDataController extends BaseController {
         });
     }
 
-    private void broadcastReplyMessages(final ArrayList<TLRPC.Message> result, final SparseArray<ArrayList<MessageObject>> replyMessageOwners, final ArrayList<TLRPC.User> users, final ArrayList<TLRPC.Chat> chats, final long dialog_id, final boolean isCache) {
+    private void broadcastReplyMessages(ArrayList<TLRPC.Message> result, SparseArray<ArrayList<MessageObject>> replyMessageOwners, ArrayList<TLRPC.User> users, ArrayList<TLRPC.Chat> chats, long dialog_id, boolean isCache) {
         final SparseArray<TLRPC.User> usersDict = new SparseArray<>();
         for (int a = 0; a < users.size(); a++) {
             TLRPC.User user = users.get(a);
@@ -4006,15 +4006,18 @@ public class MediaDataController extends BaseController {
             TLRPC.Chat chat = chats.get(a);
             chatsDict.put(chat.id, chat);
         }
+        final ArrayList<MessageObject> messageObjects = new ArrayList<>();
+        for (int a = 0, N = result.size(); a < N; a++) {
+            messageObjects.add(new MessageObject(currentAccount, result.get(a), usersDict, chatsDict, false, false));
+        }
         AndroidUtilities.runOnUIThread(() -> {
             getMessagesController().putUsers(users, isCache);
             getMessagesController().putChats(chats, isCache);
             boolean changed = false;
-            for (int a = 0; a < result.size(); a++) {
-                TLRPC.Message message = result.get(a);
-                ArrayList<MessageObject> arrayList = replyMessageOwners.get(message.id);
+            for (int a = 0, N = messageObjects.size(); a < N; a++) {
+                MessageObject messageObject = messageObjects.get(a);
+                ArrayList<MessageObject> arrayList = replyMessageOwners.get(messageObject.getId());
                 if (arrayList != null) {
-                    MessageObject messageObject = new MessageObject(currentAccount, message, usersDict, chatsDict, false);
                     for (int b = 0; b < arrayList.size(); b++) {
                         MessageObject m = arrayList.get(b);
                         m.replyMessageObject = messageObject;

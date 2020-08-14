@@ -26,7 +26,7 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
-import org.telegram.messenger.voip.TgVoip;
+import org.telegram.messenger.voip.Instance;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.AlertDialog;
@@ -278,16 +278,16 @@ public class DataSettingsActivity extends BaseFragment {
                 final SharedPreferences preferences = MessagesController.getGlobalMainSettings();
                 int selected = 0;
                 switch (preferences.getInt("VoipDataSaving", VoIPHelper.getDataSavingDefault())) {
-                    case TgVoip.DATA_SAVING_NEVER:
+                    case Instance.DATA_SAVING_NEVER:
                         selected = 0;
                         break;
-                    case TgVoip.DATA_SAVING_ROAMING:
+                    case Instance.DATA_SAVING_ROAMING:
                         selected = 1;
                         break;
-                    case TgVoip.DATA_SAVING_MOBILE:
+                    case Instance.DATA_SAVING_MOBILE:
                         selected = 2;
                         break;
-                    case TgVoip.DATA_SAVING_ALWAYS:
+                    case Instance.DATA_SAVING_ALWAYS:
                         selected = 3;
                         break;
                 }
@@ -300,16 +300,16 @@ public class DataSettingsActivity extends BaseFragment {
                             int val = -1;
                             switch (which) {
                                 case 0:
-                                    val = TgVoip.DATA_SAVING_NEVER;
+                                    val = Instance.DATA_SAVING_NEVER;
                                     break;
                                 case 1:
-                                    val = TgVoip.DATA_SAVING_ROAMING;
+                                    val = Instance.DATA_SAVING_ROAMING;
                                     break;
                                 case 2:
-                                    val = TgVoip.DATA_SAVING_MOBILE;
+                                    val = Instance.DATA_SAVING_MOBILE;
                                     break;
                                 case 3:
-                                    val = TgVoip.DATA_SAVING_ALWAYS;
+                                    val = Instance.DATA_SAVING_ALWAYS;
                                     break;
                             }
                             if (val != -1) {
@@ -421,16 +421,16 @@ public class DataSettingsActivity extends BaseFragment {
                         SharedPreferences preferences = MessagesController.getGlobalMainSettings();
                         String value = null;
                         switch (preferences.getInt("VoipDataSaving", VoIPHelper.getDataSavingDefault())) {
-                            case TgVoip.DATA_SAVING_NEVER:
+                            case Instance.DATA_SAVING_NEVER:
                                 value = LocaleController.getString("UseLessDataNever", R.string.UseLessDataNever);
                                 break;
-                            case TgVoip.DATA_SAVING_MOBILE:
+                            case Instance.DATA_SAVING_MOBILE:
                                 value = LocaleController.getString("UseLessDataOnMobile", R.string.UseLessDataOnMobile);
                                 break;
-                            case TgVoip.DATA_SAVING_ROAMING:
+                            case Instance.DATA_SAVING_ROAMING:
                                 value = LocaleController.getString("UseLessDataOnRoaming", R.string.UseLessDataOnRoaming);
                                 break;
-                            case TgVoip.DATA_SAVING_ALWAYS:
+                            case Instance.DATA_SAVING_ALWAYS:
                                 value = LocaleController.getString("UseLessDataAlways", R.string.UseLessDataAlways);
                                 break;
                         }

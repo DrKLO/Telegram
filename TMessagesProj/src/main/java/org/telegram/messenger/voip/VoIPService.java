@@ -8,6 +8,7 @@
 
 package org.telegram.messenger.voip;
 
+import android.Manifest;
 import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.app.Activity;
@@ -16,6 +17,7 @@ import android.app.Notification;
 import android.app.PendingIntent;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.media.audiofx.AcousticEchoCanceler;
 import android.media.audiofx.NoiseSuppressor;
 import android.net.Uri;
@@ -45,12 +47,12 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
 import org.telegram.messenger.XiaomiUtilities;
 import org.telegram.tgnet.ConnectionsManager;
-import org.telegram.tgnet.RequestDelegate;
-import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.Components.voip.VoIPHelper;
-import org.telegram.ui.VoIPActivity;
+import org.telegram.ui.LaunchActivity;
 import org.telegram.ui.VoIPFeedbackActivity;
+import org.webrtc.VideoFrame;
+import org.webrtc.VideoSink;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -59,12 +61,12 @@ import java.lang.reflect.Field;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.List;
+import java.util.Set;
 
-public class VoIPService extends VoIPBaseService{
+@SuppressLint("NewApi")
+public class VoIPService extends VoIPBaseService {
 
 	public static final int CALL_MIN_LAYER = 65;
 
@@ -77,7 +79,6 @@ public class VoIPService extends VoIPBaseService{
 	public static final int STATE_BUSY = 17;
 
 	private TLRPC.User user;
-	private TLRPC.PhoneCall call;
 	private int callReqId;
 
 	private byte[] g_a;
@@ -92,18 +93,50 @@ public class VoIPService extends VoIPBaseService{
 	private boolean needSendDebugLog = false;
 	private boolean needRateCall = false;
 
-	private boolean endCallAfterRequest=false;
-	private ArrayList<TLRPC.PhoneCall> pendingUpdates=new ArrayList<>();
+	private boolean endCallAfterRequest = false;
+	private ArrayList<TLRPC.PhoneCall> pendingUpdates = new ArrayList<>();
 	private Runnable delayedStartOutgoingCall;
-	private int peerCapabilities;
 
-	private byte[] groupCallEncryptionKey;
-	private long groupCallKeyFingerprint;
-	private List<Integer> groupUsersToAdd=new ArrayList<>();
-	private boolean upgrading;
-	private boolean joiningGroupCall;
+	private boolean startedRinging = false;
 
-	private boolean startedRinging=false;
+	public boolean isFrontFaceCamera() {
+		return isFrontFaceCamera;
+	}
+
+    private static class ProxyVideoSink implements VideoSink {
+		private VideoSink target;
+		private VideoSink background;
+
+		@Override
+		synchronized public void onFrame(VideoFrame frame) {
+			if (target == null) {
+				return;
+			}
+
+			target.onFrame(frame);
+			if (background != null) {
+				background.onFrame(frame);
+			}
+		}
+
+		synchronized public void setTarget(VideoSink target) {
+			this.target = target;
+		}
+
+		synchronized public void setBackground(VideoSink background) {
+			this.background = background;
+		}
+
+		synchronized public void swap() {
+			if (target != null && background != null) {
+				target = background;
+				background = null;
+			}
+		}
+	}
+
+	private ProxyVideoSink localSink;
+	private ProxyVideoSink remoteSink;
 
 	@Nullable
 	@Override
@@ -111,28 +144,40 @@ public class VoIPService extends VoIPBaseService{
 		return null;
 	}
 
-
-	@SuppressLint("MissingPermission")
+	@SuppressLint({"MissingPermission", "InlinedApi"})
 	@Override
 	public int onStartCommand(Intent intent, int flags, int startId) {
-		if(sharedInstance!=null){
-            if (BuildVars.LOGS_ENABLED) {
-                FileLog.e("Tried to start the VoIP service when it's already started");
-            }
+		if (sharedInstance != null) {
+			if (BuildVars.LOGS_ENABLED) {
+				FileLog.e("Tried to start the VoIP service when it's already started");
+			}
 			return START_NOT_STICKY;
 		}
 
-		currentAccount=intent.getIntExtra("account", -1);
-		if(currentAccount==-1)
+		currentAccount = intent.getIntExtra("account", -1);
+		if (currentAccount == -1) {
 			throw new IllegalStateException("No account specified when starting VoIP service");
-		int userID=intent.getIntExtra("user_id", 0);
+		}
+		int userID = intent.getIntExtra("user_id", 0);
 		isOutgoing = intent.getBooleanExtra("is_outgoing", false);
+		videoCall = intent.getBooleanExtra("video_call", false);
+		isVideoAvailable = intent.getBooleanExtra("can_video_call", false);
 		user = MessagesController.getInstance(currentAccount).getUser(userID);
+		localSink = new ProxyVideoSink();
+		remoteSink = new ProxyVideoSink();
 
-		if(user==null){
-            if (BuildVars.LOGS_ENABLED) {
-                FileLog.w("VoIPService: user==null");
-            }
+		if (videoCall) {
+			videoCapturer = NativeInstance.createVideoCapturer(localSink);
+			videoState = Instance.VIDEO_STATE_ACTIVE;
+			if (!isBtHeadsetConnected) {
+				setAudioOutput(0);
+			}
+		}
+
+		if (user == null) {
+			if (BuildVars.LOGS_ENABLED) {
+				FileLog.w("VoIPService: user==null");
+			}
 			stopSelf();
 			return START_NOT_STICKY;
 		}
@@ -140,51 +185,60 @@ public class VoIPService extends VoIPBaseService{
 
 		if (isOutgoing) {
 			dispatchStateChanged(STATE_REQUESTING);
-			if(USE_CONNECTION_SERVICE){
-				TelecomManager tm=(TelecomManager) getSystemService(TELECOM_SERVICE);
-				Bundle extras=new Bundle();
-				Bundle myExtras=new Bundle();
+			if (USE_CONNECTION_SERVICE) {
+				TelecomManager tm = (TelecomManager) getSystemService(TELECOM_SERVICE);
+				Bundle extras = new Bundle();
+				Bundle myExtras = new Bundle();
 				extras.putParcelable(TelecomManager.EXTRA_PHONE_ACCOUNT_HANDLE, addAccountToTelecomManager());
 				myExtras.putInt("call_type", 1);
 				extras.putBundle(TelecomManager.EXTRA_OUTGOING_CALL_EXTRAS, myExtras);
 				ContactsController.getInstance(currentAccount).createOrUpdateConnectionServiceContact(user.id, user.first_name, user.last_name);
-				tm.placeCall(Uri.fromParts("tel", "+99084"+user.id, null), extras);
-			}else{
-				delayedStartOutgoingCall=new Runnable(){
-					@Override
-					public void run(){
-						delayedStartOutgoingCall=null;
-						startOutgoingCall();
-					}
+				tm.placeCall(Uri.fromParts("tel", "+99084" + user.id, null), extras);
+			} else {
+				delayedStartOutgoingCall = () -> {
+					delayedStartOutgoingCall = null;
+					startOutgoingCall();
 				};
 				AndroidUtilities.runOnUIThread(delayedStartOutgoingCall, 2000);
 			}
 			if (intent.getBooleanExtra("start_incall_activity", false)) {
-				startActivity(new Intent(this, VoIPActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+				startActivity(new Intent(this, LaunchActivity.class).setAction("voip").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
 			}
 		} else {
 			NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.closeInCallActivity);
 			call = callIShouldHavePutIntoIntent;
+			videoCall = call != null && call.video;
+			if (videoCall) {
+				isVideoAvailable = true;
+			}
+			if (videoCall && (Build.VERSION.SDK_INT < 23 || checkSelfPermission(Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED)) {
+				videoCapturer = NativeInstance.createVideoCapturer(localSink);
+				videoState = Instance.VIDEO_STATE_ACTIVE;
+			} else {
+				videoState = Instance.VIDEO_STATE_INACTIVE;
+			}
+			if (videoCall && !isBtHeadsetConnected) {
+				setAudioOutput(0);
+			}
 			callIShouldHavePutIntoIntent = null;
-			if(USE_CONNECTION_SERVICE){
+			if (USE_CONNECTION_SERVICE) {
 				acknowledgeCall(false);
 				showNotification();
-			}else{
+			} else {
 				acknowledgeCall(true);
 			}
 		}
 		initializeAccountRelatedThings();
-
+		AndroidUtilities.runOnUIThread(() -> NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.voipServiceCreated));
 		return START_NOT_STICKY;
 	}
 
-
 	@Override
-	public void onCreate(){
+	public void onCreate() {
 		super.onCreate();
-		if(callIShouldHavePutIntoIntent!=null && Build.VERSION.SDK_INT>=Build.VERSION_CODES.O){
+		if (callIShouldHavePutIntoIntent != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
 			NotificationsController.checkOtherNotificationsChannel();
-			Notification.Builder bldr=new Notification.Builder(this, NotificationsController.OTHER_NOTIFICATIONS_CHANNEL)
+			Notification.Builder bldr = new Notification.Builder(this, NotificationsController.OTHER_NOTIFICATIONS_CHANNEL)
 					.setSmallIcon(R.drawable.notification)
 					.setContentTitle(LocaleController.getString("VoipOutgoingCall", R.string.VoipOutgoingCall))
 					.setShowWhen(false);
@@ -193,20 +247,20 @@ public class VoIPService extends VoIPBaseService{
 	}
 
 	@Override
-	protected void updateServerConfig(){
+	protected void updateServerConfig() {
 		final SharedPreferences preferences = MessagesController.getMainSettings(currentAccount);
-		TgVoip.setGlobalServerConfig(preferences.getString("voip_server_config", "{}"));
+		Instance.setGlobalServerConfig(preferences.getString("voip_server_config", "{}"));
 		ConnectionsManager.getInstance(currentAccount).sendRequest(new TLRPC.TL_phone_getCallConfig(), (response, error) -> {
 			if (error == null) {
 				String data = ((TLRPC.TL_dataJSON) response).data;
-				TgVoip.setGlobalServerConfig(data);
+				Instance.setGlobalServerConfig(data);
 				preferences.edit().putString("voip_server_config", data).commit();
 			}
 		});
 	}
 
 	@Override
-	protected void onTgVoipPreStop(){
+	protected void onTgVoipPreStop() {
 		/*if(BuildConfig.DEBUG){
 			String debugLog=controller.getDebugLog();
 			TLRPC.TL_phone_saveCallDebug req=new TLRPC.TL_phone_saveCallDebug();
@@ -227,7 +281,7 @@ public class VoIPService extends VoIPBaseService{
 	}
 
 	@Override
-	protected void onTgVoipStop(TgVoip.FinalState finalState) {
+	protected void onTgVoipStop(Instance.FinalState finalState) {
 		if (needRateCall || forceRating || finalState.isRatingSuggested) {
 			startRatingActivity();
 			needRateCall = false;
@@ -249,7 +303,7 @@ public class VoIPService extends VoIPBaseService{
 	}
 
 	public static VoIPService getSharedInstance() {
-		return sharedInstance instanceof VoIPService ? ((VoIPService)sharedInstance) : null;
+		return sharedInstance instanceof VoIPService ? ((VoIPService) sharedInstance) : null;
 	}
 
 	public TLRPC.User getUser() {
@@ -257,26 +311,22 @@ public class VoIPService extends VoIPBaseService{
 	}
 
 	public void hangUp() {
-		declineIncomingCall(currentState == STATE_RINGING || (currentState==STATE_WAITING && isOutgoing) ? DISCARD_REASON_MISSED : DISCARD_REASON_HANGUP, null);
+		declineIncomingCall(currentState == STATE_RINGING || (currentState == STATE_WAITING && isOutgoing) ? DISCARD_REASON_MISSED : DISCARD_REASON_HANGUP, null);
 	}
 
 	public void hangUp(Runnable onDone) {
-		declineIncomingCall(currentState == STATE_RINGING || (currentState==STATE_WAITING && isOutgoing) ? DISCARD_REASON_MISSED : DISCARD_REASON_HANGUP, onDone);
+		declineIncomingCall(currentState == STATE_RINGING || (currentState == STATE_WAITING && isOutgoing) ? DISCARD_REASON_MISSED : DISCARD_REASON_HANGUP, onDone);
 	}
 
 	private void startOutgoingCall() {
-		if(USE_CONNECTION_SERVICE && systemCallConnection!=null)
+		if (USE_CONNECTION_SERVICE && systemCallConnection != null) {
 			systemCallConnection.setDialing();
+		}
 		configureDeviceForCall();
 		showNotification();
 		startConnectingSound();
 		dispatchStateChanged(STATE_REQUESTING);
-		AndroidUtilities.runOnUIThread(new Runnable(){
-			@Override
-			public void run(){
-				NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.didStartedCall);
-			}
-		});
+		AndroidUtilities.runOnUIThread(() -> NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.didStartedCall));
 		final byte[] salt = new byte[256];
 		Utilities.random.nextBytes(salt);
 
@@ -284,142 +334,122 @@ public class VoIPService extends VoIPBaseService{
 		req.random_length = 256;
 		final MessagesStorage messagesStorage = MessagesStorage.getInstance(currentAccount);
 		req.version = messagesStorage.getLastSecretVersion();
-		callReqId = ConnectionsManager.getInstance(currentAccount).sendRequest(req, new RequestDelegate() {
-			@Override
-			public void run(TLObject response, TLRPC.TL_error error) {
-				callReqId = 0;
-				if(endCallAfterRequest){
-					callEnded();
-					return;
+		callReqId = ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> {
+			callReqId = 0;
+			if (endCallAfterRequest) {
+				callEnded();
+				return;
+			}
+			if (error == null) {
+				TLRPC.messages_DhConfig res = (TLRPC.messages_DhConfig) response;
+				if (response instanceof TLRPC.TL_messages_dhConfig) {
+					if (!Utilities.isGoodPrime(res.p, res.g)) {
+						callFailed();
+						return;
+					}
+					messagesStorage.setSecretPBytes(res.p);
+					messagesStorage.setSecretG(res.g);
+					messagesStorage.setLastSecretVersion(res.version);
+					messagesStorage.saveSecretParams(messagesStorage.getLastSecretVersion(), messagesStorage.getSecretG(), messagesStorage.getSecretPBytes());
 				}
-				if (error == null) {
-					TLRPC.messages_DhConfig res = (TLRPC.messages_DhConfig) response;
-					if (response instanceof TLRPC.TL_messages_dhConfig) {
-						if (!Utilities.isGoodPrime(res.p, res.g)) {
-							callFailed();
+				final byte[] salt1 = new byte[256];
+				for (int a = 0; a < 256; a++) {
+					salt1[a] = (byte) ((byte) (Utilities.random.nextDouble() * 256) ^ res.random[a]);
+				}
+
+				BigInteger i_g_a = BigInteger.valueOf(messagesStorage.getSecretG());
+				i_g_a = i_g_a.modPow(new BigInteger(1, salt1), new BigInteger(1, messagesStorage.getSecretPBytes()));
+				byte[] g_a = i_g_a.toByteArray();
+				if (g_a.length > 256) {
+					byte[] correctedAuth = new byte[256];
+					System.arraycopy(g_a, 1, correctedAuth, 0, 256);
+					g_a = correctedAuth;
+				}
+
+				TLRPC.TL_phone_requestCall reqCall = new TLRPC.TL_phone_requestCall();
+				reqCall.user_id = MessagesController.getInstance(currentAccount).getInputUser(user);
+				reqCall.protocol = new TLRPC.TL_phoneCallProtocol();
+				reqCall.video = videoCall;
+				reqCall.protocol.udp_p2p = true;
+				reqCall.protocol.udp_reflector = true;
+				reqCall.protocol.min_layer = CALL_MIN_LAYER;
+				reqCall.protocol.max_layer = Instance.getConnectionMaxLayer();
+				reqCall.protocol.library_versions.addAll(Instance.AVAILABLE_VERSIONS);
+				VoIPService.this.g_a = g_a;
+				reqCall.g_a_hash = Utilities.computeSHA256(g_a, 0, g_a.length);
+				reqCall.random_id = Utilities.random.nextInt();
+
+				ConnectionsManager.getInstance(currentAccount).sendRequest(reqCall, (response12, error12) -> AndroidUtilities.runOnUIThread(() -> {
+					if (error12 == null) {
+						call = ((TLRPC.TL_phone_phoneCall) response12).phone_call;
+						a_or_b = salt1;
+						dispatchStateChanged(STATE_WAITING);
+						if (endCallAfterRequest) {
+							hangUp();
 							return;
 						}
-						messagesStorage.setSecretPBytes(res.p);
-						messagesStorage.setSecretG(res.g);
-						messagesStorage.setLastSecretVersion(res.version);
-						messagesStorage.saveSecretParams(messagesStorage.getLastSecretVersion(), messagesStorage.getSecretG(), messagesStorage.getSecretPBytes());
-					}
-					final byte[] salt = new byte[256];
-					for (int a = 0; a < 256; a++) {
-						salt[a] = (byte) ((byte) (Utilities.random.nextDouble() * 256) ^ res.random[a]);
-					}
-
-					BigInteger i_g_a = BigInteger.valueOf(messagesStorage.getSecretG());
-					i_g_a = i_g_a.modPow(new BigInteger(1, salt), new BigInteger(1, messagesStorage.getSecretPBytes()));
-					byte[] g_a = i_g_a.toByteArray();
-					if (g_a.length > 256) {
-						byte[] correctedAuth = new byte[256];
-						System.arraycopy(g_a, 1, correctedAuth, 0, 256);
-						g_a = correctedAuth;
-					}
-
-					TLRPC.TL_phone_requestCall reqCall = new TLRPC.TL_phone_requestCall();
-					reqCall.user_id = MessagesController.getInstance(currentAccount).getInputUser(user);
-					reqCall.protocol = new TLRPC.TL_phoneCallProtocol();
-					reqCall.protocol.udp_p2p = true;
-					reqCall.protocol.udp_reflector = true;
-					reqCall.protocol.min_layer = CALL_MIN_LAYER;
-					reqCall.protocol.max_layer = TgVoip.getConnectionMaxLayer();
-					reqCall.protocol.library_versions.addAll(TgVoip.getAvailableVersions());
-					VoIPService.this.g_a=g_a;
-					reqCall.g_a_hash = Utilities.computeSHA256(g_a, 0, g_a.length);
-					reqCall.random_id = Utilities.random.nextInt();
-
-					ConnectionsManager.getInstance(currentAccount).sendRequest(reqCall, new RequestDelegate() {
-						@Override
-						public void run(final TLObject response, final TLRPC.TL_error error) {
-							AndroidUtilities.runOnUIThread(new Runnable(){
-								@Override
-								public void run(){
-									if (error == null) {
-										call = ((TLRPC.TL_phone_phoneCall) response).phone_call;
-										a_or_b = salt;
-										dispatchStateChanged(STATE_WAITING);
-										if(endCallAfterRequest){
-											hangUp();
-											return;
-										}
-										if(pendingUpdates.size()>0 && call!=null){
-											for(TLRPC.PhoneCall call:pendingUpdates){
-												onCallUpdated(call);
-											}
-											pendingUpdates.clear();
-										}
-										timeoutRunnable = new Runnable() {
-											@Override
-											public void run() {
-												timeoutRunnable=null;
-												TLRPC.TL_phone_discardCall req = new TLRPC.TL_phone_discardCall();
-												req.peer = new TLRPC.TL_inputPhoneCall();
-												req.peer.access_hash = call.access_hash;
-												req.peer.id = call.id;
-												req.reason=new TLRPC.TL_phoneCallDiscardReasonMissed();
-												ConnectionsManager.getInstance(currentAccount).sendRequest(req, new RequestDelegate() {
-													@Override
-													public void run(TLObject response, TLRPC.TL_error error) {
-                                                        if (BuildVars.LOGS_ENABLED) {
-                                                            if (error != null) {
-                                                                FileLog.e("error on phone.discardCall: " + error);
-                                                            } else {
-                                                                FileLog.d("phone.discardCall " + response);
-                                                            }
-                                                        }
-														AndroidUtilities.runOnUIThread(new Runnable(){
-															@Override
-															public void run(){
-																callFailed();
-															}
-														});
-													}
-												}, ConnectionsManager.RequestFlagFailOnServerErrors);
-											}
-										};
-										AndroidUtilities.runOnUIThread(timeoutRunnable, MessagesController.getInstance(currentAccount).callReceiveTimeout);
+						if (pendingUpdates.size() > 0 && call != null) {
+							for (TLRPC.PhoneCall call : pendingUpdates) {
+								onCallUpdated(call);
+							}
+							pendingUpdates.clear();
+						}
+						timeoutRunnable = () -> {
+							timeoutRunnable = null;
+							TLRPC.TL_phone_discardCall req1 = new TLRPC.TL_phone_discardCall();
+							req1.peer = new TLRPC.TL_inputPhoneCall();
+							req1.peer.access_hash = call.access_hash;
+							req1.peer.id = call.id;
+							req1.reason = new TLRPC.TL_phoneCallDiscardReasonMissed();
+							ConnectionsManager.getInstance(currentAccount).sendRequest(req1, (response1, error1) -> {
+								if (BuildVars.LOGS_ENABLED) {
+									if (error1 != null) {
+										FileLog.e("error on phone.discardCall: " + error1);
 									} else {
-										if (error.code == 400 && "PARTICIPANT_VERSION_OUTDATED".equals(error.text)) {
-											callFailed(TgVoip.ERROR_PEER_OUTDATED);
-										} else if(error.code==403){
-											callFailed(TgVoip.ERROR_PRIVACY);
-										}else if(error.code==406){
-											callFailed(TgVoip.ERROR_LOCALIZED);
-										}else {
-                                            if (BuildVars.LOGS_ENABLED) {
-                                                FileLog.e("Error on phone.requestCall: " + error);
-                                            }
-											callFailed();
-										}
+										FileLog.d("phone.discardCall " + response1);
 									}
 								}
-							});
+								AndroidUtilities.runOnUIThread(VoIPService.this::callFailed);
+							}, ConnectionsManager.RequestFlagFailOnServerErrors);
+						};
+						AndroidUtilities.runOnUIThread(timeoutRunnable, MessagesController.getInstance(currentAccount).callReceiveTimeout);
+					} else {
+						if (error12.code == 400 && "PARTICIPANT_VERSION_OUTDATED".equals(error12.text)) {
+							callFailed(Instance.ERROR_PEER_OUTDATED);
+						} else if (error12.code == 403) {
+							callFailed(Instance.ERROR_PRIVACY);
+						} else if (error12.code == 406) {
+							callFailed(Instance.ERROR_LOCALIZED);
+						} else {
+							if (BuildVars.LOGS_ENABLED) {
+								FileLog.e("Error on phone.requestCall: " + error12);
+							}
+							callFailed();
 						}
-					}, ConnectionsManager.RequestFlagFailOnServerErrors);
-				} else {
-                    if (BuildVars.LOGS_ENABLED) {
-                        FileLog.e("Error on getDhConfig " + error);
-                    }
-					callFailed();
+					}
+				}), ConnectionsManager.RequestFlagFailOnServerErrors);
+			} else {
+				if (BuildVars.LOGS_ENABLED) {
+					FileLog.e("Error on getDhConfig " + error);
 				}
+				callFailed();
 			}
 		}, ConnectionsManager.RequestFlagFailOnServerErrors);
 	}
 
-	private void acknowledgeCall(final boolean startRinging){
-		if(call instanceof TLRPC.TL_phoneCallDiscarded){
-            if (BuildVars.LOGS_ENABLED) {
-                FileLog.w("Call " + call.id + " was discarded before the service started, stopping");
-            }
+	private void acknowledgeCall(final boolean startRinging) {
+		if (call instanceof TLRPC.TL_phoneCallDiscarded) {
+			if (BuildVars.LOGS_ENABLED) {
+				FileLog.w("Call " + call.id + " was discarded before the service started, stopping");
+			}
 			stopSelf();
 			return;
 		}
-		if(Build.VERSION.SDK_INT>=19 && XiaomiUtilities.isMIUI() && !XiaomiUtilities.isCustomPermissionGranted(XiaomiUtilities.OP_SHOW_WHEN_LOCKED)){
-			if(((KeyguardManager)getSystemService(KEYGUARD_SERVICE)).inKeyguardRestrictedInputMode()){
-				if(BuildVars.LOGS_ENABLED)
+		if (Build.VERSION.SDK_INT >= 19 && XiaomiUtilities.isMIUI() && !XiaomiUtilities.isCustomPermissionGranted(XiaomiUtilities.OP_SHOW_WHEN_LOCKED)) {
+			if (((KeyguardManager) getSystemService(KEYGUARD_SERVICE)).inKeyguardRestrictedInputMode()) {
+				if (BuildVars.LOGS_ENABLED) {
 					FileLog.e("MIUI: no permission to show when locked but the screen is locked. ¯\\_(ツ)_/¯");
+				}
 				stopSelf();
 				return;
 			}
@@ -428,80 +458,75 @@ public class VoIPService extends VoIPBaseService{
 		req.peer = new TLRPC.TL_inputPhoneCall();
 		req.peer.id = call.id;
 		req.peer.access_hash = call.access_hash;
-		ConnectionsManager.getInstance(currentAccount).sendRequest(req, new RequestDelegate() {
-			@Override
-			public void run(final TLObject response, final TLRPC.TL_error error) {
-				AndroidUtilities.runOnUIThread(new Runnable(){
-					@Override
-					public void run(){
-						if(sharedInstance==null)
-							return;
-                        if (BuildVars.LOGS_ENABLED) {
-                            FileLog.w("receivedCall response = " + response);
-                        }
-						if (error != null){
-                            if (BuildVars.LOGS_ENABLED) {
-                                FileLog.e("error on receivedCall: " + error);
-                            }
-							stopSelf();
-						}else{
-							if(USE_CONNECTION_SERVICE){
-								ContactsController.getInstance(currentAccount).createOrUpdateConnectionServiceContact(user.id, user.first_name, user.last_name);
-								TelecomManager tm=(TelecomManager) getSystemService(TELECOM_SERVICE);
-								Bundle extras=new Bundle();
-								extras.putInt("call_type", 1);
-								tm.addNewIncomingCall(addAccountToTelecomManager(), extras);
-							}
-							if(startRinging)
-								startRinging();
-						}
-					}
-				});
+		ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
+			if (sharedInstance == null) {
+				return;
 			}
-		}, ConnectionsManager.RequestFlagFailOnServerErrors);
+			if (BuildVars.LOGS_ENABLED) {
+				FileLog.w("receivedCall response = " + response);
+			}
+			if (error != null) {
+				if (BuildVars.LOGS_ENABLED) {
+					FileLog.e("error on receivedCall: " + error);
+				}
+				stopSelf();
+			} else {
+				if (USE_CONNECTION_SERVICE) {
+					ContactsController.getInstance(currentAccount).createOrUpdateConnectionServiceContact(user.id, user.first_name, user.last_name);
+					TelecomManager tm = (TelecomManager) getSystemService(TELECOM_SERVICE);
+					Bundle extras = new Bundle();
+					extras.putInt("call_type", 1);
+					tm.addNewIncomingCall(addAccountToTelecomManager(), extras);
+				}
+				if (startRinging) {
+					startRinging();
+				}
+			}
+		}), ConnectionsManager.RequestFlagFailOnServerErrors);
 	}
 
 	protected void startRinging() {
-		if(currentState==STATE_WAITING_INCOMING){
+		if (currentState == STATE_WAITING_INCOMING) {
 			return;
 		}
-		if(USE_CONNECTION_SERVICE && systemCallConnection!=null)
+		if (USE_CONNECTION_SERVICE && systemCallConnection != null) {
 			systemCallConnection.setRinging();
-        if (BuildVars.LOGS_ENABLED) {
-            FileLog.d("starting ringing for call " + call.id);
-        }
+		}
+		if (BuildVars.LOGS_ENABLED) {
+			FileLog.d("starting ringing for call " + call.id);
+		}
 		dispatchStateChanged(STATE_WAITING_INCOMING);
-		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP){
-			showIncomingNotification(ContactsController.formatName(user.first_name, user.last_name), null, user, null, 0, VoIPActivity.class);
-            if (BuildVars.LOGS_ENABLED) {
-                FileLog.d("Showing incoming call notification");
-            }
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+			showIncomingNotification(ContactsController.formatName(user.first_name, user.last_name), null, user, call.video, 0);
+			if (BuildVars.LOGS_ENABLED) {
+				FileLog.d("Showing incoming call notification");
+			}
 		} else {
 			startRingtoneAndVibration(user.id);
-            if (BuildVars.LOGS_ENABLED) {
-                FileLog.d("Starting incall activity for incoming call");
-            }
+			if (BuildVars.LOGS_ENABLED) {
+				FileLog.d("Starting incall activity for incoming call");
+			}
 			try {
-				PendingIntent.getActivity(VoIPService.this, 12345, new Intent(VoIPService.this, VoIPActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK), 0).send();
+				PendingIntent.getActivity(VoIPService.this, 12345, new Intent(VoIPService.this, LaunchActivity.class).setAction("voip"), 0).send();
 			} catch (Exception x) {
-                if (BuildVars.LOGS_ENABLED) {
-                    FileLog.e("Error starting incall activity", x);
-                }
+				if (BuildVars.LOGS_ENABLED) {
+					FileLog.e("Error starting incall activity", x);
+				}
 			}
 		}
 	}
 
 	@Override
-	public void startRingtoneAndVibration(){
-		if(!startedRinging){
+	public void startRingtoneAndVibration() {
+		if (!startedRinging) {
 			startRingtoneAndVibration(user.id);
-			startedRinging=true;
+			startedRinging = true;
 		}
 	}
 
 	@Override
-	protected boolean isRinging(){
-		return currentState==STATE_WAITING_INCOMING;
+	protected boolean isRinging() {
+		return currentState == STATE_WAITING_INCOMING;
 	}
 
 	public void acceptIncomingCall() {
@@ -510,102 +535,80 @@ public class VoIPService extends VoIPBaseService{
 		configureDeviceForCall();
 		startConnectingSound();
 		dispatchStateChanged(STATE_EXCHANGING_KEYS);
-		AndroidUtilities.runOnUIThread(new Runnable(){
-			@Override
-			public void run(){
-				NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.didStartedCall);
-			}
-		});
+		AndroidUtilities.runOnUIThread(() -> NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.didStartedCall));
 		final MessagesStorage messagesStorage = MessagesStorage.getInstance(currentAccount);
 		TLRPC.TL_messages_getDhConfig req = new TLRPC.TL_messages_getDhConfig();
 		req.random_length = 256;
 		req.version = messagesStorage.getLastSecretVersion();
-		ConnectionsManager.getInstance(currentAccount).sendRequest(req, new RequestDelegate() {
-			@Override
-			public void run(TLObject response, TLRPC.TL_error error) {
-				if (error == null) {
-					TLRPC.messages_DhConfig res = (TLRPC.messages_DhConfig) response;
-					if (response instanceof TLRPC.TL_messages_dhConfig) {
-						if (!Utilities.isGoodPrime(res.p, res.g)) {
-							/*acceptingChats.remove(encryptedChat.id);
-							declineSecretChat(encryptedChat.id);*/
-                            if (BuildVars.LOGS_ENABLED) {
-                                FileLog.e("stopping VoIP service, bad prime");
-                            }
-							callFailed();
-							return;
+		ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> {
+			if (error == null) {
+				TLRPC.messages_DhConfig res = (TLRPC.messages_DhConfig) response;
+				if (response instanceof TLRPC.TL_messages_dhConfig) {
+					if (!Utilities.isGoodPrime(res.p, res.g)) {
+						if (BuildVars.LOGS_ENABLED) {
+							FileLog.e("stopping VoIP service, bad prime");
 						}
-
-						messagesStorage.setSecretPBytes(res.p);
-						messagesStorage.setSecretG(res.g);
-						messagesStorage.setLastSecretVersion(res.version);
-						MessagesStorage.getInstance(currentAccount).saveSecretParams(messagesStorage.getLastSecretVersion(), messagesStorage.getSecretG(), messagesStorage.getSecretPBytes());
-					}
-					byte[] salt = new byte[256];
-					for (int a = 0; a < 256; a++) {
-						salt[a] = (byte) ((byte) (Utilities.random.nextDouble() * 256) ^ res.random[a]);
-					}
-					if(call==null){
-                        if (BuildVars.LOGS_ENABLED) {
-                            FileLog.e("call is null");
-                        }
 						callFailed();
 						return;
 					}
-					a_or_b = salt;
-					BigInteger g_b = BigInteger.valueOf(messagesStorage.getSecretG());
-					BigInteger p = new BigInteger(1, messagesStorage.getSecretPBytes());
-					g_b = g_b.modPow(new BigInteger(1, salt), p);
-					g_a_hash=call.g_a_hash;
 
-					byte[] g_b_bytes = g_b.toByteArray();
-					if (g_b_bytes.length > 256) {
-						byte[] correctedAuth = new byte[256];
-						System.arraycopy(g_b_bytes, 1, correctedAuth, 0, 256);
-						g_b_bytes = correctedAuth;
-					}
-
-					TLRPC.TL_phone_acceptCall req = new TLRPC.TL_phone_acceptCall();
-					req.g_b = g_b_bytes;
-					//req.key_fingerprint = Utilities.bytesToLong(authKeyId);
-					req.peer = new TLRPC.TL_inputPhoneCall();
-					req.peer.id = call.id;
-					req.peer.access_hash = call.access_hash;
-					req.protocol = new TLRPC.TL_phoneCallProtocol();
-					req.protocol.udp_p2p = req.protocol.udp_reflector = true;
-					req.protocol.min_layer = CALL_MIN_LAYER;
-					req.protocol.max_layer = TgVoip.getConnectionMaxLayer();
-					req.protocol.library_versions.addAll(TgVoip.getAvailableVersions());
-					ConnectionsManager.getInstance(currentAccount).sendRequest(req, new RequestDelegate() {
-						@Override
-						public void run(final TLObject response, final TLRPC.TL_error error) {
-							AndroidUtilities.runOnUIThread(new Runnable(){
-								@Override
-								public void run(){
-									if (error == null) {
-                                        if (BuildVars.LOGS_ENABLED) {
-                                            FileLog.w("accept call ok! " + response);
-                                        }
-										call = ((TLRPC.TL_phone_phoneCall) response).phone_call;
-										if(call instanceof TLRPC.TL_phoneCallDiscarded){
-											onCallUpdated(call);
-										}/*else{
-									initiateActualEncryptedCall();
-								}*/
-									} else {
-                                        if (BuildVars.LOGS_ENABLED) {
-                                            FileLog.e("Error on phone.acceptCall: " + error);
-                                        }
-										callFailed();
-									}
-								}
-							});
-						}
-					}, ConnectionsManager.RequestFlagFailOnServerErrors);
-				} else {
-					//acceptingChats.remove(encryptedChat.id);
-					callFailed();
+					messagesStorage.setSecretPBytes(res.p);
+					messagesStorage.setSecretG(res.g);
+					messagesStorage.setLastSecretVersion(res.version);
+					MessagesStorage.getInstance(currentAccount).saveSecretParams(messagesStorage.getLastSecretVersion(), messagesStorage.getSecretG(), messagesStorage.getSecretPBytes());
 				}
+				byte[] salt = new byte[256];
+				for (int a = 0; a < 256; a++) {
+					salt[a] = (byte) ((byte) (Utilities.random.nextDouble() * 256) ^ res.random[a]);
+				}
+				if (call == null) {
+					if (BuildVars.LOGS_ENABLED) {
+						FileLog.e("call is null");
+					}
+					callFailed();
+					return;
+				}
+				a_or_b = salt;
+				BigInteger g_b = BigInteger.valueOf(messagesStorage.getSecretG());
+				BigInteger p = new BigInteger(1, messagesStorage.getSecretPBytes());
+				g_b = g_b.modPow(new BigInteger(1, salt), p);
+				g_a_hash = call.g_a_hash;
+
+				byte[] g_b_bytes = g_b.toByteArray();
+				if (g_b_bytes.length > 256) {
+					byte[] correctedAuth = new byte[256];
+					System.arraycopy(g_b_bytes, 1, correctedAuth, 0, 256);
+					g_b_bytes = correctedAuth;
+				}
+
+				TLRPC.TL_phone_acceptCall req1 = new TLRPC.TL_phone_acceptCall();
+				req1.g_b = g_b_bytes;
+				req1.peer = new TLRPC.TL_inputPhoneCall();
+				req1.peer.id = call.id;
+				req1.peer.access_hash = call.access_hash;
+				req1.protocol = new TLRPC.TL_phoneCallProtocol();
+				req1.protocol.udp_p2p = req1.protocol.udp_reflector = true;
+				req1.protocol.min_layer = CALL_MIN_LAYER;
+				req1.protocol.max_layer = Instance.getConnectionMaxLayer();
+				req1.protocol.library_versions.addAll(Instance.AVAILABLE_VERSIONS);
+				ConnectionsManager.getInstance(currentAccount).sendRequest(req1, (response1, error1) -> AndroidUtilities.runOnUIThread(() -> {
+					if (error1 == null) {
+						if (BuildVars.LOGS_ENABLED) {
+							FileLog.w("accept call ok! " + response1);
+						}
+						call = ((TLRPC.TL_phone_phoneCall) response1).phone_call;
+						if (call instanceof TLRPC.TL_phoneCallDiscarded) {
+							onCallUpdated(call);
+						}
+					} else {
+						if (BuildVars.LOGS_ENABLED) {
+							FileLog.e("Error on phone.acceptCall: " + error1);
+						}
+						callFailed();
+					}
+				}), ConnectionsManager.RequestFlagFailOnServerErrors);
+			} else {
+				callFailed();
 			}
 		});
 	}
@@ -614,38 +617,96 @@ public class VoIPService extends VoIPBaseService{
 		declineIncomingCall(DISCARD_REASON_HANGUP, null);
 	}
 
+	public void requestVideoCall() {
+		if (tgVoip == null) {
+			return;
+		}
+		tgVoip.setupOutgoingVideo(localSink);
+	}
+
+	public void switchCamera() {
+		if (tgVoip == null || switchingCamera) {
+			if (videoCapturer != 0 && !switchingCamera) {
+				NativeInstance.switchCameraCapturer(videoCapturer);
+			}
+			return;
+		}
+		switchingCamera = true;
+		tgVoip.switchCamera();
+	}
+
+	public void setVideoState(int videoState) {
+		if (tgVoip == null) {
+			if (videoCapturer != 0) {
+				this.videoState = videoState;
+				NativeInstance.setVideoStateCapturer(videoCapturer, videoState);
+			} else if (videoState == Instance.VIDEO_STATE_ACTIVE && currentState != STATE_BUSY && currentState != STATE_ENDED) {
+				videoCapturer = NativeInstance.createVideoCapturer(localSink);
+				this.videoState = Instance.VIDEO_STATE_ACTIVE;
+			}
+			return;
+		}
+		this.videoState = videoState;
+		tgVoip.setVideoState(videoState);
+		checkIsNear();
+	}
+
+	public int getVideoState() {
+		return videoState;
+	}
+
+	public void setSinks(VideoSink local, VideoSink remote) {
+		localSink.setTarget(local);
+		remoteSink.setTarget(remote);
+	}
+
+	public void setBackgroundSinks(VideoSink local, VideoSink remote) {
+		localSink.setBackground(local);
+		remoteSink.setBackground(remote);
+	}
+
+	public void swapSinks() {
+		localSink.swap();
+		remoteSink.swap();
+	}
+
 	@Override
-	protected Class<? extends Activity> getUIActivityClass(){
-		return VoIPActivity.class;
+	public void onDestroy() {
+		super.onDestroy();
+		setSinks(null, null);
+	}
+
+	@Override
+	protected Class<? extends Activity> getUIActivityClass() {
+		return LaunchActivity.class;
 	}
 
 	public void declineIncomingCall(int reason, final Runnable onDone) {
 		stopRinging();
-		callDiscardReason=reason;
-		if(currentState==STATE_REQUESTING){
-			if(delayedStartOutgoingCall!=null){
+		callDiscardReason = reason;
+		if (currentState == STATE_REQUESTING) {
+			if (delayedStartOutgoingCall != null) {
 				AndroidUtilities.cancelRunOnUIThread(delayedStartOutgoingCall);
 				callEnded();
-			}else{
+			} else {
 				dispatchStateChanged(STATE_HANGING_UP);
-				endCallAfterRequest=true;
-				AndroidUtilities.runOnUIThread(new Runnable(){
-					@Override
-					public void run(){
-						if(currentState==STATE_HANGING_UP){
-							callEnded();
-						}
+				endCallAfterRequest = true;
+				AndroidUtilities.runOnUIThread(() -> {
+					if (currentState == STATE_HANGING_UP) {
+						callEnded();
 					}
 				}, 5000);
 			}
 			return;
 		}
-		if (currentState == STATE_HANGING_UP || currentState == STATE_ENDED)
+		if (currentState == STATE_HANGING_UP || currentState == STATE_ENDED) {
 			return;
+		}
 		dispatchStateChanged(STATE_HANGING_UP);
 		if (call == null) {
-			if (onDone != null)
+			if (onDone != null) {
 				onDone.run();
+			}
 			callEnded();
 			if (callReqId != 0) {
 				ConnectionsManager.getInstance(currentAccount).cancelRequest(callReqId, false);
@@ -674,96 +735,105 @@ public class VoIPService extends VoIPBaseService{
 				req.reason = new TLRPC.TL_phoneCallDiscardReasonHangup();
 				break;
 		}
-		final boolean wasNotConnected=ConnectionsManager.getInstance(currentAccount).getConnectionState()!=ConnectionsManager.ConnectionStateConnected;
+		final boolean wasNotConnected = ConnectionsManager.getInstance(currentAccount).getConnectionState() != ConnectionsManager.ConnectionStateConnected;
 		final Runnable stopper;
-		if(wasNotConnected){
-			if (onDone != null)
+		if (wasNotConnected) {
+			if (onDone != null) {
 				onDone.run();
+			}
 			callEnded();
-			stopper=null;
-		}else{
-			stopper=new Runnable(){
-				private boolean done=false;
+			stopper = null;
+		} else {
+			stopper = new Runnable() {
+				private boolean done = false;
 
 				@Override
-				public void run(){
-					if(done)
+				public void run() {
+					if (done) {
 						return;
-					done=true;
-					if(onDone!=null)
+					}
+					done = true;
+					if (onDone != null) {
 						onDone.run();
+					}
 					callEnded();
 				}
 			};
-			AndroidUtilities.runOnUIThread(stopper, (int) (TgVoip.getGlobalServerConfig().hangupUiTimeout * 1000));
+			AndroidUtilities.runOnUIThread(stopper, (int) (Instance.getGlobalServerConfig().hangupUiTimeout * 1000));
 		}
-		ConnectionsManager.getInstance(currentAccount).sendRequest(req, new RequestDelegate() {
-			@Override
-			public void run(TLObject response, TLRPC.TL_error error) {
-				if (error != null) {
-                    if (BuildVars.LOGS_ENABLED) {
-                        FileLog.e("error on phone.discardCall: " + error);
-                    }
-				} else {
-					if (response instanceof TLRPC.TL_updates) {
-						TLRPC.TL_updates updates = (TLRPC.TL_updates) response;
-						MessagesController.getInstance(currentAccount).processUpdates(updates, false);
-					}
-                    if (BuildVars.LOGS_ENABLED) {
-                        FileLog.d("phone.discardCall " + response);
-                    }
+		ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> {
+			if (error != null) {
+				if (BuildVars.LOGS_ENABLED) {
+					FileLog.e("error on phone.discardCall: " + error);
 				}
-				if (!wasNotConnected){
-					AndroidUtilities.cancelRunOnUIThread(stopper);
-					if(onDone!=null)
-						onDone.run();
+			} else {
+				if (response instanceof TLRPC.TL_updates) {
+					TLRPC.TL_updates updates = (TLRPC.TL_updates) response;
+					MessagesController.getInstance(currentAccount).processUpdates(updates, false);
 				}
+				if (BuildVars.LOGS_ENABLED) {
+					FileLog.d("phone.discardCall " + response);
+				}
+			}
+			if (!wasNotConnected) {
+				AndroidUtilities.cancelRunOnUIThread(stopper);
+				if (onDone != null)
+					onDone.run();
 			}
 		}, ConnectionsManager.RequestFlagFailOnServerErrors);
 	}
 
 	private void dumpCallObject() {
-        try {
-            if (BuildVars.LOGS_ENABLED) {
-                Field[] flds = TLRPC.PhoneCall.class.getFields();
-                for (Field f : flds) {
-                    FileLog.d(f.getName() + " = " + f.get(call));
-                }
-            }
-        } catch (Exception x) {
-            if (BuildVars.LOGS_ENABLED) {
-                FileLog.e(x);
-            }
-        }
-    }
+		try {
+			if (BuildVars.LOGS_ENABLED) {
+				Field[] flds = TLRPC.PhoneCall.class.getFields();
+				for (Field f : flds) {
+					FileLog.d(f.getName() + " = " + f.get(call));
+				}
+			}
+		} catch (Exception x) {
+			if (BuildVars.LOGS_ENABLED) {
+				FileLog.e(x);
+			}
+		}
+	}
 
-	public void onCallUpdated(TLRPC.PhoneCall call) {
-		if(this.call==null){
-			pendingUpdates.add(call);
+	public void onSignalingData(TLRPC.TL_updatePhoneCallSignalingData data) {
+		if (tgVoip == null || getCallID() != data.phone_call_id) {
 			return;
 		}
-		if(call==null)
-			return;
-		if(call.id!=this.call.id){
-			if(BuildVars.LOGS_ENABLED) {
-                FileLog.w("onCallUpdated called with wrong call id (got " + call.id + ", expected " + this.call.id + ")");
-            }
+		tgVoip.onSignalingDataReceive(data.data);
+	}
+
+	public void onCallUpdated(TLRPC.PhoneCall phoneCall) {
+		if (call == null) {
+			pendingUpdates.add(phoneCall);
 			return;
 		}
-		if(call.access_hash==0)
-			call.access_hash=this.call.access_hash;
-		if(BuildVars.LOGS_ENABLED) {
-            FileLog.d("Call updated: " + call);
-            dumpCallObject();
-        }
-		this.call = call;
-		if (call instanceof TLRPC.TL_phoneCallDiscarded) {
-			needSendDebugLog = call.need_debug;
-			needRateCall = call.need_rating;
-            if (BuildVars.LOGS_ENABLED) {
-                FileLog.d("call discarded, stopping service");
-            }
-			if (call.reason instanceof TLRPC.TL_phoneCallDiscardReasonBusy) {
+		if (phoneCall == null) {
+			return;
+		}
+		if (phoneCall.id != call.id) {
+			if (BuildVars.LOGS_ENABLED) {
+				FileLog.w("onCallUpdated called with wrong call id (got " + phoneCall.id + ", expected " + this.call.id + ")");
+			}
+			return;
+		}
+		if (phoneCall.access_hash == 0) {
+			phoneCall.access_hash = this.call.access_hash;
+		}
+		if (BuildVars.LOGS_ENABLED) {
+			FileLog.d("Call updated: " + phoneCall);
+			dumpCallObject();
+		}
+		call = phoneCall;
+		if (phoneCall instanceof TLRPC.TL_phoneCallDiscarded) {
+			needSendDebugLog = phoneCall.need_debug;
+			needRateCall = phoneCall.need_rating;
+			if (BuildVars.LOGS_ENABLED) {
+				FileLog.d("call discarded, stopping service");
+			}
+			if (phoneCall.reason instanceof TLRPC.TL_phoneCallDiscardReasonBusy) {
 				dispatchStateChanged(STATE_BUSY);
 				playingSound = true;
 				soundPool.play(spBusyId, 1, 1, 0, -1, 1);
@@ -773,29 +843,29 @@ public class VoIPService extends VoIPBaseService{
 			} else {
 				callEnded();
 			}
-		} else if (call instanceof TLRPC.TL_phoneCall && authKey == null){
-			if(call.g_a_or_b==null){
-                if (BuildVars.LOGS_ENABLED) {
-                    FileLog.w("stopping VoIP service, Ga == null");
-                }
+		} else if (phoneCall instanceof TLRPC.TL_phoneCall && authKey == null) {
+			if (phoneCall.g_a_or_b == null) {
+				if (BuildVars.LOGS_ENABLED) {
+					FileLog.w("stopping VoIP service, Ga == null");
+				}
 				callFailed();
 				return;
 			}
-			if(!Arrays.equals(g_a_hash, Utilities.computeSHA256(call.g_a_or_b, 0, call.g_a_or_b.length))){
-                if (BuildVars.LOGS_ENABLED) {
-                    FileLog.w("stopping VoIP service, Ga hash doesn't match");
-                }
+			if (!Arrays.equals(g_a_hash, Utilities.computeSHA256(phoneCall.g_a_or_b, 0, phoneCall.g_a_or_b.length))) {
+				if (BuildVars.LOGS_ENABLED) {
+					FileLog.w("stopping VoIP service, Ga hash doesn't match");
+				}
 				callFailed();
 				return;
 			}
-			g_a=call.g_a_or_b;
-			BigInteger g_a = new BigInteger(1, call.g_a_or_b);
+			g_a = phoneCall.g_a_or_b;
+			BigInteger g_a = new BigInteger(1, phoneCall.g_a_or_b);
 			BigInteger p = new BigInteger(1, MessagesStorage.getInstance(currentAccount).getSecretPBytes());
 
 			if (!Utilities.isGoodGaAndGb(g_a, p)) {
-                if (BuildVars.LOGS_ENABLED) {
-                    FileLog.w("stopping VoIP service, bad Ga and Gb (accepting)");
-                }
+				if (BuildVars.LOGS_ENABLED) {
+					FileLog.w("stopping VoIP service, bad Ga and Gb (accepting)");
+				}
 				callFailed();
 				return;
 			}
@@ -820,40 +890,38 @@ public class VoIPService extends VoIPBaseService{
 			VoIPService.this.authKey = authKey;
 			keyFingerprint = Utilities.bytesToLong(authKeyId);
 
-			if(keyFingerprint!=call.key_fingerprint){
-                if (BuildVars.LOGS_ENABLED) {
-                    FileLog.w("key fingerprints don't match");
-                }
+			if (keyFingerprint != phoneCall.key_fingerprint) {
+				if (BuildVars.LOGS_ENABLED) {
+					FileLog.w("key fingerprints don't match");
+				}
 				callFailed();
 				return;
 			}
 
 			initiateActualEncryptedCall();
-		} else if(call instanceof TLRPC.TL_phoneCallAccepted && authKey==null){
+		} else if (phoneCall instanceof TLRPC.TL_phoneCallAccepted && authKey == null) {
 			processAcceptedCall();
 		} else {
-			if (currentState == STATE_WAITING && call.receive_date != 0) {
+			if (currentState == STATE_WAITING && phoneCall.receive_date != 0) {
 				dispatchStateChanged(STATE_RINGING);
-                if (BuildVars.LOGS_ENABLED) {
-                    FileLog.d("!!!!!! CALL RECEIVED");
-                }
-                if(connectingSoundRunnable!=null){
-					AndroidUtilities.cancelRunOnUIThread(connectingSoundRunnable);
-					connectingSoundRunnable=null;
+				if (BuildVars.LOGS_ENABLED) {
+					FileLog.d("!!!!!! CALL RECEIVED");
 				}
-				if (spPlayID != 0)
+				if (connectingSoundRunnable != null) {
+					AndroidUtilities.cancelRunOnUIThread(connectingSoundRunnable);
+					connectingSoundRunnable = null;
+				}
+				if (spPlayID != 0) {
 					soundPool.stop(spPlayID);
+				}
 				spPlayID = soundPool.play(spRingbackID, 1, 1, 0, -1, 1);
 				if (timeoutRunnable != null) {
 					AndroidUtilities.cancelRunOnUIThread(timeoutRunnable);
-					timeoutRunnable=null;
+					timeoutRunnable = null;
 				}
-				timeoutRunnable = new Runnable() {
-					@Override
-					public void run() {
-						timeoutRunnable=null;
-						declineIncomingCall(DISCARD_REASON_MISSED, null);
-					}
+				timeoutRunnable = () -> {
+					timeoutRunnable = null;
+					declineIncomingCall(DISCARD_REASON_MISSED, null);
 				};
 				AndroidUtilities.runOnUIThread(timeoutRunnable, MessagesController.getInstance(currentAccount).callRingTimeout);
 			}
@@ -868,9 +936,9 @@ public class VoIPService extends VoIPBaseService{
 					.putExtra("account", currentAccount)
 					.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP), 0).send();
 		} catch (Exception x) {
-            if (BuildVars.LOGS_ENABLED) {
-                FileLog.e("Error starting incall activity", x);
-            }
+			if (BuildVars.LOGS_ENABLED) {
+				FileLog.e("Error starting incall activity", x);
+			}
 		}
 	}
 
@@ -885,9 +953,9 @@ public class VoIPService extends VoIPBaseService{
 		BigInteger i_authKey = new BigInteger(1, call.g_b);
 
 		if (!Utilities.isGoodGaAndGb(i_authKey, p)) {
-            if (BuildVars.LOGS_ENABLED) {
-                FileLog.w("stopping VoIP service, bad Ga and Gb");
-            }
+			if (BuildVars.LOGS_ENABLED) {
+				FileLog.w("stopping VoIP service, bad Ga and Gb");
+			}
 			callFailed();
 			return;
 		}
@@ -911,42 +979,34 @@ public class VoIPService extends VoIPBaseService{
 		byte[] authKeyId = new byte[8];
 		System.arraycopy(authKeyHash, authKeyHash.length - 8, authKeyId, 0, 8);
 		long fingerprint = Utilities.bytesToLong(authKeyId);
-		this.authKey=authKey;
-		keyFingerprint=fingerprint;
-		TLRPC.TL_phone_confirmCall req=new TLRPC.TL_phone_confirmCall();
-		req.g_a=g_a;
-		req.key_fingerprint=fingerprint;
-		req.peer=new TLRPC.TL_inputPhoneCall();
-		req.peer.id=call.id;
-		req.peer.access_hash=call.access_hash;
-		req.protocol=new TLRPC.TL_phoneCallProtocol();
-		req.protocol.max_layer=TgVoip.getConnectionMaxLayer();
-		req.protocol.min_layer=CALL_MIN_LAYER;
-		req.protocol.udp_p2p=req.protocol.udp_reflector=true;
-		req.protocol.library_versions.addAll(TgVoip.getAvailableVersions());
-		ConnectionsManager.getInstance(currentAccount).sendRequest(req, new RequestDelegate(){
-			@Override
-			public void run(final TLObject response, final TLRPC.TL_error error){
-				AndroidUtilities.runOnUIThread(new Runnable(){
-					@Override
-					public void run(){
-						if(error!=null){
-							callFailed();
-						}else{
-							call=((TLRPC.TL_phone_phoneCall)response).phone_call;
-							initiateActualEncryptedCall();
-						}
-					}
-				});
+		this.authKey = authKey;
+		keyFingerprint = fingerprint;
+		TLRPC.TL_phone_confirmCall req = new TLRPC.TL_phone_confirmCall();
+		req.g_a = g_a;
+		req.key_fingerprint = fingerprint;
+		req.peer = new TLRPC.TL_inputPhoneCall();
+		req.peer.id = call.id;
+		req.peer.access_hash = call.access_hash;
+		req.protocol = new TLRPC.TL_phoneCallProtocol();
+		req.protocol.max_layer = Instance.getConnectionMaxLayer();
+		req.protocol.min_layer = CALL_MIN_LAYER;
+		req.protocol.udp_p2p = req.protocol.udp_reflector = true;
+		req.protocol.library_versions.addAll(Instance.AVAILABLE_VERSIONS);
+		ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
+			if (error != null) {
+				callFailed();
+			} else {
+				call = ((TLRPC.TL_phone_phoneCall) response).phone_call;
+				initiateActualEncryptedCall();
 			}
-		});
+		}));
 	}
 
 	private int convertDataSavingMode(int mode) {
-		if (mode != TgVoip.DATA_SAVING_ROAMING) {
+		if (mode != Instance.DATA_SAVING_ROAMING) {
 			return mode;
 		}
-		return ApplicationLoader.isRoaming() ? TgVoip.DATA_SAVING_MOBILE : TgVoip.DATA_SAVING_NEVER;
+		return ApplicationLoader.isRoaming() ? Instance.DATA_SAVING_MOBILE : Instance.DATA_SAVING_NEVER;
 	}
 
 	private void initiateActualEncryptedCall() {
@@ -955,35 +1015,42 @@ public class VoIPService extends VoIPBaseService{
 			timeoutRunnable = null;
 		}
 		try {
-            if (BuildVars.LOGS_ENABLED) {
-                FileLog.d("InitCall: keyID=" + keyFingerprint);
-            }
-			SharedPreferences nprefs=MessagesController.getNotificationsSettings(currentAccount);
-			HashSet<String> hashes=new HashSet<>(nprefs.getStringSet("calls_access_hashes", Collections.EMPTY_SET));
-			hashes.add(call.id+" "+call.access_hash+" "+System.currentTimeMillis());
-			while(hashes.size()>20){
-				String oldest=null;
-				long oldestTime=Long.MAX_VALUE;
-				Iterator<String> itr=hashes.iterator();
-				while(itr.hasNext()){
-					String item=itr.next();
-					String[] s=item.split(" ");
-					if(s.length<2){
+			if (BuildVars.LOGS_ENABLED) {
+				FileLog.d("InitCall: keyID=" + keyFingerprint);
+			}
+			SharedPreferences nprefs = MessagesController.getNotificationsSettings(currentAccount);
+			Set<String> set = nprefs.getStringSet("calls_access_hashes", null);
+			HashSet<String> hashes;
+			if (set != null) {
+				hashes = new HashSet<>(set);
+			} else {
+				hashes = new HashSet<>();
+			}
+			hashes.add(call.id + " " + call.access_hash + " " + System.currentTimeMillis());
+			while (hashes.size() > 20) {
+				String oldest = null;
+				long oldestTime = Long.MAX_VALUE;
+				Iterator<String> itr = hashes.iterator();
+				while (itr.hasNext()) {
+					String item = itr.next();
+					String[] s = item.split(" ");
+					if (s.length < 2) {
 						itr.remove();
-					}else{
-						try{
-							long t=Long.parseLong(s[2]);
-							if(t<oldestTime){
-								oldestTime=t;
-								oldest=item;
+					} else {
+						try {
+							long t = Long.parseLong(s[2]);
+							if (t < oldestTime) {
+								oldestTime = t;
+								oldest = item;
 							}
-						}catch(Exception x){
+						} catch (Exception x) {
 							itr.remove();
 						}
 					}
 				}
-				if(oldest!=null)
+				if (oldest != null) {
 					hashes.remove(oldest);
+				}
 			}
 			nprefs.edit().putStringSet("calls_access_hashes", hashes).commit();
 
@@ -1001,52 +1068,67 @@ public class VoIPService extends VoIPBaseService{
 
 			final SharedPreferences preferences = MessagesController.getGlobalMainSettings();
 
-			TgVoip.setNativeVersion(this, call.protocol.library_versions.get(0));
-
 			// config
 			final MessagesController messagesController = MessagesController.getInstance(currentAccount);
 			final double initializationTimeout = messagesController.callConnectTimeout / 1000.0;
 			final double receiveTimeout = messagesController.callPacketTimeout / 1000.0;
 			final int voipDataSaving = convertDataSavingMode(preferences.getInt("VoipDataSaving", VoIPHelper.getDataSavingDefault()));
-			final TgVoip.ServerConfig serverConfig = TgVoip.getGlobalServerConfig();
+			final Instance.ServerConfig serverConfig = Instance.getGlobalServerConfig();
 			final boolean enableAec = !(sysAecAvailable && serverConfig.useSystemAec);
 			final boolean enableNs = !(sysNsAvailable && serverConfig.useSystemNs);
 			final String logFilePath = BuildVars.DEBUG_VERSION ? VoIPHelper.getLogFilePath("voip" + call.id) : VoIPHelper.getLogFilePath(call.id);
-			final TgVoip.Config config = new TgVoip.Config(initializationTimeout, receiveTimeout, voipDataSaving, call.p2p_allowed, enableAec, enableNs,
-					/* enableAgc */ true, /* enableCallUpgrade */ false, logFilePath, call.protocol.max_layer);
+			final Instance.Config config = new Instance.Config(initializationTimeout, receiveTimeout, voipDataSaving, call.p2p_allowed, enableAec, enableNs, true, false, logFilePath, call.protocol.max_layer);
 
 			// persistent state
 			final String persistentStateFilePath = new File(ApplicationLoader.applicationContext.getFilesDir(), "voip_persistent_state.json").getAbsolutePath();
 
 			// endpoints
 			final boolean forceTcp = preferences.getBoolean("dbg_force_tcp_in_calls", false);
-			final int endpointType = forceTcp ? TgVoip.ENDPOINT_TYPE_TCP_RELAY : TgVoip.ENDPOINT_TYPE_UDP_RELAY;
-			final TgVoip.Endpoint[] endpoints = new TgVoip.Endpoint[call.connections.size()];
+			final int endpointType = forceTcp ? Instance.ENDPOINT_TYPE_TCP_RELAY : Instance.ENDPOINT_TYPE_UDP_RELAY;
+			final Instance.Endpoint[] endpoints = new Instance.Endpoint[call.connections.size()];
 			for (int i = 0; i < endpoints.length; i++) {
-				final TLRPC.TL_phoneConnection connection = call.connections.get(i);
-				endpoints[i] = new TgVoip.Endpoint(connection.id, connection.ip, connection.ipv6, connection.port, endpointType, connection.peer_tag);
+				final TLRPC.PhoneConnection connection = call.connections.get(i);
+				endpoints[i] = new Instance.Endpoint(connection instanceof TLRPC.TL_phoneConnectionWebrtc, connection.id, connection.ip, connection.ipv6, connection.port, endpointType, connection.peer_tag, connection.turn, connection.stun, connection.username, connection.password);
 			}
 			if (forceTcp) {
 				AndroidUtilities.runOnUIThread(() -> Toast.makeText(VoIPService.this, "This call uses TCP which will degrade its quality.", Toast.LENGTH_SHORT).show());
 			}
 
 			// proxy
-			TgVoip.Proxy proxy = null;
+			Instance.Proxy proxy = null;
 			if (preferences.getBoolean("proxy_enabled", false) && preferences.getBoolean("proxy_enabled_calls", false)) {
 				final String server = preferences.getString("proxy_ip", null);
 				final String secret = preferences.getString("proxy_secret", null);
 				if (!TextUtils.isEmpty(server) && TextUtils.isEmpty(secret)) {
-					proxy = new TgVoip.Proxy(server, preferences.getInt("proxy_port", 0), preferences.getString("proxy_user", null), preferences.getString("proxy_pass", null));
+					proxy = new Instance.Proxy(server, preferences.getInt("proxy_port", 0), preferences.getString("proxy_user", null), preferences.getString("proxy_pass", null));
 				}
 			}
 
 			// encryption key
-			final TgVoip.EncryptionKey encryptionKey = new TgVoip.EncryptionKey(authKey, isOutgoing);
+			final Instance.EncryptionKey encryptionKey = new Instance.EncryptionKey(authKey, isOutgoing);
 
+			boolean newAvailable = "2.7.7".compareTo(call.protocol.library_versions.get(0)) <= 0;
+			if (videoCapturer != 0 && !newAvailable) {
+				NativeInstance.destroyVideoCapturer(videoCapturer);
+				videoCapturer = 0;
+				videoState = Instance.VIDEO_STATE_INACTIVE;
+			}
 			// init
-			tgVoip = TgVoip.makeInstance(config, persistentStateFilePath, endpoints, proxy, getNetworkType(), encryptionKey);
+			tgVoip = Instance.makeInstance(call.protocol.library_versions.get(0), config, persistentStateFilePath, endpoints, proxy, getNetworkType(), encryptionKey, remoteSink, videoCapturer);
 			tgVoip.setOnStateUpdatedListener(this::onConnectionStateChanged);
 			tgVoip.setOnSignalBarsUpdatedListener(this::onSignalBarCountChanged);
+			tgVoip.setOnSignalDataListener(this::onSignalingData);
+			tgVoip.setOnRemoteMediaStateUpdatedListener(this::onMediaStateUpdated);
+			tgVoip.setMuteMicrophone(micMute);
+
+			if (newAvailable != isVideoAvailable) {
+				isVideoAvailable = newAvailable;
+				for (int a = 0; a < stateListeners.size(); a++) {
+					StateListener l = stateListeners.get(a);
+					l.onVideoAvailableChange(isVideoAvailable);
+				}
+			}
+			videoCapturer = 0;
 
 			AndroidUtilities.runOnUIThread(new Runnable() {
 				@Override
@@ -1058,36 +1140,54 @@ public class VoIPService extends VoIPBaseService{
 				}
 			}, 5000);
 		} catch (Exception x) {
-            if (BuildVars.LOGS_ENABLED) {
-                FileLog.e("error starting call", x);
-            }
+			if (BuildVars.LOGS_ENABLED) {
+				FileLog.e("error starting call", x);
+			}
 			callFailed();
 		}
 	}
 
-	protected void showNotification(){
-		showNotification(ContactsController.formatName(user.first_name, user.last_name), user.photo!=null ? user.photo.photo_small : null, VoIPActivity.class);
+	protected void showNotification() {
+		showNotification(ContactsController.formatName(user.first_name, user.last_name), getRoundAvatarBitmap(user));
 	}
 
 	private void startConnectingSound() {
-		if (spPlayID != 0)
+		if (spPlayID != 0) {
 			soundPool.stop(spPlayID);
+		}
 		spPlayID = soundPool.play(spConnectingId, 1, 1, 0, -1, 1);
 		if (spPlayID == 0) {
-			AndroidUtilities.runOnUIThread(connectingSoundRunnable=new Runnable() {
+			AndroidUtilities.runOnUIThread(connectingSoundRunnable = new Runnable() {
 				@Override
 				public void run() {
-					if (sharedInstance == null)
+					if (sharedInstance == null) {
 						return;
-					if (spPlayID == 0)
+					}
+					if (spPlayID == 0) {
 						spPlayID = soundPool.play(spConnectingId, 1, 1, 0, -1, 1);
-					if (spPlayID == 0)
+					}
+					if (spPlayID == 0) {
 						AndroidUtilities.runOnUIThread(this, 100);
-					else
-						connectingSoundRunnable=null;
+					} else {
+						connectingSoundRunnable = null;
+					}
 				}
 			}, 100);
 		}
+	}
+
+	public void onSignalingData(byte[] data) {
+		if (call == null) {
+			return;
+		}
+		TLRPC.TL_phone_sendSignalingData req = new TLRPC.TL_phone_sendSignalingData();
+		req.peer = new TLRPC.TL_inputPhoneCall();
+		req.peer.access_hash = call.access_hash;
+		req.peer.id = call.id;
+		req.data = data;
+		ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> {
+
+		});
 	}
 
 	protected void callFailed(String error) {
@@ -1102,17 +1202,14 @@ public class VoIPService extends VoIPBaseService{
 			req.duration = (int) (getCallDuration() / 1000);
 			req.connection_id = tgVoip != null ? tgVoip.getPreferredRelayId() : 0;
 			req.reason = new TLRPC.TL_phoneCallDiscardReasonDisconnect();
-			ConnectionsManager.getInstance(currentAccount).sendRequest(req, new RequestDelegate() {
-				@Override
-				public void run(TLObject response, TLRPC.TL_error error) {
-					if (error != null) {
-                        if (BuildVars.LOGS_ENABLED) {
-                            FileLog.e("error on phone.discardCall: " + error);
-                        }
-					} else {
-                        if (BuildVars.LOGS_ENABLED) {
-                            FileLog.d("phone.discardCall " + response);
-                        }
+			ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error1) -> {
+				if (error1 != null) {
+					if (BuildVars.LOGS_ENABLED) {
+						FileLog.e("error on phone.discardCall: " + error1);
+					}
+				} else {
+					if (BuildVars.LOGS_ENABLED) {
+						FileLog.d("phone.discardCall " + response);
 					}
 				}
 			});
@@ -1121,40 +1218,42 @@ public class VoIPService extends VoIPBaseService{
 	}
 
 	@Override
-	public long getCallID(){
-		return call!=null ? call.id : 0;
+	public long getCallID() {
+		return call != null ? call.id : 0;
+	}
+
+	public boolean isVideoAvailable() {
+		return isVideoAvailable;
 	}
 
 	public void onUIForegroundStateChanged(boolean isForeground) {
-		if(Build.VERSION.SDK_INT>=Build.VERSION_CODES.LOLLIPOP)
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
 			return;
+		}
 
 		if (currentState == STATE_WAITING_INCOMING) {
 			if (isForeground) {
 				stopForeground(true);
 			} else {
 				if (!((KeyguardManager) getSystemService(KEYGUARD_SERVICE)).inKeyguardRestrictedInputMode()) {
-					if(NotificationManagerCompat.from(this).areNotificationsEnabled())
-						showIncomingNotification(ContactsController.formatName(user.first_name, user.last_name), null, user, null, 0, VoIPActivity.class);
-					else
+					if (NotificationManagerCompat.from(this).areNotificationsEnabled()) {
+						showIncomingNotification(ContactsController.formatName(user.first_name, user.last_name), null, user, call.video, 0);
+					} else {
 						declineIncomingCall(DISCARD_REASON_LINE_BUSY, null);
+					}
 				} else {
-					AndroidUtilities.runOnUIThread(new Runnable() {
-						@Override
-						public void run() {
-							Intent intent = new Intent(VoIPService.this, VoIPActivity.class);
-							intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-							try {
-								PendingIntent.getActivity(VoIPService.this, 0, intent, 0).send();
-							} catch (PendingIntent.CanceledException e) {
-                                if (BuildVars.LOGS_ENABLED) {
-                                    FileLog.e("error restarting activity", e);
-                                }
-								declineIncomingCall(DISCARD_REASON_LINE_BUSY, null);
+					AndroidUtilities.runOnUIThread(() -> {
+						Intent intent = new Intent(VoIPService.this, LaunchActivity.class).setAction("voip");
+						try {
+							PendingIntent.getActivity(VoIPService.this, 0, intent, 0).send();
+						} catch (PendingIntent.CanceledException e) {
+							if (BuildVars.LOGS_ENABLED) {
+								FileLog.e("error restarting activity", e);
 							}
-							if(Build.VERSION.SDK_INT>=Build.VERSION_CODES.O){
-								showNotification();
-							}
+							declineIncomingCall(DISCARD_REASON_LINE_BUSY, null);
+						}
+						if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+							showNotification();
 						}
 					}, 500);
 				}
@@ -1162,201 +1261,76 @@ public class VoIPService extends VoIPBaseService{
 		}
 	}
 
-	/*package*/ void onMediaButtonEvent(KeyEvent ev) {
-		if (ev.getKeyCode() == KeyEvent.KEYCODE_HEADSETHOOK || ev.getKeyCode()==KeyEvent.KEYCODE_MEDIA_PAUSE || ev.getKeyCode()==KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE) {
+	void onMediaButtonEvent(KeyEvent ev) {
+		if (ev.getKeyCode() == KeyEvent.KEYCODE_HEADSETHOOK || ev.getKeyCode() == KeyEvent.KEYCODE_MEDIA_PAUSE || ev.getKeyCode() == KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE) {
 			if (ev.getAction() == KeyEvent.ACTION_UP) {
 				if (currentState == STATE_WAITING_INCOMING) {
 					acceptIncomingCall();
 				} else {
 					setMicMute(!isMicMute());
-					for (StateListener l : stateListeners)
+					for (StateListener l : stateListeners) {
 						l.onAudioSettingsChanged();
+					}
 				}
 			}
 		}
 	}
 
-	public byte[] getGA(){
+	public byte[] getGA() {
 		return g_a;
 	}
 
 	@Override
-	public void didReceivedNotification(int id, int account, Object... args){
-		if(id==NotificationCenter.appDidLogout){
+	public void didReceivedNotification(int id, int account, Object... args) {
+		if (id == NotificationCenter.appDidLogout) {
 			callEnded();
 		}
 	}
 
-	public void forceRating(){
-		forceRating=true;
+	public void forceRating() {
+		forceRating = true;
 	}
 
-	private String[] getEmoji(){
-		ByteArrayOutputStream os=new ByteArrayOutputStream();
-		try{
+	private String[] getEmoji() {
+		ByteArrayOutputStream os = new ByteArrayOutputStream();
+		try {
 			os.write(authKey);
 			os.write(g_a);
-		}catch(IOException ignore){}
+		} catch (IOException ignore) {
+		}
 		return EncryptionKeyEmojifier.emojifyForCall(Utilities.computeSHA256(os.toByteArray(), 0, os.size()));
 	}
 
-	public boolean canUpgrate() {
-		return (peerCapabilities & TgVoip.PEER_CAP_GROUP_CALLS) == TgVoip.PEER_CAP_GROUP_CALLS;
-	}
-
-	public void upgradeToGroupCall(List<Integer> usersToAdd){
-		if(upgrading)
-			return;
-		groupUsersToAdd=usersToAdd;
-		if (!isOutgoing) {
-			tgVoip.requestCallUpgrade();
-			return;
-		}
-		upgrading=true;
-		groupCallEncryptionKey=new byte[256];
-		Utilities.random.nextBytes(groupCallEncryptionKey);
-		groupCallEncryptionKey[0]&=0x7F;
-		byte[] authKeyHash = Utilities.computeSHA1(groupCallEncryptionKey);
-		byte[] authKeyId = new byte[8];
-		System.arraycopy(authKeyHash, authKeyHash.length - 8, authKeyId, 0, 8);
-		groupCallKeyFingerprint=Utilities.bytesToLong(authKeyId);
-
-		tgVoip.sendGroupCallKey(groupCallEncryptionKey);
-	}
-
-	/*public void upgradedToGroupCall(TLRPC.TL_updateGroupCall update){
-		if(upgrading){
-			FileLog.w("Received an update about call upgrade but we're upgrading it ourselves; ignoring update");
-			return;
-		}
-		VoIPGroupService.waitingToStart=true;
-		TLRPC.TL_phone_getGroupCall req=new TLRPC.TL_phone_getGroupCall();
-		req.call=new TLRPC.TL_inputGroupCall();
-		req.call.id=update.call.id;
-		req.call.access_hash=update.call.access_hash;
-		ConnectionsManager.getInstance(currentAccount).sendRequest(req, new RequestDelegate(){
-			@Override
-			public void run(TLObject response, TLRPC.TL_error error){
-				if(response!=null){
-					TLRPC.TL_phone_groupCall call=(TLRPC.TL_phone_groupCall) response;
-					if((call.call.flags & 2)==1 || call.call.key_fingerprint!=groupCallKeyFingerprint){
-						callFailed(VoIPController.ERROR_INSECURE_UPGRADE);
-						return;
-					}
-					stopSelf();
-					VoIPGroupService.callToStartFor=call;
-					VoIPGroupService.secretCallEncryptionKey=groupCallEncryptionKey;
-					Intent intent=new Intent(ApplicationLoader.applicationContext, VoIPGroupService.class);
-					intent.putExtra("account", currentAccount);
-					intent.putExtra("use_existing_call", true);
-					intent.putExtra("start_incall_activity", true);
-					intent.putExtra("need_update_self_streams", true);
-					intent.putExtra("private_key_emoji", getEmoji());
-					//intent.putExtra("forced_admin_id", user.id);
-					int[] uids=new int[groupUsersToAdd.size()];
-					for(int i=0;i<uids.length;i++)
-						uids[i]=groupUsersToAdd.get(i);
-					intent.putExtra("invite_users", uids);
-					ApplicationLoader.applicationContext.startService(intent);
-				}else{
-					VoIPGroupService.waitingToStart=false;
-					callFailed();
-				}
-			}
-		});
-	}*/
-
 	@Override
-	public void onConnectionStateChanged(int newState){
+	public void onConnectionStateChanged(int newState) {
 		if (newState == STATE_ESTABLISHED) {
 			if (callStartTime == 0) {
 				callStartTime = SystemClock.elapsedRealtime();
 			}
-			peerCapabilities = tgVoip.getPeerCapabilities();
+			//peerCapabilities = tgVoip.getPeerCapabilities();
 		}
 		super.onConnectionStateChanged(newState);
 	}
 
-	@Override
-	public void onGroupCallKeyReceived(byte[] key){
-		joiningGroupCall=true;
-		groupCallEncryptionKey=key;
-		byte[] authKeyHash = Utilities.computeSHA1(groupCallEncryptionKey);
-		byte[] authKeyId = new byte[8];
-		System.arraycopy(authKeyHash, authKeyHash.length - 8, authKeyId, 0, 8);
-		groupCallKeyFingerprint=Utilities.bytesToLong(authKeyId);
-	}
-
-	@Override
-	public void onGroupCallKeySent(){
-		if(isOutgoing){
-			//actuallyUpgradeToGroupCall();
-		}
-	}
-
-	@Override
-	public void onCallUpgradeRequestReceived(){
-		upgradeToGroupCall(new ArrayList<Integer>());
-	}
-
 	@TargetApi(Build.VERSION_CODES.O)
 	@Override
-	public CallConnection getConnectionAndStartCall(){
-		if(systemCallConnection==null){
-			if(BuildVars.LOGS_ENABLED)
+	public CallConnection getConnectionAndStartCall() {
+		if (systemCallConnection == null) {
+			if (BuildVars.LOGS_ENABLED) {
 				FileLog.d("creating call connection");
-			systemCallConnection=new CallConnection();
+			}
+			systemCallConnection = new CallConnection();
 			systemCallConnection.setInitializing();
-			if(isOutgoing){
-				delayedStartOutgoingCall=new Runnable(){
-					@Override
-					public void run(){
-						delayedStartOutgoingCall=null;
-						startOutgoingCall();
-					}
+			if (isOutgoing) {
+				delayedStartOutgoingCall = () -> {
+					delayedStartOutgoingCall = null;
+					startOutgoingCall();
 				};
 				AndroidUtilities.runOnUIThread(delayedStartOutgoingCall, 2000);
 			}
-			systemCallConnection.setAddress(Uri.fromParts("tel", "+99084"+user.id, null), TelecomManager.PRESENTATION_ALLOWED);
+			systemCallConnection.setAddress(Uri.fromParts("tel", "+99084" + user.id, null), TelecomManager.PRESENTATION_ALLOWED);
 			systemCallConnection.setCallerDisplayName(ContactsController.formatName(user.first_name, user.last_name), TelecomManager.PRESENTATION_ALLOWED);
 		}
 		return systemCallConnection;
 	}
-
-	/*private void actuallyUpgradeToGroupCall(){
-		TLRPC.TL_phone_upgradePhoneCall req=new TLRPC.TL_phone_upgradePhoneCall();
-		req.peer=new TLRPC.TL_inputPhoneCall();
-		req.peer.id=call.id;
-		req.peer.access_hash=call.access_hash;
-		req.key_fingerprint=groupCallKeyFingerprint;
-		req.streams=VoIPGroupController.getInitialStreams();
-		upgrading=true;
-		ConnectionsManager.getInstance(currentAccount).sendRequest(req, new RequestDelegate(){
-			@Override
-			public void run(TLObject response, TLRPC.TL_error error){
-				FileLog.d("upgrade call response = "+response);
-				if(error!=null){
-					FileLog.e("Failed to upgrade call, error: "+error.code+" "+error.text);
-					callFailed();
-					return;
-				}
-				stopSelf();
-				TLRPC.TL_phone_groupCall call=(TLRPC.TL_phone_groupCall) response;
-				VoIPGroupService.callToStartFor=call;
-				VoIPGroupService.secretCallEncryptionKey=groupCallEncryptionKey;
-				VoIPGroupService.waitingToStart=true;
-				Intent intent=new Intent(ApplicationLoader.applicationContext, VoIPGroupService.class);
-				intent.putExtra("account", currentAccount);
-				intent.putExtra("use_existing_call", true);
-				intent.putExtra("start_incall_activity", true);
-				intent.putExtra("forced_admin_id", user.id);
-				intent.putExtra("private_key_emoji", getEmoji());
-				int[] uids=new int[groupUsersToAdd.size()];
-				for(int i=0;i<uids.length;i++)
-					uids[i]=groupUsersToAdd.get(i);
-				intent.putExtra("invite_users", uids);
-				ApplicationLoader.applicationContext.startService(intent);
-			}
-		});
-	}*/
 }

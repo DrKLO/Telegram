@@ -9215,7 +9215,7 @@ public class MessagesStorage extends BaseController {
                         TLRPC.Chat chat = chats.get(a);
                         chatHashMap.put(chat.id, chat);
                     }
-                    MessageObject messageObject = new MessageObject(currentAccount, message, userHashMap, chatHashMap, true);
+                    MessageObject messageObject = new MessageObject(currentAccount, message, userHashMap, chatHashMap, true, true);
                     ArrayList<MessageObject> arrayList = new ArrayList<>();
                     arrayList.add(messageObject);
                     AndroidUtilities.runOnUIThread(() -> getNotificationCenter().postNotificationName(NotificationCenter.replaceMessagesObjects, messageObject.getDialogId(), arrayList));

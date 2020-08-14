@@ -1818,8 +1818,14 @@ public class ContactsController extends BaseController {
             if (!hasContactsPermission()) {
                 return;
             }
+            final SharedPreferences settings = MessagesController.getMainSettings(currentAccount);
+            final boolean forceUpdate = !settings.getBoolean("contacts_updated_v7", false);
+            if (forceUpdate) {
+                settings.edit().putBoolean("contacts_updated_v7", true).commit();
+            }
+            final ContentResolver contentResolver = ApplicationLoader.applicationContext.getContentResolver();
             Uri rawContactUri = ContactsContract.RawContacts.CONTENT_URI.buildUpon().appendQueryParameter(ContactsContract.RawContacts.ACCOUNT_NAME, systemAccount.name).appendQueryParameter(ContactsContract.RawContacts.ACCOUNT_TYPE, systemAccount.type).build();
-            cursor = ApplicationLoader.applicationContext.getContentResolver().query(rawContactUri, new String[]{BaseColumns._ID, ContactsContract.RawContacts.SYNC2}, null, null, null);
+            cursor = contentResolver.query(rawContactUri, new String[]{BaseColumns._ID, ContactsContract.RawContacts.SYNC2}, null, null, null);
             SparseLongArray bookContacts = new SparseLongArray();
             if (cursor != null) {
                 while (cursor.moveToNext()) {
@@ -1830,9 +1836,8 @@ public class ContactsController extends BaseController {
 
                 for (int a = 0; a < contactsArray.size(); a++) {
                     TLRPC.TL_contact u = contactsArray.get(a);
-                    if (bookContacts.indexOfKey(u.user_id) < 0) {
-                        TLRPC.User user = getMessagesController().getUser(u.user_id);
-                        addContactToPhoneBook(user, false);
+                    if (forceUpdate || bookContacts.indexOfKey(u.user_id) < 0) {
+                        addContactToPhoneBook(getMessagesController().getUser(u.user_id), forceUpdate);
                     }
                 }
             }
@@ -2055,14 +2060,35 @@ public class ContactsController extends BaseController {
 //        builder.withValue(ContactsContract.CommonDataKinds.Phone.TYPE, ContactsContract.CommonDataKinds.Phone.TYPE_MOBILE);
 //        query.add(builder.build());
 
+        final String phoneOrName = TextUtils.isEmpty(user.phone) ? ContactsController.formatName(user.first_name, user.last_name) : "+" + user.phone;
+
         builder = ContentProviderOperation.newInsert(ContactsContract.Data.CONTENT_URI);
         builder.withValueBackReference(ContactsContract.Data.RAW_CONTACT_ID, 0);
         builder.withValue(ContactsContract.Data.MIMETYPE, "vnd.android.cursor.item/vnd.org.telegram.messenger.android.profile");
         builder.withValue(ContactsContract.Data.DATA1, user.id);
         builder.withValue(ContactsContract.Data.DATA2, "Telegram Profile");
-        builder.withValue(ContactsContract.Data.DATA3, TextUtils.isEmpty(user.phone) ? ContactsController.formatName(user.first_name, user.last_name) : "+" + user.phone);
+        builder.withValue(ContactsContract.Data.DATA3, LocaleController.formatString("ContactShortcutMessage", R.string.ContactShortcutMessage, phoneOrName));
         builder.withValue(ContactsContract.Data.DATA4, user.id);
         query.add(builder.build());
+
+        builder = ContentProviderOperation.newInsert(ContactsContract.Data.CONTENT_URI);
+        builder.withValueBackReference(ContactsContract.Data.RAW_CONTACT_ID, 0);
+        builder.withValue(ContactsContract.Data.MIMETYPE, "vnd.android.cursor.item/vnd.org.telegram.messenger.android.call");
+        builder.withValue(ContactsContract.Data.DATA1, user.id);
+        builder.withValue(ContactsContract.Data.DATA2, "Telegram Voice Call");
+        builder.withValue(ContactsContract.Data.DATA3, LocaleController.formatString("ContactShortcutVoiceCall", R.string.ContactShortcutVoiceCall, phoneOrName));
+        builder.withValue(ContactsContract.Data.DATA4, user.id);
+        query.add(builder.build());
+
+        builder = ContentProviderOperation.newInsert(ContactsContract.Data.CONTENT_URI);
+        builder.withValueBackReference(ContactsContract.Data.RAW_CONTACT_ID, 0);
+        builder.withValue(ContactsContract.Data.MIMETYPE, "vnd.android.cursor.item/vnd.org.telegram.messenger.android.call.video");
+        builder.withValue(ContactsContract.Data.DATA1, user.id);
+        builder.withValue(ContactsContract.Data.DATA2, "Telegram Video Call");
+        builder.withValue(ContactsContract.Data.DATA3, LocaleController.formatString("ContactShortcutVideoCall", R.string.ContactShortcutVideoCall, phoneOrName));
+        builder.withValue(ContactsContract.Data.DATA4, user.id);
+        query.add(builder.build());
+
         try {
             ContentProviderResult[] result = contentResolver.applyBatch(ContactsContract.AUTHORITY, query);
             if (result != null && result.length > 0 && result[0].uri != null) {

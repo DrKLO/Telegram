@@ -294,7 +294,7 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
                         if (maxId != null && message.id <= maxId) {
                             continue;
                         }
-                        searchResultMessages.add(new MessageObject(currentAccount, message, false));
+                        searchResultMessages.add(new MessageObject(currentAccount, message, false, true));
                         long dialog_id = MessageObject.getDialogId(message);
                         ConcurrentHashMap<Long, Integer> read_max = message.out ? MessagesController.getInstance(currentAccount).dialogs_read_outbox_max : MessagesController.getInstance(currentAccount).dialogs_read_inbox_max;
                         Integer value = read_max.get(dialog_id);
