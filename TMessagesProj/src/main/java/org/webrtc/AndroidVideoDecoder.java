@@ -21,6 +21,8 @@ import java.nio.ByteBuffer;
 import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
+
+import org.telegram.messenger.FileLog;
 import org.webrtc.ThreadUtils.ThreadChecker;
 
 /**
@@ -543,33 +545,37 @@ class AndroidVideoDecoder implements VideoDecoder, VideoSink {
 
     VideoFrame.I420Buffer frameBuffer = allocateI420Buffer(width, height);
 
-    buffer.limit(yEnd);
-    buffer.position(yPos);
-    copyPlane(
-        buffer.slice(), stride, frameBuffer.getDataY(), frameBuffer.getStrideY(), width, height);
+    try { //don't crash
+      buffer.limit(yEnd);
+      buffer.position(yPos);
+      copyPlane(
+              buffer.slice(), stride, frameBuffer.getDataY(), frameBuffer.getStrideY(), width, height);
 
-    buffer.limit(uEnd);
-    buffer.position(uPos);
-    copyPlane(buffer.slice(), uvStride, frameBuffer.getDataU(), frameBuffer.getStrideU(),
-        chromaWidth, chromaHeight);
-    if (sliceHeight % 2 == 1) {
-      buffer.position(uPos + uvStride * (chromaHeight - 1)); // Seek to beginning of last full row.
+      buffer.limit(uEnd);
+      buffer.position(uPos);
+      copyPlane(buffer.slice(), uvStride, frameBuffer.getDataU(), frameBuffer.getStrideU(),
+              chromaWidth, chromaHeight);
+      if (sliceHeight % 2 == 1) {
+        buffer.position(uPos + uvStride * (chromaHeight - 1)); // Seek to beginning of last full row.
 
-      ByteBuffer dataU = frameBuffer.getDataU();
-      dataU.position(frameBuffer.getStrideU() * chromaHeight); // Seek to beginning of last row.
-      dataU.put(buffer); // Copy the last row.
-    }
+        ByteBuffer dataU = frameBuffer.getDataU();
+        dataU.position(frameBuffer.getStrideU() * chromaHeight); // Seek to beginning of last row.
+        dataU.put(buffer); // Copy the last row.
+      }
 
-    buffer.limit(vEnd);
-    buffer.position(vPos);
-    copyPlane(buffer.slice(), uvStride, frameBuffer.getDataV(), frameBuffer.getStrideV(),
-        chromaWidth, chromaHeight);
-    if (sliceHeight % 2 == 1) {
-      buffer.position(vPos + uvStride * (chromaHeight - 1)); // Seek to beginning of last full row.
+      buffer.limit(vEnd);
+      buffer.position(vPos);
+      copyPlane(buffer.slice(), uvStride, frameBuffer.getDataV(), frameBuffer.getStrideV(),
+              chromaWidth, chromaHeight);
+      if (sliceHeight % 2 == 1) {
+        buffer.position(vPos + uvStride * (chromaHeight - 1)); // Seek to beginning of last full row.
 
-      ByteBuffer dataV = frameBuffer.getDataV();
-      dataV.position(frameBuffer.getStrideV() * chromaHeight); // Seek to beginning of last row.
-      dataV.put(buffer); // Copy the last row.
+        ByteBuffer dataV = frameBuffer.getDataV();
+        dataV.position(frameBuffer.getStrideV() * chromaHeight); // Seek to beginning of last row.
+        dataV.put(buffer); // Copy the last row.
+      }
+    } catch (Throwable e) {
+      FileLog.e(e);
     }
 
     return frameBuffer;

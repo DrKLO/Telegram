@@ -5,6 +5,9 @@
 #include <VideoCapturerInterface.h>
 #include <platform/android/AndroidInterface.h>
 #include <platform/android/AndroidContext.h>
+#include <rtc_base/ssl_adapter.h>
+#include <modules/utility/include/jvm_android.h>
+#include <sdk/android/native_api/base/init.h>
 
 #include "pc/video_track.h"
 #include "legacy/InstanceImplLegacy.h"
@@ -214,7 +217,23 @@ jobject asJavaFinalState(JNIEnv *env, const FinalState &finalState) {
 
 extern "C" {
 
+bool webrtcLoaded = false;
+
+void initWebRTC(JNIEnv *env) {
+    if (webrtcLoaded) {
+        return;
+    }
+    JavaVM* vm;
+    env->GetJavaVM(&vm);
+    webrtc::InitAndroid(vm);
+    webrtc::JVM::Initialize(vm);
+    rtc::InitializeSSL();
+    webrtcLoaded = true;
+}
+
 JNIEXPORT jlong JNICALL Java_org_telegram_messenger_voip_NativeInstance_makeNativeInstance(JNIEnv *env, jclass clazz, jstring version, jobject instanceObj, jobject config, jstring persistentStateFilePath, jobjectArray endpoints, jobject proxyClass, jint networkType, jobject encryptionKey, jobject remoteSink, jlong videoCapturer, jfloat aspectRatio) {
+    initWebRTC(env);
+
     JavaObject configObject(env, config);
     JavaObject encryptionKeyObject(env, encryptionKey);
     std::string v = tgvoip::jni::JavaStringToStdString(env, version);
@@ -381,6 +400,7 @@ JNIEXPORT jobject JNICALL Java_org_telegram_messenger_voip_NativeInstance_stop(J
 }
 
 JNIEXPORT long JNICALL Java_org_telegram_messenger_voip_NativeInstance_createVideoCapturer(JNIEnv *env, jclass clazz, jobject localSink) {
+    initWebRTC(env);
     std::unique_ptr<VideoCaptureInterface> capture = tgcalls::VideoCaptureInterface::Create(std::make_shared<AndroidContext>(env));
     capture->setOutput(webrtc::JavaToNativeVideoSink(env, localSink));
     capture->setState(VideoState::Active);

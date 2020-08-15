@@ -134,7 +134,7 @@ public class VoIPPiPView implements VoIPBaseService.StateListener {
     };
 
     public static void show(Activity activity, int parentWidth, int parentHeight, int animationType) {
-        if (instance != null) {
+        if (instance != null || VideoCameraCapturer.eglBase == null) {
             return;
         }
         WindowManager.LayoutParams windowLayoutParams = createWindowLayoutParams(activity, parentWidth, parentHeight, SCALE_NORMAL);

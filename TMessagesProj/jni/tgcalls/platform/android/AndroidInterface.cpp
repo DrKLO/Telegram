@@ -53,7 +53,7 @@ rtc::scoped_refptr<webrtc::VideoTrackSourceInterface> AndroidInterface::makeVide
 }
 
 bool AndroidInterface::supportsEncoding(const std::string &codecName) {
-    if (softwareVideoEncoderFactory == nullptr) {
+    if (hardwareVideoEncoderFactory == nullptr) {
         JNIEnv *env = webrtc::AttachCurrentThreadIfNeeded();
         webrtc::ScopedJavaLocalRef<jclass> factory_class =
                 webrtc::GetClass(env, "org/webrtc/HardwareVideoEncoderFactory");
@@ -85,15 +85,3 @@ std::unique_ptr<PlatformInterface> CreatePlatformInterface() {
 }
 
 } // namespace tgcalls
-
-extern "C" {
-
-int webrtcOnJNILoad(JavaVM *vm, JNIEnv *env) {
-    webrtc::InitAndroid(vm);
-    webrtc::JVM::Initialize(vm);
-    rtc::InitializeSSL();
-
-    return JNI_TRUE;
-}
-
-}

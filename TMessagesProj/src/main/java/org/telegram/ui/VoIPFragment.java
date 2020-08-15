@@ -16,7 +16,6 @@ import android.content.pm.PackageManager;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
-import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
 import android.net.Uri;
 import android.os.Build;
@@ -50,7 +49,6 @@ import androidx.core.graphics.ColorUtils;
 import androidx.core.view.ViewCompat;
 
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.Emoji;
 import org.telegram.messenger.FileLog;
@@ -70,6 +68,7 @@ import org.telegram.messenger.voip.VoIPBaseService;
 import org.telegram.messenger.voip.VoIPService;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.AlertDialog;
+import org.telegram.ui.ActionBar.DarkAlertDialog;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.BackgroundGradientDrawable;
 import org.telegram.ui.Components.BackupImageView;
@@ -195,7 +194,7 @@ public class VoIPFragment implements VoIPBaseService.StateListener, Notification
     boolean hideUiRunnableWaiting;
     Runnable hideUIRunnable = () -> {
         hideUiRunnableWaiting = false;
-        if (canHideUI && uiVisible) {
+        if (canHideUI && uiVisible && !emojiExpanded) {
             lastContentTapTime = System.currentTimeMillis();
             showUi(false);
             previousState = currentState;
@@ -822,7 +821,7 @@ public class VoIPFragment implements VoIPBaseService.StateListener, Notification
     }
 
     public void switchToPip() {
-        if (isFinished || !AndroidUtilities.checkInlinePermissions(activity)) {
+        if (isFinished || !AndroidUtilities.checkInlinePermissions(activity) || instance == null) {
             return;
         }
         isFinished = true;
@@ -1041,11 +1040,13 @@ public class VoIPFragment implements VoIPBaseService.StateListener, Notification
     }
 
     private void expandEmoji(boolean expanded) {
-        if (!emojiLoaded || emojiExpanded == expanded) {
+        if (!emojiLoaded || emojiExpanded == expanded || !uiVisible) {
             return;
         }
         emojiExpanded = expanded;
         if (expanded) {
+            AndroidUtilities.runOnUIThread(hideUIRunnable);
+            hideUiRunnableWaiting = false;
             float s1 = emojiLayout.getMeasuredWidth();
             float s2 = windowView.getMeasuredWidth() - AndroidUtilities.dp(128);
             float scale = s2 / s1;
@@ -1079,6 +1080,11 @@ public class VoIPFragment implements VoIPBaseService.StateListener, Notification
                 emojiRationalTextView.animate().alpha(0).setListener(new AnimatorListenerAdapter() {
                     @Override
                     public void onAnimationEnd(Animator animation) {
+                        VoIPService service = VoIPService.getSharedInstance();
+                        if (canHideUI && !hideUiRunnableWaiting && service != null && !service.isMicMute()) {
+                            AndroidUtilities.runOnUIThread(hideUIRunnable, 3000);
+                            hideUiRunnableWaiting = true;
+                        }
                         emojiRationalTextView.setVisibility(View.GONE);
                     }
                 }).setDuration(150).start();
@@ -1097,9 +1103,6 @@ public class VoIPFragment implements VoIPBaseService.StateListener, Notification
     private void updateViewState() {
         if (isFinished || switchingToPip) {
             return;
-        }
-        if (currentState == VoIPService.DISCARD_REASON_LINE_BUSY) {
-            currentState = VoIPService.STATE_BUSY;
         }
         lockOnScreen = false;
         boolean animated = previousState != -1;
@@ -1174,6 +1177,36 @@ public class VoIPFragment implements VoIPBaseService.StateListener, Notification
                 currentUserTextureView.saveCameraLastBitmap();
                 AndroidUtilities.runOnUIThread(() -> windowView.finish(), 200);
                 break;
+            case VoIPBaseService.STATE_FAILED:
+                statusTextView.setText(LocaleController.getString("VoipFailed", R.string.VoipFailed), false, animated);
+                final VoIPService voipService = VoIPService.getSharedInstance();
+                final String lastError = voipService != null ? voipService.getLastError() : Instance.ERROR_UNKNOWN;
+                if (!TextUtils.equals(lastError, Instance.ERROR_UNKNOWN)) {
+                    if (TextUtils.equals(lastError, Instance.ERROR_INCOMPATIBLE)) {
+                        final String name = ContactsController.formatName(callingUser.first_name, callingUser.last_name);
+                        final String message = LocaleController.formatString("VoipPeerIncompatible", R.string.VoipPeerIncompatible, name);
+                        showErrorDialog(AndroidUtilities.replaceTags(message));
+                    } else if (TextUtils.equals(lastError, Instance.ERROR_PEER_OUTDATED)) {
+                        final String name = ContactsController.formatName(callingUser.first_name, callingUser.last_name);
+                        final String message = LocaleController.formatString("VoipPeerOutdated", R.string.VoipPeerOutdated, name);
+                        showErrorDialog(AndroidUtilities.replaceTags(message));
+                    } else if (TextUtils.equals(lastError, Instance.ERROR_PRIVACY)) {
+                        final String name = ContactsController.formatName(callingUser.first_name, callingUser.last_name);
+                        final String message = LocaleController.formatString("CallNotAvailable", R.string.CallNotAvailable, name);
+                        showErrorDialog(AndroidUtilities.replaceTags(message));
+                    } else if (TextUtils.equals(lastError, Instance.ERROR_AUDIO_IO)) {
+                        showErrorDialog("Error initializing audio hardware");
+                    } else if (TextUtils.equals(lastError, Instance.ERROR_LOCALIZED)) {
+                        windowView.finish();
+                    } else if (TextUtils.equals(lastError, Instance.ERROR_CONNECTION_SERVICE)) {
+                        showErrorDialog(LocaleController.getString("VoipErrorUnknown", R.string.VoipErrorUnknown));
+                    } else {
+                        AndroidUtilities.runOnUIThread(() -> windowView.finish(), 1000);
+                    }
+                } else {
+                    AndroidUtilities.runOnUIThread(() -> windowView.finish(), 1000);
+                }
+                break;
         }
 
         if (callingUserIsVideo) {
@@ -1222,6 +1255,9 @@ public class VoIPFragment implements VoIPBaseService.StateListener, Notification
         if (uiVisible && canHideUI && !hideUiRunnableWaiting && service != null && !service.isMicMute()) {
             AndroidUtilities.runOnUIThread(hideUIRunnable, 3000);
             hideUiRunnableWaiting = true;
+        } else if (service != null && service.isMicMute()) {
+            AndroidUtilities.cancelRunOnUIThread(hideUIRunnable);
+            hideUiRunnableWaiting = false;
         }
         if (!uiVisible) {
             statusLayoutOffset -= AndroidUtilities.dp(50);
@@ -1394,6 +1430,7 @@ public class VoIPFragment implements VoIPBaseService.StateListener, Notification
             uiVisibilityAnimator.start();
             AndroidUtilities.cancelRunOnUIThread(hideUIRunnable);
             hideUiRunnableWaiting = false;
+            buttonsLayout.setEnabled(false);
         } else if (show && !uiVisible) {
             tapToVideoTooltip.hide();
             speakerPhoneIcon.animate().alpha(1f).translationY(0).setDuration(150).setInterpolator(CubicBezierInterpolator.DEFAULT).start();
@@ -1407,6 +1444,7 @@ public class VoIPFragment implements VoIPBaseService.StateListener, Notification
             uiVisibilityAnimator.addUpdateListener(statusbarAnimatorListener);
             uiVisibilityAnimator.setDuration(150).setInterpolator(CubicBezierInterpolator.DEFAULT);
             uiVisibilityAnimator.start();
+            buttonsLayout.setEnabled(true);
         }
 
         uiVisible = show;
@@ -1706,7 +1744,7 @@ public class VoIPFragment implements VoIPBaseService.StateListener, Notification
                     view.announceForAccessibility(text);
                 }
                 serviceInstance.setMicMute(micMute);
-                updateButtons(true);
+                updateViewState();
             }
         });
     }
@@ -1763,7 +1801,11 @@ public class VoIPFragment implements VoIPBaseService.StateListener, Notification
         } else if (service.isSpeakerphoneOn()) {
             speakerPhoneIcon.setImageResource(R.drawable.calls_speaker);
         } else {
-            speakerPhoneIcon.setImageResource(R.drawable.calls_menu_phone);
+            if (service.isHeadsetPlugged()) {
+                speakerPhoneIcon.setImageResource(R.drawable.calls_menu_headset);
+            } else {
+                speakerPhoneIcon.setImageResource(R.drawable.calls_menu_phone);
+            }
         }
     }
 
@@ -1953,6 +1995,19 @@ public class VoIPFragment implements VoIPBaseService.StateListener, Notification
         }
 
         deviceIsLocked = ((KeyguardManager) activity.getSystemService(Context.KEYGUARD_SERVICE)).inKeyguardRestrictedInputMode();
+    }
+
+    private void showErrorDialog(CharSequence message) {
+        if (activity.isFinishing()) {
+            return;
+        }
+        AlertDialog dlg = new DarkAlertDialog.Builder(activity)
+                .setTitle(LocaleController.getString("VoipFailed", R.string.VoipFailed))
+                .setMessage(message)
+                .setPositiveButton(LocaleController.getString("OK", R.string.OK), null)
+                .show();
+        dlg.setCanceledOnTouchOutside(true);
+        dlg.setOnDismissListener(dialog -> windowView.finish());
     }
 
     @SuppressLint("InlinedApi")

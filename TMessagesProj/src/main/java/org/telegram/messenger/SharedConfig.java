@@ -76,7 +76,7 @@ public class SharedConfig {
 
     public static boolean saveToGallery;
     public static int mapPreviewType = 2;
-    public static boolean chatBubbles = false;
+    public static boolean chatBubbles = Build.VERSION.SDK_INT >= 30;
     public static boolean autoplayGifs = true;
     public static boolean autoplayVideo = true;
     public static boolean raiseToSpeak = true;
@@ -239,7 +239,7 @@ public class SharedConfig {
             preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
             saveToGallery = preferences.getBoolean("save_gallery", false);
             autoplayGifs = preferences.getBoolean("autoplay_gif", true);
-            chatBubbles = preferences.getBoolean("chatBubbles", false);
+            chatBubbles = preferences.getBoolean("chatBubbles", Build.VERSION.SDK_INT >= 30);
             autoplayVideo = preferences.getBoolean("autoplay_video", true);
             mapPreviewType = preferences.getInt("mapPreviewType", 2);
             raiseToSpeak = preferences.getBoolean("raise_to_speak", true);

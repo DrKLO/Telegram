@@ -13,7 +13,6 @@
 int registerNativeTgNetFunctions(JavaVM *vm, JNIEnv *env);
 int videoOnJNILoad(JavaVM *vm, JNIEnv *env);
 int imageOnJNILoad(JavaVM *vm, JNIEnv *env);
-int webrtcOnJNILoad(JavaVM *vm, JNIEnv *env);
 int tgvoipOnJNILoad(JavaVM *vm, JNIEnv *env);
 
 jint JNI_OnLoad(JavaVM *vm, void *reserved) {
@@ -36,13 +35,7 @@ jint JNI_OnLoad(JavaVM *vm, void *reserved) {
         return -1;
     }
 
-    if (webrtcOnJNILoad(vm, env) != JNI_TRUE) {
-        return -1;
-    }
-
-    if (tgvoipOnJNILoad(vm, env) != JNI_TRUE) {
-        return -1;
-    }
+    tgvoipOnJNILoad(vm, env);
 
 	return JNI_VERSION_1_6;
 }

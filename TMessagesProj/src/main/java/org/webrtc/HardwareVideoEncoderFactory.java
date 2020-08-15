@@ -39,7 +39,10 @@ public class HardwareVideoEncoderFactory implements VideoEncoderFactory {
   // HW H.264 encoder on below devices has poor bitrate control - actual
   // bitrates deviates a lot from the target value.
   private static final List<String> H264_HW_EXCEPTION_MODELS =
-      Arrays.asList("SAMSUNG-SGH-I337", "Nexus 7", "Nexus 4");
+      Arrays.asList("SAMSUNG-SGH-I337", "Nexus 7", "Nexus 4", "Pixel 3 XL", "Pixel 3");
+
+  private static final List<String> VP8_HW_EXCEPTION_MODELS =
+          Arrays.asList("Pixel 3 XL", "Pixel 3");
 
   @Nullable private final EglBase14.Context sharedContext;
   private final boolean enableIntelVp8Encoder;
@@ -241,6 +244,9 @@ public class HardwareVideoEncoderFactory implements VideoEncoderFactory {
   }
 
   private boolean isHardwareSupportedInCurrentSdkVp8(MediaCodecInfo info) {
+    if (VP8_HW_EXCEPTION_MODELS.contains(Build.MODEL)) {
+      return false;
+    }
     String name = info.getName();
     // QCOM Vp8 encoder is supported in KITKAT or later.
     return (name.startsWith(QCOM_PREFIX) && Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT)

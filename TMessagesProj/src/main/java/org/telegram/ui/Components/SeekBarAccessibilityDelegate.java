@@ -14,7 +14,6 @@ import androidx.core.view.ViewCompat;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.WeakHashMap;
 
 public abstract class SeekBarAccessibilityDelegate extends View.AccessibilityDelegate {
 

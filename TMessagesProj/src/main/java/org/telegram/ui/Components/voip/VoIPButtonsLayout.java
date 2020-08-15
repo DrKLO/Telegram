@@ -1,6 +1,7 @@
 package org.telegram.ui.Components.voip;
 
 import android.content.Context;
+import android.view.MotionEvent;
 import android.view.View;
 import android.widget.FrameLayout;
 
@@ -17,6 +18,14 @@ public class VoIPButtonsLayout extends FrameLayout {
     int visibleChildCount;
     int childWidth;
     int childPadding;
+
+    @Override
+    public boolean dispatchTouchEvent(MotionEvent ev) {
+        if (!isEnabled()) {
+            return false;
+        }
+        return super.dispatchTouchEvent(ev);
+    }
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {

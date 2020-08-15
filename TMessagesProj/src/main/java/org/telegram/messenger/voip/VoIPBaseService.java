@@ -126,6 +126,7 @@ public abstract class VoIPBaseService extends Service implements SensorEventList
 	protected Notification ongoingCallNotification;
 	protected NativeInstance tgVoip;
 	protected boolean isVideoAvailable;
+	protected boolean notificationsDisabled;
 	protected boolean switchingCamera;
 	protected boolean isFrontFaceCamera = true;
 	protected String lastError;
@@ -370,10 +371,10 @@ public abstract class VoIPBaseService extends Service implements SensorEventList
 					.setTitle(LocaleController.getString("VoipOutputDevices", R.string.VoipOutputDevices), true)
 					.setItems(new CharSequence[]{
 									LocaleController.getString("VoipAudioRoutingSpeaker", R.string.VoipAudioRoutingSpeaker),
-									LocaleController.getString("VoipAudioRoutingEarpiece", R.string.VoipAudioRoutingEarpiece),
+									isHeadsetPlugged ? LocaleController.getString("VoipAudioRoutingHeadset", R.string.VoipAudioRoutingHeadset) : LocaleController.getString("VoipAudioRoutingEarpiece", R.string.VoipAudioRoutingEarpiece),
 									currentBluetoothDeviceName != null ? currentBluetoothDeviceName : LocaleController.getString("VoipAudioRoutingBluetooth", R.string.VoipAudioRoutingBluetooth)},
 							new int[]{R.drawable.calls_menu_speaker,
-									R.drawable.calls_menu_phone,
+									isHeadsetPlugged ? R.drawable.calls_menu_headset : R.drawable.calls_menu_phone,
 									R.drawable.calls_menu_bluetooth}, (dialog, which) -> {
 								if (getSharedInstance() == null) {
 									return;
@@ -577,19 +578,24 @@ public abstract class VoIPBaseService extends Service implements SensorEventList
 		AudioManager am = (AudioManager) getSystemService(AUDIO_SERVICE);
 		boolean needRing = am.getRingerMode() != AudioManager.RINGER_MODE_SILENT;
 		if (needRing) {
-			if (!USE_CONNECTION_SERVICE) {
-				am.requestAudioFocus(this, AudioManager.STREAM_RING, AudioManager.AUDIOFOCUS_GAIN);
-			}
 			ringtonePlayer = new MediaPlayer();
 			ringtonePlayer.setOnPreparedListener(mediaPlayer -> ringtonePlayer.start());
 			ringtonePlayer.setLooping(true);
-			ringtonePlayer.setAudioStreamType(AudioManager.STREAM_RING);
+			if (isHeadsetPlugged) {
+				ringtonePlayer.setAudioStreamType(AudioManager.STREAM_VOICE_CALL);
+			} else {
+				ringtonePlayer.setAudioStreamType(AudioManager.STREAM_RING);
+				if (!USE_CONNECTION_SERVICE) {
+					am.requestAudioFocus(this, AudioManager.STREAM_RING, AudioManager.AUDIOFOCUS_GAIN);
+				}
+			}
 			try {
 				String notificationUri;
-				if (prefs.getBoolean("custom_" + chatID, false))
+				if (prefs.getBoolean("custom_" + chatID, false)) {
 					notificationUri = prefs.getString("ringtone_path_" + chatID, RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE).toString());
-				else
+				} else {
 					notificationUri = prefs.getString("CallsRingtonePath", RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE).toString());
+				}
 				ringtonePlayer.setDataSource(this, Uri.parse(notificationUri));
 				ringtonePlayer.prepareAsync();
 			} catch (Exception e) {
@@ -1321,6 +1327,10 @@ public abstract class VoIPBaseService extends Service implements SensorEventList
 	public boolean isBluetoothOn() {
 		final AudioManager am = (AudioManager) getSystemService(AUDIO_SERVICE);
 		return am.isBluetoothScoOn();
+	}
+
+	public boolean isHeadsetPlugged() {
+		return isHeadsetPlugged;
 	}
 
 	public void onMediaStateUpdated(int audioState, int videoState) {

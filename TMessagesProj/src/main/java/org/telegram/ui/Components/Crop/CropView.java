@@ -956,7 +956,7 @@ public class CropView extends FrameLayout implements CropAreaView.AreaViewListen
     RectF sizeRect = new RectF(0, 0, RESULT_SIDE, RESULT_SIDE);
 
     private void updateCropTransform() {
-        if (cropTransform == null) {
+        if (cropTransform == null || state == null) {
             return;
         }
         areaView.getCropRect(cropRect);

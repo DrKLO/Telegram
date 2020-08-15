@@ -12,6 +12,11 @@ package org.webrtc;
 
 import android.graphics.Matrix;
 import android.os.Handler;
+
+import org.telegram.messenger.FileLog;
+
+import java.nio.ByteBuffer;
+
 import androidx.annotation.Nullable;
 
 /**
@@ -109,8 +114,48 @@ public class TextureBufferImpl implements VideoFrame.TextureBuffer {
 
   @Override
   public VideoFrame.I420Buffer toI420() {
-    return ThreadUtils.invokeAtFrontUninterruptibly(
-        toI420Handler, () -> yuvConverter.convert(this));
+    try {
+      return ThreadUtils.invokeAtFrontUninterruptibly(
+              toI420Handler, () -> yuvConverter.convert(this));
+    } catch (Throwable e) {
+      FileLog.e(e);
+      //don't crash if something fails
+      final int frameWidth = getWidth();
+      final int frameHeight = getHeight();
+      final int stride = ((frameWidth + 7) / 8) * 8;
+      final int uvHeight = (frameHeight + 1) / 2;
+
+      final int totalHeight = frameHeight + uvHeight;
+      final ByteBuffer i420ByteBuffer = JniCommon.nativeAllocateByteBuffer(stride * totalHeight);
+
+      while (i420ByteBuffer.hasRemaining()) {
+        i420ByteBuffer.put((byte) 0);
+      }
+
+      final int viewportWidth = stride / 4;
+
+      final int yPos = 0;
+      final int uPos = yPos + stride * frameHeight;
+      final int vPos = uPos + stride / 2;
+
+      i420ByteBuffer.position(yPos);
+      i420ByteBuffer.limit(yPos + stride * frameHeight);
+      final ByteBuffer dataY = i420ByteBuffer.slice();
+
+      i420ByteBuffer.position(uPos);
+      // The last row does not have padding.
+      final int uvSize = stride * (uvHeight - 1) + stride / 2;
+      i420ByteBuffer.limit(uPos + uvSize);
+      final ByteBuffer dataU = i420ByteBuffer.slice();
+
+      i420ByteBuffer.position(vPos);
+      i420ByteBuffer.limit(vPos + uvSize);
+      final ByteBuffer dataV = i420ByteBuffer.slice();
+
+
+      return JavaI420Buffer.wrap(frameWidth, frameHeight, dataY, stride, dataU, stride, dataV, stride,
+              () -> JniCommon.nativeFreeByteBuffer(i420ByteBuffer));
+    }
   }
 
   @Override

@@ -11742,10 +11742,15 @@ public class MessagesController extends BaseController implements NotificationCe
                                 }
                                 continue;
                             }
+                            boolean notificationsDisabled = false;
                             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP && !NotificationManagerCompat.from(ApplicationLoader.applicationContext).areNotificationsEnabled()) {
-                                if (BuildVars.LOGS_ENABLED)
-                                    FileLog.d("Ignoring incoming call because notifications are disabled in system");
-                                continue;
+                                notificationsDisabled = true;
+                                if (ApplicationLoader.mainInterfacePaused || !ApplicationLoader.isScreenOn) {
+                                    if (BuildVars.LOGS_ENABLED) {
+                                        FileLog.d("Ignoring incoming call because notifications are disabled in system");
+                                    }
+                                    continue;
+                                }
                             }
                             TelephonyManager tm = (TelephonyManager) ApplicationLoader.applicationContext.getSystemService(Context.TELEPHONY_SERVICE);
                             if (svc != null || VoIPService.callIShouldHavePutIntoIntent != null || tm.getCallState() != TelephonyManager.CALL_STATE_IDLE) {
@@ -11773,8 +11778,9 @@ public class MessagesController extends BaseController implements NotificationCe
                             intent.putExtra("is_outgoing", false);
                             intent.putExtra("user_id", call.participant_id == getUserConfig().getClientUserId() ? call.admin_id : call.participant_id);
                             intent.putExtra("account", currentAccount);
+                            intent.putExtra("notifications_disabled", notificationsDisabled);
                             try {
-                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                                if (!notificationsDisabled && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                                     ApplicationLoader.applicationContext.startForegroundService(intent);
                                 } else {
                                     ApplicationLoader.applicationContext.startService(intent);

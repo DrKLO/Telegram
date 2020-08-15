@@ -18,6 +18,7 @@ import android.app.PendingIntent;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.media.AudioManager;
 import android.media.audiofx.AcousticEchoCanceler;
 import android.media.audiofx.NoiseSuppressor;
 import android.net.Uri;
@@ -25,7 +26,6 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
 import androidx.annotation.Nullable;
-import androidx.core.app.NotificationManagerCompat;
 
 import android.os.SystemClock;
 import android.telecom.TelecomManager;
@@ -162,14 +162,21 @@ public class VoIPService extends VoIPBaseService {
 		isOutgoing = intent.getBooleanExtra("is_outgoing", false);
 		videoCall = intent.getBooleanExtra("video_call", false);
 		isVideoAvailable = intent.getBooleanExtra("can_video_call", false);
+		notificationsDisabled = intent.getBooleanExtra("notifications_disabled", false);
 		user = MessagesController.getInstance(currentAccount).getUser(userID);
 		localSink = new ProxyVideoSink();
 		remoteSink = new ProxyVideoSink();
+		try {
+			AudioManager am = (AudioManager) getSystemService(AUDIO_SERVICE);
+			isHeadsetPlugged = am.isWiredHeadsetOn();
+		} catch (Exception e) {
+			FileLog.e(e);
+		}
 
 		if (videoCall) {
 			videoCapturer = NativeInstance.createVideoCapturer(localSink);
 			videoState = Instance.VIDEO_STATE_ACTIVE;
-			if (!isBtHeadsetConnected) {
+			if (!isBtHeadsetConnected && !isHeadsetPlugged) {
 				setAudioOutput(0);
 			}
 		}
@@ -217,7 +224,7 @@ public class VoIPService extends VoIPBaseService {
 			} else {
 				videoState = Instance.VIDEO_STATE_INACTIVE;
 			}
-			if (videoCall && !isBtHeadsetConnected) {
+			if (videoCall && !isBtHeadsetConnected && !isHeadsetPlugged) {
 				setAudioOutput(0);
 			}
 			callIShouldHavePutIntoIntent = null;
@@ -496,7 +503,7 @@ public class VoIPService extends VoIPBaseService {
 			FileLog.d("starting ringing for call " + call.id);
 		}
 		dispatchStateChanged(STATE_WAITING_INCOMING);
-		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+		if (!notificationsDisabled && Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
 			showIncomingNotification(ContactsController.formatName(user.first_name, user.last_name), null, user, call.video, 0);
 			if (BuildVars.LOGS_ENABLED) {
 				FileLog.d("Showing incoming call notification");
@@ -1224,41 +1231,6 @@ public class VoIPService extends VoIPBaseService {
 
 	public boolean isVideoAvailable() {
 		return isVideoAvailable;
-	}
-
-	public void onUIForegroundStateChanged(boolean isForeground) {
-		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-			return;
-		}
-
-		if (currentState == STATE_WAITING_INCOMING) {
-			if (isForeground) {
-				stopForeground(true);
-			} else {
-				if (!((KeyguardManager) getSystemService(KEYGUARD_SERVICE)).inKeyguardRestrictedInputMode()) {
-					if (NotificationManagerCompat.from(this).areNotificationsEnabled()) {
-						showIncomingNotification(ContactsController.formatName(user.first_name, user.last_name), null, user, call.video, 0);
-					} else {
-						declineIncomingCall(DISCARD_REASON_LINE_BUSY, null);
-					}
-				} else {
-					AndroidUtilities.runOnUIThread(() -> {
-						Intent intent = new Intent(VoIPService.this, LaunchActivity.class).setAction("voip");
-						try {
-							PendingIntent.getActivity(VoIPService.this, 0, intent, 0).send();
-						} catch (PendingIntent.CanceledException e) {
-							if (BuildVars.LOGS_ENABLED) {
-								FileLog.e("error restarting activity", e);
-							}
-							declineIncomingCall(DISCARD_REASON_LINE_BUSY, null);
-						}
-						if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-							showNotification();
-						}
-					}, 500);
-				}
-			}
-		}
 	}
 
 	void onMediaButtonEvent(KeyEvent ev) {

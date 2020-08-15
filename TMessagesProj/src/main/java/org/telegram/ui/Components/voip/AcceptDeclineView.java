@@ -10,6 +10,7 @@ import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.SystemClock;
 import android.text.Layout;
@@ -437,7 +438,7 @@ public class AcceptDeclineView extends View {
 
         @Override
         public AccessibilityNodeInfo createAccessibilityNodeInfo(int virtualViewId) {
-            AccessibilityNodeInfo nodeInfo = null;
+            AccessibilityNodeInfo nodeInfo;
             if (virtualViewId == HOST_VIEW_ID) {
                 nodeInfo = AccessibilityNodeInfo.obtain(hostView);
                 nodeInfo.setPackageName(hostView.getContext().getPackageName());
@@ -447,10 +448,14 @@ public class AcceptDeclineView extends View {
             } else {
                 nodeInfo = AccessibilityNodeInfo.obtain(hostView, virtualViewId);
                 nodeInfo.setPackageName(hostView.getContext().getPackageName());
-                nodeInfo.addAction(AccessibilityNodeInfo.AccessibilityAction.ACTION_CLICK);
+                if (Build.VERSION.SDK_INT >= 21) {
+                    nodeInfo.addAction(AccessibilityNodeInfo.AccessibilityAction.ACTION_CLICK);
+                }
                 nodeInfo.setText(getVirtualViewText(virtualViewId));
                 nodeInfo.setClassName(Button.class.getName());
-                nodeInfo.setImportantForAccessibility(true);
+                if (Build.VERSION.SDK_INT >= 24) {
+                    nodeInfo.setImportantForAccessibility(true);
+                }
                 nodeInfo.setVisibleToUser(true);
                 nodeInfo.setClickable(true);
                 nodeInfo.setEnabled(true);

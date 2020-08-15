@@ -331,7 +331,7 @@ public class VoIPHelper {
 						onDismiss.run();
 				})
 				.create();
-		if (BuildVars.DEBUG_VERSION && log.exists()) {
+		if (BuildVars.LOGS_ENABLED && log.exists()) {
 			alert.setNeutralButton("Send log", (dialog, which) -> {
 				Intent intent = new Intent(context, LaunchActivity.class);
 				intent.setAction(Intent.ACTION_SEND);
