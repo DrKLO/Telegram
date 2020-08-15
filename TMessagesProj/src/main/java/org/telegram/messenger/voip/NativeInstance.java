@@ -5,6 +5,8 @@ import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.FileLog;
 import org.webrtc.VideoSink;
 
+import java.util.concurrent.CountDownLatch;
+
 public class NativeInstance {
 
     private Instance.OnStateUpdatedListener onStateUpdatedListener;
@@ -69,6 +71,27 @@ public class NativeInstance {
         }
     }
 
+
+    private Instance.FinalState finalState;
+    private CountDownLatch stopBarrier;
+    private void onStop(Instance.FinalState state) {
+        finalState = state;
+        if (stopBarrier != null) {
+            stopBarrier.countDown();
+        }
+    }
+
+    public Instance.FinalState stop() {
+        stopBarrier = new CountDownLatch(1);
+        stopNative();
+        try {
+            stopBarrier.await();
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+        return finalState;
+    }
+
     private static native long makeNativeInstance(String version, NativeInstance instance, Instance.Config config, String persistentStateFilePath, Instance.Endpoint[] endpoints, Instance.Proxy proxy, int networkType, Instance.EncryptionKey encryptionKey, VideoSink remoteSink, long videoCapturer, float aspectRatio);
     public static native long createVideoCapturer(VideoSink localSink);
     public static native void setVideoStateCapturer(long videoCapturer, int videoState);
@@ -87,7 +110,7 @@ public class NativeInstance {
     public native long getPreferredRelayId();
     public native Instance.TrafficStats getTrafficStats();
     public native byte[] getPersistentState();
-    public native Instance.FinalState stop();
+    private native void stopNative();
     public native void setupOutgoingVideo(VideoSink localSink);
     public native void switchCamera();
     public native void setVideoState(int videoState);

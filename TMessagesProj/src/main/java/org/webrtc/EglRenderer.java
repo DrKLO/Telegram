@@ -150,6 +150,8 @@ public class EglRenderer implements VideoSink {
   // If true, mirrors the video stream vertically.
   private boolean mirrorVertically;
 
+  private int rotation;
+
   // These variables are synchronized on |statisticsLock|.
   private final Object statisticsLock = new Object();
   // Total number of video frames received in renderFrame() call.
@@ -532,6 +534,12 @@ public class EglRenderer implements VideoSink {
     }
   }
 
+  public void setRotation(int value) {
+    synchronized (layoutLock) {
+      rotation = value;
+    }
+  }
+
   /**
    * Release EGL surface. This function will block until the EGL surface is released.
    */
@@ -637,7 +645,8 @@ public class EglRenderer implements VideoSink {
 
     final long startTimeNs = System.nanoTime();
 
-    final float frameAspectRatio = frame.getRotatedWidth() / (float) frame.getRotatedHeight();
+    boolean rotate = Math.abs(rotation) == 90 || Math.abs(rotation) == 270;
+    final float frameAspectRatio = (rotate ? frame.getRotatedHeight() : frame.getRotatedWidth()) / (float) (rotate ? frame.getRotatedWidth() : frame.getRotatedHeight());
     final float drawnAspectRatio;
     synchronized (layoutLock) {
       drawnAspectRatio = layoutAspectRatio != 0f ? layoutAspectRatio : frameAspectRatio;
@@ -656,6 +665,7 @@ public class EglRenderer implements VideoSink {
 
     drawMatrix.reset();
     drawMatrix.preTranslate(0.5f, 0.5f);
+    drawMatrix.preRotate(rotation);
     drawMatrix.preScale(mirrorHorizontally ? -1f : 1f, mirrorVertically ? -1f : 1f);
     drawMatrix.preScale(scaleX, scaleY);
     drawMatrix.preTranslate(-0.5f, -0.5f);
@@ -665,7 +675,7 @@ public class EglRenderer implements VideoSink {
         GLES20.glClearColor(0 /* red */, 0 /* green */, 0 /* blue */, 0 /* alpha */);
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT);
         frameDrawer.drawFrame(frame, drawer, drawMatrix, 0 /* viewportX */, 0 /* viewportY */,
-            eglBase.surfaceWidth(), eglBase.surfaceHeight());
+            eglBase.surfaceWidth(), eglBase.surfaceHeight(), rotate);
 
         final long swapBuffersStartTimeNs = System.nanoTime();
         if (usePresentationTimeStamp) {
@@ -715,6 +725,7 @@ public class EglRenderer implements VideoSink {
 
     drawMatrix.reset();
     drawMatrix.preTranslate(0.5f, 0.5f);
+    drawMatrix.preRotate(rotation);
     drawMatrix.preScale(mirrorHorizontally ? -1f : 1f, mirrorVertically ? -1f : 1f);
     drawMatrix.preScale(1f, -1f); // We want the output to be upside down for Bitmap.
     drawMatrix.preTranslate(-0.5f, -0.5f);
@@ -744,7 +755,7 @@ public class EglRenderer implements VideoSink {
       GLES20.glClearColor(0 /* red */, 0 /* green */, 0 /* blue */, 0 /* alpha */);
       GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT);
       frameDrawer.drawFrame(frame, listenerAndParams.drawer, drawMatrix, 0 /* viewportX */,
-          0 /* viewportY */, scaledWidth, scaledHeight);
+          0 /* viewportY */, scaledWidth, scaledHeight, false);
 
       final ByteBuffer bitmapBuffer = ByteBuffer.allocateDirect(scaledWidth * scaledHeight * 4);
       GLES20.glViewport(0, 0, scaledWidth, scaledHeight);

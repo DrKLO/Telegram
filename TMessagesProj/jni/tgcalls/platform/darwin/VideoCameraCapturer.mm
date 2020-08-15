@@ -154,13 +154,18 @@ static webrtc::ObjCVideoTrackSource *getObjCVideoSource(const rtc::scoped_refptr
 @interface VideoCameraCapturer () <AVCaptureVideoDataOutputSampleBufferDelegate> {
     rtc::scoped_refptr<webrtc::VideoTrackSourceInterface> _source;
     
+    // Live on main thread.
     bool _isFrontCamera;
     
     dispatch_queue_t _frameQueue;
+
+    // Live on RTCDispatcherTypeCaptureSession.
     AVCaptureDevice *_currentDevice;
     BOOL _hasRetriedOnFatalError;
     BOOL _isRunning;
-    BOOL _willBeRunning;
+
+	// Live on RTCDispatcherTypeCaptureSession and main thread.
+	std::atomic<bool> _willBeRunning;
     
     AVCaptureVideoDataOutput *_videoDataOutput;
     AVCaptureSession *_captureSession;
@@ -170,16 +175,21 @@ static webrtc::ObjCVideoTrackSource *getObjCVideoSource(const rtc::scoped_refptr
     UIDeviceOrientation _orientation;
     bool _rotationLock;
     
+    // Live on mainThread.
     void (^_isActiveUpdated)(bool);
     bool _isActiveValue;
     bool _inForegroundValue;
-    bool _isPaused;
     
+    // Live on frameQueue and main thread.
+    std::atomic<bool> _isPaused;
+
+    // Live on frameQueue.
     float _aspectRatio;
     std::vector<uint8_t> _croppingBuffer;
     std::shared_ptr<rtc::VideoSinkInterface<webrtc::VideoFrame>> _uncroppedSink;
     
-    int _warmupFrameCount;
+    // Live on frameQueue and RTCDispatcherTypeCaptureSession.
+    std::atomic<int> _warmupFrameCount;
 }
 
 @end
@@ -292,18 +302,22 @@ static webrtc::ObjCVideoTrackSource *getObjCVideoSource(const rtc::scoped_refptr
 }
 
 - (void)setUncroppedSink:(std::shared_ptr<rtc::VideoSinkInterface<webrtc::VideoFrame>>)sink {
-    _uncroppedSink = sink;
+	dispatch_async(self.frameQueue, ^{
+		_uncroppedSink = sink;
+	});
 }
 
 - (void)setPreferredCaptureAspectRatio:(float)aspectRatio {
-    _aspectRatio = aspectRatio;
+	dispatch_async(self.frameQueue, ^{
+		_aspectRatio = aspectRatio;
+	});
 }
 
 - (void)startCaptureWithDevice:(AVCaptureDevice *)device
                         format:(AVCaptureDeviceFormat *)format
                            fps:(NSInteger)fps
              completionHandler:(nullable void (^)(NSError *))completionHandler {
-  _willBeRunning = YES;
+  _willBeRunning = true;
   [RTCDispatcher
       dispatchAsyncOnType:RTCDispatcherTypeCaptureSession
    block:^{
@@ -323,7 +337,7 @@ static webrtc::ObjCVideoTrackSource *getObjCVideoSource(const rtc::scoped_refptr
           if (completionHandler) {
               completionHandler(error);
           }
-          _willBeRunning = NO;
+          _willBeRunning = false;
           return;
       }
       [self reconfigureCaptureSessionInput];
@@ -340,7 +354,7 @@ static webrtc::ObjCVideoTrackSource *getObjCVideoSource(const rtc::scoped_refptr
 }
 
 - (void)stopCaptureWithCompletionHandler:(nullable void (^)(void))completionHandler {
-  _willBeRunning = NO;
+  _willBeRunning = false;
   [RTCDispatcher
    dispatchAsyncOnType:RTCDispatcherTypeCaptureSession
    block:^{

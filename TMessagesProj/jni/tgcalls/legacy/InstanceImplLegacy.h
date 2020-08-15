@@ -14,7 +14,7 @@ public:
 	~InstanceImplLegacy();
 
 	static int GetConnectionMaxLayer();
-	static std::string GetVersion();
+    static std::vector<std::string> GetVersions();
 
 	void receiveSignalingData(const std::vector<uint8_t> &data) override;
 	void setNetworkType(NetworkType networkType) override;
@@ -35,7 +35,7 @@ public:
 	int64_t getPreferredRelayId() override;
 	TrafficStats getTrafficStats() override;
 	PersistentState getPersistentState() override;
-	FinalState stop() override;
+	void stop(std::function<void(FinalState)> completion) override;
 
 private:
 	tgvoip::VoIPController *controller_;

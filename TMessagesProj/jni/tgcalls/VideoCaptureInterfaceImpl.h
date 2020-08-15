@@ -28,6 +28,7 @@ public:
 private:
 	std::shared_ptr<rtc::VideoSinkInterface<webrtc::VideoFrame>> _currentUncroppedSink;
 	std::shared_ptr<PlatformContext> _platformContext;
+    std::pair<int, int> _videoCapturerResolution;
 	std::unique_ptr<VideoCapturerInterface> _videoCapturer;
 	std::function<void(VideoState)> _stateUpdated;
 	bool _useFrontCamera = true;

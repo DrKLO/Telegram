@@ -34,11 +34,17 @@ namespace tgcalls {
 
 struct Message;
 
-class NetworkManager : public sigslot::has_slots<> {
+class NetworkManager : public sigslot::has_slots<>, public std::enable_shared_from_this<NetworkManager> {
 public:
 	struct State {
 		bool isReadyToSendData = false;
+        bool isFailed = false;
 	};
+    
+    struct InterfaceTrafficStats {
+        int64_t incoming = 0;
+        int64_t outgoing = 0;
+    };
 
 	NetworkManager(
 		rtc::Thread *thread,
@@ -51,19 +57,26 @@ public:
 		std::function<void(int delayMs, int cause)> sendTransportServiceAsync);
 	~NetworkManager();
 
+    void start();
 	void receiveSignalingMessage(DecryptedMessage &&message);
 	uint32_t sendMessage(const Message &message);
 	void sendTransportService(int cause);
+    void setIsLocalNetworkLowCost(bool isLocalNetworkLowCost);
+    TrafficStats getNetworkStats();
 
 private:
+    void checkConnectionTimeout();
 	void candidateGathered(cricket::IceTransportInternal *transport, const cricket::Candidate &candidate);
 	void candidateGatheringState(cricket::IceTransportInternal *transport);
 	void transportStateChanged(cricket::IceTransportInternal *transport);
 	void transportReadyToSend(cricket::IceTransportInternal *transport);
 	void transportPacketReceived(rtc::PacketTransportInternal *transport, const char *bytes, size_t size, const int64_t &timestamp, int unused);
     void transportRouteChanged(absl::optional<rtc::NetworkRoute> route);
+    void addTrafficStats(int64_t byteCount, bool isIncoming);
 
 	rtc::Thread *_thread = nullptr;
+    bool _enableP2P = false;
+    std::vector<RtcServer> _rtcServers;
 	EncryptedConnection _transport;
 	bool _isOutgoing = false;
 	std::function<void(const NetworkManager::State &)> _stateUpdated;
@@ -78,6 +91,11 @@ private:
 
     PeerIceParameters _localIceParameters;
     absl::optional<PeerIceParameters> _remoteIceParameters;
+    
+    bool _isLocalNetworkLowCost = false;
+    int64_t _lastNetworkActivityMs = 0;
+    InterfaceTrafficStats _trafficStatsWifi;
+    InterfaceTrafficStats _trafficStatsCellular;
 };
 
 } // namespace tgcalls

@@ -182,14 +182,14 @@ public class VideoFrameDrawer {
   public void drawFrame(
       VideoFrame frame, RendererCommon.GlDrawer drawer, Matrix additionalRenderMatrix) {
     drawFrame(frame, drawer, additionalRenderMatrix, 0 /* viewportX */, 0 /* viewportY */,
-        frame.getRotatedWidth(), frame.getRotatedHeight());
+        frame.getRotatedWidth(), frame.getRotatedHeight(), false);
   }
 
   public void drawFrame(VideoFrame frame, RendererCommon.GlDrawer drawer,
       @Nullable Matrix additionalRenderMatrix, int viewportX, int viewportY, int viewportWidth,
-      int viewportHeight) {
-    final int width = frame.getRotatedWidth();
-    final int height = frame.getRotatedHeight();
+      int viewportHeight, boolean rotate) {
+    final int width = rotate ? frame.getRotatedHeight() : frame.getRotatedWidth();
+    final int height = rotate ? frame.getRotatedWidth() : frame.getRotatedHeight();
     calculateTransformedRenderSize(width, height, additionalRenderMatrix);
     if (renderWidth <= 0 || renderHeight <= 0) {
       Logging.w(TAG, "Illegal frame size: " + renderWidth + "x" + renderHeight);

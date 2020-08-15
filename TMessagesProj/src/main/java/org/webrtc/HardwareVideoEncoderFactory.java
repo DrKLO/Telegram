@@ -35,43 +35,66 @@ public class HardwareVideoEncoderFactory implements VideoEncoderFactory {
   private static final int QCOM_VP8_KEY_FRAME_INTERVAL_ANDROID_M_MS = 20000;
   private static final int QCOM_VP8_KEY_FRAME_INTERVAL_ANDROID_N_MS = 15000;
 
-  // List of devices with poor H.264 encoder quality.
-  // HW H.264 encoder on below devices has poor bitrate control - actual
-  // bitrates deviates a lot from the target value.
-  private static final List<String> H264_HW_EXCEPTION_MODELS =
-      Arrays.asList("SAMSUNG-SGH-I337", "Nexus 7", "Nexus 4", "Pixel 3 XL", "Pixel 3");
-
-  private static final List<String> VP8_HW_EXCEPTION_MODELS =
-          Arrays.asList("Pixel 3 XL", "Pixel 3");
-
   @Nullable private final EglBase14.Context sharedContext;
   private final boolean enableIntelVp8Encoder;
   private final boolean enableH264HighProfile;
   @Nullable private final Predicate<MediaCodecInfo> codecAllowedPredicate;
 
+  private static final List<String> H264_HW_EXCEPTION_MODELS =
+          Arrays.asList("samsung-sgh-i337", "nexus7", "nexus4", "pixel3xl", "pixel3");
+
+  private static final List<String> VP8_HW_EXCEPTION_MODELS =
+          Arrays.asList("pixel3xl", "pixel3");
+
   private static Set<String> HW_EXCEPTION_MODELS = new HashSet<String>() {{
-    add("SM-A310F");
-    add("SM-A310F/DS");
-    add("SM-A310Y");
-    add("SM-A310M");
-    add("SM-G920F");
-    add("SM-G920FD");
-    add("SM-G920FQ");
-    add("SM-G920I");
-    add("SM-G920A");
-    add("SM-G920T");
-    add("SM-G930F");
-    add("SM-G930FD");
-    add("SM-G930W8");
-    add("SM-G930S");
-    add("SM-G930K");
-    add("SM-G930L");
-    add("SM-G935F");
-    add("SM-G935FD");
-    add("SM-G935W8");
-    add("SM-G935S");
-    add("SM-G935K");
-    add("SM-G935L");
+    add("sm-a310f");
+    add("sm-a310f/ds");
+    add("sm-a310y");
+    add("sm-a310m");
+    add("sm-g920f");
+    add("sm-g920fd");
+    add("sm-g920fq");
+    add("sm-g920i");
+    add("sm-g920a");
+    add("sm-g920t");
+    add("sm-g930f");
+    add("sm-g930fd");
+    add("sm-g930w8");
+    add("sm-g930s");
+    add("sm-g930k");
+    add("sm-g930l");
+    add("sm-g935f");
+    add("sm-g935fd");
+    add("sm-g935w8");
+    add("sm-g935s");
+    add("sm-g935k");
+    add("sm-g935l");
+
+    add("i537");
+    add("sgh-i537");
+    add("gt-i9295");
+    add("sgh-i337");
+    add("gt-i9505g");
+    add("gt-i9505");
+    add("gt-i9515");
+    add("f240");
+    add("e980");
+    add("ls980");
+    add("e988");
+    add("e986");
+    add("f240l");
+    add("f240s");
+    add("v9815");
+    add("nx403a");
+    add("f310l");
+    add("f310lr");
+    add("onem7");
+    add("onemax");
+    add("pn071");
+    add("htc6500lvw");
+    add("butterflys");
+    add("mi2s");
+    add("n1");
   }};
 
   /**
@@ -226,8 +249,13 @@ public class HardwareVideoEncoderFactory implements VideoEncoderFactory {
 
   // Returns true if the given MediaCodecInfo indicates a hardware module that is supported on the
   // current SDK.
+
+  private static String getModel() {
+    return Build.MODEL != null ? Build.MODEL.toLowerCase().replace(" ", "") : "nomodel";
+  }
+
   private boolean isHardwareSupportedInCurrentSdk(MediaCodecInfo info, VideoCodecMimeType type) {
-    if (HW_EXCEPTION_MODELS.contains(Build.MODEL)) {
+    if (HW_EXCEPTION_MODELS.contains(getModel())) {
       return false;
     }
     switch (type) {
@@ -244,7 +272,7 @@ public class HardwareVideoEncoderFactory implements VideoEncoderFactory {
   }
 
   private boolean isHardwareSupportedInCurrentSdkVp8(MediaCodecInfo info) {
-    if (VP8_HW_EXCEPTION_MODELS.contains(Build.MODEL)) {
+    if (VP8_HW_EXCEPTION_MODELS.contains(getModel())) {
       return false;
     }
     String name = info.getName();
@@ -268,7 +296,7 @@ public class HardwareVideoEncoderFactory implements VideoEncoderFactory {
 
   private boolean isHardwareSupportedInCurrentSdkH264(MediaCodecInfo info) {
     // First, H264 hardware might perform poorly on this model.
-    if (H264_HW_EXCEPTION_MODELS.contains(Build.MODEL)) {
+    if (H264_HW_EXCEPTION_MODELS.contains(getModel())) {
       return false;
     }
     String name = info.getName();

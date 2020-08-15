@@ -97,6 +97,13 @@ struct RemoteBatteryLevelIsLowMessage {
     bool batteryLow = false;
 };
 
+struct RemoteNetworkTypeMessage {
+    static constexpr uint8_t kId = 10;
+    static constexpr bool kRequiresAck = true;
+
+    bool isLowCost = false;
+};
+
 // To add a new message you should:
 // 1. Add the message struct.
 // 2. Add the message to the variant in Message struct.
@@ -112,7 +119,8 @@ struct Message {
 		VideoDataMessage,
         UnstructuredDataMessage,
         VideoParametersMessage,
-        RemoteBatteryLevelIsLowMessage> data;
+        RemoteBatteryLevelIsLowMessage,
+        RemoteNetworkTypeMessage> data;
 };
 
 rtc::CopyOnWriteBuffer SerializeMessageWithSeq(

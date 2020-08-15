@@ -23,10 +23,10 @@ bool CompareFormats(const VideoFormat &a, const VideoFormat &b) {
 	}
 }
 
-int FormatPriority(const VideoFormat &format) {
+int FormatPriority(const VideoFormat &format, const std::vector<std::string> &preferredCodecs) {
 	static const auto kCodecs = {
 		std::string(cricket::kAv1CodecName),
-		std::string(cricket::kVp9CodecName),
+        std::string(cricket::kVp9CodecName),
 		std::string(cricket::kH265CodecName),
 		std::string(cricket::kH264CodecName),
 		std::string(cricket::kVp8CodecName),
@@ -43,8 +43,16 @@ int FormatPriority(const VideoFormat &format) {
 		}
 		return result;
 	}();
+    
+    for (int i = 0; i < preferredCodecs.size(); i++) {
+        for (const auto &name : kSupported) {
+            if (absl::EqualsIgnoreCase(format.name, preferredCodecs[i]) && absl::EqualsIgnoreCase(format.name, name)) {
+                return i;
+            }
+        }
+    }
 
-	auto result = 0;
+    auto result = (int)preferredCodecs.size();
 	for (const auto &name : kSupported) {
 		if (absl::EqualsIgnoreCase(format.name, name)) {
 			return result;
@@ -54,17 +62,19 @@ int FormatPriority(const VideoFormat &format) {
 	return -1;
 }
 
-bool ComparePriorities(const VideoFormat &a, const VideoFormat &b) {
-	return FormatPriority(a) < FormatPriority(b);
+bool ComparePriorities(const VideoFormat &a, const VideoFormat &b, const std::vector<std::string> &preferredCodecs) {
+	return FormatPriority(a, preferredCodecs) < FormatPriority(b, preferredCodecs);
 }
 
-std::vector<VideoFormat> FilterAndSortEncoders(std::vector<VideoFormat> list) {
+std::vector<VideoFormat> FilterAndSortEncoders(std::vector<VideoFormat> list, const std::vector<std::string> &preferredCodecs) {
 	const auto listBegin = begin(list);
 	const auto listEnd = end(list);
-	std::sort(listBegin, listEnd, ComparePriorities);
+    std::sort(listBegin, listEnd, [&preferredCodecs](const VideoFormat &lhs, const VideoFormat &rhs) {
+        return ComparePriorities(lhs, rhs, preferredCodecs);
+    });
 	auto eraseFrom = listBegin;
 	auto eraseTill = eraseFrom;
-	while (eraseTill != listEnd && FormatPriority(*eraseTill) == -1) {
+	while (eraseTill != listEnd && FormatPriority(*eraseTill, preferredCodecs) == -1) {
 		++eraseTill;
 	}
 	if (eraseTill != eraseFrom) {
@@ -131,11 +141,12 @@ void AddDefaultFeedbackParams(cricket::VideoCodec *codec) {
 
 VideoFormatsMessage ComposeSupportedFormats(
 		std::vector<VideoFormat> encoders,
-		std::vector<VideoFormat> decoders) {
-	encoders = FilterAndSortEncoders(std::move(encoders));
+		std::vector<VideoFormat> decoders,
+        const std::vector<std::string> &preferredCodecs) {
+	encoders = FilterAndSortEncoders(std::move(encoders), preferredCodecs);
 
 	auto result = VideoFormatsMessage();
-	result.encodersCount = encoders.size();
+	result.encodersCount = (int)encoders.size();
 	result.formats = AppendUnique(std::move(encoders), std::move(decoders));
 	for (const auto &format : result.formats) {
 		RTC_LOG(LS_INFO) << "Format: " << format.ToString();

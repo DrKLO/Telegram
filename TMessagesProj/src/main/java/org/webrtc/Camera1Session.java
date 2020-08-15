@@ -11,6 +11,7 @@
 package org.webrtc;
 
 import android.content.Context;
+import android.hardware.Camera;
 import android.os.Handler;
 import android.os.SystemClock;
 import java.io.IOException;
@@ -44,6 +45,8 @@ class Camera1Session implements CameraSession {
   private final CaptureFormat captureFormat;
   // Used only for stats. Only used on the camera thread.
   private final long constructionTimeNs; // Construction time of this class.
+
+  private OrientationHelper orientationHelper;
 
   private SessionState state;
   private boolean firstFrameReported;
@@ -170,6 +173,7 @@ class Camera1Session implements CameraSession {
     this.info = info;
     this.captureFormat = captureFormat;
     this.constructionTimeNs = constructionTimeNs;
+    this.orientationHelper = new OrientationHelper();
 
     surfaceTextureHelper.setTextureSize(captureFormat.width, captureFormat.height);
 
@@ -218,6 +222,7 @@ class Camera1Session implements CameraSession {
     } else {
       listenForBytebufferFrames();
     }
+    orientationHelper.start();
     try {
       camera.startPreview();
     } catch (RuntimeException e) {
@@ -242,6 +247,9 @@ class Camera1Session implements CameraSession {
     camera.stopPreview();
     camera.release();
     events.onCameraClosed(this);
+    if (orientationHelper != null) {
+      orientationHelper.stop();
+    }
     Logging.d(TAG, "Stop done");
   }
 
@@ -313,10 +321,11 @@ class Camera1Session implements CameraSession {
   }
 
   private int getFrameOrientation() {
-    int rotation = CameraSession.getDeviceOrientation(applicationContext);
-    if (info.facing == android.hardware.Camera.CameraInfo.CAMERA_FACING_BACK) {
+    int rotation = orientationHelper.getOrientation();
+    if (info.facing == Camera.CameraInfo.CAMERA_FACING_FRONT) {
       rotation = 360 - rotation;
     }
+    OrientationHelper.cameraRotation = rotation;
     return (info.orientation + rotation) % 360;
   }
 

@@ -325,7 +325,6 @@ public:
         dependencies.event_log_factory =
             std::make_unique<webrtc::RtcEventLogFactory>(dependencies.task_queue_factory.get());
         dependencies.network_controller_factory = nullptr;
-        //dependencies.media_transport_factory = nullptr;
 
         _nativeFactory = webrtc::CreateModularPeerConnectionFactory(std::move(dependencies));
 
@@ -1002,8 +1001,10 @@ int InstanceImplReference::GetConnectionMaxLayer() {
     return 92;
 }
 
-std::string InstanceImplReference::GetVersion() {
-    return "2.8.8";
+std::vector<std::string> InstanceImplReference::GetVersions() {
+    std::vector<std::string> result;
+    result.push_back("2.8.8");
+    return result;
 }
 
 std::string InstanceImplReference::getLastError() {
@@ -1027,15 +1028,15 @@ PersistentState InstanceImplReference::getPersistentState() {
 	return PersistentState();
 }
 
-FinalState InstanceImplReference::stop() {
-	auto result = FinalState();
-
-	result.persistentState = getPersistentState();
-	result.debugLog = logSink_->result();
-	result.trafficStats = getTrafficStats();
-	result.isRatingSuggested = false;
-
-	return result;
+void InstanceImplReference::stop(std::function<void(FinalState)> completion) {
+    auto result = FinalState();
+    
+    result.persistentState = getPersistentState();
+    result.debugLog = logSink_->result();
+    result.trafficStats = getTrafficStats();
+    result.isRatingSuggested = false;
+    
+    completion(result);
 }
 
 template <>

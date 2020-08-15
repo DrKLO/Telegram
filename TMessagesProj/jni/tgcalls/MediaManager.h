@@ -42,7 +42,8 @@ public:
 		std::function<void(Message &&)> sendTransportMessage,
         std::function<void(int)> signalBarsUpdated,
         float localPreferredVideoAspectRatio,
-        bool enableHighBitrateVideo);
+        bool enableHighBitrateVideo,
+        std::vector<std::string> preferredCodecs);
 	~MediaManager();
 
 	void start();
@@ -53,6 +54,7 @@ public:
 	void setIncomingVideoOutput(std::shared_ptr<rtc::VideoSinkInterface<webrtc::VideoFrame>> sink);
 	void receiveMessage(DecryptedMessage &&message);
     void remoteVideoStateUpdated(VideoState videoState);
+    void setIsCurrentNetworkLowCost(bool isCurrentNetworkLowCost);
 
 private:
 	struct SSRC {
@@ -85,8 +87,9 @@ private:
     void configureSendingVideoIfNeeded();
 	void checkIsSendingVideoChanged(bool wasSending);
 	bool videoCodecsNegotiated() const;
-
-    void adjustBitratePreferences();
+    
+    int getMaxVideoBitrate() const;
+    void adjustBitratePreferences(bool resetStartBitrate);
     bool computeIsReceivingVideo() const;
     void checkIsReceivingVideoChanged(bool wasReceiving);
 
@@ -133,6 +136,7 @@ private:
     float _localPreferredVideoAspectRatio = 0.0f;
     float _preferredAspectRatio = 0.0f;
     bool _enableHighBitrateVideo = false;
+    bool _isLowCostNetwork = false;
 
 	std::unique_ptr<MediaManager::NetworkInterfaceImpl> _audioNetworkInterface;
 	std::unique_ptr<MediaManager::NetworkInterfaceImpl> _videoNetworkInterface;

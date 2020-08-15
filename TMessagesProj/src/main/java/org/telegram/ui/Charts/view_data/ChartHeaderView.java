@@ -151,6 +151,8 @@ public class ChartHeaderView extends FrameLayout {
             back.setAlpha(1f);
             back.setTranslationX(0);
             back.setTranslationY(0);
+            back.setScaleX(1f);
+            back.setScaleY(1f);
             title.setAlpha(0f);
         }
     }

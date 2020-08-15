@@ -20,6 +20,14 @@
 
 namespace tgcalls {
 
+void AndroidInterface::configurePlatformAudio() {
+
+}
+
+float AndroidInterface::getDisplayAspectRatio() {
+    return 0;
+}
+
 std::unique_ptr<webrtc::VideoEncoderFactory> AndroidInterface::makeVideoEncoderFactory() {
     JNIEnv *env = webrtc::AttachCurrentThreadIfNeeded();
     webrtc::ScopedJavaLocalRef<jclass> factory_class =
@@ -44,6 +52,10 @@ std::unique_ptr<webrtc::VideoDecoderFactory> AndroidInterface::makeVideoDecoderF
             env, env->NewObject(factory_class.obj(), factory_constructor,
                                 nullptr /* shared_context */));
     return webrtc::JavaToNativeVideoDecoderFactory(env, factory_object.obj());
+}
+
+void AndroidInterface::adaptVideoSource(rtc::scoped_refptr<webrtc::VideoTrackSourceInterface> videoSource, int width, int height, int fps) {
+
 }
 
 rtc::scoped_refptr<webrtc::VideoTrackSourceInterface> AndroidInterface::makeVideoSource(rtc::Thread *signalingThread, rtc::Thread *workerThread) {
@@ -75,7 +87,7 @@ bool AndroidInterface::supportsEncoding(const std::string &codecName) {
     return codecName == cricket::kVp8CodecName;
 }
 
-std::unique_ptr<VideoCapturerInterface> AndroidInterface::makeVideoCapturer(rtc::scoped_refptr<webrtc::VideoTrackSourceInterface> source, bool useFrontCamera, std::function<void(VideoState)> stateUpdated, std::shared_ptr<PlatformContext> platformContext) {
+std::unique_ptr<VideoCapturerInterface> AndroidInterface::makeVideoCapturer(rtc::scoped_refptr<webrtc::VideoTrackSourceInterface> source, bool useFrontCamera, std::function<void(VideoState)> stateUpdated, std::shared_ptr<PlatformContext> platformContext, std::pair<int, int> &outResolution) {
     return std::make_unique<VideoCapturerInterfaceImpl>(_source, useFrontCamera, stateUpdated, platformContext);
 }
 

@@ -1433,6 +1433,9 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
             params.date = d;
 
             int dateIndex = Arrays.binarySearch(data.chartData.x, d);
+            if (dateIndex < 0) {
+                dateIndex = data.chartData.x.length - 1;
+            }
             params.xPercentage = data.chartData.xPercentage[dateIndex];
 
 

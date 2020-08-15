@@ -12,6 +12,7 @@ import android.graphics.PorterDuff;
 import android.graphics.PorterDuffXfermode;
 import android.graphics.RectF;
 import android.os.Build;
+import android.view.Gravity;
 import android.view.View;
 import android.view.ViewOutlineProvider;
 import android.widget.FrameLayout;
@@ -19,11 +20,10 @@ import android.widget.ImageView;
 
 import androidx.annotation.NonNull;
 
-import com.google.android.exoplayer2.util.Log;
-
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.Utilities;
-import org.telegram.ui.Components.BackupImageView;
+import org.telegram.ui.Components.LayoutHelper;
+import org.webrtc.RendererCommon;
 import org.webrtc.TextureViewRenderer;
 
 import java.io.File;
@@ -41,6 +41,7 @@ public class VoIPTextureView extends FrameLayout {
 
     public final TextureViewRenderer renderer;
     public final ImageView imageView;
+    public View backgroundView;
 
     public Bitmap cameraLastBitmap;
     public float stubVisibleProgress = 1f;
@@ -55,10 +56,23 @@ public class VoIPTextureView extends FrameLayout {
                 super.onFirstFrameRendered();
                 VoIPTextureView.this.invalidate();
             }
+
+            @Override
+            protected void onMeasure(int widthSpec, int heightSpec) {
+                super.onMeasure(widthSpec, heightSpec);
+            }
         };
         renderer.setEnableHardwareScaler(true);
-
-        addView(renderer);
+        renderer.setIsCamera(isCamera);
+        if (!isCamera) {
+            backgroundView = new View(context);
+            backgroundView.setBackgroundColor(0xff1b1f23);
+            addView(backgroundView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+            renderer.setScalingType(RendererCommon.ScalingType.SCALE_ASPECT_FIT);
+            addView(renderer, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER));
+        } else {
+            addView(renderer);
+        }
         addView(imageView);
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {

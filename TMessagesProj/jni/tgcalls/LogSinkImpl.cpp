@@ -5,9 +5,9 @@
 #ifdef WEBRTC_WIN
 #include "windows.h"
 #include <ctime>
-#elif defined(WEBRTC_IOS) || defined(WEBRTC_MAC)
+#else // WEBRTC_WIN
 #include <sys/time.h>
-#endif //WEBRTC_IOS || WEBRTC_MAC
+#endif // WEBRTC_WIN
 
 namespace tgcalls {
 

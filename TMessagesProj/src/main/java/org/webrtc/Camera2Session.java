@@ -24,9 +24,11 @@ import android.os.Handler;
 import androidx.annotation.Nullable;
 import android.util.Range;
 import android.view.Surface;
+
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+
 import org.webrtc.CameraEnumerationAndroid.CaptureFormat;
 
 @TargetApi(21)
@@ -52,6 +54,8 @@ class Camera2Session implements CameraSession {
   private final int width;
   private final int height;
   private final int framerate;
+
+  private OrientationHelper orientationHelper;
 
   // Initialized at start
   private CameraCharacteristics cameraCharacteristics;
@@ -292,6 +296,7 @@ class Camera2Session implements CameraSession {
     this.width = width;
     this.height = height;
     this.framerate = framerate;
+    this.orientationHelper = new OrientationHelper();
 
     start();
   }
@@ -306,6 +311,7 @@ class Camera2Session implements CameraSession {
       reportError("getCameraCharacteristics(): " + e.getMessage());
       return;
     }
+    orientationHelper.start();
     cameraOrientation = cameraCharacteristics.get(CameraCharacteristics.SENSOR_ORIENTATION);
     isCameraFrontFacing = cameraCharacteristics.get(CameraCharacteristics.LENS_FACING)
         == CameraMetadata.LENS_FACING_FRONT;
@@ -386,6 +392,9 @@ class Camera2Session implements CameraSession {
       cameraDevice.close();
       cameraDevice = null;
     }
+    if (orientationHelper != null) {
+      orientationHelper.stop();
+    }
 
     Logging.d(TAG, "Stop done");
   }
@@ -405,10 +414,11 @@ class Camera2Session implements CameraSession {
   }
 
   private int getFrameOrientation() {
-    int rotation = CameraSession.getDeviceOrientation(applicationContext);
-    if (!isCameraFrontFacing) {
+    int rotation = orientationHelper.getOrientation();
+    if (isCameraFrontFacing) {
       rotation = 360 - rotation;
     }
+    OrientationHelper.cameraRotation = rotation;
     return (cameraOrientation + rotation) % 360;
   }
 

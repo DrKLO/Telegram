@@ -571,8 +571,13 @@ public class VoIPFragment implements VoIPBaseService.StateListener, Notification
         callingUserMiniFloatingLayout.setFloatingMode(true, false);
         callingUserMiniTextureRenderer = new TextureViewRenderer(context);
         callingUserMiniTextureRenderer.setEnableHardwareScaler(true);
+        callingUserMiniTextureRenderer.setIsCamera(false);
+        callingUserMiniTextureRenderer.setScalingType(RendererCommon.ScalingType.SCALE_ASPECT_FIT);
 
-        callingUserMiniFloatingLayout.addView(callingUserMiniTextureRenderer);
+        View backgroundView = new View(context);
+        backgroundView.setBackgroundColor(0xff1b1f23);
+        callingUserMiniFloatingLayout.addView(backgroundView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+        callingUserMiniFloatingLayout.addView(callingUserMiniTextureRenderer, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER));
         callingUserMiniFloatingLayout.setOnTapListener(view -> {
             if (cameraForceExpanded && System.currentTimeMillis() - lastContentTapTime > 500) {
                 AndroidUtilities.cancelRunOnUIThread(hideUIRunnable);
@@ -622,7 +627,7 @@ public class VoIPFragment implements VoIPBaseService.StateListener, Notification
         });
 
         emojiRationalTextView = new TextView(context);
-        emojiRationalTextView.setText(LocaleController.formatString("CallEmojiKeyTooltip", R.string.CallEmojiKeyTooltip, callingUser.first_name));
+        emojiRationalTextView.setText(LocaleController.formatString("CallEmojiKeyTooltip", R.string.CallEmojiKeyTooltip, UserObject.getFirstName(callingUser)));
         emojiRationalTextView.setTextSize(16);
         emojiRationalTextView.setTextColor(Color.WHITE);
         emojiRationalTextView.setGravity(Gravity.CENTER);

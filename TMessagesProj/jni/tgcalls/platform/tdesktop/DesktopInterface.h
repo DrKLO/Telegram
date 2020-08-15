@@ -1,12 +1,12 @@
-#ifndef TGCALLS_WINDOWS_INTERFACE_H
-#define TGCALLS_WINDOWS_INTERFACE_H
+#ifndef TGCALLS_DESKTOP_INTERFACE_H
+#define TGCALLS_DESKTOP_INTERFACE_H
 
 #include "platform/PlatformInterface.h"
 #include "VideoCapturerInterface.h"
 
 namespace tgcalls {
 
-class WindowsInterface : public PlatformInterface {
+class DesktopInterface : public PlatformInterface {
 public:
 	std::unique_ptr<webrtc::VideoEncoderFactory> makeVideoEncoderFactory() override;
 	std::unique_ptr<webrtc::VideoDecoderFactory> makeVideoDecoderFactory() override;
@@ -18,4 +18,4 @@ public:
 
 } // namespace tgcalls
 
-#endif
+#endif // TGCALLS_DESKTOP_INTERFACE_H

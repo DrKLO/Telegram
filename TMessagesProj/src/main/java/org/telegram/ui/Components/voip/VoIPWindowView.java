@@ -3,13 +3,11 @@ package org.telegram.ui.Components.voip;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.app.Activity;
-import android.app.KeyguardManager;
 import android.content.Context;
 import android.content.pm.ActivityInfo;
 import android.graphics.PixelFormat;
 import android.os.Build;
 import android.view.Gravity;
-import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.VelocityTracker;
 import android.view.View;
@@ -134,7 +132,7 @@ public class VoIPWindowView extends FrameLayout {
                 try {
                     WindowManager wm = (WindowManager) activity.getSystemService(Context.WINDOW_SERVICE);
                     wm.removeView(VoIPWindowView.this);
-                } catch (Exception e) {
+                } catch (Exception ignore) {
 
                 }
             } else {
@@ -150,7 +148,7 @@ public class VoIPWindowView extends FrameLayout {
                             setVisibility(View.GONE);
                             try {
                                 wm.removeView(VoIPWindowView.this);
-                            } catch (Exception e) {
+                            } catch (Exception ignore) {
 
                             }
                         }

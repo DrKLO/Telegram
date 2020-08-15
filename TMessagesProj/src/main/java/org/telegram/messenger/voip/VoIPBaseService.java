@@ -62,6 +62,7 @@ import android.view.View;
 import android.widget.RemoteViews;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.BuildConfig;
 import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.ContactsController;
@@ -631,6 +632,9 @@ public abstract class VoIPBaseService extends Service implements SensorEventList
 		}
 		stopForeground(true);
 		stopRinging();
+		if (ApplicationLoader.mainInterfacePaused || !ApplicationLoader.isScreenOn) {
+			MessagesController.getInstance(currentAccount).ignoreSetOnline = false;
+		}
 		NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.appDidLogout);
 		SensorManager sm = (SensorManager) getSystemService(SENSOR_SERVICE);
 		Sensor proximity = sm.getDefaultSensor(Sensor.TYPE_PROXIMITY);
@@ -649,10 +653,11 @@ public abstract class VoIPBaseService extends Service implements SensorEventList
 		sharedInstance = null;
 		AndroidUtilities.runOnUIThread(() -> NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.didEndCall));
 		if (tgVoip != null) {
-			updateTrafficStats();
 			StatsController.getInstance(currentAccount).incrementTotalCallsTime(getStatsNetworkType(), (int) (getCallDuration() / 1000) % 5);
 			onTgVoipPreStop();
-			onTgVoipStop(tgVoip.stop());
+			Instance.FinalState state = tgVoip.stop();
+			updateTrafficStats(state.trafficStats);
+			onTgVoipStop(state);
 			prevTrafficStats = null;
 			callStartTime = 0;
 			tgVoip = null;
@@ -802,8 +807,10 @@ public abstract class VoIPBaseService extends Service implements SensorEventList
 		}
 	}
 
-	protected void updateTrafficStats() {
-		final Instance.TrafficStats trafficStats = tgVoip.getTrafficStats();
+	protected void updateTrafficStats(Instance.TrafficStats trafficStats) {
+		if (trafficStats == null) {
+			trafficStats = tgVoip.getTrafficStats();
+		}
 		final long wifiSentDiff = trafficStats.bytesSentWifi - (prevTrafficStats != null ? prevTrafficStats.bytesSentWifi : 0);
 		final long wifiRecvdDiff = trafficStats.bytesReceivedWifi - (prevTrafficStats != null ? prevTrafficStats.bytesReceivedWifi : 0);
 		final long mobileSentDiff = trafficStats.bytesSentMobile - (prevTrafficStats != null ? prevTrafficStats.bytesSentMobile : 0);
@@ -1596,7 +1603,7 @@ public abstract class VoIPBaseService extends Service implements SensorEventList
 		}
 	}
 
-	public class SharedUIParams {
+	public static class SharedUIParams {
 		public boolean tapToVideoTooltipWasShowed;
 		public boolean cameraAlertWasShowed;
 		public boolean wasVideoCall;

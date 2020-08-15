@@ -10,10 +10,7 @@
 
 package org.webrtc;
 
-import android.content.Context;
 import android.graphics.Matrix;
-import android.view.WindowManager;
-import android.view.Surface;
 
 interface CameraSession {
   enum FailureType { ERROR, DISCONNECTED }
@@ -38,21 +35,6 @@ interface CameraSession {
    * If waitCameraStop is true, also waits for the camera to stop.
    */
   void stop();
-
-  static int getDeviceOrientation(Context context) {
-    final WindowManager wm = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
-    switch (wm.getDefaultDisplay().getRotation()) {
-      case Surface.ROTATION_90:
-        return 90;
-      case Surface.ROTATION_180:
-        return 180;
-      case Surface.ROTATION_270:
-        return 270;
-      case Surface.ROTATION_0:
-      default:
-        return 0;
-    }
-  }
 
   static VideoFrame.TextureBuffer createTextureBufferWithModifiedTransformMatrix(
       TextureBufferImpl buffer, boolean mirror, int rotation) {

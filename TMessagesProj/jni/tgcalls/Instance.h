@@ -55,6 +55,11 @@ struct Endpoint {
 	unsigned char peerTag[16] = { 0 };
 };
 
+enum class ProtocolVersion {
+    V0,
+    V1 // Low-cost network negotiation
+};
+
 enum class NetworkType {
 	Unknown,
 	Gprs,
@@ -98,6 +103,8 @@ struct Config {
 	int maxApiLayer = 0;
     float preferredAspectRatio;
     bool enableHighBitrateVideo = false;
+    std::vector<std::string> preferredVideoCodecs;
+    ProtocolVersion protocolVersion = ProtocolVersion::V0;
 };
 
 struct EncryptionKey {
@@ -174,7 +181,7 @@ public:
 	virtual void receiveSignalingData(const std::vector<uint8_t> &data) = 0;
 	virtual void setVideoCapture(std::shared_ptr<VideoCaptureInterface> videoCapture) = 0;
 
-	virtual FinalState stop() = 0;
+	virtual void stop(std::function<void(FinalState)> completion) = 0;
 
 };
 
@@ -204,7 +211,7 @@ public:
 
 	virtual std::unique_ptr<Instance> construct(Descriptor &&descriptor) = 0;
 	virtual int connectionMaxLayer() = 0;
-	virtual std::string version() = 0;
+	virtual std::vector<std::string> versions() = 0;
 
 	static std::unique_ptr<Instance> Create(
 		const std::string &version,
@@ -218,7 +225,7 @@ private:
 
 	template <typename Implementation>
 	static bool RegisterOne();
-	static void RegisterOne(std::unique_ptr<Meta> meta);
+	static void RegisterOne(std::shared_ptr<Meta> meta);
 
 };
 
@@ -229,14 +236,14 @@ bool Meta::RegisterOne() {
 		int connectionMaxLayer() override {
 			return Implementation::GetConnectionMaxLayer();
 		}
-		std::string version() override {
-			return Implementation::GetVersion();
+		std::vector<std::string> versions() override {
+			return Implementation::GetVersions();
 		}
 		std::unique_ptr<Instance> construct(Descriptor &&descriptor) override {
 			return std::make_unique<Implementation>(std::move(descriptor));
 		}
 	};
-	RegisterOne(std::make_unique<MetaImpl>());
+	RegisterOne(std::make_shared<MetaImpl>());
 	return true;
 }
 

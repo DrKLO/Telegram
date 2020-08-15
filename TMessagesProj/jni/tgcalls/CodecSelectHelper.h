@@ -18,7 +18,8 @@ struct CommonCodecs {
 
 VideoFormatsMessage ComposeSupportedFormats(
 	std::vector<webrtc::SdpVideoFormat> encoders,
-	std::vector<webrtc::SdpVideoFormat> decoders);
+	std::vector<webrtc::SdpVideoFormat> decoders,
+    const std::vector<std::string> &preferredCodecs);
 
 CommonFormats ComputeCommonFormats(
 	const VideoFormatsMessage &my,

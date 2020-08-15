@@ -58,6 +58,16 @@ absl::nullopt_t LogError(
 	return absl::nullopt;
 }
 
+bool ConstTimeIsDifferent(const void *a, const void *b, size_t size) {
+	auto ca = reinterpret_cast<const char*>(a);
+	auto cb = reinterpret_cast<const char*>(b);
+	volatile auto different = false;
+	for (const auto ce = ca + size; ca != ce; ++ca, ++cb) {
+		different |= (*ca != *cb);
+	}
+	return different;
+}
+
 } // namespace
 
 EncryptedConnection::EncryptedConnection(
@@ -326,7 +336,7 @@ auto EncryptedConnection::handleIncomingPacket(const char *bytes, size_t size)
 	const auto msgKeyLarge = ConcatSHA256(
 		MemorySpan{ key + 88 + x, 32 },
 		MemorySpan{ decryptionBuffer.data(), decryptionBuffer.size() });
-	if (memcmp(msgKeyLarge.data() + 8, msgKey, 16)) {
+	if (ConstTimeIsDifferent(msgKeyLarge.data() + 8, msgKey, 16)) {
 		return LogError("Bad incoming data hash.");
 	}
 
@@ -364,10 +374,16 @@ auto EncryptedConnection::processPacket(
 		}
 
 		if (type == kEmptyId) {
+			if (additionalMessage) {
+				return LogError("Empty message should be only the first one in the packet.");
+			}
 			RTC_LOG(LS_INFO) << logHeader()
 				<< "Got RECV:empty" << "#" << currentCounter;
 			reader.Consume(1);
 		} else if (type == kAckId) {
+			if (!additionalMessage) {
+				return LogError("Ack message must not be the first one in the packet.");
+			}
 			ackMyMessage(currentSeq);
 			reader.Consume(1);
 		} else if (auto message = DeserializeMessage(reader, singleMessagePacket)) {

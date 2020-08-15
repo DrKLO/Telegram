@@ -1,5 +1,7 @@
 #include "CryptoHelper.h"
 
+#include <cstring>
+
 namespace tgcalls {
 
 AesKeyIv PrepareAesKeyIv(const uint8_t *key, const uint8_t *msgKey, int x) {

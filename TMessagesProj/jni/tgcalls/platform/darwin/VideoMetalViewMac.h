@@ -29,7 +29,7 @@
 - (void)setOnFirstFrameReceived:(void (^ _Nullable)(float))onFirstFrameReceived;
 - (void)internalSetOnOrientationUpdated:(void (^ _Nullable)(int))onOrientationUpdated;
 - (void)internalSetOnIsMirroredUpdated:(void (^ _Nullable)(bool))onIsMirroredUpdated;
-
+- (void)setIsForceMirrored:(BOOL)forceMirrored;
 @end
 
 #endif // WEBRTC_MAC

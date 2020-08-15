@@ -537,6 +537,7 @@ public class VoIPService extends VoIPBaseService {
 	}
 
 	public void acceptIncomingCall() {
+		MessagesController.getInstance(currentAccount).ignoreSetOnline = false;
 		stopRinging();
 		showNotification();
 		configureDeviceForCall();
@@ -1141,7 +1142,7 @@ public class VoIPService extends VoIPBaseService {
 				@Override
 				public void run() {
 					if (tgVoip != null) {
-						updateTrafficStats();
+						updateTrafficStats(null);
 						AndroidUtilities.runOnUIThread(this, 5000);
 					}
 				}

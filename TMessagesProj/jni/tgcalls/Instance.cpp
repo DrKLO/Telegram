@@ -1,7 +1,5 @@
 #include "Instance.h"
 
-#include "VideoCaptureInterfaceImpl.h"
-
 #include <algorithm>
 #include <stdarg.h>
 
@@ -10,8 +8,8 @@ namespace {
 
 std::function<void(std::string const &)> globalLoggingFunction;
 
-std::map<std::string, std::unique_ptr<Meta>> &MetaMap() {
-	static auto result = std::map<std::string, std::unique_ptr<Meta>>();
+std::map<std::string, std::shared_ptr<Meta>> &MetaMap() {
+	static auto result = std::map<std::string, std::shared_ptr<Meta>>();
 	return result;
 }
 
@@ -44,10 +42,12 @@ std::unique_ptr<Instance> Meta::Create(
 		: nullptr;
 }
 
-void Meta::RegisterOne(std::unique_ptr<Meta> meta) {
+void Meta::RegisterOne(std::shared_ptr<Meta> meta) {
 	if (meta) {
-		const auto version = meta->version();
-		MetaMap().emplace(version, std::move(meta));
+		const auto versions = meta->versions();
+        for (auto &it : versions) {
+            MetaMap().emplace(it, meta);
+        }
 	}
 }
 

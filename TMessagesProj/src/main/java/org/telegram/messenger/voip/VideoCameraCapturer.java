@@ -14,10 +14,7 @@ import org.webrtc.CameraEnumerator;
 import org.webrtc.CameraVideoCapturer;
 import org.webrtc.CapturerObserver;
 import org.webrtc.EglBase;
-import org.webrtc.NativeAndroidVideoTrackSource;
-import org.webrtc.NativeCapturerObserver;
 import org.webrtc.SurfaceTextureHelper;
-import org.webrtc.VideoSource;
 
 @TargetApi(18)
 public class VideoCameraCapturer {

@@ -39,6 +39,7 @@ _signaling(
 	_encryptionKey,
 	[=](int delayMs, int cause) { sendSignalingAsync(delayMs, cause); }),
 _enableP2P(descriptor.config.enableP2P),
+_protocolVersion(descriptor.config.protocolVersion),
 _rtcServers(std::move(descriptor.rtcServers)),
 _videoCapture(std::move(descriptor.videoCapture)),
 _stateUpdated(std::move(descriptor.stateUpdated)),
@@ -52,6 +53,8 @@ _enableHighBitrateVideo(descriptor.config.enableHighBitrateVideo) {
 	assert(_thread->IsCurrent());
 	assert(_stateUpdated != nullptr);
 	assert(_signalingDataEmitted != nullptr);
+    
+    _preferredCodecs = descriptor.config.preferredVideoCodecs;
 
 	_sendSignalingMessage = [=](const Message &message) {
 		if (const auto prepared = _signaling.prepareForSending(message)) {
@@ -112,12 +115,19 @@ void Manager::start() {
 					if (!strong) {
 						return;
 					}
-					const auto mappedState = state.isReadyToSendData
-						? State::Established
-						: State::Reconnecting;
+                    State mappedState;
+                    if (state.isFailed) {
+                        mappedState = State::Failed;
+                    } else {
+                        mappedState = state.isReadyToSendData
+                            ? State::Established
+                            : State::Reconnecting;
+                    }
+                    bool isFirstConnection = false;
 					if (state.isReadyToSendData) {
 						if (!strong->_didConnectOnce) {
 							strong->_didConnectOnce = true;
+                            isFirstConnection = true;
 						}
 					}
 					strong->_state = mappedState;
@@ -126,6 +136,10 @@ void Manager::start() {
 					strong->_mediaManager->perform(RTC_FROM_HERE, [=](MediaManager *mediaManager) {
 						mediaManager->setIsConnected(state.isReadyToSendData);
 					});
+                    
+                    if (isFirstConnection) {
+                        strong->sendInitialSignalingMessages();
+                    }
 				});
 			},
 			[=](DecryptedMessage &&message) {
@@ -152,7 +166,7 @@ void Manager::start() {
 			});
 	}));
 	bool isOutgoing = _encryptionKey.isOutgoing;
-	_mediaManager.reset(new ThreadLocalObject<MediaManager>(getMediaThread(), [weak, isOutgoing, thread, sendSignalingMessage, videoCapture = _videoCapture, localPreferredVideoAspectRatio = _localPreferredVideoAspectRatio, enableHighBitrateVideo = _enableHighBitrateVideo, signalBarsUpdated = _signalBarsUpdated]() {
+	_mediaManager.reset(new ThreadLocalObject<MediaManager>(getMediaThread(), [weak, isOutgoing, thread, sendSignalingMessage, videoCapture = _videoCapture, localPreferredVideoAspectRatio = _localPreferredVideoAspectRatio, enableHighBitrateVideo = _enableHighBitrateVideo, signalBarsUpdated = _signalBarsUpdated, preferredCodecs = _preferredCodecs]() {
 		return new MediaManager(
 			getMediaThread(),
 			isOutgoing,
@@ -169,8 +183,12 @@ void Manager::start() {
 			},
             signalBarsUpdated,
             localPreferredVideoAspectRatio,
-            enableHighBitrateVideo);
+            enableHighBitrateVideo,
+            preferredCodecs);
 	}));
+    _networkManager->perform(RTC_FROM_HERE, [](NetworkManager *networkManager) {
+        networkManager->start();
+    });
 	_mediaManager->perform(RTC_FROM_HERE, [](MediaManager *mediaManager) {
 		mediaManager->start();
 	});
@@ -208,6 +226,10 @@ void Manager::receiveMessage(DecryptedMessage &&message) {
         if (_remoteBatteryLevelIsLowUpdated) {
 			_remoteBatteryLevelIsLowUpdated(remoteBatteryLevelIsLow->batteryLow);
         }
+    } else if (const auto remoteNetworkType = absl::get_if<RemoteNetworkTypeMessage>(data)) {
+        bool wasCurrentNetworkLowCost = calculateIsCurrentNetworkLowCost();
+        _remoteNetworkIsLowCost = remoteNetworkType->isLowCost;
+        updateIsCurrentNetworkLowCost(wasCurrentNetworkLowCost);
     } else {
         if (const auto videoParameters = absl::get_if<VideoParametersMessage>(data)) {
             float value = ((float)videoParameters->aspectRatio) / 1000.0;
@@ -247,6 +269,56 @@ void Manager::setIncomingVideoOutput(std::shared_ptr<rtc::VideoSinkInterface<web
 
 void Manager::setIsLowBatteryLevel(bool isLowBatteryLevel) {
     _sendTransportMessage({ RemoteBatteryLevelIsLowMessage{ isLowBatteryLevel } });
+}
+
+void Manager::setIsLocalNetworkLowCost(bool isLocalNetworkLowCost) {
+    if (isLocalNetworkLowCost != _localNetworkIsLowCost) {
+        _networkManager->perform(RTC_FROM_HERE, [isLocalNetworkLowCost](NetworkManager *networkManager) {
+            networkManager->setIsLocalNetworkLowCost(isLocalNetworkLowCost);
+        });
+        
+        bool wasCurrentNetworkLowCost = calculateIsCurrentNetworkLowCost();
+        _localNetworkIsLowCost = isLocalNetworkLowCost;
+        updateIsCurrentNetworkLowCost(wasCurrentNetworkLowCost);
+        
+        switch (_protocolVersion) {
+            case ProtocolVersion::V1:
+                if (_didConnectOnce) {
+                    _sendTransportMessage({ RemoteNetworkTypeMessage{ isLocalNetworkLowCost } });
+                }
+                break;
+            default:
+                break;
+        }
+    }
+}
+
+void Manager::getNetworkStats(std::function<void (TrafficStats)> completion) {
+    _networkManager->perform(RTC_FROM_HERE, [completion = std::move(completion)](NetworkManager *networkManager) {
+        completion(networkManager->getNetworkStats());
+    });
+}
+
+bool Manager::calculateIsCurrentNetworkLowCost() const {
+    return _localNetworkIsLowCost && _remoteNetworkIsLowCost;
+}
+void Manager::updateIsCurrentNetworkLowCost(bool wasLowCost) {
+    bool isLowCost = calculateIsCurrentNetworkLowCost();
+    if (isLowCost != wasLowCost) {
+        _mediaManager->perform(RTC_FROM_HERE, [isLowCost](MediaManager *mediaManager) {
+            mediaManager->setIsCurrentNetworkLowCost(isLowCost);
+        });
+    }
+}
+
+void Manager::sendInitialSignalingMessages() {
+    switch (_protocolVersion) {
+        case ProtocolVersion::V1:
+            _sendTransportMessage({ RemoteNetworkTypeMessage{ _localNetworkIsLowCost } });
+            break;
+        default:
+            break;
+    }
 }
 
 } // namespace tgcalls

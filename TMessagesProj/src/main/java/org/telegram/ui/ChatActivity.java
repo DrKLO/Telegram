@@ -8798,7 +8798,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         }
         updateChatListViewTopPadding();
 
-        if (!firstLoading && !paused && !inPreviewMode && !inScheduleMode) {
+        if (!firstLoading && !paused && !inPreviewMode && !inScheduleMode && !getMessagesController().ignoreSetOnline) {
             int scheduledRead = 0;
             if ((maxPositiveUnreadId != Integer.MIN_VALUE || maxNegativeUnreadId != Integer.MAX_VALUE)) {
                 int counterDecrement = 0;

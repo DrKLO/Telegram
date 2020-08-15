@@ -28,13 +28,13 @@ public:
 	void setAudioOutputDuckingEnabled(bool enabled) override;
     void setIsLowBatteryLevel(bool isLowBatteryLevel) override;
     static int GetConnectionMaxLayer();
-    static std::string GetVersion();
+    static std::vector<std::string> GetVersions();
 	std::string getLastError() override;
 	std::string getDebugInfo() override;
 	int64_t getPreferredRelayId() override;
 	TrafficStats getTrafficStats() override;
 	PersistentState getPersistentState() override;
-	FinalState stop() override;
+	void stop(std::function<void(FinalState)> completion) override;
 
 private:
     std::unique_ptr<LogSinkImpl> logSink_;

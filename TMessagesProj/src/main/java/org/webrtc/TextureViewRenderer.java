@@ -6,6 +6,7 @@ import android.graphics.Point;
 import android.graphics.SurfaceTexture;
 import android.os.Looper;
 import android.view.TextureView;
+import android.view.View;
 
 import org.telegram.messenger.AndroidUtilities;
 
@@ -31,6 +32,9 @@ public class TextureViewRenderer extends TextureView
     private boolean enableFixedSize;
     private int surfaceWidth;
     private int surfaceHeight;
+    private boolean isCamera;
+
+    private OrientationHelper orientationHelper;
 
     public static class TextureEglRenderer extends EglRenderer implements TextureView.SurfaceTextureListener {
         private static final String TAG = "TextureEglRenderer";
@@ -218,6 +222,9 @@ public class TextureViewRenderer extends TextureView
      */
     public void release() {
         eglRenderer.release();
+        if (orientationHelper != null) {
+            orientationHelper.stop();
+        }
     }
 
     /**
@@ -251,6 +258,19 @@ public class TextureViewRenderer extends TextureView
         eglRenderer.removeFrameListener(listener);
     }
 
+    public void setIsCamera(boolean value) {
+        isCamera = value;
+        if (!isCamera) {
+            orientationHelper = new OrientationHelper() {
+                @Override
+                protected void onOrientationUpdate(int orientation) {
+                    updateRotation();
+                }
+            };
+            orientationHelper.start();
+        }
+    }
+
     /**
      * Enables fixed size for the surface. This provides better performance but might be buggy on some
      * devices. By default this is turned off.
@@ -259,6 +279,45 @@ public class TextureViewRenderer extends TextureView
         ThreadUtils.checkIsOnMainThread();
         enableFixedSize = enabled;
         updateSurfaceSize();
+    }
+
+    private void updateRotation() {
+        if (orientationHelper == null || rotatedFrameWidth == 0 || rotatedFrameHeight == 0) {
+            return;
+        }
+        View parentView = (View) getParent();
+        if (parentView == null) {
+            return;
+        }
+        int orientation = orientationHelper.getOrientation();
+        float viewWidth = getMeasuredWidth();
+        float viewHeight = getMeasuredHeight();
+        float w;
+        float h;
+        float targetWidth = parentView.getMeasuredWidth();
+        float targetHeight = parentView.getMeasuredHeight();
+        if (orientation == 90 || orientation == 270) {
+            w = viewHeight;
+            h = viewWidth;
+        } else {
+            w = viewWidth;
+            h = viewHeight;
+        }
+        float scale;
+        if (w < h) {
+            scale = Math.max(w / viewWidth, h / viewHeight);
+        } else {
+            scale = Math.min(w / viewWidth, h / viewHeight);
+        }
+        w *= scale;
+        h *= scale;
+        if (Math.abs(w / h - targetWidth / targetHeight) < 0.1f) {
+            scale *= Math.max(targetWidth / w, targetHeight / h);
+        }
+        if (orientation == 270) {
+            orientation = -90;
+        }
+        animate().scaleX(scale).scaleY(scale).rotation(-orientation).setDuration(180).start();
     }
 
     /**
@@ -312,8 +371,11 @@ public class TextureViewRenderer extends TextureView
     @Override
     protected void onMeasure(int widthSpec, int heightSpec) {
         ThreadUtils.checkIsOnMainThread();
-        Point size = videoLayoutMeasure.measure(widthSpec, heightSpec, rotatedFrameWidth, rotatedFrameHeight);
+        Point size = videoLayoutMeasure.measure(isCamera, widthSpec, heightSpec, rotatedFrameWidth, rotatedFrameHeight);
         setMeasuredDimension(size.x, size.y);
+        if (!isCamera) {
+            updateRotation();
+        }
         logD("onMeasure(). New size: " + size.x + "x" + size.y);
     }
 
@@ -337,7 +399,7 @@ public class TextureViewRenderer extends TextureView
                 drawnFrameHeight = rotatedFrameHeight;
             } else {
                 drawnFrameWidth = rotatedFrameWidth;
-                drawnFrameHeight = (int) (rotatedFrameWidth / layoutAspectRatio);
+                drawnFrameHeight = (int) (rotatedFrameHeight / layoutAspectRatio);
             }
             // Aspect ratio of the drawn frame and the view is the same.
             final int width = Math.min(getWidth(), drawnFrameWidth);
@@ -412,6 +474,9 @@ public class TextureViewRenderer extends TextureView
     public void onFrameResolutionChanged(int videoWidth, int videoHeight, int rotation) {
         if (rendererEvents != null) {
             rendererEvents.onFrameResolutionChanged(videoWidth, videoHeight, rotation);
+        }
+        if (isCamera) {
+            eglRenderer.setRotation(-OrientationHelper.cameraRotation);
         }
         int rotatedWidth = rotation == 0 || rotation == 180 ? videoWidth : videoHeight;
         int rotatedHeight = rotation == 0 || rotation == 180 ? videoHeight : videoWidth;

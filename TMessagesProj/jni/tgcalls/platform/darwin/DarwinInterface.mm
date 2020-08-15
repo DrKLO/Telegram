@@ -18,6 +18,12 @@
 
 namespace tgcalls {
 
+static webrtc::ObjCVideoTrackSource *getObjCVideoSource(const rtc::scoped_refptr<webrtc::VideoTrackSourceInterface> nativeSource) {
+    webrtc::VideoTrackSourceProxy *proxy_source =
+    static_cast<webrtc::VideoTrackSourceProxy *>(nativeSource.get());
+    return static_cast<webrtc::ObjCVideoTrackSource *>(proxy_source->internal());
+}
+
 void DarwinInterface::configurePlatformAudio() {
 #ifdef WEBRTC_IOS
     [RTCAudioSession sharedInstance].useManualAudio = true;
@@ -45,7 +51,7 @@ bool DarwinInterface::supportsEncoding(const std::string &codecName) {
 			return [[AVAssetExportSession allExportPresets] containsObject:AVAssetExportPresetHEVCHighestQuality];
 		}
 #elif defined WEBRTC_MAC // WEBRTC_IOS
-		if (@available(macOS 10.13, *)) {
+		if (@available(macOS 10.14, *)) {
 			return [[AVAssetExportSession allExportPresets] containsObject:AVAssetExportPresetHEVCHighestQuality];
 		}
 #endif // WEBRTC_IOS || WEBRTC_MAC
@@ -54,11 +60,7 @@ bool DarwinInterface::supportsEncoding(const std::string &codecName) {
     } else if (codecName == cricket::kVp8CodecName) {
         return true;
     } else if (codecName == cricket::kVp9CodecName) {
-        #ifndef WEBRTC_IOS
         return true;
-        #else
-        return false;
-        #endif
     }
     return false;
 }
@@ -68,8 +70,12 @@ rtc::scoped_refptr<webrtc::VideoTrackSourceInterface> DarwinInterface::makeVideo
     return webrtc::VideoTrackSourceProxy::Create(signalingThread, workerThread, objCVideoTrackSource);
 }
 
-std::unique_ptr<VideoCapturerInterface> DarwinInterface::makeVideoCapturer(rtc::scoped_refptr<webrtc::VideoTrackSourceInterface> source, bool useFrontCamera, std::function<void(VideoState)> stateUpdated, std::shared_ptr<PlatformContext> platformContext) {
-    return std::make_unique<VideoCapturerInterfaceImpl>(source, useFrontCamera, stateUpdated);
+void DarwinInterface::adaptVideoSource(rtc::scoped_refptr<webrtc::VideoTrackSourceInterface> videoSource, int width, int height, int fps) {
+    getObjCVideoSource(videoSource)->OnOutputFormatRequest(width, height, fps);
+}
+
+std::unique_ptr<VideoCapturerInterface> DarwinInterface::makeVideoCapturer(rtc::scoped_refptr<webrtc::VideoTrackSourceInterface> source, bool useFrontCamera, std::function<void(VideoState)> stateUpdated, std::shared_ptr<PlatformContext> platformContext, std::pair<int, int> &outResolution) {
+    return std::make_unique<VideoCapturerInterfaceImpl>(source, useFrontCamera, stateUpdated, outResolution);
 }
 
 std::unique_ptr<PlatformInterface> CreatePlatformInterface() {

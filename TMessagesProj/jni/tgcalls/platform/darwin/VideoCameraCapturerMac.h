@@ -20,7 +20,7 @@
 - (void)setIsEnabled:(bool)isEnabled;
 - (void)setPreferredCaptureAspectRatio:(float)aspectRatio;
 - (void)setUncroppedSink:(std::shared_ptr<rtc::VideoSinkInterface<webrtc::VideoFrame>>)sink;
-
+- (BOOL)deviceIsCaptureCompitable:(AVCaptureDevice *)device;
 
 @end
 #endif //WEBRTC_MAC
