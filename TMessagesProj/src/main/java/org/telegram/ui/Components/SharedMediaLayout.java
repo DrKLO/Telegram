@@ -2714,9 +2714,6 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
         if (searchItemState == 2 && actionBar.isSearchFieldVisible()) {
             ignoreSearchCollapse = true;
             actionBar.closeSearchField();
-            searchItemState = 0;
-            searchItem.setAlpha(0.0f);
-            searchItem.setVisibility(View.INVISIBLE);
         }
     }
 
