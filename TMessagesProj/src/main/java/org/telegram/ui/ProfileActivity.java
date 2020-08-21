@@ -3415,6 +3415,10 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 color2 = Theme.getColor(Theme.key_windowBackgroundWhite);
                 verifiedCheckDrawable.setColorFilter(AndroidUtilities.getOffsetColor(color1, color2, value, 1.0f), PorterDuff.Mode.MULTIPLY);
             }
+
+            if (avatarsViewPagerIndicatorView.getSecondaryMenuItem() != null && videoCallItemVisible) {
+                needLayoutText(Math.min(1f, extraHeight / AndroidUtilities.dp(88f)));
+            }
         }
 
         @Override
@@ -3932,7 +3936,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         }
 
         int viewWidth = AndroidUtilities.isTablet() ? AndroidUtilities.dp(490) : AndroidUtilities.displaySize.x;
-        int buttonsWidth = AndroidUtilities.dp(118 + 8 + (40 + (callItemVisible || editItemVisible || searchItem != null ? 48 : 0) + (videoCallItemVisible ? 48 : 0)));
+        ActionBarMenuItem item = avatarsViewPagerIndicatorView.getSecondaryMenuItem();
+        int buttonsWidth = AndroidUtilities.dp(118 + 8 + (40 + (item != null ? 48 * (1.0f - mediaHeaderAnimationProgress) : 0) + (videoCallItemVisible ? 48 * (1.0f - mediaHeaderAnimationProgress) : 0)));
         int minWidth = viewWidth - buttonsWidth;
 
         int width = (int) (viewWidth - buttonsWidth * Math.max(0.0f, 1.0f - (diff != 1.0f ? diff * 0.15f / (1.0f - diff) : 1.0f)) - nameTextView[1].getTranslationX());

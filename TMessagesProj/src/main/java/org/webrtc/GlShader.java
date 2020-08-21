@@ -63,9 +63,9 @@ public class GlShader {
     // part of the program object."
     // But in practice, detaching shaders from the program seems to break some devices. Deleting the
     // shaders are fine however - it will delete them when they are no longer attached to a program.
-    GLES20.glDeleteShader(vertexShader);
-    GLES20.glDeleteShader(fragmentShader);
-    GlUtil.checkNoGLES2Error("Creating GlShader");
+    //GLES20.glDeleteShader(vertexShader); delete crashes on xiaomi
+    //GLES20.glDeleteShader(fragmentShader);
+    //GlUtil.checkNoGLES2Error("Creating GlShader");
   }
 
   public int getAttribLocation(String label) {

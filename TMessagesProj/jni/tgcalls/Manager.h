@@ -57,6 +57,8 @@ private:
     bool _localNetworkIsLowCost = false;
     bool _remoteNetworkIsLowCost = false;
 
+	std::shared_ptr<PlatformContext> _platformContext;
+
 };
 
 } // namespace tgcalls

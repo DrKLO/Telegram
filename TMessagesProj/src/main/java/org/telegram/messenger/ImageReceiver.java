@@ -880,7 +880,12 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
                         roundRect.set(drawRegion);
 
                         if (isRoundRect) {
-                            canvas.drawRoundRect(roundRect,roundRadius[0], roundRadius[0],roundPaint);
+                            try {
+                                canvas.drawRoundRect(roundRect,roundRadius[0], roundRadius[0],roundPaint);
+                            } catch (Exception e) {
+                                onBitmapException(bitmapDrawable);
+                                FileLog.e(e);
+                            }
                         } else {
                             for (int a = 0; a < roundRadius.length; a++) {
                                 radii[a * 2] = roundRadius[a];
@@ -930,7 +935,12 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
                         roundPaint.setAlpha(alpha);
 
                         if (isRoundRect) {
-                            canvas.drawRoundRect(roundRect, roundRadius[0], roundRadius[0], roundPaint);
+                            try {
+                                canvas.drawRoundRect(roundRect, roundRadius[0], roundRadius[0], roundPaint);
+                            } catch (Exception e) {
+                                onBitmapException(bitmapDrawable);
+                                FileLog.e(e);
+                            }
                         } else {
                             for (int a = 0; a < roundRadius.length; a++) {
                                 radii[a * 2] = roundRadius[a];

@@ -11,7 +11,6 @@ import androidx.annotation.Nullable;
 import org.telegram.messenger.ApplicationLoader;
 
 import java.io.FileNotFoundException;
-import java.io.IOException;
 
 /**
  * This is a very dirty hack to allow Telegram calls to respect user's DND settings.
@@ -66,20 +65,20 @@ public class CallNotificationSoundProvider extends ContentProvider {
 			throw new FileNotFoundException("Unexpected application state");
 		}
 
-		VoIPBaseService srv = VoIPBaseService.getSharedInstance();
-		if (srv != null) {
-			srv.startRingtoneAndVibration();
-		}
-
 		try {
+			VoIPBaseService srv = VoIPBaseService.getSharedInstance();
+			if (srv != null) {
+				srv.startRingtoneAndVibration();
+			}
+
 			ParcelFileDescriptor[] pipe = ParcelFileDescriptor.createPipe();
 			ParcelFileDescriptor.AutoCloseOutputStream outputStream = new ParcelFileDescriptor.AutoCloseOutputStream(pipe[1]);
 			byte[] silentWav = {82, 73, 70, 70, 41, 0, 0, 0, 87, 65, 86, 69, 102, 109, 116, 32, 16, 0, 0, 0, 1, 0, 1, 0, 68, (byte) 172, 0, 0, 16, (byte) 177, 2, 0, 2, 0, 16, 0, 100, 97, 116, 97, 10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 			outputStream.write(silentWav);
 			outputStream.close();
 			return pipe[0];
-		} catch (IOException x) {
-			throw new FileNotFoundException(x.getMessage());
+		} catch (Exception e) {
+			throw new FileNotFoundException(e.getMessage());
 		}
 	}
 }

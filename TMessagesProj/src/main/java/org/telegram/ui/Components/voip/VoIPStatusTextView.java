@@ -19,18 +19,21 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.R;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LayoutHelper;
 
 public class VoIPStatusTextView extends FrameLayout {
 
     TextView[] textView = new TextView[2];
+    TextView reconnectTextView;
     VoIPTimerView timerView;
 
     CharSequence nextTextToSet;
     boolean animationInProgress;
 
-    private TextAlphaSpan[] ellSpans = ellSpans = new TextAlphaSpan[]{new TextAlphaSpan(), new TextAlphaSpan(), new TextAlphaSpan()};
+    private TextAlphaSpan[] ellSpans = new TextAlphaSpan[]{new TextAlphaSpan(), new TextAlphaSpan(), new TextAlphaSpan()};
     private AnimatorSet ellAnimator;
     private boolean attachedToWindow;
 
@@ -47,6 +50,23 @@ public class VoIPStatusTextView extends FrameLayout {
             textView[i].setGravity(Gravity.CENTER_HORIZONTAL);
             addView(textView[i]);
         }
+
+        reconnectTextView = new TextView(context);
+        reconnectTextView.setTextSize(15);
+        reconnectTextView.setShadowLayer(AndroidUtilities.dp(3), 0, AndroidUtilities.dp(.666666667f), 0x4C000000);
+        reconnectTextView.setTextColor(Color.WHITE);
+        reconnectTextView.setGravity(Gravity.CENTER_HORIZONTAL);
+        addView(reconnectTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 22, 0, 0));
+
+        SpannableStringBuilder ssb = new SpannableStringBuilder(LocaleController.getString("VoipReconnecting", R.string.VoipReconnecting));
+        SpannableString ell = new SpannableString("...");
+        ell.setSpan(ellSpans[0], 0, 1, 0);
+        ell.setSpan(ellSpans[1], 1, 2, 0);
+        ell.setSpan(ellSpans[2], 2, 3, 0);
+        ssb.append(ell);
+        reconnectTextView.setText(ssb);
+        reconnectTextView.setVisibility(View.GONE);
+
         timerView = new VoIPTimerView(context);
         addView(timerView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
@@ -96,7 +116,6 @@ public class VoIPStatusTextView extends FrameLayout {
         if (TextUtils.isEmpty(textView[0].getText())) {
             animated = false;
         }
-
 
         if (!animated) {
             if (animator != null) {
@@ -230,11 +249,37 @@ public class VoIPStatusTextView extends FrameLayout {
                 textView[0].invalidate();
                 textView[1].invalidate();
             }
+            if (reconnectTextView.getVisibility() == View.VISIBLE) {
+                reconnectTextView.invalidate();
+            }
         });
         a.setDuration(duration);
         a.setStartDelay(startDelay);
         a.setInterpolator(CubicBezierInterpolator.DEFAULT);
         return a;
+    }
+
+    public void showReconnect(boolean showReconnecting, boolean animated) {
+        if (!animated) {
+            reconnectTextView.animate().setListener(null).cancel();
+            reconnectTextView.setVisibility(showReconnecting ? View.VISIBLE : View.GONE);
+        } else {
+            if (showReconnecting) {
+                if (reconnectTextView.getVisibility() != View.VISIBLE) {
+                    reconnectTextView.setVisibility(View.VISIBLE);
+                    reconnectTextView.setAlpha(0);
+                }
+                reconnectTextView.animate().setListener(null).cancel();
+                reconnectTextView.animate().alpha(1f).setDuration(150).start();
+            } else {
+                reconnectTextView.animate().alpha(0).setListener(new AnimatorListenerAdapter() {
+                    @Override
+                    public void onAnimationEnd(Animator animation) {
+                       reconnectTextView.setVisibility(View.GONE);
+                    }
+                }).setDuration(150).start();
+            }
+        }
     }
 
     private class TextAlphaSpan extends CharacterStyle {

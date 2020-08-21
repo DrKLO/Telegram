@@ -59,7 +59,8 @@ MediaManager::MediaManager(
     std::function<void(int)> signalBarsUpdated,
     float localPreferredVideoAspectRatio,
     bool enableHighBitrateVideo,
-    std::vector<std::string> preferredCodecs) :
+    std::vector<std::string> preferredCodecs,
+	std::shared_ptr<PlatformContext> platformContext) :
 _thread(thread),
 _eventLog(std::make_unique<webrtc::RtcEventLogNull>()),
 _taskQueueFactory(webrtc::CreateDefaultTaskQueueFactory()),
@@ -69,7 +70,8 @@ _signalBarsUpdated(std::move(signalBarsUpdated)),
 _outgoingVideoState(videoCapture ? VideoState::Active : VideoState::Inactive),
 _videoCapture(std::move(videoCapture)),
 _localPreferredVideoAspectRatio(localPreferredVideoAspectRatio),
-_enableHighBitrateVideo(enableHighBitrateVideo) {
+_enableHighBitrateVideo(enableHighBitrateVideo),
+_platformContext(platformContext) {
 	_ssrcAudio.incoming = isOutgoing ? ssrcAudioIncoming : ssrcAudioOutgoing;
 	_ssrcAudio.outgoing = (!isOutgoing) ? ssrcAudioIncoming : ssrcAudioOutgoing;
 	_ssrcAudio.fecIncoming = isOutgoing ? ssrcAudioFecIncoming : ssrcAudioFecOutgoing;
@@ -99,13 +101,14 @@ _enableHighBitrateVideo(enableHighBitrateVideo) {
 	mediaDeps.audio_encoder_factory = webrtc::CreateAudioEncoderFactory<webrtc::AudioEncoderOpus>();
 	mediaDeps.audio_decoder_factory = webrtc::CreateAudioDecoderFactory<webrtc::AudioDecoderOpus>();
 
-	mediaDeps.video_encoder_factory = PlatformInterface::SharedInstance()->makeVideoEncoderFactory();
-	mediaDeps.video_decoder_factory = PlatformInterface::SharedInstance()->makeVideoDecoderFactory();
+	mediaDeps.video_encoder_factory = PlatformInterface::SharedInstance()->makeVideoEncoderFactory(_platformContext);
+	mediaDeps.video_decoder_factory = PlatformInterface::SharedInstance()->makeVideoDecoderFactory(_platformContext);
 
 	_myVideoFormats = ComposeSupportedFormats(
 		mediaDeps.video_encoder_factory->GetSupportedFormats(),
 		mediaDeps.video_decoder_factory->GetSupportedFormats(),
-        preferredCodecs);
+        preferredCodecs,
+        _platformContext);
 
 	mediaDeps.audio_processing = webrtc::AudioProcessingBuilder().Create();
 	_mediaEngine = cricket::CreateMediaEngine(std::move(mediaDeps));
@@ -120,6 +123,9 @@ _enableHighBitrateVideo(enableHighBitrateVideo) {
     audioOptions.echo_cancellation = true;
     audioOptions.noise_suppression = true;
     audioOptions.audio_jitter_buffer_fast_accelerate = true;
+
+	std::vector<std::string> streamIds;
+	streamIds.push_back("1");
 
 	_audioChannel.reset(_mediaEngine->voice().CreateMediaChannel(_call.get(), cricket::MediaConfig(), audioOptions, webrtc::CryptoOptions::NoGcm()));
 	_videoChannel.reset(_mediaEngine->video().CreateMediaChannel(_call.get(), cricket::MediaConfig(), cricket::VideoOptions(), webrtc::CryptoOptions::NoGcm(), _videoBitrateAllocatorFactory.get()));
@@ -166,7 +172,9 @@ _enableHighBitrateVideo(enableHighBitrateVideo) {
 	audioRecvParameters.rtcp.remote_estimate = true;
 
 	_audioChannel->SetRecvParameters(audioRecvParameters);
-	_audioChannel->AddRecvStream(cricket::StreamParams::CreateLegacy(_ssrcAudio.incoming));
+	cricket::StreamParams audioRecvStreamParams = cricket::StreamParams::CreateLegacy(_ssrcAudio.incoming);
+	audioRecvStreamParams.set_stream_ids(streamIds);
+	_audioChannel->AddRecvStream(audioRecvStreamParams);
 	_audioChannel->SetPlayout(true);
 
 	_videoChannel->SetInterface(_videoNetworkInterface.get());
@@ -506,6 +514,9 @@ void MediaManager::checkIsReceivingVideoChanged(bool wasReceiving) {
         videoRecvStreamParams.ssrcs = {_ssrcVideo.incoming};
         videoRecvStreamParams.ssrc_groups.push_back(videoRecvSsrcGroup);
         videoRecvStreamParams.cname = "cname";
+		std::vector<std::string> streamIds;
+		streamIds.push_back("1");
+		videoRecvStreamParams.set_stream_ids(streamIds);
 
         _videoChannel->SetRecvParameters(videoRecvParameters);
         _videoChannel->AddRecvStream(videoRecvStreamParams);

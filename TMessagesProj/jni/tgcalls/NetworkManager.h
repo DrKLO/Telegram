@@ -17,7 +17,7 @@ namespace rtc {
 class BasicPacketSocketFactory;
 class BasicNetworkManager;
 class PacketTransportInternal;
-class NetworkRoute;
+struct NetworkRoute;
 } // namespace rtc
 
 namespace cricket {

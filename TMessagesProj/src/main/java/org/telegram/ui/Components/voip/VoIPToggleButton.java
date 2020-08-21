@@ -245,6 +245,8 @@ public class VoIPToggleButton extends FrameLayout {
             textView[0].setText(text);
             crossProgress = drawCross ? 1f : 0;
             iconChangeColor = false;
+            replaceProgress = 0f;
+            invalidate();
         } else {
             if (!iconChangeColor) {
                 icon[1] = ContextCompat.getDrawable(getContext(), iconRes).mutate();
@@ -299,6 +301,7 @@ public class VoIPToggleButton extends FrameLayout {
                 }
             });
             replaceAnimator.setDuration(150).start();
+            invalidate();
         }
     }
 

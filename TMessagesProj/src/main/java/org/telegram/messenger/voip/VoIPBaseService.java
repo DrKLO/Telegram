@@ -160,7 +160,7 @@ public abstract class VoIPBaseService extends Service implements SensorEventList
 	protected long callStartTime;
 	protected boolean playingSound;
 	protected boolean isOutgoing;
-	protected boolean videoCall;
+	public boolean videoCall;
 	protected long videoCapturer;
 	protected Runnable timeoutRunnable;
 
@@ -1511,7 +1511,7 @@ public abstract class VoIPBaseService extends Service implements SensorEventList
 		}
 		// some non-Google devices don't implement the ConnectionService API correctly so, sadly,
 		// we'll have to whitelist only a handful of known-compatible devices for now
-		return "angler".equals(Build.PRODUCT)            // Nexus 6P
+		return false;/*"angler".equals(Build.PRODUCT)            // Nexus 6P
 				|| "bullhead".equals(Build.PRODUCT)        // Nexus 5X
 				|| "sailfish".equals(Build.PRODUCT)        // Pixel
 				|| "marlin".equals(Build.PRODUCT)        // Pixel XL
@@ -1519,7 +1519,7 @@ public abstract class VoIPBaseService extends Service implements SensorEventList
 				|| "taimen".equals(Build.PRODUCT)        // Pixel 2 XL
 				|| "blueline".equals(Build.PRODUCT)        // Pixel 3
 				|| "crosshatch".equals(Build.PRODUCT)    // Pixel 3 XL
-				|| MessagesController.getGlobalMainSettings().getBoolean("dbg_force_connection_service", false);
+				|| MessagesController.getGlobalMainSettings().getBoolean("dbg_force_connection_service", false);*/
 	}
 
 	public interface StateListener {

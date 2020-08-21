@@ -364,7 +364,7 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
         currentItemName = message.messageOwner.media.title;
         validateRequest = request;
         saveShippingInfo = true;
-        if (saveCard) {
+        if (saveCard || currentStep == 4) {
             saveCardInfo = saveCard;
         } else {
             saveCardInfo = paymentForm.saved_credentials != null;

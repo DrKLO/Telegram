@@ -35,6 +35,9 @@ public:
 	virtual void setState(VideoState state) = 0;
     virtual void setPreferredAspectRatio(float aspectRatio) = 0;
 	virtual void setOutput(std::shared_ptr<rtc::VideoSinkInterface<webrtc::VideoFrame>> sink) = 0;
+	virtual std::shared_ptr<PlatformContext> getPlatformContext() {
+		return nullptr;
+	}
 
 };
 

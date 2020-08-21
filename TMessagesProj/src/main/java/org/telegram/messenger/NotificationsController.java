@@ -3187,8 +3187,14 @@ public class NotificationsController extends BaseController {
         int selfUserId = getUserConfig().getClientUserId();
         boolean waitingForPasscode = AndroidUtilities.needShowPasscode() || SharedConfig.isWaitingForPasscodeEnter;
 
+        int maxCount;
+        if (UserConfig.getActivatedAccountsCount() >= 3) {
+            maxCount = 7;
+        } else {
+            maxCount = 10;
+        }
         for (int b = 0, size = sortedDialogs.size(); b < size; b++) {
-            if (holders.size() >= 15) {
+            if (holders.size() >= maxCount) {
                 break;
             }
             long dialog_id = sortedDialogs.get(b);

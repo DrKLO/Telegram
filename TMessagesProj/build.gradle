@@ -43,7 +43,7 @@ dependencies {
 
 android {
     compileSdkVersion 30
-    buildToolsVersion '30.0.1'
+    buildToolsVersion '30.0.2'
     ndkVersion "21.1.6352462"
 
     defaultConfig.applicationId = "org.telegram.messenger"
@@ -280,7 +280,7 @@ android {
         }
     }
 
-    defaultConfig.versionCode = 2064
+    defaultConfig.versionCode = 2065
 
     applicationVariants.all { variant ->
         variant.outputs.all { output ->
@@ -315,7 +315,7 @@ android {
     defaultConfig {
         minSdkVersion 16
         targetSdkVersion 28
-        versionName "7.0.0"
+        versionName "7.0.1"
 
         vectorDrawables.generatedDensities = ['mdpi', 'hdpi', 'xhdpi', 'xxhdpi']
 

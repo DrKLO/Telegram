@@ -241,7 +241,8 @@ public:
 	_videoCapture(descriptor.videoCapture),
 	_localPreferredVideoAspectRatio(descriptor.config.preferredAspectRatio),
 	_state(State::Reconnecting),
-	_videoState(_videoCapture ? VideoState::Active : VideoState::Inactive) {
+	_videoState(_videoCapture ? VideoState::Active : VideoState::Inactive),
+    _platformContext(descriptor.platformContext) {
         assert(getMediaThread()->IsCurrent());
 
         rtc::LogMessage::LogToDebug(rtc::LS_INFO);
@@ -304,8 +305,8 @@ public:
         mediaDeps.task_queue_factory = dependencies.task_queue_factory.get();
         mediaDeps.audio_encoder_factory = webrtc::CreateBuiltinAudioEncoderFactory();
         mediaDeps.audio_decoder_factory = webrtc::CreateBuiltinAudioDecoderFactory();
-        mediaDeps.video_encoder_factory = PlatformInterface::SharedInstance()->makeVideoEncoderFactory();
-        mediaDeps.video_decoder_factory = PlatformInterface::SharedInstance()->makeVideoDecoderFactory();
+        mediaDeps.video_encoder_factory = PlatformInterface::SharedInstance()->makeVideoEncoderFactory(_platformContext);
+        mediaDeps.video_decoder_factory = PlatformInterface::SharedInstance()->makeVideoDecoderFactory(_platformContext);
 
         webrtc::AudioProcessing *apm = webrtc::AudioProcessingBuilder().Create();
         webrtc::AudioProcessing::Config audioConfig;
@@ -926,6 +927,8 @@ private:
 
     bool _didSetRemoteDescription = false;
     std::vector<std::shared_ptr<IceCandidateData>> _pendingRemoteIceCandidates;
+
+    std::shared_ptr<PlatformContext> _platformContext;
 };
 
 InstanceImplReference::InstanceImplReference(Descriptor &&descriptor) :

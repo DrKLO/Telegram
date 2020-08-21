@@ -19,6 +19,7 @@ class VideoFrame;
 namespace tgcalls {
 
 class VideoCaptureInterface;
+class PlatformContext;
 
 struct Proxy {
 	std::string host;
@@ -203,6 +204,7 @@ struct Descriptor {
 	std::function<void(AudioState, VideoState)> remoteMediaStateUpdated;
     std::function<void(float)> remotePrefferedAspectRatioUpdated;
 	std::function<void(const std::vector<uint8_t> &)> signalingDataEmitted;
+	std::shared_ptr<PlatformContext> platformContext;
 };
 
 class Meta {

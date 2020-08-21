@@ -76,6 +76,12 @@ public class AcceptDeclineView extends View {
 
     boolean retryMod;
     Drawable rippleDrawable;
+    private boolean screenWasWakeup;
+    Paint linePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+
+    Drawable arrowDrawable;
+
+    float arrowProgress;
 
     public AcceptDeclineView(@NonNull Context context) {
         super(context);
@@ -107,11 +113,13 @@ public class AcceptDeclineView extends View {
         cancelDrawable = ContextCompat.getDrawable(context, R.drawable.ic_close_white).mutate();
         cancelDrawable.setColorFilter(new PorterDuffColorFilter(Color.BLACK, PorterDuff.Mode.MULTIPLY));
 
-
         acceptCirclePaint.setColor(0x3f45bc4d);
         rippleDrawable = Theme.createSimpleSelectorCircleDrawable(AndroidUtilities.dp(52), 0, ColorUtils.setAlphaComponent(Color.WHITE, (int) (255 * 0.3f)));
         rippleDrawable.setCallback(this);
+
+        arrowDrawable = ContextCompat.getDrawable(context, R.drawable.call_arrow_right);
     }
+
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
@@ -122,6 +130,8 @@ public class AcceptDeclineView extends View {
         callDrawable.setBounds(padding, padding, padding + AndroidUtilities.dp(28), padding + AndroidUtilities.dp(28));
         cancelDrawable.setBounds(padding, padding, padding + AndroidUtilities.dp(28), padding + AndroidUtilities.dp(28));
 
+        linePaint.setStrokeWidth(AndroidUtilities.dp(3));
+        linePaint.setColor(Color.WHITE);
     }
 
     @Override
@@ -200,7 +210,7 @@ public class AcceptDeclineView extends View {
                         animator.start();
                         leftAnimator = animator;
                         if (listener != null) {
-                            if ((!startDrag && Math.abs(dy) < touchSlop) || leftOffsetX > maxOffset * 0.8f) {
+                            if ((!startDrag && Math.abs(dy) < touchSlop && !screenWasWakeup) || leftOffsetX > maxOffset * 0.8f) {
                                 listener.onDicline();
                             }
                         }
@@ -214,7 +224,7 @@ public class AcceptDeclineView extends View {
                         animator.start();
                         rightAnimator = animator;
                         if (listener != null) {
-                            if ((!startDrag && Math.abs(dy) < touchSlop) || -rigthOffsetX > maxOffset * 0.8f) {
+                            if ((!startDrag && Math.abs(dy) < touchSlop && !screenWasWakeup) || -rigthOffsetX > maxOffset * 0.8f) {
                                 listener.onAccept();
                             }
                         }
@@ -263,6 +273,49 @@ public class AcceptDeclineView extends View {
             invalidate();
         }
 
+
+        float k = 0.6f;
+        if (screenWasWakeup && !retryMod) {
+
+            arrowProgress += 16 / 1500f;
+            if (arrowProgress > 1) {
+                arrowProgress = 0;
+            }
+
+            int cY = (int) (AndroidUtilities.dp(40) + buttonWidth / 2f);
+            float startX = AndroidUtilities.dp(46) + buttonWidth + AndroidUtilities.dp(8);
+            float endX = getMeasuredWidth() / 2f - AndroidUtilities.dp(8);
+
+            float lineLength = AndroidUtilities.dp(10);
+
+            float stepProgress = (1f - k) / 3f;
+            for (int i = 0; i < 3; i++) {
+                int x = (int) (startX + (endX - startX - lineLength) / 3 * i);
+
+                float alpha = 0.5f;
+                float startAlphaFrom = i * stepProgress;
+                if (arrowProgress > startAlphaFrom && arrowProgress < startAlphaFrom + k) {
+                    float p = (arrowProgress - startAlphaFrom) / k;
+                    if (p > 0.5) p = 1f - p;
+                    alpha = 0.5f + p;
+                }
+                canvas.save();
+                canvas.clipRect(leftOffsetX + AndroidUtilities.dp(46) + buttonWidth / 2,0,getMeasuredHeight(),getMeasuredWidth() >> 1);
+                arrowDrawable.setAlpha((int) (255 * alpha));
+                arrowDrawable.setBounds(x, cY - arrowDrawable.getIntrinsicHeight() / 2, x + arrowDrawable.getIntrinsicWidth(), cY + arrowDrawable.getIntrinsicHeight() / 2);
+                arrowDrawable.draw(canvas);
+                canvas.restore();
+
+                x = (int) (getMeasuredWidth() - (startX + (endX - startX - lineLength) / 3 * i));
+                canvas.save();
+                canvas.clipRect(getMeasuredWidth() >> 1, 0, rigthOffsetX + getMeasuredWidth() - AndroidUtilities.dp(46) - buttonWidth / 2, getMeasuredHeight());
+                canvas.rotate(180, x - arrowDrawable.getIntrinsicWidth() / 2f, cY);
+                arrowDrawable.setBounds(x - arrowDrawable.getIntrinsicWidth(), cY - arrowDrawable.getIntrinsicHeight() / 2, x, cY + arrowDrawable.getIntrinsicHeight() / 2);
+                arrowDrawable.draw(canvas);
+                canvas.restore();
+            }
+            invalidate();
+        }
         bigRadius += AndroidUtilities.dp(8) * 0.005f;
         canvas.save();
         canvas.translate(0, AndroidUtilities.dp(40));
@@ -330,6 +383,7 @@ public class AcceptDeclineView extends View {
 
     public interface Listener {
         void onAccept();
+
         void onDicline();
     }
 
@@ -337,6 +391,7 @@ public class AcceptDeclineView extends View {
         this.retryMod = retryMod;
         if (retryMod) {
             declineDrawable.setColor(Color.WHITE);
+            screenWasWakeup = false;
         } else {
             declineDrawable.setColor(0xFFe61e44);
         }
@@ -419,6 +474,10 @@ public class AcceptDeclineView extends View {
             };
         }
         return accessibilityNodeProvider;
+    }
+
+    public void setScreenWasWakeup(boolean screenWasWakeup) {
+        this.screenWasWakeup = screenWasWakeup;
     }
 
     private static abstract class AcceptDeclineAccessibilityNodeProvider extends AccessibilityNodeProvider {
@@ -514,7 +573,9 @@ public class AcceptDeclineView extends View {
         }
 
         protected abstract CharSequence getVirtualViewText(int virtualViewId);
+
         protected abstract void getVirtualViewBoundsInScreen(int virtualViewId, Rect outRect);
+
         protected abstract void getVirtualViewBoundsInParent(int virtualViewId, Rect outRect);
     }
 }
