@@ -941,6 +941,7 @@ public class VoIPService extends VoIPBaseService {
 			PendingIntent.getActivity(VoIPService.this, 0, new Intent(VoIPService.this, VoIPFeedbackActivity.class)
 					.putExtra("call_id", call.id)
 					.putExtra("call_access_hash", call.access_hash)
+					.putExtra("call_video", call.video)
 					.putExtra("account", currentAccount)
 					.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP), 0).send();
 		} catch (Exception x) {

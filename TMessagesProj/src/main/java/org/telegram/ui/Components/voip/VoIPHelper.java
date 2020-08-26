@@ -82,7 +82,11 @@ public class VoIPHelper {
 					bldr.setNeutralButton(LocaleController.getString("VoipOfflineOpenSettings", R.string.VoipOfflineOpenSettings), (dialog, which) -> activity.startActivity(settingsIntent));
 				}
 			}
-			bldr.show();
+			try {
+				bldr.show();
+			} catch (Exception e) {
+				FileLog.e(e);
+			}
 			return;
 		}
 
@@ -211,7 +215,7 @@ public class VoIPHelper {
 			if (d[0].equals(call.call_id + "")) {
 				try {
 					long accessHash = Long.parseLong(d[1]);
-					showRateAlert(context, null, call.call_id, accessHash, UserConfig.selectedAccount, true);
+					showRateAlert(context, null, call.video, call.call_id, accessHash, UserConfig.selectedAccount, true);
 				} catch (Exception ignore) {
 				}
 				return;
@@ -219,7 +223,7 @@ public class VoIPHelper {
 		}
 	}
 
-	public static void showRateAlert(final Context context, final Runnable onDismiss, final long callID, final long accessHash, final int account, final boolean userInitiative) {
+	public static void showRateAlert(final Context context, final Runnable onDismiss, boolean isVideo, final long callID, final long accessHash, final int account, final boolean userInitiative) {
 		final File log = getLogFile(callID);
 		final int[] page = {0};
 		LinearLayout alertView = new LinearLayout(context);
@@ -246,32 +250,41 @@ public class VoIPHelper {
 			check.setChecked(!check.isChecked(), true);
 		};
 
-		final String[] problems = {"echo", "noise", "interruptions", "distorted_speech", "silent_local", "silent_remote", "dropped"};
+		final String[] problems = {isVideo ? "distorted_video" : null, isVideo ? "pixelated_video" : null, "echo", "noise", "interruptions", "distorted_speech", "silent_local", "silent_remote", "dropped"};
 		for (int i = 0; i < problems.length; i++) {
+			if (problems[i] == null) {
+				continue;
+			}
 			CheckBoxCell check = new CheckBoxCell(context, 1);
 			check.setClipToPadding(false);
 			check.setTag(problems[i]);
 			String label = null;
 			switch (i) {
 				case 0:
-					label = LocaleController.getString("RateCallEcho", R.string.RateCallEcho);
+					label = LocaleController.getString("RateCallVideoDistorted", R.string.RateCallVideoDistorted);
 					break;
 				case 1:
-					label = LocaleController.getString("RateCallNoise", R.string.RateCallNoise);
+					label = LocaleController.getString("RateCallVideoPixelated", R.string.RateCallVideoPixelated);
 					break;
 				case 2:
-					label = LocaleController.getString("RateCallInterruptions", R.string.RateCallInterruptions);
+					label = LocaleController.getString("RateCallEcho", R.string.RateCallEcho);
 					break;
 				case 3:
-					label = LocaleController.getString("RateCallDistorted", R.string.RateCallDistorted);
+					label = LocaleController.getString("RateCallNoise", R.string.RateCallNoise);
 					break;
 				case 4:
-					label = LocaleController.getString("RateCallSilentLocal", R.string.RateCallSilentLocal);
+					label = LocaleController.getString("RateCallInterruptions", R.string.RateCallInterruptions);
 					break;
 				case 5:
-					label = LocaleController.getString("RateCallSilentRemote", R.string.RateCallSilentRemote);
+					label = LocaleController.getString("RateCallDistorted", R.string.RateCallDistorted);
 					break;
 				case 6:
+					label = LocaleController.getString("RateCallSilentLocal", R.string.RateCallSilentLocal);
+					break;
+				case 7:
+					label = LocaleController.getString("RateCallSilentRemote", R.string.RateCallSilentRemote);
+					break;
+				case 8:
 					label = LocaleController.getString("RateCallDropped", R.string.RateCallDropped);
 					break;
 			}
@@ -367,10 +380,11 @@ public class VoIPHelper {
 						problemTags.add("#" + check.getTag());
 				}
 
-				if (req.rating < 5)
+				if (req.rating < 5) {
 					req.comment = commentBox.getText().toString();
-				else
+				} else {
 					req.comment = "";
+				}
 				if (!problemTags.isEmpty() && !includeLogs[0]) {
 					req.comment += " " + TextUtils.join(" ", problemTags);
 				}

@@ -753,6 +753,7 @@ LOCAL_SRC_FILES := \
 ./tgcalls/ThreadLocalObject.cpp \
 ./tgcalls/VideoCaptureInterface.cpp \
 ./tgcalls/VideoCaptureInterfaceImpl.cpp \
+./tgcalls/JsonConfig.cpp \
 ./tgcalls/reference/InstanceImplReference.cpp \
 ./tgcalls/legacy/InstanceImplLegacy.cpp \
 ./tgcalls/platform/android/AndroidInterface.cpp \

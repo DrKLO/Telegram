@@ -16,12 +16,7 @@ public class VoIPFeedbackActivity extends Activity {
 
 		setContentView(new View(this));
 
-		VoIPHelper.showRateAlert(this, new Runnable(){
-			@Override
-			public void run(){
-				finish();
-			}
-		}, getIntent().getLongExtra("call_id", 0), getIntent().getLongExtra("call_access_hash", 0), getIntent().getIntExtra("account", 0), false);
+		VoIPHelper.showRateAlert(this, this::finish, getIntent().getBooleanExtra("call_video", false), getIntent().getLongExtra("call_id", 0), getIntent().getLongExtra("call_access_hash", 0), getIntent().getIntExtra("account", 0), false);
 	}
 
 	@Override

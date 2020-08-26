@@ -18,12 +18,12 @@ import static org.webrtc.MediaCodecUtils.HISI_PREFIX;
 import android.media.MediaCodecInfo;
 import android.media.MediaCodecList;
 import android.os.Build;
+
+import org.telegram.messenger.voip.Instance;
+
 import androidx.annotation.Nullable;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 /** Factory for android hardware video encoders. */
 @SuppressWarnings("deprecation") // API 16 requires the use of deprecated methods.
@@ -39,63 +39,6 @@ public class HardwareVideoEncoderFactory implements VideoEncoderFactory {
   private final boolean enableIntelVp8Encoder;
   private final boolean enableH264HighProfile;
   @Nullable private final Predicate<MediaCodecInfo> codecAllowedPredicate;
-
-  private static final List<String> H264_HW_EXCEPTION_MODELS =
-          Arrays.asList("samsung-sgh-i337", "nexus7", "nexus4", "pixel3xl", "pixel3");
-
-  private static final List<String> VP8_HW_EXCEPTION_MODELS =
-          Arrays.asList("pixel3xl", "pixel3");
-
-  private static Set<String> HW_EXCEPTION_MODELS = new HashSet<String>() {{
-    add("sm-a310f");
-    add("sm-a310f/ds");
-    add("sm-a310y");
-    add("sm-a310m");
-    add("sm-g920f");
-    add("sm-g920fd");
-    add("sm-g920fq");
-    add("sm-g920i");
-    add("sm-g920a");
-    add("sm-g920t");
-    add("sm-g930f");
-    add("sm-g930fd");
-    add("sm-g930w8");
-    add("sm-g930s");
-    add("sm-g930k");
-    add("sm-g930l");
-    add("sm-g935f");
-    add("sm-g935fd");
-    add("sm-g935w8");
-    add("sm-g935s");
-    add("sm-g935k");
-    add("sm-g935l");
-
-    add("i537");
-    add("sgh-i537");
-    add("gt-i9295");
-    add("sgh-i337");
-    add("gt-i9505g");
-    add("gt-i9505");
-    add("gt-i9515");
-    add("f240");
-    add("e980");
-    add("ls980");
-    add("e988");
-    add("e986");
-    add("f240l");
-    add("f240s");
-    add("v9815");
-    add("nx403a");
-    add("f310l");
-    add("f310lr");
-    add("onem7");
-    add("onemax");
-    add("pn071");
-    add("htc6500lvw");
-    add("butterflys");
-    add("mi2s");
-    add("n1");
-  }};
 
   /**
    * Creates a HardwareVideoEncoderFactory that supports surface texture encoding.
@@ -249,13 +192,9 @@ public class HardwareVideoEncoderFactory implements VideoEncoderFactory {
 
   // Returns true if the given MediaCodecInfo indicates a hardware module that is supported on the
   // current SDK.
-
-  private static String getModel() {
-    return Build.MODEL != null ? Build.MODEL.toLowerCase().replace(" ", "") : "nomodel";
-  }
-
   private boolean isHardwareSupportedInCurrentSdk(MediaCodecInfo info, VideoCodecMimeType type) {
-    if (HW_EXCEPTION_MODELS.contains(getModel())) {
+    Instance.ServerConfig config = Instance.getGlobalServerConfig();
+    if (!config.enable_h264_encoder && !config.enable_h265_encoder && !config.enable_vp8_encoder && !config.enable_vp9_encoder) {
       return false;
     }
     switch (type) {
@@ -272,7 +211,7 @@ public class HardwareVideoEncoderFactory implements VideoEncoderFactory {
   }
 
   private boolean isHardwareSupportedInCurrentSdkVp8(MediaCodecInfo info) {
-    if (VP8_HW_EXCEPTION_MODELS.contains(getModel())) {
+    if (!Instance.getGlobalServerConfig().enable_vp8_encoder) {
       return false;
     }
     String name = info.getName();
@@ -288,6 +227,9 @@ public class HardwareVideoEncoderFactory implements VideoEncoderFactory {
   }
 
   private boolean isHardwareSupportedInCurrentSdkVp9(MediaCodecInfo info) {
+    if (!Instance.getGlobalServerConfig().enable_vp9_encoder) {
+      return false;
+    }
     String name = info.getName();
     return (name.startsWith(QCOM_PREFIX) || name.startsWith(EXYNOS_PREFIX) || name.startsWith(HISI_PREFIX))
         // Both QCOM and Exynos VP9 encoders are supported in N or later.
@@ -295,8 +237,7 @@ public class HardwareVideoEncoderFactory implements VideoEncoderFactory {
   }
 
   private boolean isHardwareSupportedInCurrentSdkH264(MediaCodecInfo info) {
-    // First, H264 hardware might perform poorly on this model.
-    if (H264_HW_EXCEPTION_MODELS.contains(getModel())) {
+    if (!Instance.getGlobalServerConfig().enable_h264_encoder) {
       return false;
     }
     String name = info.getName();
@@ -308,6 +249,9 @@ public class HardwareVideoEncoderFactory implements VideoEncoderFactory {
   }
 
   private boolean isHardwareSupportedInCurrentSdkH265(MediaCodecInfo info) {
+    if (!Instance.getGlobalServerConfig().enable_h265_encoder) {
+      return false;
+    }
     String name = info.getName();
     // QCOM H265 encoder is supported in KITKAT or later.
     return (name.startsWith(QCOM_PREFIX) && Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT)

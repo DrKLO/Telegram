@@ -43,7 +43,8 @@ public:
         std::function<void(int)> signalBarsUpdated,
         float localPreferredVideoAspectRatio,
         bool enableHighBitrateVideo,
-        std::vector<std::string> preferredCodecs);
+        std::vector<std::string> preferredCodecs,
+		std::shared_ptr<PlatformContext> platformContext);
 	~MediaManager();
 
 	void start();
@@ -140,6 +141,8 @@ private:
 
 	std::unique_ptr<MediaManager::NetworkInterfaceImpl> _audioNetworkInterface;
 	std::unique_ptr<MediaManager::NetworkInterfaceImpl> _videoNetworkInterface;
+
+	std::shared_ptr<PlatformContext> _platformContext;
 };
 
 } // namespace tgcalls

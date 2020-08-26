@@ -773,8 +773,10 @@ std::shared_ptr<LOTAsset> LottieParserImpl::parseAsset() {
                     return sharedAsset;
                 }
                 std::shared_ptr<LOTData> layer = parseLayer();
-                staticFlag = staticFlag && layer->isStatic();
-                asset->mLayers.push_back(layer);
+                if (layer) {
+                    staticFlag = staticFlag && layer->isStatic();
+                    asset->mLayers.push_back(layer);
+                }
             }
             if (!IsValid()) {
                 parsingError = true;

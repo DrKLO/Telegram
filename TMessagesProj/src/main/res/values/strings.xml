@@ -3023,6 +3023,8 @@
     <string name="NoCallLog">You haven\'t made any calls yet.</string>
     <string name="VoipPeerIncompatible">**%1$s**\'s app is using an incompatible protocol. They need to update their app before you can call them.</string>
     <string name="VoipPeerOutdated">**%1$s**\'s app does not support calls. They need to update their app before you can call them.</string>
+    <string name="VoipPeerVideoOutdated">Sorry, **%1$s** is using an old version of Telegram that doesn\'t support video calls.</string>
+    <string name="VoipPeerVideoOutdatedMakeVoice">Make a voice call</string>
     <string name="VoipRateCallAlert">Please rate the quality of your Telegram call</string>
     <string name="VoipNeedMicPermission">Telegram needs access to your microphone so that you can make calls.</string>
     <string name="VoipNeedMicCameraPermission">Telegram needs access to your microphone and camera so that you can make video calls.</string>
@@ -3065,6 +3067,8 @@
     <string name="RateCallSilentLocal">I couldn\'t hear the other side</string>
     <string name="RateCallSilentRemote">The other side couldn\'t hear me</string>
     <string name="RateCallDropped">Call ended unexpectedly</string>
+    <string name="RateCallVideoDistorted">Video was distorted</string>
+    <string name="RateCallVideoPixelated">Video was pixelated</string>
     <string name="TapToTurnCamera">Tap here to turn on your camera</string>
     <string name="VoipUnmute">Unmute</string>
     <string name="VoipMute">Mute</string>
@@ -3676,4 +3680,5 @@
     <string name="RemindTodayAt">\'Remind today at\' HH:mm</string>
     <string name="RemindDayAt">\'Remind on\' MMM d \'at\' HH:mm</string>
     <string name="RemindDayYearAt">\'Remind on\' MMM d yyyy \'at\' HH:mm</string>
+    <string name="VoipReconnecting">Reconnecting</string>
 </resources>

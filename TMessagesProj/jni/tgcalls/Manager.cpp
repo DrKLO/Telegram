@@ -49,7 +49,8 @@ _remotePrefferedAspectRatioUpdated(std::move(descriptor.remotePrefferedAspectRat
 _signalingDataEmitted(std::move(descriptor.signalingDataEmitted)),
 _signalBarsUpdated(std::move(descriptor.signalBarsUpdated)),
 _localPreferredVideoAspectRatio(descriptor.config.preferredAspectRatio),
-_enableHighBitrateVideo(descriptor.config.enableHighBitrateVideo) {
+_enableHighBitrateVideo(descriptor.config.enableHighBitrateVideo),
+_platformContext(descriptor.platformContext) {
 	assert(_thread->IsCurrent());
 	assert(_stateUpdated != nullptr);
 	assert(_signalingDataEmitted != nullptr);
@@ -166,7 +167,7 @@ void Manager::start() {
 			});
 	}));
 	bool isOutgoing = _encryptionKey.isOutgoing;
-	_mediaManager.reset(new ThreadLocalObject<MediaManager>(getMediaThread(), [weak, isOutgoing, thread, sendSignalingMessage, videoCapture = _videoCapture, localPreferredVideoAspectRatio = _localPreferredVideoAspectRatio, enableHighBitrateVideo = _enableHighBitrateVideo, signalBarsUpdated = _signalBarsUpdated, preferredCodecs = _preferredCodecs]() {
+	_mediaManager.reset(new ThreadLocalObject<MediaManager>(getMediaThread(), [weak, isOutgoing, thread, sendSignalingMessage, videoCapture = _videoCapture, localPreferredVideoAspectRatio = _localPreferredVideoAspectRatio, enableHighBitrateVideo = _enableHighBitrateVideo, signalBarsUpdated = _signalBarsUpdated, preferredCodecs = _preferredCodecs, platformContext = _platformContext]() {
 		return new MediaManager(
 			getMediaThread(),
 			isOutgoing,
@@ -184,7 +185,8 @@ void Manager::start() {
             signalBarsUpdated,
             localPreferredVideoAspectRatio,
             enableHighBitrateVideo,
-            preferredCodecs);
+            preferredCodecs,
+			platformContext);
 	}));
     _networkManager->perform(RTC_FROM_HERE, [](NetworkManager *networkManager) {
         networkManager->start();

@@ -16,7 +16,7 @@ VideoCaptureInterfaceObject::VideoCaptureInterfaceObject(std::shared_ptr<Platfor
 			if (this->_stateUpdated) {
 				this->_stateUpdated(state);
 			}
-		}, platformContext, _videoCapturerResolution);
+		}, _platformContext, _videoCapturerResolution);
 	}
 }
 
@@ -61,14 +61,14 @@ void VideoCaptureInterfaceObject::setPreferredAspectRatio(float aspectRatio) {
         if (aspectRatio > 0.01 && _videoCapturerResolution.first != 0 && _videoCapturerResolution.second != 0) {
             float originalWidth = (float)_videoCapturerResolution.first;
             float originalHeight = (float)_videoCapturerResolution.second;
-            
+
             float width = (originalWidth > aspectRatio * originalHeight)
                 ? int(std::round(aspectRatio * originalHeight))
                 : originalWidth;
             float height = (originalWidth > aspectRatio * originalHeight)
                 ? originalHeight
                 : int(std::round(originalHeight / aspectRatio));
-            
+
             PlatformInterface::SharedInstance()->adaptVideoSource(_videoSource, (int)width, (int)height, 30);
         }
 	}
@@ -86,7 +86,8 @@ void VideoCaptureInterfaceObject::setStateUpdated(std::function<void(VideoState)
 }
 
 VideoCaptureInterfaceImpl::VideoCaptureInterfaceImpl(std::shared_ptr<PlatformContext> platformContext) :
-_impl(Manager::getMediaThread(), [platformContext]() {
+	_platformContext(platformContext),
+	_impl(Manager::getMediaThread(), [platformContext]() {
 	return new VideoCaptureInterfaceObject(platformContext);
 }) {
 }
@@ -117,8 +118,12 @@ void VideoCaptureInterfaceImpl::setOutput(std::shared_ptr<rtc::VideoSinkInterfac
 	});
 }
 
+std::shared_ptr<PlatformContext> VideoCaptureInterfaceImpl::getPlatformContext() {
+	return _platformContext;
+}
+
 ThreadLocalObject<VideoCaptureInterfaceObject> *VideoCaptureInterfaceImpl::object() {
 	return &_impl;
 }
 
-} // namespace tgcalls
+}// namespace tgcalls

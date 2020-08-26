@@ -673,7 +673,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
             if (BuildVars.LOGS_ENABLED) {
                 FileLog.d("OS name " + os1 + " " + os2);
             }
-            if (os1.contains("flyme") || os2.contains("flyme")) {
+            if ((os1.contains("flyme") || os2.contains("flyme")) && Build.VERSION.SDK_INT <= 24) {
                 AndroidUtilities.incorrectDisplaySizeFix = true;
                 final View view = getWindow().getDecorView().getRootView();
                 view.getViewTreeObserver().addOnGlobalLayoutListener(onGlobalLayoutListener = () -> {
