@@ -284,6 +284,9 @@ public class PhotoViewerCaptionEnterView extends FrameLayout implements Notifica
     public void updateColors() {
         Theme.setDrawableColor(drawable, Theme.getColor(Theme.key_dialogFloatingButton));
         Theme.setDrawableColor(checkDrawable, Theme.getColor(Theme.key_dialogFloatingIcon));
+        if(emojiView != null) {
+            emojiView.updateColors();
+        }
     }
 
     public boolean hideActionMode() {
