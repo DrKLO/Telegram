@@ -12,7 +12,7 @@ import android.content.Context;
 import android.content.SharedPreferences;
 
 public class BuildVars {
-
+    //DUMMY VALUES: DON'T FORGET TO CHANGE
     public static boolean DEBUG_VERSION = false;
     public static boolean DEBUG_PRIVATE_VERSION = false;
     public static boolean LOGS_ENABLED = false;
