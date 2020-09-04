@@ -1,0 +1,66 @@
+{
+  "buildFiles": [
+    "E:\\Git@Hub\\Telegram\\TMessagesProj\\jni\\Android.mk",
+    "E:\\Git@Hub\\Telegram\\TMessagesProj\\jni\\Application.mk"
+  ],
+  "cleanCommands": [
+    "D:\\Android_SDK\\ndk\\20.0.5594570\\ndk-build.cmd NDK_PROJECT_PATH\u003dnull APP_BUILD_SCRIPT\u003dE:\\Git@Hub\\Telegram\\TMessagesProj\\jni\\Android.mk NDK_APPLICATION_MK\u003dE:\\Git@Hub\\Telegram\\TMessagesProj\\jni\\Application.mk APP_ABI\u003dx86_64 NDK_ALL_ABIS\u003dx86_64 NDK_DEBUG\u003d0 APP_PLATFORM\u003dandroid-23 NDK_OUT\u003dE:/Git@Hub/Telegram/TMessagesProj/build/intermediates/ndkBuild/x64_SDK23Release/obj NDK_LIBS_OUT\u003dE:\\Git@Hub\\Telegram\\TMessagesProj\\build\\intermediates\\ndkBuild\\x64_SDK23Release\\lib NDK_APPLICATION_MK:\u003djni/Application.mk APP_PLATFORM:\u003dandroid-16 clean"
+  ],
+  "buildTargetsCommand": "D:\\Android_SDK\\ndk\\20.0.5594570\\ndk-build.cmd NDK_PROJECT_PATH\u003dnull APP_BUILD_SCRIPT\u003dE:\\Git@Hub\\Telegram\\TMessagesProj\\jni\\Android.mk NDK_APPLICATION_MK\u003dE:\\Git@Hub\\Telegram\\TMessagesProj\\jni\\Application.mk APP_ABI\u003dx86_64 NDK_ALL_ABIS\u003dx86_64 NDK_DEBUG\u003d0 APP_PLATFORM\u003dandroid-23 NDK_OUT\u003dE:/Git@Hub/Telegram/TMessagesProj/build/intermediates/ndkBuild/x64_SDK23Release/obj NDK_LIBS_OUT\u003dE:\\Git@Hub\\Telegram\\TMessagesProj\\build\\intermediates\\ndkBuild\\x64_SDK23Release\\lib NDK_APPLICATION_MK:\u003djni/Application.mk APP_PLATFORM:\u003dandroid-16 --jobs\u003d8 {LIST_OF_TARGETS_TO_BUILD}",
+  "libraries": {
+    "cpufeatures-x64_SDK23Release-x86_64": {
+      "artifactName": "cpufeatures",
+      "buildCommand": "D:\\Android_SDK\\ndk\\20.0.5594570\\ndk-build.cmd NDK_PROJECT_PATH\u003dnull APP_BUILD_SCRIPT\u003dE:\\Git@Hub\\Telegram\\TMessagesProj\\jni\\Android.mk NDK_APPLICATION_MK\u003dE:\\Git@Hub\\Telegram\\TMessagesProj\\jni\\Application.mk APP_ABI\u003dx86_64 NDK_ALL_ABIS\u003dx86_64 NDK_DEBUG\u003d0 APP_PLATFORM\u003dandroid-23 NDK_OUT\u003dE:/Git@Hub/Telegram/TMessagesProj/build/intermediates/ndkBuild/x64_SDK23Release/obj NDK_LIBS_OUT\u003dE:\\Git@Hub\\Telegram\\TMessagesProj\\build\\intermediates\\ndkBuild\\x64_SDK23Release\\lib NDK_APPLICATION_MK:\u003djni/Application.mk APP_PLATFORM:\u003dandroid-16 --jobs\u003d8 E:/Git@Hub/Telegram/TMessagesProj/build/intermediates/ndkBuild/x64_SDK23Release/obj/local/x86_64/libcpufeatures.a",
+      "abi": "x86_64",
+      "output": "E:\\Git@Hub\\Telegram\\TMessagesProj\\build\\intermediates\\ndkBuild\\x64_SDK23Release\\obj\\local\\x86_64\\libcpufeatures.a"
+    },
+    "sqlite-x64_SDK23Release-x86_64": {
+      "artifactName": "sqlite",
+      "buildCommand": "D:\\Android_SDK\\ndk\\20.0.5594570\\ndk-build.cmd NDK_PROJECT_PATH\u003dnull APP_BUILD_SCRIPT\u003dE:\\Git@Hub\\Telegram\\TMessagesProj\\jni\\Android.mk NDK_APPLICATION_MK\u003dE:\\Git@Hub\\Telegram\\TMessagesProj\\jni\\Application.mk APP_ABI\u003dx86_64 NDK_ALL_ABIS\u003dx86_64 NDK_DEBUG\u003d0 APP_PLATFORM\u003dandroid-23 NDK_OUT\u003dE:/Git@Hub/Telegram/TMessagesProj/build/intermediates/ndkBuild/x64_SDK23Release/obj NDK_LIBS_OUT\u003dE:\\Git@Hub\\Telegram\\TMessagesProj\\build\\intermediates\\ndkBuild\\x64_SDK23Release\\lib NDK_APPLICATION_MK:\u003djni/Application.mk APP_PLATFORM:\u003dandroid-16 --jobs\u003d8 E:/Git@Hub/Telegram/TMessagesProj/build/intermediates/ndkBuild/x64_SDK23Release/obj/local/x86_64/libsqlite.a",
+      "abi": "x86_64",
+      "output": "E:\\Git@Hub\\Telegram\\TMessagesProj\\build\\intermediates\\ndkBuild\\x64_SDK23Release\\obj\\local\\x86_64\\libsqlite.a"
+    },
+    "crypto_x86_64-x64_SDK23Release-x86_64": {
+      "artifactName": "crypto_x86_64",
+      "buildCommand": "D:\\Android_SDK\\ndk\\20.0.5594570\\ndk-build.cmd NDK_PROJECT_PATH\u003dnull APP_BUILD_SCRIPT\u003dE:\\Git@Hub\\Telegram\\TMessagesProj\\jni\\Android.mk NDK_APPLICATION_MK\u003dE:\\Git@Hub\\Telegram\\TMessagesProj\\jni\\Application.mk APP_ABI\u003dx86_64 NDK_ALL_ABIS\u003dx86_64 NDK_DEBUG\u003d0 APP_PLATFORM\u003dandroid-23 NDK_OUT\u003dE:/Git@Hub/Telegram/TMessagesProj/build/intermediates/ndkBuild/x64_SDK23Release/obj NDK_LIBS_OUT\u003dE:\\Git@Hub\\Telegram\\TMessagesProj\\build\\intermediates\\ndkBuild\\x64_SDK23Release\\lib NDK_APPLICATION_MK:\u003djni/Application.mk APP_PLATFORM:\u003dandroid-16 --jobs\u003d8 E:/Git@Hub/Telegram/TMessagesProj/build/intermediates/ndkBuild/x64_SDK23Release/obj/local/x86_64/libcrypto_x86_64.a",
+      "abi": "x86_64",
+      "output": "E:\\Git@Hub\\Telegram\\TMessagesProj\\build\\intermediates\\ndkBuild\\x64_SDK23Release\\obj\\local\\x86_64\\libcrypto_x86_64.a"
+    },
+    "webp-x64_SDK23Release-x86_64": {
+      "artifactName": "webp",
+      "buildCommand": "D:\\Android_SDK\\ndk\\20.0.5594570\\ndk-build.cmd NDK_PROJECT_PATH\u003dnull APP_BUILD_SCRIPT\u003dE:\\Git@Hub\\Telegram\\TMessagesProj\\jni\\Android.mk NDK_APPLICATION_MK\u003dE:\\Git@Hub\\Telegram\\TMessagesProj\\jni\\Application.mk APP_ABI\u003dx86_64 NDK_ALL_ABIS\u003dx86_64 NDK_DEBUG\u003d0 APP_PLATFORM\u003dandroid-23 NDK_OUT\u003dE:/Git@Hub/Telegram/TMessagesProj/build/intermediates/ndkBuild/x64_SDK23Release/obj NDK_LIBS_OUT\u003dE:\\Git@Hub\\Telegram\\TMessagesProj\\build\\intermediates\\ndkBuild\\x64_SDK23Release\\lib NDK_APPLICATION_MK:\u003djni/Application.mk APP_PLATFORM:\u003dandroid-16 --jobs\u003d8 E:/Git@Hub/Telegram/TMessagesProj/build/intermediates/ndkBuild/x64_SDK23Release/obj/local/x86_64/libwebp.a",
+      "abi": "x86_64",
+      "output": "E:\\Git@Hub\\Telegram\\TMessagesProj\\build\\intermediates\\ndkBuild\\x64_SDK23Release\\obj\\local\\x86_64\\libwebp.a"
+    },
+    "rlottie-x64_SDK23Release-x86_64": {
+      "artifactName": "rlottie",
+      "buildCommand": "D:\\Android_SDK\\ndk\\20.0.5594570\\ndk-build.cmd NDK_PROJECT_PATH\u003dnull APP_BUILD_SCRIPT\u003dE:\\Git@Hub\\Telegram\\TMessagesProj\\jni\\Android.mk NDK_APPLICATION_MK\u003dE:\\Git@Hub\\Telegram\\TMessagesProj\\jni\\Application.mk APP_ABI\u003dx86_64 NDK_ALL_ABIS\u003dx86_64 NDK_DEBUG\u003d0 APP_PLATFORM\u003dandroid-23 NDK_OUT\u003dE:/Git@Hub/Telegram/TMessagesProj/build/intermediates/ndkBuild/x64_SDK23Release/obj NDK_LIBS_OUT\u003dE:\\Git@Hub\\Telegram\\TMessagesProj\\build\\intermediates\\ndkBuild\\x64_SDK23Release\\lib NDK_APPLICATION_MK:\u003djni/Application.mk APP_PLATFORM:\u003dandroid-16 --jobs\u003d8 E:/Git@Hub/Telegram/TMessagesProj/build/intermediates/ndkBuild/x64_SDK23Release/obj/local/x86_64/librlottie.a",
+      "abi": "x86_64",
+      "output": "E:\\Git@Hub\\Telegram\\TMessagesProj\\build\\intermediates\\ndkBuild\\x64_SDK23Release\\obj\\local\\x86_64\\librlottie.a"
+    },
+    "flac-x64_SDK23Release-x86_64": {
+      "artifactName": "flac",
+      "buildCommand": "D:\\Android_SDK\\ndk\\20.0.5594570\\ndk-build.cmd NDK_PROJECT_PATH\u003dnull APP_BUILD_SCRIPT\u003dE:\\Git@Hub\\Telegram\\TMessagesProj\\jni\\Android.mk NDK_APPLICATION_MK\u003dE:\\Git@Hub\\Telegram\\TMessagesProj\\jni\\Application.mk APP_ABI\u003dx86_64 NDK_ALL_ABIS\u003dx86_64 NDK_DEBUG\u003d0 APP_PLATFORM\u003dandroid-23 NDK_OUT\u003dE:/Git@Hub/Telegram/TMessagesProj/build/intermediates/ndkBuild/x64_SDK23Release/obj NDK_LIBS_OUT\u003dE:\\Git@Hub\\Telegram\\TMessagesProj\\build\\intermediates\\ndkBuild\\x64_SDK23Release\\lib NDK_APPLICATION_MK:\u003djni/Application.mk APP_PLATFORM:\u003dandroid-16 --jobs\u003d8 E:/Git@Hub/Telegram/TMessagesProj/build/intermediates/ndkBuild/x64_SDK23Release/obj/local/x86_64/libflac.a",
+      "abi": "x86_64",
+      "output": "E:\\Git@Hub\\Telegram\\TMessagesProj\\build\\intermediates\\ndkBuild\\x64_SDK23Release\\obj\\local\\x86_64\\libflac.a"
+    },
+    "lz4-x64_SDK23Release-x86_64": {
+      "artifactName": "lz4",
+      "buildCommand": "D:\\Android_SDK\\ndk\\20.0.5594570\\ndk-build.cmd NDK_PROJECT_PATH\u003dnull APP_BUILD_SCRIPT\u003dE:\\Git@Hub\\Telegram\\TMessagesProj\\jni\\Android.mk NDK_APPLICATION_MK\u003dE:\\Git@Hub\\Telegram\\TMessagesProj\\jni\\Application.mk APP_ABI\u003dx86_64 NDK_ALL_ABIS\u003dx86_64 NDK_DEBUG\u003d0 APP_PLATFORM\u003dandroid-23 NDK_OUT\u003dE:/Git@Hub/Telegram/TMessagesProj/build/intermediates/ndkBuild/x64_SDK23Release/obj NDK_LIBS_OUT\u003dE:\\Git@Hub\\Telegram\\TMessagesProj\\build\\intermediates\\ndkBuild\\x64_SDK23Release\\lib NDK_APPLICATION_MK:\u003djni/Application.mk APP_PLATFORM:\u003dandroid-16 --jobs\u003d8 E:/Git@Hub/Telegram/TMessagesProj/build/intermediates/ndkBuild/x64_SDK23Release/obj/local/x86_64/liblz4.a",
+      "abi": "x86_64",
+      "output": "E:\\Git@Hub\\Telegram\\TMessagesProj\\build\\intermediates\\ndkBuild\\x64_SDK23Release\\obj\\local\\x86_64\\liblz4.a"
+    },
+    "tmessages.30-x64_SDK23Release-x86_64": {
+      "artifactName": "tmessages.30",
+      "buildCommand": "D:\\Android_SDK\\ndk\\20.0.5594570\\ndk-build.cmd NDK_PROJECT_PATH\u003dnull APP_BUILD_SCRIPT\u003dE:\\Git@Hub\\Telegram\\TMessagesProj\\jni\\Android.mk NDK_APPLICATION_MK\u003dE:\\Git@Hub\\Telegram\\TMessagesProj\\jni\\Application.mk APP_ABI\u003dx86_64 NDK_ALL_ABIS\u003dx86_64 NDK_DEBUG\u003d0 APP_PLATFORM\u003dandroid-23 NDK_OUT\u003dE:/Git@Hub/Telegram/TMessagesProj/build/intermediates/ndkBuild/x64_SDK23Release/obj NDK_LIBS_OUT\u003dE:\\Git@Hub\\Telegram\\TMessagesProj\\build\\intermediates\\ndkBuild\\x64_SDK23Release\\lib NDK_APPLICATION_MK:\u003djni/Application.mk APP_PLATFORM:\u003dandroid-16 --jobs\u003d8 E:/Git@Hub/Telegram/TMessagesProj/build/intermediates/ndkBuild/x64_SDK23Release/obj/local/x86_64/libtmessages.30.so",
+      "abi": "x86_64",
+      "output": "E:\\Git@Hub\\Telegram\\TMessagesProj\\build\\intermediates\\ndkBuild\\x64_SDK23Release\\obj\\local\\x86_64\\libtmessages.30.so"
+    },
+    "tgnet-x64_SDK23Release-x86_64": {
+      "artifactName": "tgnet",
+      "buildCommand": "D:\\Android_SDK\\ndk\\20.0.5594570\\ndk-build.cmd NDK_PROJECT_PATH\u003dnull APP_BUILD_SCRIPT\u003dE:\\Git@Hub\\Telegram\\TMessagesProj\\jni\\Android.mk NDK_APPLICATION_MK\u003dE:\\Git@Hub\\Telegram\\TMessagesProj\\jni\\Application.mk APP_ABI\u003dx86_64 NDK_ALL_ABIS\u003dx86_64 NDK_DEBUG\u003d0 APP_PLATFORM\u003dandroid-23 NDK_OUT\u003dE:/Git@Hub/Telegram/TMessagesProj/build/intermediates/ndkBuild/x64_SDK23Release/obj NDK_LIBS_OUT\u003dE:\\Git@Hub\\Telegram\\TMessagesProj\\build\\intermediates\\ndkBuild\\x64_SDK23Release\\lib NDK_APPLICATION_MK:\u003djni/Application.mk APP_PLATFORM:\u003dandroid-16 --jobs\u003d8 E:/Git@Hub/Telegram/TMessagesProj/build/intermediates/ndkBuild/x64_SDK23Release/obj/local/x86_64/libtgnet.a",
+      "abi": "x86_64",
+      "output": "E:\\Git@Hub\\Telegram\\TMessagesProj\\build\\intermediates\\ndkBuild\\x64_SDK23Release\\obj\\local\\x86_64\\libtgnet.a"
+    }
+  }
+}

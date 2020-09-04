@@ -1,0 +1,20 @@
+Executable : D:\Android_SDK\ndk\20.0.5594570\ndk-build.cmd
+arguments : 
+NDK_PROJECT_PATH=null
+APP_BUILD_SCRIPT=E:\Git@Hub\Telegram\TMessagesProj\jni\Android.mk
+NDK_APPLICATION_MK=E:\Git@Hub\Telegram\TMessagesProj\jni\Application.mk
+APP_ABI=x86
+NDK_ALL_ABIS=x86
+NDK_DEBUG=0
+APP_PLATFORM=android-16
+NDK_OUT=E:/Git@Hub/Telegram/TMessagesProj/build/intermediates/ndkBuild/afatRelease/obj
+NDK_LIBS_OUT=E:\Git@Hub\Telegram\TMessagesProj\build\intermediates\ndkBuild\afatRelease\lib
+NDK_APPLICATION_MK:=jni/Application.mk
+APP_PLATFORM:=android-16
+--jobs=8
+APP_SHORT_COMMANDS=false
+LOCAL_SHORT_COMMANDS=false
+-B
+-n
+jvmArgs : 
+

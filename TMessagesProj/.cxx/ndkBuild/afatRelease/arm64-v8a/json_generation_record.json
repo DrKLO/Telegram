@@ -1,0 +1,14 @@
+[
+  {
+    "level": "INFO",
+    "message": "Start JSON generation. Platform version: 16 min SDK version: arm64-v8a"
+  },
+  {
+    "level": "INFO",
+    "message": "JSON \u0027E:\\Git@Hub\\Telegram\\TMessagesProj\\.cxx\\ndkBuild\\afatRelease\\arm64-v8a\\android_gradle_build.json\u0027 was up-to-date"
+  },
+  {
+    "level": "INFO",
+    "message": "JSON generation completed without problems"
+  }
+]
