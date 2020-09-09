@@ -34,6 +34,7 @@ import org.telegram.tgnet.TLRPC;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -1316,14 +1317,7 @@ public class ContactsController extends BaseController {
     private int getContactsHash(ArrayList<TLRPC.TL_contact> contacts) {
         long acc = 0;
         contacts = new ArrayList<>(contacts);
-        Collections.sort(contacts, (tl_contact, tl_contact2) -> {
-            if (tl_contact.user_id > tl_contact2.user_id) {
-                return 1;
-            } else if (tl_contact.user_id < tl_contact2.user_id) {
-                return -1;
-            }
-            return 0;
-        });
+        Collections.sort(contacts, Comparator.comparingInt(TLRPC.TL_contact::getUserId));
         int count = contacts.size();
         for (int a = -1; a < count; a++) {
             if (a == -1) {

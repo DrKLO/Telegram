@@ -440,6 +440,10 @@ public class PollVotesAlert extends BottomSheet {
         private float decimal;
         private int percent;
         private int votesCount;
+
+        float getDecimal() {
+            return decimal;
+        }
     }
 
     public PollVotesAlert(ChatActivity parentFragment, MessageObject message) {
@@ -560,29 +564,7 @@ public class PollVotesAlert extends BottomSheet {
         }
         updateButtons();
 
-        Collections.sort(voters, new Comparator<VotesList>() {
-            private int getIndex(VotesList votesList) {
-                for (int a = 0, N = poll.answers.size(); a < N; a++) {
-                    TLRPC.TL_pollAnswer answer = poll.answers.get(a);
-                    if (Arrays.equals(answer.option, votesList.option)) {
-                        return a;
-                    }
-                }
-                return 0;
-            }
-
-            @Override
-            public int compare(VotesList o1, VotesList o2) {
-                int i1 = getIndex(o1);
-                int i2 = getIndex(o2);
-                if (i1 > i2) {
-                    return 1;
-                } else if (i1 < i2) {
-                    return -1;
-                }
-                return 0;
-            }
-        });
+        Collections.sort(voters, Comparator.comparingInt(this::getIndex));
 
         updatePlaceholder();
 
@@ -883,6 +865,16 @@ public class PollVotesAlert extends BottomSheet {
         containerView.addView(actionBarShadow, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 1));
     }
 
+    private int getIndex(VotesList votesList) {
+        for (int a = 0, N = poll.answers.size(); a < N; a++) {
+            TLRPC.TL_pollAnswer answer = poll.answers.get(a);
+            if (Arrays.equals(answer.option, votesList.option)) {
+                return a;
+            }
+        }
+        return 0;
+    }
+
     private int getCurrentTop() {
         if (listView.getChildCount() != 0) {
             View child = listView.getChildAt(0);
@@ -931,14 +923,7 @@ public class PollVotesAlert extends BottomSheet {
         }
 
         if (hasDifferent && restPercent != 0) {
-            Collections.sort(sortedPollButtons, (o1, o2) -> {
-                if (o1.decimal > o2.decimal) {
-                    return -1;
-                } else if (o1.decimal < o2.decimal) {
-                    return 1;
-                }
-                return 0;
-            });
+            Collections.sort(sortedPollButtons, Comparator.comparingDouble(Button::getDecimal).reversed());
             for (int a = 0, N = Math.min(restPercent, sortedPollButtons.size()); a < N; a++) {
                 sortedPollButtons.get(a).percent += 1;
             }

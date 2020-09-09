@@ -113,20 +113,8 @@ public class CameraController implements MediaRecorder.OnInfoListener {
                 if (cameraInfos == null) {
                     SharedPreferences preferences = MessagesController.getGlobalMainSettings();
                     String cache = preferences.getString("cameraCache", null);
-                    Comparator<Size> comparator = (o1, o2) -> {
-                        if (o1.mWidth < o2.mWidth) {
-                            return 1;
-                        } else if (o1.mWidth > o2.mWidth) {
-                            return -1;
-                        } else {
-                            if (o1.mHeight < o2.mHeight) {
-                                return 1;
-                            } else if (o1.mHeight > o2.mHeight) {
-                                return -1;
-                            }
-                            return 0;
-                        }
-                    };
+                    Comparator<Size> comparator = Comparator.comparingInt(Size::getWidth).reversed()
+                            .thenComparing(Comparator.comparingInt(Size::getHeight).reversed());
                     ArrayList<CameraInfo> result = new ArrayList<>();
                     if (cache != null) {
                         SerializedData serializedData = new SerializedData(Base64.decode(cache, Base64.DEFAULT));

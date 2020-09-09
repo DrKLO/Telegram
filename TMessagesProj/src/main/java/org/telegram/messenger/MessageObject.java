@@ -52,6 +52,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.regex.Matcher;
@@ -3522,14 +3523,7 @@ public class MessageObject {
         ArrayList<TextStyleSpan.TextStyleRun> runs = new ArrayList<>();
         ArrayList<TLRPC.MessageEntity> entitiesCopy = new ArrayList<>(entities);
 
-        Collections.sort(entitiesCopy, (o1, o2) -> {
-            if (o1.offset > o2.offset) {
-                return 1;
-            } else if (o1.offset < o2.offset) {
-                return -1;
-            }
-            return 0;
-        });
+        Collections.sort(entitiesCopy, Comparator.comparingInt(TLRPC.MessageEntity::getOffset));
         for (int a = 0, N = entitiesCopy.size(); a < N; a++) {
             TLRPC.MessageEntity entity = entitiesCopy.get(a);
             if (entity.length <= 0 || entity.offset < 0 || entity.offset >= text.length()) {

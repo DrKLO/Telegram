@@ -629,13 +629,7 @@ public class ChatAttachAlertDocumentLayout extends ChatAttachAlert.AttachAlertLa
             } else {
                 long lm = o1.file.lastModified();
                 long rm = o2.file.lastModified();
-                if (lm == rm) {
-                    return 0;
-                } else if (lm > rm) {
-                    return -1;
-                } else {
-                    return 1;
-                }
+                return Long.compare(rm, lm);
             }
         });
     }
@@ -661,13 +655,7 @@ public class ChatAttachAlertDocumentLayout extends ChatAttachAlert.AttachAlertLa
             } else {
                 long lm = lhs.file.lastModified();
                 long rm = rhs.file.lastModified();
-                if (lm == rm) {
-                    return 0;
-                } else if (lm > rm) {
-                    return -1;
-                } else {
-                    return 1;
-                }
+                return Long.compare(rm, lm);
             }
         });
     }

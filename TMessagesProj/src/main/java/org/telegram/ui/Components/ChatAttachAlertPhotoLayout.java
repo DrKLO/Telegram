@@ -1048,14 +1048,7 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
                 }
                 int index1 = albums.indexOf(o1);
                 int index2 = albums.indexOf(o2);
-                if (index1 > index2) {
-                    return 1;
-                } else if (index1 < index2) {
-                    return -1;
-                } else {
-                    return 0;
-                }
-
+                return Integer.compare(index1, index2);
             });
         } else {
             dropDownAlbums = new ArrayList<>();

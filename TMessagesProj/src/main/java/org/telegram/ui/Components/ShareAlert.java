@@ -73,6 +73,7 @@ import org.telegram.ui.DialogsActivity;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Locale;
 
 import androidx.core.view.ViewCompat;
@@ -1157,6 +1158,10 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
             public TLObject object;
             public int date;
             public CharSequence name;
+
+            public int getDate() {
+                return date;
+            }
         }
 
         public ShareSearchAdapter(Context context) {
@@ -1340,14 +1345,7 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
                     }
                     cursor.dispose();
 
-                    Collections.sort(searchResults, (lhs, rhs) -> {
-                        if (lhs.date < rhs.date) {
-                            return 1;
-                        } else if (lhs.date > rhs.date) {
-                            return -1;
-                        }
-                        return 0;
-                    });
+                    Collections.sort(searchResults, Comparator.comparingInt(DialogSearchResult::getDate).reversed());
 
                     updateSearchResults(searchResults, searchId);
                 } catch (Exception e) {
