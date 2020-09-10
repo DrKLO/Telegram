@@ -2684,6 +2684,8 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
             });
             mainFragmentsStack.get(mainFragmentsStack.size() - 1).showDialog(alert);
         } else {
+            String videoCaption = null;
+            String documentCaption = null;
             for (int i = 0; i < dids.size(); i++) {
                 final long did = dids.get(i);
                 int lower_part = (int) did;
@@ -2698,14 +2700,13 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                     }
                 } else {
                     if (videoPath != null) {
-                        String caption = null;
                         if (sendingText != null && sendingText.length() <= 1024) {
-                            caption = sendingText;
+                            videoCaption = sendingText;
                             sendingText = null;
                         }
                         ArrayList<String> arrayList = new ArrayList<>();
                         arrayList.add(videoPath);
-                        SendMessagesHelper.prepareSendingDocuments(accountInstance, arrayList, arrayList, null, caption, null, did, null, null, null, true, 0);
+                        SendMessagesHelper.prepareSendingDocuments(accountInstance, arrayList, arrayList, null, videoCaption, null, did, null, null, null, true, 0);
                     }
                 }
                 if (photoPathsArray != null) {
@@ -2716,12 +2717,11 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                     SendMessagesHelper.prepareSendingMedia(accountInstance, photoPathsArray, did, null, null, false, false, null, true, 0);
                 }
                 if (documentsPathsArray != null || documentsUrisArray != null) {
-                    String caption = null;
                     if (sendingText != null && sendingText.length() <= 1024 && ((documentsPathsArray != null ? documentsPathsArray.size() : 0) + (documentsUrisArray != null ? documentsUrisArray.size() : 0)) == 1) {
-                        caption = sendingText;
+                        documentCaption = sendingText;
                         sendingText = null;
                     }
-                    SendMessagesHelper.prepareSendingDocuments(accountInstance, documentsPathsArray, documentsOriginalPathsArray, documentsUrisArray, caption, documentsMimeType, did, null, null, null, true, 0);
+                    SendMessagesHelper.prepareSendingDocuments(accountInstance, documentsPathsArray, documentsOriginalPathsArray, documentsUrisArray, documentCaption, documentsMimeType, did, null, null, null, true, 0);
                 }
                 if (sendingText != null) {
                     SendMessagesHelper.prepareSendingText(accountInstance, sendingText, did, true, 0);
