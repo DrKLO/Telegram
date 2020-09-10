@@ -33,6 +33,9 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import androidx.core.content.ContextCompat;
+import androidx.core.location.LocationManagerCompat;
+
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
@@ -645,19 +648,9 @@ public class ActionIntroActivity extends BaseFragment implements LocationControl
     public void onResume() {
         super.onResume();
         if (currentType == ACTION_TYPE_NEARBY_LOCATION_ENABLED) {
-            boolean enabled = true;
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                LocationManager lm = (LocationManager) ApplicationLoader.applicationContext.getSystemService(Context.LOCATION_SERVICE);
-                enabled = lm.isLocationEnabled();
-            } else if (Build.VERSION.SDK_INT >= 19) {
-                try {
-                    int mode = Settings.Secure.getInt(ApplicationLoader.applicationContext.getContentResolver(), Settings.Secure.LOCATION_MODE, Settings.Secure.LOCATION_MODE_OFF);
-                    enabled = (mode != Settings.Secure.LOCATION_MODE_OFF);
-                } catch (Throwable e) {
-                    FileLog.e(e);
-                }
-            }
-            if (enabled) {
+            LocationManager lm = ContextCompat.getSystemService(ApplicationLoader.applicationContext,
+                    LocationManager.class);
+            if (LocationManagerCompat.isLocationEnabled(lm)) {
                 presentFragment(new PeopleNearbyActivity(), true);
             }
         }
