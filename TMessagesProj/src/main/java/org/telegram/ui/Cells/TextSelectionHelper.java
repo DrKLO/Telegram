@@ -3,6 +3,8 @@ package org.telegram.ui.Cells;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.ValueAnimator;
+import android.content.ClipData;
+import android.content.ClipboardManager;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
@@ -32,6 +34,7 @@ import android.view.animation.OvershootInterpolator;
 import android.widget.Magnifier;
 import android.widget.TextView;
 
+import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
 import org.telegram.messenger.AndroidUtilities;
@@ -1330,8 +1333,9 @@ public abstract class TextSelectionHelper<Cell extends TextSelectionHelper.Selec
         if (str == null) {
             return;
         }
-        android.content.ClipboardManager clipboard = (android.content.ClipboardManager) ApplicationLoader.applicationContext.getSystemService(Context.CLIPBOARD_SERVICE);
-        android.content.ClipData clip = android.content.ClipData.newPlainText("label", str);
+        ClipboardManager clipboard = ContextCompat.getSystemService(ApplicationLoader.applicationContext,
+                ClipboardManager.class);
+        ClipData clip = ClipData.newPlainText("label", str);
         clipboard.setPrimaryClip(clip);
         hideActions();
         clear(true);

@@ -22,6 +22,8 @@ import android.text.TextUtils;
 import android.util.LongSparseArray;
 import android.util.SparseIntArray;
 
+import androidx.core.content.ContextCompat;
+
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GoogleApiAvailability;
 import com.google.android.gms.common.api.GoogleApiClient;
@@ -158,7 +160,8 @@ public class LocationController extends BaseController implements NotificationCe
     public LocationController(int instance) {
         super(instance);
 
-        locationManager = (LocationManager) ApplicationLoader.applicationContext.getSystemService(Context.LOCATION_SERVICE);
+        locationManager = ContextCompat.getSystemService(ApplicationLoader.applicationContext,
+                LocationManager.class);
         googleApiClient = new GoogleApiClient.Builder(ApplicationLoader.applicationContext).
                 addApi(LocationServices.API).
                 addConnectionCallbacks(this).

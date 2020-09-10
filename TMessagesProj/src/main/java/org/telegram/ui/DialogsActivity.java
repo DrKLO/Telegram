@@ -41,6 +41,7 @@ import android.os.Bundle;
 import android.os.Vibrator;
 
 import androidx.annotation.NonNull;
+import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.LinearSmoothScrollerCustom;
@@ -4089,7 +4090,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                     showDialog(builder.create());
                 }
                 AndroidUtilities.shakeView(pinItem, 2, 0);
-                Vibrator v = (Vibrator) getParentActivity().getSystemService(Context.VIBRATOR_SERVICE);
+                Vibrator v = ContextCompat.getSystemService(getParentActivity(), Vibrator.class);
                 if (v != null) {
                     v.vibrate(200);
                 }

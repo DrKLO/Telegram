@@ -32,6 +32,8 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import androidx.core.content.ContextCompat;
+
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.Emoji;
 import org.telegram.messenger.EmojiData;
@@ -295,7 +297,8 @@ public class IdenticonActivity extends BaseFragment implements NotificationCente
                     return true;
                 }
                 fragmentView.getViewTreeObserver().removeOnPreDrawListener(this);
-                WindowManager manager = (WindowManager) ApplicationLoader.applicationContext.getSystemService(Context.WINDOW_SERVICE);
+                WindowManager manager = ContextCompat.getSystemService(ApplicationLoader.applicationContext,
+                        WindowManager.class);
                 int rotation = manager.getDefaultDisplay().getRotation();
 
                 if (rotation == Surface.ROTATION_270 || rotation == Surface.ROTATION_90) {

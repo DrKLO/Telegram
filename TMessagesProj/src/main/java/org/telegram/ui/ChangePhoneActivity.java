@@ -49,6 +49,8 @@ import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
 
+import androidx.core.content.ContextCompat;
+
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.BuildVars;
@@ -637,7 +639,8 @@ public class ChangePhoneActivity extends BaseFragment {
             String country = null;
 
             try {
-                TelephonyManager telephonyManager = (TelephonyManager) ApplicationLoader.applicationContext.getSystemService(Context.TELEPHONY_SERVICE);
+                TelephonyManager telephonyManager = ContextCompat.getSystemService(ApplicationLoader.applicationContext,
+                        TelephonyManager.class);
                 if (telephonyManager != null) {
                     country = telephonyManager.getSimCountryIso().toUpperCase();
                 }
@@ -712,7 +715,8 @@ public class ChangePhoneActivity extends BaseFragment {
             if (getParentActivity() == null || nextPressed) {
                 return;
             }
-            TelephonyManager tm = (TelephonyManager) ApplicationLoader.applicationContext.getSystemService(Context.TELEPHONY_SERVICE);
+            TelephonyManager tm = ContextCompat.getSystemService(ApplicationLoader.applicationContext,
+                    TelephonyManager.class);
             boolean simcardAvailable = tm.getSimState() != TelephonyManager.SIM_STATE_ABSENT && tm.getPhoneType() != TelephonyManager.PHONE_TYPE_NONE;
             boolean allowCall = true;
             if (Build.VERSION.SDK_INT >= 23 && simcardAvailable) {

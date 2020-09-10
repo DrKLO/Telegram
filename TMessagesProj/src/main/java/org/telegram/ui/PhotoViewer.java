@@ -118,6 +118,7 @@ import android.widget.Toast;
 
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.ExoPlayer;
+import com.google.android.exoplayer2.Timeline;
 import com.google.android.exoplayer2.analytics.AnalyticsListener;
 import com.google.android.exoplayer2.ui.AspectRatioFrameLayout;
 import com.google.android.gms.vision.Frame;
@@ -2967,7 +2968,8 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                     if (checkImageView != null) {
                         checkImageView.post(() -> {
                             LayoutParams layoutParams = (LayoutParams) checkImageView.getLayoutParams();
-                            WindowManager manager = (WindowManager) ApplicationLoader.applicationContext.getSystemService(Activity.WINDOW_SERVICE);
+                            WindowManager manager = ContextCompat.getSystemService(ApplicationLoader.applicationContext,
+                                    WindowManager.class);
                             int rotation = manager.getDefaultDisplay().getRotation();
                             layoutParams.topMargin = (ActionBar.getCurrentActionBarHeight() - AndroidUtilities.dp(34)) / 2 + (isStatusBarVisible() ? AndroidUtilities.statusBarHeight : 0);
                             checkImageView.setLayoutParams(layoutParams);
@@ -4672,7 +4674,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         rightImage.setInvalidateAll(true);
         rightImage.setDelegate(imageReceiverDelegate);
 
-        WindowManager manager = (WindowManager) ApplicationLoader.applicationContext.getSystemService(Activity.WINDOW_SERVICE);
+        WindowManager manager = ContextCompat.getSystemService(ApplicationLoader.applicationContext, WindowManager.class);
         int rotation = manager.getDefaultDisplay().getRotation();
 
         checkImageView = new CheckBox(containerView.getContext(), R.drawable.selectphoto_large) {
@@ -4967,7 +4969,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         hintView.setColors(0xf9222222, 0xffffffff);
         containerView.addView(hintView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.BOTTOM | Gravity.LEFT, 8, 0, 8, 8));
 
-        AccessibilityManager am = (AccessibilityManager) activityContext.getSystemService(Context.ACCESSIBILITY_SERVICE);
+        AccessibilityManager am = ContextCompat.getSystemService(activityContext, AccessibilityManager.class);
         if (am.isEnabled()) {
             playButtonAccessibilityOverlay = new View(activityContext);
             playButtonAccessibilityOverlay.setContentDescription(LocaleController.getString("AccActionPlay", R.string.AccActionPlay));
@@ -5132,7 +5134,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                 if (parentActivity instanceof LaunchActivity) {
                     ((LaunchActivity) parentActivity).drawerLayoutContainer.setAllowDrawContent(true);
                 }
-                WindowManager wm = (WindowManager) parentActivity.getSystemService(Context.WINDOW_SERVICE);
+                WindowManager wm = ContextCompat.getSystemService(parentActivity, WindowManager.class);
                 wm.removeView(windowView);
             }
         } catch (Exception e) {
@@ -5315,7 +5317,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
 
         try {
             isVisible = true;
-            WindowManager wm = (WindowManager) parentActivity.getSystemService(Context.WINDOW_SERVICE);
+            WindowManager wm = ContextCompat.getSystemService(parentActivity, WindowManager.class);
             wm.addView(windowView, windowLayoutParams);
             if (currentPlaceObject != null) {
                 currentPlaceObject.imageReceiver.setVisible(false, false);
@@ -5827,7 +5829,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
 
     private boolean isAccessibilityEnabled() {
         try {
-            AccessibilityManager am = (AccessibilityManager) activityContext.getSystemService(Context.ACCESSIBILITY_SERVICE);
+            AccessibilityManager am = ContextCompat.getSystemService(activityContext, AccessibilityManager.class);
             return am.isEnabled();
         } catch (Exception e) {
             FileLog.e(e);
@@ -10215,7 +10217,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                 windowLayoutParams.flags = 0;
             }
             windowLayoutParams.softInputMode = (useSmoothKeyboard ? WindowManager.LayoutParams.SOFT_INPUT_ADJUST_PAN : WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE) | WindowManager.LayoutParams.SOFT_INPUT_IS_FORWARD_NAVIGATION;
-            WindowManager wm = (WindowManager) parentActivity.getSystemService(Context.WINDOW_SERVICE);
+            WindowManager wm = ContextCompat.getSystemService(parentActivity, WindowManager.class);
             wm.updateViewLayout(windowView, windowLayoutParams);
             windowView.setFocusable(true);
             containerView.setFocusable(true);
@@ -10288,7 +10290,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
 
         final PlaceProviderObject object = provider.getPlaceForPhoto(messageObject, fileLocation, index, true);
         lastInsets = null;
-        WindowManager wm = (WindowManager) parentActivity.getSystemService(Context.WINDOW_SERVICE);
+        WindowManager wm = ContextCompat.getSystemService(parentActivity, WindowManager.class);
         if (attachedToWindow) {
             try {
                 wm.removeView(windowView);
@@ -10556,7 +10558,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                                 windowLayoutParams.flags = 0;
                             }
                             windowLayoutParams.softInputMode = (useSmoothKeyboard ? WindowManager.LayoutParams.SOFT_INPUT_ADJUST_PAN : WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE) | WindowManager.LayoutParams.SOFT_INPUT_IS_FORWARD_NAVIGATION;
-                            WindowManager wm1 = (WindowManager) parentActivity.getSystemService(Context.WINDOW_SERVICE);
+                            WindowManager wm1 = ContextCompat.getSystemService(parentActivity, WindowManager.class);
                             wm1.updateViewLayout(windowView, windowLayoutParams);
                             windowView.setFocusable(true);
                             containerView.setFocusable(true);
@@ -10648,7 +10650,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             setCropBitmap();
         }
 
-        AccessibilityManager am = (AccessibilityManager) parentActivity.getSystemService(Context.ACCESSIBILITY_SERVICE);
+        AccessibilityManager am = ContextCompat.getSystemService(parentActivity, AccessibilityManager.class);
         if (am.isTouchExplorationEnabled()) {
             AccessibilityEvent event = AccessibilityEvent.obtain();
             event.setEventType(AccessibilityEvent.TYPE_ANNOUNCEMENT);
@@ -11029,7 +11031,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         releasePlayer(false);
         try {
             if (windowView.getParent() != null) {
-                WindowManager wm = (WindowManager) parentActivity.getSystemService(Context.WINDOW_SERVICE);
+                WindowManager wm = ContextCompat.getSystemService(parentActivity, WindowManager.class);
                 wm.removeViewImmediate(windowView);
             }
             windowView = null;
@@ -11102,7 +11104,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             }
             try {
                 if (windowView.getParent() != null) {
-                    WindowManager wm = (WindowManager) parentActivity.getSystemService(Context.WINDOW_SERVICE);
+                    WindowManager wm = ContextCompat.getSystemService(parentActivity, WindowManager.class);
                     wm.removeView(windowView);
                 }
             } catch (Exception e) {

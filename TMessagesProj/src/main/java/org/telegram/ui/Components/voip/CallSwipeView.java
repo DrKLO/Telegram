@@ -29,6 +29,7 @@ import org.telegram.messenger.FileLog;
 import java.util.ArrayList;
 
 import androidx.annotation.Keep;
+import androidx.core.content.ContextCompat;
 
 public class CallSwipeView extends View {
 
@@ -134,7 +135,7 @@ public class CallSwipeView extends View {
 
 	@Override
 	public boolean onTouchEvent(MotionEvent ev) {
-		AccessibilityManager am = (AccessibilityManager) getContext().getSystemService(Context.ACCESSIBILITY_SERVICE);
+		AccessibilityManager am = ContextCompat.getSystemService(getContext(), AccessibilityManager.class);
 		if (!isEnabled() || am.isTouchExplorationEnabled()) {
 			return super.onTouchEvent(ev);
 		}

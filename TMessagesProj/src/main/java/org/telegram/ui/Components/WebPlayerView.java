@@ -41,6 +41,8 @@ import android.webkit.WebView;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 
+import androidx.core.content.ContextCompat;
+
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.ExoPlayer;
 import com.google.android.exoplayer2.ui.AspectRatioFrameLayout;
@@ -1868,7 +1870,8 @@ public class WebPlayerView extends ViewGroup implements VideoPlayer.VideoPlayerD
 
     private void checkAudioFocus() {
         if (!hasAudioFocus) {
-            AudioManager audioManager = (AudioManager) ApplicationLoader.applicationContext.getSystemService(Context.AUDIO_SERVICE);
+            AudioManager audioManager = ContextCompat.getSystemService(ApplicationLoader.applicationContext,
+                    AudioManager.class);
             hasAudioFocus = true;
             if (audioManager.requestAudioFocus(this, AudioManager.STREAM_MUSIC, AudioManager.AUDIOFOCUS_GAIN) == AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
                 audioFocus = 2;

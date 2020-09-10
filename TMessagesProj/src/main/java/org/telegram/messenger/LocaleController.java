@@ -20,6 +20,8 @@ import android.text.TextUtils;
 import android.text.format.DateFormat;
 import android.util.Xml;
 
+import androidx.core.content.ContextCompat;
+
 import org.telegram.messenger.time.FastDateFormat;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLObject;
@@ -2815,7 +2817,8 @@ public class LocaleController {
         if (useImperialSystemType == null) {
             if (SharedConfig.distanceSystemType == 0) {
                 try {
-                    TelephonyManager telephonyManager = (TelephonyManager) ApplicationLoader.applicationContext.getSystemService(Context.TELEPHONY_SERVICE);
+                    TelephonyManager telephonyManager = ContextCompat.getSystemService(ApplicationLoader.applicationContext,
+                            TelephonyManager.class);
                     if (telephonyManager != null) {
                         String country = telephonyManager.getSimCountryIso().toUpperCase();
                         useImperialSystemType = "US".equals(country) || "GB".equals(country) || "MM".equals(country) || "LR".equals(country);

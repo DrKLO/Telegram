@@ -94,6 +94,7 @@ import android.widget.Toast;
 
 import androidx.annotation.Keep;
 import androidx.annotation.NonNull;
+import androidx.core.content.ContextCompat;
 import androidx.core.content.FileProvider;
 import androidx.recyclerview.widget.DefaultItemAnimator;
 import androidx.recyclerview.widget.GridLayoutManager;
@@ -4532,7 +4533,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
 
         lastInsets = null;
         if (!isVisible) {
-            WindowManager wm = (WindowManager) parentActivity.getSystemService(Context.WINDOW_SERVICE);
+            WindowManager wm = ContextCompat.getSystemService(parentActivity, WindowManager.class);
             if (attachedToWindow) {
                 try {
                     wm.removeView(windowView);
@@ -4559,7 +4560,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
             }
         } else {
             windowLayoutParams.flags &= ~WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE;
-            WindowManager wm = (WindowManager) parentActivity.getSystemService(Context.WINDOW_SERVICE);
+            WindowManager wm = ContextCompat.getSystemService(parentActivity, WindowManager.class);
             wm.updateViewLayout(windowView, windowLayoutParams);
         }
         isVisible = true;
@@ -4724,7 +4725,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
             animationInProgress = 0;
 
             //windowLayoutParams.flags |= WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE;
-            WindowManager wm = (WindowManager) parentActivity.getSystemService(Context.WINDOW_SERVICE);
+            WindowManager wm = ContextCompat.getSystemService(parentActivity, WindowManager.class);
             wm.updateViewLayout(windowView, windowLayoutParams);
 
             //onClosed();
@@ -4979,7 +4980,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
         containerView.post(() -> {
             try {
                 if (windowView.getParent() != null) {
-                    WindowManager wm = (WindowManager) parentActivity.getSystemService(Context.WINDOW_SERVICE);
+                    WindowManager wm = ContextCompat.getSystemService(parentActivity, WindowManager.class);
                     wm.removeView(windowView);
                 }
             } catch (Exception e) {
@@ -5075,7 +5076,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
         releasePlayer();
         try {
             if (windowView.getParent() != null) {
-                WindowManager wm = (WindowManager) parentActivity.getSystemService(Context.WINDOW_SERVICE);
+                WindowManager wm = ContextCompat.getSystemService(parentActivity, WindowManager.class);
                 wm.removeViewImmediate(windowView);
             }
             windowView = null;

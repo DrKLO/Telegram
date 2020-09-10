@@ -25,6 +25,8 @@ import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import androidx.core.content.ContextCompat;
+
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
@@ -104,7 +106,7 @@ public class ChangeBioActivity extends BaseFragment {
                 }
                 CharSequence result = super.filter(source, start, end, dest, dstart, dend);
                 if (result != null && source != null && result.length() != source.length()) {
-                    Vibrator v = (Vibrator) getParentActivity().getSystemService(Context.VIBRATOR_SERVICE);
+                    Vibrator v = ContextCompat.getSystemService(getParentActivity(), Vibrator.class);
                     if (v != null) {
                         v.vibrate(200);
                     }

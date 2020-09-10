@@ -16,6 +16,8 @@ import android.hardware.SensorManager;
 import android.view.Surface;
 import android.view.WindowManager;
 
+import androidx.core.content.ContextCompat;
+
 import org.telegram.messenger.AndroidUtilities;
 
 public class WallpaperParallaxEffect implements SensorEventListener {
@@ -29,8 +31,8 @@ public class WallpaperParallaxEffect implements SensorEventListener {
 	private Callback callback;
 
 	public WallpaperParallaxEffect(Context context) {
-		wm = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
-		sensorManager = (SensorManager) context.getSystemService(Context.SENSOR_SERVICE);
+		wm = ContextCompat.getSystemService(context, WindowManager.class);
+		sensorManager = ContextCompat.getSystemService(context, SensorManager.class);
 		accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
 	}
 

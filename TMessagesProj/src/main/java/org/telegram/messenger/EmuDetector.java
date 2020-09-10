@@ -247,7 +247,7 @@ public class EmuDetector {
     }
 
     private boolean checkPhoneNumber() {
-        TelephonyManager telephonyManager = (TelephonyManager) mContext.getSystemService(Context.TELEPHONY_SERVICE);
+        TelephonyManager telephonyManager = ContextCompat.getSystemService(mContext, TelephonyManager.class);
 
         @SuppressLint("HardwareIds") String phoneNumber = telephonyManager.getLine1Number();
 
@@ -260,7 +260,7 @@ public class EmuDetector {
     }
 
     private boolean checkDeviceId() {
-        TelephonyManager telephonyManager = (TelephonyManager) mContext.getSystemService(Context.TELEPHONY_SERVICE);
+        TelephonyManager telephonyManager = ContextCompat.getSystemService(mContext, TelephonyManager.class);
 
         @SuppressLint("HardwareIds") String deviceId = telephonyManager.getDeviceId();
 
@@ -273,7 +273,7 @@ public class EmuDetector {
     }
 
     private boolean checkImsi() {
-        TelephonyManager telephonyManager = (TelephonyManager) mContext.getSystemService(Context.TELEPHONY_SERVICE);
+        TelephonyManager telephonyManager = ContextCompat.getSystemService(mContext, TelephonyManager.class);
         @SuppressLint("HardwareIds") String imsi = telephonyManager.getSubscriberId();
 
         for (String known_imsi : IMSI_IDS) {
@@ -285,7 +285,7 @@ public class EmuDetector {
     }
 
     private boolean checkOperatorNameAndroid() {
-        String operatorName = ((TelephonyManager) mContext.getSystemService(Context.TELEPHONY_SERVICE)).getNetworkOperatorName();
+        String operatorName = ContextCompat.getSystemService(mContext, TelephonyManager.class).getNetworkOperatorName();
         return operatorName.equalsIgnoreCase("android");
     }
 

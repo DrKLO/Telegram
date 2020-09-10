@@ -21,6 +21,8 @@ import android.graphics.drawable.Drawable;
 import android.os.Build;
 
 import androidx.annotation.Keep;
+import androidx.core.content.ContextCompat;
+
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.ViewGroup;
@@ -377,7 +379,7 @@ public class ActionBarPopupWindow extends PopupWindow {
     public void dimBehind() {
         View container = getContentView().getRootView();
         Context context = getContentView().getContext();
-        WindowManager wm = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
+        WindowManager wm = ContextCompat.getSystemService(context, WindowManager.class);
         WindowManager.LayoutParams p = (WindowManager.LayoutParams) container.getLayoutParams();
         p.flags |= WindowManager.LayoutParams.FLAG_DIM_BEHIND;
         p.dimAmount = 0.2f;

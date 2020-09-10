@@ -77,6 +77,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 
+import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -1056,7 +1057,8 @@ public class WallpapersListActivity extends BaseFragment implements Notification
         if (getParentActivity() == null) {
             return;
         }
-        WindowManager manager = (WindowManager) ApplicationLoader.applicationContext.getSystemService(Activity.WINDOW_SERVICE);
+        WindowManager manager = ContextCompat.getSystemService(ApplicationLoader.applicationContext,
+                WindowManager.class);
         int rotation = manager.getDefaultDisplay().getRotation();
 
         if (AndroidUtilities.isTablet()) {

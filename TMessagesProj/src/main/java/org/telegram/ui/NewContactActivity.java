@@ -32,6 +32,8 @@ import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
 
+import androidx.core.content.ContextCompat;
+
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
@@ -110,7 +112,7 @@ public class NewContactActivity extends BaseFragment implements AdapterView.OnIt
                         return;
                     }
                     if (firstNameField.length() == 0) {
-                        Vibrator v = (Vibrator) getParentActivity().getSystemService(Context.VIBRATOR_SERVICE);
+                        Vibrator v = ContextCompat.getSystemService(getParentActivity(), Vibrator.class);
                         if (v != null) {
                             v.vibrate(200);
                         }
@@ -118,7 +120,7 @@ public class NewContactActivity extends BaseFragment implements AdapterView.OnIt
                         return;
                     }
                     if (codeField.length() == 0) {
-                        Vibrator v = (Vibrator) getParentActivity().getSystemService(Context.VIBRATOR_SERVICE);
+                        Vibrator v = ContextCompat.getSystemService(getParentActivity(), Vibrator.class);
                         if (v != null) {
                             v.vibrate(200);
                         }
@@ -126,7 +128,7 @@ public class NewContactActivity extends BaseFragment implements AdapterView.OnIt
                         return;
                     }
                     if (phoneField.length() == 0) {
-                        Vibrator v = (Vibrator) getParentActivity().getSystemService(Context.VIBRATOR_SERVICE);
+                        Vibrator v = ContextCompat.getSystemService(getParentActivity(), Vibrator.class);
                         if (v != null) {
                             v.vibrate(200);
                         }
@@ -558,7 +560,8 @@ public class NewContactActivity extends BaseFragment implements AdapterView.OnIt
         } else {
             String country = null;
             try {
-                TelephonyManager telephonyManager = (TelephonyManager) ApplicationLoader.applicationContext.getSystemService(Context.TELEPHONY_SERVICE);
+                TelephonyManager telephonyManager = ContextCompat.getSystemService(ApplicationLoader.applicationContext,
+                        TelephonyManager.class);
                 if (telephonyManager != null) {
                     country = telephonyManager.getSimCountryIso().toUpperCase();
                 }

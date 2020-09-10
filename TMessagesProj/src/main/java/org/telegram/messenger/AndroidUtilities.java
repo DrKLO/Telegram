@@ -14,6 +14,8 @@ import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.content.ClipData;
+import android.content.ClipboardManager;
 import android.content.ContentResolver;
 import android.content.ContentUris;
 import android.content.Context;
@@ -49,6 +51,7 @@ import android.provider.DocumentsContract;
 import android.provider.MediaStore;
 import android.provider.Settings;
 
+import androidx.core.content.ContextCompat;
 import androidx.core.content.FileProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.viewpager.widget.ViewPager;
@@ -665,7 +668,7 @@ public class AndroidUtilities {
         }
         try {
             prevOrientation = activity.getRequestedOrientation();
-            WindowManager manager = (WindowManager) activity.getSystemService(Activity.WINDOW_SERVICE);
+            WindowManager manager = ContextCompat.getSystemService(activity, WindowManager.class);
             if (manager != null && manager.getDefaultDisplay() != null) {
                 int rotation = manager.getDefaultDisplay().getRotation();
                 int orientation = activity.getResources().getConfiguration().orientation;
@@ -1217,7 +1220,7 @@ public class AndroidUtilities {
             return false;
         }
         try {
-            InputMethodManager inputManager = (InputMethodManager) view.getContext().getSystemService(Context.INPUT_METHOD_SERVICE);
+            InputMethodManager inputManager = ContextCompat.getSystemService(view.getContext(), InputMethodManager.class);
             return inputManager.showSoftInput(view, InputMethodManager.SHOW_IMPLICIT);
         } catch (Exception e) {
             FileLog.e(e);
@@ -1227,7 +1230,8 @@ public class AndroidUtilities {
 
     public static String[] getCurrentKeyboardLanguage() {
         try {
-            InputMethodManager inputManager = (InputMethodManager) ApplicationLoader.applicationContext.getSystemService(Context.INPUT_METHOD_SERVICE);
+            InputMethodManager inputManager =
+                    ContextCompat.getSystemService(ApplicationLoader.applicationContext, InputMethodManager.class);
             InputMethodSubtype inputMethodSubtype = inputManager.getCurrentInputMethodSubtype();
             String locale = null;
             if (inputMethodSubtype != null) {
@@ -1282,7 +1286,7 @@ public class AndroidUtilities {
             return;
         }
         try {
-            InputMethodManager imm = (InputMethodManager) view.getContext().getSystemService(Context.INPUT_METHOD_SERVICE);
+            InputMethodManager imm = ContextCompat.getSystemService(view.getContext(), InputMethodManager.class);
             if (!imm.isActive()) {
                 return;
             }
@@ -1371,7 +1375,7 @@ public class AndroidUtilities {
                 configuration = context.getResources().getConfiguration();
             }
             usingHardwareInput = configuration.keyboard != Configuration.KEYBOARD_NOKEYS && configuration.hardKeyboardHidden == Configuration.HARDKEYBOARDHIDDEN_NO;
-            WindowManager manager = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
+            WindowManager manager = ContextCompat.getSystemService(context, WindowManager.class);
             if (manager != null) {
                 Display display = manager.getDefaultDisplay();
                 if (display != null) {
@@ -1548,7 +1552,8 @@ public class AndroidUtilities {
             return;
         }
         try {
-            TelephonyManager tm = (TelephonyManager) ApplicationLoader.applicationContext.getSystemService(Context.TELEPHONY_SERVICE);
+            TelephonyManager tm = ContextCompat.getSystemService(ApplicationLoader.applicationContext,
+                    TelephonyManager.class);
             Class c = Class.forName(tm.getClass().getName());
             Method m = c.getDeclaredMethod("getITelephony");
             m.setAccessible(true);
@@ -1640,7 +1645,8 @@ public class AndroidUtilities {
     public static Point getRealScreenSize() {
         Point size = new Point();
         try {
-            WindowManager windowManager = (WindowManager) ApplicationLoader.applicationContext.getSystemService(Context.WINDOW_SERVICE);
+            WindowManager windowManager =
+                    ContextCompat.getSystemService(ApplicationLoader.applicationContext, WindowManager.class);
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
                 windowManager.getDefaultDisplay().getRealSize(size);
             } else {
@@ -1973,8 +1979,9 @@ public class AndroidUtilities {
 
     public static void addToClipboard(CharSequence str) {
         try {
-            android.content.ClipboardManager clipboard = (android.content.ClipboardManager) ApplicationLoader.applicationContext.getSystemService(Context.CLIPBOARD_SERVICE);
-            android.content.ClipData clip = android.content.ClipData.newPlainText("label", str);
+            ClipboardManager clipboard =
+                    ContextCompat.getSystemService(ApplicationLoader.applicationContext, ClipboardManager.class);
+            ClipData clip = ClipData.newPlainText("label", str);
             clipboard.setPrimaryClip(clip);
         } catch (Exception e) {
             FileLog.e(e);
@@ -2786,7 +2793,8 @@ public class AndroidUtilities {
         if (Build.VERSION.SDK_INT < 26 || Build.VERSION.SDK_INT >= 28) {
             return true;
         }
-        PowerManager powerManager = (PowerManager) ApplicationLoader.applicationContext.getSystemService(Context.POWER_SERVICE);
+        PowerManager powerManager = ContextCompat.getSystemService(ApplicationLoader.applicationContext,
+                PowerManager.class);
         if (powerManager.isPowerSaveMode()) {
             return false;
         }
@@ -3120,7 +3128,8 @@ public class AndroidUtilities {
     }
 
     public static void makeAccessibilityAnnouncement(CharSequence what) {
-        AccessibilityManager am = (AccessibilityManager) ApplicationLoader.applicationContext.getSystemService(Context.ACCESSIBILITY_SERVICE);
+        AccessibilityManager am = ContextCompat.getSystemService(ApplicationLoader.applicationContext,
+                AccessibilityManager.class);
         if (am.isEnabled()) {
             AccessibilityEvent ev = AccessibilityEvent.obtain();
             ev.setEventType(AccessibilityEvent.TYPE_ANNOUNCEMENT);

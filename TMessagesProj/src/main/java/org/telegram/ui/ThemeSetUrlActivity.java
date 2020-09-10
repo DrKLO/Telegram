@@ -8,6 +8,8 @@
 
 package org.telegram.ui;
 
+import android.content.ClipData;
+import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.graphics.Canvas;
@@ -33,6 +35,8 @@ import android.view.inputmethod.EditorInfo;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import androidx.core.content.ContextCompat;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
@@ -110,8 +114,9 @@ public class ThemeSetUrlActivity extends BaseFragment implements NotificationCen
         @Override
         public void onClick(View widget) {
             try {
-                android.content.ClipboardManager clipboard = (android.content.ClipboardManager) ApplicationLoader.applicationContext.getSystemService(Context.CLIPBOARD_SERVICE);
-                android.content.ClipData clip = android.content.ClipData.newPlainText("label", url);
+                ClipboardManager clipboard = ContextCompat.getSystemService(ApplicationLoader.applicationContext,
+                        ClipboardManager.class);
+                ClipData clip = ClipData.newPlainText("label", url);
                 clipboard.setPrimaryClip(clip);
                 Toast.makeText(getParentActivity(), LocaleController.getString("LinkCopied", R.string.LinkCopied), Toast.LENGTH_SHORT).show();
             } catch (Exception e) {

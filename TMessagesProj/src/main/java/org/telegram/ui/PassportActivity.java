@@ -27,6 +27,8 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Vibrator;
 import android.provider.MediaStore;
+
+import androidx.core.content.ContextCompat;
 import androidx.core.content.FileProvider;
 
 import android.telephony.PhoneNumberUtils;
@@ -2228,7 +2230,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
 
                 TLRPC.TL_secureValue value = getValueByType(requiredType, true);
                 if (value == null) {
-                    Vibrator v = (Vibrator) getParentActivity().getSystemService(Context.VIBRATOR_SERVICE);
+                    Vibrator v = ContextCompat.getSystemService(getParentActivity(), Vibrator.class);
                     if (v != null) {
                         v.vibrate(200);
                     }
@@ -2238,7 +2240,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
                 String key = getNameForType(requiredType.type);
                 HashMap<String, String> errors = errorsMap.get(key);
                 if (errors != null && !errors.isEmpty()) {
-                    Vibrator v = (Vibrator) getParentActivity().getSystemService(Context.VIBRATOR_SERVICE);
+                    Vibrator v = ContextCompat.getSystemService(getParentActivity(), Vibrator.class);
                     if (v != null) {
                         v.vibrate(200);
                     }
@@ -3100,7 +3102,8 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
 
         String country = null;
         try {
-            TelephonyManager telephonyManager = (TelephonyManager) ApplicationLoader.applicationContext.getSystemService(Context.TELEPHONY_SERVICE);
+            TelephonyManager telephonyManager = ContextCompat.getSystemService(ApplicationLoader.applicationContext,
+                    TelephonyManager.class);
             if (telephonyManager != null) {
                 country = telephonyManager.getSimCountryIso().toUpperCase();
             }
@@ -3574,7 +3577,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
         if (field == null) {
             return;
         }
-        Vibrator v = (Vibrator) getParentActivity().getSystemService(Context.VIBRATOR_SERVICE);
+        Vibrator v = ContextCompat.getSystemService(getParentActivity(), Vibrator.class);
         if (v != null) {
             v.vibrate(200);
         }
@@ -6241,7 +6244,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
         if (getParentActivity() == null) {
             return;
         }
-        Vibrator v = (Vibrator) getParentActivity().getSystemService(Context.VIBRATOR_SERVICE);
+        Vibrator v = ContextCompat.getSystemService(getParentActivity(), Vibrator.class);
         if (v != null) {
             v.vibrate(200);
         }
@@ -6252,7 +6255,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
     }
 
     private void startPhoneVerification(boolean checkPermissions, final String phone, Runnable finishRunnable, ErrorRunnable errorRunnable, final PassportActivityDelegate delegate) {
-        TelephonyManager tm = (TelephonyManager) ApplicationLoader.applicationContext.getSystemService(Context.TELEPHONY_SERVICE);
+        TelephonyManager tm = ContextCompat.getSystemService(ApplicationLoader.applicationContext, TelephonyManager.class);
         boolean simcardAvailable = tm.getSimState() != TelephonyManager.SIM_STATE_ABSENT && tm.getPhoneType() != TelephonyManager.PHONE_TYPE_NONE;
         boolean allowCall = true;
         if (getParentActivity() != null && Build.VERSION.SDK_INT >= 23 && simcardAvailable) {

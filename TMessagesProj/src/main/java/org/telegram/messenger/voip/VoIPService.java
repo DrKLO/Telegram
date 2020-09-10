@@ -25,13 +25,14 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
-import androidx.annotation.Nullable;
-
 import android.os.SystemClock;
 import android.telecom.TelecomManager;
 import android.text.TextUtils;
 import android.view.KeyEvent;
 import android.widget.Toast;
+
+import androidx.annotation.Nullable;
+import androidx.core.content.ContextCompat;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
@@ -167,8 +168,7 @@ public class VoIPService extends VoIPBaseService {
 		localSink = new ProxyVideoSink();
 		remoteSink = new ProxyVideoSink();
 		try {
-			AudioManager am = (AudioManager) getSystemService(AUDIO_SERVICE);
-			isHeadsetPlugged = am.isWiredHeadsetOn();
+			isHeadsetPlugged = ContextCompat.getSystemService(this, AudioManager.class).isWiredHeadsetOn();
 		} catch (Exception e) {
 			FileLog.e(e);
 		}
@@ -193,7 +193,7 @@ public class VoIPService extends VoIPBaseService {
 		if (isOutgoing) {
 			dispatchStateChanged(STATE_REQUESTING);
 			if (USE_CONNECTION_SERVICE) {
-				TelecomManager tm = (TelecomManager) getSystemService(TELECOM_SERVICE);
+				TelecomManager tm = ContextCompat.getSystemService(this, TelecomManager.class);
 				Bundle extras = new Bundle();
 				Bundle myExtras = new Bundle();
 				extras.putParcelable(TelecomManager.EXTRA_PHONE_ACCOUNT_HANDLE, addAccountToTelecomManager());
@@ -453,7 +453,7 @@ public class VoIPService extends VoIPBaseService {
 			return;
 		}
 		if (Build.VERSION.SDK_INT >= 19 && XiaomiUtilities.isMIUI() && !XiaomiUtilities.isCustomPermissionGranted(XiaomiUtilities.OP_SHOW_WHEN_LOCKED)) {
-			if (((KeyguardManager) getSystemService(KEYGUARD_SERVICE)).inKeyguardRestrictedInputMode()) {
+			if (ContextCompat.getSystemService(this, KeyguardManager.class).inKeyguardRestrictedInputMode()) {
 				if (BuildVars.LOGS_ENABLED) {
 					FileLog.e("MIUI: no permission to show when locked but the screen is locked. ¯\\_(ツ)_/¯");
 				}
@@ -480,7 +480,7 @@ public class VoIPService extends VoIPBaseService {
 			} else {
 				if (USE_CONNECTION_SERVICE) {
 					ContactsController.getInstance(currentAccount).createOrUpdateConnectionServiceContact(user.id, user.first_name, user.last_name);
-					TelecomManager tm = (TelecomManager) getSystemService(TELECOM_SERVICE);
+					TelecomManager tm = ContextCompat.getSystemService(this, TelecomManager.class);
 					Bundle extras = new Bundle();
 					extras.putInt("call_type", 1);
 					tm.addNewIncomingCall(addAccountToTelecomManager(), extras);

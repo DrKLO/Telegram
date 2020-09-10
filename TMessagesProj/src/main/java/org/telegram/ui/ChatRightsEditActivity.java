@@ -64,6 +64,7 @@ import org.telegram.ui.Components.RecyclerListView;
 import java.util.ArrayList;
 import java.util.Calendar;
 
+import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.DefaultItemAnimator;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -881,7 +882,7 @@ public class ChatRightsEditActivity extends BaseFragment {
         if (currentType == TYPE_ADMIN) {
             if (rankRow != -1 && currentRank.codePointCount(0, currentRank.length()) > MAX_RANK_LENGTH) {
                 listView.smoothScrollToPosition(rankRow);
-                Vibrator v = (Vibrator) getParentActivity().getSystemService(Context.VIBRATOR_SERVICE);
+                Vibrator v = ContextCompat.getSystemService(getParentActivity(), Vibrator.class);
                 if (v != null) {
                     v.vibrate(200);
                 }

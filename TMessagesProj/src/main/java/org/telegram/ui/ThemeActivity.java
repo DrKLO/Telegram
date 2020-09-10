@@ -30,6 +30,7 @@ import android.os.Build;
 import android.os.Bundle;
 
 import androidx.annotation.Keep;
+import androidx.core.content.ContextCompat;
 import androidx.core.content.FileProvider;
 import androidx.recyclerview.widget.DefaultItemAnimator;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -1068,7 +1069,8 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
     }
 
     private void updateSunTime(Location lastKnownLocation, boolean forceUpdate) {
-        LocationManager locationManager = (LocationManager) ApplicationLoader.applicationContext.getSystemService(Context.LOCATION_SERVICE);
+        LocationManager locationManager = ContextCompat.getSystemService(ApplicationLoader.applicationContext,
+                LocationManager.class);
         if (Build.VERSION.SDK_INT >= 23) {
             Activity activity = getParentActivity();
             if (activity != null) {
@@ -1083,7 +1085,8 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
                 return;
             }
             try {
-                LocationManager lm = (LocationManager) ApplicationLoader.applicationContext.getSystemService(Context.LOCATION_SERVICE);
+                LocationManager lm = ContextCompat.getSystemService(ApplicationLoader.applicationContext,
+                        LocationManager.class);
                 if (!lm.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
                     AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
                     builder.setTitle(LocaleController.getString("GpsDisabledAlertTitle", R.string.GpsDisabledAlertTitle));
@@ -1174,7 +1177,8 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
             return;
         }
         updatingLocation = true;
-        LocationManager locationManager = (LocationManager) ApplicationLoader.applicationContext.getSystemService(Context.LOCATION_SERVICE);
+        LocationManager locationManager = ContextCompat.getSystemService(ApplicationLoader.applicationContext,
+                LocationManager.class);
         try {
             locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 1, 0, gpsLocationListener);
         } catch (Exception e) {
@@ -1189,7 +1193,8 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
 
     private void stopLocationUpdate() {
         updatingLocation = false;
-        LocationManager locationManager = (LocationManager) ApplicationLoader.applicationContext.getSystemService(Context.LOCATION_SERVICE);
+        LocationManager locationManager = ContextCompat.getSystemService(ApplicationLoader.applicationContext,
+                LocationManager.class);
         locationManager.removeUpdates(gpsLocationListener);
         locationManager.removeUpdates(networkLocationListener);
     }

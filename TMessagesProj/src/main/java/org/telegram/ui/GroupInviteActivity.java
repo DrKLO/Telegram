@@ -8,6 +8,8 @@
 
 package org.telegram.ui;
 
+import android.content.ClipData;
+import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.Intent;
 import android.view.Gravity;
@@ -40,6 +42,7 @@ import org.telegram.ui.Components.RecyclerListView;
 
 import java.util.ArrayList;
 
+import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -129,8 +132,9 @@ public class GroupInviteActivity extends BaseFragment implements NotificationCen
                     return;
                 }
                 try {
-                    android.content.ClipboardManager clipboard = (android.content.ClipboardManager) ApplicationLoader.applicationContext.getSystemService(Context.CLIPBOARD_SERVICE);
-                    android.content.ClipData clip = android.content.ClipData.newPlainText("label", invite.link);
+                    ClipboardManager clipboard = ContextCompat.getSystemService(ApplicationLoader.applicationContext,
+                            ClipboardManager.class);
+                    ClipData clip = ClipData.newPlainText("label", invite.link);
                     clipboard.setPrimaryClip(clip);
                     Toast.makeText(getParentActivity(), LocaleController.getString("LinkCopied", R.string.LinkCopied), Toast.LENGTH_SHORT).show();
                 } catch (Exception e) {

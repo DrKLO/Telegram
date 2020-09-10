@@ -73,6 +73,7 @@ import org.telegram.ui.Components.SizeNotifierFrameLayout;
 import java.util.ArrayList;
 import java.util.concurrent.CountDownLatch;
 
+import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -563,7 +564,7 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
                 return;
             }
             if (editText.length() == 0) {
-                Vibrator v = (Vibrator) getParentActivity().getSystemService(Context.VIBRATOR_SERVICE);
+                Vibrator v = ContextCompat.getSystemService(getParentActivity(), Vibrator.class);
                 if (v != null) {
                     v.vibrate(200);
                 }

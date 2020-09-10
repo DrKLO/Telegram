@@ -56,6 +56,8 @@ import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.core.content.ContextCompat;
+
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.stripe.android.Stripe;
 import com.stripe.android.TokenCallback;
@@ -943,7 +945,8 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
                 String country = null;
 
                 try {
-                    TelephonyManager telephonyManager = (TelephonyManager) ApplicationLoader.applicationContext.getSystemService(Context.TELEPHONY_SERVICE);
+                    TelephonyManager telephonyManager = ContextCompat.getSystemService(ApplicationLoader.applicationContext,
+                            TelephonyManager.class);
                     if (telephonyManager != null) {
                         country = telephonyManager.getSimCountryIso().toUpperCase();
                     }
@@ -2575,7 +2578,7 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
     @SuppressLint("HardwareIds")
     public void fillNumber(String number) {
         try {
-            TelephonyManager tm = (TelephonyManager) ApplicationLoader.applicationContext.getSystemService(Context.TELEPHONY_SERVICE);
+            TelephonyManager tm = ContextCompat.getSystemService(ApplicationLoader.applicationContext, TelephonyManager.class);
             boolean allowCall = true;
             boolean allowSms = true;
             if (number != null || tm.getSimState() != TelephonyManager.SIM_STATE_ABSENT && tm.getPhoneType() != TelephonyManager.PHONE_TYPE_NONE) {
@@ -3053,7 +3056,7 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
     }
 
     private void shakeView(View view) {
-        Vibrator v = (Vibrator) getParentActivity().getSystemService(Context.VIBRATOR_SERVICE);
+        Vibrator v = ContextCompat.getSystemService(getParentActivity(), Vibrator.class);
         if (v != null) {
             v.vibrate(200);
         }
@@ -3088,7 +3091,7 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
             return;
         }
         if (inputFields[FIELD_SAVEDPASSWORD].length() == 0) {
-            Vibrator v = (Vibrator) ApplicationLoader.applicationContext.getSystemService(Context.VIBRATOR_SERVICE);
+            Vibrator v = ContextCompat.getSystemService(ApplicationLoader.applicationContext, Vibrator.class);
             if (v != null) {
                 v.vibrate(200);
             }
@@ -3134,7 +3137,8 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
                                 goToNextStep();
                             } else {
                                 if (error1.text.equals("PASSWORD_HASH_INVALID")) {
-                                    Vibrator v = (Vibrator) ApplicationLoader.applicationContext.getSystemService(Context.VIBRATOR_SERVICE);
+                                    Vibrator v = ContextCompat.getSystemService(ApplicationLoader.applicationContext,
+                                            Vibrator.class);
                                     if (v != null) {
                                         v.vibrate(200);
                                     }

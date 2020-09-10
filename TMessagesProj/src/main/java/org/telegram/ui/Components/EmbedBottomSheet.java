@@ -14,6 +14,8 @@ import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.content.ClipData;
+import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -48,6 +50,8 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import androidx.core.content.ContextCompat;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
@@ -430,7 +434,7 @@ public class EmbedBottomSheet extends BottomSheet {
                         try {
                             prevOrientation = parentActivity.getRequestedOrientation();
                             if (byButton) {
-                                WindowManager manager = (WindowManager) parentActivity.getSystemService(Activity.WINDOW_SERVICE);
+                                WindowManager manager = ContextCompat.getSystemService(parentActivity, WindowManager.class);
                                 int displayRotation = manager.getDefaultDisplay().getRotation();
                                 if (displayRotation == Surface.ROTATION_270) {
                                     parentActivity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE);
@@ -781,8 +785,8 @@ public class EmbedBottomSheet extends BottomSheet {
 
         View.OnClickListener copyClickListener = v -> {
             try {
-                android.content.ClipboardManager clipboard = (android.content.ClipboardManager) ApplicationLoader.applicationContext.getSystemService(Context.CLIPBOARD_SERVICE);
-                android.content.ClipData clip = android.content.ClipData.newPlainText("label", openUrl);
+                ClipboardManager clipboard = ContextCompat.getSystemService(ApplicationLoader.applicationContext, ClipboardManager.class);
+                ClipData clip = ClipData.newPlainText("label", openUrl);
                 clipboard.setPrimaryClip(clip);
             } catch (Exception e) {
                 FileLog.e(e);

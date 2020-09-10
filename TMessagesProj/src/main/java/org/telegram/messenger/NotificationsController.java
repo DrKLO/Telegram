@@ -43,6 +43,7 @@ import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
 import androidx.core.app.Person;
 import androidx.core.app.RemoteInput;
+import androidx.core.content.ContextCompat;
 import androidx.core.content.FileProvider;
 import androidx.core.content.pm.ShortcutInfoCompat;
 import androidx.core.content.pm.ShortcutManagerCompat;
@@ -127,10 +128,10 @@ public class NotificationsController extends BaseController {
     static {
         if (Build.VERSION.SDK_INT >= 26 && ApplicationLoader.applicationContext != null) {
             notificationManager = NotificationManagerCompat.from(ApplicationLoader.applicationContext);
-            systemNotificationManager = (NotificationManager) ApplicationLoader.applicationContext.getSystemService(Context.NOTIFICATION_SERVICE);
+            systemNotificationManager = ApplicationLoader.applicationContext.getSystemService(NotificationManager.class);
             checkOtherNotificationsChannel();
         }
-        audioManager = (AudioManager) ApplicationLoader.applicationContext.getSystemService(Context.AUDIO_SERVICE);
+        audioManager = ContextCompat.getSystemService(ApplicationLoader.applicationContext, AudioManager.class);
     }
     
     private static volatile NotificationsController[] Instance = new NotificationsController[UserConfig.MAX_ACCOUNT_COUNT];
@@ -160,21 +161,22 @@ public class NotificationsController extends BaseController {
         showBadgeMessages = preferences.getBoolean("badgeNumberMessages", true);
 
         notificationManager = NotificationManagerCompat.from(ApplicationLoader.applicationContext);
-        systemNotificationManager = (NotificationManager) ApplicationLoader.applicationContext.getSystemService(Context.NOTIFICATION_SERVICE);
+        systemNotificationManager = ContextCompat.getSystemService(ApplicationLoader.applicationContext,
+                NotificationManager.class);
 
         try {
-            audioManager = (AudioManager) ApplicationLoader.applicationContext.getSystemService(Context.AUDIO_SERVICE);
+            audioManager = ContextCompat.getSystemService(ApplicationLoader.applicationContext, AudioManager.class);
         } catch (Exception e) {
             FileLog.e(e);
         }
         try {
-            alarmManager = (AlarmManager) ApplicationLoader.applicationContext.getSystemService(Context.ALARM_SERVICE);
+            alarmManager = ContextCompat.getSystemService(ApplicationLoader.applicationContext, AlarmManager.class);
         } catch (Exception e) {
             FileLog.e(e);
         }
 
         try {
-            PowerManager pm = (PowerManager) ApplicationLoader.applicationContext.getSystemService(Context.POWER_SERVICE);
+            PowerManager pm = ContextCompat.getSystemService(ApplicationLoader.applicationContext, PowerManager.class);
             notificationDelayWakelock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "telegram:notification_delay_lock");
             notificationDelayWakelock.setReferenceCounted(false);
         } catch (Exception e) {
@@ -3492,7 +3494,7 @@ public class NotificationsController extends BaseController {
 
                 if (lowerId != 0) {
                     boolean setPhoto = false;
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P && !((ActivityManager) ApplicationLoader.applicationContext.getSystemService(Context.ACTIVITY_SERVICE)).isLowRamDevice()) {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P && !ApplicationLoader.applicationContext.getSystemService(ActivityManager.class).isLowRamDevice()) {
                         if (!waitingForPasscode && !messageObject.isSecretMedia() && (messageObject.type == 1 || messageObject.isSticker())) {
                             File attach = FileLoader.getPathToMessage(messageObject.messageOwner);
                             NotificationCompat.MessagingStyle.Message msg = new NotificationCompat.MessagingStyle.Message(message, ((long) messageObject.messageOwner.date) * 1000L, person);

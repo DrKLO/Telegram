@@ -141,7 +141,7 @@ public class VoIPPiPView implements VoIPBaseService.StateListener, NotificationC
         WindowManager.LayoutParams windowLayoutParams = createWindowLayoutParams(activity, parentWidth, parentHeight, SCALE_NORMAL);
         instance = new VoIPPiPView(activity, parentWidth, parentHeight, false);
 
-        WindowManager wm = (WindowManager) activity.getSystemService(Context.WINDOW_SERVICE);
+        WindowManager wm = ContextCompat.getSystemService(activity, WindowManager.class);
         instance.windowManager = wm;
         instance.windowLayoutParams = windowLayoutParams;
         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("voippipconfig", Context.MODE_PRIVATE);

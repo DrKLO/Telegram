@@ -43,6 +43,8 @@ import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.core.content.ContextCompat;
+
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
@@ -1511,7 +1513,7 @@ public class TwoStepVerificationSetupActivity extends BaseFragment {
         if (getParentActivity() == null) {
             return;
         }
-        Vibrator v = (Vibrator) getParentActivity().getSystemService(Context.VIBRATOR_SERVICE);
+        Vibrator v = ContextCompat.getSystemService(getParentActivity(), Vibrator.class);
         if (v != null) {
             v.vibrate(200);
         }

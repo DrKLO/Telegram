@@ -13,6 +13,8 @@ import android.telephony.SubscriptionManager;
 import android.telephony.TelephonyManager;
 import android.text.TextUtils;
 
+import androidx.core.content.ContextCompat;
+
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.FileLog;
 
@@ -29,7 +31,8 @@ import java.util.Enumeration;
 public class JNIUtilities {
 	@TargetApi(23)
 	public static String getCurrentNetworkInterfaceName() {
-		ConnectivityManager cm = (ConnectivityManager) ApplicationLoader.applicationContext.getSystemService(Context.CONNECTIVITY_SERVICE);
+		ConnectivityManager cm = ContextCompat.getSystemService(ApplicationLoader.applicationContext,
+				ConnectivityManager.class);
 		Network net = cm.getActiveNetwork();
 		if (net == null) {
 			return null;
@@ -42,7 +45,8 @@ public class JNIUtilities {
 	}
 
 	public static String[] getLocalNetworkAddressesAndInterfaceName() {
-		ConnectivityManager cm = (ConnectivityManager) ApplicationLoader.applicationContext.getSystemService(Context.CONNECTIVITY_SERVICE);
+		ConnectivityManager cm = ContextCompat.getSystemService(ApplicationLoader.applicationContext,
+				ConnectivityManager.class);
 		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
 			Network net = cm.getActiveNetwork();
 			if (net == null) {
@@ -102,7 +106,8 @@ public class JNIUtilities {
 
 	// [name, country, mcc, mnc]
 	public static String[] getCarrierInfo() {
-		TelephonyManager tm = (TelephonyManager) ApplicationLoader.applicationContext.getSystemService(Context.TELEPHONY_SERVICE);
+		TelephonyManager tm = ContextCompat.getSystemService(ApplicationLoader.applicationContext,
+				TelephonyManager.class);
 		if (Build.VERSION.SDK_INT >= 24) {
 			tm = tm.createForSubscriptionId(SubscriptionManager.getDefaultDataSubscriptionId());
 		}
@@ -120,7 +125,8 @@ public class JNIUtilities {
 
 	public static int[] getWifiInfo() {
 		try {
-			WifiManager wmgr = (WifiManager) ApplicationLoader.applicationContext.getSystemService(Context.WIFI_SERVICE);
+			WifiManager wmgr = ContextCompat.getSystemService(ApplicationLoader.applicationContext,
+					WifiManager.class);
 			WifiInfo info = wmgr.getConnectionInfo();
 			return new int[]{info.getRssi(), info.getLinkSpeed()};
 		} catch (Exception ignore) {

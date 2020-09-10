@@ -39,6 +39,8 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.core.content.ContextCompat;
+
 import org.telegram.messenger.AccountInstance;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
@@ -2961,7 +2963,7 @@ public class AlertsCreator {
                 return;
             }
             if (editText.length() == 0) {
-                Vibrator vibrator = (Vibrator) ApplicationLoader.applicationContext.getSystemService(Context.VIBRATOR_SERVICE);
+                Vibrator vibrator = ContextCompat.getSystemService(ApplicationLoader.applicationContext, Vibrator.class);
                 if (vibrator != null) {
                     vibrator.vibrate(200);
                 }

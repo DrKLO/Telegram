@@ -17,6 +17,8 @@ import android.animation.StateListAnimator;
 import android.animation.ValueAnimator;
 import android.annotation.SuppressLint;
 import android.app.Dialog;
+import android.content.ClipData;
+import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -3224,8 +3226,9 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             builder.setItems(new CharSequence[]{LocaleController.getString("Copy", R.string.Copy)}, (dialogInterface, i) -> {
                 if (i == 0) {
                     try {
-                        android.content.ClipboardManager clipboard = (android.content.ClipboardManager) ApplicationLoader.applicationContext.getSystemService(Context.CLIPBOARD_SERVICE);
-                        android.content.ClipData clip = android.content.ClipData.newPlainText("label", "@" + username);
+                        ClipboardManager clipboard = ContextCompat.getSystemService(ApplicationLoader.applicationContext,
+                                ClipboardManager.class);
+                        ClipData clip = ClipData.newPlainText("label", "@" + username);
                         clipboard.setPrimaryClip(clip);
                         Toast.makeText(getParentActivity(), LocaleController.getString("TextCopied", R.string.TextCopied), Toast.LENGTH_SHORT).show();
                     } catch (Exception e) {
@@ -3268,8 +3271,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     }
                 } else if (i == 1) {
                     try {
-                        android.content.ClipboardManager clipboard = (android.content.ClipboardManager) ApplicationLoader.applicationContext.getSystemService(Context.CLIPBOARD_SERVICE);
-                        android.content.ClipData clip = android.content.ClipData.newPlainText("label", "+" + user.phone);
+                        ClipboardManager clipboard = ContextCompat.getSystemService(ApplicationLoader.applicationContext, ClipboardManager.class);
+                        ClipData clip = ClipData.newPlainText("label", "+" + user.phone);
                         clipboard.setPrimaryClip(clip);
                         Toast.makeText(getParentActivity(), LocaleController.getString("PhoneCopied", R.string.PhoneCopied), Toast.LENGTH_SHORT).show();
                     } catch (Exception e) {

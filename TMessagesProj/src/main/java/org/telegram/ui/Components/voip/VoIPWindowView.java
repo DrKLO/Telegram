@@ -3,7 +3,6 @@ package org.telegram.ui.Components.voip;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.app.Activity;
-import android.content.Context;
 import android.content.pm.ActivityInfo;
 import android.graphics.PixelFormat;
 import android.os.Build;
@@ -13,6 +12,8 @@ import android.view.VelocityTracker;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.FrameLayout;
+
+import androidx.core.content.ContextCompat;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.NotificationCenter;
@@ -130,7 +131,7 @@ public class VoIPWindowView extends FrameLayout {
 
             if (lockOnScreen) {
                 try {
-                    WindowManager wm = (WindowManager) activity.getSystemService(Context.WINDOW_SERVICE);
+                    WindowManager wm = ContextCompat.getSystemService(activity, WindowManager.class);
                     wm.removeView(VoIPWindowView.this);
                 } catch (Exception ignore) {
 
@@ -144,7 +145,7 @@ public class VoIPWindowView extends FrameLayout {
                         if (getParent() != null) {
                             activity.setRequestedOrientation(orientationBefore);
 
-                            WindowManager wm = (WindowManager) activity.getSystemService(Context.WINDOW_SERVICE);
+                            WindowManager wm = ContextCompat.getSystemService(activity, WindowManager.class);
                             setVisibility(View.GONE);
                             try {
                                 wm.removeView(VoIPWindowView.this);
@@ -213,7 +214,7 @@ public class VoIPWindowView extends FrameLayout {
     public void finishImmediate() {
         if (getParent() != null) {
             activity.setRequestedOrientation(orientationBefore);
-            WindowManager wm = (WindowManager) activity.getSystemService(Context.WINDOW_SERVICE);
+            WindowManager wm = ContextCompat.getSystemService(activity, WindowManager.class);
             setVisibility(View.GONE);
             wm.removeView(VoIPWindowView.this);
         }

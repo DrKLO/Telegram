@@ -23,6 +23,8 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.accessibility.AccessibilityManager;
 
+import androidx.core.content.ContextCompat;
+
 import org.telegram.messenger.AccountInstance;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.ContactsController;
@@ -402,7 +404,8 @@ public class BaseFragment {
     }
 
     protected void onBecomeFullyVisible() {
-        AccessibilityManager mgr = (AccessibilityManager) ApplicationLoader.applicationContext.getSystemService(Context.ACCESSIBILITY_SERVICE);
+        AccessibilityManager mgr = ContextCompat.getSystemService(ApplicationLoader.applicationContext,
+                AccessibilityManager.class);
         if (mgr.isEnabled()) {
             ActionBar actionBar = getActionBar();
             if (actionBar != null) {

@@ -34,6 +34,7 @@ import android.view.View;
 import android.view.ViewConfiguration;
 import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
+import android.view.Window;
 import android.view.WindowManager;
 import android.view.animation.DecelerateInterpolator;
 import android.view.animation.Interpolator;
@@ -44,6 +45,7 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -2085,7 +2087,8 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
     }
 
     private void fixLayoutInternal(int num) {
-        WindowManager manager = (WindowManager) ApplicationLoader.applicationContext.getSystemService(Activity.WINDOW_SERVICE);
+        WindowManager manager = ContextCompat.getSystemService(ApplicationLoader.applicationContext,
+                WindowManager.class);
         int rotation = manager.getDefaultDisplay().getRotation();
         if (num == 0) {
             if (!AndroidUtilities.isTablet() && ApplicationLoader.applicationContext.getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE) {

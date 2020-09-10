@@ -34,6 +34,7 @@ import android.webkit.MimeTypeMap;
 import android.widget.Toast;
 
 import androidx.annotation.UiThread;
+import androidx.core.content.ContextCompat;
 import androidx.core.view.inputmethod.InputContentInfoCompat;
 
 import org.telegram.messenger.audioinfo.AudioInfo;
@@ -206,7 +207,8 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
 
         public void start() {
             if (locationManager == null) {
-                locationManager = (LocationManager) ApplicationLoader.applicationContext.getSystemService(Context.LOCATION_SERVICE);
+                locationManager = ContextCompat.getSystemService(ApplicationLoader.applicationContext,
+                        LocationManager.class);
             }
             try {
                 locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 1, 0, gpsLocationListener);

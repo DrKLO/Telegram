@@ -31,6 +31,8 @@ import android.view.WindowInsets;
 import android.view.WindowManager;
 import android.widget.FrameLayout;
 
+import androidx.core.content.ContextCompat;
+
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.Emoji;
@@ -709,13 +711,13 @@ public class ContentPreviewViewer {
             AndroidUtilities.lockOrientation(parentActivity);
             try {
                 if (windowView.getParent() != null) {
-                    WindowManager wm = (WindowManager) parentActivity.getSystemService(Context.WINDOW_SERVICE);
+                    WindowManager wm = ContextCompat.getSystemService(parentActivity, WindowManager.class);
                     wm.removeView(windowView);
                 }
             } catch (Exception e) {
                 FileLog.e(e);
             }
-            WindowManager wm = (WindowManager) parentActivity.getSystemService(Context.WINDOW_SERVICE);
+            WindowManager wm = ContextCompat.getSystemService(parentActivity, WindowManager.class);
             wm.addView(windowView, windowLayoutParams);
             isVisible = true;
             showProgress = 0.0f;
@@ -774,7 +776,7 @@ public class ContentPreviewViewer {
         }
         try {
             if (windowView.getParent() != null) {
-                WindowManager wm = (WindowManager) parentActivity.getSystemService(Context.WINDOW_SERVICE);
+                WindowManager wm = ContextCompat.getSystemService(parentActivity, WindowManager.class);
                 wm.removeViewImmediate(windowView);
             }
             windowView = null;
@@ -862,7 +864,7 @@ public class ContentPreviewViewer {
                 AndroidUtilities.runOnUIThread(() -> centerImage.setImageBitmap((Bitmap) null));
                 try {
                     if (windowView.getParent() != null) {
-                        WindowManager wm = (WindowManager) parentActivity.getSystemService(Context.WINDOW_SERVICE);
+                        WindowManager wm = ContextCompat.getSystemService(parentActivity, WindowManager.class);
                         wm.removeView(windowView);
                     }
                 } catch (Exception e) {

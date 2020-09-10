@@ -8,6 +8,8 @@
 
 package org.telegram.ui;
 
+import android.content.ClipData;
+import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Rect;
@@ -23,6 +25,8 @@ import android.view.inputmethod.EditorInfo;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.Toast;
+
+import androidx.core.content.ContextCompat;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
@@ -348,8 +352,9 @@ public class ChatEditTypeActivity extends BaseFragment implements NotificationCe
                 return;
             }
             try {
-                android.content.ClipboardManager clipboard = (android.content.ClipboardManager) ApplicationLoader.applicationContext.getSystemService(Context.CLIPBOARD_SERVICE);
-                android.content.ClipData clip = android.content.ClipData.newPlainText("label", invite.link);
+                ClipboardManager clipboard = ContextCompat.getSystemService(ApplicationLoader.applicationContext,
+                        ClipboardManager.class);
+                ClipData clip = ClipData.newPlainText("label", invite.link);
                 clipboard.setPrimaryClip(clip);
                 Toast.makeText(getParentActivity(), LocaleController.getString("LinkCopied", R.string.LinkCopied), Toast.LENGTH_SHORT).show();
             } catch (Exception e) {
@@ -366,8 +371,9 @@ public class ChatEditTypeActivity extends BaseFragment implements NotificationCe
                 return;
             }
             try {
-                android.content.ClipboardManager clipboard = (android.content.ClipboardManager) ApplicationLoader.applicationContext.getSystemService(Context.CLIPBOARD_SERVICE);
-                android.content.ClipData clip = android.content.ClipData.newPlainText("label", invite.link);
+                ClipboardManager clipboard = ContextCompat.getSystemService(ApplicationLoader.applicationContext,
+                        ClipboardManager.class);
+                ClipData clip = ClipData.newPlainText("label", invite.link);
                 clipboard.setPrimaryClip(clip);
                 Toast.makeText(getParentActivity(), LocaleController.getString("LinkCopied", R.string.LinkCopied), Toast.LENGTH_SHORT).show();
             } catch (Exception e) {
@@ -471,7 +477,7 @@ public class ChatEditTypeActivity extends BaseFragment implements NotificationCe
         }
         if (!isPrivate && ((currentChat.username == null && usernameTextView.length() != 0) || (currentChat.username != null && !currentChat.username.equalsIgnoreCase(usernameTextView.getText().toString())))) {
             if (usernameTextView.length() != 0 && !lastNameAvailable) {
-                Vibrator v = (Vibrator) getParentActivity().getSystemService(Context.VIBRATOR_SERVICE);
+                Vibrator v = ContextCompat.getSystemService(getParentActivity(), Vibrator.class);
                 if (v != null) {
                     v.vibrate(200);
                 }

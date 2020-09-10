@@ -26,6 +26,7 @@ import android.util.SparseIntArray;
 import android.widget.Toast;
 
 import androidx.core.app.NotificationManagerCompat;
+import androidx.core.content.ContextCompat;
 
 import org.telegram.SQLite.SQLiteCursor;
 import org.telegram.messenger.support.SparseLongArray;
@@ -11755,7 +11756,8 @@ public class MessagesController extends BaseController implements NotificationCe
                                     continue;
                                 }
                             }
-                            TelephonyManager tm = (TelephonyManager) ApplicationLoader.applicationContext.getSystemService(Context.TELEPHONY_SERVICE);
+                            TelephonyManager tm = ContextCompat.getSystemService(ApplicationLoader.applicationContext,
+                                    TelephonyManager.class);
                             if (svc != null || VoIPService.callIShouldHavePutIntoIntent != null || tm.getCallState() != TelephonyManager.CALL_STATE_IDLE) {
                                 if (BuildVars.LOGS_ENABLED) {
                                     FileLog.d("Auto-declining call " + call.id + " because there's already active one");

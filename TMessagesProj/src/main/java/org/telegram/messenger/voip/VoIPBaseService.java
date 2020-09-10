@@ -61,6 +61,8 @@ import android.text.style.ForegroundColorSpan;
 import android.view.View;
 import android.widget.RemoteViews;
 
+import androidx.core.content.ContextCompat;
+
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.BuildConfig;
@@ -190,7 +192,7 @@ public abstract class VoIPBaseService extends Service implements SensorEventList
 			if (USE_CONNECTION_SERVICE) {
 				return;
 			}
-			AudioManager am = (AudioManager) getSystemService(AUDIO_SERVICE);
+			AudioManager am = ContextCompat.getSystemService(VoIPBaseService.this, AudioManager.class);
 			if (isBtHeadsetConnected) {
 				am.stopBluetoothSco();
 				am.setBluetoothScoOn(false);
@@ -255,7 +257,7 @@ public abstract class VoIPBaseService extends Service implements SensorEventList
 					fetchBluetoothDeviceName();
 					if (needSwitchToBluetoothAfterScoActivates) {
 						needSwitchToBluetoothAfterScoActivates = false;
-						AudioManager am = (AudioManager) getSystemService(AUDIO_SERVICE);
+						AudioManager am = ContextCompat.getSystemService(VoIPBaseService.this, AudioManager.class);
 						am.setSpeakerphoneOn(false);
 						am.setBluetoothScoOn(true);
 					}
@@ -289,7 +291,7 @@ public abstract class VoIPBaseService extends Service implements SensorEventList
 				return (routeMask & (CallAudioState.ROUTE_EARPIECE | CallAudioState.ROUTE_WIRED_HEADSET)) != 0;
 			}
 		}
-		if (((TelephonyManager) getSystemService(TELEPHONY_SERVICE)).getPhoneType() != TelephonyManager.PHONE_TYPE_NONE) {
+		if (ContextCompat.getSystemService(this, TelephonyManager.class).getPhoneType() != TelephonyManager.PHONE_TYPE_NONE) {
 			return true;
 		}
 		if (mHasEarpiece != null) {
@@ -298,7 +300,7 @@ public abstract class VoIPBaseService extends Service implements SensorEventList
 
 		// not calculated yet, do it now
 		try {
-			AudioManager am = (AudioManager) getSystemService(AUDIO_SERVICE);
+			AudioManager am = ContextCompat.getSystemService(this, AudioManager.class);
 			Method method = AudioManager.class.getMethod("getDevicesForStream", Integer.TYPE);
 			Field field = AudioManager.class.getField("DEVICE_OUT_EARPIECE");
 			int earpieceFlag = field.getInt(null);
@@ -392,7 +394,7 @@ public abstract class VoIPBaseService extends Service implements SensorEventList
 				systemCallConnection.setAudioRoute(systemCallConnection.getCallAudioState().getRoute() == CallAudioState.ROUTE_BLUETOOTH ? CallAudioState.ROUTE_WIRED_OR_EARPIECE : CallAudioState.ROUTE_BLUETOOTH);
 			}
 		} else if (audioConfigured && !USE_CONNECTION_SERVICE) {
-			AudioManager am = (AudioManager) getSystemService(AUDIO_SERVICE);
+			AudioManager am = ContextCompat.getSystemService(this, AudioManager.class);
 			if (hasEarpiece()) {
 				am.setSpeakerphoneOn(!am.isSpeakerphoneOn());
 			} else {
@@ -408,7 +410,7 @@ public abstract class VoIPBaseService extends Service implements SensorEventList
 	}
 
 	protected void setAudioOutput(int which) {
-		AudioManager am = (AudioManager) getSystemService(AUDIO_SERVICE);
+		AudioManager am = ContextCompat.getSystemService(this, AudioManager.class);
 		if (USE_CONNECTION_SERVICE && systemCallConnection != null) {
 			switch (which) {
 				case 2:
@@ -480,7 +482,7 @@ public abstract class VoIPBaseService extends Service implements SensorEventList
 			int route = systemCallConnection.getCallAudioState().getRoute();
 			return hasEarpiece() ? route == CallAudioState.ROUTE_SPEAKER : route == CallAudioState.ROUTE_BLUETOOTH;
 		} else if (audioConfigured && !USE_CONNECTION_SERVICE) {
-			AudioManager am = (AudioManager) getSystemService(AUDIO_SERVICE);
+			AudioManager am = ContextCompat.getSystemService(this, AudioManager.class);
 			return hasEarpiece() ? am.isSpeakerphoneOn() : am.isBluetoothScoOn();
 		}
 		return speakerphoneStateToSet;
@@ -502,7 +504,7 @@ public abstract class VoIPBaseService extends Service implements SensorEventList
 			return audioRouteToSet;
 		}
 		if (audioConfigured) {
-			AudioManager am = (AudioManager) getSystemService(AUDIO_SERVICE);
+			AudioManager am = ContextCompat.getSystemService(this, AudioManager.class);
 			if (am.isBluetoothScoOn()) {
 				return AUDIO_ROUTE_BLUETOOTH;
 			} else if (am.isSpeakerphoneOn()) {
@@ -576,7 +578,7 @@ public abstract class VoIPBaseService extends Service implements SensorEventList
 
 	protected void startRingtoneAndVibration(int chatID) {
 		SharedPreferences prefs = MessagesController.getNotificationsSettings(currentAccount);
-		AudioManager am = (AudioManager) getSystemService(AUDIO_SERVICE);
+		AudioManager am = ContextCompat.getSystemService(this, AudioManager.class);
 		boolean needRing = am.getRingerMode() != AudioManager.RINGER_MODE_SILENT;
 		if (needRing) {
 			ringtonePlayer = new MediaPlayer();
@@ -613,7 +615,7 @@ public abstract class VoIPBaseService extends Service implements SensorEventList
 				vibrate = prefs.getInt("vibrate_calls", 0);
 			}
 			if ((vibrate != 2 && vibrate != 4 && (am.getRingerMode() == AudioManager.RINGER_MODE_VIBRATE || am.getRingerMode() == AudioManager.RINGER_MODE_NORMAL)) || (vibrate == 4 && am.getRingerMode() == AudioManager.RINGER_MODE_VIBRATE)) {
-				vibrator = (Vibrator) getSystemService(VIBRATOR_SERVICE);
+				vibrator = ContextCompat.getSystemService(this, Vibrator.class);
 				long duration = 700;
 				if (vibrate == 1) {
 					duration /= 2;
@@ -636,7 +638,7 @@ public abstract class VoIPBaseService extends Service implements SensorEventList
 			MessagesController.getInstance(currentAccount).ignoreSetOnline = false;
 		}
 		NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.appDidLogout);
-		SensorManager sm = (SensorManager) getSystemService(SENSOR_SERVICE);
+		SensorManager sm = ContextCompat.getSystemService(this, SensorManager.class);
 		Sensor proximity = sm.getDefaultSensor(Sensor.TYPE_PROXIMITY);
 		if (proximity != null) {
 			sm.unregisterListener(this);
@@ -668,7 +670,7 @@ public abstract class VoIPBaseService extends Service implements SensorEventList
 			videoCapturer = 0;
 		}
 		cpuWakelock.release();
-		AudioManager am = (AudioManager) getSystemService(AUDIO_SERVICE);
+		AudioManager am = ContextCompat.getSystemService(this, AudioManager.class);
 		if (!USE_CONNECTION_SERVICE) {
 			if (isBtHeadsetConnected && !playingSound) {
 				am.stopBluetoothSco();
@@ -742,7 +744,7 @@ public abstract class VoIPBaseService extends Service implements SensorEventList
 			FileLog.d("=============== VoIPService STARTING ===============");
 		}
 		try {
-			AudioManager am = (AudioManager) getSystemService(AUDIO_SERVICE);
+			AudioManager am = ContextCompat.getSystemService(this, AudioManager.class);
 			if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1 && am.getProperty(AudioManager.PROPERTY_OUTPUT_FRAMES_PER_BUFFER) != null) {
 				int outFramesPerBuffer = Integer.parseInt(am.getProperty(AudioManager.PROPERTY_OUTPUT_FRAMES_PER_BUFFER));
 				Instance.setBufferSize(outFramesPerBuffer);
@@ -750,7 +752,7 @@ public abstract class VoIPBaseService extends Service implements SensorEventList
 				Instance.setBufferSize(AudioTrack.getMinBufferSize(48000, AudioFormat.CHANNEL_OUT_MONO, AudioFormat.ENCODING_PCM_16BIT) / 2);
 			}
 
-			cpuWakelock = ((PowerManager) getSystemService(POWER_SERVICE)).newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "telegram-voip");
+			cpuWakelock = ContextCompat.getSystemService(this, PowerManager.class).newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "telegram-voip");
 			cpuWakelock.acquire();
 
 			btAdapter = am.isBluetoothScoAvailableOffCall() ? BluetoothAdapter.getDefaultAdapter() : null;
@@ -833,7 +835,7 @@ public abstract class VoIPBaseService extends Service implements SensorEventList
 	@SuppressLint("InvalidWakeLockTag")
 	protected void configureDeviceForCall() {
 		needPlayEndSound = true;
-		AudioManager am = (AudioManager) getSystemService(AUDIO_SERVICE);
+		AudioManager am = ContextCompat.getSystemService(this, AudioManager.class);
 		if (!USE_CONNECTION_SERVICE) {
 			am.setMode(AudioManager.MODE_IN_COMMUNICATION);
 			am.requestAudioFocus(this, AudioManager.STREAM_VOICE_CALL, AudioManager.AUDIOFOCUS_GAIN);
@@ -870,11 +872,11 @@ public abstract class VoIPBaseService extends Service implements SensorEventList
 		updateOutputGainControlState();
 		audioConfigured = true;
 
-		SensorManager sm = (SensorManager) getSystemService(SENSOR_SERVICE);
+		SensorManager sm = ContextCompat.getSystemService(this, SensorManager.class);
 		Sensor proximity = sm.getDefaultSensor(Sensor.TYPE_PROXIMITY);
 		try {
 			if (proximity != null) {
-				proximityWakelock = ((PowerManager) getSystemService(Context.POWER_SERVICE)).newWakeLock(PROXIMITY_SCREEN_OFF_WAKE_LOCK, "telegram-voip-prx");
+				proximityWakelock = ContextCompat.getSystemService(this, PowerManager.class).newWakeLock(PROXIMITY_SCREEN_OFF_WAKE_LOCK, "telegram-voip-prx");
 				sm.registerListener(this, proximity, SensorManager.SENSOR_DELAY_NORMAL);
 			}
 		} catch (Exception x) {
@@ -904,7 +906,7 @@ public abstract class VoIPBaseService extends Service implements SensorEventList
 			return;
 		}
 		if (event.sensor.getType() == Sensor.TYPE_PROXIMITY) {
-			AudioManager am = (AudioManager) getSystemService(AUDIO_SERVICE);
+			AudioManager am = ContextCompat.getSystemService(this, AudioManager.class);
 			if (isHeadsetPlugged || am.isSpeakerphoneOn() || (isBluetoothHeadsetConnected() && am.isBluetoothScoOn())) {
 				return;
 			}
@@ -965,7 +967,7 @@ public abstract class VoIPBaseService extends Service implements SensorEventList
 			FileLog.d("updateBluetoothHeadsetState: " + connected);
 		}
 		isBtHeadsetConnected = connected;
-		final AudioManager am = (AudioManager) getSystemService(AUDIO_SERVICE);
+		final AudioManager am = ContextCompat.getSystemService(this, AudioManager.class);
 		if (connected && !isRinging() && currentState != 0) {
 			if (bluetoothScoActive) {
 				if (BuildVars.LOGS_ENABLED) {
@@ -1057,7 +1059,7 @@ public abstract class VoIPBaseService extends Service implements SensorEventList
 	}
 
 	protected NetworkInfo getActiveNetworkInfo() {
-		return ((ConnectivityManager) getSystemService(CONNECTIVITY_SERVICE)).getActiveNetworkInfo();
+		return ContextCompat.getSystemService(this, ConnectivityManager.class).getActiveNetworkInfo();
 	}
 
 	protected void callFailed() {
@@ -1135,7 +1137,7 @@ public abstract class VoIPBaseService extends Service implements SensorEventList
 		if (Build.VERSION.SDK_INT >= 26) {
 			SharedPreferences nprefs = MessagesController.getGlobalNotificationsSettings();
 			int chanIndex = nprefs.getInt("calls_notification_channel", 0);
-			NotificationManager nm = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+			NotificationManager nm = getSystemService(NotificationManager.class);
 			NotificationChannel oldChannel = nm.getNotificationChannel("incoming_calls" + chanIndex);
 			if (oldChannel != null) {
 				nm.deleteNotificationChannel(oldChannel.getId());
@@ -1292,7 +1294,7 @@ public abstract class VoIPBaseService extends Service implements SensorEventList
 			if (!wasEstablished) {
 				wasEstablished = true;
 				if (!isProximityNear && !call.video) {
-					Vibrator vibrator = (Vibrator) getSystemService(VIBRATOR_SERVICE);
+					Vibrator vibrator = ContextCompat.getSystemService(this, Vibrator.class);
 					if (vibrator.hasVibrator()) {
 						vibrator.vibrate(100);
 					}
@@ -1332,7 +1334,7 @@ public abstract class VoIPBaseService extends Service implements SensorEventList
 	}
 
 	public boolean isBluetoothOn() {
-		final AudioManager am = (AudioManager) getSystemService(AUDIO_SERVICE);
+		final AudioManager am = ContextCompat.getSystemService(this, AudioManager.class);
 		return am.isBluetoothScoOn();
 	}
 
@@ -1445,7 +1447,7 @@ public abstract class VoIPBaseService extends Service implements SensorEventList
 	public void updateOutputGainControlState() {
 		if (tgVoip != null) {
 			if (!USE_CONNECTION_SERVICE) {
-				final AudioManager am = (AudioManager) getSystemService(AUDIO_SERVICE);
+				final AudioManager am = ContextCompat.getSystemService(this, AudioManager.class);
 				tgVoip.setAudioOutputGainControlEnabled(hasEarpiece() && !am.isSpeakerphoneOn() && !am.isBluetoothScoOn() && !isHeadsetPlugged);
 				tgVoip.setEchoCancellationStrength(isHeadsetPlugged || (hasEarpiece() && !am.isSpeakerphoneOn() && !am.isBluetoothScoOn() && !isHeadsetPlugged) ? 0 : 1);
 			} else {
@@ -1492,7 +1494,7 @@ public abstract class VoIPBaseService extends Service implements SensorEventList
 
 	@TargetApi(Build.VERSION_CODES.O)
 	protected PhoneAccountHandle addAccountToTelecomManager() {
-		TelecomManager tm = (TelecomManager) getSystemService(TELECOM_SERVICE);
+		TelecomManager tm = ContextCompat.getSystemService(this, TelecomManager.class);
 		TLRPC.User self = UserConfig.getInstance(currentAccount).getCurrentUser();
 		PhoneAccountHandle handle = new PhoneAccountHandle(new ComponentName(this, TelegramConnectionService.class), "" + self.id);
 		PhoneAccount account = new PhoneAccount.Builder(handle, ContactsController.formatName(self.first_name, self.last_name))

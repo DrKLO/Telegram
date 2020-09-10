@@ -26,6 +26,8 @@ import android.view.WindowManager;
 import android.view.animation.DecelerateInterpolator;
 import android.widget.FrameLayout;
 
+import androidx.core.content.ContextCompat;
+
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 
@@ -253,7 +255,8 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
         if (previewSize == null) {
             return;
         }
-        WindowManager manager = (WindowManager) ApplicationLoader.applicationContext.getSystemService(Activity.WINDOW_SERVICE);
+        WindowManager manager = ContextCompat.getSystemService(ApplicationLoader.applicationContext,
+                WindowManager.class);
         adjustAspectRatio(previewSize.getWidth(), previewSize.getHeight(), manager.getDefaultDisplay().getRotation());
     }
 

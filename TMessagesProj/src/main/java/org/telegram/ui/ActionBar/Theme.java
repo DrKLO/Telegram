@@ -106,6 +106,7 @@ import java.util.HashSet;
 import java.util.Locale;
 
 import androidx.annotation.UiThread;
+import androidx.core.content.ContextCompat;
 
 public class Theme {
 
@@ -5530,7 +5531,8 @@ public class Theme {
             }
         } else if (selectedAutoNightType == AUTO_NIGHT_TYPE_AUTOMATIC) {
             if (lightSensor == null) {
-                sensorManager = (SensorManager) ApplicationLoader.applicationContext.getSystemService(Context.SENSOR_SERVICE);
+                sensorManager = ContextCompat.getSystemService(ApplicationLoader.applicationContext,
+                        SensorManager.class);
                 lightSensor = sensorManager.getDefaultSensor(Sensor.TYPE_LIGHT);
             }
             if (!lightSensorRegistered && lightSensor != null && ambientSensorListener != null) {

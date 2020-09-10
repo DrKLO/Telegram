@@ -32,6 +32,8 @@ import android.os.PowerManager;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
+import androidx.core.content.ContextCompat;
+
 import android.util.Log;
 
 import org.telegram.messenger.FileLog;
@@ -116,7 +118,7 @@ public abstract class JobIntentService extends Service {
             // Make wake locks.  We need two, because the launch wake lock wants to have
             // a timeout, and the system does not do the right thing if you mix timeout and
             // non timeout (or even changing the timeout duration) in one wake lock.
-            PowerManager pm = ((PowerManager) context.getSystemService(Context.POWER_SERVICE));
+            PowerManager pm = ContextCompat.getSystemService(context, PowerManager.class);
             mLaunchWakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK,
                     cn.getClassName() + ":launch");
             mLaunchWakeLock.setReferenceCounted(false);
@@ -293,8 +295,7 @@ public abstract class JobIntentService extends Service {
             ensureJobId(jobId);
             JobInfo.Builder b = new JobInfo.Builder(jobId, mComponentName);
             mJobInfo = b.setOverrideDeadline(0).setRequiredNetworkType(JobInfo.NETWORK_TYPE_ANY).build();
-            mJobScheduler = (JobScheduler) context.getApplicationContext().getSystemService(
-                    Context.JOB_SCHEDULER_SERVICE);
+            mJobScheduler = ContextCompat.getSystemService(context.getApplicationContext(), JobScheduler.class);
         }
 
         @Override

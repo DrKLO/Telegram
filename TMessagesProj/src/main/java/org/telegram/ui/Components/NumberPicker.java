@@ -38,6 +38,8 @@ import android.view.animation.DecelerateInterpolator;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import androidx.core.content.ContextCompat;
+
 import org.telegram.ui.ActionBar.Theme;
 
 import java.util.Locale;
@@ -864,7 +866,7 @@ public class NumberPicker extends LinearLayout {
             mOnScrollListener.onScrollStateChange(this, scrollState);
         }
         if (scrollState == OnScrollListener.SCROLL_STATE_IDLE) {
-            AccessibilityManager am = (AccessibilityManager) getContext().getSystemService(Context.ACCESSIBILITY_SERVICE);
+            AccessibilityManager am = ContextCompat.getSystemService(getContext(), AccessibilityManager.class);
             if (am.isTouchExplorationEnabled()) {
                 String text = (mDisplayedValues == null) ? formatNumber(mValue) : mDisplayedValues[mValue - mMinValue];
                 AccessibilityEvent event = AccessibilityEvent.obtain();

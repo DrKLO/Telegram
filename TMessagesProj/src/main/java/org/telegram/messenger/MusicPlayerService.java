@@ -30,10 +30,12 @@ import android.media.session.MediaSession;
 import android.media.session.PlaybackState;
 import android.os.Build;
 import android.os.IBinder;
-import androidx.core.app.NotificationCompat;
 import android.text.TextUtils;
 import android.view.View;
 import android.widget.RemoteViews;
+
+import androidx.core.app.NotificationCompat;
+import androidx.core.content.ContextCompat;
 
 import com.google.android.exoplayer2.C;
 
@@ -83,7 +85,7 @@ public class MusicPlayerService extends Service implements NotificationCenter.No
 
     @Override
     public void onCreate() {
-        audioManager = (AudioManager) getSystemService(AUDIO_SERVICE);
+        audioManager = ContextCompat.getSystemService(this, AudioManager.class);
         for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
             NotificationCenter.getInstance(a).addObserver(this, NotificationCenter.messagePlayingDidSeek);
             NotificationCenter.getInstance(a).addObserver(this, NotificationCenter.messagePlayingPlayStateChanged);
@@ -313,7 +315,7 @@ public class MusicPlayerService extends Service implements NotificationCenter.No
                 startForeground(ID_NOTIFICATION, notification);
             } else {
                 stopForeground(false);
-                NotificationManager nm = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+                NotificationManager nm = ContextCompat.getSystemService(this, NotificationManager.class);
                 nm.notify(ID_NOTIFICATION, notification);
             }
 

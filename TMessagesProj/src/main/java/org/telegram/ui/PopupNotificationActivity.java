@@ -37,6 +37,8 @@ import android.widget.RelativeLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
 
+import androidx.core.content.ContextCompat;
+
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.DownloadController;
@@ -521,7 +523,8 @@ public class PopupNotificationActivity extends Activity implements NotificationC
             }
         });
 
-        PowerManager pm = (PowerManager) ApplicationLoader.applicationContext.getSystemService(Context.POWER_SERVICE);
+        PowerManager pm = ContextCompat.getSystemService(ApplicationLoader.applicationContext,
+                PowerManager.class);
         wakeLock = pm.newWakeLock(PowerManager.SCREEN_DIM_WAKE_LOCK | PowerManager.ACQUIRE_CAUSES_WAKEUP, "screen");
         wakeLock.setReferenceCounted(false);
 
@@ -1190,7 +1193,7 @@ public class PopupNotificationActivity extends Activity implements NotificationC
                 }
             }
         }
-        KeyguardManager km = (KeyguardManager) getSystemService(KEYGUARD_SERVICE);
+        KeyguardManager km = ContextCompat.getSystemService(this, KeyguardManager.class);
         if (km.inKeyguardRestrictedInputMode() || !ApplicationLoader.isScreenOn) {
             getWindow().addFlags(
                     WindowManager.LayoutParams.FLAG_DIM_BEHIND |
