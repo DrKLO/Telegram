@@ -26,9 +26,6 @@ import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Build;
-import androidx.annotation.Keep;
-import androidx.core.content.ContextCompat;
-
 import android.util.SparseArray;
 import android.view.GestureDetector;
 import android.view.Gravity;
@@ -36,23 +33,27 @@ import android.view.MotionEvent;
 import android.view.TextureView;
 import android.view.VelocityTracker;
 import android.view.View;
-import android.view.WindowInsets;
 import android.view.WindowManager;
 import android.view.animation.DecelerateInterpolator;
 import android.widget.FrameLayout;
+
+import androidx.annotation.Keep;
+import androidx.core.content.ContextCompat;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
 
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.ExoPlayer;
 import com.google.android.exoplayer2.ui.AspectRatioFrameLayout;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.FileLoader;
+import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.NotificationCenter;
-import org.telegram.messenger.FileLoader;
-import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.ConnectionsManager;
@@ -246,7 +247,7 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
     private float videoCrossfadeAlpha;
     private long videoCrossfadeAlphaLastTime;
 
-    private Object lastInsets;
+    private WindowInsetsCompat lastInsets;
 
     private MessageObject currentMessageObject;
     private ImageReceiver.BitmapHolder currentThumb;
@@ -530,24 +531,23 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
             protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
                 int widthSize = MeasureSpec.getSize(widthMeasureSpec);
                 int heightSize = MeasureSpec.getSize(heightMeasureSpec);
-                if (Build.VERSION.SDK_INT >= 21 && lastInsets != null) {
-                    WindowInsets insets = (WindowInsets) lastInsets;
+                if (lastInsets != null) {
                     if (AndroidUtilities.incorrectDisplaySizeFix) {
                         if (heightSize > AndroidUtilities.displaySize.y) {
                             heightSize = AndroidUtilities.displaySize.y;
                         }
                         heightSize += AndroidUtilities.statusBarHeight;
                     }
-                    heightSize -= insets.getSystemWindowInsetBottom();
-                    widthSize -= insets.getSystemWindowInsetRight();
+                    heightSize -= lastInsets.getSystemWindowInsetBottom();
+                    widthSize -= lastInsets.getSystemWindowInsetRight();
                 } else {
                     if (heightSize > AndroidUtilities.displaySize.y) {
                         heightSize = AndroidUtilities.displaySize.y;
                     }
                 }
                 setMeasuredDimension(widthSize, heightSize);
-                if (Build.VERSION.SDK_INT >= 21 && lastInsets != null) {
-                    widthSize -= ((WindowInsets) lastInsets).getSystemWindowInsetLeft();
+                if (lastInsets != null) {
+                    widthSize -= lastInsets.getSystemWindowInsetLeft();
                 }
                 containerView.measure(MeasureSpec.makeMeasureSpec(widthSize, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(heightSize, MeasureSpec.EXACTLY));
             }
@@ -556,8 +556,8 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
             @Override
             protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
                 int x = 0;
-                if (Build.VERSION.SDK_INT >= 21 && lastInsets != null) {
-                    x += ((WindowInsets) lastInsets).getSystemWindowInsetLeft();
+                if (lastInsets != null) {
+                    x += lastInsets.getSystemWindowInsetLeft();
                 }
                 containerView.layout(x, 0, x + containerView.getMeasuredWidth(), containerView.getMeasuredHeight());
                 if (changed) {
@@ -572,14 +572,14 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
 
             @Override
             protected void onDraw(Canvas canvas) {
-                if (Build.VERSION.SDK_INT >= 21 && isVisible && lastInsets != null) {
-                    WindowInsets insets = (WindowInsets) lastInsets;
+                if (isVisible && lastInsets != null) {
                     if (photoAnimationInProgress != 0) {
                         blackPaint.setAlpha(photoBackgroundDrawable.getAlpha());
                     } else {
                         blackPaint.setAlpha(255);
                     }
-                    canvas.drawRect(0, getMeasuredHeight(), getMeasuredWidth(), getMeasuredHeight() + insets.getSystemWindowInsetBottom(), blackPaint);
+                    canvas.drawRect(0, getMeasuredHeight(), getMeasuredWidth(),
+                            getMeasuredHeight() + lastInsets.getSystemWindowInsetBottom(), blackPaint);
                 }
             }
         };
@@ -604,16 +604,16 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
         layoutParams.height = LayoutHelper.MATCH_PARENT;
         layoutParams.gravity = Gravity.TOP | Gravity.LEFT;
         containerView.setLayoutParams(layoutParams);
+        ViewCompat.setOnApplyWindowInsetsListener(containerView, (v, insets) -> {
+            WindowInsetsCompat oldInsets = lastInsets;
+            lastInsets = insets;
+            if (oldInsets == null || !oldInsets.equals(insets)) {
+                windowView.requestLayout();
+            }
+            return insets.consumeSystemWindowInsets();
+        });
         if (Build.VERSION.SDK_INT >= 21) {
             containerView.setFitsSystemWindows(true);
-            containerView.setOnApplyWindowInsetsListener((v, insets) -> {
-                WindowInsets oldInsets = (WindowInsets) lastInsets;
-                lastInsets = insets;
-                if (oldInsets == null || !oldInsets.toString().equals(insets.toString())) {
-                    windowView.requestLayout();
-                }
-                return insets.consumeSystemWindowInsets();
-            });
             containerView.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN);
         }
 
