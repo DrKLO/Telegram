@@ -40,6 +40,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.core.content.ContextCompat;
+import androidx.core.text.HtmlCompat;
 
 import org.telegram.messenger.AccountInstance;
 import org.telegram.messenger.AndroidUtilities;
@@ -855,7 +856,8 @@ public class AlertsCreator {
             return null;
         }
         final TextView message = new TextView(fragment.getParentActivity());
-        Spannable spanned = new SpannableString(Html.fromHtml(LocaleController.getString("AskAQuestionInfo", R.string.AskAQuestionInfo).replace("\n", "<br>")));
+        String questionInfo = LocaleController.getString("AskAQuestionInfo", R.string.AskAQuestionInfo).replace("\n", "<br>");
+        Spannable spanned = new SpannableString(HtmlCompat.fromHtml(questionInfo, HtmlCompat.FROM_HTML_MODE_LEGACY));
         URLSpan[] spans = spanned.getSpans(0, spanned.length(), URLSpan.class);
         for (int i = 0; i < spans.length; i++) {
             URLSpan span = spans[i];
