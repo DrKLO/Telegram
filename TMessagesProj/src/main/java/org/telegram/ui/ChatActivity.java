@@ -87,6 +87,7 @@ import android.widget.Toast;
 import androidx.core.content.ContextCompat;
 import androidx.core.content.FileProvider;
 import androidx.core.graphics.ColorUtils;
+import androidx.core.view.ViewCompat;
 import androidx.recyclerview.widget.ChatListItemAnimator;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.GridLayoutManagerFixed;
@@ -3675,8 +3676,8 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 return super.createAccessibilityNodeInfo();
             }
         };
-        if (currentEncryptedChat != null && Build.VERSION.SDK_INT >= 19) {
-            chatListView.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS);
+        if (currentEncryptedChat != null) {
+            ViewCompat.setImportantForAccessibility(chatListView, ViewCompat.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS);
         }
         chatListView.setNestedScrollingEnabled(false);
         chatListView.setInstantClick(true);
@@ -16857,9 +16858,10 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         if (currentEncryptedChat != null) {
             return;
         }
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-            chatListView.setImportantForAccessibility(mentionContainer.getVisibility() == View.VISIBLE || (scrimPopupWindow != null && scrimPopupWindow.isShowing()) ? View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS : View.IMPORTANT_FOR_ACCESSIBILITY_AUTO);
-        }
+        final int importance = mentionContainer.getVisibility() == View.VISIBLE ||
+                (scrimPopupWindow != null && scrimPopupWindow.isShowing()) ?
+                ViewCompat.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS : ViewCompat.IMPORTANT_FOR_ACCESSIBILITY_AUTO;
+        ViewCompat.setImportantForAccessibility(chatListView, importance);
     }
 
     @Override
