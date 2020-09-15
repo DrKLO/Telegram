@@ -8480,4 +8480,5 @@
     <string name="DisableFlipPhotos">Disable Flip Photos by Tapping</string>
     <string name="FormatWithSeconds">Format Message Time with Seconds</string>
     <string name="DisableThumbsInDialogList">Disable Thumbs in Dialog List</string>
+    <string name="FullRecentStickers">Show Full List of Recent Stickers</string>
 </resources>

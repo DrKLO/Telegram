@@ -132,6 +132,11 @@ public class StickerMasksAlert extends BottomSheet implements NotificationCenter
 
     private int currentType;
 
+    private static boolean IsFullRecent() {
+        return org.telegram.messenger.MessagesController
+            .getGlobalMainSettings().getBoolean("fullRecentStickers", false);
+    }
+
     public interface StickerMasksAlertDelegate {
         void onStickerSelected(Object parentObject, TLRPC.Document sticker);
     }
@@ -1203,7 +1208,7 @@ public class StickerMasksAlert extends BottomSheet implements NotificationCenter
         }
         MediaDataController.getInstance(currentAccount).addRecentSticker(currentType, null, document, (int) (System.currentTimeMillis() / 1000), false);
         boolean wasEmpty = recentStickers[typeIndex(currentType)].isEmpty();
-        recentStickers[typeIndex(currentType)] = MediaDataController.getInstance(currentAccount).getRecentStickers(currentType);
+        recentStickers[typeIndex(currentType)] = MediaDataController.getInstance(currentAccount).getRecentStickers(currentType, IsFullRecent());
         if (stickersGridAdapter != null) {
             stickersGridAdapter.notifyDataSetChanged();
         }
@@ -1236,8 +1241,8 @@ public class StickerMasksAlert extends BottomSheet implements NotificationCenter
     private void checkDocuments(boolean force) {
         int previousCount = recentStickers[typeIndex(currentType)].size();
         int previousCount2 = favouriteStickers.size();
-        recentStickers[typeIndex(currentType)] = MediaDataController.getInstance(currentAccount).getRecentStickers(currentType);
-        favouriteStickers = MediaDataController.getInstance(currentAccount).getRecentStickers(MediaDataController.TYPE_FAVE);
+        recentStickers[typeIndex(currentType)] = MediaDataController.getInstance(currentAccount).getRecentStickers(currentType, IsFullRecent());
+        favouriteStickers = MediaDataController.getInstance(currentAccount).getRecentStickers(MediaDataController.TYPE_FAVE, IsFullRecent());
         if (currentType == MediaDataController.TYPE_IMAGE) {
             for (int a = 0; a < favouriteStickers.size(); a++) {
                 TLRPC.Document favSticker = favouriteStickers.get(a);

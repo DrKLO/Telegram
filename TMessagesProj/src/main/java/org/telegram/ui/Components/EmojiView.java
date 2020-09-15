@@ -374,6 +374,11 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
         }
     };
 
+    private static boolean IsFullRecent() {
+        return org.telegram.messenger.MessagesController
+            .getGlobalMainSettings().getBoolean("fullRecentStickers", false);
+    }
+
     public interface EmojiViewDelegate {
         default boolean onBackspace() {
             return false;
@@ -5396,7 +5401,7 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
         }
         MediaDataController.getInstance(currentAccount).addRecentSticker(MediaDataController.TYPE_IMAGE, null, document, (int) (System.currentTimeMillis() / 1000), false);
         boolean wasEmpty = recentStickers.isEmpty();
-        recentStickers = MediaDataController.getInstance(currentAccount).getRecentStickers(MediaDataController.TYPE_IMAGE);
+        recentStickers = MediaDataController.getInstance(currentAccount).getRecentStickers(MediaDataController.TYPE_IMAGE, IsFullRecent());
         if (stickersGridAdapter != null) {
             stickersGridAdapter.notifyDataSetChanged();
         }
@@ -5785,10 +5790,10 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
         } else {
             int previousCount = recentStickers.size();
             int previousCount2 = favouriteStickers.size();
-            recentStickers = MediaDataController.getInstance(currentAccount).getRecentStickers(MediaDataController.TYPE_IMAGE);
-            favouriteStickers = MediaDataController.getInstance(currentAccount).getRecentStickers(MediaDataController.TYPE_FAVE);
+            recentStickers = MediaDataController.getInstance(currentAccount).getRecentStickers(MediaDataController.TYPE_IMAGE, IsFullRecent());
+            favouriteStickers = MediaDataController.getInstance(currentAccount).getRecentStickers(MediaDataController.TYPE_FAVE, IsFullRecent());
             if (UserConfig.getInstance(currentAccount).isPremium()) {
-                premiumStickers = MediaDataController.getInstance(currentAccount).getRecentStickers(MediaDataController.TYPE_PREMIUM_STICKERS);
+                premiumStickers = MediaDataController.getInstance(currentAccount).getRecentStickers(MediaDataController.TYPE_PREMIUM_STICKERS, IsFullRecent());
             } else {
                 premiumStickers = new ArrayList<>();
             }

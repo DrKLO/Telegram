@@ -829,12 +829,14 @@ public class EmojiBottomSheet extends BottomSheet implements NotificationCenter.
                 packs.clear();
                 int i = 0;
                 if (currentType == PAGE_TYPE_STICKERS) {
+                    boolean isFullRecent = org.telegram.messenger.MessagesController
+                        .getGlobalMainSettings().getBoolean("fullRecentStickers", false);
                     if (hasWidgets()) {
                         documents.add(widgets);
                         itemsCount++;
                     }
 
-                    ArrayList<TLRPC.Document> favorites = mediaDataController.getRecentStickers(MediaDataController.TYPE_FAVE);
+                    ArrayList<TLRPC.Document> favorites = mediaDataController.getRecentStickers(MediaDataController.TYPE_FAVE, isFullRecent);
                     if (favorites != null && !favorites.isEmpty()) {
                         if (faveSet == null) {
                             faveSet = new TLRPC.TL_messages_stickerSet();
@@ -845,7 +847,7 @@ public class EmojiBottomSheet extends BottomSheet implements NotificationCenter.
                         stickerSets.add(faveSet);
                     }
 
-                    ArrayList<TLRPC.Document> recent = mediaDataController.getRecentStickers(MediaDataController.TYPE_IMAGE);
+                    ArrayList<TLRPC.Document> recent = mediaDataController.getRecentStickers(MediaDataController.TYPE_IMAGE, isFullRecent);
                     if (recent != null && !recent.isEmpty()) {
                         if (recentSet == null) {
                             recentSet = new TLRPC.TL_messages_stickerSet();
