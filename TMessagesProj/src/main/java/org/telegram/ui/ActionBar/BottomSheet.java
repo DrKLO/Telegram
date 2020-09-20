@@ -15,8 +15,8 @@ import android.animation.ObjectAnimator;
 import android.app.Dialog;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.res.Configuration;
 import android.graphics.Canvas;
-import android.graphics.Insets;
 import android.graphics.Paint;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
@@ -25,11 +25,6 @@ import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Bundle;
-
-import androidx.annotation.RequiresApi;
-import androidx.core.view.NestedScrollingParent;
-import androidx.core.view.NestedScrollingParentHelper;
-import androidx.core.view.ViewCompat;
 import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -39,16 +34,21 @@ import android.view.View;
 import android.view.ViewConfiguration;
 import android.view.ViewGroup;
 import android.view.Window;
-import android.view.WindowInsets;
 import android.view.WindowManager;
 import android.view.animation.Interpolator;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import androidx.core.graphics.Insets;
+import androidx.core.view.NestedScrollingParent;
+import androidx.core.view.NestedScrollingParentHelper;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
+
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.FileLog;
+import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
@@ -64,7 +64,7 @@ public class BottomSheet extends Dialog {
     protected ViewGroup containerView;
     protected ContainerView container;
     protected boolean keyboardVisible;
-    private WindowInsets lastInsets;
+    private WindowInsetsCompat lastInsets;
     protected boolean drawNavigationBar;
 
     protected boolean useSmoothKeyboard;
@@ -352,11 +352,8 @@ public class BottomSheet extends Dialog {
                 keyboardHeight = 0;
             }
             keyboardVisible = keyboardHeight > AndroidUtilities.dp(20);
-            if (lastInsets != null && Build.VERSION.SDK_INT >= 21) {
-                bottomInset = lastInsets.getSystemWindowInsetBottom();
-                if (Build.VERSION.SDK_INT >= 29) {
-                    bottomInset += getAdditionalMandatoryOffsets();
-                }
+            if (lastInsets != null) {
+                bottomInset = lastInsets.getSystemWindowInsetBottom() + getAdditionalMandatoryOffsets();
                 if (keyboardVisible && rect.bottom != 0 && rect.top != 0) {
                     bottomInset -= keyboardHeight;
                 }
@@ -365,14 +362,11 @@ public class BottomSheet extends Dialog {
                 }
             }
             setMeasuredDimension(width, containerHeight);
-            if (lastInsets != null && Build.VERSION.SDK_INT >= 21) {
-                int inset = lastInsets.getSystemWindowInsetBottom();
-                if (Build.VERSION.SDK_INT >= 29) {
-                    inset += getAdditionalMandatoryOffsets();
-                }
+            if (lastInsets != null) {
+                final int inset = lastInsets.getSystemWindowInsetBottom() + getAdditionalMandatoryOffsets();
                 height -= inset;
             }
-            if (lastInsets != null && Build.VERSION.SDK_INT >= 21) {
+            if (lastInsets != null) {
                 width -= lastInsets.getSystemWindowInsetRight() + lastInsets.getSystemWindowInsetLeft();
             }
             boolean isPortrait = width < height;
@@ -407,16 +401,14 @@ public class BottomSheet extends Dialog {
             layoutCount--;
             if (containerView != null) {
                 int t = (bottom - top) - containerView.getMeasuredHeight();
-                if (lastInsets != null && Build.VERSION.SDK_INT >= 21) {
+                if (lastInsets != null) {
                     left += lastInsets.getSystemWindowInsetLeft();
                     right -= lastInsets.getSystemWindowInsetRight();
-                    t -= lastInsets.getSystemWindowInsetBottom() - (drawNavigationBar ? 0 : bottomInset);
-                    if (Build.VERSION.SDK_INT >= 29) {
-                        t -= getAdditionalMandatoryOffsets();
-                    }
+                    t -= lastInsets.getSystemWindowInsetBottom() - (drawNavigationBar ? 0 : bottomInset)
+                            - getAdditionalMandatoryOffsets();
                 }
                 int l = ((right - left) - containerView.getMeasuredWidth()) / 2;
-                if (lastInsets != null && Build.VERSION.SDK_INT >= 21) {
+                if (lastInsets != null) {
                     l += lastInsets.getSystemWindowInsetLeft();
                 }
                 containerView.layout(l, t, l + containerView.getMeasuredWidth(), t + containerView.getMeasuredHeight());
@@ -467,7 +459,7 @@ public class BottomSheet extends Dialog {
                         default:
                             childTop = lp.topMargin;
                     }
-                    if (lastInsets != null && Build.VERSION.SDK_INT >= 21) {
+                    if (lastInsets != null) {
                         childLeft += lastInsets.getSystemWindowInsetLeft();
                     }
                     child.layout(childLeft, childTop, childLeft + width, childTop + height);
@@ -511,7 +503,7 @@ public class BottomSheet extends Dialog {
                     backgroundPaint.setColor(0xff000000);
                 }
                 float translation = 0;
-                if (Build.VERSION.SDK_INT >= 29 && getAdditionalMandatoryOffsets() > 0) {
+                if (getAdditionalMandatoryOffsets() > 0) {
                     float dist = containerView.getMeasuredHeight() - containerView.getTranslationY();
                     if (currentSheetAnimationType == 1) {
                         dist *= 0.1f;
@@ -533,7 +525,6 @@ public class BottomSheet extends Dialog {
         }
     }
 
-    @RequiresApi(api = Build.VERSION_CODES.Q)
     private int getAdditionalMandatoryOffsets() {
         if (!calcMandatoryInsets) {
             return 0;
@@ -710,13 +701,13 @@ public class BottomSheet extends Dialog {
         };
         container.setBackgroundDrawable(backDrawable);
         focusable = needFocus;
+        ViewCompat.setOnApplyWindowInsetsListener(container, (v, insets) -> {
+            lastInsets = insets;
+            v.requestLayout();
+            return insets.consumeSystemWindowInsets();
+        });
         if (Build.VERSION.SDK_INT >= 21) {
             container.setFitsSystemWindows(true);
-            container.setOnApplyWindowInsetsListener((v, insets) -> {
-                lastInsets = insets;
-                v.requestLayout();
-                return insets.consumeSystemWindowInsets();
-            });
             container.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN);
         }
 
@@ -1295,24 +1286,18 @@ public class BottomSheet extends Dialog {
     }
 
     public int getLeftInset() {
-        if (lastInsets != null && Build.VERSION.SDK_INT >= 21) {
-            return lastInsets.getSystemWindowInsetLeft();
-        }
-        return 0;
+        return lastInsets != null ? lastInsets.getSystemWindowInsetLeft() : 0;
     }
 
     public int getRightInset() {
-        if (lastInsets != null && Build.VERSION.SDK_INT >= 21) {
-            return lastInsets.getSystemWindowInsetRight();
-        }
-        return 0;
+        return lastInsets != null ? lastInsets.getSystemWindowInsetRight() : 0;
     }
 
     public int getBottomInset() {
         return bottomInset;
     }
 
-    public void onConfigurationChanged(android.content.res.Configuration newConfig) {
+    public void onConfigurationChanged(Configuration newConfig) {
 
     }
 
