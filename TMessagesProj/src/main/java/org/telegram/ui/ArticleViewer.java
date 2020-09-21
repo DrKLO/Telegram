@@ -59,7 +59,6 @@ import android.util.Property;
 import android.util.SparseArray;
 import android.util.TypedValue;
 import android.view.ActionMode;
-import android.view.DisplayCutout;
 import android.view.GestureDetector;
 import android.view.Gravity;
 import android.view.HapticFeedbackConstants;
@@ -95,6 +94,9 @@ import android.widget.Toast;
 import androidx.annotation.Keep;
 import androidx.annotation.NonNull;
 import androidx.core.content.FileProvider;
+import androidx.core.view.DisplayCutoutCompat;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
 import androidx.recyclerview.widget.DefaultItemAnimator;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.GridLayoutManagerFixed;
@@ -208,7 +210,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
     private TLRPC.Chat loadedChannel;
     private boolean loadingChannel;
 
-    private Object lastInsets;
+    private WindowInsetsCompat lastInsets;
     private boolean hasCutout;
 
     private boolean isVisible;
@@ -703,13 +705,15 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
         @TargetApi(21)
         @Override
         public WindowInsets dispatchApplyWindowInsets(WindowInsets insets) {
-            WindowInsets oldInsets = (WindowInsets) lastInsets;
-            lastInsets = insets;
-            if (oldInsets == null || !oldInsets.toString().equals(insets.toString())) {
+            WindowInsetsCompat oldInsets = lastInsets;
+            lastInsets = WindowInsetsCompat.toWindowInsetsCompat(insets);
+            if (oldInsets == null || !oldInsets.equals(lastInsets)) {
                 windowView.requestLayout();
             }
-            if (Build.VERSION.SDK_INT >= 28) {
-                DisplayCutout cutout = parentActivity.getWindow().getDecorView().getRootWindowInsets().getDisplayCutout();
+            WindowInsetsCompat rootWindowInsets =
+                    ViewCompat.getRootWindowInsets(parentActivity.getWindow().getDecorView());
+            if (rootWindowInsets != null) {
+                DisplayCutoutCompat cutout = rootWindowInsets.getDisplayCutout();
                 if (cutout != null) {
                     List<Rect> rects = cutout.getBoundingRects();
                     if (rects != null && !rects.isEmpty()) {
@@ -724,28 +728,27 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
         protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
             int widthSize = View.MeasureSpec.getSize(widthMeasureSpec);
             int heightSize = View.MeasureSpec.getSize(heightMeasureSpec);
-            if (Build.VERSION.SDK_INT >= 21 && lastInsets != null) {
+            if (lastInsets != null) {
                 setMeasuredDimension(widthSize, heightSize);
-                WindowInsets insets = (WindowInsets) lastInsets;
                 if (AndroidUtilities.incorrectDisplaySizeFix) {
                     if (heightSize > AndroidUtilities.displaySize.y) {
                         heightSize = AndroidUtilities.displaySize.y;
                     }
                     heightSize += AndroidUtilities.statusBarHeight;
                 }
-                heightSize -= insets.getSystemWindowInsetBottom();
-                widthSize -= insets.getSystemWindowInsetRight() + insets.getSystemWindowInsetLeft();
-                if (insets.getSystemWindowInsetRight() != 0) {
-                    bWidth = insets.getSystemWindowInsetRight();
+                heightSize -= lastInsets.getSystemWindowInsetBottom();
+                widthSize -= lastInsets.getSystemWindowInsetRight() + lastInsets.getSystemWindowInsetLeft();
+                if (lastInsets.getSystemWindowInsetRight() != 0) {
+                    bWidth = lastInsets.getSystemWindowInsetRight();
                     bHeight = heightSize;
-                } else if (insets.getSystemWindowInsetLeft() != 0) {
-                    bWidth = insets.getSystemWindowInsetLeft();
+                } else if (lastInsets.getSystemWindowInsetLeft() != 0) {
+                    bWidth = lastInsets.getSystemWindowInsetLeft();
                     bHeight = heightSize;
                 } else {
                     bWidth = widthSize;
-                    bHeight = insets.getStableInsetBottom();
+                    bHeight = lastInsets.getStableInsetBottom();
                 }
-                heightSize -= insets.getSystemWindowInsetTop();
+                heightSize -= lastInsets.getSystemWindowInsetTop();
             } else {
                 setMeasuredDimension(widthSize, heightSize);
             }
@@ -800,21 +803,20 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
             }
             int x;
             int y = 0;
-            if (Build.VERSION.SDK_INT >= 21 && lastInsets != null) {
-                WindowInsets insets = (WindowInsets) lastInsets;
-                x = insets.getSystemWindowInsetLeft();
+            if (lastInsets != null) {
+                x = lastInsets.getSystemWindowInsetLeft();
 
-                if (insets.getSystemWindowInsetRight() != 0) {
+                if (lastInsets.getSystemWindowInsetRight() != 0) {
                     bX = width - bWidth;
                     bY = 0;
-                } else if (insets.getSystemWindowInsetLeft() != 0) {
+                } else if (lastInsets.getSystemWindowInsetLeft() != 0) {
                     bX = 0;
                     bY = 0;
                 } else {
                     bX = 0;
                     bY = bottom - top - bHeight;
                 }
-                y += insets.getSystemWindowInsetTop();
+                y += lastInsets.getSystemWindowInsetTop();
             } else {
                 x = 0;
             }
@@ -1073,15 +1075,14 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
             int w = getMeasuredWidth();
             int h = getMeasuredHeight();
             canvas.drawRect(innerTranslationX, 0, w, h, backgroundPaint);
-            if (Build.VERSION.SDK_INT >= 21 && lastInsets != null) {
-                WindowInsets insets = (WindowInsets) lastInsets;
-                canvas.drawRect(innerTranslationX, 0, w, insets.getSystemWindowInsetTop(), statusBarPaint);
+            if (lastInsets != null) {
+                canvas.drawRect(innerTranslationX, 0, w, lastInsets.getSystemWindowInsetTop(), statusBarPaint);
                 if (hasCutout) {
-                    int left = insets.getSystemWindowInsetLeft();
+                    int left = lastInsets.getSystemWindowInsetLeft();
                     if (left != 0) {
                         canvas.drawRect(0, 0, left, h, statusBarPaint);
                     }
-                    int right = insets.getSystemWindowInsetRight();
+                    int right = lastInsets.getSystemWindowInsetRight();
                     if (right != 0) {
                         canvas.drawRect(getMeasuredWidth() - right, 0, getMeasuredWidth(), h, statusBarPaint);
                     }
@@ -12599,8 +12600,8 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
         float width = layoutParams.width * scale;
         float height = layoutParams.height * scale;
         float xPos = (AndroidUtilities.displaySize.x - width) / 2.0f;
-        if (Build.VERSION.SDK_INT >= 21 && lastInsets != null) {
-            xPos += ((WindowInsets) lastInsets).getSystemWindowInsetLeft();
+        if (lastInsets != null) {
+            xPos += lastInsets.getSystemWindowInsetLeft();
         }
         float yPos = (AndroidUtilities.displaySize.y - height) / 2.0f + AndroidUtilities.statusBarHeight;
         int clipHorizontal;
@@ -12776,8 +12777,8 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
             float width = layoutParams.width * scale * scale2;
             float height = layoutParams.height * scale * scale2;
             float xPos = (AndroidUtilities.displaySize.x - width) / 2.0f;
-            if (Build.VERSION.SDK_INT >= 21 && lastInsets != null) {
-                xPos += ((WindowInsets) lastInsets).getSystemWindowInsetLeft();
+            if (lastInsets != null) {
+                xPos += lastInsets.getSystemWindowInsetLeft();
             }
             float yPos;
             if (hasCutout) {
