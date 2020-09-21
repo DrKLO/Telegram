@@ -16,7 +16,6 @@
 
 #ifdef ABSL_HAVE_EXCEPTIONS
 
-#include "gtest/gtest.h"
 #include "absl/meta/type_traits.h"
 
 namespace testing {
@@ -40,11 +39,6 @@ void MaybeThrow(absl::string_view msg, bool throw_bad_alloc) {
     if (throw_bad_alloc) throw TestBadAllocException(msg);
     throw TestException(msg);
   }
-}
-
-testing::AssertionResult FailureMessage(const TestException& e,
-                                        int countdown) noexcept {
-  return testing::AssertionFailure() << "Exception thrown from " << e.what();
 }
 
 std::string GetSpecString(TypeSpec spec) {
