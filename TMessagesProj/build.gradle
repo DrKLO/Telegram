@@ -51,8 +51,9 @@ android {
     sourceSets.main.jniLibs.srcDirs = ['./jni/']
 
     externalNativeBuild {
-        ndkBuild {
-            path "jni/Android.mk"
+        cmake {
+            path "jni/CMakeLists.txt"
+            version "3.10.2"
         }
     }
 
@@ -320,9 +321,8 @@ android {
         vectorDrawables.generatedDensities = ['mdpi', 'hdpi', 'xhdpi', 'xxhdpi']
 
         externalNativeBuild {
-            ndkBuild {
-                arguments "NDK_APPLICATION_MK:=jni/Application.mk", "APP_PLATFORM:=android-16", "--jobs=16"
-                abiFilters "armeabi-v7a", "arm64-v8a", "x86", "x86_64"
+            cmake {
+                arguments '-DANDROID_STL=c++_static','-DANDROID_TOOLCHAIN=clang',"-DANDROID_PLATFORM=android-16","-j4"
             }
         }
     }
