@@ -43,6 +43,7 @@ import android.text.Editable;
 import android.text.SpannableStringBuilder;
 import android.text.TextUtils;
 import android.text.TextWatcher;
+import android.util.Log;
 import android.util.LongSparseArray;
 import android.util.SparseArray;
 import android.util.SparseIntArray;
@@ -2028,13 +2029,31 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
     @Override
     public void setTranslationY(float translationY) {
         super.setTranslationY(translationY);
+        updateBottomTabContainerPosition();
+    }
+
+    private void updateBottomTabContainerPosition() {
         if (bottomTabContainer.getTag() == null && (delegate == null || !delegate.isSearchOpened())) {
             View parent = (View) getParent();
             if (parent != null) {
-                float y = getY() + getMeasuredHeight() - parent.getHeight();
+                float y = getY() - parent.getHeight();
+                if (getLayoutParams().height > 0) {
+                    y +=  getLayoutParams().height;
+                } else {
+                    y += getMeasuredHeight();
+                }
+                if (bottomTabContainer.getTop() - y < 0) {
+                    y = bottomTabContainer.getTop();
+                }
                 bottomTabContainer.setTranslationY(-y);
             }
         }
+    }
+
+    @Override
+    protected void dispatchDraw(Canvas canvas) {
+        updateBottomTabContainerPosition();
+        super.dispatchDraw(canvas);
     }
 
     private void startStopVisibleGifs(boolean start) {
@@ -2954,7 +2973,7 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
                 TLRPC.TL_messages_stickerSet stickerSet = stickerSets.get(a);
                 TLObject thumb;
                 TLRPC.Document document = stickerSet.documents.get(0);
-                if (stickerSet.set.thumb instanceof TLRPC.TL_photoSize) {
+                if (stickerSet.set.thumb instanceof TLRPC.TL_photoSize || stickerSet.set.thumb instanceof TLRPC.TL_photoSizeProgressive) {
                     thumb = stickerSet.set.thumb;
                 } else {
                     thumb = document;
@@ -3211,6 +3230,7 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
         }
         super.onMeasure(View.MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY), View.MeasureSpec.makeMeasureSpec(View.MeasureSpec.getSize(heightMeasureSpec), MeasureSpec.EXACTLY));
         isLayout = false;
+        setTranslationY(getTranslationY());
     }
 
     @Override
@@ -3228,10 +3248,13 @@ public class EmojiView extends FrameLayout implements NotificationCenter.Notific
                     bottomTabContainer.setTranslationY(AndroidUtilities.dp(49));
                 } else {
                     if (bottomTabContainer.getTag() == null) {
-                        if (newHeight < lastNotifyHeight) {
+                        if (newHeight <= lastNotifyHeight) {
                             bottomTabContainer.setTranslationY(0);
                         } else {
                             float y = getY() + getMeasuredHeight() - parent.getHeight();
+                            if (bottomTabContainer.getTop() - y < 0) {
+                                y = bottomTabContainer.getTop();
+                            }
                             bottomTabContainer.setTranslationY(-y);
                         }
                     }

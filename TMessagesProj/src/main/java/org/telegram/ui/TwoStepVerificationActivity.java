@@ -547,7 +547,7 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
         progressDialog.show();
     }
 
-    protected void needHideProgress() {
+    public void needHideProgress() {
         if (progressDialog == null) {
             return;
         }
@@ -646,7 +646,7 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
         });
     }
 
-    protected TLRPC.TL_inputCheckPasswordSRP getNewSrpPassword() {
+    public TLRPC.TL_inputCheckPasswordSRP getNewSrpPassword() {
         if (currentPassword.current_algo instanceof TLRPC.TL_passwordKdfAlgoSHA256SHA256PBKDF2HMACSHA512iter100000SHA256ModPow) {
             TLRPC.TL_passwordKdfAlgoSHA256SHA256PBKDF2HMACSHA512iter100000SHA256ModPow algo = (TLRPC.TL_passwordKdfAlgoSHA256SHA256PBKDF2HMACSHA512iter100000SHA256ModPow) currentPassword.current_algo;
             return SRPHelper.startCheck(currentPasswordHash, currentPassword.srp_id, currentPassword.srp_B, algo);

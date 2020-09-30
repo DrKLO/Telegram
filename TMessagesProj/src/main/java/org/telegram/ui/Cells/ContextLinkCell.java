@@ -425,8 +425,9 @@ public class ContextLinkCell extends FrameLayout implements DownloadController.F
             TLRPC.TL_message message = new TLRPC.TL_message();
             message.out = true;
             message.id = -Utilities.random.nextInt();
-            message.to_id = new TLRPC.TL_peerUser();
-            message.to_id.user_id = message.from_id = UserConfig.getInstance(currentAccount).getClientUserId();
+            message.peer_id = new TLRPC.TL_peerUser();
+            message.from_id = new TLRPC.TL_peerUser();
+            message.peer_id.user_id = message.from_id.user_id = UserConfig.getInstance(currentAccount).getClientUserId();
             message.date = (int) (System.currentTimeMillis() / 1000);
             message.message = "";
             message.media = new TLRPC.TL_messageMediaDocument();
@@ -886,7 +887,6 @@ public class ContextLinkCell extends FrameLayout implements DownloadController.F
                 }
                 if (!isLoading) {
                     buttonState = 2;
-                    radialProgress.setIcon(getIconForCurrentState(), ifSame, animated);
                 } else {
                     buttonState = 4;
                     Float progress = ImageLoader.getInstance().getFileProgress(fileName);
@@ -895,16 +895,13 @@ public class ContextLinkCell extends FrameLayout implements DownloadController.F
                     } else {
                         radialProgress.setProgress(0, animated);
                     }
-                    radialProgress.setIcon(getIconForCurrentState(), ifSame, animated);
                 }
             } else {
                 buttonState = 1;
                 Float progress = ImageLoader.getInstance().getFileProgress(fileName);
                 float setProgress = progress != null ? progress : 0;
                 radialProgress.setProgress(setProgress, false);
-                radialProgress.setIcon(getIconForCurrentState(), ifSame, animated);
             }
-            invalidate();
         } else {
             DownloadController.getInstance(currentAccount).removeLoadingFileObserver(this);
             if (documentAttachType == DOCUMENT_ATTACH_TYPE_MUSIC || documentAttachType == DOCUMENT_ATTACH_TYPE_AUDIO) {
@@ -918,9 +915,9 @@ public class ContextLinkCell extends FrameLayout implements DownloadController.F
             } else {
                 buttonState = -1;
             }
-            radialProgress.setIcon(getIconForCurrentState(), ifSame, animated);
-            invalidate();
         }
+        radialProgress.setIcon(getIconForCurrentState(), ifSame, animated);
+        invalidate();
     }
 
     public void setDelegate(ContextLinkCellDelegate contextLinkCellDelegate) {

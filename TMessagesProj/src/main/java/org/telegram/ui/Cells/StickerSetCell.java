@@ -180,7 +180,7 @@ public class StickerSetCell extends FrameLayout {
 
             TLRPC.Document sticker = documents.get(0);
             TLObject object;
-            if (set.set.thumb instanceof TLRPC.TL_photoSize) {
+            if (set.set.thumb instanceof TLRPC.TL_photoSize || set.set.thumb instanceof TLRPC.TL_photoSizeProgressive) {
                 object = set.set.thumb;
             } else {
                 object = sticker;

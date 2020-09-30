@@ -70,7 +70,7 @@ public class BotHelpCell extends View {
         invalidate();
     }
 
-    public void setText(String text) {
+    public void setText(boolean bot, String text) {
         if (text == null || text.length() == 0) {
             setVisibility(GONE);
             return;
@@ -89,8 +89,10 @@ public class BotHelpCell extends View {
         String[] lines = text.split("\n");
         SpannableStringBuilder stringBuilder = new SpannableStringBuilder();
         String help = LocaleController.getString("BotInfoTitle", R.string.BotInfoTitle);
-        stringBuilder.append(help);
-        stringBuilder.append("\n\n");
+        if (bot) {
+            stringBuilder.append(help);
+            stringBuilder.append("\n\n");
+        }
         for (int a = 0; a < lines.length; a++) {
             stringBuilder.append(lines[a].trim());
             if (a != lines.length - 1) {
@@ -98,7 +100,9 @@ public class BotHelpCell extends View {
             }
         }
         MessageObject.addLinks(false, stringBuilder);
-        stringBuilder.setSpan(new TypefaceSpan(AndroidUtilities.getTypeface("fonts/rmedium.ttf")), 0, help.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        if (bot) {
+            stringBuilder.setSpan(new TypefaceSpan(AndroidUtilities.getTypeface("fonts/rmedium.ttf")), 0, help.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        }
         Emoji.replaceEmoji(stringBuilder, Theme.chat_msgTextPaint.getFontMetricsInt(), AndroidUtilities.dp(20), false);
         try {
             textLayout = new StaticLayout(stringBuilder, Theme.chat_msgTextPaint, maxWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);

@@ -38,6 +38,7 @@ import org.xml.sax.helpers.DefaultHandler;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.HashMap;
 
@@ -57,7 +58,38 @@ public class SvgHelper {
             return handler.getBitmap();
         } catch (Exception e) {
             FileLog.e(e);
-            throw null;
+            return null;
+        }
+    }
+
+    public static Bitmap getBitmap(String xml, int width, int height, boolean white) {
+        try {
+            SAXParserFactory spf = SAXParserFactory.newInstance();
+            SAXParser sp = spf.newSAXParser();
+            XMLReader xr = sp.getXMLReader();
+            SVGHandler handler = new SVGHandler(width, height, white);
+            xr.setContentHandler(handler);
+            xr.parse(new InputSource(new StringReader(xml)));
+            return handler.getBitmap();
+        } catch (Exception e) {
+            FileLog.e(e);
+            return null;
+        }
+    }
+
+    public static Bitmap getBitmapByPathOnly(String pathString, int svgWidth, int svgHeight, int width, int height) {
+        try {
+            Path path = doPath(pathString);
+            Bitmap bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+            Canvas canvas = new Canvas(bitmap);
+            canvas.scale(width / (float) svgWidth, height / (float) svgHeight);
+            Paint paint = new Paint();
+            paint.setColor(Color.WHITE);
+            canvas.drawPath(path,paint);
+            return bitmap;
+        } catch (Exception e) {
+            FileLog.e(e);
+            return null;
         }
     }
 

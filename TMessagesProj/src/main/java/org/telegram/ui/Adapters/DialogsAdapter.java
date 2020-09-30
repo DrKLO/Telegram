@@ -68,20 +68,21 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter {
     private boolean isOnlySelect;
     private ArrayList<Long> selectedDialogs;
     private boolean hasHints;
-    private int currentAccount = UserConfig.selectedAccount;
+    private int currentAccount;
     private boolean dialogsListFrozen;
     private boolean showArchiveHint;
     private boolean isReordering;
     private long lastSortTime;
     private PullForegroundDrawable pullForegroundDrawable;
 
-    public DialogsAdapter(Context context, int type, int folder, boolean onlySelect, ArrayList<Long> selected) {
+    public DialogsAdapter(Context context, int type, int folder, boolean onlySelect, ArrayList<Long> selected, int account) {
         mContext = context;
         dialogsType = type;
         folderId = folder;
         isOnlySelect = onlySelect;
         hasHints = folder == 0 && type == 0 && !onlySelect;
         selectedDialogs = selected;
+        currentAccount = account;
         if (folderId == 1) {
             SharedPreferences preferences = MessagesController.getGlobalMainSettings();
             showArchiveHint = preferences.getBoolean("archivehint", true);
@@ -299,7 +300,7 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter {
         View view;
         switch (viewType) {
             case 0:
-                DialogCell dialogCell = new DialogCell(mContext, true, false);
+                DialogCell dialogCell = new DialogCell(mContext, true, false, currentAccount);
                 dialogCell.setArchivedPullAnimation(pullForegroundDrawable);
                 view = dialogCell;
                 break;

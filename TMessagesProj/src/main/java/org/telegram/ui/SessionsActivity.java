@@ -373,7 +373,7 @@ public class SessionsActivity extends BaseFragment implements NotificationCenter
                             }
                         }));
                         if (param[0]) {
-                            MessagesController.getInstance(currentAccount).blockUser(authorization.bot_id);
+                            MessagesController.getInstance(currentAccount).blockPeer(authorization.bot_id);
                         }
                     }
                 });

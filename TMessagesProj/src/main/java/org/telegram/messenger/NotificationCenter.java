@@ -25,6 +25,9 @@ public class NotificationCenter {
     public static final int messagesDeleted = totalEvents++;
     public static final int historyCleared = totalEvents++;
     public static final int messagesRead = totalEvents++;
+    public static final int threadMessagesRead = totalEvents++;
+    public static final int commentsRead = totalEvents++;
+    public static final int changeRepliesCounter = totalEvents++;
     public static final int messagesDidLoad = totalEvents++;
     public static final int loadingMessagesFailed = totalEvents++;
     public static final int messageReceivedByAck = totalEvents++;

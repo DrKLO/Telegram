@@ -21,6 +21,7 @@ import android.text.Spanned;
 import android.text.StaticLayout;
 import android.text.TextPaint;
 import android.text.TextUtils;
+import android.text.TextWatcher;
 import android.text.style.CharacterStyle;
 import android.util.TypedValue;
 import android.view.ActionMode;
@@ -62,6 +63,8 @@ public class EditTextCaption extends EditTextBoldCursor {
     private int selectionEnd = -1;
     private boolean allowTextEntitiesIntersection;
     private float offsetY;
+    private int lineCount;
+    private boolean isInitLineCount;
 
     public interface EditTextCaptionDelegate {
         void onSpansChanged();
@@ -69,6 +72,31 @@ public class EditTextCaption extends EditTextBoldCursor {
 
     public EditTextCaption(Context context) {
         super(context);
+        addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+                if (lineCount != getLineCount()) {
+                    if (!isInitLineCount && getMeasuredWidth() > 0) {
+                        onLineCountChanged(lineCount, getLineCount());
+                    }
+                    lineCount = getLineCount();
+                }
+            }
+        });
+    }
+
+    protected void onLineCountChanged(int oldLineCount, int newLineCount) {
+
     }
 
     public void setCaption(String value) {
@@ -344,7 +372,12 @@ public class EditTextCaption extends EditTextBoldCursor {
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         try {
+            isInitLineCount = getMeasuredWidth() == 0 && getMeasuredHeight() == 0;
             super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+            if (isInitLineCount) {
+                lineCount = getLineCount();
+            }
+            isInitLineCount = false;
         } catch (Exception e) {
             setMeasuredDimension(MeasureSpec.getSize(widthMeasureSpec), AndroidUtilities.dp(51));
             FileLog.e(e);

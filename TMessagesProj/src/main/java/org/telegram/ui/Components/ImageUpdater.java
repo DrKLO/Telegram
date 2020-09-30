@@ -396,8 +396,8 @@ public class ImageUpdater implements NotificationCenter.NotificationCenterDelega
                 }
 
                 @Override
-                public void needEnterComment() {
-
+                public boolean needEnterComment() {
+                    return false;
                 }
 
                 @Override

@@ -181,7 +181,7 @@ public class FeaturedStickerSetCell extends FrameLayout {
         }
         if (sticker != null) {
             TLObject object;
-            if (set.set.thumb instanceof TLRPC.TL_photoSize) {
+            if (set.set.thumb instanceof TLRPC.TL_photoSize || set.set.thumb instanceof TLRPC.TL_photoSizeProgressive) {
                 object = set.set.thumb;
             } else {
                 object = sticker;

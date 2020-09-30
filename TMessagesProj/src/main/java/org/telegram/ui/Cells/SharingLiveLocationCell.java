@@ -142,12 +142,14 @@ public class SharingLiveLocationCell extends FrameLayout {
     }
 
     public void setDialog(MessageObject messageObject, Location userLocation) {
-        int fromId = messageObject.messageOwner.from_id;
+        int fromId = messageObject.getFromChatId();
         if (messageObject.isForwarded()) {
-            if (messageObject.messageOwner.fwd_from.channel_id != 0) {
-                fromId = -messageObject.messageOwner.fwd_from.channel_id;
+            if (messageObject.messageOwner.fwd_from.from_id instanceof TLRPC.TL_peerChannel) {
+                fromId = -messageObject.messageOwner.fwd_from.from_id.channel_id;
+            } else if (messageObject.messageOwner.fwd_from.from_id instanceof TLRPC.TL_peerChat) {
+                fromId = -messageObject.messageOwner.fwd_from.from_id.chat_id;
             } else {
-                fromId = messageObject.messageOwner.fwd_from.from_id;
+                fromId = messageObject.messageOwner.fwd_from.from_id.user_id;
             }
         }
         currentAccount = messageObject.currentAccount;

@@ -27,6 +27,14 @@ public class UserObject {
         return user != null && (user instanceof TLRPC.TL_userSelf_old3 || user.self);
     }
 
+    public static boolean isReplyUser(TLRPC.User user) {
+        return user != null && (user.id == 708513 || user.id == 1271266957);
+    }
+
+    public static boolean isReplyUser(long did) {
+        return did == 708513 || did == 1271266957;
+    }
+
     public static String getUserName(TLRPC.User user) {
         if (user == null || isDeleted(user)) {
             return LocaleController.getString("HiddenName", R.string.HiddenName);

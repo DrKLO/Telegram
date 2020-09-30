@@ -279,8 +279,9 @@ public class BlurBehindDrawable {
         this.show = show;
     }
 
-    public void onPanTranslationUpdate(int y) {
+    public void onPanTranslationUpdate(float y) {
         panTranslationY = y;
+        parentView.invalidate();
     }
 
     public class BlurBackgroundTask implements Runnable {

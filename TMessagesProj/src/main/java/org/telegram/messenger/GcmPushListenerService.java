@@ -200,44 +200,44 @@ public class GcmPushListenerService extends FirebaseMessagingService {
                     int channel_id;
                     int chat_id;
                     int user_id;
-                    long dialog_id = 0;
+                    long dialogId = 0;
                     boolean scheduled;
                     if (custom.has("channel_id")) {
                         channel_id = custom.getInt("channel_id");
-                        dialog_id = -channel_id;
+                        dialogId = -channel_id;
                     } else {
                         channel_id = 0;
                     }
                     if (custom.has("from_id")) {
                         user_id = custom.getInt("from_id");
-                        dialog_id = user_id;
+                        dialogId = user_id;
                     } else {
                         user_id = 0;
                     }
                     if (custom.has("chat_id")) {
                         chat_id = custom.getInt("chat_id");
-                        dialog_id = -chat_id;
+                        dialogId = -chat_id;
                     } else {
                         chat_id = 0;
                     }
                     if (custom.has("encryption_id")) {
-                        dialog_id = ((long) custom.getInt("encryption_id")) << 32;
+                        dialogId = ((long) custom.getInt("encryption_id")) << 32;
                     }
                     if (custom.has("schedule")) {
                         scheduled = custom.getInt("schedule") == 1;
                     } else {
                         scheduled = false;
                     }
-                    if (dialog_id == 0 && "ENCRYPTED_MESSAGE".equals(loc_key)) {
-                        dialog_id = -(1L << 32);
+                    if (dialogId == 0 && "ENCRYPTED_MESSAGE".equals(loc_key)) {
+                        dialogId = -(1L << 32);
                     }
                     boolean canRelease = true;
-                    if (dialog_id != 0) {
+                    if (dialogId != 0) {
                         if ("READ_HISTORY".equals(loc_key)) {
                             int max_id = custom.getInt("max_id");
                             final ArrayList<TLRPC.Update> updates = new ArrayList<>();
                             if (BuildVars.LOGS_ENABLED) {
-                                FileLog.d("GCM received read notification max_id = " + max_id + " for dialogId = " + dialog_id);
+                                FileLog.d("GCM received read notification max_id = " + max_id + " for dialogId = " + dialogId);
                             }
                             if (channel_id != 0) {
                                 TLRPC.TL_updateReadChannelInbox update = new TLRPC.TL_updateReadChannelInbox();
@@ -268,9 +268,9 @@ public class GcmPushListenerService extends FirebaseMessagingService {
                             deletedMessages.put(channel_id, ids);
                             NotificationsController.getInstance(currentAccount).removeDeletedMessagesFromNotifications(deletedMessages);
 
-                            MessagesController.getInstance(currentAccount).deleteMessagesByPush(dialog_id, ids, channel_id);
+                            MessagesController.getInstance(currentAccount).deleteMessagesByPush(dialogId, ids, channel_id);
                             if (BuildVars.LOGS_ENABLED) {
-                                FileLog.d("GCM received " + loc_key + " for dialogId = " + dialog_id + " mids = " + TextUtils.join(",", ids));
+                                FileLog.d("GCM received " + loc_key + " for dialogId = " + dialogId + " mids = " + TextUtils.join(",", ids));
                             }
                         } else if (!TextUtils.isEmpty(loc_key)) {
                             int msg_id;
@@ -289,10 +289,10 @@ public class GcmPushListenerService extends FirebaseMessagingService {
 
                             boolean processNotification = false;
                             if (msg_id != 0) {
-                                Integer currentReadValue = MessagesController.getInstance(currentAccount).dialogs_read_inbox_max.get(dialog_id);
+                                Integer currentReadValue = MessagesController.getInstance(currentAccount).dialogs_read_inbox_max.get(dialogId);
                                 if (currentReadValue == null) {
-                                    currentReadValue = MessagesStorage.getInstance(currentAccount).getDialogReadMax(false, dialog_id);
-                                    MessagesController.getInstance(accountFinal).dialogs_read_inbox_max.put(dialog_id, currentReadValue);
+                                    currentReadValue = MessagesStorage.getInstance(currentAccount).getDialogReadMax(false, dialogId);
+                                    MessagesController.getInstance(accountFinal).dialogs_read_inbox_max.put(dialogId, currentReadValue);
                                 }
                                 if (msg_id > currentReadValue) {
                                     processNotification = true;
@@ -303,13 +303,11 @@ public class GcmPushListenerService extends FirebaseMessagingService {
                                 }
                             }
                             if (processNotification) {
-                                int chat_from_id;
+                                int chat_from_id = custom.optInt("chat_from_id", 0);
+                                int chat_from_broadcast_id = custom.optInt("chat_from_broadcast_id", 0);
+                                int chat_from_group_id = custom.optInt("chat_from_group_id", 0);
+                                boolean isGroup = chat_from_id != 0 || chat_from_group_id != 0;
 
-                                if (custom.has("chat_from_id")) {
-                                    chat_from_id = custom.getInt("chat_from_id");
-                                } else {
-                                    chat_from_id = 0;
-                                }
                                 boolean mention = custom.has("mention") && custom.getInt("mention") != 0;
                                 boolean silent = custom.has("silent") && custom.getInt("silent") != 0;
 
@@ -333,18 +331,22 @@ public class GcmPushListenerService extends FirebaseMessagingService {
                                 boolean channel = false;
                                 boolean edited = custom.has("edit_date");
                                 if (loc_key.startsWith("CHAT_")) {
-                                    supergroup = channel_id != 0;
-                                    userName = name;
-                                    name = args[1];
+                                    if (UserObject.isReplyUser(dialogId)) {
+                                        name += " @ " + args[1];
+                                    } else {
+                                        supergroup = channel_id != 0;
+                                        userName = name;
+                                        name = args[1];
+                                    }
                                 } else if (loc_key.startsWith("PINNED_")) {
-                                    supergroup = chat_from_id != 0;
+                                    supergroup = isGroup;
                                     pinned = true;
                                 } else if (loc_key.startsWith("CHANNEL_")) {
                                     channel = true;
                                 }
 
                                 if (BuildVars.LOGS_ENABLED) {
-                                    FileLog.d("GCM received message notification " + loc_key + " for dialogId = " + dialog_id + " mid = " + msg_id);
+                                    FileLog.d("GCM received message notification " + loc_key + " for dialogId = " + dialogId + " mid = " + msg_id);
                                 }
                                 switch (loc_key) {
                                     case "MESSAGE_TEXT":
@@ -714,7 +716,7 @@ public class GcmPushListenerService extends FirebaseMessagingService {
                                         break;
                                     }
                                     case "PINNED_TEXT": {
-                                        if (chat_from_id != 0) {
+                                        if (isGroup) {
                                             messageText = LocaleController.formatString("NotificationActionPinnedText", R.string.NotificationActionPinnedText, args[0], args[1], args[2]);
                                         } else {
                                             messageText = LocaleController.formatString("NotificationActionPinnedTextChannel", R.string.NotificationActionPinnedTextChannel, args[0], args[1]);
@@ -722,7 +724,7 @@ public class GcmPushListenerService extends FirebaseMessagingService {
                                         break;
                                     }
                                     case "PINNED_NOTEXT": {
-                                        if (chat_from_id != 0) {
+                                        if (isGroup) {
                                             messageText = LocaleController.formatString("NotificationActionPinnedNoText", R.string.NotificationActionPinnedNoText, args[0], args[1]);
                                         } else {
                                             messageText = LocaleController.formatString("NotificationActionPinnedNoTextChannel", R.string.NotificationActionPinnedNoTextChannel, args[0]);
@@ -730,7 +732,7 @@ public class GcmPushListenerService extends FirebaseMessagingService {
                                         break;
                                     }
                                     case "PINNED_PHOTO": {
-                                        if (chat_from_id != 0) {
+                                        if (isGroup) {
                                             messageText = LocaleController.formatString("NotificationActionPinnedPhoto", R.string.NotificationActionPinnedPhoto, args[0], args[1]);
                                         } else {
                                             messageText = LocaleController.formatString("NotificationActionPinnedPhotoChannel", R.string.NotificationActionPinnedPhotoChannel, args[0]);
@@ -738,7 +740,7 @@ public class GcmPushListenerService extends FirebaseMessagingService {
                                         break;
                                     }
                                     case "PINNED_VIDEO": {
-                                        if (chat_from_id != 0) {
+                                        if (isGroup) {
                                             messageText = LocaleController.formatString("NotificationActionPinnedVideo", R.string.NotificationActionPinnedVideo, args[0], args[1]);
                                         } else {
                                             messageText = LocaleController.formatString("NotificationActionPinnedVideoChannel", R.string.NotificationActionPinnedVideoChannel, args[0]);
@@ -746,7 +748,7 @@ public class GcmPushListenerService extends FirebaseMessagingService {
                                         break;
                                     }
                                     case "PINNED_ROUND": {
-                                        if (chat_from_id != 0) {
+                                        if (isGroup) {
                                             messageText = LocaleController.formatString("NotificationActionPinnedRound", R.string.NotificationActionPinnedRound, args[0], args[1]);
                                         } else {
                                             messageText = LocaleController.formatString("NotificationActionPinnedRoundChannel", R.string.NotificationActionPinnedRoundChannel, args[0]);
@@ -754,7 +756,7 @@ public class GcmPushListenerService extends FirebaseMessagingService {
                                         break;
                                     }
                                     case "PINNED_DOC": {
-                                        if (chat_from_id != 0) {
+                                        if (isGroup) {
                                             messageText = LocaleController.formatString("NotificationActionPinnedFile", R.string.NotificationActionPinnedFile, args[0], args[1]);
                                         } else {
                                             messageText = LocaleController.formatString("NotificationActionPinnedFileChannel", R.string.NotificationActionPinnedFileChannel, args[0]);
@@ -762,7 +764,7 @@ public class GcmPushListenerService extends FirebaseMessagingService {
                                         break;
                                     }
                                     case "PINNED_STICKER": {
-                                        if (chat_from_id != 0) {
+                                        if (isGroup) {
                                             if (args.length > 2 && !TextUtils.isEmpty(args[2])) {
                                                 messageText = LocaleController.formatString("NotificationActionPinnedStickerEmoji", R.string.NotificationActionPinnedStickerEmoji, args[0], args[2], args[1]);
                                             } else {
@@ -778,7 +780,7 @@ public class GcmPushListenerService extends FirebaseMessagingService {
                                         break;
                                     }
                                     case "PINNED_AUDIO": {
-                                        if (chat_from_id != 0) {
+                                        if (isGroup) {
                                             messageText = LocaleController.formatString("NotificationActionPinnedVoice", R.string.NotificationActionPinnedVoice, args[0], args[1]);
                                         } else {
                                             messageText = LocaleController.formatString("NotificationActionPinnedVoiceChannel", R.string.NotificationActionPinnedVoiceChannel, args[0]);
@@ -786,7 +788,7 @@ public class GcmPushListenerService extends FirebaseMessagingService {
                                         break;
                                     }
                                     case "PINNED_CONTACT": {
-                                        if (chat_from_id != 0) {
+                                        if (isGroup) {
                                             messageText = LocaleController.formatString("NotificationActionPinnedContact2", R.string.NotificationActionPinnedContact2, args[0], args[2], args[1]);
                                         } else {
                                             messageText = LocaleController.formatString("NotificationActionPinnedContactChannel2", R.string.NotificationActionPinnedContactChannel2, args[0], args[1]);
@@ -794,7 +796,7 @@ public class GcmPushListenerService extends FirebaseMessagingService {
                                         break;
                                     }
                                     case "PINNED_QUIZ": {
-                                        if (chat_from_id != 0) {
+                                        if (isGroup) {
                                             messageText = LocaleController.formatString("NotificationActionPinnedQuiz2", R.string.NotificationActionPinnedQuiz2, args[0], args[2], args[1]);
                                         } else {
                                             messageText = LocaleController.formatString("NotificationActionPinnedQuizChannel2", R.string.NotificationActionPinnedQuizChannel2, args[0], args[1]);
@@ -802,7 +804,7 @@ public class GcmPushListenerService extends FirebaseMessagingService {
                                         break;
                                     }
                                     case "PINNED_POLL": {
-                                        if (chat_from_id != 0) {
+                                        if (isGroup) {
                                             messageText = LocaleController.formatString("NotificationActionPinnedPoll2", R.string.NotificationActionPinnedPoll2, args[0], args[2], args[1]);
                                         } else {
                                             messageText = LocaleController.formatString("NotificationActionPinnedPollChannel2", R.string.NotificationActionPinnedPollChannel2, args[0], args[1]);
@@ -810,7 +812,7 @@ public class GcmPushListenerService extends FirebaseMessagingService {
                                         break;
                                     }
                                     case "PINNED_GEO": {
-                                        if (chat_from_id != 0) {
+                                        if (isGroup) {
                                             messageText = LocaleController.formatString("NotificationActionPinnedGeo", R.string.NotificationActionPinnedGeo, args[0], args[1]);
                                         } else {
                                             messageText = LocaleController.formatString("NotificationActionPinnedGeoChannel", R.string.NotificationActionPinnedGeoChannel, args[0]);
@@ -818,7 +820,7 @@ public class GcmPushListenerService extends FirebaseMessagingService {
                                         break;
                                     }
                                     case "PINNED_GEOLIVE": {
-                                        if (chat_from_id != 0) {
+                                        if (isGroup) {
                                             messageText = LocaleController.formatString("NotificationActionPinnedGeoLive", R.string.NotificationActionPinnedGeoLive, args[0], args[1]);
                                         } else {
                                             messageText = LocaleController.formatString("NotificationActionPinnedGeoLiveChannel", R.string.NotificationActionPinnedGeoLiveChannel, args[0]);
@@ -826,7 +828,7 @@ public class GcmPushListenerService extends FirebaseMessagingService {
                                         break;
                                     }
                                     case "PINNED_GAME": {
-                                        if (chat_from_id != 0) {
+                                        if (isGroup) {
                                             messageText = LocaleController.formatString("NotificationActionPinnedGame", R.string.NotificationActionPinnedGame, args[0], args[1]);
                                         } else {
                                             messageText = LocaleController.formatString("NotificationActionPinnedGameChannel", R.string.NotificationActionPinnedGameChannel, args[0]);
@@ -834,7 +836,7 @@ public class GcmPushListenerService extends FirebaseMessagingService {
                                         break;
                                     }
                                     case "PINNED_GAME_SCORE": {
-                                        if (chat_from_id != 0) {
+                                        if (isGroup) {
                                             messageText = LocaleController.formatString("NotificationActionPinnedGameScore", R.string.NotificationActionPinnedGameScore, args[0], args[1]);
                                         } else {
                                             messageText = LocaleController.formatString("NotificationActionPinnedGameScoreChannel", R.string.NotificationActionPinnedGameScoreChannel, args[0]);
@@ -842,7 +844,7 @@ public class GcmPushListenerService extends FirebaseMessagingService {
                                         break;
                                     }
                                     case "PINNED_INVOICE": {
-                                        if (chat_from_id != 0) {
+                                        if (isGroup) {
                                             messageText = LocaleController.formatString("NotificationActionPinnedInvoice", R.string.NotificationActionPinnedInvoice, args[0], args[1]);
                                         } else {
                                             messageText = LocaleController.formatString("NotificationActionPinnedInvoiceChannel", R.string.NotificationActionPinnedInvoiceChannel, args[0]);
@@ -850,7 +852,7 @@ public class GcmPushListenerService extends FirebaseMessagingService {
                                         break;
                                     }
                                     case "PINNED_GIF": {
-                                        if (chat_from_id != 0) {
+                                        if (isGroup) {
                                             messageText = LocaleController.formatString("NotificationActionPinnedGif", R.string.NotificationActionPinnedGif, args[0], args[1]);
                                         } else {
                                             messageText = LocaleController.formatString("NotificationActionPinnedGifChannel", R.string.NotificationActionPinnedGifChannel, args[0]);
@@ -894,19 +896,30 @@ public class GcmPushListenerService extends FirebaseMessagingService {
                                     if (supergroup) {
                                         messageOwner.flags |= TLRPC.MESSAGE_FLAG_MEGAGROUP;
                                     }
-                                    messageOwner.dialog_id = dialog_id;
+                                    messageOwner.dialog_id = dialogId;
                                     if (channel_id != 0) {
-                                        messageOwner.to_id = new TLRPC.TL_peerChannel();
-                                        messageOwner.to_id.channel_id = channel_id;
+                                        messageOwner.peer_id = new TLRPC.TL_peerChannel();
+                                        messageOwner.peer_id.channel_id = channel_id;
                                     } else if (chat_id != 0) {
-                                        messageOwner.to_id = new TLRPC.TL_peerChat();
-                                        messageOwner.to_id.chat_id = chat_id;
+                                        messageOwner.peer_id = new TLRPC.TL_peerChat();
+                                        messageOwner.peer_id.chat_id = chat_id;
                                     } else {
-                                        messageOwner.to_id = new TLRPC.TL_peerUser();
-                                        messageOwner.to_id.user_id = user_id;
+                                        messageOwner.peer_id = new TLRPC.TL_peerUser();
+                                        messageOwner.peer_id.user_id = user_id;
                                     }
                                     messageOwner.flags |= 256;
-                                    messageOwner.from_id = chat_from_id;
+                                    if (chat_from_group_id != 0) {
+                                        messageOwner.from_id = new TLRPC.TL_peerChat();
+                                        messageOwner.from_id.chat_id = chat_id;
+                                    } else if (chat_from_broadcast_id != 0) {
+                                        messageOwner.from_id = new TLRPC.TL_peerChannel();
+                                        messageOwner.from_id.channel_id = chat_from_broadcast_id;
+                                    } else if (chat_from_id != 0) {
+                                        messageOwner.from_id = new TLRPC.TL_peerUser();
+                                        messageOwner.from_id.user_id = chat_from_id;
+                                    } else {
+                                        messageOwner.from_id = messageOwner.peer_id;
+                                    }
                                     messageOwner.mentioned = mention || pinned;
                                     messageOwner.silent = silent;
                                     messageOwner.from_scheduled = scheduled;

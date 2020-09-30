@@ -1067,7 +1067,7 @@ std::shared_ptr<LOTData> LottieParserImpl::parseLayer(bool record) {
         staticFlag &= child.get()->isStatic();
     }
 
-    if (layer->hasMask()) {
+    if (layer->hasMask() && layer->mExtra) {
         for (const auto &mask : layer->mExtra->mMasks) {
             staticFlag &= mask->isStatic();
         }
@@ -1616,10 +1616,22 @@ std::shared_ptr<LOTTransformData> LottieParserImpl::parseTransformObject(
         } else if (0 == strcmp(key, "hd")) {
             sharedTransform->setHidden(GetBool());
         } else if (0 == strcmp(key, "rx")) {
+            if (obj->m3D == nullptr) {
+                parsingError = true;
+                return sharedTransform;
+            }
             parseProperty(obj->m3D->mRx);
         } else if (0 == strcmp(key, "ry")) {
+            if (obj->m3D == nullptr) {
+                parsingError = true;
+                return sharedTransform;
+            }
             parseProperty(obj->m3D->mRy);
         } else if (0 == strcmp(key, "rz")) {
+            if (obj->m3D == nullptr) {
+                parsingError = true;
+                return sharedTransform;
+            }
             parseProperty(obj->m3D->mRz);
         } else {
             Skip(key);
@@ -1882,6 +1894,10 @@ void LottieParserImpl::parseDashProperty(LOTDashProperty &dash) {
         EnterObject();
         while (const char *key = NextObjectKey()) {
             if (0 == strcmp(key, "v")) {
+                if (dash.mDashCount > 4) {
+                    parsingError = true;
+                    return;
+                }
                 parseProperty(dash.mDashArray[dash.mDashCount++]);
             } else {
                 Skip(key);

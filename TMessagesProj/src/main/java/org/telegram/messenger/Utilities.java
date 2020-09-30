@@ -62,11 +62,13 @@ public class Utilities {
     private native static void aesCbcEncryptionByteArray(byte[] buffer, byte[] key, byte[] iv, int offset, int length, int n, int encrypt);
     public native static void aesCbcEncryption(ByteBuffer buffer, byte[] key, byte[] iv, int offset, int length, int encrypt);
     public native static String readlink(String path);
+    public native static String readlinkFd(int fd);
     public native static long getDirSize(String path, int docType, boolean subdirs);
     public native static void clearDir(String path, int docType, long time, boolean subdirs);
     private native static int pbkdf2(byte[] password, byte[] salt, byte[] dst, int iterations);
     public static native void stackBlurBitmap(Bitmap bitmap, int radius);
     public static native void drawDitheredGradient(Bitmap bitmap, int[] colors, int startX, int startY, int endX, int endY);
+    public static native int saveProgressiveJpeg(Bitmap bitmap, int width, int height, int stride, int quality, String path);
 
     public static Bitmap blurWallpaper(Bitmap src) {
         if (src == null) {

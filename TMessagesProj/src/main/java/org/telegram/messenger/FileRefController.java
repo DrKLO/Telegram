@@ -74,7 +74,7 @@ public class FileRefController extends BaseController {
             return "message" + messageObject.getRealId() + "_" + channelId + "_" + messageObject.scheduled;
         } else if (parentObject instanceof TLRPC.Message) {
             TLRPC.Message message = (TLRPC.Message) parentObject;
-            int channelId = message.to_id != null ? message.to_id.channel_id : 0;
+            int channelId = message.peer_id != null ? message.peer_id.channel_id : 0;
             return "message" + message.id + "_" + channelId + "_" + message.from_scheduled;
         } else if (parentObject instanceof TLRPC.WebPage) {
             TLRPC.WebPage webPage = (TLRPC.WebPage) parentObject;
@@ -658,10 +658,10 @@ public class FileRefController extends BaseController {
                         }
                         if (result != null) {
                             if (cache) {
-                                if (message.to_id != null && message.to_id.channel_id != 0) {
+                                if (message.peer_id != null && message.peer_id.channel_id != 0) {
                                     for (int a = 0, N2 = res.chats.size(); a < N2; a++) {
                                         TLRPC.Chat chat = res.chats.get(a);
-                                        if (chat.id == message.to_id.channel_id) {
+                                        if (chat.id == message.peer_id.channel_id) {
                                             if (chat.megagroup) {
                                                 message.flags |= TLRPC.MESSAGE_FLAG_MEGAGROUP;
                                             }

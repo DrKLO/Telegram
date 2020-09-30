@@ -202,7 +202,7 @@ public class LocationController extends BaseController implements NotificationCe
                     added = true;
                     boolean replaced = false;
                     for (int b = 0; b < messages.size(); b++) {
-                        if (messages.get(b).from_id == messageObject.messageOwner.from_id) {
+                        if (MessageObject.getFromChatId(messages.get(b)) == messageObject.getFromChatId()) {
                             replaced = true;
                             messages.set(b, messageObject.messageOwner);
                             break;
@@ -258,7 +258,7 @@ public class LocationController extends BaseController implements NotificationCe
             for (int a = 0; a < messageObjects.size(); a++) {
                 MessageObject messageObject = messageObjects.get(a);
                 for (int b = 0; b < messages.size(); b++) {
-                    if (messages.get(b).from_id == messageObject.messageOwner.from_id) {
+                    if (MessageObject.getFromChatId(messages.get(b)) == messageObject.getFromChatId()) {
                         if (!messageObject.isLiveLocation()) {
                             messages.remove(b);
                         } else {

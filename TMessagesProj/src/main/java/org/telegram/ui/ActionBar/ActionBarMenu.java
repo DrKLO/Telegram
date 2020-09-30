@@ -15,6 +15,7 @@ import android.view.ViewGroup;
 import android.widget.LinearLayout;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.ui.Adapters.FiltersView;
 
 public class ActionBarMenu extends LinearLayout {
 
@@ -250,6 +251,20 @@ public class ActionBarMenu extends LinearLayout {
                     }
                     item.setSearchFieldText(text, animated);
                     item.getSearchField().setSelection(text.length());
+                    break;
+                }
+            }
+        }
+    }
+
+    public void setFilter(FiltersView.MediaFilterData filter) {
+        int count = getChildCount();
+        for (int a = 0; a < count; a++) {
+            View view = getChildAt(a);
+            if (view instanceof ActionBarMenuItem) {
+                ActionBarMenuItem item = (ActionBarMenuItem) view;
+                if (item.isSearchField()) {
+                    item.addSearchFilter(filter);
                     break;
                 }
             }

@@ -95,6 +95,7 @@ public class ChatRightsEditActivity extends BaseFragment {
     private int editMesagesRow;
     private int deleteMessagesRow;
     private int addAdminsRow;
+    private int anonymousRow;
     private int banUsersRow;
     private int addUsersRow;
     private int pinMessagesRow;
@@ -173,10 +174,11 @@ public class ChatRightsEditActivity extends BaseFragment {
                 adminRights.invite_users = rightsAdmin.invite_users;
                 adminRights.pin_messages = rightsAdmin.pin_messages;
                 adminRights.add_admins = rightsAdmin.add_admins;
+                adminRights.anonymous = rightsAdmin.anonymous;
 
                 initialIsSet = adminRights.change_info || adminRights.post_messages || adminRights.edit_messages ||
                         adminRights.delete_messages || adminRights.ban_users || adminRights.invite_users ||
-                        adminRights.pin_messages || adminRights.add_admins;
+                        adminRights.pin_messages || adminRights.add_admins || adminRights.anonymous;
             }
         } else {
             defaultBannedRights = rightsBannedDefault;
@@ -304,7 +306,7 @@ public class ChatRightsEditActivity extends BaseFragment {
         });
 
         listView.setOnItemClickListener((view, position) -> {
-            if (!canEdit) {
+            if (!canEdit && (!currentChat.creator || currentType != TYPE_ADMIN || position != anonymousRow)) {
                 return;
             }
             if (position == 0) {
@@ -497,6 +499,8 @@ public class ChatRightsEditActivity extends BaseFragment {
                     adminRights.delete_messages = !adminRights.delete_messages;
                 } else if (position == addAdminsRow) {
                     adminRights.add_admins = !adminRights.add_admins;
+                } else if (position == anonymousRow) {
+                    adminRights.anonymous = !adminRights.anonymous;
                 } else if (position == banUsersRow) {
                     adminRights.ban_users = !adminRights.ban_users;
                 } else if (position == addUsersRow) {
@@ -589,8 +593,8 @@ public class ChatRightsEditActivity extends BaseFragment {
     }
 
     private boolean isDefaultAdminRights() {
-        return adminRights.change_info && adminRights.delete_messages && adminRights.ban_users && adminRights.invite_users && adminRights.pin_messages && !adminRights.add_admins ||
-                !adminRights.change_info && !adminRights.delete_messages && !adminRights.ban_users && !adminRights.invite_users && !adminRights.pin_messages && !adminRights.add_admins;
+        return adminRights.change_info && adminRights.delete_messages && adminRights.ban_users && adminRights.invite_users && adminRights.pin_messages && !adminRights.add_admins && !adminRights.anonymous ||
+                !adminRights.change_info && !adminRights.delete_messages && !adminRights.ban_users && !adminRights.invite_users && !adminRights.pin_messages && !adminRights.add_admins && !adminRights.anonymous;
     }
 
     private boolean hasAllAdminRights() {
@@ -766,6 +770,7 @@ public class ChatRightsEditActivity extends BaseFragment {
         editMesagesRow = -1;
         deleteMessagesRow = -1;
         addAdminsRow = -1;
+        anonymousRow = -1;
         banUsersRow = -1;
         addUsersRow = -1;
         pinMessagesRow = -1;
@@ -803,6 +808,7 @@ public class ChatRightsEditActivity extends BaseFragment {
                 addUsersRow = rowCount++;
                 pinMessagesRow = rowCount++;
                 addAdminsRow = rowCount++;
+                anonymousRow = rowCount++;
             }
         } else if (currentType == TYPE_BANNED) {
             sendMessagesRow = rowCount++;
@@ -901,7 +907,7 @@ public class ChatRightsEditActivity extends BaseFragment {
                 delegate.didSetRights(
                         adminRights.change_info || adminRights.post_messages || adminRights.edit_messages ||
                         adminRights.delete_messages || adminRights.ban_users || adminRights.invite_users ||
-                        adminRights.pin_messages || adminRights.add_admins ? 1 : 0, adminRights, bannedRights, currentRank);
+                        adminRights.pin_messages || adminRights.add_admins || adminRights.anonymous ? 1 : 0, adminRights, bannedRights, currentRank);
             }
         } else if (currentType == TYPE_BANNED) {
             MessagesController.getInstance(currentAccount).setUserBannedRole(chatId, currentUser, bannedRights, isChannel, getFragmentForAlert(1));
@@ -979,10 +985,13 @@ public class ChatRightsEditActivity extends BaseFragment {
 
         @Override
         public boolean isEnabled(RecyclerView.ViewHolder holder) {
+            int type = holder.getItemViewType();
+            if (currentChat.creator && currentType == TYPE_ADMIN && type == 4 && holder.getAdapterPosition() == anonymousRow) {
+                return true;
+            }
             if (!canEdit) {
                 return false;
             }
-            int type = holder.getItemViewType();
             if (currentType == TYPE_ADMIN && type == 4) {
                 int position = holder.getAdapterPosition();
                 if (position == changeInfoRow) {
@@ -995,6 +1004,8 @@ public class ChatRightsEditActivity extends BaseFragment {
                     return myAdminRights.delete_messages;
                 } else if (position == addAdminsRow) {
                     return myAdminRights.add_admins;
+                } else if (position == anonymousRow) {
+                    return myAdminRights.anonymous;
                 } else if (position == banUsersRow) {
                     return myAdminRights.ban_users;
                 } else if (position == addUsersRow) {
@@ -1152,7 +1163,9 @@ public class ChatRightsEditActivity extends BaseFragment {
                             checkCell.setTextAndCheck(LocaleController.getString("EditAdminGroupDeleteMessages", R.string.EditAdminGroupDeleteMessages), adminRights.delete_messages, true);
                         }
                     } else if (position == addAdminsRow) {
-                        checkCell.setTextAndCheck(LocaleController.getString("EditAdminAddAdmins", R.string.EditAdminAddAdmins), adminRights.add_admins, false);
+                        checkCell.setTextAndCheck(LocaleController.getString("EditAdminAddAdmins", R.string.EditAdminAddAdmins), adminRights.add_admins, anonymousRow != -1);
+                    } else if (position == anonymousRow) {
+                        checkCell.setTextAndCheck(LocaleController.getString("EditAdminSendAnonymously", R.string.EditAdminSendAnonymously), adminRights.anonymous, false);
                     } else if (position == banUsersRow) {
                         checkCell.setTextAndCheck(LocaleController.getString("EditAdminBanUsers", R.string.EditAdminBanUsers), adminRights.ban_users, true);
                     } else if (position == addUsersRow) {
@@ -1263,7 +1276,7 @@ public class ChatRightsEditActivity extends BaseFragment {
             } else if (position == changeInfoRow || position == postMessagesRow || position == editMesagesRow || position == deleteMessagesRow ||
                     position == addAdminsRow || position == banUsersRow || position == addUsersRow || position == pinMessagesRow ||
                     position == sendMessagesRow || position == sendMediaRow || position == sendStickersRow || position == embedLinksRow ||
-                    position == sendPollsRow) {
+                    position == sendPollsRow || position == anonymousRow) {
                 return 4;
             } else if (position == cantEditInfoRow || position == rankInfoRow) {
                 return 1;

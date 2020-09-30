@@ -611,6 +611,7 @@ void Datacenter::clearAuthKey(HandshakeType type) {
         if (authKeyPerm != nullptr) {
             delete authKeyPerm;
             authKeyPerm = nullptr;
+            if (LOGS_ENABLED) DEBUG_D("dc%d account%u clear authKeyPerm", datacenterId, instanceNum);
         }
         authKeyPermId = 0;
         serverSalts.clear();
@@ -619,6 +620,7 @@ void Datacenter::clearAuthKey(HandshakeType type) {
         if (authKeyMediaTemp != nullptr) {
             delete authKeyMediaTemp;
             authKeyMediaTemp = nullptr;
+            if (LOGS_ENABLED) DEBUG_D("dc%d account%u clear authKeyMediaTemp", datacenterId, instanceNum);
         }
         authKeyMediaTempId = 0;
         lastInitMediaVersion = 0;
@@ -628,6 +630,7 @@ void Datacenter::clearAuthKey(HandshakeType type) {
         if (authKeyTemp != nullptr) {
             delete authKeyTemp;
             authKeyTemp = nullptr;
+            if (LOGS_ENABLED) DEBUG_D("dc%d account%u clear authKeyTemp", datacenterId, instanceNum);
         }
         authKeyTempId = 0;
         lastInitVersion = 0;
@@ -882,7 +885,7 @@ bool Datacenter::isHandshaking(bool media) {
     }
     for (std::vector<std::unique_ptr<Handshake>>::iterator iter = handshakes.begin(); iter != handshakes.end(); iter++) {
         Handshake *handshake = iter->get();
-        if (handshake->getType() == HandshakeTypePerm || media && handshake->getType() == HandshakeTypeMediaTemp || !media && handshake->getType() != HandshakeTypeMediaTemp) {
+        if (handshake->getType() == HandshakeTypePerm || (media && handshake->getType() == HandshakeTypeMediaTemp) || (!media && handshake->getType() != HandshakeTypeMediaTemp)) {
             return true;
         }
     }

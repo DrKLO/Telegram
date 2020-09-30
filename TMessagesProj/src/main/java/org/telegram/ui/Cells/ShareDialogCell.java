@@ -86,7 +86,11 @@ public class ShareDialogCell extends FrameLayout {
         if (uid > 0) {
             user = MessagesController.getInstance(currentAccount).getUser(uid);
             avatarDrawable.setInfo(user);
-            if (UserObject.isUserSelf(user)) {
+            if (UserObject.isReplyUser(user)) {
+                nameTextView.setText(LocaleController.getString("RepliesTitle", R.string.RepliesTitle));
+                avatarDrawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_REPLIES);
+                imageView.setImage(null, null, avatarDrawable, user);
+            } else if (UserObject.isUserSelf(user)) {
                 nameTextView.setText(LocaleController.getString("SavedMessages", R.string.SavedMessages));
                 avatarDrawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_SAVED);
                 imageView.setImage(null, null, avatarDrawable, user);

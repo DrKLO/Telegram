@@ -349,7 +349,7 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
         actionBar.setOccupyStatusBar(false);
         actionBar.setAlpha(0.0f);
 
-        if (messageObject != null) {
+        if (messageObject != null && !MediaController.getInstance().currentPlaylistIsGlobalSearch()) {
             long did = messageObject.getDialogId();
             int lower_id = (int) did;
             int high_id = (int) (did >> 32);
@@ -944,7 +944,7 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
                     for (int a = 0; a < dids.size(); a++) {
                         long did = dids.get(a);
                         if (message != null) {
-                            SendMessagesHelper.getInstance(currentAccount).sendMessage(message.toString(), did, null, null, true, null, null, null, true, 0);
+                            SendMessagesHelper.getInstance(currentAccount).sendMessage(message.toString(), did, null, null, null, true, null, null, null, true, 0);
                         }
                         SendMessagesHelper.getInstance(currentAccount).sendMessage(fmessages, did, true, 0);
                     }
@@ -1456,7 +1456,7 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
                 currentFile = FileLoader.getAttachFileName(document);
                 currentAudioFinishedLoading = false;
                 TLRPC.PhotoSize thumb = document != null ? FileLoader.getClosestPhotoSizeWithSize(document.thumbs, 240) : null;
-                if (!(thumb instanceof TLRPC.TL_photoSize)) {
+                if (!(thumb instanceof TLRPC.TL_photoSize) && !(thumb instanceof TLRPC.TL_photoSizeProgressive)) {
                     thumb = null;
                 }
                 String artworkUrl = messageObject.getArtworkUrl(false);
@@ -1528,7 +1528,7 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
 
         @Override
         public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-            View view = new AudioPlayerCell(context);
+            View view = new AudioPlayerCell(context, MediaController.getInstance().currentPlaylistIsGlobalSearch() ? AudioPlayerCell.VIEW_TYPE_GLOBAL_SEARCH  : AudioPlayerCell.VIEW_TYPE_DEFAULT);
             return new RecyclerListView.Holder(view);
         }
 

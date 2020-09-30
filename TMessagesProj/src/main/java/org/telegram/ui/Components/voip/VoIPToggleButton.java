@@ -215,7 +215,7 @@ public class VoIPToggleButton extends FrameLayout {
             return;
         }
 
-        if (AndroidUtilities.computePerceivedBrightness(backgroundColor) > 0.5) {
+        if (Color.alpha(backgroundColor) == 255 && AndroidUtilities.computePerceivedBrightness(backgroundColor) > 0.5) {
             rippleDrawable = Theme.createSimpleSelectorCircleDrawable(AndroidUtilities.dp(52), 0, ColorUtils.setAlphaComponent(Color.BLACK, (int) (255 * 0.1f)));
             rippleDrawable.setCallback(this);
         } else {

@@ -18,6 +18,7 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
@@ -25,7 +26,6 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
 import org.telegram.tgnet.ConnectionsManager;
-import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
@@ -41,7 +41,7 @@ public class ManageChatUserCell extends FrameLayout {
     private ImageView optionsButton;
 
     private AvatarDrawable avatarDrawable;
-    private TLObject currentObject;
+    private Object currentObject;
 
     private CharSequence currentName;
     private CharSequence currrntStatus;
@@ -105,7 +105,7 @@ public class ManageChatUserCell extends FrameLayout {
         }
     }
 
-    public void setData(TLObject object, CharSequence name, CharSequence status, boolean divider) {
+    public void setData(Object object, CharSequence name, CharSequence status, boolean divider) {
         if (object == null) {
             currrntStatus = null;
             currentName = null;
@@ -273,7 +273,11 @@ public class ManageChatUserCell extends FrameLayout {
             } else {
                 statusTextView.setTextColor(statusColor);
                 if (currentChat.participants_count != 0) {
-                    statusTextView.setText(LocaleController.formatPluralString("Members", currentChat.participants_count));
+                    if (ChatObject.isChannel(currentChat) && !currentChat.megagroup) {
+                        statusTextView.setText(LocaleController.formatPluralString("Subscribers", currentChat.participants_count));
+                    } else {
+                        statusTextView.setText(LocaleController.formatPluralString("Members", currentChat.participants_count));
+                    }
                 } else if (currentChat.has_geo) {
                     statusTextView.setText(LocaleController.getString("MegaLocation", R.string.MegaLocation));
                 } else if (TextUtils.isEmpty(currentChat.username)) {
@@ -284,6 +288,12 @@ public class ManageChatUserCell extends FrameLayout {
             }
             lastAvatar = photo;
             avatarImageView.setImage(ImageLocation.getForChat(currentChat, false), "50_50", avatarDrawable, currentChat);
+        } else if (currentObject instanceof Integer) {
+            nameTextView.setText(currentName);
+            statusTextView.setTextColor(statusColor);
+            statusTextView.setText(currrntStatus);
+            avatarDrawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_SHARES);
+            avatarImageView.setImage(null, "50_50", avatarDrawable);
         }
     }
 
@@ -295,7 +305,7 @@ public class ManageChatUserCell extends FrameLayout {
         delegate = manageChatUserCellDelegate;
     }
 
-    public TLObject getCurrentObject() {
+    public Object getCurrentObject() {
         return currentObject;
     }
 

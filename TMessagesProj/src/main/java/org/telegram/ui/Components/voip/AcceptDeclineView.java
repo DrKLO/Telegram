@@ -86,12 +86,12 @@ public class AcceptDeclineView extends View {
     public AcceptDeclineView(@NonNull Context context) {
         super(context);
         touchSlop = ViewConfiguration.get(context).getScaledTouchSlop();
-        buttonWidth = AndroidUtilities.dp(70);
+        buttonWidth = AndroidUtilities.dp(60);
         acceptDrawable = new FabBackgroundDrawable();
-        acceptDrawable.setColor(0xFF45bc4d);
+        acceptDrawable.setColor(0xFF40C749);
 
         declineDrawable = new FabBackgroundDrawable();
-        declineDrawable.setColor(0xFFe61e44);
+        declineDrawable.setColor(0xFFF01D2C);
 
         declineDrawable.setBounds(0, 0, buttonWidth, buttonWidth);
         acceptDrawable.setBounds(0, 0, buttonWidth, buttonWidth);
@@ -144,12 +144,14 @@ public class AcceptDeclineView extends View {
                 startX = event.getX();
                 startY = event.getY();
                 if (leftAnimator == null && declineRect.contains((int) event.getX(), (int) event.getY())) {
+                    rippleDrawable = Theme.createSimpleSelectorCircleDrawable(AndroidUtilities.dp(52), 0, 0xFFFF3846);
                     captured = true;
                     leftDrag = true;
                     setPressed(true);
                     return true;
                 }
                 if (rightAnimator == null && acceptRect.contains((int) event.getX(), (int) event.getY())) {
+                    rippleDrawable = Theme.createSimpleSelectorCircleDrawable(AndroidUtilities.dp(52), 0, 0xFF4DD156);
                     captured = true;
                     leftDrag = false;
                     setPressed(true);
@@ -351,11 +353,6 @@ public class AcceptDeclineView extends View {
         acceptDrawable.draw(canvas);
         acceptRect.set(getMeasuredWidth() - AndroidUtilities.dp(46) - buttonWidth, AndroidUtilities.dp(40), getMeasuredWidth() - AndroidUtilities.dp(46), AndroidUtilities.dp(40) + buttonWidth);
 
-        if (!leftDrag) {
-            rippleDrawable.setBounds(AndroidUtilities.dp(4), AndroidUtilities.dp(4), buttonWidth - AndroidUtilities.dp(4), buttonWidth - AndroidUtilities.dp(4));
-            rippleDrawable.draw(canvas);
-        }
-
         if (retryMod) {
             canvas.save();
             canvas.translate(buttonWidth / 2f - retryLayout.getWidth() / 2f, buttonWidth + AndroidUtilities.dp(8));
@@ -369,9 +366,15 @@ public class AcceptDeclineView extends View {
         }
 
         canvas.save();
-        canvas.rotate(-135, buttonWidth / 2f, buttonWidth / 2f);
+        canvas.translate(-AndroidUtilities.dp(1), AndroidUtilities.dp(1));
+        canvas.rotate(-135, callDrawable.getBounds().centerX(), callDrawable.getBounds().centerY());
         callDrawable.draw(canvas);
         canvas.restore();
+
+        if (!leftDrag) {
+            rippleDrawable.setBounds(AndroidUtilities.dp(4), AndroidUtilities.dp(4), buttonWidth - AndroidUtilities.dp(4), buttonWidth - AndroidUtilities.dp(4));
+            rippleDrawable.draw(canvas);
+        }
 
         canvas.restore();
         canvas.restore();

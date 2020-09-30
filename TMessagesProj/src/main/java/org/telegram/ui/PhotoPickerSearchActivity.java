@@ -194,7 +194,7 @@ public class PhotoPickerSearchActivity extends BaseFragment {
         maximumVelocity = configuration.getScaledMaximumFlingVelocity();
 
         SizeNotifierFrameLayout sizeNotifierFrameLayout;
-        fragmentView = sizeNotifierFrameLayout = new SizeNotifierFrameLayout(context, SharedConfig.smoothKeyboard) {
+        fragmentView = sizeNotifierFrameLayout = new SizeNotifierFrameLayout(context) {
 
             private int startedTrackingPointerId;
             private boolean startedTracking;

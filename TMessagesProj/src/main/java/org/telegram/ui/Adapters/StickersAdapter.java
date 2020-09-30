@@ -113,7 +113,7 @@ public class StickersAdapter extends RecyclerListView.SelectionAdapter implement
         for (int a = 0; a < size; a++) {
             StickerResult result = stickers.get(a);
             TLRPC.PhotoSize thumb = FileLoader.getClosestPhotoSizeWithSize(result.sticker.thumbs, 90);
-            if (thumb instanceof TLRPC.TL_photoSize) {
+            if (thumb instanceof TLRPC.TL_photoSize || thumb instanceof TLRPC.TL_photoSizeProgressive) {
                 File f = FileLoader.getPathToAttach(thumb, "webp", true);
                 if (!f.exists()) {
                     stickersToLoad.add(FileLoader.getAttachFileName(thumb, "webp"));

@@ -206,7 +206,7 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
                 if (recentPostsAll.size() > 0) {
                     int lastPostId = recentPostsAll.get(0).counters.msg_id;
                     int count = recentPostsAll.size();
-                    getMessagesStorage().getMessages(-chat.id, 0, false, count, lastPostId, 0, 0, classGuid, 0, true, false, 0);
+                    getMessagesStorage().getMessages(-chat.id, 0, false, count, lastPostId, 0, 0, classGuid, 0, true, false, 0, 0);
                 }
 
                 AndroidUtilities.runOnUIThread(() -> {
@@ -653,8 +653,7 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
                     (position >= topMembersStartRow && position <= topMembersEndRow) ||
                     (position >= topInviterStartRow && position <= topInviterEndRow)) {
                 return 9;
-            }
-            if (position == expandTopMembersRow) {
+            } else if (position == expandTopMembersRow) {
                 return 15;
             } else {
                 return 10;

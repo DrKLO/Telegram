@@ -8,27 +8,32 @@ import android.content.Context;
 import android.content.res.Configuration;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
+import android.graphics.Rect;
 import android.graphics.Typeface;
 import android.graphics.drawable.InsetDrawable;
+import android.os.Build;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
-import android.view.ViewParent;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import androidx.annotation.CallSuper;
+import androidx.annotation.ColorInt;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.util.Consumer;
+import androidx.core.util.Preconditions;
 import androidx.core.view.ViewCompat;
+import androidx.dynamicanimation.animation.DynamicAnimation;
+import androidx.dynamicanimation.animation.SpringAnimation;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
-import org.telegram.ui.ActionBar.ActionBarLayout;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
 
@@ -41,23 +46,12 @@ public final class Bulletin {
     public static final int DURATION_SHORT = 1500;
     public static final int DURATION_LONG = 2750;
 
-    //region Static Factory
     public static Bulletin make(@NonNull FrameLayout containerLayout, @NonNull Layout contentLayout, int duration) {
         return new Bulletin(containerLayout, contentLayout, duration);
     }
 
     public static Bulletin make(@NonNull BaseFragment fragment, @NonNull Layout contentLayout, int duration) {
-        return new Bulletin(fragment.getParentLayout(), contentLayout, duration);
-    }
-
-    public static Bulletin make(@NonNull View view, @NonNull Layout contentLayout, int duration) {
-        final FrameLayout containerLayout = findActionBarLayout(view);
-
-        if (containerLayout == null) {
-            throw new IllegalArgumentException("No ActionBarLayout in the hierarchy of the given view");
-        }
-
-        return new Bulletin(containerLayout, contentLayout, duration);
+        return new Bulletin(fragment.getLayoutContainer(), contentLayout, duration);
     }
 
     public static Bulletin find(@NonNull FrameLayout containerLayout) {
@@ -70,36 +64,37 @@ public final class Bulletin {
         return null;
     }
 
-    private static ActionBarLayout findActionBarLayout(View view) {
-        while (view != null) {
-            if (view instanceof ActionBarLayout) {
-                return (ActionBarLayout) view;
-            }
-            ViewParent parent = view.getParent();
-            if (parent instanceof View) {
-                view = (View) parent;
-            }
-        }
-        return null;
+    public static void hide(@NonNull FrameLayout containerLayout) {
+        hide(containerLayout, true);
     }
-    //endregion
 
-    private static final HashMap<FrameLayout, OffsetProvider> offsetProviders = new HashMap<>();
+    public static void hide(@NonNull FrameLayout containerLayout, boolean animated) {
+        final Bulletin bulletin = find(containerLayout);
+        if (bulletin != null) {
+            bulletin.hide(animated && isTransitionsEnabled());
+        }
+    }
+
+    private static final HashMap<FrameLayout, Delegate> delegates = new HashMap<>();
 
     @SuppressLint("StaticFieldLeak")
     private static Bulletin visibleBulletin;
 
     private final Layout layout;
-    private final Layout.Transition layoutTransition;
+    private final FrameLayout parentLayout;
     private final FrameLayout containerLayout;
     private final int duration;
 
-    private Runnable exitRunnable;
     private boolean showing;
+    private Runnable exitRunnable;
+    private int currentBottomOffset;
+    private Delegate currentDelegate;
+    private Layout.Transition layoutTransition;
 
     private Bulletin(@NonNull FrameLayout containerLayout, @NonNull Layout layout, int duration) {
         this.layout = layout;
-        this.layoutTransition = layout.createTransition();
+        this.parentLayout = new FrameLayout(layout.getContext());
+        this.parentLayout.addView(layout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.BOTTOM));
         this.containerLayout = containerLayout;
         this.duration = duration;
     }
@@ -108,9 +103,7 @@ public final class Bulletin {
         if (!showing) {
             showing = true;
 
-            if (layout.getParent() != null) {
-                throw new IllegalStateException("Layout already has a parent");
-            }
+            Preconditions.checkState(layout.getParent() == parentLayout, "Layout has incorrect parent");
 
             if (visibleBulletin != null) {
                 visibleBulletin.hide();
@@ -124,13 +117,28 @@ public final class Bulletin {
                     layout.removeOnLayoutChangeListener(this);
                     if (showing) {
                         layout.onShow();
+                        currentDelegate = delegates.get(containerLayout);
+                        currentBottomOffset = currentDelegate != null ? currentDelegate.getBottomOffset() : 0;
                         if (isTransitionsEnabled()) {
-                            final OffsetProvider offsetProvider = offsetProviders.get(containerLayout);
+                            if (currentBottomOffset != 0) {
+                                ViewCompat.setClipBounds(parentLayout, new Rect(left, top - currentBottomOffset, right, bottom - currentBottomOffset));
+                            } else {
+                                ViewCompat.setClipBounds(parentLayout, null);
+                            }
+                            ensureLayoutTransitionCreated();
                             layoutTransition.animateEnter(layout, layout::onEnterTransitionStart, () -> {
                                 layout.onEnterTransitionEnd();
                                 layout.postDelayed(exitRunnable = Bulletin.this::hide, duration);
-                            }, offsetProvider != null ? offsetProvider.getBottomOffset() : 0);
+                            }, offset -> {
+                                if (currentDelegate != null) {
+                                    currentDelegate.onOffsetChange(layout.getHeight() - offset);
+                                }
+                            }, currentBottomOffset);
                         } else {
+                            if (currentDelegate != null) {
+                                currentDelegate.onOffsetChange(layout.getHeight() - currentBottomOffset);
+                            }
+                            layout.setTranslationY(-currentBottomOffset);
                             layout.onEnterTransitionStart();
                             layout.onEnterTransitionEnd();
                             layout.postDelayed(exitRunnable = Bulletin.this::hide, duration);
@@ -150,7 +158,13 @@ public final class Bulletin {
                 }
             });
 
-            containerLayout.addView(layout);
+            containerLayout.addView(parentLayout);
+        }
+    }
+
+    private void ensureLayoutTransitionCreated() {
+        if (layoutTransition == null) {
+            layoutTransition = layout.createTransition();
         }
     }
 
@@ -166,31 +180,40 @@ public final class Bulletin {
                 visibleBulletin = null;
             }
 
+            int bottomOffset = currentBottomOffset;
+            currentBottomOffset = 0;
+
             if (ViewCompat.isLaidOut(layout)) {
                 if (exitRunnable != null) {
                     layout.removeCallbacks(exitRunnable);
                     exitRunnable = null;
                 }
                 if (animated) {
-                    final OffsetProvider offsetProvider = offsetProviders.get(containerLayout);
+                    ensureLayoutTransitionCreated();
                     layoutTransition.animateExit(layout, layout::onExitTransitionStart, () -> {
+                        if (currentDelegate != null) {
+                            currentDelegate.onOffsetChange(0);
+                        }
                         layout.onExitTransitionEnd();
                         layout.onHide();
-                        if (containerLayout != null) {
-                            containerLayout.removeView(layout);
-                        }
+                        containerLayout.removeView(parentLayout);
                         layout.onDetach();
-                    }, offsetProvider != null ? offsetProvider.getBottomOffset() : 0);
+                    }, offset -> {
+                        if (currentDelegate != null) {
+                            currentDelegate.onOffsetChange(layout.getHeight() - offset);
+                        }
+                    }, bottomOffset);
                     return;
                 }
             }
 
+            if (currentDelegate != null) {
+                currentDelegate.onOffsetChange(0);
+            }
             layout.onExitTransitionStart();
             layout.onExitTransitionEnd();
             layout.onHide();
-            if (containerLayout != null) {
-                containerLayout.removeView(layout);
-            }
+            containerLayout.removeView(parentLayout);
             layout.onDetach();
         }
     }
@@ -204,20 +227,40 @@ public final class Bulletin {
     }
 
     private static boolean isTransitionsEnabled() {
-        return MessagesController.getGlobalMainSettings().getBoolean("view_animations", true);
+        return MessagesController.getGlobalMainSettings().getBoolean("view_animations", true) && Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2;
     }
 
     //region Offset Providers
-    public static void addOffsetProvider(@NonNull FrameLayout containerLayout, @NonNull OffsetProvider offsetProvider) {
-        offsetProviders.put(containerLayout, offsetProvider);
+    public static void addDelegate(@NonNull BaseFragment fragment, @NonNull Delegate delegate) {
+        final FrameLayout containerLayout = fragment.getLayoutContainer();
+        if (containerLayout != null) {
+            addDelegate(containerLayout, delegate);
+        }
     }
 
-    public static void removeOffsetProvider(@NonNull FrameLayout containerLayout) {
-        offsetProviders.remove(containerLayout);
+    public static void addDelegate(@NonNull FrameLayout containerLayout, @NonNull Delegate delegate) {
+        delegates.put(containerLayout, delegate);
     }
 
-    public interface OffsetProvider {
-        int getBottomOffset();
+    public static void removeDelegate(@NonNull BaseFragment fragment) {
+        final FrameLayout containerLayout = fragment.getLayoutContainer();
+        if (containerLayout != null) {
+            removeDelegate(containerLayout);
+        }
+    }
+
+    public static void removeDelegate(@NonNull FrameLayout containerLayout) {
+        delegates.remove(containerLayout);
+    }
+
+    public interface Delegate {
+
+        default int getBottomOffset() {
+            return 0;
+        }
+
+        default void onOffsetChange(float offset) {
+        }
     }
     //endregion
 
@@ -229,9 +272,13 @@ public final class Bulletin {
         protected Bulletin bulletin;
 
         public Layout(@NonNull Context context) {
+            this(context, Theme.getColor(Theme.key_undo_background));
+        }
+
+        public Layout(@NonNull Context context, @ColorInt int backgroundColor) {
             super(context);
             setMinimumHeight(AndroidUtilities.dp(48));
-            setBackground(new InsetDrawable(Theme.createRoundRectDrawable(AndroidUtilities.dp(6), Theme.getColor(Theme.key_undo_background)), AndroidUtilities.dp(8)));
+            setBackground(new InsetDrawable(Theme.createRoundRectDrawable(AndroidUtilities.dp(6), backgroundColor), AndroidUtilities.dp(8)));
             updateSize();
         }
 
@@ -351,58 +398,137 @@ public final class Bulletin {
         //region Transitions
         @NonNull
         public Transition createTransition() {
-            return new DefaultTransition();
+            return new SpringTransition();
         }
 
         public interface Transition {
-            void animateEnter(@NonNull Layout layout, @Nullable Runnable startAction, @Nullable Runnable endAction, int bottomOffset);
-            void animateExit(@NonNull Layout layout, @Nullable Runnable startAction, @Nullable Runnable endAction, int bottomOffset);
+            void animateEnter(@NonNull Layout layout, @Nullable Runnable startAction, @Nullable Runnable endAction, @Nullable Consumer<Float> onUpdate, int bottomOffset);
+            void animateExit(@NonNull Layout layout, @Nullable Runnable startAction, @Nullable Runnable endAction, @Nullable Consumer<Float> onUpdate, int bottomOffset);
         }
 
         public static class DefaultTransition implements Transition {
 
             @Override
-            public void animateEnter(@NonNull Layout layout, @Nullable Runnable startAction, @Nullable Runnable endAction, int bottomOffset) {
+            public void animateEnter(@NonNull Layout layout, @Nullable Runnable startAction, @Nullable Runnable endAction, @Nullable Consumer<Float> onUpdate, int bottomOffset) {
                 final ObjectAnimator animator = ObjectAnimator.ofFloat(layout, View.TRANSLATION_Y, layout.getHeight(), -bottomOffset);
                 animator.setDuration(225);
                 animator.setInterpolator(Easings.easeOutQuad);
-                animator.addListener(new AnimatorListenerAdapter() {
-                    @Override
-                    public void onAnimationStart(Animator animation) {
-                        if (startAction != null) {
-                            startAction.run();
+                if (startAction != null || endAction != null) {
+                    animator.addListener(new AnimatorListenerAdapter() {
+                        @Override
+                        public void onAnimationStart(Animator animation) {
+                            if (startAction != null) {
+                                startAction.run();
+                            }
                         }
-                    }
-                    @Override
-                    public void onAnimationEnd(Animator animation) {
-                        if (endAction != null) {
-                            endAction.run();
+
+                        @Override
+                        public void onAnimationEnd(Animator animation) {
+                            if (endAction != null) {
+                                endAction.run();
+                            }
                         }
-                    }
-                });
+                    });
+                }
+                if (onUpdate != null) {
+                    animator.addUpdateListener(a -> onUpdate.accept((Float) a.getAnimatedValue()));
+                }
                 animator.start();
             }
 
             @Override
-            public void animateExit(@NonNull Layout layout, @Nullable Runnable startAction, @Nullable Runnable endAction, int bottomOffset) {
+            public void animateExit(@NonNull Layout layout, @Nullable Runnable startAction, @Nullable Runnable endAction, @Nullable Consumer<Float> onUpdate, int bottomOffset) {
                 final ObjectAnimator animator = ObjectAnimator.ofFloat(layout, View.TRANSLATION_Y, layout.getTranslationY(), layout.getHeight());
                 animator.setDuration(175);
                 animator.setInterpolator(Easings.easeInQuad);
-                animator.addListener(new AnimatorListenerAdapter() {
-                    @Override
-                    public void onAnimationStart(Animator animation) {
-                        if (startAction != null) {
-                            startAction.run();
+                if (startAction != null || endAction != null) {
+                    animator.addListener(new AnimatorListenerAdapter() {
+                        @Override
+                        public void onAnimationStart(Animator animation) {
+                            if (startAction != null) {
+                                startAction.run();
+                            }
                         }
-                    }
-                    @Override
-                    public void onAnimationEnd(Animator animation) {
-                        if (endAction != null) {
-                            endAction.run();
+
+                        @Override
+                        public void onAnimationEnd(Animator animation) {
+                            if (endAction != null) {
+                                endAction.run();
+                            }
                         }
-                    }
-                });
+                    });
+                }
+                if (onUpdate != null) {
+                    animator.addUpdateListener(a -> onUpdate.accept((Float) a.getAnimatedValue()));
+                }
                 animator.start();
+            }
+        }
+
+        public static class SpringTransition implements Transition {
+
+            private static final float DAMPING_RATIO = 0.8f;
+            private static final float STIFFNESS = 400f;
+
+            @Override
+            public void animateEnter(@NonNull Layout layout, @Nullable Runnable startAction, @Nullable Runnable endAction, @Nullable Consumer<Float> onUpdate, int bottomOffset) {
+                final int translationY = layout.getHeight() - bottomOffset;
+                layout.setTranslationY(translationY);
+                onUpdate.accept((float) translationY);
+                final SpringAnimation springAnimation = new SpringAnimation(layout, SpringAnimation.TRANSLATION_Y, -bottomOffset);
+                springAnimation.getSpring().setDampingRatio(DAMPING_RATIO);
+                springAnimation.getSpring().setStiffness(STIFFNESS);
+                if (endAction != null) {
+                    springAnimation.addEndListener(new DynamicAnimation.OnAnimationEndListener() {
+                        @Override
+                        public void onAnimationEnd(DynamicAnimation animation, boolean canceled, float value, float velocity) {
+                            if (!canceled) {
+                                endAction.run();
+                            }
+                        }
+                    });
+                }
+                if (onUpdate != null) {
+                    springAnimation.addUpdateListener(new DynamicAnimation.OnAnimationUpdateListener() {
+                        @Override
+                        public void onAnimationUpdate(DynamicAnimation animation, float value, float velocity) {
+                            onUpdate.accept(value);
+                        }
+                    });
+                }
+                springAnimation.start();
+                if (startAction != null) {
+                    startAction.run();
+                }
+            }
+
+            @Override
+            public void animateExit(@NonNull Layout layout, @Nullable Runnable startAction, @Nullable Runnable endAction, @Nullable Consumer<Float> onUpdate,int bottomOffset) {
+                final SpringAnimation springAnimation = new SpringAnimation(layout, SpringAnimation.TRANSLATION_Y, layout.getHeight() - bottomOffset);
+                springAnimation.getSpring().setDampingRatio(DAMPING_RATIO);
+                springAnimation.getSpring().setStiffness(STIFFNESS);
+                if (endAction != null) {
+                    springAnimation.addEndListener(new DynamicAnimation.OnAnimationEndListener() {
+                        @Override
+                        public void onAnimationEnd(DynamicAnimation animation, boolean canceled, float value, float velocity) {
+                            if (!canceled) {
+                                endAction.run();
+                            }
+                        }
+                    });
+                }
+                if (onUpdate != null) {
+                    springAnimation.addUpdateListener(new DynamicAnimation.OnAnimationUpdateListener() {
+                        @Override
+                        public void onAnimationUpdate(DynamicAnimation animation, float value, float velocity) {
+                            onUpdate.accept(value);
+                        }
+                    });
+                }
+                springAnimation.start();
+                if (startAction != null) {
+                    startAction.run();
+                }
             }
         }
         //endregion
@@ -417,6 +543,10 @@ public final class Bulletin {
 
         public ButtonLayout(@NonNull Context context) {
             super(context);
+        }
+
+        public ButtonLayout(@NonNull Context context, int backgroundColor) {
+            super(context, backgroundColor);
         }
 
         @Override
@@ -511,6 +641,46 @@ public final class Bulletin {
             subtitleTextView.setTypeface(Typeface.SANS_SERIF);
             subtitleTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
             linearLayout.addView(subtitleTextView);
+        }
+    }
+
+    public static class LottieLayout extends ButtonLayout {
+
+        public final RLottieImageView imageView;
+        public final TextView textView;
+
+        private final int textColor;
+
+        public LottieLayout(@NonNull Context context) {
+            this(context, Theme.getColor(Theme.key_undo_background), Theme.getColor(Theme.key_undo_infoColor));
+        }
+
+        public LottieLayout(@NonNull Context context, @ColorInt int backgroundColor, @ColorInt int textColor) {
+            super(context, backgroundColor);
+            this.textColor = textColor;
+
+            imageView = new RLottieImageView(context);
+            addView(imageView, LayoutHelper.createFrameRelatively(28, 28, Gravity.START | Gravity.CENTER_VERTICAL, 14, 10, 14, 10));
+
+            textView = new TextView(context);
+            textView.setSingleLine();
+            textView.setTextColor(textColor);
+            textView.setTypeface(Typeface.SANS_SERIF);
+            textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
+            addView(textView, LayoutHelper.createFrameRelatively(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.START | Gravity.CENTER_VERTICAL, 56, 0, 16, 0));
+        }
+
+        @Override
+        protected void onShow() {
+            super.onShow();
+            imageView.playAnimation();
+        }
+
+        public void setAnimation(int resId, String... layers) {
+            imageView.setAnimation(resId, 28, 28);
+            for (int i = 0; i < layers.length; i++) {
+                imageView.setLayerColor(layers[i] + ".**", textColor);
+            }
         }
     }
     //endregion

@@ -399,7 +399,7 @@ public class ChatAttachAlertLocationLayout extends ChatAttachAlert.AttachAlertLa
             @Override
             public void onSearchExpand() {
                 searching = true;
-                parentAlert.makeFocusable(searchItem.getSearchField());
+                parentAlert.makeFocusable(searchItem.getSearchField(), true);
             }
 
             @Override
@@ -727,7 +727,7 @@ public class ChatAttachAlertLocationLayout extends ChatAttachAlert.AttachAlertLa
                 if (forceUpdate != null) {
                     yOffset += dy;
                 }
-                parentAlert.updateLayout(ChatAttachAlertLocationLayout.this, true);
+                parentAlert.updateLayout(ChatAttachAlertLocationLayout.this, true, dy);
             }
         });
         ((DefaultItemAnimator) listView.getItemAnimator()).setDelayAnimations(false);

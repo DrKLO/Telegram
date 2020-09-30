@@ -203,7 +203,6 @@ public class VoIPFragment implements VoIPBaseService.StateListener, Notification
     };
     private boolean lockOnScreen;
     private boolean screenWasWakeup;
-
     private boolean isVideoCall;
 
     public static void show(Activity activity) {
@@ -1013,6 +1012,12 @@ public class VoIPFragment implements VoIPBaseService.StateListener, Notification
         float cameraCornerRadiusFrom = callingUserIsVideo ? AndroidUtilities.dp(4) : 0;
         float cameraCornerRadiusTo = AndroidUtilities.dp(4) * 1f / cameraToScale;
 
+        float fromCameraAlpha = 1f;
+        float toCameraAlpha = 1f;
+        if (callingUserIsVideo) {
+            fromCameraAlpha = VoIPPiPView.isExpanding() ? 1f : 0f;
+        }
+
         if (enter) {
             if (animateCamera) {
                 currentUserCameraFloatingLayout.setScaleX(cameraToScale);
@@ -1020,6 +1025,7 @@ public class VoIPFragment implements VoIPBaseService.StateListener, Notification
                 currentUserCameraFloatingLayout.setTranslationX(cameraToX);
                 currentUserCameraFloatingLayout.setTranslationY(cameraToY);
                 currentUserCameraFloatingLayout.setCornerRadius(cameraCornerRadiusTo);
+                currentUserCameraFloatingLayout.setAlpha(fromCameraAlpha);
             }
             callingUserTextureView.setScaleX(callingUserToScale);
             callingUserTextureView.setScaleY(callingUserToScale);
@@ -1032,7 +1038,6 @@ public class VoIPFragment implements VoIPBaseService.StateListener, Notification
             callingUserPhotoView.setScaleY(callingUserToScale);
             callingUserPhotoView.setTranslationX(callingUserToX);
             callingUserPhotoView.setTranslationY(callingUserToY);
-
         }
         ValueAnimator animator = ValueAnimator.ofFloat(enter ? 1f : 0, enter ? 0 : 1f);
 
@@ -1040,6 +1045,7 @@ public class VoIPFragment implements VoIPBaseService.StateListener, Notification
         updateSystemBarColors();
 
         boolean finalAnimateCamera = animateCamera;
+        float finalFromCameraAlpha = fromCameraAlpha;
         animator.addUpdateListener(valueAnimator -> {
             float v = (float) valueAnimator.getAnimatedValue();
             enterTransitionProgress = 1f - v;
@@ -1052,6 +1058,7 @@ public class VoIPFragment implements VoIPBaseService.StateListener, Notification
                 currentUserCameraFloatingLayout.setTranslationX(cameraFromX * (1f - v) + cameraToX * v);
                 currentUserCameraFloatingLayout.setTranslationY(cameraFromY * (1f - v) + cameraToY * v);
                 currentUserCameraFloatingLayout.setCornerRadius(cameraCornerRadiusFrom * (1f - v) + cameraCornerRadiusTo * v);
+                currentUserCameraFloatingLayout.setAlpha(toCameraAlpha * (1f - v) + finalFromCameraAlpha * v);
             }
 
             float callingUserScale = callingUserFromScale * (1f - v) + callingUserToScale * v;

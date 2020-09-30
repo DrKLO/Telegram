@@ -158,7 +158,7 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
     }
 
     public void setMessageObject(MessageObject messageObject) {
-        if (currentMessageObject == messageObject && (hasReplyMessage || messageObject.replyMessageObject == null)) {
+        if (currentMessageObject == messageObject && (textLayout == null || TextUtils.equals(textLayout.getText(), messageObject.messageText)) && (hasReplyMessage || messageObject.replyMessageObject == null)) {
             return;
         }
         currentMessageObject = messageObject;
@@ -166,19 +166,7 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
         DownloadController.getInstance(currentAccount).removeLoadingFileObserver(this);
         previousWidth = 0;
         if (currentMessageObject.type == 11) {
-            int id = 0;
-            if (messageObject.messageOwner.to_id != null) {
-                if (messageObject.messageOwner.to_id.chat_id != 0) {
-                    id = messageObject.messageOwner.to_id.chat_id;
-                } else if (messageObject.messageOwner.to_id.channel_id != 0) {
-                    id = messageObject.messageOwner.to_id.channel_id;
-                } else {
-                    id = messageObject.messageOwner.to_id.user_id;
-                    if (id == UserConfig.getInstance(currentAccount).getClientUserId()) {
-                        id = messageObject.messageOwner.from_id;
-                    }
-                }
-            }
+            int id = (int) messageObject.getDialogId();
             avatarDrawable.setInfo(id, null, null);
             if (currentMessageObject.messageOwner.action instanceof TLRPC.TL_messageActionUserUpdatedPhoto) {
                 imageReceiver.setImage(null, null, avatarDrawable, null, currentMessageObject, 0);
@@ -315,7 +303,7 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
                                     if (delegate != null) {
                                         String url = link[0].getURL();
                                         if (url.startsWith("game")) {
-                                            delegate.didPressReplyMessage(this, currentMessageObject.messageOwner.reply_to_msg_id);
+                                            delegate.didPressReplyMessage(this, currentMessageObject.getReplyMsgId());
                                             /*TLRPC.KeyboardButton gameButton = null;
                                             MessageObject messageObject = currentMessageObject.replyMessageObject;
                                             if (messageObject != null && messageObject.messageOwner.reply_markup != null) {

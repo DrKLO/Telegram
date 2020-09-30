@@ -262,7 +262,7 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
             }
         });
 
-        SizeNotifierFrameLayout sizeNotifierFrameLayout = new SizeNotifierFrameLayout(context, SharedConfig.smoothKeyboard) {
+        SizeNotifierFrameLayout sizeNotifierFrameLayout = new SizeNotifierFrameLayout(context) {
 
             private boolean ignoreLayout;
 
@@ -276,7 +276,7 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
 
                 measureChildWithMargins(actionBar, widthMeasureSpec, 0, heightMeasureSpec, 0);
 
-                int keyboardSize = SharedConfig.smoothKeyboard ? 0 : measureKeyboardHeight();
+                int keyboardSize = measureKeyboardHeight();
                 if (keyboardSize > AndroidUtilities.dp(20)) {
                     ignoreLayout = true;
                     editText.hideEmojiView();
@@ -309,7 +309,7 @@ public class GroupCreateFinalActivity extends BaseFragment implements Notificati
             protected void onLayout(boolean changed, int l, int t, int r, int b) {
                 final int count = getChildCount();
 
-                int keyboardSize = SharedConfig.smoothKeyboard ? 0 : measureKeyboardHeight();
+                int keyboardSize = measureKeyboardHeight();
                 int paddingBottom = keyboardSize <= AndroidUtilities.dp(20) && !AndroidUtilities.isInMultiwindow && !AndroidUtilities.isTablet() ? editText.getEmojiPadding() : 0;
                 setBottomClip(paddingBottom);
 

@@ -128,7 +128,13 @@ public class GroupCreateSpan extends View {
         } else if (object instanceof TLRPC.User) {
             TLRPC.User user = (TLRPC.User) object;
             uid = user.id;
-            if (UserObject.isUserSelf(user)) {
+            if (UserObject.isReplyUser(user)) {
+                firstName = LocaleController.getString("RepliesTitle", R.string.RepliesTitle);
+                avatarDrawable.setSmallSize(true);
+                avatarDrawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_REPLIES);
+                imageLocation = null;
+                imageParent = null;
+            } else if (UserObject.isUserSelf(user)) {
                 firstName = LocaleController.getString("SavedMessages", R.string.SavedMessages);
                 avatarDrawable.setSmallSize(true);
                 avatarDrawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_SAVED);

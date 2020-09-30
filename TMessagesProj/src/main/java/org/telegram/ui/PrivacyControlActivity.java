@@ -144,14 +144,14 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
             message.date = date + 60;
             message.dialog_id = 1;
             message.flags = 257 + TLRPC.MESSAGE_FLAG_FWD;
-            message.from_id = 0;
+            message.from_id = new TLRPC.TL_peerUser();
             message.id = 1;
             message.fwd_from = new TLRPC.TL_messageFwdHeader();
             message.fwd_from.from_name = ContactsController.formatName(currentUser.first_name, currentUser.last_name);
             message.media = new TLRPC.TL_messageMediaEmpty();
             message.out = false;
-            message.to_id = new TLRPC.TL_peerUser();
-            message.to_id.user_id = UserConfig.getInstance(currentAccount).getClientUserId();
+            message.peer_id = new TLRPC.TL_peerUser();
+            message.peer_id.user_id = UserConfig.getInstance(currentAccount).getClientUserId();
             messageObject = new MessageObject(currentAccount, message, true, false);
             messageObject.eventId = 1;
             messageObject.resetLayout();
@@ -809,15 +809,16 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
 
     private void setMessageText() {
         if (messageCell != null) {
+            messageCell.messageObject.messageOwner.fwd_from.from_id = new TLRPC.TL_peerUser();
             if (currentType == TYPE_EVERYBODY) {
                 messageCell.hintView.setOverrideText(LocaleController.getString("PrivacyForwardsEverybody", R.string.PrivacyForwardsEverybody));
-                messageCell.messageObject.messageOwner.fwd_from.from_id = 1;
+                messageCell.messageObject.messageOwner.fwd_from.from_id.user_id = 1;
             } else if (currentType == TYPE_NOBODY) {
                 messageCell.hintView.setOverrideText(LocaleController.getString("PrivacyForwardsNobody", R.string.PrivacyForwardsNobody));
-                messageCell.messageObject.messageOwner.fwd_from.from_id = 0;
+                messageCell.messageObject.messageOwner.fwd_from.from_id.user_id = 0;
             } else {
                 messageCell.hintView.setOverrideText(LocaleController.getString("PrivacyForwardsContacts", R.string.PrivacyForwardsContacts));
-                messageCell.messageObject.messageOwner.fwd_from.from_id = 1;
+                messageCell.messageObject.messageOwner.fwd_from.from_id.user_id = 1;
             }
             messageCell.cell.forceResetMessageObject();
         }

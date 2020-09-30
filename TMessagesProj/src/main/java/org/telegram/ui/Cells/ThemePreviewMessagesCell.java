@@ -55,12 +55,13 @@ public class ThemePreviewMessagesCell extends LinearLayout {
         message.date = date + 60;
         message.dialog_id = 1;
         message.flags = 259;
-        message.from_id = UserConfig.getInstance(UserConfig.selectedAccount).getClientUserId();
+        message.from_id = new TLRPC.TL_peerUser();
+        message.from_id.user_id = UserConfig.getInstance(UserConfig.selectedAccount).getClientUserId();
         message.id = 1;
         message.media = new TLRPC.TL_messageMediaEmpty();
         message.out = true;
-        message.to_id = new TLRPC.TL_peerUser();
-        message.to_id.user_id = 0;
+        message.peer_id = new TLRPC.TL_peerUser();
+        message.peer_id.user_id = 0;
         MessageObject replyMessageObject = new MessageObject(UserConfig.selectedAccount, message, true, false);
 
         message = new TLRPC.TL_message();
@@ -85,12 +86,13 @@ public class ThemePreviewMessagesCell extends LinearLayout {
         message.date = date + 960;
         message.dialog_id = 1;
         message.flags = 259;
-        message.from_id = UserConfig.getInstance(UserConfig.selectedAccount).getClientUserId();
+        message.from_id = new TLRPC.TL_peerUser();
+        message.from_id.user_id = UserConfig.getInstance(UserConfig.selectedAccount).getClientUserId();
         message.id = 1;
         message.media = new TLRPC.TL_messageMediaEmpty();
         message.out = true;
-        message.to_id = new TLRPC.TL_peerUser();
-        message.to_id.user_id = 0;
+        message.peer_id = new TLRPC.TL_peerUser();
+        message.peer_id.user_id = 0;
         MessageObject message1 = new MessageObject(UserConfig.selectedAccount, message, true, false);
         message1.resetLayout();
         message1.eventId = 1;
@@ -104,13 +106,14 @@ public class ThemePreviewMessagesCell extends LinearLayout {
         message.date = date + 60;
         message.dialog_id = 1;
         message.flags = 257 + 8;
-        message.from_id = 0;
+        message.from_id = new TLRPC.TL_peerUser();
         message.id = 1;
-        message.reply_to_msg_id = 5;
+        message.reply_to = new TLRPC.TL_messageReplyHeader();
+        message.reply_to.reply_to_msg_id = 5;
         message.media = new TLRPC.TL_messageMediaEmpty();
         message.out = false;
-        message.to_id = new TLRPC.TL_peerUser();
-        message.to_id.user_id = UserConfig.getInstance(UserConfig.selectedAccount).getClientUserId();
+        message.peer_id = new TLRPC.TL_peerUser();
+        message.peer_id.user_id = UserConfig.getInstance(UserConfig.selectedAccount).getClientUserId();
         MessageObject message2 = new MessageObject(UserConfig.selectedAccount, message, true, false);
         if (type == 0) {
             message2.customReplyName = LocaleController.getString("FontSizePreviewName", R.string.FontSizePreviewName);

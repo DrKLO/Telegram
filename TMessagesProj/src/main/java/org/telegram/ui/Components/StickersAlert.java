@@ -12,6 +12,7 @@ import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
+import android.animation.ValueAnimator;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Context;
@@ -24,6 +25,9 @@ import android.text.Spannable;
 import android.text.SpannableStringBuilder;
 import android.text.TextUtils;
 import android.text.method.LinkMovementMethod;
+import android.transition.Transition;
+import android.transition.TransitionManager;
+import android.transition.TransitionValues;
 import android.util.SparseArray;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -277,6 +281,41 @@ public class StickersAlert extends BottomSheet implements NotificationCenter.Not
                 ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
                     reqId = 0;
                     if (error == null) {
+                        Transition addTarget = new Transition() {
+
+                            @Override
+                            public void captureStartValues(TransitionValues transitionValues) {
+                                transitionValues.values.put("start", true);
+                                transitionValues.values.put("offset", containerView.getTop() + scrollOffsetY);
+                            }
+
+                            @Override
+                            public void captureEndValues(TransitionValues transitionValues) {
+                                transitionValues.values.put("start", false);
+                                transitionValues.values.put("offset", containerView.getTop() + scrollOffsetY);
+                            }
+
+                            @Override
+                            public Animator createAnimator(ViewGroup sceneRoot, TransitionValues startValues, TransitionValues endValues) {
+                                int scrollOffsetY = StickersAlert.this.scrollOffsetY;
+                                int startValue = (int) startValues.values.get("offset") - (int) endValues.values.get("offset");
+                                final ValueAnimator animator = ValueAnimator.ofFloat(0f, 1f);
+                                animator.setDuration(250);
+                                animator.addUpdateListener(a -> {
+                                    float fraction = a.getAnimatedFraction();
+                                    gridView.setAlpha(fraction);
+                                    titleTextView.setAlpha(fraction);
+                                    if (startValue != 0) {
+                                        int value = (int) (startValue * (1f - fraction));
+                                        setScrollOffsetY(scrollOffsetY + value);
+                                        gridView.setTranslationY(value);
+                                    }
+                                });
+                                return animator;
+                            }
+                        };
+                        addTarget.addTarget(containerView);
+                        TransitionManager.beginDelayedTransition(container, addTarget);
                         optionsButton.setVisibility(View.VISIBLE);
                         stickerSet = (TLRPC.TL_messages_stickerSet) response;
                         showEmoji = !stickerSet.set.masks;
@@ -793,13 +832,7 @@ public class StickersAlert extends BottomSheet implements NotificationCenter.Not
     @SuppressLint("NewApi")
     private void updateLayout() {
         if (gridView.getChildCount() <= 0) {
-            gridView.setTopGlowOffset(scrollOffsetY = gridView.getPaddingTop());
-            if (stickerSetCovereds == null) {
-                titleTextView.setTranslationY(scrollOffsetY);
-                optionsButton.setTranslationY(scrollOffsetY);
-                shadow[0].setTranslationY(scrollOffsetY);
-            }
-            containerView.invalidate();
+            setScrollOffsetY(gridView.getPaddingTop());
             return;
         }
         View child = gridView.getChildAt(0);
@@ -813,14 +846,19 @@ public class StickersAlert extends BottomSheet implements NotificationCenter.Not
             runShadowAnimation(0, true);
         }
         if (scrollOffsetY != newOffset) {
-            gridView.setTopGlowOffset(scrollOffsetY = newOffset);
-            if (stickerSetCovereds == null) {
-                titleTextView.setTranslationY(scrollOffsetY);
-                optionsButton.setTranslationY(scrollOffsetY);
-                shadow[0].setTranslationY(scrollOffsetY);
-            }
-            containerView.invalidate();
+            setScrollOffsetY(newOffset);
         }
+    }
+
+    private void setScrollOffsetY(int newOffset) {
+        scrollOffsetY = newOffset;
+        gridView.setTopGlowOffset(newOffset);
+        if (stickerSetCovereds == null) {
+            titleTextView.setTranslationY(newOffset);
+            optionsButton.setTranslationY(newOffset);
+            shadow[0].setTranslationY(newOffset);
+        }
+        containerView.invalidate();
     }
 
     private void hidePreview() {

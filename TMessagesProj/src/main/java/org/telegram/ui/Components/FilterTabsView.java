@@ -391,12 +391,6 @@ public class FilterTabsView extends FrameLayout {
             int color2 = Theme.getColor(aTabLineColorKey);
             selectorDrawable.setColor(ColorUtils.blendARGB(color1, color2, value));
 
-            if (aBackgroundColorKey != null) {
-                color1 = Theme.getColor(backgroundColorKey);
-                color2 = Theme.getColor(aBackgroundColorKey);
-                object.setBackgroundColor(ColorUtils.blendARGB(color1, color2, value));
-            }
-
             listView.invalidateViews();
             listView.invalidate();
             object.invalidate();

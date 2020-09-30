@@ -226,6 +226,28 @@
     <string name="HideNewChatsAlertTitle">Hide new chats?</string>
     <string name="HideNewChatsAlertText">You are receiving many new chats from users who are not in your Contacts List. Do you want have such chats **automatically muted** and **archived**?</string>
     <string name="GoToSettings">GO TO SETTINGS</string>
+    <string name="OpenProfile">Open Profile</string>
+    <string name="OpenChannel2">Open Channel</string>
+    <string name="SendMessage">Send Message</string>
+    <string name="Mention">Mention</string>
+    <string name="NotificationsMutedHint">Notifications muted</string>
+    <string name="NotificationsMutedForHint">Notifications muted for %1$s</string>
+    <string name="NotificationsUnmutedHint">Notifications unmuted</string>
+    <string name="MessagesDeletedHint_zero">%1$d messages deleted</string>
+    <string name="MessagesDeletedHint_one">Message deleted</string>
+    <string name="MessagesDeletedHint_two">%1$d messages deleted</string>
+    <string name="MessagesDeletedHint_few">%1$d messages deleted</string>
+    <string name="MessagesDeletedHint_many">%1$d messages deleted</string>
+    <string name="MessagesDeletedHint_other">%1$d messages deleted</string>
+    <string name="SearchEmptyViewTitle">No Results</string>
+    <string name="SearchEmptyViewTitle2">No Results</string>
+    <string name="SearchEmptyViewFilteredSubtitle2">Try a new search.</string>
+    <string name="SearchEmptyViewFilteredSubtitleMusic">Music from all your chats will be shown here.</string>
+    <string name="SearchEmptyViewFilteredSubtitleFiles">Files from all your chats will be shown here.</string>
+    <string name="SearchEmptyViewFilteredSubtitleLinks">Links from all your chats will be shown here.</string>
+    <string name="SearchEmptyViewFilteredSubtitleVoice">Voice from all your chats will be shown here.</string>
+    <string name="SearchEmptyViewFilteredSubtitleMedia">Media from all your chats will be shown here.</string>
+    <string name="SearchAllChatsShort">Chats</string>
     <!--channels-->
     <string name="SetAsAdmin">Promote to admin</string>
     <string name="EditAdminRights">Edit admin rights</string>
@@ -364,6 +386,7 @@
     <string name="ChannelAdminsInfo">You can add administrators to help you manage your channel. Tap and hold to remove admins.</string>
     <string name="ChannelJoinTo">Do you want to join the channel \'%1$s\'?</string>
     <string name="ChannelCantOpenPrivate">Sorry, this chat is no longer accessible.</string>
+    <string name="ChannelCantOpenBannedByAdmin">Sorry, you can\'t access this chat because you were banned by an admin.</string>
     <string name="ChannelCantOpenBanned">Unfortunately, you were banned from participating in public groups.</string>
     <string name="ChannelCantOpenNa">Sorry, this chat is no longer accessible.</string>
     <string name="ChannelAddTo">Add %1$s to the channel?</string>
@@ -418,6 +441,7 @@
     <string name="EditAdminDeleteMessages">Delete Messages of Others</string>
     <string name="EditAdminGroupDeleteMessages">Delete Messages</string>
     <string name="EditAdminAddAdmins">Add New Admins</string>
+    <string name="EditAdminSendAnonymously">Send Anonymously</string>
     <string name="EditAdminRemoveAdmin">Dismiss Admin</string>
     <string name="EditAdminGroupTransfer">Transfer Group Ownership</string>
     <string name="EditAdminChannelTransfer">Transfer Channel Ownership</string>
@@ -508,11 +532,12 @@
     <string name="MakeAdmin">MAKE ADMIN</string>
     <string name="AdminWillBeRemoved">%1$s will be removed from admins if you restrict them.</string>
     <string name="Discussion">Discussion</string>
+    <string name="ViewDiscussion">View discussion</string>
     <string name="DiscussionInfo">Add a group chat for comments</string>
     <string name="LinkedChannel">Linked Channel</string>
-    <string name="DiscussionChannelHelp">Select a group chat for discussion that will be displayed in your channel.</string>
+    <string name="DiscussionChannelHelp3">Select a group chat that will host comments from your channel.</string>
     <string name="DiscussionChannelHelp2">Everything you post in the channel will be forwarded to this group.</string>
-    <string name="DiscussionChannelGroupSetHelp">A link to **%1$s** is shown to all subscribers in the bottom panel.</string>
+    <string name="DiscussionChannelGroupSetHelp2">**%1$s** is selected as the group that hosts comments for your channel.</string>
     <string name="DiscussionGroupHelp">**%1$s** is linking the group as its discussion board.</string>
     <string name="DiscussionGroupHelp2">All new messages posted in this channel are forwarded to the group.</string>
     <string name="DiscussionCreateGroup">Create a New Group</string>
@@ -687,6 +712,7 @@
     <string name="EventLogPromotedEditMessages">Edit messages</string>
     <string name="EventLogPromotedDeleteMessages">Delete messages</string>
     <string name="EventLogPromotedAddAdmins">Add admins</string>
+    <string name="EventLogPromotedSendAnonymously">Send anonymously</string>
     <string name="EventLogPromotedBanUsers">Ban users</string>
     <string name="EventLogPromotedAddUsers">Add users</string>
     <string name="EventLogPromotedTitle">Title: %1$s</string>
@@ -856,6 +882,7 @@
     <string name="AddContactFullChat">ADD %1$s TO CONTACTS</string>
     <string name="ViewContact">VIEW CONTACT</string>
     <string name="BlockUserAlert">Do you want to block **%1$s** from messaging and calling you on Telegram?</string>
+    <string name="BlockUserReplyAlert">Do you want to block messages from **%1$s**?</string>
     <string name="ReportSpamAlert">Are you sure you want to report spam from this user?</string>
     <string name="ReportSpamAlertGroup">Are you sure you want to report spam from this group?</string>
     <string name="ReportSpamAlertChannel">Are you sure you want to report spam from this channel?</string>
@@ -1014,6 +1041,25 @@
     <string name="SecretChatTimerMinutes">m</string>
     <string name="SecretChatTimerHours">h</string>
     <string name="SecretChatTimerWeeks">w</string>
+    <string name="SharedToPrivateMessagesAndGroups">to private messages and groups</string>
+    <string name="Shares">Shares</string>
+    <string name="BotOwnershipTransfer">Transfer Bot Ownership</string>
+    <string name="BotOwnershipTransferReadyAlertText">This will transfer the **full owner** rights for the bot to the selected user.</string>
+    <string name="BotOwnershipTransferChangeOwner">Change Owner</string>
+    <string name="BotOwnershipTransferAlertText">You can transfer bot only if you have:</string>
+    <string name="LeaveAComment">Leave a comment</string>
+    <string name="CommentsTitle">Comments</string>
+    <string name="Comment">Comment</string>
+    <string name="RepliesTitle">Replies</string>
+    <string name="NoComments">No comments here yet...</string>
+    <string name="NoReplies">No replies here yet...</string>
+    <string name="ViewInChat">View in chat</string>
+    <string name="SendAnonymously">Send anonymously</string>
+    <string name="DiscussionStarted">Discussion started</string>
+    <string name="ViewThread">View Thread</string>
+    <string name="ChooseDate">Choose date</string>
+    <string name="RepliesChatInfo">This chat helps you keep track of replies to your comments in Channels.</string>
+    <string name="ChannelPostDeleted">Sorry, this post has been removed from the discussion group.</string>
     <!--notification-->
     <string name="MessageLifetimeChanged">%1$s set the self-destruct timer to %2$s</string>
     <string name="MessageLifetimeChangedOutgoing">You set the self-destruct timer to %1$s</string>
@@ -1165,6 +1211,10 @@
     <string name="SortedByLastSeen">Sorted by last seen time</string>
     <string name="AddContactByPhone">Add %1$s</string>
     <string name="PhoneNumberSearch">Phone number</string>
+    <string name="NoContactsYet">You have no contacts on Telegram yet</string>
+    <string name="NoContactsYetLine1">Invite friends to try Telegram</string>
+    <string name="NoContactsYetLine2">Find people nearby to chat with</string>
+    <string name="NoContactsYetLine3">Search people by username</string>
     <!--group create view-->
     <string name="SendMessageTo">Add people...</string>
     <string name="SoftUserLimitAlert">You will be able to add more users after you finish creating the group and convert it to a supergroup.</string>
@@ -1224,6 +1274,8 @@
     <string name="ContactNotRegisteredTitle">Invite to Telegram</string>
     <string name="ContactNotRegistered">%1$s is not on Telegram yet, would you like to invite them to join?</string>
     <string name="Invite">Invite</string>
+    <string name="Block">BLOCK</string>
+    <string name="BlockAndDeleteReplies">BLOCK AND DELETE REPLIES</string>
     <string name="BlockContact">Block user</string>
     <string name="BlockUser">Block user</string>
     <string name="BlockUsers">Block users</string>
@@ -2232,8 +2284,8 @@
     <string name="SharedMediaTabFull2">Shared Media</string>
     <string name="SharedGroupsTab2">Groups</string>
     <string name="SharedLinksTab2">Links</string>
-    <string name="SharedMusicTab2">Audio</string>
-    <string name="SharedVoiceTab2">Voice Messages</string>
+    <string name="SharedMusicTab2">Music</string>
+    <string name="SharedVoiceTab2">Voice</string>
     <string name="SharedGIFsTab2">GIFs</string>
     <string name="DocumentsTitle">Shared Files</string>
     <string name="SharedContentTitle">Shared Content</string>
@@ -2424,6 +2476,8 @@
     <string name="MainChannelProfileVideoSetHint">This is the main channel video now.</string>
     <string name="MainGroupProfilePhotoSetHint">This is the main group photo now.</string>
     <string name="MainGroupProfileVideoSetHint">This is the main group video now.</string>
+    <string name="PhotoSavedHint">Photo saved to gallery</string>
+    <string name="VideoSavedHint">Video saved to gallery</string>
     <!--password view-->
     <string name="TwoStepVerification">Two-Step Verification</string>
     <string name="TwoStepVerificationTitle">Two-Step Verification</string>
@@ -3084,6 +3138,11 @@
     <string name="DeclineCall">Decline</string>
     <string name="RetryCall">Retry</string>
     <string name="VoipVideoUnavailable">Video</string>
+    <string name="CallAlert">Are you sure you want to call **%1$s**?</string>
+    <string name="CallAlertTitle">Voice Call</string>
+    <string name="VideoCallAlert">Are you sure you want to video call **%1$s**?</string>
+    <string name="VideoCallAlertTitle">Video Call</string>
+    <string name="VoipReconnecting">Reconnecting</string>
     <!--contacts shortcuts-->
     <string name="ContactShortcutMessage">Message %1$s</string>
     <string name="ContactShortcutVoiceCall">Voice call %1$s</string>
@@ -3341,6 +3400,12 @@
     <string name="Shares_few">%1$s shares</string>
     <string name="Shares_many">%1$s shares</string>
     <string name="Shares_other">%1$s shares</string>
+    <string name="Shared_zero">%1$s shared</string>
+    <string name="Shared_one">%1$s shared</string>
+    <string name="Shared_two">%1$s shared</string>
+    <string name="Shared_few">%1$s shared</string>
+    <string name="Shared_many">%1$s shared</string>
+    <string name="Shared_other">%1$s shared</string>
     <string name="StickerSets_zero">%1$s sticker sets</string>
     <string name="StickerSets_one">%1$s sticker set</string>
     <string name="StickerSets_two">%1$s sticker sets</string>
@@ -3528,6 +3593,24 @@
     <string name="MembersCountSelected_few">%1$d of %2$d selected</string>
     <string name="MembersCountSelected_many">%1$d of %2$d selected</string>
     <string name="MembersCountSelected_other">%1$d of %2$d selected</string>
+    <string name="ViewReplies_zero">View %1$d Replies</string>
+    <string name="ViewReplies_one">View %1$d Reply</string>
+    <string name="ViewReplies_two">View %1$d Replies</string>
+    <string name="ViewReplies_few">View %1$d Replies</string>
+    <string name="ViewReplies_many">View %1$d Replies</string>
+    <string name="ViewReplies_other">View %1$d Replies</string>
+    <string name="Replies_zero">%1$d Replies</string>
+    <string name="Replies_one">%1$d Reply</string>
+    <string name="Replies_two">%1$d Replies</string>
+    <string name="Replies_few">%1$d Replies</string>
+    <string name="Replies_many">%1$d Replies</string>
+    <string name="Replies_other">%1$d Replies</string>
+    <string name="Comments_zero">%1$d Comments</string>
+    <string name="Comments_one">%1$d Comment</string>
+    <string name="Comments_two">%1$d Comments</string>
+    <string name="Comments_few">%1$d Comments</string>
+    <string name="Comments_many">%1$d Comments</string>
+    <string name="Comments_other">%1$d Comments</string>
     <!--accessibility descriptions-->
     <string name="AccDescrGroup">Group</string>
     <string name="AccDescrChannel">Channel</string>
@@ -3655,6 +3738,7 @@
     <string name="AccDescrVoipCamOn">Camera is on</string>
     <string name="AccDescrVoipCamOff">Camera is off</string>
     <!--date formatters-->
+    <string name="formatterMonthYear">MMM yyyy</string>
     <string name="formatterStats12H">MMM dd yyyy, h:mm a</string>
     <string name="formatterStats24H">MMM dd yyyy, HH:mm</string>
     <string name="formatterBannedUntil12H">MMM dd yyyy, h:mm a</string>
@@ -3669,6 +3753,7 @@
     <string name="chatDate">MMMM d</string>
     <string name="chatFullDate">MMMM d, yyyy</string>
     <string name="formatterWeek">EEE</string>
+    <string name="formatterWeekLong">EEEE</string>
     <string name="formatterDay24H">HH:mm</string>
     <string name="formatterDay12H">h:mm a</string>
     <string name="formatDateAtTime">%1$s at %2$s</string>
@@ -3680,5 +3765,5 @@
     <string name="RemindTodayAt">\'Remind today at\' HH:mm</string>
     <string name="RemindDayAt">\'Remind on\' MMM d \'at\' HH:mm</string>
     <string name="RemindDayYearAt">\'Remind on\' MMM d yyyy \'at\' HH:mm</string>
-    <string name="VoipReconnecting">Reconnecting</string>
+    <string name="SearchTipToday">Today</string>
 </resources>

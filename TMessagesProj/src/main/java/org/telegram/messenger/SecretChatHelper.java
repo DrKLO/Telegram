@@ -131,17 +131,18 @@ public class SecretChatHelper extends BaseController {
         newMsg.action = new TLRPC.TL_messageEncryptedAction();
         newMsg.action.encryptedAction = decryptedMessage;
         newMsg.local_id = newMsg.id = getUserConfig().getNewMessageId();
-        newMsg.from_id = getUserConfig().getClientUserId();
+        newMsg.from_id = new TLRPC.TL_peerUser();
+        newMsg.from_id.user_id = getUserConfig().getClientUserId();
         newMsg.unread = true;
         newMsg.out = true;
         newMsg.flags = TLRPC.MESSAGE_FLAG_HAS_FROM_ID;
         newMsg.dialog_id = ((long) encryptedChat.id) << 32;
-        newMsg.to_id = new TLRPC.TL_peerUser();
+        newMsg.peer_id = new TLRPC.TL_peerUser();
         newMsg.send_state = MessageObject.MESSAGE_SEND_STATE_SENDING;
         if (encryptedChat.participant_id == getUserConfig().getClientUserId()) {
-            newMsg.to_id.user_id = encryptedChat.admin_id;
+            newMsg.peer_id.user_id = encryptedChat.admin_id;
         } else {
-            newMsg.to_id.user_id = encryptedChat.participant_id;
+            newMsg.peer_id.user_id = encryptedChat.participant_id;
         }
         if (decryptedMessage instanceof TLRPC.TL_decryptedMessageActionScreenshotMessages || decryptedMessage instanceof TLRPC.TL_decryptedMessageActionSetMessageTTL) {
             newMsg.date = getConnectionsManager().getCurrentTime();
@@ -695,6 +696,7 @@ public class SecretChatHelper extends BaseController {
                         reqToSend = req2;
                     } else {
                         TLRPC.TL_messages_sendEncrypted req2 = new TLRPC.TL_messages_sendEncrypted();
+                        req2.silent = newMsgObj.silent;
                         req2.data = data;
                         req2.random_id = req.random_id;
                         req2.peer = new TLRPC.TL_inputEncryptedChat();
@@ -704,6 +706,7 @@ public class SecretChatHelper extends BaseController {
                     }
                 } else {
                     TLRPC.TL_messages_sendEncryptedFile req2 = new TLRPC.TL_messages_sendEncryptedFile();
+                    req2.silent = newMsgObj.silent;
                     req2.data = data;
                     req2.random_id = req.random_id;
                     req2.peer = new TLRPC.TL_inputEncryptedChat();
@@ -858,11 +861,13 @@ public class SecretChatHelper extends BaseController {
                 newMessage.message = decryptedMessage.message;
                 newMessage.date = date;
                 newMessage.local_id = newMessage.id = getUserConfig().getNewMessageId();
+                newMessage.silent = decryptedMessage.silent;
                 getUserConfig().saveConfig(false);
-                newMessage.from_id = from_id;
-                newMessage.to_id = new TLRPC.TL_peerUser();
+                newMessage.from_id = new TLRPC.TL_peerUser();
+                newMessage.from_id.user_id = from_id;
+                newMessage.peer_id = new TLRPC.TL_peerUser();
+                newMessage.peer_id.user_id = getUserConfig().getClientUserId();
                 newMessage.random_id = decryptedMessage.random_id;
-                newMessage.to_id.user_id = getUserConfig().getClientUserId();
                 newMessage.unread = true;
                 newMessage.flags = TLRPC.MESSAGE_FLAG_HAS_MEDIA | TLRPC.MESSAGE_FLAG_HAS_FROM_ID;
                 if (decryptedMessage.via_bot_name != null && decryptedMessage.via_bot_name.length() > 0) {
@@ -875,7 +880,8 @@ public class SecretChatHelper extends BaseController {
                 }
                 newMessage.dialog_id = ((long) chat.id) << 32;
                 if (decryptedMessage.reply_to_random_id != 0) {
-                    newMessage.reply_to_random_id = decryptedMessage.reply_to_random_id;
+                    newMessage.reply_to = new TLRPC.TL_messageReplyHeader();
+                    newMessage.reply_to.reply_to_random_id = decryptedMessage.reply_to_random_id;
                     newMessage.flags |= TLRPC.MESSAGE_FLAG_REPLY;
                 }
                 if (decryptedMessage.media == null || decryptedMessage.media instanceof TLRPC.TL_decryptedMessageMediaEmpty) {
@@ -1021,7 +1027,7 @@ public class SecretChatHelper extends BaseController {
                     newMessage.media.document.iv = decryptedMessage.media.iv;
                     if (newMessage.media.document.mime_type == null) {
                         newMessage.media.document.mime_type = "";
-                    } else if (MessageObject.isAnimatedStickerDocument(newMessage.media.document, true)) {
+                    } else if ("application/x-tgsticker".equals(newMessage.media.document.mime_type) || "application/x-tgsdice".equals(newMessage.media.document.mime_type)) {
                         newMessage.media.document.mime_type = "application/x-bad_tgsticker";
                     }
                     byte[] thumb = ((TLRPC.TL_decryptedMessageMediaDocument) decryptedMessage.media).thumb;
@@ -1140,9 +1146,10 @@ public class SecretChatHelper extends BaseController {
                     newMessage.unread = true;
                     newMessage.flags = TLRPC.MESSAGE_FLAG_HAS_FROM_ID;
                     newMessage.date = date;
-                    newMessage.from_id = from_id;
-                    newMessage.to_id = new TLRPC.TL_peerUser();
-                    newMessage.to_id.user_id = getUserConfig().getClientUserId();
+                    newMessage.from_id = new TLRPC.TL_peerUser();
+                    newMessage.from_id.user_id = from_id;
+                    newMessage.peer_id = new TLRPC.TL_peerUser();
+                    newMessage.peer_id.user_id = getUserConfig().getClientUserId();
                     newMessage.dialog_id = ((long) chat.id) << 32;
                     return newMessage;
                 } else if (serviceMessage.action instanceof TLRPC.TL_decryptedMessageActionFlushHistory) {
@@ -1350,19 +1357,20 @@ public class SecretChatHelper extends BaseController {
         newMsg.action.encryptedAction = new TLRPC.TL_decryptedMessageActionDeleteMessages();
         newMsg.action.encryptedAction.random_ids.add(random_id);
         newMsg.local_id = newMsg.id = mid;
-        newMsg.from_id = getUserConfig().getClientUserId();
+        newMsg.from_id = new TLRPC.TL_peerUser();
+        newMsg.from_id.user_id = getUserConfig().getClientUserId();
         newMsg.unread = true;
         newMsg.out = true;
         newMsg.flags = TLRPC.MESSAGE_FLAG_HAS_FROM_ID;
         newMsg.dialog_id = ((long) encryptedChat.id) << 32;
-        newMsg.to_id = new TLRPC.TL_peerUser();
         newMsg.send_state = MessageObject.MESSAGE_SEND_STATE_SENDING;
         newMsg.seq_in = seq_in;
         newMsg.seq_out = seq_out;
+        newMsg.peer_id = new TLRPC.TL_peerUser();
         if (encryptedChat.participant_id == getUserConfig().getClientUserId()) {
-            newMsg.to_id.user_id = encryptedChat.admin_id;
+            newMsg.peer_id.user_id = encryptedChat.admin_id;
         } else {
-            newMsg.to_id.user_id = encryptedChat.participant_id;
+            newMsg.peer_id.user_id = encryptedChat.participant_id;
         }
         newMsg.date = 0;
         newMsg.random_id = random_id;

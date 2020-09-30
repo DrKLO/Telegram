@@ -33,7 +33,7 @@ public class AutoMessageReplyReceiver extends BroadcastReceiver {
         if (dialog_id == 0 || max_id == 0) {
             return;
         }
-        SendMessagesHelper.getInstance(currentAccount).sendMessage(text.toString(), dialog_id, null, null, true, null, null, null, true, 0);
-        MessagesController.getInstance(currentAccount).markDialogAsRead(dialog_id, max_id, max_id, 0, false, 0, true, 0);
+        SendMessagesHelper.getInstance(currentAccount).sendMessage(text.toString(), dialog_id, null, null, null, true, null, null, null, true, 0);
+        MessagesController.getInstance(currentAccount).markDialogAsRead(dialog_id, max_id, max_id, 0, false, 0, 0, true, 0);
     }
 }

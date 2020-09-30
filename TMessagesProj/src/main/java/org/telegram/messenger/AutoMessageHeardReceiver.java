@@ -35,7 +35,7 @@ public class AutoMessageHeardReceiver extends BroadcastReceiver {
                     TLRPC.User user1 = accountInstance.getMessagesStorage().getUserSync(lowerId);
                     AndroidUtilities.runOnUIThread(() -> {
                         accountInstance.getMessagesController().putUser(user1, true);
-                        MessagesController.getInstance(currentAccount).markDialogAsRead(dialog_id, max_id, max_id, 0, false, 0, true, 0);
+                        MessagesController.getInstance(currentAccount).markDialogAsRead(dialog_id, max_id, max_id, 0, false, 0, 0, true, 0);
                     });
                 });
                 return;
@@ -47,12 +47,12 @@ public class AutoMessageHeardReceiver extends BroadcastReceiver {
                     TLRPC.Chat chat1 = accountInstance.getMessagesStorage().getChatSync(-lowerId);
                     AndroidUtilities.runOnUIThread(() -> {
                         accountInstance.getMessagesController().putChat(chat1, true);
-                        MessagesController.getInstance(currentAccount).markDialogAsRead(dialog_id, max_id, max_id, 0, false, 0, true, 0);
+                        MessagesController.getInstance(currentAccount).markDialogAsRead(dialog_id, max_id, max_id, 0, false, 0, 0, true, 0);
                     });
                 });
                 return;
             }
         }
-        MessagesController.getInstance(currentAccount).markDialogAsRead(dialog_id, max_id, max_id, 0, false, 0, true, 0);
+        MessagesController.getInstance(currentAccount).markDialogAsRead(dialog_id, max_id, max_id, 0, false, 0, 0, true, 0);
     }
 }

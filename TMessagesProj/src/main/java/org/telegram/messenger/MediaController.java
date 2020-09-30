@@ -61,10 +61,12 @@ import org.telegram.messenger.audioinfo.AudioInfo;
 import org.telegram.messenger.video.MediaCodecVideoConvertor;
 import org.telegram.messenger.voip.VoIPService;
 import org.telegram.tgnet.ConnectionsManager;
+import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Adapters.FiltersView;
 import org.telegram.ui.ChatActivity;
 import org.telegram.ui.Components.EmbedBottomSheet;
 import org.telegram.ui.Components.PhotoFilterView;
@@ -73,9 +75,11 @@ import org.telegram.ui.Components.VideoPlayer;
 import org.telegram.ui.PhotoViewer;
 
 import java.io.File;
+import java.io.FileDescriptor;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.InputStream;
+import java.lang.reflect.Method;
 import java.net.URLEncoder;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -459,6 +463,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
     private final Object progressTimerSync = new Object();
     private boolean downloadingCurrentMessage;
     private boolean playMusicAgain;
+    private PlaylistGlobalSearchParams playlistGlobalSearchParams;
     private AudioInfo audioInfo;
     private VideoPlayer videoPlayer;
     private boolean playerWasReady;
@@ -504,7 +509,8 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
     private long recordStartTime;
     private long recordTimeCount;
     private long recordDialogId;
-    private MessageObject recordReplyingMessageObject;
+    private MessageObject recordReplyingMsg;
+    private MessageObject recordReplyingTopMsg;
     private short[] recordSamples = new short[1024];
     private long samplesCount;
 
@@ -1070,6 +1076,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
         playlistMergeDialogId = 0;
         playlistMaxId[0] = playlistMaxId[1] = Integer.MAX_VALUE;
         loadingPlaylist = false;
+        playlistGlobalSearchParams = null;
     }
 
     public void startMediaObserver() {
@@ -1224,7 +1231,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
             int channelId = (Integer) args[1];
             ArrayList<Integer> markAsDeletedMessages = (ArrayList<Integer>) args[0];
             if (playingMessageObject != null) {
-                if (channelId == playingMessageObject.messageOwner.to_id.channel_id) {
+                if (channelId == playingMessageObject.messageOwner.peer_id.channel_id) {
                     if (markAsDeletedMessages.contains(playingMessageObject.getId())) {
                         cleanupPlayer(true, true);
                     }
@@ -1232,7 +1239,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
             }
             if (voiceMessagesPlaylist != null && !voiceMessagesPlaylist.isEmpty()) {
                 MessageObject messageObject = voiceMessagesPlaylist.get(0);
-                if (channelId == messageObject.messageOwner.to_id.channel_id) {
+                if (channelId == messageObject.messageOwner.peer_id.channel_id) {
                     for (int a = 0; a < markAsDeletedMessages.size(); a++) {
                         Integer key = markAsDeletedMessages.get(a);
                         messageObject = voiceMessagesPlaylistMap.get(key);
@@ -1506,7 +1513,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                     if (!raiseChat.playFirstUnreadVoiceMessage()) {
                         raiseToEarRecord = true;
                         useFrontSpeaker = false;
-                        startRecording(raiseChat.getCurrentAccount(), raiseChat.getDialogId(), null, raiseChat.getClassGuid());
+                        startRecording(raiseChat.getCurrentAccount(), raiseChat.getDialogId(), null, raiseChat.getThreadMessage(), raiseChat.getClassGuid());
                     }
                     if (useFrontSpeaker) {
                         setUseFrontSpeaker(true);
@@ -1595,7 +1602,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
             return;
         }
         raiseToEarRecord = true;
-        startRecording(raiseChat.getCurrentAccount(), raiseChat.getDialogId(), null, raiseChat.getClassGuid());
+        startRecording(raiseChat.getCurrentAccount(), raiseChat.getDialogId(), null, raiseChat.getThreadMessage(), raiseChat.getClassGuid());
         ignoreOnPause = true;
     }
 
@@ -1894,6 +1901,93 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
         if (loadingPlaylist || playingMessageObject == null || playingMessageObject.scheduled || (int) playingMessageObject.getDialogId() == 0 || playlistClassGuid == 0) {
             return;
         }
+        if (playlistGlobalSearchParams != null) {
+            int finalPlaylistGuid = playlistClassGuid;
+            if (!playlistGlobalSearchParams.endReached && !playlist.isEmpty()) {
+                int currentAccount = playlist.get(0).currentAccount;
+                TLObject request;
+                if (playlistGlobalSearchParams.dialogId != 0) {
+                    final TLRPC.TL_messages_search req = new TLRPC.TL_messages_search();
+                    req.q = playlistGlobalSearchParams.query;
+                    req.limit = 20;
+                    req.filter = playlistGlobalSearchParams.filter == null ? new TLRPC.TL_inputMessagesFilterEmpty() : playlistGlobalSearchParams.filter.filter;
+                    req.peer = AccountInstance.getInstance(currentAccount).getMessagesController().getInputPeer(playlistGlobalSearchParams.dialogId);
+                    MessageObject lastMessage = playlist.get(playlist.size() - 1);
+                    req.offset_id = lastMessage.getId();
+                    if (playlistGlobalSearchParams.minDate > 0) {
+                        req.min_date = (int) (playlistGlobalSearchParams.minDate / 1000);
+                    }
+                    if (playlistGlobalSearchParams.maxDate > 0) {
+                        req.min_date = (int) (playlistGlobalSearchParams.maxDate / 1000);
+                    }
+                    request = req;
+                } else {
+                    final TLRPC.TL_messages_searchGlobal req = new TLRPC.TL_messages_searchGlobal();
+                    req.limit = 20;
+                    req.q = playlistGlobalSearchParams.query;
+                    req.filter = playlistGlobalSearchParams.filter.filter;
+                    MessageObject lastMessage = playlist.get(playlist.size() - 1);
+                    req.offset_id = lastMessage.getId();
+                    req.offset_rate = playlistGlobalSearchParams.nextSearchRate;
+                    req.flags |= 1;
+                    req.folder_id = playlistGlobalSearchParams.folderId;
+                    int id;
+                    if (lastMessage.messageOwner.peer_id.channel_id != 0) {
+                        id = -lastMessage.messageOwner.peer_id.channel_id;
+                    } else if (lastMessage.messageOwner.peer_id.chat_id != 0) {
+                        id = -lastMessage.messageOwner.peer_id.chat_id;
+                    } else {
+                        id = lastMessage.messageOwner.peer_id.user_id;
+                    }
+                    req.offset_peer = MessagesController.getInstance(currentAccount).getInputPeer(id);
+                    if (playlistGlobalSearchParams.minDate > 0) {
+                        req.min_date = (int) (playlistGlobalSearchParams.minDate / 1000);
+                    }
+                    if (playlistGlobalSearchParams.maxDate > 0) {
+                        req.min_date = (int) (playlistGlobalSearchParams.maxDate / 1000);
+                    }
+                    request = req;
+                }
+                loadingPlaylist = true;
+                ConnectionsManager.getInstance(currentAccount).sendRequest(request, (response, error) -> {
+                    AndroidUtilities.runOnUIThread(() -> {
+                        if (playlistClassGuid != finalPlaylistGuid || playlistGlobalSearchParams == null) {
+                            return;
+                        }
+                        if (error != null) {
+                            return;
+                        }
+                        loadingPlaylist = false;
+
+                        TLRPC.messages_Messages res = (TLRPC.messages_Messages) response;
+                        playlistGlobalSearchParams.nextSearchRate = res.next_rate;
+                        MessagesStorage.getInstance(currentAccount).putUsersAndChats(res.users, res.chats, true, true);
+                        MessagesController.getInstance(currentAccount).putUsers(res.users, false);
+                        MessagesController.getInstance(currentAccount).putChats(res.chats, false);
+                        int n = res.messages.size();
+                        int addedCount = 0;
+                        for (int i = 0; i < n; i++) {
+                            MessageObject messageObject = new MessageObject(currentAccount, res.messages.get(i), false, true);
+                            if (playlistMap.containsKey(messageObject.getId())) {
+                                continue;
+                            }
+                            playlist.add(0, messageObject);
+                            playlistMap.put(messageObject.getId(), messageObject);
+                            addedCount++;
+                        }
+                        loadingPlaylist = false;
+                        playlistGlobalSearchParams.endReached = playlist.size() == playlistGlobalSearchParams.totalCount;
+                        if (SharedConfig.shuffleMusic) {
+                            buildShuffledPlayList();
+                        }
+                        if (addedCount != 0) {
+                            NotificationCenter.getInstance(playingMessageObject.currentAccount).postNotificationName(NotificationCenter.moreMusicDidLoad, addedCount);
+                        }
+                    });
+                });
+            }
+            return;
+        }
         if (!playlistEndReached[0]) {
             loadingPlaylist = true;
             AccountInstance.getInstance(playingMessageObject.currentAccount).getMediaDataController().loadMedia(playingMessageObject.getDialogId(), 50, playlistMaxId[0], MediaDataController.MEDIA_MUSIC, 1, playlistClassGuid);
@@ -1903,11 +1997,15 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
         }
     }
 
-    public boolean setPlaylist(ArrayList<MessageObject> messageObjects, MessageObject current, long mergeDialogId) {
-        return setPlaylist(messageObjects, current, mergeDialogId, true);
+    public boolean setPlaylist(ArrayList<MessageObject> messageObjects, MessageObject current, long mergeDialogId, PlaylistGlobalSearchParams globalSearchParams) {
+        return setPlaylist(messageObjects, current, mergeDialogId, true, globalSearchParams);
     }
 
-    public boolean setPlaylist(ArrayList<MessageObject> messageObjects, MessageObject current, long mergeDialogId, boolean loadMusic) {
+    public boolean setPlaylist(ArrayList<MessageObject> messageObjects, MessageObject current, long mergeDialogId) {
+        return setPlaylist(messageObjects, current, mergeDialogId, true, null);
+    }
+
+    public boolean setPlaylist(ArrayList<MessageObject> messageObjects, MessageObject current, long mergeDialogId, boolean loadMusic, PlaylistGlobalSearchParams params) {
         if (playingMessageObject == current) {
             return playMessage(current);
         }
@@ -1915,6 +2013,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
         playlistMergeDialogId = mergeDialogId;
         playMusicAgain = !playlist.isEmpty();
         clearPlaylist();
+        playlistGlobalSearchParams = params;
         for (int a = messageObjects.size() - 1; a >= 0; a--) {
             MessageObject messageObject = messageObjects.get(a);
             if (messageObject.isMusic()) {
@@ -1935,7 +2034,11 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                 currentPlaylistNum = 0;
             }
             if (loadMusic) {
-                MediaDataController.getInstance(current.currentAccount).loadMusic(current.getDialogId(), playlist.get(0).getIdWithChannel(), playlist.get(playlist.size() - 1).getIdWithChannel());
+                if (playlistGlobalSearchParams == null) {
+                    MediaDataController.getInstance(current.currentAccount).loadMusic(current.getDialogId(), playlist.get(0).getIdWithChannel(), playlist.get(playlist.size() - 1).getIdWithChannel());
+                } else {
+                    playlistClassGuid = ConnectionsManager.generateClassGuid();
+                }
             }
         }
         return playMessage(current);
@@ -2534,7 +2637,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
         if (messageObject.isRoundVideo() || isVideo) {
             FileLoader.getInstance(messageObject.currentAccount).setLoadingVideoForPlayer(messageObject.getDocument(), true);
             playerWasReady = false;
-            boolean destroyAtEnd = !isVideo || messageObject.messageOwner.to_id.channel_id == 0 && messageObject.audioProgress <= 0.1f;
+            boolean destroyAtEnd = !isVideo || messageObject.messageOwner.peer_id.channel_id == 0 && messageObject.audioProgress <= 0.1f;
             int[] playCount = isVideo && messageObject.getDuration() <= 30 ? new int[]{1} : null;
             clearPlaylist();
             videoPlayer = new VideoPlayer();
@@ -2991,8 +3094,9 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
         return downloadingCurrentMessage;
     }
 
-    public void setReplyingMessage(MessageObject reply_to_msg) {
-        recordReplyingMessageObject = reply_to_msg;
+    public void setReplyingMessage(MessageObject replyToMsg, MessageObject replyToTopMsg) {
+        recordReplyingMsg = replyToMsg;
+        recordReplyingTopMsg = replyToTopMsg;
     }
 
     public void requestAudioFocus(boolean request) {
@@ -3011,7 +3115,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
         }
     }
 
-    public void startRecording(final int currentAccount, final long dialog_id, final MessageObject reply_to_msg, int guid) {
+    public void startRecording(int currentAccount, long dialogId, MessageObject replyToMsg, MessageObject replyToTopMsg, int guid) {
         boolean paused = false;
         if (playingMessageObject != null && isPlayingMessage(playingMessageObject) && !isMessagePaused()) {
             paused = true;
@@ -3060,9 +3164,10 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                 recordStartTime = System.currentTimeMillis();
                 recordTimeCount = 0;
                 samplesCount = 0;
-                recordDialogId = dialog_id;
+                recordDialogId = dialogId;
                 recordingCurrentAccount = currentAccount;
-                recordReplyingMessageObject = reply_to_msg;
+                recordReplyingMsg = replyToMsg;
+                recordReplyingTopMsg = replyToTopMsg;
                 fileBuffer.rewind();
 
                 audioRecorder.startRecording();
@@ -3148,7 +3253,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                     audioToSend.attributes.add(attributeAudio);
                     if (duration > 700) {
                         if (send == 1) {
-                            SendMessagesHelper.getInstance(recordingCurrentAccount).sendMessage(audioToSend, null, recordingAudioFileToSend.getAbsolutePath(), recordDialogId, recordReplyingMessageObject, null, null, null, null, notify, scheduleDate, 0, null);
+                            SendMessagesHelper.getInstance(recordingCurrentAccount).sendMessage(audioToSend, null, recordingAudioFileToSend.getAbsolutePath(), recordDialogId, recordReplyingMsg, recordReplyingTopMsg, null, null, null, null, notify, scheduleDate, 0, null);
                         }
                         NotificationCenter.getInstance(recordingCurrentAccount).postNotificationName(NotificationCenter.audioDidSent, recordingGuid, send == 2 ? audioToSend : null, send == 2 ? recordingAudioFileToSend.getAbsolutePath() : null);
                     } else {
@@ -3286,8 +3391,26 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                     }
                     boolean result = true;
                     long lastProgress = System.currentTimeMillis() - 500;
-                    try (FileChannel source = new FileInputStream(sourceFile).getChannel(); FileChannel destination = new FileOutputStream(destFile).getChannel()) {
+                    try (FileInputStream inputStream = new FileInputStream(sourceFile); FileChannel source = inputStream.getChannel(); FileChannel destination = new FileOutputStream(destFile).getChannel()) {
                         long size = source.size();
+                        try {
+                            @SuppressLint("DiscouragedPrivateApi") Method getInt = FileDescriptor.class.getDeclaredMethod("getInt$");
+                            int fdint = (Integer) getInt.invoke(inputStream.getFD());
+                            if (AndroidUtilities.isInternalUri(fdint)) {
+                                if (finalProgress != null) {
+                                    AndroidUtilities.runOnUIThread(() -> {
+                                        try {
+                                            finalProgress.dismiss();
+                                        } catch (Exception e) {
+                                            FileLog.e(e);
+                                        }
+                                    });
+                                }
+                                return;
+                            }
+                        } catch (Throwable e) {
+                            FileLog.e(e);
+                        }
                         for (long a = 0; a < size; a += 4096) {
                             if (cancelled[0]) {
                                 break;
@@ -3414,6 +3537,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
         return result;
     }
 
+    @SuppressLint("DiscouragedPrivateApi")
     public static String copyFileToCache(Uri uri, String ext) {
         InputStream inputStream = null;
         FileOutputStream output = null;
@@ -3431,6 +3555,18 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                 return null;
             }
             inputStream = ApplicationLoader.applicationContext.getContentResolver().openInputStream(uri);
+            if (inputStream instanceof FileInputStream) {
+                FileInputStream fileInputStream = (FileInputStream) inputStream;
+                try {
+                    Method getInt = FileDescriptor.class.getDeclaredMethod("getInt$");
+                    int fdint = (Integer) getInt.invoke(fileInputStream.getFD());
+                    if (AndroidUtilities.isInternalUri(fdint)) {
+                        return null;
+                    }
+                } catch (Throwable e) {
+                    FileLog.e(e);
+                }
+            }
             output = new FileOutputStream(f);
             byte[] buffer = new byte[1024 * 20];
             int len;
@@ -4051,5 +4187,29 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
     public interface VideoConvertorListener {
         boolean checkConversionCanceled();
         void didWriteData(long availableSize, float progress);
+    }
+
+    public static class PlaylistGlobalSearchParams {
+        final String query;
+        final FiltersView.MediaFilterData filter;
+        final int dialogId;
+        final long minDate;
+        final long maxDate;
+        public int totalCount;
+        public boolean endReached;
+        public int nextSearchRate;
+        public int folderId;
+
+        public PlaylistGlobalSearchParams(String query, int dialogId, long minDate, long maxDate, FiltersView.MediaFilterData filter) {
+            this.filter = filter;
+            this.query = query;
+            this.dialogId = dialogId;
+            this.minDate = minDate;
+            this.maxDate = maxDate;
+        }
+    }
+
+    public boolean currentPlaylistIsGlobalSearch() {
+        return playlistGlobalSearchParams != null;
     }
 }

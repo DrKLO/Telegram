@@ -614,7 +614,7 @@ public class DownloadController extends BaseController implements NotificationCe
             return 0;
         }
         int index;
-        TLRPC.Peer peer = message.to_id;
+        TLRPC.Peer peer = message.peer_id;
         if (peer != null) {
             if (peer.user_id != 0) {
                 if (getContactsController().contactsDict.containsKey(peer.user_id)) {
@@ -623,14 +623,14 @@ public class DownloadController extends BaseController implements NotificationCe
                     index = 1;
                 }
             } else if (peer.chat_id != 0) {
-                if (message.from_id != 0 && getContactsController().contactsDict.containsKey(message.from_id)) {
+                if (message.from_id instanceof TLRPC.TL_peerUser && getContactsController().contactsDict.containsKey(message.from_id.user_id)) {
                     index = 0;
                 } else {
                     index = 2;
                 }
             } else {
                 if (MessageObject.isMegagroup(message)) {
-                    if (message.from_id != 0 && getContactsController().contactsDict.containsKey(message.from_id)) {
+                    if (message.from_id instanceof TLRPC.TL_peerUser && getContactsController().contactsDict.containsKey(message.from_id.user_id)) {
                         index = 0;
                     } else {
                         index = 2;
@@ -1040,34 +1040,34 @@ public class DownloadController extends BaseController implements NotificationCe
                     for (int a = 0; a < delayedMessages.size(); a++) {
                         SendMessagesHelper.DelayedMessage delayedMessage = delayedMessages.get(a);
                         if (delayedMessage.encryptedChat == null) {
-                            long dialog_id = delayedMessage.peer;
+                            long dialogId = delayedMessage.peer;
+                            int topMessageId = delayedMessage.topMessageId;
+                            Long lastTime = typingTimes.get(dialogId);
                             if (delayedMessage.type == 4) {
-                                Long lastTime = typingTimes.get(dialog_id);
                                 if (lastTime == null || lastTime + 4000 < System.currentTimeMillis()) {
                                     MessageObject messageObject = (MessageObject) delayedMessage.extraHashMap.get(fileName + "_i");
                                     if (messageObject != null && messageObject.isVideo()) {
-                                        getMessagesController().sendTyping(dialog_id, 5, 0);
+                                        getMessagesController().sendTyping(dialogId, topMessageId, 5, 0);
                                     } else {
-                                        getMessagesController().sendTyping(dialog_id, 4, 0);
+                                        getMessagesController().sendTyping(dialogId, topMessageId, 4, 0);
                                     }
-                                    typingTimes.put(dialog_id, System.currentTimeMillis());
+                                    typingTimes.put(dialogId, System.currentTimeMillis());
                                 }
                             } else {
-                                Long lastTime = typingTimes.get(dialog_id);
                                 TLRPC.Document document = delayedMessage.obj.getDocument();
                                 if (lastTime == null || lastTime + 4000 < System.currentTimeMillis()) {
                                     if (delayedMessage.obj.isRoundVideo()) {
-                                        getMessagesController().sendTyping(dialog_id, 8, 0);
+                                        getMessagesController().sendTyping(dialogId, topMessageId, 8, 0);
                                     } else if (delayedMessage.obj.isVideo()) {
-                                        getMessagesController().sendTyping(dialog_id, 5, 0);
+                                        getMessagesController().sendTyping(dialogId, topMessageId, 5, 0);
                                     } else if (delayedMessage.obj.isVoice()) {
-                                        getMessagesController().sendTyping(dialog_id, 9, 0);
+                                        getMessagesController().sendTyping(dialogId, topMessageId, 9, 0);
                                     } else if (delayedMessage.obj.getDocument() != null) {
-                                        getMessagesController().sendTyping(dialog_id, 3, 0);
+                                        getMessagesController().sendTyping(dialogId, topMessageId, 3, 0);
                                     } else if (delayedMessage.photoSize != null) {
-                                        getMessagesController().sendTyping(dialog_id, 4, 0);
+                                        getMessagesController().sendTyping(dialogId, topMessageId, 4, 0);
                                     }
-                                    typingTimes.put(dialog_id, System.currentTimeMillis());
+                                    typingTimes.put(dialogId, System.currentTimeMillis());
                                 }
                             }
                         }

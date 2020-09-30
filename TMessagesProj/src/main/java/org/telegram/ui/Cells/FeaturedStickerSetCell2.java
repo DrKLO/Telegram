@@ -43,7 +43,6 @@ import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.ProgressButton;
 import org.telegram.ui.Components.RecyclerListView;
 
-import java.util.ArrayList;
 import java.util.List;
 
 public class FeaturedStickerSetCell2 extends FrameLayout {
@@ -186,7 +185,7 @@ public class FeaturedStickerSetCell2 extends FrameLayout {
         if (sticker != null) {
             if (MessageObject.canAutoplayAnimatedSticker(sticker)) {
                 TLObject object;
-                if (set.set.thumb instanceof TLRPC.TL_photoSize) {
+                if (set.set.thumb instanceof TLRPC.TL_photoSize || set.set.thumb instanceof TLRPC.TL_photoSizeProgressive) {
                     object = set.set.thumb;
                 } else {
                     object = sticker;

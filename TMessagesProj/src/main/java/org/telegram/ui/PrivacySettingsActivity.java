@@ -108,7 +108,7 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
         super.onFragmentCreate();
 
         getContactsController().loadPrivacySettings();
-        getMessagesController().getBlockedUsers(true);
+        getMessagesController().getBlockedPeers(true);
         currentSync = newSync = getUserConfig().syncContacts;
         currentSuggest = newSuggest = getUserConfig().suggestContacts;
         TLRPC.TL_globalPrivacySettings privacySettings = getContactsController().getGlobalPrivacySettings();

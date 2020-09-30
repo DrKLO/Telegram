@@ -2625,6 +2625,10 @@ public class ContactsController extends BaseController {
     }
 
     public static String formatName(String firstName, String lastName) {
+        return formatName(firstName, lastName, 0);
+    }
+
+    public static String formatName(String firstName, String lastName, int maxLength) {
         /*if ((firstName == null || firstName.length() == 0) && (lastName == null || lastName.length() == 0)) {
             return LocaleController.getString("HiddenName", R.string.HiddenName);
         }*/
@@ -2637,22 +2641,42 @@ public class ContactsController extends BaseController {
         StringBuilder result = new StringBuilder((firstName != null ? firstName.length() : 0) + (lastName != null ? lastName.length() : 0) + 1);
         if (LocaleController.nameDisplayOrder == 1) {
             if (firstName != null && firstName.length() > 0) {
+                if (maxLength > 0 && firstName.length() > maxLength + 2) {
+                    return firstName.substring(0, maxLength);
+                }
                 result.append(firstName);
                 if (lastName != null && lastName.length() > 0) {
                     result.append(" ");
-                    result.append(lastName);
+                    if (maxLength > 0 && result.length() + lastName.length() > maxLength) {
+                        result.append(lastName.charAt(0));
+                    } else {
+                        result.append(lastName);
+                    }
                 }
             } else if (lastName != null && lastName.length() > 0) {
+                if (maxLength > 0 && lastName.length() > maxLength + 2) {
+                    return lastName.substring(0, maxLength);
+                }
                 result.append(lastName);
             }
         } else {
             if (lastName != null && lastName.length() > 0) {
+                if (maxLength > 0 && lastName.length() > maxLength + 2) {
+                    return lastName.substring(0, maxLength);
+                }
                 result.append(lastName);
                 if (firstName != null && firstName.length() > 0) {
                     result.append(" ");
-                    result.append(firstName);
+                    if (maxLength > 0 && result.length() + firstName.length() > maxLength) {
+                        result.append(firstName.charAt(0));
+                    } else {
+                        result.append(firstName);
+                    }
                 }
             } else if (firstName != null && firstName.length() > 0) {
+                if (maxLength > 0 && firstName.length() > maxLength + 2) {
+                    return firstName.substring(0, maxLength);
+                }
                 result.append(firstName);
             }
         }

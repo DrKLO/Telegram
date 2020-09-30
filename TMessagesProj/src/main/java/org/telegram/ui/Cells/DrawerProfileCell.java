@@ -46,6 +46,8 @@ import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Components.RLottieDrawable;
+import org.telegram.ui.Components.RLottieImageView;
 import org.telegram.ui.Components.SnowflakesEffect;
 
 public class DrawerProfileCell extends FrameLayout {
@@ -55,7 +57,8 @@ public class DrawerProfileCell extends FrameLayout {
     private TextView phoneTextView;
     private ImageView shadowView;
     private ImageView arrowView;
-    private ImageView darkThemeView;
+    private RLottieImageView darkThemeView;
+    private RLottieDrawable sunDrawable;
 
     private Rect srcRect = new Rect();
     private Rect destRect = new Rect();
@@ -66,6 +69,7 @@ public class DrawerProfileCell extends FrameLayout {
     private SnowflakesEffect snowflakesEffect;
     private boolean accountsShown;
     private int darkThemeBackgroundColor;
+    public static boolean switchingTheme;
 
     public DrawerProfileCell(Context context) {
         super(context);
@@ -104,15 +108,33 @@ public class DrawerProfileCell extends FrameLayout {
         addView(arrowView, LayoutHelper.createFrame(59, 59, Gravity.RIGHT | Gravity.BOTTOM));
         setArrowState(false);
 
-        darkThemeView = new ImageView(context);
+        sunDrawable = new RLottieDrawable(R.raw.sun, "" + R.raw.sun, AndroidUtilities.dp(28), AndroidUtilities.dp(28), true, null);
+        if (isCurrentThemeDay()) {
+            sunDrawable.setCustomEndFrame(36);
+        } else {
+            sunDrawable.setCustomEndFrame(0);
+            sunDrawable.setCurrentFrame(36);
+        }
+        sunDrawable.setPlayInDirectionOfCustomEndFrame(true);
+        darkThemeView = new RLottieImageView(context);
+        sunDrawable.beginApplyLayerColors();
+        int color = Theme.getColor(Theme.key_chats_menuName);
+        sunDrawable.setLayerColor("Sunny.**", color);
+        sunDrawable.setLayerColor("Path 6.**", color);
+        sunDrawable.setLayerColor("Path.**", color);
+        sunDrawable.setLayerColor("Path 5.**", color);
+        sunDrawable.commitApplyLayerColors();
         darkThemeView.setScaleType(ImageView.ScaleType.CENTER);
-        darkThemeView.setImageResource(R.drawable.menu_night);
-        darkThemeView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_chats_menuName), PorterDuff.Mode.MULTIPLY));
+        darkThemeView.setAnimation(sunDrawable);
         if (Build.VERSION.SDK_INT >= 21) {
             darkThemeView.setBackgroundDrawable(Theme.createSelectorDrawable(darkThemeBackgroundColor = Theme.getColor(Theme.key_listSelector), 1, AndroidUtilities.dp(17)));
             Theme.setRippleDrawableForceSoftware((RippleDrawable) darkThemeView.getBackground());
         }
         darkThemeView.setOnClickListener(v -> {
+            if (switchingTheme) {
+                return;
+            }
+            switchingTheme = true;
             SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("themeconfig", Activity.MODE_PRIVATE);
             String dayThemeName = preferences.getString("lastDayTheme", "Blue");
             if (Theme.getTheme(dayThemeName) == null) {
@@ -131,22 +153,22 @@ public class DrawerProfileCell extends FrameLayout {
                 }
             }
 
-            if (dayThemeName.equals(themeInfo.getKey())) {
+            boolean toDark;
+            if (toDark = dayThemeName.equals(themeInfo.getKey())) {
                 themeInfo = Theme.getTheme(nightThemeName);
+                sunDrawable.setCustomEndFrame(36);
             } else {
                 themeInfo = Theme.getTheme(dayThemeName);
+                sunDrawable.setCustomEndFrame(0);
             }
+            darkThemeView.playAnimation();
             if (Theme.selectedAutoNightType != Theme.AUTO_NIGHT_TYPE_NONE) {
                 Toast.makeText(getContext(), LocaleController.getString("AutoNightModeOff", R.string.AutoNightModeOff), Toast.LENGTH_SHORT).show();
                 Theme.selectedAutoNightType = Theme.AUTO_NIGHT_TYPE_NONE;
                 Theme.saveAutoNightThemeConfig();
                 Theme.cancelAutoNightThemeCallbacks();
             }
-            int[] pos = new int[2];
-            darkThemeView.getLocationInWindow(pos);
-            pos[0] += darkThemeView.getMeasuredWidth() / 2;
-            pos[1] += darkThemeView.getMeasuredHeight() / 2;
-            NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.needSetDayNightTheme, themeInfo, false, pos, -1);
+            switchTheme(themeInfo, toDark);
         });
         addView(darkThemeView, LayoutHelper.createFrame(48, 48, Gravity.RIGHT | Gravity.BOTTOM, 0, 0, 6, 90));
 
@@ -154,6 +176,31 @@ public class DrawerProfileCell extends FrameLayout {
             snowflakesEffect = new SnowflakesEffect();
             snowflakesEffect.setColorKey(Theme.key_chats_menuName);
         }
+    }
+
+    private void switchTheme(Theme.ThemeInfo themeInfo, boolean toDark) {
+        int[] pos = new int[2];
+        darkThemeView.getLocationInWindow(pos);
+        pos[0] += darkThemeView.getMeasuredWidth() / 2;
+        pos[1] += darkThemeView.getMeasuredHeight() / 2;
+        NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.needSetDayNightTheme, themeInfo, false, pos, -1, toDark, darkThemeView);
+    }
+
+    private boolean isCurrentThemeDay() {
+        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("themeconfig", Activity.MODE_PRIVATE);
+        String dayThemeName = preferences.getString("lastDayTheme", "Blue");
+        if (Theme.getTheme(dayThemeName) == null) {
+            dayThemeName = "Blue";
+        }
+        String nightThemeName = preferences.getString("lastDarkTheme", "Dark Blue");
+        if (Theme.getTheme(nightThemeName) == null) {
+            nightThemeName = "Dark Blue";
+        }
+        Theme.ThemeInfo themeInfo = Theme.getActiveTheme();
+        if (dayThemeName.equals(nightThemeName) && themeInfo.isDark()) {
+            dayThemeName = "Blue";
+        }
+        return dayThemeName.equals(themeInfo.getKey());
     }
 
     @Override
@@ -199,9 +246,14 @@ public class DrawerProfileCell extends FrameLayout {
             shadowView.getDrawable().setColorFilter(new PorterDuffColorFilter(color, PorterDuff.Mode.MULTIPLY));
         }
         color = Theme.getColor(Theme.key_chats_menuName);
-        if (currentMoonColor == null || currentColor != color) {
+        if (currentMoonColor == null || currentMoonColor != color) {
             currentMoonColor = color;
-            darkThemeView.getDrawable().setColorFilter(new PorterDuffColorFilter(color, PorterDuff.Mode.MULTIPLY));
+            sunDrawable.beginApplyLayerColors();
+            sunDrawable.setLayerColor("Sunny.**", currentMoonColor);
+            sunDrawable.setLayerColor("Path 6.**", currentMoonColor);
+            sunDrawable.setLayerColor("Path.**", currentMoonColor);
+            sunDrawable.setLayerColor("Path 5.**", currentMoonColor);
+            sunDrawable.commitApplyLayerColors();
         }
         nameTextView.setTextColor(Theme.getColor(Theme.key_chats_menuName));
         if (useImageBackground) {

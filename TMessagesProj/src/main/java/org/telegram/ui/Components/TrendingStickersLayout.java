@@ -1,7 +1,11 @@
 package org.telegram.ui.Components;
 
+import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
+import android.animation.ValueAnimator;
 import android.content.Context;
 import android.content.res.Configuration;
+import android.graphics.Paint;
 import android.util.LongSparseArray;
 import android.util.SparseArray;
 import android.view.Gravity;
@@ -22,6 +26,7 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.ui.ActionBar.AdjustPanLayoutHelper;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ActionBar.ThemeDescription;
@@ -104,6 +109,9 @@ public class TrendingStickersLayout extends FrameLayout implements NotificationC
     private boolean wasLayout;
     private boolean loaded;
     private int hash;
+    ValueAnimator glueToTopAnimator;
+    private boolean gluedToTop;
+    private boolean scrollFromAnimator;
 
     public TrendingStickersLayout(@NonNull Context context, Delegate delegate) {
         this(context, delegate, new TLRPC.StickerSetCovered[10], new LongSparseArray<>(), new LongSparseArray<>());
@@ -190,6 +198,14 @@ public class TrendingStickersLayout extends FrameLayout implements NotificationC
             }
 
             @Override
+            public boolean onTouchEvent(MotionEvent e) {
+                if (glueToTopAnimator != null) {
+                    return false;
+                }
+                return super.onTouchEvent(e);
+            }
+
+            @Override
             public void requestLayout() {
                 if (!ignoreLayout) {
                     super.requestLayout();
@@ -235,6 +251,17 @@ public class TrendingStickersLayout extends FrameLayout implements NotificationC
             @Override
             protected boolean shouldCalcLastItemHeight() {
                 return listView.getAdapter() == searchAdapter;
+            }
+
+            @Override
+            public int scrollVerticallyBy(int dy, RecyclerView.Recycler recycler, RecyclerView.State state) {
+                if (scrollFromAnimator) {
+                    return super.scrollVerticallyBy(dy, recycler, state);
+                }
+                if (glueToTopAnimator != null) {
+                    return 0;
+                }
+                return super.scrollVerticallyBy(dy, recycler, state);
             }
         });
         layoutManager.setSpanSizeLookup(new GridLayoutManager.SpanSizeLookup() {
@@ -496,6 +523,44 @@ public class TrendingStickersLayout extends FrameLayout implements NotificationC
         searchAdapter.getThemeDescriptions(descriptions, listView, delegate);
         descriptions.add(new ThemeDescription(shadowView, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_dialogShadowLine));
         descriptions.add(new ThemeDescription(searchLayout, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_dialogBackground));
+    }
+
+    public void glueToTop(boolean glue) {
+        gluedToTop = glue;
+        if (glue) {
+            if (getContentTopOffset() > 0 && glueToTopAnimator == null) {
+                int startFrom = getContentTopOffset();
+                glueToTopAnimator = ValueAnimator.ofFloat(0, 1f);
+                glueToTopAnimator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
+                    int dy = 0;
+
+                    @Override
+                    public void onAnimationUpdate(ValueAnimator valueAnimator) {
+                        int currentDy = (int) (startFrom * (float) valueAnimator.getAnimatedValue());
+                        scrollFromAnimator = true;
+                        listView.scrollBy(0, currentDy - dy);
+                        scrollFromAnimator = false;
+                        dy = currentDy;
+                    }
+                });
+                glueToTopAnimator.addListener(new AnimatorListenerAdapter() {
+                    @Override
+                    public void onAnimationEnd(Animator animation) {
+                        setContentViewPaddingTop(0);
+                        glueToTopAnimator = null;
+                    }
+                });
+                glueToTopAnimator.setDuration(AdjustPanLayoutHelper.keyboardDuration);
+                glueToTopAnimator.setInterpolator(AdjustPanLayoutHelper.keyboardInterpolator);
+                glueToTopAnimator.start();
+            }
+        } else {
+            if (glueToTopAnimator != null) {
+                glueToTopAnimator.removeAllListeners();
+                glueToTopAnimator.cancel();
+                glueToTopAnimator = null;
+            }
+        }
     }
 
     private class TrendingStickersAdapter extends RecyclerListView.SelectionAdapter {

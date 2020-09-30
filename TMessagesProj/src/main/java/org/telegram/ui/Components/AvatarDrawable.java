@@ -19,6 +19,8 @@ import android.text.Layout;
 import android.text.StaticLayout;
 import android.text.TextPaint;
 
+import androidx.core.graphics.ColorUtils;
+
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.UserObject;
@@ -44,6 +46,8 @@ public class AvatarDrawable extends Drawable {
     public static final int AVATAR_TYPE_NORMAL = 0;
     public static final int AVATAR_TYPE_SAVED = 1;
     public static final int AVATAR_TYPE_ARCHIVED = 2;
+    public static final int AVATAR_TYPE_SHARES = 3;
+    public static final int AVATAR_TYPE_REPLIES = 4;
 
     public static final int AVATAR_TYPE_FILTER_CONTACTS = 4;
     public static final int AVATAR_TYPE_FILTER_NON_CONTACTS = 5;
@@ -53,6 +57,8 @@ public class AvatarDrawable extends Drawable {
     public static final int AVATAR_TYPE_FILTER_MUTED = 9;
     public static final int AVATAR_TYPE_FILTER_READ = 10;
     public static final int AVATAR_TYPE_FILTER_ARCHIVED = 11;
+
+    private int alpha = 255;
 
     public AvatarDrawable() {
         super();
@@ -141,8 +147,12 @@ public class AvatarDrawable extends Drawable {
         avatarType = value;
         if (avatarType == AVATAR_TYPE_ARCHIVED) {
             color = Theme.getColor(Theme.key_avatar_backgroundArchivedHidden);
+        } else if (avatarType == AVATAR_TYPE_REPLIES) {
+            color = Theme.getColor(Theme.key_avatar_backgroundSaved);
         } else if (avatarType == AVATAR_TYPE_SAVED) {
             color = Theme.getColor(Theme.key_avatar_backgroundSaved);
+        } else if (avatarType == AVATAR_TYPE_SHARES) {
+            color = getColorForId(5);
         } else {
             if (avatarType == AVATAR_TYPE_FILTER_CONTACTS) {
                 color = getColorForId(5);
@@ -162,7 +172,7 @@ public class AvatarDrawable extends Drawable {
                 color = getColorForId(4);
             }
         }
-        needApplyColorAccent = avatarType != AVATAR_TYPE_ARCHIVED && avatarType != AVATAR_TYPE_SAVED;
+        needApplyColorAccent = avatarType != AVATAR_TYPE_ARCHIVED && avatarType != AVATAR_TYPE_SAVED && avatarType != AVATAR_TYPE_REPLIES;
     }
 
     public void setArchivedAvatarHiddenProgress(float progress) {
@@ -270,15 +280,15 @@ public class AvatarDrawable extends Drawable {
             return;
         }
         int size = bounds.width();
-        namePaint.setColor(Theme.getColor(Theme.key_avatar_text));
-        Theme.avatar_backgroundPaint.setColor(getColor());
+        namePaint.setColor(ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_avatar_text), alpha));
+        Theme.avatar_backgroundPaint.setColor(ColorUtils.setAlphaComponent(getColor(), alpha));
         canvas.save();
         canvas.translate(bounds.left, bounds.top);
         canvas.drawCircle(size / 2.0f, size / 2.0f, size / 2.0f, Theme.avatar_backgroundPaint);
 
         if (avatarType == AVATAR_TYPE_ARCHIVED) {
             if (archivedAvatarProgress != 0) {
-                Theme.avatar_backgroundPaint.setColor(Theme.getColor(Theme.key_avatar_backgroundArchived));
+                Theme.avatar_backgroundPaint.setColor(ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_avatar_backgroundArchived), alpha));
                 canvas.drawCircle(size / 2.0f, size / 2.0f, size / 2.0f * archivedAvatarProgress, Theme.avatar_backgroundPaint);
                 if (Theme.dialogs_archiveAvatarDrawableRecolored) {
                     Theme.dialogs_archiveAvatarDrawable.beginApplyLayerColors();
@@ -307,8 +317,12 @@ public class AvatarDrawable extends Drawable {
         } else if (avatarType != 0) {
             Drawable drawable;
 
-            if (avatarType == AVATAR_TYPE_SAVED) {
+            if (avatarType == AVATAR_TYPE_REPLIES) {
+                drawable = Theme.avatarDrawables[11];
+            } else if (avatarType == AVATAR_TYPE_SAVED) {
                 drawable = Theme.avatarDrawables[0];
+            } else if (avatarType == AVATAR_TYPE_SHARES) {
+                drawable = Theme.avatarDrawables[10];
             } else if (avatarType == AVATAR_TYPE_FILTER_CONTACTS) {
                 drawable = Theme.avatarDrawables[2];
             } else if (avatarType == AVATAR_TYPE_FILTER_NON_CONTACTS) {
@@ -336,7 +350,13 @@ public class AvatarDrawable extends Drawable {
                 int x = (size - w) / 2;
                 int y = (size - h) / 2;
                 drawable.setBounds(x, y, x + w, y + h);
-                drawable.draw(canvas);
+                if (alpha != 255) {
+                    drawable.setAlpha(alpha);
+                    drawable.draw(canvas);
+                    drawable.setAlpha(255);
+                } else {
+                    drawable.draw(canvas);
+                }
             }
         } else if (drawDeleted && Theme.avatarDrawables[1] != null) {
             int x = (size - Theme.avatarDrawables[1].getIntrinsicWidth()) / 2;
@@ -354,7 +374,7 @@ public class AvatarDrawable extends Drawable {
 
     @Override
     public void setAlpha(int alpha) {
-
+        this.alpha = alpha;
     }
 
     @Override

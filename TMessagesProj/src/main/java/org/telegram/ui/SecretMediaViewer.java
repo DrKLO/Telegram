@@ -742,7 +742,7 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.messagesDeleted);
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.updateMessageMedia);
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.didCreatedNewDeleteTask);
-        currentChannelId = messageObject.messageOwner.to_id != null ? messageObject.messageOwner.to_id.channel_id : 0;
+        currentChannelId = messageObject.messageOwner.peer_id != null ? messageObject.messageOwner.peer_id.channel_id : 0;
         toggleActionBar(true, false);
 
         currentMessageObject = messageObject;
