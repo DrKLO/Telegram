@@ -288,7 +288,7 @@ public class AndroidUtilities {
                     x = staticLayout.getPrimaryHorizontal(startHighlightedIndex + 1) - availableWidth * 0.3f;
                     sub = str.subSequence(staticLayout.getOffsetForHorizontal(0, x), str.length());
                 } else {
-                    if (Character.isWhitespace(str.charAt(charOf))) {
+                    if (charOf > 0 && charOf < str.length() - 1 && Character.isWhitespace(str.charAt(charOf))) {
                         charOf--;
                     }
                     sub = str.subSequence(charOf, str.length());

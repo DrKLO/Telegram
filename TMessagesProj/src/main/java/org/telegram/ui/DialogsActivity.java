@@ -556,12 +556,6 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 }
             } else if (!inPreviewMode) {
                 if (progressToActionMode > 0) {
-                    int n = actionBar.getChildCount();
-                    for (int i = 0; i < n; i++) {
-                        if (actionBar.getChildAt(i) != actionBar.getActionMode() && actionBar.getChildAt(i) != actionBar.getBackButton()) {
-                            actionBar.getChildAt(i).setAlpha(1f - progressToActionMode);
-                        }
-                    }
                     actionBarSearchPaint.setColor(ColorUtils.blendARGB(Theme.getColor(folderId == 0 ? Theme.key_actionBarDefault : Theme.key_actionBarDefaultArchived), Theme.getColor(Theme.key_windowBackgroundWhite), progressToActionMode));
                     canvas.drawRect(0, top, getMeasuredWidth(), top + actionBarHeight, actionBarSearchPaint);
                 } else {
@@ -1692,7 +1686,9 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 if (viewPages[0] != null) {
                     if (searchString != null) {
                         viewPages[0].listView.hide();
-                        searchViewPager.searchListView.show();
+                        if (searchViewPager != null) {
+                            searchViewPager.searchListView.show();
+                        }
                     }
                     if (!onlySelect) {
                         floatingButtonContainer.setVisibility(View.GONE);
@@ -3771,6 +3767,8 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                         }
                         searchWasFullyShowed = false;
                         fragmentView.requestLayout();
+                        searchItem.getSearchContainer().setAlpha(1f);
+
                     }
 
                     viewPages[0].listView.setVerticalScrollBarEnabled(true);
@@ -3810,6 +3808,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             filtersView.setAlpha(show ? 1.0f : 0.0f);
             searchViewPager.setScaleX(show ? 1.0f : 1.1f);
             searchViewPager.setScaleY(show ? 1.0f : 1.1f);
+            searchItem.getSearchContainer().setAlpha(show ? 1f : 0);
             if (filterTabsView != null && filterTabsView.getVisibility() == View.VISIBLE) {
                 filterTabsView.setTranslationY(show ? -AndroidUtilities.dp(44) : 0);
                 filterTabsView.getTabsContainer().setAlpha(show ? 0.0f : 1.0f);
@@ -4348,6 +4347,11 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         actionBarColorAnimator = ValueAnimator.ofFloat(progressToActionMode, 0);
         actionBarColorAnimator.addUpdateListener(valueAnimator -> {
             progressToActionMode = (float) valueAnimator.getAnimatedValue();
+            for (int i = 0; i < actionBar.getChildCount(); i++) {
+                if (actionBar.getChildAt(i).getVisibility() == View.VISIBLE && actionBar.getChildAt(i) != actionBar.getActionMode() && actionBar.getChildAt(i) != actionBar.getBackButton()) {
+                    actionBar.getChildAt(i).setAlpha(1f - progressToActionMode);
+                }
+            }
             fragmentView.invalidate();
         });
         actionBarColorAnimator.setInterpolator(CubicBezierInterpolator.DEFAULT);
@@ -5046,6 +5050,11 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             actionBarColorAnimator = ValueAnimator.ofFloat(progressToActionMode, 1f);
             actionBarColorAnimator.addUpdateListener(valueAnimator -> {
                 progressToActionMode = (float) valueAnimator.getAnimatedValue();
+                for (int i = 0; i < actionBar.getChildCount(); i++) {
+                    if (actionBar.getChildAt(i).getVisibility() == View.VISIBLE && actionBar.getChildAt(i) != actionBar.getActionMode() && actionBar.getChildAt(i) != actionBar.getBackButton()) {
+                        actionBar.getChildAt(i).setAlpha(1f - progressToActionMode);
+                    }
+                }
                 fragmentView.invalidate();
             });
             actionBarColorAnimator.setInterpolator(CubicBezierInterpolator.DEFAULT);
@@ -5846,6 +5855,9 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             for (int b = 0; b < 3; b++) {
                 RecyclerListView list;
                 if (b == 2) {
+                    if (searchViewPager == null) {
+                        continue;
+                    }
                     list = searchViewPager.searchListView;
                 } else if (viewPages != null) {
                     list = b < viewPages.length ? viewPages[b].listView : null;
@@ -5867,7 +5879,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                     }
                 }
             }
-            if (searchViewPager.dialogsSearchAdapter != null) {
+            if (searchViewPager != null && searchViewPager.dialogsSearchAdapter != null) {
                 RecyclerListView recyclerListView = searchViewPager.dialogsSearchAdapter.getInnerListView();
                 if (recyclerListView != null) {
                     int count = recyclerListView.getChildCount();
@@ -5920,21 +5932,25 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             if (filtersView != null) {
                 filtersView.updateColors();
             }
-            searchViewPager.updateColors();
+            if (searchViewPager != null) {
+                searchViewPager.updateColors();
+            }
             if (searchTabsView != null) {
                 searchTabsView.updateColors();
             }
-            EditTextBoldCursor editText = searchItem.getSearchField();
-            if (whiteActionBar) {
-                editText.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
-                editText.setHintTextColor(Theme.getColor(Theme.key_player_time));
-                editText.setCursorColor(Theme.getColor(Theme.key_chat_messagePanelCursor));
-            } else {
-                editText.setCursorColor(Theme.getColor(Theme.key_actionBarDefaultSearch));
-                editText.setHintTextColor(Theme.getColor(Theme.key_actionBarDefaultSearchPlaceholder));
-                editText.setTextColor(Theme.getColor(Theme.key_actionBarDefaultSearch));
+            if (searchItem != null) {
+                EditTextBoldCursor editText = searchItem.getSearchField();
+                if (whiteActionBar) {
+                    editText.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+                    editText.setHintTextColor(Theme.getColor(Theme.key_player_time));
+                    editText.setCursorColor(Theme.getColor(Theme.key_chat_messagePanelCursor));
+                } else {
+                    editText.setCursorColor(Theme.getColor(Theme.key_actionBarDefaultSearch));
+                    editText.setHintTextColor(Theme.getColor(Theme.key_actionBarDefaultSearchPlaceholder));
+                    editText.setTextColor(Theme.getColor(Theme.key_actionBarDefaultSearch));
+                }
+                searchItem.updateColor();
             }
-            searchItem.updateColor();
             setSearchAnimationProgress(searchAnimationProgress);
         };
 

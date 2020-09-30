@@ -2009,8 +2009,12 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         actionModeViews.clear();
 
         if (inPreviewMode) {
-            headerItem.setAlpha(0.0f);
-            attachItem.setAlpha(0.0f);
+            if (headerItem != null) {
+                headerItem.setAlpha(0.0f);
+            }
+            if (attachItem != null) {
+                attachItem.setAlpha(0.0f);
+            }
         }
 
         final ActionBarMenu actionMode = actionBar.createActionMode();
@@ -2744,6 +2748,13 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                         }
                     } else if (child == instantCameraView || child == overlayView || child == animatingImageView) {
                         childTop = 0;
+                    } else if (child == textSelectionHelper.getOverlayView(context)) {
+                        if (SharedConfig.smoothKeyboard) {
+                            childTop -= paddingBottom;
+                        }
+                        if (keyboardSize > AndroidUtilities.dp(20) && getLayoutParams().height < 0) {
+                            childTop -= keyboardSize;
+                        }
                     }
                     child.layout(childLeft, childTop, childLeft + width, childTop + height);
                 }
@@ -12222,7 +12233,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             boolean hasChatInBack = false;
             boolean updatedReplies = false;
 
-            if (threadMessageObject != null) {
+            if (threadMessageObject != null && parentLayout != null) {
                 for (int a = 0, N = parentLayout.fragmentsStack.size() - 1; a < N; a++) {
                     BaseFragment fragment = parentLayout.fragmentsStack.get(a);
                     if (fragment != this && fragment instanceof ChatActivity) {
@@ -13259,7 +13270,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 SparseArray<TLRPC.TL_messageReplies> array = channelReplies.get((int) dialog_id);
                 boolean hasChatInBack = false;
 
-                if (threadMessageObject != null) {
+                if (threadMessageObject != null && parentLayout != null) {
                     for (int a = 0, N = parentLayout.fragmentsStack.size() - 1; a < N; a++) {
                         BaseFragment fragment = parentLayout.fragmentsStack.get(a);
                         if (fragment != this && fragment instanceof ChatActivity) {
@@ -13306,7 +13317,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                                     }
                                     newGroups.put(groupedMessages.groupId, groupedMessages);
                                 }
-                            } else {
+                            } else if (chatAdapter != null) {
                                 int row = messages.indexOf(messageObject);
                                 if (row >= 0) {
                                     if (updatedRows == null) {
@@ -14605,9 +14616,9 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                             if (fwd_from.from_id instanceof TLRPC.TL_peerUser) {
                                 user = messagesController.getUser(fwd_from.from_id.user_id);
                             } else if (fwd_from.from_id instanceof TLRPC.TL_peerChat) {
-                                user = messagesController.getUser(fwd_from.from_id.user_id);
+                                chat = messagesController.getChat(fwd_from.from_id.chat_id);
                             } else if (fwd_from.from_id instanceof TLRPC.TL_peerChannel) {
-                                user = messagesController.getUser(fwd_from.from_id.user_id);
+                                chat = messagesController.getChat(fwd_from.from_id.channel_id);
                             } else {
                                 chat = messagesController.getChat(fwd_from.saved_from_peer.chat_id);
                             }
@@ -16922,7 +16933,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 MessageObject message = selectedObject;
                 MessageObject.GroupedMessages group = selectedObjectGroup;
                 AlertsCreator.createScheduleDatePickerDialog(getParentActivity(), dialog_id, message.messageOwner.date, (notify, scheduleDate) -> {
-                    if (group != null) {
+                    if (group != null && !group.messages.isEmpty()) {
                         SendMessagesHelper.getInstance(currentAccount).editMessage(group.messages.get(0), null, false, ChatActivity.this, null, scheduleDate, null);
                     } else {
                         SendMessagesHelper.getInstance(currentAccount).editMessage(message, null, false, ChatActivity.this, null, scheduleDate, null);
@@ -18159,7 +18170,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     public boolean shouldDrawThreadProgress(ChatMessageCell cell) {
                         MessageObject.GroupedMessages group = cell.getCurrentMessagesGroup();
                         MessageObject message;
-                        if (group != null) {
+                        if (group != null && !group.messages.isEmpty()) {
                             message = group.messages.get(0);
                         } else {
                             message = cell.getMessageObject();
@@ -18658,7 +18669,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     public void didPressCommentButton(ChatMessageCell cell) {
                         MessageObject.GroupedMessages group = cell.getCurrentMessagesGroup();
                         MessageObject message;
-                        if (group != null) {
+                        if (group != null && !group.messages.isEmpty()) {
                             message = group.messages.get(0);
                         } else {
                             message = cell.getMessageObject();

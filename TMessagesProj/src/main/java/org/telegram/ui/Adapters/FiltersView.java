@@ -264,14 +264,8 @@ public class FiltersView extends RecyclerListView {
     private final static Pattern shortDate = Pattern.compile("^([0-9]{1,4})(\\.| |\\\\)([0-9]{1,4})$");
     private final static Pattern longDate = Pattern.compile("^([0-9]{1,2})(\\.| |\\\\)([0-9]{1,2})(\\.| |\\\\)([0-9]{1,4})$");
 
-    private final static String formatter[] = new String[]{
-            "dd.MM.yyyy",
-            "dd/MM/yyyy",
-            "dd MM yyyy",
-    };
 
-
-    private final static int[] numberOfDaysEachMonth = new int[]{31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+    private final static int[] numberOfDaysEachMonth = new int[]{31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
 
     public static void fillTipDates(String query, ArrayList<DateData> dates) {
         dates.clear();
@@ -282,7 +276,7 @@ public class FiltersView extends RecyclerListView {
         if (q.length() < 3) {
             return;
         }
-        if (LocaleController.getString("SearchTipToday", R.string.SearchTipToday).toLowerCase().startsWith(q)) {
+        if (LocaleController.getString("SearchTipToday", R.string.SearchTipToday).toLowerCase().startsWith(q) || "today".startsWith(q)) {
             Calendar calendar = Calendar.getInstance();
             int year = calendar.get(Calendar.YEAR);
             int month = calendar.get(Calendar.MONTH);
@@ -292,6 +286,19 @@ public class FiltersView extends RecyclerListView {
             calendar.set(year, month, day + 1, 0, 0, 0);
             long maxDate = calendar.getTimeInMillis() - 1;
             dates.add(new DateData(LocaleController.getString("SearchTipToday", R.string.SearchTipToday), minDate, maxDate));
+            return;
+        }
+
+        if (LocaleController.getString("SearchTipYesterday", R.string.SearchTipYesterday).toLowerCase().startsWith(q) || "yesterday".startsWith(q)) {
+            Calendar calendar = Calendar.getInstance();
+            int year = calendar.get(Calendar.YEAR);
+            int month = calendar.get(Calendar.MONTH);
+            int day = calendar.get(Calendar.DAY_OF_MONTH);
+            calendar.set(year, month, day, 0, 0, 0);
+            long minDate = calendar.getTimeInMillis() - 86400000L;
+            calendar.set(year, month, day + 1, 0, 0, 0);
+            long maxDate = calendar.getTimeInMillis() - 86400001L;
+            dates.add(new DateData(LocaleController.getString("SearchTipYesterday", R.string.SearchTipYesterday), minDate, maxDate));
             return;
         }
         Matcher matcher;
@@ -346,17 +353,17 @@ public class FiltersView extends RecyclerListView {
             if (!matcher.group(2).equals(matcher.group(4))) {
                 return;
             }
-            int day = Integer.parseInt(g1) - 1;
+            int day = Integer.parseInt(g1);
             int month = Integer.parseInt(g2) - 1;
             int year = Integer.parseInt(g3);
             int currentYear = Calendar.getInstance().get(Calendar.YEAR);
-            if (validDateForMont(day, month + 1) && year >= minYear && year <= currentYear) {
+            if (validDateForMont(day - 1, month) && year >= minYear && year <= currentYear) {
                 Calendar calendar = Calendar.getInstance();
                 calendar.set(year, month, day, 0, 0, 0);
                 long minDate = calendar.getTimeInMillis();
                 calendar.set(year, month, day + 1, 0, 0, 0);
                 long maxDate = calendar.getTimeInMillis() - 1;
-                dates.add(new DateData(LocaleController.getInstance().formatterYearMax.format(calendar.getTime()), minDate, maxDate));
+                dates.add(new DateData(LocaleController.getInstance().formatterYearMax.format(minDate), minDate, maxDate));
                 return;
             }
 
@@ -369,17 +376,17 @@ public class FiltersView extends RecyclerListView {
                 selectedYear = minYear;
                 for (int i = currentYear; i >= selectedYear; i--) {
                     Calendar calendar = Calendar.getInstance();
-                    calendar.set(i, 0, 0, 0, 0, 0);
+                    calendar.set(i, 0, 1, 0, 0, 0);
                     long minDate = calendar.getTimeInMillis();
-                    calendar.set(i + 1, 0, 0, 0, 0, 0);
+                    calendar.set(i + 1, 0, 1, 0, 0, 0);
                     long maxDate = calendar.getTimeInMillis() - 1;
                     dates.add(new DateData(Integer.toString(i), minDate, maxDate));
                 }
             } else if (selectedYear <= currentYear) {
                 Calendar calendar = Calendar.getInstance();
-                calendar.set(selectedYear, 0, 0, 0, 0, 0);
+                calendar.set(selectedYear, 0, 1, 0, 0, 0);
                 long minDate = calendar.getTimeInMillis();
-                calendar.set(selectedYear + 1, 0, 0, 0, 0, 0);
+                calendar.set(selectedYear + 1, 0, 1, 0, 0, 0);
                 long maxDate = calendar.getTimeInMillis() - 1;
                 dates.add(new DateData(Integer.toString(selectedYear), minDate, maxDate));
             }
@@ -421,41 +428,22 @@ public class FiltersView extends RecyclerListView {
             }
         }
 
-        for (int i = 0; i < formatter.length; i++) {
-            try {
-                if (isValidFormat(formatter[i], q, Locale.ENGLISH)) {
-                    Date date = new SimpleDateFormat(formatter[i]).parse(q);
-                    if (date != null) {
-                        Calendar calendar = Calendar.getInstance();
-                        calendar.setTime(date);
-                        int year = calendar.get(Calendar.YEAR);
-                        if (year < minYear) {
-                            return;
-                        }
-                        long minDate = date.getTime();
-                        long maxDate = minDate + 86400000L - 1;
-                        dates.add(new DateData(LocaleController.getInstance().formatterYearMax.format(date), minDate, maxDate));
-                        return;
-                    }
-                }
-
-            } catch (ParseException e) {
-                e.printStackTrace();
-            }
-        }
-
         if (!TextUtils.isEmpty(q) && q.length() > 2) {
             int month = getMonth(q);
+            long today = Calendar.getInstance().getTimeInMillis();
             if (month >= 0) {
                 int selectedYear = minYear;
                 int currentYear = Calendar.getInstance().get(Calendar.YEAR);
                 for (int j = currentYear; j >= selectedYear; j--) {
                     Calendar calendar = Calendar.getInstance();
-                    calendar.set(j, month, 0, 0, 0, 0);
+                    calendar.set(j, month, 1, 0, 0, 0);
                     long minDate = calendar.getTimeInMillis();
-                    calendar.set(j, month + 1, 0, 0, 0, 0);
+                    if (minDate > today) {
+                        continue;
+                    }
+                    calendar.add(Calendar.MONTH, 1);
                     long maxDate = calendar.getTimeInMillis() - 1;
-                    dates.add(new DateData(LocaleController.getInstance().formatterMonthYear.format(maxDate), minDate, maxDate));
+                    dates.add(new DateData(LocaleController.getInstance().formatterMonthYear.format(minDate), minDate, maxDate));
                 }
             }
         }
@@ -463,33 +451,41 @@ public class FiltersView extends RecyclerListView {
 
     private static void createForMonthYear(ArrayList<DateData> dates, int month, int selectedYear) {
         int currentYear = Calendar.getInstance().get(Calendar.YEAR);
+        long today = Calendar.getInstance().getTimeInMillis();
         if (selectedYear >= minYear && selectedYear <= currentYear) {
             Calendar calendar = Calendar.getInstance();
-            calendar.set(selectedYear, month, 0, 0, 0, 0);
+            calendar.set(selectedYear, month, 1, 0, 0, 0);
             long minDate = calendar.getTimeInMillis();
-            calendar.set(selectedYear, month + 1, 0, 0, 0, 0);
+            if (minDate > today) {
+                return;
+            }
+            calendar.add(Calendar.MONTH, 1);
             long maxDate = calendar.getTimeInMillis() - 1;
-            dates.add(new DateData(LocaleController.getInstance().formatterMonthYear.format(maxDate), minDate, maxDate));
+            dates.add(new DateData(LocaleController.getInstance().formatterMonthYear.format(minDate), minDate, maxDate));
         }
     }
 
     private static void createForDayMonth(ArrayList<DateData> dates, int day, int month) {
         if (validDateForMont(day, month)) {
             int currentYear = Calendar.getInstance().get(Calendar.YEAR);
+            long today = Calendar.getInstance().getTimeInMillis();
             GregorianCalendar georgianCal = (GregorianCalendar) GregorianCalendar.getInstance();
             for (int i = currentYear; i >= minYear; i--) {
                 if (month == 1 && day == 28 && !georgianCal.isLeapYear(i)) {
                     continue;
                 }
                 Calendar calendar = Calendar.getInstance();
-                calendar.set(i, month, day, 0, 0, 0);
-                long minDate = calendar.getTimeInMillis();
                 calendar.set(i, month, day + 1, 0, 0, 0);
+                long minDate = calendar.getTimeInMillis();
+                if (minDate > today) {
+                    continue;
+                }
+                calendar.set(i, month, day + 2, 0, 0, 0);
                 long maxDate = calendar.getTimeInMillis() - 1;
                 if (i == currentYear) {
-                    dates.add(new DateData(LocaleController.getInstance().formatterDayMonth.format(maxDate), minDate, maxDate));
+                    dates.add(new DateData(LocaleController.getInstance().formatterDayMonth.format(minDate), minDate, maxDate));
                 } else {
-                    dates.add(new DateData(LocaleController.getInstance().formatterYearMax.format(maxDate), minDate, maxDate));
+                    dates.add(new DateData(LocaleController.getInstance().formatterYearMax.format(minDate), minDate, maxDate));
                 }
             }
         }
@@ -540,9 +536,10 @@ public class FiltersView extends RecyclerListView {
 
         String[] monthsEng = new String[12];
         Calendar c = Calendar.getInstance();
-        for (int i = 0; i < 12; i++) {
+        for (int i = 1; i <= 12; i++) {
+            c.set(0, 0, 0, 0, 0, 0);
             c.set(Calendar.MONTH, i);
-            monthsEng[i] = c.getDisplayName(Calendar.MONTH, Calendar.LONG, Locale.ENGLISH).toLowerCase();
+            monthsEng[i - 1] = c.getDisplayName(Calendar.MONTH, Calendar.LONG, Locale.ENGLISH).toLowerCase();
         }
 
 

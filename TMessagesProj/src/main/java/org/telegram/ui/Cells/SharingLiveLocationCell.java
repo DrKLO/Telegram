@@ -148,7 +148,7 @@ public class SharingLiveLocationCell extends FrameLayout {
                 fromId = -messageObject.messageOwner.fwd_from.from_id.channel_id;
             } else if (messageObject.messageOwner.fwd_from.from_id instanceof TLRPC.TL_peerChat) {
                 fromId = -messageObject.messageOwner.fwd_from.from_id.chat_id;
-            } else {
+            } else if (messageObject.messageOwner.fwd_from.from_id instanceof TLRPC.TL_peerUser) {
                 fromId = messageObject.messageOwner.fwd_from.from_id.user_id;
             }
         }

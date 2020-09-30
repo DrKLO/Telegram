@@ -5580,10 +5580,10 @@ public class MessageObject {
                 if (startIndex < 0) {
                     continue;
                 }
+                int l = Math.max(currentQuery.length(), word.length());
                 if (startIndex != 0) {
                     word = word.substring(startIndex);
                 }
-                int l = Math.max(currentQuery.length(), word.length());
                 int min = Math.min(currentQuery.length(), word.length());
                 int count = 0;
                 for (int j = 0; j < min; j++) {

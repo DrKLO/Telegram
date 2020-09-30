@@ -213,7 +213,9 @@ public final class Bulletin {
             layout.onExitTransitionStart();
             layout.onExitTransitionEnd();
             layout.onHide();
-            containerLayout.removeView(parentLayout);
+            if (containerLayout != null) {
+                containerLayout.removeView(parentLayout);
+            }
             layout.onDetach();
         }
     }

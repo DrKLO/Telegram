@@ -327,10 +327,14 @@ public class FilteredSearchView extends FrameLayout implements NotificationCente
         addView(loadingView = new LoadingView(context) {
             @Override
             int getType() {
-                if (currentSearchFilter == null || !TextUtils.isEmpty(currentSearchString)) {
+                if (currentSearchFilter == null) {
                     return 1;
                 } else if (currentSearchFilter.filterType == FiltersView.FILTER_TYPE_MEDIA) {
-                    return 2;
+                    if (!TextUtils.isEmpty(currentSearchString)) {
+                        return 1;
+                    } else {
+                        return 2;
+                    }
                 } else if (currentSearchFilter.filterType == FiltersView.FILTER_TYPE_FILES) {
                     return 3;
                 } else if (currentSearchFilter.filterType == FiltersView.FILTER_TYPE_MUSIC || currentSearchFilter.filterType == FiltersView.FILTER_TYPE_VOICE) {
@@ -502,6 +506,8 @@ public class FilteredSearchView extends FrameLayout implements NotificationCente
         requestIndex++;
         final int requestId = requestIndex;
 
+        final int folderId = uiCallback.getFolderId();
+
         AndroidUtilities.runOnUIThread(searchRunnable = () -> {
             TLObject request;
 
@@ -530,7 +536,7 @@ public class FilteredSearchView extends FrameLayout implements NotificationCente
                     resultArray = new ArrayList<>();
                     ArrayList<CharSequence> resultArrayNames = new ArrayList<>();
                     ArrayList<TLRPC.User> encUsers = new ArrayList<>();
-                    MessagesStorage.getInstance(currentAccount).localSearch(0, query, resultArray, resultArrayNames, encUsers);
+                    MessagesStorage.getInstance(currentAccount).localSearch(0, query, resultArray, resultArrayNames, encUsers, folderId);
                 }
 
                 final TLRPC.TL_messages_searchGlobal req = new TLRPC.TL_messages_searchGlobal();
@@ -825,7 +831,7 @@ public class FilteredSearchView extends FrameLayout implements NotificationCente
             View view;
             switch (viewType) {
                 case 0:
-                    view = new SharedPhotoVideoCell(mContext);
+                    view = new SharedPhotoVideoCell(mContext, SharedPhotoVideoCell.VIEW_TYPE_GLOBAL_SEARCH) ;
                     SharedPhotoVideoCell cell = (SharedPhotoVideoCell) view;
                     cell.setDelegate(new SharedPhotoVideoCell.SharedPhotoVideoCellDelegate() {
                         @Override

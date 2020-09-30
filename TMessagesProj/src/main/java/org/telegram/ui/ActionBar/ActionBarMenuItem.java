@@ -621,6 +621,7 @@ public class ActionBarMenuItem extends FrameLayout {
             return false;
         } else {
             searchContainer.setVisibility(VISIBLE);
+            searchContainer.setAlpha(1f);
             setVisibility(GONE);
             searchField.setText("");
             searchField.requestFocus();

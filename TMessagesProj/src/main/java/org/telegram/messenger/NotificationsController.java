@@ -1384,9 +1384,8 @@ public class NotificationsController extends BaseController {
             return messageObject.messageOwner.message;
         }
         if (fromId == 0) {
-            if (messageObject.isFromUser() || messageObject.getId() < 0) {
-                fromId = messageObject.getFromChatId();
-            } else {
+            fromId = messageObject.getFromChatId();
+            if (fromId == 0) {
                 fromId = -chat_id;
             }
         } else if (fromId == getUserConfig().getClientUserId()) {
@@ -1823,9 +1822,8 @@ public class NotificationsController extends BaseController {
         }
         int selfUsedId = getUserConfig().getClientUserId();
         if (from_id == 0) {
-            if (messageObject.isFromUser() || messageObject.getId() < 0) {
-                from_id = messageObject.getFromChatId();
-            } else {
+            from_id = messageObject.getFromChatId();
+            if (from_id == 0) {
                 from_id = -chat_id;
             }
         } else if (from_id == selfUsedId) {

@@ -10771,7 +10771,7 @@ public class MessagesStorage extends BaseController {
     }
 
 
-    public void localSearch(int dialogsType, String query, ArrayList<TLObject> resultArray, ArrayList<CharSequence> resultArrayNames, ArrayList<TLRPC.User> encUsers) {
+    public void localSearch(int dialogsType, String query, ArrayList<TLObject> resultArray, ArrayList<CharSequence> resultArrayNames, ArrayList<TLRPC.User> encUsers, int folderId) {
         int selfUserId = UserConfig.getInstance(currentAccount).getClientUserId();
         try {
             String savedMessages = LocaleController.getString("SavedMessages", R.string.SavedMessages).toLowerCase();
@@ -10792,7 +10792,12 @@ public class MessagesStorage extends BaseController {
             int resultCount = 0;
 
             LongSparseArray<DialogsSearchAdapter.DialogSearchResult> dialogsResult = new LongSparseArray<>();
-            SQLiteCursor cursor = getDatabase().queryFinalized("SELECT did, date FROM dialogs ORDER BY date DESC LIMIT 600");
+            SQLiteCursor cursor = null;
+            if (folderId >= 0) {
+                cursor = getDatabase().queryFinalized("SELECT did, date FROM dialogs WHERE folder_id = ? ORDER BY date DESC LIMIT 600", folderId);
+            } else {
+                cursor = getDatabase().queryFinalized("SELECT did, date FROM dialogs ORDER BY date DESC LIMIT 600");
+            }
             while (cursor.next()) {
                 long id = cursor.longValue(0);
                 DialogsSearchAdapter.DialogSearchResult dialogSearchResult = new DialogsSearchAdapter.DialogSearchResult();

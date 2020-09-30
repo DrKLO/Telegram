@@ -47,7 +47,7 @@ public class AvatarDrawable extends Drawable {
     public static final int AVATAR_TYPE_SAVED = 1;
     public static final int AVATAR_TYPE_ARCHIVED = 2;
     public static final int AVATAR_TYPE_SHARES = 3;
-    public static final int AVATAR_TYPE_REPLIES = 4;
+    public static final int AVATAR_TYPE_REPLIES = 12;
 
     public static final int AVATAR_TYPE_FILTER_CONTACTS = 4;
     public static final int AVATAR_TYPE_FILTER_NON_CONTACTS = 5;

@@ -541,7 +541,7 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
             ArrayList<TLObject> resultArray = new ArrayList<>();
             ArrayList<CharSequence> resultArrayNames = new ArrayList<>();
             ArrayList<TLRPC.User> encUsers = new ArrayList<>();
-            MessagesStorage.getInstance(currentAccount).localSearch(dialogsType, q, resultArray, resultArrayNames, encUsers);
+            MessagesStorage.getInstance(currentAccount).localSearch(dialogsType, q, resultArray, resultArrayNames, encUsers, -1);
             updateSearchResults(resultArray, resultArrayNames, encUsers, searchId);
             FiltersView.fillTipDates(q, localTipDates);
             AndroidUtilities.runOnUIThread(() -> {
