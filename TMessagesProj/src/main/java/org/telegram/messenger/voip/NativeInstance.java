@@ -93,9 +93,9 @@ public class NativeInstance {
     }
 
     private static native long makeNativeInstance(String version, NativeInstance instance, Instance.Config config, String persistentStateFilePath, Instance.Endpoint[] endpoints, Instance.Proxy proxy, int networkType, Instance.EncryptionKey encryptionKey, VideoSink remoteSink, long videoCapturer, float aspectRatio);
-    public static native long createVideoCapturer(VideoSink localSink);
+    public static native long createVideoCapturer(VideoSink localSink, boolean front);
     public static native void setVideoStateCapturer(long videoCapturer, int videoState);
-    public static native void switchCameraCapturer(long videoCapturer);
+    public static native void switchCameraCapturer(long videoCapturer, boolean front);
     public static native void destroyVideoCapturer(long videoCapturer);
 
     public native void setGlobalServerConfig(String serverConfigJson);
@@ -111,8 +111,8 @@ public class NativeInstance {
     public native Instance.TrafficStats getTrafficStats();
     public native byte[] getPersistentState();
     private native void stopNative();
-    public native void setupOutgoingVideo(VideoSink localSink);
-    public native void switchCamera();
+    public native void setupOutgoingVideo(VideoSink localSink, boolean front);
+    public native void switchCamera(boolean front);
     public native void setVideoState(int videoState);
     public native void onSignalingDataReceive(byte[] data);
 }

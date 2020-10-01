@@ -676,8 +676,8 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter {
         if (foundType == 0) {
             final ArrayList<Integer> users = new ArrayList<>();
             for (int a = 0; a < Math.min(100, messageObjects.size()); a++) {
-                int from_id = messageObjects.get(a).messageOwner.from_id;
-                if (!users.contains(from_id)) {
+                int from_id = messageObjects.get(a).getFromChatId();
+                if (from_id > 0 && !users.contains(from_id)) {
                     users.add(from_id);
                 }
             }

@@ -8,15 +8,16 @@
 
 package org.telegram.ui.Components;
 
+import android.app.Activity;
 import android.content.Context;
 import android.graphics.Rect;
 import android.view.View;
 import android.view.WindowManager;
+import android.widget.FrameLayout;
 
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.ui.ActionBar.AdjustPanFrameLayout;
 
-public class SizeNotifierFrameLayoutPhoto extends AdjustPanFrameLayout {
+public class SizeNotifierFrameLayoutPhoto extends FrameLayout {
 
     private Rect rect = new Rect();
     private int keyboardHeight;
@@ -55,14 +56,7 @@ public class SizeNotifierFrameLayoutPhoto extends AdjustPanFrameLayout {
             int usableViewHeight = rootView.getHeight() - (rect.top != 0 ? AndroidUtilities.statusBarHeight : 0) - AndroidUtilities.getViewInset(rootView);
             return usableViewHeight - (rect.bottom - rect.top);
         } else {
-            int usableViewHeight = rootView.getHeight() - AndroidUtilities.getViewInset(rootView);
-            int top = rect.top;
-            int size;
-            if (useSmoothKeyboard) {
-                size = Math.max(0, usableViewHeight - (rect.bottom - rect.top));
-            } else {
-                size = AndroidUtilities.displaySize.y - top - usableViewHeight;
-            }
+            int size = ((Activity) rootView.getContext()).getWindow().getDecorView().getHeight() - AndroidUtilities.getViewInset(rootView) - rootView.getBottom();
             if (size <= Math.max(AndroidUtilities.dp(10), AndroidUtilities.statusBarHeight)) {
                 size = 0;
             }

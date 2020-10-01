@@ -39,7 +39,6 @@ import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.ScrollSlidingTextTabStrip;
 
 import java.util.ArrayList;
-import java.util.Collections;
 
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -52,7 +51,6 @@ public class DialogOrContactPickerActivity extends BaseFragment {
         private ActionBar actionBar;
         private RecyclerListView listView;
         private RecyclerListView listView2;
-        private View emptyView;
         private int selectedType;
 
         public ViewPage(Context context) {
@@ -88,7 +86,7 @@ public class DialogOrContactPickerActivity extends BaseFragment {
         args.putBoolean("onlySelect", true);
         args.putBoolean("checkCanWrite", false);
         args.putBoolean("resetDelegate", false);
-        args.putInt("dialogsType", 4);
+        args.putInt("dialogsType", 9);
         dialogsActivity = new DialogsActivity(args);
         dialogsActivity.setDelegate((fragment, dids, message, param) -> {
             if (dids.isEmpty()) {
@@ -160,6 +158,7 @@ public class DialogOrContactPickerActivity extends BaseFragment {
                 contactsActivity.getActionBar().setSearchFieldText(editText.getText().toString());
             }
         });
+        searchItem.setSearchFieldHint(LocaleController.getString("Search", R.string.Search));
 
         scrollSlidingTextTabStrip = new ScrollSlidingTextTabStrip(context);
         scrollSlidingTextTabStrip.setUseSameWidth(true);
@@ -259,9 +258,6 @@ public class DialogOrContactPickerActivity extends BaseFragment {
                     }
                     if (viewPages[a].listView2 != null) {
                         viewPages[a].listView2.setPadding(0, actionBarHeight, 0, 0);
-                    }
-                    if (viewPages[a].emptyView != null) {
-                        viewPages[a].emptyView.setPadding(0, actionBarHeight, 0, 0);
                     }
                 }
                 globalIgnoreLayout = false;
@@ -500,7 +496,6 @@ public class DialogOrContactPickerActivity extends BaseFragment {
                 viewPages[a].parentFragment = dialogsActivity;
                 viewPages[a].listView = dialogsActivity.getListView();
                 viewPages[a].listView2 = dialogsActivity.getSearchListView();
-                viewPages[a].emptyView = dialogsActivity.getEmptyView();
             } else if (a == 1) {
                 viewPages[a].parentFragment = contactsActivity;
                 viewPages[a].listView = contactsActivity.getListView();
@@ -632,7 +627,7 @@ public class DialogOrContactPickerActivity extends BaseFragment {
             if (MessagesController.isSupportUser(user)) {
                 AlertsCreator.showSimpleToast(DialogOrContactPickerActivity.this, LocaleController.getString("ErrorOccurred", R.string.ErrorOccurred));
             } else {
-                MessagesController.getInstance(currentAccount).blockUser(user.id);
+                MessagesController.getInstance(currentAccount).blockPeer(user.id);
                 AlertsCreator.showSimpleToast(DialogOrContactPickerActivity.this, LocaleController.getString("UserBlocked", R.string.UserBlocked));
             }
             finishFragment();

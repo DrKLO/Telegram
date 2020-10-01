@@ -164,7 +164,7 @@ public class ArchivedStickerSetCell extends FrameLayout implements Checkable {
         }
         if (sticker != null) {
             TLObject object;
-            if (set.set.thumb instanceof TLRPC.TL_photoSize) {
+            if (set.set.thumb instanceof TLRPC.TL_photoSize || set.set.thumb instanceof TLRPC.TL_photoSizeProgressive) {
                 object = set.set.thumb;
             } else {
                 object = sticker;

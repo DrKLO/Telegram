@@ -178,7 +178,7 @@ public class PopupNotificationActivity extends Activity implements NotificationC
         statusDrawables[3] = new PlayingGameDrawable();
         statusDrawables[4] = new RoundStatusDrawable();
 
-        SizeNotifierFrameLayout contentView = new SizeNotifierFrameLayout(this, false) {
+        SizeNotifierFrameLayout contentView = new SizeNotifierFrameLayout(this) {
             @Override
             protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
                 int widthMode = MeasureSpec.getMode(widthMeasureSpec);
@@ -250,9 +250,6 @@ public class PopupNotificationActivity extends Activity implements NotificationC
                     }
 
                     switch (verticalGravity) {
-                        case Gravity.TOP:
-                            childTop = lp.topMargin;
-                            break;
                         case Gravity.CENTER_VERTICAL:
                             childTop = ((b - paddingBottom) - t - height) / 2 + lp.topMargin - lp.bottomMargin;
                             break;
@@ -323,7 +320,7 @@ public class PopupNotificationActivity extends Activity implements NotificationC
                 if (currentMessageNum >= 0 && currentMessageNum < popupMessages.size()) {
                     popupMessages.remove(currentMessageNum);
                 }
-                MessagesController.getInstance(currentMessageObject.currentAccount).markDialogAsRead(currentMessageObject.getDialogId(), currentMessageObject.getId(), Math.max(0, currentMessageObject.getId()), currentMessageObject.messageOwner.date, true, 0, true, 0);
+                MessagesController.getInstance(currentMessageObject.currentAccount).markDialogAsRead(currentMessageObject.getDialogId(), currentMessageObject.getId(), Math.max(0, currentMessageObject.getId()), currentMessageObject.messageOwner.date, true, 0, 0, true, 0);
                 currentMessageObject = null;
                 getNewMessage();
             }
@@ -366,7 +363,7 @@ public class PopupNotificationActivity extends Activity implements NotificationC
             @Override
             public void needSendTyping() {
                 if (currentMessageObject != null) {
-                    MessagesController.getInstance(currentMessageObject.currentAccount).sendTyping(currentMessageObject.getDialogId(), 0, classGuid);
+                    MessagesController.getInstance(currentMessageObject.currentAccount).sendTyping(currentMessageObject.getDialogId(), 0, 0, classGuid);
                 }
             }
 
@@ -1288,16 +1285,22 @@ public class PopupNotificationActivity extends Activity implements NotificationC
                 currentUser = MessagesController.getInstance(currentMessageObject.currentAccount).getUser(lower_id);
             } else {
                 currentChat = MessagesController.getInstance(currentMessageObject.currentAccount).getChat(-lower_id);
-                currentUser = MessagesController.getInstance(currentMessageObject.currentAccount).getUser(currentMessageObject.messageOwner.from_id);
+                if (currentMessageObject.isFromUser()) {
+                    currentUser = MessagesController.getInstance(currentMessageObject.currentAccount).getUser(currentMessageObject.messageOwner.from_id.user_id);
+                }
             }
         } else {
             TLRPC.EncryptedChat encryptedChat = MessagesController.getInstance(currentMessageObject.currentAccount).getEncryptedChat((int) (dialog_id >> 32));
             currentUser = MessagesController.getInstance(currentMessageObject.currentAccount).getUser(encryptedChat.user_id);
         }
 
-        if (currentChat != null && currentUser != null) {
+        if (currentChat != null) {
             nameTextView.setText(currentChat.title);
-            onlineTextView.setText(UserObject.getUserName(currentUser));
+            if (currentUser != null) {
+                onlineTextView.setText(UserObject.getUserName(currentUser));
+            } else {
+                onlineTextView.setText(null);
+            }
             nameTextView.setCompoundDrawablesWithIntrinsicBounds(0, 0, 0, 0);
             nameTextView.setCompoundDrawablePadding(0);
         } else if (currentUser != null) {
@@ -1336,7 +1339,7 @@ public class PopupNotificationActivity extends Activity implements NotificationC
         if (currentUser != null && currentUser.id == 777000) {
             onlineTextView.setText(LocaleController.getString("ServiceNotifications", R.string.ServiceNotifications));
         } else {
-            CharSequence printString = MessagesController.getInstance(currentMessageObject.currentAccount).printingStrings.get(currentMessageObject.getDialogId());
+            CharSequence printString = MessagesController.getInstance(currentMessageObject.currentAccount).getPrintingString(currentMessageObject.getDialogId(), 0);
             if (printString == null || printString.length() == 0) {
                 lastPrintString = null;
                 setTypingAnimation(false);
@@ -1386,7 +1389,7 @@ public class PopupNotificationActivity extends Activity implements NotificationC
         }
         if (start) {
             try {
-                Integer type = MessagesController.getInstance(currentMessageObject.currentAccount).printingStringsTypes.get(currentMessageObject.getDialogId());
+                Integer type = MessagesController.getInstance(currentMessageObject.currentAccount).getPrintingStringType(currentMessageObject.getDialogId(), 0);
                 onlineTextView.setCompoundDrawablesWithIntrinsicBounds(statusDrawables[type], null, null, null);
                 onlineTextView.setCompoundDrawablePadding(AndroidUtilities.dp(4));
                 for (int a = 0; a < statusDrawables.length; a++) {
@@ -1490,7 +1493,7 @@ public class PopupNotificationActivity extends Activity implements NotificationC
                 checkAndUpdateAvatar();
             }
             if ((updateMask & MessagesController.UPDATE_MASK_USER_PRINT) != 0) {
-                CharSequence printString = MessagesController.getInstance(currentMessageObject.currentAccount).printingStrings.get(currentMessageObject.getDialogId());
+                CharSequence printString = MessagesController.getInstance(currentMessageObject.currentAccount).getPrintingString(currentMessageObject.getDialogId(), 0);
                 if (lastPrintString != null && printString == null || lastPrintString == null && printString != null || lastPrintString != null && printString != null && !lastPrintString.equals(printString)) {
                     updateSubtitle();
                 }

@@ -12,6 +12,7 @@ import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
+import android.animation.ValueAnimator;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Canvas;
@@ -42,12 +43,14 @@ import android.view.inputmethod.EditorInfo;
 import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import org.telegram.SQLite.SQLiteCursor;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
+import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.FileLog;
@@ -65,11 +68,14 @@ import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.NativeByteBuffer;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.ui.ActionBar.AdjustPanLayoutHelper;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.ShareDialogCell;
+import org.telegram.ui.ChatActivity;
 import org.telegram.ui.DialogsActivity;
+import org.telegram.ui.ForwardsActivity;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -87,6 +93,7 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
     private FrameLayout writeButtonContainer;
     private View selectedCountView;
     private TextView pickerBottomLayout;
+    private LinearLayout sharesCountLayout;
     private AnimatorSet animatorSet;
     private RecyclerListView gridView;
     private GridLayoutManager layoutManager;
@@ -101,6 +108,8 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
     private AnimatorSet[] shadowAnimation = new AnimatorSet[2];
     private LongSparseArray<TLRPC.Dialog> selectedDialogs = new LongSparseArray<>();
 
+    private ChatActivity parentFragment;
+
     private RectF rect = new RectF();
     private Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private TextPaint textPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
@@ -113,9 +122,18 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
     private String linkToCopy;
 
     private int scrollOffsetY;
+    private int previousScrollOffsetY;
     private int topBeforeSwitch;
+    private boolean panTranslationMoveLayout;
 
     private ShareAlertDelegate delegate;
+    private float currentPanTranslationY;
+
+    private float captionEditTextTopOffset;
+    private float chatActivityEnterViewAnimateFromTop;
+    private ValueAnimator topBackgroundAnimator;
+
+    private int topOffset;
 
     public interface ShareAlertDelegate {
         void didShare();
@@ -251,12 +269,17 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
         } else {
             arrayList = null;
         }
-        return new ShareAlert(context, arrayList, text, channel, copyLink, fullScreen);
+        return new ShareAlert(context, null, arrayList, text, channel, copyLink, fullScreen);
     }
 
     public ShareAlert(final Context context, ArrayList<MessageObject> messages, final String text, boolean channel, final String copyLink, boolean fullScreen) {
+        this(context, null, messages, text, channel, copyLink, fullScreen);
+    }
+
+    public ShareAlert(final Context context, ChatActivity fragment, ArrayList<MessageObject> messages, final String text, boolean channel, final String copyLink, boolean fullScreen) {
         super(context, true);
 
+        parentFragment = fragment;
         shadowDrawable = context.getResources().getDrawable(R.drawable.sheet_shadow_round).mutate();
         shadowDrawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_dialogBackground), PorterDuff.Mode.MULTIPLY));
 
@@ -266,6 +289,7 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
         searchAdapter = new ShareSearchAdapter(context);
         isChannel = channel;
         sendingText = text;
+        useSmoothKeyboard = true;
 
         if (sendingMessageObjects != null) {
             for (int a = 0, N = sendingMessageObjects.size(); a < N; a++) {
@@ -283,7 +307,7 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
             loadingLink = true;
             TLRPC.TL_channels_exportMessageLink req = new TLRPC.TL_channels_exportMessageLink();
             req.id = messages.get(0).getId();
-            req.channel = MessagesController.getInstance(currentAccount).getInputChannel(messages.get(0).messageOwner.to_id.channel_id);
+            req.channel = MessagesController.getInstance(currentAccount).getInputChannel(messages.get(0).messageOwner.peer_id.channel_id);
             ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
                 if (response != null) {
                     exportedMessageLink = (TLRPC.TL_exportedMessageLink) response;
@@ -296,28 +320,136 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
         }
 
 
-        SizeNotifierFrameLayout sizeNotifierFrameLayout = new SizeNotifierFrameLayout(context, false) {
+        SizeNotifierFrameLayout sizeNotifierFrameLayout = new SizeNotifierFrameLayout(context) {
 
             private boolean ignoreLayout = false;
             private RectF rect1 = new RectF();
             private boolean fullHeight;
+            private int topOffset;
+            private int previousTopOffset;
+
+            private int fromScrollY;
+            private int toScrollY;
+
+            private int fromOffsetTop;
+            private int toOffsetTop;
+
+            AdjustPanLayoutHelper adjustPanLayoutHelper = new AdjustPanLayoutHelper(this) {
+
+                @Override
+                protected void onTransitionStart(boolean keyboardVisible) {
+                    super.onTransitionStart(keyboardVisible);
+                    if (previousScrollOffsetY > 0 && previousScrollOffsetY != scrollOffsetY && keyboardVisible) {
+                        fromScrollY = previousScrollOffsetY;
+                        toScrollY = scrollOffsetY;
+                        panTranslationMoveLayout = true;
+                        scrollOffsetY = fromScrollY;
+                    } else {
+                        fromScrollY = -1;
+                    }
+
+                    if (topOffset != previousTopOffset) {
+                        fromOffsetTop = 0;
+                        toOffsetTop = 0;
+                        panTranslationMoveLayout = true;
+
+                        if (!keyboardVisible) {
+                            toOffsetTop -= topOffset - previousTopOffset;
+                        } else {
+                            toOffsetTop += topOffset - previousTopOffset;
+                        }
+                        scrollOffsetY = keyboardVisible ? fromScrollY : toScrollY;
+                    } else {
+                        fromOffsetTop = -1;
+                    }
+                    gridView.setTopGlowOffset((int) (currentPanTranslationY + scrollOffsetY));
+                    frameLayout.setTranslationY(currentPanTranslationY + scrollOffsetY);
+                    searchEmptyView.setTranslationY(currentPanTranslationY + scrollOffsetY);
+                    invalidate();
+                }
+
+                @Override
+                protected void onTransitionEnd() {
+                    super.onTransitionEnd();
+                    panTranslationMoveLayout = false;
+                    updateLayout();
+                    previousScrollOffsetY = scrollOffsetY;
+                    gridView.setTopGlowOffset(scrollOffsetY);
+                    frameLayout.setTranslationY(scrollOffsetY);
+                    searchEmptyView.setTranslationY(scrollOffsetY);
+                    gridView.setTranslationY(0);
+                }
+
+                @Override
+                protected void onPanTranslationUpdate(float y, float progress, boolean keyboardVisible) {
+                    super.onPanTranslationUpdate(y, progress, keyboardVisible);
+                    for (int i = 0; i < containerView.getChildCount(); i++) {
+                        if (containerView.getChildAt(i) != pickerBottomLayout && containerView.getChildAt(i) != shadow[1] && containerView.getChildAt(i) != sharesCountLayout
+                                && containerView.getChildAt(i) != frameLayout2 && containerView.getChildAt(i) != writeButtonContainer && containerView.getChildAt(i) != selectedCountView) {
+                            containerView.getChildAt(i).setTranslationY(y);
+                        }
+                    }
+                    currentPanTranslationY = y;
+                    if (fromScrollY != -1 && keyboardVisible) {
+                        scrollOffsetY = (int) (fromScrollY * (1f - progress) + toScrollY * progress);
+                        gridView.setTranslationY(currentPanTranslationY + (fromScrollY - toScrollY) * (1f - progress));
+                    } else if (fromOffsetTop != -1) {
+                        scrollOffsetY = (int) (fromOffsetTop * (1f - progress) + toOffsetTop * progress);
+                        float p = keyboardVisible ? (1f - progress) : progress;
+                        if (keyboardVisible) {
+                            gridView.setTranslationY(currentPanTranslationY - (fromOffsetTop - toOffsetTop) * progress);
+                        } else {
+                            gridView.setTranslationY(currentPanTranslationY + (toOffsetTop - fromOffsetTop) * p);
+                        }
+                    }
+                    gridView.setTopGlowOffset((int) (scrollOffsetY + currentPanTranslationY));
+                    frameLayout.setTranslationY(scrollOffsetY + currentPanTranslationY);
+                    searchEmptyView.setTranslationY(scrollOffsetY + currentPanTranslationY);
+                    frameLayout2.invalidate();
+                    setCurrentPanTranslationY(currentPanTranslationY);
+                    invalidate();
+                }
+
+                @Override
+                protected boolean heightAnimationEnabled() {
+                    if (isDismissed()) {
+                        return false;
+                    }
+                    return !commentTextView.isPopupVisible();
+                }
+            };
+
+            @Override
+            protected void onAttachedToWindow() {
+                super.onAttachedToWindow();
+                adjustPanLayoutHelper.setResizableView(this);
+                adjustPanLayoutHelper.onAttach();
+            }
+
+            @Override
+            protected void onDetachedFromWindow() {
+                super.onDetachedFromWindow();
+                adjustPanLayoutHelper.onDetach();
+            }
 
             @Override
             protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-                int totalHeight = MeasureSpec.getSize(heightMeasureSpec);
+                int totalHeight;
+                if (getLayoutParams().height > 0) {
+                    totalHeight = getLayoutParams().height;
+                } else {
+                    totalHeight = MeasureSpec.getSize(heightMeasureSpec);
+                }
+
                 if (Build.VERSION.SDK_INT >= 21 && !isFullscreen) {
                     ignoreLayout = true;
                     setPadding(backgroundPaddingLeft, AndroidUtilities.statusBarHeight, backgroundPaddingLeft, 0);
                     ignoreLayout = false;
                 }
                 int availableHeight = totalHeight - getPaddingTop();
-                int keyboardSize = SharedConfig.smoothKeyboard ? 0 : measureKeyboardHeight();
-                if (!AndroidUtilities.isInMultiwindow && keyboardSize <= AndroidUtilities.dp(20)) {
-                    availableHeight -= commentTextView.getEmojiPadding();
-                }
 
-                int size = Math.max(searchAdapter.getItemCount(), listAdapter.getItemCount());
-                int contentSize = AndroidUtilities.dp(48) + Math.max(3, (int) Math.ceil(size / 4.0f)) * AndroidUtilities.dp(103) + backgroundPaddingTop;
+                int size = Math.max(searchAdapter.getItemCount(), listAdapter.getItemCount() - 1);
+                int contentSize = AndroidUtilities.dp(103) + AndroidUtilities.dp(48) + Math.max(2, (int) Math.ceil(size / 4.0f)) * AndroidUtilities.dp(103) + backgroundPaddingTop;
                 int padding = (contentSize < availableHeight ? 0 : availableHeight - (availableHeight / 5 * 3)) + AndroidUtilities.dp(8);
                 if (gridView.getPaddingTop() != padding) {
                     ignoreLayout = true;
@@ -325,6 +457,8 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
                     ignoreLayout = false;
                 }
                 fullHeight = contentSize >= totalHeight;
+                topOffset = (fullHeight || !SharedConfig.smoothKeyboard) ? 0 : totalHeight - contentSize;
+                setMeasuredDimension(MeasureSpec.getSize(widthMeasureSpec), totalHeight);
                 onMeasureInternal(widthMeasureSpec, MeasureSpec.makeMeasureSpec(Math.min(contentSize, totalHeight), MeasureSpec.EXACTLY));
             }
 
@@ -332,31 +466,44 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
                 int widthSize = MeasureSpec.getSize(widthMeasureSpec);
                 int heightSize = MeasureSpec.getSize(heightMeasureSpec);
 
-                setMeasuredDimension(widthSize, heightSize);
                 widthSize -= backgroundPaddingLeft * 2;
 
                 int keyboardSize = SharedConfig.smoothKeyboard ? 0 : measureKeyboardHeight();
+                if (!commentTextView.isWaitingForKeyboardOpen() && keyboardSize <= AndroidUtilities.dp(20) && !commentTextView.isPopupShowing() && !commentTextView.isAnimatePopupClosing()) {
+                    ignoreLayout = true;
+                    commentTextView.hideEmojiView();
+                    ignoreLayout = false;
+                }
+
+                ignoreLayout = true;
                 if (keyboardSize <= AndroidUtilities.dp(20)) {
                     if (!AndroidUtilities.isInMultiwindow) {
-                        heightSize -= commentTextView.getEmojiPadding();
+                        int paddingBottom;
+                        if (SharedConfig.smoothKeyboard && keyboardVisible) {
+                            paddingBottom = 0;
+                        } else {
+                            paddingBottom = commentTextView.getEmojiPadding();
+                        }
+                        heightSize -= paddingBottom;
                         heightMeasureSpec = MeasureSpec.makeMeasureSpec(heightSize, MeasureSpec.EXACTLY);
                     }
-                    ignoreLayout = true;
                     int visibility = commentTextView.isPopupShowing() ? GONE : VISIBLE;
                     if (pickerBottomLayout != null) {
                         pickerBottomLayout.setVisibility(visibility);
-                        shadow[1].setAlpha(frameLayout2.getVisibility() == VISIBLE || visibility == VISIBLE ? 1.0f : 0.0f);
+                        if (sharesCountLayout != null) {
+                            sharesCountLayout.setVisibility(visibility);
+                        }
                     }
-                    ignoreLayout = false;
                 } else {
-                    ignoreLayout = true;
                     commentTextView.hideEmojiView();
                     if (pickerBottomLayout != null) {
                         pickerBottomLayout.setVisibility(GONE);
-                        shadow[1].setAlpha(frameLayout2.getVisibility() == VISIBLE ? 1.0f : 0.0f);
+                        if (sharesCountLayout != null) {
+                            sharesCountLayout.setVisibility(GONE);
+                        }
                     }
-                    ignoreLayout = false;
                 }
+                ignoreLayout = false;
 
                 int childCount = getChildCount();
                 for (int i = 0; i < childCount; i++) {
@@ -384,8 +531,13 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
             protected void onLayout(boolean changed, int l, int t, int r, int b) {
                 final int count = getChildCount();
 
-                int keyboardSize = SharedConfig.smoothKeyboard ? 0 : measureKeyboardHeight();
-                int paddingBottom = keyboardSize <= AndroidUtilities.dp(20) && !AndroidUtilities.isInMultiwindow && !AndroidUtilities.isTablet() ? commentTextView.getEmojiPadding() : 0;
+                int keyboardSize = measureKeyboardHeight();
+                int paddingBottom;
+                if (SharedConfig.smoothKeyboard && keyboardVisible) {
+                    paddingBottom = 0;
+                } else {
+                    paddingBottom = keyboardSize <= AndroidUtilities.dp(20) && !AndroidUtilities.isInMultiwindow && !AndroidUtilities.isTablet() ? commentTextView.getEmojiPadding() : 0;
+                }
                 setBottomClip(paddingBottom);
 
                 for (int i = 0; i < count; i++) {
@@ -423,10 +575,10 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
 
                     switch (verticalGravity) {
                         case Gravity.TOP:
-                            childTop = lp.topMargin + getPaddingTop();
+                            childTop = lp.topMargin + getPaddingTop() + topOffset;
                             break;
                         case Gravity.CENTER_VERTICAL:
-                            childTop = ((b - paddingBottom) - t - height) / 2 + lp.topMargin - lp.bottomMargin;
+                            childTop = ((b - paddingBottom) - (t + topOffset) - height) / 2 + lp.topMargin - lp.bottomMargin;
                             break;
                         case Gravity.BOTTOM:
                             childTop = ((b - paddingBottom) - t) - height - lp.bottomMargin;
@@ -473,8 +625,10 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
 
             @Override
             protected void onDraw(Canvas canvas) {
-                int y = scrollOffsetY - backgroundPaddingTop + AndroidUtilities.dp(6);
-                int top = scrollOffsetY - backgroundPaddingTop - AndroidUtilities.dp(13);
+                canvas.save();
+                canvas.translate(0, currentPanTranslationY);
+                int y = scrollOffsetY - backgroundPaddingTop + AndroidUtilities.dp(6) + topOffset;
+                int top = scrollOffsetY - backgroundPaddingTop - AndroidUtilities.dp(13) + topOffset;
                 int height = getMeasuredHeight() + AndroidUtilities.dp(30) + backgroundPaddingTop;
                 int statusBarHeight = 0;
                 float radProgress = 1.0f;
@@ -516,10 +670,21 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
                     Theme.dialogs_onlineCirclePaint.setColor(finalColor);
                     canvas.drawRect(backgroundPaddingLeft, AndroidUtilities.statusBarHeight - statusBarHeight, getMeasuredWidth() - backgroundPaddingLeft, AndroidUtilities.statusBarHeight, Theme.dialogs_onlineCirclePaint);
                 }
+                canvas.restore();
+                previousTopOffset = topOffset;
+            }
+
+            @Override
+            protected void dispatchDraw(Canvas canvas) {
+                canvas.save();
+                canvas.clipRect(0, getPaddingTop() + currentPanTranslationY, getMeasuredWidth(), getMeasuredHeight() + currentPanTranslationY);
+                super.dispatchDraw(canvas);
+                canvas.restore();
             }
         };
         containerView = sizeNotifierFrameLayout;
         containerView.setWillNotDraw(false);
+        containerView.setClipChildren(false);
         containerView.setPadding(backgroundPaddingLeft, 0, backgroundPaddingLeft, 0);
 
         frameLayout = new FrameLayout(context);
@@ -532,6 +697,13 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
             @Override
             protected boolean allowSelectChildAtPosition(float x, float y) {
                 return y >= scrollOffsetY + AndroidUtilities.dp(48) + (Build.VERSION.SDK_INT >= 21 ? AndroidUtilities.statusBarHeight : 0);
+            }
+
+            @Override
+            public void setTranslationY(float translationY) {
+                super.setTranslationY(translationY);
+                int[] ii = new int[2];
+                getLocationInWindow(ii);
             }
         };
         gridView.setTag(13);
@@ -629,6 +801,9 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
             @Override
             public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
                 updateLayout();
+                if (dy != 0) {
+                    previousScrollOffsetY = scrollOffsetY;
+                }
             }
         });
 
@@ -676,24 +851,145 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
                 }
             });
             containerView.addView(pickerBottomLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.LEFT | Gravity.BOTTOM));
+
+            if (BuildVars.DEBUG_PRIVATE_VERSION && parentFragment != null && ChatObject.hasAdminRights(parentFragment.getCurrentChat()) && sendingMessageObjects.size() > 0 && sendingMessageObjects.get(0).messageOwner.forwards > 0) {
+                MessageObject messageObject = sendingMessageObjects.get(0);
+                if (!messageObject.isForwarded()) {
+                    sharesCountLayout = new LinearLayout(context);
+                    sharesCountLayout.setOrientation(LinearLayout.HORIZONTAL);
+                    sharesCountLayout.setGravity(Gravity.CENTER_VERTICAL);
+                    sharesCountLayout.setBackgroundDrawable(Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector), 2));
+                    containerView.addView(sharesCountLayout, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 48, Gravity.RIGHT | Gravity.BOTTOM, 6, 0, -6, 0));
+                    sharesCountLayout.setOnClickListener(view -> parentFragment.presentFragment(new ForwardsActivity(messageObject)));
+
+                    ImageView imageView = new ImageView(context);
+                    imageView.setImageResource(R.drawable.share_arrow);
+                    imageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_dialogTextBlue2), PorterDuff.Mode.MULTIPLY));
+                    sharesCountLayout.addView(imageView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, Gravity.CENTER_VERTICAL, 20, 0, 0, 0));
+
+                    TextView textView = new TextView(context);
+                    textView.setText(String.format("%d", messageObject.messageOwner.forwards));
+                    textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+                    textView.setTextColor(Theme.getColor(Theme.key_dialogTextBlue2));
+                    textView.setGravity(Gravity.CENTER_VERTICAL);
+                    textView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+                    sharesCountLayout.addView(textView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, Gravity.CENTER_VERTICAL, 8, 0, 20, 0));
+                }
+            }
         } else {
             shadow[1].setAlpha(0.0f);
         }
 
-        frameLayout2 = new FrameLayout(context);
-        frameLayout2.setBackgroundColor(Theme.getColor(Theme.key_dialogBackground));
+        frameLayout2 = new FrameLayout(context) {
+
+            private final Paint p = new Paint();
+            private int color;
+
+            @Override
+            public void setVisibility(int visibility) {
+                super.setVisibility(visibility);
+                if (visibility != View.VISIBLE) {
+                    shadow[1].setTranslationY(0);
+                }
+            }
+
+            @Override
+            public void setAlpha(float alpha) {
+                super.setAlpha(alpha);
+                invalidate();
+            }
+
+            @Override
+            protected void onDraw(Canvas canvas) {
+                if (chatActivityEnterViewAnimateFromTop != 0 && chatActivityEnterViewAnimateFromTop != frameLayout2.getTop() + chatActivityEnterViewAnimateFromTop) {
+                    if (topBackgroundAnimator != null) {
+                        topBackgroundAnimator.cancel();
+                    }
+                    captionEditTextTopOffset = chatActivityEnterViewAnimateFromTop - (frameLayout2.getTop() + captionEditTextTopOffset);
+                    topBackgroundAnimator = ValueAnimator.ofFloat(captionEditTextTopOffset, 0);
+                    topBackgroundAnimator.addUpdateListener(valueAnimator -> {
+                        captionEditTextTopOffset = (float) valueAnimator.getAnimatedValue();
+                        frameLayout2.invalidate();
+                        invalidate();
+                    });
+                    topBackgroundAnimator.setInterpolator(CubicBezierInterpolator.DEFAULT);
+                    topBackgroundAnimator.setDuration(200);
+                    topBackgroundAnimator.start();
+                    chatActivityEnterViewAnimateFromTop = 0;
+                }
+                float alphaOffset = (frameLayout2.getMeasuredHeight() - AndroidUtilities.dp(48)) * (1f - getAlpha());
+                shadow[1].setTranslationY(-(frameLayout2.getMeasuredHeight() - AndroidUtilities.dp(48)) + captionEditTextTopOffset + currentPanTranslationY + alphaOffset);
+
+                int newColor = Theme.getColor(Theme.key_dialogBackground);
+                if (color != newColor) {
+                    color = newColor;
+                    p.setColor(color);
+                }
+                canvas.drawRect(0, captionEditTextTopOffset + alphaOffset, getMeasuredWidth(), getMeasuredHeight(), p);
+            }
+
+            @Override
+            protected void dispatchDraw(Canvas canvas) {
+                canvas.save();
+                canvas.clipRect(0, captionEditTextTopOffset, getMeasuredWidth(), getMeasuredHeight());
+                super.dispatchDraw(canvas);
+                canvas.restore();
+            }
+        };
+        frameLayout2.setWillNotDraw(false);
         frameLayout2.setAlpha(0.0f);
         frameLayout2.setVisibility(View.INVISIBLE);
-        containerView.addView(frameLayout2, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.LEFT | Gravity.BOTTOM));
+        containerView.addView(frameLayout2, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.BOTTOM));
         frameLayout2.setOnTouchListener((v, event) -> true);
 
-        commentTextView = new EditTextEmoji(context, sizeNotifierFrameLayout, null, EditTextEmoji.STYLE_DIALOG);
+        commentTextView = new EditTextEmoji(context, sizeNotifierFrameLayout, null, EditTextEmoji.STYLE_DIALOG) {
+
+            private boolean shouldAnimateEditTextWithBounds;
+            private int messageEditTextPredrawHeigth;
+            private int messageEditTextPredrawScrollY;
+            private ValueAnimator messageEditTextAnimator;
+
+            @Override
+            protected void dispatchDraw(Canvas canvas) {
+                if (shouldAnimateEditTextWithBounds) {
+                    EditTextCaption editText = commentTextView.getEditText();
+                    float dy = (messageEditTextPredrawHeigth - editText.getMeasuredHeight()) + (messageEditTextPredrawScrollY - editText.getScrollY());
+                    editText.setOffsetY(editText.getOffsetY() - dy);
+                    ValueAnimator a = ValueAnimator.ofFloat(editText.getOffsetY(), 0);
+                    a.addUpdateListener(animation -> editText.setOffsetY((float) animation.getAnimatedValue()));
+                    if (messageEditTextAnimator != null) {
+                        messageEditTextAnimator.cancel();
+                    }
+                    messageEditTextAnimator = a;
+                    a.setDuration(200);
+                    a.setInterpolator(CubicBezierInterpolator.DEFAULT);
+                    a.start();
+                    shouldAnimateEditTextWithBounds = false;
+                }
+                super.dispatchDraw(canvas);
+            }
+
+            @Override
+            protected void onLineCountChanged(int oldLineCount, int newLineCount) {
+                if (!TextUtils.isEmpty(getEditText().getText())) {
+                    shouldAnimateEditTextWithBounds = true;
+                    messageEditTextPredrawHeigth = getEditText().getMeasuredHeight();
+                    messageEditTextPredrawScrollY = getEditText().getScrollY();
+                    invalidate();
+                } else {
+                    getEditText().animate().cancel();
+                    getEditText().setOffsetY(0);
+                    shouldAnimateEditTextWithBounds = false;
+                }
+                chatActivityEnterViewAnimateFromTop = frameLayout2.getTop() + captionEditTextTopOffset;
+                frameLayout2.invalidate();
+            }
+        };
         commentTextView.setHint(LocaleController.getString("ShareComment", R.string.ShareComment));
         commentTextView.onResume();
-        EditTextBoldCursor editText = commentTextView.getEditText();
-        editText.setMaxLines(1);
-        editText.setSingleLine(true);
-        frameLayout2.addView(commentTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT, 0, 0, 84, 0));
+        frameLayout2.addView(commentTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.LEFT, 0, 0, 84, 0));
+        frameLayout2.setClipChildren(false);
+        commentTextView.setClipChildren(false);
 
         writeButtonContainer = new FrameLayout(context) {
             @Override
@@ -749,7 +1045,7 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
                 for (int a = 0; a < selectedDialogs.size(); a++) {
                     long key = selectedDialogs.keyAt(a);
                     if (frameLayout2.getTag() != null && commentTextView.length() > 0) {
-                        SendMessagesHelper.getInstance(currentAccount).sendMessage(commentTextView.getText().toString(), key, null, null, true, null, null, null, true, 0);
+                        SendMessagesHelper.getInstance(currentAccount).sendMessage(commentTextView.getText().toString(), key, null, null, null, true, null, null, null, true, 0);
                     }
                     SendMessagesHelper.getInstance(currentAccount).sendMessage(sendingMessageObjects, key, true, 0);
                 }
@@ -757,9 +1053,9 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
                 for (int a = 0; a < selectedDialogs.size(); a++) {
                     long key = selectedDialogs.keyAt(a);
                     if (frameLayout2.getTag() != null && commentTextView.length() > 0) {
-                        SendMessagesHelper.getInstance(currentAccount).sendMessage(commentTextView.getText().toString(), key, null, null, true, null, null, null, true, 0);
+                        SendMessagesHelper.getInstance(currentAccount).sendMessage(commentTextView.getText().toString(), key, null, null, null, true, null, null, null, true, 0);
                     }
-                    SendMessagesHelper.getInstance(currentAccount).sendMessage(sendingText, key, null, null, true, null, null, null, true, 0);
+                    SendMessagesHelper.getInstance(currentAccount).sendMessage(sendingText, key, null, null, null, true, null, null, null, true, 0);
                 }
             }
             if (delegate != null) {
@@ -858,7 +1154,7 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
 
     @SuppressLint("NewApi")
     private void updateLayout() {
-        if (gridView.getChildCount() <= 0) {
+        if (gridView.getChildCount() <= 0 || panTranslationMoveLayout) {
             return;
         }
         View child = gridView.getChildAt(0);
@@ -872,9 +1168,10 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
             runShadowAnimation(0, true);
         }
         if (scrollOffsetY != newOffset) {
-            gridView.setTopGlowOffset(scrollOffsetY = newOffset);
-            frameLayout.setTranslationY(scrollOffsetY);
-            searchEmptyView.setTranslationY(scrollOffsetY);
+            previousScrollOffsetY = scrollOffsetY;
+            gridView.setTopGlowOffset(scrollOffsetY = (int) (newOffset + currentPanTranslationY));
+            frameLayout.setTranslationY(scrollOffsetY + currentPanTranslationY);
+            searchEmptyView.setTranslationY(scrollOffsetY + currentPanTranslationY) ;
             containerView.invalidate();
         }
     }
@@ -949,6 +1246,9 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
         }
         if (pickerBottomLayout != null) {
             ViewCompat.setImportantForAccessibility(pickerBottomLayout, show ? ViewCompat.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS : ViewCompat.IMPORTANT_FOR_ACCESSIBILITY_YES);
+        }
+        if (sharesCountLayout != null) {
+            ViewCompat.setImportantForAccessibility(sharesCountLayout, show ? ViewCompat.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS : ViewCompat.IMPORTANT_FOR_ACCESSIBILITY_YES);
         }
         animatorSet = new AnimatorSet();
         ArrayList<Animator> animators = new ArrayList<>();

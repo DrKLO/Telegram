@@ -8,6 +8,7 @@
 #include <asm/fcntl.h>
 #include <fcntl.h>
 #include <libyuv.h>
+#include <tgnet/FileLog.h>
 #include "tgnet/ConnectionsManager.h"
 #include "c_utils.h"
 
@@ -16,6 +17,7 @@ extern "C" {
 #include <libavformat/isom.h>
 #include <libavutil/eval.h>
 #include <libswscale/swscale.h>
+}
     
 static const std::string av_make_error_str(int errnum) {
     char errbuf[AV_ERROR_MAX_STRING_SIZE];
@@ -106,7 +108,6 @@ typedef struct VideoInfo {
     bool stopped = false;
     bool seeking = false;
 
-    uint8_t __attribute__ ((aligned (16))) *dst_data[1];
     int32_t dst_linesize[1];
 
     struct SwsContext *sws_ctx = nullptr;
@@ -281,7 +282,7 @@ enum PARAM_NUM {
     PARAM_NUM_COUNT = 11,
 };
 
-void Java_org_telegram_ui_Components_AnimatedFileDrawable_getVideoInfo(JNIEnv *env, jclass clazz,jint sdkVersion, jstring src, jintArray data) {
+extern "C" JNIEXPORT void JNICALL Java_org_telegram_ui_Components_AnimatedFileDrawable_getVideoInfo(JNIEnv *env, jclass clazz,jint sdkVersion, jstring src, jintArray data) {
     VideoInfo *info = new VideoInfo();
 
     char const *srcString = env->GetStringUTFChars(src, 0);
@@ -383,7 +384,7 @@ void Java_org_telegram_ui_Components_AnimatedFileDrawable_getVideoInfo(JNIEnv *e
     }
 }
 
-jlong Java_org_telegram_ui_Components_AnimatedFileDrawable_createDecoder(JNIEnv *env, jclass clazz, jstring src, jintArray data, jint account, jlong streamFileSize, jobject stream, jboolean preview) {
+extern "C" JNIEXPORT jlong JNICALL Java_org_telegram_ui_Components_AnimatedFileDrawable_createDecoder(JNIEnv *env, jclass clazz, jstring src, jintArray data, jint account, jlong streamFileSize, jobject stream, jboolean preview) {
     VideoInfo *info = new VideoInfo();
     
     char const *srcString = env->GetStringUTFChars(src, 0);
@@ -485,7 +486,7 @@ jlong Java_org_telegram_ui_Components_AnimatedFileDrawable_createDecoder(JNIEnv 
     return (jlong) (intptr_t) info;
 }
 
-void Java_org_telegram_ui_Components_AnimatedFileDrawable_destroyDecoder(JNIEnv *env, jclass clazz, jlong ptr) {
+extern "C" JNIEXPORT void JNICALL Java_org_telegram_ui_Components_AnimatedFileDrawable_destroyDecoder(JNIEnv *env, jclass clazz, jlong ptr) {
     if (ptr == NULL) {
         return;
     }
@@ -510,7 +511,7 @@ void Java_org_telegram_ui_Components_AnimatedFileDrawable_destroyDecoder(JNIEnv 
     delete info;
 }
 
-void Java_org_telegram_ui_Components_AnimatedFileDrawable_stopDecoder(JNIEnv *env, jclass clazz, jlong ptr) {
+extern "C" JNIEXPORT void JNICALL Java_org_telegram_ui_Components_AnimatedFileDrawable_stopDecoder(JNIEnv *env, jclass clazz, jlong ptr) {
     if (ptr == NULL) {
         return;
     }
@@ -518,7 +519,7 @@ void Java_org_telegram_ui_Components_AnimatedFileDrawable_stopDecoder(JNIEnv *en
     info->stopped = true;
 }
 
-void Java_org_telegram_ui_Components_AnimatedFileDrawable_prepareToSeek(JNIEnv *env, jclass clazz, jlong ptr) {
+extern "C" JNIEXPORT void JNICALL Java_org_telegram_ui_Components_AnimatedFileDrawable_prepareToSeek(JNIEnv *env, jclass clazz, jlong ptr) {
     if (ptr == NULL) {
         return;
     }
@@ -526,7 +527,7 @@ void Java_org_telegram_ui_Components_AnimatedFileDrawable_prepareToSeek(JNIEnv *
     info->seeking = true;
 }
 
-void Java_org_telegram_ui_Components_AnimatedFileDrawable_seekToMs(JNIEnv *env, jclass clazz, jlong ptr, jlong ms, jboolean precise) {
+extern "C" JNIEXPORT void JNICALL Java_org_telegram_ui_Components_AnimatedFileDrawable_seekToMs(JNIEnv *env, jclass clazz, jlong ptr, jlong ms, jboolean precise) {
     if (ptr == NULL) {
         return;
     }
@@ -637,16 +638,17 @@ static inline void writeFrameToBitmap(JNIEnv *env, VideoInfo *info, jintArray da
                     libyuv::ABGRToARGB(info->frame->data[0], info->frame->linesize[0], (uint8_t *) pixels, info->frame->width * 4, info->frame->width, info->frame->height);
                 }
             } else {
-                info->dst_data[0] = (uint8_t *) pixels;
+                uint8_t __attribute__ ((aligned (16))) *dst_data[1];
+                dst_data[0] = (uint8_t *) pixels;
                 info->dst_linesize[0] = stride;
-                sws_scale(info->sws_ctx, info->frame->data, info->frame->linesize, 0, info->frame->height, info->dst_data, info->dst_linesize);
+                sws_scale(info->sws_ctx, info->frame->data, info->frame->linesize, 0, info->frame->height, dst_data, info->dst_linesize);
             }
         }
         AndroidBitmap_unlockPixels(env, bitmap);
     }
 }
 
-int Java_org_telegram_ui_Components_AnimatedFileDrawable_getFrameAtTime(JNIEnv *env, jclass clazz, jlong ptr, jlong ms, jobject bitmap, jintArray data, jint stride) {
+extern "C" JNIEXPORT int JNICALL Java_org_telegram_ui_Components_AnimatedFileDrawable_getFrameAtTime(JNIEnv *env, jclass clazz, jlong ptr, jlong ms, jobject bitmap, jintArray data, jint stride) {
     if (ptr == NULL || bitmap == nullptr || data == nullptr) {
         return 0;
     }
@@ -725,8 +727,8 @@ int Java_org_telegram_ui_Components_AnimatedFileDrawable_getFrameAtTime(JNIEnv *
         return 0;
     }
 }
-    
-jint Java_org_telegram_ui_Components_AnimatedFileDrawable_getVideoFrame(JNIEnv *env, jclass clazz, jlong ptr, jobject bitmap, jintArray data, jint stride, jboolean preview, jfloat start_time, jfloat end_time) {
+
+extern "C" JNIEXPORT jint JNICALL Java_org_telegram_ui_Components_AnimatedFileDrawable_getVideoFrame(JNIEnv *env, jclass clazz, jlong ptr, jobject bitmap, jintArray data, jint stride, jboolean preview, jfloat start_time, jfloat end_time) {
     if (ptr == NULL || bitmap == nullptr) {
         return 0;
     }
@@ -809,7 +811,7 @@ jint Java_org_telegram_ui_Components_AnimatedFileDrawable_getVideoFrame(JNIEnv *
     return 0;
 }
 
-jint videoOnJNILoad(JavaVM *vm, JNIEnv *env) {
+extern "C" jint videoOnJNILoad(JavaVM *vm, JNIEnv *env) {
     jclass_AnimatedFileDrawableStream = (jclass) env->NewGlobalRef(env->FindClass("org/telegram/messenger/AnimatedFileDrawableStream"));
     if (jclass_AnimatedFileDrawableStream == 0) {
         return JNI_FALSE;
@@ -832,5 +834,4 @@ jint videoOnJNILoad(JavaVM *vm, JNIEnv *env) {
     }
 
     return JNI_TRUE;
-}
 }

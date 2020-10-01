@@ -296,7 +296,7 @@ public class StickerMasksAlert extends BottomSheet implements NotificationCenter
         shadowDrawable = context.getResources().getDrawable(R.drawable.sheet_shadow_round).mutate();
         shadowDrawable.setColorFilter(new PorterDuffColorFilter(0xff252525, PorterDuff.Mode.MULTIPLY));
 
-        containerView = new SizeNotifierFrameLayout(context, false) {
+        containerView = new SizeNotifierFrameLayout(context) {
 
             private boolean ignoreLayout = false;
             private RectF rect = new RectF();
@@ -823,7 +823,7 @@ public class StickerMasksAlert extends BottomSheet implements NotificationCenter
             TLRPC.TL_messages_stickerSet stickerSet = stickerSets[currentType].get(a);
             TLObject thumb;
             TLRPC.Document document = stickerSet.documents.get(0);
-            if (stickerSet.set.thumb instanceof TLRPC.TL_photoSize) {
+            if (stickerSet.set.thumb instanceof TLRPC.TL_photoSize || stickerSet.set.thumb instanceof TLRPC.TL_photoSizeProgressive) {
                 thumb = stickerSet.set.thumb;
             } else {
                 thumb = document;

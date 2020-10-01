@@ -181,7 +181,7 @@
     <string name="MuteFor">كتم لمدة %1$s</string>
     <string name="UnmuteNotifications">إلغاء الكتم</string>
     <string name="WillUnmuteIn">خلال %1$s</string>
-    <string name="MuteDisable">تعطيل</string>
+    <string name="MuteDisable">كتم للأبد</string>
     <string name="Hashtags">الوُسُوم</string>
     <string name="Recent">الأخيرة</string>
     <string name="ChatHints">الأشخاص</string>
@@ -226,6 +226,28 @@
     <string name="HideNewChatsAlertTitle">إخفاء المحادثات الجديدة؟</string>
     <string name="HideNewChatsAlertText">أنت تتلقى الكثير من المحادثات الجديدة من مستخدمين ليسوا في قائمة جهات اتصالك، هل تريد أن تكون مثل هذه المحادثات **مكتومة تلقائيًا** و **مؤرشفة**؟</string>
     <string name="GoToSettings">اذهب إلى الإعدادات</string>
+    <string name="OpenProfile">عرض الملف الشخصي</string>
+    <string name="OpenChannel2">فتح القناة</string>
+    <string name="SendMessage">إرسال&#160;رسالة</string>
+    <string name="Mention">إشارة</string>
+    <string name="NotificationsMutedHint">Notifications muted</string>
+    <string name="NotificationsMutedForHint">Notifications muted for %1$s</string>
+    <string name="NotificationsUnmutedHint">Notifications unmuted</string>
+    <string name="MessagesDeletedHint_zero">%1$d messages deleted</string>
+    <string name="MessagesDeletedHint_one">Message deleted</string>
+    <string name="MessagesDeletedHint_two">%1$d messages deleted</string>
+    <string name="MessagesDeletedHint_few">%1$d messages deleted</string>
+    <string name="MessagesDeletedHint_many">%1$d messages deleted</string>
+    <string name="MessagesDeletedHint_other">%1$d messages deleted</string>
+    <string name="SearchEmptyViewTitle">ما من نتائج</string>
+    <string name="SearchEmptyViewTitle2">ما من نتائج</string>
+    <string name="SearchEmptyViewFilteredSubtitle2">Try a new search.</string>
+    <string name="SearchEmptyViewFilteredSubtitleMusic">صوتيات</string>
+    <string name="SearchEmptyViewFilteredSubtitleFiles">ملفات</string>
+    <string name="SearchEmptyViewFilteredSubtitleLinks">روابط</string>
+    <string name="SearchEmptyViewFilteredSubtitleVoice">رسائل صوتية</string>
+    <string name="SearchEmptyViewFilteredSubtitleMedia">وسائط</string>
+    <string name="SearchAllChatsShort">محادثات</string>
     <!--channels-->
     <string name="SetAsAdmin">ترقية إلى مشرف</string>
     <string name="EditAdminRights">تعديل صلاحيات المشرف</string>
@@ -364,6 +386,7 @@
     <string name="ChannelAdminsInfo">يمكنك إضافة مشرفين لمساعدتك في إدارة القناة، اضغط مطوَّلا على أيٍّ منهم لحذفه.</string>
     <string name="ChannelJoinTo">هل ترغب في الانضمام لقناة \'%1$s\'؟</string>
     <string name="ChannelCantOpenPrivate">المعذرة، لا يمكن الوصول إلى هذه المحادثة.</string>
+    <string name="ChannelCantOpenBannedByAdmin">عذرًا، لا يمكنك الوصول إلى هذه المحادثة بسبب قيام أحد المشرفين بحظرك.</string>
     <string name="ChannelCantOpenBanned">للأسف، تم حظرك من المشاركة في المجموعات العامة.</string>
     <string name="ChannelCantOpenNa">المعذرة، لا يمكن الوصول إلى هذه المحادثة.</string>
     <string name="ChannelAddTo">هل ترغب بإضافة %1$s للقناة؟</string>
@@ -418,6 +441,7 @@
     <string name="EditAdminDeleteMessages">حذف رسائل الآخرين</string>
     <string name="EditAdminGroupDeleteMessages">حذف الرسائل</string>
     <string name="EditAdminAddAdmins">إضافة مشرفين جدد</string>
+    <string name="EditAdminSendAnonymously">البقاء مجهولًا</string>
     <string name="EditAdminRemoveAdmin">إزالة الإشراف</string>
     <string name="EditAdminGroupTransfer">نقل ملكية المجموعة</string>
     <string name="EditAdminChannelTransfer">نقل ملكية القناة</string>
@@ -508,11 +532,12 @@
     <string name="MakeAdmin">تعيينُه كمشرف</string>
     <string name="AdminWillBeRemoved">سيتم إزالة %1$s من المشرفين إذا قمت بتقييده.</string>
     <string name="Discussion">المناقشات</string>
+    <string name="ViewDiscussion">عرض المناقشة</string>
     <string name="DiscussionInfo">أضف مجموعة للتعليقات</string>
     <string name="LinkedChannel">القناة المربوطة</string>
-    <string name="DiscussionChannelHelp">قم باختيار مجموعة نقاشات ليتم عرضها في قناتك.</string>
+    <string name="DiscussionChannelHelp3">حدد المجموعة التي ستستضيف التعليقات من قناتك.</string>
     <string name="DiscussionChannelHelp2">سيتم تحويل جميع منشورات القناة الجديدة إلى هذه المجموعة.</string>
-    <string name="DiscussionChannelGroupSetHelp">يظهر رابط **%1$s** لجميع المشتركين في الجزء السفلي من القناة.</string>
+    <string name="DiscussionChannelGroupSetHelp2">تم تحديد **%1$s** على أنها المجموعة التي سيتم استخدامها لاستضافة التعليقات لقناتك.</string>
     <string name="DiscussionGroupHelp">تم ربط هذه المجموعة بـ **%1$s** على أنها منصة نقاشاتها.</string>
     <string name="DiscussionGroupHelp2">سيتم تحويل جميع المنشورات الجديدة في هذه القناة للمجموعة.</string>
     <string name="DiscussionCreateGroup">إنشاء مجموعة جديدة</string>
@@ -618,7 +643,7 @@
     <string name="EventLogEmptyTextSearch">لم يتم العثور على أحداث أخيرة تحوي «**%1$s**».</string>
     <string name="EventLogInfoTitle">ما هي آخر الأحداث؟</string>
     <string name="EventLogInfoDetail">هي قائمة تحوي جميع الأحداث التي قام بها أعضاء المجموعة ومشرفوها خلال آخِر 48 ساعة.</string>
-    <string name="EventLogInfoDetailChannel">هي قائمة تحوي جميع الأحداث التي قام بها مشرفو القناة خلال آخِر 48 ساعة.</string>
+    <string name="EventLogInfoDetailChannel">هو سجل يحوي جميع الإجراءات التي قام بها مشرفو القناة خلال آخر ٤٨ ساعة.</string>
     <string name="EventLogEditedGroupTitle">غيَّر un1 اسم المجموعة إلى «%1$s»</string>
     <string name="EventLogEditedChannelTitle">غيَّر un1 اسمَ القناة إلى «%1$s»</string>
     <string name="EventLogLeftGroup">غادر un1 المجموعة</string>
@@ -646,7 +671,7 @@
     <string name="EventLogStopPoll">أوقف un1 الاستفتاء:</string>
     <string name="EventLogStopQuiz">أوقف un1 الاختبار:</string>
     <string name="EventLogDeletedMessages">حذف un1 هذه الرسالة:</string>
-    <string name="EventLogChangedLocation">غيّرَ un1 موقع المجموعة ليصبح «%1$s»</string>
+    <string name="EventLogChangedLocation">غيّرَ un1 موقع المجموعة إلى «%1$s»</string>
     <string name="EventLogRemovedLocation">أزال un1 موقع المجموعة</string>
     <string name="EventLogChangedOwnership">نقلَ الملكية لـ %1$s</string>
     <string name="EventLogChangedStickersSet">un1 غير حزمة ملصقات المجموعة</string>
@@ -687,6 +712,7 @@
     <string name="EventLogPromotedEditMessages">تعديل الرسائل</string>
     <string name="EventLogPromotedDeleteMessages">حذف الرسائل</string>
     <string name="EventLogPromotedAddAdmins">إضافة مشرفين</string>
+    <string name="EventLogPromotedSendAnonymously">إرسال كمجهول</string>
     <string name="EventLogPromotedBanUsers">حظر المستخدمين</string>
     <string name="EventLogPromotedAddUsers">إضافة مستخدمين</string>
     <string name="EventLogPromotedTitle">اللقب: %1$s</string>
@@ -768,7 +794,7 @@
     <string name="IsRecordingAudio">يسجل %1$s رسالةً صوتية...</string>
     <string name="IsRecordingRound">يسجل %1$s رسالةً مرئية...</string>
     <string name="IsSendingAudio">%1$s يقوم بإرسال مقطع صوتي...</string>
-    <string name="IsSendingPhoto">%1$s يرسل صورة</string>
+    <string name="IsSendingPhoto">يرسل %1$s صورة</string>
     <string name="InstantView">استعراض فوري</string>
     <string name="OpenGroup">فتح المجموعة</string>
     <string name="OpenBackground">عرض الخلفية</string>
@@ -778,7 +804,7 @@
     <string name="InstantViewNightMode">سيتم تفعيل النمط المظلم في الليل تلقائيًا</string>
     <string name="InstantViewReference">المراجع</string>
     <string name="IsSendingGame">%1$s يلعب لعبة...</string>
-    <string name="IsSendingVideo">%1$s يقوم بإرسال مقطع مرئي...</string>
+    <string name="IsSendingVideo">يرسل %1$s مقطعًا مرئيًا...</string>
     <string name="IsSendingFile">يرسل %1$s ملفًا...</string>
     <string name="RecordingAudio">يسجل رسالةً صوتية...</string>
     <string name="RecordingRound">يسجل رسالةً مرئية...</string>
@@ -856,6 +882,7 @@
     <string name="AddContactFullChat">إضافة %1$s لجهات الاتصال</string>
     <string name="ViewContact">عرض جهة الاتصال</string>
     <string name="BlockUserAlert">هل ترغب بحظر **%1$s** من مراسلتك والاتصال بك على تيليجرام؟</string>
+    <string name="BlockUserReplyAlert">Do you want to block messages from **%1$s**?</string>
     <string name="ReportSpamAlert">هل ترغب حقًا في التبليغ عن إزعاج من هذا المستخدم؟</string>
     <string name="ReportSpamAlertGroup">هل ترغب حقًا في التبليغ عن إزعاج من هذه المجموعة؟</string>
     <string name="ReportSpamAlertChannel">هل ترغب حقًا في التبليغ عن إزعاج من هذه القناة؟</string>
@@ -1014,6 +1041,25 @@
     <string name="SecretChatTimerMinutes">د</string>
     <string name="SecretChatTimerHours">س</string>
     <string name="SecretChatTimerWeeks">أس</string>
+    <string name="SharedToPrivateMessagesAndGroups">to private messages and groups</string>
+
+    <string name="BotOwnershipTransfer">نقل ملكية البوت</string>
+    <string name="BotOwnershipTransferReadyAlertText">This will transfer the **full owner** rights for the bot to the selected user.</string>
+    <string name="BotOwnershipTransferChangeOwner">تغيير المالك</string>
+    <string name="BotOwnershipTransferAlertText">You can transfer bot only if you have:</string>
+    <string name="LeaveAComment">كتابة تعليق</string>
+    <string name="CommentsTitle">Comments</string>
+    <string name="Comment">Comment</string>
+    <string name="RepliesTitle">الردود</string>
+    <string name="NoComments">ما من تعليقات هنا بعد...</string>
+    <string name="NoReplies">No replies here yet...</string>
+    <string name="ViewInChat">عرض في المحادثة</string>
+    <string name="SendAnonymously">إرسال كمجهول</string>
+    <string name="DiscussionStarted">بداية المناقشة</string>
+    <string name="ViewThread">عرض الموضوع</string>
+    <string name="ChooseDate">Choose date</string>
+    <string name="RepliesChatInfo">تساعدك هذه المحادثة في تتبع الردود على تعليقاتك في القنوات.</string>
+    <string name="ChannelPostDeleted">Sorry, this post has been removed from the discussion group.</string>
     <!--notification-->
     <string name="MessageLifetimeChanged">عيّن %1$s عداد التدمير الذاتي ليصبح %2$s</string>
     <string name="MessageLifetimeChangedOutgoing">قمت بتعيين عداد التدمير الذاتي ليصبح %1$s</string>
@@ -1165,6 +1211,10 @@
     <string name="SortedByLastSeen">مرتبة حسب تاريخ آخر ظهور</string>
     <string name="AddContactByPhone">إضافة %1$s</string>
     <string name="PhoneNumberSearch">رقم الهاتف</string>
+    <string name="NoContactsYet">You have no contacts on Telegram yet</string>
+    <string name="NoContactsYetLine1">دعوة الأصدقاء لتجربة تيليجرام</string>
+    <string name="NoContactsYetLine2">Find people nearby to chat with</string>
+    <string name="NoContactsYetLine3">Search people by username</string>
     <!--group create view-->
     <string name="SendMessageTo">إضافة أشخاص...</string>
     <string name="SoftUserLimitAlert">ستتمكن من إضافة المزيد من الأعضاء بعد انتهاءك من إنشاء المجموعة.</string>
@@ -1224,6 +1274,8 @@
     <string name="ContactNotRegisteredTitle">دعوة إلى تيليجرام</string>
     <string name="ContactNotRegistered">لم يقم %1$s بالتسجيل في تيليجرام بعد. هل ترغب في دعوتهم؟</string>
     <string name="Invite">دعوة</string>
+    <string name="Block">حظر</string>
+    <string name="BlockAndDeleteReplies">حظر وحذف الردود</string>
     <string name="BlockContact">حظر المستخدم</string>
     <string name="BlockUser">حظر مستخدم جديد</string>
     <string name="BlockUsers">حظر المستخدمين</string>
@@ -2424,6 +2476,8 @@
     <string name="MainChannelProfileVideoSetHint">المقطع المرئي الأساسي للقناة.</string>
     <string name="MainGroupProfilePhotoSetHint">صورة العرض الأساسية للمجموعة.</string>
     <string name="MainGroupProfileVideoSetHint">المقطع المرئي الأساسي للمجموعة.</string>
+    <string name="PhotoSavedHint">Photo saved to gallery</string>
+    <string name="VideoSavedHint">Video saved to gallery</string>
     <!--password view-->
     <string name="TwoStepVerification">التحقق بخطوتين</string>
     <string name="TwoStepVerificationTitle">التحقق بخطوتين</string>
@@ -2521,7 +2575,7 @@
     <string name="BytesSent">البيانات المرسلة</string>
     <string name="BytesReceived">البيانات المستلمة</string>
     <string name="FilesDataUsage">الملفات</string>
-    <string name="CallsDataUsage">إعدادات المكالمات</string>
+    <string name="CallsDataUsage">المكالمات</string>
     <string name="OutgoingCalls">المكالمات صادرة</string>
     <string name="IncomingCalls">المكالمات الواردة</string>
     <string name="CallsTotalTime">الوقت الإجمالي</string>
@@ -2612,7 +2666,7 @@
     <string name="InviteToGroupError">المعذرة، لا يمكنك إضافة هذا المستخدم للمجموعات نظرًا لإعدادات خصوصيته.</string>
     <string name="InviteToChannelError">المعذرة، لا يمكنك إضافة هذا المستخدم للقنوات نظرًا لإعدادات خصوصيته.</string>
     <string name="CreateGroupError">المعذرة، لا يمكنك إنشاء مجموعة مع هؤلاء المستخدمين نظرًا لإعدادات خصوصيتهم.</string>
-    <string name="PrivacyCallsP2PHelp">سيجعل تعطيل الند للند جميع المكالمات معتمِدة على خوادم تيليجرام؛ وذلك لتجنب الكشف عن عنوان الـ IP الخاص بجهازك، لكنَّ جودة الصوت ستنخفض قليلا.</string>
+    <string name="PrivacyCallsP2PHelp">سيجعل تعطيل الند للند جميع المكالمات معتمدة على خوادم تيليجرام وذلك لتجنب الكشف عن عنوان الـ IP الخاص بجهازك، لكنَّ قد تنخفض جودة الصوت والصورة.</string>
     <string name="SyncContactsDelete">حذف الجهات المزامَنة</string>
     <string name="SuggestContacts">اقتراح الجهات المتكررة</string>
     <string name="SuggestContactsInfo">عرضُ الأشخاص الذين تراسلهم باستمرار في أعلى خانة البحث للوصول إليهم بشكل أسرع.</string>
@@ -2955,7 +3009,7 @@
     <string name="CharactersPerMessage">%s للرسالة</string>
     <string name="TopDaysOfWeekChartTitle">الأيام النشطة</string>
     <string name="StatisticSearchUserHistory">يقرؤون الرسائل</string>
-    <string name="StatisticOpenProfile">فتح الملف الشخصي</string>
+    <string name="StatisticOpenProfile">عرض الملف الشخصي</string>
     <!--Intro view-->
     <string name="Page1Title">تيليجرام</string>
     <string name="Page2Title">سريع</string>
@@ -3023,6 +3077,8 @@
     <string name="NoCallLog">لم تقم بإجراء أي مكالمة بعد.</string>
     <string name="VoipPeerIncompatible">يستخدم تطبيق تيليجرام الخاص بـ**%1$s** بروتوكولًا غيرَ متوافقٍ، ينبغي عليهم تحديث تطبيقهم لتتمكن من الاتصال بهم.</string>
     <string name="VoipPeerOutdated">نسخة **%1$s** لا تدعم المكالمات؛ يَلزمُه تحديث تطبيقه قبل أن تتمكن من الاتصال به.</string>
+    <string name="VoipPeerVideoOutdated">عذرًا، يستخدم **%1$s** إصدارًا قديمًا من تيليجرام لا يدعم المكالمات المرئية.</string>
+    <string name="VoipPeerVideoOutdatedMakeVoice">إجراء مكالمة صوتية</string>
     <string name="VoipRateCallAlert">يرجى تقييم جودة مكالمتك في تيليجرام</string>
     <string name="VoipNeedMicPermission">يحتاج تيليجرام إلى استخدام الميكروفون من أجل إجراء المكالمات.</string>
     <string name="VoipNeedMicCameraPermission">"يحتاج تيليجرام الوصول إلى المايكروفون والكاميرا لتتمكن من إجراء المكالمات المرئية. "</string>
@@ -3034,6 +3090,7 @@
     <string name="CallViaTelegram">مكالمة تيليجرام</string>
     <string name="VideoCallViaTelegram">مكالمة تيليجرام مرئية</string>
     <string name="VoipAudioRoutingEarpiece">سماعة الأذن</string>
+    <string name="VoipAudioRoutingHeadset">سماعة الأذن</string>
     <string name="VoipAudioRoutingSpeaker">مكبر الصوت</string>
     <string name="VoipAudioRoutingBluetooth">بلوتوث</string>
     <string name="VoipOutputDevices">أجهزة الإخراج</string>
@@ -3064,6 +3121,8 @@
     <string name="RateCallSilentLocal">لم أتمكن من سماع الطرف الآخر</string>
     <string name="RateCallSilentRemote">لم يسمعني الطرف الآخر</string>
     <string name="RateCallDropped">انقطع الاتصال فجأة</string>
+    <string name="RateCallVideoDistorted">الصورة مشوّهة</string>
+    <string name="RateCallVideoPixelated">جودة الصورة&#160;رديئة</string>
     <string name="TapToTurnCamera">اضغط هنا لتشغيل&#160;الكاميرا</string>
     <string name="VoipUnmute">إلغاء الكتم</string>
     <string name="VoipMute">كتم</string>
@@ -3078,6 +3137,12 @@
     <string name="AcceptCall">قبول</string>
     <string name="DeclineCall">رفض</string>
     <string name="RetryCall">معاودة الاتصال</string>
+    <string name="VoipVideoUnavailable">الكاميرا</string>
+    <string name="CallAlert">Are you sure you want to call **%1$s**?</string>
+    <string name="CallAlertTitle">مكالمة صوتية</string>
+    <string name="VideoCallAlert">Are you sure you want to video call **%1$s**?</string>
+    <string name="VideoCallAlertTitle">مكالمة مرئية</string>
+    <string name="VoipReconnecting">تتم معاودة الاتصال</string>
     <!--contacts shortcuts-->
     <string name="ContactShortcutMessage">مراسلة %1$s</string>
     <string name="ContactShortcutVoiceCall">مكالمة صوتية %1$s</string>
@@ -3097,7 +3162,7 @@
     <string name="Recipient_other">%1$d مستقبل</string>
     <string name="OnlineCount_zero">%1$d متصل</string>
     <string name="OnlineCount_one">متصل واحد</string>
-    <string name="OnlineCount_two">متصلان</string>
+    <string name="OnlineCount_two">متصلان اثنان</string>
     <string name="OnlineCount_few">%1$d متصلين</string>
     <string name="OnlineCount_many">%1$d متصلا</string>
     <string name="OnlineCount_other">%1$d متصل</string>
@@ -3335,6 +3400,12 @@
     <string name="Shares_few">%1$s مشاركات</string>
     <string name="Shares_many">%1$s مشاركة</string>
     <string name="Shares_other">%1$s مشاركة</string>
+    <string name="Shared_zero">%1$s shared</string>
+    <string name="Shared_one">%1$s shared</string>
+    <string name="Shared_two">%1$s shared</string>
+    <string name="Shared_few">%1$s shared</string>
+    <string name="Shared_many">%1$s shared</string>
+    <string name="Shared_other">%1$s shared</string>
     <string name="StickerSets_zero">%1$s حزمة ملصقات</string>
     <string name="StickerSets_one">حزمة ملصقات واحدة</string>
     <string name="StickerSets_two">حزمتا ملصقات</string>
@@ -3512,9 +3583,9 @@
     <string name="UsersCount_other">%1$d مستخدم</string>
     <string name="UsersCountTitle_zero">%1$d مستخدم</string>
     <string name="UsersCountTitle_one">مستخدم واحد</string>
-    <string name="UsersCountTitle_two">مستخدمين اثنين</string>
+    <string name="UsersCountTitle_two">مستخدمان</string>
     <string name="UsersCountTitle_few">%1$d مستخدمين</string>
-    <string name="UsersCountTitle_many">%1$d مستخدم</string>
+    <string name="UsersCountTitle_many">%1$d مستخدمًا</string>
     <string name="UsersCountTitle_other">%1$d مستخدم</string>
     <string name="MembersCountSelected_zero">تم تحديد %1$d من %2$d</string>
     <string name="MembersCountSelected_one">تم تحديد %1$d من %2$d</string>
@@ -3522,6 +3593,24 @@
     <string name="MembersCountSelected_few">تم تحديد %1$d من %2$d</string>
     <string name="MembersCountSelected_many">تم تحديد %1$d من %2$d</string>
     <string name="MembersCountSelected_other">تم تحديد %1$d من %2$d</string>
+    <string name="ViewReplies_zero">View %1$d Replies</string>
+    <string name="ViewReplies_one">View %1$d Reply</string>
+    <string name="ViewReplies_two">View %1$d Replies</string>
+    <string name="ViewReplies_few">View %1$d Replies</string>
+    <string name="ViewReplies_many">View %1$d Replies</string>
+    <string name="ViewReplies_other">View %1$d Replies</string>
+    <string name="Replies_zero">%1$d Replies</string>
+    <string name="Replies_one">%1$d Reply</string>
+    <string name="Replies_two">%1$d Replies</string>
+    <string name="Replies_few">%1$d Replies</string>
+    <string name="Replies_many">%1$d Replies</string>
+    <string name="Replies_other">%1$d Replies</string>
+    <string name="Comments_zero">%1$d Comments</string>
+    <string name="Comments_one">%1$d Comment</string>
+    <string name="Comments_two">%1$d Comments</string>
+    <string name="Comments_few">%1$d Comments</string>
+    <string name="Comments_many">%1$d Comments</string>
+    <string name="Comments_other">%1$d Comments</string>
     <!--accessibility descriptions-->
     <string name="AccDescrGroup">مجموعة</string>
     <string name="AccDescrChannel">قناة</string>
@@ -3649,6 +3738,7 @@
     <string name="AccDescrVoipCamOn">الكاميرا مفتوحة</string>
     <string name="AccDescrVoipCamOff">الكاميرا مغلقة</string>
     <!--date formatters-->
+    <string name="formatterMonthYear">yyyy MMMM</string>
     <string name="formatterStats12H">MMM dd yyyy, h:mm a</string>
     <string name="formatterStats24H">MMM dd yyyy, HH:mm</string>
     <string name="formatterBannedUntil12H">MMM dd yyyy, h:mm a</string>
@@ -3663,6 +3753,7 @@
     <string name="chatDate">d MMMM</string>
     <string name="chatFullDate">d MMMM yyyy</string>
     <string name="formatterWeek">EEE</string>
+    <string name="formatterWeekLong">EEEE</string>
     <string name="formatterDay24H">HH:mm</string>
     <string name="formatterDay12H">h:mm a</string>
     <string name="formatDateAtTime">%1$s الساعة %2$s</string>
@@ -3674,4 +3765,5 @@
     <string name="RemindTodayAt">\'ذكّرني اليوم عند\' HH:mm</string>
     <string name="RemindDayAt">\'ذكّرني بتاريخ\' d MMM \'عند\' HH:mm</string>
     <string name="RemindDayYearAt">\'ذكّرني بتاريخ\' d MMM yyyy \'عند\' HH:mm</string>
+    <string name="SearchTipToday">Today</string>
 </resources>

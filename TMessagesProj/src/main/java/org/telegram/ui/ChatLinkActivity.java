@@ -18,16 +18,18 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.EditText;
 import android.widget.FrameLayout;
-import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
+import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
@@ -45,6 +47,7 @@ import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.EmptyTextProgressView;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.LoadingStickerDrawable;
 import org.telegram.ui.Components.RecyclerListView;
 
 import java.util.ArrayList;
@@ -69,6 +72,7 @@ public class ChatLinkActivity extends BaseFragment implements NotificationCenter
     private ArrayList<TLRPC.Chat> chats = new ArrayList<>();
     private boolean loadingChats;
     private boolean waitingForChatCreate;
+    private boolean chatsLoaded;
 
     private int currentChatId;
 
@@ -84,6 +88,75 @@ public class ChatLinkActivity extends BaseFragment implements NotificationCenter
     private boolean searching;
 
     private final static int search_button = 0;
+
+    private static class EmptyView extends LinearLayout implements NotificationCenter.NotificationCenterDelegate {
+
+        private BackupImageView stickerView;
+        private LoadingStickerDrawable drawable;
+
+        private int currentAccount = UserConfig.selectedAccount;
+
+        private static final String stickerSetName = "tg_placeholders";
+
+        public EmptyView(Context context) {
+            super(context);
+
+            setPadding(0, AndroidUtilities.dp(12), 0, AndroidUtilities.dp(12));
+            setOrientation(LinearLayout.VERTICAL);
+
+            stickerView = new BackupImageView(context);
+            drawable = new LoadingStickerDrawable(stickerView, "M476.1,397.4c25.8-47.2,0.3-105.9-50.9-120c-2.5-6.9-7.8-12.7-15-16.4l0.4-229.4c0-12.3-10-22.4-22.4-22.4" +
+                    "H128.5c-12.3,0-22.4,10-22.4,22.4l-0.4,229.8v0c0,6.7,2.9,12.6,7.6,16.7c-51.6,15.9-79.2,77.2-48.1,116.4" +
+                    "c-8.7,11.7-13.4,27.5-14,47.2c-1.7,34.5,21.6,45.8,55.9,45.8c52.3,0,99.1,4.6,105.1-36.2c16.5,0.9,7.1-37.3-6.5-53.3" +
+                    "c18.4-22.4,18.3-52.9,4.9-78.2c-0.7-5.3-3.8-9.8-8.1-12.6c-1.5-2-1.6-2-2.1-2.7c0.2-1,1.2-11.8-3.4-20.9h138.5" +
+                    "c-4.8,8.8-4.7,17-2.9,22.1c-5.3,4.8-6.8,12.3-5.2,17c-11.4,24.9-10,53.8,4.3,77.5c-6.8,9.7-11.2,21.7-12.6,31.6" +
+                    "c-0.2-0.2-0.4-0.3-0.6-0.5c0.8-3.3,0.4-6.4-1.3-7.8c9.3-12.1-4.5-29.2-17-21.7c-3.8-2.8-10.6-3.2-18.1-0.5" +
+                    "c-2.4-10.6-21.1-10.6-28.6-1c-1.3,0.3-2.9,0.8-4.5,1.9c-5.2-0.9-10.9,0.1-14.1,4.4c-6.9,3-9.5,10.4-7.8,17c-0.9,1.8-1.1,4-0.8,6.3" +
+                    "c-1.6,1.2-2.3,3.1-2,4.9c0.1,0.6,10.4,56.6,11.2,62c0.3,1.8,1.5,3.2,3.1,3.9c8.7,3.4,12,3.8,30.1,9.4c2.7,0.8,2.4,0.8,6.7-0.1" +
+                    "c16.4-3.5,30.2-8.9,30.8-9.2c1.6-0.6,2.7-2,3.1-3.7c0.1-0.4,6.8-36.5,10-53.2c0.9,4.2,3.3,7.3,7.4,7.5c1.2,7.8,4.4,14.5,9.5,19.9" +
+                    "c16.4,17.3,44.9,15.7,64.9,16.1c38.3,0.8,74.5,1.5,84.4-24.4C488.9,453.5,491.3,421.3,476.1,397.4z", AndroidUtilities.dp(104), AndroidUtilities.dp(104));
+            stickerView.setImageDrawable(drawable);
+            addView(stickerView, LayoutHelper.createLinear(104, 104, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 0, 2, 0, 0));
+        }
+
+        private void setSticker() {
+            TLRPC.TL_messages_stickerSet set = MediaDataController.getInstance(currentAccount).getStickerSetByName(stickerSetName);
+            if (set == null) {
+                set = MediaDataController.getInstance(currentAccount).getStickerSetByEmojiOrName(stickerSetName);
+            }
+            if (set != null && set.documents.size() >= 3) {
+                TLRPC.Document document = set.documents.get(2);
+                ImageLocation imageLocation = ImageLocation.getForDocument(document);
+                stickerView.setImage(imageLocation, "104_104", "tgs", drawable, set);
+            } else {
+                MediaDataController.getInstance(currentAccount).loadStickersByEmojiOrName(stickerSetName, false, set == null);
+                stickerView.setImageDrawable(drawable);
+            }
+        }
+
+        @Override
+        protected void onAttachedToWindow() {
+            super.onAttachedToWindow();
+            setSticker();
+            NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.diceStickersDidLoad);
+        }
+
+        @Override
+        protected void onDetachedFromWindow() {
+            super.onDetachedFromWindow();
+            NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.diceStickersDidLoad);
+        }
+
+        @Override
+        public void didReceivedNotification(int id, int account, Object... args) {
+            if (id == NotificationCenter.diceStickersDidLoad) {
+                String name = (String) args[0];
+                if (stickerSetName.equals(name)) {
+                    setSticker();
+                }
+            }
+        }
+    }
 
     public ChatLinkActivity(int chatId) {
         super();
@@ -118,14 +191,13 @@ public class ChatLinkActivity extends BaseFragment implements NotificationCenter
             if (info.linked_chat_id != 0) {
                 createChatRow = rowCount++;
             }
-            detailRow = rowCount++;
         } else {
             chatStartRow = rowCount;
             rowCount += chats.size();
             chatEndRow = rowCount;
             createChatRow = rowCount++;
-            detailRow = rowCount++;
         }
+        detailRow = rowCount++;
 
         if (listViewAdapter != null) {
             listViewAdapter.notifyDataSetChanged();
@@ -336,7 +408,7 @@ public class ChatLinkActivity extends BaseFragment implements NotificationCenter
                                 progressDialog[0] = null;
                                 info.linked_chat_id = 0;
                                 NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.chatInfoDidLoad, info, 0, false, null);
-                                getMessagesController().loadFullChat(currentChatId, 0, true);
+                                AndroidUtilities.runOnUIThread(() -> getMessagesController().loadFullChat(currentChatId, 0, true), 1000);
                                 if (!isChannel) {
                                     finishFragment();
                                 }
@@ -466,7 +538,7 @@ public class ChatLinkActivity extends BaseFragment implements NotificationCenter
             }
             info.linked_chat_id = chat.id;
             NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.chatInfoDidLoad, info, 0, false, null);
-            getMessagesController().loadFullChat(currentChatId, 0, true);
+            AndroidUtilities.runOnUIThread(() -> getMessagesController().loadFullChat(currentChatId, 0, true), 1000);
             if (createFragment != null) {
                 removeSelfFromStack();
                 createFragment.finishFragment();
@@ -510,6 +582,7 @@ public class ChatLinkActivity extends BaseFragment implements NotificationCenter
                 chats = res.chats;
             }
             loadingChats = false;
+            chatsLoaded = true;
             updateRows();
         }));
     }
@@ -525,15 +598,14 @@ public class ChatLinkActivity extends BaseFragment implements NotificationCenter
     @SuppressWarnings("FieldCanBeLocal")
     public class HintInnerCell extends FrameLayout {
 
-        private ImageView imageView;
+        private EmptyView emptyView;
         private TextView messageTextView;
 
         public HintInnerCell(Context context) {
             super(context);
 
-            imageView = new ImageView(context);
-            imageView.setImageResource(Theme.getCurrentTheme().isDark() ? R.drawable.tip6_dark : R.drawable.tip6);
-            addView(imageView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.CENTER_HORIZONTAL, 0, 20, 0, 0));
+            emptyView = new EmptyView(context);
+            addView(emptyView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.CENTER_HORIZONTAL, 0, 10, 0, 0));
 
             messageTextView = new TextView(context);
             messageTextView.setTextColor(Theme.getColor(Theme.key_chats_message));
@@ -543,10 +615,10 @@ public class ChatLinkActivity extends BaseFragment implements NotificationCenter
                 if (info != null && info.linked_chat_id != 0) {
                     TLRPC.Chat chat = getMessagesController().getChat(info.linked_chat_id);
                     if (chat != null) {
-                        messageTextView.setText(AndroidUtilities.replaceTags(LocaleController.formatString("DiscussionChannelGroupSetHelp", R.string.DiscussionChannelGroupSetHelp, chat.title)));
+                        messageTextView.setText(AndroidUtilities.replaceTags(LocaleController.formatString("DiscussionChannelGroupSetHelp2", R.string.DiscussionChannelGroupSetHelp2, chat.title)));
                     }
                 } else {
-                    messageTextView.setText(LocaleController.getString("DiscussionChannelHelp", R.string.DiscussionChannelHelp));
+                    messageTextView.setText(LocaleController.getString("DiscussionChannelHelp3", R.string.DiscussionChannelHelp3));
                 }
             } else {
                 TLRPC.Chat chat = getMessagesController().getChat(info.linked_chat_id);
@@ -555,7 +627,7 @@ public class ChatLinkActivity extends BaseFragment implements NotificationCenter
                 }
             }
 
-            addView(messageTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.LEFT, 52, 124, 52, 27));
+            addView(messageTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.LEFT, 52, 143, 52, 18));
         }
 
         @Override
@@ -734,7 +806,7 @@ public class ChatLinkActivity extends BaseFragment implements NotificationCenter
 
         @Override
         public int getItemCount() {
-            if (loadingChats) {
+            if (loadingChats && !chatsLoaded) {
                 return 0;
             }
             return rowCount;

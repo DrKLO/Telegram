@@ -9,9 +9,14 @@
 package org.telegram.ui.Adapters;
 
 import android.content.Context;
+import android.graphics.drawable.ColorDrawable;
+import android.graphics.drawable.Drawable;
+import android.os.Build;
 import android.util.SparseArray;
+import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.FrameLayout;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.FileLog;
@@ -22,11 +27,17 @@ import org.telegram.tgnet.TLRPC;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
+import org.telegram.ui.ActionBar.ActionBar;
+import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.DividerCell;
 import org.telegram.ui.Cells.GraySectionCell;
 import org.telegram.ui.Cells.LetterSectionCell;
+import org.telegram.ui.Cells.ShadowSectionCell;
 import org.telegram.ui.Cells.TextCell;
 import org.telegram.ui.Cells.UserCell;
+import org.telegram.ui.Components.CombinedDrawable;
+import org.telegram.ui.Components.ContactsEmptyView;
+import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RecyclerListView;
 
 import java.util.ArrayList;
@@ -50,14 +61,15 @@ public class ContactsAdapter extends RecyclerListView.SectionsAdapter {
     private boolean isChannel;
     private boolean disableSections;
     private boolean hasGps;
+    private boolean isEmpty;
 
-    public ContactsAdapter(Context context, int onlyUsersType, boolean arg2, SparseArray<TLRPC.User> arg3, int arg4, boolean gps) {
+    public ContactsAdapter(Context context, int onlyUsersType, boolean showPhoneBook, SparseArray<TLRPC.User> usersToIgnore, int flags, boolean gps) {
         mContext = context;
         onlyUsers = onlyUsersType;
-        needPhonebook = arg2;
-        ignoreUsers = arg3;
-        isAdmin = arg4 != 0;
-        isChannel = arg4 == 2;
+        needPhonebook = showPhoneBook;
+        ignoreUsers = usersToIgnore;
+        isAdmin = flags != 0;
+        isChannel = flags == 2;
         hasGps = gps;
     }
 
@@ -191,6 +203,9 @@ public class ContactsAdapter extends RecyclerListView.SectionsAdapter {
         ArrayList<String> sortedUsersSectionsArray = onlyUsers == 2 ? ContactsController.getInstance(currentAccount).sortedUsersMutualSectionsArray : ContactsController.getInstance(currentAccount).sortedUsersSectionsArray;
 
         if (onlyUsers != 0 && !isAdmin) {
+            if (isEmpty) {
+                return false;
+            }
             ArrayList<TLRPC.TL_contact> arr = usersSectionsDict.get(sortedUsersSectionsArray.get(section));
             return row < arr.size();
         } else {
@@ -203,6 +218,9 @@ public class ContactsAdapter extends RecyclerListView.SectionsAdapter {
                     return row != 3;
                 }
             } else {
+                if (isEmpty) {
+                    return false;
+                }
                 if (sortType == 2) {
                     if (section == 1) {
                         return row < onlineContacts.size();
@@ -221,11 +239,17 @@ public class ContactsAdapter extends RecyclerListView.SectionsAdapter {
     @Override
     public int getSectionCount() {
         int count;
+        isEmpty = false;
         if (sortType == 2) {
             count = 1;
+            isEmpty = onlineContacts.isEmpty();
         } else {
             ArrayList<String> sortedUsersSectionsArray = onlyUsers == 2 ? ContactsController.getInstance(currentAccount).sortedUsersMutualSectionsArray : ContactsController.getInstance(currentAccount).sortedUsersSectionsArray;
             count = sortedUsersSectionsArray.size();
+            if (count == 0) {
+                isEmpty = true;
+                count = 1;
+            }
         }
         if (onlyUsers == 0) {
             count++;
@@ -245,6 +269,9 @@ public class ContactsAdapter extends RecyclerListView.SectionsAdapter {
         ArrayList<String> sortedUsersSectionsArray = onlyUsers == 2 ? ContactsController.getInstance(currentAccount).sortedUsersMutualSectionsArray : ContactsController.getInstance(currentAccount).sortedUsersSectionsArray;
 
         if (onlyUsers != 0 && !isAdmin) {
+            if (isEmpty) {
+                return 1;
+            }
             if (section < sortedUsersSectionsArray.size()) {
                 ArrayList<TLRPC.TL_contact> arr = usersSectionsDict.get(sortedUsersSectionsArray.get(section));
                 int count = arr.size();
@@ -263,6 +290,9 @@ public class ContactsAdapter extends RecyclerListView.SectionsAdapter {
                     return 4;
                 }
             } else {
+                if (isEmpty) {
+                    return 1;
+                }
                 if (sortType == 2) {
                     if (section == 1) {
                         return onlineContacts.isEmpty() ? 0 : onlineContacts.size() + 1;
@@ -294,7 +324,7 @@ public class ContactsAdapter extends RecyclerListView.SectionsAdapter {
             view = new LetterSectionCell(mContext);
         }
         LetterSectionCell cell = (LetterSectionCell) view;
-        if (sortType == 2 || disableSections) {
+        if (sortType == 2 || disableSections || isEmpty) {
             cell.setLetter("");
         } else {
             if (onlyUsers != 0 && !isAdmin) {
@@ -330,9 +360,48 @@ public class ContactsAdapter extends RecyclerListView.SectionsAdapter {
                 view = new GraySectionCell(mContext);
                 break;
             case 3:
-            default:
                 view = new DividerCell(mContext);
                 view.setPadding(AndroidUtilities.dp(LocaleController.isRTL ? 28 : 72), AndroidUtilities.dp(8), AndroidUtilities.dp(LocaleController.isRTL ? 72 : 28), AndroidUtilities.dp(8));
+                break;
+            case 4:
+                FrameLayout frameLayout = new FrameLayout(mContext) {
+                    @Override
+                    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+                        int height;
+                        height = MeasureSpec.getSize(heightMeasureSpec);
+                        if (height == 0) {
+                            height = parent.getMeasuredHeight();
+                        }
+                        if (height == 0) {
+                            height = AndroidUtilities.displaySize.y - ActionBar.getCurrentActionBarHeight() - (Build.VERSION.SDK_INT >= 21 ? AndroidUtilities.statusBarHeight : 0);
+                        }
+                        int cellHeight = AndroidUtilities.dp(50);
+                        int totalHeight = onlyUsers != 0 ? 0 : cellHeight + AndroidUtilities.dp(30);
+                        if (hasGps) {
+                            totalHeight += cellHeight;
+                        }
+                        if (!isAdmin && !needPhonebook) {
+                            totalHeight += cellHeight;
+                        }
+                        if (totalHeight < height) {
+                            height = height - totalHeight;
+                        } else {
+                            height = 0;
+                        }
+                        super.onMeasure(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(height, MeasureSpec.EXACTLY));
+                    }
+                };
+                ContactsEmptyView emptyView = new ContactsEmptyView(mContext);
+                frameLayout.addView(emptyView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER));
+                view = frameLayout;
+                break;
+            case 5:
+            default:
+                view = new ShadowSectionCell(mContext);
+                Drawable drawable = Theme.getThemedDrawable(mContext, R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow);
+                CombinedDrawable combinedDrawable = new CombinedDrawable(new ColorDrawable(Theme.getColor(Theme.key_windowBackgroundGray)), drawable);
+                combinedDrawable.setFullsize(true);
+                view.setBackgroundDrawable(combinedDrawable);
                 break;
         }
         return new RecyclerListView.Holder(view);
@@ -418,6 +487,9 @@ public class ContactsAdapter extends RecyclerListView.SectionsAdapter {
         HashMap<String, ArrayList<TLRPC.TL_contact>> usersSectionsDict = onlyUsers == 2 ? ContactsController.getInstance(currentAccount).usersMutualSectionsDict : ContactsController.getInstance(currentAccount).usersSectionsDict;
         ArrayList<String> sortedUsersSectionsArray = onlyUsers == 2 ? ContactsController.getInstance(currentAccount).sortedUsersMutualSectionsArray : ContactsController.getInstance(currentAccount).sortedUsersSectionsArray;
         if (onlyUsers != 0 && !isAdmin) {
+            if (isEmpty) {
+                return 4;
+            }
             ArrayList<TLRPC.TL_contact> arr = usersSectionsDict.get(sortedUsersSectionsArray.get(section));
             return position < arr.size() ? 0 : 3;
         } else {
@@ -428,12 +500,15 @@ public class ContactsAdapter extends RecyclerListView.SectionsAdapter {
                     }
                 } else if (needPhonebook) {
                     if (hasGps && position == 2 || !hasGps && position == 1) {
-                        return 2;
+                        return isEmpty ? 5 : 2;
                     }
                 } else if (position == 3) {
-                    return 2;
+                    return isEmpty ? 5 : 2;
                 }
             } else {
+                if (isEmpty) {
+                    return 4;
+                }
                 if (sortType == 2) {
                     if (section == 1) {
                         return position < onlineContacts.size() ? 0 : 3;
@@ -451,7 +526,7 @@ public class ContactsAdapter extends RecyclerListView.SectionsAdapter {
 
     @Override
     public String getLetter(int position) {
-        if (sortType == 2) {
+        if (sortType == 2 || isEmpty) {
             return null;
         }
         ArrayList<String> sortedUsersSectionsArray = onlyUsers == 2 ? ContactsController.getInstance(currentAccount).sortedUsersMutualSectionsArray : ContactsController.getInstance(currentAccount).sortedUsersSectionsArray;

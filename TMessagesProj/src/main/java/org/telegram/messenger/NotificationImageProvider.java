@@ -99,9 +99,7 @@ public class NotificationImageProvider extends ContentProvider implements Notifi
 			if (AndroidUtilities.isInternalUri(Uri.fromFile(finalFile))) {
 				throw new SecurityException("trying to read internal file");
 			}
-			if (finalFile.exists()) {
-				return ParcelFileDescriptor.open(finalFile, ParcelFileDescriptor.MODE_READ_ONLY);
-			} else {
+			if (!finalFile.exists()) {
 				Long _startTime = fileStartTimes.get(name);
 				long startTime = _startTime != null ? _startTime : System.currentTimeMillis();
 				if (_startTime == null) {
@@ -132,8 +130,8 @@ public class NotificationImageProvider extends ContentProvider implements Notifi
 				if (AndroidUtilities.isInternalUri(Uri.fromFile(finalFile))) {
 					throw new SecurityException("trying to read internal file");
 				}
-				return ParcelFileDescriptor.open(finalFile, ParcelFileDescriptor.MODE_READ_ONLY);
 			}
+			return ParcelFileDescriptor.open(finalFile, ParcelFileDescriptor.MODE_READ_ONLY);
 		}
 		throw new FileNotFoundException("Invalid URI");
 	}

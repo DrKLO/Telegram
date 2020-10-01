@@ -260,6 +260,12 @@ public class ChatAttachAlertContactsLayout extends ChatAttachAlert.AttachAlertLa
             }
 
             @Override
+            public boolean onInterceptTouchEvent(MotionEvent ev) {
+                parentAlert.makeFocusable(getSearchEditText(), true);
+                return super.onInterceptTouchEvent(ev);
+            }
+
+            @Override
             public void processTouchEvent(MotionEvent event) {
                 MotionEvent e = MotionEvent.obtain(event);
                 e.setLocation(e.getRawX(), e.getRawY() - parentAlert.getSheetContainer().getTranslationY() - AndroidUtilities.dp(58));
@@ -269,7 +275,7 @@ public class ChatAttachAlertContactsLayout extends ChatAttachAlert.AttachAlertLa
 
             @Override
             protected void onFieldTouchUp(EditTextBoldCursor editText) {
-                parentAlert.makeFocusable(editText);
+                parentAlert.makeFocusable(editText, true);
             }
         };
         searchField.setHint(LocaleController.getString("SearchFriends", R.string.SearchFriends));
@@ -358,7 +364,7 @@ public class ChatAttachAlertContactsLayout extends ChatAttachAlert.AttachAlertLa
         listView.setOnScrollListener(new RecyclerView.OnScrollListener() {
             @Override
             public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
-                parentAlert.updateLayout(ChatAttachAlertContactsLayout.this, true);
+                parentAlert.updateLayout(ChatAttachAlertContactsLayout.this, true, dy);
                 updateEmptyViewPosition();
             }
         });

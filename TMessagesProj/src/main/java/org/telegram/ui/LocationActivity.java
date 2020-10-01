@@ -567,7 +567,6 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
                             }
                             searchListView.setVisibility(View.VISIBLE);
                             searchInProgress = searchAdapter.getItemCount() == 0;
-                            updateEmptyView();
                         } else {
                             if (otherItem != null) {
                                 otherItem.setVisibility(View.VISIBLE);
@@ -576,8 +575,8 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
                             mapViewClip.setVisibility(View.VISIBLE);
                             searchListView.setAdapter(null);
                             searchListView.setVisibility(View.GONE);
-                            updateEmptyView();
                         }
+                        updateEmptyView();
                         searchAdapter.searchDelayed(text, userLocation);
                     }
                 });
@@ -1257,8 +1256,8 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
     }
 
     private int getMessageId(TLRPC.Message message) {
-        if (message.from_id != 0) {
-            return message.from_id;
+        if (message.from_id != null) {
+            return MessageObject.getFromChatId(message);
         } else {
             return (int) MessageObject.getDialogId(message);
         }
@@ -1335,21 +1334,20 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
     private LiveLocation addUserMarker(TLRPC.Message message) {
         LiveLocation liveLocation;
         LatLng latLng = new LatLng(message.media.geo.lat, message.media.geo._long);
-        if ((liveLocation = markersMap.get(message.from_id)) == null) {
+        if ((liveLocation = markersMap.get(MessageObject.getFromChatId(message))) == null) {
             liveLocation = new LiveLocation();
             liveLocation.object = message;
-            if (liveLocation.object.from_id != 0) {
-                liveLocation.user = getMessagesController().getUser(liveLocation.object.from_id);
-                liveLocation.id = liveLocation.object.from_id;
+            if (liveLocation.object.from_id instanceof TLRPC.TL_peerUser) {
+                liveLocation.user = getMessagesController().getUser(liveLocation.object.from_id.user_id);
+                liveLocation.id = liveLocation.object.from_id.user_id;
             } else {
                 int did = (int) MessageObject.getDialogId(message);
                 if (did > 0) {
                     liveLocation.user = getMessagesController().getUser(did);
-                    liveLocation.id = did;
                 } else {
                     liveLocation.chat = getMessagesController().getChat(-did);
-                    liveLocation.id = did;
                 }
+                liveLocation.id = did;
             }
 
             try {
@@ -1382,11 +1380,10 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
         int did = (int) dialogId;
         if (did > 0) {
             liveLocation.user = getMessagesController().getUser(did);
-            liveLocation.id = did;
         } else {
             liveLocation.chat = getMessagesController().getChat(-did);
-            liveLocation.id = did;
         }
+        liveLocation.id = did;
 
         try {
             MarkerOptions options = new MarkerOptions().position(latLng);

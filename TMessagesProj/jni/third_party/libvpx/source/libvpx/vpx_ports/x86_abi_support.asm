@@ -16,17 +16,6 @@
 ; In general, we make the source use 64 bit syntax, then twiddle with it using
 ; the preprocessor to get the 32 bit syntax on 32 bit platforms.
 ;
-%ifidn __OUTPUT_FORMAT__,elf32
-%define ABI_IS_32BIT 1
-%elifidn __OUTPUT_FORMAT__,macho32
-%define ABI_IS_32BIT 1
-%elifidn __OUTPUT_FORMAT__,win32
-%define ABI_IS_32BIT 1
-%elifidn __OUTPUT_FORMAT__,aout
-%define ABI_IS_32BIT 1
-%else
-%define ABI_IS_32BIT 0
-%endif
 
 %if ABI_IS_32BIT
 %define rax eax

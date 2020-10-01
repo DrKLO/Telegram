@@ -29,6 +29,7 @@ public class MenuDrawable extends Drawable {
     private int currentAnimationTime;
     private boolean rotateToBack = true;
     private DecelerateInterpolator interpolator = new DecelerateInterpolator();
+    private int iconColor;
 
     public MenuDrawable() {
         super();
@@ -89,7 +90,7 @@ public class MenuDrawable extends Drawable {
         float endXDiff;
         float startYDiff;
         float startXDiff;
-        int color1 = Theme.getColor(Theme.key_actionBarDefaultIcon);
+        int color1 = iconColor == 0 ? Theme.getColor(Theme.key_actionBarDefaultIcon) : iconColor;
         if (rotateToBack) {
             canvas.rotate(currentRotation * (reverseAngle ? -180 : 180));
             paint.setColor(color1);
@@ -136,5 +137,9 @@ public class MenuDrawable extends Drawable {
     @Override
     public int getIntrinsicHeight() {
         return AndroidUtilities.dp(24);
+    }
+
+    public void setIconColor(int iconColor) {
+        this.iconColor = iconColor;
     }
 }

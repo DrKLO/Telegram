@@ -975,7 +975,7 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
         invalidate();
     }
 
-    public void onPanTranslationUpdate(int y) {
+    public void onPanTranslationUpdate(float y) {
         panTranslationY = y / 2f;
         updateTranslationY();
         blurBehindDrawable.onPanTranslationUpdate(y);

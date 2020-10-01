@@ -20,6 +20,7 @@ import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
+import org.telegram.messenger.UserObject;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.messenger.ContactsController;
@@ -161,7 +162,9 @@ public class SearchAdapter extends RecyclerListView.SelectionAdapter {
                     if (names[0].equals(names[1])) {
                         names[1] = null;
                     }
-                    if (user.self) {
+                    if (UserObject.isReplyUser(user)) {
+                        names[2] = LocaleController.getString("RepliesTitle", R.string.RepliesTitle).toLowerCase();
+                    } else if (user.self) {
                         names[2] = LocaleController.getString("SavedMessages", R.string.SavedMessages).toLowerCase();
                     }
 

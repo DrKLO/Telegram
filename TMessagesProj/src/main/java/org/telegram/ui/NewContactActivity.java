@@ -92,6 +92,8 @@ public class NewContactActivity extends BaseFragment implements AdapterView.OnIt
     private boolean ignoreSelection;
     private boolean donePressed;
     private String initialPhoneNumber;
+    private String initialFirstName;
+    private String initialLastName;
 
     private final static int done_button = 1;
 
@@ -205,6 +207,7 @@ public class NewContactActivity extends BaseFragment implements AdapterView.OnIt
         avatarImage = new BackupImageView(context);
         avatarImage.setImageDrawable(avatarDrawable);
         frameLayout.addView(avatarImage, LayoutHelper.createFrame(60, 60, Gravity.LEFT | Gravity.TOP, 0, 9, 0, 0));
+        boolean needInvalidateAvatar = false;
 
         firstNameField = new EditTextBoldCursor(context);
         firstNameField.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
@@ -221,6 +224,11 @@ public class NewContactActivity extends BaseFragment implements AdapterView.OnIt
         firstNameField.setCursorColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
         firstNameField.setCursorSize(AndroidUtilities.dp(20));
         firstNameField.setCursorWidth(1.5f);
+        if (initialFirstName != null) {
+            firstNameField.setText(initialFirstName);
+            initialFirstName = null;
+            needInvalidateAvatar = true;
+        }
         frameLayout.addView(firstNameField, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 34, Gravity.LEFT | Gravity.TOP, 84, 0, 0, 0));
         firstNameField.setOnEditorActionListener((textView, i, keyEvent) -> {
             if (i == EditorInfo.IME_ACTION_NEXT) {
@@ -243,8 +251,7 @@ public class NewContactActivity extends BaseFragment implements AdapterView.OnIt
 
             @Override
             public void afterTextChanged(Editable editable) {
-                avatarDrawable.setInfo(5, firstNameField.getText().toString(), lastNameField.getText().toString());
-                avatarImage.invalidate();
+                invalidateAvatar();
             }
         });
 
@@ -263,6 +270,11 @@ public class NewContactActivity extends BaseFragment implements AdapterView.OnIt
         lastNameField.setCursorColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
         lastNameField.setCursorSize(AndroidUtilities.dp(20));
         lastNameField.setCursorWidth(1.5f);
+        if (initialLastName != null) {
+            lastNameField.setText(initialLastName);
+            initialLastName = null;
+            needInvalidateAvatar = true;
+        }
         frameLayout.addView(lastNameField, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 34, Gravity.LEFT | Gravity.TOP, 84, 44, 0, 0));
         lastNameField.setOnEditorActionListener((textView, i, keyEvent) -> {
             if (i == EditorInfo.IME_ACTION_NEXT) {
@@ -285,10 +297,13 @@ public class NewContactActivity extends BaseFragment implements AdapterView.OnIt
 
             @Override
             public void afterTextChanged(Editable editable) {
-                avatarDrawable.setInfo(5, firstNameField.getText().toString(), lastNameField.getText().toString());
-                avatarImage.invalidate();
+                invalidateAvatar();
             }
         });
+
+        if (needInvalidateAvatar) {
+            invalidateAvatar();
+        }
 
         countryButton = new TextView(context);
         countryButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
@@ -586,6 +601,11 @@ public class NewContactActivity extends BaseFragment implements AdapterView.OnIt
         return fragmentView;
     }
 
+    private void invalidateAvatar() {
+        avatarDrawable.setInfo(5, firstNameField.getText().toString(), lastNameField.getText().toString());
+        avatarImage.invalidate();
+    }
+
     @Override
     public void onTransitionAnimationEnd(boolean isOpen, boolean backward) {
         if (isOpen) {
@@ -600,6 +620,11 @@ public class NewContactActivity extends BaseFragment implements AdapterView.OnIt
 
     public void setInitialPhoneNumber(String value) {
         initialPhoneNumber = value;
+    }
+
+    public void setInitialName(String firstName, String lastName) {
+        initialFirstName = firstName;
+        initialLastName = lastName;
     }
 
     public void selectCountry(String name) {
@@ -713,8 +738,7 @@ public class NewContactActivity extends BaseFragment implements AdapterView.OnIt
 
         ThemeDescription.ThemeDescriptionDelegate cellDelegate = () -> {
             if (avatarImage != null) {
-                avatarDrawable.setInfo(5, firstNameField.getText().toString(), lastNameField.getText().toString());
-                avatarImage.invalidate();
+                invalidateAvatar();
             }
         };
 

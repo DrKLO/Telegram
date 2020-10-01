@@ -197,7 +197,7 @@ public class ChatAttachAlertPollLayout extends ChatAttachAlert.AttachAlertLayout
             @Override
             protected void onMoveAnimationUpdate(RecyclerView.ViewHolder holder) {
                 if (holder.getAdapterPosition() == 0) {
-                    parentAlert.updateLayout(ChatAttachAlertPollLayout.this, true);
+                    parentAlert.updateLayout(ChatAttachAlertPollLayout.this, true, 0);
                 }
             }
         });
@@ -331,7 +331,7 @@ public class ChatAttachAlertPollLayout extends ChatAttachAlert.AttachAlertLayout
         listView.setOnScrollListener(new RecyclerView.OnScrollListener() {
             @Override
             public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
-                parentAlert.updateLayout(ChatAttachAlertPollLayout.this, true);
+                parentAlert.updateLayout(ChatAttachAlertPollLayout.this, true, dy);
                 if (dy != 0 && hintView != null) {
                     hintView.hide();
                 }
@@ -888,7 +888,7 @@ public class ChatAttachAlertPollLayout extends ChatAttachAlert.AttachAlertLayout
                     PollEditTextCell cell = new PollEditTextCell(mContext, null) {
                         @Override
                         protected void onFieldTouchUp(EditTextBoldCursor editText) {
-                            parentAlert.makeFocusable(editText);
+                            parentAlert.makeFocusable(editText, true);
                         }
                     };
                     cell.createErrorTextView();
@@ -926,7 +926,7 @@ public class ChatAttachAlertPollLayout extends ChatAttachAlert.AttachAlertLayout
                     PollEditTextCell cell = new PollEditTextCell(mContext, true, null) {
                         @Override
                         protected void onFieldTouchUp(EditTextBoldCursor editText) {
-                            parentAlert.makeFocusable(editText);
+                            parentAlert.makeFocusable(editText, true);
                         }
 
                         @Override
@@ -1039,7 +1039,7 @@ public class ChatAttachAlertPollLayout extends ChatAttachAlert.AttachAlertLayout
 
                         @Override
                         protected void onFieldTouchUp(EditTextBoldCursor editText) {
-                            parentAlert.makeFocusable(editText);
+                            parentAlert.makeFocusable(editText, true);
                         }
 
                         @Override

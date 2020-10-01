@@ -533,6 +533,7 @@ public class VoIPPiPView implements VoIPBaseService.StateListener, NotificationC
             currentUserTextureView.setRoundCorners(AndroidUtilities.dp(8) * (1f / getScaleY()) * progressToCameraMini);
             currentUserTextureView.setScaleX(0.4f + 0.6f * (1f - progressToCameraMini));
             currentUserTextureView.setScaleY(0.4f + 0.6f * (1f - progressToCameraMini));
+            currentUserTextureView.setAlpha(Math.min(1f, 1f - progressToCameraMini));
             super.dispatchDraw(canvas);
         }
 
@@ -585,7 +586,14 @@ public class VoIPPiPView implements VoIPBaseService.StateListener, NotificationC
                         moveToBoundsAnimator.cancel();
                     }
                     if (event.getAction() == MotionEvent.ACTION_UP && !moving && System.currentTimeMillis() - startTime < 150) {
-                        instance.floatingView.expand(!instance.expanded);
+                        Context context = getContext();
+                        if (context instanceof LaunchActivity && !ApplicationLoader.mainInterfacePaused) {
+                            VoIPFragment.show((Activity) context);
+                        } else if (context instanceof LaunchActivity) {
+                            Intent intent = new Intent(context, LaunchActivity.class);
+                            intent.setAction("voip");
+                            context.startActivity(intent);
+                        }
                         moving = false;
                         return false;
                     }

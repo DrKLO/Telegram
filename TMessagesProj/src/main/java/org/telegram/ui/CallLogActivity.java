@@ -94,8 +94,9 @@ public class CallLogActivity extends BaseFragment implements NotificationCenter.
 			ArrayList<MessageObject> arr = (ArrayList<MessageObject>) args[1];
 			for (MessageObject msg : arr) {
 				if (msg.messageOwner.action instanceof TLRPC.TL_messageActionPhoneCall) {
-					int userID = msg.messageOwner.from_id == UserConfig.getInstance(currentAccount).getClientUserId() ? msg.messageOwner.to_id.user_id : msg.messageOwner.from_id;
-					int callType = msg.messageOwner.from_id == UserConfig.getInstance(currentAccount).getClientUserId() ? TYPE_OUT : TYPE_IN;
+					int fromId = msg.getFromChatId();
+					int userID = fromId == UserConfig.getInstance(currentAccount).getClientUserId() ? msg.messageOwner.peer_id.user_id : fromId;
+					int callType = fromId == UserConfig.getInstance(currentAccount).getClientUserId() ? TYPE_OUT : TYPE_IN;
 					TLRPC.PhoneCallDiscardReason reason = msg.messageOwner.action.reason;
 					if (callType == TYPE_IN && (reason instanceof TLRPC.TL_phoneCallDiscardReasonMissed || reason instanceof TLRPC.TL_phoneCallDiscardReasonBusy)) {
 						callType = TYPE_MISSED;
@@ -410,12 +411,13 @@ public class CallLogActivity extends BaseFragment implements NotificationCenter.
 					if (msg.action == null || msg.action instanceof TLRPC.TL_messageActionHistoryClear) {
 						continue;
 					}
-					int callType = msg.from_id == UserConfig.getInstance(currentAccount).getClientUserId() ? TYPE_OUT : TYPE_IN;
+					int callType = MessageObject.getFromChatId(msg) == UserConfig.getInstance(currentAccount).getClientUserId() ? TYPE_OUT : TYPE_IN;
 					TLRPC.PhoneCallDiscardReason reason = msg.action.reason;
 					if (callType == TYPE_IN && (reason instanceof TLRPC.TL_phoneCallDiscardReasonMissed || reason instanceof TLRPC.TL_phoneCallDiscardReasonBusy)) {
 						callType = TYPE_MISSED;
 					}
-					int userID = msg.from_id == UserConfig.getInstance(currentAccount).getClientUserId() ? msg.to_id.user_id : msg.from_id;
+					int fromId = MessageObject.getFromChatId(msg);
+					int userID = fromId == UserConfig.getInstance(currentAccount).getClientUserId() ? msg.peer_id.user_id : fromId;
 					if (currentRow == null || currentRow.user.id != userID || currentRow.type != callType) {
 						if (currentRow != null && !calls.contains(currentRow)) {
 							calls.add(currentRow);

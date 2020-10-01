@@ -226,6 +226,28 @@
     <string name="HideNewChatsAlertTitle">Nieuwe chats verbergen?</string>
     <string name="HideNewChatsAlertText">Je ontvangt veel nieuwe chats van mensen die geen contact van je zijn. Wil je deze chats **automatisch dempen** en **archiveren**?</string>
     <string name="GoToSettings">GA NAAR INSTELLINGEN</string>
+    <string name="OpenProfile">Open Profile</string>
+    <string name="OpenChannel2">Open Channel</string>
+    <string name="SendMessage">Send Message</string>
+    <string name="Mention">Mention</string>
+    <string name="NotificationsMutedHint">Notifications muted</string>
+    <string name="NotificationsMutedForHint">Notifications muted for %1$s</string>
+    <string name="NotificationsUnmutedHint">Notifications unmuted</string>
+    <string name="MessagesDeletedHint_zero">%1$d messages deleted</string>
+    <string name="MessagesDeletedHint_one">Message deleted</string>
+    <string name="MessagesDeletedHint_two">%1$d messages deleted</string>
+    <string name="MessagesDeletedHint_few">%1$d messages deleted</string>
+    <string name="MessagesDeletedHint_many">%1$d messages deleted</string>
+    <string name="MessagesDeletedHint_other">%1$d messages deleted</string>
+    <string name="SearchEmptyViewTitle">No Results</string>
+    <string name="SearchEmptyViewTitle2">No Results</string>
+    <string name="SearchEmptyViewFilteredSubtitle2">Try a new search.</string>
+    <string name="SearchEmptyViewFilteredSubtitleMusic">Muziek</string>
+    <string name="SearchEmptyViewFilteredSubtitleFiles">Bestanden</string>
+    <string name="SearchEmptyViewFilteredSubtitleLinks">Links</string>
+    <string name="SearchEmptyViewFilteredSubtitleVoice">Voice from all your chats will be shown here.</string>
+    <string name="SearchEmptyViewFilteredSubtitleMedia">Media</string>
+    <string name="SearchAllChatsShort">Chats</string>
     <!--channels-->
     <string name="SetAsAdmin">Promoveren tot beheerder</string>
     <string name="EditAdminRights">Beheerdersrechten aanpassen</string>
@@ -364,6 +386,7 @@
     <string name="ChannelAdminsInfo">Je kunt beheerders toevoegen om je te helpen je kanaal te beheren. Druk en houd ingedrukt om beheerders te verwijderen.</string>
     <string name="ChannelJoinTo">Lid worden van kanaal \'%1$s\'?</string>
     <string name="ChannelCantOpenPrivate">Sorry, deze chat is niet beschikbaar.</string>
+    <string name="ChannelCantOpenBannedByAdmin">Sorry, you can\'t access this chat because you were banned by an admin.</string>
     <string name="ChannelCantOpenBanned">Helaas ben je geblokkeerd van deelname in publieke groepen.</string>
     <string name="ChannelCantOpenNa">Sorry, deze chat is niet beschikbaar.</string>
     <string name="ChannelAddTo">%1$s toevoegen aan het kanaal?</string>
@@ -418,6 +441,7 @@
     <string name="EditAdminDeleteMessages">Berichten verwijderen</string>
     <string name="EditAdminGroupDeleteMessages">Verwijder berichten</string>
     <string name="EditAdminAddAdmins">Beheerders toevoegen</string>
+    <string name="EditAdminSendAnonymously">Send Anonymously</string>
     <string name="EditAdminRemoveAdmin">Beheerder ontslaan</string>
     <string name="EditAdminGroupTransfer">Eigenaarschap overdragen</string>
     <string name="EditAdminChannelTransfer">Eigenaarschap overdragen</string>
@@ -508,11 +532,12 @@
     <string name="MakeAdmin">BEHEERDER MAKEN</string>
     <string name="AdminWillBeRemoved">%1$s  zal verwijderd worden als beheerder als je een beperking oplegt.</string>
     <string name="Discussion">Discussie</string>
+    <string name="ViewDiscussion">View discussion</string>
     <string name="DiscussionInfo">Voeg een groepschat toe voor opmerkingen.</string>
     <string name="LinkedChannel">Gekoppeld kanaal</string>
-    <string name="DiscussionChannelHelp">Kies een groepschat voor discussie die zal worden weergegeven in je kanaal.</string>
+    <string name="DiscussionChannelHelp3">Select a group chat that will host comments from your channel.</string>
     <string name="DiscussionChannelHelp2">Alles wat je plaatst in het kanaal zal worden doorgestuurd naar deze groep.</string>
-    <string name="DiscussionChannelGroupSetHelp">Een link naar **%1$s**  zal worden weergegeven aan alle abonnees in het onderpaneel.</string>
+    <string name="DiscussionChannelGroupSetHelp2">**%1$s** is selected as the group that hosts comments for your channel.</string>
     <string name="DiscussionGroupHelp">**%1$s** koppelt de groep als discussiegroep</string>
     <string name="DiscussionGroupHelp2">Alle nieuwe berichten die je plaatst in dit kanaal worden doorgestuurd naar de groep.</string>
     <string name="DiscussionCreateGroup">Maak een nieuwe groep</string>
@@ -687,6 +712,7 @@
     <string name="EventLogPromotedEditMessages">Berichten wijzigen</string>
     <string name="EventLogPromotedDeleteMessages">Berichten verwijderen</string>
     <string name="EventLogPromotedAddAdmins">Beheerders toevoegen</string>
+    <string name="EventLogPromotedSendAnonymously">Send anonymously</string>
     <string name="EventLogPromotedBanUsers">Leden blokkeren</string>
     <string name="EventLogPromotedAddUsers">Leden toevoegen</string>
     <string name="EventLogPromotedTitle">Titel: %1$s</string>
@@ -856,6 +882,7 @@
     <string name="AddContactFullChat">VOEG %1$s TOE AAN CONTACTEN</string>
     <string name="ViewContact">CONTACT BEKIJKEN</string>
     <string name="BlockUserAlert">**%1$s** echt blokkeren om je berichten te sturen en je te bellen via Telegram?</string>
+    <string name="BlockUserReplyAlert">Do you want to block messages from **%1$s**?</string>
     <string name="ReportSpamAlert">"Spam van deze gebruiker echt melden? "</string>
     <string name="ReportSpamAlertGroup">"Spam van deze groep echt melden? "</string>
     <string name="ReportSpamAlertChannel">"Spam van dit kanaal echt melden? "</string>
@@ -1014,6 +1041,25 @@
     <string name="SecretChatTimerMinutes">m</string>
     <string name="SecretChatTimerHours">u</string>
     <string name="SecretChatTimerWeeks">w</string>
+    <string name="SharedToPrivateMessagesAndGroups">to private messages and groups</string>
+
+    <string name="BotOwnershipTransfer">Transfer Bot Ownership</string>
+    <string name="BotOwnershipTransferReadyAlertText">This will transfer the **full owner** rights for the bot to the selected user.</string>
+    <string name="BotOwnershipTransferChangeOwner">Change Owner</string>
+    <string name="BotOwnershipTransferAlertText">You can transfer bot only if you have:</string>
+    <string name="LeaveAComment">Leave a comment</string>
+    <string name="CommentsTitle">Comments</string>
+    <string name="Comment">Comment</string>
+    <string name="RepliesTitle">Replies</string>
+    <string name="NoComments">No comments here yet...</string>
+    <string name="NoReplies">No replies here yet...</string>
+    <string name="ViewInChat">View in chat</string>
+    <string name="SendAnonymously">Send anonymously</string>
+    <string name="DiscussionStarted">Discussion started</string>
+    <string name="ViewThread">View Thread</string>
+    <string name="ChooseDate">Choose date</string>
+    <string name="RepliesChatInfo">This chat helps you keep track of replies to your comments in Channels.</string>
+    <string name="ChannelPostDeleted">Sorry, this post has been removed from the discussion group.</string>
     <!--notification-->
     <string name="MessageLifetimeChanged">%1$s heeft de zelfvernietigingstimer ingesteld op %2$s</string>
     <string name="MessageLifetimeChangedOutgoing">Je hebt de zelfvernietigingstimer ingesteld op %1$s</string>
@@ -1165,6 +1211,10 @@
     <string name="SortedByLastSeen">Sorteren op laatst-gezien</string>
     <string name="AddContactByPhone">Voeg %1$s toe</string>
     <string name="PhoneNumberSearch">Telefoonnummer</string>
+    <string name="NoContactsYet">You have no contacts on Telegram yet</string>
+    <string name="NoContactsYetLine1">Invite friends to try Telegram</string>
+    <string name="NoContactsYetLine2">Find people nearby to chat with</string>
+    <string name="NoContactsYetLine3">Search people by username</string>
     <!--group create view-->
     <string name="SendMessageTo">Mensen toevoegen</string>
     <string name="SoftUserLimitAlert">Je kan meer leden toevoegen nadat je de groep hebt aangemaakt.</string>
@@ -1224,6 +1274,8 @@
     <string name="ContactNotRegisteredTitle">Uitnodigen voor Telegram</string>
     <string name="ContactNotRegistered">%1$s is nog geen lid, uitnodigen?</string>
     <string name="Invite">Nodig uit</string>
+    <string name="Block">BLOCK</string>
+    <string name="BlockAndDeleteReplies">BLOCK AND DELETE REPLIES</string>
     <string name="BlockContact">Blokkeer</string>
     <string name="BlockUser">Blokkeer gebruiker</string>
     <string name="BlockUsers">Blokkeer gebruikers</string>
@@ -2232,7 +2284,7 @@
     <string name="SharedMediaTabFull2">Gedeelde media</string>
     <string name="SharedGroupsTab2">Groepen</string>
     <string name="SharedLinksTab2">Links</string>
-    <string name="SharedMusicTab2">Audio</string>
+    <string name="SharedMusicTab2">Muziek</string>
     <string name="SharedVoiceTab2">Spraakberichten</string>
     <string name="SharedGIFsTab2">GIF\'s</string>
     <string name="DocumentsTitle">Gedeelde bestanden</string>
@@ -2424,6 +2476,8 @@
     <string name="MainChannelProfileVideoSetHint">Dit is nu de hoofdkanaalvideo.</string>
     <string name="MainGroupProfilePhotoSetHint">Dit is nu de hoofdgroepsfoto.</string>
     <string name="MainGroupProfileVideoSetHint">Dit is nu de hoofdgroepsvideo.</string>
+    <string name="PhotoSavedHint">Photo saved to gallery</string>
+    <string name="VideoSavedHint">Video saved to gallery</string>
     <!--password view-->
     <string name="TwoStepVerification">Twee-staps-verificatie</string>
     <string name="TwoStepVerificationTitle">Twee-staps-verificatie</string>
@@ -2521,7 +2575,7 @@
     <string name="BytesSent">Verzonden bytes</string>
     <string name="BytesReceived">Ontvangen bytes</string>
     <string name="FilesDataUsage">Bestanden</string>
-    <string name="CallsDataUsage">Oproepinstellingen</string>
+    <string name="CallsDataUsage">Oproepen</string>
     <string name="OutgoingCalls">Uitgaande oproepen</string>
     <string name="IncomingCalls">Inkomende oproepen</string>
     <string name="CallsTotalTime">Totale oproeptijd</string>
@@ -2612,7 +2666,7 @@
     <string name="InviteToGroupError">Je kunt deze gebruiker niet toevoegen aan groepen vanwege de privacyinstellingen van deze gebruiker.</string>
     <string name="InviteToChannelError">Je kunt deze gebruiker niet toevoegen aan kanalen vanwege de privacyinstellingen van deze gebruiker.</string>
     <string name="CreateGroupError">Je kan geen groep maken met deze gebruikers vanwege de privacyinstellingen van deze gebruikers.</string>
-    <string name="PrivacyCallsP2PHelp">peer-to-peer uitschakelen zorgt ervoor dat alle gesprekken verlopen via Telegram-servers, dit voorkomt dat je IP-adres zichtbaar is maar verlaagt de audio-kwaliteit enigszins.</string>
+    <string name="PrivacyCallsP2PHelp">Peer-to-peer uitschakelen zorgt ervoor dat alle gesprekken verlopen via Telegram-servers, dit voorkomt dat je IP-adres zichtbaar is maar verlaagt de audio- en videokwaliteit.</string>
     <string name="SyncContactsDelete">Wis gesynchroniseerde contacten</string>
     <string name="SuggestContacts">Veelgebruikte contacten voorstellen</string>
     <string name="SuggestContactsInfo">Mensen die je vaak een bericht stuurt bovenaan de zoeksectie weergeven voor snelle toegang.</string>
@@ -2986,10 +3040,10 @@
     <string name="VoipInCallBranding">Telegram-oproep</string>
     <string name="VoipInVideoCallBranding">Telegram-video-oproep</string>
     <string name="VoipOutgoingCall">Telegram-oproep bezig</string>
-    <string name="VoipEndCall">Oproep beëindigen</string>
+    <string name="VoipEndCall">Ophangen</string>
     <string name="VoipOngoingAlertTitle">Er is al een oproep actief</string>
     <string name="VoipOngoingAlert">Er is al een oproep actief met **%1$s**.  Wil je deze oproep beëindigen en een nieuwe oproep starten met **%2$s**?</string>
-    <string name="VoipNotificationSettings">Spraakoproepen</string>
+    <string name="VoipNotificationSettings">Oproepen</string>
     <string name="VoipSettingsRingtone">Beltoon</string>
     <string name="VoipRingtoneInfo">Je kunt een aangepaste beltoon instellen voor Telegram-oproepen van dit contact.</string>
     <string name="Calls">Oproepen</string>
@@ -3017,15 +3071,17 @@
     <string name="CallMessageOutgoingMissed">Oproep geannuleerd</string>
     <string name="CallMessageIncomingDeclined">Geweigerde oproep</string>
     <string name="CallMessageVideoIncomingMissed">Gemiste video-oproep</string>
-    <string name="CallMessageVideoOutgoingMissed">Geannuleerde video-oproep</string>
+    <string name="CallMessageVideoOutgoingMissed">Geannuleerde oproep</string>
     <string name="CallMessageVideoIncomingDeclined">Geweigerde video-oproep</string>
     <string name="CallMessageWithDuration">%1$s (%2$s)</string>
     <string name="NoCallLog">Je hebt nog geen oproepen gedaan.</string>
     <string name="VoipPeerIncompatible">**%1$s** maakt gebruik van een niet-compatibel protocol voor spraakoproepen en moet eerst een update uitvoeren.</string>
     <string name="VoipPeerOutdated">**%1$s** heeft nog geen ondersteuning voor spraakoproepen en zal eerst een update moeten uitvoeren.</string>
+    <string name="VoipPeerVideoOutdated">Sorry, **%1$s** gebruikt een oude versie van Telegram die geen videogesprekken ondersteunt.</string>
+    <string name="VoipPeerVideoOutdatedMakeVoice">Make a voice call</string>
     <string name="VoipRateCallAlert">Beoordeel de kwaliteit van je Telegram-oproep.</string>
     <string name="VoipNeedMicPermission">Telegram heeft toegang tot je microfoon nodig zodat je kunt bellen.</string>
-    <string name="VoipNeedMicCameraPermission">Telegram needs access to your microphone and camera so that you can make video calls.</string>
+    <string name="VoipNeedMicCameraPermission">Telegram heeft toegang nodig tot je microfoon en camera, zodat je video-oproepen kunt doen.</string>
     <string name="VoipFeedbackCommentHint">Opmerking toevoegen</string>
     <string name="CallBack">Terugbellen</string>
     <string name="CallAgain">Herhaal</string>
@@ -3034,6 +3090,7 @@
     <string name="CallViaTelegram">Telegram-oproep</string>
     <string name="VideoCallViaTelegram">Telegram-video-oproep</string>
     <string name="VoipAudioRoutingEarpiece">Oorstuk</string>
+    <string name="VoipAudioRoutingHeadset">Koptelefoon</string>
     <string name="VoipAudioRoutingSpeaker">Luidspreker</string>
     <string name="VoipAudioRoutingBluetooth">Bluetooth</string>
     <string name="VoipOutputDevices">Uitvoerapparaten</string>
@@ -3064,24 +3121,32 @@
     <string name="RateCallSilentLocal">Ik kon de andere kant niet horen</string>
     <string name="RateCallSilentRemote">De andere kant kon me niet horen</string>
     <string name="RateCallDropped">Oproep onverwacht afgebroken</string>
-    <string name="TapToTurnCamera">Tap here to turn on your camera</string>
+    <string name="RateCallVideoDistorted">Video was vervormd</string>
+    <string name="RateCallVideoPixelated">Video was korrelig</string>
+    <string name="TapToTurnCamera">Tik hier om je camera aan te zetten</string>
     <string name="VoipUnmute">Geluid aan</string>
     <string name="VoipMute">Geluid uit</string>
-    <string name="VoipStartVideo">Start Video</string>
-    <string name="VoipStopVideo">Stop Video</string>
+    <string name="VoipStartVideo">Camera aan</string>
+    <string name="VoipStopVideo">Camera uit</string>
     <string name="VoipSpeaker">Luidspreker</string>
-    <string name="VoipFlip">Wissel</string>
-    <string name="VoipSwitchToVideoCall">Switch to video call?</string>
-    <string name="VoipSwitch">SWITCH</string>
+    <string name="VoipFlip">Wisselen</string>
+    <string name="VoipSwitchToVideoCall">Overschakelen naar video-oproep?</string>
+    <string name="VoipSwitch">WISSELEN</string>
     <string name="VoipUserMicrophoneIsOff">De microfoon van %s staat uit</string>
     <string name="VoipUserCameraIsOff">De camera van %s staat uit</string>
     <string name="AcceptCall">Opnemen</string>
     <string name="DeclineCall">Weigeren</string>
     <string name="RetryCall">Opnieuw proberen</string>
+    <string name="VoipVideoUnavailable">Video</string>
+    <string name="CallAlert">Are you sure you want to call **%1$s**?</string>
+    <string name="CallAlertTitle">Voice Call</string>
+    <string name="VideoCallAlert">Are you sure you want to video call **%1$s**?</string>
+    <string name="VideoCallAlertTitle">Video Call</string>
+    <string name="VoipReconnecting">Opnieuw verbinden</string>
     <!--contacts shortcuts-->
-    <string name="ContactShortcutMessage">Message %1$s</string>
-    <string name="ContactShortcutVoiceCall">Voice call %1$s</string>
-    <string name="ContactShortcutVideoCall">Video call %1$s</string>
+    <string name="ContactShortcutMessage">Bericht naar %1$s</string>
+    <string name="ContactShortcutVoiceCall">Spraakoproep naar %1$s</string>
+    <string name="ContactShortcutVideoCall">Video-oproep naar %1$s</string>
     <!--plural-->
     <string name="DeleteBackground_zero">%1$d Achtergronden verwijderen</string>
     <string name="DeleteBackground_one">Achtergrond verwijderen</string>
@@ -3335,6 +3400,12 @@
     <string name="Shares_few">%1$s keer gedeeld</string>
     <string name="Shares_many">%1$s keer gedeeld</string>
     <string name="Shares_other">%1$s keer gedeeld</string>
+    <string name="Shared_zero">%1$s shared</string>
+    <string name="Shared_one">%1$s shared</string>
+    <string name="Shared_two">%1$s shared</string>
+    <string name="Shared_few">%1$s shared</string>
+    <string name="Shared_many">%1$s shared</string>
+    <string name="Shared_other">%1$s shared</string>
     <string name="StickerSets_zero">%1$s stickerbundels</string>
     <string name="StickerSets_one">%1$s stickerbundel</string>
     <string name="StickerSets_two">%1$s stickerbundels</string>
@@ -3522,6 +3593,24 @@
     <string name="MembersCountSelected_few">%1$d van %2$d geselecteerd</string>
     <string name="MembersCountSelected_many">%1$d van %2$d geselecteerd</string>
     <string name="MembersCountSelected_other">%1$d van %2$d geselecteerd</string>
+    <string name="ViewReplies_zero">View %1$d Replies</string>
+    <string name="ViewReplies_one">View %1$d Reply</string>
+    <string name="ViewReplies_two">View %1$d Replies</string>
+    <string name="ViewReplies_few">View %1$d Replies</string>
+    <string name="ViewReplies_many">View %1$d Replies</string>
+    <string name="ViewReplies_other">View %1$d Replies</string>
+    <string name="Replies_zero">%1$d Replies</string>
+    <string name="Replies_one">%1$d Reply</string>
+    <string name="Replies_two">%1$d Replies</string>
+    <string name="Replies_few">%1$d Replies</string>
+    <string name="Replies_many">%1$d Replies</string>
+    <string name="Replies_other">%1$d Replies</string>
+    <string name="Comments_zero">%1$d Comments</string>
+    <string name="Comments_one">%1$d Comment</string>
+    <string name="Comments_two">%1$d Comments</string>
+    <string name="Comments_few">%1$d Comments</string>
+    <string name="Comments_many">%1$d Comments</string>
+    <string name="Comments_other">%1$d Comments</string>
     <!--accessibility descriptions-->
     <string name="AccDescrGroup">Groep</string>
     <string name="AccDescrChannel">Kanaal</string>
@@ -3644,11 +3733,12 @@
     <string name="AccDescrPipMode">Beeld-in-beeld-modus</string>
     <string name="AccDescrVoipMicOn">De microfoon staat aan</string>
     <string name="AccDescrVoipMicOff">De microfoon staat uit</string>
-    <string name="AccDescrVoipCamSwitchedToFront">Switched to front camera</string>
-    <string name="AccDescrVoipCamSwitchedToBack">Switched to rear camera</string>
+    <string name="AccDescrVoipCamSwitchedToFront">Overgeschakeld naar de voorcamera</string>
+    <string name="AccDescrVoipCamSwitchedToBack">Overgeschakeld naar de achtercamera</string>
     <string name="AccDescrVoipCamOn">De camera staat aan</string>
     <string name="AccDescrVoipCamOff">De camera staat uit</string>
     <!--date formatters-->
+    <string name="formatterMonthYear">MMMM yyyy</string>
     <string name="formatterStats12H">dd MMM yyyy, h:mm a</string>
     <string name="formatterStats24H">dd MMM yyyy, HH:mm</string>
     <string name="formatterBannedUntil12H">dd MMM yyyy, h:mm a</string>
@@ -3663,6 +3753,7 @@
     <string name="chatDate">d MMMM</string>
     <string name="chatFullDate">d MMMM yyyy</string>
     <string name="formatterWeek">EEE</string>
+    <string name="formatterWeekLong">EEEE</string>
     <string name="formatterDay24H">HH:mm</string>
     <string name="formatterDay12H">h:mm a</string>
     <string name="formatDateAtTime">%1$s om %2$s</string>
@@ -3674,4 +3765,5 @@
     <string name="RemindTodayAt">\'Herinner vandaag om HH:mm</string>
     <string name="RemindDayAt">\'Herinner op\' d MMM \'om\' HH:mm</string>
     <string name="RemindDayYearAt">\'Herinner op\' d MMM yyyy \'om\' HH:mm</string>
+    <string name="SearchTipToday">Today</string>
 </resources>

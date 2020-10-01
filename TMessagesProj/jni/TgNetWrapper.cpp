@@ -139,7 +139,7 @@ void cancelRequest(JNIEnv *env, jclass c, jint instanceNum, jint token, jboolean
 }
 
 void cleanUp(JNIEnv *env, jclass c, jint instanceNum, jboolean resetKeys) {
-    return ConnectionsManager::getInstance(instanceNum).cleanUp(resetKeys);
+    return ConnectionsManager::getInstance(instanceNum).cleanUp(resetKeys, -1);
 }
 
 void cancelRequestsForGuid(JNIEnv *env, jclass c, jint instanceNum, jint guid) {

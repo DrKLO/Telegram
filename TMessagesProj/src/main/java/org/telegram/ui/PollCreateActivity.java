@@ -168,12 +168,6 @@ public class PollCreateActivity extends BaseFragment {
     }
 
     @Override
-    public void onFragmentDestroy() {
-        super.onFragmentDestroy();
-        AndroidUtilities.removeAdjustResize(getParentActivity(), classGuid, true);
-    }
-
-    @Override
     public View createView(Context context) {
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
         if (quizOnly == 1) {
@@ -391,7 +385,7 @@ public class PollCreateActivity extends BaseFragment {
         if (listAdapter != null) {
             listAdapter.notifyDataSetChanged();
         }
-        AndroidUtilities.requestAdjustResize(getParentActivity(), classGuid, true);
+        AndroidUtilities.requestAdjustResize(getParentActivity(), classGuid);
     }
 
     private void showQuizHint() {

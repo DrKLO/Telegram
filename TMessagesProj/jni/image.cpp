@@ -4,9 +4,14 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#include <unistd.h>
 #include <android/bitmap.h>
-#include <libwebp/webp/decode.h>
-#include <libwebp/webp/encode.h>
+#include <string>
+#include <mozjpeg/java/org_libjpegturbo_turbojpeg_TJ.h>
+#include <mozjpeg/jpeglib.h>
+#include "libwebp/webp/decode.h"
+#include "libwebp/webp/encode.h"
+#include "mozjpeg/turbojpeg.h"
 #include "c_utils.h"
 
 extern "C" {
@@ -93,13 +98,13 @@ static void fastBlurMore(int32_t w, int32_t h, int32_t stride, uint8_t *pix, int
             x++; \
 
         while (x < r1) {
-            update (0, x, x + r1);
+            update (0, x, x + r1)
         }
         while (x < we) {
-            update (x - r1, x, x + r1);
+            update (x - r1, x, x + r1)
         }
         while (x < w) {
-            update (x - r1, x, w - 1);
+            update (x - r1, x, w - 1)
         }
 #undef update
 
@@ -130,13 +135,13 @@ static void fastBlurMore(int32_t w, int32_t h, int32_t stride, uint8_t *pix, int
             yi += stride;
 
         while (y < r1) {
-            update (0, y, y + r1);
+            update (0, y, y + r1)
         }
         while (y < he) {
-            update (y - r1, y, y + r1);
+            update (y - r1, y, y + r1)
         }
         while (y < h) {
-            update (y - r1, y, h - 1);
+            update (y - r1, y, h - 1)
         }
 #undef update
     }
@@ -196,13 +201,13 @@ static void fastBlur(int32_t w, int32_t h, int32_t stride, uint8_t *pix, int32_t
                 x++;                        \
 
         while (x < r1) {
-            update (0, x, x + r1);
+            update (0, x, x + r1)
         }
         while (x < we) {
-            update (x - r1, x, x + r1);
+            update (x - r1, x, x + r1)
         }
         while (x < w) {
-            update (x - r1, x, w - 1);
+            update (x - r1, x, w - 1)
         }
 
 #undef update
@@ -234,13 +239,13 @@ static void fastBlur(int32_t w, int32_t h, int32_t stride, uint8_t *pix, int32_t
                 yi += stride;
 
         while (y < r1) {
-            update (0, y, y + r1);
+            update (0, y, y + r1)
         }
         while (y < he) {
-            update (y - r1, y, y + r1);
+            update (y - r1, y, y + r1)
         }
         while (y < h) {
-            update (y - r1, y, h - 1);
+            update (y - r1, y, h - 1)
         }
 #undef update
     }
@@ -285,13 +290,13 @@ static void fastBlurMore565(int32_t w, int32_t h, int32_t stride, uint8_t *pix, 
             x++; \
 
         while (x < r1) {
-            update (0, x, x + r1);
+            update (0, x, x + r1)
         }
         while (x < we) {
-            update (x - r1, x, x + r1);
+            update (x - r1, x, x + r1)
         }
         while (x < w) {
-            update (x - r1, x, w - 1);
+            update (x - r1, x, w - 1)
         }
 #undef update
 
@@ -320,13 +325,13 @@ static void fastBlurMore565(int32_t w, int32_t h, int32_t stride, uint8_t *pix, 
             yi += stride;
 
         while (y < r1) {
-            update (0, y, y + r1);
+            update (0, y, y + r1)
         }
         while (y < he) {
-            update (y - r1, y, y + r1);
+            update (y - r1, y, y + r1)
         }
         while (y < h) {
-            update (y - r1, y, h - 1);
+            update (y - r1, y, h - 1)
         }
 #undef update
     }
@@ -386,13 +391,13 @@ static void fastBlur565(int32_t w, int32_t h, int32_t stride, uint8_t *pix, int3
                 x++;
 
         while (x < r1) {
-            update(0, x, x + r1);
+            update(0, x, x + r1)
         }
         while (x < we) {
-            update(x - r1, x, x + r1);
+            update(x - r1, x, x + r1)
         }
         while (x < w) {
-            update(x - r1, x, w - 1);
+            update(x - r1, x, w - 1)
         }
 
 #undef update
@@ -422,13 +427,13 @@ static void fastBlur565(int32_t w, int32_t h, int32_t stride, uint8_t *pix, int3
                 yi += stride;
 
         while (y < r1) {
-            update (0, y, y + r1);
+            update (0, y, y + r1)
         }
         while (y < he) {
-            update (y - r1, y, y + r1);
+            update (y - r1, y, y + r1)
         }
         while (y < h) {
-            update (y - r1, y, h - 1);
+            update (y - r1, y, h - 1)
         }
 #undef update
     }
@@ -436,7 +441,7 @@ static void fastBlur565(int32_t w, int32_t h, int32_t stride, uint8_t *pix, int3
     delete[] rgb;
 }
 
-int Java_org_telegram_messenger_Utilities_needInvert(JNIEnv *env, jclass clazz, jobject bitmap, jint unpin, jint width, jint height, jint stride) {
+JNIEXPORT int Java_org_telegram_messenger_Utilities_needInvert(JNIEnv *env, jclass clazz, jobject bitmap, jint unpin, jint width, jint height, jint stride) {
     if (!bitmap) {
         return 0;
     }
@@ -502,7 +507,7 @@ int Java_org_telegram_messenger_Utilities_needInvert(JNIEnv *env, jclass clazz, 
     return hasAlpha && matching / total > 0.85;
 }
 
-void Java_org_telegram_messenger_Utilities_blurBitmap(JNIEnv *env, jclass clazz, jobject bitmap, jint radius, jint unpin, jint width, jint height, jint stride) {
+JNIEXPORT void Java_org_telegram_messenger_Utilities_blurBitmap(JNIEnv *env, jclass clazz, jobject bitmap, jint radius, jint unpin, jint width, jint height, jint stride) {
     if (!bitmap) {
         return;
     }
@@ -536,7 +541,7 @@ void Java_org_telegram_messenger_Utilities_blurBitmap(JNIEnv *env, jclass clazz,
 const uint32_t PGPhotoEnhanceHistogramBins = 256;
 const uint32_t PGPhotoEnhanceSegments = 4;
 
-void Java_org_telegram_messenger_Utilities_calcCDT(JNIEnv *env, jclass clazz, jobject hsvBuffer, jint width, jint height, jobject buffer, jobject calcBuffer) {
+JNIEXPORT void Java_org_telegram_messenger_Utilities_calcCDT(JNIEnv *env, jclass clazz, jobject hsvBuffer, jint width, jint height, jobject buffer, jobject calcBuffer) {
     float imageWidth = width;
     float imageHeight = height;
     float _clipLimit = 1.25f;
@@ -628,7 +633,7 @@ void Java_org_telegram_messenger_Utilities_calcCDT(JNIEnv *env, jclass clazz, jo
     }
 }
 
-jint Java_org_telegram_messenger_Utilities_pinBitmap(JNIEnv *env, jclass clazz, jobject bitmap) {
+JNIEXPORT jint Java_org_telegram_messenger_Utilities_pinBitmap(JNIEnv *env, jclass clazz, jobject bitmap) {
     if (bitmap == nullptr) {
         return 0;
     }
@@ -636,14 +641,14 @@ jint Java_org_telegram_messenger_Utilities_pinBitmap(JNIEnv *env, jclass clazz, 
     return AndroidBitmap_lockPixels(env, bitmap, &pixels) >= 0 ? 1 : 0;
 }
 
-void Java_org_telegram_messenger_Utilities_unpinBitmap(JNIEnv *env, jclass clazz, jobject bitmap) {
+JNIEXPORT void Java_org_telegram_messenger_Utilities_unpinBitmap(JNIEnv *env, jclass clazz, jobject bitmap) {
     if (bitmap == NULL) {
         return;
     }
     AndroidBitmap_unlockPixels(env, bitmap);
 }
 
-jboolean Java_org_telegram_messenger_Utilities_loadWebpImage(JNIEnv *env, jclass clazz, jobject outputBitmap, jobject buffer, jint len, jobject options, jboolean unpin) {
+JNIEXPORT jboolean Java_org_telegram_messenger_Utilities_loadWebpImage(JNIEnv *env, jclass clazz, jobject outputBitmap, jobject buffer, jint len, jobject options, jboolean unpin) {
     if (!buffer) {
         env->ThrowNew(jclass_NullPointerException, "Input buffer can not be null");
         return 0;
@@ -701,7 +706,7 @@ inline static void zeroClearInt(int *p, size_t count) {
     memset(p, 0, sizeof(int) * count);
 }
 
-void Java_org_telegram_messenger_Utilities_stackBlurBitmap(JNIEnv *env, jclass clazz, jobject bitmap, jint radius) {
+JNIEXPORT void Java_org_telegram_messenger_Utilities_stackBlurBitmap(JNIEnv *env, jclass clazz, jobject bitmap, jint radius) {
     if (radius < 1) {
         return;
     }
@@ -954,7 +959,7 @@ void Java_org_telegram_messenger_Utilities_stackBlurBitmap(JNIEnv *env, jclass c
     AndroidBitmap_unlockPixels(env, bitmap);
 }
 
-void Java_org_telegram_messenger_Utilities_drawDitheredGradient(JNIEnv *env, jclass clazz, jobject bitmap, jintArray colors, jint startX, jint startY, jint endX, jint endY) {
+JNIEXPORT void Java_org_telegram_messenger_Utilities_drawDitheredGradient(JNIEnv *env, jclass clazz, jobject bitmap, jintArray colors, jint startX, jint startY, jint endX, jint endY) {
     AndroidBitmapInfo info;
     void *pixelsBuffer;
     int reason;
@@ -1055,6 +1060,110 @@ void Java_org_telegram_messenger_Utilities_drawDitheredGradient(JNIEnv *env, jcl
         env->ThrowNew(jclass_RuntimeException, "AndroidBitmap_unlockPixels failed with a reason: " + reason);
         return;
     }
+}
+
+JNIEXPORT jint Java_org_telegram_messenger_Utilities_saveProgressiveJpeg(JNIEnv *env, jclass clazz, jobject bitmap, jint width, jint height, jint stride, jint quality, jstring path) {
+    if (!bitmap || !path || !width || !height || !stride || stride != width * 4) {
+        return 0;
+    }
+    void *pixels = 0;
+    if (AndroidBitmap_lockPixels(env, bitmap, &pixels) < 0) {
+        return 0;
+    }
+    if (pixels == NULL) {
+        return 0;
+    }
+    tjhandle handle = 0;
+    if ((handle = tjInitCompress()) == NULL) {
+        return 0;
+    }
+    const char *pathStr = env->GetStringUTFChars(path, 0);
+    std::string filePath = std::string(pathStr);
+    if (pathStr != 0) {
+        env->ReleaseStringUTFChars(path, pathStr);
+    }
+
+    const char *enabledValue = "1";
+    const char *disabledValue = "0";
+    setenv("TJ_OPTIMIZE", enabledValue, 1);
+    setenv("TJ_ARITHMETIC", disabledValue, 1);
+    setenv("TJ_PROGRESSIVE", enabledValue, 1);
+    setenv("TJ_REVERT", enabledValue, 1);
+
+    TJSAMP jpegSubsamp = TJSAMP::TJSAMP_420;
+    jint buffSize = (jint) tjBufSize(width, height, jpegSubsamp);
+    unsigned char *jpegBuf = new unsigned char[buffSize];
+    unsigned char *srcBuf = (unsigned char *) pixels;
+
+    int pf = org_libjpegturbo_turbojpeg_TJ_PF_RGBA;
+
+    jsize actualPitch = width * tjPixelSize[pf];
+    jsize arraySize = (height - 1) * actualPitch + (width) * tjPixelSize[pf];
+    unsigned long jpegSize = tjBufSize(width, height, jpegSubsamp);
+
+    if (tjCompress2(handle, srcBuf, width, stride, height, pf, &jpegBuf, &jpegSize, jpegSubsamp, quality, TJFLAG_ACCURATEDCT | TJFLAG_PROGRESSIVE | TJFLAG_NOREALLOC) == 0) {
+        FILE *f = fopen(filePath.c_str(), "wb");
+        if (f && fwrite(jpegBuf, sizeof(unsigned char), jpegSize, f) == jpegSize) {
+            fflush(f);
+            fsync(fileno(f));
+        } else {
+            jpegSize = -1;
+        }
+        fclose(f);
+    } else {
+        jpegSize = -1;
+    }
+    delete[] jpegBuf;
+    tjDestroy(handle);
+    AndroidBitmap_unlockPixels(env, bitmap);
+    return jpegSize;
+
+    /*struct jpeg_compress_struct cinfo;
+    struct jpeg_error_mgr jerr;
+    cinfo.err = jpeg_std_error(&jerr);
+    jpeg_create_compress(&cinfo);
+
+    const char *pathStr = env->GetStringUTFChars(path, 0);
+    std::string filePath = std::string(pathStr);
+    if (pathStr != 0) {
+        env->ReleaseStringUTFChars(path, pathStr);
+    }
+
+    uint8_t *outBuffer = NULL;
+    unsigned long outSize = 0;
+    jpeg_mem_dest(&cinfo, &outBuffer, &outSize);
+    unsigned char *srcBuf = (unsigned char *) pixels;
+
+    cinfo.image_width = (uint32_t) width;
+    cinfo.image_height = (uint32_t) height;
+    cinfo.input_components = 4;
+    cinfo.in_color_space = JCS_EXT_RGBA;
+    jpeg_c_set_int_param(&cinfo, JINT_COMPRESS_PROFILE, JCP_FASTEST);
+    jpeg_set_defaults(&cinfo);
+    cinfo.arith_code = FALSE;
+    cinfo.dct_method = JDCT_ISLOW;
+    cinfo.optimize_coding = TRUE;
+    jpeg_set_quality(&cinfo, 78, 1);
+    jpeg_simple_progression(&cinfo);
+    jpeg_start_compress(&cinfo, 1);
+
+    JSAMPROW rowPointer[1];
+    while (cinfo.next_scanline < cinfo.image_height) {
+        rowPointer[0] = (JSAMPROW) (srcBuf + cinfo.next_scanline * stride);
+        jpeg_write_scanlines(&cinfo, rowPointer, 1);
+    }
+
+    jpeg_finish_compress(&cinfo);
+
+    FILE *f = fopen(filePath.c_str(), "wb");
+    if (f && fwrite(outBuffer, sizeof(uint8_t), outSize, f) == outSize) {
+        fflush(f);
+        fsync(fileno(f));
+    }
+    fclose(f);
+
+    jpeg_destroy_compress(&cinfo);
+    return outSize;*/
 }
 
 }

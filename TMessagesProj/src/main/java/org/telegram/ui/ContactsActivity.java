@@ -131,6 +131,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
     private SparseArray<TLRPC.User> ignoreUsers;
     private boolean allowUsernameSearch = true;
     private ContactsActivityDelegate delegate;
+    private String initialSearchString;
 
     private AlertDialog permissionDialog;
     private boolean askAboutContacts = true;
@@ -611,6 +612,11 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
             floatingButtonContainer.addView(floatingButton, LayoutHelper.createFrame((Build.VERSION.SDK_INT >= 21 ? 56 : 60), (Build.VERSION.SDK_INT >= 21 ? 56 : 60), Gravity.LEFT | Gravity.TOP, 10, 0, 10, 0));
         }
 
+        if (initialSearchString != null) {
+            actionBar.openSearchField(initialSearchString, false);
+            initialSearchString = null;
+        }
+
         return fragmentView;
     }
 
@@ -902,6 +908,10 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
 
     public void setIgnoreUsers(SparseArray<TLRPC.User> users) {
         ignoreUsers = users;
+    }
+
+    public void setInitialSearchString(String initialSearchString) {
+        this.initialSearchString = initialSearchString;
     }
 
     @Override

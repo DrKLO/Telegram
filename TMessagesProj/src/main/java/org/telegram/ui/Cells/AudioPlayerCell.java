@@ -11,13 +11,20 @@ package org.telegram.ui.Cells;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Canvas;
+import android.graphics.Paint;
 import android.text.Layout;
+import android.text.SpannableStringBuilder;
 import android.text.StaticLayout;
+import android.text.TextPaint;
 import android.text.TextUtils;
+import android.text.style.ReplacementSpan;
 import android.view.MotionEvent;
 import android.view.SoundEffectConstants;
 import android.view.View;
 import android.view.accessibility.AccessibilityNodeInfo;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.DownloadController;
@@ -34,6 +41,7 @@ import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.MediaActionDrawable;
 import org.telegram.ui.Components.RadialProgress2;
+import org.telegram.ui.FilteredSearchView;
 
 import java.io.File;
 
@@ -59,13 +67,44 @@ public class AudioPlayerCell extends View implements DownloadController.FileDown
     private int miniButtonState;
     private RadialProgress2 radialProgress;
 
-    public AudioPlayerCell(Context context) {
+    private int viewType;
+
+    public final static int VIEW_TYPE_DEFAULT = 0;
+    public final static int VIEW_TYPE_GLOBAL_SEARCH = 1;
+
+    private SpannableStringBuilder dotSpan;
+
+    public AudioPlayerCell(Context context, int viewType) {
         super(context);
+        this.viewType = viewType;
 
         radialProgress = new RadialProgress2(this);
         radialProgress.setColors(Theme.key_chat_inLoader, Theme.key_chat_inLoaderSelected, Theme.key_chat_inMediaIcon, Theme.key_chat_inMediaIconSelected);
         TAG = DownloadController.getInstance(currentAccount).generateObserverTag();
         setFocusable(true);
+
+        if (viewType == VIEW_TYPE_GLOBAL_SEARCH) {
+            dotSpan = new SpannableStringBuilder(".");
+            dotSpan.setSpan(new ReplacementSpan() {
+
+                Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
+                int color;
+
+                @Override
+                public int getSize(@NonNull Paint paint, CharSequence charSequence, int i, int i1, @Nullable Paint.FontMetricsInt fontMetricsInt) {
+                    return AndroidUtilities.dp(3);
+                }
+
+                @Override
+                public void draw(@NonNull Canvas canvas, CharSequence text, int start, int end, float x, int top, int y, int bottom, @NonNull Paint paint) {
+                    if (color != paint.getColor()) {
+                        p.setColor(paint.getColor());
+                    }
+                    float radius = AndroidUtilities.dpf2(3) / 2f;
+                    canvas.drawCircle(x + radius, (bottom - top) / 2, radius, p);
+                }
+            }, 0, 1, 0);
+        }
     }
 
     @SuppressLint("DrawAllocation")
@@ -87,9 +126,11 @@ public class AudioPlayerCell extends View implements DownloadController.FileDown
         }
 
         try {
-            String author = currentMessageObject.getMusicAuthor();
-            int width = (int) Math.ceil(Theme.chat_contextResult_descriptionTextPaint.measureText(author));
-            CharSequence authorFinal = TextUtils.ellipsize(author.replace('\n', ' '), Theme.chat_contextResult_descriptionTextPaint, Math.min(width, maxWidth), TextUtils.TruncateAt.END);
+            CharSequence author = currentMessageObject.getMusicAuthor().replace('\n', ' ');
+            if (viewType == VIEW_TYPE_GLOBAL_SEARCH) {
+                author = new SpannableStringBuilder(author).append(' ').append(dotSpan).append(' ').append(FilteredSearchView.createFromInfoString(currentMessageObject));
+            }
+            CharSequence authorFinal = TextUtils.ellipsize(author, Theme.chat_contextResult_descriptionTextPaint, maxWidth, TextUtils.TruncateAt.END);
             descriptionLayout = new StaticLayout(authorFinal, Theme.chat_contextResult_descriptionTextPaint, maxWidth + AndroidUtilities.dp(4), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
         } catch (Exception e) {
             FileLog.e(e);
@@ -106,7 +147,7 @@ public class AudioPlayerCell extends View implements DownloadController.FileDown
         currentMessageObject = messageObject;
         TLRPC.Document document = messageObject.getDocument();
         TLRPC.PhotoSize thumb = document != null ? FileLoader.getClosestPhotoSizeWithSize(document.thumbs, 90) : null;
-        if (thumb instanceof TLRPC.TL_photoSize) {
+        if (thumb instanceof TLRPC.TL_photoSize || thumb instanceof TLRPC.TL_photoSizeProgressive) {
             radialProgress.setImageOverlay(thumb, document, messageObject);
         } else {
             String artworkUrl = messageObject.getArtworkUrl(true);

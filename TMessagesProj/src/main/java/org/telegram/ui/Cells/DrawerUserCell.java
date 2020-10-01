@@ -20,6 +20,7 @@ import android.widget.TextView;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.ImageLocation;
+import org.telegram.messenger.MessagesStorage;
 import org.telegram.messenger.NotificationsController;
 import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.TLRPC;
@@ -103,7 +104,7 @@ public class DrawerUserCell extends FrameLayout {
         if (UserConfig.getActivatedAccountsCount() <= 1 || !NotificationsController.getInstance(accountNumber).showBadgeNumber) {
             return;
         }
-        int counter = NotificationsController.getInstance(accountNumber).getTotalUnreadCount();
+        int counter = MessagesStorage.getInstance(accountNumber).getMainUnreadCount();
         if (counter <= 0) {
             return;
         }

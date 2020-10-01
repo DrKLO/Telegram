@@ -23,6 +23,7 @@ public class PathAnimator {
     private float scale;
     private float tx;
     private float ty;
+    private float durationScale;
     private ArrayList<KeyFrame> keyFrames = new ArrayList<>();
 
     private static class KeyFrame {
@@ -49,10 +50,15 @@ public class PathAnimator {
         public float y2;
     }
 
-    public PathAnimator(float sc, float x, float y) {
+    public PathAnimator(float sc, float x, float y, float dsc) {
         scale = sc;
         tx = x;
         ty = y;
+        durationScale = dsc;
+    }
+
+    public float getDurationScale() {
+        return durationScale;
     }
 
     public void addSvgKeyFrame(String svg, float ms) {
@@ -61,7 +67,7 @@ public class PathAnimator {
         }
         try {
             KeyFrame keyFrame = new KeyFrame();
-            keyFrame.time = ms;
+            keyFrame.time = ms * durationScale;
             String[] args = svg.split(" ");
             for (int a = 0; a < args.length; a++) {
                 switch (args[a].charAt(0)) {

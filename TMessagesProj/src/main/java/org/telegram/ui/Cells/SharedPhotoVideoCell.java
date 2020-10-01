@@ -53,6 +53,11 @@ public class SharedPhotoVideoCell extends FrameLayout {
     private boolean ignoreLayout;
     private Paint backgroundPaint = new Paint();
 
+    public final static int VIEW_TYPE_DEFAULT = 0;
+    public final static int VIEW_TYPE_GLOBAL_SEARCH = 1;
+
+    private int type;
+
     private int currentAccount = UserConfig.selectedAccount;
 
     public interface SharedPhotoVideoCellDelegate {
@@ -235,7 +240,11 @@ public class SharedPhotoVideoCell extends FrameLayout {
     }
 
     public SharedPhotoVideoCell(Context context) {
+        this(context, VIEW_TYPE_DEFAULT);
+    }
+    public SharedPhotoVideoCell(Context context, int type) {
         super(context);
+        this.type = type;
 
         backgroundPaint.setColor(Theme.getColor(Theme.key_sharedMedia_photoPlaceholder));
         messageObjects = new MessageObject[6];
@@ -344,7 +353,12 @@ public class SharedPhotoVideoCell extends FrameLayout {
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        final int itemWidth = getItemSize(itemsCount);
+        int itemWidth;
+        if (type == VIEW_TYPE_GLOBAL_SEARCH) {
+            itemWidth = (MeasureSpec.getSize(widthMeasureSpec) - (itemsCount - 1) * AndroidUtilities.dp(2)) / itemsCount;
+        } else {
+            itemWidth = getItemSize(itemsCount);
+        }
 
         ignoreLayout = true;
         for (int a = 0; a < itemsCount; a++) {

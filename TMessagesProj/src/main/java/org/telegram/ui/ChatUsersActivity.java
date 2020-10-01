@@ -868,10 +868,13 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
                     rank = channelParticipant.rank;
                     canEditAdmin = !(channelParticipant instanceof TLRPC.TL_channelParticipantAdmin || channelParticipant instanceof TLRPC.TL_channelParticipantCreator) || channelParticipant.can_edit;
                     if (participant instanceof TLRPC.TL_channelParticipantCreator) {
-                        adminRights = new TLRPC.TL_chatAdminRights();
-                        adminRights.change_info = adminRights.post_messages = adminRights.edit_messages =
-                        adminRights.delete_messages = adminRights.ban_users = adminRights.invite_users =
-                        adminRights.pin_messages = adminRights.add_admins = true;
+                        adminRights = ((TLRPC.TL_channelParticipantCreator) participant).admin_rights;
+                        if (adminRights == null) {
+                            adminRights = new TLRPC.TL_chatAdminRights();
+                            adminRights.change_info = adminRights.post_messages = adminRights.edit_messages =
+                            adminRights.delete_messages = adminRights.ban_users = adminRights.invite_users =
+                            adminRights.pin_messages = adminRights.add_admins = true;
+                        }
                     }
                 } else if (participant instanceof TLRPC.ChatParticipant) {
                     TLRPC.ChatParticipant chatParticipant = (TLRPC.ChatParticipant) participant;
@@ -1064,8 +1067,8 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
                 admin.date = (int) (System.currentTimeMillis() / 1000);
                 admin.admin_rights = new TLRPC.TL_chatAdminRights();
                 admin.admin_rights.change_info = admin.admin_rights.post_messages = admin.admin_rights.edit_messages =
-                        admin.admin_rights.delete_messages = admin.admin_rights.ban_users = admin.admin_rights.invite_users =
-                                admin.admin_rights.pin_messages = admin.admin_rights.add_admins = true;
+                admin.admin_rights.delete_messages = admin.admin_rights.ban_users = admin.admin_rights.invite_users =
+                admin.admin_rights.pin_messages = admin.admin_rights.add_admins = true;
                 map.put(selfUserId, admin);
 
                 int index = arrayList.indexOf(object);
@@ -2472,13 +2475,13 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
 
         @Override
         public boolean isEnabled(RecyclerView.ViewHolder holder) {
-            int type = holder.getItemViewType();
-            if (type == 7) {
+            int viewType = holder.getItemViewType();
+            if (viewType == 7) {
                 return ChatObject.canBlockUsers(currentChat);
-            } else if (type == 0) {
+            } else if (viewType == 0) {
                 ManageChatUserCell cell = (ManageChatUserCell) holder.itemView;
-                TLObject object = cell.getCurrentObject();
-                if (object instanceof TLRPC.User) {
+                Object object = cell.getCurrentObject();
+                if (type != TYPE_ADMIN && object instanceof TLRPC.User) {
                     TLRPC.User user = (TLRPC.User) object;
                     if (user.self) {
                         return false;
@@ -2486,7 +2489,7 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
                 }
                 return true;
             }
-            return type == 0 || type == 2 || type == 6;
+            return viewType == 0 || viewType == 2 || viewType == 6;
         }
 
         @Override
@@ -2578,7 +2581,7 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
                     view = new GraySectionCell(mContext);
                     break;
                 case 10:
-                    view = new LoadingCell(mContext,AndroidUtilities.dp(40), AndroidUtilities.dp(120));
+                    view = new LoadingCell(mContext, AndroidUtilities.dp(40), AndroidUtilities.dp(120));
                     break;
                 case 9:
                 default:

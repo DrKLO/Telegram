@@ -57,7 +57,7 @@ public class StickerSetBulletinLayout extends Bulletin.TwoLineLayout {
 
         if (sticker != null) {
             TLObject object;
-            if (stickerSet.thumb instanceof TLRPC.TL_photoSize) {
+            if (stickerSet.thumb instanceof TLRPC.TL_photoSize || stickerSet.thumb instanceof TLRPC.TL_photoSizeProgressive) {
                 object = stickerSet.thumb;
             } else {
                 object = sticker;

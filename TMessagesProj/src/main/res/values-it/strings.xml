@@ -86,7 +86,7 @@
     <string name="PaymentTransactionMessage">Vuoi davvero trasferire %1$s al bot %2$s per %3$s?</string>
     <string name="PaymentTransactionTotal">Totale</string>
     <string name="PaymentInvoice">FATTURA</string>
-    <string name="PaymentTestInvoice">FATTURA DI TEST</string>
+    <string name="PaymentTestInvoice">FATTURA DI PROVA</string>
     <string name="PaymentCheckoutPay">PAGA %1$s</string>
     <string name="PaymentCheckoutMethod">Metodo di pagamento</string>
     <string name="PaymentCheckoutProvider">Fornitore del pagamento</string>
@@ -181,7 +181,7 @@
     <string name="MuteFor">Silenzia per %1$s</string>
     <string name="UnmuteNotifications">Suona</string>
     <string name="WillUnmuteIn">Tra %1$s</string>
-    <string name="MuteDisable">Disattiva</string>
+    <string name="MuteDisable">Silenzia per sempre</string>
     <string name="Hashtags">HASHTAG</string>
     <string name="Recent">Recenti</string>
     <string name="ChatHints">Persone</string>
@@ -226,6 +226,28 @@
     <string name="HideNewChatsAlertTitle">Nascondere le nuove chat?</string>
     <string name="HideNewChatsAlertText">Stai ricevendo molte nuove chat da utenti che non sono tra i tuoi contatti. Vuoi che queste chat siano **automaticamente silenziate** e **archiviate**?</string>
     <string name="GoToSettings">VAI ALLE IMPOSTAZIONI</string>
+    <string name="OpenProfile">Apri profilo</string>
+    <string name="OpenChannel2">Apri canale</string>
+    <string name="SendMessage">Invia messaggio</string>
+    <string name="Mention">Menziona</string>
+    <string name="NotificationsMutedHint">Notifiche silenziate</string>
+    <string name="NotificationsMutedForHint">Notifiche silenziate per %1$s</string>
+    <string name="NotificationsUnmutedHint">Notifiche attivate</string>
+    <string name="MessagesDeletedHint_zero">%1$d messaggi eliminati</string>
+    <string name="MessagesDeletedHint_one">Messaggio eliminato</string>
+    <string name="MessagesDeletedHint_two">%1$d messaggi eliminati</string>
+    <string name="MessagesDeletedHint_few">%1$d messaggi eliminati</string>
+    <string name="MessagesDeletedHint_many">%1$d messaggi eliminati</string>
+    <string name="MessagesDeletedHint_other">%1$d messaggi eliminati</string>
+    <string name="SearchEmptyViewTitle">Nessun risultato</string>
+    <string name="SearchEmptyViewTitle2">Nessun risultato</string>
+    <string name="SearchEmptyViewFilteredSubtitle2">Prova una nuova ricerca.</string>
+    <string name="SearchEmptyViewFilteredSubtitleMusic">Musica</string>
+    <string name="SearchEmptyViewFilteredSubtitleFiles">File</string>
+    <string name="SearchEmptyViewFilteredSubtitleLinks">Link</string>
+    <string name="SearchEmptyViewFilteredSubtitleVoice">Vocali</string>
+    <string name="SearchEmptyViewFilteredSubtitleMedia">Media</string>
+    <string name="SearchAllChatsShort">Chat</string>
     <!--channels-->
     <string name="SetAsAdmin">Rendi amministratore</string>
     <string name="EditAdminRights">Modifica permessi amministratore</string>
@@ -364,6 +386,7 @@
     <string name="ChannelAdminsInfo">Puoi aggiungere amministratori per farti aiutare a gestire il tuo canale. Tieni premuto per rimuovere gli amministratori.</string>
     <string name="ChannelJoinTo">Vuoi unirti al canale \'%1$s\'?</string>
     <string name="ChannelCantOpenPrivate">Spiacenti, questa chat non è più accessibile.</string>
+    <string name="ChannelCantOpenBannedByAdmin">Spiacenti, non puoi accedere a questa chat perché sei stato rimosso da un amministratore.</string>
     <string name="ChannelCantOpenBanned">Sfortunatamente, non ti è permesso partecipare ai gruppi pubblici.</string>
     <string name="ChannelCantOpenNa">Spiacenti, questa chat non è più accessibile.</string>
     <string name="ChannelAddTo">Aggiungere %1$s al canale?</string>
@@ -418,6 +441,7 @@
     <string name="EditAdminDeleteMessages">Eliminare messaggi altrui</string>
     <string name="EditAdminGroupDeleteMessages">Eliminare messaggi</string>
     <string name="EditAdminAddAdmins">Aggiungere amministratori</string>
+    <string name="EditAdminSendAnonymously">Invia anonimamente</string>
     <string name="EditAdminRemoveAdmin">Rimuovi amministratore</string>
     <string name="EditAdminGroupTransfer">Trasferisci proprietà gruppo</string>
     <string name="EditAdminChannelTransfer">Trasferisci proprietà canale</string>
@@ -508,11 +532,12 @@
     <string name="MakeAdmin">RENDI AMMINISTRATORE</string>
     <string name="AdminWillBeRemoved">%1$s sarà rimosso dagli amministratori se lo limiti.</string>
     <string name="Discussion">Discussione</string>
+    <string name="ViewDiscussion">Visualizza discussione</string>
     <string name="DiscussionInfo">Aggiungi una chat di gruppo per i commenti</string>
     <string name="LinkedChannel">Canale collegato</string>
-    <string name="DiscussionChannelHelp">Seleziona una chat di gruppo per la discussione che sarà mostrata nel tuo canale.</string>
+    <string name="DiscussionChannelHelp3">Seleziona una chat di gruppo che ospiterà i commenti dal tuo canale.</string>
     <string name="DiscussionChannelHelp2">Tutto ciò che pubblichi nel canale verrà inoltrato in questo gruppo.</string>
-    <string name="DiscussionChannelGroupSetHelp">A tutti gli iscritti viene mostrato un link a **%1$s** nel pannello inferiore.</string>
+    <string name="DiscussionChannelGroupSetHelp2">**%1$s** è il gruppo che sarà usato per ospitare i commenti per il tuo canale.</string>
     <string name="DiscussionGroupHelp">Il gruppo è collegato come chat di discussione di **%1$s**.</string>
     <string name="DiscussionGroupHelp2">Tutti i nuovi messaggi pubblicati in questo canale sono inoltrati nel gruppo.</string>
     <string name="DiscussionCreateGroup">Crea un nuovo gruppo</string>
@@ -687,6 +712,7 @@
     <string name="EventLogPromotedEditMessages">Modificare messaggi</string>
     <string name="EventLogPromotedDeleteMessages">Eliminare messaggi</string>
     <string name="EventLogPromotedAddAdmins">Aggiungere amministratori</string>
+    <string name="EventLogPromotedSendAnonymously">Invia anonimamente</string>
     <string name="EventLogPromotedBanUsers">Bloccare utenti</string>
     <string name="EventLogPromotedAddUsers">Aggiungere utenti</string>
     <string name="EventLogPromotedTitle">Titolo: %1$s</string>
@@ -856,6 +882,7 @@
     <string name="AddContactFullChat">AGGIUNGI %1$s AI CONTATTI</string>
     <string name="ViewContact">VISUALIZZA CONTATTO</string>
     <string name="BlockUserAlert">Vuoi impedire a **%1$s** di scriverti e chiamarti su Telegram?</string>
+    <string name="BlockUserReplyAlert">Vuoi bloccare i messaggi da **%1$s**?</string>
     <string name="ReportSpamAlert">Sei sicuro di voler segnalare questo utente come spam?</string>
     <string name="ReportSpamAlertGroup">Sei sicuro di voler segnalare questo gruppo come spam?</string>
     <string name="ReportSpamAlertChannel">Sei sicuro di voler segnalare questo canale come spam?</string>
@@ -1014,6 +1041,25 @@
     <string name="SecretChatTimerMinutes">m</string>
     <string name="SecretChatTimerHours">h</string>
     <string name="SecretChatTimerWeeks">S</string>
+    <string name="SharedToPrivateMessagesAndGroups">to private messages and groups</string>
+
+    <string name="BotOwnershipTransfer">Trasferisci proprietà bot</string>
+    <string name="BotOwnershipTransferReadyAlertText">Questo trasferirà tutti i **diritti di proprietà** per il bot all\'utente selezionato.</string>
+    <string name="BotOwnershipTransferChangeOwner">Cambia proprietario</string>
+    <string name="BotOwnershipTransferAlertText">Puoi trasferire il bot solo se hai:</string>
+    <string name="LeaveAComment">Lascia un commento</string>
+    <string name="CommentsTitle">Commenti</string>
+    <string name="Comment">Commenta</string>
+    <string name="RepliesTitle">Risposte</string>
+    <string name="NoComments">Ancora nessun commento qui...</string>
+    <string name="NoReplies">Ancora nessuna risposta qui...</string>
+    <string name="ViewInChat">Visualizza in chat</string>
+    <string name="SendAnonymously">Invia anonimamente</string>
+    <string name="DiscussionStarted">Discussione iniziata</string>
+    <string name="ViewThread">Visualizza thread</string>
+    <string name="ChooseDate">Scegli data</string>
+    <string name="RepliesChatInfo">Questa chat ti aiuta a tenere traccia delle risposte ai tuoi commenti nei canali.</string>
+    <string name="ChannelPostDeleted">Sorry, this post has been removed from the discussion group.</string>
     <!--notification-->
     <string name="MessageLifetimeChanged">%1$s ha impostato il timer di autodistruzione a %2$s</string>
     <string name="MessageLifetimeChangedOutgoing">Hai impostato il timer di autodistruzione a %1$s</string>
@@ -1165,6 +1211,10 @@
     <string name="SortedByLastSeen">Ordinati per ultimo accesso</string>
     <string name="AddContactByPhone">Aggiungi %1$s</string>
     <string name="PhoneNumberSearch">Numero di telefono</string>
+    <string name="NoContactsYet">Non hai ancora contatti su Telegram</string>
+    <string name="NoContactsYetLine1">Invita gli amici a provare Telegram</string>
+    <string name="NoContactsYetLine2">Trova persone nelle vicinanze con cui messaggiare</string>
+    <string name="NoContactsYetLine3">Cerca persone tramite username</string>
     <!--group create view-->
     <string name="SendMessageTo">Aggiungi persone...</string>
     <string name="SoftUserLimitAlert">Potrai aggiungere altri membri dopo aver creato il gruppo.</string>
@@ -1224,6 +1274,8 @@
     <string name="ContactNotRegisteredTitle">Invita su Telegram</string>
     <string name="ContactNotRegistered">%1$s non si è ancora unito a Telegram, vuoi invitarlo a unirsi?</string>
     <string name="Invite">Invita</string>
+    <string name="Block">BLOCCA</string>
+    <string name="BlockAndDeleteReplies">BLOCCA E ELIMINA RISPOSTE</string>
     <string name="BlockContact">Blocca utente</string>
     <string name="BlockUser">Blocca utente</string>
     <string name="BlockUsers">Blocca utenti</string>
@@ -2232,8 +2284,8 @@
     <string name="SharedMediaTabFull2">Media condivisi</string>
     <string name="SharedGroupsTab2">Gruppi</string>
     <string name="SharedLinksTab2">Link</string>
-    <string name="SharedMusicTab2">Audio</string>
-    <string name="SharedVoiceTab2">Messaggi vocali</string>
+    <string name="SharedMusicTab2">Musica</string>
+    <string name="SharedVoiceTab2">Vocali</string>
     <string name="SharedGIFsTab2">GIF</string>
     <string name="DocumentsTitle">File condivisi</string>
     <string name="SharedContentTitle">Contenuto condiviso</string>
@@ -2424,6 +2476,8 @@
     <string name="MainChannelProfileVideoSetHint">Questo è ora il video principale del canale.</string>
     <string name="MainGroupProfilePhotoSetHint">Questa è ora la foto principale del gruppo.</string>
     <string name="MainGroupProfileVideoSetHint">Questo è ora il video principale del gruppo.</string>
+    <string name="PhotoSavedHint">Foto salvata nella galleria</string>
+    <string name="VideoSavedHint">Video salvato nella galleria</string>
     <!--password view-->
     <string name="TwoStepVerification">Verifica in due passaggi</string>
     <string name="TwoStepVerificationTitle">Verifica in due passaggi</string>
@@ -2438,7 +2492,7 @@
     <string name="PasswordOn">Sì</string>
     <string name="PasswordOff">No</string>
     <string name="PleaseEnterCurrentPassword">Inserisci la tua password</string>
-    <string name="PleaseEnterCurrentPasswordTransfer">Per favore inserisci la password per completare il trasferimento.</string>
+    <string name="PleaseEnterCurrentPasswordTransfer">Per favore inserisci la tua password per completare il trasferimento.</string>
     <string name="PleaseEnterFirstPassword">Inserisci una password</string>
     <string name="PleaseEnterNewFirstPassword">Inserisci una nuova password</string>
     <string name="PleaseEnterPassword">Inserisci la tua nuova password</string>
@@ -2521,7 +2575,7 @@
     <string name="BytesSent">Byte inviati</string>
     <string name="BytesReceived">Byte ricevuti</string>
     <string name="FilesDataUsage">File</string>
-    <string name="CallsDataUsage">Impostazioni chiamata</string>
+    <string name="CallsDataUsage">Chiamate</string>
     <string name="OutgoingCalls">Chiamate in uscita</string>
     <string name="IncomingCalls">Chiamata in entrata</string>
     <string name="CallsTotalTime">Tempo totale</string>
@@ -2612,7 +2666,7 @@
     <string name="InviteToGroupError">Spiacenti, non puoi aggiungere questo utente al gruppo a causa delle sue impostazioni di privacy.</string>
     <string name="InviteToChannelError">Spiacenti, non puoi aggiungere questo utente al canale a causa delle sue impostazioni di privacy.</string>
     <string name="CreateGroupError">Spiacenti, non puoi creare un gruppo con questi utenti a causa delle loro impostazioni di privacy.</string>
-    <string name="PrivacyCallsP2PHelp">Disattivando il peer-to-peer, tutte le chiamate saranno inviate tramite i server di Telegram per evitare di rivelare l\'indirizzo IP, ma la qualità audio diminuirà leggermente.</string>
+    <string name="PrivacyCallsP2PHelp">Disattivando il peer-to-peer, tutte le chiamate saranno inviate tramite i server di Telegram per evitare di rivelare l\'indirizzo IP, ma la qualità audio e video potrebbe diminuire leggermente.</string>
     <string name="SyncContactsDelete">Elimina i contatti sincronizzati</string>
     <string name="SuggestContacts">Suggerisci contatti frequenti</string>
     <string name="SuggestContactsInfo">Visualizza le persone che contatti di frequente nella parte superiore della sezione di ricerca per un accesso rapido.</string>
@@ -2650,7 +2704,7 @@
     <string name="Edit">Modifica</string>
     <string name="Send">Invia</string>
     <string name="Call">Chiama</string>
-    <string name="VideoCall">Videochiamata</string>
+    <string name="VideoCall">Videochiama</string>
     <string name="Copy">Copia</string>
     <string name="Delete">Elimina</string>
     <string name="Start">Avvia</string>
@@ -2858,7 +2912,7 @@
     <string name="JoinGroup">UNISCITI AL GRUPPO</string>
     <string name="AddAdminErrorNotAMember">Spiacenti, non puoi aggiungere questo utente come amministratore perché non è un membro del gruppo e non sei autorizzato ad aggiungerlo.</string>
     <string name="AddAdminErrorBlacklisted">Spiacenti, non puoi aggiungere questo utente come amministratore perché è bloccato e non puoi sbloccarlo.</string>
-    <string name="AddUserErrorBlacklisted">Spiacenti, non puoi aggiungere questo utente perché è nella lista degli utenti bloccati e non lo puoi sbloccare.</string>
+    <string name="AddUserErrorBlacklisted">Spiacenti, non puoi aggiungere questo utente perché è nella lista degli utenti rimossi e non lo puoi sbloccare.</string>
     <string name="AddBannedErrorAdmin">Spiacenti, non puoi bloccare questo utente perché è un amministratore in questo gruppo e non sei autorizzato a degradarlo.</string>
     <string name="ErrorSendRestrictedStickers">Spiacenti, gli amministratori di questo gruppo ti hanno vietato di inviare sticker.</string>
     <string name="ErrorSendRestrictedMedia">Spiacenti, gli amministratori di questo gruppo ti hanno vietato di inviare media.</string>
@@ -2986,10 +3040,10 @@
     <string name="VoipInCallBranding">Chiamata Telegram</string>
     <string name="VoipInVideoCallBranding">Videochiamata Telegram</string>
     <string name="VoipOutgoingCall">Chiamata Telegram in corso</string>
-    <string name="VoipEndCall">Termina chiamata</string>
+    <string name="VoipEndCall">Termina</string>
     <string name="VoipOngoingAlertTitle">Altra chiamata in corso</string>
     <string name="VoipOngoingAlert">Al momento hai una chiamata in corso con **%1$s**. Vuoi riagganciare e iniziarne una nuova con **%2$s**?</string>
-    <string name="VoipNotificationSettings">Chiamate vocali</string>
+    <string name="VoipNotificationSettings">Chiamate</string>
     <string name="VoipSettingsRingtone">Suoneria</string>
     <string name="VoipRingtoneInfo">Puoi personalizzare la suoneria usata quando questo contatto ti chiama su Telegram.</string>
     <string name="Calls">Chiamate</string>
@@ -3023,6 +3077,8 @@
     <string name="NoCallLog">Non hai ancora effettuato alcuna chiamata.</string>
     <string name="VoipPeerIncompatible">L\'app di **%1$s** sta usando un protocollo non compatibile. Deve aggiornare la sua app prima che tu possa chiamarlo.</string>
     <string name="VoipPeerOutdated">L\'app di **%1$s** non supporta le chiamate. Deve aggiornare la sua app prima che tu possa chiamarlo.</string>
+    <string name="VoipPeerVideoOutdated">Spiacenti, **%1$s** sta usando una vecchia versione di Telegram che non supporta le videochiamate.</string>
+    <string name="VoipPeerVideoOutdatedMakeVoice">Fai una chiamata vocale</string>
     <string name="VoipRateCallAlert">Per favore valuta la qualità della tua chiamata Telegram</string>
     <string name="VoipNeedMicPermission">Telegram deve accedere al microfono affinché tu possa effettuare chiamate.</string>
     <string name="VoipNeedMicCameraPermission">Telegram deve accedere al tuo microfono e alla tua videocamera affinché tu possa effettuare videochiamate.</string>
@@ -3034,6 +3090,7 @@
     <string name="CallViaTelegram">Chiamata Telegram</string>
     <string name="VideoCallViaTelegram">Videochiamata Telegram</string>
     <string name="VoipAudioRoutingEarpiece">Auricolare</string>
+    <string name="VoipAudioRoutingHeadset">Cuffie</string>
     <string name="VoipAudioRoutingSpeaker">Vivavoce</string>
     <string name="VoipAudioRoutingBluetooth">Bluetooth</string>
     <string name="VoipOutputDevices">Dispositivi di output</string>
@@ -3064,8 +3121,10 @@
     <string name="RateCallSilentLocal">Non riuscivo a sentire gli altri</string>
     <string name="RateCallSilentRemote">Gli altri non riuscivano a sentirmi</string>
     <string name="RateCallDropped">Chiamata terminata inaspettatamente</string>
+    <string name="RateCallVideoDistorted">Il video era distorto</string>
+    <string name="RateCallVideoPixelated">Il video era pixellato</string>
     <string name="TapToTurnCamera">Tocca qui per attivare la tua videocamera</string>
-    <string name="VoipUnmute">Suona</string>
+    <string name="VoipUnmute">Attiva</string>
     <string name="VoipMute">Muto</string>
     <string name="VoipStartVideo">Avvia video</string>
     <string name="VoipStopVideo">Ferma video</string>
@@ -3078,8 +3137,14 @@
     <string name="AcceptCall">Accetta</string>
     <string name="DeclineCall">Rifiuta</string>
     <string name="RetryCall">Riprova</string>
+    <string name="VoipVideoUnavailable">Video</string>
+    <string name="CallAlert">Sei sicuro di voler chiamare %1$s?</string>
+    <string name="CallAlertTitle">Chiamata vocale</string>
+    <string name="VideoCallAlert">Sei sicuro di voler videochiamare **%1$s**?</string>
+    <string name="VideoCallAlertTitle">Videochiamata</string>
+    <string name="VoipReconnecting">Riconnetto</string>
     <!--contacts shortcuts-->
-    <string name="ContactShortcutMessage">Invia messaggio a %1$s</string>
+    <string name="ContactShortcutMessage">Invia un messaggio a %1$s</string>
     <string name="ContactShortcutVoiceCall">Chiama %1$s</string>
     <string name="ContactShortcutVideoCall">Videochiama %1$s</string>
     <!--plural-->
@@ -3335,6 +3400,12 @@
     <string name="Shares_few">%1$s condivisioni</string>
     <string name="Shares_many">%1$s condivisioni</string>
     <string name="Shares_other">%1$s condivisioni</string>
+    <string name="Shared_zero">%1$s shared</string>
+    <string name="Shared_one">%1$s shared</string>
+    <string name="Shared_two">%1$s shared</string>
+    <string name="Shared_few">%1$s shared</string>
+    <string name="Shared_many">%1$s shared</string>
+    <string name="Shared_other">%1$s shared</string>
     <string name="StickerSets_zero">%1$s set di sticker</string>
     <string name="StickerSets_one">%1$s set di sticker</string>
     <string name="StickerSets_two">%1$s set di sticker</string>
@@ -3522,13 +3593,31 @@
     <string name="MembersCountSelected_few">%1$d di %2$d selezionati</string>
     <string name="MembersCountSelected_many">%1$d di %2$d selezionati</string>
     <string name="MembersCountSelected_other">%1$d di %2$d selezionati</string>
+    <string name="ViewReplies_zero">Visualizza %1$d risposte</string>
+    <string name="ViewReplies_one">Visualizza %1$d risposta</string>
+    <string name="ViewReplies_two">Visualizza %1$d risposte</string>
+    <string name="ViewReplies_few">Visualizza %1$d risposte</string>
+    <string name="ViewReplies_many">Visualizza %1$d risposte</string>
+    <string name="ViewReplies_other">Visualizza %1$d risposte</string>
+    <string name="Replies_zero">%1$d risposte</string>
+    <string name="Replies_one">%1$d risposta</string>
+    <string name="Replies_two">%1$d risposte</string>
+    <string name="Replies_few">%1$d risposte</string>
+    <string name="Replies_many">%1$d risposte</string>
+    <string name="Replies_other">%1$d risposte</string>
+    <string name="Comments_zero">%1$d commenti</string>
+    <string name="Comments_one">%1$d commento</string>
+    <string name="Comments_two">%1$d commenti</string>
+    <string name="Comments_few">%1$d commenti</string>
+    <string name="Comments_many">%1$d commenti</string>
+    <string name="Comments_other">%1$d commenti</string>
     <!--accessibility descriptions-->
     <string name="AccDescrGroup">Gruppo</string>
     <string name="AccDescrChannel">Canale</string>
     <string name="AccDescrSecretChat">Chat segreta</string>
     <string name="AccDescrSentDate">Inviato %s</string>
     <string name="AccDescrReceivedDate">Ricevuto %s</string>
-    <string name="AccDescrScheduledDate">Programmato per %s</string>
+    <string name="AccDescrScheduledDate">Programmato per le %s</string>
     <string name="AccDescrGoBack">Torna indietro</string>
     <string name="AccDescrOpenMenu">Apri menù di navigazione</string>
     <string name="AccDescrMusicInfo">%2$s di %1$s</string>
@@ -3649,6 +3738,7 @@
     <string name="AccDescrVoipCamOn">La videocamera è accesa</string>
     <string name="AccDescrVoipCamOff">La videocamera è spenta</string>
     <!--date formatters-->
+    <string name="formatterMonthYear">MMMM yyyy</string>
     <string name="formatterStats12H">dd MMM yyyy, h:mm a</string>
     <string name="formatterStats24H">dd MMM yyyy, HH:mm</string>
     <string name="formatterBannedUntil12H">dd MMM yyyy, h:mm a</string>
@@ -3663,6 +3753,7 @@
     <string name="chatDate">d MMMM</string>
     <string name="chatFullDate">d MMMM, yyyy</string>
     <string name="formatterWeek">EEE</string>
+    <string name="formatterWeekLong">EEEE</string>
     <string name="formatterDay24H">HH:mm</string>
     <string name="formatterDay12H">h:mm a</string>
     <string name="formatDateAtTime">%1$s alle %2$s</string>
@@ -3674,4 +3765,5 @@
     <string name="RemindTodayAt">\'Ricorda oggi alle\' HH:mm</string>
     <string name="RemindDayAt">\'Ricorda il\' d MMM \'alle\' HH:mm</string>
     <string name="RemindDayYearAt">\'Ricorda il\' d MMM yyyy \'alle\' HH:mm</string>
+    <string name="SearchTipToday">Today</string>
 </resources>

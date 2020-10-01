@@ -235,7 +235,7 @@ public class PollVotesAlert extends BottomSheet {
         }
     }
 
-    public static final Property<UserCell, Float> USER_CELL_PROPERTY = new AnimationProperties.FloatProperty<UserCell>("placeholderAlpha(") {
+    public static final Property<UserCell, Float> USER_CELL_PROPERTY = new AnimationProperties.FloatProperty<UserCell>("placeholderAlpha") {
         @Override
         public void setValue(UserCell object, float value) {
             object.setPlaceholderAlpha(value);

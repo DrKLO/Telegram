@@ -22,7 +22,10 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.ui.Components.CubicBezierInterpolator;
+import org.telegram.ui.Components.EllipsizeSpanAnimator;
 import org.telegram.ui.Components.LayoutHelper;
+
+import java.util.ArrayList;
 
 public class VoIPStatusTextView extends FrameLayout {
 
@@ -33,12 +36,12 @@ public class VoIPStatusTextView extends FrameLayout {
     CharSequence nextTextToSet;
     boolean animationInProgress;
 
-    private TextAlphaSpan[] ellSpans = new TextAlphaSpan[]{new TextAlphaSpan(), new TextAlphaSpan(), new TextAlphaSpan()};
-    private AnimatorSet ellAnimator;
     private boolean attachedToWindow;
 
     ValueAnimator animator;
     boolean timerShowing;
+
+    EllipsizeSpanAnimator ellipsizeAnimator;
 
     public VoIPStatusTextView(@NonNull Context context) {
         super(context);
@@ -58,11 +61,10 @@ public class VoIPStatusTextView extends FrameLayout {
         reconnectTextView.setGravity(Gravity.CENTER_HORIZONTAL);
         addView(reconnectTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 22, 0, 0));
 
+        ellipsizeAnimator = new EllipsizeSpanAnimator(this);
         SpannableStringBuilder ssb = new SpannableStringBuilder(LocaleController.getString("VoipReconnecting", R.string.VoipReconnecting));
         SpannableString ell = new SpannableString("...");
-        ell.setSpan(ellSpans[0], 0, 1, 0);
-        ell.setSpan(ellSpans[1], 1, 2, 0);
-        ell.setSpan(ellSpans[2], 2, 3, 0);
+        ellipsizeAnimator.wrap(ell, 0);
         ssb.append(ell);
         reconnectTextView.setText(ssb);
         reconnectTextView.setVisibility(View.GONE);
@@ -70,47 +72,23 @@ public class VoIPStatusTextView extends FrameLayout {
         timerView = new VoIPTimerView(context);
         addView(timerView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
-        ellAnimator = new AnimatorSet();
-        ellAnimator.playTogether(
-                createEllipsizeAnimator(ellSpans[0], 0, 255, 0, 300),
-                createEllipsizeAnimator(ellSpans[1], 0, 255, 150, 300),
-                createEllipsizeAnimator(ellSpans[2], 0, 255, 300, 300),
-                createEllipsizeAnimator(ellSpans[0], 255, 0, 1000, 400),
-                createEllipsizeAnimator(ellSpans[1], 255, 0, 1000, 400),
-                createEllipsizeAnimator(ellSpans[2], 255, 0, 1000, 400)
-        );
-        ellAnimator.addListener(new AnimatorListenerAdapter() {
-            private Runnable restarter = new Runnable() {
-                @Override
-                public void run() {
-                    if (attachedToWindow) {
-                        ellAnimator.start();
-                    }
-                }
-            };
-
-            @Override
-            public void onAnimationEnd(Animator animation) {
-                if (attachedToWindow) {
-                    postDelayed(restarter, 300);
-                }
-            }
-        });
     }
 
     public void setText(String text, boolean ellipsis, boolean animated) {
         CharSequence nextString = text;
         if (ellipsis) {
             SpannableStringBuilder ssb = new SpannableStringBuilder(text);
-            for (TextAlphaSpan s : ellSpans) {
-                s.setAlpha(0);
-            }
+            ellipsizeAnimator.reset();
             SpannableString ell = new SpannableString("...");
-            ell.setSpan(ellSpans[0], 0, 1, 0);
-            ell.setSpan(ellSpans[1], 1, 2, 0);
-            ell.setSpan(ellSpans[2], 2, 3, 0);
+            ellipsizeAnimator.wrap(ell, 0);
             ssb.append(ell);
             nextString = ssb;
+
+            ellipsizeAnimator.addView(textView[0]);
+            ellipsizeAnimator.addView(textView[1]);
+        } else {
+            ellipsizeAnimator.removeView(textView[0]);
+            ellipsizeAnimator.removeView(textView[1]);
         }
 
         if (TextUtils.isEmpty(textView[0].getText())) {
@@ -126,6 +104,7 @@ public class VoIPStatusTextView extends FrameLayout {
             textView[0].setVisibility(View.VISIBLE);
             textView[1].setVisibility(View.GONE);
             timerView.setVisibility(View.GONE);
+
         } else {
             if (animationInProgress) {
                 nextTextToSet = nextString;
@@ -174,6 +153,8 @@ public class VoIPStatusTextView extends FrameLayout {
             replaceViews(textView[0], timerView, null);
         }
 
+        ellipsizeAnimator.removeView(textView[0]);
+        ellipsizeAnimator.removeView(textView[1]);
     }
 
 
@@ -241,24 +222,6 @@ public class VoIPStatusTextView extends FrameLayout {
         timerView.setSignalBarCount(count);
     }
 
-    private Animator createEllipsizeAnimator(TextAlphaSpan target, int startVal, int endVal, int startDelay, int duration) {
-        ValueAnimator a = ValueAnimator.ofInt(startVal, endVal);
-        a.addUpdateListener(valueAnimator -> {
-            target.setAlpha((int) valueAnimator.getAnimatedValue());
-            if (!(timerShowing && !animationInProgress)){
-                textView[0].invalidate();
-                textView[1].invalidate();
-            }
-            if (reconnectTextView.getVisibility() == View.VISIBLE) {
-                reconnectTextView.invalidate();
-            }
-        });
-        a.setDuration(duration);
-        a.setStartDelay(startDelay);
-        a.setInterpolator(CubicBezierInterpolator.DEFAULT);
-        return a;
-    }
-
     public void showReconnect(boolean showReconnecting, boolean animated) {
         if (!animated) {
             reconnectTextView.animate().setListener(null).cancel();
@@ -275,27 +238,16 @@ public class VoIPStatusTextView extends FrameLayout {
                 reconnectTextView.animate().alpha(0).setListener(new AnimatorListenerAdapter() {
                     @Override
                     public void onAnimationEnd(Animator animation) {
-                       reconnectTextView.setVisibility(View.GONE);
+                        reconnectTextView.setVisibility(View.GONE);
                     }
                 }).setDuration(150).start();
             }
         }
-    }
 
-    private class TextAlphaSpan extends CharacterStyle {
-        private int alpha;
-
-        public TextAlphaSpan() {
-            this.alpha = 0;
-        }
-
-        public void setAlpha(int alpha) {
-            this.alpha = alpha;
-        }
-
-        @Override
-        public void updateDrawState(TextPaint tp) {
-            tp.setAlpha(alpha);
+        if (showReconnecting) {
+            ellipsizeAnimator.addView(reconnectTextView);
+        } else {
+            ellipsizeAnimator.removeView(reconnectTextView);
         }
     }
 
@@ -303,16 +255,14 @@ public class VoIPStatusTextView extends FrameLayout {
     protected void onAttachedToWindow() {
         super.onAttachedToWindow();
         attachedToWindow = true;
-        if (!ellAnimator.isRunning()) {
-            ellAnimator.start();
-        }
+        ellipsizeAnimator.onAttachedToWindow();
     }
 
     @Override
     protected void onDetachedFromWindow() {
         super.onDetachedFromWindow();
         attachedToWindow = false;
-        ellAnimator.removeAllListeners();
-        ellAnimator.cancel();
+        ellipsizeAnimator.onDetachedFromWindow();
     }
+
 }

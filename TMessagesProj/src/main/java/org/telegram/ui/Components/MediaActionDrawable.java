@@ -158,7 +158,7 @@ public class MediaActionDrawable extends Drawable {
                 return false;
             }
             if (currentIcon == ICON_PLAY && icon == ICON_PAUSE || currentIcon == ICON_PAUSE && icon == ICON_PLAY) {
-                transitionAnimationTime = 666.0f;
+                transitionAnimationTime = 300.0f;
             } else if (currentIcon == ICON_DOWNLOAD && (icon == ICON_CANCEL || icon == ICON_CANCEL_FILL)) {
                 transitionAnimationTime = 400.0f;
             } else if (currentIcon != ICON_NONE && icon == ICON_CHECK) {
@@ -673,10 +673,18 @@ public class MediaActionDrawable extends Drawable {
 
             canvas.save();
             canvas.translate(bounds.centerX() + AndroidUtilities.dp(1) * (1.0f - p), bounds.centerY());
-            float ms = 666.0f * p;
+            float ms = 500.0f * p;
             float rotation = currentIcon == ICON_PAUSE ? 90 : 0;
-            float iconScale = 1.0f;
-            if (currentIcon == ICON_PLAY && nextIcon == ICON_PAUSE || currentIcon == ICON_PAUSE && nextIcon == ICON_PLAY) {
+            if (currentIcon == ICON_PLAY && nextIcon == ICON_PAUSE) {
+                if (ms < 384) {
+                    rotation = 95 * CubicBezierInterpolator.EASE_BOTH.getInterpolation(ms / 384);
+                } else if (ms < 484) {
+                    rotation = 95 - 5 * CubicBezierInterpolator.EASE_BOTH.getInterpolation((ms - 384) / 100.0f);
+                } else {
+                    rotation = 90;
+                }
+                ms += 100;
+            } else if (currentIcon == ICON_PAUSE && nextIcon == ICON_PLAY) {
                 if (ms < 100) {
                     rotation = -5 * CubicBezierInterpolator.EASE_BOTH.getInterpolation(ms / 100.0f);
                 } else if (ms < 484) {
@@ -684,18 +692,8 @@ public class MediaActionDrawable extends Drawable {
                 } else {
                     rotation = 90;
                 }
-                if (ms < 200) {
-                    iconScale = 1.0f;
-                } else if (ms < 416) {
-                    iconScale = 1.0f + 0.1f * CubicBezierInterpolator.EASE_BOTH.getInterpolation((ms - 200) / 216.0f);
-                } else if (ms < 566) {
-                    iconScale = 1.1f - 0.13f * CubicBezierInterpolator.EASE_BOTH.getInterpolation((ms - 416) / 150.0f);
-                } else {
-                    iconScale = 0.97f + 0.03f * interpolator.getInterpolation((ms - 566) / 100.0f);
-                }
             }
             canvas.rotate(rotation);
-            canvas.scale(iconScale, iconScale);
             if (currentIcon != ICON_PLAY && currentIcon != ICON_PAUSE || currentIcon == ICON_NONE) {
                 canvas.scale(drawableScale, drawableScale);
             }

@@ -774,7 +774,9 @@ gray_render_cubic( RAS_ARG_ const SW_FT_Vector*  control1,
                    const SW_FT_Vector*  control2,
                    const SW_FT_Vector*  to )
 {
-    SW_FT_Vector   bez_stack[16 * 3 + 1];  /* enough to accommodate bisections */
+    const int count = 16 * 3 + 1;
+    int num = 0;
+    SW_FT_Vector   bez_stack[count];  /* enough to accommodate bisections */
     SW_FT_Vector*  arc = bez_stack;
 
 
@@ -807,6 +809,9 @@ gray_render_cubic( RAS_ARG_ const SW_FT_Vector*  control1,
         /* with each split, control points quickly converge towards  */
         /* chord trisection points and the vanishing distances below */
         /* indicate when the segment is flat enough to draw          */
+        if (num < 0 || num >= count) {
+            return;
+        }
         if ( SW_FT_ABS( 2 * arc[0].x - 3 * arc[1].x + arc[3].x ) > ONE_PIXEL / 2 ||
              SW_FT_ABS( 2 * arc[0].y - 3 * arc[1].y + arc[3].y ) > ONE_PIXEL / 2 ||
              SW_FT_ABS( arc[0].x - 3 * arc[2].x + 2 * arc[3].x ) > ONE_PIXEL / 2 ||
@@ -819,11 +824,13 @@ gray_render_cubic( RAS_ARG_ const SW_FT_Vector*  control1,
             return;
 
         arc -= 3;
+        num -= 3;
         continue;
 
         Split:
         gray_split_cubic( arc );
         arc += 3;
+        num += 3;
     }
 }
 

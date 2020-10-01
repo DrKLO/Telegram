@@ -561,7 +561,7 @@ void blit(VRle::Span *spans, int count, uchar *buffer, int len, int offsetX)
     while (count--) {
         int    x = spans->x + offsetX;
         int    l = spans->len;
-        if (x + l > len) {
+        if (x + l < 0 || x + l > len) {
             return;
         }
         uchar *ptr = buffer + x;

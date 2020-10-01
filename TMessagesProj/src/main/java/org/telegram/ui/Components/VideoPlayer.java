@@ -38,6 +38,7 @@ import com.google.android.exoplayer2.audio.TeeAudioProcessor;
 import com.google.android.exoplayer2.drm.DrmSessionManager;
 import com.google.android.exoplayer2.drm.FrameworkMediaCrypto;
 import com.google.android.exoplayer2.extractor.DefaultExtractorsFactory;
+import com.google.android.exoplayer2.mediacodec.MediaCodecRenderer;
 import com.google.android.exoplayer2.mediacodec.MediaCodecSelector;
 import com.google.android.exoplayer2.source.ExtractorMediaSource;
 import com.google.android.exoplayer2.source.LoopingMediaSource;
@@ -103,6 +104,8 @@ public class VideoPlayer implements ExoPlayer.EventListener, SimpleExoPlayer.Vid
     private boolean isStreaming;
     private boolean autoplay;
     private boolean mixedAudio;
+
+    private boolean triedReinit;
 
     private Uri currentUri;
 
@@ -609,7 +612,8 @@ public class VideoPlayer implements ExoPlayer.EventListener, SimpleExoPlayer.Vid
     @Override
     public void onPlayerError(ExoPlaybackException error) {
         Throwable cause = error.getCause();
-        if (textureView != null && cause instanceof SurfaceNotValidException) {
+        if (textureView != null && (!triedReinit && cause instanceof MediaCodecRenderer.DecoderInitializationException || cause instanceof SurfaceNotValidException)) {
+            triedReinit = true;
             if (player != null) {
                 ViewGroup parent = (ViewGroup) textureView.getParent();
                 if (parent != null) {

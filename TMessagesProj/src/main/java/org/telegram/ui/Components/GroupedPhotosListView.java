@@ -19,6 +19,7 @@ import org.telegram.messenger.MessageObject;
 import org.telegram.tgnet.TLRPC;
 
 import java.util.ArrayList;
+import java.util.List;
 
 public class GroupedPhotosListView extends View implements GestureDetector.OnGestureListener {
 
@@ -68,7 +69,7 @@ public class GroupedPhotosListView extends View implements GestureDetector.OnGes
         int getSlideshowMessageId();
         ArrayList<ImageLocation> getImagesArrLocations();
         ArrayList<MessageObject> getImagesArr();
-        ArrayList<TLRPC.PageBlock> getPageBlockArr();
+        List<TLRPC.PageBlock> getPageBlockArr();
         Object getParentObject();
         void setCurrentIndex(int index);
         void onShowAnimationStart();
@@ -105,7 +106,7 @@ public class GroupedPhotosListView extends View implements GestureDetector.OnGes
         int currentIndex = delegate.getCurrentIndex();
         ArrayList<ImageLocation> imagesArrLocations = delegate.getImagesArrLocations();
         ArrayList<MessageObject> imagesArr = delegate.getImagesArr();
-        ArrayList<TLRPC.PageBlock> pageBlockArr = delegate.getPageBlockArr();
+        List<TLRPC.PageBlock> pageBlockArr = delegate.getPageBlockArr();
         int slideshowMessageId = delegate.getSlideshowMessageId();
         int currentAccount = delegate.getCurrentAccount();
 
@@ -483,7 +484,7 @@ public class GroupedPhotosListView extends View implements GestureDetector.OnGes
         int currentIndex = delegate.getCurrentIndex();
         ArrayList<ImageLocation> imagesArrLocations = delegate.getImagesArrLocations();
         ArrayList<MessageObject> imagesArr = delegate.getImagesArr();
-        ArrayList<TLRPC.PageBlock> pageBlockArr = delegate.getPageBlockArr();
+        List<TLRPC.PageBlock> pageBlockArr = delegate.getPageBlockArr();
 
         stopScrolling();
         int count = imagesToDraw.size();
@@ -546,7 +547,7 @@ public class GroupedPhotosListView extends View implements GestureDetector.OnGes
         int currentIndex = delegate.getCurrentIndex();
         ArrayList<ImageLocation> imagesArrLocations = delegate.getImagesArrLocations();
         ArrayList<MessageObject> imagesArr = delegate.getImagesArr();
-        ArrayList<TLRPC.PageBlock> pageBlockArr = delegate.getPageBlockArr();
+        List<TLRPC.PageBlock> pageBlockArr = delegate.getPageBlockArr();
 
         if (currentIndex != nextPhotoScrolling && nextPhotoScrolling >= 0 && nextPhotoScrolling < currentPhotos.size()) {
             Object photo = currentObjects.get(nextPhotoScrolling);

@@ -6866,8 +6866,8 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
                 }
 
                 @Override
-                public void needEnterComment() {
-
+                public boolean needEnterComment() {
+                    return false;
                 }
 
                 @Override

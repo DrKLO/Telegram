@@ -81,6 +81,9 @@ void VDrawable::setDashInfo(float *array, uint size)
     for (uint i = 0; i < size; i++) {
         mStroke.mDash.push_back(array[i]);
     }
+    if (mStroke.mDash.size() == 1) {
+        mStroke.mDash.push_back(20);
+    }
     mFlag |= DirtyState::Path;
 }
 
