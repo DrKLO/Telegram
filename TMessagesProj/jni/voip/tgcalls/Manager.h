@@ -6,10 +6,20 @@
 #include "NetworkManager.h"
 #include "MediaManager.h"
 #include "Instance.h"
+#include "Stats.h"
 
 namespace tgcalls {
 
 class Manager final : public std::enable_shared_from_this<Manager> {
+private:
+    struct ResolvedNetworkStatus {
+        bool isLowCost = false;
+        bool isLowDataRequested = false;
+
+        bool operator==(const ResolvedNetworkStatus &rhs);
+        bool operator!=(const ResolvedNetworkStatus &rhs);
+    };
+
 public:
 	static rtc::Thread *getMediaThread();
 
@@ -19,25 +29,35 @@ public:
 	void start();
 	void receiveSignalingData(const std::vector<uint8_t> &data);
 	void setVideoCapture(std::shared_ptr<VideoCaptureInterface> videoCapture);
+    void setRequestedVideoAspect(float aspect);
     void setMuteOutgoingAudio(bool mute);
 	void setIncomingVideoOutput(std::shared_ptr<rtc::VideoSinkInterface<webrtc::VideoFrame>> sink);
     void setIsLowBatteryLevel(bool isLowBatteryLevel);
     void setIsLocalNetworkLowCost(bool isLocalNetworkLowCost);
-    void getNetworkStats(std::function<void(TrafficStats)> completion);
-    
+    void getNetworkStats(std::function<void(TrafficStats, CallStats)> completion);
+
+
+	void setAudioInputDevice(std::string id);
+	void setAudioOutputDevice(std::string id);
+	void setInputVolume(float level);
+	void setOutputVolume(float level);
+
 private:
 	void sendSignalingAsync(int delayMs, int cause);
 	void receiveMessage(DecryptedMessage &&message);
-    bool calculateIsCurrentNetworkLowCost() const;
-    void updateIsCurrentNetworkLowCost(bool wasLowCost);
+    void updateCurrentResolvedNetworkStatus();
     void sendInitialSignalingMessages();
 
 	rtc::Thread *_thread;
 	EncryptionKey _encryptionKey;
 	EncryptedConnection _signaling;
 	bool _enableP2P = false;
+    bool _enableTCP = false;
+    bool _enableStunMarking = false;
     ProtocolVersion _protocolVersion = ProtocolVersion::V0;
+    FilePath _statsLogPath;
 	std::vector<RtcServer> _rtcServers;
+	MediaDevicesConfig _mediaDevicesConfig;
 	std::shared_ptr<VideoCaptureInterface> _videoCapture;
 	std::function<void(State)> _stateUpdated;
 	std::function<void(AudioState, VideoState)> _remoteMediaStateUpdated;
@@ -51,11 +71,14 @@ private:
 	std::unique_ptr<ThreadLocalObject<MediaManager>> _mediaManager;
 	State _state = State::Reconnecting;
     bool _didConnectOnce = false;
-    float _localPreferredVideoAspectRatio = 0.0f;
     bool _enableHighBitrateVideo = false;
+    DataSaving _dataSaving = DataSaving::Never;
     std::vector<std::string> _preferredCodecs;
     bool _localNetworkIsLowCost = false;
     bool _remoteNetworkIsLowCost = false;
+    bool _remoteIsLowDataRequested = false;
+    absl::optional<ResolvedNetworkStatus> _currentResolvedLocalNetworkStatus;
+    absl::optional<ResolvedNetworkStatus> _currentResolvedNetworkStatus;
 
 	std::shared_ptr<PlatformContext> _platformContext;
 

@@ -8,6 +8,8 @@
 #include <rtc_base/ssl_adapter.h>
 #include <modules/utility/include/jvm_android.h>
 #include <sdk/android/native_api/base/init.h>
+#include <voip/webrtc/media/base/media_constants.h>
+#include <tgnet/FileLog.h>
 
 #include "pc/video_track.h"
 #include "legacy/InstanceImplLegacy.h"
@@ -266,10 +268,13 @@ JNIEXPORT jlong JNICALL Java_org_telegram_messenger_voip_NativeInstance_makeNati
                     .enableAEC = configObject.getBooleanField("enableAec") == JNI_TRUE,
                     .enableNS = configObject.getBooleanField("enableNs") == JNI_TRUE,
                     .enableAGC = configObject.getBooleanField("enableAgc") == JNI_TRUE,
+                    .enableStunMarking = configObject.getBooleanField("enableSm") == JNI_TRUE,
                     .enableVolumeControl = true,
                     .logPath = tgvoip::jni::JavaStringToStdString(env, configObject.getStringField("logPath")),
                     .maxApiLayer = configObject.getIntField("maxApiLayer"),
-                    .preferredAspectRatio = aspectRatio
+                    .enableHighBitrateVideo = true,
+                    .statsLogPath = tgvoip::jni::JavaStringToStdString(env, configObject.getStringField("statsLogPath")),
+                    .preferredVideoCodecs = {cricket::kVp9CodecName}
             },
             .encryptionKey = EncryptionKey(
                     std::move(encryptionKeyValue),
@@ -346,6 +351,7 @@ JNIEXPORT jlong JNICALL Java_org_telegram_messenger_voip_NativeInstance_makeNati
     holder->_platformContext = platformContext;
     holder->nativeInstance->setIncomingVideoOutput(webrtc::JavaToNativeVideoSink(env, remoteSink));
     holder->nativeInstance->setNetworkType(parseNetworkType(networkType));
+    holder->nativeInstance->setRequestedVideoAspect(aspectRatio);
     return reinterpret_cast<jlong>(holder);
 }
 
@@ -410,9 +416,9 @@ JNIEXPORT void JNICALL Java_org_telegram_messenger_voip_NativeInstance_stopNativ
     });
 }
 
-JNIEXPORT long JNICALL Java_org_telegram_messenger_voip_NativeInstance_createVideoCapturer(JNIEnv *env, jclass clazz, jobject localSink) {
+JNIEXPORT jlong JNICALL Java_org_telegram_messenger_voip_NativeInstance_createVideoCapturer(JNIEnv *env, jclass clazz, jobject localSink, jboolean front) {
     initWebRTC(env);
-    std::unique_ptr<VideoCaptureInterface> capture = tgcalls::VideoCaptureInterface::Create(std::make_shared<AndroidContext>(env));
+    std::unique_ptr<VideoCaptureInterface> capture = tgcalls::VideoCaptureInterface::Create(front ? "front" : "back", std::make_shared<AndroidContext>(env));
     capture->setOutput(webrtc::JavaToNativeVideoSink(env, localSink));
     capture->setState(VideoState::Active);
     return reinterpret_cast<intptr_t>(capture.release());
@@ -423,9 +429,9 @@ JNIEXPORT void JNICALL Java_org_telegram_messenger_voip_NativeInstance_destroyVi
     delete capturer;
 }
 
-JNIEXPORT void JNICALL Java_org_telegram_messenger_voip_NativeInstance_switchCameraCapturer(JNIEnv *env, jclass clazz, jlong videoCapturer) {
+JNIEXPORT void JNICALL Java_org_telegram_messenger_voip_NativeInstance_switchCameraCapturer(JNIEnv *env, jclass clazz, jlong videoCapturer, jboolean front) {
     VideoCaptureInterface *capturer = reinterpret_cast<VideoCaptureInterface *>(videoCapturer);
-    capturer->switchCamera();
+    capturer->switchToDevice(front ? "front" : "back");
 }
 
 JNIEXPORT void JNICALL Java_org_telegram_messenger_voip_NativeInstance_setVideoStateCapturer(JNIEnv *env, jclass clazz, jlong videoCapturer, jint videoState) {
@@ -433,12 +439,12 @@ JNIEXPORT void JNICALL Java_org_telegram_messenger_voip_NativeInstance_setVideoS
     capturer->setState(static_cast<VideoState>(videoState));
 }
 
-JNIEXPORT void JNICALL Java_org_telegram_messenger_voip_NativeInstance_switchCamera(JNIEnv *env, jobject obj) {
+JNIEXPORT void JNICALL Java_org_telegram_messenger_voip_NativeInstance_switchCamera(JNIEnv *env, jobject obj, jboolean front) {
     InstanceHolder *instance = getInstanceHolder(env, obj);
     if (instance->_videoCapture == nullptr) {
         return;
     }
-    instance->_videoCapture->switchCamera();
+    instance->_videoCapture->switchToDevice(front ? "front" : "back");
 }
 
 JNIEXPORT void Java_org_telegram_messenger_voip_NativeInstance_setVideoState(JNIEnv *env, jobject obj, jint state) {
@@ -449,12 +455,12 @@ JNIEXPORT void Java_org_telegram_messenger_voip_NativeInstance_setVideoState(JNI
     instance->_videoCapture->setState(static_cast<VideoState>(state));
 }
 
-JNIEXPORT void JNICALL Java_org_telegram_messenger_voip_NativeInstance_setupOutgoingVideo(JNIEnv *env, jobject obj, jobject localSink) {
+JNIEXPORT void JNICALL Java_org_telegram_messenger_voip_NativeInstance_setupOutgoingVideo(JNIEnv *env, jobject obj, jobject localSink, jboolean front) {
     InstanceHolder *instance = getInstanceHolder(env, obj);
     if (instance->_videoCapture) {
         return;
     }
-    instance->_videoCapture = tgcalls::VideoCaptureInterface::Create(instance->_platformContext);
+    instance->_videoCapture = tgcalls::VideoCaptureInterface::Create(front ? "front" : "back", instance->_platformContext);
     instance->_videoCapture->setOutput(webrtc::JavaToNativeVideoSink(env, localSink));
     instance->_videoCapture->setState(VideoState::Active);
     instance->nativeInstance->setVideoCapture(instance->_videoCapture);

@@ -15,7 +15,7 @@ import java.util.List;
 
 public final class Instance {
 
-    public static final List<String> AVAILABLE_VERSIONS = Build.VERSION.SDK_INT >= 18 ? Arrays.asList("2.7.7", "2.4.4") : Arrays.asList("2.4.4");
+    public static final List<String> AVAILABLE_VERSIONS = Build.VERSION.SDK_INT >= 18 ? Arrays.asList(/*"3.0.0", */"2.7.7", "2.4.4") : Arrays.asList("2.4.4");
 
     public static final int AUDIO_STATE_MUTED = 0;
     public static final int AUDIO_STATE_ACTIVE = 1;
@@ -153,9 +153,11 @@ public final class Instance {
         public final boolean enableAgc;
         public final boolean enableCallUpgrade;
         public final String logPath;
+        public final String statsLogPath;
         public final int maxApiLayer;
+        public final boolean enableSm;
 
-        public Config(double initializationTimeout, double receiveTimeout, int dataSaving, boolean enableP2p, boolean enableAec, boolean enableNs, boolean enableAgc, boolean enableCallUpgrade, String logPath, int maxApiLayer) {
+        public Config(double initializationTimeout, double receiveTimeout, int dataSaving, boolean enableP2p, boolean enableAec, boolean enableNs, boolean enableAgc, boolean enableCallUpgrade, boolean enableSm, String logPath, String statsLogPath, int maxApiLayer) {
             this.initializationTimeout = initializationTimeout;
             this.receiveTimeout = receiveTimeout;
             this.dataSaving = dataSaving;
@@ -165,7 +167,9 @@ public final class Instance {
             this.enableAgc = enableAgc;
             this.enableCallUpgrade = enableCallUpgrade;
             this.logPath = logPath;
+            this.statsLogPath = statsLogPath;
             this.maxApiLayer = maxApiLayer;
+            this.enableSm = enableSm;
         }
 
         @Override
@@ -180,7 +184,9 @@ public final class Instance {
                     ", enableAgc=" + enableAgc +
                     ", enableCallUpgrade=" + enableCallUpgrade +
                     ", logPath='" + logPath + '\'' +
+                    ", statsLogPath='" + statsLogPath + '\'' +
                     ", maxApiLayer=" + maxApiLayer +
+                    ", enableSm=" + enableSm +
                     '}';
         }
     }
@@ -328,6 +334,7 @@ public final class Instance {
 
         public final boolean useSystemNs;
         public final boolean useSystemAec;
+        public final boolean enableStunMarking;
         public final double hangupUiTimeout;
 
         public final boolean enable_vp8_encoder;
@@ -345,6 +352,7 @@ public final class Instance {
             this.jsonObject = jsonObject;
             this.useSystemNs = jsonObject.optBoolean("use_system_ns", true);
             this.useSystemAec = jsonObject.optBoolean("use_system_aec", true);
+            this.enableStunMarking = jsonObject.optBoolean("voip_enable_stun_marking", false);
             this.hangupUiTimeout = jsonObject.optDouble("hangup_ui_timeout", 5);
 
             this.enable_vp8_encoder = jsonObject.optBoolean("enable_vp8_encoder", true);

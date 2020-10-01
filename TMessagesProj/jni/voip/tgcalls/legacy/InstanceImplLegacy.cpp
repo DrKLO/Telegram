@@ -151,6 +151,11 @@ onSignalBarsUpdated_(std::move(descriptor.signalBarsUpdated)) {
 	controller_->Start();
 
 	controller_->Connect();
+
+	controller_->SetCurrentAudioInput(descriptor.mediaDevicesConfig.audioInputId);
+	controller_->SetCurrentAudioOutput(descriptor.mediaDevicesConfig.audioOutputId);
+	controller_->SetInputVolume(descriptor.mediaDevicesConfig.inputVolume);
+	controller_->SetOutputVolume(descriptor.mediaDevicesConfig.outputVolume);
 }
 
 InstanceImplLegacy::~InstanceImplLegacy() {
@@ -202,6 +207,9 @@ void InstanceImplLegacy::receiveSignalingData(const std::vector<uint8_t> &data) 
 }
 
 void InstanceImplLegacy::setVideoCapture(std::shared_ptr<VideoCaptureInterface> videoCapture) {
+}
+
+void InstanceImplLegacy::setRequestedVideoAspect(float aspect) {
 }
 
 void InstanceImplLegacy::setIncomingVideoOutput(std::shared_ptr<rtc::VideoSinkInterface<webrtc::VideoFrame>> sink) {

@@ -1,3 +1,4 @@
+#include <tgnet/FileLog.h>
 #include "VideoCaptureInterfaceImpl.h"
 
 #include "VideoCapturerInterface.h"
@@ -7,39 +8,44 @@
 
 namespace tgcalls {
 
-VideoCaptureInterfaceObject::VideoCaptureInterfaceObject(std::shared_ptr<PlatformContext> platformContext) {
-	_videoSource = PlatformInterface::SharedInstance()->makeVideoSource(Manager::getMediaThread(), MediaManager::getWorkerThread());
+VideoCaptureInterfaceObject::VideoCaptureInterfaceObject(std::string deviceId, std::shared_ptr<PlatformContext> platformContext)
+: _videoSource(PlatformInterface::SharedInstance()->makeVideoSource(Manager::getMediaThread(), MediaManager::getWorkerThread())) {
 	_platformContext = platformContext;
-	//this should outlive the capturer
-	if (_videoSource) {
-		_videoCapturer = PlatformInterface::SharedInstance()->makeVideoCapturer(_videoSource, _useFrontCamera, [this](VideoState state) {
-			if (this->_stateUpdated) {
-				this->_stateUpdated(state);
-			}
-		}, _platformContext, _videoCapturerResolution);
-	}
+    
+	switchToDevice(deviceId);
 }
 
 VideoCaptureInterfaceObject::~VideoCaptureInterfaceObject() {
 	if (_videoCapturer && _currentUncroppedSink != nullptr) {
-		//_videoSource->RemoveSink(_currentSink.get());
 		_videoCapturer->setUncroppedOutput(nullptr);
 	}
 }
 
-void VideoCaptureInterfaceObject::switchCamera() {
-	_useFrontCamera = !_useFrontCamera;
+webrtc::VideoTrackSourceInterface *VideoCaptureInterfaceObject::source() {
+	return _videoSource;
+}
+
+void VideoCaptureInterfaceObject::switchToDevice(std::string deviceId) {
     if (_videoCapturer && _currentUncroppedSink) {
 		_videoCapturer->setUncroppedOutput(nullptr);
     }
 	if (_videoSource) {
-		_videoCapturer = PlatformInterface::SharedInstance()->makeVideoCapturer(_videoSource, _useFrontCamera, [this](VideoState state) {
+        //this should outlive the capturer
+		_videoCapturer = PlatformInterface::SharedInstance()->makeVideoCapturer(_videoSource, deviceId, [this](VideoState state) {
 			if (this->_stateUpdated) {
 				this->_stateUpdated(state);
 			}
-		}, _platformContext, _videoCapturerResolution);
+        }, [this](PlatformCaptureInfo info) {
+            if (this->_shouldBeAdaptedToReceiverAspectRate != info.shouldBeAdaptedToReceiverAspectRate) {
+                this->_shouldBeAdaptedToReceiverAspectRate = info.shouldBeAdaptedToReceiverAspectRate;
+                this->updateAspectRateAdaptation();
+            }
+        }, _platformContext, _videoCapturerResolution);
 	}
 	if (_videoCapturer) {
+//        if (_preferredAspectRatio > 0) {
+//            _videoCapturer->setPreferredCaptureAspectRatio(_preferredAspectRatio);
+//        }
 		if (_currentUncroppedSink) {
 			_videoCapturer->setUncroppedOutput(_currentUncroppedSink);
 		}
@@ -57,21 +63,32 @@ void VideoCaptureInterfaceObject::setState(VideoState state) {
 }
 
 void VideoCaptureInterfaceObject::setPreferredAspectRatio(float aspectRatio) {
-	if (_videoCapturer) {
-        if (aspectRatio > 0.01 && _videoCapturerResolution.first != 0 && _videoCapturerResolution.second != 0) {
-            float originalWidth = (float)_videoCapturerResolution.first;
-            float originalHeight = (float)_videoCapturerResolution.second;
+    _preferredAspectRatio = aspectRatio;
+    updateAspectRateAdaptation();
+}
 
-            float width = (originalWidth > aspectRatio * originalHeight)
-                ? int(std::round(aspectRatio * originalHeight))
-                : originalWidth;
-            float height = (originalWidth > aspectRatio * originalHeight)
-                ? originalHeight
-                : int(std::round(originalHeight / aspectRatio));
-
-            PlatformInterface::SharedInstance()->adaptVideoSource(_videoSource, (int)width, (int)height, 30);
+void VideoCaptureInterfaceObject::updateAspectRateAdaptation() {
+    if (_videoCapturer) {
+        if (_videoCapturerResolution.first != 0 && _videoCapturerResolution.second != 0) {
+            if (_preferredAspectRatio > 0.01 && _shouldBeAdaptedToReceiverAspectRate) {
+                float originalWidth = (float)_videoCapturerResolution.first;
+                float originalHeight = (float)_videoCapturerResolution.second;
+                
+                float aspectRatio = _preferredAspectRatio;
+                
+                float width = (originalWidth > aspectRatio * originalHeight)
+                    ? int(std::round(aspectRatio * originalHeight))
+                    : originalWidth;
+                float height = (originalWidth > aspectRatio * originalHeight)
+                    ? originalHeight
+                    : int(std::round(originalHeight / aspectRatio));
+                
+                PlatformInterface::SharedInstance()->adaptVideoSource(_videoSource, (int)width, (int)height, 30);
+            } else {
+                PlatformInterface::SharedInstance()->adaptVideoSource(_videoSource, _videoCapturerResolution.first, _videoCapturerResolution.second, 30);
+            }
         }
-	}
+    }
 }
 
 void VideoCaptureInterfaceObject::setOutput(std::shared_ptr<rtc::VideoSinkInterface<webrtc::VideoFrame>> sink) {
@@ -85,18 +102,18 @@ void VideoCaptureInterfaceObject::setStateUpdated(std::function<void(VideoState)
 	_stateUpdated = stateUpdated;
 }
 
-VideoCaptureInterfaceImpl::VideoCaptureInterfaceImpl(std::shared_ptr<PlatformContext> platformContext) :
-	_platformContext(platformContext),
-	_impl(Manager::getMediaThread(), [platformContext]() {
-	return new VideoCaptureInterfaceObject(platformContext);
+VideoCaptureInterfaceImpl::VideoCaptureInterfaceImpl(std::string deviceId, std::shared_ptr<PlatformContext> platformContext) :
+_platformContext(platformContext),
+_impl(Manager::getMediaThread(), [deviceId, platformContext]() {
+	return new VideoCaptureInterfaceObject(deviceId, platformContext);
 }) {
 }
 
 VideoCaptureInterfaceImpl::~VideoCaptureInterfaceImpl() = default;
 
-void VideoCaptureInterfaceImpl::switchCamera() {
-	_impl.perform(RTC_FROM_HERE, [](VideoCaptureInterfaceObject *impl) {
-		impl->switchCamera();
+void VideoCaptureInterfaceImpl::switchToDevice(std::string deviceId) {
+	_impl.perform(RTC_FROM_HERE, [deviceId](VideoCaptureInterfaceObject *impl) {
+		impl->switchToDevice(deviceId);
 	});
 }
 
@@ -126,4 +143,4 @@ ThreadLocalObject<VideoCaptureInterfaceObject> *VideoCaptureInterfaceImpl::objec
 	return &_impl;
 }
 
-}// namespace tgcalls
+} // namespace tgcalls

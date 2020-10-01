@@ -10,6 +10,7 @@
 #include "Instance.h"
 #include "Message.h"
 #include "VideoCaptureInterface.h"
+#include "Stats.h"
 
 #include <functional>
 #include <memory>
@@ -20,6 +21,7 @@ class RtcEventLogNull;
 class TaskQueueFactory;
 class VideoBitrateAllocatorFactory;
 class VideoTrackSourceInterface;
+class AudioDeviceModule;
 } // namespace webrtc
 
 namespace cricket {
@@ -30,6 +32,8 @@ class VideoMediaChannel;
 
 namespace tgcalls {
 
+class VideoSinkInterfaceProxyImpl;
+
 class MediaManager : public sigslot::has_slots<>, public std::enable_shared_from_this<MediaManager> {
 public:
 	static rtc::Thread *getWorkerThread();
@@ -37,11 +41,12 @@ public:
 	MediaManager(
 		rtc::Thread *thread,
 		bool isOutgoing,
+        ProtocolVersion protocolVersion,
+		const MediaDevicesConfig &devicesConfig,
 		std::shared_ptr<VideoCaptureInterface> videoCapture,
 		std::function<void(Message &&)> sendSignalingMessage,
 		std::function<void(Message &&)> sendTransportMessage,
         std::function<void(int)> signalBarsUpdated,
-        float localPreferredVideoAspectRatio,
         bool enableHighBitrateVideo,
         std::vector<std::string> preferredCodecs,
 		std::shared_ptr<PlatformContext> platformContext);
@@ -51,11 +56,18 @@ public:
 	void setIsConnected(bool isConnected);
 	void notifyPacketSent(const rtc::SentPacket &sentPacket);
 	void setSendVideo(std::shared_ptr<VideoCaptureInterface> videoCapture);
+    void setRequestedVideoAspect(float aspect);
 	void setMuteOutgoingAudio(bool mute);
 	void setIncomingVideoOutput(std::shared_ptr<rtc::VideoSinkInterface<webrtc::VideoFrame>> sink);
 	void receiveMessage(DecryptedMessage &&message);
     void remoteVideoStateUpdated(VideoState videoState);
-    void setIsCurrentNetworkLowCost(bool isCurrentNetworkLowCost);
+    void setNetworkParameters(bool isLowCost, bool isDataSavingActive);
+    void fillCallStats(CallStats &callStats);
+
+	void setAudioInputDevice(std::string id);
+	void setAudioOutputDevice(std::string id);
+	void setInputVolume(float level);
+	void setOutputVolume(float level);
 
 private:
 	struct SSRC {
@@ -90,6 +102,7 @@ private:
 	bool videoCodecsNegotiated() const;
     
     int getMaxVideoBitrate() const;
+    int getMaxAudioBitrate() const;
     void adjustBitratePreferences(bool resetStartBitrate);
     bool computeIsReceivingVideo() const;
     void checkIsReceivingVideoChanged(bool wasReceiving);
@@ -98,7 +111,9 @@ private:
 	void setOutgoingAudioState(AudioState state);
 	void sendVideoParametersMessage();
 	void sendOutgoingMediaStateMessage();
-    
+
+	rtc::scoped_refptr<webrtc::AudioDeviceModule> createAudioDeviceModule();
+
     void beginStatsTimer(int timeoutMs);
     void collectStats();
 
@@ -113,8 +128,11 @@ private:
 	SSRC _ssrcAudio;
 	SSRC _ssrcVideo;
 	bool _enableFlexfec = true;
+    
+    ProtocolVersion _protocolVersion;
 
 	bool _isConnected = false;
+    bool _didConnectOnce = false;
 	bool _readyToReceiveVideo = false;
     bool _didConfigureVideo = false;
 	AudioState _outgoingAudioState = AudioState::Active;
@@ -128,19 +146,23 @@ private:
 	std::unique_ptr<webrtc::Call> _call;
 	webrtc::FieldTrialBasedConfig _fieldTrials;
 	webrtc::LocalAudioSinkAdapter _audioSource;
+	rtc::scoped_refptr<webrtc::AudioDeviceModule> _audioDeviceModule;
 	std::unique_ptr<cricket::VoiceMediaChannel> _audioChannel;
 	std::unique_ptr<cricket::VideoMediaChannel> _videoChannel;
 	std::unique_ptr<webrtc::VideoBitrateAllocatorFactory> _videoBitrateAllocatorFactory;
 	std::shared_ptr<VideoCaptureInterface> _videoCapture;
-	std::shared_ptr<rtc::VideoSinkInterface<webrtc::VideoFrame>> _currentIncomingVideoSink;
+    std::shared_ptr<VideoSinkInterfaceProxyImpl> _incomingVideoSinkProxy;
 
     float _localPreferredVideoAspectRatio = 0.0f;
     float _preferredAspectRatio = 0.0f;
     bool _enableHighBitrateVideo = false;
     bool _isLowCostNetwork = false;
+    bool _isDataSavingActive = false;
 
 	std::unique_ptr<MediaManager::NetworkInterfaceImpl> _audioNetworkInterface;
 	std::unique_ptr<MediaManager::NetworkInterfaceImpl> _videoNetworkInterface;
+    
+    std::vector<CallStatsBitrateRecord> _bitrateRecords;
 
 	std::shared_ptr<PlatformContext> _platformContext;
 };

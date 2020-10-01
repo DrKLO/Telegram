@@ -1221,6 +1221,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
         }
         int lower_id = (int) peer;
         int sendResult = 0;
+        int myId = getUserConfig().getClientUserId();
         if (lower_id != 0) {
             final TLRPC.Peer peer_id = getMessagesController().getPeer((int) peer);
             boolean isMegagroup = false;
@@ -1229,6 +1230,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
             boolean canSendMedia = true;
             boolean canSendPolls = true;
             boolean canSendPreview = true;
+            String rank = null;
             int linkedToGroup = 0;
             TLRPC.Chat chat;
             if (lower_id > 0) {
@@ -1264,7 +1266,6 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
             LongSparseArray<TLRPC.Message> messagesByRandomIds = new LongSparseArray<>();
             TLRPC.InputPeer inputPeer = getMessagesController().getInputPeer(lower_id);
             long lastDialogId = 0;
-            int myId = getUserConfig().getClientUserId();
             final boolean toMyself = peer == myId;
             long lastGroupedId;
             for (int a = 0; a < messages.size(); a++) {
@@ -1294,7 +1295,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                 }
 
                 final TLRPC.Message newMsg = new TLRPC.TL_message();
-                boolean forwardFromSaved = msgObj.getDialogId() == myId && msgObj.isFromUser() && msgObj.messageOwner.from_id.user_id == getUserConfig().getClientUserId();
+                boolean forwardFromSaved = msgObj.getDialogId() == myId && msgObj.isFromUser() && msgObj.messageOwner.from_id.user_id == myId;
                 if (msgObj.isForwarded()) {
                     newMsg.fwd_from = new TLRPC.TL_messageFwdHeader();
                     if ((msgObj.messageOwner.fwd_from.flags & 1) != 0) {
@@ -1446,16 +1447,20 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                 if (peer_id.channel_id != 0 && !isMegagroup) {
                     if (isSignature) {
                         newMsg.from_id = new TLRPC.TL_peerUser();
-                        newMsg.from_id.user_id = getUserConfig().getClientUserId();
+                        newMsg.from_id.user_id = myId;
                     } else {
                         newMsg.from_id = peer_id;
                     }
                     newMsg.post = true;
                 } else if (ChatObject.shouldSendAnonymously(chat)) {
                     newMsg.from_id = peer_id;
+                    if (rank != null) {
+                        newMsg.post_author = rank;
+                        newMsg.flags |= 65536;
+                    }
                 } else {
                     newMsg.from_id = new TLRPC.TL_peerUser();
-                    newMsg.from_id.user_id = getUserConfig().getClientUserId();
+                    newMsg.from_id.user_id = myId;
                     newMsg.flags |= TLRPC.MESSAGE_FLAG_HAS_FROM_ID;
                 }
                 if (newMsg.random_id == 0) {
@@ -1609,6 +1614,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                                         final int oldId = newMsgObj1.id;
                                         final ArrayList<TLRPC.Message> sentMessages = new ArrayList<>();
                                         sentMessages.add(message);
+                                        msgObj1.messageOwner.post_author = message.post_author;
                                         updateMediaPaths(msgObj1, message, message.id, null, true);
                                         int existFlags = msgObj1.getMediaExistanceFlags();
                                         newMsgObj1.id = message.id;
@@ -2583,9 +2589,11 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
         boolean isChannel = false;
         boolean forceNoSoundVideo = false;
         boolean anonymously = false;
+        String rank = null;
         int linkedToGroup = 0;
         TLRPC.EncryptedChat encryptedChat = null;
         TLRPC.InputPeer sendToPeer = lower_id != 0 ? getMessagesController().getInputPeer(lower_id) : null;
+        int myId = getUserConfig().getClientUserId();
         if (lower_id == 0) {
             encryptedChat = getMessagesController().getEncryptedChat(high_id);
             if (encryptedChat == null) {
@@ -2886,9 +2894,13 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                     newMsg.from_id.channel_id = sendToPeer.channel_id;
                 } else if (anonymously) {
                     newMsg.from_id = getMessagesController().getPeer(lower_id);
+                    if (rank != null) {
+                        newMsg.post_author = rank;
+                        newMsg.flags |= 65536;
+                    }
                 } else {
                     newMsg.from_id = new TLRPC.TL_peerUser();
-                    newMsg.from_id.user_id = getUserConfig().getClientUserId();
+                    newMsg.from_id.user_id = myId;
                     newMsg.flags |= TLRPC.MESSAGE_FLAG_HAS_FROM_ID;
                 }
                 getUserConfig().saveConfig(false);
@@ -2925,7 +2937,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                             newMsg.post = true;
                             if (chat.signatures) {
                                 newMsg.from_id = new TLRPC.TL_peerUser();
-                                newMsg.from_id.user_id = getUserConfig().getClientUserId();
+                                newMsg.from_id.user_id = myId;
                             }
                         }
                     }
@@ -2975,7 +2987,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                 }
             } else {
                 newMsg.peer_id = new TLRPC.TL_peerUser();
-                if (encryptedChat.participant_id == getUserConfig().getClientUserId()) {
+                if (encryptedChat.participant_id == myId) {
                     newMsg.peer_id.user_id = encryptedChat.admin_id;
                 } else {
                     newMsg.peer_id.user_id = encryptedChat.participant_id;
@@ -4786,6 +4798,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                                     }
                                     message.unread = value < message.id;
                                 }
+                                msgObj.messageOwner.post_author = message.post_author;
                                 updateMediaPaths(msgObj, message, message.id, originalPath, false);
                                 existFlags = msgObj.getMediaExistanceFlags();
                                 newMsgObj.id = message.id;

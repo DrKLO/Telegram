@@ -228,6 +228,7 @@
     <string name="GoToSettings">GO TO SETTINGS</string>
     <string name="OpenProfile">Open Profile</string>
     <string name="OpenChannel2">Open Channel</string>
+    <string name="OpenGroup2">Open Group</string>
     <string name="SendMessage">Send Message</string>
     <string name="Mention">Mention</string>
     <string name="NotificationsMutedHint">Notifications muted</string>
@@ -3611,6 +3612,12 @@
     <string name="Comments_few">%1$d Comments</string>
     <string name="Comments_many">%1$d Comments</string>
     <string name="Comments_other">%1$d Comments</string>
+    <string name="CommentsCount_zero">%1$d comments</string>
+    <string name="CommentsCount_one">%1$d comment</string>
+    <string name="CommentsCount_two">%1$d comments</string>
+    <string name="CommentsCount_few">%1$d comments</string>
+    <string name="CommentsCount_many">%1$d comments</string>
+    <string name="CommentsCount_other">%1$d comments</string>
     <!--accessibility descriptions-->
     <string name="AccDescrGroup">Group</string>
     <string name="AccDescrChannel">Channel</string>

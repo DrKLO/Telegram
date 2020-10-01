@@ -517,7 +517,7 @@ public class VoIPHelper {
 				c.get(Calendar.MINUTE), c.get(Calendar.SECOND), name)).getAbsolutePath();
 	}
 
-	public static String getLogFilePath(long callId) {
+	public static String getLogFilePath(long callId, boolean stats) {
 		final File logsDir = getLogsDir();
 		if (!BuildVars.DEBUG_VERSION) {
 			final File[] _logs = logsDir.listFiles();

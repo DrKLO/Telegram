@@ -51,6 +51,7 @@ import android.view.View;
 import android.view.ViewConfiguration;
 import android.view.ViewGroup;
 import android.view.ViewOutlineProvider;
+import android.view.ViewParent;
 import android.view.ViewTreeObserver;
 import android.view.WindowManager;
 import android.view.animation.AccelerateDecelerateInterpolator;
@@ -2771,7 +2772,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         floatingButtonContainer.setContentDescription(LocaleController.getString("NewMessageTitle", R.string.NewMessageTitle));
         floatingButtonContainer.addView(floatingButton, LayoutHelper.createFrame((Build.VERSION.SDK_INT >= 21 ? 56 : 60), (Build.VERSION.SDK_INT >= 21 ? 56 : 60), Gravity.LEFT | Gravity.TOP, 10, 0, 10, 0));
 
-
+        searchTabsView = null;
         if (searchString != null) {
             showSearch(true, false);
             actionBar.openSearchField(searchString, false);
@@ -2997,7 +2998,6 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         }
 
         updateFilterTabs(false);
-        searchTabsView = null;
 
         return fragmentView;
     }
@@ -3654,7 +3654,10 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                     contentView.addView(searchTabsView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 44));
                 }
             } else if (searchTabsView != null && onlyDialogsAdapter) {
-                ((ContentView) fragmentView).removeView(searchTabsView);
+                ViewParent parent = searchTabsView.getParent();
+                if (parent instanceof ViewGroup) {
+                    ((ViewGroup) parent).removeView(searchTabsView);
+                }
                 searchTabsView = null;
             }
 

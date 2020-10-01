@@ -239,7 +239,6 @@ public:
     _remoteBatteryLevelIsLowUpdated(descriptor.remoteBatteryLevelIsLowUpdated),
     _remotePrefferedAspectRatioUpdated(descriptor.remotePrefferedAspectRatioUpdated),
 	_videoCapture(descriptor.videoCapture),
-	_localPreferredVideoAspectRatio(descriptor.config.preferredAspectRatio),
 	_state(State::Reconnecting),
 	_videoState(_videoCapture ? VideoState::Active : VideoState::Inactive),
     _platformContext(descriptor.platformContext) {
@@ -436,6 +435,9 @@ public:
             videoCaptureImpl->setPreferredAspectRatio(_preferredAspectRatio);
         }
 		beginSendingVideo();
+    }
+    
+    void setRequestedVideoAspect(float aspect) {
     }
 
     void receiveSignalingData(const std::vector<uint8_t> &data) {
@@ -863,7 +865,7 @@ private:
             });
         });
 
-        _localVideoTrack = _nativeFactory->CreateVideoTrack("video0", videoCaptureImpl->_videoSource);
+        _localVideoTrack = _nativeFactory->CreateVideoTrack("video0", videoCaptureImpl->source());
         _peerConnection->AddTrack(_localVideoTrack, _streamIds);
         for (auto &it : _peerConnection->GetTransceivers()) {
             if (it->media_type() == cricket::MediaType::MEDIA_TYPE_VIDEO) {
@@ -967,6 +969,12 @@ void InstanceImplReference::receiveSignalingData(const std::vector<uint8_t> &dat
 void InstanceImplReference::setVideoCapture(std::shared_ptr<VideoCaptureInterface> videoCapture) {
     internal_->perform(RTC_FROM_HERE, [videoCapture](InstanceImplReferenceInternal *internal) {
         internal->setVideoCapture(videoCapture);
+    });
+}
+
+void InstanceImplReference::setRequestedVideoAspect(float aspect) {
+    internal_->perform(RTC_FROM_HERE, [aspect](InstanceImplReferenceInternal *internal) {
+        internal->setRequestedVideoAspect(aspect);
     });
 }
 

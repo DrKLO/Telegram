@@ -20,7 +20,7 @@ class VideoCameraCapturer;
 class VideoCameraCapturer {
 
 public:
-	VideoCameraCapturer(rtc::scoped_refptr<webrtc::JavaVideoTrackSourceInterface> source, bool useFrontCamera, std::function<void(VideoState)> stateUpdated, std::shared_ptr<PlatformContext> platformContext);
+	VideoCameraCapturer(rtc::scoped_refptr<webrtc::JavaVideoTrackSourceInterface> source, std::string deviceId, std::function<void(VideoState)> stateUpdated, std::shared_ptr<PlatformContext> platformContext);
 
 	void setState(VideoState state);
 	void setPreferredCaptureAspectRatio(float aspectRatio);

@@ -147,6 +147,7 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
         emptyView.subtitle.setVisibility(View.GONE);
         emptyView.setVisibility(View.GONE);
         emptyView.addView(loadingView, 0);
+        emptyView.showProgress(true, false);
 
         searchContainer.addView(emptyView);
         searchListView.setEmptyView(emptyView);

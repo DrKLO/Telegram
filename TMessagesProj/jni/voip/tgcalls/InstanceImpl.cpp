@@ -58,6 +58,12 @@ void InstanceImpl::setVideoCapture(std::shared_ptr<VideoCaptureInterface> videoC
     });
 }
 
+void InstanceImpl::setRequestedVideoAspect(float aspect) {
+    _manager->perform(RTC_FROM_HERE, [aspect](Manager *manager) {
+        manager->setRequestedVideoAspect(aspect);
+    });
+}
+
 void InstanceImpl::setNetworkType(NetworkType networkType) {
     bool isLowCostNetwork = false;
     switch (networkType) {
@@ -93,19 +99,27 @@ void InstanceImpl::setEchoCancellationStrength(int strength) {
 }
 
 void InstanceImpl::setAudioInputDevice(std::string id) {
-	// TODO: not implemented
+	_manager->perform(RTC_FROM_HERE, [id](Manager *manager) {
+		manager->setAudioInputDevice(id);
+	});
 }
 
 void InstanceImpl::setAudioOutputDevice(std::string id) {
-	// TODO: not implemented
+	_manager->perform(RTC_FROM_HERE, [id](Manager *manager) {
+		manager->setAudioOutputDevice(id);
+	});
 }
 
 void InstanceImpl::setInputVolume(float level) {
-	// TODO: not implemented
+	_manager->perform(RTC_FROM_HERE, [level](Manager *manager) {
+		manager->setInputVolume(level);
+	});
 }
 
 void InstanceImpl::setOutputVolume(float level) {
-	// TODO: not implemented
+	_manager->perform(RTC_FROM_HERE, [level](Manager *manager) {
+		manager->setOutputVolume(level);
+	});
 }
 
 void InstanceImpl::setAudioOutputDuckingEnabled(bool enabled) {
@@ -142,39 +156,17 @@ void InstanceImpl::stop(std::function<void(FinalState)> completion) {
     std::string debugLog = _logSink->result();
     
     _manager->perform(RTC_FROM_HERE, [completion, debugLog = std::move(debugLog)](Manager *manager) {
-        manager->getNetworkStats([completion, debugLog = std::move(debugLog)](TrafficStats stats) {
+        manager->getNetworkStats([completion, debugLog = std::move(debugLog)](TrafficStats stats, CallStats callStats) {
             FinalState finalState;
             finalState.debugLog = debugLog;
             finalState.isRatingSuggested = false;
             finalState.trafficStats = stats;
+            finalState.callStats = callStats;
             
             completion(finalState);
         });
     });
 }
-
-/*void InstanceImpl::controllerStateCallback(Controller::State state) {
-	if (onStateUpdated_) {
-		const auto mappedState = [&] {
-			switch (state) {
-			case Controller::State::WaitInit:
-				return State::WaitInit;
-			case Controller::State::WaitInitAck:
-				return State::WaitInitAck;
-			case Controller::State::Established:
-				return State::Estabilished;
-			case Controller::State::Failed:
-				return State::Failed;
-			case Controller::State::Reconnecting:
-				return State::Reconnecting;
-			default:
-				return State::Estabilished;
-			}
-		}();
-
-		onStateUpdated_(mappedState);
-	}
-}*/
 
 int InstanceImpl::GetConnectionMaxLayer() {
 	return 92;  // TODO: retrieve from LayerBase

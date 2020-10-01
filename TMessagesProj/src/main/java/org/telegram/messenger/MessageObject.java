@@ -5269,7 +5269,7 @@ public class MessageObject {
         if (scheduled && message.date < ConnectionsManager.getInstance(currentAccount).getCurrentTime() - 60) {
             return false;
         }
-        if (chat != null && (chat.left || chat.kicked)) {
+        if (chat != null && (chat.left || chat.kicked) && (!chat.megagroup || !chat.has_link)) {
             return false;
         }
         if (message == null || message.peer_id == null || message.media != null && (isRoundVideoDocument(message.media.document) || isStickerDocument(message.media.document) || isAnimatedStickerDocument(message.media.document, true) || isLocationMessage(message)) || message.action != null && !(message.action instanceof TLRPC.TL_messageActionEmpty) || isForwardedMessage(message) || message.via_bot_id != 0 || message.id < 0) {

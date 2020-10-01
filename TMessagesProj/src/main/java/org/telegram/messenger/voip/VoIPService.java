@@ -174,7 +174,7 @@ public class VoIPService extends VoIPBaseService {
 		}
 
 		if (videoCall) {
-			videoCapturer = NativeInstance.createVideoCapturer(localSink);
+			videoCapturer = NativeInstance.createVideoCapturer(localSink, isFrontFaceCamera);
 			videoState = Instance.VIDEO_STATE_ACTIVE;
 			if (!isBtHeadsetConnected && !isHeadsetPlugged) {
 				setAudioOutput(0);
@@ -219,7 +219,7 @@ public class VoIPService extends VoIPBaseService {
 				isVideoAvailable = true;
 			}
 			if (videoCall && (Build.VERSION.SDK_INT < 23 || checkSelfPermission(Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED)) {
-				videoCapturer = NativeInstance.createVideoCapturer(localSink);
+				videoCapturer = NativeInstance.createVideoCapturer(localSink, isFrontFaceCamera);
 				videoState = Instance.VIDEO_STATE_ACTIVE;
 			} else {
 				videoState = Instance.VIDEO_STATE_INACTIVE;
@@ -629,18 +629,18 @@ public class VoIPService extends VoIPBaseService {
 		if (tgVoip == null) {
 			return;
 		}
-		tgVoip.setupOutgoingVideo(localSink);
+		tgVoip.setupOutgoingVideo(localSink, isFrontFaceCamera);
 	}
 
 	public void switchCamera() {
 		if (tgVoip == null || switchingCamera) {
 			if (videoCapturer != 0 && !switchingCamera) {
-				NativeInstance.switchCameraCapturer(videoCapturer);
+				NativeInstance.switchCameraCapturer(videoCapturer, !isFrontFaceCamera);
 			}
 			return;
 		}
 		switchingCamera = true;
-		tgVoip.switchCamera();
+		tgVoip.switchCamera(!isFrontFaceCamera);
 	}
 
 	public void setVideoState(int videoState) {
@@ -649,7 +649,7 @@ public class VoIPService extends VoIPBaseService {
 				this.videoState = videoState;
 				NativeInstance.setVideoStateCapturer(videoCapturer, videoState);
 			} else if (videoState == Instance.VIDEO_STATE_ACTIVE && currentState != STATE_BUSY && currentState != STATE_ENDED) {
-				videoCapturer = NativeInstance.createVideoCapturer(localSink);
+				videoCapturer = NativeInstance.createVideoCapturer(localSink, isFrontFaceCamera);
 				this.videoState = Instance.VIDEO_STATE_ACTIVE;
 			}
 			return;
@@ -1085,8 +1085,9 @@ public class VoIPService extends VoIPBaseService {
 			final Instance.ServerConfig serverConfig = Instance.getGlobalServerConfig();
 			final boolean enableAec = !(sysAecAvailable && serverConfig.useSystemAec);
 			final boolean enableNs = !(sysNsAvailable && serverConfig.useSystemNs);
-			final String logFilePath = BuildVars.DEBUG_VERSION ? VoIPHelper.getLogFilePath("voip" + call.id) : VoIPHelper.getLogFilePath(call.id);
-			final Instance.Config config = new Instance.Config(initializationTimeout, receiveTimeout, voipDataSaving, call.p2p_allowed, enableAec, enableNs, true, false, logFilePath, call.protocol.max_layer);
+			final String logFilePath = BuildVars.DEBUG_VERSION ? VoIPHelper.getLogFilePath("voip" + call.id) : VoIPHelper.getLogFilePath(call.id, false);
+			final String statisLogFilePath = "";
+			final Instance.Config config = new Instance.Config(initializationTimeout, receiveTimeout, voipDataSaving, call.p2p_allowed, enableAec, enableNs, true, false, serverConfig.enableStunMarking, logFilePath, statisLogFilePath, call.protocol.max_layer);
 
 			// persistent state
 			final String persistentStateFilePath = new File(ApplicationLoader.applicationContext.getFilesDir(), "voip_persistent_state.json").getAbsolutePath();

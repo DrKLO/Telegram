@@ -4,8 +4,8 @@
 
 namespace tgcalls {
 
-VideoCapturerInterfaceImpl::VideoCapturerInterfaceImpl(rtc::scoped_refptr<webrtc::JavaVideoTrackSourceInterface> source, bool useFrontCamera, std::function<void(VideoState)> stateUpdated, std::shared_ptr<PlatformContext> platformContext) {
-	_capturer = std::unique_ptr<VideoCameraCapturer>(new VideoCameraCapturer(source, useFrontCamera, stateUpdated, platformContext));
+VideoCapturerInterfaceImpl::VideoCapturerInterfaceImpl(rtc::scoped_refptr<webrtc::JavaVideoTrackSourceInterface> source, std::string deviceId, std::function<void(VideoState)> stateUpdated, std::shared_ptr<PlatformContext> platformContext) {
+	_capturer = std::unique_ptr<VideoCameraCapturer>(new VideoCameraCapturer(source, deviceId, stateUpdated, platformContext));
 }
 
 void VideoCapturerInterfaceImpl::setState(VideoState state) {

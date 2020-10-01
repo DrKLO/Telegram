@@ -145,6 +145,7 @@ public class AvatarPreviewer {
     public static enum MenuItem {
         OPEN_PROFILE("OpenProfile", R.string.OpenProfile, R.drawable.msg_openprofile),
         OPEN_CHANNEL("OpenChannel2", R.string.OpenChannel2, R.drawable.msg_channel),
+        OPEN_GROUP("OpenGroup2", R.string.OpenGroup2, R.drawable.msg_discussion),
         SEND_MESSAGE("SendMessage", R.string.SendMessage, R.drawable.msg_discussion),
         MENTION("Mention", R.string.Mention, R.drawable.msg_mention);
 

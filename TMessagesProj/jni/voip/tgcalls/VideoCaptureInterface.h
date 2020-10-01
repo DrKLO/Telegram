@@ -1,6 +1,7 @@
 #ifndef TGCALLS_VIDEO_CAPTURE_INTERFACE_H
 #define TGCALLS_VIDEO_CAPTURE_INTERFACE_H
 
+#include <string>
 #include <memory>
 
 namespace rtc {
@@ -27,11 +28,13 @@ protected:
 	VideoCaptureInterface() = default;
 
 public:
-	static std::unique_ptr<VideoCaptureInterface> Create(std::shared_ptr<PlatformContext> platformContext = nullptr);
+	static std::unique_ptr<VideoCaptureInterface> Create(
+		std::string deviceId = std::string(),
+		std::shared_ptr<PlatformContext> platformContext = nullptr);
 
 	virtual ~VideoCaptureInterface();
 
-	virtual void switchCamera() = 0;
+	virtual void switchToDevice(std::string deviceId) = 0;
 	virtual void setState(VideoState state) = 0;
     virtual void setPreferredAspectRatio(float aspectRatio) = 0;
 	virtual void setOutput(std::shared_ptr<rtc::VideoSinkInterface<webrtc::VideoFrame>> sink) = 0;

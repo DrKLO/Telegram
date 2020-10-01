@@ -2,6 +2,8 @@
 
 #include "rtc_base/byte_buffer.h"
 
+#include <fstream>
+
 namespace tgcalls {
 namespace {
 
@@ -24,7 +26,73 @@ rtc::Thread *makeMediaThread() {
 	return value.get();
 }
 
+void dumpStatsLog(const FilePath &path, const CallStats &stats) {
+	if (path.empty()) {
+		return;
+	}
+    std::ofstream file;
+    file.open(path);
+
+    file << "{";
+    file << "\"v\":\"" << 1 << "\"";
+    file << ",";
+
+    file << "\"codec\":\"" << stats.outgoingCodec << "\"";
+    file << ",";
+
+    file << "\"bitrate\":[";
+    bool addComma = false;
+    for (auto &it : stats.bitrateRecords) {
+        if (addComma) {
+            file << ",";
+        }
+        file << "{";
+        file << "\"t\":\"" << it.timestamp << "\"";
+        file << ",";
+        file << "\"b\":\"" << it.bitrate << "\"";
+        file << "}";
+        addComma = true;
+    }
+    file << "]";
+    file << ",";
+
+    file << "\"network\":[";
+    addComma = false;
+    for (auto &it : stats.networkRecords) {
+        if (addComma) {
+            file << ",";
+        }
+        file << "{";
+        file << "\"t\":\"" << it.timestamp << "\"";
+        file << ",";
+        file << "\"e\":\"" << (int)(it.endpointType) << "\"";
+        file << ",";
+        file << "\"w\":\"" << (it.isLowCost ? 1 : 0) << "\"";
+        file << "}";
+        addComma = true;
+    }
+    file << "]";
+
+    file << "}";
+
+    file.close();
+}
+
 } // namespace
+
+bool Manager::ResolvedNetworkStatus::operator==(const ResolvedNetworkStatus &rhs) {
+    if (rhs.isLowCost != isLowCost) {
+        return false;
+    }
+    if (rhs.isLowDataRequested != isLowDataRequested) {
+        return false;
+    }
+    return true;
+}
+
+bool Manager::ResolvedNetworkStatus::operator!=(const ResolvedNetworkStatus &rhs) {
+    return !(*this == rhs);
+}
 
 rtc::Thread *Manager::getMediaThread() {
 	static rtc::Thread *value = makeMediaThread();
@@ -39,8 +107,12 @@ _signaling(
 	_encryptionKey,
 	[=](int delayMs, int cause) { sendSignalingAsync(delayMs, cause); }),
 _enableP2P(descriptor.config.enableP2P),
+_enableTCP(descriptor.config.allowTCP),
+_enableStunMarking(descriptor.config.enableStunMarking),
 _protocolVersion(descriptor.config.protocolVersion),
+_statsLogPath(descriptor.config.statsLogPath),
 _rtcServers(std::move(descriptor.rtcServers)),
+_mediaDevicesConfig(std::move(descriptor.mediaDevicesConfig)),
 _videoCapture(std::move(descriptor.videoCapture)),
 _stateUpdated(std::move(descriptor.stateUpdated)),
 _remoteMediaStateUpdated(std::move(descriptor.remoteMediaStateUpdated)),
@@ -48,13 +120,14 @@ _remoteBatteryLevelIsLowUpdated(std::move(descriptor.remoteBatteryLevelIsLowUpda
 _remotePrefferedAspectRatioUpdated(std::move(descriptor.remotePrefferedAspectRatioUpdated)),
 _signalingDataEmitted(std::move(descriptor.signalingDataEmitted)),
 _signalBarsUpdated(std::move(descriptor.signalBarsUpdated)),
-_localPreferredVideoAspectRatio(descriptor.config.preferredAspectRatio),
 _enableHighBitrateVideo(descriptor.config.enableHighBitrateVideo),
+_dataSaving(descriptor.config.dataSaving),
 _platformContext(descriptor.platformContext) {
+
 	assert(_thread->IsCurrent());
 	assert(_stateUpdated != nullptr);
 	assert(_signalingDataEmitted != nullptr);
-    
+
     _preferredCodecs = descriptor.config.preferredVideoCodecs;
 
 	_sendSignalingMessage = [=](const Message &message) {
@@ -104,11 +177,13 @@ void Manager::start() {
 			strong->_sendSignalingMessage(std::move(message));
 		});
 	};
-	_networkManager.reset(new ThreadLocalObject<NetworkManager>(getNetworkThread(), [weak, thread, sendSignalingMessage, encryptionKey = _encryptionKey, enableP2P = _enableP2P, rtcServers = _rtcServers] {
+	_networkManager.reset(new ThreadLocalObject<NetworkManager>(getNetworkThread(), [weak, thread, sendSignalingMessage, encryptionKey = _encryptionKey, enableP2P = _enableP2P, enableTCP = _enableTCP, enableStunMarking = _enableStunMarking, rtcServers = _rtcServers] {
 		return new NetworkManager(
 			getNetworkThread(),
 			encryptionKey,
 			enableP2P,
+            enableTCP,
+            enableStunMarking,
 			rtcServers,
 			[=](const NetworkManager::State &state) {
 				thread->PostTask(RTC_FROM_HERE, [=] {
@@ -137,7 +212,7 @@ void Manager::start() {
 					strong->_mediaManager->perform(RTC_FROM_HERE, [=](MediaManager *mediaManager) {
 						mediaManager->setIsConnected(state.isReadyToSendData);
 					});
-                    
+
                     if (isFirstConnection) {
                         strong->sendInitialSignalingMessages();
                     }
@@ -167,10 +242,12 @@ void Manager::start() {
 			});
 	}));
 	bool isOutgoing = _encryptionKey.isOutgoing;
-	_mediaManager.reset(new ThreadLocalObject<MediaManager>(getMediaThread(), [weak, isOutgoing, thread, sendSignalingMessage, videoCapture = _videoCapture, localPreferredVideoAspectRatio = _localPreferredVideoAspectRatio, enableHighBitrateVideo = _enableHighBitrateVideo, signalBarsUpdated = _signalBarsUpdated, preferredCodecs = _preferredCodecs, platformContext = _platformContext]() {
+	_mediaManager.reset(new ThreadLocalObject<MediaManager>(getMediaThread(), [weak, isOutgoing, protocolVersion = _protocolVersion, thread, sendSignalingMessage, videoCapture = _videoCapture, mediaDevicesConfig = _mediaDevicesConfig, enableHighBitrateVideo = _enableHighBitrateVideo, signalBarsUpdated = _signalBarsUpdated, preferredCodecs = _preferredCodecs, platformContext = _platformContext]() {
 		return new MediaManager(
 			getMediaThread(),
 			isOutgoing,
+            protocolVersion,
+			mediaDevicesConfig,
 			videoCapture,
 			sendSignalingMessage,
 			[=](Message &&message) {
@@ -183,7 +260,6 @@ void Manager::start() {
 				});
 			},
             signalBarsUpdated,
-            localPreferredVideoAspectRatio,
             enableHighBitrateVideo,
             preferredCodecs,
 			platformContext);
@@ -228,10 +304,10 @@ void Manager::receiveMessage(DecryptedMessage &&message) {
         if (_remoteBatteryLevelIsLowUpdated) {
 			_remoteBatteryLevelIsLowUpdated(remoteBatteryLevelIsLow->batteryLow);
         }
-    } else if (const auto remoteNetworkType = absl::get_if<RemoteNetworkTypeMessage>(data)) {
-        bool wasCurrentNetworkLowCost = calculateIsCurrentNetworkLowCost();
-        _remoteNetworkIsLowCost = remoteNetworkType->isLowCost;
-        updateIsCurrentNetworkLowCost(wasCurrentNetworkLowCost);
+    } else if (const auto remoteNetworkStatus = absl::get_if<RemoteNetworkStatusMessage>(data)) {
+        _remoteNetworkIsLowCost = remoteNetworkStatus->isLowCost;
+        _remoteIsLowDataRequested = remoteNetworkStatus->isLowDataRequested;
+        updateCurrentResolvedNetworkStatus();
     } else {
         if (const auto videoParameters = absl::get_if<VideoParametersMessage>(data)) {
             float value = ((float)videoParameters->aspectRatio) / 1000.0;
@@ -257,6 +333,12 @@ void Manager::setVideoCapture(std::shared_ptr<VideoCaptureInterface> videoCaptur
     });
 }
 
+void Manager::setRequestedVideoAspect(float aspect) {
+    _mediaManager->perform(RTC_FROM_HERE, [aspect](MediaManager *mediaManager) {
+        mediaManager->setRequestedVideoAspect(aspect);
+    });
+}
+
 void Manager::setMuteOutgoingAudio(bool mute) {
 	_mediaManager->perform(RTC_FROM_HERE, [mute](MediaManager *mediaManager) {
 		mediaManager->setMuteOutgoingAudio(mute);
@@ -278,16 +360,85 @@ void Manager::setIsLocalNetworkLowCost(bool isLocalNetworkLowCost) {
         _networkManager->perform(RTC_FROM_HERE, [isLocalNetworkLowCost](NetworkManager *networkManager) {
             networkManager->setIsLocalNetworkLowCost(isLocalNetworkLowCost);
         });
-        
-        bool wasCurrentNetworkLowCost = calculateIsCurrentNetworkLowCost();
+
         _localNetworkIsLowCost = isLocalNetworkLowCost;
-        updateIsCurrentNetworkLowCost(wasCurrentNetworkLowCost);
-        
+        updateCurrentResolvedNetworkStatus();
+    }
+}
+
+void Manager::getNetworkStats(std::function<void (TrafficStats, CallStats)> completion) {
+    _networkManager->perform(RTC_FROM_HERE, [thread = _thread, weak = std::weak_ptr<Manager>(shared_from_this()), completion = std::move(completion), statsLogPath = _statsLogPath](NetworkManager *networkManager) {
+        auto networkStats = networkManager->getNetworkStats();
+
+        CallStats callStats;
+        networkManager->fillCallStats(callStats);
+
+        thread->PostTask(RTC_FROM_HERE, [weak, networkStats, completion = std::move(completion), callStats = std::move(callStats), statsLogPath = statsLogPath] {
+            const auto strong = weak.lock();
+            if (!strong) {
+                return;
+            }
+
+            strong->_mediaManager->perform(RTC_FROM_HERE, [networkStats, completion = std::move(completion), callStatsValue = std::move(callStats), statsLogPath = statsLogPath](MediaManager *mediaManager) {
+                CallStats callStats = std::move(callStatsValue);
+                mediaManager->fillCallStats(callStats);
+                dumpStatsLog(statsLogPath, callStats);
+                completion(networkStats, callStats);
+            });
+        });
+    });
+}
+
+void Manager::updateCurrentResolvedNetworkStatus() {
+    bool localIsLowDataRequested = false;
+    switch (_dataSaving) {
+        case DataSaving::Never:
+            localIsLowDataRequested = false;
+            break;
+        case DataSaving::Mobile:
+            localIsLowDataRequested = !_localNetworkIsLowCost;
+            break;
+        case DataSaving::Always:
+            localIsLowDataRequested = true;
+        default:
+            break;
+    }
+
+    ResolvedNetworkStatus localStatus;
+    localStatus.isLowCost = _localNetworkIsLowCost;
+    localStatus.isLowDataRequested = localIsLowDataRequested;
+
+    if (!_currentResolvedLocalNetworkStatus.has_value() || *_currentResolvedLocalNetworkStatus != localStatus) {
+        _currentResolvedLocalNetworkStatus = localStatus;
+
         switch (_protocolVersion) {
             case ProtocolVersion::V1:
                 if (_didConnectOnce) {
-                    _sendTransportMessage({ RemoteNetworkTypeMessage{ isLocalNetworkLowCost } });
+                    _sendTransportMessage({ RemoteNetworkStatusMessage{ localStatus.isLowCost, localStatus.isLowDataRequested } });
                 }
+                break;
+            default:
+                break;
+        }
+    }
+
+    ResolvedNetworkStatus status;
+    status.isLowCost = _localNetworkIsLowCost && _remoteNetworkIsLowCost;
+    status.isLowDataRequested = localIsLowDataRequested || _remoteIsLowDataRequested;
+
+    if (!_currentResolvedNetworkStatus.has_value() || *_currentResolvedNetworkStatus != status) {
+        _currentResolvedNetworkStatus = status;
+        _mediaManager->perform(RTC_FROM_HERE, [status](MediaManager *mediaManager) {
+            mediaManager->setNetworkParameters(status.isLowCost, status.isLowDataRequested);
+        });
+    }
+}
+
+void Manager::sendInitialSignalingMessages() {
+    if (_currentResolvedLocalNetworkStatus.has_value()) {
+        switch (_protocolVersion) {
+        case ProtocolVersion::V1:
+            _sendTransportMessage({ RemoteNetworkStatusMessage{ _currentResolvedLocalNetworkStatus->isLowCost, _currentResolvedLocalNetworkStatus->isLowDataRequested } });
                 break;
             default:
                 break;
@@ -295,32 +446,28 @@ void Manager::setIsLocalNetworkLowCost(bool isLocalNetworkLowCost) {
     }
 }
 
-void Manager::getNetworkStats(std::function<void (TrafficStats)> completion) {
-    _networkManager->perform(RTC_FROM_HERE, [completion = std::move(completion)](NetworkManager *networkManager) {
-        completion(networkManager->getNetworkStats());
-    });
+void Manager::setAudioInputDevice(std::string id) {
+	_mediaManager->perform(RTC_FROM_HERE, [id](MediaManager *mediaManager) {
+		mediaManager->setAudioInputDevice(id);
+	});
 }
 
-bool Manager::calculateIsCurrentNetworkLowCost() const {
-    return _localNetworkIsLowCost && _remoteNetworkIsLowCost;
-}
-void Manager::updateIsCurrentNetworkLowCost(bool wasLowCost) {
-    bool isLowCost = calculateIsCurrentNetworkLowCost();
-    if (isLowCost != wasLowCost) {
-        _mediaManager->perform(RTC_FROM_HERE, [isLowCost](MediaManager *mediaManager) {
-            mediaManager->setIsCurrentNetworkLowCost(isLowCost);
-        });
-    }
+void Manager::setAudioOutputDevice(std::string id) {
+	_mediaManager->perform(RTC_FROM_HERE, [id](MediaManager *mediaManager) {
+		mediaManager->setAudioOutputDevice(id);
+	});
 }
 
-void Manager::sendInitialSignalingMessages() {
-    switch (_protocolVersion) {
-        case ProtocolVersion::V1:
-            _sendTransportMessage({ RemoteNetworkTypeMessage{ _localNetworkIsLowCost } });
-            break;
-        default:
-            break;
-    }
+void Manager::setInputVolume(float level) {
+	_mediaManager->perform(RTC_FROM_HERE, [level](MediaManager *mediaManager) {
+		mediaManager->setInputVolume(level);
+	});
+}
+
+void Manager::setOutputVolume(float level) {
+	_mediaManager->perform(RTC_FROM_HERE, [level](MediaManager *mediaManager) {
+		mediaManager->setOutputVolume(level);
+	});
 }
 
 } // namespace tgcalls

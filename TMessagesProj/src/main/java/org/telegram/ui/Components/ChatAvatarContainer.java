@@ -445,31 +445,30 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
             }
         } else {
             if (parentFragment.isThreadChat()) {
-                if (titleTextView.getTag() == null) {
-                    return;
-                }
-                titleTextView.setTag(null);
-                subtitleTextView.setVisibility(VISIBLE);
-                if (titleAnimation != null) {
-                    titleAnimation.cancel();
-                    titleAnimation = null;
-                }
-                if (animated) {
-                    titleAnimation = new AnimatorSet();
-                    titleAnimation.playTogether(
-                            ObjectAnimator.ofFloat(titleTextView, View.TRANSLATION_Y, 0),
-                            ObjectAnimator.ofFloat(subtitleTextView, View.ALPHA, 1.0f));
-                    titleAnimation.addListener(new AnimatorListenerAdapter() {
-                        @Override
-                        public void onAnimationEnd(Animator animation) {
-                            titleAnimation = null;
-                        }
-                    });
-                    titleAnimation.setDuration(180);
-                    titleAnimation.start();
-                } else {
-                    titleTextView.setTranslationY(0.0f);
-                    subtitleTextView.setAlpha(1.0f);
+                if (titleTextView.getTag() != null) {
+                    titleTextView.setTag(null);
+                    subtitleTextView.setVisibility(VISIBLE);
+                    if (titleAnimation != null) {
+                        titleAnimation.cancel();
+                        titleAnimation = null;
+                    }
+                    if (animated) {
+                        titleAnimation = new AnimatorSet();
+                        titleAnimation.playTogether(
+                                ObjectAnimator.ofFloat(titleTextView, View.TRANSLATION_Y, 0),
+                                ObjectAnimator.ofFloat(subtitleTextView, View.ALPHA, 1.0f));
+                        titleAnimation.addListener(new AnimatorListenerAdapter() {
+                            @Override
+                            public void onAnimationEnd(Animator animation) {
+                                titleAnimation = null;
+                            }
+                        });
+                        titleAnimation.setDuration(180);
+                        titleAnimation.start();
+                    } else {
+                        titleTextView.setTranslationY(0.0f);
+                        subtitleTextView.setAlpha(1.0f);
+                    }
                 }
             }
             newSubtitle = printString;

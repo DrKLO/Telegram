@@ -2771,7 +2771,7 @@ public class MessagesStorage extends BaseController {
                         getChatsInternal(TextUtils.join(",", chatsToLoad), chats);
                         for (int a = 0; a < chats.size(); a++) {
                             TLRPC.Chat chat = chats.get(a);
-                            if (chat != null && (ChatObject.isNotInChat(chat) || chat.migrated_to != null)) {
+                            if (chat != null && (ChatObject.isNotInChat(chat) || chat.min || chat.migrated_to != null)) {
                                 long did = -chat.id;
                                 database.executeFast("UPDATE dialogs SET unread_count = 0 WHERE did = " + did).stepThis().dispose();
                                 database.executeFast(String.format(Locale.US, "UPDATE messages SET read_state = 3 WHERE uid = %d AND mid > 0 AND read_state IN(0,2) AND out = 0", did)).stepThis().dispose();

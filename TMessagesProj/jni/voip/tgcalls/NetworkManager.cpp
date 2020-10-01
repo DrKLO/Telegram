@@ -23,10 +23,30 @@ extern "C" {
 
 namespace tgcalls {
 
+class TurnCustomizerImpl : public webrtc::TurnCustomizer {
+public:
+    TurnCustomizerImpl() {
+    }
+    
+    virtual ~TurnCustomizerImpl() {
+    }
+    
+    void MaybeModifyOutgoingStunMessage(cricket::PortInterface* port,
+                                        cricket::StunMessage* message) override {
+        message->AddAttribute(std::make_unique<cricket::StunByteStringAttribute>(cricket::STUN_ATTR_SOFTWARE, "Telegram "));
+    }
+    
+    bool AllowChannelData(cricket::PortInterface* port, const void *data, size_t size, bool payload) override {
+        return true;
+    }
+};
+
 NetworkManager::NetworkManager(
 	rtc::Thread *thread,
 	EncryptionKey encryptionKey,
 	bool enableP2P,
+    bool enableTCP,
+    bool enableStunMarking,
 	std::vector<RtcServer> const &rtcServers,
 	std::function<void(const NetworkManager::State &)> stateUpdated,
 	std::function<void(DecryptedMessage &&)> transportMessageReceived,
@@ -34,6 +54,8 @@ NetworkManager::NetworkManager(
 	std::function<void(int delayMs, int cause)> sendTransportServiceAsync) :
 _thread(thread),
 _enableP2P(enableP2P),
+_enableTCP(enableTCP),
+_enableStunMarking(enableStunMarking),
 _rtcServers(rtcServers),
 _transport(
 	EncryptedConnection::Type::Transport,
@@ -63,9 +85,17 @@ void NetworkManager::start() {
     _socketFactory.reset(new rtc::BasicPacketSocketFactory(_thread));
 
     _networkManager = std::make_unique<rtc::BasicNetworkManager>();
-    _portAllocator.reset(new cricket::BasicPortAllocator(_networkManager.get(), _socketFactory.get(), nullptr, nullptr));
+    
+    if (_enableStunMarking) {
+        _turnCustomizer.reset(new TurnCustomizerImpl());
+    }
+    
+    _portAllocator.reset(new cricket::BasicPortAllocator(_networkManager.get(), _socketFactory.get(), _turnCustomizer.get(), nullptr));
 
-    uint32_t flags = cricket::PORTALLOCATOR_DISABLE_TCP;
+    uint32_t flags = 0;
+    if (!_enableTCP) {
+        flags |= cricket::PORTALLOCATOR_DISABLE_TCP;
+    }
     if (!_enableP2P) {
         flags |= cricket::PORTALLOCATOR_DISABLE_UDP;
         flags |= cricket::PORTALLOCATOR_DISABLE_STUN;
@@ -90,7 +120,7 @@ void NetworkManager::start() {
         }
     }
 
-    _portAllocator->SetConfiguration(stunServers, turnServers, 2, webrtc::NO_PRUNE);
+    _portAllocator->SetConfiguration(stunServers, turnServers, 2, webrtc::NO_PRUNE, _turnCustomizer.get());
 
     _asyncResolverFactory = std::make_unique<webrtc::BasicAsyncResolverFactory>();
     _transportChannel.reset(new cricket::P2PTransportChannel("transport", 0, _portAllocator.get(), _asyncResolverFactory.get(), nullptr));
@@ -167,6 +197,8 @@ void NetworkManager::sendTransportService(int cause) {
 
 void NetworkManager::setIsLocalNetworkLowCost(bool isLocalNetworkLowCost) {
     _isLocalNetworkLowCost = isLocalNetworkLowCost;
+    
+    logCurrentNetworkState();
 }
 
 TrafficStats NetworkManager::getNetworkStats() {
@@ -176,6 +208,22 @@ TrafficStats NetworkManager::getNetworkStats() {
     stats.bytesSentMobile = _trafficStatsCellular.outgoing;
     stats.bytesReceivedMobile = _trafficStatsCellular.incoming;
     return stats;
+}
+
+void NetworkManager::fillCallStats(CallStats &callStats) {
+    callStats.networkRecords = std::move(_networkRecords);
+}
+
+void NetworkManager::logCurrentNetworkState() {
+    if (!_currentEndpointType.has_value()) {
+        return;
+    }
+    
+    CallStatsNetworkRecord record;
+    record.timestamp = (int32_t)(rtc::TimeMillis() / 1000);
+    record.endpointType = *_currentEndpointType;
+    record.isLowCost = _isLocalNetworkLowCost;
+    _networkRecords.push_back(std::move(record));
 }
 
 void NetworkManager::checkConnectionTimeout() {
@@ -258,6 +306,17 @@ void NetworkManager::transportRouteChanged(absl::optional<rtc::NetworkRoute> rou
         bool remoteIsWifi = route->remote.adapter_type() == rtc::AdapterType::ADAPTER_TYPE_WIFI;
         
         RTC_LOG(LS_INFO) << "NetworkManager is wifi: local=" << localIsWifi << ", remote=" << remoteIsWifi;
+        
+        CallStatsConnectionEndpointType endpointType;
+        if (route->local.uses_turn()) {
+            endpointType = CallStatsConnectionEndpointType::ConnectionEndpointTURN;
+        } else {
+            endpointType = CallStatsConnectionEndpointType::ConnectionEndpointP2P;
+        }
+        if (!_currentEndpointType.has_value() || _currentEndpointType != endpointType) {
+            _currentEndpointType = endpointType;
+            logCurrentNetworkState();
+        }
     }
 }
 
