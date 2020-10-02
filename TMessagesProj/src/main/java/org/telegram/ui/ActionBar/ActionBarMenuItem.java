@@ -910,7 +910,7 @@ public class ActionBarMenuItem extends FrameLayout {
                         ignoreRequestLayout = true;
                         measureChildWithMargins(searchFilterLayout, widthMeasureSpec, width, heightMeasureSpec, 0);
                         int filterWidth = searchFilterLayout.getVisibility() == View.VISIBLE ? searchFilterLayout.getMeasuredWidth() : 0;
-                        measureChildWithMargins(searchField, widthMeasureSpec, width + filterWidth, heightMeasureSpec, 0);
+                        measureChildWithMargins(searchField, MeasureSpec.makeMeasureSpec(minWidth - AndroidUtilities.dp(6), MeasureSpec.UNSPECIFIED), width + filterWidth, heightMeasureSpec, 0);
                         ignoreRequestLayout = false;
                         setMeasuredDimension(Math.max(filterWidth + searchField.getMeasuredWidth(), minWidth), MeasureSpec.getSize(heightMeasureSpec));
                     }
@@ -1109,7 +1109,7 @@ public class ActionBarMenuItem extends FrameLayout {
                 searchContainer.addView(searchFilterLayout, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 32, Gravity.CENTER_VERTICAL, 0, 0, 48, 0));
             } else {
                 searchContainer.addView(searchFilterLayout, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 32, Gravity.CENTER_VERTICAL, 0, 0, 48, 0));
-                searchContainer.addView(searchField, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 36, Gravity.CENTER_VERTICAL, 0, 0, 0, 0));
+                searchContainer.addView(searchField, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 36, Gravity.CENTER_VERTICAL, 0, 0, wrapInScrollView ? 0 : 48, 0));
                 searchContainer.addView(searchFieldCaption, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 36, Gravity.CENTER_VERTICAL | Gravity.RIGHT, 0, 5.5f, 48, 0));
             }
             searchFilterLayout.setClipChildren(false);

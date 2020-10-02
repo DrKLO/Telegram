@@ -2608,13 +2608,19 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
 
         searchViewPager.dialogsSearchAdapter.setDelegate(new DialogsSearchAdapter.DialogsSearchAdapterDelegate() {
             @Override
-            public void searchStateChanged(boolean search) {
+            public void searchStateChanged(boolean search, boolean animated) {
+                if (searchViewPager.emptyView.getVisibility() == View.VISIBLE) {
+                    animated = true;
+                }
                 if (searching && searchWas && searchViewPager.emptyView != null) {
                     if (search || searchViewPager.dialogsSearchAdapter.getItemCount() != 0) {
-                        searchViewPager.emptyView.showProgress(true);
+                        searchViewPager.emptyView.showProgress(true, animated);
                     } else {
-                        searchViewPager.emptyView.showProgress(false);
+                        searchViewPager.emptyView.showProgress(false, animated);
                     }
+                }
+                if (search && searchViewPager.dialogsSearchAdapter.getItemCount() == 0) {
+                    searchViewPager.cancelEnterAnimation();
                 }
             }
 
@@ -2700,6 +2706,13 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 TextView button = (TextView) dialog.getButton(DialogInterface.BUTTON_POSITIVE);
                 if (button != null) {
                     button.setTextColor(Theme.getColor(Theme.key_dialogTextRed2));
+                }
+            }
+
+            @Override
+            public void runResultsEnterAnimation() {
+                if (searchViewPager != null) {
+                    searchViewPager.runResultsEnterAnimation();
                 }
             }
         });
@@ -3753,7 +3766,6 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                         }
                         searchWasFullyShowed = true;
                         AndroidUtilities.requestAdjustResize(getParentActivity(), classGuid);
-                        fragmentView.requestLayout();
                         searchItem.setVisibility(View.GONE);
                     } else {
                         whiteActionBar = false;
@@ -3769,9 +3781,11 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                             hideFloatingButton(false);
                         }
                         searchWasFullyShowed = false;
-                        fragmentView.requestLayout();
                         searchItem.getSearchContainer().setAlpha(1f);
+                    }
 
+                    if (fragmentView != null) {
+                        fragmentView.requestLayout();
                     }
 
                     viewPages[0].listView.setVerticalScrollBarEnabled(true);
@@ -5931,6 +5945,9 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             if (doneItem != null) {
                 doneItem.setIconColor(Theme.getColor(Theme.key_actionBarDefaultIcon));
             }
+            if (commentView != null) {
+                commentView.updateColors();
+            }
 
             if (filtersView != null) {
                 filtersView.updateColors();
@@ -6303,6 +6320,15 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         arrayList.add(new ThemeDescription(null, 0, null, null, null, null, Theme.key_player_progress));
         arrayList.add(new ThemeDescription(null, 0, null, null, null, null, Theme.key_player_button));
         arrayList.add(new ThemeDescription(null, 0, null, null, null, null, Theme.key_player_buttonActive));
+
+        if (commentView != null) {
+            arrayList.add(new ThemeDescription(commentView, 0, null, Theme.chat_composeBackgroundPaint, null, null, Theme.key_chat_messagePanelBackground));
+            arrayList.add(new ThemeDescription(commentView, 0, null, null, new Drawable[]{Theme.chat_composeShadowDrawable}, null, Theme.key_chat_messagePanelShadow));
+            arrayList.add(new ThemeDescription(commentView, ThemeDescription.FLAG_TEXTCOLOR, new Class[]{ChatActivityEnterView.class}, new String[]{"messageEditText"}, null, null, null, Theme.key_chat_messagePanelText));
+            arrayList.add(new ThemeDescription(commentView, ThemeDescription.FLAG_CURSORCOLOR, new Class[]{ChatActivityEnterView.class}, new String[]{"messageEditText"}, null, null, null, Theme.key_chat_messagePanelCursor));
+            arrayList.add(new ThemeDescription(commentView, ThemeDescription.FLAG_HINTTEXTCOLOR, new Class[]{ChatActivityEnterView.class}, new String[]{"messageEditText"}, null, null, null, Theme.key_chat_messagePanelHint));
+            arrayList.add(new ThemeDescription(commentView, ThemeDescription.FLAG_IMAGECOLOR, new Class[]{ChatActivityEnterView.class}, new String[]{"sendButton"}, null, null, null, Theme.key_chat_messagePanelSend));
+        }
 
         arrayList.add(new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_actionBarTipBackground));
         arrayList.add(new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_windowBackgroundWhiteBlackText));

@@ -529,6 +529,7 @@ public class ChatAttachAlertAudioLayout extends ChatAttachAlert.AttachAlertLayou
                     message.out = true;
                     message.id = id;
                     message.peer_id = new TLRPC.TL_peerUser();
+                    message.from_id = new TLRPC.TL_peerUser();
                     message.peer_id.user_id = message.from_id.user_id = UserConfig.getInstance(parentAlert.currentAccount).getClientUserId();
                     message.date = (int) (System.currentTimeMillis() / 1000);
                     message.message = "";

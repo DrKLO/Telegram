@@ -2,9 +2,16 @@ package org.telegram.ui.Components;
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
+import android.animation.AnimatorSet;
+import android.animation.ObjectAnimator;
+import android.animation.ValueAnimator;
 import android.content.Context;
+import android.graphics.Canvas;
 import android.os.Bundle;
+import android.util.SparseArray;
+import android.util.SparseIntArray;
 import android.view.View;
+import android.view.ViewTreeObserver;
 import android.widget.FrameLayout;
 
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -40,7 +47,9 @@ import org.telegram.ui.ViewPagerFixed;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Set;
 
 public class SearchViewPager extends ViewPagerFixed implements FilteredSearchView.UiCallback {
 
@@ -80,6 +89,8 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
 
     private final int folderId;
 
+    ArrayList<SearchResultsEnterAnimator> currentAnimators = new ArrayList<>();
+
     public SearchViewPager(Context context, BaseFragment fragment, int type, int initialDialogsType, int folderId, ChatPreviewDelegate chatPreviewDelegate) {
         super(context);
         this.folderId = folderId;
@@ -96,14 +107,30 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
             }
         };
 
-        searchListView = new RecyclerListView(context);
+        searchListView = new RecyclerListView(context) {
+            @Override
+            protected void dispatchDraw(Canvas canvas) {
+                int n = getChildCount();
+                loop: for (int i = 0; i < n; i++) {
+                    View v = getChildAt(i);
+                    int position = searchlayoutManager.getPosition(v);
+                    for (int k = 0; k < currentAnimators.size(); k++) {
+                        if (currentAnimators.get(k).setup(v, position)) {
+                            continue loop;
+                        }
+                    }
+                    v.setAlpha(1f);
+                }
+                super.dispatchDraw(canvas);
+            }
+        };
         searchListView.setPivotY(0);
         searchListView.setAdapter(dialogsSearchAdapter);
         searchListView.setVerticalScrollBarEnabled(true);
         searchListView.setInstantClick(true);
         searchListView.setVerticalScrollbarPosition(LocaleController.isRTL ? RecyclerListView.SCROLLBAR_POSITION_LEFT : RecyclerListView.SCROLLBAR_POSITION_RIGHT);
         searchListView.setLayoutManager(searchlayoutManager = new LinearLayoutManager(context, LinearLayoutManager.VERTICAL, false));
-
+        searchListView.setAnimateEmptyView(true, 0);
         searchListView.setOnScrollListener(new RecyclerView.OnScrollListener() {
             @Override
             public void onScrollStateChanged(RecyclerView recyclerView, int newState) {
@@ -226,6 +253,8 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
                 dialogsSearchAdapter.setFiltersDelegate(filteredSearchViewDelegate, false);
                 noMediaFiltersSearchView.animate().setListener(null).cancel();
                 noMediaFiltersSearchView.setDelegate(null, false);
+                emptyView.showProgress(!dialogsSearchAdapter.isSearching(), false);
+                emptyView.showProgress(dialogsSearchAdapter.isSearching(), false);
                 if (reset) {
                     noMediaFiltersSearchView.setVisibility(View.GONE);
                 } else {
@@ -629,6 +658,74 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
         }
     }
 
+    public void runResultsEnterAnimation() {
+        Set<Integer> hasSet = new HashSet<>();
+        int n =  searchListView.getChildCount();
+        for (int i = 0; i < n; i++) {
+            hasSet.add(searchlayoutManager.getPosition(searchListView.getChildAt(i)));
+        }
+        searchListView.getViewTreeObserver().addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
+            @Override
+            public boolean onPreDraw() {
+                searchListView.getViewTreeObserver().removeOnPreDrawListener(this);
+                int n =  searchListView.getChildCount();
+                for (int i = 0; i < n; i++) {
+                    View child = searchListView.getChildAt(i);
+                    int position = searchlayoutManager.getPosition(child);
+                    if (!hasSet.contains(position)) {
+                        SearchResultsEnterAnimator animator = new SearchResultsEnterAnimator();
+                        child.setAlpha(0);
+                        int s = Math.min(searchListView.getMeasuredHeight(), Math.max(0, child.getTop()));
+                        int delay = (int) ((s / (float) searchListView.getMeasuredHeight()) * 100);
+                        animator.position = position;
+                        animator.valueAnimator.setStartDelay(delay);
+                        animator.valueAnimator.setDuration(200);
+                        animator.valueAnimator.start();
+                    }
+                }
+                return true;
+            }
+        });
+    }
+
+    public void cancelEnterAnimation() {
+        for (int i = 0; i < currentAnimators.size(); i++) {
+            SearchResultsEnterAnimator animator = currentAnimators.get(i);
+            animator.valueAnimator.cancel();
+            currentAnimators.remove(animator);
+            i--;
+        }
+    }
+
+
+    private class SearchResultsEnterAnimator {
+        final ValueAnimator valueAnimator;
+        float progress;
+        int position;
+
+        private SearchResultsEnterAnimator() {
+            valueAnimator = ValueAnimator.ofFloat(0, 1f);
+            valueAnimator.addUpdateListener(valueAnimator -> {
+                progress = (float) valueAnimator.getAnimatedValue();
+                searchListView.invalidate();
+            });
+            valueAnimator.addListener(new AnimatorListenerAdapter() {
+                @Override
+                public void onAnimationEnd(Animator animation) {
+                    currentAnimators.remove(SearchResultsEnterAnimator.this);
+                }
+            });
+            currentAnimators.add(this);
+        }
+
+        public boolean setup(View view, int position) {
+            if (this.position == position) {
+                view.setAlpha(progress);
+                return true;
+            }
+            return false;
+        }
+    }
 
     public interface ChatPreviewDelegate {
         void startChatPreview(DialogCell cell);

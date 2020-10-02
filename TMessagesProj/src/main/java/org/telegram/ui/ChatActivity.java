@@ -2508,23 +2508,9 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                         continue;
                     }
                     if (child == chatListView) {
-                        /*globalIgnoreLayout = true;
-                        int additionalPadding = inputFieldHeight - AndroidUtilities.dp(51);
-                        if (pinnedMessageView != null && pinnedMessageView.getTag() == null || topChatPanelView != null && topChatPanelView.getTag() == null) {
-                            chatListView.setPadding(0, AndroidUtilities.dp(52) + additionalPadding, 0, AndroidUtilities.dp(3));
-                        } else {
-                            chatListView.setPadding(0, AndroidUtilities.dp(4) + additionalPadding, 0, AndroidUtilities.dp(3));
-                        }
-                        globalIgnoreLayout = false;*/
-//                        if (chatActivityEnterView.getAlpha() != 1.0f) {
-//                            chatListView.setTranslationY(inputFieldHeight - AndroidUtilities.dp(51));
-//                        }
                         chatListViewClipTop = inPreviewMode ? 0 : (inputFieldHeight - AndroidUtilities.dp(51));
                         int contentWidthSpec = MeasureSpec.makeMeasureSpec(widthSize, MeasureSpec.EXACTLY);
                         int h = heightSize - listViewTopHeight - (inPreviewMode && Build.VERSION.SDK_INT >= 21 ? AndroidUtilities.statusBarHeight : 0);
-//                        if (!chatActivityEnterView.pannelAniamationInProgress()) {
-//                            h -= chatEmojiViewPadding;
-//                        }
                         if (keyboardSize > AndroidUtilities.dp(20) && getLayoutParams().height < 0) {
                             h += keyboardSize;
                         }
@@ -2727,9 +2713,6 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                         if (keyboardSize > AndroidUtilities.dp(20) && getLayoutParams().height < 0) {
                             childTop -= keyboardSize;
                         }
-//                        if (!chatActivityEnterView.pannelAniamationInProgress()) {
-//                            childTop += chatEmojiViewPadding;
-//                        }
                     } else if (child == progressView) {
                         if (chatActivityEnterView.isTopViewVisible()) {
                             childTop -= AndroidUtilities.dp(48);
@@ -14567,6 +14550,9 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     } else {
                         pinnedMessageEnterOffset = 0;
                         invalidateChatListViewTopPadding();
+                        if (firstLoading) {
+                            updateChatListViewTopPadding();
+                        }
                         pinnedMessageView.setVisibility(View.VISIBLE);
                     }
                 }
@@ -14974,8 +14960,12 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         }
         if (actionBar != null) {
             actionBar.setBackButtonDrawable(!value ? new BackDrawable(false) : null);
-            headerItem.setAlpha(!value ? 1.0f : 0.0f);
-            attachItem.setAlpha(!value ? 1.0f : 0.0f);
+            if (headerItem != null) {
+                headerItem.setAlpha(!value ? 1.0f : 0.0f);
+            }
+            if (attachItem != null) {
+                attachItem.setAlpha(!value ? 1.0f : 0.0f);
+            }
         }
 
         if (chatListView != null) {

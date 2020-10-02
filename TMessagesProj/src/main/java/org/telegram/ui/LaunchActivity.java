@@ -2250,7 +2250,6 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                     FileLog.e(e);
                 }
             }
-            //TODO error
             try {
                 progressDialog.dismiss();
             } catch (Exception e) {
@@ -3163,6 +3162,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
             });
             mainFragmentsStack.get(mainFragmentsStack.size() - 1).showDialog(alert);
         } else {
+            String captionToSend = null;
             for (int i = 0; i < dids.size(); i++) {
                 final long did = dids.get(i);
                 int lower_part = (int) did;
@@ -3177,14 +3177,13 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                     }
                 } else {
                     if (videoPath != null) {
-                        String caption = null;
                         if (sendingText != null && sendingText.length() <= 1024) {
-                            caption = sendingText;
+                            captionToSend = sendingText;
                             sendingText = null;
                         }
                         ArrayList<String> arrayList = new ArrayList<>();
                         arrayList.add(videoPath);
-                        SendMessagesHelper.prepareSendingDocuments(accountInstance, arrayList, arrayList, null, caption, null, did, null, null, null, null, true, 0);
+                        SendMessagesHelper.prepareSendingDocuments(accountInstance, arrayList, arrayList, null, captionToSend, null, did, null, null, null, null, true, 0);
                     }
                 }
                 if (photoPathsArray != null) {
@@ -3195,12 +3194,11 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                     SendMessagesHelper.prepareSendingMedia(accountInstance, photoPathsArray, did, null, null, null, false, false, null, true, 0);
                 }
                 if (documentsPathsArray != null || documentsUrisArray != null) {
-                    String caption = null;
                     if (sendingText != null && sendingText.length() <= 1024 && ((documentsPathsArray != null ? documentsPathsArray.size() : 0) + (documentsUrisArray != null ? documentsUrisArray.size() : 0)) == 1) {
-                        caption = sendingText;
+                        captionToSend = sendingText;
                         sendingText = null;
                     }
-                    SendMessagesHelper.prepareSendingDocuments(accountInstance, documentsPathsArray, documentsOriginalPathsArray, documentsUrisArray, caption, documentsMimeType, did, null, null, null, null, true, 0);
+                    SendMessagesHelper.prepareSendingDocuments(accountInstance, documentsPathsArray, documentsOriginalPathsArray, documentsUrisArray, captionToSend, documentsMimeType, did, null, null, null, null, true, 0);
                 }
                 if (sendingText != null) {
                     SendMessagesHelper.prepareSendingText(accountInstance, sendingText, did, true, 0);

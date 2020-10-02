@@ -410,7 +410,7 @@ public class SharedAudioCell extends FrameLayout implements DownloadController.F
 
         if (titleLayout != null) {
             canvas.save();
-            canvas.translate(AndroidUtilities.dp(LocaleController.isRTL ? 8 : AndroidUtilities.leftBaseline), titleY);
+            canvas.translate(AndroidUtilities.dp(LocaleController.isRTL ? 8 : AndroidUtilities.leftBaseline) + (LocaleController.isRTL && dateLayout != null ? dateLayout.getWidth() + AndroidUtilities.dp(4) : 0), titleY);
             titleLayout.draw(canvas);
             canvas.restore();
         }

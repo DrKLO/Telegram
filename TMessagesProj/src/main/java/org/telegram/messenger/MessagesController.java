@@ -4562,7 +4562,7 @@ public class MessagesController extends BaseController implements NotificationCe
                                 if ((messageViews.flags & 2) != 0) {
                                     if (forwards == null) {
                                         forwards = new SparseIntArray();
-                                        channelViews.put(key, forwards);
+                                        channelForwards.put(key, forwards);
                                     }
                                     forwards.put(req.id.get(a1), messageViews.forwards);
                                 }

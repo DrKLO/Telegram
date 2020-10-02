@@ -6565,9 +6565,9 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                 keyboardHeightLand = MessagesController.getGlobalEmojiSettings().getInt("kbd_height_land3", AndroidUtilities.dp(200));
             }
             int currentHeight = AndroidUtilities.displaySize.x > AndroidUtilities.displaySize.y ? keyboardHeightLand : keyboardHeight;
-            if (!samePannelWasVisible && !anotherPanelWasVisible) {
+            /*if (!samePannelWasVisible && !anotherPanelWasVisible) {
                 currentHeight = 0;
-            } else if (contentType == 1) {
+            } else */if (contentType == 1) {
                 currentHeight = Math.min(botKeyboardView.getKeyboardHeight(), currentHeight);
             }
             if (botKeyboardView != null) {

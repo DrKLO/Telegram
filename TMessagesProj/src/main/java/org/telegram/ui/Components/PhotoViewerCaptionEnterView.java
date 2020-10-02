@@ -16,7 +16,6 @@ import android.animation.ValueAnimator;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
-import android.graphics.ColorFilter;
 import android.graphics.Paint;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
@@ -382,6 +381,9 @@ public class PhotoViewerCaptionEnterView extends FrameLayout implements Notifica
     public void updateColors() {
         Theme.setDrawableColor(drawable, Theme.getColor(Theme.key_dialogFloatingButton));
         Theme.setDrawableColor(checkDrawable, Theme.getColor(Theme.key_dialogFloatingIcon));
+        if (emojiView != null) {
+            emojiView.updateColors();
+        }
     }
 
     public boolean hideActionMode() {
@@ -522,11 +524,7 @@ public class PhotoViewerCaptionEnterView extends FrameLayout implements Notifica
                 Emoji.replaceEmoji(builder, messageEditText.getPaint().getFontMetricsInt(), AndroidUtilities.dp(20), false);
             }
             messageEditText.setText(builder);
-            if (start + text.length() <= messageEditText.length()) {
-                messageEditText.setSelection(start + text.length());
-            } else {
-                messageEditText.setSelection(messageEditText.length());
-            }
+            messageEditText.setSelection(Math.min(start + text.length(), messageEditText.length()));
         } catch (Exception e) {
             FileLog.e(e);
         }

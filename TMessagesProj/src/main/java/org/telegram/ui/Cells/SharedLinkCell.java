@@ -309,7 +309,7 @@ public class SharedLinkCell extends FrameLayout {
                     titleFinal = titleH;
                 }
 
-                titleLayout = ChatMessageCell.generateStaticLayout(titleFinal, titleTextPaint, maxWidth - dateWidth, maxWidth - dateWidth, 0, 3);
+                titleLayout = ChatMessageCell.generateStaticLayout(titleFinal, titleTextPaint, maxWidth - dateWidth - AndroidUtilities.dp(4), maxWidth - dateWidth - AndroidUtilities.dp(4), 0, 3);
                 if (titleLayout.getLineCount() > 0) {
                     descriptionY = titleY + titleLayout.getLineBottom(titleLayout.getLineCount() - 1) + AndroidUtilities.dp(4);
                 }
@@ -565,7 +565,11 @@ public class SharedLinkCell extends FrameLayout {
         }
         if (titleLayout != null) {
             canvas.save();
-            canvas.translate(AndroidUtilities.dp(LocaleController.isRTL ? 8 : AndroidUtilities.leftBaseline), titleY);
+            float x = AndroidUtilities.dp(LocaleController.isRTL ? 8 : AndroidUtilities.leftBaseline);
+            if (LocaleController.isRTL) {
+                x += dateLayout == null ? 0 : (dateLayout.getWidth() + AndroidUtilities.dp(4));
+            }
+            canvas.translate(x, titleY);
             titleLayout.draw(canvas);
             canvas.restore();
         }

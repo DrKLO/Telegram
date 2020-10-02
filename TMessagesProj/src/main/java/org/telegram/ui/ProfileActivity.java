@@ -4862,6 +4862,9 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             }
         } else if (chat_id != 0) {
             if (chatInfo != null && (!TextUtils.isEmpty(chatInfo.about) || chatInfo.location instanceof TLRPC.TL_channelLocation) || !TextUtils.isEmpty(currentChat.username)) {
+                if (LocaleController.isRTL && ChatObject.isChannel(currentChat) && !currentChat.megagroup && chatInfo.linked_chat_id != 0) {
+                    emptyRow = rowCount++;
+                }
                 infoHeaderRow = rowCount++;
                 if (chatInfo != null) {
                     if (!TextUtils.isEmpty(chatInfo.about)) {

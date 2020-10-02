@@ -6935,7 +6935,9 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                 }
                 File f = new File(FileLoader.getDirectory(FileLoader.MEDIA_DIR_CACHE), SharedConfig.getLastLocalId() + "_temp.jpg");
                 mergeImages(entry.thumbPath = f.getAbsolutePath(), null, croppedPaintBitmap, croppedBitmap, thumbSize, true);
-                croppedPaintBitmap.recycle();
+                if (croppedPaintBitmap != null) {
+                    croppedPaintBitmap.recycle();
+                }
                 paintBitmap.recycle();
             } else {
                 if (!isCurrentVideo) {
@@ -9621,21 +9623,6 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                     editState.mediaEntities = searchImage.mediaEntities;
                     editState.cropState = searchImage.cropState;
                 }
-                if (editState.cropState != null) {
-                    previousHasTransform = true;
-                    previousCropPx = editState.cropState.cropPx;
-                    previousCropPy = editState.cropState.cropPy;
-                    previousCropScale = editState.cropState.cropScale;
-                    previousCropRotation = editState.cropState.cropRotate;
-                    previousCropOrientation = editState.cropState.transformRotation;
-                    previousCropPw = editState.cropState.cropPw;
-                    previousCropPh = editState.cropState.cropPh;
-                    previousCropMirrored = editState.cropState.mirrored;
-                    cropTransform.setViewTransform(previousHasTransform, previousCropPx, previousCropPy, previousCropRotation, previousCropOrientation, previousCropScale, 1.0f, 1.0f, previousCropPw, previousCropPh, 0, 0, previousCropMirrored);
-                } else {
-                    previousHasTransform = false;
-                    cropTransform.setViewTransform(false, previousCropPx, previousCropPy, previousCropRotation, previousCropOrientation, previousCropScale, 1.0f, 1.0f, previousCropPw, previousCropPh, 0, 0, previousCropMirrored);
-                }
                 if (object instanceof MediaController.MediaEditState) {
                     MediaController.MediaEditState state = (MediaController.MediaEditState) object;
                     if (hasAnimatedMediaEntities()) {
@@ -9646,6 +9633,21 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                         currentImagePath = currentPathObject;
                     }
                 }
+            }
+            if (editState.cropState != null) {
+                previousHasTransform = true;
+                previousCropPx = editState.cropState.cropPx;
+                previousCropPy = editState.cropState.cropPy;
+                previousCropScale = editState.cropState.cropScale;
+                previousCropRotation = editState.cropState.cropRotate;
+                previousCropOrientation = editState.cropState.transformRotation;
+                previousCropPw = editState.cropState.cropPw;
+                previousCropPh = editState.cropState.cropPh;
+                previousCropMirrored = editState.cropState.mirrored;
+                cropTransform.setViewTransform(previousHasTransform, previousCropPx, previousCropPy, previousCropRotation, previousCropOrientation, previousCropScale, 1.0f, 1.0f, previousCropPw, previousCropPh, 0, 0, previousCropMirrored);
+            } else {
+                previousHasTransform = false;
+                cropTransform.setViewTransform(false, previousCropPx, previousCropPy, previousCropRotation, previousCropOrientation, previousCropScale, 1.0f, 1.0f, previousCropPw, previousCropPh, 0, 0, previousCropMirrored);
             }
         } else if (pageBlocksAdapter != null) {
             if (currentIndex < 0 || currentIndex >= pageBlocksAdapter.getItemsCount()) {

@@ -7428,7 +7428,7 @@ public class Theme {
                 color = defaultColors.get(key);
             }
         }
-        if (color != null && (key_windowBackgroundWhite.equals(key) || key_windowBackgroundGray.equals(key))) {
+        if (color != null && (key_windowBackgroundWhite.equals(key) || key_windowBackgroundGray.equals(key) || key_actionBarDefault.equals(key) || key_actionBarDefaultArchived.equals(key))) {
             color |= 0xff000000;
         }
         return color;
@@ -7520,14 +7520,14 @@ public class Theme {
                 return getDefaultColor(key);
             }
         }
-        if (key_windowBackgroundWhite.equals(key) || key_windowBackgroundGray.equals(key)) {
+        if (key_windowBackgroundWhite.equals(key) || key_windowBackgroundGray.equals(key) || key_actionBarDefault.equals(key) || key_actionBarDefaultArchived.equals(key)) {
             color |= 0xff000000;
         }
         return color;
     }
 
     public static void setColor(String key, int color, boolean useDefault) {
-        if (key.equals(key_chat_wallpaper) || key.equals(key_chat_wallpaper_gradient_to) || key.equals(key_windowBackgroundWhite) || key.equals(key_windowBackgroundGray)) {
+        if (key.equals(key_chat_wallpaper) || key.equals(key_chat_wallpaper_gradient_to) || key.equals(key_windowBackgroundWhite) || key.equals(key_windowBackgroundGray) || key.equals(key_actionBarDefault) || key.equals(key_actionBarDefaultArchived)) {
             color = 0xff000000 | color;
         }
 

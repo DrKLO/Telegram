@@ -2500,12 +2500,14 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
         if (cameraIcon != null) {
             cameraIcon.setVisibility(VISIBLE);
         }
-        int count = gridView.getChildCount();
-        for (int a = 0; a < count; a++) {
-            View child = gridView.getChildAt(a);
-            if (child instanceof PhotoAttachCameraCell) {
-                child.setVisibility(View.INVISIBLE);
-                break;
+        if (cameraView != null) {
+            int count = gridView.getChildCount();
+            for (int a = 0; a < count; a++) {
+                View child = gridView.getChildAt(a);
+                if (child instanceof PhotoAttachCameraCell) {
+                    child.setVisibility(View.INVISIBLE);
+                    break;
+                }
             }
         }
     }
