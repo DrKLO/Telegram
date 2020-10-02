@@ -328,7 +328,11 @@ public class AndroidUtilities {
         SpannableStringBuilder spannableStringBuilder = SpannableStringBuilder.valueOf(str);
         int i = s.indexOf(query);
         while (i >= 0) {
-            spannableStringBuilder.setSpan(new ForegroundColorSpanThemable(Theme.key_windowBackgroundWhiteBlueText4), i, i + query.length(), 0);
+            try {
+                spannableStringBuilder.setSpan(new ForegroundColorSpanThemable(Theme.key_windowBackgroundWhiteBlueText4), i, i + query.length(), 0);
+            } catch (Exception e) {
+                FileLog.e(e);
+            }
             i = s.indexOf(query, i + 1);
         }
         return spannableStringBuilder;

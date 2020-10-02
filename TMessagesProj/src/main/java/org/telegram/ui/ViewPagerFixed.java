@@ -10,6 +10,7 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Paint;
+import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
@@ -93,6 +94,7 @@ public class ViewPagerFixed extends FrameLayout {
             }
         }
     };
+    private Rect rect = new Rect();
 
     public ViewPagerFixed(@NonNull Context context) {
         super(context);
@@ -270,6 +272,10 @@ public class ViewPagerFixed extends FrameLayout {
             velocityTracker.addMovement(ev);
         }
         if (ev != null && ev.getAction() == MotionEvent.ACTION_DOWN && checkTabsAnimationInProgress()) {
+            View child = findScrollingChild(this, ev.getX(), ev.getY());
+            if (child != null && (child.canScrollHorizontally(1) || child.canScrollHorizontally(-1))) {
+                return false;
+            }
             startedTracking = true;
             startedTrackingPointerId = ev.getPointerId(0);
             startedTrackingX = (int) ev.getX();
@@ -548,7 +554,7 @@ public class ViewPagerFixed extends FrameLayout {
         if (direction == 0) {
             return false;
         }
-        if (tabsAnimationInProgress) {
+        if (tabsAnimationInProgress || startedTracking) {
             return true;
         }
         boolean forward = direction > 0;
@@ -1387,6 +1393,28 @@ public class ViewPagerFixed extends FrameLayout {
             }
             invalidate();
         }
+    }
+
+    private View findScrollingChild(ViewGroup parent, float x, float y) {
+        int n = parent.getChildCount();
+        for (int i = 0; i < n; i++) {
+            View child = parent.getChildAt(i);
+            if (child.getVisibility() != View.VISIBLE) {
+                continue;
+            }
+            child.getHitRect(rect);
+            if (rect.contains((int) x, (int) y)) {
+                if (child.canScrollHorizontally(-1)) {
+                    return child;
+                } else if (child instanceof ViewGroup) {
+                    View v = findScrollingChild((ViewGroup) child, x - rect.left, y - rect.top);
+                    if (v != null) {
+                        return v;
+                    }
+                }
+            }
+        }
+        return null;
     }
 
 

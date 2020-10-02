@@ -950,7 +950,7 @@ public class DialogCell extends BaseCell {
                                 } else if (message.messageOwner.message != null) {
                                     String mess = message.messageOwner.message;
                                     if (message.hasHighlightedWords()) {
-                                        mess = mess.replace('\n', ' ').trim();
+                                        mess = mess.replace('\n', ' ').replaceAll(" +", " ").trim();
                                         int w = getMeasuredWidth() - AndroidUtilities.dp(72 + 23 + 10);
                                         if (hasNameInMessage) {
                                             if (!TextUtils.isEmpty(messageNameString)) {
@@ -1016,8 +1016,8 @@ public class DialogCell extends BaseCell {
                                     } else {
                                         emoji = "\uD83D\uDCCE ";
                                     }
-                                    if (message.hasHighlightedWords()) {
-                                        String str = message.messageOwner.message.replace('\n', ' ').trim();
+                                    if (message.hasHighlightedWords() && !TextUtils.isEmpty(message.messageOwner.message)) {
+                                        String str = message.messageOwner.message.replace('\n', ' ').replaceAll(" +", " ").trim();
                                         int w = getMeasuredWidth() - AndroidUtilities.dp(72 + 23 + 24);
                                         if (hasNameInMessage) {
                                             if (!TextUtils.isEmpty(messageNameString)) {
@@ -1041,22 +1041,22 @@ public class DialogCell extends BaseCell {
                                     } else if (message.type == 14) {
                                         messageString = String.format("\uD83C\uDFA7 %s - %s", message.getMusicAuthor(), message.getMusicTitle());
                                     } else {
-                                        if (message.hasHighlightedWords()){
+                                        if (message.hasHighlightedWords() && !TextUtils.isEmpty(message.messageOwner.message)){
                                             messageString = message.messageOwner.message.replace('\n', ' ').trim();
                                             int w = getMeasuredWidth() - AndroidUtilities.dp(72 + 23 );
                                             messageString = AndroidUtilities.ellipsizeCenterEnd(messageString, message.highlightedWords.get(0), w, currentMessagePaint).toString();
-                                            AndroidUtilities.highlightText(messageString, message.highlightedWords);
                                         } else {
                                             messageString = message.messageText;
                                         }
+                                        AndroidUtilities.highlightText(messageString, message.highlightedWords);
                                     }
                                     if (message.messageOwner.media != null && !message.isMediaEmpty()) {
                                         currentMessagePaint = Theme.dialogs_messagePrintingPaint[paintIndex];
                                     }
                                 }
                                 if (hasMessageThumb) {
-                                    if (message.hasHighlightedWords()) {
-                                        messageString = message.messageOwner.message.replace('\n', ' ').trim();
+                                    if (message.hasHighlightedWords() && !TextUtils.isEmpty(message.messageOwner.message)) {
+                                        messageString = message.messageOwner.message.replace('\n', ' ').replaceAll(" +", " ").trim();
                                         int w = getMeasuredWidth() - AndroidUtilities.dp(72 + 23 + thumbSize + 6);
                                         messageString = AndroidUtilities.ellipsizeCenterEnd(messageString, message.highlightedWords.get(0), w, currentMessagePaint).toString();
                                     } else {

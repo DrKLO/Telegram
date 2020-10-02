@@ -653,9 +653,11 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
             WindowInsets oldInsets = (WindowInsets) lastInsets;
             lastInsets = insets;
             if (oldInsets == null || !oldInsets.toString().equals(insets.toString())) {
-                windowView.requestLayout();
+                if (windowView != null) {
+                    windowView.requestLayout();
+                }
             }
-            if (Build.VERSION.SDK_INT >= 28) {
+            if (Build.VERSION.SDK_INT >= 28 && parentActivity != null) {
                 DisplayCutout cutout = parentActivity.getWindow().getDecorView().getRootWindowInsets().getDisplayCutout();
                 if (cutout != null) {
                     List<Rect> rects = cutout.getBoundingRects();

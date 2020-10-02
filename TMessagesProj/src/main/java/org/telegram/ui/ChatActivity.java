@@ -378,6 +378,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
     private int threadMaxInboxReadId;
     private int threadMaxOutboxReadId;
     private int replyMaxReadId = 0;
+    private Runnable delayedReadRunnable;
 
     private ArrayList<MessageObject> animatingMessageObjects = new ArrayList<>();
     private HashMap<TLRPC.Document, Integer> animatingDocuments = new HashMap<>();
@@ -1209,10 +1210,10 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 getNotificationCenter().addObserver(this, NotificationCenter.pinnedMessageDidLoad);
                 getNotificationCenter().addObserver(this, NotificationCenter.commentsRead);
                 getNotificationCenter().addObserver(this, NotificationCenter.changeRepliesCounter);
+                getNotificationCenter().addObserver(this, NotificationCenter.messagesRead);
             } else {
                 getNotificationCenter().addObserver(this, NotificationCenter.threadMessagesRead);
             }
-            getNotificationCenter().addObserver(this, NotificationCenter.messagesRead);
             getNotificationCenter().addObserver(this, NotificationCenter.removeAllMessagesFromDialog);
             getNotificationCenter().addObserver(this, NotificationCenter.messagesReadContent);
             getNotificationCenter().addObserver(this, NotificationCenter.chatSearchResultsAvailable);
@@ -3972,11 +3973,15 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
 
             @Override
             public void onLayoutChildren(RecyclerView.Recycler recycler, RecyclerView.State state) {
-                try {
+                if (BuildVars.DEBUG_PRIVATE_VERSION) {
                     super.onLayoutChildren(recycler, state);
-                } catch (Exception e) {
-                    FileLog.e(e);
-                    AndroidUtilities.runOnUIThread(() -> chatAdapter.notifyDataSetChanged(false));
+                } else {
+                    try {
+                        super.onLayoutChildren(recycler, state);
+                    } catch (Exception e) {
+                        FileLog.e(e);
+                        AndroidUtilities.runOnUIThread(() -> chatAdapter.notifyDataSetChanged(false));
+                    }
                 }
             }
         };
@@ -11968,9 +11973,16 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 if (obj != null && obj.hasReplies()) {
                     int maxReadId = (Integer) args[2];
                     if (paused) {
+                        if (delayedReadRunnable != null) {
+                            AndroidUtilities.cancelRunOnUIThread(delayedReadRunnable);
+                            delayedReadRunnable = null;
+                        }
                         obj.messageOwner.replies.read_max_id = maxReadId;
                     } else {
-                        AndroidUtilities.runOnUIThread(() -> obj.messageOwner.replies.read_max_id = maxReadId, 1000);
+                        AndroidUtilities.runOnUIThread(delayedReadRunnable = () -> {
+                            delayedReadRunnable = null;
+                            obj.messageOwner.replies.read_max_id = maxReadId;
+                        }, 500);
                     }
                 }
             }
@@ -13314,6 +13326,9 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                                     }
                                 }
                             } else {
+                                if (messageObject.messageOwner.replies != null && messageObject.messageOwner.replies.read_max_id > newValue.read_max_id) {
+                                    newValue.read_max_id = messageObject.messageOwner.replies.read_max_id;
+                                }
                                 messageObject.messageOwner.replies = newValue;
                             }
                             if (messageObject.hasValidGroupId()) {
@@ -14001,10 +14016,18 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
     public void onTransitionAnimationStart(boolean isOpen, boolean backward) {
         int[] alowedNotifications = null;
         if (isOpen) {
-            alowedNotifications = new int[]{
-                    NotificationCenter.dialogsNeedReload, NotificationCenter.closeChats,
-                    NotificationCenter.botKeyboardDidLoad, NotificationCenter.needDeleteDialog
-            };
+            if (threadMessageId != 0) {
+                alowedNotifications = new int[]{
+                        NotificationCenter.dialogsNeedReload, NotificationCenter.closeChats,
+                        NotificationCenter.botKeyboardDidLoad, NotificationCenter.needDeleteDialog,
+                        NotificationCenter.messagesDidLoad
+                };
+            } else {
+                alowedNotifications = new int[]{
+                        NotificationCenter.dialogsNeedReload, NotificationCenter.closeChats,
+                        NotificationCenter.botKeyboardDidLoad, NotificationCenter.needDeleteDialog
+                };
+            }
             openAnimationEnded = false;
             if (!backward) {
                 openAnimationStartTime = SystemClock.elapsedRealtime();
@@ -17456,6 +17479,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         if (!noDiscussion && discussionMessage == null || noDiscussion || !noHistory && history == null) {
             return;
         }
+
         if (history != null && maxReadId != 1 && maxReadId != 0 && maxReadId != discussionMessage.read_inbox_max_id) {
             history = null;
         }
@@ -17498,7 +17522,9 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                         }
                     }
                 }
-                getMessagesController().processLoadedMessages(history, dialogId, 0, 30, maxReadId, 0, false, chatActivity.getClassGuid(), fnid, 0, 0, 0, 2, true, false, false, arrayList.get(arrayList.size() - 1).getId(), 1, false, 0);
+                TLRPC.messages_Messages historyFinal = history;
+                int fnidFinal = fnid;
+                Utilities.stageQueue.postRunnable(() -> getMessagesController().processLoadedMessages(historyFinal, dialogId, 0, 30, maxReadId, 0, false, chatActivity.getClassGuid(), fnidFinal, 0, 0, 0, 2, true, false, false, arrayList.get(arrayList.size() - 1).getId(), 1, false, 0));
             }
         }
 

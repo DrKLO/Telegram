@@ -608,206 +608,43 @@ public class NotificationsController extends BaseController {
     }
 
     public void processEditedMessages(final LongSparseArray<ArrayList<MessageObject>> editedMessages) {
-        /*if (editedMessages.size() == 0) {
+        if (editedMessages.size() == 0) {
             return;
         }
         final ArrayList<MessageObject> popupArrayAdd = new ArrayList<>(0);
         notificationsQueue.postRunnable(() -> {
-            boolean added = false;
-            boolean edited = false;
-
-            LongSparseArray<Boolean> settingsCache = new LongSparseArray<>();
-            SharedPreferences preferences = getAccountInstance().getNotificationsSettings();
-            boolean allowPinned = preferences.getBoolean("PinnedMessages", true);
-            int popup = 0;
-            boolean hasScheduled = false;
-
-            for (int a = 0; a < messageObjects.size(); a++) {
-                MessageObject messageObject = messageObjects.get(a);
-                if (messageObject.messageOwner != null && messageObject.messageOwner.silent && (messageObject.messageOwner.action instanceof TLRPC.TL_messageActionContactSignUp || messageObject.messageOwner.action instanceof TLRPC.TL_messageActionUserJoined)) {
+            boolean updated = false;
+            for (int a = 0, N = editedMessages.size(); a < N; a++) {
+                long did = editedMessages.keyAt(a);
+                if (pushDialogs.indexOfKey(did) < 0) {
                     continue;
                 }
-                long mid = messageObject.getId();
-                long random_id = messageObject.isFcmMessage() ? messageObject.messageOwner.random_id : 0;
-                long dialog_id = messageObject.getDialogId();
-                int lower_id = (int) dialog_id;
-                boolean isChannel;
-                if (messageObject.isFcmMessage()) {
-                    isChannel = messageObject.localChannel;
-                } else if (lower_id < 0) {
-                    TLRPC.Chat chat = getMessagesController().getChat(-lower_id);
-                    isChannel = ChatObject.isChannel(chat) && !chat.megagroup;
-                } else {
-                    isChannel = false;
-                }
-                if (messageObject.messageOwner.to_id.channel_id != 0) {
-                    mid |= ((long) messageObject.messageOwner.to_id.channel_id) << 32;
-                }
-
-                MessageObject oldMessageObject = pushMessagesDict.get(mid);
-                if (oldMessageObject == null && messageObject.messageOwner.random_id != 0) {
-                    oldMessageObject = fcmRandomMessagesDict.get(messageObject.messageOwner.random_id);
-                    if (oldMessageObject != null) {
-                        fcmRandomMessagesDict.remove(messageObject.messageOwner.random_id);
+                ArrayList<MessageObject> messages = editedMessages.valueAt(a);
+                for (int b = 0, N2 = messages.size(); b < N2; b++) {
+                    MessageObject messageObject = messages.get(b);
+                    long mid = messageObject.getId();
+                    if (messageObject.messageOwner.peer_id.channel_id != 0) {
+                        mid |= ((long) messageObject.messageOwner.peer_id.channel_id) << 32;
                     }
-                }
-                if (oldMessageObject != null) {
-                    if (oldMessageObject.isFcmMessage()) {
+                    MessageObject oldMessage = pushMessagesDict.get(mid);
+                    if (oldMessage != null) {
+                        updated = true;
                         pushMessagesDict.put(mid, messageObject);
-                        int idxOld = pushMessages.indexOf(oldMessageObject);
-                        if (idxOld >= 0) {
-                            pushMessages.set(idxOld, messageObject);
-                            popup = addToPopupMessages(popupArrayAdd, messageObject, lower_id, dialog_id, isChannel, preferences);
+                        int idx = pushMessages.indexOf(oldMessage);
+                        if (idx >= 0) {
+                            pushMessages.set(idx, messageObject);
                         }
-                        if (isFcm && (edited = messageObject.localEdit)) {
-                            getMessagesStorage().putPushMessage(messageObject);
+                        idx = delayedPushMessages.indexOf(oldMessage);
+                        if (idx >= 0) {
+                            delayedPushMessages.set(idx, messageObject);
                         }
-                    }
-                    continue;
-                }
-                if (edited) {
-                    continue;
-                }
-                if (isFcm) {
-                    getMessagesStorage().putPushMessage(messageObject);
-                }
-
-                long original_dialog_id = dialog_id;
-                if (dialog_id == opened_dialog_id && ApplicationLoader.isScreenOn) {
-                    if (!isFcm) {
-                        playInChatSound();
-                    }
-                    continue;
-                }
-                if (messageObject.messageOwner.mentioned) {
-                    if (!allowPinned && messageObject.messageOwner.action instanceof TLRPC.TL_messageActionPinMessage) {
-                        continue;
-                    }
-                    dialog_id = messageObject.messageOwner.from_id;
-                }
-                if (isPersonalMessage(messageObject)) {
-                    personal_count++;
-                }
-                added = true;
-
-                boolean isChat = lower_id < 0;
-                int index = settingsCache.indexOfKey(dialog_id);
-                boolean value;
-                if (index >= 0) {
-                    value = settingsCache.valueAt(index);
-                } else {
-                    int notifyOverride = getNotifyOverride(preferences, dialog_id);
-                    if (notifyOverride == -1) {
-                        value = isGlobalNotificationsEnabled(dialog_id, isChannel);
-                    } else {
-                        value = notifyOverride != 2;
-                    }
-
-                    settingsCache.put(dialog_id, value);
-                }
-
-                if (value) {
-                    if (!isFcm) {
-                        popup = addToPopupMessages(popupArrayAdd, messageObject, lower_id, dialog_id, isChannel, preferences);
-                    }
-                    if (!hasScheduled) {
-                        hasScheduled = messageObject.messageOwner.from_scheduled;
-                    }
-                    delayedPushMessages.add(messageObject);
-                    pushMessages.add(0, messageObject);
-                    if (mid != 0) {
-                        pushMessagesDict.put(mid, messageObject);
-                    } else if (random_id != 0) {
-                        fcmRandomMessagesDict.put(random_id, messageObject);
-                    }
-                    if (original_dialog_id != dialog_id) {
-                        Integer current = pushDialogsOverrideMention.get(original_dialog_id);
-                        pushDialogsOverrideMention.put(original_dialog_id, current == null ? 1 : current + 1);
                     }
                 }
             }
-
-            if (added) {
-                notifyCheck = isLast;
+            if (updated) {
+                showOrUpdateNotification(false);
             }
-
-            if (!popupArrayAdd.isEmpty() && !AndroidUtilities.needShowPasscode() && !SharedConfig.isWaitingForPasscodeEnter) {
-                final int popupFinal = popup;
-                AndroidUtilities.runOnUIThread(() -> {
-                    popupMessages.addAll(0, popupArrayAdd);
-                    if (ApplicationLoader.mainInterfacePaused || !ApplicationLoader.isScreenOn) {
-                        if (popupFinal == 3 || popupFinal == 1 && ApplicationLoader.isScreenOn || popupFinal == 2 && !ApplicationLoader.isScreenOn) {
-                            Intent popupIntent = new Intent(ApplicationLoader.applicationContext, PopupNotificationActivity.class);
-                            popupIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_NO_ANIMATION | Intent.FLAG_ACTIVITY_NO_USER_ACTION | Intent.FLAG_FROM_BACKGROUND);
-                            try {
-                                ApplicationLoader.applicationContext.startActivity(popupIntent);
-                            } catch (Throwable ignore) {
-
-                            }
-                        }
-                    }
-                });
-            }
-            if (isFcm || hasScheduled) {
-                if (edited) {
-                    delayedPushMessages.clear();
-                    showOrUpdateNotification(notifyCheck);
-                } else if (added) {
-                    MessageObject messageObject = messageObjects.get(0);
-                    long dialog_id = messageObject.getDialogId();
-                    Boolean isChannel;
-                    if (messageObject.isFcmMessage()) {
-                        isChannel = messageObject.localChannel;
-                    } else {
-                        isChannel = null;
-                    }
-                    int old_unread_count = total_unread_count;
-
-                    int notifyOverride = getNotifyOverride(preferences, dialog_id);
-                    boolean canAddValue;
-                    if (notifyOverride == -1) {
-                        canAddValue = isGlobalNotificationsEnabled(dialog_id, isChannel);
-                    } else {
-                        canAddValue = notifyOverride != 2;
-                    }
-
-                    Integer currentCount = pushDialogs.get(dialog_id);
-                    int newCount = currentCount != null ? currentCount + 1 : 1;
-
-                    if (notifyCheck && !canAddValue) {
-                        Integer override = pushDialogsOverrideMention.get(dialog_id);
-                        if (override != null && override != 0) {
-                            canAddValue = true;
-                            newCount = override;
-                        }
-                    }
-
-                    if (canAddValue) {
-                        if (currentCount != null) {
-                            total_unread_count -= currentCount;
-                        }
-                        total_unread_count += newCount;
-                        pushDialogs.put(dialog_id, newCount);
-                    }
-                    if (old_unread_count != total_unread_count) {
-                        delayedPushMessages.clear();
-                        showOrUpdateNotification(notifyCheck);
-                        final int pushDialogsCount = pushDialogs.size();
-                        AndroidUtilities.runOnUIThread(() -> {
-                            NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.notificationsCountUpdated, currentAccount);
-                            getNotificationCenter().postNotificationName(NotificationCenter.dialogsUnreadCounterChanged, pushDialogsCount);
-                        });
-                    }
-                    notifyCheck = false;
-                    if (showBadgeNumber) {
-                        setBadge(getTotalAllUnreadCount());
-                    }
-                }
-            }
-            if (countDownLatch != null) {
-                countDownLatch.countDown();
-            }
-        });*/
+        });
     }
 
     public void processNewMessages(final ArrayList<MessageObject> messageObjects, final boolean isLast, final boolean isFcm, CountDownLatch countDownLatch) {
@@ -1032,20 +869,28 @@ public class NotificationsController extends BaseController {
             int old_unread_count = total_unread_count;
             SharedPreferences preferences = getAccountInstance().getNotificationsSettings();
             for (int b = 0; b < dialogsToUpdate.size(); b++) {
-                long dialog_id = dialogsToUpdate.keyAt(b);
+                long dialogId = dialogsToUpdate.keyAt(b);
+                Integer currentCount = pushDialogs.get(dialogId);
+                Integer newCount = dialogsToUpdate.get(dialogId);
 
-                int notifyOverride = getNotifyOverride(preferences, dialog_id);
+                int lowerId = (int) dialogId;
+                if (lowerId < 0) {
+                    TLRPC.Chat chat = getMessagesController().getChat(-lowerId);
+                    if (chat == null || chat.min || ChatObject.isNotInChat(chat)) {
+                        newCount = 0;
+                    }
+                }
+
+                int notifyOverride = getNotifyOverride(preferences, dialogId);
                 boolean canAddValue;
                 if (notifyOverride == -1) {
-                    canAddValue = isGlobalNotificationsEnabled(dialog_id);
+                    canAddValue = isGlobalNotificationsEnabled(dialogId);
                 } else {
                     canAddValue = notifyOverride != 2;
                 }
-                Integer currentCount = pushDialogs.get(dialog_id);
-                Integer newCount = dialogsToUpdate.get(dialog_id);
 
                 if (notifyCheck && !canAddValue) {
-                    Integer override = pushDialogsOverrideMention.get(dialog_id);
+                    Integer override = pushDialogsOverrideMention.get(dialogId);
                     if (override != null && override != 0) {
                         canAddValue = true;
                         newCount = override;
@@ -1053,7 +898,7 @@ public class NotificationsController extends BaseController {
                 }
 
                 if (newCount == 0) {
-                    smartNotificationsDialogs.remove(dialog_id);
+                    smartNotificationsDialogs.remove(dialogId);
                 }
 
                 if (newCount < 0) {
@@ -1068,11 +913,11 @@ public class NotificationsController extends BaseController {
                     }
                 }
                 if (newCount == 0) {
-                    pushDialogs.remove(dialog_id);
-                    pushDialogsOverrideMention.remove(dialog_id);
+                    pushDialogs.remove(dialogId);
+                    pushDialogsOverrideMention.remove(dialogId);
                     for (int a = 0; a < pushMessages.size(); a++) {
                         MessageObject messageObject = pushMessages.get(a);
-                        if (!messageObject.messageOwner.from_scheduled && messageObject.getDialogId() == dialog_id) {
+                        if (!messageObject.messageOwner.from_scheduled && messageObject.getDialogId() == dialogId) {
                             if (isPersonalMessage(messageObject)) {
                                 personal_count--;
                             }
@@ -1089,7 +934,7 @@ public class NotificationsController extends BaseController {
                     }
                 } else if (canAddValue) {
                     total_unread_count += newCount;
-                    pushDialogs.put(dialog_id, newCount);
+                    pushDialogs.put(dialogId, newCount);
                 }
             }
             if (!popupArrayToRemove.isEmpty()) {
@@ -1297,6 +1142,13 @@ public class NotificationsController extends BaseController {
                             try {
                                 for (int i = 0, N = MessagesController.getInstance(a).allDialogs.size(); i < N; i++) {
                                     TLRPC.Dialog dialog = MessagesController.getInstance(a).allDialogs.get(i);
+                                    int lowerId = (int) dialog.id;
+                                    if (lowerId < 0) {
+                                        TLRPC.Chat chat = getMessagesController().getChat(-lowerId);
+                                        if (ChatObject.isNotInChat(chat)) {
+                                            continue;
+                                        }
+                                    }
                                     if (dialog.unread_count != 0) {
                                         count += dialog.unread_count;
                                     }
@@ -1312,6 +1164,13 @@ public class NotificationsController extends BaseController {
                             try {
                                 for (int i = 0, N = MessagesController.getInstance(a).allDialogs.size(); i < N; i++) {
                                     TLRPC.Dialog dialog = MessagesController.getInstance(a).allDialogs.get(i);
+                                    int lowerId = (int) dialog.id;
+                                    if (lowerId < 0) {
+                                        TLRPC.Chat chat = getMessagesController().getChat(-lowerId);
+                                        if (ChatObject.isNotInChat(chat)) {
+                                            continue;
+                                        }
+                                    }
                                     if (dialog.unread_count != 0) {
                                         count++;
                                     }

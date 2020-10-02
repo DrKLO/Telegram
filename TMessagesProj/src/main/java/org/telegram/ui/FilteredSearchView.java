@@ -326,7 +326,7 @@ public class FilteredSearchView extends FrameLayout implements NotificationCente
         recyclerListView.setLayoutManager(layoutManager);
         addView(loadingView = new LoadingView(context) {
             @Override
-            int getType() {
+            public int getType() {
                 if (currentSearchFilter == null) {
                     return 1;
                 } else if (currentSearchFilter.filterType == FiltersView.FILTER_TYPE_MEDIA) {
@@ -346,7 +346,7 @@ public class FilteredSearchView extends FrameLayout implements NotificationCente
             }
 
             @Override
-            int getColumnsCount() {
+            public int getColumnsCount() {
                 return columnsCount;
             }
         });
@@ -488,11 +488,7 @@ public class FilteredSearchView extends FrameLayout implements NotificationCente
         }
 
         if (!filterAndQueryIsSame) {
-            //if (!filterAndQueryIsSame || TextUtils.isEmpty(query)) {
             clearCurrentResultsRunnable.run();
-//            } else {
-//                AndroidUtilities.runOnUIThread(clearCurrentResultsRunnable, 1000);
-//            }
             emptyView.showProgress(true, !clearOldResults);
         }
 
@@ -713,10 +709,10 @@ public class FilteredSearchView extends FrameLayout implements NotificationCente
                             boolean found = false;
                             for (int i = 0; i < localTipChats.size(); i++) {
                                 if (localTipChats.get(i) instanceof TLRPC.User)
-                                if (UserConfig.getInstance(UserConfig.selectedAccount).getCurrentUser().id == ((TLRPC.User)localTipChats.get(i)).id) {
-                                    found = true;
-                                    break;
-                                }
+                                    if (UserConfig.getInstance(UserConfig.selectedAccount).getCurrentUser().id == ((TLRPC.User) localTipChats.get(i)).id) {
+                                        found = true;
+                                        break;
+                                    }
                             }
                             if (!found) {
                                 localTipChats.add(0, UserConfig.getInstance(UserConfig.selectedAccount).getCurrentUser());
@@ -831,7 +827,7 @@ public class FilteredSearchView extends FrameLayout implements NotificationCente
             View view;
             switch (viewType) {
                 case 0:
-                    view = new SharedPhotoVideoCell(mContext, SharedPhotoVideoCell.VIEW_TYPE_GLOBAL_SEARCH) ;
+                    view = new SharedPhotoVideoCell(mContext, SharedPhotoVideoCell.VIEW_TYPE_GLOBAL_SEARCH);
                     SharedPhotoVideoCell cell = (SharedPhotoVideoCell) view;
                     cell.setDelegate(new SharedPhotoVideoCell.SharedPhotoVideoCellDelegate() {
                         @Override
@@ -1542,10 +1538,15 @@ public class FilteredSearchView extends FrameLayout implements NotificationCente
 
     public interface UiCallback {
         void goToMessage(MessageObject messageObject);
+
         boolean actionModeShowing();
+
         void toggleItemSelection(MessageObject item, View view, int a);
+
         boolean isSelected(MessageHashId messageHashId);
+
         void showActionMode();
+
         int getFolderId();
     }
 
@@ -1561,11 +1562,11 @@ public class FilteredSearchView extends FrameLayout implements NotificationCente
         int color0;
         int color1;
 
-        int getType() {
+        public int getType() {
             return 1;
         }
 
-        int getColumnsCount() {
+        public int getColumnsCount() {
             return 2;
         }
 
@@ -1588,15 +1589,18 @@ public class FilteredSearchView extends FrameLayout implements NotificationCente
                 int h = 0;
                 while (h < getMeasuredHeight()) {
                     int r = AndroidUtilities.dp(25);
-                    canvas.drawCircle(AndroidUtilities.dp(9) + r, h + (AndroidUtilities.dp(78) >> 1), r, paint);
+                    canvas.drawCircle(checkRtl(AndroidUtilities.dp(9) + r), h + (AndroidUtilities.dp(78) >> 1), r, paint);
 
                     rectF.set(AndroidUtilities.dp(68), h + AndroidUtilities.dp(20), AndroidUtilities.dp(140), h + AndroidUtilities.dp(28));
+                    checkRtl(rectF);
                     canvas.drawRoundRect(rectF, AndroidUtilities.dp(4), AndroidUtilities.dp(4), paint);
 
                     rectF.set(AndroidUtilities.dp(68), h + AndroidUtilities.dp(42), AndroidUtilities.dp(260), h + AndroidUtilities.dp(50));
+                    checkRtl(rectF);
                     canvas.drawRoundRect(rectF, AndroidUtilities.dp(4), AndroidUtilities.dp(4), paint);
 
                     rectF.set(getMeasuredWidth() - AndroidUtilities.dp(50), h + AndroidUtilities.dp(20), getMeasuredWidth() - AndroidUtilities.dp(12), h + AndroidUtilities.dp(28));
+                    checkRtl(rectF);
                     canvas.drawRoundRect(rectF, AndroidUtilities.dp(4), AndroidUtilities.dp(4), paint);
 
                     h += AndroidUtilities.dp(78) + 1;
@@ -1615,15 +1619,19 @@ public class FilteredSearchView extends FrameLayout implements NotificationCente
                 int h = 0;
                 while (h < getMeasuredHeight()) {
                     rectF.set(AndroidUtilities.dp(12), h + AndroidUtilities.dp(8), AndroidUtilities.dp(52), h + AndroidUtilities.dp(48));
+                    checkRtl(rectF);
                     canvas.drawRoundRect(rectF, AndroidUtilities.dp(4), AndroidUtilities.dp(4), paint);
 
                     rectF.set(AndroidUtilities.dp(68), h + AndroidUtilities.dp(12), AndroidUtilities.dp(140), h + AndroidUtilities.dp(20));
+                    checkRtl(rectF);
                     canvas.drawRoundRect(rectF, AndroidUtilities.dp(4), AndroidUtilities.dp(4), paint);
 
                     rectF.set(AndroidUtilities.dp(68), h + AndroidUtilities.dp(34), AndroidUtilities.dp(260), h + AndroidUtilities.dp(42));
+                    checkRtl(rectF);
                     canvas.drawRoundRect(rectF, AndroidUtilities.dp(4), AndroidUtilities.dp(4), paint);
 
                     rectF.set(getMeasuredWidth() - AndroidUtilities.dp(50), h + AndroidUtilities.dp(12), getMeasuredWidth() - AndroidUtilities.dp(12), h + AndroidUtilities.dp(20));
+                    checkRtl(rectF);
                     canvas.drawRoundRect(rectF, AndroidUtilities.dp(4), AndroidUtilities.dp(4), paint);
 
                     h += AndroidUtilities.dp(56) + 1;
@@ -1632,15 +1640,18 @@ public class FilteredSearchView extends FrameLayout implements NotificationCente
                 int h = 0;
                 while (h < getMeasuredHeight()) {
                     int radius = AndroidUtilities.dp(44) >> 1;
-                    canvas.drawCircle(AndroidUtilities.dp(12) + radius, h + AndroidUtilities.dp(6) + radius, radius, paint);
+                    canvas.drawCircle(checkRtl(AndroidUtilities.dp(12) + radius), h + AndroidUtilities.dp(6) + radius, radius, paint);
 
                     rectF.set(AndroidUtilities.dp(68), h + AndroidUtilities.dp(12), AndroidUtilities.dp(140), h + AndroidUtilities.dp(20));
+                    checkRtl(rectF);
                     canvas.drawRoundRect(rectF, AndroidUtilities.dp(4), AndroidUtilities.dp(4), paint);
 
                     rectF.set(AndroidUtilities.dp(68), h + AndroidUtilities.dp(34), AndroidUtilities.dp(260), h + AndroidUtilities.dp(42));
+                    checkRtl(rectF);
                     canvas.drawRoundRect(rectF, AndroidUtilities.dp(4), AndroidUtilities.dp(4), paint);
 
                     rectF.set(getMeasuredWidth() - AndroidUtilities.dp(50), h + AndroidUtilities.dp(12), getMeasuredWidth() - AndroidUtilities.dp(12), h + AndroidUtilities.dp(20));
+                    checkRtl(rectF);
                     canvas.drawRoundRect(rectF, AndroidUtilities.dp(4), AndroidUtilities.dp(4), paint);
 
                     h += AndroidUtilities.dp(56) + 1;
@@ -1649,18 +1660,23 @@ public class FilteredSearchView extends FrameLayout implements NotificationCente
                 int h = 0;
                 while (h < getMeasuredHeight()) {
                     rectF.set(AndroidUtilities.dp(10), h + AndroidUtilities.dp(11), AndroidUtilities.dp(62), h + AndroidUtilities.dp(11 + 52));
+                    checkRtl(rectF);
                     canvas.drawRoundRect(rectF, AndroidUtilities.dp(4), AndroidUtilities.dp(4), paint);
 
                     rectF.set(AndroidUtilities.dp(68), h + AndroidUtilities.dp(12), AndroidUtilities.dp(140), h + AndroidUtilities.dp(20));
+                    checkRtl(rectF);
                     canvas.drawRoundRect(rectF, AndroidUtilities.dp(4), AndroidUtilities.dp(4), paint);
 
                     rectF.set(AndroidUtilities.dp(68), h + AndroidUtilities.dp(34), AndroidUtilities.dp(268), h + AndroidUtilities.dp(42));
+                    checkRtl(rectF);
                     canvas.drawRoundRect(rectF, AndroidUtilities.dp(4), AndroidUtilities.dp(4), paint);
 
                     rectF.set(AndroidUtilities.dp(68), h + AndroidUtilities.dp(34 + 20), AndroidUtilities.dp(120 + 68), h + AndroidUtilities.dp(42 + 20));
+                    checkRtl(rectF);
                     canvas.drawRoundRect(rectF, AndroidUtilities.dp(4), AndroidUtilities.dp(4), paint);
 
                     rectF.set(getMeasuredWidth() - AndroidUtilities.dp(50), h + AndroidUtilities.dp(12), getMeasuredWidth() - AndroidUtilities.dp(12), h + AndroidUtilities.dp(20));
+                    checkRtl(rectF);
                     canvas.drawRoundRect(rectF, AndroidUtilities.dp(4), AndroidUtilities.dp(4), paint);
 
                     h += AndroidUtilities.dp(80);
@@ -1680,6 +1696,20 @@ public class FilteredSearchView extends FrameLayout implements NotificationCente
             matrix.setTranslate(0, totalTranslation);
             gradient.setLocalMatrix(matrix);
             invalidate();
+        }
+
+        private float checkRtl(float x) {
+            if (LocaleController.isRTL) {
+                return getMeasuredWidth() - x;
+            }
+            return x;
+        }
+
+        private void checkRtl(RectF rectF) {
+            if (LocaleController.isRTL) {
+                rectF.left = getMeasuredWidth() - rectF.left;
+                rectF.right = getMeasuredWidth() - rectF.right;
+            }
         }
     }
 

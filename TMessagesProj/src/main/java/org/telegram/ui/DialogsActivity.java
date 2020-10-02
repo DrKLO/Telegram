@@ -3012,6 +3012,13 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
 
         updateFilterTabs(false);
 
+        if (folderId != 0) {
+            FiltersView.MediaFilterData filterData = new FiltersView.MediaFilterData(R.drawable.chats_archive, R.drawable.chats_archive, LocaleController.getString("Archive", R.string.Archive), null, FiltersView.FILTER_TYPE_ARCHIVE);
+            filterData.removable = false;
+            actionBar.setSearchFilter(filterData);
+            searchItem.collapseSearchFilters();
+        }
+
         return fragmentView;
     }
 
@@ -3025,10 +3032,18 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             searchTabsHeight = searchTabsView.getMeasuredHeight();
         }
         if (fragmentContextView != null) {
-            fragmentContextView.setTranslationY(topPadding + actionBar.getTranslationY() + filtersTabsHeight * (1f - searchAnimationProgress) + searchTabsHeight * searchAnimationProgress);
+            float from = 0;
+            if (fragmentLocationContextView != null && fragmentLocationContextView.getVisibility() == View.VISIBLE) {
+                from += AndroidUtilities.dp(36);
+            }
+            fragmentContextView.setTranslationY(from + fragmentContextView.getTopPadding() + actionBar.getTranslationY() + filtersTabsHeight * (1f - searchAnimationProgress) + searchTabsHeight * searchAnimationProgress);
         }
         if (fragmentLocationContextView != null) {
-            fragmentLocationContextView.setTranslationY(topPadding + actionBar.getTranslationY() + filtersTabsHeight * (1f - searchAnimationProgress) + searchTabsHeight * searchAnimationProgress);
+            float from = 0;
+            if (fragmentContextView != null) {
+                from += fragmentContextView.getTopPadding();
+            }
+            fragmentLocationContextView.setTranslationY(from + fragmentLocationContextView.getTopPadding() + actionBar.getTranslationY() + filtersTabsHeight * (1f - searchAnimationProgress) + searchTabsHeight * searchAnimationProgress);
         }
     }
 
@@ -3709,6 +3724,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                     searchTabsView.hide(false, false);
                     searchTabsView.setVisibility(View.VISIBLE);
                 }
+                searchItem.getSearchContainer().setAlpha(0f);
             } else {
                 viewPages[0].listView.setVisibility(View.VISIBLE);
                 viewPages[0].setVisibility(View.VISIBLE);
@@ -3768,6 +3784,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                         AndroidUtilities.requestAdjustResize(getParentActivity(), classGuid);
                         searchItem.setVisibility(View.GONE);
                     } else {
+                        searchItem.collapseSearchFilters();
                         whiteActionBar = false;
                         searchViewPager.setVisibility(View.GONE);
                         if (searchTabsView != null) {
@@ -4022,7 +4039,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                     actionBar.openSearchField(str, false);
                 } else if (!str.equals("section")) {
                     NewContactActivity activity = new NewContactActivity();
-                    activity.setInitialPhoneNumber(str);
+                    activity.setInitialPhoneNumber(str, true);
                     presentFragment(activity);
                 }
             }

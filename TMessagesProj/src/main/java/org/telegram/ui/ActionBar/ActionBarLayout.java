@@ -276,6 +276,7 @@ public class ActionBarLayout extends FrameLayout {
     protected Activity parentActivity;
 
     public ArrayList<BaseFragment> fragmentsStack;
+    private Rect rect = new Rect();
 
     public ActionBarLayout(Context context) {
         super(context);
@@ -636,7 +637,7 @@ public class ActionBarLayout extends FrameLayout {
                     velocityTracker.addMovement(ev);
                     if (!transitionAnimationInProgress && !inPreviewMode && maybeStartTracking && !startedTracking && dx >= AndroidUtilities.getPixelsInCM(0.4f, true) && Math.abs(dx) / 3 > dy) {
                         BaseFragment currentFragment = fragmentsStack.get(fragmentsStack.size() - 1);
-                        if (currentFragment.canBeginSlide()) {
+                        if (currentFragment.canBeginSlide() && findScrollingChild(this, ev.getX(), ev.getY()) == null) {
                             prepareForMoving(ev);
                         } else {
                             maybeStartTracking = false;
@@ -1831,5 +1832,27 @@ public class ActionBarLayout extends FrameLayout {
         if (containerView != null) {
             containerView.setFragmentPanTranslationOffset(offset);
         }
+    }
+
+    private View findScrollingChild(ViewGroup parent, float x, float y) {
+        int n = parent.getChildCount();
+        for (int i = 0; i < n; i++) {
+            View child = parent.getChildAt(i);
+            if (child.getVisibility() != View.VISIBLE) {
+                continue;
+            }
+            child.getHitRect(rect);
+            if (rect.contains((int) x, (int) y)) {
+                if (child.canScrollHorizontally(-1)) {
+                    return child;
+                } else if (child instanceof ViewGroup) {
+                    View v = findScrollingChild((ViewGroup) child, x - rect.left, y - rect.top);
+                    if (v != null) {
+                        return v;
+                    }
+                }
+            }
+        }
+        return null;
     }
 }

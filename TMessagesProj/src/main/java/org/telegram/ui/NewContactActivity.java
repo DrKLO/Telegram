@@ -92,6 +92,7 @@ public class NewContactActivity extends BaseFragment implements AdapterView.OnIt
     private boolean ignoreSelection;
     private boolean donePressed;
     private String initialPhoneNumber;
+    private boolean initialPhoneNumberWithCountryCode;
     private String initialFirstName;
     private String initialLastName;
 
@@ -568,7 +569,23 @@ public class NewContactActivity extends BaseFragment implements AdapterView.OnIt
         Collections.sort(countriesArray, String::compareTo);
 
         if (!TextUtils.isEmpty(initialPhoneNumber)) {
-            codeField.setText(initialPhoneNumber);
+            TLRPC.User user = getUserConfig().getCurrentUser();
+            if (initialPhoneNumber.startsWith("+")) {
+                codeField.setText(initialPhoneNumber.substring(1));
+            } else if (initialPhoneNumberWithCountryCode || user == null || TextUtils.isEmpty(user.phone)) {
+                codeField.setText(initialPhoneNumber);
+            } else {
+                String phone = user.phone;
+                for (int a = 4; a >= 1; a--) {
+                    String sub = phone.substring(0, a);
+                    String country = codesMap.get(sub);
+                    if (country != null) {
+                        codeField.setText(sub);
+                        break;
+                    }
+                }
+                phoneField.setText(initialPhoneNumber);
+            }
             initialPhoneNumber = null;
         } else {
             String country = null;
@@ -618,8 +635,9 @@ public class NewContactActivity extends BaseFragment implements AdapterView.OnIt
         }
     }
 
-    public void setInitialPhoneNumber(String value) {
+    public void setInitialPhoneNumber(String value, boolean withCoutryCode) {
         initialPhoneNumber = value;
+        initialPhoneNumberWithCountryCode = withCoutryCode;
     }
 
     public void setInitialName(String firstName, String lastName) {

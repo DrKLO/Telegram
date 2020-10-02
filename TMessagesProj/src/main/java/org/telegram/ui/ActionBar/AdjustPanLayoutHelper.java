@@ -15,6 +15,7 @@ import android.widget.FrameLayout;
 
 import com.google.android.exoplayer2.util.Log;
 
+import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.UserConfig;
@@ -65,7 +66,7 @@ public class AdjustPanLayoutHelper {
                 return true;
             }
 
-            if (!heightAnimationEnabled()) {
+            if (!heightAnimationEnabled() || Math.abs(previousHeight - contentHeight) < AndroidUtilities.dp(20)) {
                 previousHeight = contentHeight;
                 previousContentHeight = contentView.getHeight();
                 previousStartOffset = startOffset();

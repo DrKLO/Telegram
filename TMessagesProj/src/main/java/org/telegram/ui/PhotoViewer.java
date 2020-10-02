@@ -5910,7 +5910,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
     }
 
     private void closeCaptionEnter(boolean apply) {
-        if (currentIndex < 0 || currentIndex >= imagesArrLocals.size()) {
+        if (currentIndex < 0 || currentIndex >= imagesArrLocals.size() || captionEditText.getTag() == null) {
             return;
         }
         Object object = imagesArrLocals.get(currentIndex);
@@ -9051,7 +9051,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                     setItemVisible(masksItem, shouldMasksItemBeVisible, !pipItemVisible);
                 }
                 final boolean shouldAutoPlayed = shouldMessageObjectAutoPlayed(newMessageObject);
-                if (!shouldAutoPlayed) {
+                if (!shouldAutoPlayed && TextUtils.isEmpty(placeProvider.getTitleFor(switchingToIndex))) {
                     final boolean animated = !playerWasPlaying;
                     if (nameOverride != null) {
                         nameTextView.setText(nameOverride);
@@ -9117,7 +9117,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                                 loadingMoreImages = true;
                             }
                         }
-                        CharSequence title = placeProvider.getTitleFor( switchingToIndex);
+                        CharSequence title = placeProvider.getTitleFor(switchingToIndex);
                         if (title != null) {
                             actionBar.setTitle(title);
                             CharSequence subtitle = placeProvider.getSubtitleFor(switchingToIndex);

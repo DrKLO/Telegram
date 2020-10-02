@@ -5560,7 +5560,7 @@ public class MessagesController extends BaseController implements NotificationCe
         boolean isMegagroup = false;
         if (messagesRes instanceof TLRPC.TL_messages_channelMessages) {
             int channelId = -(int) dialogId;
-            if (!scheduled) {
+            if (!scheduled && threadMessageId == 0) {
                 int channelPts = channelsPts.get(channelId);
                 if (channelPts == 0) {
                     channelPts = getMessagesStorage().getChannelPtsSync(channelId);

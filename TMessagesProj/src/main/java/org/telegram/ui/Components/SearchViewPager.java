@@ -2,14 +2,10 @@ package org.telegram.ui.Components;
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
-import android.animation.AnimatorSet;
-import android.animation.ObjectAnimator;
 import android.animation.ValueAnimator;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.os.Bundle;
-import android.util.SparseArray;
-import android.util.SparseIntArray;
 import android.view.View;
 import android.view.ViewTreeObserver;
 import android.widget.FrameLayout;
@@ -61,7 +57,7 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
 
     private NumberTextView selectedMessagesCountTextView;
     private boolean isActionModeShowed;
-    private HashMap<FilteredSearchView.MessageHashId, MessageObject> selectedFiles = new HashMap();
+    private HashMap<FilteredSearchView.MessageHashId, MessageObject> selectedFiles = new HashMap<>();
 
     private ArrayList<FiltersView.MediaFilterData> currentSearchFilters = new ArrayList<>();
 
@@ -253,8 +249,10 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
                 dialogsSearchAdapter.setFiltersDelegate(filteredSearchViewDelegate, false);
                 noMediaFiltersSearchView.animate().setListener(null).cancel();
                 noMediaFiltersSearchView.setDelegate(null, false);
-                emptyView.showProgress(!dialogsSearchAdapter.isSearching(), false);
-                emptyView.showProgress(dialogsSearchAdapter.isSearching(), false);
+                if (reset) {
+                    emptyView.showProgress(!dialogsSearchAdapter.isSearching(), false);
+                    emptyView.showProgress(dialogsSearchAdapter.isSearching(), false);
+                }
                 if (reset) {
                     noMediaFiltersSearchView.setVisibility(View.GONE);
                 } else {
@@ -378,11 +376,9 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
             DialogsActivity fragment = new DialogsActivity(args);
             fragment.setDelegate((fragment1, dids, message, param) -> {
                 ArrayList<MessageObject> fmessages = new ArrayList<>();
-                ArrayList<Integer> ids = new ArrayList<>();
                 Iterator<FilteredSearchView.MessageHashId> idIterator = selectedFiles.keySet().iterator();
                 while (idIterator.hasNext()) {
                     FilteredSearchView.MessageHashId hashId = idIterator.next();
-                    ids.add(hashId.messageId);
                     fmessages.add(selectedFiles.get(hashId));
                 }
                 selectedFiles.clear();
@@ -495,7 +491,6 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
         } else if (view instanceof DialogCell) {
             ((DialogCell) view).setChecked(selectedFiles.containsKey(hashId), true);
         }
-        return;
     }
 
     @Override
@@ -637,6 +632,7 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
         }
         noMediaFiltersSearchView.messagesDeleted(channelId, markAsDeletedMessages);
         if (!selectedFiles.isEmpty()) {
+            ArrayList<FilteredSearchView.MessageHashId> toRemove = null;
             Iterator<FilteredSearchView.MessageHashId> iterator = selectedFiles.keySet().iterator();
             while (iterator.hasNext()) {
                 FilteredSearchView.MessageHashId hashId = iterator.next();
@@ -646,12 +642,18 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
                 if (currentChannelId == channelId) {
                     for (int i = 0; i < markAsDeletedMessages.size(); i++) {
                         if (messageObject.getId() == markAsDeletedMessages.get(i)) {
-                            selectedFiles.remove(hashId);
-                            selectedMessagesCountTextView.setNumber(selectedFiles.size(), true);
-                            if (gotoItem != null) {
-                                gotoItem.setVisibility(selectedFiles.size() == 1 ? View.VISIBLE : View.GONE);
-                            }
+                            toRemove = new ArrayList<>();
+                            toRemove.add(hashId);
                         }
+                    }
+                }
+                if (toRemove != null) {
+                    for (int a = 0, N = toRemove.size(); a < N; a++) {
+                        selectedFiles.remove(toRemove.get(a));
+                    }
+                    selectedMessagesCountTextView.setNumber(selectedFiles.size(), true);
+                    if (gotoItem != null) {
+                        gotoItem.setVisibility(selectedFiles.size() == 1 ? View.VISIBLE : View.GONE);
                     }
                 }
             }

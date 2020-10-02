@@ -3213,7 +3213,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                 if (messageObject1 == null) {
                     return;
                 }
-                if (waveform != null) {
+                if (waveform != null && messageObject1.getDocument() != null) {
                     for (int a = 0; a < messageObject1.getDocument().attributes.size(); a++) {
                         TLRPC.DocumentAttribute attribute = messageObject1.getDocument().attributes.get(a);
                         if (attribute instanceof TLRPC.TL_documentAttributeAudio) {

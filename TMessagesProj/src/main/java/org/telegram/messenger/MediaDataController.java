@@ -2179,60 +2179,75 @@ public class MediaDataController extends BaseController {
         final int currentReqId = ++lastReqId;
         lastSearchQuery = query;
         final long queryWithDialogFinal = queryWithDialog;
-        reqId = getConnectionsManager().sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
-            if (currentReqId == lastReqId) {
-                reqId = 0;
-                if (!jumpToMessage) {
-                    loadingMoreSearchMessages = false;
-                }
-                if (response != null) {
-                    TLRPC.messages_Messages res = (TLRPC.messages_Messages) response;
-                    for (int a = 0; a < res.messages.size(); a++) {
-                        TLRPC.Message message = res.messages.get(a);
-                        if (message instanceof TLRPC.TL_messageEmpty || message.action instanceof TLRPC.TL_messageActionHistoryClear) {
-                            res.messages.remove(a);
-                            a--;
-                        }
-                    }
-                    getMessagesStorage().putUsersAndChats(res.users, res.chats, true, true);
-                    getMessagesController().putUsers(res.users, false);
-                    getMessagesController().putChats(res.chats, false);
-                    if (req.offset_id == 0 && queryWithDialogFinal == dialogId) {
-                        lastReturnedNum = 0;
-                        searchResultMessages.clear();
-                        searchResultMessagesMap[0].clear();
-                        searchResultMessagesMap[1].clear();
-                        messagesSearchCount[0] = 0;
-                        getNotificationCenter().postNotificationName(NotificationCenter.chatSearchResultsLoading, guid);
-                    }
-                    boolean added = false;
-                    int N = Math.min(res.messages.size(), 20);
-                    for (int a = 0; a < N; a++) {
-                        TLRPC.Message message = res.messages.get(a);
-                        added = true;
-                        MessageObject messageObject = new MessageObject(currentAccount, message, false, false);
-                        searchResultMessages.add(messageObject);
-                        searchResultMessagesMap[queryWithDialogFinal == dialogId ? 0 : 1].put(messageObject.getId(), messageObject);
-                    }
-                    messagesSearchEndReached[queryWithDialogFinal == dialogId ? 0 : 1] = res.messages.size() < 21;
-                    messagesSearchCount[queryWithDialogFinal == dialogId ? 0 : 1] = res instanceof TLRPC.TL_messages_messagesSlice || res instanceof TLRPC.TL_messages_channelMessages ? res.count : res.messages.size();
-                    if (searchResultMessages.isEmpty()) {
-                        getNotificationCenter().postNotificationName(NotificationCenter.chatSearchResultsAvailable, guid, 0, getMask(), (long) 0, 0, 0, jumpToMessage);
-                    } else {
-                        if (added) {
-                            if (lastReturnedNum >= searchResultMessages.size()) {
-                                lastReturnedNum = searchResultMessages.size() - 1;
-                            }
-                            MessageObject messageObject = searchResultMessages.get(lastReturnedNum);
-                            getNotificationCenter().postNotificationName(NotificationCenter.chatSearchResultsAvailable, guid, messageObject.getId(), getMask(), messageObject.getDialogId(), lastReturnedNum, messagesSearchCount[0] + messagesSearchCount[1], jumpToMessage);
-                        }
-                    }
-                    if (queryWithDialogFinal == dialogId && messagesSearchEndReached[0] && mergeDialogId != 0 && !messagesSearchEndReached[1]) {
-                        searchMessagesInChat(lastSearchQuery, dialogId, mergeDialogId, guid, 0, replyMessageId, true, user, jumpToMessage);
-                    }
+        String finalQuery = query;
+        reqId = getConnectionsManager().sendRequest(req, (response, error) -> {
+            ArrayList<MessageObject> messageObjects = new ArrayList<>();
+
+            if (error == null) {
+                TLRPC.messages_Messages res = (TLRPC.messages_Messages) response;
+                int N = Math.min(res.messages.size(), 20);
+                for (int a = 0; a < N; a++) {
+                    TLRPC.Message message = res.messages.get(a);
+                    MessageObject messageObject = new MessageObject(currentAccount, message, false, false);
+                    messageObject.setQuery(finalQuery);
+                    messageObjects.add(messageObject);
                 }
             }
-        }), ConnectionsManager.RequestFlagFailOnServerErrors);
+            AndroidUtilities.runOnUIThread(() -> {
+                if (currentReqId == lastReqId) {
+                    reqId = 0;
+                    if (!jumpToMessage) {
+                        loadingMoreSearchMessages = false;
+                    }
+                    if (response != null) {
+                        TLRPC.messages_Messages res = (TLRPC.messages_Messages) response;
+                        for (int a = 0; a < res.messages.size(); a++) {
+                            TLRPC.Message message = res.messages.get(a);
+                            if (message instanceof TLRPC.TL_messageEmpty || message.action instanceof TLRPC.TL_messageActionHistoryClear) {
+                                res.messages.remove(a);
+                                a--;
+                            }
+                        }
+                        getMessagesStorage().putUsersAndChats(res.users, res.chats, true, true);
+                        getMessagesController().putUsers(res.users, false);
+                        getMessagesController().putChats(res.chats, false);
+                        if (req.offset_id == 0 && queryWithDialogFinal == dialogId) {
+                            lastReturnedNum = 0;
+                            searchResultMessages.clear();
+                            searchResultMessagesMap[0].clear();
+                            searchResultMessagesMap[1].clear();
+                            messagesSearchCount[0] = 0;
+                            getNotificationCenter().postNotificationName(NotificationCenter.chatSearchResultsLoading, guid);
+                        }
+                        boolean added = false;
+                        int N = Math.min(res.messages.size(), 20);
+                        for (int a = 0; a < N; a++) {
+                            TLRPC.Message message = res.messages.get(a);
+                            added = true;
+                            MessageObject messageObject = messageObjects.get(a);
+                            searchResultMessages.add(messageObject);
+                            searchResultMessagesMap[queryWithDialogFinal == dialogId ? 0 : 1].put(messageObject.getId(), messageObject);
+                        }
+                        messagesSearchEndReached[queryWithDialogFinal == dialogId ? 0 : 1] = res.messages.size() < 21;
+                        messagesSearchCount[queryWithDialogFinal == dialogId ? 0 : 1] = res instanceof TLRPC.TL_messages_messagesSlice || res instanceof TLRPC.TL_messages_channelMessages ? res.count : res.messages.size();
+                        if (searchResultMessages.isEmpty()) {
+                            getNotificationCenter().postNotificationName(NotificationCenter.chatSearchResultsAvailable, guid, 0, getMask(), (long) 0, 0, 0, jumpToMessage);
+                        } else {
+                            if (added) {
+                                if (lastReturnedNum >= searchResultMessages.size()) {
+                                    lastReturnedNum = searchResultMessages.size() - 1;
+                                }
+                                MessageObject messageObject = searchResultMessages.get(lastReturnedNum);
+                                getNotificationCenter().postNotificationName(NotificationCenter.chatSearchResultsAvailable, guid, messageObject.getId(), getMask(), messageObject.getDialogId(), lastReturnedNum, messagesSearchCount[0] + messagesSearchCount[1], jumpToMessage);
+                            }
+                        }
+                        if (queryWithDialogFinal == dialogId && messagesSearchEndReached[0] && mergeDialogId != 0 && !messagesSearchEndReached[1]) {
+                            searchMessagesInChat(lastSearchQuery, dialogId, mergeDialogId, guid, 0, replyMessageId, true, user, jumpToMessage);
+                        }
+                    }
+                }
+            });
+        }, ConnectionsManager.RequestFlagFailOnServerErrors);
     }
 
     public String getLastSearchQuery() {

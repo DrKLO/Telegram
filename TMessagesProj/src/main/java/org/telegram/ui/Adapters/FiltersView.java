@@ -63,6 +63,7 @@ public class FiltersView extends RecyclerListView {
     public final static int FILTER_TYPE_CHAT = 4;
     public final static int FILTER_TYPE_VOICE = 5;
     public final static int FILTER_TYPE_DATE = 6;
+    public final static int FILTER_TYPE_ARCHIVE = 7;
 
     public final static MediaFilterData[] filters = new MediaFilterData[]{
             new MediaFilterData(R.drawable.search_media, R.drawable.search_media_filled, LocaleController.getString("SharedMediaTab2", R.string.SharedMediaTab2), new TLRPC.TL_inputMessagesFilterPhotoVideo(), FILTER_TYPE_MEDIA),
@@ -260,9 +261,8 @@ public class FiltersView extends RecyclerListView {
     private final static Pattern monthYearOrDayPatter = Pattern.compile("(\\w{3,}) ([0-9]{0,4})");
     private final static Pattern yearOrDayAndMonthPatter = Pattern.compile("([0-9]{0,4}) (\\w{2,})");
 
-
-    private final static Pattern shortDate = Pattern.compile("^([0-9]{1,4})(\\.| |\\\\)([0-9]{1,4})$");
-    private final static Pattern longDate = Pattern.compile("^([0-9]{1,2})(\\.| |\\\\)([0-9]{1,2})(\\.| |\\\\)([0-9]{1,4})$");
+    private final static Pattern shortDate = Pattern.compile("^([0-9]{1,4})(\\.| |/|\\-)([0-9]{1,4})$");
+    private final static Pattern longDate = Pattern.compile("^([0-9]{1,2})(\\.| |/|\\-)([0-9]{1,2})(\\.| |/|\\-)([0-9]{1,4})$");
 
 
     private final static int[] numberOfDaysEachMonth = new int[]{31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
@@ -356,6 +356,9 @@ public class FiltersView extends RecyclerListView {
             int day = Integer.parseInt(g1);
             int month = Integer.parseInt(g2) - 1;
             int year = Integer.parseInt(g3);
+            if (year >= 10 && year <= 99) {
+                year += 2000;
+            }
             int currentYear = Calendar.getInstance().get(Calendar.YEAR);
             if (validDateForMont(day - 1, month) && year >= minYear && year <= currentYear) {
                 Calendar calendar = Calendar.getInstance();
@@ -751,6 +754,7 @@ public class FiltersView extends RecyclerListView {
         public final TLRPC.MessagesFilter filter;
         public TLObject chat;
         public DateData dateData;
+        public boolean removable = true;
 
         public MediaFilterData(int iconRes, int iconResFilled, String title, TLRPC.MessagesFilter filter, int filterType) {
             this.iconRes = iconRes;

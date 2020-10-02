@@ -2140,7 +2140,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                     fragment.setInitialName(names[0], names.length > 1 ? names[1] : null);
                 }
                 if (newContactPhone != null) {
-                    fragment.setInitialPhoneNumber(PhoneFormat.stripExceptNumbers(newContactPhone));
+                    fragment.setInitialPhoneNumber(PhoneFormat.stripExceptNumbers(newContactPhone, true), false);
                 }
                 actionBarLayout.presentFragment(fragment, false, true, true, false);
                 if (AndroidUtilities.isTablet()) {

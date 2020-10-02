@@ -349,7 +349,7 @@ public class SharedLinkCell extends FrameLayout {
         }
 
         if (message != null && !TextUtils.isEmpty(message.messageOwner.message)) {
-            CharSequence caption = Emoji.replaceEmoji(message.messageOwner.message.replace("\n", " ").trim(), Theme.chat_msgTextPaint.getFontMetricsInt(), AndroidUtilities.dp(20), false);
+            CharSequence caption = Emoji.replaceEmoji(message.messageOwner.message.replace("\n", " ").replaceAll(" +", " ").trim(), Theme.chat_msgTextPaint.getFontMetricsInt(), AndroidUtilities.dp(20), false);
             CharSequence sequence = AndroidUtilities.highlightText(caption, message.highlightedWords);
             if (sequence != null) {
                 sequence = TextUtils.ellipsize(AndroidUtilities.ellipsizeCenterEnd(sequence, message.highlightedWords.get(0), maxWidth, captionTextPaint), captionTextPaint, maxWidth, TextUtils.TruncateAt.END);

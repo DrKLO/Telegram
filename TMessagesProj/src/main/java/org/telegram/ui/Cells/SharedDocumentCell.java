@@ -435,7 +435,7 @@ public class SharedDocumentCell extends FrameLayout implements DownloadControlle
             }
 
             if (messageObject.hasHighlightedWords() && !TextUtils.isEmpty(message.messageOwner.message)) {
-                String str = message.messageOwner.message.replace("\n", " ").trim();
+                String str = message.messageOwner.message.replace("\n", " ").replaceAll(" +", " ").trim();
                 caption = AndroidUtilities.highlightText(str, message.highlightedWords);
                 if (captionTextView != null) {
                     captionTextView.setVisibility(caption == null ? View.GONE : View.VISIBLE);
