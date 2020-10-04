@@ -8791,7 +8791,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             currentUser.first_name = fwd_from.from_name;
         } else {
             int fromId = currentMessageObject.getFromChatId();
-            if (fromId > 0) {
+            if (fromId > 0 && !currentMessageObject.messageOwner.post) {
                 currentUser = messagesController.getUser(fromId);
             } else if (fromId < 0) {
                 currentChat = messagesController.getChat(-fromId);
@@ -10384,7 +10384,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 endX += AndroidUtilities.dp(14);
                 buttonX -= AndroidUtilities.dp(10);
             }
-            commentButtonRect.set(buttonX, (int) buttonY, endX - AndroidUtilities.dp(14), (int) (layoutHeight - AndroidUtilities.dp(h)));
+            commentButtonRect.set(buttonX, (int) buttonY, endX - AndroidUtilities.dp(14), layoutHeight - AndroidUtilities.dp(h));
             if (selectorDrawable[1] != null && selectorDrawableMaskType[1] == 2) {
                 selectorDrawable[1].setBounds(commentButtonRect);
                 selectorDrawable[1].draw(canvas);

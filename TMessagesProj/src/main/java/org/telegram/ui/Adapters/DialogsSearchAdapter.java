@@ -351,7 +351,7 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
         }, ConnectionsManager.RequestFlagFailOnServerErrors);
     }
 
-    public boolean hasRecentRearch() {
+    public boolean hasRecentSearch() {
         return dialogsType != 2 && dialogsType != 4 && dialogsType != 5 && dialogsType != 6 && (!recentSearchObjects.isEmpty() || !MediaDataController.getInstance(currentAccount).hints.isEmpty());
     }
 

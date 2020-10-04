@@ -615,7 +615,6 @@ public class DrawerLayoutContainer extends FrameLayout {
 
     @Override
     protected void dispatchDraw(Canvas canvas) {
-       // adjustPanLayoutHelper.update();
         super.dispatchDraw(canvas);
         if (drawCurrentPreviewFragmentAbove && parentActionBarLayout != null) {
             if (previewBlurDrawable != null) {

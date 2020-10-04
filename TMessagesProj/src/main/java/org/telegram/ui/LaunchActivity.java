@@ -254,6 +254,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
             }
         }
 
+        getWindow().setBackgroundDrawableResource(R.drawable.transparent);
         if (SharedConfig.passcodeHash.length() > 0 && !SharedConfig.allowScreenCapture) {
             try {
                 getWindow().setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE);
@@ -1142,6 +1143,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
         boolean videoCallUser = false;
         boolean needCallAlert = false;
         boolean newContact = false;
+        boolean newContactAlert = false;
         boolean scanQr = false;
         String searchQuery = null;
         String callSearchQuery = null;
@@ -1763,7 +1765,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                                         } else {
                                             open_settings = 1;
                                         }
-                                    } else if ((url.startsWith("tg:search") || url.startsWith("tg://search")) && SharedConfig.assistantSupport) {
+                                    } else if ((url.startsWith("tg:search") || url.startsWith("tg://search"))) {
                                         url = url.replace("tg:search", "tg://telegram.org").replace("tg://search", "tg://telegram.org");
                                         data = Uri.parse(url);
                                         searchQuery = data.getQueryParameter("query");
@@ -1772,9 +1774,9 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                                         } else {
                                             searchQuery = "";
                                         }
-                                    } else if ((url.startsWith("tg:calllog") || url.startsWith("tg://calllog")) && SharedConfig.assistantSupport) {
+                                    } else if ((url.startsWith("tg:calllog") || url.startsWith("tg://calllog"))) {
                                         showCallLog = true;
-                                    } else if ((url.startsWith("tg:call") || url.startsWith("tg://call")) && SharedConfig.assistantSupport) {
+                                    } else if ((url.startsWith("tg:call") || url.startsWith("tg://call"))) {
                                         if (UserConfig.getInstance(currentAccount).isClientActivated()) {
                                             final String extraForceCall = "extra_force_call";
                                             if (ContactsController.getInstance(currentAccount).contactsLoaded || intent.hasExtra(extraForceCall)) {
@@ -1783,21 +1785,27 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                                                 final String callPhone = data.getQueryParameter("phone");
                                                 final List<TLRPC.TL_contact> contacts = findContacts(callUserName, callPhone, false);
 
-                                                if (contacts.size() == 1) {
-                                                    push_user_id = contacts.get(0).user_id;
-                                                }
-
-                                                if (push_user_id == 0) {
-                                                    callSearchQuery = callUserName != null ? callUserName : "";
-                                                }
-
-                                                if ("video".equalsIgnoreCase(callFormat)) {
-                                                    videoCallUser = true;
+                                                if (contacts.isEmpty() && callPhone != null) {
+                                                    newContactName = callUserName;
+                                                    newContactPhone = callPhone;
+                                                    newContactAlert = true;
                                                 } else {
-                                                    audioCallUser = true;
-                                                }
+                                                    if (contacts.size() == 1) {
+                                                        push_user_id = contacts.get(0).user_id;
+                                                    }
 
-                                                needCallAlert = true;
+                                                    if (push_user_id == 0) {
+                                                        callSearchQuery = callUserName != null ? callUserName : "";
+                                                    }
+
+                                                    if ("video".equalsIgnoreCase(callFormat)) {
+                                                        videoCallUser = true;
+                                                    } else {
+                                                        audioCallUser = true;
+                                                    }
+
+                                                    needCallAlert = true;
+                                                }
                                             } else {
                                                 final Intent copyIntent = new Intent(intent);
                                                 copyIntent.removeExtra(EXTRA_ACTION_TOKEN);
@@ -1805,9 +1813,9 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                                                 ContactsLoadingObserver.observe((contactsLoaded) -> handleIntent(copyIntent, true, false, false), 1000);
                                             }
                                         }
-                                    } else if ((url.startsWith("tg:scanqr") || url.startsWith("tg://scanqr")) && SharedConfig.assistantSupport) {
+                                    } else if ((url.startsWith("tg:scanqr") || url.startsWith("tg://scanqr"))) {
                                         scanQr = true;
-                                    } else if ((url.startsWith("tg:addcontact") || url.startsWith("tg://addcontact")) && SharedConfig.assistantSupport) {
+                                    } else if ((url.startsWith("tg:addcontact") || url.startsWith("tg://addcontact"))) {
                                         url = url.replace("tg:addcontact", "tg://telegram.org").replace("tg://addcontact", "tg://telegram.org");
                                         data = Uri.parse(url);
                                         newContactName = data.getQueryParameter("name");
@@ -2151,6 +2159,28 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                     drawerLayoutContainer.setAllowOpenDrawer(true, false);
                 }
                 pushOpened = true;
+            } else if (newContactAlert) {
+                final BaseFragment lastFragment = actionBarLayout.getLastFragment();
+                if (lastFragment != null && lastFragment.getParentActivity() != null) {
+                    final String finalNewContactName = newContactName;
+                    final String finalNewContactPhone = "+" + PhoneFormat.stripExceptNumbers(newContactPhone);
+                    final AlertDialog newContactAlertDialog = new AlertDialog.Builder(lastFragment.getParentActivity())
+                            .setTitle(LocaleController.getString("NewContactAlertTitle", R.string.NewContactAlertTitle))
+                            .setMessage(AndroidUtilities.replaceTags(LocaleController.formatString("NewContactAlertMessage", R.string.NewContactAlertMessage, PhoneFormat.getInstance().format(finalNewContactPhone))))
+                            .setPositiveButton(LocaleController.getString("NewContactAlertButton", R.string.NewContactAlertButton), (d, i) -> {
+                                final NewContactActivity fragment = new NewContactActivity();
+                                fragment.setInitialPhoneNumber(finalNewContactPhone, false);
+                                if (finalNewContactName != null) {
+                                    final String[] names = finalNewContactName.split(" ", 2);
+                                    fragment.setInitialName(names[0], names.length > 1 ? names[1] : null);
+                                }
+                                lastFragment.presentFragment(fragment);
+                            })
+                            .setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null)
+                            .create();
+                    lastFragment.showDialog(newContactAlertDialog);
+                    pushOpened = true;
+                }
             } else if (showCallLog) {
                 actionBarLayout.presentFragment(new CallLogActivity(), false, true, true, false);
                 if (AndroidUtilities.isTablet()) {
@@ -2931,7 +2961,11 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
 
         if (userPhone != null) {
             userPhone = PhoneFormat.stripExceptNumbers(userPhone);
-            final TLRPC.TL_contact contact = contactsController.contactsByPhone.get(userPhone);
+            TLRPC.TL_contact contact = contactsController.contactsByPhone.get(userPhone);
+            if (contact == null) {
+                String shortUserPhone = userPhone.substring(Math.max(0, userPhone.length() - 7));
+                contact = contactsController.contactsByShortPhone.get(shortUserPhone);
+            }
             if (contact != null) {
                 final TLRPC.User user = messagesController.getUser(contact.user_id);
                 if (user != null && (!user.self || allowSelf)) {

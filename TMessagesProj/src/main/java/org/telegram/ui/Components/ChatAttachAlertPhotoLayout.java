@@ -2805,9 +2805,14 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
                 cameraAttachAdapter.notifyDataSetChanged();
                 if (!selectedPhotosOrder.isEmpty() && galleryAlbumEntry != null) {
                     for (int a = 0, N = selectedPhotosOrder.size(); a < N; a++) {
-                        int imageId = (Integer) selectedPhotosOrder.get(a);
+                        Integer imageId = (Integer) selectedPhotosOrder.get(a);
+                        Object currentEntry = selectedPhotos.get(imageId);
                         MediaController.PhotoEntry entry = galleryAlbumEntry.photosByIds.get(imageId);
                         if (entry != null) {
+                            if (currentEntry instanceof MediaController.PhotoEntry) {
+                                MediaController.PhotoEntry photoEntry = (MediaController.PhotoEntry) currentEntry;
+                                entry.copyFrom(photoEntry);
+                            }
                             selectedPhotos.put(imageId, entry);
                         }
                     }

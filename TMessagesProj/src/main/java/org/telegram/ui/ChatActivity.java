@@ -18444,7 +18444,9 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     }
 
                     private void openChat(ChatMessageCell cell, TLRPC.Chat chat, int postId) {
-                        if (currentChat == null || chat.id != currentChat.id || isThreadChat()) {
+                        if (currentChat != null && chat.id == currentChat.id) {
+                            scrollToMessageId(postId, cell.getMessageObject().getId(), true, 0, true);
+                        } else if (currentChat == null || chat.id != currentChat.id || isThreadChat()) {
                             Bundle args = new Bundle();
                             args.putInt("chat_id", chat.id);
                             if (postId != 0) {

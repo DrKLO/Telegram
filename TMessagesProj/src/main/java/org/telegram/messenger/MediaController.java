@@ -260,6 +260,31 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
             stickers = null;
             cropState = null;
         }
+
+        public void copyFrom(MediaEditState state) {
+            caption = state.caption;
+
+            thumbPath = state.thumbPath;
+            imagePath = state.imagePath;
+            filterPath = state.filterPath;
+            paintPath = state.paintPath;
+            croppedPaintPath = state.croppedPaintPath;
+            fullPaintPath = state.fullPaintPath;
+
+            entities = state.entities;
+            savedFilterState = state.savedFilterState;
+            mediaEntities = state.mediaEntities;
+            croppedMediaEntities = state.croppedMediaEntities;
+            stickers = state.stickers;
+            editedInfo = state.editedInfo;
+            averageDuration = state.averageDuration;
+            isFiltered = state.isFiltered;
+            isPainted = state.isPainted;
+            isCropped = state.isCropped;
+            ttl = state.ttl;
+
+            cropState = state.cropState;
+        }
     }
 
     public static class PhotoEntry extends MediaEditState {

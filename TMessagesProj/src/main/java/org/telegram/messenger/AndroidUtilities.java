@@ -288,8 +288,8 @@ public class AndroidUtilities {
                     x = staticLayout.getPrimaryHorizontal(startHighlightedIndex + 1) - availableWidth * 0.3f;
                     sub = str.subSequence(staticLayout.getOffsetForHorizontal(0, x), str.length());
                 } else {
-                    if (charOf > 0 && charOf < str.length() - 1 && Character.isWhitespace(str.charAt(charOf))) {
-                        charOf--;
+                    if (charOf > 0 && charOf < str.length() - 2 && Character.isWhitespace(str.charAt(charOf))) {
+                        charOf++;
                     }
                     sub = str.subSequence(charOf, str.length());
                 }
@@ -329,7 +329,7 @@ public class AndroidUtilities {
         int i = s.indexOf(query);
         while (i >= 0) {
             try {
-                spannableStringBuilder.setSpan(new ForegroundColorSpanThemable(Theme.key_windowBackgroundWhiteBlueText4), i, i + query.length(), 0);
+                spannableStringBuilder.setSpan(new ForegroundColorSpanThemable(Theme.key_windowBackgroundWhiteBlueText4), i, Math.min(i + query.length(), str.length()), 0);
             } catch (Exception e) {
                 FileLog.e(e);
             }

@@ -395,8 +395,10 @@ target_compile_definitions(sqlite PUBLIC
 #voip
 include(${CMAKE_HOME_DIRECTORY}/voip/CMakeLists.txt)
 
+set(NATIVE_LIB "tmessages.33")
+
 #tmessages
-add_library(tmessages.32 SHARED
+add_library(${NATIVE_LIB} SHARED
         jni.c
         audio.c
         image.cpp
@@ -416,34 +418,34 @@ add_library(tmessages.32 SHARED
         genann.c
         secureid_ocr.cpp)
 
-target_compile_options(tmessages.32 PUBLIC
+target_compile_options(${NATIVE_LIB} PUBLIC
         -ffast-math -Os -funroll-loops -ffast-math -fno-strict-aliasing -fno-math-errno)
 
-target_compile_definitions(tmessages.32 PUBLIC
+target_compile_definitions(${NATIVE_LIB} PUBLIC
         BSD=1 NULL=0 SOCKLEN_T=socklen_t ANDROID_NDK DISABLE_IMPORTGL AVOID_TABLES ANDROID_TILE_BASED_DECODE __STDC_CONSTANT_MACROS ANDROID_ARMV6_IDCT OPUS_BUILD FIXED_POINT USE_ALLOCA restrict= __EMX__ LOCALE_NOT_USED HAVE_LRINT HAVE_LRINTF)
 
 if (${ANDROID_ABI} STREQUAL "armeabi-v7a")
-    set_target_properties(tmessages.32 PROPERTIES
+    set_target_properties(${NATIVE_LIB} PROPERTIES
             ANDROID_ARM_NEON FALSE
             ANDROID_ARM_MODE arm)
-    target_compile_definitions(tmessages.32 PUBLIC
+    target_compile_definitions(${NATIVE_LIB} PUBLIC
             ANDROID_ARM_NEON=false)
-    target_sources(tmessages.32 PRIVATE
+    target_sources(${NATIVE_LIB} PRIVATE
         third_party/libyuv/source/compare_neon.cc
         third_party/libyuv/source/rotate_neon.cc
         third_party/libyuv/source/row_neon.cc
         third_party/libyuv/source/scale_neon.cc)
 else()
-    set_target_properties(tmessages.32 PROPERTIES
+    set_target_properties(${NATIVE_LIB} PROPERTIES
             ANDROID_ARM_NEON FALSE
             ANDROID_ARM_MODE arm)
 endif()
 
 if (${ANDROID_ABI} STREQUAL "armeabi-v7a" OR ${ANDROID_ABI} STREQUAL "arm64-v8a")
-    target_compile_definitions(tmessages.32 PUBLIC
+    target_compile_definitions(${NATIVE_LIB} PUBLIC
             LIBYUV_NEON OPUS_HAVE_RTCD OPUS_ARM_ASM)
 
-    target_sources(tmessages.32 PRIVATE
+    target_sources(${NATIVE_LIB} PRIVATE
             opus/celt/arm/celt_neon_intr.c
             opus/celt/arm/pitch_neon_intr.c
             opus/silk/arm/NSQ_neon.c
@@ -455,11 +457,11 @@ if (${ANDROID_ABI} STREQUAL "armeabi-v7a" OR ${ANDROID_ABI} STREQUAL "arm64-v8a"
             )
 
 elseif(${ANDROID_ABI} STREQUAL "x86")
-    target_compile_definitions(tmessages.32 PUBLIC
+    target_compile_definitions(${NATIVE_LIB} PUBLIC
             x86fix)
 endif()
 
-target_sources(tmessages.32 PRIVATE
+target_sources(${NATIVE_LIB} PRIVATE
 
         opus/src/opus.c
         opus/src/opus_decoder.c
@@ -642,7 +644,7 @@ target_sources(tmessages.32 PRIVATE
         third_party/libyuv/source/scale.cc
         third_party/libyuv/source/video_common.cc)
 
-target_include_directories(tmessages.32 PUBLIC
+target_include_directories(${NATIVE_LIB} PUBLIC
         opus/include
         opus/silk
         opus/silk/fixed
@@ -661,7 +663,7 @@ target_include_directories(tmessages.32 PUBLIC
         webrtc/
         lz4)
 
-target_link_libraries(tmessages.32
+target_link_libraries(${NATIVE_LIB}
         -Wl,--whole-archive voipandroid -Wl,--no-whole-archive
         tgvoip
         tgcalls
@@ -689,12 +691,12 @@ target_link_libraries(tmessages.32
         cpufeatures)
 
 if (${ANDROID_ABI} STREQUAL "x86" OR ${ANDROID_ABI} STREQUAL "x86_64")
-    target_link_libraries(tmessages.32
+    target_link_libraries(${NATIVE_LIB}
             -Wl,--whole-archive libvpx_yasm -Wl,--no-whole-archive)
 endif()
 
 #if (${ANDROID_ABI} STREQUAL "x86" OR ${ANDROID_ABI} STREQUAL "x86_64")
-#    target_link_libraries(tmessages.32
+#    target_link_libraries(${NATIVE_LIB}
 #            -Wl,--whole-archive vpxasm -Wl,--no-whole-archive
 #            c)
 #endif()

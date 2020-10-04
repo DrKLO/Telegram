@@ -1314,7 +1314,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                         newMsg.fwd_from.flags |= 8;
                         newMsg.fwd_from.post_author = msgObj.messageOwner.fwd_from.post_author;
                     }
-                    if ((msgObj.messageOwner.fwd_from.flags & 16) != 0) {
+                    if ((msgObj.messageOwner.fwd_from.flags & 16) != 0 && !UserObject.isReplyUser(msgObj.getDialogId())) {
                         newMsg.fwd_from.flags |= 16;
                         newMsg.fwd_from.saved_from_peer = msgObj.messageOwner.fwd_from.saved_from_peer;
                         newMsg.fwd_from.saved_from_msg_id = msgObj.messageOwner.fwd_from.saved_from_msg_id;

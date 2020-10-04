@@ -1216,6 +1216,9 @@
     <string name="NoContactsYetLine1">Invite friends to try Telegram</string>
     <string name="NoContactsYetLine2">Find people nearby to chat with</string>
     <string name="NoContactsYetLine3">Search people by username</string>
+    <string name="NewContactAlertTitle">New contact</string>
+    <string name="NewContactAlertMessage">Phone number **%1$s** is not in your contact list. Do you want to add it?</string>
+    <string name="NewContactAlertButton">Add contact</string>
     <!--group create view-->
     <string name="SendMessageTo">Add people...</string>
     <string name="SoftUserLimitAlert">You will be able to add more users after you finish creating the group and convert it to a supergroup.</string>

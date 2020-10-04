@@ -703,9 +703,9 @@ public class LinearLayoutManager extends RecyclerView.LayoutManager implements
             mAnchorInfo.reset();
         }
         mLastStackFromEnd = mStackFromEnd;
-        if (DEBUG) {
-            validateChildOrder();
-        }
+//        if (DEBUG) {
+//            validateChildOrder();
+//        }
     }
 
     @Override
@@ -1612,9 +1612,9 @@ public class LinearLayoutManager extends RecyclerView.LayoutManager implements
                 break;
             }
         }
-        if (DEBUG) {
-            validateChildOrder();
-        }
+//        if (DEBUG) {
+//            validateChildOrder();
+//        }
         return start - layoutState.mAvailable;
     }
 
