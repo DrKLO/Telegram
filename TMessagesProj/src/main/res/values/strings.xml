@@ -1217,7 +1217,7 @@
     <string name="NoContactsYetLine2">Find people nearby to chat with</string>
     <string name="NoContactsYetLine3">Search people by username</string>
     <string name="NewContactAlertTitle">New contact</string>
-    <string name="NewContactAlertMessage">Phone number **%1$s** is not in your contact list. Do you want to add it?</string>
+    <string name="NewContactAlertMessage">Phone number **%1$s** is not in your contacts list. Do you want to add it?</string>
     <string name="NewContactAlertButton">Add contact</string>
     <!--group create view-->
     <string name="SendMessageTo">Add people...</string>

@@ -2163,7 +2163,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                 final BaseFragment lastFragment = actionBarLayout.getLastFragment();
                 if (lastFragment != null && lastFragment.getParentActivity() != null) {
                     final String finalNewContactName = newContactName;
-                    final String finalNewContactPhone = "+" + PhoneFormat.stripExceptNumbers(newContactPhone);
+                    final String finalNewContactPhone = NewContactActivity.getPhoneNumber(this, UserConfig.getInstance(currentAccount).getCurrentUser(), newContactPhone, false);
                     final AlertDialog newContactAlertDialog = new AlertDialog.Builder(lastFragment.getParentActivity())
                             .setTitle(LocaleController.getString("NewContactAlertTitle", R.string.NewContactAlertTitle))
                             .setMessage(AndroidUtilities.replaceTags(LocaleController.formatString("NewContactAlertMessage", R.string.NewContactAlertMessage, PhoneFormat.getInstance().format(finalNewContactPhone))))
@@ -2268,6 +2268,8 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                     chatActivity.setThreadMessages(arrayList, chat, req.msg_id, res.read_inbox_max_id, res.read_outbox_max_id);
                     if (commentId != null) {
                         chatActivity.setHighlightMessageId(commentId);
+                    } else if (threadId != null) {
+                        chatActivity.setHighlightMessageId(messageId);
                     }
                     presentFragment(chatActivity);
                     chatOpened = true;

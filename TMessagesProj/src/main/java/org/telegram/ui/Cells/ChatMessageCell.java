@@ -10067,7 +10067,12 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             nameLayout.draw(canvas);
             canvas.restore();
             if (adminLayout != null) {
-                int color = Theme.getColor(isDrawSelectionBackground() ? Theme.key_chat_adminSelectedText : Theme.key_chat_adminText);
+                int color;
+                if (currentMessageObject.isOutOwner()) {
+                    color = Theme.getColor(isDrawSelectionBackground() ? Theme.key_chat_outAdminSelectedText : Theme.key_chat_outAdminText);
+                } else {
+                    color = Theme.getColor(isDrawSelectionBackground() ? Theme.key_chat_inAdminSelectedText : Theme.key_chat_inAdminText);
+                }
                 Theme.chat_adminPaint.setColor(color);
                 canvas.save();
                 float ax;

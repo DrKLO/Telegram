@@ -1533,7 +1533,11 @@ public class MessagesStorage extends BaseController {
                             }
                             if (message.replyMessage == null) {
                                 long messageId = message.reply_to.reply_to_msg_id;
-                                if (message.peer_id.channel_id != 0) {
+                                if (message.reply_to.reply_to_peer_id != null) {
+                                    if (message.reply_to.reply_to_peer_id.channel_id != 0) {
+                                        messageId |= ((long) message.reply_to.reply_to_peer_id.channel_id) << 32;
+                                    }
+                                } else if (message.peer_id.channel_id != 0) {
                                     messageId |= ((long) message.peer_id.channel_id) << 32;
                                 }
                                 if (!replyMessages.contains(messageId)) {
@@ -2670,7 +2674,11 @@ public class MessagesStorage extends BaseController {
                                     }
                                     if (message.replyMessage == null) {
                                         long messageId = message.reply_to.reply_to_msg_id;
-                                        if (message.peer_id.channel_id != 0) {
+                                        if (message.reply_to.reply_to_peer_id != null) {
+                                            if (message.reply_to.reply_to_peer_id.channel_id != 0) {
+                                                messageId |= ((long) message.reply_to.reply_to_peer_id.channel_id) << 32;
+                                            }
+                                        } else if (message.peer_id.channel_id != 0) {
                                             messageId |= ((long) message.peer_id.channel_id) << 32;
                                         }
                                         if (!replyMessages.contains(messageId)) {
@@ -5857,7 +5865,11 @@ public class MessagesStorage extends BaseController {
                             if (message.replyMessage == null) {
                                 if (message.reply_to.reply_to_msg_id != 0) {
                                     long messageId = message.reply_to.reply_to_msg_id;
-                                    if (message.peer_id.channel_id != 0) {
+                                    if (message.reply_to.reply_to_peer_id != null) {
+                                        if (message.reply_to.reply_to_peer_id.channel_id != 0) {
+                                            messageId |= ((long) message.reply_to.reply_to_peer_id.channel_id) << 32;
+                                        }
+                                    } else if (message.peer_id.channel_id != 0) {
                                         messageId |= ((long) message.peer_id.channel_id) << 32;
                                     }
                                     if (!replyMessages.contains(messageId)) {
@@ -6318,7 +6330,11 @@ public class MessagesStorage extends BaseController {
                                 if (message.replyMessage == null) {
                                     if (message.reply_to.reply_to_msg_id != 0) {
                                         long messageId = message.reply_to.reply_to_msg_id;
-                                        if (message.peer_id.channel_id != 0) {
+                                        if (message.reply_to.reply_to_peer_id != null) {
+                                            if (message.reply_to.reply_to_peer_id.channel_id != 0) {
+                                                messageId |= ((long) message.reply_to.reply_to_peer_id.channel_id) << 32;
+                                            }
+                                        } else if (message.peer_id.channel_id != 0) {
                                             messageId |= ((long) message.peer_id.channel_id) << 32;
                                         }
                                         if (!replyMessages.contains(messageId)) {
@@ -10046,7 +10062,11 @@ public class MessagesStorage extends BaseController {
                                         }
                                         if (message.replyMessage == null) {
                                             long messageId = message.reply_to.reply_to_msg_id;
-                                            if (message.peer_id.channel_id != 0) {
+                                            if (message.reply_to.reply_to_peer_id != null) {
+                                                if (message.reply_to.reply_to_peer_id.channel_id != 0) {
+                                                    messageId |= ((long) message.reply_to.reply_to_peer_id.channel_id) << 32;
+                                                }
+                                            } else if (message.peer_id.channel_id != 0) {
                                                 messageId |= ((long) message.peer_id.channel_id) << 32;
                                             }
                                             if (!replyMessages.contains(messageId)) {

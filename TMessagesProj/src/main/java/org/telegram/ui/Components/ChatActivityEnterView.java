@@ -1850,7 +1850,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
     public ChatActivityEnterView(Activity context, SizeNotifierFrameLayout parent, ChatActivity fragment, final boolean isChat) {
         super(context);
 
-        smoothKeyboard = isChat && SharedConfig.smoothKeyboard;
+        smoothKeyboard = isChat && SharedConfig.smoothKeyboard && !AndroidUtilities.isInMultiwindow && (fragment == null || !fragment.isInBubbleMode());
         dotPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         dotPaint.setColor(Theme.getColor(Theme.key_chat_emojiPanelNewTrending));
         setFocusable(true);
@@ -3278,7 +3278,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                 sizeNotifierLayout.removeView(emojiView);
                 emojiView = null;
             } else {
-                if (emojiViewVisible && (!waitingForKeyboardOpen)) {
+                if (emojiViewVisible && !waitingForKeyboardOpen) {
                     removeEmojiViewAfterAnimation = true;
                     hidePopup(false);
                 } else {
@@ -3289,8 +3289,6 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                     emojiView = null;
                 }
             }
-
-
         }
         allowStickers = value;
         allowGifs = value2;
@@ -6845,12 +6843,12 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
     }
 
     private void openKeyboardInternal() {
-        showPopup(AndroidUtilities.usingHardwareInput || isPaused ? 0 : 2, 0);
+        showPopup(AndroidUtilities.usingHardwareInput || AndroidUtilities.isInMultiwindow || parentFragment != null && parentFragment.isInBubbleMode() || isPaused ? 0 : 2, 0);
         messageEditText.requestFocus();
         AndroidUtilities.showKeyboard(messageEditText);
         if (isPaused) {
             showKeyboardOnResume = true;
-        } else if (!AndroidUtilities.usingHardwareInput && !keyboardVisible && !AndroidUtilities.isInMultiwindow) {
+        } else if (!AndroidUtilities.usingHardwareInput && !keyboardVisible && !AndroidUtilities.isInMultiwindow && (parentFragment == null || !parentFragment.isInBubbleMode())) {
             waitingForKeyboardOpen = true;
             AndroidUtilities.cancelRunOnUIThread(openKeyboardRunnable);
             AndroidUtilities.runOnUIThread(openKeyboardRunnable, 100);

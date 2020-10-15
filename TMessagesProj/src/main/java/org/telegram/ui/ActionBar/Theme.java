@@ -2576,8 +2576,10 @@ public class Theme {
     public static final String key_chat_inAudioSelectedProgress = "chat_inAudioSelectedProgress";
     public static final String key_chat_outAudioSelectedProgress = "chat_outAudioSelectedProgress";
     public static final String key_chat_mediaTimeText = "chat_mediaTimeText";
-    public static final String key_chat_adminText = "chat_adminText";
-    public static final String key_chat_adminSelectedText = "chat_adminSelectedText";
+    public static final String key_chat_inAdminText = "chat_adminText";
+    public static final String key_chat_inAdminSelectedText = "chat_adminSelectedText";
+    public static final String key_chat_outAdminText = "chat_outAdminText";
+    public static final String key_chat_outAdminSelectedText = "chat_outAdminSelectedText";
     public static final String key_chat_inTimeText = "chat_inTimeText";
     public static final String key_chat_outTimeText = "chat_outTimeText";
     public static final String key_chat_inTimeSelectedText = "chat_inTimeSelectedText";
@@ -3287,11 +3289,13 @@ public class Theme {
         defaultColors.put(key_chat_inAudioSelectedProgress, 0xffeff8fe);
         defaultColors.put(key_chat_outAudioSelectedProgress, 0xffe1f8cf);
         defaultColors.put(key_chat_mediaTimeText, 0xffffffff);
+        defaultColors.put(key_chat_inAdminText, 0xffc0c6cb);
+        defaultColors.put(key_chat_inAdminSelectedText, 0xff89b4c1);
+        defaultColors.put(key_chat_outAdminText, 0xff70b15c);
+        defaultColors.put(key_chat_outAdminSelectedText, 0xff70b15c);
         defaultColors.put(key_chat_inTimeText, 0xffa1aab3);
-        defaultColors.put(key_chat_outTimeText, 0xff70b15c);
-        defaultColors.put(key_chat_adminText, 0xffc0c6cb);
-        defaultColors.put(key_chat_adminSelectedText, 0xff89b4c1);
         defaultColors.put(key_chat_inTimeSelectedText, 0xff89b4c1);
+        defaultColors.put(key_chat_outTimeText, 0xff70b15c);
         defaultColors.put(key_chat_outTimeSelectedText, 0xff70b15c);
         defaultColors.put(key_chat_inAudioPerformerText, 0xff2f3438);
         defaultColors.put(key_chat_inAudioPerformerSelectedText, 0xff2f3438);
@@ -3618,8 +3622,8 @@ public class Theme {
         defaultColors.put(key_statisticChartLineEmpty, 0xFFEEEEEE);
         defaultColors.put(key_actionBarTipBackground, 0xFF446F94);
 
-        fallbackKeys.put(key_chat_adminText, key_chat_inTimeText);
-        fallbackKeys.put(key_chat_adminSelectedText, key_chat_inTimeSelectedText);
+        fallbackKeys.put(key_chat_inAdminText, key_chat_inTimeText);
+        fallbackKeys.put(key_chat_inAdminSelectedText, key_chat_inTimeSelectedText);
         fallbackKeys.put(key_player_progressCachedBackground, key_player_progressBackground);
         fallbackKeys.put(key_chat_inAudioCacheSeekbar, key_chat_inAudioSeekbar);
         fallbackKeys.put(key_chat_outAudioCacheSeekbar, key_chat_outAudioSeekbar);
@@ -3746,6 +3750,9 @@ public class Theme {
 
         fallbackKeys.put(key_chat_inPsaNameText, key_avatar_nameInMessageGreen);
         fallbackKeys.put(key_chat_outPsaNameText, key_avatar_nameInMessageGreen);
+
+        fallbackKeys.put(key_chat_outAdminText, key_chat_outTimeText);
+        fallbackKeys.put(key_chat_outAdminSelectedText, key_chat_outTimeSelectedText);
 
         themeAccentExclusionKeys.addAll(Arrays.asList(keys_avatar_background));
         themeAccentExclusionKeys.addAll(Arrays.asList(keys_avatar_nameInMessage));

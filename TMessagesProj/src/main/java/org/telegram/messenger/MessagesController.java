@@ -10932,7 +10932,7 @@ public class MessagesController extends BaseController implements NotificationCe
                         messages.put(message.dialog_id, arr);
                     }
                     arr.add(obj);
-                    if ((!obj.isOut() || obj.messageOwner.from_scheduled) && obj.isUnread() && !ChatObject.isNotInChat(chat) && chat.min) {
+                    if ((!obj.isOut() || obj.messageOwner.from_scheduled) && obj.isUnread() && (chat == null || !ChatObject.isNotInChat(chat) && !chat.min)) {
                         if (pushMessages == null) {
                             pushMessages = new ArrayList<>();
                         }

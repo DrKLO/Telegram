@@ -54,7 +54,7 @@ public class SharingLiveLocationCell extends FrameLayout {
     private LocationActivity.LiveLocation liveLocation;
     private Location location = new Location("network");
 
-    private int currentAccount;
+    private int currentAccount = UserConfig.selectedAccount;
 
     private Runnable invalidateRunnable = new Runnable() {
         @Override

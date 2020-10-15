@@ -3045,6 +3045,8 @@ public class AlertsCreator {
                             if (!(participant.participant instanceof TLRPC.TL_channelParticipantAdmin || participant.participant instanceof TLRPC.TL_channelParticipantCreator)) {
                                 loadType = 0;
                             }
+                        } else if (error != null && "USER_NOT_PARTICIPANT".equals(error.text)) {
+                            loadType = 0;
                         }
                         createDeleteMessagesAlert(fragment, user, chat, encryptedChat, chatInfo, mergeDialogId, selectedMessage, selectedMessages, selectedGroup, scheduled, loadType, onDelete);
                     }));

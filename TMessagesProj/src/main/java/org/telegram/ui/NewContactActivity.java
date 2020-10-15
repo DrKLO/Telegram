@@ -524,7 +524,7 @@ public class NewContactActivity extends BaseFragment implements AdapterView.OnIt
                 }
                 phoneField.setText(builder);
                 if (start >= 0) {
-                    phoneField.setSelection(start <= phoneField.length() ? start : phoneField.length());
+                    phoneField.setSelection(Math.min(start, phoneField.length()));
                 }
                 phoneField.onTextChange();
                 ignoreOnPhoneChange = false;
@@ -616,6 +616,36 @@ public class NewContactActivity extends BaseFragment implements AdapterView.OnIt
         }
 
         return fragmentView;
+    }
+
+    public static String getPhoneNumber(Context context, TLRPC.User user, String number, boolean withCoutryCode) {
+        HashMap<String, String> codesMap = new HashMap<>();
+        try {
+            BufferedReader reader = new BufferedReader(new InputStreamReader(context.getResources().getAssets().open("countries.txt")));
+            String line;
+            while ((line = reader.readLine()) != null) {
+                String[] args = line.split(";");
+                codesMap.put(args[0], args[2]);
+            }
+            reader.close();
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+        if (number.startsWith("+")) {
+            return number;
+        } else if (withCoutryCode || user == null || TextUtils.isEmpty(user.phone)) {
+            return "+" + number;
+        } else {
+            String phone = user.phone;
+            for (int a = 4; a >= 1; a--) {
+                String sub = phone.substring(0, a);
+                String country = codesMap.get(sub);
+                if (country != null) {
+                    return "+" + sub + number;
+                }
+            }
+            return number;
+        }
     }
 
     private void invalidateAvatar() {

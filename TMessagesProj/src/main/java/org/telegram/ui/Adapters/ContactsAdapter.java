@@ -77,10 +77,10 @@ public class ContactsAdapter extends RecyclerListView.SectionsAdapter {
         disableSections = value;
     }
 
-    public void setSortType(int value) {
+    public void setSortType(int value, boolean force) {
         sortType = value;
         if (sortType == 2) {
-            if (onlineContacts == null) {
+            if (onlineContacts == null || force) {
                 onlineContacts = new ArrayList<>(ContactsController.getInstance(currentAccount).contacts);
                 int selfId = UserConfig.getInstance(currentAccount).clientUserId;
                 for (int a = 0, N = onlineContacts.size(); a < N; a++) {
@@ -191,7 +191,7 @@ public class ContactsAdapter extends RecyclerListView.SectionsAdapter {
                 }
             }
         }
-        if (needPhonebook) {
+        if (needPhonebook && position >= 0 && position < ContactsController.getInstance(currentAccount).phoneBookContacts.size()) {
             return ContactsController.getInstance(currentAccount).phoneBookContacts.get(position);
         }
         return null;
