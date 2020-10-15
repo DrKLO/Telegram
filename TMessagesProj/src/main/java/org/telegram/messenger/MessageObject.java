@@ -2902,7 +2902,7 @@ public class MessageObject {
                     height = attribute.h;
                 }
             }
-            if (animated && width <= 1280 && height <= 1280) {
+            if (animated && width <= 1440 && height <= 1440) {
                 return true;
             }
         }
