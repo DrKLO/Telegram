@@ -645,6 +645,9 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
             searchWas = false;
             lastSearchId = 0;
             waitingResponseCount = 0;
+            if (delegate != null) {
+                delegate.searchStateChanged(false, true);
+            }
             searchMessagesInternal(null, 0);
             notifyDataSetChanged();
             localTipDates.clear();

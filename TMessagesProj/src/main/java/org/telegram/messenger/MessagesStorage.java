@@ -3064,7 +3064,6 @@ public class MessagesStorage extends BaseController {
 
                 if (messagesOnly == 0 || messagesOnly == 3) {
                     database.executeFast("DELETE FROM dialogs WHERE did = " + did).stepThis().dispose();
-                    database.executeFast("DELETE FROM chat_settings_v2 WHERE uid = " + did).stepThis().dispose();
                     database.executeFast("DELETE FROM chat_pinned_v2 WHERE uid = " + did).stepThis().dispose();
                     database.executeFast("DELETE FROM chat_pinned_count WHERE uid = " + did).stepThis().dispose();
                     database.executeFast("DELETE FROM channel_users_v2 WHERE did = " + did).stepThis().dispose();
@@ -3073,11 +3072,10 @@ public class MessagesStorage extends BaseController {
                     int high_id = (int) (did >> 32);
                     if (lower_id != 0) {
                         if (lower_id < 0) {
-                            //database.executeFast("DELETE FROM chats WHERE uid = " + (-lower_id)).stepThis().dispose();
+                            database.executeFast("DELETE FROM chat_settings_v2 WHERE uid = " + (-lower_id)).stepThis().dispose();
                         }
                     } else {
                         database.executeFast("DELETE FROM enc_chats WHERE uid = " + high_id).stepThis().dispose();
-                        //database.executeFast("DELETE FROM secret_holes WHERE uid = " + high_id).stepThis().dispose();
                     }
                 } else if (messagesOnly == 2) {
                     SQLiteCursor cursor = database.queryFinalized("SELECT last_mid_i, last_mid FROM dialogs WHERE did = " + did);
@@ -3091,7 +3089,9 @@ public class MessagesStorage extends BaseController {
                                 NativeByteBuffer data = cursor2.byteBufferValue(0);
                                 if (data != null) {
                                     TLRPC.Message message = TLRPC.Message.TLdeserialize(data, data.readInt32(false), false);
-                                    message.readAttachPath(data, getUserConfig().clientUserId);
+                                    if (message != null) {
+                                        message.readAttachPath(data, getUserConfig().clientUserId);
+                                    }
                                     data.reuse();
                                     if (message != null) {
                                         messageId = message.id;
@@ -5009,14 +5009,21 @@ public class MessagesStorage extends BaseController {
                     if (ids == null) {
                         database.executeFast("DELETE FROM chat_pinned_v2 WHERE uid = " + dialogId).stepThis().dispose();
                         if (dialogId < 0) {
-                            database.executeFast("UPDATE chat_settings_v2 SET pinned = " + 0 + " WHERE uid = " + dialogId).stepThis().dispose();
+                            database.executeFast(String.format(Locale.US, "UPDATE chat_settings_v2 SET pinned = 0 WHERE uid = %d", -dialogId)).stepThis().dispose();
                         } else {
-                            database.executeFast("UPDATE user_settings SET pinned = " + 0 + " WHERE uid = " + dialogId).stepThis().dispose();
+                            database.executeFast(String.format(Locale.US, "UPDATE user_settings SET pinned = 0 WHERE uid = %d", dialogId)).stepThis().dispose();
                         }
                         newCount = 0;
                         endReached = true;
                     } else {
-                        database.executeFast(String.format("DELETE FROM chat_pinned_v2 WHERE uid = " + dialogId + " AND mid IN(%s)", TextUtils.join(",", ids))).stepThis().dispose();
+                        String idsStr = TextUtils.join(",", ids);
+                        if (dialogId < 0) {
+                            database.executeFast(String.format(Locale.US, "UPDATE chat_settings_v2 SET pinned = 0 WHERE uid = %d AND pinned IN (%s)", -dialogId, idsStr)).stepThis().dispose();
+                        } else {
+                            database.executeFast(String.format(Locale.US, "UPDATE user_settings SET pinned = 0 WHERE uid = %d AND pinned IN (%s)", dialogId, idsStr)).stepThis().dispose();
+                        }
+
+                        database.executeFast(String.format(Locale.US, "DELETE FROM chat_pinned_v2 WHERE uid = %d AND mid IN(%s)", dialogId, idsStr)).stepThis().dispose();
 
                         SQLiteCursor cursor = database.queryFinalized("SELECT changes()");
                         int updatedCount = cursor.next() ? cursor.intValue(0) : 0;
@@ -8990,6 +8997,14 @@ public class MessagesStorage extends BaseController {
                 for (int a = 0, N = messagesByDialogs.size(); a < N; a++) {
                     long did = messagesByDialogs.keyAt(a);
                     ArrayList<Integer> mids = messagesByDialogs.valueAt(a);
+                    int lowerId = (int) did;
+                    if (lowerId != 0) {
+                        if (lowerId < 0) {
+                            database.executeFast(String.format(Locale.US, "UPDATE chat_settings_v2 SET pinned = 0 WHERE uid = %d AND pinned IN (%s)", -lowerId, mids)).stepThis().dispose();
+                        } else {
+                            database.executeFast(String.format(Locale.US, "UPDATE user_settings SET pinned = 0 WHERE uid = %d AND pinned IN (%s)", lowerId, mids)).stepThis().dispose();
+                        }
+                    }
                     database.executeFast(String.format(Locale.US, "DELETE FROM chat_pinned_v2 WHERE uid = %d AND mid IN(%s)", did, TextUtils.join(",", mids))).stepThis().dispose();
                     int updatedCount = 0;
                     cursor = database.queryFinalized("SELECT changes()");
@@ -9332,7 +9347,9 @@ public class MessagesStorage extends BaseController {
                 state.dispose();
             }
 
-            database.executeFast(String.format(Locale.US, "DELETE FROM chat_pinned_v2 WHERE uid = %d AND mid <= %d", -channelId, maxMessageId)).stepThis().dispose();
+
+            database.executeFast(String.format(Locale.US, "UPDATE chat_settings_v2 SET pinned = 0 WHERE uid = %d AND pinned <= %d", channelId, maxMessageId)).stepThis().dispose();
+            database.executeFast(String.format(Locale.US, "DELETE FROM chat_pinned_v2 WHERE uid = %d AND mid <= %d", channelId, maxMessageId)).stepThis().dispose();
             int updatedCount = 0;
             cursor = database.queryFinalized("SELECT changes()");
             if (cursor.next()) {

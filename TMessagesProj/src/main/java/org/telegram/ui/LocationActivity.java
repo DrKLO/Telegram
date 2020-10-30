@@ -867,7 +867,7 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
         proximityButton.setContentDescription(LocaleController.getString("AccDescrLocationNotify", R.string.AccDescrLocationNotify));
         mapViewClip.addView(proximityButton, LayoutHelper.createFrame(Build.VERSION.SDK_INT >= 21 ? 40 : 44, Build.VERSION.SDK_INT >= 21 ? 40 : 44, Gravity.RIGHT | Gravity.TOP, 0, 12 + 50, 12, 0));
         proximityButton.setOnClickListener(v -> {
-            if (getParentActivity() == null || myLocation == null || !checkGpsEnabled()) {
+            if (getParentActivity() == null || myLocation == null || !checkGpsEnabled() || googleMap == null) {
                 return;
             }
             if (hintView != null) {
@@ -1836,6 +1836,9 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
     }
 
     private void createCircle(int meters) {
+        if (googleMap == null) {
+            return;
+        }
         List<PatternItem> PATTERN_POLYGON_ALPHA = Arrays.asList(new Gap(20), new Dash(20));
 
         CircleOptions circleOptions = new CircleOptions();

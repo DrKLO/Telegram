@@ -5220,7 +5220,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
         }
     }
 
-    private static boolean prepareSendingDocumentInternal(AccountInstance accountInstance, String path, String originalPath, Uri uri, String mime, long dialogId, MessageObject replyToMsg, MessageObject replyToTopMsg, CharSequence caption, final ArrayList<TLRPC.MessageEntity> entities, final MessageObject editingMessageObject, long[] groupId, boolean isGroupFinal, boolean forceDocument, boolean notify, int scheduleDate, Boolean[] withThumb) {
+    private static boolean prepareSendingDocumentInternal(AccountInstance accountInstance, String path, String originalPath, Uri uri, String mime, long dialogId, MessageObject replyToMsg, MessageObject replyToTopMsg, CharSequence caption, final ArrayList<TLRPC.MessageEntity> entities, final MessageObject editingMessageObject, long[] groupId, boolean isGroupFinal, boolean forceDocument, boolean notify, int scheduleDate, Integer[] docType) {
         if ((path == null || path.length() == 0) && uri == null) {
             return false;
         }
@@ -5448,19 +5448,25 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
         if (originalPath != null) {
             params.put("originalPath", originalPath);
         }
-        if (forceDocument) {
+        if (forceDocument && attributeAudio == null) {
             params.put("forceDocument", "1");
         }
         if (parentFinal != null) {
             params.put("parentObject", parentFinal);
         }
-        Boolean prevWithThumb = false;
-        if (withThumb != null) {
-            prevWithThumb = withThumb[0];
-            withThumb[0] = document.mime_type != null && (document.mime_type.toLowerCase().startsWith("image/") || document.mime_type.toLowerCase().startsWith("video/mp4")) || MessageObject.canPreviewDocument(document);
+        Integer prevType = 0;
+        if (docType != null) {
+            prevType = docType[0];
+            if (document.mime_type != null && (document.mime_type.toLowerCase().startsWith("image/") || document.mime_type.toLowerCase().startsWith("video/mp4")) || MessageObject.canPreviewDocument(document)) {
+                docType[0] = 1;
+            } else if (attributeAudio != null) {
+                docType[0] = 2;
+            } else {
+                docType[0] = 0;
+            }
         }
         if (groupId != null) {
-            if (withThumb != null && prevWithThumb != null && prevWithThumb != withThumb[0]) {
+            if (docType != null && prevType != null && prevType != docType[0]) {
                 finishGroup(accountInstance, groupId[0], scheduleDate);
                 groupId[0] = Utilities.random.nextLong();
             }
@@ -5605,7 +5611,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
             boolean error = false;
             long[] groupId = new long[1];
             int mediaCount = 0;
-            Boolean[] withThumb = new Boolean[1];
+            Integer[] docType = new Integer[1];
 
             boolean isEncrypted = (int) dialogId == 0;
             int enryptedLayer = 0;
@@ -5630,7 +5636,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                     }
                     mediaCount++;
                     long prevGroupId = groupId[0];
-                    if (!prepareSendingDocumentInternal(accountInstance, paths.get(a), originalPaths.get(a), null, mime, dialogId, replyToMsg, replyToTopMsg, captionFinal, null, editingMessageObject, groupId, mediaCount == 10 || a == count - 1, true, notify, scheduleDate, withThumb)) {
+                    if (!prepareSendingDocumentInternal(accountInstance, paths.get(a), originalPaths.get(a), null, mime, dialogId, replyToMsg, replyToTopMsg, captionFinal, null, editingMessageObject, groupId, mediaCount == 10 || a == count - 1, true, notify, scheduleDate, docType)) {
                         error = true;
                     }
                     if (prevGroupId != groupId[0]) {
@@ -5653,7 +5659,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                     }
                     mediaCount++;
                     long prevGroupId = groupId[0];
-                    if (!prepareSendingDocumentInternal(accountInstance, null, null, uris.get(a), mime, dialogId, replyToMsg, replyToTopMsg, captionFinal, null, editingMessageObject, groupId, mediaCount == 10 || a == count - 1, true, notify, scheduleDate, withThumb)) {
+                    if (!prepareSendingDocumentInternal(accountInstance, null, null, uris.get(a), mime, dialogId, replyToMsg, replyToTopMsg, captionFinal, null, editingMessageObject, groupId, mediaCount == 10 || a == count - 1, true, notify, scheduleDate, docType)) {
                         error = true;
                     }
                     if (prevGroupId != groupId[0]) {

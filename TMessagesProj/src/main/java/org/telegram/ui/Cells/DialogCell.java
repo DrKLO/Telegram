@@ -2312,7 +2312,7 @@ public class DialogCell extends BaseCell {
                 StatusDrawable statusDrawable = Theme.getChatStatusDrawable(printingStringType);
                 if (statusDrawable != null) {
                     canvas.save();
-                    int left = LocaleController.isRTL ? messageLeft + messageLayout.getWidth() - statusDrawable.getIntrinsicWidth() : messageLeft;
+                    int left = (LocaleController.isRTL || messageLayout.isRtlCharAt(0)) ? messageLeft + messageLayout.getWidth() - statusDrawable.getIntrinsicWidth() : messageLeft;
                     if (printingStringType == 1 || printingStringType == 4) {
                         canvas.translate(left, messageTop + (printingStringType == 1 ? AndroidUtilities.dp(1) : 0));
                     } else {

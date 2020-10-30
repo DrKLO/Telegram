@@ -35,6 +35,8 @@ public class SlotsDrawable extends RLottieDrawable {
     private int[] secondFrameCounts = new int[3];
     private int[] secondFrameNums = new int[3];
 
+    private boolean playWinAnimation;
+
     public SlotsDrawable(String diceEmoji, int w, int h) {
         super(diceEmoji, w, h);
 
@@ -82,7 +84,7 @@ public class SlotsDrawable extends RLottieDrawable {
                                 secondFrameNums[a] = secondFrameCounts[a] - 1;
                             }
                         }
-                        if (autoRepeatPlayCount == 1) {
+                        if (playWinAnimation) {
                             if (frameNums[0] + 1 < frameCounts[0]) {
                                 frameNums[0]++;
                             } else {
@@ -92,10 +94,12 @@ public class SlotsDrawable extends RLottieDrawable {
                         getFrame(nativePtrs[0], Math.max(frameNums[0], 0), backgroundBitmap, width, height, backgroundBitmap.getRowBytes(), true);
                         for (int a = 0; a < secondNativePtrs.length; a++) {
                             getFrame(secondNativePtrs[a], secondFrameNums[a] >= 0 ? secondFrameNums[a] : (secondFrameCounts[a] - 1), backgroundBitmap, width, height, backgroundBitmap.getRowBytes(), false);
-                            if (secondFrameNums[a] + 1 < secondFrameCounts[a]) {
-                                secondFrameNums[a]++;
-                            } else {
-                                secondFrameNums[a] = -1;
+                            if (!nextFrameIsLast) {
+                                if (secondFrameNums[a] + 1 < secondFrameCounts[a]) {
+                                    secondFrameNums[a]++;
+                                } else {
+                                    secondFrameNums[a] = -1;
+                                }
                             }
                         }
                         result = getFrame(nativePtrs[4], frameNums[4], backgroundBitmap, width, height, backgroundBitmap.getRowBytes(), false);
@@ -104,12 +108,11 @@ public class SlotsDrawable extends RLottieDrawable {
                         }
                         if (secondFrameNums[0] == -1 && secondFrameNums[1] == -1 && secondFrameNums[2] == -1) {
                             nextFrameIsLast = true;
+                            autoRepeatPlayCount++;
                         }
                         if (left == right && right == center) {
                             if (secondFrameNums[0] == secondFrameCounts[0] - 100) {
-                                if (autoRepeatPlayCount == 0) {
-                                    autoRepeatPlayCount++;
-                                }
+                                playWinAnimation = true;
                                 if (left == ReelValue.sevenWin) {
                                     Runnable runnable = onFinishCallback.get();
                                     if (runnable != null) {
