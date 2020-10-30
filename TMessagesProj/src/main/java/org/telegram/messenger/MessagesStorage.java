@@ -8998,14 +8998,15 @@ public class MessagesStorage extends BaseController {
                     long did = messagesByDialogs.keyAt(a);
                     ArrayList<Integer> mids = messagesByDialogs.valueAt(a);
                     int lowerId = (int) did;
+                    String idsStr = TextUtils.join(",", mids);
                     if (lowerId != 0) {
                         if (lowerId < 0) {
-                            database.executeFast(String.format(Locale.US, "UPDATE chat_settings_v2 SET pinned = 0 WHERE uid = %d AND pinned IN (%s)", -lowerId, mids)).stepThis().dispose();
+                            database.executeFast(String.format(Locale.US, "UPDATE chat_settings_v2 SET pinned = 0 WHERE uid = %d AND pinned IN (%s)", -lowerId, idsStr)).stepThis().dispose();
                         } else {
-                            database.executeFast(String.format(Locale.US, "UPDATE user_settings SET pinned = 0 WHERE uid = %d AND pinned IN (%s)", lowerId, mids)).stepThis().dispose();
+                            database.executeFast(String.format(Locale.US, "UPDATE user_settings SET pinned = 0 WHERE uid = %d AND pinned IN (%s)", lowerId, idsStr)).stepThis().dispose();
                         }
                     }
-                    database.executeFast(String.format(Locale.US, "DELETE FROM chat_pinned_v2 WHERE uid = %d AND mid IN(%s)", did, TextUtils.join(",", mids))).stepThis().dispose();
+                    database.executeFast(String.format(Locale.US, "DELETE FROM chat_pinned_v2 WHERE uid = %d AND mid IN(%s)", did, idsStr)).stepThis().dispose();
                     int updatedCount = 0;
                     cursor = database.queryFinalized("SELECT changes()");
                     if (cursor.next()) {
