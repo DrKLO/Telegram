@@ -268,7 +268,7 @@ public class MediaActionDrawable extends Drawable {
         if (messageDrawable != null && messageDrawable.hasGradient() && !hasOverlayImage) {
             LinearGradient shader = messageDrawable.getGradientShader();
             Matrix matrix = messageDrawable.getMatrix();
-            matrix.postTranslate(0, bounds.top);
+            matrix.setTranslate(0, -messageDrawable.getTopY() + bounds.top);
             shader.setLocalMatrix(matrix);
             paint.setShader(shader);
             paint2.setShader(shader);
@@ -715,13 +715,18 @@ public class MediaActionDrawable extends Drawable {
                     progress1 = 1.0f;
                     progress2 = 0.0f;
                 }
+                paint.setAlpha(255);
             } else {
                 progress1 = 0.0f;
                 progress2 = 1.0f;
+                if (nextIcon != ICON_CHECK) {
+                    paint.setAlpha((int) (255 * (1.0f - transitionProgress)));
+                } else {
+                    paint.setAlpha(255);
+                }
             }
             int y = cy + AndroidUtilities.dp(7);
             int x = cx - AndroidUtilities.dp(3);
-            paint.setAlpha(255);
             if (progress1 < 1) {
                 canvas.drawLine(x - AndroidUtilities.dp(6), y - AndroidUtilities.dp(6), x - AndroidUtilities.dp(6) * progress1, y - AndroidUtilities.dp(6) * progress1, paint);
             }

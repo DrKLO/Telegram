@@ -100,6 +100,7 @@ public class SendLocationCell extends FrameLayout {
             accurateTextView.setAlpha(value ? 1.0f : 0.5f);
             imageView.setAlpha(value ? 1.0f : 0.5f);
         }
+        checkText();
     }
 
     @Override

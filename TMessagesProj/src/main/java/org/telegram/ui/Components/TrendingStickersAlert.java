@@ -66,7 +66,9 @@ public class TrendingStickersAlert extends BottomSheet {
                     }
                     AndroidUtilities.hideKeyboard(view);
                 }
-                updateLayout();
+                if (dy != 0) {
+                    updateLayout();
+                }
             }
         });
     }
@@ -147,7 +149,6 @@ public class TrendingStickersAlert extends BottomSheet {
                             TrendingStickersAlert.this.setAllowNestedScroll(false);
                             gluedToTop = true;
                         }
-                        layout.setContentViewPaddingBottom(keyboardHeight);
                     }
                 }
             });
@@ -175,8 +176,13 @@ public class TrendingStickersAlert extends BottomSheet {
 
         @Override
         protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+            super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(heightMeasureSpec), MeasureSpec.EXACTLY));
+        }
+
+        @Override
+        protected void onLayout(boolean changed, int l, int t, int r, int b) {
             final int statusBarHeight = Build.VERSION.SDK_INT >= 21 ? AndroidUtilities.statusBarHeight : 0;
-            final int height = MeasureSpec.getSize(heightMeasureSpec) - statusBarHeight;
+            final int height = MeasureSpec.getSize(getMeasuredHeight()) - statusBarHeight;
             final int keyboardHeight = measureKeyboardHeight();
             final int padding = (int) ((height + keyboardHeight) * 0.2f);
 
@@ -187,22 +193,15 @@ public class TrendingStickersAlert extends BottomSheet {
                 gluedToTop = true;
             } else {
                 layout.glueToTop(false);
-                layout.setContentViewPaddingTop(padding);
                 TrendingStickersAlert.this.setAllowNestedScroll(true);
                 gluedToTop = false;
             }
-            layout.setContentViewPaddingBottom(keyboardHeight);
+            layout.setContentViewPaddingTop(padding);
             if (getPaddingTop() != statusBarHeight) {
                 setPadding(backgroundPaddingLeft, statusBarHeight, backgroundPaddingLeft, 0);
             }
             ignoreLayout = false;
-            super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(heightMeasureSpec), MeasureSpec.EXACTLY));
-        }
-
-        @Override
-        protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
-            super.onLayout(changed, left, top, right, bottom);
-            updateLayout();
+            super.onLayout(changed, l, t, r, b);
         }
 
         @Override
@@ -214,6 +213,7 @@ public class TrendingStickersAlert extends BottomSheet {
 
         @Override
         protected void onDraw(Canvas canvas) {
+            updateLayout();
             super.onDraw(canvas);
 
             final float fraction = getFraction();

@@ -90,6 +90,7 @@ import java.util.HashMap;
 import java.util.Locale;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.CountDownLatch;
 
 public class MediaController implements AudioManager.OnAudioFocusChangeListener, NotificationCenter.NotificationCenterDelegate, SensorEventListener {
 
@@ -474,6 +475,8 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
 
     private boolean isPaused = false;
     private VideoPlayer audioPlayer = null;
+    private VideoPlayer emojiSoundPlayer = null;
+    private int emojiSoundPlayerNum = 0;
     private boolean isStreamingCurrentAudio;
     private int playerNum;
     private String shouldSavePositionForCurrentAudio;
@@ -2089,10 +2092,11 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
         }
         currentPlaylistNum = index;
         playMusicAgain = true;
-        if (playingMessageObject != null) {
+        MessageObject messageObject = playlist.get(currentPlaylistNum);
+        if (playingMessageObject != null && !isSamePlayingMessage(messageObject)) {
             playingMessageObject.resetPlayingProgress();
         }
-        playMessage(playlist.get(currentPlaylistNum));
+        playMessage(messageObject);
     }
 
     private void playNextMessageWithoutOrder(boolean byStop) {
@@ -2581,6 +2585,91 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
             NotificationCenter.getInstance(messageObject.currentAccount).postNotificationName(NotificationCenter.messagePlayingProgressDidChanged, playingMessageObject.getId(), 0);
             FileLog.e(e2);
         }*/
+    }
+
+    public void playEmojiSound(AccountInstance accountInstance, String emoji, MessagesController.EmojiSound sound, boolean loadOnly) {
+        if (sound == null) {
+            return;
+        }
+        Utilities.stageQueue.postRunnable(() -> {
+            TLRPC.Document document = new TLRPC.TL_document();
+            document.access_hash = sound.accessHash;
+            document.id = sound.id;
+            document.mime_type = "sound/ogg";
+            document.file_reference = sound.fileReference;
+            document.dc_id = accountInstance.getConnectionsManager().getCurrentDatacenterId();
+            File file = FileLoader.getPathToAttach(document, true);
+            if (file.exists()) {
+                if (loadOnly) {
+                    return;
+                }
+                AndroidUtilities.runOnUIThread(() -> {
+                    try {
+                        int tag = ++emojiSoundPlayerNum;
+                        if (emojiSoundPlayer != null) {
+                            emojiSoundPlayer.releasePlayer(true);
+                        }
+                        emojiSoundPlayer = new VideoPlayer(false);
+                        emojiSoundPlayer.setDelegate(new VideoPlayer.VideoPlayerDelegate() {
+                            @Override
+                            public void onStateChanged(boolean playWhenReady, int playbackState) {
+                                AndroidUtilities.runOnUIThread(() -> {
+                                    if (tag != emojiSoundPlayerNum) {
+                                        return;
+                                    }
+                                    if (playbackState == ExoPlayer.STATE_ENDED) {
+                                        if (emojiSoundPlayer != null) {
+                                            try {
+                                                emojiSoundPlayer.releasePlayer(true);
+                                                emojiSoundPlayer = null;
+                                            } catch (Exception e) {
+                                                FileLog.e(e);
+                                            }
+                                        }
+                                    }
+                                });
+                            }
+
+                            @Override
+                            public void onError(VideoPlayer player, Exception e) {
+
+                            }
+
+                            @Override
+                            public void onVideoSizeChanged(int width, int height, int unappliedRotationDegrees, float pixelWidthHeightRatio) {
+
+                            }
+
+                            @Override
+                            public void onRenderedFirstFrame() {
+
+                            }
+
+                            @Override
+                            public void onSurfaceTextureUpdated(SurfaceTexture surfaceTexture) {
+
+                            }
+
+                            @Override
+                            public boolean onSurfaceDestroyed(SurfaceTexture surfaceTexture) {
+                                return false;
+                            }
+                        });
+                        emojiSoundPlayer.preparePlayer(Uri.fromFile(file), "other");
+                        emojiSoundPlayer.setStreamType(AudioManager.STREAM_MUSIC);
+                        emojiSoundPlayer.play();
+                    } catch (Exception e) {
+                        FileLog.e(e);
+                        if (emojiSoundPlayer != null) {
+                            emojiSoundPlayer.releasePlayer(true);
+                            emojiSoundPlayer = null;
+                        }
+                    }
+                });
+            } else {
+                AndroidUtilities.runOnUIThread(() -> accountInstance.getFileLoader().loadFile(document, null, 1, 1));
+            }
+        });
     }
 
     public boolean playMessage(final MessageObject messageObject) {
@@ -3343,7 +3432,226 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
         });
     }
 
+    private static class MediaLoader implements NotificationCenter.NotificationCenterDelegate {
+
+        private AccountInstance currentAccount;
+        private AlertDialog progressDialog;
+        private ArrayList<MessageObject> messageObjects;
+        private HashMap<String, MessageObject> loadingMessageObjects = new HashMap<>();
+        private float finishedProgress;
+        private boolean cancelled;
+        private boolean finished;
+        private int copiedFiles;
+        private CountDownLatch waitingForFile;
+        private MessagesStorage.IntCallback onFinishRunnable;
+        private boolean isMusic;
+
+        public MediaLoader(Context context, AccountInstance accountInstance, ArrayList<MessageObject> messages, MessagesStorage.IntCallback onFinish) {
+            currentAccount = accountInstance;
+            messageObjects = messages;
+            onFinishRunnable = onFinish;
+            isMusic = messages.get(0).isMusic();
+            currentAccount.getNotificationCenter().addObserver(this, NotificationCenter.fileDidLoad);
+            currentAccount.getNotificationCenter().addObserver(this, NotificationCenter.FileLoadProgressChanged);
+            currentAccount.getNotificationCenter().addObserver(this, NotificationCenter.fileDidFailToLoad);
+            progressDialog = new AlertDialog(context, 2);
+            progressDialog.setMessage(LocaleController.getString("Loading", R.string.Loading));
+            progressDialog.setCanceledOnTouchOutside(false);
+            progressDialog.setCancelable(true);
+            progressDialog.setOnCancelListener(d -> cancelled = true);
+        }
+
+        public void start() {
+            AndroidUtilities.runOnUIThread(() -> {
+                if (!finished) {
+                    progressDialog.show();
+                }
+            }, 250);
+
+            new Thread(() -> {
+                try {
+                    File dir;
+                    if (isMusic) {
+                        dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MUSIC);
+                    } else {
+                        dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
+                    }
+                    dir.mkdir();
+                    for (int b = 0, N = messageObjects.size(); b < N; b++) {
+                        MessageObject message = messageObjects.get(b);
+                        String name = message.getDocumentName();
+                        File destFile = new File(dir, name);
+                        if (destFile.exists()) {
+                            int idx = name.lastIndexOf('.');
+                            for (int a = 0; a < 10; a++) {
+                                String newName;
+                                if (idx != -1) {
+                                    newName = name.substring(0, idx) + "(" + (a + 1) + ")" + name.substring(idx);
+                                } else {
+                                    newName = name + "(" + (a + 1) + ")";
+                                }
+                                destFile = new File(dir, newName);
+                                if (!destFile.exists()) {
+                                    break;
+                                }
+                            }
+                        }
+                        if (!destFile.exists()) {
+                            destFile.createNewFile();
+                        }
+                        String path = message.messageOwner.attachPath;
+                        if (path != null && path.length() > 0) {
+                            File temp = new File(path);
+                            if (!temp.exists()) {
+                                path = null;
+                            }
+                        }
+                        if (path == null || path.length() == 0) {
+                            path = FileLoader.getPathToMessage(message.messageOwner).toString();
+                        }
+                        File sourceFile = new File(path);
+                        if (!sourceFile.exists()) {
+                            waitingForFile = new CountDownLatch(1);
+                            addMessageToLoad(message);
+                            waitingForFile.await();
+                        }
+                        copyFile(sourceFile, destFile, message.getMimeType());
+                    }
+                    checkIfFinished();
+                } catch (Exception e) {
+                    FileLog.e(e);
+                }
+
+            }).start();
+        }
+
+        private void checkIfFinished() {
+            if (!loadingMessageObjects.isEmpty()) {
+                return;
+            }
+            AndroidUtilities.runOnUIThread(() -> {
+                try {
+                    if (progressDialog.isShowing()) {
+                        progressDialog.dismiss();
+                    } else {
+                        finished = true;
+                    }
+                    if (onFinishRunnable != null) {
+                        AndroidUtilities.runOnUIThread(() -> onFinishRunnable.run(copiedFiles));
+                    }
+                } catch (Exception e) {
+                    FileLog.e(e);
+                }
+                currentAccount.getNotificationCenter().removeObserver(this, NotificationCenter.fileDidLoad);
+                currentAccount.getNotificationCenter().removeObserver(this, NotificationCenter.FileLoadProgressChanged);
+                currentAccount.getNotificationCenter().removeObserver(this, NotificationCenter.fileDidFailToLoad);
+            });
+        }
+
+        private void addMessageToLoad(MessageObject messageObject) {
+            AndroidUtilities.runOnUIThread(() -> {
+                TLRPC.Document document = messageObject.getDocument();
+                if (document == null) {
+                    return;
+                }
+                String fileName = FileLoader.getAttachFileName(document);
+                loadingMessageObjects.put(fileName, messageObject);
+                currentAccount.getFileLoader().loadFile(document, messageObject, 1, 0);
+            });
+        }
+
+        private boolean copyFile(File sourceFile, File destFile, String mime) {
+            if (AndroidUtilities.isInternalUri(Uri.fromFile(sourceFile))) {
+                return false;
+            }
+            try (FileInputStream inputStream = new FileInputStream(sourceFile); FileChannel source = inputStream.getChannel(); FileChannel destination = new FileOutputStream(destFile).getChannel()) {
+                long size = source.size();
+                try {
+                    @SuppressLint("DiscouragedPrivateApi") Method getInt = FileDescriptor.class.getDeclaredMethod("getInt$");
+                    int fdint = (Integer) getInt.invoke(inputStream.getFD());
+                    if (AndroidUtilities.isInternalUri(fdint)) {
+                        if (progressDialog != null) {
+                            AndroidUtilities.runOnUIThread(() -> {
+                                try {
+                                    progressDialog.dismiss();
+                                } catch (Exception e) {
+                                    FileLog.e(e);
+                                }
+                            });
+                        }
+                        return false;
+                    }
+                } catch (Throwable e) {
+                    FileLog.e(e);
+                }
+                long lastProgress = 0;
+                for (long a = 0; a < size; a += 4096) {
+                    if (cancelled) {
+                        break;
+                    }
+                    destination.transferFrom(source, a, Math.min(4096, size - a));
+                }
+                if (!cancelled) {
+                    if (isMusic) {
+                        AndroidUtilities.addMediaToGallery(Uri.fromFile(destFile));
+                    } else {
+                        DownloadManager downloadManager = (DownloadManager) ApplicationLoader.applicationContext.getSystemService(Context.DOWNLOAD_SERVICE);
+                        downloadManager.addCompletedDownload(destFile.getName(), destFile.getName(), false, mime, destFile.getAbsolutePath(), destFile.length(), true);
+                    }
+                    finishedProgress += 100.0f / messageObjects.size();
+                    final int progress = (int) (finishedProgress);
+                    AndroidUtilities.runOnUIThread(() -> {
+                        try {
+                            progressDialog.setProgress(progress);
+                        } catch (Exception e) {
+                            FileLog.e(e);
+                        }
+                    });
+                    copiedFiles++;
+                    return true;
+                }
+            } catch (Exception e) {
+                FileLog.e(e);
+            }
+            destFile.delete();
+            return false;
+        }
+
+        @Override
+        public void didReceivedNotification(int id, int account, Object... args) {
+            if (id == NotificationCenter.fileDidLoad || id == NotificationCenter.fileDidFailToLoad) {
+                String fileName = (String) args[0];
+                if (loadingMessageObjects.remove(fileName) != null) {
+                    waitingForFile.countDown();
+                }
+            } else if (id == NotificationCenter.FileLoadProgressChanged) {
+                String fileName = (String) args[0];
+                if (loadingMessageObjects.containsKey(fileName)) {
+                    Long loadedSize = (Long) args[1];
+                    Long totalSize = (Long) args[2];
+                    float loadProgress = loadedSize / (float) totalSize;
+                    final int progress = (int) (finishedProgress + loadProgress / messageObjects.size() * 100);
+                    AndroidUtilities.runOnUIThread(() -> {
+                        try {
+                            progressDialog.setProgress(progress);
+                        } catch (Exception e) {
+                            FileLog.e(e);
+                        }
+                    });
+                }
+            }
+        }
+    }
+
+    public static void saveFilesFromMessages(Context context, AccountInstance accountInstance, ArrayList<MessageObject> messageObjects, final MessagesStorage.IntCallback onSaved) {
+        new MediaLoader(context, accountInstance, messageObjects, onSaved).start();
+    }
+
     public static void saveFile(String fullPath, Context context, final int type, final String name, final String mime) {
+        saveFile(fullPath, context, type, name, mime, null);
+    }
+
+    public static void saveFile(String fullPath, Context context, final int type, final String name, final String mime, final Runnable onSaved) {
         if (fullPath == null) {
             return;
         }
@@ -3364,14 +3672,20 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
         final boolean[] cancelled = new boolean[] {false};
         if (sourceFile.exists()) {
             AlertDialog progressDialog = null;
+            final boolean[] finished = new boolean[1];
             if (context != null && type != 0) {
                 try {
-                    progressDialog = new AlertDialog(context, 2);
-                    progressDialog.setMessage(LocaleController.getString("Loading", R.string.Loading));
-                    progressDialog.setCanceledOnTouchOutside(false);
-                    progressDialog.setCancelable(true);
-                    progressDialog.setOnCancelListener(dialog -> cancelled[0] = true);
-                    progressDialog.show();
+                    final AlertDialog dialog = new AlertDialog(context, 2);
+                    dialog.setMessage(LocaleController.getString("Loading", R.string.Loading));
+                    dialog.setCanceledOnTouchOutside(false);
+                    dialog.setCancelable(true);
+                    dialog.setOnCancelListener(d -> cancelled[0] = true);
+                    AndroidUtilities.runOnUIThread(() -> {
+                        if (!finished[0]) {
+                            dialog.show();
+                        }
+                    }, 250);
+                    progressDialog = dialog;
                 } catch (Exception e) {
                     FileLog.e(e);
                 }
@@ -3471,6 +3785,9 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                         } else {
                             AndroidUtilities.addMediaToGallery(Uri.fromFile(destFile));
                         }
+                        if (onSaved != null) {
+                            AndroidUtilities.runOnUIThread(onSaved);
+                        }
                     }
                 } catch (Exception e) {
                     FileLog.e(e);
@@ -3478,7 +3795,11 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                 if (finalProgress != null) {
                     AndroidUtilities.runOnUIThread(() -> {
                         try {
-                            finalProgress.dismiss();
+                            if (finalProgress.isShowing()) {
+                                finalProgress.dismiss();
+                            } else {
+                                finished[0] = true;
+                            }
                         } catch (Exception e) {
                             FileLog.e(e);
                         }

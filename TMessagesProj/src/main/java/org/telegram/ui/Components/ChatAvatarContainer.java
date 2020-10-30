@@ -74,13 +74,13 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
         avatarImageView = new BackupImageView(context);
         if (parentFragment != null) {
             sharedMediaPreloader = new SharedMediaLayout.SharedMediaPreloader(chatActivity);
-            if (parentFragment.isThreadChat()) {
+            if (parentFragment.isThreadChat() || parentFragment.getChatMode() == 2) {
                 avatarImageView.setVisibility(GONE);
             }
         }
         avatarImageView.setRoundRadius(AndroidUtilities.dp(21));
         addView(avatarImageView);
-        if (parentFragment != null && !parentFragment.isInScheduleMode() && !UserObject.isReplyUser(parentFragment.getCurrentUser())) {
+        if (parentFragment != null && parentFragment.getChatMode() == 0 && !UserObject.isReplyUser(parentFragment.getCurrentUser())) {
             avatarImageView.setOnClickListener(v -> openProfile(true));
         }
 
@@ -109,17 +109,17 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
             timeItem.setContentDescription(LocaleController.getString("SetTimer", R.string.SetTimer));
         }
 
-        if (parentFragment != null && !parentFragment.isInScheduleMode()) {
+        if (parentFragment != null && parentFragment.getChatMode() == 0) {
             if (!parentFragment.isThreadChat() && !UserObject.isReplyUser(parentFragment.getCurrentUser())) {
                 setOnClickListener(v -> openProfile(false));
             }
 
             TLRPC.Chat chat = parentFragment.getCurrentChat();
-            statusDrawables[0] = new TypingDotsDrawable();
-            statusDrawables[1] = new RecordStatusDrawable();
-            statusDrawables[2] = new SendingFileDrawable();
-            statusDrawables[3] = new PlayingGameDrawable();
-            statusDrawables[4] = new RoundStatusDrawable();
+            statusDrawables[0] = new TypingDotsDrawable(false);
+            statusDrawables[1] = new RecordStatusDrawable(false);
+            statusDrawables[2] = new SendingFileDrawable(false);
+            statusDrawables[3] = new PlayingGameDrawable(false);
+            statusDrawables[4] = new RoundStatusDrawable(false);
             for (int a = 0; a < statusDrawables.length; a++) {
                 statusDrawables[a].setIsChat(chat != null);
             }
@@ -309,14 +309,14 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
             return;
         }
         TLRPC.User user = parentFragment.getCurrentUser();
-        if (UserObject.isUserSelf(user) || UserObject.isReplyUser(user) || parentFragment.isInScheduleMode()) {
+        if (UserObject.isUserSelf(user) || UserObject.isReplyUser(user) || parentFragment.getChatMode() != 0) {
             if (subtitleTextView.getVisibility() != GONE) {
                 subtitleTextView.setVisibility(GONE);
             }
             return;
         }
         TLRPC.Chat chat = parentFragment.getCurrentChat();
-        CharSequence printString = MessagesController.getInstance(currentAccount).getPrintingString(parentFragment.getDialogId(), parentFragment.getThreadId());
+        CharSequence printString = MessagesController.getInstance(currentAccount).getPrintingString(parentFragment.getDialogId(), parentFragment.getThreadId(), false);
         if (printString != null) {
             printString = TextUtils.replace(printString, new String[]{"..."}, new String[]{""});
         }

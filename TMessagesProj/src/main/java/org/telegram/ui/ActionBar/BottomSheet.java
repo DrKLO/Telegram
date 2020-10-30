@@ -52,7 +52,6 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
-import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.UserConfig;
 import org.telegram.ui.Components.AnimationProperties;
 import org.telegram.ui.Components.CubicBezierInterpolator;
@@ -521,9 +520,6 @@ public class BottomSheet extends Dialog {
                 float translation = 0;
                 if (Build.VERSION.SDK_INT >= 29 && getAdditionalMandatoryOffsets() > 0) {
                     float dist = containerView.getMeasuredHeight() - containerView.getTranslationY();
-                    if (currentSheetAnimationType == 1) {
-                        dist *= 0.1f;
-                    }
                     translation = Math.max(0, bottomInset - dist);
                 }
                 int navBarHeight = drawNavigationBar ? bottomInset : 0;
@@ -676,11 +672,6 @@ public class BottomSheet extends Dialog {
         public ImageView getImageView() {
             return imageView;
         }
-    }
-
-    @Override
-    public void onAttachedToWindow() {
-        super.onAttachedToWindow();
     }
 
     public void setAllowNestedScroll(boolean value) {
@@ -1245,6 +1236,10 @@ public class BottomSheet extends Dialog {
         public Builder setCustomView(View view) {
             bottomSheet.customView = view;
             return this;
+        }
+
+        public View getCustomView() {
+            return bottomSheet.customView;
         }
 
         public Builder setTitle(CharSequence title) {

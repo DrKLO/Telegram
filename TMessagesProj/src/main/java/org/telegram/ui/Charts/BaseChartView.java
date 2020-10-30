@@ -17,6 +17,7 @@ import android.graphics.RectF;
 import android.os.Build;
 import android.os.Bundle;
 import android.text.TextPaint;
+import android.view.HapticFeedbackConstants;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewConfiguration;
@@ -1465,6 +1466,7 @@ public abstract class BaseChartView<T extends ChartData, L extends LineViewData>
         legendSignatureView.setVisibility(VISIBLE);
         selectionA = 1f;
         moveLegend(chartFullWidth * (pickerDelegate.pickerStart) - HORIZONTAL_PADDING);
+        performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
     }
 
     public long getStartDate() {

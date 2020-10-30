@@ -8,16 +8,20 @@
 
 package org.telegram.ui.Components;
 
+import android.Manifest;
 import android.app.Activity;
 import android.app.Dialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.graphics.Color;
+import android.graphics.Outline;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Vibrator;
 import android.text.Html;
@@ -33,6 +37,7 @@ import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.HapticFeedbackConstants;
 import android.view.View;
+import android.view.ViewOutlineProvider;
 import android.view.inputmethod.EditorInfo;
 import android.widget.Button;
 import android.widget.FrameLayout;
@@ -94,6 +99,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.CountDownLatch;
+
+import androidx.annotation.RequiresApi;
 
 public class AlertsCreator {
 
@@ -157,7 +164,7 @@ public class AlertsCreator {
                 if (fragment != null) {
                     showSimpleAlert(fragment, LocaleController.getString("EditMessageError", R.string.EditMessageError));
                 } else {
-                    showSimpleToast(fragment, LocaleController.getString("EditMessageError", R.string.EditMessageError));
+                    showSimpleToast(null, LocaleController.getString("EditMessageError", R.string.EditMessageError));
                 }
             }
         } else if (request instanceof TLRPC.TL_messages_sendMessage ||
@@ -216,7 +223,7 @@ public class AlertsCreator {
         } else if (request instanceof TLRPC.TL_account_sendConfirmPhoneCode) {
             if (error.code == 400) {
                 return showSimpleAlert(fragment, LocaleController.getString("CancelLinkExpired", R.string.CancelLinkExpired));
-            } else if (error.text != null) {
+            } else {
                 if (error.text.startsWith("FLOOD_WAIT")) {
                     return showSimpleAlert(fragment, LocaleController.getString("FloodWait", R.string.FloodWait));
                 } else {
@@ -262,7 +269,7 @@ public class AlertsCreator {
                     break;
             }
         } else if (request instanceof TLRPC.TL_contacts_importContacts) {
-            if (error == null || error.text.startsWith("FLOOD_WAIT")) {
+            if (error.text.startsWith("FLOOD_WAIT")) {
                 showSimpleAlert(fragment, LocaleController.getString("FloodWait", R.string.FloodWait));
             } else {
                 showSimpleAlert(fragment, LocaleController.getString("ErrorOccurred", R.string.ErrorOccurred) + "\n" + error.text);
@@ -395,7 +402,7 @@ public class AlertsCreator {
         int end;
         if (start != -1) {
             end = TextUtils.indexOf(spanned, ']', start + 1);
-            if (start != -1 && end != -1) {
+            if (end != -1) {
                 spanned.delete(end, end + 1);
                 spanned.delete(start, start + 1);
             }
@@ -434,7 +441,7 @@ public class AlertsCreator {
                 if (!few) {
                     TLRPC.ChatFull chatFull = MessagesController.getInstance(currentAccount).getChatFull(chat.id);
                     if (chatFull == null) {
-                        chatFull = MessagesStorage.getInstance(currentAccount).loadChatInfo(chat.id, new CountDownLatch(1), false, false);
+                        chatFull = MessagesStorage.getInstance(currentAccount).loadChatInfo(chat.id, ChatObject.isChannel(chat), new CountDownLatch(1), false, false);
                     }
                     if (chatFull != null && chatFull.slowmode_next_send_date >= ConnectionsManager.getInstance(currentAccount).getCurrentTime()) {
                         few = true;
@@ -575,7 +582,7 @@ public class AlertsCreator {
                 cells[a].setTag(a);
                 if (a == 0) {
                     cells[a].setText(LocaleController.getString("DeleteReportSpam", R.string.DeleteReportSpam), "", true, false);
-                } else if (a == 1) {
+                } else {
                     cells[a].setText(LocaleController.formatString("DeleteThisChat", R.string.DeleteThisChat), "", true, false);
                 }
                 cells[a].setPadding(LocaleController.isRTL ? AndroidUtilities.dp(16) : AndroidUtilities.dp(8), 0, LocaleController.isRTL ? AndroidUtilities.dp(8) : AndroidUtilities.dp(16), 0);
@@ -1158,7 +1165,7 @@ public class AlertsCreator {
                 avatarDrawable.setInfo(user);
                 imageView.setImage(ImageLocation.getForUser(user, false), "50_50", avatarDrawable, user);
             }
-        } else if (chat != null) {
+        } else {
             avatarDrawable.setInfo(chat);
             imageView.setImage(ImageLocation.getForChat(chat, false), "50_50", avatarDrawable, chat);
         }
@@ -1181,7 +1188,7 @@ public class AlertsCreator {
                             messageTextView.setText(AndroidUtilities.replaceTags(LocaleController.formatString("AreYouSureClearHistoryWithUser", R.string.AreYouSureClearHistoryWithUser, UserObject.getUserName(user))));
                         }
                     }
-                } else if (chat != null) {
+                } else {
                     if (!ChatObject.isChannel(chat) || chat.megagroup && TextUtils.isEmpty(chat.username)) {
                         messageTextView.setText(AndroidUtilities.replaceTags(LocaleController.formatString("AreYouSureClearHistoryWithChat", R.string.AreYouSureClearHistoryWithChat, chat.title)));
                     } else if (chat.megagroup) {
@@ -2506,7 +2513,48 @@ public class AlertsCreator {
         return builder.create();
     }
 
-    public static AlertDialog.Builder createContactsPermissionDialog(final Activity parentActivity, final MessagesStorage.IntCallback callback) {
+    @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
+    public static AlertDialog.Builder createBackgroundLocationPermissionDialog(Activity activity, TLRPC.User selfUser, Runnable cancelRunnable) {
+        if (activity == null || Build.VERSION.SDK_INT < 29) {
+            return null;
+        }
+        AlertDialog.Builder builder = new AlertDialog.Builder(activity);
+        String svg = RLottieDrawable.readRes(null, Theme.getCurrentTheme().isDark() ? R.raw.permission_map_dark : R.raw.permission_map);
+        String pinSvg = RLottieDrawable.readRes(null, Theme.getCurrentTheme().isDark() ? R.raw.permission_pin_dark : R.raw.permission_pin);
+        FrameLayout frameLayout = new FrameLayout(activity);
+        frameLayout.setClipToOutline(true);
+        frameLayout.setOutlineProvider(new ViewOutlineProvider() {
+            @Override
+            public void getOutline(View view, Outline outline) {
+                outline.setRoundRect(0, 0, view.getMeasuredWidth(), view.getMeasuredHeight() + AndroidUtilities.dp(6), AndroidUtilities.dp(6));
+            }
+        });
+
+        View background = new View(activity);
+        background.setBackground(SvgHelper.getDrawable(svg));
+        frameLayout.addView(background, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.LEFT | Gravity.TOP, 0, 0, 0, 0));
+
+        View pin = new View(activity);
+        pin.setBackground(SvgHelper.getDrawable(pinSvg));
+        frameLayout.addView(pin, LayoutHelper.createFrame(60, 82, Gravity.CENTER, 0, 0, 0, 0));
+
+        BackupImageView imageView = new BackupImageView(activity);
+        imageView.setRoundRadius(AndroidUtilities.dp(26));
+        imageView.setImage(ImageLocation.getForUser(selfUser, false), "50_50", (Drawable) null, selfUser);
+        frameLayout.addView(imageView, LayoutHelper.createFrame(52, 52, Gravity.CENTER, 0, 0, 0, 11));
+
+        builder.setTopView(frameLayout);
+        builder.setMessage(AndroidUtilities.replaceTags(LocaleController.getString("PermissionBackgroundLocation", R.string.PermissionBackgroundLocation)));
+        builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), (dialog, which) -> {
+            if (activity.checkSelfPermission(Manifest.permission.ACCESS_BACKGROUND_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                activity.requestPermissions(new String[]{Manifest.permission.ACCESS_BACKGROUND_LOCATION}, 30);
+            }
+        });
+        builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), ((dialog, which) -> cancelRunnable.run()));
+        return builder;
+    }
+
+    public static AlertDialog.Builder createContactsPermissionDialog(Activity parentActivity, MessagesStorage.IntCallback callback) {
         AlertDialog.Builder builder = new AlertDialog.Builder(parentActivity);
         builder.setTopImage(R.drawable.permissions_contacts, Theme.getColor(Theme.key_dialogTopBackground));
         builder.setMessage(AndroidUtilities.replaceTags(LocaleController.getString("ContactsPermissionAlert", R.string.ContactsPermissionAlert)));
@@ -2607,14 +2655,12 @@ public class AlertsCreator {
                     LocaleController.getString("NotificationsPriorityUrgent", R.string.NotificationsPriorityUrgent)
             };
         } else {
-            if (dialog_id == 0) {
-                if (globalType == NotificationsController.TYPE_PRIVATE) {
-                    selected[0] = preferences.getInt("priority_messages", 1);
-                } else if (globalType == NotificationsController.TYPE_GROUP) {
-                    selected[0] = preferences.getInt("priority_group", 1);
-                } else if (globalType == NotificationsController.TYPE_CHANNEL) {
-                    selected[0] = preferences.getInt("priority_channel", 1);
-                }
+            if (globalType == NotificationsController.TYPE_PRIVATE) {
+                selected[0] = preferences.getInt("priority_messages", 1);
+            } else if (globalType == NotificationsController.TYPE_GROUP) {
+                selected[0] = preferences.getInt("priority_group", 1);
+            } else if (globalType == NotificationsController.TYPE_CHANNEL) {
+                selected[0] = preferences.getInt("priority_channel", 1);
             }
             if (selected[0] == 4) {
                 selected[0] = 0;
@@ -3072,7 +3118,7 @@ public class AlertsCreator {
                         cell.setText(LocaleController.getString("DeleteBanUser", R.string.DeleteBanUser), "", false, false);
                     } else if (a == 1) {
                         cell.setText(LocaleController.getString("DeleteReportSpam", R.string.DeleteReportSpam), "", false, false);
-                    } else if (a == 2) {
+                    } else {
                         cell.setText(LocaleController.formatString("DeleteAllFrom", R.string.DeleteAllFrom, ContactsController.formatName(actionUser.first_name, actionUser.last_name)), "", false, false);
                     }
                     cell.setPadding(LocaleController.isRTL ? AndroidUtilities.dp(16) : AndroidUtilities.dp(8), 0, LocaleController.isRTL ? AndroidUtilities.dp(8) : AndroidUtilities.dp(16), 0);
@@ -3114,7 +3160,12 @@ public class AlertsCreator {
         } else if (!scheduled && !ChatObject.isChannel(chat) && encryptedChat == null) {
             if (user != null && user.id != UserConfig.getInstance(currentAccount).getClientUserId() && (!user.bot || user.support) || chat != null) {
                 if (selectedMessage != null) {
-                    boolean hasOutgoing = !selectedMessage.isSendError() && (selectedMessage.messageOwner.action == null || selectedMessage.messageOwner.action instanceof TLRPC.TL_messageActionEmpty || selectedMessage.messageOwner.action instanceof TLRPC.TL_messageActionPhoneCall) && (selectedMessage.isOut() || canRevokeInbox || ChatObject.hasAdminRights(chat)) && (currentDate - selectedMessage.messageOwner.date) <= revokeTimeLimit;
+                    boolean hasOutgoing = !selectedMessage.isSendError() && (
+                            selectedMessage.messageOwner.action == null ||
+                                    selectedMessage.messageOwner.action instanceof TLRPC.TL_messageActionEmpty ||
+                                    selectedMessage.messageOwner.action instanceof TLRPC.TL_messageActionPhoneCall ||
+                                    selectedMessage.messageOwner.action instanceof TLRPC.TL_messageActionPinMessage ||
+                                    selectedMessage.messageOwner.action instanceof TLRPC.TL_messageActionGeoProximityReached) && (selectedMessage.isOut() || canRevokeInbox || ChatObject.hasAdminRights(chat)) && (currentDate - selectedMessage.messageOwner.date) <= revokeTimeLimit;
                     if (hasOutgoing) {
                         myMessagesCount++;
                     }
@@ -3123,7 +3174,11 @@ public class AlertsCreator {
                     for (int a = 1; a >= 0; a--) {
                         for (int b = 0; b < selectedMessages[a].size(); b++) {
                             MessageObject msg = selectedMessages[a].valueAt(b);
-                            if (!(msg.messageOwner.action == null || msg.messageOwner.action instanceof TLRPC.TL_messageActionEmpty || msg.messageOwner.action instanceof TLRPC.TL_messageActionPhoneCall)) {
+                            if (!(msg.messageOwner.action == null ||
+                                    msg.messageOwner.action instanceof TLRPC.TL_messageActionEmpty ||
+                                    msg.messageOwner.action instanceof TLRPC.TL_messageActionPhoneCall ||
+                                    msg.messageOwner.action instanceof TLRPC.TL_messageActionPinMessage ||
+                                    msg.messageOwner.action instanceof TLRPC.TL_messageActionGeoProximityReached)) {
                                 continue;
                             }
                             if ((msg.isOut() || canRevokeInbox) || chat != null && ChatObject.canBlockUsers(chat)) {
@@ -3196,7 +3251,7 @@ public class AlertsCreator {
                     int channelId = 0;
                     if (!ids.isEmpty()) {
                         MessageObject msg = selectedMessages[a].get(ids.get(0));
-                        if (channelId == 0 && msg.messageOwner.peer_id.channel_id != 0) {
+                        if (msg.messageOwner.peer_id.channel_id != 0) {
                             channelId = msg.messageOwner.peer_id.channel_id;
                         }
                     }
@@ -3229,9 +3284,6 @@ public class AlertsCreator {
                 if (checks[2]) {
                     MessagesController.getInstance(currentAccount).deleteUserChannelHistory(chat, userFinal, 0);
                 }
-            }
-            if (BulletinFactory.canShowBulletin(fragment)) {
-                BulletinFactory.createDeleteMessagesBulletin(fragment, count).show();
             }
             if (onDelete != null) {
                 onDelete.run();

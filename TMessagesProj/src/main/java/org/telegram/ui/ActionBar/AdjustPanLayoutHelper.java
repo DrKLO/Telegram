@@ -13,8 +13,6 @@ import android.view.Window;
 import android.view.animation.Interpolator;
 import android.widget.FrameLayout;
 
-import com.google.android.exoplayer2.util.Log;
-
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.SharedConfig;
@@ -127,11 +125,12 @@ public class AdjustPanLayoutHelper {
             onPanTranslationUpdate(-y, v, isKeyboardVisible);
         });
         animationInProgress = true;
+        int selectedAccount = UserConfig.selectedAccount;
         animator.addListener(new AnimatorListenerAdapter() {
             @Override
             public void onAnimationEnd(Animator animation) {
                 animationInProgress = false;
-                NotificationCenter.getInstance(UserConfig.selectedAccount).onAnimationFinish(notificationsIndex);
+                NotificationCenter.getInstance(selectedAccount).onAnimationFinish(notificationsIndex);
                 animator = null;
                 setViewHeight(ViewGroup.LayoutParams.MATCH_PARENT);
                 viewsToHeightSet.clear();
@@ -144,7 +143,7 @@ public class AdjustPanLayoutHelper {
         animator.setDuration(220);
         animator.setInterpolator(CubicBezierInterpolator.DEFAULT);
 
-        notificationsIndex = NotificationCenter.getInstance(UserConfig.selectedAccount).setAnimationInProgress(notificationsIndex, null);
+        notificationsIndex = NotificationCenter.getInstance(selectedAccount).setAnimationInProgress(notificationsIndex, null);
         animator.start();
     }
 

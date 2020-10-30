@@ -1016,19 +1016,69 @@ public class FileLoadOperation {
     }
 
     public void cancel() {
+        cancel(false);
+    }
+
+    public void cancel(boolean deleteFiles) {
         Utilities.stageQueue.postRunnable(() -> {
-            if (state == stateFinished || state == stateFailed) {
-                return;
+            if (state != stateFinished && state != stateFailed) {
+                if (requestInfos != null) {
+                    for (int a = 0; a < requestInfos.size(); a++) {
+                        RequestInfo requestInfo = requestInfos.get(a);
+                        if (requestInfo.requestToken != 0) {
+                            ConnectionsManager.getInstance(currentAccount).cancelRequest(requestInfo.requestToken, true);
+                        }
+                    }
+                }
+                onFail(false, 1);
             }
-            if (requestInfos != null) {
-                for (int a = 0; a < requestInfos.size(); a++) {
-                    RequestInfo requestInfo = requestInfos.get(a);
-                    if (requestInfo.requestToken != 0) {
-                        ConnectionsManager.getInstance(currentAccount).cancelRequest(requestInfo.requestToken, true);
+            if (deleteFiles) {
+                if (cacheFileFinal != null) {
+                    try {
+                        if (!cacheFileFinal.delete()) {
+                            cacheFileFinal.deleteOnExit();
+                        }
+                    } catch (Exception e) {
+                        FileLog.e(e);
+                    }
+                }
+                if (cacheFileTemp != null) {
+                    try {
+                        if (!cacheFileTemp.delete()) {
+                            cacheFileTemp.deleteOnExit();
+                        }
+                    } catch (Exception e) {
+                        FileLog.e(e);
+                    }
+                }
+                if (cacheFileParts != null) {
+                    try {
+                        if (!cacheFileParts.delete()) {
+                            cacheFileParts.deleteOnExit();
+                        }
+                    } catch (Exception e) {
+                        FileLog.e(e);
+                    }
+                }
+                if (cacheIvTemp != null) {
+                    try {
+                        if (!cacheIvTemp.delete()) {
+                            cacheIvTemp.deleteOnExit();
+                        }
+                    } catch (Exception e) {
+                        FileLog.e(e);
+                    }
+                }
+                if (cacheFilePreload != null) {
+                    try {
+                        if (!cacheFilePreload.delete()) {
+                            cacheFilePreload.deleteOnExit();
+                        }
+                    } catch (Exception e) {
+                        FileLog.e(e);
                     }
                 }
             }
-            onFail(false, 1);
         });
     }
 

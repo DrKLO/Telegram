@@ -14,6 +14,7 @@ import android.animation.AnimatorListenerAdapter;
 import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
 import android.annotation.SuppressLint;
+import android.app.Activity;
 import android.app.Dialog;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -43,6 +44,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewParent;
 import android.view.WindowManager;
+import android.view.animation.DecelerateInterpolator;
 import android.view.inputmethod.EditorInfo;
 import android.webkit.CookieManager;
 import android.webkit.JavascriptInterface;
@@ -51,19 +53,33 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.EditText;
 import android.widget.FrameLayout;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.common.api.Status;
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.Task;
+import com.google.android.gms.wallet.AutoResolveHelper;
+import com.google.android.gms.wallet.IsReadyToPayRequest;
+import com.google.android.gms.wallet.PaymentData;
+import com.google.android.gms.wallet.PaymentDataRequest;
+import com.google.android.gms.wallet.PaymentsClient;
+import com.google.android.gms.wallet.Wallet;
+import com.google.android.gms.wallet.WalletConstants;
 import com.stripe.android.Stripe;
 import com.stripe.android.TokenCallback;
 import com.stripe.android.exception.APIConnectionException;
 import com.stripe.android.exception.APIException;
 import com.stripe.android.model.Card;
 import com.stripe.android.model.Token;
+import com.stripe.android.net.StripeApiHandler;
+import com.stripe.android.net.TokenParser;
 
+import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.messenger.AndroidUtilities;
@@ -109,10 +125,13 @@ import org.telegram.ui.Components.LayoutHelper;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 
 public class PaymentFormActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
 
@@ -150,7 +169,7 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
     private HashMap<String, String> codesMap = new HashMap<>();
     private HashMap<String, String> phoneFormatMap = new HashMap<>();
 
-    private GoogleApiClient googleApiClient;
+    private PaymentsClient paymentsClient;
 
     private EditTextBoldCursor[] inputFields;
     private RadioCell[] radioCells;
@@ -173,6 +192,7 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
     private TextInfoPrivacyCell[] bottomCell = new TextInfoPrivacyCell[3];
     private TextSettingsCell[] settingsCell = new TextSettingsCell[2];
     private FrameLayout androidPayContainer;
+    private FrameLayout googlePayButton;
     private LinearLayout linearLayout2;
 
     private EditTextSettingsCell codeFieldCell;
@@ -231,9 +251,7 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
 
     private final static int done_button = 1;
 
-    private static final int LOAD_MASKED_WALLET_REQUEST_CODE = 1000;
-    private static final int LOAD_FULL_WALLET_REQUEST_CODE = 1001;
-    private final static int fragment_container_id = 4000;
+    private static final int LOAD_PAYMENT_DATA_REQUEST_CODE = 991;
 
     private interface PaymentFormActivityDelegate {
         boolean didSelectNewCard(String tokenJson, String card, boolean saveCard, TLRPC.TL_inputPaymentCredentialsAndroidPay androidPay);
@@ -392,16 +410,6 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
             } catch (Throwable e) {
                 FileLog.e(e);
             }
-        }
-        if (googleApiClient != null) {
-            googleApiClient.connect();
-        }
-    }
-
-    @Override
-    public void onPause() {
-        if (googleApiClient != null) {
-            googleApiClient.disconnect();
         }
     }
 
@@ -991,10 +999,7 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
                 if (androidPayPublicKey != null) {
                     initAndroidPay(context);
                 }
-                androidPayContainer = new FrameLayout(context);
-                androidPayContainer.setId(fragment_container_id);
-                androidPayContainer.setBackgroundDrawable(Theme.getSelectorDrawable(true));
-                androidPayContainer.setVisibility(View.GONE);
+                createAndroidPayButton(context);
                 linearLayout2.addView(androidPayContainer, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 50));
 
                 webviewLoading = true;
@@ -1093,7 +1098,9 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
                     }
                 }
 
-                initAndroidPay(context);
+                if (!TextUtils.isEmpty(stripeApiKey)) {
+                    initAndroidPay(context);
+                }
 
                 inputFields = new EditTextBoldCursor[FIELDS_COUNT_CARD];
                 for (int a = 0; a < FIELDS_COUNT_CARD; a++) {
@@ -1493,10 +1500,7 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
                         updateSavePaymentField();
                         linearLayout2.addView(bottomCell[0], LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
                     } else if (a == FIELD_CARD) {
-                        androidPayContainer = new FrameLayout(context);
-                        androidPayContainer.setId(fragment_container_id);
-                        androidPayContainer.setBackgroundDrawable(Theme.getSelectorDrawable(true));
-                        androidPayContainer.setVisibility(View.GONE);
+                        createAndroidPayButton(context);
                         container.addView(androidPayContainer, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL | Gravity.RIGHT, 0, 0, 4, 0));
                     }
 
@@ -2046,6 +2050,100 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
         return fragmentView;
     }
 
+    private void createAndroidPayButton(Context context) {
+        androidPayContainer = new FrameLayout(context);
+        androidPayContainer.setBackgroundDrawable(Theme.getSelectorDrawable(true));
+        androidPayContainer.setVisibility(View.GONE);
+
+        googlePayButton = new FrameLayout(context);
+        googlePayButton.setClickable(true);
+        googlePayButton.setFocusable(true);
+        googlePayButton.setBackgroundResource(R.drawable.googlepay_button_no_shadow_background);
+        if (androidPayPublicKey == null) {
+            googlePayButton.setPadding(AndroidUtilities.dp(10), AndroidUtilities.dp(2), AndroidUtilities.dp(10), AndroidUtilities.dp(2));
+        } else {
+            googlePayButton.setPadding(AndroidUtilities.dp(2), AndroidUtilities.dp(2), AndroidUtilities.dp(2), AndroidUtilities.dp(2));
+        }
+        androidPayContainer.addView(googlePayButton, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48));
+        googlePayButton.setOnClickListener(v -> {
+            googlePayButton.setClickable(false);
+            try {
+                JSONObject paymentDataRequest = getBaseRequest();
+
+                JSONObject cardPaymentMethod = getBaseCardPaymentMethod();
+                if (androidPayPublicKey != null) {
+                    cardPaymentMethod.put("tokenizationSpecification", new JSONObject() {{
+                        put("type", "DIRECT");
+                        put("parameters", new JSONObject() {{
+                            put("protocolVersion", "ECv2");
+                            put("publicKey", androidPayPublicKey);
+                        }});
+                    }});
+                } else {
+                    cardPaymentMethod.put("tokenizationSpecification", new JSONObject() {{
+                        put("type", "PAYMENT_GATEWAY");
+                        put("parameters", new JSONObject() {{
+                            put("gateway", "stripe");
+                            put("stripe:publishableKey", stripeApiKey);
+                            put("stripe:version", StripeApiHandler.VERSION);
+                        }});
+                    }});
+                }
+
+                paymentDataRequest.put("allowedPaymentMethods", new JSONArray().put(cardPaymentMethod));
+
+                JSONObject transactionInfo = new JSONObject();
+                ArrayList<TLRPC.TL_labeledPrice> arrayList = new ArrayList<>(paymentForm.invoice.prices);
+                if (shippingOption != null) {
+                    arrayList.addAll(shippingOption.prices);
+                }
+                transactionInfo.put("totalPrice", totalPriceDecimal = getTotalPriceDecimalString(arrayList));
+                transactionInfo.put("totalPriceStatus", "FINAL");
+                transactionInfo.put("countryCode", countryName);
+                transactionInfo.put("currencyCode", paymentForm.invoice.currency);
+                transactionInfo.put("checkoutOption", "COMPLETE_IMMEDIATE_PURCHASE");
+                paymentDataRequest.put("transactionInfo", transactionInfo);
+
+                paymentDataRequest.put("merchantInfo", new JSONObject().put("merchantName", currentBotName));
+
+                /*paymentDataRequest.put("shippingAddressRequired", true);
+
+                JSONObject shippingAddressParameters = new JSONObject();
+                shippingAddressParameters.put("phoneNumberRequired", false);
+
+                JSONArray allowedCountryCodes = new JSONArray(Constants.SHIPPING_SUPPORTED_COUNTRIES);
+                shippingAddressParameters.put("allowedCountryCodes", allowedCountryCodes);
+                paymentDataRequest.put("shippingAddressParameters", shippingAddressParameters);*/
+
+                PaymentDataRequest request = PaymentDataRequest.fromJson(paymentDataRequest.toString());
+                if (request != null) {
+                    AutoResolveHelper.resolveTask(paymentsClient.loadPaymentData(request), getParentActivity(), LOAD_PAYMENT_DATA_REQUEST_CODE);
+                }
+            } catch (JSONException e) {
+                throw new RuntimeException("The price cannot be deserialized from the JSON object.");
+            }
+        });
+
+        LinearLayout linearLayout = new LinearLayout(context);
+        linearLayout.setWeightSum(2);
+        linearLayout.setGravity(Gravity.CENTER_VERTICAL);
+        linearLayout.setOrientation(LinearLayout.VERTICAL);
+        linearLayout.setDuplicateParentStateEnabled(true);
+        googlePayButton.addView(linearLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+
+        ImageView imageView = new ImageView(context);
+        imageView.setScaleType(ImageView.ScaleType.FIT_CENTER);
+        imageView.setDuplicateParentStateEnabled(true);
+        imageView.setImageResource(R.drawable.buy_with_googlepay_button_content);
+        linearLayout.addView(imageView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 0, 1.0f));
+
+        imageView = new ImageView(context);
+        imageView.setScaleType(ImageView.ScaleType.FIT_XY);
+        imageView.setDuplicateParentStateEnabled(true);
+        imageView.setImageResource(R.drawable.googlepay_button_overlay);
+        googlePayButton.addView(imageView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+    }
+
     private void updatePasswordFields() {
         if (currentStep != 6 || bottomCell[2] == null) {
             return;
@@ -2162,43 +2260,88 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
         showDialog(builder.create());
     }
 
+    private JSONObject getBaseRequest() throws JSONException {
+        return new JSONObject().put("apiVersion", 2).put("apiVersionMinor", 0);
+    }
+
+    private JSONObject getBaseCardPaymentMethod() throws JSONException {
+        List<String> SUPPORTED_NETWORKS = Arrays.asList(
+                "AMEX",
+                "DISCOVER",
+                "JCB",
+                "MASTERCARD",
+                "VISA");
+
+        List<String> SUPPORTED_METHODS = Arrays.asList(
+                "PAN_ONLY",
+                "CRYPTOGRAM_3DS");
+
+        JSONObject cardPaymentMethod = new JSONObject();
+        cardPaymentMethod.put("type", "CARD");
+
+        JSONObject parameters = new JSONObject();
+        parameters.put("allowedAuthMethods", new JSONArray(SUPPORTED_METHODS));
+        parameters.put("allowedCardNetworks", new JSONArray(SUPPORTED_NETWORKS));
+
+        // Optionally, you can add billing address/phone number associated with a CARD payment method.
+        /*parameters.put("billingAddressRequired", true);
+
+        JSONObject billingAddressParameters = new JSONObject();
+        billingAddressParameters.put("format", "FULL");
+        parameters.put("billingAddressParameters", billingAddressParameters);*/
+
+        cardPaymentMethod.put("parameters", parameters);
+
+        return cardPaymentMethod;
+    }
+
+    public Optional<JSONObject> getIsReadyToPayRequest() {
+        try {
+            JSONObject isReadyToPayRequest = getBaseRequest();
+            isReadyToPayRequest.put(
+                    "allowedPaymentMethods", new JSONArray().put(getBaseCardPaymentMethod()));
+
+            return Optional.of(isReadyToPayRequest);
+        } catch (JSONException e) {
+            return Optional.empty();
+        }
+    }
+
     private void initAndroidPay(Context context) {
-        /*if (Build.VERSION.SDK_INT < 19) {
+        if (Build.VERSION.SDK_INT < 19 || getParentActivity() == null) {
             return;
         }
-        googleApiClient = new GoogleApiClient.Builder(context)
-                .addConnectionCallbacks(new GoogleApiClient.ConnectionCallbacks() {
-                    @Override
-                    public void onConnected(Bundle bundle) {
-
-                    }
-
-                    @Override
-                    public void onConnectionSuspended(int i) {
-
-                    }
-                })
-                .addOnConnectionFailedListener(connectionResult -> {
-
-                })
-                .addApi(Wallet.API, new Wallet.WalletOptions.Builder()
-                        .setEnvironment(paymentForm.invoice.test ? WalletConstants.ENVIRONMENT_TEST : WalletConstants.ENVIRONMENT_PRODUCTION)
-                        .setTheme(WalletConstants.THEME_LIGHT)
-                        .build())
+        Wallet.WalletOptions walletOptions = new Wallet.WalletOptions.Builder()
+                .setEnvironment(paymentForm.invoice.test ? WalletConstants.ENVIRONMENT_TEST : WalletConstants.ENVIRONMENT_PRODUCTION)
+                .setTheme(WalletConstants.THEME_LIGHT)
                 .build();
+        paymentsClient = Wallet.getPaymentsClient(context, walletOptions);
 
-        Wallet.Payments.isReadyToPay(googleApiClient).setResultCallback(
-                booleanResult -> {
-                    if (booleanResult.getStatus().isSuccess()) {
-                        if (booleanResult.getValue()) {
-                            showAndroidPay();
+        final Optional<JSONObject> isReadyToPayJson = getIsReadyToPayRequest();
+        if (!isReadyToPayJson.isPresent()) {
+            return;
+        }
+        IsReadyToPayRequest request = IsReadyToPayRequest.fromJson(isReadyToPayJson.get().toString());
+        if (request == null) {
+            return;
+        }
+
+        Task<Boolean> task = paymentsClient.isReadyToPay(request);
+        task.addOnCompleteListener(getParentActivity(),
+                (OnCompleteListener<Boolean>) task1 -> {
+                    if (task1.isSuccessful()) {
+                        if (androidPayContainer != null) {
+                            androidPayContainer.setVisibility(View.VISIBLE);
+                            AnimatorSet animatorSet = new AnimatorSet();
+                            animatorSet.playTogether(ObjectAnimator.ofFloat(androidPayContainer, View.ALPHA, 0.0f, 1.0f));
+                            animatorSet.setInterpolator(new DecelerateInterpolator());
+                            animatorSet.setDuration(180);
+                            animatorSet.start();
                         }
                     } else {
-
+                        FileLog.e("isReadyToPay failed", task1.getException());
                     }
-                }
-        );
-        googleApiClient.connect();*/
+                });
     }
 
     private String getTotalPriceString(ArrayList<TLRPC.TL_labeledPrice> prices) {
@@ -2300,147 +2443,54 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
         }
     }
 
-    private void showAndroidPay() {
-        /*if (getParentActivity() == null || androidPayContainer == null) {
-            return;
-        }
-
-        WalletFragmentOptions.Builder optionsBuilder = WalletFragmentOptions.newBuilder();
-        optionsBuilder.setEnvironment(paymentForm.invoice.test ? WalletConstants.ENVIRONMENT_TEST : WalletConstants.ENVIRONMENT_PRODUCTION);
-        optionsBuilder.setMode(WalletFragmentMode.BUY_BUTTON);
-
-        WalletFragmentStyle walletFragmentStyle;
-        if (androidPayPublicKey != null) {
-            androidPayContainer.setBackgroundColor(androidPayBackgroundColor);
-            walletFragmentStyle = new WalletFragmentStyle()
-                .setBuyButtonText(WalletFragmentStyle.BuyButtonText.BUY_WITH)
-                .setBuyButtonAppearance(androidPayBlackTheme ? WalletFragmentStyle.BuyButtonAppearance.ANDROID_PAY_LIGHT_WITH_BORDER : WalletFragmentStyle.BuyButtonAppearance.ANDROID_PAY_DARK)
-                .setBuyButtonWidth(WalletFragmentStyle.Dimension.MATCH_PARENT);
-        } else {
-            walletFragmentStyle = new WalletFragmentStyle()
-                    .setBuyButtonText(WalletFragmentStyle.BuyButtonText.LOGO_ONLY)
-                    .setBuyButtonAppearance(WalletFragmentStyle.BuyButtonAppearance.ANDROID_PAY_LIGHT_WITH_BORDER)
-                    .setBuyButtonWidth(WalletFragmentStyle.Dimension.WRAP_CONTENT);
-        }
-
-        optionsBuilder.setFragmentStyle(walletFragmentStyle);
-        WalletFragment walletFragment = WalletFragment.newInstance(optionsBuilder.build());
-        FragmentManager fragmentManager = getParentActivity().getFragmentManager();
-        FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
-        fragmentTransaction.replace(fragment_container_id, walletFragment);
-        fragmentTransaction.commit();
-
-        ArrayList<TLRPC.TL_labeledPrice> arrayList = new ArrayList<>(paymentForm.invoice.prices);
-        if (shippingOption != null) {
-            arrayList.addAll(shippingOption.prices);
-        }
-        totalPriceDecimal = getTotalPriceDecimalString(arrayList);
-
-        PaymentMethodTokenizationParameters parameters;
-        if (androidPayPublicKey != null) {
-            parameters = PaymentMethodTokenizationParameters.newBuilder()
-                    .setPaymentMethodTokenizationType(PaymentMethodTokenizationType.NETWORK_TOKEN)
-                    .addParameter("publicKey", androidPayPublicKey)
-                    .build();
-        } else {
-            parameters = PaymentMethodTokenizationParameters.newBuilder()
-                    .setPaymentMethodTokenizationType(PaymentMethodTokenizationType.PAYMENT_GATEWAY)
-                    .addParameter("gateway", "stripe")
-                    .addParameter("stripe:publishableKey", stripeApiKey)
-                    .addParameter("stripe:version", StripeApiHandler.VERSION)
-                    .build();
-        }
-
-        MaskedWalletRequest maskedWalletRequest = MaskedWalletRequest.newBuilder()
-                .setPaymentMethodTokenizationParameters(parameters)
-                .setEstimatedTotalPrice(totalPriceDecimal)
-                .setCurrencyCode(paymentForm.invoice.currency)
-                .build();
-
-        WalletFragmentInitParams initParams = WalletFragmentInitParams.newBuilder()
-                .setMaskedWalletRequest(maskedWalletRequest)
-                .setMaskedWalletRequestCode(LOAD_MASKED_WALLET_REQUEST_CODE)
-                .build();
-
-        walletFragment.initialize(initParams);
-        androidPayContainer.setVisibility(View.VISIBLE);
-        AnimatorSet animatorSet = new AnimatorSet();
-        animatorSet.playTogether(ObjectAnimator.ofFloat(androidPayContainer, "alpha", 0.0f, 1.0f));
-        animatorSet.setInterpolator(new DecelerateInterpolator());
-        animatorSet.setDuration(180);
-        animatorSet.start();*/
-    }
-
     @Override
     public void onActivityResultFragment(int requestCode, int resultCode, Intent data) {
-        /*if (requestCode == LOAD_MASKED_WALLET_REQUEST_CODE) {
-            if (resultCode == Activity.RESULT_OK) {
-                showEditDoneProgress(true, true);
-                setDonePressed(true);
-
-                MaskedWallet maskedWallet = data.getParcelableExtra(WalletConstants.EXTRA_MASKED_WALLET);
-
-                Cart.Builder cardBuilder = Cart.newBuilder()
-                        .setCurrencyCode(paymentForm.invoice.currency)
-                        .setTotalPrice(totalPriceDecimal);
-
-                ArrayList<TLRPC.TL_labeledPrice> arrayList = new ArrayList<>(paymentForm.invoice.prices);
-                if (shippingOption != null) {
-                    arrayList.addAll(shippingOption.prices);
-                }
-                for (int a = 0; a < arrayList.size(); a++) {
-                    TLRPC.TL_labeledPrice price = arrayList.get(a);
-                    String amount = LocaleController.getInstance().formatCurrencyDecimalString(price.amount, paymentForm.invoice.currency, false);
-                    cardBuilder.addLineItem(LineItem.newBuilder()
-                            .setCurrencyCode(paymentForm.invoice.currency)
-                            .setQuantity("1")
-                            .setDescription(price.label)
-                            .setTotalPrice(amount)
-                            .setUnitPrice(amount).build());
-                }
-                FullWalletRequest fullWalletRequest = FullWalletRequest.newBuilder()
-                        .setCart(cardBuilder.build())
-                        .setGoogleTransactionId(maskedWallet.getGoogleTransactionId())
-                        .build();
-                Wallet.Payments.loadFullWallet(googleApiClient, fullWalletRequest, LOAD_FULL_WALLET_REQUEST_CODE);
-            } else {
-                showEditDoneProgress(true, false);
-                setDonePressed(false);
-            }
-        } else if (requestCode == LOAD_FULL_WALLET_REQUEST_CODE) {
-            if (resultCode == Activity.RESULT_OK) {
-                FullWallet fullWallet = data.getParcelableExtra(WalletConstants.EXTRA_FULL_WALLET);
-                String tokenJSON = fullWallet.getPaymentMethodToken().getToken();
-                try {
-                    if (androidPayPublicKey != null) {
-                        androidPayCredentials = new TLRPC.TL_inputPaymentCredentialsAndroidPay();
-                        androidPayCredentials.payment_token = new TLRPC.TL_dataJSON();
-                        androidPayCredentials.payment_token.data = tokenJSON;
-                        androidPayCredentials.google_transaction_id = fullWallet.getGoogleTransactionId();
-                        String[] descriptions = fullWallet.getPaymentDescriptions();
-                        if (descriptions.length > 0) {
-                            cardName = descriptions[0];
-                        } else {
-                            cardName = "Android Pay";
-                        }
-                    } else {
-                        Token token = TokenParser.parseToken(tokenJSON);
-                        paymentJson = String.format(Locale.US, "{\"type\":\"%1$s\", \"id\":\"%2$s\"}", token.getType(), token.getId());
-                        Card card = token.getCard();
-                        cardName = card.getType() + " *" + card.getLast4();
+        if (requestCode == LOAD_PAYMENT_DATA_REQUEST_CODE) {
+            AndroidUtilities.runOnUIThread(() -> {
+                if (resultCode == Activity.RESULT_OK) {
+                    PaymentData paymentData = PaymentData.getFromIntent(data);
+                    final String paymentInfo = paymentData.toJson();
+                    if (paymentInfo == null) {
+                        return;
                     }
-                    goToNextStep();
-                    showEditDoneProgress(true, false);
-                    setDonePressed(false);
-                } catch (JSONException ignore) {
-                    showEditDoneProgress(true, false);
-                    setDonePressed(false);
+                    try {
+                        JSONObject paymentMethodData = new JSONObject(paymentInfo).getJSONObject("paymentMethodData");
+                        final JSONObject tokenizationData = paymentMethodData.getJSONObject("tokenizationData");
+                        final String tokenizationType = tokenizationData.getString("type");
+                        final String token = tokenizationData.getString("token");
+
+                        if (androidPayPublicKey != null) {
+                            androidPayCredentials = new TLRPC.TL_inputPaymentCredentialsAndroidPay();
+                            androidPayCredentials.payment_token = new TLRPC.TL_dataJSON();
+                            androidPayCredentials.payment_token.data = tokenizationData.toString();
+                            androidPayCredentials.google_transaction_id = "";
+                            String descriptions = paymentMethodData.optString("description");
+                            if (!TextUtils.isEmpty(descriptions)) {
+                                cardName = descriptions;
+                            } else {
+                                cardName = "Android Pay";
+                            }
+                        } else {
+                            Token t = TokenParser.parseToken(token);
+                            paymentJson = String.format(Locale.US, "{\"type\":\"%1$s\", \"id\":\"%2$s\"}", t.getType(), t.getId());
+                            Card card = t.getCard();
+                            cardName = card.getType() + " *" + card.getLast4();
+                        }
+                        goToNextStep();
+                    } catch (JSONException e) {
+                        throw new RuntimeException("The selected garment cannot be parsed from the list of elements");
+                    }
+                } else {
+                    if (resultCode == AutoResolveHelper.RESULT_ERROR) {
+                        Status status = AutoResolveHelper.getStatusFromIntent(data);
+                        FileLog.e("android pay error " + status.getStatusMessage());
+                    }
                 }
-            } else {
                 showEditDoneProgress(true, false);
                 setDonePressed(false);
-            }
-        }*/
+                googlePayButton.setClickable(true);
+            });
+        }
     }
 
     private void goToNextStep() {
@@ -3181,30 +3231,29 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
                 progressView.setVisibility(View.VISIBLE);
                 doneItem.setEnabled(false);
                 doneItemAnimation.playTogether(
-                        ObjectAnimator.ofFloat(doneItem.getContentView(), "scaleX", 0.1f),
-                        ObjectAnimator.ofFloat(doneItem.getContentView(), "scaleY", 0.1f),
-                        ObjectAnimator.ofFloat(doneItem.getContentView(), "alpha", 0.0f),
-                        ObjectAnimator.ofFloat(progressView, "scaleX", 1.0f),
-                        ObjectAnimator.ofFloat(progressView, "scaleY", 1.0f),
-                        ObjectAnimator.ofFloat(progressView, "alpha", 1.0f));
+                        ObjectAnimator.ofFloat(doneItem.getContentView(), View.SCALE_X, 0.1f),
+                        ObjectAnimator.ofFloat(doneItem.getContentView(), View.SCALE_Y, 0.1f),
+                        ObjectAnimator.ofFloat(doneItem.getContentView(), View.ALPHA, 0.0f),
+                        ObjectAnimator.ofFloat(progressView, View.SCALE_X, 1.0f),
+                        ObjectAnimator.ofFloat(progressView, View.SCALE_Y, 1.0f),
+                        ObjectAnimator.ofFloat(progressView, View.ALPHA, 1.0f));
             } else {
                 if (webView != null) {
                     doneItemAnimation.playTogether(
-                            ObjectAnimator.ofFloat(progressView, "scaleX", 0.1f),
-                            ObjectAnimator.ofFloat(progressView, "scaleY", 0.1f),
-                            ObjectAnimator.ofFloat(progressView, "alpha", 0.0f));
+                            ObjectAnimator.ofFloat(progressView, View.SCALE_X, 0.1f),
+                            ObjectAnimator.ofFloat(progressView, View.SCALE_Y, 0.1f),
+                            ObjectAnimator.ofFloat(progressView, View.ALPHA, 0.0f));
                 } else {
                     doneItem.getContentView().setVisibility(View.VISIBLE);
                     doneItem.setEnabled(true);
                     doneItemAnimation.playTogether(
-                            ObjectAnimator.ofFloat(progressView, "scaleX", 0.1f),
-                            ObjectAnimator.ofFloat(progressView, "scaleY", 0.1f),
-                            ObjectAnimator.ofFloat(progressView, "alpha", 0.0f),
-                            ObjectAnimator.ofFloat(doneItem.getContentView(), "scaleX", 1.0f),
-                            ObjectAnimator.ofFloat(doneItem.getContentView(), "scaleY", 1.0f),
-                            ObjectAnimator.ofFloat(doneItem.getContentView(), "alpha", 1.0f));
+                            ObjectAnimator.ofFloat(progressView, View.SCALE_X, 0.1f),
+                            ObjectAnimator.ofFloat(progressView, View.SCALE_Y, 0.1f),
+                            ObjectAnimator.ofFloat(progressView, View.ALPHA, 0.0f),
+                            ObjectAnimator.ofFloat(doneItem.getContentView(), View.SCALE_X, 1.0f),
+                            ObjectAnimator.ofFloat(doneItem.getContentView(), View.SCALE_Y, 1.0f),
+                            ObjectAnimator.ofFloat(doneItem.getContentView(), View.ALPHA, 1.0f));
                 }
-
             }
             doneItemAnimation.addListener(new AnimatorListenerAdapter() {
                 @Override
@@ -3233,22 +3282,22 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
                 progressViewButton.setVisibility(View.VISIBLE);
                 bottomLayout.setEnabled(false);
                 doneItemAnimation.playTogether(
-                        ObjectAnimator.ofFloat(payTextView, "scaleX", 0.1f),
-                        ObjectAnimator.ofFloat(payTextView, "scaleY", 0.1f),
-                        ObjectAnimator.ofFloat(payTextView, "alpha", 0.0f),
-                        ObjectAnimator.ofFloat(progressViewButton, "scaleX", 1.0f),
-                        ObjectAnimator.ofFloat(progressViewButton, "scaleY", 1.0f),
-                        ObjectAnimator.ofFloat(progressViewButton, "alpha", 1.0f));
+                        ObjectAnimator.ofFloat(payTextView, View.SCALE_X, 0.1f),
+                        ObjectAnimator.ofFloat(payTextView, View.SCALE_Y, 0.1f),
+                        ObjectAnimator.ofFloat(payTextView, View.ALPHA, 0.0f),
+                        ObjectAnimator.ofFloat(progressViewButton, View.SCALE_X, 1.0f),
+                        ObjectAnimator.ofFloat(progressViewButton, View.SCALE_Y, 1.0f),
+                        ObjectAnimator.ofFloat(progressViewButton, View.ALPHA, 1.0f));
             } else {
                 payTextView.setVisibility(View.VISIBLE);
                 bottomLayout.setEnabled(true);
                 doneItemAnimation.playTogether(
-                        ObjectAnimator.ofFloat(progressViewButton, "scaleX", 0.1f),
-                        ObjectAnimator.ofFloat(progressViewButton, "scaleY", 0.1f),
-                        ObjectAnimator.ofFloat(progressViewButton, "alpha", 0.0f),
-                        ObjectAnimator.ofFloat(payTextView, "scaleX", 1.0f),
-                        ObjectAnimator.ofFloat(payTextView, "scaleY", 1.0f),
-                        ObjectAnimator.ofFloat(payTextView, "alpha", 1.0f));
+                        ObjectAnimator.ofFloat(progressViewButton, View.SCALE_X, 0.1f),
+                        ObjectAnimator.ofFloat(progressViewButton, View.SCALE_Y, 0.1f),
+                        ObjectAnimator.ofFloat(progressViewButton, View.ALPHA, 0.0f),
+                        ObjectAnimator.ofFloat(payTextView, View.SCALE_X, 1.0f),
+                        ObjectAnimator.ofFloat(payTextView, View.SCALE_Y, 1.0f),
+                        ObjectAnimator.ofFloat(payTextView, View.ALPHA, 1.0f));
 
             }
             doneItemAnimation.addListener(new AnimatorListenerAdapter() {

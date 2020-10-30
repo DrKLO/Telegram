@@ -18,6 +18,7 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.view.accessibility.AccessibilityNodeInfoCompat;
 import androidx.recyclerview.widget.DefaultItemAnimator;
 import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -83,6 +84,14 @@ public class FiltersView extends RecyclerListView {
             @Override
             public boolean supportsPredictiveItemAnimations() {
                 return false;
+            }
+
+            @Override
+            public void onInitializeAccessibilityNodeInfo(@NonNull Recycler recycler, @NonNull State state, @NonNull AccessibilityNodeInfoCompat info) {
+                super.onInitializeAccessibilityNodeInfo(recycler, state, info);
+                if (!isEnabled()) {
+                    info.setVisibleToUser(false);
+                }
             }
         };
         layoutManager.setOrientation(HORIZONTAL);

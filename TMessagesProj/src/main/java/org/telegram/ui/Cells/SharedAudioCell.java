@@ -175,7 +175,7 @@ public class SharedAudioCell extends FrameLayout implements DownloadController.F
             CharSequence caption = Emoji.replaceEmoji(currentMessageObject.messageOwner.message.replace("\n", " ").replaceAll(" +", " ").trim(), Theme.chat_msgTextPaint.getFontMetricsInt(), AndroidUtilities.dp(20), false);
             CharSequence sequence = AndroidUtilities.highlightText(caption, currentMessageObject.highlightedWords);
             if (sequence != null) {
-                sequence = TextUtils.ellipsize(AndroidUtilities.ellipsizeCenterEnd(sequence, currentMessageObject.highlightedWords.get(0), maxWidth, captionTextPaint), captionTextPaint, maxWidth, TextUtils.TruncateAt.END);
+                sequence = TextUtils.ellipsize(AndroidUtilities.ellipsizeCenterEnd(sequence, currentMessageObject.highlightedWords.get(0), maxWidth, captionTextPaint, 130), captionTextPaint, maxWidth, TextUtils.TruncateAt.END);
                 captionLayout = new StaticLayout(sequence, captionTextPaint, maxWidth + AndroidUtilities.dp(4), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
             }
         }

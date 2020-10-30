@@ -251,7 +251,7 @@ public class ChatObject {
 
     public static boolean canAddBotsToChat(TLRPC.Chat chat) {
         if (isChannel(chat)) {
-            if (chat != null && chat.megagroup && (chat.admin_rights != null && (chat.admin_rights.post_messages || chat.admin_rights.add_admins) || chat.creator)) {
+            if (chat.megagroup && (chat.admin_rights != null && (chat.admin_rights.post_messages || chat.admin_rights.add_admins) || chat.creator)) {
                 return true;
             }
         } else {
@@ -273,7 +273,7 @@ public class ChatObject {
 
     public static boolean isCanWriteToChannel(int chatId, int currentAccount) {
         TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(chatId);
-        return ChatObject.canSendMessages(chat) || chat != null && chat.megagroup;
+        return ChatObject.canSendMessages(chat) || chat.megagroup;
     }
 
     public static boolean canWriteToChat(TLRPC.Chat chat) {

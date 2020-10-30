@@ -704,20 +704,21 @@ public class ActionBarMenuItem extends FrameLayout {
                     }.setDuration(150)).addTransition(changeBounds);
             transition.setOrdering(TransitionSet.ORDERING_TOGETHER);
             transition.setInterpolator(CubicBezierInterpolator.EASE_OUT);
+            int selectedAccount = UserConfig.selectedAccount;
             transition.addListener(new Transition.TransitionListener() {
                 @Override
                 public void onTransitionStart(Transition transition) {
-                    notificationIndex = NotificationCenter.getInstance(UserConfig.selectedAccount).setAnimationInProgress(notificationIndex,null);
+                    notificationIndex = NotificationCenter.getInstance(selectedAccount).setAnimationInProgress(notificationIndex,null);
                 }
 
                 @Override
                 public void onTransitionEnd(Transition transition) {
-                    NotificationCenter.getInstance(UserConfig.selectedAccount).onAnimationFinish(notificationIndex);
+                    NotificationCenter.getInstance(selectedAccount).onAnimationFinish(notificationIndex);
                 }
 
                 @Override
                 public void onTransitionCancel(Transition transition) {
-                    NotificationCenter.getInstance(UserConfig.selectedAccount).onAnimationFinish(notificationIndex);
+                    NotificationCenter.getInstance(selectedAccount).onAnimationFinish(notificationIndex);
                 }
 
                 @Override

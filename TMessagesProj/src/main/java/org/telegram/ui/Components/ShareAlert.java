@@ -75,7 +75,7 @@ import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.ShareDialogCell;
 import org.telegram.ui.ChatActivity;
 import org.telegram.ui.DialogsActivity;
-import org.telegram.ui.ForwardsActivity;
+import org.telegram.ui.MessageStatisticActivity;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -603,9 +603,16 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
 
             @Override
             public boolean onInterceptTouchEvent(MotionEvent ev) {
-                if (ev.getAction() == MotionEvent.ACTION_DOWN && scrollOffsetY != 0 && ev.getY() < scrollOffsetY - AndroidUtilities.dp(30)) {
-                    dismiss();
-                    return true;
+                if (!fullHeight) {
+                    if (ev.getAction() == MotionEvent.ACTION_DOWN && ev.getY() < topOffset - AndroidUtilities.dp(30)) {
+                        dismiss();
+                        return true;
+                    }
+                } else {
+                    if (ev.getAction() == MotionEvent.ACTION_DOWN && scrollOffsetY != 0 && ev.getY() < scrollOffsetY - AndroidUtilities.dp(30)) {
+                        dismiss();
+                        return true;
+                    }
                 }
                 return super.onInterceptTouchEvent(ev);
             }
@@ -852,7 +859,7 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
             });
             containerView.addView(pickerBottomLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.LEFT | Gravity.BOTTOM));
 
-            if (BuildVars.DEBUG_PRIVATE_VERSION && parentFragment != null && ChatObject.hasAdminRights(parentFragment.getCurrentChat()) && sendingMessageObjects.size() > 0 && sendingMessageObjects.get(0).messageOwner.forwards > 0) {
+            if (parentFragment != null && ChatObject.hasAdminRights(parentFragment.getCurrentChat()) && sendingMessageObjects.size() > 0 && sendingMessageObjects.get(0).messageOwner.forwards > 0) {
                 MessageObject messageObject = sendingMessageObjects.get(0);
                 if (!messageObject.isForwarded()) {
                     sharesCountLayout = new LinearLayout(context);
@@ -860,7 +867,7 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
                     sharesCountLayout.setGravity(Gravity.CENTER_VERTICAL);
                     sharesCountLayout.setBackgroundDrawable(Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector), 2));
                     containerView.addView(sharesCountLayout, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 48, Gravity.RIGHT | Gravity.BOTTOM, 6, 0, -6, 0));
-                    sharesCountLayout.setOnClickListener(view -> parentFragment.presentFragment(new ForwardsActivity(messageObject)));
+                    sharesCountLayout.setOnClickListener(view -> parentFragment.presentFragment(new MessageStatisticActivity(messageObject)));
 
                     ImageView imageView = new ImageView(context);
                     imageView.setImageResource(R.drawable.share_arrow);

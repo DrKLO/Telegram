@@ -99,6 +99,12 @@ public class LocationActivityAdapter extends BaseLocationAdapter implements Loca
         }
     }
 
+    public void updateLiveLocationCell() {
+        if (shareLiveLocationPotistion > 0) {
+            notifyItemChanged(shareLiveLocationPotistion);
+        }
+    }
+
     public void updateLiveLocations() {
         if (!currentLiveLocations.isEmpty()) {
             notifyItemRangeChanged(2, currentLiveLocations.size(), new Object());
@@ -212,7 +218,9 @@ public class LocationActivityAdapter extends BaseLocationAdapter implements Loca
 
     @Override
     public int getItemCount() {
-        if (locationType == LocationActivity.LOCATION_TYPE_GROUP_VIEW) {
+        if (locationType == LocationActivity.LOCATION_TYPE_LIVE_VIEW) {
+            return 2;
+        } else if (locationType == LocationActivity.LOCATION_TYPE_GROUP_VIEW) {
             return 2;
         } else if (locationType == LocationActivity.LOCATION_TYPE_GROUP) {
             return 2;
@@ -221,13 +229,13 @@ public class LocationActivityAdapter extends BaseLocationAdapter implements Loca
         } else if (locationType == 2) {
             return 2 + currentLiveLocations.size();
         } else {
-            if (searching || !searching && places.isEmpty()) {
+            if (searching || places.isEmpty()) {
                 return (locationType != 0 ? 6 : 5) + (needEmptyView ? 1 : 0);
             }
             if (locationType == 1) {
-                return 5 + places.size() + (places.isEmpty() ? 0 : 1) + (needEmptyView ? 1 : 0);
+                return 6 + places.size() + (needEmptyView ? 1 : 0);
             } else {
-                return 4 + places.size() + (places.isEmpty() ? 0 : 1) + (needEmptyView ? 1 : 0);
+                return 5 + places.size() + (needEmptyView ? 1 : 0);
             }
         }
     }
@@ -336,7 +344,9 @@ public class LocationActivityAdapter extends BaseLocationAdapter implements Loca
                 break;
             case 7:
                 SharingLiveLocationCell locationCell = (SharingLiveLocationCell) holder.itemView;
-                if (chatLocation != null) {
+                if (locationType == LocationActivity.LOCATION_TYPE_LIVE_VIEW) {
+                    locationCell.setDialog(currentMessageObject, gpsLocation);
+                } else if (chatLocation != null) {
                     locationCell.setDialog(dialogId, chatLocation);
                 } else if (currentMessageObject != null && position == 1) {
                     locationCell.setDialog(currentMessageObject, gpsLocation);
@@ -392,6 +402,9 @@ public class LocationActivityAdapter extends BaseLocationAdapter implements Loca
         if (position == 0) {
             return 0;
         }
+        if (locationType == LocationActivity.LOCATION_TYPE_LIVE_VIEW) {
+            return 7;
+        }
         if (needEmptyView && position == getItemCount() - 1) {
             return 10;
         }
@@ -436,7 +449,7 @@ public class LocationActivityAdapter extends BaseLocationAdapter implements Loca
                 return 9;
             } else if (position == 4) {
                 return 2;
-            } else if (searching || !searching && places.isEmpty()) {
+            } else if (searching || places.isEmpty()) {
                 return 4;
             } else if (position == places.size() + 5) {
                 return 5;
@@ -448,7 +461,7 @@ public class LocationActivityAdapter extends BaseLocationAdapter implements Loca
                 return 9;
             } else if (position == 3) {
                 return 2;
-            } else if (searching || !searching && places.isEmpty()) {
+            } else if (searching || places.isEmpty()) {
                 return 4;
             } else if (position == places.size() + 4) {
                 return 5;

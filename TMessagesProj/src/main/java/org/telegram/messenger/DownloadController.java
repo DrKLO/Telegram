@@ -768,12 +768,12 @@ public class DownloadController extends BaseController implements NotificationCe
             }
             if (downloadObject.object instanceof TLRPC.Document) {
                 TLRPC.Document document = (TLRPC.Document) downloadObject.object;
-                getFileLoader().cancelLoadFile(document);
+                getFileLoader().cancelLoadFile(document, true);
             } else if (downloadObject.object instanceof TLRPC.Photo) {
                 TLRPC.Photo photo = (TLRPC.Photo) downloadObject.object;
                 TLRPC.PhotoSize photoSize = FileLoader.getClosestPhotoSizeWithSize(photo.sizes, AndroidUtilities.getPhotoSize());
                 if (photoSize != null) {
-                    getFileLoader().cancelLoadFile(photoSize);
+                    getFileLoader().cancelLoadFile(photoSize, true);
                 }
             }
         }
@@ -783,14 +783,14 @@ public class DownloadController extends BaseController implements NotificationCe
         if (objects.isEmpty()) {
             return;
         }
-        ArrayList<DownloadObject> queue = null;
+        ArrayList<DownloadObject> queue;
         if (type == AUTODOWNLOAD_TYPE_PHOTO) {
             queue = photoDownloadQueue;
         } else if (type == AUTODOWNLOAD_TYPE_AUDIO) {
             queue = audioDownloadQueue;
         } else if (type == AUTODOWNLOAD_TYPE_VIDEO) {
             queue = videoDownloadQueue;
-        } else if (type == AUTODOWNLOAD_TYPE_DOCUMENT) {
+        } else {
             queue = documentDownloadQueue;
         }
         for (int a = 0; a < objects.size(); a++) {

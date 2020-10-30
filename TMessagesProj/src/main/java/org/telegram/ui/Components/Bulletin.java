@@ -13,6 +13,7 @@ import android.graphics.Typeface;
 import android.graphics.drawable.InsetDrawable;
 import android.os.Build;
 import android.util.TypedValue;
+import android.view.GestureDetector;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
@@ -30,8 +31,10 @@ import androidx.core.util.Preconditions;
 import androidx.core.view.ViewCompat;
 import androidx.dynamicanimation.animation.DynamicAnimation;
 import androidx.dynamicanimation.animation.SpringAnimation;
+import androidx.dynamicanimation.animation.SpringForce;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.BaseFragment;
@@ -81,25 +84,33 @@ public final class Bulletin {
     private static Bulletin visibleBulletin;
 
     private final Layout layout;
-    private final FrameLayout parentLayout;
+    private final ParentLayout parentLayout;
     private final FrameLayout containerLayout;
+    private final Runnable hideRunnable = this::hide;
     private final int duration;
 
     private boolean showing;
-    private Runnable exitRunnable;
+    private boolean canHide;
     private int currentBottomOffset;
     private Delegate currentDelegate;
     private Layout.Transition layoutTransition;
 
     private Bulletin(@NonNull FrameLayout containerLayout, @NonNull Layout layout, int duration) {
         this.layout = layout;
-        this.parentLayout = new FrameLayout(layout.getContext());
-        this.parentLayout.addView(layout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.BOTTOM));
+        this.parentLayout = new ParentLayout(layout) {
+            @Override
+            protected void onPressedStateChanged(boolean pressed) {
+                setCanHide(!pressed);
+                if (containerLayout.getParent() != null) {
+                    containerLayout.getParent().requestDisallowInterceptTouchEvent(pressed);
+                }
+            }
+        };
         this.containerLayout = containerLayout;
         this.duration = duration;
     }
 
-    public void show() {
+    public Bulletin show() {
         if (!showing) {
             showing = true;
 
@@ -128,7 +139,7 @@ public final class Bulletin {
                             ensureLayoutTransitionCreated();
                             layoutTransition.animateEnter(layout, layout::onEnterTransitionStart, () -> {
                                 layout.onEnterTransitionEnd();
-                                layout.postDelayed(exitRunnable = Bulletin.this::hide, duration);
+                                setCanHide(true);
                             }, offset -> {
                                 if (currentDelegate != null) {
                                     currentDelegate.onOffsetChange(layout.getHeight() - offset);
@@ -141,7 +152,7 @@ public final class Bulletin {
                             layout.setTranslationY(-currentBottomOffset);
                             layout.onEnterTransitionStart();
                             layout.onEnterTransitionEnd();
-                            layout.postDelayed(exitRunnable = Bulletin.this::hide, duration);
+                            setCanHide(true);
                         }
                     }
                 }
@@ -160,6 +171,18 @@ public final class Bulletin {
 
             containerLayout.addView(parentLayout);
         }
+        return this;
+    }
+
+    private void setCanHide(boolean canHide) {
+        if (this.canHide != canHide) {
+            this.canHide = canHide;
+            if (canHide) {
+                layout.postDelayed(hideRunnable, duration);
+            } else {
+                layout.removeCallbacks(hideRunnable);
+            }
+        }
     }
 
     private void ensureLayoutTransitionCreated() {
@@ -172,8 +195,8 @@ public final class Bulletin {
         hide(isTransitionsEnabled());
     }
 
-    private void hide(boolean animated) {
-        if (showing) {
+    public void hide(boolean animated) {
+        if (showing && canHide) {
             showing = false;
 
             if (visibleBulletin == this) {
@@ -184,10 +207,7 @@ public final class Bulletin {
             currentBottomOffset = 0;
 
             if (ViewCompat.isLaidOut(layout)) {
-                if (exitRunnable != null) {
-                    layout.removeCallbacks(exitRunnable);
-                    exitRunnable = null;
-                }
+                layout.removeCallbacks(hideRunnable);
                 if (animated) {
                     ensureLayoutTransitionCreated();
                     layoutTransition.animateExit(layout, layout::onExitTransitionStart, () -> {
@@ -230,6 +250,85 @@ public final class Bulletin {
 
     private static boolean isTransitionsEnabled() {
         return MessagesController.getGlobalMainSettings().getBoolean("view_animations", true) && Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2;
+    }
+
+    private static abstract class ParentLayout extends FrameLayout {
+
+        private final Layout layout;
+        private final Rect rect = new Rect();
+        private final GestureDetector gestureDetector;
+
+        private boolean pressed;
+        private float translationX;
+        private SpringAnimation springAnimation;
+
+        public ParentLayout(Layout layout) {
+            super(layout.getContext());
+            this.layout = layout;
+            gestureDetector = new GestureDetector(layout.getContext(), new GestureDetector.SimpleOnGestureListener() {
+
+                @Override
+                public boolean onDown(MotionEvent e) {
+                    return springAnimation == null;
+                }
+
+                @Override
+                public boolean onScroll(MotionEvent e1, MotionEvent e2, float distanceX, float distanceY) {
+                    layout.setTranslationX(translationX -= distanceX);
+                    return true;
+                }
+
+                @Override
+                public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
+                    if (Math.abs(velocityX) > 2000f) {
+                        springAnimation = new SpringAnimation(layout, DynamicAnimation.TRANSLATION_X, Math.signum(velocityX) * layout.getWidth() * 2f);
+                        springAnimation.getSpring().setDampingRatio(SpringForce.DAMPING_RATIO_NO_BOUNCY);
+                        springAnimation.getSpring().setStiffness(100f);
+                        springAnimation.setStartVelocity(velocityX);
+                        springAnimation.start();
+                        return true;
+                    }
+                    return false;
+                }
+            });
+            gestureDetector.setIsLongpressEnabled(false);
+            addView(layout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.BOTTOM));
+        }
+
+        @Override
+        public boolean onTouchEvent(MotionEvent event) {
+            if (pressed || inLayoutHitRect(event.getX(), event.getY())) {
+                gestureDetector.onTouchEvent(event);
+                final int actionMasked = event.getActionMasked();
+                if (actionMasked == MotionEvent.ACTION_DOWN) {
+                    if (!pressed && springAnimation == null) {
+                        layout.animate().cancel();
+                        translationX = layout.getTranslationX();
+                        onPressedStateChanged(pressed = true);
+                    }
+                } else if (actionMasked == MotionEvent.ACTION_UP || actionMasked == MotionEvent.ACTION_CANCEL) {
+                    if (pressed) {
+                        if (springAnimation == null) {
+                            if (Math.abs(translationX) > layout.getWidth() / 2) {
+                                layout.animate().translationX(Math.signum(translationX) * layout.getWidth()).setDuration(200).setInterpolator(AndroidUtilities.accelerateInterpolator).start();
+                            } else {
+                                layout.animate().translationX(0).setDuration(200).start();
+                            }
+                        }
+                        onPressedStateChanged(pressed = false);
+                    }
+                }
+                return true;
+            }
+            return false;
+        }
+
+        private boolean inLayoutHitRect(float x, float y) {
+            layout.getHitRect(rect);
+            return rect.contains((int) x, (int) y);
+        }
+
+        protected abstract void onPressedStateChanged(boolean pressed);
     }
 
     //region Offset Providers
@@ -295,12 +394,6 @@ public final class Bulletin {
             final boolean matchParentWidth = !AndroidUtilities.isTablet() && isPortrait;
             setMinimumWidth(matchParentWidth ? 0 : AndroidUtilities.dp(344));
             setLayoutParams(LayoutHelper.createFrame(matchParentWidth ? LayoutHelper.MATCH_PARENT : LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL));
-        }
-
-        @Override
-        public boolean onTouchEvent(MotionEvent event) {
-            super.onTouchEvent(event);
-            return true;
         }
 
         public Bulletin getBulletin() {
@@ -481,22 +574,14 @@ public final class Bulletin {
                 springAnimation.getSpring().setDampingRatio(DAMPING_RATIO);
                 springAnimation.getSpring().setStiffness(STIFFNESS);
                 if (endAction != null) {
-                    springAnimation.addEndListener(new DynamicAnimation.OnAnimationEndListener() {
-                        @Override
-                        public void onAnimationEnd(DynamicAnimation animation, boolean canceled, float value, float velocity) {
-                            if (!canceled) {
-                                endAction.run();
-                            }
+                    springAnimation.addEndListener((animation, canceled, value, velocity) -> {
+                        if (!canceled) {
+                            endAction.run();
                         }
                     });
                 }
                 if (onUpdate != null) {
-                    springAnimation.addUpdateListener(new DynamicAnimation.OnAnimationUpdateListener() {
-                        @Override
-                        public void onAnimationUpdate(DynamicAnimation animation, float value, float velocity) {
-                            onUpdate.accept(value);
-                        }
-                    });
+                    springAnimation.addUpdateListener((animation, value, velocity) -> onUpdate.accept(value));
                 }
                 springAnimation.start();
                 if (startAction != null) {
@@ -510,22 +595,14 @@ public final class Bulletin {
                 springAnimation.getSpring().setDampingRatio(DAMPING_RATIO);
                 springAnimation.getSpring().setStiffness(STIFFNESS);
                 if (endAction != null) {
-                    springAnimation.addEndListener(new DynamicAnimation.OnAnimationEndListener() {
-                        @Override
-                        public void onAnimationEnd(DynamicAnimation animation, boolean canceled, float value, float velocity) {
-                            if (!canceled) {
-                                endAction.run();
-                            }
+                    springAnimation.addEndListener((animation, canceled, value, velocity) -> {
+                        if (!canceled) {
+                            endAction.run();
                         }
                     });
                 }
                 if (onUpdate != null) {
-                    springAnimation.addUpdateListener(new DynamicAnimation.OnAnimationUpdateListener() {
-                        @Override
-                        public void onAnimationUpdate(DynamicAnimation animation, float value, float velocity) {
-                            onUpdate.accept(value);
-                        }
-                    });
+                    springAnimation.addUpdateListener((animation, value, velocity) -> onUpdate.accept(value));
                 }
                 springAnimation.start();
                 if (startAction != null) {
@@ -644,6 +721,61 @@ public final class Bulletin {
             subtitleTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
             linearLayout.addView(subtitleTextView);
         }
+
+    }
+
+    public static class TwoLineLottieLayout extends ButtonLayout {
+
+        public final RLottieImageView imageView;
+        public final TextView titleTextView;
+        public final TextView subtitleTextView;
+
+        private final int textColor;
+
+        public TwoLineLottieLayout(@NonNull Context context) {
+            this(context, Theme.getColor(Theme.key_undo_background), Theme.getColor(Theme.key_undo_infoColor));
+        }
+
+        public TwoLineLottieLayout(@NonNull Context context, @ColorInt int backgroundColor, @ColorInt int textColor) {
+            super(context, backgroundColor);
+            this.textColor = textColor;
+
+            imageView = new RLottieImageView(context);
+            addView(imageView, LayoutHelper.createFrameRelatively(28, 28, Gravity.START | Gravity.CENTER_VERTICAL, 14, 10, 14, 10));
+
+            final int undoInfoColor = Theme.getColor(Theme.key_undo_infoColor);
+
+            final LinearLayout linearLayout = new LinearLayout(context);
+            linearLayout.setOrientation(LinearLayout.VERTICAL);
+            addView(linearLayout, LayoutHelper.createFrameRelatively(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.START | Gravity.CENTER_VERTICAL, 54, 8, 12, 8));
+
+            titleTextView = new TextView(context);
+            titleTextView.setSingleLine();
+            titleTextView.setTextColor(undoInfoColor);
+            titleTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+            titleTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            linearLayout.addView(titleTextView);
+
+            subtitleTextView = new TextView(context);
+            subtitleTextView.setMaxLines(2);
+            subtitleTextView.setTextColor(undoInfoColor);
+            subtitleTextView.setTypeface(Typeface.SANS_SERIF);
+            subtitleTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
+            linearLayout.addView(subtitleTextView);
+        }
+
+        @Override
+        protected void onShow() {
+            super.onShow();
+            imageView.playAnimation();
+        }
+
+        public void setAnimation(int resId, String... layers) {
+            imageView.setAnimation(resId, 28, 28);
+            for (int i = 0; i < layers.length; i++) {
+                imageView.setLayerColor(layers[i] + ".**", textColor);
+            }
+        }
     }
 
     public static class LottieLayout extends ButtonLayout {
@@ -736,18 +868,31 @@ public final class Bulletin {
         private Bulletin bulletin;
         private boolean isUndone;
 
-        public UndoButton(@NonNull Context context) {
+        public UndoButton(@NonNull Context context, boolean text) {
             super(context);
 
             final int undoCancelColor = Theme.getColor(Theme.key_undo_cancelColor);
 
-            final ImageView undoImageView = new ImageView(getContext());
-            undoImageView.setOnClickListener(v -> undo());
-            undoImageView.setImageResource(R.drawable.chats_undo);
-            undoImageView.setColorFilter(new PorterDuffColorFilter(undoCancelColor, PorterDuff.Mode.MULTIPLY));
-            undoImageView.setBackground(Theme.createSelectorDrawable((undoCancelColor & 0x00ffffff) | 0x19000000));
-            ViewHelper.setPaddingRelative(undoImageView, 0, 12, 0, 12);
-            addView(undoImageView, LayoutHelper.createFrameRelatively(56, 48, Gravity.CENTER_VERTICAL));
+            if (text) {
+                TextView undoTextView = new TextView(context);
+                undoTextView.setOnClickListener(v -> undo());
+                undoTextView.setBackground(Theme.createSelectorDrawable((undoCancelColor & 0x00ffffff) | 0x19000000, 7));
+                undoTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+                undoTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+                undoTextView.setTextColor(undoCancelColor);
+                undoTextView.setText(LocaleController.getString("Undo", R.string.Undo));
+                undoTextView.setGravity(Gravity.CENTER_VERTICAL);
+                ViewHelper.setPaddingRelative(undoTextView, 16, 0, 16, 0);
+                addView(undoTextView, LayoutHelper.createFrameRelatively(LayoutHelper.WRAP_CONTENT, 48, Gravity.CENTER_VERTICAL, 0, 0, 0, 0));
+            } else {
+                final ImageView undoImageView = new ImageView(getContext());
+                undoImageView.setOnClickListener(v -> undo());
+                undoImageView.setImageResource(R.drawable.chats_undo);
+                undoImageView.setColorFilter(new PorterDuffColorFilter(undoCancelColor, PorterDuff.Mode.MULTIPLY));
+                undoImageView.setBackground(Theme.createSelectorDrawable((undoCancelColor & 0x00ffffff) | 0x19000000));
+                ViewHelper.setPaddingRelative(undoImageView, 0, 12, 0, 12);
+                addView(undoImageView, LayoutHelper.createFrameRelatively(56, 48, Gravity.CENTER_VERTICAL));
+            }
         }
 
         public void undo() {

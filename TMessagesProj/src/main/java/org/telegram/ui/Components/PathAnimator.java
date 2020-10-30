@@ -20,6 +20,7 @@ import java.util.ArrayList;
 public class PathAnimator {
 
     private Path path = new Path();
+    private float pathTime = -1;
     private float scale;
     private float tx;
     private float ty;
@@ -108,69 +109,72 @@ public class PathAnimator {
     }
 
     public void draw(Canvas canvas, Paint paint, float time) {
-        KeyFrame startKeyFrame = null;
-        KeyFrame endKeyFrame = null;
-        for (int a = 0, N = keyFrames.size(); a < N; a++) {
-            KeyFrame keyFrame = keyFrames.get(a);
-            if ((startKeyFrame == null || startKeyFrame.time < keyFrame.time) && keyFrame.time <= time) {
-                startKeyFrame = keyFrame;
+        if (pathTime != time) {
+            pathTime = time;
+            KeyFrame startKeyFrame = null;
+            KeyFrame endKeyFrame = null;
+            for (int a = 0, N = keyFrames.size(); a < N; a++) {
+                KeyFrame keyFrame = keyFrames.get(a);
+                if ((startKeyFrame == null || startKeyFrame.time < keyFrame.time) && keyFrame.time <= time) {
+                    startKeyFrame = keyFrame;
+                }
+                if ((endKeyFrame == null || endKeyFrame.time > keyFrame.time) && keyFrame.time >= time) {
+                    endKeyFrame = keyFrame;
+                }
             }
-            if ((endKeyFrame == null || endKeyFrame.time > keyFrame.time) && keyFrame.time >= time) {
-                endKeyFrame = keyFrame;
+            if (endKeyFrame == startKeyFrame) {
+                startKeyFrame = null;
             }
-        }
-        if (endKeyFrame == startKeyFrame) {
-            startKeyFrame = null;
-        }
-        if (startKeyFrame != null && endKeyFrame == null) {
-            endKeyFrame = startKeyFrame;
-            startKeyFrame = null;
-        }
-        if (endKeyFrame == null || startKeyFrame != null && startKeyFrame.commands.size() != endKeyFrame.commands.size()) {
-            return;
-        }
-        path.reset();
-        for (int a = 0, N = endKeyFrame.commands.size(); a < N; a++) {
-            Object startCommand = startKeyFrame != null ? startKeyFrame.commands.get(a) : null;
-            Object endCommand = endKeyFrame.commands.get(a);
-            if (startCommand != null && startCommand.getClass() != endCommand.getClass()) {
+            if (startKeyFrame != null && endKeyFrame == null) {
+                endKeyFrame = startKeyFrame;
+                startKeyFrame = null;
+            }
+            if (endKeyFrame == null || startKeyFrame != null && startKeyFrame.commands.size() != endKeyFrame.commands.size()) {
                 return;
             }
-            float progress;
-            if (startKeyFrame != null) {
-                progress = (time - startKeyFrame.time) / (endKeyFrame.time - startKeyFrame.time);
-            } else {
-                progress = 1.0f;
+            path.reset();
+            for (int a = 0, N = endKeyFrame.commands.size(); a < N; a++) {
+                Object startCommand = startKeyFrame != null ? startKeyFrame.commands.get(a) : null;
+                Object endCommand = endKeyFrame.commands.get(a);
+                if (startCommand != null && startCommand.getClass() != endCommand.getClass()) {
+                    return;
+                }
+                float progress;
+                if (startKeyFrame != null) {
+                    progress = (time - startKeyFrame.time) / (endKeyFrame.time - startKeyFrame.time);
+                } else {
+                    progress = 1.0f;
+                }
+                if (endCommand instanceof MoveTo) {
+                    MoveTo end = (MoveTo) endCommand;
+                    MoveTo start = (MoveTo) startCommand;
+                    if (start != null) {
+                        path.moveTo(AndroidUtilities.dpf2(start.x + (end.x - start.x) * progress), AndroidUtilities.dpf2(start.y + (end.y - start.y) * progress));
+                    } else {
+                        path.moveTo(AndroidUtilities.dpf2(end.x), AndroidUtilities.dpf2(end.y));
+                    }
+                } else if (endCommand instanceof LineTo) {
+                    LineTo end = (LineTo) endCommand;
+                    LineTo start = (LineTo) startCommand;
+                    if (start != null) {
+                        path.lineTo(AndroidUtilities.dpf2(start.x + (end.x - start.x) * progress), AndroidUtilities.dpf2(start.y + (end.y - start.y) * progress));
+                    } else {
+                        path.lineTo(AndroidUtilities.dpf2(end.x), AndroidUtilities.dpf2(end.y));
+                    }
+                } else if (endCommand instanceof CurveTo) {
+                    CurveTo end = (CurveTo) endCommand;
+                    CurveTo start = (CurveTo) startCommand;
+                    if (start != null) {
+                        path.cubicTo(AndroidUtilities.dpf2(start.x1 + (end.x1 - start.x1) * progress), AndroidUtilities.dpf2(start.y1 + (end.y1 - start.y1) * progress),
+                                AndroidUtilities.dpf2(start.x2 + (end.x2 - start.x2) * progress), AndroidUtilities.dpf2(start.y2 + (end.y2 - start.y2) * progress),
+                                AndroidUtilities.dpf2(start.x + (end.x - start.x) * progress), AndroidUtilities.dpf2(start.y + (end.y - start.y) * progress));
+                    } else {
+                        path.cubicTo(AndroidUtilities.dpf2(end.x1), AndroidUtilities.dpf2(end.y1), AndroidUtilities.dpf2(end.x2), AndroidUtilities.dpf2(end.y2), AndroidUtilities.dpf2(end.x), AndroidUtilities.dpf2(end.y));
+                    }
+                }
             }
-            if (endCommand instanceof MoveTo) {
-                MoveTo end = (MoveTo) endCommand;
-                MoveTo start = (MoveTo) startCommand;
-                if (start != null) {
-                    path.moveTo(AndroidUtilities.dp(start.x + (end.x - start.x) * progress), AndroidUtilities.dp(start.y + (end.y - start.y) * progress));
-                } else {
-                    path.moveTo(AndroidUtilities.dp(end.x), AndroidUtilities.dp(end.y));
-                }
-            } else if (endCommand instanceof LineTo) {
-                LineTo end = (LineTo) endCommand;
-                LineTo start = (LineTo) startCommand;
-                if (start != null) {
-                    path.lineTo(AndroidUtilities.dp(start.x + (end.x - start.x) * progress), AndroidUtilities.dp(start.y + (end.y - start.y) * progress));
-                } else {
-                    path.lineTo(AndroidUtilities.dp(end.x), AndroidUtilities.dp(end.y));
-                }
-            } else if (endCommand instanceof CurveTo) {
-                CurveTo end = (CurveTo) endCommand;
-                CurveTo start = (CurveTo) startCommand;
-                if (start != null) {
-                    path.cubicTo(AndroidUtilities.dp(start.x1 + (end.x1 - start.x1) * progress), AndroidUtilities.dp(start.y1 + (end.y1 - start.y1) * progress),
-                            AndroidUtilities.dp(start.x2 + (end.x2 - start.x2) * progress), AndroidUtilities.dp(start.y2 + (end.y2 - start.y2) * progress),
-                            AndroidUtilities.dp(start.x + (end.x - start.x) * progress), AndroidUtilities.dp(start.y + (end.y - start.y) * progress));
-                } else {
-                    path.cubicTo(AndroidUtilities.dp(end.x1), AndroidUtilities.dp(end.y1), AndroidUtilities.dp(end.x2), AndroidUtilities.dp(end.y2), AndroidUtilities.dp(end.x), AndroidUtilities.dp(end.y));
-                }
-            }
+            path.close();
         }
-        path.close();
         canvas.drawPath(path, paint);
     }
 }

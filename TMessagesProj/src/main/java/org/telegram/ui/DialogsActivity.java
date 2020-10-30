@@ -509,7 +509,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             if (inPreviewMode) {
                 top = AndroidUtilities.statusBarHeight;
             } else {
-                top = inPreviewMode ? 0 : (int) (-getY() + actionBar.getY());
+                top = (int) (-getY() + actionBar.getY());
             }
             if (whiteActionBar) {
                 if (searchAnimationProgress == 1f) {
@@ -2802,11 +2802,11 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
 
         if (!onlySelect && initialDialogsType == 0) {
             fragmentLocationContextView = new FragmentContextView(context, this, true);
-            fragmentLocationContextView.setLayoutParams(LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 39, Gravity.TOP | Gravity.LEFT, 0, -36, 0, 0));
+            fragmentLocationContextView.setLayoutParams(LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 38, Gravity.TOP | Gravity.LEFT, 0, -36, 0, 0));
             contentView.addView(fragmentLocationContextView);
 
             fragmentContextView = new FragmentContextView(context, this, false);
-            fragmentContextView.setLayoutParams(LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 39, Gravity.TOP | Gravity.LEFT, 0, -36, 0, 0));
+            fragmentContextView.setLayoutParams(LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 38, Gravity.TOP | Gravity.LEFT, 0, -36, 0, 0));
             contentView.addView(fragmentContextView);
 
             fragmentContextView.setAdditionalContextView(fragmentLocationContextView);
@@ -3310,7 +3310,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
     }
 
     private void updateFilterTabs(boolean force) {
-        if (filterTabsView == null || inPreviewMode) {
+        if (filterTabsView == null || inPreviewMode || searchIsShowed) {
             return;
         }
         if (scrimPopupWindow != null) {
@@ -3742,6 +3742,9 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             animators.add(ObjectAnimator.ofFloat(searchViewPager, View.SCALE_X, show ? 1.0f : 1.05f));
             animators.add(ObjectAnimator.ofFloat(searchViewPager, View.SCALE_Y, show ? 1.0f : 1.05f));
             animators.add(ObjectAnimator.ofFloat(searchItem.getIconView(), View.ALPHA, show ? 0 : 1f));
+            if (passcodeItem != null) {
+                animators.add(ObjectAnimator.ofFloat(passcodeItem.getIconView(), View.ALPHA, show ? 0 : 1f));
+            }
             animators.add(ObjectAnimator.ofFloat(searchItem.getSearchContainer(), View.ALPHA, show ? 1f : 0));
 
             if (filterTabsView != null && filterTabsView.getVisibility() == View.VISIBLE) {
@@ -4875,7 +4878,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 if (MessagesController.isSupportUser(user)) {
                     cantBlockCount++;
                 } else {
-                    if (lower_id == 0 || preferences.getBoolean("dialog_bar_report" + selectedDialog, true)) {
+                    if (preferences.getBoolean("dialog_bar_report" + selectedDialog, true)) {
                         canReportSpamCount++;
                     }
                 }
@@ -5574,7 +5577,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
     }
 
     private void showFiltersHint() {
-        if (askingForPermissions || !getMessagesController().dialogFiltersLoaded || !getMessagesController().showFiltersTooltip || filterTabsView == null || filterTabsView.getVisibility() == View.VISIBLE || isPaused || !getUserConfig().filtersLoaded || inPreviewMode) {
+        if (askingForPermissions || !getMessagesController().dialogFiltersLoaded || !getMessagesController().showFiltersTooltip || filterTabsView == null || !getMessagesController().dialogFilters.isEmpty() || isPaused || !getUserConfig().filtersLoaded || inPreviewMode) {
             return;
         }
         SharedPreferences preferences = MessagesController.getGlobalMainSettings();

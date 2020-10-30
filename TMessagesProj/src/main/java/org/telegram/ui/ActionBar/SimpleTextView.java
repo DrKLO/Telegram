@@ -164,7 +164,7 @@ public class SimpleTextView extends View implements Drawable.Callback {
         }
     }
 
-    private boolean createLayout(int width) {
+    protected boolean createLayout(int width) {
         if (text != null) {
             try {
                 if (leftDrawable != null) {

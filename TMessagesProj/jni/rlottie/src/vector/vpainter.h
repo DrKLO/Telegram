@@ -37,8 +37,8 @@ public:
     };
     ~VPainter();
     VPainter();
-    VPainter(VBitmap *buffer);
-    bool  begin(VBitmap *buffer);
+    VPainter(VBitmap *buffer, bool clear);
+    bool  begin(VBitmap *buffer, bool clear);
     void  end();
     void  setDrawRegion(const VRect &region); // sub surface rendering area.
     void  setBrush(const VBrush &brush);

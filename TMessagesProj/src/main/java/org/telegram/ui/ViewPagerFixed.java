@@ -32,6 +32,7 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.core.graphics.ColorUtils;
+import androidx.core.view.accessibility.AccessibilityNodeInfoCompat;
 import androidx.recyclerview.widget.DefaultItemAnimator;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.LinearSmoothScroller;
@@ -272,10 +273,6 @@ public class ViewPagerFixed extends FrameLayout {
             velocityTracker.addMovement(ev);
         }
         if (ev != null && ev.getAction() == MotionEvent.ACTION_DOWN && checkTabsAnimationInProgress()) {
-            View child = findScrollingChild(this, ev.getX(), ev.getY());
-            if (child != null && (child.canScrollHorizontally(1) || child.canScrollHorizontally(-1))) {
-                return false;
-            }
             startedTracking = true;
             startedTrackingPointerId = ev.getPointerId(0);
             startedTrackingX = (int) ev.getX();
@@ -301,6 +298,13 @@ public class ViewPagerFixed extends FrameLayout {
             tabsAnimationInProgress = false;
         } else if (ev != null && ev.getAction() == MotionEvent.ACTION_DOWN) {
             additionalOffset = 0;
+        }
+
+        if (!startedTracking && ev != null) {
+            View child = findScrollingChild(this, ev.getX(), ev.getY());
+            if (child != null && (child.canScrollHorizontally(1) || child.canScrollHorizontally(-1))) {
+                return false;
+            }
         }
         if (ev != null && ev.getAction() == MotionEvent.ACTION_DOWN && !startedTracking && !maybeStartTracking) {
             startedTrackingPointerId = ev.getPointerId(0);
@@ -624,6 +628,7 @@ public class ViewPagerFixed extends FrameLayout {
             public void setTab(Tab tab, int position) {
                 currentTab = tab;
                 currentPosition = position;
+                setContentDescription(tab.title);
                 requestLayout();
             }
 
@@ -937,6 +942,14 @@ public class ViewPagerFixed extends FrameLayout {
                 @Override
                 public int scrollHorizontallyBy(int dx, RecyclerView.Recycler recycler, RecyclerView.State state) {
                     return super.scrollHorizontallyBy(dx, recycler, state);
+                }
+
+                @Override
+                public void onInitializeAccessibilityNodeInfo(@NonNull RecyclerView.Recycler recycler, @NonNull RecyclerView.State state, @NonNull AccessibilityNodeInfoCompat info) {
+                    super.onInitializeAccessibilityNodeInfo(recycler, state, info);
+                    if (isInHiddenMode) {
+                        info.setVisibleToUser(false);
+                    }
                 }
             });
             listView.setPadding(AndroidUtilities.dp(7), 0, AndroidUtilities.dp(7), 0);

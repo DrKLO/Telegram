@@ -25,10 +25,14 @@ package org.telegram.ui.Components;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.ColorFilter;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Path;
+import android.graphics.PixelFormat;
+import android.graphics.Rect;
 import android.graphics.RectF;
+import android.graphics.drawable.Drawable;
 
 import org.telegram.messenger.FileLog;
 import org.xml.sax.Attributes;
@@ -47,12 +51,109 @@ import javax.xml.parsers.SAXParserFactory;
 
 public class SvgHelper {
 
+    private static class Line {
+        float x1, y1, x2, y2;
+
+        public Line(float x1, float y1, float x2, float y2) {
+            this.x1 = x1;
+            this.y1 = y1;
+            this.x2 = x2;
+            this.y2 = y2;
+        }
+    }
+
+    private static class Circle {
+        float x1, y1, rad;
+
+        public Circle(float x1, float y1, float rad) {
+            this.x1 = x1;
+            this.y1 = y1;
+            this.rad = rad;
+        }
+    }
+
+    private static class Oval {
+        RectF rect;
+
+        public Oval(RectF rect) {
+            this.rect = rect;
+        }
+    }
+
+    public static class SvgDrawable extends Drawable {
+
+        private ArrayList<Object> commands = new ArrayList<>();
+        private HashMap<Object, Paint> paints = new HashMap<>();
+        private int width;
+        private int height;
+
+        @Override
+        public void draw(Canvas canvas) {
+            Rect bounds = getBounds();
+            float scaleX = bounds.width() / (float) width;
+            float scaleY = bounds.height() / (float) height;
+            float scale = Math.max(scaleX, scaleY);
+            canvas.scale(scale, scale);
+            for (int a = 0, N = commands.size(); a < N; a++) {
+                Object object = commands.get(a);
+                if (object instanceof Matrix) {
+                    canvas.save();
+                    canvas.concat((Matrix) object);
+                } else if (object == null) {
+                    canvas.restore();
+                } else {
+                    Paint paint = paints.get(object);
+                    if (object instanceof Path) {
+                        canvas.drawPath((Path) object, paint);
+                    } else if (object instanceof Rect) {
+                        canvas.drawRect((Rect) object, paint);
+                    } else if (object instanceof RectF) {
+                        canvas.drawRect((RectF) object, paint);
+                    } else if (object instanceof Line) {
+                        Line line = (Line) object;
+                        canvas.drawLine(line.x1, line.y1, line.x2, line.y2, paint);
+                    } else if (object instanceof Circle) {
+                        Circle circle = (Circle) object;
+                        canvas.drawCircle(circle.x1, circle.y1, circle.rad, paint);
+                    } else if (object instanceof Oval) {
+                        Oval oval = (Oval) object;
+                        canvas.drawOval(oval.rect, paint);
+                    }
+                }
+            }
+        }
+
+        @Override
+        public void setAlpha(int alpha) {
+
+        }
+
+        @Override
+        public void setColorFilter(ColorFilter colorFilter) {
+
+        }
+
+        @Override
+        public int getOpacity() {
+            return PixelFormat.TRANSPARENT;
+        }
+
+        private void addCommand(Object command, Paint paint) {
+            commands.add(command);
+            paints.put(command, new Paint(paint));
+        }
+
+        private void addCommand(Object command) {
+            commands.add(command);
+        }
+    }
+
     public static Bitmap getBitmap(File file, int width, int height, boolean white) {
         try (FileInputStream stream = new FileInputStream(file)) {
             SAXParserFactory spf = SAXParserFactory.newInstance();
             SAXParser sp = spf.newSAXParser();
             XMLReader xr = sp.getXMLReader();
-            SVGHandler handler = new SVGHandler(width, height, white);
+            SVGHandler handler = new SVGHandler(width, height, white, false);
             xr.setContentHandler(handler);
             xr.parse(new InputSource(stream));
             return handler.getBitmap();
@@ -67,10 +168,25 @@ public class SvgHelper {
             SAXParserFactory spf = SAXParserFactory.newInstance();
             SAXParser sp = spf.newSAXParser();
             XMLReader xr = sp.getXMLReader();
-            SVGHandler handler = new SVGHandler(width, height, white);
+            SVGHandler handler = new SVGHandler(width, height, white, false);
             xr.setContentHandler(handler);
             xr.parse(new InputSource(new StringReader(xml)));
             return handler.getBitmap();
+        } catch (Exception e) {
+            FileLog.e(e);
+            return null;
+        }
+    }
+
+    public static SvgDrawable getDrawable(String xml) {
+        try {
+            SAXParserFactory spf = SAXParserFactory.newInstance();
+            SAXParser sp = spf.newSAXParser();
+            XMLReader xr = sp.getXMLReader();
+            SVGHandler handler = new SVGHandler(0, 0, false, true);
+            xr.setContentHandler(handler);
+            xr.parse(new InputSource(new StringReader(xml)));
+            return handler.getDrawable();
         } catch (Exception e) {
             FileLog.e(e);
             return null;
@@ -632,6 +748,7 @@ public class SvgHelper {
 
         private Canvas canvas;
         private Bitmap bitmap;
+        private SvgDrawable drawable;
         private int desiredWidth;
         private int desiredHeight;
         private float scale = 1.0f;
@@ -643,10 +760,13 @@ public class SvgHelper {
 
         private HashMap<String, StyleSet> globalStyles = new HashMap<>();
 
-        private SVGHandler(int dw, int dh, boolean white) {
+        private SVGHandler(int dw, int dh, boolean white, boolean asDrawable) {
             desiredWidth = dw;
             desiredHeight = dh;
             whiteOnly = white;
+            if (asDrawable) {
+                drawable = new SvgDrawable();
+            }
         }
 
         @Override
@@ -678,7 +798,7 @@ public class SvgHelper {
                     if (whiteOnly) {
                         paint.setColor(0xffffffff);
                     } else {
-                        paint.setColor(0xFF000000);
+                        paint.setColor(0xff000000);
                     }
                     return true;
                 }
@@ -746,14 +866,22 @@ public class SvgHelper {
             pushed = transform != null;
             if (pushed) {
                 final Matrix matrix = parseTransform(transform);
-                canvas.save();
-                canvas.concat(matrix);
+                if (drawable != null) {
+                    drawable.addCommand(matrix);
+                } else {
+                    canvas.save();
+                    canvas.concat(matrix);
+                }
             }
         }
 
         private void popTransform() {
             if (pushed) {
-                canvas.restore();
+                if (drawable != null) {
+                    drawable.addCommand(null);
+                } else {
+                    canvas.restore();
+                }
             }
         }
 
@@ -783,16 +911,21 @@ public class SvgHelper {
                     if (width == 0 || height == 0) {
                         width = desiredWidth;
                         height = desiredHeight;
-                    } else {
+                    } else if (desiredWidth != 0 && desiredHeight != 0) {
                         scale = Math.min(desiredWidth / (float) width, desiredHeight / (float) height);
                         width *= scale;
                         height *= scale;
                     }
-                    bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
-                    bitmap.eraseColor(0);
-                    canvas = new Canvas(bitmap);
-                    if (scale != 0) {
-                        canvas.scale(scale, scale);
+                    if (drawable == null) {
+                        bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+                        bitmap.eraseColor(0);
+                        canvas = new Canvas(bitmap);
+                        if (scale != 0) {
+                            canvas.scale(scale, scale);
+                        }
+                    } else {
+                        drawable.width = width;
+                        drawable.height = height;
                     }
                     break;
                 }
@@ -822,10 +955,18 @@ public class SvgHelper {
                     pushTransform(atts);
                     Properties props = new Properties(atts, globalStyles);
                     if (doFill(props)) {
-                        canvas.drawRect(x, y, x + width, y + height, paint);
+                        if (drawable != null) {
+                            drawable.addCommand(new RectF(x, y, x + width, y + height), paint);
+                        } else {
+                            canvas.drawRect(x, y, x + width, y + height, paint);
+                        }
                     }
                     if (doStroke(props)) {
-                        canvas.drawRect(x, y, x + width, y + height, paint);
+                        if (drawable != null) {
+                            drawable.addCommand(new RectF(x, y, x + width, y + height), paint);
+                        } else {
+                            canvas.drawRect(x, y, x + width, y + height, paint);
+                        }
                     }
                     popTransform();
                     break;
@@ -838,7 +979,11 @@ public class SvgHelper {
                     Properties props = new Properties(atts, globalStyles);
                     if (doStroke(props)) {
                         pushTransform(atts);
-                        canvas.drawLine(x1, y1, x2, y2, paint);
+                        if (drawable != null) {
+                            drawable.addCommand(new Line(x1, y1, x2, y2), paint);
+                        } else {
+                            canvas.drawLine(x1, y1, x2, y2, paint);
+                        }
                         popTransform();
                     }
                     break;
@@ -851,10 +996,18 @@ public class SvgHelper {
                         pushTransform(atts);
                         Properties props = new Properties(atts, globalStyles);
                         if (doFill(props)) {
-                            canvas.drawCircle(centerX, centerY, radius, paint);
+                            if (drawable != null) {
+                                drawable.addCommand(new Circle(centerX, centerY, radius), paint);
+                            } else {
+                                canvas.drawCircle(centerX, centerY, radius, paint);
+                            }
                         }
                         if (doStroke(props)) {
-                            canvas.drawCircle(centerX, centerY, radius, paint);
+                            if (drawable != null) {
+                                drawable.addCommand(new Circle(centerX, centerY, radius), paint);
+                            } else {
+                                canvas.drawCircle(centerX, centerY, radius, paint);
+                            }
                         }
                         popTransform();
                     }
@@ -870,10 +1023,18 @@ public class SvgHelper {
                         Properties props = new Properties(atts, globalStyles);
                         rect.set(centerX - radiusX, centerY - radiusY, centerX + radiusX, centerY + radiusY);
                         if (doFill(props)) {
-                            canvas.drawOval(rect, paint);
+                            if (drawable != null) {
+                                drawable.addCommand(new Oval(rect), paint);
+                            } else {
+                                canvas.drawOval(rect, paint);
+                            }
                         }
                         if (doStroke(props)) {
-                            canvas.drawOval(rect, paint);
+                            if (drawable != null) {
+                                drawable.addCommand(new Oval(rect), paint);
+                            } else {
+                                canvas.drawOval(rect, paint);
+                            }
                         }
                         popTransform();
                     }
@@ -898,10 +1059,18 @@ public class SvgHelper {
                                 p.close();
                             }
                             if (doFill(props)) {
-                                canvas.drawPath(p, paint);
+                                if (drawable != null) {
+                                    drawable.addCommand(p, paint);
+                                } else {
+                                    canvas.drawPath(p, paint);
+                                }
                             }
                             if (doStroke(props)) {
-                                canvas.drawPath(p, paint);
+                                if (drawable != null) {
+                                    drawable.addCommand(p, paint);
+                                } else {
+                                    canvas.drawPath(p, paint);
+                                }
                             }
                             popTransform();
                         }
@@ -912,10 +1081,18 @@ public class SvgHelper {
                     pushTransform(atts);
                     Properties props = new Properties(atts, globalStyles);
                     if (doFill(props)) {
-                        canvas.drawPath(p, paint);
+                        if (drawable != null) {
+                            drawable.addCommand(p, paint);
+                        } else {
+                            canvas.drawPath(p, paint);
+                        }
                     }
                     if (doStroke(props)) {
-                        canvas.drawPath(p, paint);
+                        if (drawable != null) {
+                            drawable.addCommand(p, paint);
+                        } else {
+                            canvas.drawPath(p, paint);
+                        }
                     }
                     popTransform();
                     break;
@@ -964,6 +1141,10 @@ public class SvgHelper {
 
         public Bitmap getBitmap() {
             return bitmap;
+        }
+
+        public SvgDrawable getDrawable() {
+            return drawable;
         }
     }
 

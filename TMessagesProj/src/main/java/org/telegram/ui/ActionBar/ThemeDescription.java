@@ -353,6 +353,10 @@ public class ThemeDescription {
             }
         } else if (viewToInvalidate instanceof ContextProgressView) {
             ((ContextProgressView) viewToInvalidate).updateColors();
+        } else if (viewToInvalidate instanceof SeekBarView) {
+            if ((changeFlags & FLAG_PROGRESSBAR) != 0) {
+                ((SeekBarView) viewToInvalidate).setOuterColor(color);
+            }
         }
         if ((changeFlags & FLAG_TEXTCOLOR) != 0) {
             if ((changeFlags & FLAG_CHECKTAG) == 0 || checkTag(currentKey, viewToInvalidate)) {

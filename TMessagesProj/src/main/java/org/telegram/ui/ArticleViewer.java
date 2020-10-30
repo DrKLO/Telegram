@@ -859,7 +859,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
         }
 
         public boolean handleTouchEvent(MotionEvent event) {
-            if (!closeAnimationInProgress && fullscreenVideoContainer.getVisibility() != VISIBLE && !textSelectionHelper.isSelectionMode()) {
+            if (pageSwitchAnimation == null && !closeAnimationInProgress && fullscreenVideoContainer.getVisibility() != VISIBLE && !textSelectionHelper.isSelectionMode()) {
                 if (event != null && event.getAction() == MotionEvent.ACTION_DOWN && !startedTracking && !maybeStartTracking) {
                     startedTrackingPointerId = event.getPointerId(0);
                     maybeStartTracking = true;
@@ -3621,7 +3621,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
         windowLayoutParams.width = WindowManager.LayoutParams.MATCH_PARENT;
         windowLayoutParams.gravity = Gravity.TOP | Gravity.LEFT;
         windowLayoutParams.type = WindowManager.LayoutParams.LAST_APPLICATION_WINDOW - 1;
-        windowLayoutParams.softInputMode = SharedConfig.smoothKeyboard ? WindowManager.LayoutParams.SOFT_INPUT_ADJUST_PAN : WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE;
+        windowLayoutParams.softInputMode = WindowManager.LayoutParams.SOFT_INPUT_ADJUST_NOTHING;
         windowLayoutParams.flags = WindowManager.LayoutParams.FLAG_ALT_FOCUSABLE_IM;
         if (Build.VERSION.SDK_INT >= 21) {
             windowLayoutParams.flags |= WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN |
@@ -4010,10 +4010,6 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
             return false;
         }
 
-        if (messageObject != null) {
-            webpage = messageObject.messageOwner.media.webpage;
-        }
-
         String anchor = null;
         if (messageObject != null) {
             webpage = messageObject.messageOwner.media.webpage;
@@ -4084,7 +4080,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
                         return;
                     }
 
-                    if (!pagesStack.isEmpty() && pagesStack.get(0) == webPageFinal && webPage.cached_page != null) {
+                    if (!pagesStack.isEmpty() && pagesStack.get(0) == webPageFinal) {
                         if (messageObject != null) {
                             messageObject.messageOwner.media.webpage = webPage;
                             TLRPC.TL_messages_messages messagesRes = new TLRPC.TL_messages_messages();

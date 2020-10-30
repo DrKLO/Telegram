@@ -42,6 +42,8 @@ public class HintView extends FrameLayout {
     private boolean isTopArrow;
     private String overrideText;
     private int shownY;
+    private float translationY;
+    private float extraTranslationY;
 
     private int bottomOffset;
     private long showingDuration = 2000;
@@ -103,6 +105,15 @@ public class HintView extends FrameLayout {
             messageCell = null;
             showForMessageCell(cell, false);
         }
+    }
+
+    public void setExtraTranslationY(float value) {
+        extraTranslationY = value;
+        setTranslationY(extraTranslationY + translationY);
+    }
+
+    public float getBaseTranslationY() {
+        return translationY;
     }
 
     public boolean showForMessageCell(ChatMessageCell cell, boolean animated) {
@@ -185,9 +196,9 @@ public class HintView extends FrameLayout {
 
         int parentWidth = parentView.getMeasuredWidth();
         if (isTopArrow) {
-            setTranslationY(AndroidUtilities.dp(44));
+            setTranslationY(extraTranslationY + (translationY = AndroidUtilities.dp(44)));
         } else {
-            setTranslationY(top - getMeasuredHeight());
+            setTranslationY(extraTranslationY + (translationY = top - getMeasuredHeight()));
         }
         int iconX = cell.getLeft() + centerX;
         int left = AndroidUtilities.dp(19);
@@ -268,6 +279,8 @@ public class HintView extends FrameLayout {
 
         if (currentType == 4) {
             top += AndroidUtilities.dp(4);
+        } else if (currentType == 6) {
+            top += view.getMeasuredHeight() + getMeasuredHeight() + AndroidUtilities.dp(10);
         }
 
         int centerX;
@@ -289,10 +302,10 @@ public class HintView extends FrameLayout {
         top -= bottomOffset;
 
         int parentWidth = parentView.getMeasuredWidth();
-        if (isTopArrow) {
-            setTranslationY(AndroidUtilities.dp(44));
+        if (isTopArrow && currentType != 6) {
+            setTranslationY(extraTranslationY + (translationY = AndroidUtilities.dp(44)));
         } else {
-            setTranslationY(top - getMeasuredHeight());
+            setTranslationY(extraTranslationY + (translationY = top - getMeasuredHeight()));
         }
         final int offset;
 

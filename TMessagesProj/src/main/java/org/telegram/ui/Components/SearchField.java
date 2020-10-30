@@ -144,6 +144,7 @@ public class SearchField extends FrameLayout {
         });
         searchEditText.setOnEditorActionListener((v, actionId, event) -> {
             if (event != null && (event.getAction() == KeyEvent.ACTION_UP && event.getKeyCode() == KeyEvent.KEYCODE_SEARCH || event.getAction() == KeyEvent.ACTION_DOWN && event.getKeyCode() == KeyEvent.KEYCODE_ENTER)) {
+                searchEditText.hideActionMode();
                 AndroidUtilities.hideKeyboard(searchEditText);
             }
             return false;

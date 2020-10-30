@@ -123,7 +123,7 @@ public class ChatEditTypeActivity extends BaseFragment implements NotificationCe
                 return false;
             }
             if (info == null) {
-                info = getMessagesStorage().loadChatInfo(chatId, new CountDownLatch(1), false, false);
+                info = getMessagesStorage().loadChatInfo(chatId, ChatObject.isChannel(currentChat), new CountDownLatch(1), false, false);
                 if (info == null) {
                     return false;
                 }

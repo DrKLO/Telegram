@@ -150,7 +150,7 @@ public class ColorPicker extends FrameLayout {
 
         for (int i = 1; i < LOCATIONS.length; i++) {
             float value = LOCATIONS[i];
-            if (value > location) {
+            if (value >= location) {
                 leftIndex = i - 1;
                 rightIndex = i;
                 break;

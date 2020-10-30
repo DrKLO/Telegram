@@ -1491,7 +1491,7 @@ public abstract class TextSelectionHelper<Cell extends TextSelectionHelper.Selec
                 textArea.set(maybeTextX, maybeTextY,
                         maybeTextX + chatMessageCell.getCaptionLayout().getWidth(),
                         maybeTextY + chatMessageCell.getCaptionLayout().getHeight());
-            } else if (messageObject != null && messageObject.textLayoutBlocks.size() > 0) {
+            } else if (messageObject != null && messageObject.textLayoutBlocks != null && messageObject.textLayoutBlocks.size() > 0) {
                 MessageObject.TextLayoutBlock block = messageObject.textLayoutBlocks.get(messageObject.textLayoutBlocks.size() - 1);
                 textArea.set(
                         maybeTextX, maybeTextY,

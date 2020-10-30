@@ -45,6 +45,8 @@ import org.telegram.ui.Cells.HintDialogCell;
 import org.telegram.ui.Cells.LoadingCell;
 import org.telegram.ui.Cells.ProfileSearchCell;
 import org.telegram.ui.Cells.TextCell;
+import org.telegram.ui.Components.FlickerLoadingView;
+import org.telegram.ui.Components.ForegroundColorSpanThemable;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.FilteredSearchView;
 
@@ -55,8 +57,6 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
-
-import com.google.android.exoplayer2.util.Log;
 
 public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
 
@@ -179,7 +179,6 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
             @Override
             public void onDataSetChanged(int searchId) {
                 waitingResponseCount--;
-                Log.d("kek", "data set change " + waitingResponseCount);
                 lastGlobalSearchId = searchId;
                 if (lastLocalSearchId != searchId) {
                     searchResult.clear();
@@ -340,7 +339,7 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
                             }
                         }
                         notifyDataSetChanged();
-                        if (delegate != null && req.offset_id == 0) {
+                        if (delegate != null) {
                             delegate.searchStateChanged(waitingResponseCount > 0, true);
                             delegate.runResultsEnterAnimation();
                         }
@@ -567,7 +566,6 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
     private void updateSearchResults(final ArrayList<TLObject> result, final ArrayList<CharSequence> names, final ArrayList<TLRPC.User> encUsers, final int searchId) {
         AndroidUtilities.runOnUIThread(() -> {
             waitingResponseCount--;
-            Log.d("kek", "update local search " + waitingResponseCount);
             if (searchId != lastSearchId) {
                 return;
             }
@@ -862,7 +860,10 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
                 view = new DialogCell(mContext, false, true);
                 break;
             case 3:
-                view = new LoadingCell(mContext);
+                FlickerLoadingView flickerLoadingView = new FlickerLoadingView(mContext);
+                flickerLoadingView.setViewType(FlickerLoadingView.DIALOG_TYPE);
+                flickerLoadingView.setIsSingleCell(true);
+                view = flickerLoadingView;
                 break;
             case 4:
                 view = new HashtagSearchCell(mContext);
@@ -872,7 +873,7 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
                     @Override
                     public boolean onInterceptTouchEvent(MotionEvent e) {
                         if (getParent() != null && getParent().getParent() != null) {
-                            getParent().getParent().requestDisallowInterceptTouchEvent(canScrollHorizontally(-1));
+                            getParent().getParent().requestDisallowInterceptTouchEvent(canScrollHorizontally(-1) || canScrollHorizontally(1));
                         }
                         return super.onInterceptTouchEvent(e);
                     }
@@ -981,7 +982,7 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
                             }
                             if (nameSearch != null && (index = AndroidUtilities.indexOfIgnoreCase(nameSearch, foundUserName)) != -1) {
                                 SpannableStringBuilder spannableStringBuilder = new SpannableStringBuilder(nameSearch);
-                                spannableStringBuilder.setSpan(new ForegroundColorSpan(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText4)), index, index + foundUserName.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                                spannableStringBuilder.setSpan(new ForegroundColorSpanThemable(Theme.key_windowBackgroundWhiteBlueText4), index, index + foundUserName.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                                 name = spannableStringBuilder;
                             } else if (un != null) {
                                 if (foundUserName.startsWith("@")) {
@@ -998,7 +999,7 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
                                         } else {
                                             index++;
                                         }
-                                        spannableStringBuilder.setSpan(new ForegroundColorSpan(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText4)), index, index + len, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                                        spannableStringBuilder.setSpan(new ForegroundColorSpanThemable(Theme.key_windowBackgroundWhiteBlueText4), index, index + len, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                                     }
                                     username = spannableStringBuilder;
                                 } catch (Exception e) {

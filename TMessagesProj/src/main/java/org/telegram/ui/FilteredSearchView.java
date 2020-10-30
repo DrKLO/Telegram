@@ -70,6 +70,7 @@ import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.ColoredImageSpan;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.EmbedBottomSheet;
+import org.telegram.ui.Components.FlickerLoadingView;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.SearchViewPager;
@@ -257,7 +258,7 @@ public class FilteredSearchView extends FrameLayout implements NotificationCente
     private Delegate delegate;
     private SearchViewPager.ChatPreviewDelegate chatPreviewDelegate;
     public final LinearLayoutManager layoutManager;
-    private final LoadingView loadingView;
+    private final FlickerLoadingView loadingView;
     private boolean firstLoading = true;
     int animationIndex = -1;
     public int keyboardHeight;
@@ -324,27 +325,7 @@ public class FilteredSearchView extends FrameLayout implements NotificationCente
 
         layoutManager = new LinearLayoutManager(context);
         recyclerListView.setLayoutManager(layoutManager);
-        addView(loadingView = new LoadingView(context) {
-            @Override
-            public int getType() {
-                if (currentSearchFilter == null) {
-                    return 1;
-                } else if (currentSearchFilter.filterType == FiltersView.FILTER_TYPE_MEDIA) {
-                    if (!TextUtils.isEmpty(currentSearchString)) {
-                        return 1;
-                    } else {
-                        return 2;
-                    }
-                } else if (currentSearchFilter.filterType == FiltersView.FILTER_TYPE_FILES) {
-                    return 3;
-                } else if (currentSearchFilter.filterType == FiltersView.FILTER_TYPE_MUSIC || currentSearchFilter.filterType == FiltersView.FILTER_TYPE_VOICE) {
-                    return 4;
-                } else if (currentSearchFilter.filterType == FiltersView.FILTER_TYPE_LINKS) {
-                    return 5;
-                }
-                return 1;
-            }
-
+        addView(loadingView = new FlickerLoadingView(context) {
             @Override
             public int getColumnsCount() {
                 return columnsCount;
@@ -725,7 +706,21 @@ public class FilteredSearchView extends FrameLayout implements NotificationCente
                         }
                     }
                     firstLoading = false;
-                    if (loadingView.getVisibility() == View.VISIBLE && recyclerListView.getChildCount() == 0) {
+                    View progressView = null;
+                    int progressViewPosition = -1;
+                    for (int i = 0; i < n; i++) {
+                        View child = recyclerListView.getChildAt(i);
+                        if (child instanceof FlickerLoadingView) {
+                            progressView = child;
+                            progressViewPosition = recyclerListView.getChildAdapterPosition(child);
+                        }
+                    }
+                    final View finalProgressView = progressView;
+                    if (progressView != null) {
+                        recyclerListView.removeView(progressView);
+                    }
+                    if (loadingView.getVisibility() == View.VISIBLE && recyclerListView.getChildCount() == 0 || progressView != null) {
+                        int finalProgressViewPosition = progressViewPosition;
                         getViewTreeObserver().addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
                             @Override
                             public boolean onPreDraw() {
@@ -734,6 +729,11 @@ public class FilteredSearchView extends FrameLayout implements NotificationCente
                                 AnimatorSet animatorSet = new AnimatorSet();
                                 for (int i = 0; i < n; i++) {
                                     View child = recyclerListView.getChildAt(i);
+                                    if (finalProgressView != null) {
+                                        if (recyclerListView.getChildAdapterPosition(child) < finalProgressViewPosition) {
+                                            continue;
+                                        }
+                                    }
                                     child.setAlpha(0);
                                     int s = Math.min(recyclerListView.getMeasuredHeight(), Math.max(0, child.getTop()));
                                     int delay = (int) ((s / (float) recyclerListView.getMeasuredHeight()) * 100);
@@ -751,6 +751,24 @@ public class FilteredSearchView extends FrameLayout implements NotificationCente
                                 });
                                 animationIndex = NotificationCenter.getInstance(currentAccount).setAnimationInProgress(animationIndex, null);
                                 animatorSet.start();
+
+                                if (finalProgressView != null && finalProgressView.getParent() == null) {
+                                    recyclerListView.addView(finalProgressView);
+                                    RecyclerView.LayoutManager layoutManager = recyclerListView.getLayoutManager();
+                                    if (layoutManager != null) {
+                                        layoutManager.ignoreView(finalProgressView);
+                                        Animator animator = ObjectAnimator.ofFloat(finalProgressView, ALPHA, finalProgressView.getAlpha(), 0);
+                                        animator.addListener(new AnimatorListenerAdapter() {
+                                            @Override
+                                            public void onAnimationEnd(Animator animation) {
+                                                finalProgressView.setAlpha(1f);
+                                                layoutManager.stopIgnoringView(finalProgressView);
+                                                recyclerListView.removeView(finalProgressView);
+                                            }
+                                        });
+                                        animator.start();
+                                    }
+                                }
                                 return true;
                             }
                         });
@@ -759,6 +777,22 @@ public class FilteredSearchView extends FrameLayout implements NotificationCente
                 });
             });
         }, (filterAndQueryIsSame && !messages.isEmpty()) ? 0 : 350);
+
+        if (currentSearchFilter == null) {
+            loadingView.setViewType(FlickerLoadingView.DIALOG_TYPE);
+        } else if (currentSearchFilter.filterType == FiltersView.FILTER_TYPE_MEDIA) {
+            if (!TextUtils.isEmpty(currentSearchString)) {
+                loadingView.setViewType(FlickerLoadingView.DIALOG_TYPE);
+            } else {
+                loadingView.setViewType(FlickerLoadingView.PHOTOS_TYPE);
+            }
+        } else if (currentSearchFilter.filterType == FiltersView.FILTER_TYPE_FILES) {
+            loadingView.setViewType(FlickerLoadingView.FILES_TYPE);
+        } else if (currentSearchFilter.filterType == FiltersView.FILTER_TYPE_MUSIC || currentSearchFilter.filterType == FiltersView.FILTER_TYPE_VOICE) {
+            loadingView.setViewType(FlickerLoadingView.AUDIO_TYPE);
+        } else if (currentSearchFilter.filterType == FiltersView.FILTER_TYPE_LINKS) {
+            loadingView.setViewType(FlickerLoadingView.LINKS_TYPE);
+        }
     }
 
     public void update() {
@@ -1098,7 +1132,10 @@ public class FilteredSearchView extends FrameLayout implements NotificationCente
                     break;
                 case 2:
                 default:
-                    view = new LoadingCell(mContext, AndroidUtilities.dp(32), AndroidUtilities.dp(54));
+                    FlickerLoadingView flickerLoadingView = new FlickerLoadingView(mContext);
+                    flickerLoadingView.setViewType(FlickerLoadingView.LINKS_TYPE);
+                    flickerLoadingView.setIsSingleCell(true);
+                    view = flickerLoadingView;
                     break;
             }
             view.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
@@ -1234,7 +1271,14 @@ public class FilteredSearchView extends FrameLayout implements NotificationCente
                     view = new SharedDocumentCell(mContext, SharedDocumentCell.VIEW_TYPE_GLOBAL_SEARCH);
                     break;
                 case 2:
-                    view = new LoadingCell(mContext, AndroidUtilities.dp(32), AndroidUtilities.dp(54));
+                    FlickerLoadingView flickerLoadingView = new FlickerLoadingView(mContext);
+                    if (currentType == 2 || currentType == 4) {
+                        flickerLoadingView.setViewType(FlickerLoadingView.AUDIO_TYPE);
+                    } else {
+                        flickerLoadingView.setViewType(FlickerLoadingView.FILES_TYPE);
+                    }
+                    flickerLoadingView.setIsSingleCell(true);
+                    view = flickerLoadingView;
                     break;
                 case 3:
                 default:
@@ -1439,6 +1483,12 @@ public class FilteredSearchView extends FrameLayout implements NotificationCente
                 case 0:
                     view = new DialogCell(parent.getContext(), true, false);
                     break;
+                case 3:
+                    FlickerLoadingView flickerLoadingView = new FlickerLoadingView(parent.getContext());
+                    flickerLoadingView.setIsSingleCell(true);
+                    flickerLoadingView.setViewType(FlickerLoadingView.DIALOG_TYPE);
+                    view = flickerLoadingView;
+                    break;
                 default:
                 case 2:
                     GraySectionCell cell = new GraySectionCell(parent.getContext());
@@ -1477,6 +1527,9 @@ public class FilteredSearchView extends FrameLayout implements NotificationCente
 
         @Override
         public int getItemViewType(int position) {
+            if (position >= messages.size()) {
+                return 3;
+            }
             return 0;
         }
 
@@ -1485,7 +1538,7 @@ public class FilteredSearchView extends FrameLayout implements NotificationCente
             if (messages.isEmpty()) {
                 return 0;
             }
-            return messages.size();
+            return messages.size() + (endReached ? 0 : 1);
         }
     }
 
@@ -1548,169 +1601,6 @@ public class FilteredSearchView extends FrameLayout implements NotificationCente
         void showActionMode();
 
         int getFolderId();
-    }
-
-    public static class LoadingView extends View {
-
-        int gradientWidth;
-        LinearGradient gradient;
-        Paint paint = new Paint();
-        private long lastUpdateTime;
-        private int totalTranslation;
-        private Matrix matrix;
-        RectF rectF = new RectF();
-        int color0;
-        int color1;
-
-        public int getType() {
-            return 1;
-        }
-
-        public int getColumnsCount() {
-            return 2;
-        }
-
-        public LoadingView(Context context) {
-            super(context);
-            matrix = new Matrix();
-        }
-
-        @Override
-        protected void onDraw(Canvas canvas) {
-            int color0 = Theme.getColor(Theme.key_dialogBackground);
-            int color1 = Theme.getColor(Theme.key_windowBackgroundGray);
-            if (this.color1 != color1 || this.color0 != color0) {
-                this.color0 = color0;
-                this.color1 = color1;
-                gradient = new LinearGradient(0, 0, 0, gradientWidth = AndroidUtilities.dp(600), new int[]{color1, color0, color0, color1}, new float[]{0.0f, 0.4f, 0.6f, 1f}, Shader.TileMode.CLAMP);
-                paint.setShader(gradient);
-            }
-            if (getType() == 1) {
-                int h = 0;
-                while (h < getMeasuredHeight()) {
-                    int r = AndroidUtilities.dp(25);
-                    canvas.drawCircle(checkRtl(AndroidUtilities.dp(9) + r), h + (AndroidUtilities.dp(78) >> 1), r, paint);
-
-                    rectF.set(AndroidUtilities.dp(68), h + AndroidUtilities.dp(20), AndroidUtilities.dp(140), h + AndroidUtilities.dp(28));
-                    checkRtl(rectF);
-                    canvas.drawRoundRect(rectF, AndroidUtilities.dp(4), AndroidUtilities.dp(4), paint);
-
-                    rectF.set(AndroidUtilities.dp(68), h + AndroidUtilities.dp(42), AndroidUtilities.dp(260), h + AndroidUtilities.dp(50));
-                    checkRtl(rectF);
-                    canvas.drawRoundRect(rectF, AndroidUtilities.dp(4), AndroidUtilities.dp(4), paint);
-
-                    rectF.set(getMeasuredWidth() - AndroidUtilities.dp(50), h + AndroidUtilities.dp(20), getMeasuredWidth() - AndroidUtilities.dp(12), h + AndroidUtilities.dp(28));
-                    checkRtl(rectF);
-                    canvas.drawRoundRect(rectF, AndroidUtilities.dp(4), AndroidUtilities.dp(4), paint);
-
-                    h += AndroidUtilities.dp(78) + 1;
-                }
-            } else if (getType() == 2) {
-                int photoWidth = (getMeasuredWidth() - (AndroidUtilities.dp(2) * (getColumnsCount() - 1))) / getColumnsCount();
-                int h = 0;
-                while (h < getMeasuredHeight()) {
-                    for (int i = 0; i < getColumnsCount(); i++) {
-                        int x = i * (photoWidth + AndroidUtilities.dp(2));
-                        canvas.drawRect(x, h, x + photoWidth, h + photoWidth, paint);
-                    }
-                    h += photoWidth + AndroidUtilities.dp(2);
-                }
-            } else if (getType() == 3) {
-                int h = 0;
-                while (h < getMeasuredHeight()) {
-                    rectF.set(AndroidUtilities.dp(12), h + AndroidUtilities.dp(8), AndroidUtilities.dp(52), h + AndroidUtilities.dp(48));
-                    checkRtl(rectF);
-                    canvas.drawRoundRect(rectF, AndroidUtilities.dp(4), AndroidUtilities.dp(4), paint);
-
-                    rectF.set(AndroidUtilities.dp(68), h + AndroidUtilities.dp(12), AndroidUtilities.dp(140), h + AndroidUtilities.dp(20));
-                    checkRtl(rectF);
-                    canvas.drawRoundRect(rectF, AndroidUtilities.dp(4), AndroidUtilities.dp(4), paint);
-
-                    rectF.set(AndroidUtilities.dp(68), h + AndroidUtilities.dp(34), AndroidUtilities.dp(260), h + AndroidUtilities.dp(42));
-                    checkRtl(rectF);
-                    canvas.drawRoundRect(rectF, AndroidUtilities.dp(4), AndroidUtilities.dp(4), paint);
-
-                    rectF.set(getMeasuredWidth() - AndroidUtilities.dp(50), h + AndroidUtilities.dp(12), getMeasuredWidth() - AndroidUtilities.dp(12), h + AndroidUtilities.dp(20));
-                    checkRtl(rectF);
-                    canvas.drawRoundRect(rectF, AndroidUtilities.dp(4), AndroidUtilities.dp(4), paint);
-
-                    h += AndroidUtilities.dp(56) + 1;
-                }
-            } else if (getType() == 4) {
-                int h = 0;
-                while (h < getMeasuredHeight()) {
-                    int radius = AndroidUtilities.dp(44) >> 1;
-                    canvas.drawCircle(checkRtl(AndroidUtilities.dp(12) + radius), h + AndroidUtilities.dp(6) + radius, radius, paint);
-
-                    rectF.set(AndroidUtilities.dp(68), h + AndroidUtilities.dp(12), AndroidUtilities.dp(140), h + AndroidUtilities.dp(20));
-                    checkRtl(rectF);
-                    canvas.drawRoundRect(rectF, AndroidUtilities.dp(4), AndroidUtilities.dp(4), paint);
-
-                    rectF.set(AndroidUtilities.dp(68), h + AndroidUtilities.dp(34), AndroidUtilities.dp(260), h + AndroidUtilities.dp(42));
-                    checkRtl(rectF);
-                    canvas.drawRoundRect(rectF, AndroidUtilities.dp(4), AndroidUtilities.dp(4), paint);
-
-                    rectF.set(getMeasuredWidth() - AndroidUtilities.dp(50), h + AndroidUtilities.dp(12), getMeasuredWidth() - AndroidUtilities.dp(12), h + AndroidUtilities.dp(20));
-                    checkRtl(rectF);
-                    canvas.drawRoundRect(rectF, AndroidUtilities.dp(4), AndroidUtilities.dp(4), paint);
-
-                    h += AndroidUtilities.dp(56) + 1;
-                }
-            } else if (getType() == 5) {
-                int h = 0;
-                while (h < getMeasuredHeight()) {
-                    rectF.set(AndroidUtilities.dp(10), h + AndroidUtilities.dp(11), AndroidUtilities.dp(62), h + AndroidUtilities.dp(11 + 52));
-                    checkRtl(rectF);
-                    canvas.drawRoundRect(rectF, AndroidUtilities.dp(4), AndroidUtilities.dp(4), paint);
-
-                    rectF.set(AndroidUtilities.dp(68), h + AndroidUtilities.dp(12), AndroidUtilities.dp(140), h + AndroidUtilities.dp(20));
-                    checkRtl(rectF);
-                    canvas.drawRoundRect(rectF, AndroidUtilities.dp(4), AndroidUtilities.dp(4), paint);
-
-                    rectF.set(AndroidUtilities.dp(68), h + AndroidUtilities.dp(34), AndroidUtilities.dp(268), h + AndroidUtilities.dp(42));
-                    checkRtl(rectF);
-                    canvas.drawRoundRect(rectF, AndroidUtilities.dp(4), AndroidUtilities.dp(4), paint);
-
-                    rectF.set(AndroidUtilities.dp(68), h + AndroidUtilities.dp(34 + 20), AndroidUtilities.dp(120 + 68), h + AndroidUtilities.dp(42 + 20));
-                    checkRtl(rectF);
-                    canvas.drawRoundRect(rectF, AndroidUtilities.dp(4), AndroidUtilities.dp(4), paint);
-
-                    rectF.set(getMeasuredWidth() - AndroidUtilities.dp(50), h + AndroidUtilities.dp(12), getMeasuredWidth() - AndroidUtilities.dp(12), h + AndroidUtilities.dp(20));
-                    checkRtl(rectF);
-                    canvas.drawRoundRect(rectF, AndroidUtilities.dp(4), AndroidUtilities.dp(4), paint);
-
-                    h += AndroidUtilities.dp(80);
-                }
-            }
-
-            long newUpdateTime = SystemClock.elapsedRealtime();
-            long dt = Math.abs(lastUpdateTime - newUpdateTime);
-            if (dt > 17) {
-                dt = 16;
-            }
-            lastUpdateTime = newUpdateTime;
-            totalTranslation += dt * getMeasuredHeight() / 400.0f;
-            if (totalTranslation >= getMeasuredHeight() * 2) {
-                totalTranslation = -gradientWidth * 2;
-            }
-            matrix.setTranslate(0, totalTranslation);
-            gradient.setLocalMatrix(matrix);
-            invalidate();
-        }
-
-        private float checkRtl(float x) {
-            if (LocaleController.isRTL) {
-                return getMeasuredWidth() - x;
-            }
-            return x;
-        }
-
-        private void checkRtl(RectF rectF) {
-            if (LocaleController.isRTL) {
-                rectF.left = getMeasuredWidth() - rectF.left;
-                rectF.right = getMeasuredWidth() - rectF.right;
-            }
-        }
     }
 
     private void showFloatingDateView() {

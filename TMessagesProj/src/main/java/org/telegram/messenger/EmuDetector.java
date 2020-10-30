@@ -8,6 +8,8 @@ import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.os.Build;
 import androidx.core.content.ContextCompat;
+
+import android.os.Environment;
 import android.telephony.TelephonyManager;
 import android.text.TextUtils;
 
@@ -32,6 +34,10 @@ public class EmuDetector {
 
     public interface OnEmulatorDetectorListener {
         void onResult(boolean isEmulator);
+    }
+
+    private enum EmulatorTypes {
+        GENY, ANDY, NOX, BLUE, PIPES, X86
     }
 
     private static final String[] PHONE_NUMBERS = {
@@ -81,7 +87,14 @@ public class EmuDetector {
     private static final String[] NOX_FILES = {
             "fstab.nox",
             "init.nox.rc",
-            "ueventd.nox.rc"
+            "ueventd.nox.rc",
+            "/BigNoxGameHD",
+            "/YSLauncher"
+    };
+
+    private static final String[] BLUE_FILES = {
+            "/Android/data/com.bluestacks.home",
+            "/Android/data/com.bluestacks.settings"
     };
 
     private static final Property[] PROPERTIES = {
@@ -132,6 +145,7 @@ public class EmuDetector {
         mListPackageName.add("com.google.android.launcher.layouts.genymotion");
         mListPackageName.add("com.bluestacks");
         mListPackageName.add("com.bignox.app");
+        mListPackageName.add("com.vphone.launcher");
     }
 
     public boolean isCheckTelephony() {
@@ -185,23 +199,25 @@ public class EmuDetector {
     }
 
     private boolean checkBasic() {
-        boolean result = Build.FINGERPRINT.startsWith("generic")
-                || Build.MODEL.contains("google_sdk")
-                || Build.MODEL.toLowerCase().contains("droid4x")
-                || Build.MODEL.contains("Emulator")
-                || Build.MODEL.contains("Android SDK built for x86")
-                || Build.MANUFACTURER.contains("Genymotion")
-                || Build.HARDWARE.equals("goldfish")
-                || Build.HARDWARE.equals("vbox86")
-                || Build.PRODUCT.equals("sdk")
-                || Build.PRODUCT.equals("google_sdk")
-                || Build.PRODUCT.equals("sdk_x86")
-                || Build.PRODUCT.equals("vbox86p")
-                || Build.BOARD.toLowerCase().contains("nox")
-                || Build.BOOTLOADER.toLowerCase().contains("nox")
-                || Build.HARDWARE.toLowerCase().contains("nox")
-                || Build.PRODUCT.toLowerCase().contains("nox")
-                || Build.SERIAL.toLowerCase().contains("nox");
+        boolean result =
+                Build.BOARD.toLowerCase().contains("nox")
+                        || Build.BOOTLOADER.toLowerCase().contains("nox")
+                        || Build.FINGERPRINT.startsWith("generic")
+                        || Build.MODEL.toLowerCase().contains("google_sdk")
+                        || Build.MODEL.toLowerCase().contains("droid4x")
+                        || Build.MODEL.toLowerCase().contains("emulator")
+                        || Build.MODEL.contains("Android SDK built for x86")
+                        || Build.MANUFACTURER.toLowerCase().contains("genymotion")
+                        || Build.HARDWARE.toLowerCase().contains("goldfish")
+                        || Build.HARDWARE.toLowerCase().contains("vbox86")
+                        || Build.HARDWARE.toLowerCase().contains("android_x86")
+                        || Build.HARDWARE.toLowerCase().contains("nox")
+                        || Build.PRODUCT.equals("sdk")
+                        || Build.PRODUCT.equals("google_sdk")
+                        || Build.PRODUCT.equals("sdk_x86")
+                        || Build.PRODUCT.equals("vbox86p")
+                        || Build.PRODUCT.toLowerCase().contains("nox")
+                        || Build.SERIAL.toLowerCase().contains("nox");
 
         if (result) {
             return true;
@@ -216,13 +232,14 @@ public class EmuDetector {
 
     private boolean checkAdvanced() {
         return checkTelephony()
-                || checkFiles(GENY_FILES, "Geny")
-                || checkFiles(ANDY_FILES, "Andy")
-                || checkFiles(NOX_FILES, "Nox")
+                || checkFiles(GENY_FILES, EmulatorTypes.GENY)
+                || checkFiles(ANDY_FILES, EmulatorTypes.ANDY)
+                || checkFiles(NOX_FILES, EmulatorTypes.NOX)
+                || checkFiles(BLUE_FILES, EmulatorTypes.BLUE)
                 || checkQEmuDrivers()
-                || checkFiles(PIPES, "Pipes")
+                || checkFiles(PIPES, EmulatorTypes.PIPES)
                 || checkIp()
-                || (checkQEmuProps() && checkFiles(X86_FILES, "X86"));
+                || (checkQEmuProps() && checkFiles(X86_FILES, EmulatorTypes.X86));
     }
 
     private boolean checkPackageName() {
@@ -313,9 +330,18 @@ public class EmuDetector {
         return false;
     }
 
-    private boolean checkFiles(String[] targets, String type) {
+    private boolean checkFiles(String[] targets, EmulatorTypes type) {
         for (String pipe : targets) {
-            File qemu_file = new File(pipe);
+            File qemu_file;
+            if (ContextCompat.checkSelfPermission(mContext, Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
+                if ((pipe.contains("/") && type == EmulatorTypes.NOX) || type == EmulatorTypes.BLUE) {
+                    qemu_file = new File(Environment.getExternalStorageDirectory() + pipe);
+                } else {
+                    qemu_file = new File(pipe);
+                }
+            } else {
+                qemu_file = new File(pipe);
+            }
             if (qemu_file.exists()) {
                 return true;
             }
