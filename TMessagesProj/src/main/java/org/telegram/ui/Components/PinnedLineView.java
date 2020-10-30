@@ -221,8 +221,9 @@ public class PinnedLineView extends View {
             this.totalCount = totalCount;
             invalidate();
         } else {
-            if (this.totalCount != totalCount || Math.abs(selectedPosition - position) > 2) {
+            if (this.totalCount != totalCount || (Math.abs(selectedPosition - position) > 2 && !animationInProgress && !replaceInProgress)) {
                 if (animator != null) {
+                    nextPosition = 0;
                     animator.cancel();
                 }
                 int viewPadding = AndroidUtilities.dp(8);
