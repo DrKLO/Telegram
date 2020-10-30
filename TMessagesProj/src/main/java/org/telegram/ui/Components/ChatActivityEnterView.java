@@ -227,6 +227,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
     private AdjustPanLayoutHelper adjustPanLayoutHelper;
     private Runnable showTopViewRunnable;
     private Runnable setTextFieldRunnable;
+    public boolean preventInput;
 
 
     private class SeekBarWaveformView extends View {
@@ -2054,6 +2055,14 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                     FileLog.e(e);
                 }
                 return false;
+            }
+
+            @Override
+            public boolean dispatchKeyEvent(KeyEvent event) {
+                if (preventInput) {
+                    return false;
+                }
+                return super.dispatchKeyEvent(event);
             }
 
             @Override
@@ -3899,26 +3908,31 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
             }
             exitAnimation.setDuration(200);
 
-            attachButton.setAlpha(0f);
+            AnimatorSet attachIconAnimator;
+            if (attachButton != null) {
+                attachButton.setAlpha(0f);
+                attachButton.setScaleX(0);
+                attachButton.setScaleY(0);
+
+                attachIconAnimator = new AnimatorSet();
+                attachIconAnimator.playTogether(
+                        ObjectAnimator.ofFloat(attachButton, View.ALPHA, 1.0f),
+                        ObjectAnimator.ofFloat(attachButton, View.SCALE_X, 1.0f),
+                        ObjectAnimator.ofFloat(attachButton, View.SCALE_Y, 1.0f)
+                );
+                attachIconAnimator.setDuration(150);
+            } else {
+                attachIconAnimator = null;
+            }
+
             emojiButton[0].setAlpha(0f);
             emojiButton[1].setAlpha(0f);
 
-            attachButton.setScaleX(0);
             emojiButton[0].setScaleX(0);
             emojiButton[1].setScaleX(0);
 
-            attachButton.setScaleY(0);
             emojiButton[0].setScaleY(0);
             emojiButton[1].setScaleY(0);
-
-            AnimatorSet attachIconAnimator = new AnimatorSet();
-            attachIconAnimator.playTogether(
-                    ObjectAnimator.ofFloat(attachButton, View.ALPHA, 1.0f),
-                    ObjectAnimator.ofFloat(attachButton, View.SCALE_X, 1.0f),
-                    ObjectAnimator.ofFloat(attachButton, View.SCALE_Y, 1.0f)
-            );
-
-            attachIconAnimator.setDuration(150);
 
             AnimatorSet iconsEndAnimator = new AnimatorSet();
 
@@ -3940,12 +3954,18 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
             iconsEndAnimator.setStartDelay(600);
 
             recordPannelAnimation = new AnimatorSet();
-            recordPannelAnimation.playTogether(
-                    exitAnimation,
-                    attachIconAnimator,
-                    iconsEndAnimator
-
-            );
+            if (attachIconAnimator != null) {
+                recordPannelAnimation.playTogether(
+                        exitAnimation,
+                        attachIconAnimator,
+                        iconsEndAnimator
+                );
+            } else {
+                recordPannelAnimation.playTogether(
+                        exitAnimation,
+                        iconsEndAnimator
+                );
+            }
 
             recordPannelAnimation.addListener(new AnimatorListenerAdapter() {
                 @Override

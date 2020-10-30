@@ -918,8 +918,10 @@ public class ActionBarMenuItem extends FrameLayout {
                     } else {
                         if (searchFieldCaption.getVisibility() == VISIBLE) {
                             measureChildWithMargins(searchFieldCaption, widthMeasureSpec, MeasureSpec.getSize(widthMeasureSpec) / 2, heightMeasureSpec, 0);
+                            width = searchFieldCaption.getMeasuredWidth() + AndroidUtilities.dp(4);
+                        } else {
+                            width = 0;
                         }
-                        width = 0;
                         int minWidth = MeasureSpec.getSize(widthMeasureSpec);
                         ignoreRequestLayout = true;
                         measureChildWithMargins(searchFilterLayout, widthMeasureSpec, width, heightMeasureSpec, 0);

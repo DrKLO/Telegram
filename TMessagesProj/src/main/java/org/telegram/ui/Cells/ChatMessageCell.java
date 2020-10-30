@@ -3600,7 +3600,12 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                             }
                             photoImage.setAllowStartAnimation(messageObject.gifState != 1);
                             currentPhotoObject = FileLoader.getClosestPhotoSizeWithSize(document.thumbs, 90);
-                            photoParentObject = document;
+                            if (currentPhotoObject != null) {
+                                photoParentObject = document;
+                            } else if (photo != null) {
+                                currentPhotoObject = FileLoader.getClosestPhotoSizeWithSize(photo.sizes, 90);
+                                photoParentObject = photo;
+                            }
                             if (currentPhotoObject != null && (currentPhotoObject.w == 0 || currentPhotoObject.h == 0)) {
                                 for (int a = 0; a < document.attributes.size(); a++) {
                                     TLRPC.DocumentAttribute attribute = document.attributes.get(a);
@@ -4777,13 +4782,18 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                     if (messageObject.isDice()) {
                         filter = String.format(Locale.US, "%d_%d_dice_%s_%s", w, h, messageObject.getDiceEmoji(), messageObject.toString());
                         photoImage.setAutoRepeat(2);
-                        TLRPC.TL_messages_stickerSet stickerSet = MediaDataController.getInstance(currentAccount).getStickerSetByEmojiOrName(currentMessageObject.getDiceEmoji());
+                        String emoji = currentMessageObject.getDiceEmoji();
+                        TLRPC.TL_messages_stickerSet stickerSet = MediaDataController.getInstance(currentAccount).getStickerSetByEmojiOrName(emoji);
                         if (stickerSet != null) {
                             if (stickerSet.documents.size() > 0) {
                                 int value = currentMessageObject.getDiceValue();
                                 if (value <= 0) {
                                     TLRPC.Document document = stickerSet.documents.get(0);
-                                    currentPhotoObjectThumb = FileLoader.getClosestPhotoSizeWithSize(document.thumbs, 40);
+                                    if ("\uD83C\uDFB0".equals(emoji)) {
+                                        currentPhotoObjectThumb = null;
+                                    } else {
+                                        currentPhotoObjectThumb = FileLoader.getClosestPhotoSizeWithSize(document.thumbs, 40);
+                                    }
                                     photoParentObject = document;
                                 }
                             }

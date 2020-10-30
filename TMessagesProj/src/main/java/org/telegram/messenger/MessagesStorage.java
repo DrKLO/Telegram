@@ -892,13 +892,13 @@ public class MessagesStorage extends BaseController {
                     version = 68;
                 }
                 if (version == 68) {
-                    database.executeFast("ALTER TABLE messages ADD COLUMN forwards INTEGER default 0").stepThis().dispose();
+                    executeNoException("ALTER TABLE messages ADD COLUMN forwards INTEGER default 0");
                     database.executeFast("PRAGMA user_version = 69").stepThis().dispose();
                     version = 69;
                 }
                 if (version == 69) {
-                    database.executeFast("ALTER TABLE messages ADD COLUMN replies_data BLOB default NULL").stepThis().dispose();
-                    database.executeFast("ALTER TABLE messages ADD COLUMN thread_reply_id INTEGER default 0").stepThis().dispose();
+                    executeNoException("ALTER TABLE messages ADD COLUMN replies_data BLOB default NULL");
+                    executeNoException("ALTER TABLE messages ADD COLUMN thread_reply_id INTEGER default 0");
                     database.executeFast("CREATE INDEX IF NOT EXISTS uid_thread_reply_id_mid_idx_messages ON messages(uid, thread_reply_id, mid) WHERE thread_reply_id != 0;").stepThis().dispose();
                     database.executeFast("PRAGMA user_version = 70").stepThis().dispose();
                     version = 70;
@@ -909,7 +909,7 @@ public class MessagesStorage extends BaseController {
                     version = 71;
                 }
                 if (version == 71) {
-                    database.executeFast("ALTER TABLE sharing_locations ADD COLUMN proximity INTEGER default 0").stepThis().dispose();
+                    executeNoException("ALTER TABLE sharing_locations ADD COLUMN proximity INTEGER default 0");
                     database.executeFast("PRAGMA user_version = 72").stepThis().dispose();
                     version = 72;
                 }
@@ -925,6 +925,14 @@ public class MessagesStorage extends BaseController {
                 FileLog.e(e);
             }
         });
+    }
+
+    private void executeNoException(String query) {
+        try {
+            database.executeFast(query).stepThis().dispose();
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
     }
 
     private void cleanupInternal(boolean deleteFiles) {

@@ -121,7 +121,7 @@ public class LocationActivityAdapter extends BaseLocationAdapter implements Loca
         currentLiveLocations = new ArrayList<>(liveLocations);
         int uid = UserConfig.getInstance(currentAccount).getClientUserId();
         for (int a = 0; a < currentLiveLocations.size(); a++) {
-            if (currentLiveLocations.get(a).id == uid) {
+            if (currentLiveLocations.get(a).id == uid || currentLiveLocations.get(a).object.out) {
                 currentLiveLocations.remove(a);
                 break;
             }

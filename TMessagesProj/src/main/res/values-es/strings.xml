@@ -228,6 +228,7 @@
     <string name="GoToSettings">IR A AJUSTES</string>
     <string name="OpenProfile">Abrir perfil</string>
     <string name="OpenChannel2">Abrir canal</string>
+    <string name="OpenGroup2">Abrir grupo</string>
     <string name="SendMessage">Enviar mensaje</string>
     <string name="Mention">Mencionar</string>
     <string name="NotificationsMutedHint">Notificaciones silenciadas</string>
@@ -242,12 +243,14 @@
     <string name="SearchEmptyViewTitle">Sin resultados</string>
     <string name="SearchEmptyViewTitle2">Sin resultados</string>
     <string name="SearchEmptyViewFilteredSubtitle2">Intenta una nueva búsqueda.</string>
-    <string name="SearchEmptyViewFilteredSubtitleMusic">Música</string>
-    <string name="SearchEmptyViewFilteredSubtitleFiles">Archivos</string>
-    <string name="SearchEmptyViewFilteredSubtitleLinks">Enlaces</string>
-    <string name="SearchEmptyViewFilteredSubtitleVoice">Voz</string>
-    <string name="SearchEmptyViewFilteredSubtitleMedia">Media</string>
+    <string name="SearchEmptyViewFilteredSubtitleMusic">La música de todos tus chats aparecerá aquí.</string>
+    <string name="SearchEmptyViewFilteredSubtitleFiles">Los archivos de todos tus chats aparecerán aquí.</string>
+    <string name="SearchEmptyViewFilteredSubtitleLinks">Los enlaces de todos tus chats aparecerán aquí.</string>
+    <string name="SearchEmptyViewFilteredSubtitleVoice">Los mensajes de voz de todos tus chats aparecerán aquí.</string>
+    <string name="SearchEmptyViewFilteredSubtitleMedia">La multimedia de todos tus chats aparecerá aquí.</string>
     <string name="SearchAllChatsShort">Chats</string>
+    <string name="MessagePinnedHint">Mensaje fijado</string>
+    <string name="MessageUnpinnedHint">Mensaje desfijado</string>
     <!--channels-->
     <string name="SetAsAdmin">Promover a administrador</string>
     <string name="EditAdminRights">Permisos de administrador</string>
@@ -560,9 +563,10 @@
     <string name="SlowmodeHours">%1$dh</string>
     <string name="SlowmodeInfoOff">Elige el tiempo que cada miembro debe esperar antes de enviar su siguiente mensaje.</string>
     <string name="SlowmodeInfoSelected">Los miembros podrán enviar sólo un mensaje cada %1$s.</string>
-    <string name="SlowmodeSendError">El modo lento está activado. No puedes enviar más de un mensaje a la vez.</string>
-    <string name="SlowmodeSelectSendError">El modo lento está activado. No puedes seleccionar más ítems.</string>
-    <string name="SlowmodeSendErrorTooLong">Lo sentimos, este texto es muy largo para ser enviado en un mensaje.\n\nEl modo lento está activado. No puedes enviar más de un mensaje a la vez.</string>
+    <string name="SlowmodeSendError">El modo lento está activo. No puedes enviar más de un mensaje a la vez.</string>
+    <string name="SlowmodeSelectSendError">El modo lento está activo. No puedes seleccionar más ítems.</string>
+    <string name="SlowmodeSendErrorTooLong">Lo sentimos, este texto es muy largo para ser enviado en un mensaje.\n\nEl modo lento está activo. No puedes enviar más de un mensaje a la vez.</string>
+    <string name="UserSetAsAdminHint">**%1$s** promovido a administrador</string>
     <!--polls-->
     <string name="NewPoll">Nueva encuesta</string>
     <string name="NewQuiz">Nuevo cuestionario</string>
@@ -895,10 +899,12 @@
     <string name="TapHereGifs">Toca y ve los GIF guardados</string>
     <string name="PinMessage">Fijar</string>
     <string name="PinNotify">Notificar a todos los miembros</string>
+    <string name="PinAlsoFor">Fijar también para %1$s</string>
     <string name="UnpinMessage">Desfijar</string>
     <string name="PinMessageAlertTitle">Fijar mensaje</string>
     <string name="UnpinMessageAlertTitle">Desfijar mensaje</string>
-    <string name="PinMessageAlert">¿Quieres fijar este mensaje en el grupo?</string>
+    <string name="PinOldMessageAlert">¿Quieres fijar un mensaje más antiguo y a la vez mantener fijado uno más reciente?</string>
+    <string name="PinMessageAlert">¿Quieres fijar este mensaje para todos los miembros del grupo?</string>
     <string name="PinMessageAlertChannel">¿Quieres fijar este mensaje en el canal?</string>
     <string name="PinMessageAlertChat">¿Quieres fijar este mensaje en la parte de arriba del chat?</string>
     <string name="UnpinMessageAlert">¿Quieres desfijar este mensaje?</string>
@@ -923,6 +929,7 @@
     <string name="ReportChatOther">Otros</string>
     <string name="ReportChatDescription">Descripción</string>
     <string name="PinnedMessage">Mensaje fijado</string>
+    <string name="PreviousPinnedMessage">Mensaje anterior</string>
     <string name="PinnedPoll">Encuesta fijada</string>
     <string name="EditedMessage">editado</string>
     <string name="EditMessage">Editar mensaje</string>
@@ -992,11 +999,11 @@
     <string name="ScamMessage">ESTAFA</string>
     <string name="ViaBot">vía</string>
     <string name="MessageNotFound">El mensaje no existe</string>
-    <string name="SlowModeHint">Modo lento activado. Puedes enviar\ntu próximo mensaje en %1$s.</string>
+    <string name="SlowModeHint">Modo lento activo. Puedes enviar\ntu próximo mensaje en %1$s.</string>
     <string name="TapForVideo">Toca para foto, mantén para video</string>
     <string name="TapToViewAsList">Toca para ver como lista.</string>
     <string name="SendWithoutSound">Enviar sin sonido</string>
-    <string name="MessageScheduleSend">Enviar ahora</string>>
+    <string name="MessageScheduleSend">Enviar ahora</string>
     <string name="MessageScheduleEditTime">Reprogramar</string>
     <string name="MessageScheduleToday">Hoy</string>
     <string name="Schedule">Programar</string>
@@ -1042,7 +1049,6 @@
     <string name="SecretChatTimerHours">h</string>
     <string name="SecretChatTimerWeeks">S</string>
     <string name="SharedToPrivateMessagesAndGroups">a chats privados y grupos</string>
-
     <string name="BotOwnershipTransfer">Transferir propiedad del bot</string>
     <string name="BotOwnershipTransferReadyAlertText">Esto transferirá todos los **derechos de propietario** del bot al usuario elegido.</string>
     <string name="BotOwnershipTransferChangeOwner">Cambiar propietario</string>
@@ -1059,7 +1065,11 @@
     <string name="ViewThread">Ver hilo</string>
     <string name="ChooseDate">Elige una fecha</string>
     <string name="RepliesChatInfo">Este chat te ayuda a realizar un seguimiento de las respuestas a tus comentarios en canales.</string>
-    <string name="ChannelPostDeleted">Sorry, this post has been removed from the discussion group.</string>
+    <string name="ChannelPostDeleted">Esta publicación ha sido eliminada del grupo de conversación.</string>
+    <string name="UnpinAllMessages">DESFIJAR TODOS LOS MENSAJES</string>
+    <string name="HidePinnedMessages">OCULTAR MENSAJES FIJADOS</string>
+    <string name="PinnedMessagesHidden">Mensajes fijados ocultos</string>
+    <string name="PinnedMessagesHiddenInfo">Verás los mensajes fijados\notra vez si se fija uno nuevo.</string>
     <!--notification-->
     <string name="MessageLifetimeChanged">%1$s activó la autodestrucción en %2$s</string>
     <string name="MessageLifetimeChangedOutgoing">Activaste la autodestrucción en %1$s</string>
@@ -1175,6 +1185,25 @@
     <string name="NotificationActionPinnedGeoLiveChannel">%1$s fijó una ubicación en tiempo real</string>
     <string name="NotificationActionPinnedGifChannel">%1$s fijó un GIF</string>
     <string name="NotificationActionPinnedMusicChannel">%1$s fijó un audio</string>
+    <string name="NotificationActionPinnedTextUser">%1$s fijó “%2$s”</string>
+    <string name="NotificationActionPinnedNoTextUser">%1$s fijó un mensaje</string>
+    <string name="NotificationActionPinnedPollUser">%1$s fijó una encuesta %2$s</string>
+    <string name="NotificationActionPinnedQuizUser">%1$s fijó un cuestionario %2$s</string>
+    <string name="NotificationActionPinnedPhotoUser">%1$s fijó una foto</string>
+    <string name="NotificationActionPinnedGameUser">%1$s fijó un juego</string>
+    <string name="NotificationActionPinnedGameScoreUser">%1$s fijó una puntuación</string>
+    <string name="NotificationActionPinnedVideoUser">%1$s fijó un video</string>
+    <string name="NotificationActionPinnedFileUser">%1$s fijó un archivo</string>
+    <string name="NotificationActionPinnedInvoiceUser">%1$s fijó una factura</string>
+    <string name="NotificationActionPinnedStickerUser">%1$s fijó un sticker</string>
+    <string name="NotificationActionPinnedStickerEmojiUser">%1$s fijó un %2$s sticker</string>
+    <string name="NotificationActionPinnedVoiceUser">%1$s fijó un mensaje de voz</string>
+    <string name="NotificationActionPinnedRoundUser">%1$s fijó un videomensaje</string>
+    <string name="NotificationActionPinnedContactUser">%1$s fijó un contacto %2$s</string>
+    <string name="NotificationActionPinnedGeoUser">%1$s fijó un mapa</string>
+    <string name="NotificationActionPinnedGeoLiveUser">%1$s fijó una ubicación en tiempo real</string>
+    <string name="NotificationActionPinnedGifUser">%1$s fijó un GIF</string>
+    <string name="NotificationActionPinnedMusicUser">%1$s fijó un audio</string>
     <string name="SecretChatName">Telegram</string>
     <!--contacts view-->
     <string name="SelectContact">Elige un contacto</string>
@@ -1215,6 +1244,9 @@
     <string name="NoContactsYetLine1">Invita a tus amigos a probar Telegram</string>
     <string name="NoContactsYetLine2">Encuentra personas cerca para chatear</string>
     <string name="NoContactsYetLine3">Busca personas por nombre de usuario</string>
+    <string name="NewContactAlertTitle">Nuevo contacto</string>
+    <string name="NewContactAlertMessage">El número de teléfono **%1$s** no está en tu lista de contactos. ¿Quieres añadirlo?</string>
+    <string name="NewContactAlertButton">Añadir contacto</string>
     <!--group create view-->
     <string name="SendMessageTo">Añadir personas...</string>
     <string name="SoftUserLimitAlert">Podrás añadir más miembros después de crear el grupo.</string>
@@ -1662,7 +1694,7 @@
     <string name="LanguageCustomAlert">Estás a punto de aplicar un pack de idioma personalizado (**%1$s**) que está completo en un %2$d%%.\n\nEsto traducirá toda la interfaz. Puedes sugerir correcciones en la [plataforma de traducción].\n\nPuedes cambiar el idioma cuando quieras en Ajustes.</string>
     <string name="LanguageUnknownTitle">Datos insuficientes</string>
     <string name="LanguageUnofficial">Idiomas no oficiales</string>
-    <string name="LanguageUnsupportedError">Ese idioma no está.</string>
+    <string name="LanguageUnsupportedError">Idioma no disponible.</string>
     <string name="LanguageSame">Ya estás usando este pack de idioma (**%1$s**). Puedes cambiar el idioma cuando quieras en Ajustes.</string>
     <string name="LanguageUnknownCustomAlert">Lamentablemente, este pack de idioma personalizado (**%1$s**) no contiene datos para Telegram Android.</string>
     <string name="AskAQuestionInfo">Ten en cuenta que el soporte de Telegram está hecho por voluntarios. Respondemos lo antes posible, pero puede tomar tiempo.\n\nPor favor, mira las <![CDATA[<a href=\"https://telegram.org/faq/es#preguntas-generales\">Preguntas frecuentes de Telegram</a>]]>: tienen respuestas para la mayoría de las preguntas y <![CDATA[<a href=\"https://telegram.org/faq/es#solucion-de-problemas\">soluciones a problemas</a>]]>.</string>
@@ -2310,6 +2342,12 @@
     <string name="KMetersAway2">a %1$s km</string>
     <string name="FootsAway">a %1$s ft</string>
     <string name="MilesAway">a %1$s mi</string>
+    <string name="FootsShort">%1$s ft</string>
+    <string name="MilesShort">%1$s mi</string>
+    <string name="Mi">mi</string>
+    <string name="Km">km</string>
+    <string name="MetersShort">%1$s m</string>
+    <string name="KMetersShort">%1$s km</string>
     <string name="MetersFromYou2">a %1$s m de ti</string>
     <string name="KMetersFromYou2">a %1$s km de ti</string>
     <string name="FootsFromYou">a %1$s ft de ti</string>
@@ -2334,7 +2372,7 @@
     <string name="NearbyVenue">O elige un lugar</string>
     <string name="TapToSendLocation">Toca para enviar esta ubicación</string>
     <string name="LiveLocations">Ubicaciones en tiempo real</string>
-    <string name="LiveLocationContext">Ubicación en tiempo real</string>
+    <string name="LiveLocationContext">En tiempo real</string>
     <string name="SendLiveLocationFor15m">15 minutos</string>
     <string name="SendLiveLocationFor1h">1 hora</string>
     <string name="SendLiveLocationFor8h">8 horas</string>
@@ -2343,6 +2381,8 @@
     <string name="LocationUpdatedJustNow">recién actualizada</string>
     <string name="SharingYouAndOtherName">Tú y %1$s</string>
     <string name="AttachLiveLocationIsSharing">%1$s compartida con %2$s</string>
+    <string name="AttachLiveLocationIsSharingChat">%1$s compartida con %2$s</string>
+    <string name="AttachLiveLocationIsSharingChats">%1$s compartida con %2$s</string>
     <string name="StopAllLocationSharings">DETENER TODO</string>
     <string name="SharingLiveLocationTitle">Compartiendo tu ubicación en tiempo real con %1$s</string>
     <string name="LiveLocationAlertPrivate">Elige durante cuánto tiempo %1$s verá tu ubicación exacta.</string>
@@ -2371,6 +2411,19 @@
     <string name="ChatSetThisLocation">Establecer esta ubicación</string>
     <string name="ChatSetLocationInfo">Las personas podrán encontrar tu grupo en la sección “Personas cerca”.</string>
     <string name="PlacesInThisArea">Lugares en esta zona</string>
+    <string name="LocationNotifiation">Aviso de proximidad</string>
+    <string name="LocationNotifiationButtonUser">Notificar cuando %1$s esté a %2$s</string>
+    <string name="LocationNotifiationButtonGroup">Notificar cuando alguien esté a %1$s</string>
+    <string name="LocationNotifiationCloser">Ya estás a menos de %1$s</string>
+    <string name="ShareLocationAlertTitle">Compartir ubicación</string>
+    <string name="ShareLocationAlertButton">Compartir</string>
+    <string name="ShareLocationAlertText">Para que funcione el aviso, por favor, comparte tu ubicación en tiempo real en este chat.</string>
+    <string name="ProximityTooltioUser">Avisar cuando %1$s esté cerca</string>
+    <string name="ProximityTooltioGroup">Avisar cuando otros miembros del grupo estén cerca</string>
+    <string name="ProximityAlertSet">Aviso de proximidad activo</string>
+    <string name="ProximityAlertSetInfoUser">Te notificaremos cuando %1$s esté a %2$s de ti.</string>
+    <string name="ProximityAlertSetInfoGroup2">We will notify you once someone is within %1$s from you.</string>
+    <string name="ProximityAlertCancelled">Aviso de proximidad cancelado</string>
     <!--photo gallery view-->
     <string name="ShowAsList">Mostrar como lista</string>
     <string name="ShowAsGrid">Mostrar como cuadrícula</string>
@@ -2478,6 +2531,41 @@
     <string name="MainGroupProfileVideoSetHint">Ahora este es el video principal del grupo.</string>
     <string name="PhotoSavedHint">Foto guardada en Galería</string>
     <string name="VideoSavedHint">Video guardado en Galería</string>
+    <string name="PhotoSavedToDownloadsHint">Foto guardada en descargas</string>
+    <string name="VideoSavedToDownloadsHint">Video guardado en descargas</string>
+    <string name="GifSavedToDownloadsHint">GIF guardado en descargas</string>
+    <string name="AudioSavedHint">Archivo guardado en música</string>
+    <string name="FileSavedHint">Archivo guardado en descargas</string>
+    <string name="FilesSavedHint_zero">%1$d archivos guardados en descargas</string>
+    <string name="FilesSavedHint_one">Archivo guardado en descargas</string>
+    <string name="FilesSavedHint_two">%1$d archivos guardados en descargas</string>
+    <string name="FilesSavedHint_few">%1$d archivos guardados en descargas</string>
+    <string name="FilesSavedHint_many">%1$d archivos guardados en descargas</string>
+    <string name="FilesSavedHint_other">%1$d archivos guardados en descargas</string>
+    <string name="PhotosSavedHint_zero">%1$d fotos guardadas en galería</string>
+    <string name="PhotosSavedHint_one">Foto guardada en galería</string>
+    <string name="PhotosSavedHint_two">%1$d fotos guardadas en galería</string>
+    <string name="PhotosSavedHint_few">%1$d fotos guardadas en galería</string>
+    <string name="PhotosSavedHint_many">%1$d fotos guardadas en galería</string>
+    <string name="PhotosSavedHint_other">%1$d fotos guardadas en galería</string>
+    <string name="VideosSavedHint_zero">%1$d videos guardados en galería</string>
+    <string name="VideosSavedHint_one">Video guardado en galería</string>
+    <string name="VideosSavedHint_two">%1$d videos guardados en galería</string>
+    <string name="VideosSavedHint_few">%1$d videos guardados en galería</string>
+    <string name="VideosSavedHint_many">%1$d videos guardados en galería</string>
+    <string name="VideosSavedHint_other">%1$d videos guardados en galería</string>
+    <string name="AudiosSavedHint_zero">%1$d archivos guardados en música</string>
+    <string name="AudiosSavedHint_one">Archivo guardado en música</string>
+    <string name="AudiosSavedHint_two">%1$d archivos guardados en música</string>
+    <string name="AudiosSavedHint_few">%1$d archivos guardados en música</string>
+    <string name="AudiosSavedHint_many">%1$d archivos guardados en música</string>
+    <string name="AudiosSavedHint_other">%1$d archivos guardados en música</string>
+    <string name="MediaSavedHint_zero">%1$d ítems guardados en galería</string>
+    <string name="MediaSavedHint_one">Ítem guardado en galería</string>
+    <string name="MediaSavedHint_two">%1$d ítems guardados en galería</string>
+    <string name="MediaSavedHint_few">%1$d ítems guardados en galería</string>
+    <string name="MediaSavedHint_many">%1$d ítems guardados en galería</string>
+    <string name="MediaSavedHint_other">%1$d ítems guardados en galería</string>
     <!--password view-->
     <string name="TwoStepVerification">Verificación en dos pasos</string>
     <string name="TwoStepVerificationTitle">Verificación en dos pasos</string>
@@ -2761,6 +2849,9 @@
     <string name="ActionAddUserSelf">un1 volvió al grupo</string>
     <string name="ActionAddUserSelfMega">un1 se unió al grupo</string>
     <string name="ActionAddUserSelfYou">Volviste al grupo</string>
+    <string name="ActionUserWithinRadius">un1 ahora está a %1$s de ti</string>
+    <string name="ActionUserWithinYouRadius">Ahora estás a %1$s de un1</string>
+    <string name="ActionUserWithinOtherRadius">un1 ahora está a %1$s de un2</string>
     <string name="ActionBotAllowed">Autorizaste que este bot te envíe mensajes cuando iniciaste sesión en %1$s.</string>
     <string name="ActionBotDocuments">%1$s recibió los siguientes documentos: %2$s</string>
     <string name="ActionBotDocumentIdentity">Datos personales</string>
@@ -2937,6 +3028,7 @@
     <string name="PermissionDrawAboveOtherApps">Telegram necesita acceso a mostrarse sobre otras aplicaciones para usar el modo imagen en imagen.</string>
     <string name="PermissionOpenSettings">AJUSTES</string>
     <string name="PermissionXiaomiLockscreen">Por favor, permite a Telegram aparecer en la pantalla bloqueada para que las llamadas funcionen correctamente.</string>
+    <string name="PermissionBackgroundLocation">Para compartir tu ubicación en tiempo real en este chat, Telegram necesita acceso a tu ubicación todo el tiempo, incluyendo cuando la app está en segundo plano.\n\nAccederemos a tu ubicación sólo durante el tiempo que elijas, y puedes dejar de compartirla en cualquier momento. No usaremos tu ubicación para ningún otro propósito que no sea el de compartirla en este chat.</string>
     <!--charts-->
     <string name="GrowthChartTitle">Crecimiento</string>
     <string name="FollowersChartTitle">Seguidores</string>
@@ -2957,7 +3049,7 @@
     <string name="ClearTelegramCache">Borrar caché de Telegram</string>
     <string name="StatisticOverview">Resumen</string>
     <string name="ViewsPerPost">Vistas por post</string>
-    <string name="SharesPerPost">Comparticiones por post</string>
+    <string name="SharesPerPost">Reenvíos por post</string>
     <string name="EnabledNotifications">Notificaciones activas</string>
     <string name="ClearLocalDatabase">Borrar base de datos local</string>
     <string name="TelegramCacheSize">"Caché de Telegram • %s "</string>
@@ -3010,6 +3102,15 @@
     <string name="TopDaysOfWeekChartTitle">Top días de la semana</string>
     <string name="StatisticSearchUserHistory">Ver mensajes</string>
     <string name="StatisticOpenProfile">Abrir perfil</string>
+    <string name="SearchTipToday">Hoy</string>
+    <string name="SearchTipYesterday">Ayer</string>
+    <string name="StatisticViews">Vistas</string>
+    <string name="PublicShares">Reenvíos en público</string>
+    <string name="PrivateShares">Reenvíos en privado</string>
+    <string name="ViewStats">Ver estadísticas</string>
+    <string name="ViewChannelStats">Ver estadísticas del canal</string>
+    <string name="ViewMessageStatistic">Estadísticas del mensaje</string>
+    <string name="ViewMessage">Abrir mensaje</string>
     <!--Intro view-->
     <string name="Page1Title">Telegram</string>
     <string name="Page2Title">Rápida</string>
@@ -3244,6 +3345,12 @@
     <string name="NewMessages_few">%1$d mensajes nuevos</string>
     <string name="NewMessages_many">%1$d mensajes nuevos</string>
     <string name="NewMessages_other">%1$d mensajes nuevos</string>
+    <string name="MessagesUnpinned_zero">%1$d mensajes desfijados</string>
+    <string name="MessagesUnpinned_one">mensaje desfijado</string>
+    <string name="MessagesUnpinned_two">%1$d mensajes desfijados</string>
+    <string name="MessagesUnpinned_few">%1$d mensajes desfijados</string>
+    <string name="MessagesUnpinned_many">%1$d mensajes desfijados</string>
+    <string name="MessagesUnpinned_other">%1$d mensajes desfijados</string>
     <string name="messages_zero">%1$d mensajes</string>
     <string name="messages_one">%1$d mensaje</string>
     <string name="messages_two">%1$d mensajes</string>
@@ -3400,6 +3507,12 @@
     <string name="Shares_few">%1$s reenvíos</string>
     <string name="Shares_many">%1$s reenvíos</string>
     <string name="Shares_other">%1$s reenvíos</string>
+    <string name="PublicSharesCount_zero">%1$s reenvíos públicos</string>
+    <string name="PublicSharesCount_one">%1$s reenvío público</string>
+    <string name="PublicSharesCount_two">%1$s reenvíos públicos</string>
+    <string name="PublicSharesCount_few">%1$s reenvíos públicos</string>
+    <string name="PublicSharesCount_many">%1$s reenvíos públicos</string>
+    <string name="PublicSharesCount_other">%1$s reenvíos públicos</string>
     <string name="Shared_zero">%1$s reenvíos</string>
     <string name="Shared_one">%1$s reenvío</string>
     <string name="Shared_two">%1$s reenvíos</string>
@@ -3611,6 +3724,24 @@
     <string name="Comments_few">%1$d comentarios</string>
     <string name="Comments_many">%1$d comentarios</string>
     <string name="Comments_other">%1$d comentarios</string>
+    <string name="CommentsCount_zero">%1$d comentarios</string>
+    <string name="CommentsCount_one">%1$d comentario</string>
+    <string name="CommentsCount_two">%1$d comentarios</string>
+    <string name="CommentsCount_few">%1$d comentarios</string>
+    <string name="CommentsCount_many">%1$d comentarios</string>
+    <string name="CommentsCount_other">%1$d comentarios</string>
+    <string name="CommentsNoNumber_zero">comentarios</string>
+    <string name="CommentsNoNumber_one">comentario</string>
+    <string name="CommentsNoNumber_two">comentarios</string>
+    <string name="CommentsNoNumber_few">comentarios</string>
+    <string name="CommentsNoNumber_many">comentarios</string>
+    <string name="CommentsNoNumber_other">comentarios</string>
+    <string name="PinnedMessagesCount_zero">%1$d mensajes fijados</string>
+    <string name="PinnedMessagesCount_one">Mensaje fijado</string>
+    <string name="PinnedMessagesCount_two">%1$d mensajes fijados</string>
+    <string name="PinnedMessagesCount_few">%1$d mensajes fijados</string>
+    <string name="PinnedMessagesCount_many">%1$d mensajes fijados</string>
+    <string name="PinnedMessagesCount_other">%1$d mensajes fijados</string>
     <!--accessibility descriptions-->
     <string name="AccDescrGroup">Grupo</string>
     <string name="AccDescrChannel">Canal</string>
@@ -3684,6 +3815,7 @@
     <string name="AccDescrIVTitle">Título</string>
     <string name="AccDescrIVHeading">Encabezado</string>
     <string name="AccDescrMyLocation">Mi ubicación</string>
+    <string name="AccDescrLocationNotify">Notificar cuando las personas que comparten su ubicación estén dentro del rango</string>
     <string name="AccDescrVideoQuality">Calidad de video</string>
     <string name="AccDescrAspectRatio">Relación de aspecto</string>
     <string name="AccDescrTakeMorePics">Tomar una foto más</string>
@@ -3737,6 +3869,7 @@
     <string name="AccDescrVoipCamSwitchedToBack">Cambió a la cámara trasera</string>
     <string name="AccDescrVoipCamOn">La cámara está encendida</string>
     <string name="AccDescrVoipCamOff">La cámara está apagada</string>
+    <string name="AccPinnedMessagesList">Lista de mensajes fijados</string>
     <!--date formatters-->
     <string name="formatterMonthYear">MMMM \'de\' yyyy</string>
     <string name="formatterStats12H">dd MMM yyyy, h:mm a</string>
@@ -3765,5 +3898,4 @@
     <string name="RemindTodayAt">\'Recordar hoy a las\' HH:mm</string>
     <string name="RemindDayAt">\'Recordar el\' d \'de\' MMM \'a las\' HH:mm</string>
     <string name="RemindDayYearAt">\'Recordar el\' d \'de\' MMM \'de\' yyyy \'a las\' HH:mm</string>
-    <string name="SearchTipToday">Today</string>
 </resources>

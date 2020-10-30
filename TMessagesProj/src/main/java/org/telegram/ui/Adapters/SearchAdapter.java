@@ -11,7 +11,6 @@ package org.telegram.ui.Adapters;
 import android.content.Context;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
-import android.text.style.ForegroundColorSpan;
 import android.util.SparseArray;
 import android.view.View;
 import android.view.ViewGroup;
@@ -316,7 +315,7 @@ public class SearchAdapter extends RecyclerListView.SelectionAdapter {
                         }
                     } else if (position > searchResult.size() && un != null) {
                         String foundUserName = searchAdapterHelper.getLastFoundUsername();
-                        if (foundUserName.startsWith("@")) {
+                        if (foundUserName != null && foundUserName.startsWith("@")) {
                             foundUserName = foundUserName.substring(1);
                         }
                         try {
@@ -324,7 +323,7 @@ public class SearchAdapter extends RecyclerListView.SelectionAdapter {
                             SpannableStringBuilder spannableStringBuilder = new SpannableStringBuilder();
                             spannableStringBuilder.append("@");
                             spannableStringBuilder.append(un);
-                            if ((index = AndroidUtilities.indexOfIgnoreCase(un, foundUserName)) != -1) {
+                            if (foundUserName != null && (index = AndroidUtilities.indexOfIgnoreCase(un, foundUserName)) != -1) {
                                 int len = foundUserName.length();
                                 if (index == 0) {
                                     len++;

@@ -245,6 +245,7 @@ public class ProximitySheet extends FrameLayout {
         buttonTextView.setGravity(Gravity.CENTER);
         buttonTextView.setTextColor(Theme.getColor(Theme.key_featuredStickers_buttonText));
         buttonTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+        buttonTextView.setMaxLines(2);
         buttonTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
         buttonTextView.setBackgroundDrawable(Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(4), Theme.getColor(Theme.key_featuredStickers_addButton), Theme.getColor(Theme.key_featuredStickers_addButtonPressed)));
         buttonContainer.addView(buttonTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48));
@@ -319,8 +320,8 @@ public class ProximitySheet extends FrameLayout {
             } else {
                 String format = LocaleController.getString("LocationNotifiationButtonUser", R.string.LocationNotifiationButtonUser);
                 int width = (int) Math.ceil(buttonTextView.getPaint().measureText(format));
-                int restWidth = totalWidth - AndroidUtilities.dp(32 + 62) - width;
-                CharSequence name = TextUtils.ellipsize(UserObject.getFirstName(currentUser), buttonTextView.getPaint(), restWidth, TextUtils.TruncateAt.END);
+                int restWidth = (int) ((totalWidth - AndroidUtilities.dp(32 + 62)) * 1.5f - width);
+                CharSequence name = TextUtils.ellipsize(UserObject.getFirstName(currentUser), buttonTextView.getPaint(), Math.max(AndroidUtilities.dp(10), restWidth), TextUtils.TruncateAt.END);
                 buttonTextView.setText(LocaleController.formatString("LocationNotifiationButtonUser", R.string.LocationNotifiationButtonUser, name, distance));
             }
             if (buttonTextView.getTag() != null) {

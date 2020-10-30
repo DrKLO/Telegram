@@ -676,6 +676,8 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
             notifyDataSetChanged();
             if (needMessagesSearch != 2 && delegate != null) {
                 delegate.searchStateChanged(true, false);
+            } else {
+                waitingResponseCount--;
             }
 
             Utilities.searchQueue.postRunnable(searchRunnable = () -> {

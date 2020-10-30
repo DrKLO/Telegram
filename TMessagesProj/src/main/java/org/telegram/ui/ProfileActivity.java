@@ -5677,56 +5677,57 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     req.flags |= 4;
                 }
                 getConnectionsManager().sendRequest(req, (response, error) -> {
-                    if (error == null) {
-                        TLRPC.User user = getMessagesController().getUser(getUserConfig().getClientUserId());
-                        if (user == null) {
-                            user = getUserConfig().getCurrentUser();
-                            if (user == null) {
-                                return;
-                            }
-                            getMessagesController().putUser(user, false);
-                        } else {
-                            getUserConfig().setCurrentUser(user);
-                        }
-                        TLRPC.TL_photos_photo photos_photo = (TLRPC.TL_photos_photo) response;
-                        ArrayList<TLRPC.PhotoSize> sizes = photos_photo.photo.sizes;
-                        TLRPC.PhotoSize small = FileLoader.getClosestPhotoSizeWithSize(sizes, 150);
-                        TLRPC.PhotoSize big = FileLoader.getClosestPhotoSizeWithSize(sizes, 800);
-                        TLRPC.VideoSize videoSize = photos_photo.photo.video_sizes.isEmpty() ? null : photos_photo.photo.video_sizes.get(0);
-                        user.photo = new TLRPC.TL_userProfilePhoto();
-                        user.photo.photo_id = photos_photo.photo.id;
-                        if (small != null) {
-                            user.photo.photo_small = small.location;
-                        }
-                        if (big != null) {
-                            user.photo.photo_big = big.location;
-                        }
-
-                        if (small != null && avatar != null) {
-                            File destFile = FileLoader.getPathToAttach(small, true);
-                            File src = FileLoader.getPathToAttach(avatar, true);
-                            src.renameTo(destFile);
-                            String oldKey = avatar.volume_id + "_" + avatar.local_id + "@50_50";
-                            String newKey = small.location.volume_id + "_" + small.location.local_id + "@50_50";
-                            ImageLoader.getInstance().replaceImageInCache(oldKey, newKey, ImageLocation.getForUser(user, false), true);
-                        }
-                        if (big != null && avatarBig != null) {
-                            File destFile = FileLoader.getPathToAttach(big, true);
-                            File src = FileLoader.getPathToAttach(avatarBig, true);
-                            src.renameTo(destFile);
-                        }
-                        if (videoSize != null && videoPath != null) {
-                            File destFile = FileLoader.getPathToAttach(videoSize, "mp4", true);
-                            File src = new File(videoPath);
-                            src.renameTo(destFile);
-                        }
-
-                        getMessagesStorage().clearUserPhotos(user.id);
-                        ArrayList<TLRPC.User> users = new ArrayList<>();
-                        users.add(user);
-                        getMessagesStorage().putUsersAndChats(users, null, false, true);
-                    }
                     AndroidUtilities.runOnUIThread(() -> {
+                        if (error == null) {
+                            TLRPC.User user = getMessagesController().getUser(getUserConfig().getClientUserId());
+                            if (user == null) {
+                                user = getUserConfig().getCurrentUser();
+                                if (user == null) {
+                                    return;
+                                }
+                                getMessagesController().putUser(user, false);
+                            } else {
+                                getUserConfig().setCurrentUser(user);
+                            }
+                            TLRPC.TL_photos_photo photos_photo = (TLRPC.TL_photos_photo) response;
+                            ArrayList<TLRPC.PhotoSize> sizes = photos_photo.photo.sizes;
+                            TLRPC.PhotoSize small = FileLoader.getClosestPhotoSizeWithSize(sizes, 150);
+                            TLRPC.PhotoSize big = FileLoader.getClosestPhotoSizeWithSize(sizes, 800);
+                            TLRPC.VideoSize videoSize = photos_photo.photo.video_sizes.isEmpty() ? null : photos_photo.photo.video_sizes.get(0);
+                            user.photo = new TLRPC.TL_userProfilePhoto();
+                            user.photo.photo_id = photos_photo.photo.id;
+                            if (small != null) {
+                                user.photo.photo_small = small.location;
+                            }
+                            if (big != null) {
+                                user.photo.photo_big = big.location;
+                            }
+
+                            if (small != null && avatar != null) {
+                                File destFile = FileLoader.getPathToAttach(small, true);
+                                File src = FileLoader.getPathToAttach(avatar, true);
+                                src.renameTo(destFile);
+                                String oldKey = avatar.volume_id + "_" + avatar.local_id + "@50_50";
+                                String newKey = small.location.volume_id + "_" + small.location.local_id + "@50_50";
+                                ImageLoader.getInstance().replaceImageInCache(oldKey, newKey, ImageLocation.getForUser(user, false), true);
+                            }
+                            if (big != null && avatarBig != null) {
+                                File destFile = FileLoader.getPathToAttach(big, true);
+                                File src = FileLoader.getPathToAttach(avatarBig, true);
+                                src.renameTo(destFile);
+                            }
+                            if (videoSize != null && videoPath != null) {
+                                File destFile = FileLoader.getPathToAttach(videoSize, "mp4", true);
+                                File src = new File(videoPath);
+                                src.renameTo(destFile);
+                            }
+
+                            getMessagesStorage().clearUserPhotos(user.id);
+                            ArrayList<TLRPC.User> users = new ArrayList<>();
+                            users.add(user);
+                            getMessagesStorage().putUsersAndChats(users, null, false, true);
+                        }
+
                         allowPullingDown = !AndroidUtilities.isTablet() && !isInLandscapeMode && avatarImage.getImageReceiver().hasNotThumb();
                         avatar = null;
                         avatarBig = null;

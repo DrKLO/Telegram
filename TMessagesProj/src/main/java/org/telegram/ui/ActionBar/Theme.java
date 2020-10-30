@@ -7637,7 +7637,9 @@ public class Theme {
         if (drawable == null) {
             return;
         }
-        if (drawable instanceof MsgClockDrawable) {
+        if (drawable instanceof StatusDrawable) {
+            ((StatusDrawable) drawable).setColor(color);
+        } else if (drawable instanceof MsgClockDrawable) {
             ((MsgClockDrawable) drawable).setColor(color);
         } else if (drawable instanceof ShapeDrawable) {
             ((ShapeDrawable) drawable).getPaint().setColor(color);

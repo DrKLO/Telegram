@@ -20,6 +20,10 @@ public class RLottieImageView extends ImageView {
         super(context);
     }
 
+    public void clearLayerColors() {
+        layerColors.clear();
+    }
+
     public void setLayerColor(String layer, int color) {
         if (layerColors == null) {
             layerColors = new HashMap<>();

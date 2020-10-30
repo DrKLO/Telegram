@@ -117,6 +117,7 @@ import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.MapPlaceholderDrawable;
 import org.telegram.ui.Components.ProximitySheet;
 import org.telegram.ui.Components.RecyclerListView;
+import org.telegram.ui.Components.UndoView;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -144,6 +145,9 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
     private ActionBarMenuItem searchItem;
     private MapOverlayView overlayView;
     private HintView hintView;
+
+    private UndoView[] undoView = new UndoView[2];
+    private boolean canUndo;
 
     private boolean proximityAnimationInProgress;
 
@@ -465,6 +469,9 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
         } catch (Exception e) {
             FileLog.e(e);
         }
+        if (undoView[0] != null) {
+            undoView[0].hide(true, 0);
+        }
         if (adapter != null) {
             adapter.destroy();
         }
@@ -479,6 +486,18 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
             AndroidUtilities.cancelRunOnUIThread(markAsReadRunnable);
             markAsReadRunnable = null;
         }
+    }
+
+    private UndoView getUndoView() {
+        if (undoView[0].getVisibility() == View.VISIBLE) {
+            UndoView old = undoView[0];
+            undoView[0] = undoView[1];
+            undoView[1] = old;
+            old.hide(true, 2);
+            mapViewClip.removeView(undoView[0]);
+            mapViewClip.addView(undoView[0]);
+        }
+        return undoView[0];
     }
 
     @Override
@@ -842,10 +861,9 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
                 }
             });
         }
+        proximityButton.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_location_actionIcon), PorterDuff.Mode.MULTIPLY));
         proximityButton.setBackgroundDrawable(drawable);
-        proximityButton.setImageResource(R.drawable.msg_location_alert);
         proximityButton.setScaleType(ImageView.ScaleType.CENTER);
-        proximityButton.setTag(Theme.key_location_actionIcon);
         proximityButton.setContentDescription(LocaleController.getString("AccDescrLocationNotify", R.string.AccDescrLocationNotify));
         mapViewClip.addView(proximityButton, LayoutHelper.createFrame(Build.VERSION.SDK_INT >= 21 ? 40 : 44, Build.VERSION.SDK_INT >= 21 ? 40 : 44, Gravity.RIGHT | Gravity.TOP, 0, 12 + 50, 12, 0));
         proximityButton.setOnClickListener(v -> {
@@ -858,13 +876,25 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
             SharedPreferences preferences = MessagesController.getGlobalMainSettings();
             preferences.edit().putInt("proximityhint", 3).commit();
             LocationController.SharingLocationInfo info = getLocationController().getSharingLocationInfo(dialogId);
+            if (canUndo) {
+                undoView[0].hide(true, 1);
+            }
             if (info != null && info.proximityMeters > 0) {
-                proximityButton.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_location_actionIcon), PorterDuff.Mode.MULTIPLY));
-                getLocationController().setProximityLocation(dialogId, 0, true);
+                proximityButton.setImageResource(R.drawable.msg_location_alert);
                 if (proximityCircle != null) {
                     proximityCircle.remove();
                     proximityCircle = null;
                 }
+                canUndo = true;
+                getUndoView().showWithAction(0, UndoView.ACTION_PROXIMITY_REMOVED, 0, null,
+                        () -> {
+                            getLocationController().setProximityLocation(dialogId, 0, true);
+                            canUndo = false;
+                        }, () -> {
+                            proximityButton.setImageResource(R.drawable.msg_location_alert2);
+                            createCircle(info.proximityMeters);
+                            canUndo = false;
+                        });
                 return;
             }
             openProximityAlert();
@@ -875,10 +905,11 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
         }
         if (messageObject == null || !messageObject.isLiveLocation() || messageObject.isExpiredLiveLocation(getConnectionsManager().getCurrentTime()) || ChatObject.isChannel(chat) && !chat.megagroup) {
             proximityButton.setVisibility(View.GONE);
+            proximityButton.setImageResource(R.drawable.msg_location_alert);
         } else {
             LocationController.SharingLocationInfo myInfo = getLocationController().getSharingLocationInfo(dialogId);
             if (myInfo != null && myInfo.proximityMeters > 0) {
-                proximityButton.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_location_actionActiveIcon), PorterDuff.Mode.MULTIPLY));
+                proximityButton.setImageResource(R.drawable.msg_location_alert2);
             } else {
                 if ((int) dialogId > 0 && messageObject.getFromChatId() == getUserConfig().getClientUserId()) {
                     proximityButton.setVisibility(View.INVISIBLE);
@@ -886,7 +917,7 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
                     proximityButton.setScaleX(0.4f);
                     proximityButton.setScaleY(0.4f);
                 }
-                proximityButton.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_location_actionIcon), PorterDuff.Mode.MULTIPLY));
+                proximityButton.setImageResource(R.drawable.msg_location_alert);
             }
         }
 
@@ -1244,6 +1275,16 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
             adapter.setMessageObject(messageObject);
         }
 
+
+        for (int a = 0; a < 2; a++) {
+            undoView[a] = new UndoView(context);
+            undoView[a].setAdditionalTranslationY(AndroidUtilities.dp(10));
+            if (Build.VERSION.SDK_INT >= 21) {
+                undoView[a].setTranslationZ(AndroidUtilities.dp(5));
+            }
+            mapViewClip.addView(undoView[a], LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.BOTTOM | Gravity.LEFT, 8, 0, 8, 8));
+        }
+
         shadow = new View(context) {
 
             private RectF rect = new RectF();
@@ -1264,6 +1305,9 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
                 }
             }
         };
+        if (Build.VERSION.SDK_INT >= 21) {
+            shadow.setTranslationZ(AndroidUtilities.dp(6));
+        }
         mapViewClip.addView(shadow, layoutParams);
 
         if (messageObject == null && chatLocation == null && initialLocation != null) {
@@ -1389,9 +1433,11 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
             previousRadius = proximityCircle.getRadius();
         }
 
-        TLRPC.User user = null;
+        TLRPC.User user;
         if ((int) dialogId > 0) {
             user = getMessagesController().getUser((int) dialogId);
+        } else {
+            user = null;
         }
         proximitySheet = new ProximitySheet(getParentActivity(), user, (move, radius) -> {
             if (proximityCircle != null) {
@@ -1423,13 +1469,14 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
                 AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
                 builder.setTitle(LocaleController.getString("ShareLocationAlertTitle", R.string.ShareLocationAlertTitle));
                 builder.setMessage(LocaleController.getString("ShareLocationAlertText", R.string.ShareLocationAlertText));
-                builder.setPositiveButton(LocaleController.getString("ShareLocationAlertButton", R.string.ShareLocationAlertButton), (dialog, id) -> shareLiveLocation(900, radius));
+                builder.setPositiveButton(LocaleController.getString("ShareLocationAlertButton", R.string.ShareLocationAlertButton), (dialog, id) -> shareLiveLocation(user, 900, radius));
                 builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
                 showDialog(builder.create());
                 return false;
             }
             proximitySheet.setRadiusSet();
-            proximityButton.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_location_actionActiveIcon), PorterDuff.Mode.MULTIPLY));
+            proximityButton.setImageResource(R.drawable.msg_location_alert2);
+            getUndoView().showWithAction(0, UndoView.ACTION_PROXIMITY_SET, radius, user, null, null);
             getLocationController().setProximityLocation(dialogId, radius, true);
             return true;
         }, () -> {
@@ -1469,14 +1516,16 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
                 }
             }
         }
-        TLRPC.User user = null;
+        TLRPC.User user;
         if ((int) dialogId > 0) {
             user = getMessagesController().getUser((int) dialogId);
+        } else {
+            user = null;
         }
-        showDialog(AlertsCreator.createLocationUpdateDialog(getParentActivity(), user, param -> shareLiveLocation(param, proximityRadius)));
+        showDialog(AlertsCreator.createLocationUpdateDialog(getParentActivity(), user, param -> shareLiveLocation(user, param, proximityRadius)));
     }
 
-    private void shareLiveLocation(int period, int proximityRadius) {
+    private void shareLiveLocation(TLRPC.User user, int period, int radius) {
         TLRPC.TL_messageMediaGeoLive location = new TLRPC.TL_messageMediaGeoLive();
         location.geo = new TLRPC.TL_geoPoint();
         location.geo.lat = AndroidUtilities.fixLocationCoord(myLocation.getLatitude());
@@ -1484,15 +1533,16 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
         location.heading = LocationController.getHeading(myLocation);
         location.flags |= 1;
         location.period = period;
-        location.proximity_notification_radius = proximityRadius;
+        location.proximity_notification_radius = radius;
         location.flags |= 8;
         delegate.didSelectLocation(location, locationType, true, 0);
-        if (proximityRadius > 0) {
+        if (radius > 0) {
             proximitySheet.setRadiusSet();
-            proximityButton.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_location_actionActiveIcon), PorterDuff.Mode.MULTIPLY));
+            proximityButton.setImageResource(R.drawable.msg_location_alert2);
             if (proximitySheet != null) {
                 proximitySheet.dismiss();
             }
+            getUndoView().showWithAction(0, UndoView.ACTION_PROXIMITY_SET, radius, user, null, null);
         } else {
             finishFragment();
         }
@@ -2180,7 +2230,7 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
                     bounds = builder.build();
                     if (messages.size() > 1) {
                         try {
-                            moveToBounds = CameraUpdateFactory.newLatLngBounds(bounds, AndroidUtilities.dp(80));
+                            moveToBounds = CameraUpdateFactory.newLatLngBounds(bounds, AndroidUtilities.dp(80 + 33));
                             googleMap.moveCamera(moveToBounds);
                             moveToBounds = null;
                         } catch (Exception e) {
@@ -2359,7 +2409,7 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
                 } else if (messageObject.messageOwner.action instanceof TLRPC.TL_messageActionGeoProximityReached) {
                     int lowerId = (int) messageObject.getDialogId();
                     if (lowerId > 0) {
-                        proximityButton.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_location_actionIcon), PorterDuff.Mode.MULTIPLY));
+                        proximityButton.setImageResource(R.drawable.msg_location_alert);
                         if (proximityCircle != null) {
                             proximityCircle.remove();
                             proximityCircle = null;
@@ -2429,6 +2479,9 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
                 FileLog.e(e);
             }
         }
+        if (undoView[0] != null) {
+            undoView[0].hide(true, 0);
+        }
         onResumeCalled = false;
     }
 
@@ -2439,6 +2492,13 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
             return false;
         }
         return super.onBackPressed();
+    }
+
+    @Override
+    protected void onBecomeFullyHidden() {
+        if (undoView[0] != null) {
+            undoView[0].hide(true, 0);
+        }
     }
 
     @Override
@@ -2542,6 +2602,25 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
                 }
             }
         };
+
+        for (int a = 0; a < undoView.length; a++) {
+            themeDescriptions.add(new ThemeDescription(undoView[a], ThemeDescription.FLAG_BACKGROUNDFILTER, null, null, null, null, Theme.key_undo_background));
+            themeDescriptions.add(new ThemeDescription(undoView[a], 0, new Class[]{UndoView.class}, new String[]{"undoImageView"}, null, null, null, Theme.key_undo_cancelColor));
+            themeDescriptions.add(new ThemeDescription(undoView[a], 0, new Class[]{UndoView.class}, new String[]{"undoTextView"}, null, null, null, Theme.key_undo_cancelColor));
+            themeDescriptions.add(new ThemeDescription(undoView[a], 0, new Class[]{UndoView.class}, new String[]{"infoTextView"}, null, null, null, Theme.key_undo_infoColor));
+            themeDescriptions.add(new ThemeDescription(undoView[a], 0, new Class[]{UndoView.class}, new String[]{"subinfoTextView"}, null, null, null, Theme.key_undo_infoColor));
+            themeDescriptions.add(new ThemeDescription(undoView[a], 0, new Class[]{UndoView.class}, new String[]{"textPaint"}, null, null, null, Theme.key_undo_infoColor));
+            themeDescriptions.add(new ThemeDescription(undoView[a], 0, new Class[]{UndoView.class}, new String[]{"progressPaint"}, null, null, null, Theme.key_undo_infoColor));
+            themeDescriptions.add(new ThemeDescription(undoView[a], 0, new Class[]{UndoView.class}, new String[]{"leftImageView"}, "BODY", Theme.key_undo_background));
+            themeDescriptions.add(new ThemeDescription(undoView[a], 0, new Class[]{UndoView.class}, new String[]{"leftImageView"}, "Wibe Big", Theme.key_undo_background));
+            themeDescriptions.add(new ThemeDescription(undoView[a], 0, new Class[]{UndoView.class}, new String[]{"leftImageView"}, "Wibe Big 3", Theme.key_undo_infoColor));
+            themeDescriptions.add(new ThemeDescription(undoView[a], 0, new Class[]{UndoView.class}, new String[]{"leftImageView"}, "Wibe Small", Theme.key_undo_infoColor));
+            themeDescriptions.add(new ThemeDescription(undoView[a], 0, new Class[]{UndoView.class}, new String[]{"leftImageView"}, "Body Main.**", Theme.key_undo_infoColor));
+            themeDescriptions.add(new ThemeDescription(undoView[a], 0, new Class[]{UndoView.class}, new String[]{"leftImageView"}, "Body Top.**", Theme.key_undo_infoColor));
+            themeDescriptions.add(new ThemeDescription(undoView[a], 0, new Class[]{UndoView.class}, new String[]{"leftImageView"}, "Line.**", Theme.key_undo_infoColor));
+            themeDescriptions.add(new ThemeDescription(undoView[a], 0, new Class[]{UndoView.class}, new String[]{"leftImageView"}, "Curve Big.**", Theme.key_undo_infoColor));
+            themeDescriptions.add(new ThemeDescription(undoView[a], 0, new Class[]{UndoView.class}, new String[]{"leftImageView"}, "Curve Small.**", Theme.key_undo_infoColor));
+        }
 
         themeDescriptions.add(new ThemeDescription(fragmentView, ThemeDescription.FLAG_BACKGROUND, null, null, null, cellDelegate, Theme.key_dialogBackground));
 

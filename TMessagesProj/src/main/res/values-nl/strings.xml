@@ -226,8 +226,9 @@
     <string name="HideNewChatsAlertTitle">Nieuwe chats verbergen?</string>
     <string name="HideNewChatsAlertText">Je ontvangt veel nieuwe chats van mensen die geen contact van je zijn. Wil je deze chats **automatisch dempen** en **archiveren**?</string>
     <string name="GoToSettings">GA NAAR INSTELLINGEN</string>
-    <string name="OpenProfile">Open Profile</string>
+    <string name="OpenProfile">Profiel openen</string>
     <string name="OpenChannel2">Open Channel</string>
+    <string name="OpenGroup2">Open Group</string>
     <string name="SendMessage">Send Message</string>
     <string name="Mention">Mention</string>
     <string name="NotificationsMutedHint">Notifications muted</string>
@@ -240,7 +241,7 @@
     <string name="MessagesDeletedHint_many">%1$d messages deleted</string>
     <string name="MessagesDeletedHint_other">%1$d messages deleted</string>
     <string name="SearchEmptyViewTitle">No Results</string>
-    <string name="SearchEmptyViewTitle2">No Results</string>
+    <string name="SearchEmptyViewTitle2">Geen resultaten</string>
     <string name="SearchEmptyViewFilteredSubtitle2">Try a new search.</string>
     <string name="SearchEmptyViewFilteredSubtitleMusic">Muziek</string>
     <string name="SearchEmptyViewFilteredSubtitleFiles">Bestanden</string>
@@ -248,6 +249,8 @@
     <string name="SearchEmptyViewFilteredSubtitleVoice">Voice from all your chats will be shown here.</string>
     <string name="SearchEmptyViewFilteredSubtitleMedia">Media</string>
     <string name="SearchAllChatsShort">Chats</string>
+    <string name="MessagePinnedHint">Message pinned</string>
+    <string name="MessageUnpinnedHint">Message unpinned</string>
     <!--channels-->
     <string name="SetAsAdmin">Promoveren tot beheerder</string>
     <string name="EditAdminRights">Beheerdersrechten aanpassen</string>
@@ -563,6 +566,7 @@
     <string name="SlowmodeSendError">Tempolimiet ingeschakeld. Je kunt niet meer dan 1 bericht tegelijkertijd sturen.</string>
     <string name="SlowmodeSelectSendError">Tempolimiet ingeschakeld. Je kunt niet meer dan 1 item selecteren.</string>
     <string name="SlowmodeSendErrorTooLong">Sorry, deze tekst is te lang om als 1 bericht te sturen.\n\nTempolimiet is ingeschakeld, je kunt niet meer dan 1 bericht tegelijkertijd sturen.</string>
+    <string name="UserSetAsAdminHint">**%1$s** promoted to admin</string>
     <!--polls-->
     <string name="NewPoll">Nieuwe poll</string>
     <string name="NewQuiz">Nieuwe quiz</string>
@@ -895,9 +899,11 @@
     <string name="TapHereGifs">Tik hier om opgeslagen GIF\'s te bekijken</string>
     <string name="PinMessage">Vastzetten</string>
     <string name="PinNotify">Alle leden informeren</string>
+    <string name="PinAlsoFor">Also pin for %1$s</string>
     <string name="UnpinMessage">Losmaken</string>
     <string name="PinMessageAlertTitle">Bericht vastzetten</string>
     <string name="UnpinMessageAlertTitle">Bericht losmaken</string>
+    <string name="PinOldMessageAlert">Do you want to pin an older message while leaving a more recent one pinned?</string>
     <string name="PinMessageAlert">Wil je dit bericht vastzetten?</string>
     <string name="PinMessageAlertChannel">Wil je dit bericht vastzetten?</string>
     <string name="PinMessageAlertChat">Wil je dit bericht vastzetten bovenaan de chat?</string>
@@ -923,6 +929,7 @@
     <string name="ReportChatOther">Overig</string>
     <string name="ReportChatDescription">Beschrijving</string>
     <string name="PinnedMessage">Vastgezet bericht</string>
+    <string name="PreviousPinnedMessage">Previous Message</string>
     <string name="PinnedPoll">Vastgezette poll</string>
     <string name="EditedMessage">gewijzigd</string>
     <string name="EditMessage">Bericht wijzigen</string>
@@ -996,7 +1003,7 @@
     <string name="TapForVideo">Tik voor foto, hou vast voor video</string>
     <string name="TapToViewAsList">Tik om als lijst weer te geven.</string>
     <string name="SendWithoutSound">Stuur zonder geluid</string>
-    <string name="MessageScheduleSend">Stuur nu</string>>
+    <string name="MessageScheduleSend">Stuur nu</string>
     <string name="MessageScheduleEditTime">Plan opnieuw</string>
     <string name="MessageScheduleToday">Vandaag</string>
     <string name="Schedule">Plannen</string>
@@ -1042,7 +1049,6 @@
     <string name="SecretChatTimerHours">u</string>
     <string name="SecretChatTimerWeeks">w</string>
     <string name="SharedToPrivateMessagesAndGroups">to private messages and groups</string>
-
     <string name="BotOwnershipTransfer">Transfer Bot Ownership</string>
     <string name="BotOwnershipTransferReadyAlertText">This will transfer the **full owner** rights for the bot to the selected user.</string>
     <string name="BotOwnershipTransferChangeOwner">Change Owner</string>
@@ -1060,6 +1066,10 @@
     <string name="ChooseDate">Choose date</string>
     <string name="RepliesChatInfo">This chat helps you keep track of replies to your comments in Channels.</string>
     <string name="ChannelPostDeleted">Sorry, this post has been removed from the discussion group.</string>
+    <string name="UnpinAllMessages">UNPIN ALL MESSAGES</string>
+    <string name="HidePinnedMessages">HIDE PINNED MESSAGES</string>
+    <string name="PinnedMessagesHidden">Pinned messages hidden</string>
+    <string name="PinnedMessagesHiddenInfo">Pinned messages will be shown again if a new message is pinned.</string>
     <!--notification-->
     <string name="MessageLifetimeChanged">%1$s heeft de zelfvernietigingstimer ingesteld op %2$s</string>
     <string name="MessageLifetimeChangedOutgoing">Je hebt de zelfvernietigingstimer ingesteld op %1$s</string>
@@ -1175,6 +1185,25 @@
     <string name="NotificationActionPinnedGeoLiveChannel">%1$s heeft een live-locatie vastgezet</string>
     <string name="NotificationActionPinnedGifChannel">%1$s heeft GIF vastgezet</string>
     <string name="NotificationActionPinnedMusicChannel">%1$s heeft muziekbestand vastgezet</string>
+    <string name="NotificationActionPinnedTextUser">%1$s pinned \"%2$s\"</string>
+    <string name="NotificationActionPinnedNoTextUser">%1$s pinned a message</string>
+    <string name="NotificationActionPinnedPollUser">%1$s pinned a poll %2$s</string>
+    <string name="NotificationActionPinnedQuizUser">%1$s pinned a quiz %2$s</string>
+    <string name="NotificationActionPinnedPhotoUser">%1$s pinned a photo</string>
+    <string name="NotificationActionPinnedGameUser">%1$s pinned a game</string>
+    <string name="NotificationActionPinnedGameScoreUser">%1$s pinned a game score</string>
+    <string name="NotificationActionPinnedVideoUser">%1$s pinned a video</string>
+    <string name="NotificationActionPinnedFileUser">%1$s pinned a file</string>
+    <string name="NotificationActionPinnedInvoiceUser">%1$s pinned an invoice</string>
+    <string name="NotificationActionPinnedStickerUser">%1$s pinned a sticker</string>
+    <string name="NotificationActionPinnedStickerEmojiUser">%1$s pinned a %2$s sticker</string>
+    <string name="NotificationActionPinnedVoiceUser">%1$s pinned a voice message</string>
+    <string name="NotificationActionPinnedRoundUser">%1$s pinned a video message</string>
+    <string name="NotificationActionPinnedContactUser">%1$s pinned a contact %2$s</string>
+    <string name="NotificationActionPinnedGeoUser">%1$s pinned a map</string>
+    <string name="NotificationActionPinnedGeoLiveUser">%1$s pinned a live location</string>
+    <string name="NotificationActionPinnedGifUser">%1$s pinned a GIF</string>
+    <string name="NotificationActionPinnedMusicUser">%1$s pinned an audio file</string>
     <string name="SecretChatName">Telegram</string>
     <!--contacts view-->
     <string name="SelectContact">Contact kiezen</string>
@@ -1215,6 +1244,9 @@
     <string name="NoContactsYetLine1">Invite friends to try Telegram</string>
     <string name="NoContactsYetLine2">Find people nearby to chat with</string>
     <string name="NoContactsYetLine3">Search people by username</string>
+    <string name="NewContactAlertTitle">New contact</string>
+    <string name="NewContactAlertMessage">The phone number **%1$s** is not in your contact list. Do you want to add it?</string>
+    <string name="NewContactAlertButton">Add contact</string>
     <!--group create view-->
     <string name="SendMessageTo">Mensen toevoegen</string>
     <string name="SoftUserLimitAlert">Je kan meer leden toevoegen nadat je de groep hebt aangemaakt.</string>
@@ -1274,7 +1306,7 @@
     <string name="ContactNotRegisteredTitle">Uitnodigen voor Telegram</string>
     <string name="ContactNotRegistered">%1$s is nog geen lid, uitnodigen?</string>
     <string name="Invite">Nodig uit</string>
-    <string name="Block">BLOCK</string>
+    <string name="Block">Blokkeren</string>
     <string name="BlockAndDeleteReplies">BLOCK AND DELETE REPLIES</string>
     <string name="BlockContact">Blokkeer</string>
     <string name="BlockUser">Blokkeer gebruiker</string>
@@ -2310,6 +2342,12 @@
     <string name="KMetersAway2">%1$s km afstand</string>
     <string name="FootsAway">%1$s voet afstand</string>
     <string name="MilesAway">%1$s mijl afstand</string>
+    <string name="FootsShort">%1$s ft</string>
+    <string name="MilesShort">%1$s mi</string>
+    <string name="Mi">mi</string>
+    <string name="Km">km</string>
+    <string name="MetersShort">%1$s m</string>
+    <string name="KMetersShort">%1$s km</string>
     <string name="MetersFromYou2">%1$s m afstand</string>
     <string name="KMetersFromYou2">%1$s km afstand</string>
     <string name="FootsFromYou">%1$s ft afstand</string>
@@ -2343,6 +2381,8 @@
     <string name="LocationUpdatedJustNow">zojuist bijgewerkt</string>
     <string name="SharingYouAndOtherName">Jij en %1$s</string>
     <string name="AttachLiveLocationIsSharing">%1$s aan het delen met %2$s</string>
+    <string name="AttachLiveLocationIsSharingChat">%1$s sharing with %2$s</string>
+    <string name="AttachLiveLocationIsSharingChats">%1$s sharing with %2$s</string>
     <string name="StopAllLocationSharings">ALLES STOPPEN</string>
     <string name="SharingLiveLocationTitle">Je deelt je live-locatie met %1$s</string>
     <string name="LiveLocationAlertPrivate">Kies hoelang je je nauwkeurige locatie met %1$s wilt delen.</string>
@@ -2371,6 +2411,19 @@
     <string name="ChatSetThisLocation">Stel deze locatie in</string>
     <string name="ChatSetLocationInfo">Mensen kunnen je groep vinden in de \"Mensen Dichtbij\"-sectie</string>
     <string name="PlacesInThisArea">Plaatsen in de buurt</string>
+    <string name="LocationNotifiation">Proximity alert</string>
+    <string name="LocationNotifiationButtonUser">Notify when %1$s is within %2$s</string>
+    <string name="LocationNotifiationButtonGroup">Notify when someone is within %1$s</string>
+    <string name="LocationNotifiationCloser">You are already closer than %1$s</string>
+    <string name="ShareLocationAlertTitle">Share Location</string>
+    <string name="ShareLocationAlertButton">Share</string>
+    <string name="ShareLocationAlertText">For the alert to work, please share your live location in this chat.</string>
+    <string name="ProximityTooltioUser">Alert when %1$s is close</string>
+    <string name="ProximityTooltioGroup">Alert when other members of the group are close</string>
+    <string name="ProximityAlertSet">Proximity alert set</string>
+    <string name="ProximityAlertSetInfoUser">We will notify you once %1$s is within %2$s from you.</string>
+    <string name="ProximityAlertSetInfoGroup2">We will notify you once someone is within %1$s from you.</string>
+    <string name="ProximityAlertCancelled">Proximity alert cancelled</string>
     <!--photo gallery view-->
     <string name="ShowAsList">Weergeven als lijst</string>
     <string name="ShowAsGrid">Weergeven als rooster</string>
@@ -2478,6 +2531,41 @@
     <string name="MainGroupProfileVideoSetHint">Dit is nu de hoofdgroepsvideo.</string>
     <string name="PhotoSavedHint">Photo saved to gallery</string>
     <string name="VideoSavedHint">Video saved to gallery</string>
+    <string name="PhotoSavedToDownloadsHint">Photo saved to downloads</string>
+    <string name="VideoSavedToDownloadsHint">Video saved to downloads</string>
+    <string name="GifSavedToDownloadsHint">GIF saved to downloads</string>
+    <string name="AudioSavedHint">File saved to music</string>
+    <string name="FileSavedHint">File saved to downloads</string>
+    <string name="FilesSavedHint_zero">%1$d files saved to downloads</string>
+    <string name="FilesSavedHint_one">File saved to downloads</string>
+    <string name="FilesSavedHint_two">%1$d files saved to downloads</string>
+    <string name="FilesSavedHint_few">%1$d files saved to downloads</string>
+    <string name="FilesSavedHint_many">%1$d files saved to downloads</string>
+    <string name="FilesSavedHint_other">%1$d files saved to downloads</string>
+    <string name="PhotosSavedHint_zero">%1$d photos saved to gallery</string>
+    <string name="PhotosSavedHint_one">Photo saved to gallery</string>
+    <string name="PhotosSavedHint_two">%1$d photos saved to gallery</string>
+    <string name="PhotosSavedHint_few">%1$d photos saved to gallery</string>
+    <string name="PhotosSavedHint_many">%1$d photos saved to gallery</string>
+    <string name="PhotosSavedHint_other">%1$d photos saved to gallery</string>
+    <string name="VideosSavedHint_zero">%1$d videos saved to gallery</string>
+    <string name="VideosSavedHint_one">Video saved to gallery</string>
+    <string name="VideosSavedHint_two">%1$d videos saved to gallery</string>
+    <string name="VideosSavedHint_few">%1$d videos saved to gallery</string>
+    <string name="VideosSavedHint_many">%1$d videos saved to gallery</string>
+    <string name="VideosSavedHint_other">%1$d videos saved to gallery</string>
+    <string name="AudiosSavedHint_zero">%1$d files saved to music</string>
+    <string name="AudiosSavedHint_one">File saved to music</string>
+    <string name="AudiosSavedHint_two">%1$d files saved to music</string>
+    <string name="AudiosSavedHint_few">%1$d files saved to music</string>
+    <string name="AudiosSavedHint_many">%1$d files saved to music</string>
+    <string name="AudiosSavedHint_other">%1$d files saved to music</string>
+    <string name="MediaSavedHint_zero">%1$d items saved to gallery</string>
+    <string name="MediaSavedHint_one">One item saved to gallery</string>
+    <string name="MediaSavedHint_two">%1$d items saved to gallery</string>
+    <string name="MediaSavedHint_few">%1$d items saved to gallery</string>
+    <string name="MediaSavedHint_many">%1$d items saved to gallery</string>
+    <string name="MediaSavedHint_other">%1$d items saved to gallery</string>
     <!--password view-->
     <string name="TwoStepVerification">Twee-staps-verificatie</string>
     <string name="TwoStepVerificationTitle">Twee-staps-verificatie</string>
@@ -2761,6 +2849,9 @@
     <string name="ActionAddUserSelf">un1 is terug in de groep</string>
     <string name="ActionAddUserSelfMega">un1 is lid van de groep</string>
     <string name="ActionAddUserSelfYou">Je keerde terug naar de groep</string>
+    <string name="ActionUserWithinRadius">un1 is now within %1$s from you</string>
+    <string name="ActionUserWithinYouRadius">You are now within %1$s from un1</string>
+    <string name="ActionUserWithinOtherRadius">un1 is now within %1$s from un2</string>
     <string name="ActionBotAllowed">Je hebt deze bot toegestaan je berichten te sturen door in te loggen op %1$s.</string>
     <string name="ActionBotDocuments">%1$s heeft de volgende documenten ontvangen: %2$s</string>
     <string name="ActionBotDocumentIdentity">Persoonlijke gegevens</string>
@@ -2937,6 +3028,7 @@
     <string name="PermissionDrawAboveOtherApps">Telegram heeft de toestemming \'over andere apps tekenen\' nodig om video\'s af te spelen in Picture-in-Picture-modus.</string>
     <string name="PermissionOpenSettings">INSTELLINGEN</string>
     <string name="PermissionXiaomiLockscreen">Sta Telegram toe om weer te kunnen geven op het vergrendelscherm om ervoor te zorgen dat oproepen goed werken.</string>
+    <string name="PermissionBackgroundLocation">To share your live location in this chat, Telegram needs access to your location all the time, including while the app is in the background.\n\nWe will access your location only for the duration you choose, and you can stop sharing it any time. We won\'t use your location for any purpose other than sharing it in this chat.</string>
     <!--charts-->
     <string name="GrowthChartTitle">Groei</string>
     <string name="FollowersChartTitle">Volgers</string>
@@ -3010,6 +3102,15 @@
     <string name="TopDaysOfWeekChartTitle">Actiefste dagen</string>
     <string name="StatisticSearchUserHistory">Berichten weergeven</string>
     <string name="StatisticOpenProfile">Profiel openen</string>
+    <string name="SearchTipToday">Vandaag</string>
+    <string name="SearchTipYesterday">Gisteren</string>
+    <string name="StatisticViews">Views</string>
+    <string name="PublicShares">Public Shares</string>
+    <string name="PrivateShares">Private Shares</string>
+    <string name="ViewStats">View Stats</string>
+    <string name="ViewChannelStats">View Channel Stats</string>
+    <string name="ViewMessageStatistic">Message Statistics</string>
+    <string name="ViewMessage">Open Message</string>
     <!--Intro view-->
     <string name="Page1Title">Telegram</string>
     <string name="Page2Title">Snel</string>
@@ -3244,6 +3345,12 @@
     <string name="NewMessages_few">%1$d nieuwe berichten</string>
     <string name="NewMessages_many">%1$d nieuwe berichten</string>
     <string name="NewMessages_other">%1$d nieuwe berichten</string>
+    <string name="MessagesUnpinned_zero">%1$d messages unpinned</string>
+    <string name="MessagesUnpinned_one">message unpinned</string>
+    <string name="MessagesUnpinned_two">%1$d messages unpinned</string>
+    <string name="MessagesUnpinned_few">%1$d messages unpinned</string>
+    <string name="MessagesUnpinned_many">%1$d messages unpinned</string>
+    <string name="MessagesUnpinned_other">%1$d messages unpinned</string>
     <string name="messages_zero">%1$d berichten</string>
     <string name="messages_one">%1$d bericht</string>
     <string name="messages_two">%1$d berichten</string>
@@ -3400,6 +3507,12 @@
     <string name="Shares_few">%1$s keer gedeeld</string>
     <string name="Shares_many">%1$s keer gedeeld</string>
     <string name="Shares_other">%1$s keer gedeeld</string>
+    <string name="PublicSharesCount_zero">%1$s public shares</string>
+    <string name="PublicSharesCount_one">%1$s public share</string>
+    <string name="PublicSharesCount_two">%1$s public shares</string>
+    <string name="PublicSharesCount_few">%1$s public shares</string>
+    <string name="PublicSharesCount_many">%1$s public shares</string>
+    <string name="PublicSharesCount_other">%1$s public shares</string>
     <string name="Shared_zero">%1$s shared</string>
     <string name="Shared_one">%1$s shared</string>
     <string name="Shared_two">%1$s shared</string>
@@ -3611,6 +3724,24 @@
     <string name="Comments_few">%1$d Comments</string>
     <string name="Comments_many">%1$d Comments</string>
     <string name="Comments_other">%1$d Comments</string>
+    <string name="CommentsCount_zero">%1$d comments</string>
+    <string name="CommentsCount_one">%1$d comment</string>
+    <string name="CommentsCount_two">%1$d comments</string>
+    <string name="CommentsCount_few">%1$d comments</string>
+    <string name="CommentsCount_many">%1$d comments</string>
+    <string name="CommentsCount_other">%1$d comments</string>
+    <string name="CommentsNoNumber_zero">comments</string>
+    <string name="CommentsNoNumber_one">comment</string>
+    <string name="CommentsNoNumber_two">comments</string>
+    <string name="CommentsNoNumber_few">comments</string>
+    <string name="CommentsNoNumber_many">comments</string>
+    <string name="CommentsNoNumber_other">comments</string>
+    <string name="PinnedMessagesCount_zero">%1$d Pinned Messages</string>
+    <string name="PinnedMessagesCount_one">Pinned Message</string>
+    <string name="PinnedMessagesCount_two">%1$d Pinned Messages</string>
+    <string name="PinnedMessagesCount_few">%1$d Pinned Messages</string>
+    <string name="PinnedMessagesCount_many">%1$d Pinned Messages</string>
+    <string name="PinnedMessagesCount_other">%1$d Pinned Messages</string>
     <!--accessibility descriptions-->
     <string name="AccDescrGroup">Groep</string>
     <string name="AccDescrChannel">Kanaal</string>
@@ -3684,6 +3815,7 @@
     <string name="AccDescrIVTitle">Titel</string>
     <string name="AccDescrIVHeading">Titel</string>
     <string name="AccDescrMyLocation">Mijn locatie</string>
+    <string name="AccDescrLocationNotify">Notify when people sharing location are in range</string>
     <string name="AccDescrVideoQuality">Videokwaliteit</string>
     <string name="AccDescrAspectRatio">Beelverhouding</string>
     <string name="AccDescrTakeMorePics">Nog een foto nemen</string>
@@ -3737,6 +3869,7 @@
     <string name="AccDescrVoipCamSwitchedToBack">Overgeschakeld naar de achtercamera</string>
     <string name="AccDescrVoipCamOn">De camera staat aan</string>
     <string name="AccDescrVoipCamOff">De camera staat uit</string>
+    <string name="AccPinnedMessagesList">Pinned message list</string>
     <!--date formatters-->
     <string name="formatterMonthYear">MMMM yyyy</string>
     <string name="formatterStats12H">dd MMM yyyy, h:mm a</string>
@@ -3765,5 +3898,4 @@
     <string name="RemindTodayAt">\'Herinner vandaag om HH:mm</string>
     <string name="RemindDayAt">\'Herinner op\' d MMM \'om\' HH:mm</string>
     <string name="RemindDayYearAt">\'Herinner op\' d MMM yyyy \'om\' HH:mm</string>
-    <string name="SearchTipToday">Today</string>
 </resources>

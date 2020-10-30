@@ -757,7 +757,6 @@ public final class Bulletin {
             linearLayout.addView(titleTextView);
 
             subtitleTextView = new TextView(context);
-            subtitleTextView.setMaxLines(2);
             subtitleTextView.setTextColor(undoInfoColor);
             subtitleTextView.setTypeface(Typeface.SANS_SERIF);
             subtitleTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);

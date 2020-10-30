@@ -583,17 +583,17 @@ public class LocationController extends BaseController implements NotificationCe
         return cachedNearbyChats;
     }
 
-    protected void addSharingLocation(long did, int mid, int period, int radius, TLRPC.Message message) {
+    protected void addSharingLocation(TLRPC.Message message) {
         final SharingLocationInfo info = new SharingLocationInfo();
-        info.did = did;
-        info.mid = mid;
-        info.period = period;
-        info.lastSentProximityMeters = info.proximityMeters = radius;
+        info.did = message.dialog_id;
+        info.mid = message.id;
+        info.period = message.media.period;
+        info.lastSentProximityMeters = info.proximityMeters = message.media.proximity_notification_radius;
         info.account = currentAccount;
         info.messageObject = new MessageObject(currentAccount, message, false, false);
-        info.stopTime = getConnectionsManager().getCurrentTime() + period;
-        final SharingLocationInfo old = sharingLocationsMap.get(did);
-        sharingLocationsMap.put(did, info);
+        info.stopTime = getConnectionsManager().getCurrentTime() + info.period;
+        final SharingLocationInfo old = sharingLocationsMap.get(info.did);
+        sharingLocationsMap.put(info.did, info);
         if (old != null) {
             sharingLocations.remove(old);
         }

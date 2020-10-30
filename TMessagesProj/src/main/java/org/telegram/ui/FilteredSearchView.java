@@ -99,8 +99,6 @@ public class FilteredSearchView extends FrameLayout implements NotificationCente
     String lastMessagesSearchString;
     String lastSearchFilterQueryString;
 
-    int currentAccount = UserConfig.selectedAccount;
-
     FiltersView.MediaFilterData currentSearchFilter;
     int currentSearchDialogId;
     long currentSearchMaxDate;
@@ -485,6 +483,8 @@ public class FilteredSearchView extends FrameLayout implements NotificationCente
 
         final int folderId = uiCallback.getFolderId();
 
+        int currentAccount = UserConfig.selectedAccount;
+
         AndroidUtilities.runOnUIThread(searchRunnable = () -> {
             TLObject request;
 
@@ -810,7 +810,7 @@ public class FilteredSearchView extends FrameLayout implements NotificationCente
         for (int j = 0; j < messages.size(); j++) {
             MessageObject messageObject = messages.get(j);
             long dialogId = messageObject.getDialogId();
-            int currentChannelId = dialogId < 0 && ChatObject.isChannel((int) -dialogId, currentAccount) ? (int) -dialogId : 0;
+            int currentChannelId = dialogId < 0 && ChatObject.isChannel((int) -dialogId, UserConfig.selectedAccount) ? (int) -dialogId : 0;
             if (currentChannelId == channelId) {
                 for (int i = 0; i < markAsDeletedMessages.size(); i++) {
                     if (messageObject.getId() == markAsDeletedMessages.get(i)) {
@@ -989,10 +989,10 @@ public class FilteredSearchView extends FrameLayout implements NotificationCente
                     AndroidUtilities.openDocument(message, parentActivity, parentFragment);
                 } else if (!cell.isLoading()) {
                     MessageObject messageObject = cell.getMessage();
-                    AccountInstance.getInstance(currentAccount).getFileLoader().loadFile(document, messageObject, 0, 0);
+                    AccountInstance.getInstance(UserConfig.selectedAccount).getFileLoader().loadFile(document, messageObject, 0, 0);
                     cell.updateFileExistIcon();
                 } else {
-                    AccountInstance.getInstance(currentAccount).getFileLoader().cancelLoadFile(document);
+                    AccountInstance.getInstance(UserConfig.selectedAccount).getFileLoader().cancelLoadFile(document);
                     cell.updateFileExistIcon();
                 }
             }
@@ -1407,16 +1407,18 @@ public class FilteredSearchView extends FrameLayout implements NotificationCente
         EmbedBottomSheet.show(parentActivity, webPage.site_name, webPage.description, webPage.url, webPage.embed_url, webPage.embed_width, webPage.embed_height, false);
     }
 
+    int lastAccount;
+    
     @Override
     protected void onAttachedToWindow() {
         super.onAttachedToWindow();
-        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.emojiDidLoad);
+        NotificationCenter.getInstance(lastAccount = UserConfig.selectedAccount).addObserver(this, NotificationCenter.emojiDidLoad);
     }
 
     @Override
     protected void onDetachedFromWindow() {
         super.onDetachedFromWindow();
-        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.emojiDidLoad);
+        NotificationCenter.getInstance(lastAccount).removeObserver(this, NotificationCenter.emojiDidLoad);
     }
 
     @Override

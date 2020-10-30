@@ -10,6 +10,8 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.telegram.messenger.BuildVars;
+import org.telegram.messenger.MessagesController;
+import org.telegram.messenger.SharedConfig;
 import org.telegram.ui.Cells.ChatMessageCell;
 
 import java.util.ArrayList;
@@ -57,7 +59,7 @@ public class RecyclerAnimationScrollHelper {
         }
 
         int n = recyclerView.getChildCount();
-        if (n == 0) {
+        if (n == 0 || !MessagesController.getGlobalMainSettings().getBoolean("view_animations", true)) {
             layoutManager.scrollToPositionWithOffset(position, offset, bottom);
             return;
         }

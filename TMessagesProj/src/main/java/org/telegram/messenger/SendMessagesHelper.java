@@ -4846,7 +4846,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                         }
 
                         if (MessageObject.isLiveLocationMessage(newMsgObj) && newMsgObj.via_bot_id == 0 && TextUtils.isEmpty(newMsgObj.via_bot_name)) {
-                            getLocationController().addSharingLocation(newMsgObj.dialog_id, newMsgObj.id, newMsgObj.media.period, newMsgObj.media.proximity_notification_radius, newMsgObj);
+                            getLocationController().addSharingLocation(newMsgObj);
                         }
 
                         if (!isSentError) {
@@ -4923,7 +4923,9 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
             TLRPC.PhotoSize strippedOld = null;
             TLRPC.PhotoSize strippedNew = null;
             TLObject photoObject = null;
-            if (newMsgObj.isDice()) {
+            if (newMsgObj.isLiveLocation() && sentMessage.media instanceof TLRPC.TL_messageMediaGeoLive) {
+                newMsg.media.period = sentMessage.media.period;
+            } else if (newMsgObj.isDice()) {
                 TLRPC.TL_messageMediaDice mediaDice = (TLRPC.TL_messageMediaDice) newMsg.media;
                 TLRPC.TL_messageMediaDice mediaDiceNew = (TLRPC.TL_messageMediaDice) sentMessage.media;
                 mediaDice.value = mediaDiceNew.value;

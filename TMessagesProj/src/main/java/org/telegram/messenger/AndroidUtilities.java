@@ -377,7 +377,7 @@ public class AndroidUtilities {
                 LinkSpec spec = new LinkSpec();
 
                 String url = makeUrl(m.group(0), schemes, m);
-                if (internalOnly && !Browser.isInternalUrl(url, null)) {
+                if (internalOnly && !Browser.isInternalUrl(url, true, null)) {
                     continue;
                 }
                 spec.url = url;
