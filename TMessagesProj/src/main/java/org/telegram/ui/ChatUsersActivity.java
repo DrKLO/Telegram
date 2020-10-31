@@ -1890,9 +1890,7 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
             req.offset = offset;
             req.limit = count;
             int reqId = getConnectionsManager().sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
-                if (parentLayout != null) {
-                    parentLayout.resumeDelayedFragmentAnimation();
-                }
+                resumeDelayedFragmentAnimation();
                 if (error == null) {
                     TLRPC.TL_channels_channelParticipants res = (TLRPC.TL_channels_channelParticipants) response;
                     if (type == TYPE_ADMIN) {

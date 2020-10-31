@@ -276,7 +276,7 @@ public class NotificationCenter {
     public int setAnimationInProgress(int oldIndex, int[] allowedNotifications, boolean stopHeavyOperations) {
         onAnimationFinish(oldIndex);
         if (heavyOperationsCounter.isEmpty() && stopHeavyOperations) {
-            NotificationCenter.getGlobalInstance().postNotificationName(stopAllHeavyOperations, 512);
+            getGlobalInstance().postNotificationName(stopAllHeavyOperations, 512);
         }
 
         animationInProgressCount++;

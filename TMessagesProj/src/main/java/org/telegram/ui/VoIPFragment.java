@@ -99,6 +99,8 @@ public class VoIPFragment implements VoIPBaseService.StateListener, Notification
     private final static int STATE_FULLSCREEN = 1;
     private final static int STATE_FLOATING = 2;
 
+    private int currentAccount;
+
     Activity activity;
 
     TLRPC.User currentUser;
@@ -205,12 +207,11 @@ public class VoIPFragment implements VoIPBaseService.StateListener, Notification
     private boolean screenWasWakeup;
     private boolean isVideoCall;
 
-    public static void show(Activity activity) {
-        show(activity, false);
+    public static void show(Activity activity, int account) {
+        show(activity, false, account);
     }
 
-
-    public static void show(Activity activity, boolean overlay) {
+    public static void show(Activity activity, boolean overlay, int account) {
         if (instance != null && instance.windowView.getParent() == null) {
             if (instance != null) {
                 instance.callingUserTextureView.renderer.release();
@@ -229,6 +230,7 @@ public class VoIPFragment implements VoIPBaseService.StateListener, Notification
         }
         VoIPFragment fragment = new VoIPFragment();
         fragment.activity = activity;
+        fragment.currentAccount = account;
         instance = fragment;
         VoIPWindowView windowView = new VoIPWindowView(activity, !transitionFromPip) {
             @Override
@@ -333,7 +335,7 @@ public class VoIPFragment implements VoIPBaseService.StateListener, Notification
                 h -= instance.lastInsets.getSystemWindowInsetBottom();
             }
             if (instance.canSwitchToPip) {
-                VoIPPiPView.show(instance.activity, instance.windowView.getMeasuredWidth(), h, VoIPPiPView.ANIMATION_ENTER_TYPE_SCALE);
+                VoIPPiPView.show(instance.activity, instance.currentAccount, instance.windowView.getMeasuredWidth(), h, VoIPPiPView.ANIMATION_ENTER_TYPE_SCALE);
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT_WATCH && instance.lastInsets != null) {
                     VoIPPiPView.topInset = instance.lastInsets.getSystemWindowInsetTop();
                     VoIPPiPView.bottomInset = instance.lastInsets.getSystemWindowInsetBottom();
@@ -379,13 +381,13 @@ public class VoIPFragment implements VoIPBaseService.StateListener, Notification
     }
 
     public VoIPFragment() {
-        currentUser = MessagesController.getInstance(UserConfig.selectedAccount).getUser(UserConfig.getInstance(UserConfig.selectedAccount).getClientUserId());
+        currentUser = MessagesController.getInstance(currentAccount).getUser(UserConfig.getInstance(currentAccount).getClientUserId());
         callingUser = VoIPService.getSharedInstance().getUser();
         VoIPService.getSharedInstance().registerStateListener(this);
         isOutgoing = VoIPService.getSharedInstance().isOutgoing();
         previousState = -1;
         currentState = VoIPService.getSharedInstance().getCallState();
-        NotificationCenter.getInstance(UserConfig.selectedAccount).addObserver(this, NotificationCenter.voipServiceCreated);
+        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.voipServiceCreated);
         NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.emojiDidLoad);
         NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.closeInCallActivity);
     }
@@ -395,7 +397,7 @@ public class VoIPFragment implements VoIPBaseService.StateListener, Notification
         if (service != null) {
             service.unregisterStateListener(this);
         }
-        NotificationCenter.getInstance(UserConfig.selectedAccount).removeObserver(this, NotificationCenter.voipServiceCreated);
+        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.voipServiceCreated);
         NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.emojiDidLoad);
         NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.closeInCallActivity);
     }
@@ -732,7 +734,7 @@ public class VoIPFragment implements VoIPBaseService.StateListener, Notification
                     intent.putExtra("start_incall_activity", false);
                     intent.putExtra("video_call", isVideoCall);
                     intent.putExtra("can_video_call", isVideoCall);
-                    intent.putExtra("account", UserConfig.selectedAccount);
+                    intent.putExtra("account", currentAccount);
                     try {
                         activity.startService(intent);
                     } catch (Throwable e) {
@@ -863,7 +865,7 @@ public class VoIPFragment implements VoIPBaseService.StateListener, Notification
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT_WATCH && instance.lastInsets != null) {
                 h -= instance.lastInsets.getSystemWindowInsetBottom();
             }
-            VoIPPiPView.show(instance.activity, instance.windowView.getMeasuredWidth(), h, VoIPPiPView.ANIMATION_ENTER_TYPE_TRANSITION);
+            VoIPPiPView.show(instance.activity, instance.currentAccount, instance.windowView.getMeasuredWidth(), h, VoIPPiPView.ANIMATION_ENTER_TYPE_TRANSITION);
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT_WATCH && instance.lastInsets != null) {
                 VoIPPiPView.topInset = instance.lastInsets.getSystemWindowInsetTop();
                 VoIPPiPView.bottomInset = instance.lastInsets.getSystemWindowInsetBottom();
@@ -883,13 +885,13 @@ public class VoIPFragment implements VoIPBaseService.StateListener, Notification
         VoIPPiPView.switchingToPip = true;
         switchingToPip = true;
         Animator animator = createPiPTransition(false);
-        animationIndex = NotificationCenter.getInstance(UserConfig.selectedAccount).setAnimationInProgress(animationIndex, null);
+        animationIndex = NotificationCenter.getInstance(currentAccount).setAnimationInProgress(animationIndex, null);
         animator.addListener(new AnimatorListenerAdapter() {
             @Override
             public void onAnimationEnd(Animator animation) {
                 VoIPPiPView.getInstance().windowView.setAlpha(1f);
                 AndroidUtilities.runOnUIThread(() -> {
-                    NotificationCenter.getInstance(UserConfig.selectedAccount).onAnimationFinish(animationIndex);
+                    NotificationCenter.getInstance(currentAccount).onAnimationFinish(animationIndex);
                     VoIPPiPView.getInstance().onTransitionEnd();
                     currentUserCameraFloatingLayout.setCornerRadius(-1f);
                     callingUserTextureView.renderer.release();
@@ -920,7 +922,7 @@ public class VoIPFragment implements VoIPBaseService.StateListener, Notification
         switchingToPip = true;
         VoIPPiPView.switchingToPip = true;
         VoIPPiPView.prepareForTransition();
-        animationIndex = NotificationCenter.getInstance(UserConfig.selectedAccount).setAnimationInProgress(animationIndex, null);
+        animationIndex = NotificationCenter.getInstance(currentAccount).setAnimationInProgress(animationIndex, null);
         AndroidUtilities.runOnUIThread(() -> {
             windowView.setAlpha(1f);
             Animator animator = createPiPTransition(true);
@@ -953,7 +955,7 @@ public class VoIPFragment implements VoIPBaseService.StateListener, Notification
                 animator.addListener(new AnimatorListenerAdapter() {
                     @Override
                     public void onAnimationEnd(Animator animation) {
-                        NotificationCenter.getInstance(UserConfig.selectedAccount).onAnimationFinish(animationIndex);
+                        NotificationCenter.getInstance(currentAccount).onAnimationFinish(animationIndex);
                         currentUserCameraFloatingLayout.setCornerRadius(-1f);
                         switchingToPip = false;
                         currentUserCameraFloatingLayout.switchingToPip = false;
@@ -1252,7 +1254,7 @@ public class VoIPFragment implements VoIPBaseService.StateListener, Notification
                                         intent.putExtra("start_incall_activity", false);
                                         intent.putExtra("video_call", false);
                                         intent.putExtra("can_video_call", false);
-                                        intent.putExtra("account", UserConfig.selectedAccount);
+                                        intent.putExtra("account", currentAccount);
                                         try {
                                             activity.startService(intent);
                                         } catch (Throwable e) {
@@ -2052,7 +2054,7 @@ public class VoIPFragment implements VoIPBaseService.StateListener, Notification
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT_WATCH && instance.lastInsets != null) {
                 h -= instance.lastInsets.getSystemWindowInsetBottom();
             }
-            VoIPPiPView.show(instance.activity, instance.windowView.getMeasuredWidth(), h, VoIPPiPView.ANIMATION_ENTER_TYPE_SCALE);
+            VoIPPiPView.show(instance.activity, instance.currentAccount, instance.windowView.getMeasuredWidth(), h, VoIPPiPView.ANIMATION_ENTER_TYPE_SCALE);
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT_WATCH && instance.lastInsets != null) {
                 VoIPPiPView.topInset = instance.lastInsets.getSystemWindowInsetTop();
                 VoIPPiPView.bottomInset = instance.lastInsets.getSystemWindowInsetBottom();

@@ -1048,6 +1048,8 @@ public class DownloadController extends BaseController implements NotificationCe
                                     MessageObject messageObject = (MessageObject) delayedMessage.extraHashMap.get(fileName + "_i");
                                     if (messageObject != null && messageObject.isVideo()) {
                                         getMessagesController().sendTyping(dialogId, topMessageId, 5, 0);
+                                    } else if (messageObject != null && messageObject.getDocument() != null) {
+                                        getMessagesController().sendTyping(dialogId, topMessageId, 3, 0);
                                     } else {
                                         getMessagesController().sendTyping(dialogId, topMessageId, 4, 0);
                                     }

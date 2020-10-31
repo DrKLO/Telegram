@@ -79,6 +79,8 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
     private boolean isMusic;
     private boolean supportsCalls = true;
 
+    private int account = UserConfig.selectedAccount;
+
     private boolean isLocation;
 
     private FragmentContextViewDelegate delegate;
@@ -715,7 +717,7 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
                     animatorSet.addListener(new AnimatorListenerAdapter() {
                         @Override
                         public void onAnimationEnd(Animator animation) {
-                            NotificationCenter.getInstance(UserConfig.selectedAccount).onAnimationFinish(animationIndex);
+                            NotificationCenter.getInstance(account).onAnimationFinish(animationIndex);
                             if (animatorSet != null && animatorSet.equals(animation)) {
                                 setVisibility(GONE);
                                 if (delegate != null) {
@@ -726,7 +728,7 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
                         }
                     });
                     animatorSet.start();
-                    animationIndex = NotificationCenter.getInstance(UserConfig.selectedAccount).setAnimationInProgress(animationIndex, null);
+                    animationIndex = NotificationCenter.getInstance(account).setAnimationInProgress(animationIndex, null);
                 }
             }
         } else {
@@ -765,7 +767,7 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
                     animatorSet.addListener(new AnimatorListenerAdapter() {
                         @Override
                         public void onAnimationEnd(Animator animation) {
-                            NotificationCenter.getInstance(UserConfig.selectedAccount).onAnimationFinish(animationIndex);
+                            NotificationCenter.getInstance(account).onAnimationFinish(animationIndex);
                             if (animatorSet != null && animatorSet.equals(animation)) {
                                 if (delegate != null) {
                                     delegate.onAnimation(false, true);
@@ -775,7 +777,7 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
                         }
                     });
                     animatorSet.start();
-                    animationIndex = NotificationCenter.getInstance(UserConfig.selectedAccount).setAnimationInProgress(animationIndex, null);
+                    animationIndex = NotificationCenter.getInstance(account).setAnimationInProgress(animationIndex, null);
                 }
                 visible = true;
                 setVisibility(VISIBLE);

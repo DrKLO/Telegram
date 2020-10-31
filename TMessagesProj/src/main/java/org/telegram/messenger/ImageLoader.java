@@ -403,9 +403,11 @@ public class ImageLoader {
         @Override
         protected void onPostExecute(final String result) {
             if (result != null) {
-                cacheImage.httpTask = new HttpImageTask(cacheImage, 0, result);
-                httpTasks.add(cacheImage.httpTask);
-                runHttpTasks(false);
+                imageLoadQueue.postRunnable(() -> {
+                    cacheImage.httpTask = new HttpImageTask(cacheImage, 0, result);
+                    httpTasks.add(cacheImage.httpTask);
+                    runHttpTasks(false);
+                });
             } else if (canRetry) {
                 artworkLoadError(cacheImage.url);
             }

@@ -233,9 +233,10 @@ public class LocaleController {
                 "nl", "nn", "no", "sv", "af", "bg", "bn", "ca", "eu", "fur", "fy", "gu", "ha", "is", "ku",
                 "lb", "ml", "mr", "nah", "ne", "om", "or", "pa", "pap", "ps", "so", "sq", "sw", "ta", "te",
                 "tk", "ur", "zu", "mn", "gsw", "chr", "rm", "pt", "an", "ast"}, new PluralRules_One());
-        addRules(new String[]{"cs", "sk", "sr", "hr", "bs"}, new PluralRules_Czech());
+        addRules(new String[]{"cs", "sk"}, new PluralRules_Czech());
         addRules(new String[]{"ff", "fr", "kab"}, new PluralRules_French());
         addRules(new String[]{"ru", "uk", "be", "sh"}, new PluralRules_Balkan());
+        addRules(new String[]{"sr", "hr", "bs"}, new PluralRules_Serbian());
         addRules(new String[]{"lv"}, new PluralRules_Latvian());
         addRules(new String[]{"lt"}, new PluralRules_Lithuanian());
         addRules(new String[]{"pl"}, new PluralRules_Polish());
@@ -2804,6 +2805,20 @@ public class LocaleController {
                 return QUANTITY_FEW;
             } else if ((rem10 == 0 || (rem10 >= 5 && rem10 <= 9) || (rem100 >= 11 && rem100 <= 14))) {
                 return QUANTITY_MANY;
+            } else {
+                return QUANTITY_OTHER;
+            }
+        }
+    }
+
+    public static class PluralRules_Serbian extends PluralRules {
+        public int quantityForNumber(int count) {
+            int rem100 = count % 100;
+            int rem10 = count % 10;
+            if (rem10 == 1 && rem100 != 11) {
+                return QUANTITY_ONE;
+            } else if (rem10 >= 2 && rem10 <= 4 && !(rem100 >= 12 && rem100 <= 14)) {
+                return QUANTITY_FEW;
             } else {
                 return QUANTITY_OTHER;
             }

@@ -490,6 +490,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
 
     private boolean openAnimationEnded;
     private boolean fragmentOpened;
+    private boolean fragmentBeginToShow;
     private long openAnimationStartTime;
 
     private boolean scrollToTopOnResume;
@@ -634,6 +635,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
     private long activityResumeTime;
 
     private int transitionAnimationIndex;
+    private int scrollAnimationIndex;
     private final static int[] allowedNotificationsDuringChatListAnimations = new int[]{
             NotificationCenter.messagesRead,
             NotificationCenter.threadMessagesRead,
@@ -1486,6 +1488,8 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         if (chatAttachAlert != null) {
             chatAttachAlert.dismissInternal();
         }
+        getNotificationCenter().onAnimationFinish(transitionAnimationIndex);
+        getNotificationCenter().onAnimationFinish(scrollAnimationIndex);
         hideUndoViews();
         if (chatInviteRunnable != null) {
             AndroidUtilities.cancelRunOnUIThread(chatInviteRunnable);
@@ -4020,13 +4024,12 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         if (MessagesController.getGlobalMainSettings().getBoolean("view_animations", true)) {
             chatListItemAniamtor = new ChatListItemAnimator(this, chatListView) {
 
-                int index = -1;
                 Runnable finishRunnable;
 
                 @Override
                 public void onAnimationStart() {
-                    if (index == -1) {
-                        index = getNotificationCenter().setAnimationInProgress(index, allowedNotificationsDuringChatListAnimations, false);
+                    if (scrollAnimationIndex == -1) {
+                        scrollAnimationIndex = getNotificationCenter().setAnimationInProgress(scrollAnimationIndex, allowedNotificationsDuringChatListAnimations, false);
                     }
                     if (finishRunnable != null) {
                         AndroidUtilities.cancelRunOnUIThread(finishRunnable);
@@ -4048,9 +4051,9 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                             scrollToMessageId(nextScrollToMessageId, nextScrollFromMessageId, nextScrollSelect, nextScrollLoadIndex, nextScrollForce);
                             nextScrollToMessageId = 0;
                         }
-                        if (index != -1) {
-                            getNotificationCenter().onAnimationFinish(index);
-                            index = -1;
+                        if (scrollAnimationIndex != -1) {
+                            getNotificationCenter().onAnimationFinish(scrollAnimationIndex);
+                            scrollAnimationIndex = -1;
                         }
                         if (BuildVars.LOGS_ENABLED) {
                             FileLog.d("chatItemAnimator enable notifications");
@@ -4066,9 +4069,9 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                         AndroidUtilities.cancelRunOnUIThread(finishRunnable);
                     }
                     AndroidUtilities.runOnUIThread(finishRunnable = () -> {
-                        if (index != -1) {
-                            getNotificationCenter().onAnimationFinish(index);
-                            index = -1;
+                        if (scrollAnimationIndex != -1) {
+                            getNotificationCenter().onAnimationFinish(scrollAnimationIndex);
+                            scrollAnimationIndex = -1;
                         }
                         if (BuildVars.LOGS_ENABLED) {
                             FileLog.d("chatItemAnimator enable notifications");
@@ -11158,11 +11161,12 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 } else {
                     doNotRemoveLoadIndex = false;
                 }
-                if (!doNotRemoveLoadIndex && !openAnimationEnded) {
+                if (!doNotRemoveLoadIndex && !fragmentBeginToShow && !paused) {
                     int[] alowedNotifications = new int[]{NotificationCenter.chatInfoDidLoad, NotificationCenter.dialogsNeedReload, NotificationCenter.scheduledMessagesUpdated,
                             NotificationCenter.closeChats, NotificationCenter.botKeyboardDidLoad, NotificationCenter.userInfoDidLoad, NotificationCenter.pinnedInfoDidLoad, NotificationCenter.needDeleteDialog/*, NotificationCenter.botInfoDidLoad*/};
                     if (transitionAnimationIndex == 0) {
                         transitionAnimationIndex = getNotificationCenter().setAnimationInProgress(transitionAnimationIndex, alowedNotifications);
+                        AndroidUtilities.runOnUIThread(() -> getNotificationCenter().onAnimationFinish(transitionAnimationIndex), 800);
                     } else {
                         getNotificationCenter().updateAllowedNotifications(transitionAnimationIndex, alowedNotifications);
                     }
@@ -11371,9 +11375,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     firstLoading = false;
                     AndroidUtilities.runOnUIThread(() -> {
                         getNotificationCenter().runDelayedNotifications();
-                        if (parentLayout != null) {
-                            parentLayout.resumeDelayedFragmentAnimation();
-                        }
+                        resumeDelayedFragmentAnimation();
                     });
                 }
 
@@ -14945,6 +14947,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
     public void onTransitionAnimationStart(boolean isOpen, boolean backward) {
         int[] alowedNotifications = null;
         if (isOpen) {
+            fragmentBeginToShow = true;
             if (transitionAnimationIndex == 0) {
                 alowedNotifications = new int[]{
                         NotificationCenter.dialogsNeedReload, NotificationCenter.closeChats,

@@ -1448,7 +1448,7 @@ public class ThemePreviewActivity extends BaseFragment implements DownloadContro
                             public int getDefaultColor(int num) {
                                 if (colorType == 3 && applyingTheme.firstAccentIsDefault && num == 0) {
                                     Theme.ThemeAccent accent = applyingTheme.themeAccentsMap.get(Theme.DEFALT_THEME_ACCENT_ID);
-                                    return accent.myMessagesAccentColor;
+                                    return accent != null ? accent.myMessagesAccentColor : 0;
                                 }
                                 return 0;
                             }

@@ -4253,7 +4253,7 @@ public class MessagesController extends BaseController implements NotificationCe
     }
 
     public void deleteDialog(final long did, final int onlyHistory, boolean revoke) {
-        deleteDialog(did, true, onlyHistory, 0, revoke, null, 0);
+        deleteDialog(did, 1, onlyHistory, 0, revoke, null, 0);
     }
 
     public void setDialogsInTransaction(boolean transaction) {
@@ -4263,9 +4263,14 @@ public class MessagesController extends BaseController implements NotificationCe
         }
     }
 
-    protected void deleteDialog(final long did, final boolean first, final int onlyHistory, final int max_id, boolean revoke, TLRPC.InputPeer peer, final long taskId) {
+    protected void deleteDialog(long did, int first, int onlyHistory, int max_id, boolean revoke, TLRPC.InputPeer peer, long taskId) {
         if (onlyHistory == 2) {
             getMessagesStorage().deleteDialog(did, onlyHistory);
+            return;
+        }
+        if (first == 1 && max_id == 0) {
+            TLRPC.InputPeer peerFinal = peer;
+            getMessagesStorage().getDialogMaxMessageId(did, (param) -> deleteDialog(did, 2, onlyHistory, Math.max(0, param), revoke, peerFinal, taskId));
             return;
         }
         if (onlyHistory == 0 || onlyHistory == 3) {
@@ -4275,15 +4280,8 @@ public class MessagesController extends BaseController implements NotificationCe
         int high_id = (int) (did >> 32);
         int max_id_delete = max_id;
 
-        if (first) {
+        if (first != 0) {
             boolean isPromoDialog = false;
-            boolean emptyMax = max_id_delete == 0;
-            if (emptyMax) {
-                int max = getMessagesStorage().getDialogMaxMessageId(did);
-                if (max > 0) {
-                    max_id_delete = Math.max(max, max_id_delete);
-                }
-            }
             getMessagesStorage().deleteDialog(did, onlyHistory);
             TLRPC.Dialog dialog = dialogs_dict.get(did);
             if (onlyHistory == 0 || onlyHistory == 3) {
@@ -4293,7 +4291,7 @@ public class MessagesController extends BaseController implements NotificationCe
                 getMediaDataController().cleanDraft(did, 0, false);
             }
             if (dialog != null) {
-                if (emptyMax) {
+                if (first == 2) {
                     max_id_delete = Math.max(0, dialog.top_message);
                     max_id_delete = Math.max(max_id_delete, dialog.read_inbox_max_id);
                     max_id_delete = Math.max(max_id_delete, dialog.read_outbox_max_id);
@@ -4373,7 +4371,7 @@ public class MessagesController extends BaseController implements NotificationCe
                     }
                 }
             }
-            if (emptyMax) {
+            if (first == 2) {
                 Integer max = dialogs_read_inbox_max.get(did);
                 if (max != null) {
                     max_id_delete = Math.max(max, max_id_delete);
@@ -4420,7 +4418,7 @@ public class MessagesController extends BaseController implements NotificationCe
                         data = new NativeByteBuffer(4 + 8 + 4 + 4 + 4 + 4 + peer.getObjectSize());
                         data.writeInt32(13);
                         data.writeInt64(did);
-                        data.writeBool(first);
+                        data.writeBool(first != 0);
                         data.writeInt32(onlyHistory);
                         data.writeInt32(max_id_delete);
                         data.writeBool(revoke);
@@ -4468,7 +4466,7 @@ public class MessagesController extends BaseController implements NotificationCe
                     if (error == null) {
                         TLRPC.TL_messages_affectedHistory res = (TLRPC.TL_messages_affectedHistory) response;
                         if (res.offset > 0) {
-                            deleteDialog(did, false, onlyHistory, max_id_delete_final, revoke, peerFinal, 0);
+                            deleteDialog(did, 0, onlyHistory, max_id_delete_final, revoke, peerFinal, 0);
                         }
                         processNewDifferenceParams(-1, res.pts, -1, res.pts_count);
                         getMessagesStorage().onDeleteQueryComplete(did);

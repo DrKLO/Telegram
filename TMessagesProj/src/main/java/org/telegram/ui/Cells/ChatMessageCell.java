@@ -3414,7 +3414,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                         try {
                             int width = (int) Math.ceil(Theme.chat_replyNamePaint.measureText(site_name) + 1);
                             siteNameLayout = new StaticLayout(site_name, Theme.chat_replyNamePaint, Math.min(width, linkPreviewMaxWidth), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
-                            siteNameRtl = siteNameLayout.getLineLeft(0) != 0;
+                            siteNameRtl = Math.max(siteNameLayout.getLineLeft(0), 0) != 0;
                             int height = siteNameLayout.getLineBottom(siteNameLayout.getLineCount() - 1);
                             linkPreviewHeight += height;
                             totalHeight += height;
@@ -3448,7 +3448,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                             totalHeight += height;
                             boolean checkForRtl = true;
                             for (int a = 0; a < titleLayout.getLineCount(); a++) {
-                                int lineLeft = (int) titleLayout.getLineLeft(a);
+                                int lineLeft = (int) Math.max(0, titleLayout.getLineLeft(a));
                                 if (lineLeft != 0) {
                                     titleIsRTL = true;
                                 }
@@ -3497,7 +3497,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                             int height = authorLayout.getLineBottom(authorLayout.getLineCount() - 1);
                             linkPreviewHeight += height;
                             totalHeight += height;
-                            int lineLeft = (int) authorLayout.getLineLeft(0);
+                            int lineLeft = (int) Math.max(authorLayout.getLineLeft(0), 0);
                             authorX = -lineLeft;
                             int width;
                             if (lineLeft != 0) {
@@ -3536,7 +3536,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                             boolean hasRTL = false;
                             for (int a = 0; a < descriptionLayout.getLineCount(); a++) {
                                 int lineLeft = (int) Math.ceil(descriptionLayout.getLineLeft(a));
-                                if (lineLeft != 0) {
+                                if (lineLeft > 0) {
                                     hasRTL = true;
                                     if (descriptionX == 0) {
                                         descriptionX = -lineLeft;
@@ -3554,7 +3554,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                                 }
 
                                 int width;
-                                if (lineLeft != 0) {
+                                if (lineLeft > 0) {
                                     width = textWidth - lineLeft;
                                 } else {
                                     if (hasRTL) {
@@ -4240,7 +4240,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 boolean titleRtl = false;
                 if (titleLayout != null) {
                     for (int a = 0, N = titleLayout.getLineCount(); a < N; a++) {
-                        if (titleLayout.getLineLeft(a) != 0) {
+                        if (titleLayout.getLineLeft(a) > 0) {
                             titleRtl = true;
                             break;
                         }
@@ -12691,7 +12691,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
     }
 
     public float getNonAnimationTranslationX(boolean update) {
-        if (!currentMessageObject.isOutOwner()) {
+        if (currentMessageObject != null && !currentMessageObject.isOutOwner()) {
             if (update && (checkBoxVisible || checkBoxAnimationInProgress)) {
                 Interpolator interpolator = checkBoxVisible ? CubicBezierInterpolator.EASE_OUT : CubicBezierInterpolator.EASE_IN;
                 checkBoxTranslation = (int) Math.ceil(interpolator.getInterpolation(checkBoxAnimationProgress) * AndroidUtilities.dp(35));
