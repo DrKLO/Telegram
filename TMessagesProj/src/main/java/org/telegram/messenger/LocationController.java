@@ -108,6 +108,8 @@ public class LocationController extends BaseController implements NotificationCe
         public int stopTime;
         public int period;
         public int account;
+        public int proximityMeters;
+        public int lastSentProximityMeters;
         public MessageObject messageObject;
     }
 
@@ -210,6 +212,11 @@ public class LocationController extends BaseController implements NotificationCe
                     }
                     if (!replaced) {
                         messages.add(messageObject.messageOwner);
+                    }
+                } else if (messageObject.messageOwner.action instanceof TLRPC.TL_messageActionGeoProximityReached) {
+                    int lowerId = (int) messageObject.getDialogId();
+                    if (lowerId > 0) {
+                        setProximityLocation(messageObject.getDialogId(), 0, false);
                     }
                 }
             }
@@ -379,7 +386,7 @@ public class LocationController extends BaseController implements NotificationCe
             float[] result = new float[1];
             for (int a = 0; a < sharingLocations.size(); a++) {
                 final SharingLocationInfo info = sharingLocations.get(a);
-                if (info.messageObject.messageOwner.media != null && info.messageObject.messageOwner.media.geo != null) {
+                if (info.messageObject.messageOwner.media != null && info.messageObject.messageOwner.media.geo != null && info.lastSentProximityMeters == info.proximityMeters) {
                     int messageDate = info.messageObject.messageOwner.edit_date != 0 ? info.messageObject.messageOwner.edit_date : info.messageObject.messageOwner.date;
                     TLRPC.GeoPoint point = info.messageObject.messageOwner.media.geo;
                     if (Math.abs(date - messageDate) < 10) {
@@ -398,6 +405,16 @@ public class LocationController extends BaseController implements NotificationCe
                 req.media.geo_point = new TLRPC.TL_inputGeoPoint();
                 req.media.geo_point.lat = AndroidUtilities.fixLocationCoord(lastKnownLocation.getLatitude());
                 req.media.geo_point._long = AndroidUtilities.fixLocationCoord(lastKnownLocation.getLongitude());
+                req.media.geo_point.accuracy_radius = (int) lastKnownLocation.getAccuracy();
+                if (req.media.geo_point.accuracy_radius != 0) {
+                    req.media.geo_point.flags |= 1;
+                }
+                if (info.lastSentProximityMeters != info.proximityMeters) {
+                    req.media.proximity_notification_radius = info.proximityMeters;
+                    req.media.flags |= 8;
+                }
+                req.media.heading = getHeading(lastKnownLocation);
+                req.media.flags |= 4;
                 final int[] reqId = new int[1];
                 reqId[0] = getConnectionsManager().sendRequest(req, (response, error) -> {
                     if (error != null) {
@@ -416,6 +433,9 @@ public class LocationController extends BaseController implements NotificationCe
                             });
                         }
                         return;
+                    }
+                    if ((req.flags & 8) != 0) {
+                        info.lastSentProximityMeters = req.media.proximity_notification_radius;
                     }
                     TLRPC.Updates updates = (TLRPC.Updates) response;
                     boolean updated = false;
@@ -563,16 +583,17 @@ public class LocationController extends BaseController implements NotificationCe
         return cachedNearbyChats;
     }
 
-    protected void addSharingLocation(long did, int mid, int period, TLRPC.Message message) {
+    protected void addSharingLocation(TLRPC.Message message) {
         final SharingLocationInfo info = new SharingLocationInfo();
-        info.did = did;
-        info.mid = mid;
-        info.period = period;
+        info.did = message.dialog_id;
+        info.mid = message.id;
+        info.period = message.media.period;
+        info.lastSentProximityMeters = info.proximityMeters = message.media.proximity_notification_radius;
         info.account = currentAccount;
         info.messageObject = new MessageObject(currentAccount, message, false, false);
-        info.stopTime = getConnectionsManager().getCurrentTime() + period;
-        final SharingLocationInfo old = sharingLocationsMap.get(did);
-        sharingLocationsMap.put(did, info);
+        info.stopTime = getConnectionsManager().getCurrentTime() + info.period;
+        final SharingLocationInfo old = sharingLocationsMap.get(info.did);
+        sharingLocationsMap.put(info.did, info);
         if (old != null) {
             sharingLocations.remove(old);
         }
@@ -598,6 +619,41 @@ public class LocationController extends BaseController implements NotificationCe
         return sharingLocationsMapUI.get(did);
     }
 
+    public boolean setProximityLocation(long did, int meters, boolean broadcast) {
+        SharingLocationInfo info = sharingLocationsMapUI.get(did);
+        if (info != null) {
+            info.proximityMeters = meters;
+        }
+        getMessagesStorage().getStorageQueue().postRunnable(() -> {
+            try {
+                SQLitePreparedStatement state = getMessagesStorage().getDatabase().executeFast("UPDATE sharing_locations SET proximity = ? WHERE uid = ?");
+                state.requery();
+                state.bindInteger(1, meters);
+                state.bindLong(2, did);
+                state.step();
+                state.dispose();
+            } catch (Exception e) {
+                FileLog.e(e);
+            }
+        });
+        if (broadcast) {
+            Utilities.stageQueue.postRunnable(() -> broadcastLastKnownLocation(true));
+        }
+        return info != null;
+    }
+
+    public static int getHeading(Location location) {
+        float val = location.getBearing();
+        if (val > 0 && val < 1.0f) {
+            if (val < 0.5f) {
+                return 360;
+            } else {
+                return 1;
+            }
+        }
+        return (int) val;
+    }
+
     private void loadSharingLocations() {
         getMessagesStorage().getStorageQueue().postRunnable(() -> {
             final ArrayList<SharingLocationInfo> result = new ArrayList<>();
@@ -606,13 +662,14 @@ public class LocationController extends BaseController implements NotificationCe
             try {
                 ArrayList<Integer> usersToLoad = new ArrayList<>();
                 ArrayList<Integer> chatsToLoad = new ArrayList<>();
-                SQLiteCursor cursor = getMessagesStorage().getDatabase().queryFinalized("SELECT uid, mid, date, period, message FROM sharing_locations WHERE 1");
+                SQLiteCursor cursor = getMessagesStorage().getDatabase().queryFinalized("SELECT uid, mid, date, period, message, proximity FROM sharing_locations WHERE 1");
                 while (cursor.next()) {
                     SharingLocationInfo info = new SharingLocationInfo();
                     info.did = cursor.longValue(0);
                     info.mid = cursor.intValue(1);
                     info.stopTime = cursor.intValue(2);
                     info.period = cursor.intValue(3);
+                    info.proximityMeters = cursor.intValue(5);
                     info.account = currentAccount;
                     NativeByteBuffer data = cursor.byteBufferValue(4);
                     if (data != null) {
@@ -688,7 +745,7 @@ public class LocationController extends BaseController implements NotificationCe
                     if (info == null) {
                         return;
                     }
-                    SQLitePreparedStatement state = getMessagesStorage().getDatabase().executeFast("REPLACE INTO sharing_locations VALUES(?, ?, ?, ?, ?)");
+                    SQLitePreparedStatement state = getMessagesStorage().getDatabase().executeFast("REPLACE INTO sharing_locations VALUES(?, ?, ?, ?, ?, ?)");
                     state.requery();
 
                     NativeByteBuffer data = new NativeByteBuffer(info.messageObject.messageOwner.getObjectSize());
@@ -699,6 +756,7 @@ public class LocationController extends BaseController implements NotificationCe
                     state.bindInteger(3, info.stopTime);
                     state.bindInteger(4, info.period);
                     state.bindByteBuffer(5, data);
+                    state.bindInteger(6, info.proximityMeters);
 
                     state.step();
                     state.dispose();
@@ -922,7 +980,7 @@ public class LocationController extends BaseController implements NotificationCe
             return;
         }
         ArrayList<TLRPC.Message> messages = locationsCache.get(dialogId);
-        if (messages.isEmpty() || messages == null) {
+        if (messages == null || messages.isEmpty()) {
             return;
         }
         Integer date = lastReadLocationTime.get(dialogId);
@@ -977,9 +1035,7 @@ public class LocationController extends BaseController implements NotificationCe
             callbacks.remove(callback);
         }
         if (location == null) {
-            if (callback != null) {
-                callback.onLocationAddressAvailable(null, null, null);
-            }
+            callback.onLocationAddressAvailable(null, null, null);
             return;
         }
 
@@ -1084,9 +1140,7 @@ public class LocationController extends BaseController implements NotificationCe
             final String displayNameFinal = displayName;
             AndroidUtilities.runOnUIThread(() -> {
                 callbacks.remove(callback);
-                if (callback != null) {
-                    callback.onLocationAddressAvailable(nameFinal, displayNameFinal, location);
-                }
+                callback.onLocationAddressAvailable(nameFinal, displayNameFinal, location);
             });
         }, 300);
         callbacks.put(callback, fetchLocationRunnable);

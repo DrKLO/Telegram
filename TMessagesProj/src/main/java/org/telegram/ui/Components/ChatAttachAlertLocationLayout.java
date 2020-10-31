@@ -17,6 +17,7 @@ import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
@@ -148,6 +149,7 @@ public class ChatAttachAlertLocationLayout extends ChatAttachAlert.AttachAlertLa
     private FrameLayout lastPressedMarkerView;
 
     private boolean checkPermission = true;
+    private boolean checkBackgroundPermission = true;
 
     private boolean searching;
     private boolean searchWas;
@@ -1118,9 +1120,22 @@ public class ChatAttachAlertLocationLayout extends ChatAttachAlert.AttachAlertLa
         animatorSet.start();
     }
 
-    private void openShareLiveLocation() {
+    public void openShareLiveLocation() {
         if (delegate == null || getParentActivity() == null || myLocation == null) {
             return;
+        }
+        if (checkBackgroundPermission && Build.VERSION.SDK_INT >= 29) {
+            Activity activity = getParentActivity();
+            if (activity != null) {
+                checkBackgroundPermission = false;
+                SharedPreferences preferences = MessagesController.getGlobalMainSettings();
+                int lastTime = preferences.getInt("backgroundloc", 0);
+                if (Math.abs(System.currentTimeMillis() / 1000 - lastTime) > 24 * 60 * 60 && activity.checkSelfPermission(Manifest.permission.ACCESS_BACKGROUND_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                    preferences.edit().putInt("backgroundloc", (int) (System.currentTimeMillis() / 1000)).commit();
+                    AlertsCreator.createBackgroundLocationPermissionDialog(activity, getMessagesController().getUser(getUserConfig().getClientUserId()), this::openShareLiveLocation).show();
+                    return;
+                }
+            }
         }
         TLRPC.User user = null;
         if ((int) dialogId > 0) {

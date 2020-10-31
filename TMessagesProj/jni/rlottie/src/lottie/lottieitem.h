@@ -70,7 +70,7 @@ public:
    VSize size() const;
    void buildRenderTree();
    const LOTLayerNode * renderTree()const;
-   bool render(const rlottie::Surface &surface);
+   bool render(const rlottie::Surface &surface, bool clear);
    void setValue(const std::string &keypath, LOTVariant &value);
    void resetCurrentFrame();
 private:

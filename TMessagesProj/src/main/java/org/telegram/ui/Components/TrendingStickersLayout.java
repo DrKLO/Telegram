@@ -138,10 +138,16 @@ public class TrendingStickersLayout extends FrameLayout implements NotificationC
 
             @Override
             public void setAdapterVisible(boolean visible) {
+                boolean changed = false;
                 if (visible && listView.getAdapter() != searchAdapter) {
                     listView.setAdapter(searchAdapter);
+                    changed = true;
                 } else if (!visible && listView.getAdapter() != adapter) {
                     listView.setAdapter(adapter);
+                    changed = true;
+                }
+                if (changed && listView.getAdapter().getItemCount() > 0) {
+                    layoutManager.scrollToPositionWithOffset(0, -listView.getPaddingTop() + AndroidUtilities.dp(58) + topOffset, false);
                 }
             }
 
@@ -260,6 +266,22 @@ public class TrendingStickersLayout extends FrameLayout implements NotificationC
                 }
                 if (glueToTopAnimator != null) {
                     return 0;
+                }
+                if (gluedToTop) {
+                    int minPosition = 1;
+                    for (int i = 0; i < getChildCount(); i++) {
+                        int p = listView.getChildAdapterPosition(getChildAt(i));
+                        if (p < minPosition) {
+                            minPosition = p;
+                            break;
+                        }
+                    }
+                    if (minPosition == 0) {
+                        View minView = layoutManager.findViewByPosition(minPosition);
+                        if (minView != null && minView.getTop() - dy > AndroidUtilities.dp(58)) {
+                            dy = minView.getTop() - AndroidUtilities.dp(58);
+                        }
+                    }
                 }
                 return super.scrollVerticallyBy(dy, recycler, state);
             }
@@ -448,16 +470,7 @@ public class TrendingStickersLayout extends FrameLayout implements NotificationC
         paddingTop += AndroidUtilities.dp(58);
         if (listView.getPaddingTop() != paddingTop) {
             ignoreLayout = true;
-            listView.setPadding(0, paddingTop, 0, listView.getPaddingBottom());
-            ignoreLayout = false;
-        }
-    }
-
-    public void setContentViewPaddingBottom(int paddingBottom) {
-        if (listView.getPaddingBottom() != paddingBottom) {
-            ignoreLayout = true;
-            listView.setPadding(0, listView.getPaddingTop(), 0, paddingBottom);
-            updateLastItemInAdapter();
+            listView.setPadding(0, paddingTop, 0, 0);
             ignoreLayout = false;
         }
     }
@@ -481,6 +494,12 @@ public class TrendingStickersLayout extends FrameLayout implements NotificationC
             return true;
         }
         View child = listView.getChildAt(0);
+        for (int i = 1; i < listView.getChildCount(); i++) {
+            View view = listView.getChildAt(i);
+            if (view.getTop() < child.getTop()) {
+                child = view;
+            }
+        }
         RecyclerListView.Holder holder = (RecyclerListView.Holder) listView.findContainingViewHolder(child);
         int top = child.getTop() - AndroidUtilities.dp(58);
         int newOffset = top > 0 && holder != null && holder.getAdapterPosition() == 0 ? top : 0;
@@ -546,7 +565,6 @@ public class TrendingStickersLayout extends FrameLayout implements NotificationC
                 glueToTopAnimator.addListener(new AnimatorListenerAdapter() {
                     @Override
                     public void onAnimationEnd(Animator animation) {
-                        setContentViewPaddingTop(0);
                         glueToTopAnimator = null;
                     }
                 });

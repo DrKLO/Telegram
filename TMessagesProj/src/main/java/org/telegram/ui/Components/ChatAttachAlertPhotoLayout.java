@@ -2062,8 +2062,11 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
                 }
 
                 float topLocal = child.getY() + gridView.getY() + getY();
-                float  top = topLocal + parentAlert.getSheetContainer().getY();
+                float top = topLocal + parentAlert.getSheetContainer().getY();
                 float left = child.getX() + gridView.getX() + getX() + parentAlert.getSheetContainer().getX();
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                    left -= getRootWindowInsets().getSystemWindowInsetLeft();
+                }
 
                 float maxY = (Build.VERSION.SDK_INT >= 21 && !parentAlert.inBubbleMode ? AndroidUtilities.statusBarHeight : 0) + ActionBar.getCurrentActionBarHeight();
                 if (topLocal < maxY) {

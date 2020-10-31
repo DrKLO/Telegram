@@ -90,6 +90,29 @@ public class MentionCell extends LinearLayout {
         usernameTextView.setVisibility(VISIBLE);
     }
 
+    public void setChat(TLRPC.Chat chat) {
+        if (chat == null) {
+            nameTextView.setText("");
+            usernameTextView.setText("");
+            imageView.setImageDrawable(null);
+            return;
+        }
+        avatarDrawable.setInfo(chat);
+        if (chat.photo != null && chat.photo.photo_small != null) {
+            imageView.setImage(ImageLocation.getForChat(chat, false), "50_50", avatarDrawable, chat);
+        } else {
+            imageView.setImageDrawable(avatarDrawable);
+        }
+        nameTextView.setText(chat.title);
+        if (chat.username != null) {
+            usernameTextView.setText("@" + chat.username);
+        } else {
+            usernameTextView.setText("");
+        }
+        imageView.setVisibility(VISIBLE);
+        usernameTextView.setVisibility(VISIBLE);
+    }
+
     public void setText(String text) {
         imageView.setVisibility(INVISIBLE);
         usernameTextView.setVisibility(INVISIBLE);

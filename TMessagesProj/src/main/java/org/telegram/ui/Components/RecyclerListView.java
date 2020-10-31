@@ -1884,4 +1884,12 @@ public class RecyclerListView extends RecyclerView {
             return false;
         }
     }
+
+    @Override
+    public void setTranslationY(float translationY) {
+        super.setTranslationY(translationY);
+        if (fastScroll != null) {
+            fastScroll.setTranslationY(translationY);
+        }
+    }
 }

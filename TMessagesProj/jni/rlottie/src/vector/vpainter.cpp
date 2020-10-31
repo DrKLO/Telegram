@@ -115,17 +115,19 @@ VPainter::VPainter()
     mImpl = new VPainterImpl;
 }
 
-VPainter::VPainter(VBitmap *buffer)
+VPainter::VPainter(VBitmap *buffer, bool clear)
 {
     mImpl = new VPainterImpl;
-    begin(buffer);
+    begin(buffer, clear);
 }
-bool VPainter::begin(VBitmap *buffer)
+bool VPainter::begin(VBitmap *buffer, bool clear)
 {
     mImpl->mBuffer.prepare(buffer);
     mImpl->mSpanData.init(&mImpl->mBuffer);
     // TODO find a better api to clear the surface
-    mImpl->mBuffer.clear();
+    if (clear) {
+        mImpl->mBuffer.clear();
+    }
     return true;
 }
 void VPainter::end() {}

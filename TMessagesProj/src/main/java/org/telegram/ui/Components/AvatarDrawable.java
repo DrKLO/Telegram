@@ -359,9 +359,16 @@ public class AvatarDrawable extends Drawable {
                 }
             }
         } else if (drawDeleted && Theme.avatarDrawables[1] != null) {
-            int x = (size - Theme.avatarDrawables[1].getIntrinsicWidth()) / 2;
-            int y = (size - Theme.avatarDrawables[1].getIntrinsicHeight()) / 2;
-            Theme.avatarDrawables[1].setBounds(x, y, x + Theme.avatarDrawables[1].getIntrinsicWidth(), y + Theme.avatarDrawables[1].getIntrinsicHeight());
+            int w = Theme.avatarDrawables[1].getIntrinsicWidth();
+            int h = Theme.avatarDrawables[1].getIntrinsicHeight();
+            if (w > size || h > size) {
+                float scale = size / (float) AndroidUtilities.dp(50);
+                w *= scale;
+                h *= scale;
+            }
+            int x = (size - w) / 2;
+            int y = (size - h) / 2;
+            Theme.avatarDrawables[1].setBounds(x, y, x + w, y + h);
             Theme.avatarDrawables[1].draw(canvas);
         } else {
             if (textLayout != null) {

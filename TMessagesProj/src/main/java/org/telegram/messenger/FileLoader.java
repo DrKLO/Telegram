@@ -117,7 +117,7 @@ public class FileLoader extends BaseController {
             dir = mediaDirs.get(FileLoader.MEDIA_DIR_CACHE);
         }
         try {
-            if (!dir.isDirectory()) {
+            if (dir != null && !dir.isDirectory()) {
                 dir.mkdirs();
             }
         } catch (Exception e) {
@@ -407,25 +407,23 @@ public class FileLoader extends BaseController {
                 int queueType = operation.getQueueType();
                 LinkedList<FileLoadOperation> downloadQueue = getLoadOperationQueue(datacenterId, queueType);
                 SparseIntArray count = getLoadOperationCount(queueType);
-                if (downloadQueue != null) {
-                    int index = downloadQueue.indexOf(operation);
-                    if (index >= 0) {
-                        downloadQueue.remove(index);
-                            if (operation.start()) {
-                                count.put(datacenterId, count.get(datacenterId) + 1);
-                            }
-                            if (queueType == QUEUE_TYPE_FILE) {
-                                if (operation.wasStarted() && !activeFileLoadOperation.contains(operation)) {
-                                    pauseCurrentFileLoadOperations(operation);
-                                    activeFileLoadOperation.add(operation);
-                                }
-                            }
-                    } else {
-                        pauseCurrentFileLoadOperations(operation);
-                        operation.start();
-                        if (queueType == QUEUE_TYPE_FILE && !activeFileLoadOperation.contains(operation)) {
-                            activeFileLoadOperation.add(operation);
+                int index = downloadQueue.indexOf(operation);
+                if (index >= 0) {
+                    downloadQueue.remove(index);
+                        if (operation.start()) {
+                            count.put(datacenterId, count.get(datacenterId) + 1);
                         }
+                        if (queueType == QUEUE_TYPE_FILE) {
+                            if (operation.wasStarted() && !activeFileLoadOperation.contains(operation)) {
+                                pauseCurrentFileLoadOperations(operation);
+                                activeFileLoadOperation.add(operation);
+                            }
+                        }
+                } else {
+                    pauseCurrentFileLoadOperations(operation);
+                    operation.start();
+                    if (queueType == QUEUE_TYPE_FILE && !activeFileLoadOperation.contains(operation)) {
+                        activeFileLoadOperation.add(operation);
                     }
                 }
             }
@@ -433,27 +431,49 @@ public class FileLoader extends BaseController {
     }
 
     public void cancelLoadFile(TLRPC.Document document) {
-        cancelLoadFile(document, null, null, null, null);
+        cancelLoadFile(document, false);
+    }
+
+    public void cancelLoadFile(TLRPC.Document document, boolean deleteFile) {
+        cancelLoadFile(document, null, null, null, null, null, deleteFile);
     }
 
     public void cancelLoadFile(SecureDocument document) {
-        cancelLoadFile(null, document, null, null, null);
+        cancelLoadFile(null, document, null, null, null, null, false);
     }
 
     public void cancelLoadFile(WebFile document) {
-        cancelLoadFile(null, null, document, null, null);
+        cancelLoadFile(null, null, document, null, null, null, false);
     }
 
     public void cancelLoadFile(TLRPC.PhotoSize photo) {
-        cancelLoadFile(null, null, null, photo.location, null);
+        cancelLoadFile(photo, false);
+    }
+
+    public void cancelLoadFile(TLRPC.PhotoSize photo, boolean deleteFile) {
+        cancelLoadFile(null, null, null, photo.location, null, null, deleteFile);
     }
 
     public void cancelLoadFile(TLRPC.FileLocation location, String ext) {
-        cancelLoadFile(null, null, null, location, ext);
+        cancelLoadFile(location, ext, false);
     }
 
-    private void cancelLoadFile(final TLRPC.Document document, final SecureDocument secureDocument, final WebFile webDocument, final TLRPC.FileLocation location, final String locationExt) {
-        if (location == null && document == null && webDocument == null && secureDocument == null) {
+    public void cancelLoadFile(TLRPC.FileLocation location, String ext, boolean deleteFile) {
+        cancelLoadFile(null, null, null, location, ext, null, deleteFile);
+    }
+
+    public void cancelLoadFile(String fileName) {
+        cancelLoadFile(null, null, null, null, null, fileName, true);
+    }
+
+    public void cancelLoadFiles(ArrayList<String> fileNames) {
+        for (int a = 0, N = fileNames.size(); a < N; a++) {
+            cancelLoadFile(null, null, null, null, null, fileNames.get(a), true);
+        }
+    }
+
+    private void cancelLoadFile(final TLRPC.Document document, final SecureDocument secureDocument, final WebFile webDocument, final TLRPC.FileLocation location, final String locationExt, String name, boolean deleteFile) {
+        if (location == null && document == null && webDocument == null && secureDocument == null && TextUtils.isEmpty(name)) {
             return;
         }
         final String fileName;
@@ -466,10 +486,7 @@ public class FileLoader extends BaseController {
         } else if (webDocument != null) {
             fileName = getAttachFileName(webDocument);
         } else {
-            fileName = null;
-        }
-        if (fileName == null) {
-            return;
+            fileName = name;
         }
         loadOperationPathsUI.remove(fileName);
         fileLoaderQueue.postRunnable(() -> {
@@ -485,7 +502,7 @@ public class FileLoader extends BaseController {
                 if (queueType == QUEUE_TYPE_FILE) {
                     activeFileLoadOperation.remove(operation);
                 }
-                operation.cancel();
+                operation.cancel(deleteFile);
             }
         });
     }
@@ -589,33 +606,29 @@ public class FileLoader extends BaseController {
                 int queueType = operation.getQueueType();
                 LinkedList<FileLoadOperation> downloadQueue = getLoadOperationQueue(datacenterId, queueType);
                 SparseIntArray count = getLoadOperationCount(queueType);
-                if (downloadQueue != null) {
-                    int index = downloadQueue.indexOf(operation);
-                    if (index >= 0) {
-                        downloadQueue.remove(index);
-                        if (stream != null) {
-                            if (operation.start(stream, streamOffset, streamPriority)) {
-                                count.put(datacenterId, count.get(datacenterId) + 1);
+                int index = downloadQueue.indexOf(operation);
+                if (index >= 0) {
+                    downloadQueue.remove(index);
+                    if (stream != null) {
+                        if (operation.start(stream, streamOffset, streamPriority)) {
+                            count.put(datacenterId, count.get(datacenterId) + 1);
+                        }
+                        if (queueType == QUEUE_TYPE_FILE) {
+                            if (operation.wasStarted() && !activeFileLoadOperation.contains(operation)) {
+                                pauseCurrentFileLoadOperations(operation);
+                                activeFileLoadOperation.add(operation);
                             }
-                            if (queueType == QUEUE_TYPE_FILE) {
-                                if (operation.wasStarted() && !activeFileLoadOperation.contains(operation)) {
-                                    if (stream != null) {
-                                        pauseCurrentFileLoadOperations(operation);
-                                    }
-                                    activeFileLoadOperation.add(operation);
-                                }
-                            }
-                        } else {
-                            downloadQueue.add(0, operation);
                         }
                     } else {
-                        if (stream != null) {
-                            pauseCurrentFileLoadOperations(operation);
-                        }
-                        operation.start(stream, streamOffset, streamPriority);
-                        if (queueType == QUEUE_TYPE_FILE && !activeFileLoadOperation.contains(operation)) {
-                            activeFileLoadOperation.add(operation);
-                        }
+                        downloadQueue.add(0, operation);
+                    }
+                } else {
+                    if (stream != null) {
+                        pauseCurrentFileLoadOperations(operation);
+                    }
+                    operation.start(stream, streamOffset, streamPriority);
+                    if (queueType == QUEUE_TYPE_FILE && !activeFileLoadOperation.contains(operation)) {
+                        activeFileLoadOperation.add(operation);
                     }
                 }
             }
@@ -626,14 +639,6 @@ public class FileLoader extends BaseController {
         File tempDir = getDirectory(MEDIA_DIR_CACHE);
         File storeDir = tempDir;
         int type = MEDIA_DIR_CACHE;
-        int queueType;
-        if (type == MEDIA_DIR_AUDIO) {
-            queueType = QUEUE_TYPE_AUDIO;
-        } else if (secureDocument != null || location != null && (imageLocation == null || imageLocation.imageType != IMAGE_TYPE_ANIMATION) || MessageObject.isImageWebDocument(webDocument)) {
-            queueType = QUEUE_TYPE_IMAGE;
-        } else {
-            queueType = QUEUE_TYPE_FILE;
-        }
 
         if (secureDocument != null) {
             operation = new FileLoadOperation(secureDocument);
@@ -652,7 +657,9 @@ public class FileLoader extends BaseController {
             }
         } else if (webDocument != null) {
             operation = new FileLoadOperation(currentAccount, webDocument);
-            if (MessageObject.isVoiceWebDocument(webDocument)) {
+            if (webDocument.location != null) {
+                type = MEDIA_DIR_CACHE;
+            } else if (MessageObject.isVoiceWebDocument(webDocument)) {
                 type = MEDIA_DIR_AUDIO;
             } else if (MessageObject.isVideoWebDocument(webDocument)) {
                 type = MEDIA_DIR_VIDEO;
@@ -661,6 +668,14 @@ public class FileLoader extends BaseController {
             } else {
                 type = MEDIA_DIR_DOCUMENT;
             }
+        }
+        int queueType;
+        if (type == MEDIA_DIR_AUDIO) {
+            queueType = QUEUE_TYPE_AUDIO;
+        } else if (secureDocument != null || location != null && (imageLocation == null || imageLocation.imageType != IMAGE_TYPE_ANIMATION) || MessageObject.isImageWebDocument(webDocument)) {
+            queueType = QUEUE_TYPE_IMAGE;
+        } else {
+            queueType = QUEUE_TYPE_FILE;
         }
         if (cacheType == 0 || cacheType == 10) {
             storeDir = getDirectory(type);
@@ -881,8 +896,6 @@ public class FileLoader extends BaseController {
                             return getAttachFileName(sizeFull);
                         }
                     }
-                } else if (message.media instanceof TLRPC.TL_messageMediaInvoice) {
-                    return getAttachFileName(((TLRPC.TL_messageMediaInvoice) message.media).photo);
                 }
             } else if (message.media instanceof TLRPC.TL_messageMediaInvoice) {
                 TLRPC.WebDocument document = ((TLRPC.TL_messageMediaInvoice) message.media).photo;
@@ -966,7 +979,7 @@ public class FileLoader extends BaseController {
                 }
             } else if (attach instanceof TLRPC.Photo) {
                 TLRPC.PhotoSize photoSize = getClosestPhotoSizeWithSize(((TLRPC.Photo) attach).sizes, AndroidUtilities.getPhotoSize());
-                return getPathToAttach(photoSize, ext, forceCache);
+                return getPathToAttach(photoSize, ext, false);
             } else if (attach instanceof TLRPC.PhotoSize) {
                 TLRPC.PhotoSize photoSize = (TLRPC.PhotoSize) attach;
                 if (photoSize instanceof TLRPC.TL_photoStrippedSize) {
@@ -1127,15 +1140,13 @@ public class FileLoader extends BaseController {
     public static String getAttachFileName(TLObject attach, String ext) {
         if (attach instanceof TLRPC.Document) {
             TLRPC.Document document = (TLRPC.Document) attach;
-            String docExt = null;
-            if (docExt == null) {
-                docExt = getDocumentFileName(document);
-                int idx;
-                if (docExt == null || (idx = docExt.lastIndexOf('.')) == -1) {
-                    docExt = "";
-                } else {
-                    docExt = docExt.substring(idx);
-                }
+            String docExt;
+            docExt = getDocumentFileName(document);
+            int idx;
+            if ((idx = docExt.lastIndexOf('.')) == -1) {
+                docExt = "";
+            } else {
+                docExt = docExt.substring(idx);
             }
             if (docExt.length() <= 1) {
                 docExt = getExtensionByMimeType(document.mime_type);

@@ -295,9 +295,6 @@ public class ChildHelper {
         final int offset = getOffset(index);
         mBucket.remove(offset);
         mCallback.detachViewFromParent(offset);
-        if (DEBUG) {
-            Log.d(TAG, "detach view from parent " + index + ", off:" + offset);
-        }
     }
 
     /**

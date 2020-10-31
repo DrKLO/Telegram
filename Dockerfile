@@ -1,4 +1,4 @@
-FROM gradle:6.1.1-jdk8
+FROM gradle:6.5.0-jdk8
 
 ENV ANDROID_SDK_URL https://dl.google.com/android/repository/sdk-tools-linux-3859397.zip
 ENV ANDROID_API_LEVEL android-30

@@ -10,6 +10,7 @@ package org.telegram.ui.Components;
 
 import android.graphics.Canvas;
 import android.graphics.ColorFilter;
+import android.graphics.Paint;
 import android.graphics.RectF;
 
 import org.telegram.messenger.AndroidUtilities;
@@ -23,8 +24,26 @@ public class RecordStatusDrawable extends StatusDrawable {
     private RectF rect = new RectF();
     private float progress;
 
+    Paint currentPaint;
+
+    public RecordStatusDrawable(boolean createPaint) {
+        if (createPaint) {
+            currentPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+            currentPaint.setStyle(Paint.Style.STROKE);
+            currentPaint.setStrokeCap(Paint.Cap.ROUND);
+            currentPaint.setStrokeWidth(AndroidUtilities.dp(2));
+        }
+    }
+
     public void setIsChat(boolean value) {
         isChat = value;
+    }
+
+    @Override
+    public void setColor(int color) {
+        if (currentPaint != null) {
+            currentPaint.setColor(color);
+        }
     }
 
     private void update() {
@@ -53,19 +72,20 @@ public class RecordStatusDrawable extends StatusDrawable {
 
     @Override
     public void draw(Canvas canvas) {
+        Paint paint = currentPaint == null ? Theme.chat_statusRecordPaint : currentPaint;
         canvas.save();
         canvas.translate(0, getIntrinsicHeight() / 2 + AndroidUtilities.dp(isChat ? 1 : 2));
         for (int a = 0; a < 4; a++) {
             if (a == 0) {
-                Theme.chat_statusRecordPaint.setAlpha((int) (255 * progress));
+                paint.setAlpha((int) (255 * progress));
             } else if (a == 3) {
-                Theme.chat_statusRecordPaint.setAlpha((int) (255 * (1.0f - progress)));
+                paint.setAlpha((int) (255 * (1.0f - progress)));
             } else {
-                Theme.chat_statusRecordPaint.setAlpha(255);
+                paint.setAlpha(255);
             }
             float side = AndroidUtilities.dp(4) * a + AndroidUtilities.dp(4) * progress;
             rect.set(-side, -side, side, side);
-            canvas.drawArc(rect, -15, 30, false, Theme.chat_statusRecordPaint);
+            canvas.drawArc(rect, -15, 30, false, paint);
         }
         canvas.restore();
         if (started) {

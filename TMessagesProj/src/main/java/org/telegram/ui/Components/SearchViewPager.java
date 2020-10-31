@@ -2,6 +2,7 @@ package org.telegram.ui.Components;
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
+import android.animation.ObjectAnimator;
 import android.animation.ValueAnimator;
 import android.content.Context;
 import android.graphics.Canvas;
@@ -109,6 +110,10 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
                 int n = getChildCount();
                 loop: for (int i = 0; i < n; i++) {
                     View v = getChildAt(i);
+                    ViewHolder holder = searchListView.getChildViewHolder(v);
+                    if (holder == null || holder.shouldIgnore()) {
+                        continue;
+                    }
                     int position = searchlayoutManager.getPosition(v);
                     for (int k = 0; k < currentAnimators.size(); k++) {
                         if (currentAnimators.get(k).setup(v, position)) {
@@ -155,7 +160,8 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
         searchContainer.addView(searchListView);
         searchContainer.addView(noMediaFiltersSearchView);
 
-        FilteredSearchView.LoadingView loadingView = new FilteredSearchView.LoadingView(context);
+        FlickerLoadingView loadingView = new FlickerLoadingView(context);
+        loadingView.setViewType(1);
         emptyView = new StickerEmptyView(context, loadingView) {
             @Override
             public void setVisibility(int visibility) {
@@ -663,9 +669,21 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
     public void runResultsEnterAnimation() {
         Set<Integer> hasSet = new HashSet<>();
         int n =  searchListView.getChildCount();
+        View progressView = null;
         for (int i = 0; i < n; i++) {
-            hasSet.add(searchlayoutManager.getPosition(searchListView.getChildAt(i)));
+            View child = searchListView.getChildAt(i);
+            int childPosition = searchlayoutManager.getPosition(child);
+            if (child instanceof FlickerLoadingView) {
+                progressView = child;
+            } else {
+                hasSet.add(childPosition);
+            }
         }
+        final View finalProgressView = progressView;
+        if (progressView != null) {
+            searchListView.removeView(progressView);
+        }
+
         searchListView.getViewTreeObserver().addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
             @Override
             public boolean onPreDraw() {
@@ -683,6 +701,23 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
                         animator.valueAnimator.setStartDelay(delay);
                         animator.valueAnimator.setDuration(200);
                         animator.valueAnimator.start();
+                    }
+                }
+                if (finalProgressView != null && finalProgressView.getParent() == null) {
+                    searchListView.addView(finalProgressView);
+                    RecyclerView.LayoutManager layoutManager = searchListView.getLayoutManager();
+                    if (layoutManager != null) {
+                        layoutManager.ignoreView(finalProgressView);
+                        Animator animator = ObjectAnimator.ofFloat(finalProgressView, ALPHA, finalProgressView.getAlpha(), 0);
+                        animator.addListener(new AnimatorListenerAdapter() {
+                            @Override
+                            public void onAnimationEnd(Animator animation) {
+                                finalProgressView.setAlpha(1f);
+                                layoutManager.stopIgnoringView(finalProgressView);
+                                searchListView.removeView(finalProgressView);
+                            }
+                        });
+                        animator.start();
                     }
                 }
                 return true;

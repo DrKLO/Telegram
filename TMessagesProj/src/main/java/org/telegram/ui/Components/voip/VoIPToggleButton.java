@@ -6,7 +6,6 @@ import android.animation.ValueAnimator;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
@@ -14,7 +13,6 @@ import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.PorterDuffXfermode;
 import android.graphics.drawable.Drawable;
-import android.graphics.drawable.RippleDrawable;
 import android.view.Gravity;
 import android.view.View;
 import android.view.accessibility.AccessibilityNodeInfo;
@@ -290,7 +288,7 @@ public class VoIPToggleButton extends FrameLayout {
                         textView[1].setVisibility(View.GONE);
                     }
 
-                    if (!iconChangeColor) {
+                    if (!iconChangeColor && icon[1] != null) {
                         icon[0] = icon[1];
                         icon[1] = null;
                     }

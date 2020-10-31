@@ -59,6 +59,7 @@ import java.util.ArrayList;
 public class FragmentContextView extends FrameLayout implements NotificationCenter.NotificationCenterDelegate {
 
     private ImageView playButton;
+    private PlayPauseDrawable playPauseDrawable;
     private TextView titleTextView;
     private AnimatorSet animatorSet;
     private BaseFragment fragment;
@@ -122,12 +123,13 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
         frameLayout.addView(selector, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
 
         View shadow = new View(context);
-        shadow.setBackgroundResource(R.drawable.header_shadow);
-        addView(shadow, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 3, Gravity.LEFT | Gravity.TOP, 0, 36, 0, 0));
+        shadow.setBackgroundResource(R.drawable.blockpanel_shadow);
+        addView(shadow, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 2, Gravity.LEFT | Gravity.TOP, 0, 36, 0, 0));
 
         playButton = new ImageView(context);
         playButton.setScaleType(ImageView.ScaleType.CENTER);
         playButton.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_inappPlayerPlayPause), PorterDuff.Mode.MULTIPLY));
+        playButton.setImageDrawable(playPauseDrawable = new PlayPauseDrawable(14));
         if (Build.VERSION.SDK_INT >= 21) {
             playButton.setBackgroundDrawable(Theme.createSelectorDrawable(Theme.getColor(Theme.key_inappPlayerPlayPause) & 0x19ffffff, 1, AndroidUtilities.dp(14)));
         }
@@ -178,7 +180,7 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
             closeButton.setBackgroundDrawable(Theme.createSelectorDrawable(Theme.getColor(Theme.key_inappPlayerClose) & 0x19ffffff, 1, AndroidUtilities.dp(14)));
         }
         closeButton.setScaleType(ImageView.ScaleType.CENTER);
-        addView(closeButton, LayoutHelper.createFrame(36, 36, Gravity.RIGHT | Gravity.TOP));
+        addView(closeButton, LayoutHelper.createFrame(36, 36, Gravity.RIGHT | Gravity.TOP, 0, 0, 2, 0));
         closeButton.setOnClickListener(v -> {
             if (currentStyle == 2) {
                 AlertDialog.Builder builder = new AlertDialog.Builder(fragment.getParentActivity());
@@ -239,7 +241,7 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
                             if (lower_part != 0) {
                                 if (lower_part > 0) {
                                     args.putInt("user_id", lower_part);
-                                } else if (lower_part < 0) {
+                                } else {
                                     args.putInt("chat_id", -lower_part);
                                 }
                             } else {
@@ -269,8 +271,6 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
                             break;
                         }
                     }
-                } else {
-                    did = 0;
                 }
                 if (did != 0) {
                     openSharingLocation(LocationController.getInstance(account).getSharingLocationInfo(did));
@@ -390,7 +390,7 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
                     playbackSpeedButton.setVisibility(VISIBLE);
                 }
                 closeButton.setContentDescription(LocaleController.getString("AccDescrClosePlayer", R.string.AccDescrClosePlayer));
-            } else if (style == 2) {
+            } else {
                 playButton.setLayoutParams(LayoutHelper.createFrame(36, 36, Gravity.TOP | Gravity.LEFT, 8, 0, 0, 0));
                 titleTextView.setLayoutParams(LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 36, Gravity.LEFT | Gravity.TOP, 35 + 16, 0, 36, 0));
                 closeButton.setContentDescription(LocaleController.getString("AccDescrStopLiveLocation", R.string.AccDescrStopLiveLocation));
@@ -466,7 +466,7 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        super.onMeasure(widthMeasureSpec, AndroidUtilities.dp2(39));
+        super.onMeasure(widthMeasureSpec, AndroidUtilities.dp2(38));
     }
 
     @Override
@@ -565,6 +565,7 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
             if (fragment instanceof DialogsActivity) {
                 String liveLocation = LocaleController.getString("LiveLocationContext", R.string.LiveLocationContext);
                 String param;
+                String str;
                 ArrayList<LocationController.SharingLocationInfo> infos = new ArrayList<>();
                 for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
                     infos.addAll(LocationController.getInstance(a).sharingLocationsUI);
@@ -575,6 +576,7 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
                     if (lower_id > 0) {
                         TLRPC.User user = MessagesController.getInstance(info.messageObject.currentAccount).getUser(lower_id);
                         param = UserObject.getFirstName(user);
+                        str = LocaleController.getString("AttachLiveLocationIsSharing", R.string.AttachLiveLocationIsSharing);
                     } else {
                         TLRPC.Chat chat = MessagesController.getInstance(info.messageObject.currentAccount).getChat(-lower_id);
                         if (chat != null) {
@@ -582,11 +584,13 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
                         } else {
                             param = "";
                         }
+                        str = LocaleController.getString("AttachLiveLocationIsSharingChat", R.string.AttachLiveLocationIsSharingChat);
                     }
                 } else {
                     param = LocaleController.formatPluralString("Chats", infos.size());
+                    str = LocaleController.getString("AttachLiveLocationIsSharingChats", R.string.AttachLiveLocationIsSharingChats);
                 }
-                String fullString = String.format(LocaleController.getString("AttachLiveLocationIsSharing", R.string.AttachLiveLocationIsSharing), liveLocation, param);
+                String fullString = String.format(str, liveLocation, param);
                 int start = fullString.indexOf(liveLocation);
                 SpannableStringBuilder stringBuilder = new SpannableStringBuilder(fullString);
                 titleTextView.setEllipsize(TextUtils.TruncateAt.END);
@@ -777,10 +781,10 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
                 setVisibility(VISIBLE);
             }
             if (MediaController.getInstance().isMessagePaused()) {
-                playButton.setImageResource(R.drawable.miniplayer_play);
+                playPauseDrawable.setPause(false, !create);
                 playButton.setContentDescription(LocaleController.getString("AccActionPlay", R.string.AccActionPlay));
             } else {
-                playButton.setImageResource(R.drawable.miniplayer_pause);
+                playPauseDrawable.setPause(true, !create);
                 playButton.setContentDescription(LocaleController.getString("AccActionPause", R.string.AccActionPause));
             }
             if (lastMessageObject != messageObject || prevStyle != 0) {

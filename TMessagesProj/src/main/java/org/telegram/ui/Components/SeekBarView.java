@@ -21,6 +21,8 @@ import android.view.View;
 import android.view.ViewConfiguration;
 import android.widget.FrameLayout;
 
+import androidx.core.graphics.ColorUtils;
+
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.ui.ActionBar.Theme;
 
@@ -43,6 +45,8 @@ public class SeekBarView extends FrameLayout {
     private long lastUpdateTime;
     private float currentRadius;
     private int[] pressedState = new int[]{android.R.attr.state_enabled, android.R.attr.state_pressed};
+    private float transitionProgress = 1f;
+    private int transitionThumbX;
 
     public interface SeekBarViewDelegate {
         void onSeekBarDrag(boolean stop, float progress);
@@ -72,8 +76,7 @@ public class SeekBarView extends FrameLayout {
         currentRadius = AndroidUtilities.dp(6);
 
         if (Build.VERSION.SDK_INT >= 21) {
-            int color = Theme.getColor(Theme.key_player_progress);
-            hoverDrawable = Theme.createSelectorDrawable(Color.argb(40, Color.red(color), Color.green(color), Color.blue(color)), 1, AndroidUtilities.dp(16));
+            hoverDrawable = Theme.createSelectorDrawable(ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_player_progress), 40), 1, AndroidUtilities.dp(16));
             hoverDrawable.setCallback(this);
             hoverDrawable.setVisible(true, false);
         }
@@ -116,7 +119,7 @@ public class SeekBarView extends FrameLayout {
         innerPaint1.setColor(inner);
         outerPaint1.setColor(outer);
         if (hoverDrawable != null) {
-            Theme.setDrawableColor(hoverDrawable, Color.argb(40, Color.red(outer), Color.green(outer), Color.blue(outer)));
+            Theme.setSelectorDrawableColor(hoverDrawable, ColorUtils.setAlphaComponent(outer, 40), true);
         }
     }
 
@@ -127,7 +130,7 @@ public class SeekBarView extends FrameLayout {
     public void setOuterColor(int color) {
         outerPaint1.setColor(color);
         if (hoverDrawable != null) {
-            Theme.setDrawableColor(hoverDrawable, Color.argb(40, Color.red(color), Color.green(color), Color.blue(color)));
+            Theme.setSelectorDrawableColor(hoverDrawable, ColorUtils.setAlphaComponent(color, 40), true);
         }
     }
 
@@ -246,6 +249,10 @@ public class SeekBarView extends FrameLayout {
     }
 
     public void setProgress(float progress) {
+        setProgress(progress, false);
+    }
+
+    public void setProgress(float progress, boolean animated) {
         if (getMeasuredWidth() == 0) {
             progressToSet = progress;
             return;
@@ -253,6 +260,10 @@ public class SeekBarView extends FrameLayout {
         progressToSet = -1;
         int newThumbX = (int) Math.ceil((getMeasuredWidth() - selectorWidth) * progress);
         if (thumbX != newThumbX) {
+            if (animated) {
+                transitionThumbX = thumbX;
+                transitionProgress = 0f;
+            }
             thumbX = newThumbX;
             if (thumbX < 0) {
                 thumbX = 0;
@@ -302,13 +313,14 @@ public class SeekBarView extends FrameLayout {
             hoverDrawable.setBounds(dx, dy, dx + AndroidUtilities.dp(32), dy + AndroidUtilities.dp(32));
             hoverDrawable.draw(canvas);
         }
+        boolean needInvalidate = false;
         int newRad = AndroidUtilities.dp(pressed ? 8 : 6);
+        long newUpdateTime = SystemClock.elapsedRealtime();
+        long dt = newUpdateTime - lastUpdateTime;
+        if (dt > 18) {
+            dt = 16;
+        }
         if (currentRadius != newRad) {
-            long newUpdateTime = SystemClock.elapsedRealtime();
-            long dt = newUpdateTime - lastUpdateTime;
-            if (dt > 18) {
-                dt = 16;
-            }
             if (currentRadius < newRad) {
                 currentRadius += AndroidUtilities.dp(1) * (dt / 60.0f);
                 if (currentRadius > newRad) {
@@ -320,9 +332,29 @@ public class SeekBarView extends FrameLayout {
                     currentRadius = newRad;
                 }
             }
-            invalidate();
+            needInvalidate = true;
         }
-        canvas.drawCircle(thumbX + selectorWidth / 2, y + thumbSize / 2, currentRadius, outerPaint1);
+        if (transitionProgress < 1f) {
+            transitionProgress += dt / 225f;
+            if (transitionProgress < 1f) {
+                needInvalidate = true;
+            } else {
+                transitionProgress = 1f;
+            }
+        }
+        if (transitionProgress < 1f) {
+            final float oldCircleProgress = 1f - Easings.easeInQuad.getInterpolation(Math.min(1f, transitionProgress * 3f));
+            final float newCircleProgress = Easings.easeOutQuad.getInterpolation(transitionProgress);
+            if (oldCircleProgress > 0f) {
+                canvas.drawCircle(transitionThumbX + selectorWidth / 2, y + thumbSize / 2, currentRadius * oldCircleProgress, outerPaint1);
+            }
+            canvas.drawCircle(thumbX + selectorWidth / 2, y + thumbSize / 2, currentRadius * newCircleProgress, outerPaint1);
+        } else {
+            canvas.drawCircle(thumbX + selectorWidth / 2, y + thumbSize / 2, currentRadius, outerPaint1);
+        }
+        if (needInvalidate) {
+            postInvalidateOnAnimation();
+        }
     }
 
     public SeekBarAccessibilityDelegate getSeekBarAccessibilityDelegate() {

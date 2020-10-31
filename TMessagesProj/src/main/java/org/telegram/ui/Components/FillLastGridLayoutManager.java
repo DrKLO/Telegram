@@ -47,15 +47,18 @@ public class FillLastGridLayoutManager extends GridLayoutManager {
         int count = adapter.getItemCount() - 1;
         int allHeight = 0;
         final SpanSizeLookup spanSizeLookup = getSpanSizeLookup();
+        boolean add = true;
         for (int a = 0; a < count; a++) {
             final int spanSize = spanSizeLookup.getSpanSize(a);
             spanCounter += spanSize;
-
             if (spanSize == spanCount || spanCounter > spanCount) {
-                spanCounter = 0;
-            } else if (spanCounter != 1) {
+                spanCounter = spanSize;
+                add = true;
+            }
+            if (!add) {
                 continue;
             }
+            add = false;
 
             int type = adapter.getItemViewType(a);
             RecyclerView.ViewHolder holder = heights.get(type, null);

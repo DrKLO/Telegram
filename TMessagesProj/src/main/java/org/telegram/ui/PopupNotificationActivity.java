@@ -172,11 +172,11 @@ public class PopupNotificationActivity extends Activity implements NotificationC
         NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.emojiDidLoad);
         classGuid = ConnectionsManager.generateClassGuid();
 
-        statusDrawables[0] = new TypingDotsDrawable();
-        statusDrawables[1] = new RecordStatusDrawable();
-        statusDrawables[2] = new SendingFileDrawable();
-        statusDrawables[3] = new PlayingGameDrawable();
-        statusDrawables[4] = new RoundStatusDrawable();
+        statusDrawables[0] = new TypingDotsDrawable(false);
+        statusDrawables[1] = new RecordStatusDrawable(false);
+        statusDrawables[2] = new SendingFileDrawable(false);
+        statusDrawables[3] = new PlayingGameDrawable(false);
+        statusDrawables[4] = new RoundStatusDrawable(false);
 
         SizeNotifierFrameLayout contentView = new SizeNotifierFrameLayout(this) {
             @Override
@@ -1339,7 +1339,7 @@ public class PopupNotificationActivity extends Activity implements NotificationC
         if (currentUser != null && currentUser.id == 777000) {
             onlineTextView.setText(LocaleController.getString("ServiceNotifications", R.string.ServiceNotifications));
         } else {
-            CharSequence printString = MessagesController.getInstance(currentMessageObject.currentAccount).getPrintingString(currentMessageObject.getDialogId(), 0);
+            CharSequence printString = MessagesController.getInstance(currentMessageObject.currentAccount).getPrintingString(currentMessageObject.getDialogId(), 0, false);
             if (printString == null || printString.length() == 0) {
                 lastPrintString = null;
                 setTypingAnimation(false);
@@ -1493,7 +1493,7 @@ public class PopupNotificationActivity extends Activity implements NotificationC
                 checkAndUpdateAvatar();
             }
             if ((updateMask & MessagesController.UPDATE_MASK_USER_PRINT) != 0) {
-                CharSequence printString = MessagesController.getInstance(currentMessageObject.currentAccount).getPrintingString(currentMessageObject.getDialogId(), 0);
+                CharSequence printString = MessagesController.getInstance(currentMessageObject.currentAccount).getPrintingString(currentMessageObject.getDialogId(), 0, false);
                 if (lastPrintString != null && printString == null || lastPrintString == null && printString != null || lastPrintString != null && printString != null && !lastPrintString.equals(printString)) {
                     updateSubtitle();
                 }

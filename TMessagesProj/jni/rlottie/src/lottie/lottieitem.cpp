@@ -175,7 +175,7 @@ const LOTLayerNode *LOTCompItem::renderTree() const
     return mRootLayer->layerNode();
 }
 
-bool LOTCompItem::render(const rlottie::Surface &surface)
+bool LOTCompItem::render(const rlottie::Surface &surface, bool clear)
 {
     VBitmap bitmap(reinterpret_cast<uchar *>(surface.buffer()), surface.width(),
                    surface.height(), surface.bytesPerLine(),
@@ -190,7 +190,7 @@ bool LOTCompItem::render(const rlottie::Surface &surface)
         e->preprocess(clip);
     }
 
-    VPainter painter(&bitmap);
+    VPainter painter(&bitmap, clear);
     // set sub surface area for drawing.
     painter.setDrawRegion(
         VRect(surface.drawRegionPosX(), surface.drawRegionPosY(),
@@ -609,7 +609,7 @@ void LOTCompLayerItem::render(VPainter *painter, const VRle &inheritMask,
             VPainter srcPainter;
             VBitmap  srcBitmap(size.width(), size.height(),
                               VBitmap::Format::ARGB32);
-            srcPainter.begin(&srcBitmap);
+            srcPainter.begin(&srcBitmap, true);
             renderHelper(&srcPainter, inheritMask, matteRle);
             srcPainter.end();
             painter->drawBitmap(VPoint(), srcBitmap, combinedAlpha() * 255);
@@ -669,7 +669,7 @@ void LOTCompLayerItem::renderMatteLayer(VPainter *painter, const VRle &mask,
     VPainter srcPainter;
     src->bitmap().reset(size.width(), size.height(),
                         VBitmap::Format::ARGB32);
-    srcPainter.begin(&src->bitmap());
+    srcPainter.begin(&src->bitmap(), true);
     src->render(&srcPainter, mask, matteRle);
     srcPainter.end();
 
@@ -677,7 +677,7 @@ void LOTCompLayerItem::renderMatteLayer(VPainter *painter, const VRle &mask,
     VPainter layerPainter;
     layer->bitmap().reset(size.width(), size.height(),
                           VBitmap::Format::ARGB32);
-    layerPainter.begin(&layer->bitmap());
+    layerPainter.begin(&layer->bitmap(), true);
     layer->render(&layerPainter, mask, matteRle);
 
     // 2.1update composition mode

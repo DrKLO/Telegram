@@ -13,6 +13,7 @@ import android.util.SparseArray;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 
 public class NotificationCenter {
 
@@ -63,7 +64,7 @@ public class NotificationCenter {
     public static final int didSetOrRemoveTwoStepPassword = totalEvents++;
     public static final int didRemoveTwoStepPassword = totalEvents++;
     public static final int replyMessagesDidLoad = totalEvents++;
-    public static final int pinnedMessageDidLoad = totalEvents++;
+    public static final int didLoadPinnedMessages = totalEvents++;
     public static final int newSessionReceived = totalEvents++;
     public static final int didReceivedWebpages = totalEvents++;
     public static final int didReceivedWebpagesInUpdates = totalEvents++;
@@ -74,6 +75,7 @@ public class NotificationCenter {
     public static final int messagesReadContent = totalEvents++;
     public static final int botInfoDidLoad = totalEvents++;
     public static final int userInfoDidLoad = totalEvents++;
+    public static final int pinnedInfoDidLoad = totalEvents++;
     public static final int botKeyboardDidLoad = totalEvents++;
     public static final int chatSearchResultsAvailable = totalEvents++;
     public static final int chatSearchResultsLoading = totalEvents++;
@@ -201,6 +203,8 @@ public class NotificationCenter {
     private SparseArray<ArrayList<NotificationCenterDelegate>> removeAfterBroadcast = new SparseArray<>();
     private SparseArray<ArrayList<NotificationCenterDelegate>> addAfterBroadcast = new SparseArray<>();
     private ArrayList<DelayedPost> delayedPosts = new ArrayList<>(10);
+    private ArrayList<Runnable> delayedRunnables  = new ArrayList<>(10);
+    private ArrayList<Runnable> delayedRunnablesTmp  = new ArrayList<>(10);
     private ArrayList<DelayedPost> delayedPostsTmp = new ArrayList<>(10);
     private ArrayList<PostponeNotificationCallback> postponeCallbackList = new ArrayList<>(10);
 
@@ -208,6 +212,8 @@ public class NotificationCenter {
 
     private int animationInProgressCount;
     private int animationInProgressPointer = 1;
+
+    HashSet<Integer> heavyOperationsCounter = new HashSet<>();
 
     private final HashMap<Integer, int[]> allowedNotifications = new HashMap<>();
 
@@ -264,14 +270,21 @@ public class NotificationCenter {
     }
 
     public int setAnimationInProgress(int oldIndex, int[] allowedNotifications) {
+        return setAnimationInProgress(oldIndex, allowedNotifications, true);
+    }
+
+    public int setAnimationInProgress(int oldIndex, int[] allowedNotifications, boolean stopHeavyOperations) {
         onAnimationFinish(oldIndex);
-        if (animationInProgressCount == 0) {
+        if (heavyOperationsCounter.isEmpty() && stopHeavyOperations) {
             NotificationCenter.getGlobalInstance().postNotificationName(stopAllHeavyOperations, 512);
         }
 
         animationInProgressCount++;
         animationInProgressPointer++;
 
+        if (stopHeavyOperations) {
+            heavyOperationsCounter.add(animationInProgressPointer);
+        }
         if (allowedNotifications == null) {
             allowedNotifications = new int[0];
         }
@@ -294,8 +307,13 @@ public class NotificationCenter {
         int[] notifications = allowedNotifications.remove(index);
         if (notifications != null) {
             animationInProgressCount--;
+            if (!heavyOperationsCounter.isEmpty()) {
+                heavyOperationsCounter.remove(index);
+                if (heavyOperationsCounter.isEmpty()) {
+                    NotificationCenter.getGlobalInstance().postNotificationName(startAllHeavyOperations, 512);
+                }
+            }
             if (animationInProgressCount == 0) {
-                NotificationCenter.getGlobalInstance().postNotificationName(startAllHeavyOperations, 512);
                 runDelayedNotifications();
             }
         }
@@ -312,6 +330,16 @@ public class NotificationCenter {
             }
             delayedPostsTmp.clear();
         }
+
+        if (!delayedRunnables.isEmpty()) {
+            delayedRunnablesTmp.clear();
+            delayedRunnablesTmp.addAll(delayedRunnables);
+            delayedRunnables.clear();
+            for (int a = 0; a < delayedRunnablesTmp.size(); a++) {
+                delayedRunnablesTmp.get(a).run();
+            }
+            delayedRunnablesTmp.clear();
+        }
     }
 
     public boolean isAnimationInProgress() {
@@ -327,7 +355,7 @@ public class NotificationCenter {
         if (!allowDuringAnimation && !allowedNotifications.isEmpty()) {
             int size = allowedNotifications.size();
             int allowedCount = 0;
-            for(Integer key : allowedNotifications.keySet()) {
+            for (Integer key : allowedNotifications.keySet()) {
                 int[] allowed = allowedNotifications.get(key);
                 if (allowed != null) {
                     for (int a = 0; a < allowed.length; a++) {
@@ -344,7 +372,7 @@ public class NotificationCenter {
         }
         if (id == startAllHeavyOperations) {
             Integer flags = (Integer) args[0];
-            currentHeavyOperationFlags &=~ flags;
+            currentHeavyOperationFlags &= ~flags;
         } else if (id == stopAllHeavyOperations) {
             Integer flags = (Integer) args[0];
             currentHeavyOperationFlags |= flags;
@@ -482,5 +510,13 @@ public class NotificationCenter {
 
     public interface PostponeNotificationCallback {
         boolean needPostpone(int id, int currentAccount, Object[] args);
+    }
+
+    public void doOnIdle(Runnable runnable) {
+        if (isAnimationInProgress()) {
+            delayedRunnables.add(runnable);
+        } else {
+            runnable.run();
+        }
     }
 }

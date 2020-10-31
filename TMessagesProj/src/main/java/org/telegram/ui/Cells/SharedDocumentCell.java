@@ -530,7 +530,7 @@ public class SharedDocumentCell extends FrameLayout implements DownloadControlle
             int h = AndroidUtilities.dp(5 + 29) + nameTextView.getMeasuredHeight() +  (needDivider ? 1 : 0);
             if (caption != null && captionTextView != null && message.hasHighlightedWords()) {
                 ignoreRequestLayout = true;
-                captionTextView.setText(AndroidUtilities.ellipsizeCenterEnd(caption, message.highlightedWords.get(0), captionTextView.getMeasuredWidth(), captionTextView.getPaint()));
+                captionTextView.setText(AndroidUtilities.ellipsizeCenterEnd(caption, message.highlightedWords.get(0), captionTextView.getMeasuredWidth(), captionTextView.getPaint(), 130));
                 ignoreRequestLayout = false;
 
                 h += captionTextView.getMeasuredHeight() + AndroidUtilities.dp(3);

@@ -249,6 +249,8 @@
     <string name="SearchEmptyViewFilteredSubtitleVoice">Voice from all your chats will be shown here.</string>
     <string name="SearchEmptyViewFilteredSubtitleMedia">Media from all your chats will be shown here.</string>
     <string name="SearchAllChatsShort">Chats</string>
+    <string name="MessagePinnedHint">Message pinned</string>
+    <string name="MessageUnpinnedHint">Message unpinned</string>
     <!--channels-->
     <string name="SetAsAdmin">Promote to admin</string>
     <string name="EditAdminRights">Edit admin rights</string>
@@ -564,6 +566,7 @@
     <string name="SlowmodeSendError">Slow Mode is enabled. You can\'t send more than one message at once.</string>
     <string name="SlowmodeSelectSendError">Slow Mode is enabled. You can\'t select more items.</string>
     <string name="SlowmodeSendErrorTooLong">Sorry, this text is too long to send as one message.\n\nSlow Mode is enabled. You can\'t send more than one message at once.</string>
+    <string name="UserSetAsAdminHint">**%1$s** promoted to admin</string>
     <!--polls-->
     <string name="NewPoll">New Poll</string>
     <string name="NewQuiz">New Quiz</string>
@@ -896,10 +899,12 @@
     <string name="TapHereGifs">Tap here to access saved GIFs</string>
     <string name="PinMessage">Pin</string>
     <string name="PinNotify">Notify all members</string>
+    <string name="PinAlsoFor">Also pin for %1$s</string>
     <string name="UnpinMessage">Unpin</string>
     <string name="PinMessageAlertTitle">Pin message</string>
     <string name="UnpinMessageAlertTitle">Unpin message</string>
-    <string name="PinMessageAlert">Do you want to pin this message in this group?</string>
+    <string name="PinOldMessageAlert">Do you want to pin an older message while leaving a more recent one pinned?</string>
+    <string name="PinMessageAlert">Do you want to pin this message for all members in the group?</string>
     <string name="PinMessageAlertChannel">Do you want to pin this message in this channel?</string>
     <string name="PinMessageAlertChat">Do you want to pin this message at the top of the chat?</string>
     <string name="UnpinMessageAlert">Do you want to unpin this message?</string>
@@ -924,6 +929,7 @@
     <string name="ReportChatOther">Other</string>
     <string name="ReportChatDescription">Description</string>
     <string name="PinnedMessage">Pinned Message</string>
+    <string name="PreviousPinnedMessage">Previous Message</string>
     <string name="PinnedPoll">Pinned poll</string>
     <string name="EditedMessage">edited</string>
     <string name="EditMessage">Edit Message</string>
@@ -997,7 +1003,7 @@
     <string name="TapForVideo">Tap for photo, hold for video</string>
     <string name="TapToViewAsList">Tap to view as a list.</string>
     <string name="SendWithoutSound">Send without sound</string>
-    <string name="MessageScheduleSend">Send Now</string>>
+    <string name="MessageScheduleSend">Send Now</string>
     <string name="MessageScheduleEditTime">Reschedule</string>
     <string name="MessageScheduleToday">Today</string>
     <string name="Schedule">Schedule</string>
@@ -1043,7 +1049,6 @@
     <string name="SecretChatTimerHours">h</string>
     <string name="SecretChatTimerWeeks">w</string>
     <string name="SharedToPrivateMessagesAndGroups">to private messages and groups</string>
-    <string name="Shares">Shares</string>
     <string name="BotOwnershipTransfer">Transfer Bot Ownership</string>
     <string name="BotOwnershipTransferReadyAlertText">This will transfer the **full owner** rights for the bot to the selected user.</string>
     <string name="BotOwnershipTransferChangeOwner">Change Owner</string>
@@ -1061,6 +1066,10 @@
     <string name="ChooseDate">Choose date</string>
     <string name="RepliesChatInfo">This chat helps you keep track of replies to your comments in Channels.</string>
     <string name="ChannelPostDeleted">Sorry, this post has been removed from the discussion group.</string>
+    <string name="UnpinAllMessages">UNPIN ALL MESSAGES</string>
+    <string name="HidePinnedMessages">HIDE PINNED MESSAGES</string>
+    <string name="PinnedMessagesHidden">Pinned messages hidden</string>
+    <string name="PinnedMessagesHiddenInfo">You will see the bar with pinned messages only if a new message is pinned.</string>
     <!--notification-->
     <string name="MessageLifetimeChanged">%1$s set the self-destruct timer to %2$s</string>
     <string name="MessageLifetimeChangedOutgoing">You set the self-destruct timer to %1$s</string>
@@ -1176,6 +1185,25 @@
     <string name="NotificationActionPinnedGeoLiveChannel">%1$s pinned a live location</string>
     <string name="NotificationActionPinnedGifChannel">%1$s pinned a GIF</string>
     <string name="NotificationActionPinnedMusicChannel">%1$s pinned an audio file</string>
+    <string name="NotificationActionPinnedTextUser">%1$s pinned \"%2$s\"</string>
+    <string name="NotificationActionPinnedNoTextUser">%1$s pinned a message</string>
+    <string name="NotificationActionPinnedPollUser">%1$s pinned a poll %2$s</string>
+    <string name="NotificationActionPinnedQuizUser">%1$s pinned a quiz %2$s</string>
+    <string name="NotificationActionPinnedPhotoUser">%1$s pinned a photo</string>
+    <string name="NotificationActionPinnedGameUser">%1$s pinned a game</string>
+    <string name="NotificationActionPinnedGameScoreUser">%1$s pinned a game score</string>
+    <string name="NotificationActionPinnedVideoUser">%1$s pinned a video</string>
+    <string name="NotificationActionPinnedFileUser">%1$s pinned a file</string>
+    <string name="NotificationActionPinnedInvoiceUser">%1$s pinned an invoice</string>
+    <string name="NotificationActionPinnedStickerUser">%1$s pinned a sticker</string>
+    <string name="NotificationActionPinnedStickerEmojiUser">%1$s pinned a %2$s sticker</string>
+    <string name="NotificationActionPinnedVoiceUser">%1$s pinned a voice message</string>
+    <string name="NotificationActionPinnedRoundUser">%1$s pinned a video message</string>
+    <string name="NotificationActionPinnedContactUser">%1$s pinned a contact %2$s</string>
+    <string name="NotificationActionPinnedGeoUser">%1$s pinned a map</string>
+    <string name="NotificationActionPinnedGeoLiveUser">%1$s pinned a live location</string>
+    <string name="NotificationActionPinnedGifUser">%1$s pinned a GIF</string>
+    <string name="NotificationActionPinnedMusicUser">%1$s pinned an audio file</string>
     <string name="SecretChatName">Telegram</string>
     <!--contacts view-->
     <string name="SelectContact">Select Contact</string>
@@ -2314,6 +2342,12 @@
     <string name="KMetersAway2">%1$s km away</string>
     <string name="FootsAway">%1$s ft away</string>
     <string name="MilesAway">%1$s mi away</string>
+    <string name="FootsShort">%1$s ft</string>
+    <string name="MilesShort">%1$s mi</string>
+    <string name="Mi">mi</string>
+    <string name="Km">km</string>
+    <string name="MetersShort">%1$s m</string>
+    <string name="KMetersShort">%1$s km</string>
     <string name="MetersFromYou2">%1$s m from&#160;you</string>
     <string name="KMetersFromYou2">%1$s km from&#160;you</string>
     <string name="FootsFromYou">%1$s ft from&#160;you</string>
@@ -2347,6 +2381,8 @@
     <string name="LocationUpdatedJustNow">updated just now</string>
     <string name="SharingYouAndOtherName">You and %1$s</string>
     <string name="AttachLiveLocationIsSharing">%1$s sharing with %2$s</string>
+    <string name="AttachLiveLocationIsSharingChat">%1$s sharing with %2$s</string>
+    <string name="AttachLiveLocationIsSharingChats">%1$s sharing with %2$s</string>
     <string name="StopAllLocationSharings">STOP ALL</string>
     <string name="SharingLiveLocationTitle">You are sharing your Live Location with %1$s</string>
     <string name="LiveLocationAlertPrivate">Choose for how long %1$s will see your accurate location.</string>
@@ -2375,6 +2411,19 @@
     <string name="ChatSetThisLocation">Set this location</string>
     <string name="ChatSetLocationInfo">People will be able to find your group in the \"People Nearby\" section.</string>
     <string name="PlacesInThisArea">Places in this area</string>
+    <string name="LocationNotifiation">Proximity alert</string>
+    <string name="LocationNotifiationButtonUser">Notify when %1$s is within %2$s</string>
+    <string name="LocationNotifiationButtonGroup">Notify when someone is within %1$s</string>
+    <string name="LocationNotifiationCloser">You are already closer than %1$s</string>
+    <string name="ShareLocationAlertTitle">Share Location</string>
+    <string name="ShareLocationAlertButton">Share</string>
+    <string name="ShareLocationAlertText">For the alert to work, please share your live location in this chat.</string>
+    <string name="ProximityTooltioUser">Alert when %1$s is close</string>
+    <string name="ProximityTooltioGroup">Alert when other members of the group are close</string>
+    <string name="ProximityAlertSet">Proximity alert set</string>
+    <string name="ProximityAlertSetInfoUser">We will notify you once %1$s is within %2$s from you.</string>
+    <string name="ProximityAlertSetInfoGroup2">We will notify you once someone is within %1$s from you.</string>
+    <string name="ProximityAlertCancelled">Proximity alert cancelled</string>
     <!--photo gallery view-->
     <string name="ShowAsList">Show as list</string>
     <string name="ShowAsGrid">Show as grid</string>
@@ -2482,6 +2531,41 @@
     <string name="MainGroupProfileVideoSetHint">This is the main group video now.</string>
     <string name="PhotoSavedHint">Photo saved to gallery</string>
     <string name="VideoSavedHint">Video saved to gallery</string>
+    <string name="PhotoSavedToDownloadsHint">Photo saved to downloads</string>
+    <string name="VideoSavedToDownloadsHint">Video saved to downloads</string>
+    <string name="GifSavedToDownloadsHint">GIF saved to downloads</string>
+    <string name="AudioSavedHint">File saved to music</string>
+    <string name="FileSavedHint">File saved to downloads</string>
+    <string name="FilesSavedHint_zero">%1$d files saved to downloads</string>
+    <string name="FilesSavedHint_one">File saved to downloads</string>
+    <string name="FilesSavedHint_two">%1$d files saved to downloads</string>
+    <string name="FilesSavedHint_few">%1$d files saved to downloads</string>
+    <string name="FilesSavedHint_many">%1$d files saved to downloads</string>
+    <string name="FilesSavedHint_other">%1$d files saved to downloads</string>
+    <string name="PhotosSavedHint_zero">%1$d photos saved to gallery</string>
+    <string name="PhotosSavedHint_one">Photo saved to gallery</string>
+    <string name="PhotosSavedHint_two">%1$d photos saved to gallery</string>
+    <string name="PhotosSavedHint_few">%1$d photos saved to gallery</string>
+    <string name="PhotosSavedHint_many">%1$d photos saved to gallery</string>
+    <string name="PhotosSavedHint_other">%1$d photos saved to gallery</string>
+    <string name="VideosSavedHint_zero">%1$d videos saved to gallery</string>
+    <string name="VideosSavedHint_one">Video saved to gallery</string>
+    <string name="VideosSavedHint_two">%1$d videos saved to gallery</string>
+    <string name="VideosSavedHint_few">%1$d videos saved to gallery</string>
+    <string name="VideosSavedHint_many">%1$d videos saved to gallery</string>
+    <string name="VideosSavedHint_other">%1$d videos saved to gallery</string>
+    <string name="AudiosSavedHint_zero">%1$d files saved to music</string>
+    <string name="AudiosSavedHint_one">File saved to music</string>
+    <string name="AudiosSavedHint_two">%1$d files saved to music</string>
+    <string name="AudiosSavedHint_few">%1$d files saved to music</string>
+    <string name="AudiosSavedHint_many">%1$d files saved to music</string>
+    <string name="AudiosSavedHint_other">%1$d files saved to music</string>
+    <string name="MediaSavedHint_zero">%1$d items saved to gallery</string>
+    <string name="MediaSavedHint_one">An item saved to gallery</string>
+    <string name="MediaSavedHint_two">%1$d items saved to gallery</string>
+    <string name="MediaSavedHint_few">%1$d items saved to gallery</string>
+    <string name="MediaSavedHint_many">%1$d items saved to gallery</string>
+    <string name="MediaSavedHint_other">%1$d items saved to gallery</string>
     <!--password view-->
     <string name="TwoStepVerification">Two-Step Verification</string>
     <string name="TwoStepVerificationTitle">Two-Step Verification</string>
@@ -2765,6 +2849,9 @@
     <string name="ActionAddUserSelf">un1 returned to the group</string>
     <string name="ActionAddUserSelfMega">un1 joined the group</string>
     <string name="ActionAddUserSelfYou">You returned to the group</string>
+    <string name="ActionUserWithinRadius">un1 is now within %1$s from you</string>
+    <string name="ActionUserWithinYouRadius">You are now within %1$s from un1</string>
+    <string name="ActionUserWithinOtherRadius">un1 is now within %1$s from un2</string>
     <string name="ActionBotAllowed">You allowed this bot to message you when you logged in on %1$s.</string>
     <string name="ActionBotDocuments">%1$s received the following documents: %2$s</string>
     <string name="ActionBotDocumentIdentity">Personal details</string>
@@ -2941,6 +3028,7 @@
     <string name="PermissionDrawAboveOtherApps">Telegram needs access to draw above other apps to play videos in Picture-in-Picture mode.</string>
     <string name="PermissionOpenSettings">SETTINGS</string>
     <string name="PermissionXiaomiLockscreen">Please allow Telegram to be shown on the lock screen so that calls can work properly.</string>
+    <string name="PermissionBackgroundLocation">To share your live location in this chat, Telegram needs access to your location all the time, including while the app is in the background.\n\nWe will access your location only for the duration you choose, and you can stop sharing it any time. We won\'t use your location for any purpose other than sharing it in this chat.</string>
     <!--charts-->
     <string name="GrowthChartTitle">Growth</string>
     <string name="FollowersChartTitle">Followers</string>
@@ -3014,6 +3102,15 @@
     <string name="TopDaysOfWeekChartTitle">Top days of week</string>
     <string name="StatisticSearchUserHistory">View Messages</string>
     <string name="StatisticOpenProfile">Open Profile</string>
+    <string name="SearchTipToday">Today</string>
+    <string name="SearchTipYesterday">Yesterday</string>
+    <string name="StatisticViews">Views</string>
+    <string name="PublicShares">Public Shares</string>
+    <string name="PrivateShares">Private Shares</string>
+    <string name="ViewStats">View Stats</string>
+    <string name="ViewChannelStats">View Channel Stats</string>
+    <string name="ViewMessageStatistic">Message Statistic</string>
+    <string name="ViewMessage">Open Message</string>
     <!--Intro view-->
     <string name="Page1Title">Telegram</string>
     <string name="Page2Title">Fast</string>
@@ -3248,6 +3345,12 @@
     <string name="NewMessages_few">%1$d new messages</string>
     <string name="NewMessages_many">%1$d new messages</string>
     <string name="NewMessages_other">%1$d new messages</string>
+    <string name="MessagesUnpinned_zero">%1$d messages unpinned</string>
+    <string name="MessagesUnpinned_one">Message unpinned</string>
+    <string name="MessagesUnpinned_two">%1$d messages unpinned</string>
+    <string name="MessagesUnpinned_few">%1$d messages unpinned</string>
+    <string name="MessagesUnpinned_many">%1$d messages unpinned</string>
+    <string name="MessagesUnpinned_other">%1$d messages unpinned</string>
     <string name="messages_zero">%1$d messages</string>
     <string name="messages_one">%1$d message</string>
     <string name="messages_two">%1$d messages</string>
@@ -3404,6 +3507,12 @@
     <string name="Shares_few">%1$s shares</string>
     <string name="Shares_many">%1$s shares</string>
     <string name="Shares_other">%1$s shares</string>
+    <string name="PublicSharesCount_zero">%1$s public shares</string>
+    <string name="PublicSharesCount_one">%1$s public share</string>
+    <string name="PublicSharesCount_two">%1$s public shares</string>
+    <string name="PublicSharesCount_few">%1$s public shares</string>
+    <string name="PublicSharesCount_many">%1$s public shares</string>
+    <string name="PublicSharesCount_other">%1$s public shares</string>
     <string name="Shared_zero">%1$s shared</string>
     <string name="Shared_one">%1$s shared</string>
     <string name="Shared_two">%1$s shared</string>
@@ -3621,6 +3730,18 @@
     <string name="CommentsCount_few">%1$d comments</string>
     <string name="CommentsCount_many">%1$d comments</string>
     <string name="CommentsCount_other">%1$d comments</string>
+    <string name="CommentsNoNumber_zero">comments</string>
+    <string name="CommentsNoNumber_one">comment</string>
+    <string name="CommentsNoNumber_two">comments</string>
+    <string name="CommentsNoNumber_few">comments</string>
+    <string name="CommentsNoNumber_many">comments</string>
+    <string name="CommentsNoNumber_other">comments</string>
+    <string name="PinnedMessagesCount_zero">%1$d Pinned Messages</string>
+    <string name="PinnedMessagesCount_one">Pinned Message</string>
+    <string name="PinnedMessagesCount_two">%1$d Pinned Messages</string>
+    <string name="PinnedMessagesCount_few">%1$d Pinned Messages</string>
+    <string name="PinnedMessagesCount_many">%1$d Pinned Messages</string>
+    <string name="PinnedMessagesCount_other">%1$d Pinned Messages</string>
     <!--accessibility descriptions-->
     <string name="AccDescrGroup">Group</string>
     <string name="AccDescrChannel">Channel</string>
@@ -3694,6 +3815,7 @@
     <string name="AccDescrIVTitle">Title</string>
     <string name="AccDescrIVHeading">Heading</string>
     <string name="AccDescrMyLocation">My location</string>
+    <string name="AccDescrLocationNotify">Notify when in range</string>
     <string name="AccDescrVideoQuality">Video quality</string>
     <string name="AccDescrAspectRatio">Aspect ratio</string>
     <string name="AccDescrTakeMorePics">Take one more picture</string>
@@ -3747,6 +3869,7 @@
     <string name="AccDescrVoipCamSwitchedToBack">Switched to rear camera</string>
     <string name="AccDescrVoipCamOn">Camera is on</string>
     <string name="AccDescrVoipCamOff">Camera is off</string>
+    <string name="AccPinnedMessagesList">Pinned messages list</string>
     <!--date formatters-->
     <string name="formatterMonthYear">MMM yyyy</string>
     <string name="formatterStats12H">MMM dd yyyy, h:mm a</string>
@@ -3775,6 +3898,4 @@
     <string name="RemindTodayAt">\'Remind today at\' HH:mm</string>
     <string name="RemindDayAt">\'Remind on\' MMM d \'at\' HH:mm</string>
     <string name="RemindDayYearAt">\'Remind on\' MMM d yyyy \'at\' HH:mm</string>
-    <string name="SearchTipToday">Today</string>
-    <string name="SearchTipYesterday">Yesterday</string>
 </resources>

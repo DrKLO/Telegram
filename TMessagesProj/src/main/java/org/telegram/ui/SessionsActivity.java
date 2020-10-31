@@ -208,7 +208,15 @@ public class SessionsActivity extends BaseFragment implements NotificationCenter
                             listAdapter.notifyDataSetChanged();
                             undoView.showWithAction(0, UndoView.ACTION_QR_SESSION_ACCEPTED, response);
                         } else {
-                            AndroidUtilities.runOnUIThread(() -> AlertsCreator.showSimpleAlert(SessionsActivity.this, LocaleController.getString("AuthAnotherClient", R.string.AuthAnotherClient), LocaleController.getString("ErrorOccurred", R.string.ErrorOccurred) + "\n" + error.text));
+                            AndroidUtilities.runOnUIThread(() -> {
+                                final String text;
+                                if (error.text.equals("AUTH_TOKEN_EXCEPTION")) {
+                                    text = LocaleController.getString("AccountAlreadyLoggedIn", R.string.AccountAlreadyLoggedIn);
+                                } else {
+                                    text = LocaleController.getString("ErrorOccurred", R.string.ErrorOccurred) + "\n" + error.text;
+                                }
+                                AlertsCreator.showSimpleAlert(SessionsActivity.this, LocaleController.getString("AuthAnotherClient", R.string.AuthAnotherClient), text);
+                            });
                         }
                     }));
                 });

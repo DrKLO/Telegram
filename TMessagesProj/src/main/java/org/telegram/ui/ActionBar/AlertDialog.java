@@ -83,6 +83,7 @@ public class AlertDialog extends Dialog implements Drawable.Callback {
     private CharSequence subtitle;
     private CharSequence message;
     private int topResId;
+    private View topView;
     private int topAnimationId;
     private int topHeight = 132;
     private Drawable topDrawable;
@@ -270,6 +271,14 @@ public class AlertDialog extends Dialog implements Drawable.Callback {
                         topImageView.measure(MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(topHeight), MeasureSpec.EXACTLY));
                         availableHeight -= topImageView.getMeasuredHeight() - AndroidUtilities.dp(8);
                     }
+                    if (topView != null) {
+                        int w = width - AndroidUtilities.dp(16);
+                        float scale = w / 936.0f;
+                        int h = (int) (354 * scale);
+                        topView.measure(MeasureSpec.makeMeasureSpec(w, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(h, MeasureSpec.EXACTLY));
+                        topView.getLayoutParams().height = h;
+                        availableHeight -= topView.getMeasuredHeight();
+                    }
                     if (progressViewStyle == 0) {
                         layoutParams = (LayoutParams) contentScrollView.getLayoutParams();
 
@@ -398,6 +407,9 @@ public class AlertDialog extends Dialog implements Drawable.Callback {
             topImageView.getBackground().setColorFilter(new PorterDuffColorFilter(topBackgroundColor, PorterDuff.Mode.MULTIPLY));
             topImageView.setPadding(0, 0, 0, 0);
             containerView.addView(topImageView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, topHeight, Gravity.LEFT | Gravity.TOP, -8, -8, 0, 0));
+        } else if (topView != null) {
+            topView.setPadding(0, 0, 0, 0);
+            containerView.addView(topView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, topHeight, Gravity.LEFT | Gravity.TOP, 0, 0, 0, 0));
         }
 
         if (title != null) {
@@ -1099,6 +1111,11 @@ public class AlertDialog extends Dialog implements Drawable.Callback {
         public Builder setTopImage(int resId, int backgroundColor) {
             alertDialog.topResId = resId;
             alertDialog.topBackgroundColor = backgroundColor;
+            return this;
+        }
+
+        public Builder setTopView(View view) {
+            alertDialog.topView = view;
             return this;
         }
 

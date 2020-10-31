@@ -211,7 +211,7 @@ public class ChangeBioActivity extends BaseFragment {
                         FileLog.e(e);
                     }
                     userFull.about = newName;
-                    NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.userInfoDidLoad, user.id, userFull, null);
+                    NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.userInfoDidLoad, user.id, userFull);
                     finishFragment();
                 });
             } else {

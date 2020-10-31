@@ -10,6 +10,7 @@ package org.telegram.ui.Components;
 
 import android.graphics.Canvas;
 import android.graphics.ColorFilter;
+import android.graphics.Paint;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.ui.ActionBar.Theme;
@@ -20,6 +21,24 @@ public class SendingFileDrawable extends StatusDrawable {
     private long lastUpdateTime = 0;
     private boolean started = false;
     private float progress;
+
+    Paint currentPaint;
+
+    public SendingFileDrawable(boolean createPaint) {
+        if (createPaint) {
+            currentPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+            currentPaint.setStyle(Paint.Style.STROKE);
+            currentPaint.setStrokeCap(Paint.Cap.ROUND);
+            currentPaint.setStrokeWidth(AndroidUtilities.dp(2));
+        }
+    }
+
+    @Override
+    public void setColor(int color) {
+        if (currentPaint != null) {
+            currentPaint.setColor(color);
+        }
+    }
 
     public void setIsChat(boolean value) {
         isChat = value;
@@ -51,17 +70,18 @@ public class SendingFileDrawable extends StatusDrawable {
 
     @Override
     public void draw(Canvas canvas) {
+        Paint paint = currentPaint == null ? Theme.chat_statusRecordPaint : currentPaint;
         for (int a = 0; a < 3; a++) {
             if (a == 0) {
-                Theme.chat_statusRecordPaint.setAlpha((int) (255 * progress));
+                paint.setAlpha((int) (255 * progress));
             } else if (a == 2) {
-                Theme.chat_statusRecordPaint.setAlpha((int) (255 * (1.0f - progress)));
+                paint.setAlpha((int) (255 * (1.0f - progress)));
             } else {
-                Theme.chat_statusRecordPaint.setAlpha(255);
+                paint.setAlpha(255);
             }
             float side = AndroidUtilities.dp(5) * a + AndroidUtilities.dp(5) * progress;
-            canvas.drawLine(side, AndroidUtilities.dp(isChat ? 3 : 4), side + AndroidUtilities.dp(4), AndroidUtilities.dp(isChat ? 7 : 8), Theme.chat_statusRecordPaint);
-            canvas.drawLine(side, AndroidUtilities.dp(isChat ? 11 : 12), side + AndroidUtilities.dp(4), AndroidUtilities.dp(isChat ? 7 : 8), Theme.chat_statusRecordPaint);
+            canvas.drawLine(side, AndroidUtilities.dp(isChat ? 3 : 4), side + AndroidUtilities.dp(4), AndroidUtilities.dp(isChat ? 7 : 8), paint);
+            canvas.drawLine(side, AndroidUtilities.dp(isChat ? 11 : 12), side + AndroidUtilities.dp(4), AndroidUtilities.dp(isChat ? 7 : 8), paint);
         }
 
         if (started) {

@@ -620,9 +620,6 @@ public class FileUploadOperation {
                     startUploadRequest();
                 }
             } else {
-                if (finalRequest != null) {
-                    FileLog.e("23123");
-                }
                 state = 4;
                 delegate.didFailedUploadingFile(FileUploadOperation.this);
                 cleanup();

@@ -35,6 +35,7 @@ public class NumberTextView extends View {
     private ObjectAnimator animator;
     private float progress = 0.0f;
     private int currentNumber = 1;
+    private boolean addNumber;
 
     public NumberTextView(Context context) {
         super(context);
@@ -54,6 +55,10 @@ public class NumberTextView extends View {
         return progress;
     }
 
+    public void setAddNumber() {
+        addNumber = true;
+    }
+
     public void setNumber(int number, boolean animated) {
         if (currentNumber == number && animated) {
             return;
@@ -65,9 +70,18 @@ public class NumberTextView extends View {
         oldLetters.clear();
         oldLetters.addAll(letters);
         letters.clear();
-        String oldText = String.format(Locale.US, "%d", currentNumber);
-        String text = String.format(Locale.US, "%d", number);
-        boolean forwardAnimation = number > currentNumber;
+        String oldText;
+        String text;
+        boolean forwardAnimation;
+        if (addNumber) {
+            oldText = String.format(Locale.US, "#%d", currentNumber);
+            text = String.format(Locale.US, "#%d", number);
+            forwardAnimation = number < currentNumber;
+        } else {
+            oldText = String.format(Locale.US, "%d", currentNumber);
+            text = String.format(Locale.US, "%d", number);
+            forwardAnimation = number > currentNumber;
+        }
         currentNumber = number;
         progress = 0;
         for (int a = 0; a < text.length(); a++) {
@@ -83,7 +97,7 @@ public class NumberTextView extends View {
         }
         if (animated && !oldLetters.isEmpty()) {
             animator = ObjectAnimator.ofFloat(this, "progress", forwardAnimation ? -1 : 1, 0);
-            animator.setDuration(150);
+            animator.setDuration(addNumber ? 180 : 150);
             animator.addListener(new AnimatorListenerAdapter() {
                 @Override
                 public void onAnimationEnd(Animator animation) {
@@ -121,6 +135,7 @@ public class NumberTextView extends View {
             return;
         }
         float height = letters.get(0).getHeight();
+        float translationHeight = addNumber ? AndroidUtilities.dp(4) : height;
         canvas.save();
         canvas.translate(getPaddingLeft(), (getMeasuredHeight() - height) / 2);
         int count = Math.max(letters.size(), oldLetters.size());
@@ -132,12 +147,12 @@ public class NumberTextView extends View {
                 if (old != null) {
                     textPaint.setAlpha((int) (255 * progress));
                     canvas.save();
-                    canvas.translate(0, (progress - 1.0f) * height);
+                    canvas.translate(0, (progress - 1.0f) * translationHeight);
                     old.draw(canvas);
                     canvas.restore();
                     if (layout != null) {
                         textPaint.setAlpha((int) (255 * (1.0f - progress)));
-                        canvas.translate(0, progress * height);
+                        canvas.translate(0, progress * translationHeight);
                     }
                 } else {
                     textPaint.setAlpha(255);
@@ -146,14 +161,14 @@ public class NumberTextView extends View {
                 if (old != null) {
                     textPaint.setAlpha((int) (255 * -progress));
                     canvas.save();
-                    canvas.translate(0, (1.0f + progress) * height);
+                    canvas.translate(0, (1.0f + progress) * translationHeight);
                     old.draw(canvas);
                     canvas.restore();
                 }
                 if (layout != null) {
                     if (a == count - 1 || old != null) {
                         textPaint.setAlpha((int) (255 * (1.0f + progress)));
-                        canvas.translate(0, progress * height);
+                        canvas.translate(0, progress * translationHeight);
                     } else {
                         textPaint.setAlpha(255);
                     }

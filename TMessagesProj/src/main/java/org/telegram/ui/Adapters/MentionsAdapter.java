@@ -48,6 +48,7 @@ import org.telegram.ui.Components.RecyclerListView;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 
 import androidx.recyclerview.widget.RecyclerView;
@@ -65,8 +66,8 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter {
     private long dialog_id;
     private TLRPC.ChatFull info;
     private SearchAdapterHelper searchAdapterHelper;
-    private ArrayList<TLRPC.User> searchResultUsernames;
-    private SparseArray<TLRPC.User> searchResultUsernamesMap;
+    private ArrayList<TLObject> searchResultUsernames;
+    private SparseArray<TLObject> searchResultUsernamesMap;
     private Runnable searchGlobalRunnable;
     private ArrayList<String> searchResultHashtags;
     private ArrayList<String> searchResultCommands;
@@ -683,9 +684,9 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter {
             }
             final String usernameString = result.toString().toLowerCase();
             boolean hasSpace = usernameString.indexOf(' ') >= 0;
-            ArrayList<TLRPC.User> newResult = new ArrayList<>();
+            ArrayList<TLObject> newResult = new ArrayList<>();
             final SparseArray<TLRPC.User> newResultsHashMap = new SparseArray<>();
-            final SparseArray<TLRPC.User> newMap = new SparseArray<>();
+            final SparseArray<TLObject> newMap = new SparseArray<>();
             ArrayList<TLRPC.TL_topPeer> inlineBots = MediaDataController.getInstance(currentAccount).inlineBots;
             if (!usernameOnly && needBotContext && dogPostion == 0 && !inlineBots.isEmpty()) {
                 int count = 0;
@@ -706,61 +707,96 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter {
                 }
             }
             final TLRPC.Chat chat;
+            int threadId;
             if (parentFragment != null) {
                 chat = parentFragment.getCurrentChat();
+                threadId = parentFragment.getThreadId();
             } else if (info != null) {
                 chat = messagesController.getChat(info.id);
+                threadId = 0;
             } else {
                 chat = null;
+                threadId = 0;
             }
             if (chat != null && info != null && info.participants != null && (!ChatObject.isChannel(chat) || chat.megagroup)) {
-                for (int a = 0; a < info.participants.participants.size(); a++) {
-                    TLRPC.ChatParticipant chatParticipant = info.participants.participants.get(a);
-                    TLRPC.User user = messagesController.getUser(chatParticipant.user_id);
-                    if (user == null || !usernameOnly && UserObject.isUserSelf(user) || newResultsHashMap.indexOfKey(user.id) >= 0) {
-                        continue;
-                    }
-                    if (usernameString.length() == 0) {
-                        if (!user.deleted) {
-                            newResult.add(user);
+                for (int a = -1; a < info.participants.participants.size(); a++) {
+                    String username;
+                    String firstName;
+                    String lastName;
+                    TLObject object;
+                    int id;
+                    if (a == -1) {
+                        if (chat == null) {
+                            continue;
                         }
+                        if (usernameString.length() == 0) {
+                            newResult.add(chat);
+                            continue;
+                        }
+                        firstName = chat.title;
+                        lastName = null;
+                        username = chat.username;
+                        object = chat;
+                        id = -chat.id;
                     } else {
-                        if (user.username != null && user.username.length() > 0 && user.username.toLowerCase().startsWith(usernameString)) {
-                            newResult.add(user);
-                            newMap.put(user.id, user);
-                        } else {
-                            if (user.first_name != null && user.first_name.length() > 0 && user.first_name.toLowerCase().startsWith(usernameString)) {
+                        TLRPC.ChatParticipant chatParticipant = info.participants.participants.get(a);
+                        TLRPC.User user = messagesController.getUser(chatParticipant.user_id);
+                        if (user == null || !usernameOnly && UserObject.isUserSelf(user) || newResultsHashMap.indexOfKey(user.id) >= 0) {
+                            continue;
+                        }
+                        if (usernameString.length() == 0) {
+                            if (!user.deleted) {
                                 newResult.add(user);
-                                newMap.put(user.id, user);
-                            } else if (user.last_name != null && user.last_name.length() > 0 && user.last_name.toLowerCase().startsWith(usernameString)) {
-                                newResult.add(user);
-                                newMap.put(user.id, user);
-                            } else if (hasSpace && ContactsController.formatName(user.first_name, user.last_name).toLowerCase().startsWith(usernameString)) {
-                                newResult.add(user);
-                                newMap.put(user.id, user);
+                                continue;
                             }
                         }
+                        firstName = user.first_name;
+                        lastName = user.last_name;
+                        username = user.username;
+                        object = user;
+                        id = user.id;
+                    }
+                    if (!TextUtils.isEmpty(username) && username.toLowerCase().startsWith(usernameString) ||
+                            !TextUtils.isEmpty(firstName) && firstName.toLowerCase().startsWith(usernameString) ||
+                            !TextUtils.isEmpty(lastName) && lastName.toLowerCase().startsWith(usernameString) ||
+                            hasSpace && ContactsController.formatName(firstName, lastName).toLowerCase().startsWith(usernameString)) {
+                        newResult.add(object);
+                        newMap.put(id, object);
                     }
                 }
             }
-            Collections.sort(newResult, (lhs, rhs) -> {
-                if (newMap.indexOfKey(lhs.id) >= 0 && newMap.indexOfKey(rhs.id) >= 0) {
+            Collections.sort(newResult, new Comparator<TLObject>() {
+
+                private int getId(TLObject object) {
+                    if (object instanceof TLRPC.User) {
+                        return ((TLRPC.User) object).id;
+                    } else {
+                        return -((TLRPC.Chat) object).id;
+                    }
+                }
+
+                @Override
+                public int compare(TLObject lhs, TLObject rhs) {
+                    int id1 = getId(lhs);
+                    int id2 = getId(rhs);
+                    if (newMap.indexOfKey(id1) >= 0 && newMap.indexOfKey(id2) >= 0) {
+                        return 0;
+                    } else if (newMap.indexOfKey(id1) >= 0) {
+                        return -1;
+                    } else if (newMap.indexOfKey(id2) >= 0) {
+                        return 1;
+                    }
+                    int lhsNum = users.indexOf(id1);
+                    int rhsNum = users.indexOf(id2);
+                    if (lhsNum != -1 && rhsNum != -1) {
+                        return lhsNum < rhsNum ? -1 : (lhsNum == rhsNum ? 0 : 1);
+                    } else if (lhsNum != -1 && rhsNum == -1) {
+                        return -1;
+                    } else if (lhsNum == -1 && rhsNum != -1) {
+                        return 1;
+                    }
                     return 0;
-                } else if (newMap.indexOfKey(lhs.id) >= 0) {
-                    return -1;
-                } else if (newMap.indexOfKey(rhs.id) >= 0) {
-                    return 1;
                 }
-                int lhsNum = users.indexOf(lhs.id);
-                int rhsNum = users.indexOf(rhs.id);
-                if (lhsNum != -1 && rhsNum != -1) {
-                    return lhsNum < rhsNum ? -1 : (lhsNum == rhsNum ? 0 : 1);
-                } else if (lhsNum != -1 && rhsNum == -1) {
-                    return -1;
-                } else if (lhsNum == -1 && rhsNum != -1) {
-                    return 1;
-                }
-                return 0;
             });
             searchResultHashtags = null;
             searchResultCommands = null;
@@ -787,9 +823,14 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter {
                         req.channel = MessagesController.getInputChannel(chat);
                         req.limit = 20;
                         req.offset = 0;
-                        TLRPC.TL_channelParticipantsSearch channelParticipantsSearch = new TLRPC.TL_channelParticipantsSearch();
-                        channelParticipantsSearch.q = usernameString;
-                        req.filter = channelParticipantsSearch;
+                        TLRPC.TL_channelParticipantsMentions channelParticipantsMentions = new TLRPC.TL_channelParticipantsMentions();
+                        channelParticipantsMentions.flags |= 1;
+                        channelParticipantsMentions.q = usernameString;
+                        if (threadId != 0) {
+                            channelParticipantsMentions.flags |= 2;
+                            channelParticipantsMentions.top_msg_id = threadId;
+                        }
+                        req.filter = channelParticipantsMentions;
                         final int currentReqId = ++channelLastReqId;
                         channelReqId = ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
                             if (channelReqId != 0 && currentReqId == channelLastReqId && searchResultUsernamesMap != null && searchResultUsernames != null) {
@@ -887,7 +928,7 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter {
         }
     }
 
-    private void showUsersResult(ArrayList<TLRPC.User> newResult, SparseArray<TLRPC.User> newMap, boolean notify) {
+    private void showUsersResult(ArrayList<TLObject> newResult, SparseArray<TLObject> newMap, boolean notify) {
         searchResultUsernames = newResult;
         searchResultUsernamesMap = newMap;
         if (cancelDelayRunnable != null) {
@@ -1080,7 +1121,12 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter {
             }
         } else {
             if (searchResultUsernames != null) {
-                ((MentionCell) holder.itemView).setUser(searchResultUsernames.get(position));
+                TLObject object = searchResultUsernames.get(position);
+                if (object instanceof TLRPC.User) {
+                    ((MentionCell) holder.itemView).setUser((TLRPC.User) object);
+                } else if (object instanceof TLRPC.Chat) {
+                    ((MentionCell) holder.itemView).setChat((TLRPC.Chat) object);
+                }
             } else if (searchResultHashtags != null) {
                 ((MentionCell) holder.itemView).setText(searchResultHashtags.get(position));
             } else if (searchResultSuggestions != null) {

@@ -29,9 +29,18 @@ public class PlayingGameDrawable extends StatusDrawable {
     private boolean started = false;
     private RectF rect = new RectF();
     private float progress;
+    private final boolean isDialogScreen;
 
+    public PlayingGameDrawable(boolean isDialogScreen) {
+        this.isDialogScreen = isDialogScreen;
+    }
     public void setIsChat(boolean value) {
         isChat = value;
+    }
+
+    @Override
+    public void setColor(int color) {
+
     }
 
     private void update() {
@@ -73,7 +82,7 @@ public class PlayingGameDrawable extends StatusDrawable {
             //y = AndroidUtilities.dp(9.3f) + getBounds().top;
         }
 
-        paint.setColor(Theme.getColor(Theme.key_chat_status));
+        paint.setColor(Theme.getColor(isDialogScreen ? Theme.key_chats_actionMessage : Theme.key_chat_status));
         rect.set(0, y, size, y + size);
         int rad;
         if (progress < 0.5f) {
@@ -98,7 +107,7 @@ public class PlayingGameDrawable extends StatusDrawable {
         }
         paint.setAlpha(255);
         canvas.drawArc(rect, rad, 360 - rad * 2, true, paint);
-        paint.setColor(Theme.getColor(Theme.key_actionBarDefault));
+        paint.setColor(Theme.getColor(isDialogScreen ? Theme.key_windowBackgroundWhite : Theme.key_actionBarDefault));
         canvas.drawCircle(AndroidUtilities.dp(4), y + size / 2 - AndroidUtilities.dp(2), AndroidUtilities.dp(1), paint);
 
         checkUpdate();

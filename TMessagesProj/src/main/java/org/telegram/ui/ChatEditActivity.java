@@ -44,7 +44,6 @@ import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.MessagesStorage;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
-import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
@@ -196,7 +195,7 @@ public class ChatEditActivity extends BaseFragment implements ImageUpdater.Image
                 return false;
             }
             if (info == null) {
-                info = MessagesStorage.getInstance(currentAccount).loadChatInfo(chatId, new CountDownLatch(1), false, false);
+                info = MessagesStorage.getInstance(currentAccount).loadChatInfo(chatId, ChatObject.isChannel(currentChat), new CountDownLatch(1), false, false);
                 if (info == null) {
                     return false;
                 }
@@ -1143,7 +1142,7 @@ public class ChatEditActivity extends BaseFragment implements ImageUpdater.Image
         }
         if (nameTextView != null) {
             String text = nameTextView.getText().toString();
-            if (text != null && text.length() != 0) {
+            if (text.length() != 0) {
                 args.putString("nameTextView", text);
             }
         }
@@ -1265,7 +1264,7 @@ public class ChatEditActivity extends BaseFragment implements ImageUpdater.Image
         }
 
         if (stickersCell != null) {
-            if (info.stickerset != null) {
+            if (info != null && info.stickerset != null) {
                 stickersCell.setTextAndValue(LocaleController.getString("GroupStickers", R.string.GroupStickers), info.stickerset.title, false);
             } else {
                 stickersCell.setText(LocaleController.getString("GroupStickers", R.string.GroupStickers), false);

@@ -36,6 +36,10 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import androidx.recyclerview.widget.GridLayoutManager;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.ChatObject;
@@ -62,7 +66,6 @@ import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ActionBar.ThemeDescription;
-import org.telegram.ui.Adapters.FiltersView;
 import org.telegram.ui.Adapters.SearchAdapterHelper;
 import org.telegram.ui.ArticleViewer;
 import org.telegram.ui.Cells.ChatActionCell;
@@ -79,7 +82,6 @@ import org.telegram.ui.Cells.SharedPhotoVideoCell;
 import org.telegram.ui.Cells.UserCell;
 import org.telegram.ui.ChatActivity;
 import org.telegram.ui.DialogsActivity;
-import org.telegram.ui.FilteredSearchView;
 import org.telegram.ui.PhotoViewer;
 import org.telegram.ui.ProfileActivity;
 
@@ -87,16 +89,12 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 
-import androidx.recyclerview.widget.GridLayoutManager;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
-
 @SuppressWarnings("unchecked")
 public class SharedMediaLayout extends FrameLayout implements NotificationCenter.NotificationCenterDelegate {
 
     private static class MediaPage extends FrameLayout {
         private RecyclerListView listView;
-        private FilteredSearchView.LoadingView progressView;
+        private FlickerLoadingView progressView;
         private TextView emptyTextView;
         private ExtendedGridLayoutManager layoutManager;
         private ImageView emptyImageView;
@@ -505,7 +503,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                 } else if (view instanceof ContextLinkCell) {
                     ContextLinkCell cell = (ContextLinkCell) view;
                     MessageObject message = (MessageObject) cell.getParentObject();
-                    if (message != null && messageObject != null && message.getId() == messageObject.getId()) {
+                    if (message != null && message.getId() == messageObject.getId()) {
                         imageReceiver = cell.getPhotoImage();
                         cell.getLocationInWindow(coords);
                     }
@@ -1209,7 +1207,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
             mediaPages[a].emptyTextView.setPadding(AndroidUtilities.dp(40), 0, AndroidUtilities.dp(40), AndroidUtilities.dp(128));
             mediaPages[a].emptyView.addView(mediaPages[a].emptyTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER, 0, 24, 0, 0));
 
-            mediaPages[a].progressView = new FilteredSearchView.LoadingView(context) {
+            mediaPages[a].progressView = new FlickerLoadingView(context) {
 
                 @Override
                 public int getColumnsCount() {
@@ -1217,7 +1215,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                 }
 
                 @Override
-                public int getType() {
+                public int getViewType() {
                     if (mediaPage.selectedType == 0 || mediaPage.selectedType == 5) {
                         return 2;
                     } else if (mediaPage.selectedType == 1) {
@@ -1227,7 +1225,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                     } else if (mediaPage.selectedType == 3) {
                         return 5;
                     }
-                    return super.getType();
+                    return 1;
                 }
 
                 @Override
@@ -1237,6 +1235,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                     super.onDraw(canvas);
                 }
             };
+            mediaPages[a].progressView.showDate(false);
             mediaPages[a].progressView.setVisibility(View.GONE);
             mediaPages[a].addView(mediaPages[a].progressView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
             if (a != 0) {
@@ -1253,7 +1252,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
         floatingDateView.setTranslationY(-AndroidUtilities.dp(48));
         addView(floatingDateView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.CENTER_HORIZONTAL, 0, 48 + 4, 0, 0));
 
-        addView(fragmentContextView = new FragmentContextView(context, parent, this, false), LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 39, Gravity.TOP | Gravity.LEFT, 0, 48, 0, 0));
+        addView(fragmentContextView = new FragmentContextView(context, parent, this, false), LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 38, Gravity.TOP | Gravity.LEFT, 0, 48, 0, 0));
         fragmentContextView.setSupportsCalls(false);
         fragmentContextView.setDelegate((start, show) -> {
             if (show && !start) {
@@ -1589,7 +1588,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                     if (lower_part != 0) {
                         if (lower_part > 0) {
                             args1.putInt("user_id", lower_part);
-                        } else if (lower_part < 0) {
+                        } else {
                             args1.putInt("chat_id", -lower_part);
                         }
                     } else {
@@ -1619,7 +1618,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
             if (lower_part != 0) {
                 if (lower_part > 0) {
                     args.putInt("user_id", lower_part);
-                } else if (lower_part < 0) {
+                } else {
                     TLRPC.Chat chat = profileActivity.getMessagesController().getChat(-lower_part);
                     if (chat != null && chat.migrated_to != null) {
                         args.putInt("migrated_to", lower_part);
@@ -2051,8 +2050,21 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                     } else if (newItemCount < oldItemCount) {
                         adapter.notifyItemRangeRemoved(newItemCount, (oldItemCount - newItemCount));
                     }
-                    if (listView != null && oldItemCount == 0 && newItemCount > 0) {
+                    if (listView != null && newItemCount > oldItemCount) {
                         RecyclerListView finalListView = listView;
+                        int n = finalListView.getChildCount();
+                        AnimatorSet animatorSet = new AnimatorSet();
+                        View progressView = null;
+                        for (int i = 0; i < n; i++) {
+                            View child = finalListView.getChildAt(i);
+                            if (child instanceof FlickerLoadingView) {
+                                progressView = child;
+                            }
+                        }
+                        final View finalProgressView = progressView;
+                        if (progressView != null) {
+                            finalListView.removeView(progressView);
+                        }
                         getViewTreeObserver().addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
                             @Override
                             public boolean onPreDraw() {
@@ -2061,14 +2073,34 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                                 AnimatorSet animatorSet = new AnimatorSet();
                                 for (int i = 0; i < n; i++) {
                                     View child = finalListView.getChildAt(i);
-                                    child.setAlpha(0);
-                                    int s = Math.min(finalListView.getMeasuredHeight(), Math.max(0, child.getTop()));
-                                    int delay = (int) ((s / (float) finalListView.getMeasuredHeight()) * 100);
-                                    ObjectAnimator a = ObjectAnimator.ofFloat(child, View.ALPHA, 0, 1f);
-                                    a.setStartDelay(delay);
-                                    a.setDuration(200);
-                                    animatorSet.playTogether(a);
+                                    if (finalListView.getChildAdapterPosition(child) >= oldItemCount - 1) {
+                                        child.setAlpha(0);
+                                        int s = Math.min(finalListView.getMeasuredHeight(), Math.max(0, child.getTop()));
+                                        int delay = (int) ((s / (float) finalListView.getMeasuredHeight()) * 100);
+                                        ObjectAnimator a = ObjectAnimator.ofFloat(child, View.ALPHA, 0, 1f);
+                                        a.setStartDelay(delay);
+                                        a.setDuration(200);
+                                        animatorSet.playTogether(a);
+                                    }
+                                    if (finalProgressView != null && finalProgressView.getParent() == null) {
+                                        finalListView.addView(finalProgressView);
+                                        RecyclerView.LayoutManager layoutManager = finalListView.getLayoutManager();
+                                        if (layoutManager != null) {
+                                            layoutManager.ignoreView(finalProgressView);
+                                            Animator animator = ObjectAnimator.ofFloat(finalProgressView, ALPHA, finalProgressView.getAlpha(), 0);
+                                            animator.addListener(new AnimatorListenerAdapter() {
+                                                @Override
+                                                public void onAnimationEnd(Animator animation) {
+                                                    finalProgressView.setAlpha(1f);
+                                                    layoutManager.stopIgnoringView(finalProgressView);
+                                                    finalListView.removeView(finalProgressView);
+                                                }
+                                            });
+                                            animator.start();
+                                        }
+                                    }
                                 }
+
                                 animatorSet.start();
                                 return true;
                             }
@@ -2269,7 +2301,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                         }
                     }
                 }
-            } else if (id == NotificationCenter.messagePlayingDidStart) {
+            } else {
                 MessageObject messageObject = (MessageObject) args[0];
                 if (messageObject.eventId != 0) {
                     return;
@@ -3072,7 +3104,11 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                     break;
                 case 2:
                 default:
-                    view = new LoadingCell(mContext, AndroidUtilities.dp(32), AndroidUtilities.dp(54));
+                    FlickerLoadingView flickerLoadingView = new FlickerLoadingView(mContext);
+                    flickerLoadingView.setIsSingleCell(true);
+                    flickerLoadingView.showDate(false);
+                    flickerLoadingView.setViewType(FlickerLoadingView.LINKS_TYPE);
+                    view = flickerLoadingView;
                     break;
             }
             view.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
@@ -3193,7 +3229,15 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                     view = new SharedDocumentCell(mContext);
                     break;
                 case 2:
-                    view = new LoadingCell(mContext, AndroidUtilities.dp(32), AndroidUtilities.dp(54));
+                    FlickerLoadingView flickerLoadingView = new FlickerLoadingView(mContext);
+                    view = flickerLoadingView;
+                    if (currentType == MediaDataController.MEDIA_MUSIC) {
+                        flickerLoadingView.setViewType(FlickerLoadingView.AUDIO_TYPE);
+                    } else {
+                        flickerLoadingView.setViewType(FlickerLoadingView.FILES_TYPE);
+                    }
+                    flickerLoadingView.showDate(false);
+                    flickerLoadingView.setIsSingleCell(true);
                     break;
                 case 3:
                 default:
@@ -3355,7 +3399,10 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                     break;
                 case 1:
                 default:
-                    view = new LoadingCell(mContext, AndroidUtilities.dp(32), AndroidUtilities.dp(74));
+                    FlickerLoadingView flickerLoadingView = new FlickerLoadingView(mContext);
+                    flickerLoadingView.setIsSingleCell(true);
+                    flickerLoadingView.setViewType(FlickerLoadingView.PHOTOS_TYPE);
+                    view = flickerLoadingView;
                     break;
             }
             view.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
@@ -3898,7 +3945,11 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                     break;
                 case 1:
                 default:
-                    view = new LoadingCell(mContext);
+                    FlickerLoadingView flickerLoadingView = new FlickerLoadingView(mContext);
+                    flickerLoadingView.setIsSingleCell(true);
+                    flickerLoadingView.showDate(false);
+                    flickerLoadingView.setViewType(FlickerLoadingView.DIALOG_TYPE);
+                    view = flickerLoadingView;
                     break;
             }
             view.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
@@ -4067,45 +4118,43 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                         ArrayList<CharSequence> resultArrayNames = new ArrayList<>();
                         ArrayList<TLObject> resultArray2 = new ArrayList<>();
 
-                        if (participantsCopy != null) {
-                            for (int a = 0, N = participantsCopy.size(); a < N; a++) {
-                                int userId;
-                                TLObject o = participantsCopy.get(a);
-                                if (o instanceof TLRPC.ChatParticipant) {
-                                    userId = ((TLRPC.ChatParticipant) o).user_id;
-                                } else if (o instanceof TLRPC.ChannelParticipant) {
-                                    userId = ((TLRPC.ChannelParticipant) o).user_id;
-                                } else {
-                                    continue;
-                                }
-                                TLRPC.User user = profileActivity.getMessagesController().getUser(userId);
-                                if (user.id == profileActivity.getUserConfig().getClientUserId()) {
-                                    continue;
+                        for (int a = 0, N = participantsCopy.size(); a < N; a++) {
+                            int userId;
+                            TLObject o = participantsCopy.get(a);
+                            if (o instanceof TLRPC.ChatParticipant) {
+                                userId = ((TLRPC.ChatParticipant) o).user_id;
+                            } else if (o instanceof TLRPC.ChannelParticipant) {
+                                userId = ((TLRPC.ChannelParticipant) o).user_id;
+                            } else {
+                                continue;
+                            }
+                            TLRPC.User user = profileActivity.getMessagesController().getUser(userId);
+                            if (user.id == profileActivity.getUserConfig().getClientUserId()) {
+                                continue;
+                            }
+
+                            String name = UserObject.getUserName(user).toLowerCase();
+                            String tName = LocaleController.getInstance().getTranslitString(name);
+                            if (name.equals(tName)) {
+                                tName = null;
+                            }
+
+                            int found = 0;
+                            for (String q : search) {
+                                if (name.startsWith(q) || name.contains(" " + q) || tName != null && (tName.startsWith(q) || tName.contains(" " + q))) {
+                                    found = 1;
+                                } else if (user.username != null && user.username.startsWith(q)) {
+                                    found = 2;
                                 }
 
-                                String name = UserObject.getUserName(user).toLowerCase();
-                                String tName = LocaleController.getInstance().getTranslitString(name);
-                                if (name.equals(tName)) {
-                                    tName = null;
-                                }
-
-                                int found = 0;
-                                for (String q : search) {
-                                    if (name.startsWith(q) || name.contains(" " + q) || tName != null && (tName.startsWith(q) || tName.contains(" " + q))) {
-                                        found = 1;
-                                    } else if (user.username != null && user.username.startsWith(q)) {
-                                        found = 2;
+                                if (found != 0) {
+                                    if (found == 1) {
+                                        resultArrayNames.add(AndroidUtilities.generateSearchName(user.first_name, user.last_name, q));
+                                    } else {
+                                        resultArrayNames.add(AndroidUtilities.generateSearchName("@" + user.username, null, "@" + q));
                                     }
-
-                                    if (found != 0) {
-                                        if (found == 1) {
-                                            resultArrayNames.add(AndroidUtilities.generateSearchName(user.first_name, user.last_name, q));
-                                        } else {
-                                            resultArrayNames.add(AndroidUtilities.generateSearchName("@" + user.username, null, "@" + q));
-                                        }
-                                        resultArray2.add(o);
-                                        break;
-                                    }
+                                    resultArray2.add(o);
+                                    break;
                                 }
                             }
                         }

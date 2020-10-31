@@ -11,7 +11,6 @@ package org.telegram.ui.Adapters;
 import android.content.Context;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
-import android.text.style.ForegroundColorSpan;
 import android.util.SparseArray;
 import android.view.View;
 import android.view.ViewGroup;
@@ -33,6 +32,7 @@ import org.telegram.ui.Cells.GraySectionCell;
 import org.telegram.ui.Cells.ProfileSearchCell;
 import org.telegram.ui.Cells.TextCell;
 import org.telegram.ui.Cells.UserCell;
+import org.telegram.ui.Components.ForegroundColorSpanThemable;
 import org.telegram.ui.Components.RecyclerListView;
 
 import java.util.ArrayList;
@@ -315,7 +315,7 @@ public class SearchAdapter extends RecyclerListView.SelectionAdapter {
                         }
                     } else if (position > searchResult.size() && un != null) {
                         String foundUserName = searchAdapterHelper.getLastFoundUsername();
-                        if (foundUserName.startsWith("@")) {
+                        if (foundUserName != null && foundUserName.startsWith("@")) {
                             foundUserName = foundUserName.substring(1);
                         }
                         try {
@@ -323,14 +323,14 @@ public class SearchAdapter extends RecyclerListView.SelectionAdapter {
                             SpannableStringBuilder spannableStringBuilder = new SpannableStringBuilder();
                             spannableStringBuilder.append("@");
                             spannableStringBuilder.append(un);
-                            if ((index = AndroidUtilities.indexOfIgnoreCase(un, foundUserName)) != -1) {
+                            if (foundUserName != null && (index = AndroidUtilities.indexOfIgnoreCase(un, foundUserName)) != -1) {
                                 int len = foundUserName.length();
                                 if (index == 0) {
                                     len++;
                                 } else {
                                     index++;
                                 }
-                                spannableStringBuilder.setSpan(new ForegroundColorSpan(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText4)), index, index + len, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                                spannableStringBuilder.setSpan(new ForegroundColorSpanThemable(Theme.key_windowBackgroundWhiteBlueText4), index, index + len, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                             }
                             username = spannableStringBuilder;
                         } catch (Exception e) {

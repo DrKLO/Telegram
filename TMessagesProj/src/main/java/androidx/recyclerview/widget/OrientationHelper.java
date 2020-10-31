@@ -371,7 +371,7 @@ public abstract class OrientationHelper {
 
             @Override
             public int getStartAfterPadding() {
-                return mLayoutManager.getPaddingTop();
+                return mLayoutManager.getStartAfterPadding();
             }
 
             @Override
@@ -418,8 +418,7 @@ public abstract class OrientationHelper {
 
             @Override
             public int getTotalSpace() {
-                return mLayoutManager.getHeight() - mLayoutManager.getPaddingTop()
-                        - mLayoutManager.getPaddingBottom();
+                return mLayoutManager.getTotalSpace();
             }
 
             @Override

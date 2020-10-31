@@ -299,7 +299,7 @@ JNIEXPORT void Java_org_telegram_ui_Components_RLottieDrawable_createCache(JNIEn
             for (size_t a = 0; a < info->frameCount; a += framesPerUpdate) {
                 Surface &surfaceToRender = num % 2 == 0 ? surface1 : surface2;
                 num++;
-                info->animation->renderSync(a, surfaceToRender);
+                info->animation->renderSync(a, surfaceToRender, true);
                 if (a != 0) {
                     std::unique_lock<std::mutex> lk(cacheDoneMutex);
                     cacheDoneCv.wait(lk, [] { return !frameReady.load(); });
@@ -317,6 +317,7 @@ JNIEXPORT void Java_org_telegram_ui_Components_RLottieDrawable_createCache(JNIEn
 
             //DEBUG_D("sticker time = %d", (int) (ConnectionsManager::getInstance(0).getCurrentTimeMonotonicMillis() - time));
             delete[] info->compressBuffer;
+            delete[] firstBuffer;
             delete[] secondBuffer;
             fseek(info->precacheFile, 0, SEEK_SET);
             uint8_t byte = 1;
@@ -332,7 +333,7 @@ JNIEXPORT void Java_org_telegram_ui_Components_RLottieDrawable_createCache(JNIEn
     }
 }
 
-JNIEXPORT jint Java_org_telegram_ui_Components_RLottieDrawable_getFrame(JNIEnv *env, jclass clazz, jlong ptr, jint frame, jobject bitmap, jint w, jint h, jint stride) {
+JNIEXPORT jint Java_org_telegram_ui_Components_RLottieDrawable_getFrame(JNIEnv *env, jclass clazz, jlong ptr, jint frame, jobject bitmap, jint w, jint h, jint stride, jboolean clear) {
     if (!ptr || bitmap == nullptr) {
         return 0;
     }
@@ -384,7 +385,7 @@ JNIEXPORT jint Java_org_telegram_ui_Components_RLottieDrawable_getFrame(JNIEnv *
         if (!loadedFromCache) {
             if (!info->nextFrameIsCacheFrame || !info->precache) {
                 Surface surface((uint32_t *) pixels, (size_t) w, (size_t) h, (size_t) stride);
-                info->animation->renderSync((size_t) frame, surface);
+                info->animation->renderSync((size_t) frame, surface, clear);
                 info->nextFrameIsCacheFrame = true;
             }
         }

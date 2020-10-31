@@ -81,6 +81,7 @@ public class ChatAttachAlertAudioLayout extends ChatAttachAlert.AttachAlertLayou
     private boolean ignoreLayout;
 
     private ArrayList<MediaController.AudioEntry> audioEntries = new ArrayList<>();
+    private ArrayList<MediaController.AudioEntry> selectedAudiosOrder = new ArrayList<>();
     private LongSparseArray<MediaController.AudioEntry> selectedAudios = new LongSparseArray<>();
 
     private AudioSelectDelegate delegate;
@@ -371,6 +372,7 @@ public class ChatAttachAlertAudioLayout extends ChatAttachAlert.AttachAlertLayou
     @Override
     void onHidden() {
         selectedAudios.clear();
+        selectedAudiosOrder.clear();
     }
 
     @Override
@@ -463,6 +465,7 @@ public class ChatAttachAlertAudioLayout extends ChatAttachAlert.AttachAlertLayou
         boolean add;
         if (selectedAudios.indexOfKey(audioEntry.id) >= 0) {
             selectedAudios.remove(audioEntry.id);
+            selectedAudiosOrder.remove(audioEntry);
             audioCell.setChecked(false, true);
             add = false;
         } else {
@@ -471,6 +474,7 @@ public class ChatAttachAlertAudioLayout extends ChatAttachAlert.AttachAlertLayou
                 return;
             }
             selectedAudios.put(audioEntry.id, audioEntry);
+            selectedAudiosOrder.add(audioEntry);
             audioCell.setChecked(true, true);
             add = true;
         }
@@ -489,8 +493,8 @@ public class ChatAttachAlertAudioLayout extends ChatAttachAlert.AttachAlertLayou
         }
         sendPressed = true;
         ArrayList<MessageObject> audios = new ArrayList<>();
-        for (int a = 0; a < selectedAudios.size(); a++) {
-            audios.add(selectedAudios.valueAt(a).messageObject);
+        for (int a = 0; a < selectedAudiosOrder.size(); a++) {
+            audios.add(selectedAudiosOrder.get(a).messageObject);
         }
         delegate.didSelectAudio(audios, parentAlert.commentTextView.getText().toString(), notify, scheduleDate);
     }

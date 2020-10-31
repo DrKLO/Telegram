@@ -9,8 +9,6 @@ import android.text.TextPaint;
 import android.text.style.CharacterStyle;
 import android.view.View;
 
-import com.google.android.exoplayer2.util.Log;
-
 import java.util.ArrayList;
 
 public class EllipsizeSpanAnimator {

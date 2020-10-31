@@ -318,6 +318,7 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
 
     protected int avatarPicker;
     protected boolean avatarSearch;
+    protected boolean typeButtonsAvailable;
 
     private int selectedId;
 
@@ -334,6 +335,7 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
     private float baseSelectedTextViewTranslationY;
     private boolean menuShowed;
     protected SizeNotifierFrameLayout sizeNotifierFrameLayout;
+    private boolean openTransitionFinished;
 
     private Object viewChangeAnimator;
 
@@ -609,7 +611,7 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
 
                 @Override
                 protected boolean heightAnimationEnabled() {
-                    if (isDismissed()) {
+                    if (isDismissed() || !openTransitionFinished) {
                         return false;
                     }
                     return !commentTextView.isPopupVisible();
@@ -1200,13 +1202,13 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
                         baseFragment.getParentActivity().requestPermissions(new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, 4);
                         return;
                     }
-                    openAudioLayout();
+                    openAudioLayout(true);
                 } else if (num == 4) {
                     if (Build.VERSION.SDK_INT >= 23 && baseFragment.getParentActivity().checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
                         baseFragment.getParentActivity().requestPermissions(new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, 4);
                         return;
                     }
-                    openDocumentsLayout();
+                    openDocumentsLayout(true);
                 } else if (num == 5) {
                     if (Build.VERSION.SDK_INT >= 23) {
                         if (baseFragment.getParentActivity().checkSelfPermission(Manifest.permission.READ_CONTACTS) != PackageManager.PERMISSION_GRANTED) {
@@ -1609,6 +1611,7 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
             ChatActivity chatActivity = (ChatActivity) baseFragment;
             calcMandatoryInsets = chatActivity.isKeyboardVisible();
         }
+        openTransitionFinished = false;
     }
 
     public void setEditingMessageObject(MessageObject messageObject) {
@@ -1749,6 +1752,8 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
     public void onRequestPermissionsResultFragment(int requestCode, String[] permissions, int[] grantResults) {
         if (requestCode == 5 && grantResults != null && grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
             openContactsLayout();
+        } else if (requestCode == 30 && locationLayout != null && currentAttachLayout == locationLayout && isShowing()) {
+            locationLayout.openShareLiveLocation();
         }
     }
 
@@ -1760,7 +1765,7 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
         showLayout(contactsLayout);
     }
 
-    private void openAudioLayout() {
+    private void openAudioLayout(boolean show) {
         if (audioLayout == null) {
             layouts[3] = audioLayout = new ChatAttachAlertAudioLayout(this, getContext());
             audioLayout.setDelegate((audios, caption, notify, scheduleDate) -> ((ChatActivity) baseFragment).sendAudio(audios, caption, notify, scheduleDate));
@@ -1770,10 +1775,12 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
             TLRPC.Chat currentChat = chatActivity.getCurrentChat();
             audioLayout.setMaxSelectedFiles(currentChat != null && !ChatObject.hasAdminRights(currentChat) && currentChat.slowmode_enabled || editingMessageObject != null ? 1 : -1);
         }
-        showLayout(audioLayout);
+        if (show) {
+            showLayout(audioLayout);
+        }
     }
 
-    private void openDocumentsLayout() {
+    private void openDocumentsLayout(boolean show) {
         if (documentLayout == null) {
             layouts[4] = documentLayout = new ChatAttachAlertDocumentLayout(this, getContext(), false);
             documentLayout.setDelegate(new ChatAttachAlertDocumentLayout.DocumentSelectActivityDelegate() {
@@ -1806,7 +1813,7 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
 
                 @Override
                 public void startMusicSelectActivity() {
-                    openAudioLayout();
+                    openAudioLayout(true);
                 }
             });
         }
@@ -1818,7 +1825,9 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
             documentLayout.setMaxSelectedFiles(maxSelectedPhotos);
             documentLayout.setCanSelectOnlyImageFiles(true);
         }
-        showLayout(documentLayout);
+        if (show) {
+            showLayout(documentLayout);
+        }
     }
 
     private boolean showCommentTextView(boolean show, boolean animated) {
@@ -1836,7 +1845,10 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
         if (show) {
             frameLayout2.setVisibility(View.VISIBLE);
             writeButtonContainer.setVisibility(View.VISIBLE);
-        } else {
+            if (!typeButtonsAvailable) {
+                shadow.setVisibility(View.VISIBLE);
+            }
+        } else if (typeButtonsAvailable) {
             buttonsRecyclerView.setVisibility(View.VISIBLE);
         }
         if (animated) {
@@ -1853,9 +1865,12 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
                 animators.add(ObjectAnimator.ofFloat(frameLayout2, View.TRANSLATION_Y, show ? 0.0f : AndroidUtilities.dp(48)));
                 animators.add(ObjectAnimator.ofFloat(shadow, View.TRANSLATION_Y, show ? AndroidUtilities.dp(36) : AndroidUtilities.dp(48 + 36)));
                 animators.add(ObjectAnimator.ofFloat(shadow, View.ALPHA, show ? 1.0f : 0.0f));
-            } else {
+            } else if (typeButtonsAvailable) {
                 animators.add(ObjectAnimator.ofFloat(buttonsRecyclerView, View.TRANSLATION_Y, show ? AndroidUtilities.dp(36) : 0));
                 animators.add(ObjectAnimator.ofFloat(shadow, View.TRANSLATION_Y, show ? AndroidUtilities.dp(36) : 0));
+            } else {
+                shadow.setTranslationY(AndroidUtilities.dp(36));
+                animators.add(ObjectAnimator.ofFloat(shadow, View.ALPHA, show ? 1.0f : 0.0f));
             }
 
             commentsAnimator.playTogether(animators);
@@ -1868,7 +1883,10 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
                         if (!show) {
                             frameLayout2.setVisibility(View.INVISIBLE);
                             writeButtonContainer.setVisibility(View.INVISIBLE);
-                        } else {
+                            if (!typeButtonsAvailable) {
+                                shadow.setVisibility(View.INVISIBLE);
+                            }
+                        } else if (typeButtonsAvailable) {
                             buttonsRecyclerView.setVisibility(View.INVISIBLE);
                         }
                         commentsAnimator = null;
@@ -1895,13 +1913,19 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
                 frameLayout2.setTranslationY(show ? 0.0f : AndroidUtilities.dp(48));
                 shadow.setTranslationY(show ? AndroidUtilities.dp(36) : AndroidUtilities.dp(48 + 36));
                 shadow.setAlpha(show ? 1.0f : 0.0f);
-            } else {
+            } else if (typeButtonsAvailable) {
                 buttonsRecyclerView.setTranslationY(show ? AndroidUtilities.dp(36) : 0);
                 shadow.setTranslationY(show ? AndroidUtilities.dp(36) : 0);
+            } else {
+                shadow.setTranslationY(AndroidUtilities.dp(36));
+                shadow.setAlpha(show ? 1.0f : 0.0f);
             }
             if (!show) {
                 frameLayout2.setVisibility(View.INVISIBLE);
                 writeButtonContainer.setVisibility(View.INVISIBLE);
+                if (!typeButtonsAvailable) {
+                    shadow.setVisibility(View.INVISIBLE);
+                }
             }
         }
         return true;
@@ -1980,9 +2004,7 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
                 setFocusable(true);
                 editText.requestFocus();
                 if (showKeyboard) {
-                    AndroidUtilities.runOnUIThread(() -> {
-                        AndroidUtilities.showKeyboard(editText);
-                    });
+                    AndroidUtilities.runOnUIThread(() -> AndroidUtilities.showKeyboard(editText));
                 }
             }, keyboardVisible ? 200 : 0);
         }
@@ -2197,14 +2219,15 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
                 actionBarAnimation = null;
             }
             boolean needsSearchItem = avatarSearch || currentAttachLayout == photoLayout && !menuShowed && baseFragment instanceof ChatActivity && ((ChatActivity) baseFragment).allowSendGifs();
+            boolean needMoreItem = avatarPicker != 0 || !menuShowed && currentAttachLayout == photoLayout && mediaEnabled;
             if (show) {
                 if (needsSearchItem) {
                     searchItem.setVisibility(View.VISIBLE);
                 }
-                if (avatarPicker != 0 || !menuShowed && currentAttachLayout == photoLayout) {
+                if (needMoreItem) {
                     selectedMenuItem.setVisibility(View.VISIBLE);
                 }
-            } else if (avatarPicker == 0) {
+            } else if (typeButtonsAvailable) {
                 buttonsRecyclerView.setVisibility(View.VISIBLE);
             }
             if (animated) {
@@ -2216,7 +2239,7 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
                 if (needsSearchItem) {
                     animators.add(ObjectAnimator.ofFloat(searchItem, View.ALPHA, show ? 1.0f : 0.0f));
                 }
-                if (avatarPicker != 0 || !menuShowed && currentAttachLayout == photoLayout) {
+                if (needMoreItem) {
                     animators.add(ObjectAnimator.ofFloat(selectedMenuItem, View.ALPHA, show ? 1.0f : 0.0f));
                 }
                 actionBarAnimation.playTogether(animators);
@@ -2225,7 +2248,7 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
                     public void onAnimationEnd(Animator animation) {
                         if (actionBarAnimation != null) {
                             if (show) {
-                                if (avatarPicker == 0) {
+                                if (typeButtonsAvailable) {
                                     buttonsRecyclerView.setVisibility(View.INVISIBLE);
                                 }
                             } else {
@@ -2245,7 +2268,7 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
                 actionBarAnimation.start();
             } else {
                 if (show) {
-                    if (avatarPicker == 0) {
+                    if (typeButtonsAvailable) {
                         buttonsRecyclerView.setVisibility(View.INVISIBLE);
                     }
                 }
@@ -2254,7 +2277,7 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
                 if (needsSearchItem) {
                     searchItem.setAlpha(show ? 1.0f : 0.0f);
                 }
-                if (avatarPicker != 0 || !menuShowed && currentAttachLayout == photoLayout) {
+                if (needMoreItem) {
                     selectedMenuItem.setAlpha(show ? 1.0f : 0.0f);
                 }
                 if (!show) {
@@ -2395,7 +2418,30 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
         commentTextView.hidePopup(true);
         enterCommentEventSent = false;
         setFocusable(false);
-        if (currentAttachLayout != photoLayout) {
+        ChatAttachAlert.AttachAlertLayout layoutToSet;
+        if (editingMessageObject != null && editingMessageObject.hasValidGroupId() && (editingMessageObject.isMusic() || editingMessageObject.isDocument())) {
+            if (editingMessageObject.isMusic()) {
+                openAudioLayout(false);
+                layoutToSet = audioLayout;
+                selectedId = 3;
+            } else {
+                openDocumentsLayout(false);
+                layoutToSet = documentLayout;
+                selectedId = 4;
+            }
+            typeButtonsAvailable = false;
+            buttonsRecyclerView.setVisibility(View.GONE);
+            shadow.setVisibility(View.INVISIBLE);
+        } else {
+            layoutToSet = photoLayout;
+            typeButtonsAvailable = avatarPicker == 0;
+            selectedId = 1;
+            if (typeButtonsAvailable) {
+                buttonsRecyclerView.setVisibility(View.VISIBLE);
+                shadow.setVisibility(View.VISIBLE);
+            }
+        }
+        if (currentAttachLayout != layoutToSet) {
             if (actionBar.isSearchFieldVisible()) {
                 actionBar.closeSearchField();
             }
@@ -2403,18 +2449,17 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
             currentAttachLayout.onHide();
             currentAttachLayout.setVisibility(View.GONE);
             currentAttachLayout.onHidden();
-            currentAttachLayout = photoLayout;
+            currentAttachLayout = layoutToSet;
             setAllowNestedScroll(true);
             if (currentAttachLayout.getParent() == null) {
                 containerView.addView(currentAttachLayout, 0, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
             }
-            selectedId = 1;
-            photoLayout.setAlpha(1.0f);
-            photoLayout.setVisibility(View.VISIBLE);
-            photoLayout.onShow();
-            photoLayout.onShown();
-            actionBar.setVisibility(View.VISIBLE);
-            actionBarShadow.setVisibility(View.VISIBLE);
+            layoutToSet.setAlpha(1.0f);
+            layoutToSet.setVisibility(View.VISIBLE);
+            layoutToSet.onShow();
+            layoutToSet.onShown();
+            actionBar.setVisibility(layoutToSet.needsActionBar() != 0 ? View.VISIBLE : View.INVISIBLE);
+            actionBarShadow.setVisibility(actionBar.getVisibility());
         }
         updateCountButton(0);
 
@@ -2449,6 +2494,7 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
         }
         currentAttachLayout.onOpenAnimationEnd();
         AndroidUtilities.makeAccessibilityAnnouncement(LocaleController.getString("AccDescrAttachButton", R.string.AccDescrAttachButton));
+        openTransitionFinished = true;
     }
 
     @Override
@@ -2471,6 +2517,7 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
         avatarPicker = type;
         avatarSearch = search;
         if (avatarPicker != 0) {
+            typeButtonsAvailable = false;
             buttonsRecyclerView.setVisibility(View.GONE);
             shadow.setVisibility(View.GONE);
             if (avatarPicker == 2) {
@@ -2478,6 +2525,8 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
             } else {
                 selectedTextView.setText(LocaleController.getString("ChoosePhoto", R.string.ChoosePhoto));
             }
+        } else {
+            typeButtonsAvailable = true;
         }
     }
 
@@ -2593,9 +2642,17 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
                 galleryButton = buttonsCount++;
                 documentButton = buttonsCount++;
             } else if (editingMessageObject != null) {
-                galleryButton = buttonsCount++;
-                documentButton = buttonsCount++;
-                musicButton = buttonsCount++;
+                if ((editingMessageObject.isMusic() || editingMessageObject.isDocument()) && editingMessageObject.hasValidGroupId()) {
+                    if (editingMessageObject.isMusic()) {
+                        musicButton = buttonsCount++;
+                    } else {
+                        documentButton = buttonsCount++;
+                    }
+                } else {
+                    galleryButton = buttonsCount++;
+                    documentButton = buttonsCount++;
+                    musicButton = buttonsCount++;
+                }
             } else {
                 if (mediaEnabled) {
                     galleryButton = buttonsCount++;
@@ -2713,5 +2770,9 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
     @Override
     public void setAllowNestedScroll(boolean allowNestedScroll) {
         this.allowNestedScroll = allowNestedScroll;
+    }
+
+    public BaseFragment getBaseFragment() {
+        return baseFragment;
     }
 }

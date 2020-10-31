@@ -463,14 +463,16 @@ public class SearchAdapterHelper {
                     state.step();
                 }
                 state.dispose();
-                MessagesStorage.getInstance(currentAccount).getDatabase().commitTransaction();
-                if (arrayList.size() >= 100) {
-                    MessagesStorage.getInstance(currentAccount).getDatabase().beginTransaction();
+                if (arrayList.size() > 100) {
+                    state = MessagesStorage.getInstance(currentAccount).getDatabase().executeFast("DELETE FROM hashtag_recent_v2 WHERE id = ?");
                     for (int a = 100; a < arrayList.size(); a++) {
-                        MessagesStorage.getInstance(currentAccount).getDatabase().executeFast("DELETE FROM hashtag_recent_v2 WHERE id = '" + arrayList.get(a).hashtag + "'").stepThis().dispose();
+                        state.requery();
+                        state.bindString(1, arrayList.get(a).hashtag);
+                        state.step();
                     }
-                    MessagesStorage.getInstance(currentAccount).getDatabase().commitTransaction();
+                    state.dispose();
                 }
+                MessagesStorage.getInstance(currentAccount).getDatabase().commitTransaction();
             } catch (Exception e) {
                 FileLog.e(e);
             }

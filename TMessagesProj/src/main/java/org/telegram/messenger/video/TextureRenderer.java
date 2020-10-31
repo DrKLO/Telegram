@@ -388,7 +388,7 @@ public class TextureRenderer {
             for (int a = 0, N = mediaEntities.size(); a < N; a++) {
                 VideoEditedInfo.MediaEntity entity = mediaEntities.get(a);
                 if (entity.ptr != 0) {
-                    RLottieDrawable.getFrame(entity.ptr, (int) entity.currentFrame, stickerBitmap, 512, 512, stickerBitmap.getRowBytes());
+                    RLottieDrawable.getFrame(entity.ptr, (int) entity.currentFrame, stickerBitmap, 512, 512, stickerBitmap.getRowBytes(), true);
                     GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, stickerTexture[0]);
                     GLUtils.texImage2D(GL10.GL_TEXTURE_2D, 0, stickerBitmap, 0);
                     entity.currentFrame += entity.framesPerDraw;
