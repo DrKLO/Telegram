@@ -1,0 +1,3 @@
+[submodule "TMessagesProj/jni/libwebp"]
+	path = TMessagesProj/jni/libwebp
+	url = https://github.com/webmproject/libwebp

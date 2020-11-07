@@ -12,8 +12,8 @@
 #include <tgnet/FileLog.h>
 #include <vector>
 #include <algorithm>
-#include "libwebp/webp/decode.h"
-#include "libwebp/webp/encode.h"
+#include "webp/decode.h"
+#include "webp/encode.h"
 #include "mozjpeg/turbojpeg.h"
 #include "c_utils.h"
 
