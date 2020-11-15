@@ -141,6 +141,7 @@ public class ForkSettingsActivity extends BaseFragment {
     private int inappCameraRow;
     private int systemCameraRow;
     private int photoHasStickerRow;
+    private int showNotificationContent;
     private int unmutedOnTopRow;
     private int rearVideoMessages;
     private int replaceForward;
@@ -192,6 +193,7 @@ public class ForkSettingsActivity extends BaseFragment {
         hideSensitiveDataRow = SharedConfig.isUserOwner() ? -1 : rowCount++;
         squareAvatarsRow = rowCount++;
         photoHasStickerRow = rowCount++;
+        showNotificationContent = rowCount++;
         hideBottomButton = SharedConfig.isUserOwner() ? rowCount++ : -1;
     
         emptyRows.add(rowCount++);
@@ -296,6 +298,8 @@ public class ForkSettingsActivity extends BaseFragment {
                 }
             } else if (position == photoHasStickerRow) {
                 toggleGlobalMainSetting("photoHasSticker", view, true);
+            } else if (position == showNotificationContent) {
+                toggleGlobalMainSetting("showNotificationContent", view, false);
             } else if (position == unmutedOnTopRow) {
                 toggleGlobalMainSetting("unmutedOnTop", view, false);
                 MessagesController.getInstance(currentAccount).sortDialogs(null);
@@ -375,6 +379,10 @@ public class ForkSettingsActivity extends BaseFragment {
                         String t = LocaleController.getString("PhotoHasSticker", R.string.PhotoHasSticker);
                         String info = LocaleController.getString("PhotoHasStickerInfo", R.string.PhotoHasStickerInfo);
                         textCell.setTextAndValueAndCheck(t, info, preferences.getBoolean("photoHasSticker", true), true, false);
+                    } else if (position == showNotificationContent) {
+                        String t = LocaleController.getString("ShowNotificationContent", R.string.ShowNotificationContent);
+                        String info = LocaleController.getString("ShowNotificationContentInfo", R.string.ShowNotificationContentInfo);
+                        textCell.setTextAndValueAndCheck(t, info, preferences.getBoolean("showNotificationContent", false), true, false);
                     } else if (position == unmutedOnTopRow) {
                         String t = LocaleController.getString("UnmutedOnTop", R.string.UnmutedOnTop);
                         String info = LocaleController.getString("UnmutedOnTopInfo", R.string.UnmutedOnTopInfo);
@@ -447,6 +455,7 @@ public class ForkSettingsActivity extends BaseFragment {
                         || position == disableThumbsInDialogList
                         || position == hideBottomButton
                         || position == syncPinsRow
+                        || position == showNotificationContent
                         || position == photoHasStickerRow;
             return fork;
         }
@@ -502,6 +511,7 @@ public class ForkSettingsActivity extends BaseFragment {
                 || position == formatWithSeconds
                 || position == disableThumbsInDialogList
                 || position == hideBottomButton
+                || position == showNotificationContent
                 || position == photoHasStickerRow) {
                 return 3;
             } else if (sectionRows.contains(position)) {

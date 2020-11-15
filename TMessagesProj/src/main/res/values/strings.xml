@@ -8482,4 +8482,6 @@
     <string name="FormatWithSeconds">Format Message Time with Seconds</string>
     <string name="DisableThumbsInDialogList">Disable Thumbs in Dialog List</string>
     <string name="FullRecentStickers">Show Full List of Recent Stickers</string>
+    <string name="ShowNotificationContent">Show Notifications content</string>
+    <string name="ShowNotificationContentInfo">When app is locked. Can be cause of privacy leaks.</string>
 </resources>
