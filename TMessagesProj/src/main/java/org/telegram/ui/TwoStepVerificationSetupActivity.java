@@ -769,6 +769,7 @@ public class TwoStepVerificationSetupActivity extends BaseFragment {
 
                 showPasswordButton = new ImageView(context);
                 showPasswordButton.setImageResource(R.drawable.msg_message);
+                showPasswordButton.setContentDescription(LocaleController.getString("AccDescrShowPassword", R.string.AccDescrShowPassword));
                 showPasswordButton.setScaleType(ImageView.ScaleType.CENTER);
                 if (Build.VERSION.SDK_INT >= 21) {
                     showPasswordButton.setBackgroundDrawable(Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector)));

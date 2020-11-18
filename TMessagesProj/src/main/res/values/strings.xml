@@ -3870,6 +3870,7 @@
     <string name="AccDescrVoipCamOn">Camera is on</string>
     <string name="AccDescrVoipCamOff">Camera is off</string>
     <string name="AccPinnedMessagesList">Pinned messages list</string>
+    <string name="AccDescrShowPassword">Show password</string>
     <!--date formatters-->
     <string name="formatterMonthYear">MMM yyyy</string>
     <string name="formatterStats12H">MMM dd yyyy, h:mm a</string>
