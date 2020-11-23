@@ -3282,7 +3282,6 @@ public class NotificationsController extends BaseController {
                 } else if (needVibrate == 1) {
                     mBuilder.setVibrate(vibrationPattern = new long[]{0, 100, 0, 100});
                 } else if (needVibrate == 0 || needVibrate == 4) {
-                    mBuilder.setDefaults(NotificationCompat.DEFAULT_VIBRATE);
                     vibrationPattern = new long[]{};
                 } else if (needVibrate == 3) {
                     mBuilder.setVibrate(vibrationPattern = new long[]{0, 1000});
