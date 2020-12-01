@@ -2864,6 +2864,8 @@ public class MediaDataController extends BaseController {
                 }
             }
         }
+
+        Collections.reverse(hintsFinal);
         Utilities.globalQueue.postRunnable(() -> {
             try {
                 if (SharedConfig.directShareHash == null) {
