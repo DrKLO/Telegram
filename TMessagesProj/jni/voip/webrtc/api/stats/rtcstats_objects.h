@@ -115,6 +115,7 @@ class RTC_EXPORT RTCCodecStats final : public RTCStats {
   RTCCodecStats(const RTCCodecStats& other);
   ~RTCCodecStats() override;
 
+  RTCStatsMember<std::string> transport_id;
   RTCStatsMember<uint32_t> payload_type;
   RTCStatsMember<std::string> mime_type;
   RTCStatsMember<uint32_t> clock_rate;

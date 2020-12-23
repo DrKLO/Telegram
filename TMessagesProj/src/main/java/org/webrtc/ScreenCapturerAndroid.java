@@ -75,6 +75,11 @@ public class ScreenCapturerAndroid implements VideoCapturer, VideoSink {
     }
   }
 
+  @Nullable
+  public MediaProjection getMediaProjection() {
+    return mediaProjection;
+  }
+
   @Override
   // TODO(bugs.webrtc.org/8491): Remove NoSynchronizedMethodCheck suppression.
   @SuppressWarnings("NoSynchronizedMethodCheck")

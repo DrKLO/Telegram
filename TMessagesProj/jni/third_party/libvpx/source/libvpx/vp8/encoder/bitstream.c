@@ -222,7 +222,7 @@ void vp8_pack_tokens(vp8_writer *w, const TOKENEXTRA *p, int xcount) {
 
             validate_buffer(w->buffer + w->pos, 1, w->buffer_end, w->error);
 
-            w->buffer[w->pos++] = (lowvalue >> (24 - offset));
+            w->buffer[w->pos++] = (lowvalue >> (24 - offset)) & 0xff;
             lowvalue <<= offset;
             shift = count;
             lowvalue &= 0xffffff;

@@ -43,7 +43,7 @@ class AdaptiveModeLevelEstimatorAgc : public Agc {
   static constexpr int kDefaultAgc2LevelHeadroomDbfs = -1;
   int32_t time_in_ms_since_last_estimate_ = 0;
   AdaptiveModeLevelEstimator level_estimator_;
-  VadWithLevel agc2_vad_;
+  VadLevelAnalyzer agc2_vad_;
   float latest_voice_probability_ = 0.f;
 };
 }  // namespace webrtc

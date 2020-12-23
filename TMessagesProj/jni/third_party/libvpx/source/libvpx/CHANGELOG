@@ -1,3 +1,27 @@
+2020-07-29 v1.9.0 "Quacking Duck"
+  This release adds support for NV12, a separate library for rate control, as
+  well as incremental improvements.
+
+  - Upgrading:
+    NV12 support is added to this release.
+    A new interface is added for VP9 rate control. The new library libvp9rc.a
+    must be linked by applications.
+    Googletest is updated to v1.10.0.
+    simple_encode.cc is compiled into a new library libsimple_encode.a with
+    CONFIG_RATE_CTRL.
+
+  - Enhancement:
+    Various changes to improve VP9 SVC, rate control, quality and speed to real
+    time encoding.
+
+  - Bug fixes:
+    Fix key frame update refresh simulcast flexible svc.
+    Fix to disable_16x16part speed feature for real time encoding.
+    Fix some signed integer overflows for VP9 rate control.
+    Fix initialization of delta_q_uv.
+    Fix condition in regulate_q for cyclic refresh.
+    Various fixes to dynamic resizing for VP9 SVC.
+
 2019-12-09 v1.8.2 "Pekin Duck"
   This release collects incremental improvements to many aspects of the library.
 

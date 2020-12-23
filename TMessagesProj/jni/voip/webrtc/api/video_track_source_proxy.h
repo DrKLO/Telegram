@@ -23,8 +23,8 @@ namespace webrtc {
 BEGIN_PROXY_MAP(VideoTrackSource)
 PROXY_SIGNALING_THREAD_DESTRUCTOR()
 PROXY_CONSTMETHOD0(SourceState, state)
-PROXY_CONSTMETHOD0(bool, remote)
-PROXY_CONSTMETHOD0(bool, is_screencast)
+BYPASS_PROXY_CONSTMETHOD0(bool, remote)
+BYPASS_PROXY_CONSTMETHOD0(bool, is_screencast)
 PROXY_CONSTMETHOD0(absl::optional<bool>, needs_denoising)
 PROXY_METHOD1(bool, GetStats, Stats*)
 PROXY_WORKER_METHOD2(void,

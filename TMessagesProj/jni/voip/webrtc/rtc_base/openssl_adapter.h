@@ -32,7 +32,8 @@
 
 namespace rtc {
 
-class OpenSSLAdapter final : public SSLAdapter, public MessageHandler {
+class OpenSSLAdapter final : public SSLAdapter,
+                             public MessageHandlerAutoCleanup {
  public:
   static bool InitializeSSL();
   static bool CleanupSSL();

@@ -1286,7 +1286,7 @@ public class ChatAttachAlertLocationLayout extends ChatAttachAlert.AttachAlertLa
             if (loadingMapView.getTag() == null) {
                 loadingMapView.animate().alpha(0.0f).setDuration(180).start();
             }
-        }, 2000);
+        }, 200);
         positionMarker(myLocation = getLastLocation());
 
         if (checkGpsEnabled && getParentActivity() != null) {

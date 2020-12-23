@@ -69,9 +69,7 @@ void FilterAnalyzer::Reset() {
   blocks_since_reset_ = 0;
   ResetRegion();
   for (auto& state : filter_analysis_states_) {
-    state.peak_index = 0;
-    state.gain = default_gain_;
-    state.consistent_filter_detector.Reset();
+    state.Reset(default_gain_);
   }
   std::fill(filter_delays_blocks_.begin(), filter_delays_blocks_.end(), 0);
 }
@@ -204,7 +202,9 @@ FilterAnalyzer::ConsistentFilterDetector::ConsistentFilterDetector(
     const EchoCanceller3Config& config)
     : active_render_threshold_(config.render_levels.active_render_limit *
                                config.render_levels.active_render_limit *
-                               kFftLengthBy2) {}
+                               kFftLengthBy2) {
+  Reset();
+}
 
 void FilterAnalyzer::ConsistentFilterDetector::Reset() {
   significant_peak_ = false;

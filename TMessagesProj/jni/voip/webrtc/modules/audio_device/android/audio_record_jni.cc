@@ -219,8 +219,7 @@ int32_t AudioRecordJni::EnableBuiltInAEC(bool enable) {
 
 int32_t AudioRecordJni::EnableBuiltInAGC(bool enable) {
   // TODO(henrika): possibly remove when no longer used by any client.
-  FATAL() << "Should never be called";
-  return -1;
+  RTC_CHECK_NOTREACHED();
 }
 
 int32_t AudioRecordJni::EnableBuiltInNS(bool enable) {

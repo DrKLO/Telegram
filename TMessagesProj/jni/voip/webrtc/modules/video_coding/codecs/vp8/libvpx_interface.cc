@@ -195,6 +195,10 @@ class LibvpxVp8Facade : public LibvpxInterface {
       vpx_codec_iter_t* iter) const override {
     return ::vpx_codec_get_cx_data(ctx, iter);
   }
+
+  const char* codec_error_detail(vpx_codec_ctx_t* ctx) const override {
+    return ::vpx_codec_error_detail(ctx);
+  }
 };
 
 }  // namespace

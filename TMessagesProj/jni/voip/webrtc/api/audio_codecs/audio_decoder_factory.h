@@ -38,6 +38,8 @@ class AudioDecoderFactory : public rtc::RefCountInterface {
   // communication between the AudioEncoder and AudioDecoder instances, which is
   // needed for some codecs with built-in bandwidth adaptation.)
   //
+  // Returns null if the format isn't supported.
+  //
   // Note: Implementations need to be robust against combinations other than
   // one encoder, one decoder getting the same ID; such decoders must still
   // work.

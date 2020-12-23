@@ -30,7 +30,6 @@
 
 namespace webrtc {
 
-class RTPFragmentationHeader;
 // TODO(pbos): Expose these through a public (root) header or change these APIs.
 struct CodecSpecificInfo;
 
@@ -73,16 +72,9 @@ class RTC_EXPORT EncodedImageCallback {
   };
 
   // Callback function which is called when an image has been encoded.
-  // Deprecated, use OnEncodedImage below instead, see bugs.webrtc.org/6471
-  virtual Result OnEncodedImage(const EncodedImage& encoded_image,
-                                const CodecSpecificInfo* codec_specific_info,
-                                const RTPFragmentationHeader* fragmentation);
-
-  // Callback function which is called when an image has been encoded.
-  // TODO(bugs.webrtc.org/6471): Make pure virtual
-  // when OnEncodedImage above is deleted.
-  virtual Result OnEncodedImage(const EncodedImage& encoded_image,
-                                const CodecSpecificInfo* codec_specific_info);
+  virtual Result OnEncodedImage(
+      const EncodedImage& encoded_image,
+      const CodecSpecificInfo* codec_specific_info) = 0;
 
   virtual void OnDroppedFrame(DropReason reason) {}
 };
@@ -182,6 +174,15 @@ class RTC_EXPORT VideoEncoder {
     // requirements the encoder has on the incoming video frame buffers.
     int requested_resolution_alignment;
 
+    // Same as above but if true, each simulcast layer should also be divisible
+    // by |requested_resolution_alignment|.
+    // Note that scale factors |scale_resolution_down_by| may be adjusted so a
+    // common multiple is not too large to avoid largely cropped frames and
+    // possibly with an aspect ratio far from the original.
+    // Warning: large values of scale_resolution_down_by could be changed
+    // considerably, especially if |requested_resolution_alignment| is large.
+    bool apply_alignment_to_all_simulcast_layers;
+
     // If true, encoder supports working with a native handle (e.g. texture
     // handle for hw codecs) rather than requiring a raw I420 buffer.
     bool supports_native_handle;
@@ -253,6 +254,12 @@ class RTC_EXPORT VideoEncoder {
     // in such case the encoder should return
     // WEBRTC_VIDEO_CODEC_ERR_SIMULCAST_PARAMETERS_NOT_SUPPORTED.
     bool supports_simulcast;
+
+    // The list of pixel formats preferred by the encoder. It is assumed that if
+    // the list is empty and supports_native_handle is false, then {I420} is the
+    // preferred pixel format. The order of the formats does not matter.
+    absl::InlinedVector<VideoFrameBuffer::Type, kMaxPreferredPixelFormats>
+        preferred_pixel_formats;
   };
 
   struct RTC_EXPORT RateControlParameters {
@@ -266,6 +273,9 @@ class RTC_EXPORT VideoEncoder {
 
     // Target bitrate, per spatial/temporal layer.
     // A target bitrate of 0bps indicates a layer should not be encoded at all.
+    VideoBitrateAllocation target_bitrate;
+    // Adjusted target bitrate, per spatial/temporal layer. May be lower or
+    // higher than the target depending on encoder behaviour.
     VideoBitrateAllocation bitrate;
     // Target framerate, in fps. A value <= 0.0 is invalid and should be
     // interpreted as framerate target not available. In this case the encoder
@@ -377,7 +387,7 @@ class RTC_EXPORT VideoEncoder {
   // Return value                : WEBRTC_VIDEO_CODEC_OK if OK, < 0 otherwise.
   virtual int32_t Release() = 0;
 
-  // Encode an I420 image (as a part of a video stream). The encoded image
+  // Encode an image (as a part of a video stream). The encoded image
   // will be returned to the user through the encode complete callback.
   //
   // Input:

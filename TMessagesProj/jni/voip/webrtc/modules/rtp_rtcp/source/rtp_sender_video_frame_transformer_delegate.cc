@@ -162,7 +162,14 @@ void RTPSenderVideoFrameTransformerDelegate::SetVideoStructureUnderLock(
     const FrameDependencyStructure* video_structure) {
   MutexLock lock(&sender_lock_);
   RTC_CHECK(sender_);
-  sender_->SetVideoStructureUnderLock(video_structure);
+  sender_->SetVideoStructureAfterTransformation(video_structure);
+}
+
+void RTPSenderVideoFrameTransformerDelegate::SetVideoLayersAllocationUnderLock(
+    VideoLayersAllocation allocation) {
+  MutexLock lock(&sender_lock_);
+  RTC_CHECK(sender_);
+  sender_->SetVideoLayersAllocationAfterTransformation(std::move(allocation));
 }
 
 void RTPSenderVideoFrameTransformerDelegate::Reset() {

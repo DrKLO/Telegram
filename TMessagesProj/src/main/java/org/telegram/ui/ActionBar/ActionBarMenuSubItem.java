@@ -26,14 +26,20 @@ public class ActionBarMenuSubItem extends FrameLayout {
     private int iconColor = Theme.getColor(Theme.key_actionBarDefaultSubmenuItemIcon);
     private int selectorColor = Theme.getColor(Theme.key_dialogButtonSelector);
 
-    public ActionBarMenuSubItem(Context context) {
-        this(context, false);
+    boolean top;
+    boolean bottom;
+
+    public ActionBarMenuSubItem(Context context, boolean top, boolean bottom) {
+        this(context, false, top, bottom);
     }
 
-    public ActionBarMenuSubItem(Context context, boolean needCheck) {
+    public ActionBarMenuSubItem(Context context, boolean needCheck, boolean top, boolean bottom) {
         super(context);
 
-        setBackground(Theme.createSelectorDrawable(selectorColor, 2));
+        this.top = top;
+        this.bottom = bottom;
+
+        updateBackground();
         setPadding(AndroidUtilities.dp(18), 0, AndroidUtilities.dp(18), 0);
 
         imageView = new ImageView(context);
@@ -55,26 +61,13 @@ public class ActionBarMenuSubItem extends FrameLayout {
             checkView.setImageResource(R.drawable.msg_text_check);
             checkView.setScaleType(ImageView.ScaleType.CENTER);
             checkView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_radioBackgroundChecked), PorterDuff.Mode.MULTIPLY));
-            addView(checkView, LayoutHelper.createFrame(26, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT));
+            addView(checkView, LayoutHelper.createFrame(26, LayoutHelper.MATCH_PARENT, Gravity.CENTER_VERTICAL | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT)));
         }
     }
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         super.onMeasure(widthMeasureSpec, View.MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(48), View.MeasureSpec.EXACTLY));
-    }
-
-    @Override
-    protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
-        super.onLayout(changed, left, top, right, bottom);
-        if (checkView != null) {
-            if (LocaleController.isRTL) {
-                left = getPaddingRight();
-            } else {
-                left = getMeasuredWidth() - checkView.getMeasuredWidth() - getPaddingLeft();
-            }
-            checkView.layout(left, checkView.getTop(), left + checkView.getMeasuredWidth(), checkView.getBottom());
-        }
     }
 
     public void setChecked(boolean checked) {
@@ -84,9 +77,13 @@ public class ActionBarMenuSubItem extends FrameLayout {
         checkView.setVisibility(checked ? VISIBLE : INVISIBLE);
     }
 
+    public void setCheckColor(int color) {
+        checkView.setColorFilter(new PorterDuffColorFilter(color, PorterDuff.Mode.MULTIPLY));
+    }
+
     public void setTextAndIcon(CharSequence text, int icon) {
         textView.setText(text);
-        if (icon != 0) {
+        if (icon != 0 || checkView != null) {
             imageView.setImageResource(icon);
             imageView.setVisibility(VISIBLE);
             textView.setPadding(LocaleController.isRTL ? 0 : AndroidUtilities.dp(43), 0, LocaleController.isRTL ? AndroidUtilities.dp(43) : 0, 0);
@@ -127,7 +124,20 @@ public class ActionBarMenuSubItem extends FrameLayout {
 
     public void setSelectorColor(int selectorColor) {
         if (this.selectorColor != selectorColor) {
-            setBackground(Theme.createSelectorDrawable(this.selectorColor = selectorColor, 2));
+            this.selectorColor = selectorColor;
+            updateBackground();
         }
+    }
+
+    public void updateSelectorBackground(boolean top, boolean bottom) {
+        this.top = top;
+        this.bottom = bottom;
+        updateBackground();
+    }
+
+    private void updateBackground() {
+        int topBackgroundRadius = top ? 6 : 0;
+        int bottomBackgroundRadius = bottom ? 6 : 0;
+        setBackground(Theme.createRadSelectorDrawable(selectorColor, topBackgroundRadius, bottomBackgroundRadius));
     }
 }

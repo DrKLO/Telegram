@@ -16,27 +16,23 @@
 #include <numeric>
 
 #include "rtc_base/checks.h"
+#include "rtc_base/numerics/safe_compare.h"
 
 namespace webrtc {
 namespace rnn_vad {
 namespace {
 
-// Computes cross-correlation coefficients between |x| and |y| and writes them
-// in |x_corr|. The lag values are in {0, ..., max_lag - 1}, where max_lag
-// equals the size of |x_corr|.
-// The |x| and |y| sub-arrays used to compute a cross-correlation coefficients
-// for a lag l have both size "size of |x| - l" - i.e., the longest sub-array is
-// used. |x| and |y| must have the same size.
-void ComputeCrossCorrelation(
+// Computes auto-correlation coefficients for |x| and writes them in
+// |auto_corr|. The lag values are in {0, ..., max_lag - 1}, where max_lag
+// equals the size of |auto_corr|.
+void ComputeAutoCorrelation(
     rtc::ArrayView<const float> x,
-    rtc::ArrayView<const float> y,
-    rtc::ArrayView<float, kNumLpcCoefficients> x_corr) {
-  constexpr size_t max_lag = x_corr.size();
-  RTC_DCHECK_EQ(x.size(), y.size());
+    rtc::ArrayView<float, kNumLpcCoefficients> auto_corr) {
+  constexpr int max_lag = auto_corr.size();
   RTC_DCHECK_LT(max_lag, x.size());
-  for (size_t lag = 0; lag < max_lag; ++lag) {
-    x_corr[lag] =
-        std::inner_product(x.begin(), x.end() - lag, y.begin() + lag, 0.f);
+  for (int lag = 0; lag < max_lag; ++lag) {
+    auto_corr[lag] =
+        std::inner_product(x.begin(), x.end() - lag, x.begin() + lag, 0.f);
   }
 }
 
@@ -45,9 +41,13 @@ void DenoiseAutoCorrelation(
     rtc::ArrayView<float, kNumLpcCoefficients> auto_corr) {
   // Assume -40 dB white noise floor.
   auto_corr[0] *= 1.0001f;
-  for (size_t i = 1; i < kNumLpcCoefficients; ++i) {
-    auto_corr[i] -= auto_corr[i] * (0.008f * i) * (0.008f * i);
-  }
+  // Hard-coded values obtained as
+  // [np.float32((0.008*0.008*i*i)) for i in range(1,5)].
+  auto_corr[1] -= auto_corr[1] * 0.000064f;
+  auto_corr[2] -= auto_corr[2] * 0.000256f;
+  auto_corr[3] -= auto_corr[3] * 0.000576f;
+  auto_corr[4] -= auto_corr[4] * 0.001024f;
+  static_assert(kNumLpcCoefficients == 5, "Update `auto_corr`.");
 }
 
 // Computes the initial inverse filter coefficients given the auto-correlation
@@ -56,9 +56,9 @@ void ComputeInitialInverseFilterCoefficients(
     rtc::ArrayView<const float, kNumLpcCoefficients> auto_corr,
     rtc::ArrayView<float, kNumLpcCoefficients - 1> lpc_coeffs) {
   float error = auto_corr[0];
-  for (size_t i = 0; i < kNumLpcCoefficients - 1; ++i) {
+  for (int i = 0; i < kNumLpcCoefficients - 1; ++i) {
     float reflection_coeff = 0.f;
-    for (size_t j = 0; j < i; ++j) {
+    for (int j = 0; j < i; ++j) {
       reflection_coeff += lpc_coeffs[j] * auto_corr[i - j];
     }
     reflection_coeff += auto_corr[i + 1];
@@ -72,7 +72,7 @@ void ComputeInitialInverseFilterCoefficients(
     reflection_coeff /= -error;
     // Update LPC coefficients and total error.
     lpc_coeffs[i] = reflection_coeff;
-    for (size_t j = 0; j<(i + 1)>> 1; ++j) {
+    for (int j = 0; j < ((i + 1) >> 1); ++j) {
       const float tmp1 = lpc_coeffs[j];
       const float tmp2 = lpc_coeffs[i - 1 - j];
       lpc_coeffs[j] = tmp1 + reflection_coeff * tmp2;
@@ -91,46 +91,49 @@ void ComputeAndPostProcessLpcCoefficients(
     rtc::ArrayView<const float> x,
     rtc::ArrayView<float, kNumLpcCoefficients> lpc_coeffs) {
   std::array<float, kNumLpcCoefficients> auto_corr;
-  ComputeCrossCorrelation(x, x, {auto_corr.data(), auto_corr.size()});
+  ComputeAutoCorrelation(x, auto_corr);
   if (auto_corr[0] == 0.f) {  // Empty frame.
     std::fill(lpc_coeffs.begin(), lpc_coeffs.end(), 0);
     return;
   }
-  DenoiseAutoCorrelation({auto_corr.data(), auto_corr.size()});
+  DenoiseAutoCorrelation(auto_corr);
   std::array<float, kNumLpcCoefficients - 1> lpc_coeffs_pre{};
   ComputeInitialInverseFilterCoefficients(auto_corr, lpc_coeffs_pre);
   // LPC coefficients post-processing.
   // TODO(bugs.webrtc.org/9076): Consider removing these steps.
-  float c1 = 1.f;
-  for (size_t i = 0; i < kNumLpcCoefficients - 1; ++i) {
-    c1 *= 0.9f;
-    lpc_coeffs_pre[i] *= c1;
-  }
-  const float c2 = 0.8f;
-  lpc_coeffs[0] = lpc_coeffs_pre[0] + c2;
-  lpc_coeffs[1] = lpc_coeffs_pre[1] + c2 * lpc_coeffs_pre[0];
-  lpc_coeffs[2] = lpc_coeffs_pre[2] + c2 * lpc_coeffs_pre[1];
-  lpc_coeffs[3] = lpc_coeffs_pre[3] + c2 * lpc_coeffs_pre[2];
-  lpc_coeffs[4] = c2 * lpc_coeffs_pre[3];
+  lpc_coeffs_pre[0] *= 0.9f;
+  lpc_coeffs_pre[1] *= 0.9f * 0.9f;
+  lpc_coeffs_pre[2] *= 0.9f * 0.9f * 0.9f;
+  lpc_coeffs_pre[3] *= 0.9f * 0.9f * 0.9f * 0.9f;
+  constexpr float kC = 0.8f;
+  lpc_coeffs[0] = lpc_coeffs_pre[0] + kC;
+  lpc_coeffs[1] = lpc_coeffs_pre[1] + kC * lpc_coeffs_pre[0];
+  lpc_coeffs[2] = lpc_coeffs_pre[2] + kC * lpc_coeffs_pre[1];
+  lpc_coeffs[3] = lpc_coeffs_pre[3] + kC * lpc_coeffs_pre[2];
+  lpc_coeffs[4] = kC * lpc_coeffs_pre[3];
+  static_assert(kNumLpcCoefficients == 5, "Update `lpc_coeffs(_pre)`.");
 }
 
 void ComputeLpResidual(
     rtc::ArrayView<const float, kNumLpcCoefficients> lpc_coeffs,
     rtc::ArrayView<const float> x,
     rtc::ArrayView<float> y) {
-  RTC_DCHECK_LT(kNumLpcCoefficients, x.size());
+  RTC_DCHECK_GT(x.size(), kNumLpcCoefficients);
   RTC_DCHECK_EQ(x.size(), y.size());
-  std::array<float, kNumLpcCoefficients> input_chunk;
-  input_chunk.fill(0.f);
-  for (size_t i = 0; i < y.size(); ++i) {
-    const float sum = std::inner_product(input_chunk.begin(), input_chunk.end(),
-                                         lpc_coeffs.begin(), x[i]);
-    // Circular shift and add a new sample.
-    for (size_t j = kNumLpcCoefficients - 1; j > 0; --j)
-      input_chunk[j] = input_chunk[j - 1];
-    input_chunk[0] = x[i];
-    // Copy result.
-    y[i] = sum;
+  // The code below implements the following operation:
+  // y[i] = x[i] + dot_product({x[i], ..., x[i - kNumLpcCoefficients + 1]},
+  //                           lpc_coeffs)
+  // Edge case: i < kNumLpcCoefficients.
+  y[0] = x[0];
+  for (int i = 1; i < kNumLpcCoefficients; ++i) {
+    y[i] =
+        std::inner_product(x.crend() - i, x.crend(), lpc_coeffs.cbegin(), x[i]);
+  }
+  // Regular case.
+  auto last = x.crend();
+  for (int i = kNumLpcCoefficients; rtc::SafeLt(i, y.size()); ++i, --last) {
+    y[i] = std::inner_product(last - kNumLpcCoefficients, last,
+                              lpc_coeffs.cbegin(), x[i]);
   }
 }
 

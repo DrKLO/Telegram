@@ -340,7 +340,8 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
                             continue;
                         }
                         if (event.action instanceof TLRPC.TL_channelAdminLogEventActionParticipantToggleAdmin) {
-                            if (event.action.prev_participant instanceof TLRPC.TL_channelParticipantCreator && !(event.action.new_participant instanceof TLRPC.TL_channelParticipantCreator)) {
+                            TLRPC.TL_channelAdminLogEventActionParticipantToggleAdmin action = (TLRPC.TL_channelAdminLogEventActionParticipantToggleAdmin) event.action;
+                            if (action.prev_participant instanceof TLRPC.TL_channelParticipantCreator && !(action.new_participant instanceof TLRPC.TL_channelParticipantCreator)) {
                                 continue;
                             }
                         }
@@ -1016,9 +1017,10 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
         }
         if (type == 1) {
             if (selectedObject.currentEvent != null && selectedObject.currentEvent.action instanceof TLRPC.TL_channelAdminLogEventActionChangeStickerSet) {
-                TLRPC.InputStickerSet stickerSet = selectedObject.currentEvent.action.new_stickerset;
+                TLRPC.TL_channelAdminLogEventActionChangeStickerSet action = (TLRPC.TL_channelAdminLogEventActionChangeStickerSet) selectedObject.currentEvent.action;
+                TLRPC.InputStickerSet stickerSet = action.new_stickerset;
                 if (stickerSet == null || stickerSet instanceof TLRPC.TL_inputStickerSetEmpty) {
-                    stickerSet = selectedObject.currentEvent.action.prev_stickerset;
+                    stickerSet = action.prev_stickerset;
                 }
                 if (stickerSet != null) {
                     showDialog(new StickersAlert(getParentActivity(), ChannelAdminLogActivity.this, stickerSet, null, null));

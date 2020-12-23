@@ -34,58 +34,74 @@ void TransposeWx8_NEON(const uint8_t* src,
       // loops are on blocks of 8. loop will stop when
       // counter gets to or below 0. starting the counter
       // at w-8 allow for this
-      "sub         %w3, %w3, #8                     \n"
+      "sub         %w3, %w3, #8                  \n"
 
       // handle 8x8 blocks. this should be the majority of the plane
-      "1:                                          \n"
+      "1:                                        \n"
       "mov         %0, %1                        \n"
 
-      "ld1        {v0.8b}, [%0], %5              \n"
-      "ld1        {v1.8b}, [%0], %5              \n"
-      "ld1        {v2.8b}, [%0], %5              \n"
-      "ld1        {v3.8b}, [%0], %5              \n"
-      "ld1        {v4.8b}, [%0], %5              \n"
-      "ld1        {v5.8b}, [%0], %5              \n"
-      "ld1        {v6.8b}, [%0], %5              \n"
-      "ld1        {v7.8b}, [%0]                  \n"
+      "ld1         {v0.8b}, [%0], %5             \n"
+      "ld1         {v1.8b}, [%0], %5             \n"
+      "ld1         {v2.8b}, [%0], %5             \n"
+      "ld1         {v3.8b}, [%0], %5             \n"
+      "ld1         {v4.8b}, [%0], %5             \n"
+      "ld1         {v5.8b}, [%0], %5             \n"
+      "ld1         {v6.8b}, [%0], %5             \n"
+      "ld1         {v7.8b}, [%0]                 \n"
+      "mov         %0, %1                        \n"
 
-      "trn2     v16.8b, v0.8b, v1.8b             \n"
-      "trn1     v17.8b, v0.8b, v1.8b             \n"
-      "trn2     v18.8b, v2.8b, v3.8b             \n"
-      "trn1     v19.8b, v2.8b, v3.8b             \n"
-      "trn2     v20.8b, v4.8b, v5.8b             \n"
-      "trn1     v21.8b, v4.8b, v5.8b             \n"
-      "trn2     v22.8b, v6.8b, v7.8b             \n"
-      "trn1     v23.8b, v6.8b, v7.8b             \n"
+      "trn2        v16.8b, v0.8b, v1.8b          \n"
+      "prfm        pldl1keep, [%0, 448]          \n"  // prefetch 7 lines ahead
+      "trn1        v17.8b, v0.8b, v1.8b          \n"
+      "add         %0, %0, %5                    \n"
+      "trn2        v18.8b, v2.8b, v3.8b          \n"
+      "prfm        pldl1keep, [%0, 448]          \n"  // row 1
+      "trn1        v19.8b, v2.8b, v3.8b          \n"
+      "add         %0, %0, %5                    \n"
+      "trn2        v20.8b, v4.8b, v5.8b          \n"
+      "prfm        pldl1keep, [%0, 448]          \n"  // row 2
+      "trn1        v21.8b, v4.8b, v5.8b          \n"
+      "add         %0, %0, %5                    \n"
+      "trn2        v22.8b, v6.8b, v7.8b          \n"
+      "prfm        pldl1keep, [%0, 448]          \n"  // row 3
+      "trn1        v23.8b, v6.8b, v7.8b          \n"
+      "add         %0, %0, %5                    \n"
 
-      "trn2     v3.4h, v17.4h, v19.4h            \n"
-      "trn1     v1.4h, v17.4h, v19.4h            \n"
-      "trn2     v2.4h, v16.4h, v18.4h            \n"
-      "trn1     v0.4h, v16.4h, v18.4h            \n"
-      "trn2     v7.4h, v21.4h, v23.4h            \n"
-      "trn1     v5.4h, v21.4h, v23.4h            \n"
-      "trn2     v6.4h, v20.4h, v22.4h            \n"
-      "trn1     v4.4h, v20.4h, v22.4h            \n"
+      "trn2        v3.4h, v17.4h, v19.4h         \n"
+      "prfm        pldl1keep, [%0, 448]          \n"  // row 4
+      "trn1        v1.4h, v17.4h, v19.4h         \n"
+      "add         %0, %0, %5                    \n"
+      "trn2        v2.4h, v16.4h, v18.4h         \n"
+      "prfm        pldl1keep, [%0, 448]          \n"  // row 5
+      "trn1        v0.4h, v16.4h, v18.4h         \n"
+      "add         %0, %0, %5                    \n"
+      "trn2        v7.4h, v21.4h, v23.4h         \n"
+      "prfm        pldl1keep, [%0, 448]          \n"  // row 6
+      "trn1        v5.4h, v21.4h, v23.4h         \n"
+      "add         %0, %0, %5                    \n"
+      "trn2        v6.4h, v20.4h, v22.4h         \n"
+      "prfm        pldl1keep, [%0, 448]          \n"  // row 7
+      "trn1        v4.4h, v20.4h, v22.4h         \n"
 
-      "trn2     v21.2s, v1.2s, v5.2s             \n"
-      "trn1     v17.2s, v1.2s, v5.2s             \n"
-      "trn2     v20.2s, v0.2s, v4.2s             \n"
-      "trn1     v16.2s, v0.2s, v4.2s             \n"
-      "trn2     v23.2s, v3.2s, v7.2s             \n"
-      "trn1     v19.2s, v3.2s, v7.2s             \n"
-      "trn2     v22.2s, v2.2s, v6.2s             \n"
-      "trn1     v18.2s, v2.2s, v6.2s             \n"
+      "trn2        v21.2s, v1.2s, v5.2s          \n"
+      "trn1        v17.2s, v1.2s, v5.2s          \n"
+      "trn2        v20.2s, v0.2s, v4.2s          \n"
+      "trn1        v16.2s, v0.2s, v4.2s          \n"
+      "trn2        v23.2s, v3.2s, v7.2s          \n"
+      "trn1        v19.2s, v3.2s, v7.2s          \n"
+      "trn2        v22.2s, v2.2s, v6.2s          \n"
+      "trn1        v18.2s, v2.2s, v6.2s          \n"
 
       "mov         %0, %2                        \n"
 
-      "st1      {v17.8b}, [%0], %6               \n"
-      "st1      {v16.8b}, [%0], %6               \n"
-      "st1      {v19.8b}, [%0], %6               \n"
-      "st1      {v18.8b}, [%0], %6               \n"
-      "st1      {v21.8b}, [%0], %6               \n"
-      "st1      {v20.8b}, [%0], %6               \n"
-      "st1      {v23.8b}, [%0], %6               \n"
-      "st1      {v22.8b}, [%0]                   \n"
+      "st1         {v17.8b}, [%0], %6            \n"
+      "st1         {v16.8b}, [%0], %6            \n"
+      "st1         {v19.8b}, [%0], %6            \n"
+      "st1         {v18.8b}, [%0], %6            \n"
+      "st1         {v21.8b}, [%0], %6            \n"
+      "st1         {v20.8b}, [%0], %6            \n"
+      "st1         {v23.8b}, [%0], %6            \n"
+      "st1         {v22.8b}, [%0]                \n"
 
       "add         %1, %1, #8                    \n"  // src += 8
       "add         %2, %2, %6, lsl #3            \n"  // dst += 8 * dst_stride
@@ -94,33 +110,33 @@ void TransposeWx8_NEON(const uint8_t* src,
 
       // add 8 back to counter. if the result is 0 there are
       // no residuals.
-      "adds        %w3, %w3, #8                    \n"
-      "b.eq        4f                              \n"
+      "adds        %w3, %w3, #8                  \n"
+      "b.eq        4f                            \n"
 
       // some residual, so between 1 and 7 lines left to transpose
-      "cmp         %w3, #2                          \n"
-      "b.lt        3f                              \n"
+      "cmp         %w3, #2                       \n"
+      "b.lt        3f                            \n"
 
-      "cmp         %w3, #4                          \n"
-      "b.lt        2f                              \n"
+      "cmp         %w3, #4                       \n"
+      "b.lt        2f                            \n"
 
       // 4x8 block
-      "mov         %0, %1                          \n"
-      "ld1     {v0.s}[0], [%0], %5                 \n"
-      "ld1     {v0.s}[1], [%0], %5                 \n"
-      "ld1     {v0.s}[2], [%0], %5                 \n"
-      "ld1     {v0.s}[3], [%0], %5                 \n"
-      "ld1     {v1.s}[0], [%0], %5                 \n"
-      "ld1     {v1.s}[1], [%0], %5                 \n"
-      "ld1     {v1.s}[2], [%0], %5                 \n"
-      "ld1     {v1.s}[3], [%0]                     \n"
+      "mov         %0, %1                        \n"
+      "ld1         {v0.s}[0], [%0], %5           \n"
+      "ld1         {v0.s}[1], [%0], %5           \n"
+      "ld1         {v0.s}[2], [%0], %5           \n"
+      "ld1         {v0.s}[3], [%0], %5           \n"
+      "ld1         {v1.s}[0], [%0], %5           \n"
+      "ld1         {v1.s}[1], [%0], %5           \n"
+      "ld1         {v1.s}[2], [%0], %5           \n"
+      "ld1         {v1.s}[3], [%0]               \n"
 
-      "mov         %0, %2                          \n"
+      "mov         %0, %2                        \n"
 
-      "ld1      {v2.16b}, [%4]                     \n"
+      "ld1         {v2.16b}, [%4]                \n"
 
-      "tbl      v3.16b, {v0.16b}, v2.16b           \n"
-      "tbl      v0.16b, {v1.16b}, v2.16b           \n"
+      "tbl         v3.16b, {v0.16b}, v2.16b      \n"
+      "tbl         v0.16b, {v1.16b}, v2.16b      \n"
 
       // TODO(frkoenig): Rework shuffle above to
       // write out with 4 instead of 8 writes.
@@ -212,89 +228,90 @@ void TransposeUVWx8_NEON(const uint8_t* src,
       // loops are on blocks of 8. loop will stop when
       // counter gets to or below 0. starting the counter
       // at w-8 allow for this
-      "sub       %w4, %w4, #8                    \n"
+      "sub         %w4, %w4, #8                  \n"
 
       // handle 8x8 blocks. this should be the majority of the plane
       "1:                                        \n"
-      "mov       %0, %1                          \n"
+      "mov         %0, %1                        \n"
 
-      "ld1       {v0.16b}, [%0], %5              \n"
-      "ld1       {v1.16b}, [%0], %5              \n"
-      "ld1       {v2.16b}, [%0], %5              \n"
-      "ld1       {v3.16b}, [%0], %5              \n"
-      "ld1       {v4.16b}, [%0], %5              \n"
-      "ld1       {v5.16b}, [%0], %5              \n"
-      "ld1       {v6.16b}, [%0], %5              \n"
-      "ld1       {v7.16b}, [%0]                  \n"
+      "ld1         {v0.16b}, [%0], %5            \n"
+      "ld1         {v1.16b}, [%0], %5            \n"
+      "ld1         {v2.16b}, [%0], %5            \n"
+      "ld1         {v3.16b}, [%0], %5            \n"
+      "ld1         {v4.16b}, [%0], %5            \n"
+      "ld1         {v5.16b}, [%0], %5            \n"
+      "ld1         {v6.16b}, [%0], %5            \n"
+      "ld1         {v7.16b}, [%0]                \n"
+      "mov         %0, %1                        \n"
 
-      "trn1      v16.16b, v0.16b, v1.16b         \n"
-      "trn2      v17.16b, v0.16b, v1.16b         \n"
-      "trn1      v18.16b, v2.16b, v3.16b         \n"
-      "trn2      v19.16b, v2.16b, v3.16b         \n"
-      "trn1      v20.16b, v4.16b, v5.16b         \n"
-      "trn2      v21.16b, v4.16b, v5.16b         \n"
-      "trn1      v22.16b, v6.16b, v7.16b         \n"
-      "trn2      v23.16b, v6.16b, v7.16b         \n"
+      "trn1        v16.16b, v0.16b, v1.16b       \n"
+      "trn2        v17.16b, v0.16b, v1.16b       \n"
+      "trn1        v18.16b, v2.16b, v3.16b       \n"
+      "trn2        v19.16b, v2.16b, v3.16b       \n"
+      "trn1        v20.16b, v4.16b, v5.16b       \n"
+      "trn2        v21.16b, v4.16b, v5.16b       \n"
+      "trn1        v22.16b, v6.16b, v7.16b       \n"
+      "trn2        v23.16b, v6.16b, v7.16b       \n"
 
-      "trn1      v0.8h, v16.8h, v18.8h           \n"
-      "trn2      v1.8h, v16.8h, v18.8h           \n"
-      "trn1      v2.8h, v20.8h, v22.8h           \n"
-      "trn2      v3.8h, v20.8h, v22.8h           \n"
-      "trn1      v4.8h, v17.8h, v19.8h           \n"
-      "trn2      v5.8h, v17.8h, v19.8h           \n"
-      "trn1      v6.8h, v21.8h, v23.8h           \n"
-      "trn2      v7.8h, v21.8h, v23.8h           \n"
+      "trn1        v0.8h, v16.8h, v18.8h         \n"
+      "trn2        v1.8h, v16.8h, v18.8h         \n"
+      "trn1        v2.8h, v20.8h, v22.8h         \n"
+      "trn2        v3.8h, v20.8h, v22.8h         \n"
+      "trn1        v4.8h, v17.8h, v19.8h         \n"
+      "trn2        v5.8h, v17.8h, v19.8h         \n"
+      "trn1        v6.8h, v21.8h, v23.8h         \n"
+      "trn2        v7.8h, v21.8h, v23.8h         \n"
 
-      "trn1      v16.4s, v0.4s, v2.4s            \n"
-      "trn2      v17.4s, v0.4s, v2.4s            \n"
-      "trn1      v18.4s, v1.4s, v3.4s            \n"
-      "trn2      v19.4s, v1.4s, v3.4s            \n"
-      "trn1      v20.4s, v4.4s, v6.4s            \n"
-      "trn2      v21.4s, v4.4s, v6.4s            \n"
-      "trn1      v22.4s, v5.4s, v7.4s            \n"
-      "trn2      v23.4s, v5.4s, v7.4s            \n"
+      "trn1        v16.4s, v0.4s, v2.4s          \n"
+      "trn2        v17.4s, v0.4s, v2.4s          \n"
+      "trn1        v18.4s, v1.4s, v3.4s          \n"
+      "trn2        v19.4s, v1.4s, v3.4s          \n"
+      "trn1        v20.4s, v4.4s, v6.4s          \n"
+      "trn2        v21.4s, v4.4s, v6.4s          \n"
+      "trn1        v22.4s, v5.4s, v7.4s          \n"
+      "trn2        v23.4s, v5.4s, v7.4s          \n"
 
-      "mov       %0, %2                          \n"
+      "mov         %0, %2                        \n"
 
-      "st1       {v16.d}[0], [%0], %6            \n"
-      "st1       {v18.d}[0], [%0], %6            \n"
-      "st1       {v17.d}[0], [%0], %6            \n"
-      "st1       {v19.d}[0], [%0], %6            \n"
-      "st1       {v16.d}[1], [%0], %6            \n"
-      "st1       {v18.d}[1], [%0], %6            \n"
-      "st1       {v17.d}[1], [%0], %6            \n"
-      "st1       {v19.d}[1], [%0]                \n"
+      "st1         {v16.d}[0], [%0], %6          \n"
+      "st1         {v18.d}[0], [%0], %6          \n"
+      "st1         {v17.d}[0], [%0], %6          \n"
+      "st1         {v19.d}[0], [%0], %6          \n"
+      "st1         {v16.d}[1], [%0], %6          \n"
+      "st1         {v18.d}[1], [%0], %6          \n"
+      "st1         {v17.d}[1], [%0], %6          \n"
+      "st1         {v19.d}[1], [%0]              \n"
 
-      "mov       %0, %3                          \n"
+      "mov         %0, %3                        \n"
 
-      "st1       {v20.d}[0], [%0], %7            \n"
-      "st1       {v22.d}[0], [%0], %7            \n"
-      "st1       {v21.d}[0], [%0], %7            \n"
-      "st1       {v23.d}[0], [%0], %7            \n"
-      "st1       {v20.d}[1], [%0], %7            \n"
-      "st1       {v22.d}[1], [%0], %7            \n"
-      "st1       {v21.d}[1], [%0], %7            \n"
-      "st1       {v23.d}[1], [%0]                \n"
+      "st1         {v20.d}[0], [%0], %7          \n"
+      "st1         {v22.d}[0], [%0], %7          \n"
+      "st1         {v21.d}[0], [%0], %7          \n"
+      "st1         {v23.d}[0], [%0], %7          \n"
+      "st1         {v20.d}[1], [%0], %7          \n"
+      "st1         {v22.d}[1], [%0], %7          \n"
+      "st1         {v21.d}[1], [%0], %7          \n"
+      "st1         {v23.d}[1], [%0]              \n"
 
-      "add       %1, %1, #16                     \n"  // src   += 8*2
-      "add       %2, %2, %6, lsl #3              \n"  // dst_a += 8 *
+      "add         %1, %1, #16                   \n"  // src   += 8*2
+      "add         %2, %2, %6, lsl #3            \n"  // dst_a += 8 *
                                                       // dst_stride_a
-      "add       %3, %3, %7, lsl #3              \n"  // dst_b += 8 *
+      "add         %3, %3, %7, lsl #3            \n"  // dst_b += 8 *
                                                       // dst_stride_b
-      "subs      %w4, %w4,  #8                   \n"  // w     -= 8
-      "b.ge      1b                              \n"
+      "subs        %w4, %w4,  #8                 \n"  // w     -= 8
+      "b.ge        1b                            \n"
 
       // add 8 back to counter. if the result is 0 there are
       // no residuals.
-      "adds      %w4, %w4, #8                    \n"
-      "b.eq      4f                              \n"
+      "adds        %w4, %w4, #8                  \n"
+      "b.eq        4f                            \n"
 
       // some residual, so between 1 and 7 lines left to transpose
-      "cmp       %w4, #2                         \n"
-      "b.lt      3f                              \n"
+      "cmp         %w4, #2                       \n"
+      "b.lt        3f                            \n"
 
-      "cmp       %w4, #4                         \n"
-      "b.lt      2f                              \n"
+      "cmp         %w4, #4                       \n"
+      "b.lt        2f                            \n"
 
       // TODO(frkoenig): Clean this up
       // 4x8 block

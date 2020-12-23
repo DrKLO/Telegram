@@ -129,7 +129,7 @@ void DataChannelController::OnDataReceived(
   cricket::ReceiveDataParams params;
   params.sid = channel_id;
   params.type = ToCricketDataMessageType(type);
-  data_channel_transport_invoker_->AsyncInvoke<void>(
+  data_channel_transport_invoker_.AsyncInvoke<void>(
       RTC_FROM_HERE, signaling_thread(), [this, params, buffer] {
         RTC_DCHECK_RUN_ON(signaling_thread());
         // TODO(bugs.webrtc.org/11547): The data being received should be
@@ -148,7 +148,7 @@ void DataChannelController::OnDataReceived(
 
 void DataChannelController::OnChannelClosing(int channel_id) {
   RTC_DCHECK_RUN_ON(network_thread());
-  data_channel_transport_invoker_->AsyncInvoke<void>(
+  data_channel_transport_invoker_.AsyncInvoke<void>(
       RTC_FROM_HERE, signaling_thread(), [this, channel_id] {
         RTC_DCHECK_RUN_ON(signaling_thread());
         SignalDataChannelTransportChannelClosing_s(channel_id);
@@ -157,7 +157,7 @@ void DataChannelController::OnChannelClosing(int channel_id) {
 
 void DataChannelController::OnChannelClosed(int channel_id) {
   RTC_DCHECK_RUN_ON(network_thread());
-  data_channel_transport_invoker_->AsyncInvoke<void>(
+  data_channel_transport_invoker_.AsyncInvoke<void>(
       RTC_FROM_HERE, signaling_thread(), [this, channel_id] {
         RTC_DCHECK_RUN_ON(signaling_thread());
         SignalDataChannelTransportChannelClosed_s(channel_id);
@@ -166,7 +166,7 @@ void DataChannelController::OnChannelClosed(int channel_id) {
 
 void DataChannelController::OnReadyToSend() {
   RTC_DCHECK_RUN_ON(network_thread());
-  data_channel_transport_invoker_->AsyncInvoke<void>(
+  data_channel_transport_invoker_.AsyncInvoke<void>(
       RTC_FROM_HERE, signaling_thread(), [this] {
         RTC_DCHECK_RUN_ON(signaling_thread());
         data_channel_transport_ready_to_send_ = true;
@@ -177,7 +177,7 @@ void DataChannelController::OnReadyToSend() {
 
 void DataChannelController::OnTransportClosed() {
   RTC_DCHECK_RUN_ON(network_thread());
-  data_channel_transport_invoker_->AsyncInvoke<void>(
+  data_channel_transport_invoker_.AsyncInvoke<void>(
       RTC_FROM_HERE, signaling_thread(), [this] {
         RTC_DCHECK_RUN_ON(signaling_thread());
         OnTransportChannelClosed();
@@ -186,7 +186,6 @@ void DataChannelController::OnTransportClosed() {
 
 void DataChannelController::SetupDataChannelTransport_n() {
   RTC_DCHECK_RUN_ON(network_thread());
-  data_channel_transport_invoker_ = std::make_unique<rtc::AsyncInvoker>();
 
   // There's a new data channel transport.  This needs to be signaled to the
   // |sctp_data_channels_| so that they can reopen and reconnect.  This is
@@ -196,7 +195,6 @@ void DataChannelController::SetupDataChannelTransport_n() {
 
 void DataChannelController::TeardownDataChannelTransport_n() {
   RTC_DCHECK_RUN_ON(network_thread());
-  data_channel_transport_invoker_ = nullptr;
   if (data_channel_transport()) {
     data_channel_transport()->SetDataSink(nullptr);
   }
@@ -592,7 +590,7 @@ bool DataChannelController::DataChannelSendData(
 
 void DataChannelController::NotifyDataChannelsOfTransportCreated() {
   RTC_DCHECK_RUN_ON(network_thread());
-  data_channel_transport_invoker_->AsyncInvoke<void>(
+  data_channel_transport_invoker_.AsyncInvoke<void>(
       RTC_FROM_HERE, signaling_thread(), [this] {
         RTC_DCHECK_RUN_ON(signaling_thread());
         for (const auto& channel : sctp_data_channels_) {

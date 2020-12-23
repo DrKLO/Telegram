@@ -138,7 +138,7 @@ onSignalBarsUpdated_(std::move(descriptor.signalBarsUpdated)) {
 		descriptor.config.enableCallUpgrade
 	);
 	mappedConfig.enableVolumeControl = descriptor.config.enableVolumeControl;
-	mappedConfig.logFilePath = descriptor.config.logPath;
+	mappedConfig.logFilePath = descriptor.config.logPath.data;
 	mappedConfig.statsDumpFilePath = {};
 
 	controller_->SetConfig(mappedConfig);

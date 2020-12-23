@@ -3,7 +3,7 @@ package org.telegram.ui.Components;
 import android.content.Context;
 import android.widget.FrameLayout;
 
-import androidx.core.util.Preconditions;
+import androidx.annotation.CheckResult;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
@@ -14,12 +14,10 @@ import org.telegram.ui.ActionBar.BaseFragment;
 public final class BulletinFactory {
 
     public static BulletinFactory of(BaseFragment fragment) {
-        Preconditions.checkNotNull(fragment);
         return new BulletinFactory(fragment);
     }
 
     public static BulletinFactory of(FrameLayout containerLayout) {
-        Preconditions.checkNotNull(containerLayout);
         return new BulletinFactory(containerLayout);
     }
 
@@ -28,34 +26,41 @@ public final class BulletinFactory {
     }
 
     public enum FileType {
-        PHOTO("PhotoSavedHint", R.string.PhotoSavedHint),
-        PHOTO_TO_DOWNLOADS("PhotoSavedToDownloadsHint", R.string.PhotoSavedToDownloadsHint),
-        PHOTOS("PhotosSavedHint"),
 
-        VIDEO("VideoSavedHint", R.string.VideoSavedHint),
-        VIDEO_TO_DOWNLOADS("VideoSavedToDownloadsHint", R.string.VideoSavedToDownloadsHint),
-        VIDEOS("VideosSavedHint"),
+        PHOTO("PhotoSavedHint", R.string.PhotoSavedHint, Icon.SAVED_TO_GALLERY),
+        PHOTOS("PhotosSavedHint", Icon.SAVED_TO_GALLERY),
 
-        AUDIO("AudioSavedHint", R.string.AudioSavedHint),
-        AUDIOS("AudiosSavedHint"),
-        GIF("GifSavedToDownloadsHint", R.string.GifSavedToDownloadsHint),
-        MEDIA("MediaSavedHint"),
+        VIDEO("VideoSavedHint", R.string.VideoSavedHint, Icon.SAVED_TO_GALLERY),
+        VIDEOS("VideosSavedHint", Icon.SAVED_TO_GALLERY),
 
-        UNKNOWN("FileSavedHint", R.string.FileSavedHint),
-        UNKNOWNS("FilesSavedHint");
+        MEDIA("MediaSavedHint", Icon.SAVED_TO_GALLERY),
+
+        PHOTO_TO_DOWNLOADS("PhotoSavedToDownloadsHint", Icon.SAVED_TO_DOWNLOADS),
+        VIDEO_TO_DOWNLOADS("VideoSavedToDownloadsHint", R.string.VideoSavedToDownloadsHint, Icon.SAVED_TO_DOWNLOADS),
+
+        GIF("GifSavedToDownloadsHint", Icon.SAVED_TO_DOWNLOADS),
+
+        AUDIO("AudioSavedHint", Icon.SAVED_TO_MUSIC),
+        AUDIOS("AudiosSavedHint", Icon.SAVED_TO_MUSIC),
+
+        UNKNOWN("FileSavedHint", Icon.SAVED_TO_DOWNLOADS),
+        UNKNOWNS("FilesSavedHint", Icon.SAVED_TO_DOWNLOADS);
 
         private final String localeKey;
         private final int localeRes;
         private final boolean plural;
+        private final Icon icon;
 
-        FileType(String localeKey, int localeRes) {
+        FileType(String localeKey, int localeRes, Icon icon) {
             this.localeKey = localeKey;
             this.localeRes = localeRes;
+            this.icon = icon;
             this.plural = false;
         }
 
-        FileType(String localeKey) {
+        FileType(String localeKey, Icon icon) {
             this.localeKey = localeKey;
+            this.icon = icon;
             this.localeRes = 0;
             this.plural = true;
         }
@@ -69,6 +74,23 @@ public final class BulletinFactory {
                 return LocaleController.formatPluralString(localeKey, amount);
             } else {
                 return LocaleController.getString(localeKey, localeRes);
+            }
+        }
+
+        private enum Icon {
+
+            SAVED_TO_DOWNLOADS(R.raw.ic_download, 2, "Box", "Arrow"),
+            SAVED_TO_GALLERY(R.raw.ic_save_to_gallery, 0, "Box", "Arrow", "Mask", "Arrow 2", "Splash"),
+            SAVED_TO_MUSIC(R.raw.ic_save_to_music, 2, "Box", "Arrow");
+
+            private final int resId;
+            private final String[] layers;
+            private final int paddingBottom;
+
+            Icon(int resId, int paddingBottom, String... layers) {
+                this.resId = resId;
+                this.paddingBottom = paddingBottom;
+                this.layers = layers;
             }
         }
     }
@@ -86,14 +108,17 @@ public final class BulletinFactory {
         this.fragment = null;
     }
 
+    @CheckResult
     public Bulletin createDownloadBulletin(FileType fileType) {
         return createDownloadBulletin(fileType, 1);
     }
 
+    @CheckResult
     public Bulletin createDownloadBulletin(FileType fileType, int filesAmount) {
         return createDownloadBulletin(fileType, filesAmount, 0, 0);
     }
 
+    @CheckResult
     public Bulletin createDownloadBulletin(FileType fileType, int filesAmount, int backgroundColor, int textColor) {
         final Bulletin.LottieLayout layout;
         if (backgroundColor != 0 && textColor != 0) {
@@ -101,9 +126,33 @@ public final class BulletinFactory {
         } else {
             layout = new Bulletin.LottieLayout(getContext());
         }
-        layout.setAnimation(R.raw.ic_download, "Box", "Arrow", "Mask", "Arrow 2", "Splash");
+        layout.setAnimation(fileType.icon.resId, fileType.icon.layers);
         layout.textView.setText(fileType.getText(filesAmount));
+        if (fileType.icon.paddingBottom != 0) {
+            layout.setIconPaddingBottom(fileType.icon.paddingBottom);
+        }
         return create(layout, Bulletin.DURATION_SHORT);
+    }
+
+    @CheckResult
+    public Bulletin createCopyLinkBulletin() {
+        return createCopyLinkBulletin(false);
+    }
+
+    @CheckResult
+    public Bulletin createCopyLinkBulletin(boolean isPrivate) {
+        if (isPrivate) {
+            final Bulletin.TwoLineLottieLayout layout = new Bulletin.TwoLineLottieLayout(getContext());
+            layout.setAnimation(R.raw.voip_invite, 36, 36, "Wibe", "Circle");
+            layout.titleTextView.setText(LocaleController.getString("LinkCopied", R.string.LinkCopied));
+            layout.subtitleTextView.setText(LocaleController.getString("LinkCopiedPrivateInfo", R.string.LinkCopiedPrivateInfo));
+            return create(layout, Bulletin.DURATION_LONG);
+        } else {
+            final Bulletin.LottieLayout layout = new Bulletin.LottieLayout(getContext());
+            layout.setAnimation(R.raw.voip_invite, 36, 36, "Wibe", "Circle");
+            layout.textView.setText(LocaleController.getString("LinkCopied", R.string.LinkCopied));
+            return create(layout, Bulletin.DURATION_SHORT);
+        }
     }
 
     private Bulletin create(Bulletin.Layout layout, int duration) {
@@ -119,8 +168,9 @@ public final class BulletinFactory {
     }
 
     //region Static Factory
+
+    @CheckResult
     public static Bulletin createMuteBulletin(BaseFragment fragment, int setting) {
-        Preconditions.checkArgument(canShowBulletin(fragment));
         final Bulletin.LottieLayout layout = new Bulletin.LottieLayout(fragment.getParentActivity());
 
         final String text;
@@ -161,30 +211,31 @@ public final class BulletinFactory {
         return Bulletin.make(fragment, layout, Bulletin.DURATION_SHORT);
     }
 
+    @CheckResult
     public static Bulletin createMuteBulletin(BaseFragment fragment, boolean muted) {
         return createMuteBulletin(fragment, muted ? NotificationsController.SETTING_MUTE_FOREVER : NotificationsController.SETTING_MUTE_UNMUTE);
     }
 
+    @CheckResult
     public static Bulletin createDeleteMessagesBulletin(BaseFragment fragment, int count) {
-        Preconditions.checkArgument(canShowBulletin(fragment));
         final Bulletin.LottieLayout layout = new Bulletin.LottieLayout(fragment.getParentActivity());
         layout.setAnimation(R.raw.ic_delete, "Envelope", "Cover", "Bucket");
         layout.textView.setText(LocaleController.formatPluralString("MessagesDeletedHint", count));
         return Bulletin.make(fragment, layout, Bulletin.DURATION_SHORT);
     }
 
+    @CheckResult
     public static Bulletin createUnpinAllMessagesBulletin(BaseFragment fragment, int count, boolean hide, Runnable undoAction, Runnable delayedAction) {
-        Preconditions.checkArgument(canShowBulletin(fragment));
         Bulletin.ButtonLayout buttonLayout;
         if (hide) {
             final Bulletin.TwoLineLottieLayout layout = new Bulletin.TwoLineLottieLayout(fragment.getParentActivity());
-            layout.setAnimation(R.raw.ic_unpin, "Pin", "Line");
+            layout.setAnimation(R.raw.ic_unpin, 28, 28, "Pin", "Line");
             layout.titleTextView.setText(LocaleController.getString("PinnedMessagesHidden", R.string.PinnedMessagesHidden));
             layout.subtitleTextView.setText(LocaleController.getString("PinnedMessagesHiddenInfo", R.string.PinnedMessagesHiddenInfo));
             buttonLayout = layout;
         } else {
             final Bulletin.LottieLayout layout = new Bulletin.LottieLayout(fragment.getParentActivity());
-            layout.setAnimation(R.raw.ic_unpin, "Pin", "Line");
+            layout.setAnimation(R.raw.ic_unpin, 28, 28, "Pin", "Line");
             layout.textView.setText(LocaleController.formatPluralString("MessagesUnpinned", count));
             buttonLayout = layout;
         }
@@ -192,34 +243,66 @@ public final class BulletinFactory {
         return Bulletin.make(fragment, buttonLayout, 5000);
     }
 
+    @CheckResult
     public static Bulletin createSaveToGalleryBulletin(BaseFragment fragment, boolean video) {
         return of(fragment).createDownloadBulletin(video ? FileType.VIDEO : FileType.PHOTO);
     }
 
+    @CheckResult
     public static Bulletin createSaveToGalleryBulletin(FrameLayout containerLayout, boolean video, int backgroundColor, int textColor) {
         return of(containerLayout).createDownloadBulletin(video ? FileType.VIDEO : FileType.PHOTO, 1, backgroundColor, textColor);
     }
 
+    @CheckResult
     public static Bulletin createPromoteToAdminBulletin(BaseFragment fragment, String userFirstName) {
-        Preconditions.checkArgument(canShowBulletin(fragment));
         final Bulletin.LottieLayout layout = new Bulletin.LottieLayout(fragment.getParentActivity());
         layout.setAnimation(R.raw.ic_admin, "Shield");
         layout.textView.setText(AndroidUtilities.replaceTags(LocaleController.formatString("UserSetAsAdminHint", R.string.UserSetAsAdminHint, userFirstName)));
         return Bulletin.make(fragment, layout, Bulletin.DURATION_SHORT);
     }
 
+    @CheckResult
+    public static Bulletin createRemoveFromChatBulletin(BaseFragment fragment, String userFirstName, String chatName) {
+        final Bulletin.LottieLayout layout = new Bulletin.LottieLayout(fragment.getParentActivity());
+        layout.setAnimation(R.raw.ic_ban, "Hand");
+        layout.textView.setText(AndroidUtilities.replaceTags(LocaleController.formatString("UserRemovedFromChatHint", R.string.UserRemovedFromChatHint, userFirstName, chatName)));
+        return Bulletin.make(fragment, layout, Bulletin.DURATION_SHORT);
+    }
+
+    @CheckResult
+    public static Bulletin createBanBulletin(BaseFragment fragment, boolean banned) {
+        final Bulletin.LottieLayout layout = new Bulletin.LottieLayout(fragment.getParentActivity());
+        final String text;
+        if (banned) {
+            layout.setAnimation(R.raw.ic_ban, "Hand");
+            text = LocaleController.getString("UserBlocked", R.string.UserBlocked);
+        } else {
+            layout.setAnimation(R.raw.ic_unban, "Main", "Finger 1", "Finger 2", "Finger 3", "Finger 4");
+            text = LocaleController.getString("UserUnblocked", R.string.UserUnblocked);
+        }
+        layout.textView.setText(AndroidUtilities.replaceTags(text));
+        return Bulletin.make(fragment, layout, Bulletin.DURATION_SHORT);
+    }
+
+    @CheckResult
+    public static Bulletin createCopyLinkBulletin(BaseFragment fragment) {
+        return of(fragment).createCopyLinkBulletin();
+    }
+
+    @CheckResult
     public static Bulletin createPinMessageBulletin(BaseFragment fragment) {
         return createPinMessageBulletin(fragment, true, null, null);
     }
 
+    @CheckResult
     public static Bulletin createUnpinMessageBulletin(BaseFragment fragment, Runnable undoAction, Runnable delayedAction) {
         return createPinMessageBulletin(fragment, false, undoAction, delayedAction);
     }
 
+    @CheckResult
     private static Bulletin createPinMessageBulletin(BaseFragment fragment, boolean pinned, Runnable undoAction, Runnable delayedAction) {
-        Preconditions.checkArgument(canShowBulletin(fragment));
         final Bulletin.LottieLayout layout = new Bulletin.LottieLayout(fragment.getParentActivity());
-        layout.setAnimation(pinned ? R.raw.ic_pin : R.raw.ic_unpin, "Pin", "Line");
+        layout.setAnimation(pinned ? R.raw.ic_pin : R.raw.ic_unpin, 28, 28, "Pin", "Line");
         layout.textView.setText(LocaleController.getString(pinned ? "MessagePinnedHint" : "MessageUnpinnedHint", pinned ? R.string.MessagePinnedHint : R.string.MessageUnpinnedHint));
         if (!pinned) {
             layout.setButton(new Bulletin.UndoButton(fragment.getParentActivity(), true).setUndoAction(undoAction).setDelayedAction(delayedAction));

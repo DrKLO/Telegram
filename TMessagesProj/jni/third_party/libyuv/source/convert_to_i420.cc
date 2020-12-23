@@ -179,11 +179,6 @@ int ConvertToI420(const uint8_t* sample,
                            dst_stride_y, dst_v, dst_stride_v, dst_u,
                            dst_stride_u, crop_width, inv_crop_height, rotation);
       break;
-    case FOURCC_M420:
-      src = sample + (src_width * crop_y) * 12 / 8 + crop_x;
-      r = M420ToI420(src, src_width, dst_y, dst_stride_y, dst_u, dst_stride_u,
-                     dst_v, dst_stride_v, crop_width, inv_crop_height);
-      break;
     // Triplanar formats
     case FOURCC_I420:
     case FOURCC_YV12: {

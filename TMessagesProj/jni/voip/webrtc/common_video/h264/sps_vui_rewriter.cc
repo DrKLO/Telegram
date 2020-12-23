@@ -210,7 +210,7 @@ SpsVuiRewriter::ParseResult SpsVuiRewriter::ParseAndRewriteSps(
   return result;
 }
 
-rtc::Buffer SpsVuiRewriter::ParseOutgoingBitstreamAndRewriteSps(
+rtc::Buffer SpsVuiRewriter::ParseOutgoingBitstreamAndRewrite(
     rtc::ArrayView<const uint8_t> buffer,
     const webrtc::ColorSpace* color_space) {
   std::vector<H264::NaluIndex> nalus =
@@ -225,8 +225,6 @@ rtc::Buffer SpsVuiRewriter::ParseOutgoingBitstreamAndRewriteSps(
     const uint8_t* start_code_ptr = buffer.data() + nalu.start_offset;
     const size_t start_code_length =
         nalu.payload_start_offset - nalu.start_offset;
-    output_buffer.AppendData(start_code_ptr, start_code_length);
-
     const uint8_t* nalu_ptr = buffer.data() + nalu.payload_start_offset;
     const size_t nalu_length = nalu.payload_size;
 
@@ -253,12 +251,17 @@ rtc::Buffer SpsVuiRewriter::ParseOutgoingBitstreamAndRewriteSps(
           nalu_ptr + H264::kNaluTypeSize, nalu_length - H264::kNaluTypeSize,
           &sps, color_space, &output_nalu, Direction::kOutgoing);
       if (result == ParseResult::kVuiRewritten) {
+        output_buffer.AppendData(start_code_ptr, start_code_length);
         output_buffer.AppendData(output_nalu.data(), output_nalu.size());
         continue;
       }
+    } else if (H264::ParseNaluType(nalu_ptr[0]) == H264::NaluType::kAud) {
+      // Skip the access unit delimiter copy.
+      continue;
     }
 
-    // vui wasn't rewritten, copy the nal unit as is.
+    // vui wasn't rewritten and it is not aud, copy the nal unit as is.
+    output_buffer.AppendData(start_code_ptr, start_code_length);
     output_buffer.AppendData(nalu_ptr, nalu_length);
   }
   return output_buffer;

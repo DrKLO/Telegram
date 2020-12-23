@@ -934,7 +934,7 @@ private:
 };
 
 InstanceImplReference::InstanceImplReference(Descriptor &&descriptor) :
-    logSink_(std::make_unique<LogSinkImpl>(descriptor.config)) {
+    logSink_(std::make_unique<LogSinkImpl>(descriptor.config.logPath)) {
     rtc::LogMessage::AddLogToStream(logSink_.get(), rtc::LS_INFO);
 
 	internal_.reset(new ThreadLocalObject<InstanceImplReferenceInternal>(getMediaThread(), [descriptor = std::move(descriptor)]() {

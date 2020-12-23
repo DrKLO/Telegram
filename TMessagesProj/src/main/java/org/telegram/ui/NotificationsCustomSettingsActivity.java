@@ -849,6 +849,7 @@ public class NotificationsCustomSettingsActivity extends BaseFragment {
                     editor.putString("ChannelSoundPath", "NoSound");
                 }
             }
+            getNotificationsController().deleteNotificationChannelGlobal(currentType);
             editor.commit();
             getNotificationsController().updateServerNotificationsSettings(currentType);
             RecyclerView.ViewHolder holder = listView.findViewHolderForAdapterPosition(requestCode);

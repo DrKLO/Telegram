@@ -26,17 +26,11 @@ constexpr size_t kMaximalNumberOfSamplesPerChannel = 480;
 constexpr float kAttackFilterConstant = 0.f;
 
 // Adaptive digital gain applier settings below.
-constexpr float kMaxGainChangePerSecondDb = 3.f;
-constexpr float kMaxGainChangePerFrameDb =
-    kMaxGainChangePerSecondDb * kFrameDurationMs / 1000.f;
 constexpr float kHeadroomDbfs = 1.f;
 constexpr float kMaxGainDb = 30.f;
 constexpr float kInitialAdaptiveDigitalGainDb = 8.f;
 // At what limiter levels should we start decreasing the adaptive digital gain.
 constexpr float kLimiterThresholdForAgcGainDbfs = -kHeadroomDbfs;
-
-// This parameter must be tuned together with the noise estimator.
-constexpr float kMaxNoiseLevelDbfs = -50.f;
 
 // This is the threshold for speech. Speech frames are used for updating the
 // speech level, measuring the amount of speech, and decide when to allow target
@@ -49,9 +43,13 @@ constexpr float kFullBufferLeakFactor = 1.f - 1.f / kFullBufferSizeMs;
 
 constexpr float kInitialSpeechLevelEstimateDbfs = -30.f;
 
+// Robust VAD probability and speech decisions.
+constexpr float kDefaultSmoothedVadProbabilityAttack = 1.f;
+constexpr int kDefaultLevelEstimatorAdjacentSpeechFramesThreshold = 1;
+
 // Saturation Protector settings.
-float GetInitialSaturationMarginDb();
-float GetExtraSaturationMarginOffsetDb();
+constexpr float kDefaultInitialSaturationMarginDb = 20.f;
+constexpr float kDefaultExtraSaturationMarginDb = 2.f;
 
 constexpr size_t kPeakEnveloperSuperFrameLengthMs = 400;
 static_assert(kFullBufferSizeMs % kPeakEnveloperSuperFrameLengthMs == 0,

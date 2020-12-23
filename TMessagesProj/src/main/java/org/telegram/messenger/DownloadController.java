@@ -629,7 +629,8 @@ public class DownloadController extends BaseController implements NotificationCe
                     index = 2;
                 }
             } else {
-                if (MessageObject.isMegagroup(message)) {
+                TLRPC.Chat chat = message.peer_id != null && message.peer_id.channel_id != 0 ? getMessagesController().getChat(message.peer_id.channel_id) : null;
+                if (ChatObject.isChannel(chat) && chat.megagroup) {
                     if (message.from_id instanceof TLRPC.TL_peerUser && getContactsController().contactsDict.containsKey(message.from_id.user_id)) {
                         index = 0;
                     } else {

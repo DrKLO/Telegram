@@ -696,6 +696,9 @@ void P2PTransportChannel::SetIceConfig(const IceConfig& config) {
       // Make sure that nomination reaching ICE controlled asap.
       "send_ping_on_switch_ice_controlling",
       &field_trials_.send_ping_on_switch_ice_controlling,
+      // Make sure that nomination reaching ICE controlled asap.
+      "send_ping_on_selected_ice_controlling",
+      &field_trials_.send_ping_on_selected_ice_controlling,
       // Reply to nomination ASAP.
       "send_ping_on_nomination_ice_controlled",
       &field_trials_.send_ping_on_nomination_ice_controlled,
@@ -1013,7 +1016,7 @@ void P2PTransportChannel::OnUnknownAddress(PortInterface* port,
     uint16_t network_id = 0;
     uint16_t network_cost = 0;
     const StunUInt32Attribute* network_attr =
-        stun_msg->GetUInt32(STUN_ATTR_NETWORK_INFO);
+        stun_msg->GetUInt32(STUN_ATTR_GOOG_NETWORK_INFO);
     if (network_attr) {
       uint32_t network_info = network_attr->value();
       network_id = static_cast<uint16_t>(network_info >> 16);
@@ -1768,9 +1771,10 @@ void P2PTransportChannel::SwitchSelectedConnection(Connection* conn,
     RTC_LOG(LS_INFO) << ToString() << ": No selected connection";
   }
 
-  if (field_trials_.send_ping_on_switch_ice_controlling &&
-      ice_role_ == ICEROLE_CONTROLLING && old_selected_connection != nullptr &&
-      conn != nullptr) {
+  if (conn != nullptr && ice_role_ == ICEROLE_CONTROLLING &&
+      ((field_trials_.send_ping_on_switch_ice_controlling &&
+        old_selected_connection != nullptr) ||
+       field_trials_.send_ping_on_selected_ice_controlling)) {
     PingConnection(conn);
     MarkConnectionPinged(conn);
   }
@@ -1784,12 +1788,31 @@ void P2PTransportChannel::SwitchSelectedConnection(Connection* conn,
     pair_change.selected_candidate_pair = *GetSelectedCandidatePair();
     pair_change.last_data_received_ms =
         selected_connection_->last_data_received();
+
+    if (old_selected_connection) {
+      pair_change.estimated_disconnected_time_ms =
+          ComputeEstimatedDisconnectedTimeMs(rtc::TimeMillis(),
+                                             old_selected_connection);
+    } else {
+      pair_change.estimated_disconnected_time_ms = 0;
+    }
+
     SignalCandidatePairChanged(pair_change);
   }
 
   ++selected_candidate_pair_changes_;
 
   ice_controller_->SetSelectedConnection(selected_connection_);
+}
+
+int64_t P2PTransportChannel::ComputeEstimatedDisconnectedTimeMs(
+    int64_t now_ms,
+    Connection* old_connection) {
+  // TODO(jonaso): nicer keeps estimate of how frequently data _should_ be
+  // received, this could be used to give better estimate (if needed).
+  int64_t last_data_or_old_ping =
+      std::max(old_connection->last_received(), last_data_received_ms_);
+  return (now_ms - last_data_or_old_ping);
 }
 
 // Warning: UpdateState should eventually be called whenever a connection
@@ -2110,6 +2133,9 @@ void P2PTransportChannel::OnReadPacket(Connection* connection,
 
   if (connection == selected_connection_) {
     // Let the client know of an incoming packet
+    RTC_DCHECK(connection->last_data_received() >= last_data_received_ms_);
+    last_data_received_ms_ =
+        std::max(last_data_received_ms_, connection->last_data_received());
     SignalReadPacket(this, data, len, packet_time_us, 0);
     return;
   }
@@ -2117,6 +2143,10 @@ void P2PTransportChannel::OnReadPacket(Connection* connection,
   // Do not deliver, if packet doesn't belong to the correct transport channel.
   if (!FindConnection(connection))
     return;
+
+  RTC_DCHECK(connection->last_data_received() >= last_data_received_ms_);
+  last_data_received_ms_ =
+      std::max(last_data_received_ms_, connection->last_data_received());
 
   // Let the client know of an incoming packet
   SignalReadPacket(this, data, len, packet_time_us, 0);

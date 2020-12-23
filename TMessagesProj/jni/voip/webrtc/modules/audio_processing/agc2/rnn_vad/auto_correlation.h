@@ -34,7 +34,7 @@ class AutoCorrelationCalculator {
   // |auto_corr| indexes are inverted lags.
   void ComputeOnPitchBuffer(
       rtc::ArrayView<const float, kBufSize12kHz> pitch_buf,
-      rtc::ArrayView<float, kNumInvertedLags12kHz> auto_corr);
+      rtc::ArrayView<float, kNumLags12kHz> auto_corr);
 
  private:
   Pffft fft_;

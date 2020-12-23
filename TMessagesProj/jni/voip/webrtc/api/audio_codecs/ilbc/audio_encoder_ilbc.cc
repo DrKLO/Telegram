@@ -32,7 +32,7 @@ int GetIlbcBitrate(int ptime) {
       // 50 bytes per frame of 30 ms => (approx) 13333 bits/s.
       return 13333;
     default:
-      FATAL();
+      RTC_CHECK_NOTREACHED();
   }
 }
 }  // namespace

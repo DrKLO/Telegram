@@ -25,11 +25,11 @@ rtc::Thread *getManagerThread() {
 } // namespace
 
 InstanceImpl::InstanceImpl(Descriptor &&descriptor)
-: _logSink(std::make_unique<LogSinkImpl>(descriptor.config)) {
+: _logSink(std::make_unique<LogSinkImpl>(descriptor.config.logPath)) {
     rtc::LogMessage::LogToDebug(rtc::LS_INFO);
     rtc::LogMessage::SetLogToStderr(false);
 	rtc::LogMessage::AddLogToStream(_logSink.get(), rtc::LS_INFO);
-    
+
     auto networkType = descriptor.initialNetworkType;
 
 	_manager.reset(new ThreadLocalObject<Manager>(getManagerThread(), [descriptor = std::move(descriptor)]() mutable {
@@ -38,7 +38,7 @@ InstanceImpl::InstanceImpl(Descriptor &&descriptor)
 	_manager->perform(RTC_FROM_HERE, [](Manager *manager) {
 		manager->start();
 	});
-    
+
     setNetworkType(networkType);
 }
 
@@ -74,7 +74,7 @@ void InstanceImpl::setNetworkType(NetworkType networkType) {
         default:
             break;
     }
-    
+
     _manager->perform(RTC_FROM_HERE, [isLowCostNetwork](Manager *manager) {
         manager->setIsLocalNetworkLowCost(isLowCostNetwork);
     });
@@ -154,7 +154,7 @@ PersistentState InstanceImpl::getPersistentState() {
 
 void InstanceImpl::stop(std::function<void(FinalState)> completion) {
     std::string debugLog = _logSink->result();
-    
+
     _manager->perform(RTC_FROM_HERE, [completion, debugLog = std::move(debugLog)](Manager *manager) {
         manager->getNetworkStats([completion, debugLog = std::move(debugLog)](TrafficStats stats, CallStats callStats) {
             FinalState finalState;
@@ -162,7 +162,7 @@ void InstanceImpl::stop(std::function<void(FinalState)> completion) {
             finalState.isRatingSuggested = false;
             finalState.trafficStats = stats;
             finalState.callStats = callStats;
-            
+
             completion(finalState);
         });
     });

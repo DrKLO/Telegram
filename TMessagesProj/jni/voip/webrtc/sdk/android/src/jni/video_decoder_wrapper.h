@@ -18,7 +18,6 @@
 
 #include "api/video_codecs/video_decoder.h"
 #include "common_video/h264/h264_bitstream_parser.h"
-#include "common_video/h265/h265_bitstream_parser.h"
 #include "rtc_base/race_checker.h"
 #include "rtc_base/synchronization/mutex.h"
 #include "rtc_base/thread_checker.h"
@@ -100,9 +99,6 @@ class VideoDecoderWrapper : public VideoDecoder {
 
   bool initialized_ RTC_GUARDED_BY(decoder_thread_checker_);
   H264BitstreamParser h264_bitstream_parser_
-      RTC_GUARDED_BY(decoder_thread_checker_);
-
-  H265BitstreamParser h265_bitstream_parser_
       RTC_GUARDED_BY(decoder_thread_checker_);
 
   DecodedImageCallback* callback_ RTC_GUARDED_BY(callback_race_checker_);

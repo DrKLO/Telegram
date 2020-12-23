@@ -19,7 +19,7 @@ public class VoIPPermissionActivity extends Activity {
 		super.onCreate(savedInstanceState);
 
 		VoIPService service = VoIPService.getSharedInstance();
-		boolean isVideoCall = service != null && service.call != null && service.call.video;
+		boolean isVideoCall = service != null && service.privateCall != null && service.privateCall.video;
 
 		ArrayList<String> permissions = new ArrayList<>();
 		if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {

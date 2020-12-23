@@ -44,6 +44,10 @@ class NetEqSimulatorFactory {
     std::string field_trial_string;
     // A filename for the generated output audio file.
     absl::optional<std::string> output_audio_filename;
+    // A filename for the python plot.
+    absl::optional<std::string> python_plot_filename;
+    // A filename for the text log.
+    absl::optional<std::string> text_log_filename;
     // A custom NetEqFactory can be used.
     NetEqFactory* neteq_factory = nullptr;
   };

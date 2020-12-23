@@ -95,7 +95,7 @@ SECTION .text
 ;    int *flimits,
 ;    int size
 ;)
-global sym(vpx_post_proc_down_and_across_mb_row_sse2) PRIVATE
+globalsym(vpx_post_proc_down_and_across_mb_row_sse2)
 sym(vpx_post_proc_down_and_across_mb_row_sse2):
     push        rbp
     mov         rbp, rsp
@@ -235,7 +235,7 @@ sym(vpx_post_proc_down_and_across_mb_row_sse2):
 
 ;void vpx_mbpost_proc_across_ip_sse2(unsigned char *src,
 ;                                    int pitch, int rows, int cols,int flimit)
-global sym(vpx_mbpost_proc_across_ip_sse2) PRIVATE
+globalsym(vpx_mbpost_proc_across_ip_sse2)
 sym(vpx_mbpost_proc_across_ip_sse2):
     push        rbp
     mov         rbp, rsp

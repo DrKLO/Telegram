@@ -35,16 +35,10 @@ AudioProcessing* AudioProcessingBuilder::Create(const webrtc::Config& config) {
 #else
 
   // Standard implementation.
-  AudioProcessingImpl* apm = new rtc::RefCountedObject<AudioProcessingImpl>(
+  return new rtc::RefCountedObject<AudioProcessingImpl>(
       config, std::move(capture_post_processing_),
       std::move(render_pre_processing_), std::move(echo_control_factory_),
       std::move(echo_detector_), std::move(capture_analyzer_));
-  if (apm->Initialize() != AudioProcessing::kNoError) {
-    delete apm;
-    apm = nullptr;
-  }
-  return apm;
-
 #endif
 }
 

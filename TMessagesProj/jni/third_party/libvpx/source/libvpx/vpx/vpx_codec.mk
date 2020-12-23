@@ -24,6 +24,7 @@ API_DOC_SRCS-$(CONFIG_VP8_DECODER) += vp8dx.h
 API_DOC_SRCS-yes += vpx_codec.h
 API_DOC_SRCS-yes += vpx_decoder.h
 API_DOC_SRCS-yes += vpx_encoder.h
+API_DOC_SRCS-yes += vpx_ext_ratectrl.h
 API_DOC_SRCS-yes += vpx_frame_buffer.h
 API_DOC_SRCS-yes += vpx_image.h
 
@@ -39,3 +40,4 @@ API_SRCS-yes += vpx_codec.mk
 API_SRCS-yes += vpx_frame_buffer.h
 API_SRCS-yes += vpx_image.h
 API_SRCS-yes += vpx_integer.h
+API_SRCS-yes += vpx_ext_ratectrl.h

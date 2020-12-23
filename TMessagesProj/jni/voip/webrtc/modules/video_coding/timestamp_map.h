@@ -24,6 +24,7 @@ class VCMTimestampMap {
 
   void Add(uint32_t timestamp, VCMFrameInformation* data);
   VCMFrameInformation* Pop(uint32_t timestamp);
+  size_t Size() const;
 
  private:
   struct TimestampDataTuple {

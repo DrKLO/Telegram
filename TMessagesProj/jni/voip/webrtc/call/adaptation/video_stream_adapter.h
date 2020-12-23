@@ -20,6 +20,7 @@
 #include "api/adaptation/resource.h"
 #include "api/rtp_parameters.h"
 #include "api/video/video_adaptation_counters.h"
+#include "api/video/video_stream_encoder_observer.h"
 #include "call/adaptation/adaptation_constraint.h"
 #include "call/adaptation/degradation_preference_provider.h"
 #include "call/adaptation/video_source_restrictions.h"
@@ -87,8 +88,6 @@ class Adaptation final {
   const VideoStreamInputState& input_state() const;
   const VideoSourceRestrictions& restrictions() const;
   const VideoAdaptationCounters& counters() const;
-  // Used for stats reporting.
-  bool min_pixel_limit_reached() const;
 
  private:
   friend class VideoStreamAdapter;
@@ -97,13 +96,9 @@ class Adaptation final {
   Adaptation(int validation_id,
              VideoSourceRestrictions restrictions,
              VideoAdaptationCounters counters,
-             VideoStreamInputState input_state,
-             bool min_pixel_limit_reached);
+             VideoStreamInputState input_state);
   // Constructor when adaptation is not valid. Status MUST NOT be kValid.
-  Adaptation(int validation_id,
-             Status invalid_status,
-             VideoStreamInputState input_state,
-             bool min_pixel_limit_reached);
+  Adaptation(int validation_id, Status invalid_status);
 
   // An Adaptation can become invalidated if the state of VideoStreamAdapter is
   // modified before the Adaptation is applied. To guard against this, this ID
@@ -111,7 +106,6 @@ class Adaptation final {
   // TODO(https://crbug.com/webrtc/11700): Remove the validation_id_.
   const int validation_id_;
   const Status status_;
-  const bool min_pixel_limit_reached_;
   // Input state when adaptation was made.
   const VideoStreamInputState input_state_;
   const VideoSourceRestrictions restrictions_;
@@ -126,8 +120,8 @@ class Adaptation final {
 // 3. Modify the stream's restrictions in one of the valid ways.
 class VideoStreamAdapter {
  public:
-  explicit VideoStreamAdapter(
-      VideoStreamInputStateProvider* input_state_provider);
+  VideoStreamAdapter(VideoStreamInputStateProvider* input_state_provider,
+                     VideoStreamEncoderObserver* encoder_stats_observer);
   ~VideoStreamAdapter();
 
   VideoSourceRestrictions source_restrictions() const;
@@ -148,9 +142,7 @@ class VideoStreamAdapter {
 
   // Returns an adaptation that we are guaranteed to be able to apply, or a
   // status code indicating the reason why we cannot adapt.
-  // TODO(https://crbug.com/webrtc/11771) |resource| is needed by the
-  // AdaptationConstraint resources. Remove this parameter when it's removed.
-  Adaptation GetAdaptationUp(rtc::scoped_refptr<Resource> resource);
+  Adaptation GetAdaptationUp();
   Adaptation GetAdaptationDown();
   Adaptation GetAdaptationTo(const VideoAdaptationCounters& counters,
                              const VideoSourceRestrictions& restrictions);
@@ -194,10 +186,7 @@ class VideoStreamAdapter {
       const RestrictionsWithCounters& restrictions) const
       RTC_RUN_ON(&sequence_checker_);
 
-  // TODO(https://crbug.com/webrtc/11771) |resource| is needed by the
-  // AdaptationConstraint resources. Remove this parameter when it's removed.
-  Adaptation GetAdaptationUp(const VideoStreamInputState& input_state,
-                             rtc::scoped_refptr<Resource> resource) const
+  Adaptation GetAdaptationUp(const VideoStreamInputState& input_state) const
       RTC_RUN_ON(&sequence_checker_);
   Adaptation GetAdaptationDown(const VideoStreamInputState& input_state) const
       RTC_RUN_ON(&sequence_checker_);
@@ -229,6 +218,8 @@ class VideoStreamAdapter {
   // Gets the input state which is the basis of all adaptations.
   // Thread safe.
   VideoStreamInputStateProvider* input_state_provider_;
+  // Used to signal when min pixel limit has been reached.
+  VideoStreamEncoderObserver* const encoder_stats_observer_;
   // Decides the next adaptation target in DegradationPreference::BALANCED.
   const BalancedDegradationSettings balanced_settings_;
   // To guard against applying adaptations that have become invalidated, an

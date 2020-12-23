@@ -70,8 +70,7 @@ class RTC_EXPORT SimulcastEncoderAdapter : public VideoEncoder {
   EncodedImageCallback::Result OnEncodedImage(
       size_t stream_idx,
       const EncodedImage& encoded_image,
-      const CodecSpecificInfo* codec_specific_info,
-      const RTPFragmentationHeader* fragmentation);
+      const CodecSpecificInfo* codec_specific_info);
 
   EncoderInfo GetEncoderInfo() const override;
 

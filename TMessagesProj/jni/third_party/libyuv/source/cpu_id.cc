@@ -75,9 +75,9 @@ void CpuId(int info_eax, int info_ecx, int* cpu_info) {
   asm volatile(
 #if defined(__i386__) && defined(__PIC__)
       // Preserve ebx for fpic 32 bit.
-      "mov %%ebx, %%edi                          \n"
+      "mov         %%ebx, %%edi                  \n"
       "cpuid                                     \n"
-      "xchg %%edi, %%ebx                         \n"
+      "xchg        %%edi, %%ebx                  \n"
       : "=D"(info_ebx),
 #else
       "cpuid                                     \n"
@@ -163,44 +163,38 @@ LIBYUV_API SAFEBUFFERS int ArmCpuCaps(const char* cpuinfo_name) {
 }
 
 // TODO(fbarchard): Consider read_msa_ir().
-// TODO(fbarchard): Add unittest.
-LIBYUV_API SAFEBUFFERS int MipsCpuCaps(const char* cpuinfo_name,
-                                       const char ase[]) {
+LIBYUV_API SAFEBUFFERS int MipsCpuCaps(const char* cpuinfo_name) {
   char cpuinfo_line[512];
+  int flag = 0x0;
   FILE* f = fopen(cpuinfo_name, "r");
   if (!f) {
-    // ase enabled if /proc/cpuinfo is unavailable.
-    if (strcmp(ase, " msa") == 0) {
-      return kCpuHasMSA;
-    }
-    if (strcmp(ase, " mmi") == 0) {
-      return kCpuHasMMI;
-    }
+    // Assume nothing if /proc/cpuinfo is unavailable.
+    // This will occur for Chrome sandbox for Pepper or Render process.
     return 0;
   }
   while (fgets(cpuinfo_line, sizeof(cpuinfo_line) - 1, f)) {
+    if (memcmp(cpuinfo_line, "cpu model", 9) == 0) {
+      // Workaround early kernel without mmi in ASEs line.
+      if (strstr(cpuinfo_line, "Loongson-3")) {
+        flag |= kCpuHasMMI;
+      } else if (strstr(cpuinfo_line, "Loongson-2K")) {
+        flag |= kCpuHasMMI | kCpuHasMSA;
+      }
+    }
     if (memcmp(cpuinfo_line, "ASEs implemented", 16) == 0) {
-      char* p = strstr(cpuinfo_line, ase);
-      if (p) {
-        fclose(f);
-        if (strcmp(ase, " msa") == 0) {
-          return kCpuHasMSA;
-        }
-        return 0;
+      if (strstr(cpuinfo_line, "loongson-mmi") &&
+          strstr(cpuinfo_line, "loongson-ext")) {
+        flag |= kCpuHasMMI;
       }
-    } else if (memcmp(cpuinfo_line, "cpu model", 9) == 0) {
-      char* p = strstr(cpuinfo_line, "Loongson-3");
-      if (p) {
-        fclose(f);
-        if (strcmp(ase, " mmi") == 0) {
-          return kCpuHasMMI;
-        }
-        return 0;
+      if (strstr(cpuinfo_line, "msa")) {
+        flag |= kCpuHasMSA;
       }
+      // ASEs is the last line, so we can break here.
+      break;
     }
   }
   fclose(f);
-  return 0;
+  return flag;
 }
 
 static SAFEBUFFERS int GetCpuFlags(void) {
@@ -242,11 +236,7 @@ static SAFEBUFFERS int GetCpuFlags(void) {
   }
 #endif
 #if defined(__mips__) && defined(__linux__)
-#if defined(__mips_msa)
-  cpu_info = MipsCpuCaps("/proc/cpuinfo", " msa");
-#elif defined(_MIPS_ARCH_LOONGSON3A)
-  cpu_info = MipsCpuCaps("/proc/cpuinfo", " mmi");
-#endif
+  cpu_info = MipsCpuCaps("/proc/cpuinfo");
   cpu_info |= kCpuHasMIPS;
 #endif
 #if defined(__arm__) || defined(__aarch64__)

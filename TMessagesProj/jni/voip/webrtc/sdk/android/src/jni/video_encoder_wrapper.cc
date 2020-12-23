@@ -116,7 +116,10 @@ int32_t VideoEncoderWrapper::Release() {
   int32_t status = JavaToNativeVideoCodecStatus(
       jni, Java_VideoEncoder_release(jni, encoder_));
   RTC_LOG(LS_INFO) << "release: " << status;
-  frame_extra_infos_.clear();
+  {
+    MutexLock lock(&frame_extra_infos_lock_);
+    frame_extra_infos_.clear();
+  }
   initialized_ = false;
 
   return status;
@@ -141,7 +144,10 @@ int32_t VideoEncoderWrapper::Encode(
   FrameExtraInfo info;
   info.capture_time_ns = frame.timestamp_us() * rtc::kNumNanosecsPerMicrosec;
   info.timestamp_rtp = frame.timestamp();
-  frame_extra_infos_.push_back(info);
+  {
+    MutexLock lock(&frame_extra_infos_lock_);
+    frame_extra_infos_.push_back(info);
+  }
 
   ScopedJavaLocalRef<jobject> j_frame = NativeToJavaVideoFrame(jni, frame);
   ScopedJavaLocalRef<jobject> ret =
@@ -232,19 +238,23 @@ void VideoEncoderWrapper::OnEncodedFrame(
   // entries that don't belong to us, and we need to be careful not to
   // remove them. Removing only those entries older than the current frame
   // provides this guarantee.
-  while (!frame_extra_infos_.empty() &&
-         frame_extra_infos_.front().capture_time_ns < capture_time_ns) {
+  FrameExtraInfo frame_extra_info;
+  {
+    MutexLock lock(&frame_extra_infos_lock_);
+    while (!frame_extra_infos_.empty() &&
+           frame_extra_infos_.front().capture_time_ns < capture_time_ns) {
+      frame_extra_infos_.pop_front();
+    }
+    if (frame_extra_infos_.empty() ||
+        frame_extra_infos_.front().capture_time_ns != capture_time_ns) {
+      RTC_LOG(LS_WARNING)
+          << "Java encoder produced an unexpected frame with timestamp: "
+          << capture_time_ns;
+      return;
+    }
+    frame_extra_info = frame_extra_infos_.front();
     frame_extra_infos_.pop_front();
   }
-  if (frame_extra_infos_.empty() ||
-      frame_extra_infos_.front().capture_time_ns != capture_time_ns) {
-    RTC_LOG(LS_WARNING)
-        << "Java encoder produced an unexpected frame with timestamp: "
-        << capture_time_ns;
-    return;
-  }
-  FrameExtraInfo frame_extra_info = std::move(frame_extra_infos_.front());
-  frame_extra_infos_.pop_front();
 
   // This is a bit subtle. The |frame| variable from the lambda capture is
   // const. Which implies that (i) we need to make a copy to be able to
@@ -346,7 +356,6 @@ CodecSpecificInfo VideoEncoderWrapper::ParseCodecSpecificInfo(
           static_cast<uint8_t>(gof_idx_++ % gof_.num_frames_in_gof);
       info.codecSpecific.VP9.num_spatial_layers = 1;
       info.codecSpecific.VP9.first_frame_in_picture = true;
-      info.codecSpecific.VP9.end_of_picture = true;
       info.codecSpecific.VP9.spatial_layer_resolution_present = false;
       if (info.codecSpecific.VP9.ss_data_available) {
         info.codecSpecific.VP9.spatial_layer_resolution_present = true;

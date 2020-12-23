@@ -26,7 +26,8 @@ class RtpPacketizerAv1 : public RtpPacketizer {
  public:
   RtpPacketizerAv1(rtc::ArrayView<const uint8_t> payload,
                    PayloadSizeLimits limits,
-                   VideoFrameType frame_type);
+                   VideoFrameType frame_type,
+                   bool is_last_frame_in_picture);
   ~RtpPacketizerAv1() override = default;
 
   size_t NumPackets() const override { return packets_.size() - packet_index_; }
@@ -63,6 +64,7 @@ class RtpPacketizerAv1 : public RtpPacketizer {
   const VideoFrameType frame_type_;
   const std::vector<Obu> obus_;
   const std::vector<Packet> packets_;
+  const bool is_last_frame_in_picture_;
   size_t packet_index_ = 0;
 };
 

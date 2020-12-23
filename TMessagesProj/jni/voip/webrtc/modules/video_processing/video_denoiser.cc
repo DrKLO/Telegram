@@ -235,7 +235,7 @@ rtc::scoped_refptr<I420BufferInterface> VideoDenoiser::DenoiseFrame(
   const uint8_t* y_src = frame->DataY();
   int stride_y_src = frame->StrideY();
   rtc::scoped_refptr<I420Buffer> dst =
-      buffer_pool_.CreateBuffer(width_, height_);
+      buffer_pool_.CreateI420Buffer(width_, height_);
 
   uint8_t* y_dst = dst->MutableDataY();
   int stride_y_dst = dst->StrideY();

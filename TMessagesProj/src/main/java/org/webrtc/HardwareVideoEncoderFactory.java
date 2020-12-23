@@ -157,18 +157,13 @@ public class HardwareVideoEncoderFactory implements VideoEncoderFactory {
   }
 
   private @Nullable MediaCodecInfo findCodecForType(VideoCodecMimeType type) {
-    for (int i = 0; i < MediaCodecList.getCodecCount(); ++i) {
-      MediaCodecInfo info = null;
-      try {
-        info = MediaCodecList.getCodecInfoAt(i);
-      } catch (IllegalArgumentException e) {
-        Logging.e(TAG, "Cannot retrieve encoder codec info", e);
-      }
-
+    ArrayList<MediaCodecInfo> infos = MediaCodecUtils.getSortedCodecsList();
+    int count = infos.size();
+    for (int i = 0; i < count; ++i) {
+      MediaCodecInfo info = infos.get(i);
       if (info == null || !info.isEncoder()) {
         continue;
       }
-
       if (isSupportedCodec(info, type)) {
         return info;
       }

@@ -107,7 +107,6 @@ class RtpPacketizerH265 : public RtpPacketizer {
 
   const PayloadSizeLimits limits_;
   size_t num_packets_left_;
-  RTPFragmentationHeader fragmentation_;
 
   RTC_DISALLOW_COPY_AND_ASSIGN(RtpPacketizerH265);
 };

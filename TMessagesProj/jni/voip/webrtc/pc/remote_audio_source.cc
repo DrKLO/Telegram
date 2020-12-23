@@ -18,7 +18,6 @@
 #include "absl/algorithm/container.h"
 #include "api/scoped_refptr.h"
 #include "rtc_base/checks.h"
-#include "rtc_base/constructor_magic.h"
 #include "rtc_base/location.h"
 #include "rtc_base/logging.h"
 #include "rtc_base/numerics/safe_conversions.h"
@@ -36,6 +35,11 @@ class RemoteAudioSource::AudioDataProxy : public AudioSinkInterface {
   explicit AudioDataProxy(RemoteAudioSource* source) : source_(source) {
     RTC_DCHECK(source);
   }
+
+  AudioDataProxy() = delete;
+  AudioDataProxy(const AudioDataProxy&) = delete;
+  AudioDataProxy& operator=(const AudioDataProxy&) = delete;
+
   ~AudioDataProxy() override { source_->OnAudioChannelGone(); }
 
   // AudioSinkInterface implementation.
@@ -45,8 +49,6 @@ class RemoteAudioSource::AudioDataProxy : public AudioSinkInterface {
 
  private:
   const rtc::scoped_refptr<RemoteAudioSource> source_;
-
-  RTC_DISALLOW_IMPLICIT_CONSTRUCTORS(AudioDataProxy);
 };
 
 RemoteAudioSource::RemoteAudioSource(rtc::Thread* worker_thread)

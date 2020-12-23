@@ -11,43 +11,11 @@
 #ifndef MODULES_INCLUDE_MODULE_COMMON_TYPES_H_
 #define MODULES_INCLUDE_MODULE_COMMON_TYPES_H_
 
-#include <stddef.h>
 #include <stdint.h>
 
 #include <vector>
 
-#include "rtc_base/system/rtc_export.h"
-
 namespace webrtc {
-
-class RTC_EXPORT RTPFragmentationHeader {
- public:
-  RTPFragmentationHeader();
-  RTPFragmentationHeader(const RTPFragmentationHeader&) = delete;
-  RTPFragmentationHeader(RTPFragmentationHeader&& other);
-  RTPFragmentationHeader& operator=(const RTPFragmentationHeader& other) =
-      delete;
-  RTPFragmentationHeader& operator=(RTPFragmentationHeader&& other);
-  ~RTPFragmentationHeader();
-
-  friend void swap(RTPFragmentationHeader& a, RTPFragmentationHeader& b);
-
-  void CopyFrom(const RTPFragmentationHeader& src);
-  void VerifyAndAllocateFragmentationHeader(size_t size) { Resize(size); }
-
-  void Resize(size_t size);
-  size_t Size() const { return fragmentationVectorSize; }
-
-  size_t Offset(size_t index) const { return fragmentationOffset[index]; }
-  size_t Length(size_t index) const { return fragmentationLength[index]; }
-
-  // TODO(danilchap): Move all members to private section,
-  // simplify by replacing raw arrays with single std::vector<Fragment>
-  uint16_t fragmentationVectorSize;  // Number of fragmentations
-  size_t* fragmentationOffset;       // Offset of pointer to data for each
-                                     // fragmentation
-  size_t* fragmentationLength;       // Data size for each fragmentation
-};
 
 // Interface used by the CallStats class to distribute call statistics.
 // Callbacks will be triggered as soon as the class has been registered to a

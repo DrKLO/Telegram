@@ -41,7 +41,11 @@ namespace webrtc {
 // Internal class used by PeerConnection.
 class RtpReceiverInternal : public RtpReceiverInterface {
  public:
+  // Stops receiving. The track may be reactivated.
   virtual void Stop() = 0;
+  // Stops the receiver permanently.
+  // Causes the associated track to enter kEnded state. Cannot be reversed.
+  virtual void StopAndEndTrack() = 0;
 
   // Sets the underlying MediaEngine channel associated with this RtpSender.
   // A VoiceMediaChannel should be used for audio RtpSenders and

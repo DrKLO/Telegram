@@ -187,13 +187,13 @@ void ConnectionRequest::Prepare(StunMessage* request) {
   uint32_t network_info = connection_->port()->Network()->id();
   network_info = (network_info << 16) | connection_->port()->network_cost();
   request->AddAttribute(std::make_unique<StunUInt32Attribute>(
-      STUN_ATTR_NETWORK_INFO, network_info));
+      STUN_ATTR_GOOG_NETWORK_INFO, network_info));
 
   if (webrtc::field_trial::IsEnabled(
           "WebRTC-PiggybackIceCheckAcknowledgement") &&
       connection_->last_ping_id_received()) {
     request->AddAttribute(std::make_unique<StunByteStringAttribute>(
-        STUN_ATTR_LAST_ICE_CHECK_RECEIVED,
+        STUN_ATTR_GOOG_LAST_ICE_CHECK_RECEIVED,
         connection_->last_ping_id_received().value()));
   }
 
@@ -616,7 +616,7 @@ void Connection::HandleStunBindingOrGoogPingRequest(IceMessage* msg) {
   // Note: If packets are re-ordered, we may get incorrect network cost
   // temporarily, but it should get the correct value shortly after that.
   const StunUInt32Attribute* network_attr =
-      msg->GetUInt32(STUN_ATTR_NETWORK_INFO);
+      msg->GetUInt32(STUN_ATTR_GOOG_NETWORK_INFO);
   if (network_attr) {
     uint32_t network_info = network_attr->value();
     uint16_t network_cost = static_cast<uint16_t>(network_info);
@@ -868,7 +868,7 @@ void Connection::HandlePiggybackCheckAcknowledgementIfAny(StunMessage* msg) {
   RTC_DCHECK(msg->type() == STUN_BINDING_REQUEST ||
              msg->type() == GOOG_PING_REQUEST);
   const StunByteStringAttribute* last_ice_check_received_attr =
-      msg->GetByteString(STUN_ATTR_LAST_ICE_CHECK_RECEIVED);
+      msg->GetByteString(STUN_ATTR_GOOG_LAST_ICE_CHECK_RECEIVED);
   if (last_ice_check_received_attr) {
     const std::string request_id = last_ice_check_received_attr->GetString();
     auto iter = absl::c_find_if(

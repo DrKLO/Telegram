@@ -90,6 +90,6 @@ void write_webm_file_footer(struct WebmOutputContext *webm_ctx) {
   segment->Finalize();
   delete segment;
   delete writer;
-  webm_ctx->writer = NULL;
-  webm_ctx->segment = NULL;
+  webm_ctx->writer = nullptr;
+  webm_ctx->segment = nullptr;
 }

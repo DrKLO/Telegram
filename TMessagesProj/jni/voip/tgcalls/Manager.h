@@ -57,6 +57,7 @@ private:
     ProtocolVersion _protocolVersion = ProtocolVersion::V0;
     FilePath _statsLogPath;
 	std::vector<RtcServer> _rtcServers;
+	std::unique_ptr<Proxy> _proxy;
 	MediaDevicesConfig _mediaDevicesConfig;
 	std::shared_ptr<VideoCaptureInterface> _videoCapture;
 	std::function<void(State)> _stateUpdated;
@@ -65,6 +66,7 @@ private:
     std::function<void(float)> _remotePrefferedAspectRatioUpdated;
 	std::function<void(const std::vector<uint8_t> &)> _signalingDataEmitted;
     std::function<void(int)> _signalBarsUpdated;
+    std::function<void(float)> _audioLevelUpdated;
 	std::function<uint32_t(const Message &)> _sendSignalingMessage;
 	std::function<void(Message&&)> _sendTransportMessage;
 	std::unique_ptr<ThreadLocalObject<NetworkManager>> _networkManager;

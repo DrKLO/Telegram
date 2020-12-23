@@ -535,6 +535,9 @@ JsepTransportController::CreateDtlsSrtpTransport(
       config_.active_reset_srtp_params);
   dtls_srtp_transport->SignalDtlsStateChange.connect(
       this, &JsepTransportController::UpdateAggregateStates_n);
+  dtls_srtp_transport->SetOnErrorDemuxingPacket([this](uint32_t ssrc) {
+      this->JsepTransportController::ErrorDemuxingPacket_n(ssrc);
+  });
   return dtls_srtp_transport;
 }
 
@@ -1256,10 +1259,11 @@ void JsepTransportController::UpdateAggregateStates_n() {
   }
   if (ice_connection_state_ != new_connection_state) {
     ice_connection_state_ = new_connection_state;
-    invoker_.AsyncInvoke<void>(RTC_FROM_HERE, signaling_thread_,
-                               [this, new_connection_state] {
-                                 SignalIceConnectionState(new_connection_state);
-                               });
+
+    invoker_.AsyncInvoke<void>(
+        RTC_FROM_HERE, signaling_thread_, [this, new_connection_state] {
+          SignalIceConnectionState.Send(new_connection_state);
+        });
   }
 
   // Compute the current RTCIceConnectionState as described in
@@ -1381,7 +1385,10 @@ void JsepTransportController::UpdateAggregateStates_n() {
                                });
   }
 
-  if (all_done_gathering) {
+  // Compute the gathering state.
+  if (dtls_transports.empty()) {
+    new_gathering_state = cricket::kIceGatheringNew;
+  } else if (all_done_gathering) {
     new_gathering_state = cricket::kIceGatheringComplete;
   } else if (any_gathering) {
     new_gathering_state = cricket::kIceGatheringGathering;
@@ -1393,6 +1400,10 @@ void JsepTransportController::UpdateAggregateStates_n() {
                                  SignalIceGatheringState(new_gathering_state);
                                });
   }
+}
+
+void JsepTransportController::ErrorDemuxingPacket_n(uint32_t ssrc) {
+  SignalErrorDemuxingPacket.emit(ssrc);
 }
 
 void JsepTransportController::OnRtcpPacketReceived_n(

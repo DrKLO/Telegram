@@ -22,7 +22,7 @@ SECTION .text
 ;    int            dst_stride,
 ;    int            src_weight
 ;)
-global sym(vp9_filter_by_weight16x16_sse2) PRIVATE
+globalsym(vp9_filter_by_weight16x16_sse2)
 sym(vp9_filter_by_weight16x16_sse2):
     push        rbp
     mov         rbp, rsp
@@ -100,7 +100,7 @@ sym(vp9_filter_by_weight16x16_sse2):
 ;    int            dst_stride,
 ;    int            src_weight
 ;)
-global sym(vp9_filter_by_weight8x8_sse2) PRIVATE
+globalsym(vp9_filter_by_weight8x8_sse2)
 sym(vp9_filter_by_weight8x8_sse2):
     push        rbp
     mov         rbp, rsp
@@ -168,7 +168,7 @@ sym(vp9_filter_by_weight8x8_sse2):
 ;    unsigned int  *variance,      4
 ;    unsigned int  *sad,           5
 ;)
-global sym(vp9_variance_and_sad_16x16_sse2) PRIVATE
+globalsym(vp9_variance_and_sad_16x16_sse2)
 sym(vp9_variance_and_sad_16x16_sse2):
     push        rbp
     mov         rbp, rsp

@@ -28,7 +28,7 @@
 
 namespace webrtc {
 
-class StatsCollector;
+class StatsCollectorInterface;
 
 bool UnimplementedRtpParameterHasValue(const RtpParameters& parameters);
 
@@ -257,7 +257,7 @@ class AudioRtpSender : public DtmfProviderInterface, public RtpSenderBase {
   static rtc::scoped_refptr<AudioRtpSender> Create(
       rtc::Thread* worker_thread,
       const std::string& id,
-      StatsCollector* stats,
+      StatsCollectorInterface* stats,
       SetStreamsObserver* set_streams_observer);
   virtual ~AudioRtpSender();
 
@@ -281,7 +281,7 @@ class AudioRtpSender : public DtmfProviderInterface, public RtpSenderBase {
  protected:
   AudioRtpSender(rtc::Thread* worker_thread,
                  const std::string& id,
-                 StatsCollector* stats,
+                 StatsCollectorInterface* stats,
                  SetStreamsObserver* set_streams_observer);
 
   void SetSend() override;
@@ -303,7 +303,7 @@ class AudioRtpSender : public DtmfProviderInterface, public RtpSenderBase {
   }
   sigslot::signal0<> SignalDestroyed;
 
-  StatsCollector* stats_ = nullptr;
+  StatsCollectorInterface* stats_ = nullptr;
   rtc::scoped_refptr<DtmfSenderInterface> dtmf_sender_proxy_;
   bool cached_track_enabled_ = false;
 

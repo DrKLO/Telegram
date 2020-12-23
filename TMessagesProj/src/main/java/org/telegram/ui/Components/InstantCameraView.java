@@ -160,38 +160,38 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
     private float[] moldSTMatrix = new float[16];
     private static final String VERTEX_SHADER =
             "uniform mat4 uMVPMatrix;\n" +
-            "uniform mat4 uSTMatrix;\n" +
-            "attribute vec4 aPosition;\n" +
-            "attribute vec4 aTextureCoord;\n" +
-            "varying vec2 vTextureCoord;\n" +
-            "void main() {\n" +
-            "   gl_Position = uMVPMatrix * aPosition;\n" +
-            "   vTextureCoord = (uSTMatrix * aTextureCoord).xy;\n" +
-            "}\n";
+                    "uniform mat4 uSTMatrix;\n" +
+                    "attribute vec4 aPosition;\n" +
+                    "attribute vec4 aTextureCoord;\n" +
+                    "varying vec2 vTextureCoord;\n" +
+                    "void main() {\n" +
+                    "   gl_Position = uMVPMatrix * aPosition;\n" +
+                    "   vTextureCoord = (uSTMatrix * aTextureCoord).xy;\n" +
+                    "}\n";
 
     private static final String FRAGMENT_SHADER =
             "#extension GL_OES_EGL_image_external : require\n" +
-            "precision highp float;\n" +
-            "varying vec2 vTextureCoord;\n" +
-            "uniform float scaleX;\n" +
-            "uniform float scaleY;\n" +
-            "uniform float alpha;\n" +
-            "uniform samplerExternalOES sTexture;\n" +
-            "void main() {\n" +
-            "   vec2 coord = vec2((vTextureCoord.x - 0.5) * scaleX, (vTextureCoord.y - 0.5) * scaleY);\n" +
-            "   float coef = ceil(clamp(0.2601 - dot(coord, coord), 0.0, 1.0));\n" +
-            "   vec3 color = texture2D(sTexture, vTextureCoord).rgb * coef + (1.0 - step(0.001, coef));\n" +
-            "   gl_FragColor = vec4(color * alpha, alpha);\n" +
-            "}\n";
+                    "precision highp float;\n" +
+                    "varying vec2 vTextureCoord;\n" +
+                    "uniform float scaleX;\n" +
+                    "uniform float scaleY;\n" +
+                    "uniform float alpha;\n" +
+                    "uniform samplerExternalOES sTexture;\n" +
+                    "void main() {\n" +
+                    "   vec2 coord = vec2((vTextureCoord.x - 0.5) * scaleX, (vTextureCoord.y - 0.5) * scaleY);\n" +
+                    "   float coef = ceil(clamp(0.2601 - dot(coord, coord), 0.0, 1.0));\n" +
+                    "   vec3 color = texture2D(sTexture, vTextureCoord).rgb * coef + (1.0 - step(0.001, coef));\n" +
+                    "   gl_FragColor = vec4(color * alpha, alpha);\n" +
+                    "}\n";
 
     private static final String FRAGMENT_SCREEN_SHADER =
             "#extension GL_OES_EGL_image_external : require\n" +
-            "precision lowp float;\n" +
-            "varying vec2 vTextureCoord;\n" +
-            "uniform samplerExternalOES sTexture;\n" +
-            "void main() {\n" +
-            "   gl_FragColor = texture2D(sTexture, vTextureCoord);\n" +
-            "}\n";
+                    "precision lowp float;\n" +
+                    "varying vec2 vTextureCoord;\n" +
+                    "uniform samplerExternalOES sTexture;\n" +
+                    "void main() {\n" +
+                    "   gl_FragColor = texture2D(sTexture, vTextureCoord);\n" +
+                    "}\n";
 
     private FloatBuffer vertexBuffer;
     private FloatBuffer textureBuffer;
@@ -584,7 +584,7 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
         animatorSet = new AnimatorSet();
         float toX = 0;
         if (!open) {
-            toX = recordedTime > 300 ?  AndroidUtilities.dp(24) - getMeasuredWidth() / 2f : 0;
+            toX = recordedTime > 300 ? AndroidUtilities.dp(24) - getMeasuredWidth() / 2f : 0;
         }
         ValueAnimator translationYAnimator = ValueAnimator.ofFloat(open ? 1f : 0f, open ? 0 : 1f);
         translationYAnimator.addUpdateListener(animation -> {
@@ -1090,7 +1090,7 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
                 return false;
             }
 
-            int[] attrib_list = { EGL_CONTEXT_CLIENT_VERSION, 2, EGL10.EGL_NONE };
+            int[] attrib_list = {EGL_CONTEXT_CLIENT_VERSION, 2, EGL10.EGL_NONE};
             eglContext = egl10.eglCreateContext(eglDisplay, eglConfig, EGL10.EGL_NO_CONTEXT, attrib_list);
             if (eglContext == null) {
                 if (BuildVars.LOGS_ENABLED) {
@@ -1429,14 +1429,14 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
         }
     }
 
-    private static class AudioBufferInfo {
-        final static int MAX_SAMPLES = 10;
-        ByteBuffer[] buffer = new ByteBuffer[MAX_SAMPLES];
-        long[] offset = new long[MAX_SAMPLES];
-        int[] read = new int[MAX_SAMPLES];
-        int results;
-        int lastWroteBuffer;
-        boolean last;
+    public static class AudioBufferInfo {
+        public final static int MAX_SAMPLES = 10;
+        public ByteBuffer[] buffer = new ByteBuffer[MAX_SAMPLES];
+        public long[] offset = new long[MAX_SAMPLES];
+        public int[] read = new int[MAX_SAMPLES];
+        public int results;
+        public int lastWroteBuffer;
+        public boolean last;
 
         public AudioBufferInfo() {
             for (int i = 0; i < MAX_SAMPLES; i++) {
@@ -1921,7 +1921,7 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
             public void run() {
                 final TextureView textureView = InstantCameraView.this.textureView;
                 if (textureView != null) {
-                    final Bitmap bitmap = textureView.getBitmap(AndroidUtilities.dp(56),  AndroidUtilities.dp(56));
+                    final Bitmap bitmap = textureView.getBitmap(AndroidUtilities.dp(56), AndroidUtilities.dp(56));
                     AndroidUtilities.runOnUIThread(() -> {
                         if ((bitmap == null || bitmap.getPixel(0, 0) == 0) && keyframeThumbs.size() > 1) {
                             keyframeThumbs.add(keyframeThumbs.get(keyframeThumbs.size() - 1));

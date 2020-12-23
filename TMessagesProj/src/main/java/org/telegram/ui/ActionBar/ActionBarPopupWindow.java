@@ -178,13 +178,18 @@ public class ActionBarPopupWindow extends PopupWindow {
                     }
                 } else {
                     int count = getItemsCount();
-                    for (int a = lastStartedChild; a < count; a++) {
+                    int h = 0;
+                    for (int a = 0; a < count; a++) {
                         View child = getItemAt(a);
                         if (child.getVisibility() != VISIBLE) {
                             continue;
                         }
+                        h += child.getMeasuredHeight();
+                        if (a < lastStartedChild) {
+                            continue;
+                        }
                         Integer position = positions.get(child);
-                        if (position != null && (position + 1) * AndroidUtilities.dp(48) - AndroidUtilities.dp(24) > value * height) {
+                        if (position != null && h - AndroidUtilities.dp(24) > value * height) {
                             break;
                         }
                         lastStartedChild = a + 1;
@@ -292,6 +297,32 @@ public class ActionBarPopupWindow extends PopupWindow {
             for (int a = 0; a < count; a++) {
                 View child = linearLayout.getChildAt(a);
                 child.setBackground(Theme.createRadSelectorDrawable(color, a == 0 ? 6 : 0, a == count - 1 ? 6 : 0));
+            }
+        }
+
+        public void updateRadialSelectors() {
+            int count = linearLayout.getChildCount();
+            View firstVisible = null;
+            View lastVisible = null;
+            for (int a = 0; a < count; a++) {
+                View child = linearLayout.getChildAt(a);
+                if (child.getVisibility() != View.VISIBLE) {
+                    continue;
+                }
+                if (firstVisible == null) {
+                    firstVisible = child;
+                }
+                lastVisible = child;
+            }
+
+            for (int a = 0; a < count; a++) {
+                View child = linearLayout.getChildAt(a);
+                if (child.getVisibility() != View.VISIBLE) {
+                    continue;
+                }
+                if (child instanceof ActionBarMenuSubItem) {
+                    ((ActionBarMenuSubItem) child).updateSelectorBackground(child == firstVisible, child == lastVisible);
+                }
             }
         }
     }

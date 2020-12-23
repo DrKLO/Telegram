@@ -17,6 +17,7 @@
 
 #include "api/units/time_delta.h"
 #include "api/video/encoded_frame.h"
+#include "api/video/video_content_type.h"
 #include "api/video/video_frame.h"
 #include "api/video_codecs/sdp_video_format.h"
 #include "api/video_codecs/video_decoder_factory.h"
@@ -29,6 +30,11 @@ class VideoStreamDecoderInterface {
    public:
     virtual ~Callbacks() = default;
 
+    struct FrameInfo {
+      absl::optional<int> qp;
+      VideoContentType content_type;
+    };
+
     // Called when the VideoStreamDecoder enters a non-decodable state.
     virtual void OnNonDecodableState() = 0;
 
@@ -36,10 +42,8 @@ class VideoStreamDecoderInterface {
     virtual void OnContinuousUntil(
         const video_coding::VideoLayerFrameId& key) = 0;
 
-    // Called with the decoded frame.
-    virtual void OnDecodedFrame(VideoFrame decodedImage,
-                                absl::optional<int> decode_time_ms,
-                                absl::optional<int> qp) = 0;
+    virtual void OnDecodedFrame(VideoFrame frame,
+                                const FrameInfo& frame_info) = 0;
   };
 
   virtual ~VideoStreamDecoderInterface() = default;

@@ -89,18 +89,13 @@ class MediaCodecVideoDecoderFactory implements VideoDecoderFactory {
       return null;
     }
 
-    for (int i = 0; i < MediaCodecList.getCodecCount(); ++i) {
-      MediaCodecInfo info = null;
-      try {
-        info = MediaCodecList.getCodecInfoAt(i);
-      } catch (IllegalArgumentException e) {
-        Logging.e(TAG, "Cannot retrieve decoder codec info", e);
-      }
-
+    ArrayList<MediaCodecInfo> infos = MediaCodecUtils.getSortedCodecsList();
+    int codecCount = infos.size();
+    for (int i = 0; i < codecCount; ++i) {
+      MediaCodecInfo info = infos.get(i);
       if (info == null || info.isEncoder()) {
         continue;
       }
-
       if (isSupportedCodec(info, type)) {
         return info;
       }

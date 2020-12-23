@@ -31,7 +31,8 @@ const int kFakeIPv4NetworkPrefixLength = 24;
 const int kFakeIPv6NetworkPrefixLength = 64;
 
 // Fake network manager that allows us to manually specify the IPs to use.
-class FakeNetworkManager : public NetworkManagerBase, public MessageHandler {
+class FakeNetworkManager : public NetworkManagerBase,
+                           public MessageHandlerAutoCleanup {
  public:
   FakeNetworkManager() {}
 

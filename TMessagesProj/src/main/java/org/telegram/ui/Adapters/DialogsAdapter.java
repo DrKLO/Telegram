@@ -21,9 +21,13 @@ import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.TextView;
 
+import androidx.recyclerview.widget.RecyclerView;
+import androidx.viewpager.widget.ViewPager;
+
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.DialogObject;
+import org.telegram.messenger.DownloadController;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
@@ -43,17 +47,15 @@ import org.telegram.ui.Cells.HeaderCell;
 import org.telegram.ui.Cells.LoadingCell;
 import org.telegram.ui.Cells.ShadowSectionCell;
 import org.telegram.ui.Cells.UserCell;
-import org.telegram.ui.Components.PullForegroundDrawable;
 import org.telegram.ui.Components.CombinedDrawable;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.PullForegroundDrawable;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.DialogsActivity;
 
 import java.util.ArrayList;
 import java.util.Collections;
-
-import androidx.recyclerview.widget.RecyclerView;
-import androidx.viewpager.widget.ViewPager;
+import java.util.HashSet;
 
 public class DialogsAdapter extends RecyclerListView.SelectionAdapter {
 
@@ -75,6 +77,8 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter {
     private long lastSortTime;
     private PullForegroundDrawable pullForegroundDrawable;
 
+    private DialogsPreloader preloader;
+
     public DialogsAdapter(Context context, int type, int folder, boolean onlySelect, ArrayList<Long> selected, int account) {
         mContext = context;
         dialogsType = type;
@@ -90,6 +94,9 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter {
             if (showArchiveHint) {
                 archiveHintCell = new ArchiveHintCell(context);
             }
+        }
+        if (folder == 0) {
+            this.preloader = new DialogsPreloader();
         }
     }
 
@@ -302,6 +309,7 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter {
             case 0:
                 DialogCell dialogCell = new DialogCell(mContext, true, false, currentAccount);
                 dialogCell.setArchivedPullAnimation(pullForegroundDrawable);
+                dialogCell.setPreloader(preloader);
                 view = dialogCell;
                 break;
             case 1:
@@ -441,6 +449,9 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter {
                 }
                 cell.setChecked(selectedDialogs.contains(dialog.id), false);
                 cell.setDialog(dialog, dialogsType, folderId);
+                if (preloader != null && i < 10) {
+                    preloader.add(dialog.id);
+                }
                 break;
             }
             case 5: {
@@ -542,5 +553,133 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter {
 
     public void setArchivedPullDrawable(PullForegroundDrawable drawable) {
         pullForegroundDrawable = drawable;
+    }
+
+    public void didDatabaseCleared() {
+        if (preloader != null) {
+            preloader.clear();
+        }
+    }
+
+    public void resume() {
+        if (preloader != null) {
+            preloader.resume();
+        }
+    }
+
+    public void pause() {
+        if (preloader != null) {
+            preloader.pause();
+        }
+    }
+
+    public static class DialogsPreloader {
+
+        private final int MAX_REQUEST_COUNT = 4;
+        private final int MAX_NETWORK_REQUEST_COUNT = 10 - MAX_REQUEST_COUNT;
+        private final int NETWORK_REQUESTS_RESET_TIME = 60_000;
+
+        HashSet<Long> dialogsReadyMap = new HashSet<>();
+        HashSet<Long> preloadedErrorMap = new HashSet<>();
+
+        HashSet<Long> loadingDialogs = new HashSet<>();
+        ArrayList<Long> preloadDialogsPool = new ArrayList<>();
+        int currentRequestCount;
+        int networkRequestCount;
+
+        boolean resumed;
+
+        Runnable clearNetworkRequestCount = () -> {
+            networkRequestCount = 0;
+            start();
+        };
+
+        public void add(long dialog_id) {
+            if (isReady(dialog_id) || preloadedErrorMap.contains(dialog_id) || loadingDialogs.contains(dialog_id) || preloadDialogsPool.contains(dialog_id)) {
+                return;
+            }
+            preloadDialogsPool.add(dialog_id);
+            start();
+        }
+
+        private void start() {
+            if (!preloadIsAvilable() || !resumed || preloadDialogsPool.isEmpty() || currentRequestCount >= MAX_REQUEST_COUNT || networkRequestCount > MAX_NETWORK_REQUEST_COUNT) {
+                return;
+            }
+            long dialog_id = preloadDialogsPool.remove(0);
+            currentRequestCount++;
+            loadingDialogs.add(dialog_id);
+            MessagesController.getInstance(UserConfig.selectedAccount).ensureMessagesLoaded(dialog_id, 0, new MessagesController.MessagesLoadedCallback() {
+                @Override
+                public void onMessagesLoaded(boolean fromCache) {
+                    AndroidUtilities.runOnUIThread(() -> {
+                        if (!fromCache) {
+                            networkRequestCount++;
+                            if (networkRequestCount >= MAX_NETWORK_REQUEST_COUNT) {
+                                AndroidUtilities.cancelRunOnUIThread(clearNetworkRequestCount);
+                                AndroidUtilities.runOnUIThread(clearNetworkRequestCount, NETWORK_REQUESTS_RESET_TIME);
+                            }
+                        }
+                        if (loadingDialogs.remove(dialog_id)) {
+                            dialogsReadyMap.add(dialog_id);
+                            updateList();
+                            currentRequestCount--;
+                            start();
+                        }
+                    });
+                }
+
+                @Override
+                public void onError() {
+                    AndroidUtilities.runOnUIThread(() -> {
+                        if (loadingDialogs.remove(dialog_id)) {
+                            preloadedErrorMap.add(dialog_id);
+                            currentRequestCount--;
+                            start();
+                        }
+                    });
+                }
+            });
+        }
+
+        private boolean preloadIsAvilable() {
+            return false;
+           // return DownloadController.getInstance(UserConfig.selectedAccount).getCurrentDownloadMask() != 0;
+        }
+
+        public void updateList() {
+        }
+
+        public boolean isReady(long currentDialogId) {
+            return dialogsReadyMap.contains(currentDialogId);
+        }
+
+        public boolean preloadedError(long currendDialogId) {
+            return preloadedErrorMap.contains(currendDialogId);
+        }
+
+        public void remove(long currentDialogId) {
+            preloadDialogsPool.remove(currentDialogId);
+        }
+
+        public void clear() {
+            dialogsReadyMap.clear();
+            preloadedErrorMap.clear();
+            loadingDialogs.clear();
+            preloadDialogsPool.clear();
+            currentRequestCount = 0;
+            networkRequestCount = 0;
+            AndroidUtilities.cancelRunOnUIThread(clearNetworkRequestCount);
+            updateList();
+        }
+
+        public void resume() {
+            resumed = true;
+            start();
+        }
+
+        public void pause() {
+            resumed = false;
+        }
     }
 }

@@ -94,8 +94,9 @@ VideoCodec VideoCodecInitializer::VideoEncoderConfigToVideoCodec(
 
   int max_framerate = 0;
 
+  absl::optional<std::string> scalability_mode = streams[0].scalability_mode;
   for (size_t i = 0; i < streams.size(); ++i) {
-    SimulcastStream* sim_stream = &video_codec.simulcastStream[i];
+    SpatialLayer* sim_stream = &video_codec.simulcastStream[i];
     RTC_DCHECK_GT(streams[i].width, 0);
     RTC_DCHECK_GT(streams[i].height, 0);
     RTC_DCHECK_GT(streams[i].max_framerate, 0);
@@ -126,6 +127,15 @@ VideoCodec VideoCodecInitializer::VideoEncoderConfigToVideoCodec(
     video_codec.qpMax = std::max(video_codec.qpMax,
                                  static_cast<unsigned int>(streams[i].max_qp));
     max_framerate = std::max(max_framerate, streams[i].max_framerate);
+
+    if (streams[0].scalability_mode != streams[i].scalability_mode) {
+      RTC_LOG(LS_WARNING) << "Inconsistent scalability modes configured.";
+      scalability_mode.reset();
+    }
+  }
+
+  if (scalability_mode.has_value()) {
+    video_codec.SetScalabilityMode(*scalability_mode);
   }
 
   if (video_codec.maxBitrate == 0) {
@@ -210,7 +220,7 @@ VideoCodec VideoCodecInitializer::VideoEncoderConfigToVideoCodec(
 
         for (size_t spatial_idx = first_active_layer;
              spatial_idx < config.simulcast_layers.size() &&
-             spatial_idx < spatial_layers.size();
+             spatial_idx < spatial_layers.size() + first_active_layer;
              ++spatial_idx) {
           spatial_layers[spatial_idx - first_active_layer].active =
               config.simulcast_layers[spatial_idx].active;

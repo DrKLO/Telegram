@@ -38,7 +38,7 @@ void AdaptiveModeLevelEstimatorAgc::Process(const int16_t* audio,
   if (latest_voice_probability_ > kVadConfidenceThreshold) {
     time_in_ms_since_last_estimate_ += kFrameDurationMs;
   }
-  level_estimator_.UpdateEstimation(vad_prob);
+  level_estimator_.Update(vad_prob);
 }
 
 // Retrieves the difference between the target RMS level and the current
@@ -48,8 +48,8 @@ bool AdaptiveModeLevelEstimatorAgc::GetRmsErrorDb(int* error) {
   if (time_in_ms_since_last_estimate_ <= kTimeUntilConfidentMs) {
     return false;
   }
-  *error = std::floor(target_level_dbfs() -
-                      level_estimator_.LatestLevelEstimate() + 0.5f);
+  *error =
+      std::floor(target_level_dbfs() - level_estimator_.level_dbfs() + 0.5f);
   time_in_ms_since_last_estimate_ = 0;
   return true;
 }

@@ -51,6 +51,7 @@ import android.view.HapticFeedbackConstants;
 import android.view.TextureView;
 import android.view.View;
 import android.view.WindowManager;
+import android.webkit.MimeTypeMap;
 import android.widget.FrameLayout;
 
 import com.google.android.exoplayer2.C;
@@ -86,6 +87,7 @@ import java.nio.ByteOrder;
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Timer;
@@ -1295,13 +1297,16 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                     playlistMap.put(object.getId(), object);
                     playlistMaxId[0] = Math.min(playlistMaxId[0], object.getId());
                 }
-                playlistClassGuid = ConnectionsManager.generateClassGuid();
+                sortPlaylist();
                 if (SharedConfig.shuffleMusic) {
                     buildShuffledPlayList();
-                    currentPlaylistNum = 0;
-                } else {
-                    currentPlaylistNum += arrayListBegin.size();
+                } else if (playingMessageObject != null) {
+                    int newIndex = playlist.indexOf(playingMessageObject);
+                    if (newIndex >= 0) {
+                        currentPlaylistNum = newIndex;
+                    }
                 }
+                playlistClassGuid = ConnectionsManager.generateClassGuid();
             }
         } else if (id == NotificationCenter.mediaDidLoad) {
             int guid = (Integer) args[3];
@@ -1325,6 +1330,13 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                     playlist.add(0, message);
                     playlistMap.put(message.getId(), message);
                     playlistMaxId[loadIndex] = Math.min(playlistMaxId[loadIndex], message.getId());
+                }
+                sortPlaylist();
+                if (playingMessageObject != null) {
+                    int newIndex = playlist.indexOf(playingMessageObject);
+                    if (newIndex >= 0) {
+                        currentPlaylistNum = newIndex;
+                    }
                 }
                 loadingPlaylist = false;
                 if (SharedConfig.shuffleMusic) {
@@ -1915,7 +1927,6 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
 
         MessageObject messageObject = playlist.get(currentPlaylistNum);
         all.remove(currentPlaylistNum);
-        shuffledPlaylist.add(messageObject);
 
         int count = all.size();
         for (int a = 0; a < count; a++) {
@@ -1923,6 +1934,8 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
             shuffledPlaylist.add(all.get(index));
             all.remove(index);
         }
+        shuffledPlaylist.add(messageObject);
+        currentPlaylistNum = shuffledPlaylist.size() - 1;
     }
 
     public void loadMoreMusic() {
@@ -1977,42 +1990,41 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                     request = req;
                 }
                 loadingPlaylist = true;
-                ConnectionsManager.getInstance(currentAccount).sendRequest(request, (response, error) -> {
-                    AndroidUtilities.runOnUIThread(() -> {
-                        if (playlistClassGuid != finalPlaylistGuid || playlistGlobalSearchParams == null || playingMessageObject == null) {
-                            return;
-                        }
-                        if (error != null) {
-                            return;
-                        }
-                        loadingPlaylist = false;
+                ConnectionsManager.getInstance(currentAccount).sendRequest(request, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
+                    if (playlistClassGuid != finalPlaylistGuid || playlistGlobalSearchParams == null || playingMessageObject == null) {
+                        return;
+                    }
+                    if (error != null) {
+                        return;
+                    }
+                    loadingPlaylist = false;
 
-                        TLRPC.messages_Messages res = (TLRPC.messages_Messages) response;
-                        playlistGlobalSearchParams.nextSearchRate = res.next_rate;
-                        MessagesStorage.getInstance(currentAccount).putUsersAndChats(res.users, res.chats, true, true);
-                        MessagesController.getInstance(currentAccount).putUsers(res.users, false);
-                        MessagesController.getInstance(currentAccount).putChats(res.chats, false);
-                        int n = res.messages.size();
-                        int addedCount = 0;
-                        for (int i = 0; i < n; i++) {
-                            MessageObject messageObject = new MessageObject(currentAccount, res.messages.get(i), false, true);
-                            if (playlistMap.containsKey(messageObject.getId())) {
-                                continue;
-                            }
-                            playlist.add(0, messageObject);
-                            playlistMap.put(messageObject.getId(), messageObject);
-                            addedCount++;
+                    TLRPC.messages_Messages res = (TLRPC.messages_Messages) response;
+                    playlistGlobalSearchParams.nextSearchRate = res.next_rate;
+                    MessagesStorage.getInstance(currentAccount).putUsersAndChats(res.users, res.chats, true, true);
+                    MessagesController.getInstance(currentAccount).putUsers(res.users, false);
+                    MessagesController.getInstance(currentAccount).putChats(res.chats, false);
+                    int n = res.messages.size();
+                    int addedCount = 0;
+                    for (int i = 0; i < n; i++) {
+                        MessageObject messageObject = new MessageObject(currentAccount, res.messages.get(i), false, true);
+                        if (playlistMap.containsKey(messageObject.getId())) {
+                            continue;
                         }
-                        loadingPlaylist = false;
-                        playlistGlobalSearchParams.endReached = playlist.size() == playlistGlobalSearchParams.totalCount;
-                        if (SharedConfig.shuffleMusic) {
-                            buildShuffledPlayList();
-                        }
-                        if (addedCount != 0) {
-                            NotificationCenter.getInstance(playingMessageObject.currentAccount).postNotificationName(NotificationCenter.moreMusicDidLoad, addedCount);
-                        }
-                    });
-                });
+                        playlist.add(0, messageObject);
+                        playlistMap.put(messageObject.getId(), messageObject);
+                        addedCount++;
+                    }
+                    sortPlaylist();
+                    loadingPlaylist = false;
+                    playlistGlobalSearchParams.endReached = playlist.size() == playlistGlobalSearchParams.totalCount;
+                    if (SharedConfig.shuffleMusic) {
+                        buildShuffledPlayList();
+                    }
+                    if (addedCount != 0) {
+                        NotificationCenter.getInstance(playingMessageObject.currentAccount).postNotificationName(NotificationCenter.moreMusicDidLoad, addedCount);
+                    }
+                }));
             }
             return;
         }
@@ -2035,6 +2047,10 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
 
     public boolean setPlaylist(ArrayList<MessageObject> messageObjects, MessageObject current, long mergeDialogId, boolean loadMusic, PlaylistGlobalSearchParams params) {
         if (playingMessageObject == current) {
+            int newIdx = playlist.indexOf(current);
+            if (newIdx >= 0) {
+                currentPlaylistNum = newIdx;
+            }
             return playMessage(current);
         }
         forceLoopCurrentPlaylist = !loadMusic;
@@ -2042,13 +2058,22 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
         playMusicAgain = !playlist.isEmpty();
         clearPlaylist();
         playlistGlobalSearchParams = params;
+        boolean isSecretChat = !messageObjects.isEmpty() && (int) messageObjects.get(0).getDialogId() == 0;
+        long minId = Long.MAX_VALUE;
+        long maxId = Long.MIN_VALUE;
         for (int a = messageObjects.size() - 1; a >= 0; a--) {
             MessageObject messageObject = messageObjects.get(a);
             if (messageObject.isMusic()) {
+                long id = messageObject.getIdWithChannel();
+                if (id > 0 || isSecretChat) {
+                    minId = Math.min(minId, id);
+                    maxId = Math.max(maxId, id);
+                }
                 playlist.add(messageObject);
                 playlistMap.put(messageObject.getId(), messageObject);
             }
         }
+        sortPlaylist();
         currentPlaylistNum = playlist.indexOf(current);
         if (currentPlaylistNum == -1) {
             clearPlaylist();
@@ -2059,17 +2084,36 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
         if (current.isMusic() && !current.scheduled) {
             if (SharedConfig.shuffleMusic) {
                 buildShuffledPlayList();
-                currentPlaylistNum = 0;
             }
             if (loadMusic) {
                 if (playlistGlobalSearchParams == null) {
-                    MediaDataController.getInstance(current.currentAccount).loadMusic(current.getDialogId(), playlist.get(0).getIdWithChannel(), playlist.get(playlist.size() - 1).getIdWithChannel());
+                    MediaDataController.getInstance(current.currentAccount).loadMusic(current.getDialogId(), minId, maxId);
                 } else {
                     playlistClassGuid = ConnectionsManager.generateClassGuid();
                 }
             }
         }
         return playMessage(current);
+    }
+
+    private void sortPlaylist() {
+        Collections.sort(playlist, (o1, o2) -> {
+            int mid1 = o1.getId();
+            int mid2 = o2.getId();
+            long group1 = o1.messageOwner.grouped_id;
+            long group2 = o2.messageOwner.grouped_id;
+            if (mid1 < 0 && mid2 < 0) {
+                if (group1 != 0 && group1 == group2) {
+                    return Integer.compare(mid1, mid2);
+                }
+                return Integer.compare(mid2, mid1);
+            } else {
+                if (group1 != 0 && group1 == group2) {
+                    return Integer.compare(mid2, mid1);
+                }
+                return Integer.compare(mid1, mid2);
+            }
+        });
     }
 
     public void playNextMessage() {
@@ -3110,7 +3154,6 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
         if (oldShuffle != SharedConfig.shuffleMusic) {
             if (SharedConfig.shuffleMusic) {
                 buildShuffledPlayList();
-                currentPlaylistNum = 0;
             } else {
                 if (playingMessageObject != null) {
                     currentPlaylistNum = playlist.indexOf(playingMessageObject);
@@ -3590,13 +3633,39 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                         break;
                     }
                     destination.transferFrom(source, a, Math.min(4096, size - a));
+                    if (a + 4096 >= size || lastProgress <= SystemClock.elapsedRealtime() - 500) {
+                        lastProgress = SystemClock.elapsedRealtime();
+                        final int progress = (int) (finishedProgress + 100.0f / messageObjects.size() * a / size);
+                        AndroidUtilities.runOnUIThread(() -> {
+                            try {
+                                progressDialog.setProgress(progress);
+                            } catch (Exception e) {
+                                FileLog.e(e);
+                            }
+                        });
+                    }
                 }
                 if (!cancelled) {
                     if (isMusic) {
                         AndroidUtilities.addMediaToGallery(Uri.fromFile(destFile));
                     } else {
                         DownloadManager downloadManager = (DownloadManager) ApplicationLoader.applicationContext.getSystemService(Context.DOWNLOAD_SERVICE);
-                        downloadManager.addCompletedDownload(destFile.getName(), destFile.getName(), false, mime, destFile.getAbsolutePath(), destFile.length(), true);
+                        String mimeType = mime;
+                        if (TextUtils.isEmpty(mimeType)) {
+                            MimeTypeMap myMime = MimeTypeMap.getSingleton();
+                            String name = destFile.getName();
+                            int idx = name.lastIndexOf('.');
+                            if (idx != -1) {
+                                String ext = name.substring(idx + 1);
+                                mimeType = myMime.getMimeTypeFromExtension(ext.toLowerCase());
+                                if (TextUtils.isEmpty(mimeType)) {
+                                    mimeType = "text/plain";
+                                }
+                            } else {
+                                mimeType = "text/plain";
+                            }
+                        }
+                        downloadManager.addCompletedDownload(destFile.getName(), destFile.getName(), false, mimeType, destFile.getAbsolutePath(), destFile.length(), true);
                     }
                     finishedProgress += 100.0f / messageObjects.size();
                     final int progress = (int) (finishedProgress);

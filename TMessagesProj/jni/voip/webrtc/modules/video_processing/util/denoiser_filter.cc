@@ -41,7 +41,7 @@ std::unique_ptr<DenoiserFilter> DenoiserFilter::Create(
     filter.reset(new DenoiserFilterSSE2());
 #else
     // x86 CPU detection required.
-    if (WebRtc_GetCPUInfo(kSSE2)) {
+    if (GetCPUInfo(kSSE2)) {
       filter.reset(new DenoiserFilterSSE2());
     } else {
       filter.reset(new DenoiserFilterC());

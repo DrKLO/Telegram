@@ -48,8 +48,6 @@ namespace webrtc {
 
 namespace {
 static const int kFullStackTestDurationSecs = 45;
-const char kVp8TrustedRateControllerFieldTrial[] =
-    "WebRTC-LibvpxVp8TrustedRateController/Enabled/";
 
 struct ParamsWithLogging : public VideoQualityTest::Params {
  public:
@@ -91,7 +89,7 @@ std::string ClipNameToClipPath(const char* clip_name) {
 // };
 
 #if defined(RTC_ENABLE_VP9)
-TEST(FullStackTest, ForemanCifWithoutPacketLossVp9) {
+TEST(FullStackTest, Foreman_Cif_Net_Delay_0_0_Plr_0_VP9) {
   auto fixture = CreateVideoQualityTestFixture();
   ParamsWithLogging foreman_cif;
   foreman_cif.call.send_side_bwe = true;
@@ -105,7 +103,8 @@ TEST(FullStackTest, ForemanCifWithoutPacketLossVp9) {
   fixture->RunWithAnalyzer(foreman_cif);
 }
 
-TEST(GenericDescriptorTest, ForemanCifPlr5Vp9) {
+TEST(GenericDescriptorTest,
+     Foreman_Cif_Delay_50_0_Plr_5_VP9_Generic_Descriptor) {
   auto fixture = CreateVideoQualityTestFixture();
   ParamsWithLogging foreman_cif;
   foreman_cif.call.send_side_bwe = true;
@@ -122,7 +121,7 @@ TEST(GenericDescriptorTest, ForemanCifPlr5Vp9) {
   fixture->RunWithAnalyzer(foreman_cif);
 }
 
-TEST(FullStackTest, GeneratorWithoutPacketLossVp9Profile2) {
+TEST(FullStackTest, Generator_Net_Delay_0_0_Plr_0_VP9Profile2) {
   // Profile 2 might not be available on some platforms until
   // https://bugs.chromium.org/p/webm/issues/detail?id=1544 is solved.
   bool profile_2_is_supported = false;
@@ -148,7 +147,7 @@ TEST(FullStackTest, GeneratorWithoutPacketLossVp9Profile2) {
   fixture->RunWithAnalyzer(generator);
 }
 
-TEST(FullStackTest, ForemanCifWithoutPacketLossMultiplexI420Frame) {
+TEST(FullStackTest, Foreman_Cif_Net_Delay_0_0_Plr_0_Multiplex) {
   auto fixture = CreateVideoQualityTestFixture();
   ParamsWithLogging foreman_cif;
   foreman_cif.call.send_side_bwe = true;
@@ -162,7 +161,7 @@ TEST(FullStackTest, ForemanCifWithoutPacketLossMultiplexI420Frame) {
   fixture->RunWithAnalyzer(foreman_cif);
 }
 
-TEST(FullStackTest, GeneratorWithoutPacketLossMultiplexI420AFrame) {
+TEST(FullStackTest, Generator_Net_Delay_0_0_Plr_0_Multiplex) {
   auto fixture = CreateVideoQualityTestFixture();
 
   ParamsWithLogging generator;
@@ -179,11 +178,11 @@ TEST(FullStackTest, GeneratorWithoutPacketLossMultiplexI420AFrame) {
 
 #if defined(WEBRTC_LINUX)
 // Crashes on the linux trusty perf bot: bugs.webrtc.org/9129.
-#define MAYBE_ParisQcifWithoutPacketLoss DISABLED_ParisQcifWithoutPacketLoss
+#define MAYBE_Net_Delay_0_0_Plr_0 DISABLED_Net_Delay_0_0_Plr_0
 #else
-#define MAYBE_ParisQcifWithoutPacketLoss ParisQcifWithoutPacketLoss
+#define MAYBE_Net_Delay_0_0_Plr_0 Net_Delay_0_0_Plr_0
 #endif
-TEST(FullStackTest, MAYBE_ParisQcifWithoutPacketLoss) {
+TEST(FullStackTest, MAYBE_Net_Delay_0_0_Plr_0) {
   auto fixture = CreateVideoQualityTestFixture();
   ParamsWithLogging paris_qcif;
   paris_qcif.call.send_side_bwe = true;
@@ -197,7 +196,8 @@ TEST(FullStackTest, MAYBE_ParisQcifWithoutPacketLoss) {
   fixture->RunWithAnalyzer(paris_qcif);
 }
 
-TEST(GenericDescriptorTest, ForemanCifWithoutPacketLoss) {
+TEST(GenericDescriptorTest,
+     Foreman_Cif_Net_Delay_0_0_Plr_0_Generic_Descriptor) {
   auto fixture = CreateVideoQualityTestFixture();
   // TODO(pbos): Decide on psnr/ssim thresholds for foreman_cif.
   ParamsWithLogging foreman_cif;
@@ -213,7 +213,8 @@ TEST(GenericDescriptorTest, ForemanCifWithoutPacketLoss) {
   fixture->RunWithAnalyzer(foreman_cif);
 }
 
-TEST(GenericDescriptorTest, ForemanCif30kbpsWithoutPacketLoss) {
+TEST(GenericDescriptorTest,
+     Foreman_Cif_30kbps_Net_Delay_0_0_Plr_0_Generic_Descriptor) {
   auto fixture = CreateVideoQualityTestFixture();
   ParamsWithLogging foreman_cif;
   foreman_cif.call.send_side_bwe = true;
@@ -229,30 +230,8 @@ TEST(GenericDescriptorTest, ForemanCif30kbpsWithoutPacketLoss) {
   fixture->RunWithAnalyzer(foreman_cif);
 }
 
-// TODO(webrtc:9722): Remove when experiment is cleaned up.
-TEST(GenericDescriptorTest,
-     ForemanCif30kbpsWithoutPacketLossTrustedRateControl) {
-  test::ScopedFieldTrials override_field_trials(
-      AppendFieldTrials(kVp8TrustedRateControllerFieldTrial));
-  auto fixture = CreateVideoQualityTestFixture();
-
-  ParamsWithLogging foreman_cif;
-  foreman_cif.call.send_side_bwe = true;
-  foreman_cif.video[0] = {
-      true,  352,   288,   10,
-      30000, 30000, 30000, false,
-      "VP8", 1,     0,     0,
-      false, false, true,  ClipNameToClipPath("foreman_cif")};
-  foreman_cif.analyzer = {
-      "foreman_cif_30kbps_net_delay_0_0_plr_0_trusted_rate_ctrl_generic_"
-      "descriptor",
-      0.0, 0.0, kFullStackTestDurationSecs};
-  foreman_cif.call.generic_descriptor = true;
-  fixture->RunWithAnalyzer(foreman_cif);
-}
-
 // Link capacity below default start rate.
-TEST(FullStackTest, ForemanCifLink150kbpsWithoutPacketLoss) {
+TEST(FullStackTest, Foreman_Cif_Link_150kbps_Net_Delay_0_0_Plr_0) {
   auto fixture = CreateVideoQualityTestFixture();
   ParamsWithLogging foreman_cif;
   foreman_cif.call.send_side_bwe = true;
@@ -268,7 +247,8 @@ TEST(FullStackTest, ForemanCifLink150kbpsWithoutPacketLoss) {
 }
 
 // Restricted network and encoder overproducing by 30%.
-TEST(FullStackTest, ForemanCifLink150kbpsBadRateController) {
+TEST(FullStackTest,
+     Foreman_Cif_Link_150kbps_Delay100ms_30pkts_Queue_Overshoot30) {
   auto fixture = CreateVideoQualityTestFixture();
   ParamsWithLogging foreman_cif;
   foreman_cif.call.send_side_bwe = true;
@@ -291,7 +271,7 @@ TEST(FullStackTest, ForemanCifLink150kbpsBadRateController) {
 // Packet rate and loss are low enough that loss will happen with ~3s interval.
 // This triggers protection overhead to toggle between zero and non-zero.
 // Link queue is restrictive enough to trigger loss on probes.
-TEST(FullStackTest, ForemanCifMediaCapacitySmallLossAndQueue) {
+TEST(FullStackTest, Foreman_Cif_Link_250kbps_Delay100ms_10pkts_Loss1) {
   auto fixture = CreateVideoQualityTestFixture();
   ParamsWithLogging foreman_cif;
   foreman_cif.call.send_side_bwe = true;
@@ -310,7 +290,7 @@ TEST(FullStackTest, ForemanCifMediaCapacitySmallLossAndQueue) {
   fixture->RunWithAnalyzer(foreman_cif);
 }
 
-TEST(GenericDescriptorTest, ForemanCifPlr5) {
+TEST(GenericDescriptorTest, Foreman_Cif_Delay_50_0_Plr_5_Generic_Descriptor) {
   auto fixture = CreateVideoQualityTestFixture();
   ParamsWithLogging foreman_cif;
   foreman_cif.call.send_side_bwe = true;
@@ -327,7 +307,8 @@ TEST(GenericDescriptorTest, ForemanCifPlr5) {
   fixture->RunWithAnalyzer(foreman_cif);
 }
 
-TEST(GenericDescriptorTest, ForemanCifPlr5Ulpfec) {
+TEST(GenericDescriptorTest,
+     Foreman_Cif_Delay_50_0_Plr_5_Ulpfec_Generic_Descriptor) {
   auto fixture = CreateVideoQualityTestFixture();
   ParamsWithLogging foreman_cif;
   foreman_cif.call.send_side_bwe = true;
@@ -345,7 +326,7 @@ TEST(GenericDescriptorTest, ForemanCifPlr5Ulpfec) {
   fixture->RunWithAnalyzer(foreman_cif);
 }
 
-TEST(FullStackTest, ForemanCifPlr5Flexfec) {
+TEST(FullStackTest, Foreman_Cif_Delay_50_0_Plr_5_Flexfec) {
   auto fixture = CreateVideoQualityTestFixture();
   ParamsWithLogging foreman_cif;
   foreman_cif.call.send_side_bwe = true;
@@ -361,7 +342,7 @@ TEST(FullStackTest, ForemanCifPlr5Flexfec) {
   fixture->RunWithAnalyzer(foreman_cif);
 }
 
-TEST(FullStackTest, ForemanCif500kbpsPlr3Flexfec) {
+TEST(FullStackTest, Foreman_Cif_500kbps_Delay_50_0_Plr_3_Flexfec) {
   auto fixture = CreateVideoQualityTestFixture();
   ParamsWithLogging foreman_cif;
   foreman_cif.call.send_side_bwe = true;
@@ -378,7 +359,7 @@ TEST(FullStackTest, ForemanCif500kbpsPlr3Flexfec) {
   fixture->RunWithAnalyzer(foreman_cif);
 }
 
-TEST(FullStackTest, ForemanCif500kbpsPlr3Ulpfec) {
+TEST(FullStackTest, Foreman_Cif_500kbps_Delay_50_0_Plr_3_Ulpfec) {
   auto fixture = CreateVideoQualityTestFixture();
   ParamsWithLogging foreman_cif;
   foreman_cif.call.send_side_bwe = true;
@@ -396,7 +377,7 @@ TEST(FullStackTest, ForemanCif500kbpsPlr3Ulpfec) {
 }
 
 #if defined(WEBRTC_USE_H264)
-TEST(FullStackTest, ForemanCifWithoutPacketlossH264) {
+TEST(FullStackTest, Foreman_Cif_Net_Delay_0_0_Plr_0_H264) {
   auto fixture = CreateVideoQualityTestFixture();
   // TODO(pbos): Decide on psnr/ssim thresholds for foreman_cif.
   ParamsWithLogging foreman_cif;
@@ -411,7 +392,7 @@ TEST(FullStackTest, ForemanCifWithoutPacketlossH264) {
   fixture->RunWithAnalyzer(foreman_cif);
 }
 
-TEST(FullStackTest, ForemanCif30kbpsWithoutPacketlossH264) {
+TEST(FullStackTest, Foreman_Cif_30kbps_Net_Delay_0_0_Plr_0_H264) {
   auto fixture = CreateVideoQualityTestFixture();
   ParamsWithLogging foreman_cif;
   foreman_cif.call.send_side_bwe = true;
@@ -425,7 +406,8 @@ TEST(FullStackTest, ForemanCif30kbpsWithoutPacketlossH264) {
   fixture->RunWithAnalyzer(foreman_cif);
 }
 
-TEST(GenericDescriptorTest, ForemanCifPlr5H264) {
+TEST(GenericDescriptorTest,
+     Foreman_Cif_Delay_50_0_Plr_5_H264_Generic_Descriptor) {
   auto fixture = CreateVideoQualityTestFixture();
   ParamsWithLogging foreman_cif;
   foreman_cif.call.send_side_bwe = true;
@@ -443,7 +425,7 @@ TEST(GenericDescriptorTest, ForemanCifPlr5H264) {
   fixture->RunWithAnalyzer(foreman_cif);
 }
 
-TEST(FullStackTest, ForemanCifPlr5H264SpsPpsIdrIsKeyframe) {
+TEST(FullStackTest, Foreman_Cif_Delay_50_0_Plr_5_H264_Sps_Pps_Idr) {
   test::ScopedFieldTrials override_field_trials(
       AppendFieldTrials("WebRTC-SpsPpsIdrIsH264Keyframe/Enabled/"));
   auto fixture = CreateVideoQualityTestFixture();
@@ -463,7 +445,7 @@ TEST(FullStackTest, ForemanCifPlr5H264SpsPpsIdrIsKeyframe) {
 }
 
 // Verify that this is worth the bot time, before enabling.
-TEST(FullStackTest, ForemanCifPlr5H264Flexfec) {
+TEST(FullStackTest, Foreman_Cif_Delay_50_0_Plr_5_H264_Flexfec) {
   auto fixture = CreateVideoQualityTestFixture();
   ParamsWithLogging foreman_cif;
   foreman_cif.call.send_side_bwe = true;
@@ -481,7 +463,7 @@ TEST(FullStackTest, ForemanCifPlr5H264Flexfec) {
 
 // Ulpfec with H264 is an unsupported combination, so this test is only useful
 // for debugging. It is therefore disabled by default.
-TEST(FullStackTest, DISABLED_ForemanCifPlr5H264Ulpfec) {
+TEST(FullStackTest, DISABLED_Foreman_Cif_Delay_50_0_Plr_5_H264_Ulpfec) {
   auto fixture = CreateVideoQualityTestFixture();
   ParamsWithLogging foreman_cif;
   foreman_cif.call.send_side_bwe = true;
@@ -498,7 +480,7 @@ TEST(FullStackTest, DISABLED_ForemanCifPlr5H264Ulpfec) {
 }
 #endif  // defined(WEBRTC_USE_H264)
 
-TEST(FullStackTest, ForemanCif500kbps) {
+TEST(FullStackTest, Foreman_Cif_500kbps) {
   auto fixture = CreateVideoQualityTestFixture();
   ParamsWithLogging foreman_cif;
   foreman_cif.call.send_side_bwe = true;
@@ -515,7 +497,7 @@ TEST(FullStackTest, ForemanCif500kbps) {
   fixture->RunWithAnalyzer(foreman_cif);
 }
 
-TEST(FullStackTest, ForemanCif500kbpsLimitedQueue) {
+TEST(FullStackTest, Foreman_Cif_500kbps_32pkts_Queue) {
   auto fixture = CreateVideoQualityTestFixture();
   ParamsWithLogging foreman_cif;
   foreman_cif.call.send_side_bwe = true;
@@ -532,7 +514,7 @@ TEST(FullStackTest, ForemanCif500kbpsLimitedQueue) {
   fixture->RunWithAnalyzer(foreman_cif);
 }
 
-TEST(FullStackTest, ForemanCif500kbps100ms) {
+TEST(FullStackTest, Foreman_Cif_500kbps_100ms) {
   auto fixture = CreateVideoQualityTestFixture();
   ParamsWithLogging foreman_cif;
   foreman_cif.call.send_side_bwe = true;
@@ -549,7 +531,8 @@ TEST(FullStackTest, ForemanCif500kbps100ms) {
   fixture->RunWithAnalyzer(foreman_cif);
 }
 
-TEST(GenericDescriptorTest, ForemanCif500kbps100msLimitedQueue) {
+TEST(GenericDescriptorTest,
+     Foreman_Cif_500kbps_100ms_32pkts_Queue_Generic_Descriptor) {
   auto fixture = CreateVideoQualityTestFixture();
   ParamsWithLogging foreman_cif;
   foreman_cif.call.send_side_bwe = true;
@@ -568,7 +551,7 @@ TEST(GenericDescriptorTest, ForemanCif500kbps100msLimitedQueue) {
   fixture->RunWithAnalyzer(foreman_cif);
 }
 
-TEST(FullStackTest, ForemanCif500kbps100msLimitedQueueRecvBwe) {
+TEST(FullStackTest, Foreman_Cif_500kbps_100ms_32pkts_Queue_Recv_Bwe) {
   auto fixture = CreateVideoQualityTestFixture();
   ParamsWithLogging foreman_cif;
   foreman_cif.call.send_side_bwe = false;
@@ -585,7 +568,7 @@ TEST(FullStackTest, ForemanCif500kbps100msLimitedQueueRecvBwe) {
   fixture->RunWithAnalyzer(foreman_cif);
 }
 
-TEST(FullStackTest, ForemanCif1000kbps100msLimitedQueue) {
+TEST(FullStackTest, Foreman_Cif_1000kbps_100ms_32pkts_Queue) {
   auto fixture = CreateVideoQualityTestFixture();
   ParamsWithLogging foreman_cif;
   foreman_cif.call.send_side_bwe = true;
@@ -603,7 +586,7 @@ TEST(FullStackTest, ForemanCif1000kbps100msLimitedQueue) {
 }
 
 // TODO(sprang): Remove this if we have the similar ModerateLimits below?
-TEST(FullStackTest, ConferenceMotionHd2000kbps100msLimitedQueue) {
+TEST(FullStackTest, Conference_Motion_Hd_2000kbps_100ms_32pkts_Queue) {
   auto fixture = CreateVideoQualityTestFixture();
   ParamsWithLogging conf_motion_hd;
   conf_motion_hd.call.send_side_bwe = true;
@@ -624,34 +607,8 @@ TEST(FullStackTest, ConferenceMotionHd2000kbps100msLimitedQueue) {
   fixture->RunWithAnalyzer(conf_motion_hd);
 }
 
-// TODO(webrtc:9722): Remove when experiment is cleaned up.
-TEST(FullStackTest, ConferenceMotionHd1TLModerateLimitsWhitelistVp8) {
-  test::ScopedFieldTrials override_field_trials(
-      AppendFieldTrials(kVp8TrustedRateControllerFieldTrial));
-  auto fixture = CreateVideoQualityTestFixture();
-
-  ParamsWithLogging conf_motion_hd;
-  conf_motion_hd.call.send_side_bwe = true;
-  conf_motion_hd.video[0] = {
-      true,    1280,
-      720,     50,
-      30000,   3000000,
-      3000000, false,
-      "VP8",   1,
-      -1,      0,
-      false,   false,
-      false,   ClipNameToClipPath("ConferenceMotion_1280_720_50")};
-  conf_motion_hd.analyzer = {
-      "conference_motion_hd_1tl_moderate_limits_trusted_rate_ctrl", 0.0, 0.0,
-      kFullStackTestDurationSecs};
-  conf_motion_hd.config->queue_length_packets = 50;
-  conf_motion_hd.config->loss_percent = 3;
-  conf_motion_hd.config->queue_delay_ms = 100;
-  conf_motion_hd.config->link_capacity_kbps = 2000;
-  fixture->RunWithAnalyzer(conf_motion_hd);
-}
-
-TEST(GenericDescriptorTest, ConferenceMotionHd2TLModerateLimits) {
+TEST(GenericDescriptorTest,
+     Conference_Motion_Hd_2tl_Moderate_Limits_Generic_Descriptor) {
   auto fixture = CreateVideoQualityTestFixture();
   ParamsWithLogging conf_motion_hd;
   conf_motion_hd.call.send_side_bwe = true;
@@ -675,7 +632,7 @@ TEST(GenericDescriptorTest, ConferenceMotionHd2TLModerateLimits) {
   fixture->RunWithAnalyzer(conf_motion_hd);
 }
 
-TEST(FullStackTest, ConferenceMotionHd3TLModerateLimits) {
+TEST(FullStackTest, Conference_Motion_Hd_3tl_Moderate_Limits) {
   auto fixture = CreateVideoQualityTestFixture();
   ParamsWithLogging conf_motion_hd;
   conf_motion_hd.call.send_side_bwe = true;
@@ -697,7 +654,7 @@ TEST(FullStackTest, ConferenceMotionHd3TLModerateLimits) {
   fixture->RunWithAnalyzer(conf_motion_hd);
 }
 
-TEST(FullStackTest, ConferenceMotionHd4TLModerateLimits) {
+TEST(FullStackTest, Conference_Motion_Hd_4tl_Moderate_Limits) {
   auto fixture = CreateVideoQualityTestFixture();
   ParamsWithLogging conf_motion_hd;
   conf_motion_hd.call.send_side_bwe = true;
@@ -719,7 +676,7 @@ TEST(FullStackTest, ConferenceMotionHd4TLModerateLimits) {
   fixture->RunWithAnalyzer(conf_motion_hd);
 }
 
-TEST(FullStackTest, ConferenceMotionHd3TLModerateLimitsAltTLPattern) {
+TEST(FullStackTest, Conference_Motion_Hd_3tl_Alt_Moderate_Limits) {
   test::ScopedFieldTrials field_trial(
       AppendFieldTrials("WebRTC-UseShortVP8TL3Pattern/Enabled/"));
   auto fixture = CreateVideoQualityTestFixture();
@@ -743,8 +700,7 @@ TEST(FullStackTest, ConferenceMotionHd3TLModerateLimitsAltTLPattern) {
   fixture->RunWithAnalyzer(conf_motion_hd);
 }
 
-TEST(FullStackTest,
-     ConferenceMotionHd3TLModerateLimitsAltTLPatternAndBaseHeavyTLAllocation) {
+TEST(FullStackTest, Conference_Motion_Hd_3tl_Alt_Heavy_Moderate_Limits) {
   auto fixture = CreateVideoQualityTestFixture();
   test::ScopedFieldTrials field_trial(
       AppendFieldTrials("WebRTC-UseShortVP8TL3Pattern/Enabled/"
@@ -771,7 +727,7 @@ TEST(FullStackTest,
 }
 
 #if defined(RTC_ENABLE_VP9)
-TEST(FullStackTest, ConferenceMotionHd2000kbps100msLimitedQueueVP9) {
+TEST(FullStackTest, Conference_Motion_Hd_2000kbps_100ms_32pkts_Queue_Vp9) {
   auto fixture = CreateVideoQualityTestFixture();
   ParamsWithLogging conf_motion_hd;
   conf_motion_hd.call.send_side_bwe = true;
@@ -794,7 +750,7 @@ TEST(FullStackTest, ConferenceMotionHd2000kbps100msLimitedQueueVP9) {
 }
 #endif
 
-TEST(FullStackTest, ScreenshareSlidesVP8_2TL) {
+TEST(FullStackTest, Screenshare_Slides) {
   auto fixture = CreateVideoQualityTestFixture();
   ParamsWithLogging screenshare;
   screenshare.call.send_side_bwe = true;
@@ -809,7 +765,7 @@ TEST(FullStackTest, ScreenshareSlidesVP8_2TL) {
 
 #if !defined(WEBRTC_MAC) && !defined(WEBRTC_WIN)
 // TODO(bugs.webrtc.org/9840): Investigate why is this test flaky on Win/Mac.
-TEST(FullStackTest, ScreenshareSlidesVP8_2TL_Simulcast) {
+TEST(FullStackTest, Screenshare_Slides_Simulcast) {
   auto fixture = CreateVideoQualityTestFixture();
   ParamsWithLogging screenshare;
   screenshare.call.send_side_bwe = true;
@@ -839,7 +795,7 @@ TEST(FullStackTest, ScreenshareSlidesVP8_2TL_Simulcast) {
 
 #endif  // !defined(WEBRTC_MAC) && !defined(WEBRTC_WIN)
 
-TEST(FullStackTest, ScreenshareSlidesVP8_2TL_Scroll) {
+TEST(FullStackTest, Screenshare_Slides_Scrolling) {
   auto fixture = CreateVideoQualityTestFixture();
   ParamsWithLogging config;
   config.call.send_side_bwe = true;
@@ -852,7 +808,7 @@ TEST(FullStackTest, ScreenshareSlidesVP8_2TL_Scroll) {
   fixture->RunWithAnalyzer(config);
 }
 
-TEST(GenericDescriptorTest, ScreenshareSlidesVP8_2TL_LossyNet) {
+TEST(GenericDescriptorTest, Screenshare_Slides_Lossy_Net_Generic_Descriptor) {
   auto fixture = CreateVideoQualityTestFixture();
   ParamsWithLogging screenshare;
   screenshare.call.send_side_bwe = true;
@@ -869,7 +825,7 @@ TEST(GenericDescriptorTest, ScreenshareSlidesVP8_2TL_LossyNet) {
   fixture->RunWithAnalyzer(screenshare);
 }
 
-TEST(FullStackTest, ScreenshareSlidesVP8_2TL_VeryLossyNet) {
+TEST(FullStackTest, Screenshare_Slides_Very_Lossy) {
   auto fixture = CreateVideoQualityTestFixture();
   ParamsWithLogging screenshare;
   screenshare.call.send_side_bwe = true;
@@ -885,7 +841,7 @@ TEST(FullStackTest, ScreenshareSlidesVP8_2TL_VeryLossyNet) {
   fixture->RunWithAnalyzer(screenshare);
 }
 
-TEST(FullStackTest, ScreenshareSlidesVP8_2TL_LossyNetRestrictedQueue) {
+TEST(FullStackTest, Screenshare_Slides_Lossy_Limited) {
   auto fixture = CreateVideoQualityTestFixture();
   ParamsWithLogging screenshare;
   screenshare.call.send_side_bwe = true;
@@ -902,7 +858,7 @@ TEST(FullStackTest, ScreenshareSlidesVP8_2TL_LossyNetRestrictedQueue) {
   fixture->RunWithAnalyzer(screenshare);
 }
 
-TEST(FullStackTest, ScreenshareSlidesVP8_2TL_ModeratelyRestricted) {
+TEST(FullStackTest, Screenshare_Slides_Moderately_Restricted) {
   auto fixture = CreateVideoQualityTestFixture();
   ParamsWithLogging screenshare;
   screenshare.call.send_side_bwe = true;
@@ -971,7 +927,7 @@ ParamsWithLogging::Video SimulcastVp8VideoLow() {
 
 #if defined(RTC_ENABLE_VP9)
 
-TEST(FullStackTest, ScreenshareSlidesVP9_3SL_High_Fps) {
+TEST(FullStackTest, Screenshare_Slides_Vp9_3sl_High_Fps) {
   auto fixture = CreateVideoQualityTestFixture();
   ParamsWithLogging screenshare;
   screenshare.call.send_side_bwe = true;
@@ -990,7 +946,7 @@ TEST(FullStackTest, ScreenshareSlidesVP9_3SL_High_Fps) {
 // TODO(http://bugs.webrtc.org/9506): investigate.
 #if !defined(WEBRTC_MAC)
 
-TEST(FullStackTest, VP9KSVC_3SL_High) {
+TEST(FullStackTest, Vp9ksvc_3sl_High) {
   webrtc::test::ScopedFieldTrials override_trials(
       AppendFieldTrials("WebRTC-Vp9IssueKeyFrameOnLayerDeactivation/Enabled/"));
   auto fixture = CreateVideoQualityTestFixture();
@@ -1005,7 +961,7 @@ TEST(FullStackTest, VP9KSVC_3SL_High) {
   fixture->RunWithAnalyzer(simulcast);
 }
 
-TEST(FullStackTest, VP9KSVC_3SL_Low) {
+TEST(FullStackTest, Vp9ksvc_3sl_Low) {
   webrtc::test::ScopedFieldTrials override_trials(
       AppendFieldTrials("WebRTC-Vp9IssueKeyFrameOnLayerDeactivation/Enabled/"));
   auto fixture = CreateVideoQualityTestFixture();
@@ -1020,7 +976,7 @@ TEST(FullStackTest, VP9KSVC_3SL_Low) {
   fixture->RunWithAnalyzer(simulcast);
 }
 
-TEST(FullStackTest, VP9KSVC_3SL_Low_Bw_Limited) {
+TEST(FullStackTest, Vp9ksvc_3sl_Low_Bw_Limited) {
   webrtc::test::ScopedFieldTrials override_trials(
       AppendFieldTrials("WebRTC-Vp9IssueKeyFrameOnLayerDeactivation/Enabled/"
                         "WebRTC-Vp9ExternalRefCtrl/Enabled/"));
@@ -1037,7 +993,7 @@ TEST(FullStackTest, VP9KSVC_3SL_Low_Bw_Limited) {
   fixture->RunWithAnalyzer(simulcast);
 }
 
-TEST(FullStackTest, VP9KSVC_3SL_Medium_Network_Restricted) {
+TEST(FullStackTest, Vp9ksvc_3sl_Medium_Network_Restricted) {
   webrtc::test::ScopedFieldTrials override_trials(
       AppendFieldTrials("WebRTC-Vp9IssueKeyFrameOnLayerDeactivation/Enabled/"));
   auto fixture = CreateVideoQualityTestFixture();
@@ -1055,10 +1011,9 @@ TEST(FullStackTest, VP9KSVC_3SL_Medium_Network_Restricted) {
 }
 
 // TODO(webrtc:9722): Remove when experiment is cleaned up.
-TEST(FullStackTest, VP9KSVC_3SL_Medium_Network_Restricted_Trusted_Rate) {
+TEST(FullStackTest, Vp9ksvc_3sl_Medium_Network_Restricted_Trusted_Rate) {
   webrtc::test::ScopedFieldTrials override_trials(
-      AppendFieldTrials("WebRTC-Vp9IssueKeyFrameOnLayerDeactivation/Enabled/"
-                        "WebRTC-LibvpxVp9TrustedRateController/Enabled/"));
+      AppendFieldTrials("WebRTC-Vp9IssueKeyFrameOnLayerDeactivation/Enabled/"));
   auto fixture = CreateVideoQualityTestFixture();
   ParamsWithLogging simulcast;
   simulcast.call.send_side_bwe = true;
@@ -1079,12 +1034,12 @@ TEST(FullStackTest, VP9KSVC_3SL_Medium_Network_Restricted_Trusted_Rate) {
 // Android bots can't handle FullHD, so disable the test.
 // TODO(bugs.webrtc.org/9220): Investigate source of flakiness on Mac.
 #if defined(WEBRTC_ANDROID) || defined(WEBRTC_MAC)
-#define MAYBE_SimulcastFullHdOveruse DISABLED_SimulcastFullHdOveruse
+#define MAYBE_Simulcast_HD_High DISABLED_Simulcast_HD_High
 #else
-#define MAYBE_SimulcastFullHdOveruse SimulcastFullHdOveruse
+#define MAYBE_Simulcast_HD_High Simulcast_HD_High
 #endif
 
-TEST(FullStackTest, MAYBE_SimulcastFullHdOveruse) {
+TEST(FullStackTest, MAYBE_Simulcast_HD_High) {
   auto fixture = CreateVideoQualityTestFixture();
   ParamsWithLogging simulcast;
   simulcast.call.send_side_bwe = true;
@@ -1107,7 +1062,7 @@ TEST(FullStackTest, MAYBE_SimulcastFullHdOveruse) {
   fixture->RunWithAnalyzer(simulcast);
 }
 
-TEST(FullStackTest, SimulcastVP8_3SL_High) {
+TEST(FullStackTest, Simulcast_Vp8_3sl_High) {
   auto fixture = CreateVideoQualityTestFixture();
   ParamsWithLogging simulcast;
   simulcast.call.send_side_bwe = true;
@@ -1133,7 +1088,7 @@ TEST(FullStackTest, SimulcastVP8_3SL_High) {
   fixture->RunWithAnalyzer(simulcast);
 }
 
-TEST(FullStackTest, SimulcastVP8_3SL_Low) {
+TEST(FullStackTest, Simulcast_Vp8_3sl_Low) {
   auto fixture = CreateVideoQualityTestFixture();
   ParamsWithLogging simulcast;
   simulcast.call.send_side_bwe = true;
@@ -1163,11 +1118,11 @@ TEST(FullStackTest, SimulcastVP8_3SL_Low) {
 // available and exercises WebRTC calls with a high target bitrate(100 Mbps).
 // Android32 bots can't handle this high bitrate, so disable test for those.
 #if defined(WEBRTC_ANDROID)
-#define MAYBE_HighBitrateWithFakeCodec DISABLED_HighBitrateWithFakeCodec
+#define MAYBE_High_Bitrate_With_Fake_Codec DISABLED_High_Bitrate_With_Fake_Codec
 #else
-#define MAYBE_HighBitrateWithFakeCodec HighBitrateWithFakeCodec
+#define MAYBE_High_Bitrate_With_Fake_Codec High_Bitrate_With_Fake_Codec
 #endif  // defined(WEBRTC_ANDROID)
-TEST(FullStackTest, MAYBE_HighBitrateWithFakeCodec) {
+TEST(FullStackTest, MAYBE_High_Bitrate_With_Fake_Codec) {
   auto fixture = CreateVideoQualityTestFixture();
   const int target_bitrate = 100000000;
   ParamsWithLogging generator;
@@ -1199,12 +1154,12 @@ TEST(FullStackTest, MAYBE_HighBitrateWithFakeCodec) {
 #if defined(WEBRTC_ANDROID) || defined(WEBRTC_IOS)
 // Fails on mobile devices:
 // https://bugs.chromium.org/p/webrtc/issues/detail?id=7301
-#define MAYBE_LargeRoomVP8_50thumb DISABLED_LargeRoomVP8_50thumb
+#define MAYBE_Largeroom_50thumb DISABLED_Largeroom_50thumb
 #else
-#define MAYBE_LargeRoomVP8_50thumb LargeRoomVP8_50thumb
+#define MAYBE_Largeroom_50thumb Largeroom_50thumb
 #endif
 
-TEST(FullStackTest, MAYBE_LargeRoomVP8_50thumb) {
+TEST(FullStackTest, MAYBE_Largeroom_50thumb) {
   auto fixture = CreateVideoQualityTestFixture();
   ParamsWithLogging large_room;
   large_room.call.send_side_bwe = true;

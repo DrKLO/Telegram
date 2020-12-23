@@ -14,6 +14,7 @@ import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
 import android.animation.ValueAnimator;
 import android.annotation.SuppressLint;
+import android.app.Activity;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -50,7 +51,6 @@ import android.widget.Toast;
 import org.telegram.SQLite.SQLiteCursor;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
-import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.FileLog;
@@ -75,6 +75,7 @@ import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.ShareDialogCell;
 import org.telegram.ui.ChatActivity;
 import org.telegram.ui.DialogsActivity;
+import org.telegram.ui.LaunchActivity;
 import org.telegram.ui.MessageStatisticActivity;
 
 import java.util.ArrayList;
@@ -109,6 +110,7 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
     private LongSparseArray<TLRPC.Dialog> selectedDialogs = new LongSparseArray<>();
 
     private ChatActivity parentFragment;
+    private Activity parentActivity;
 
     private RectF rect = new RectF();
     private Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -136,7 +138,13 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
     private int topOffset;
 
     public interface ShareAlertDelegate {
-        void didShare();
+        default void didShare() {
+
+        }
+
+        default boolean didCopy() {
+            return false;
+        }
     }
 
     @SuppressWarnings("FieldCanBeLocal")
@@ -278,6 +286,10 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
 
     public ShareAlert(final Context context, ChatActivity fragment, ArrayList<MessageObject> messages, final String text, boolean channel, final String copyLink, boolean fullScreen) {
         super(context, true);
+
+        if (context instanceof Activity) {
+            parentActivity = (Activity) context;
+        }
 
         parentFragment = fragment;
         shadowDrawable = context.getResources().getDrawable(R.drawable.sheet_shadow_round).mutate();
@@ -1178,7 +1190,7 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
             previousScrollOffsetY = scrollOffsetY;
             gridView.setTopGlowOffset(scrollOffsetY = (int) (newOffset + currentPanTranslationY));
             frameLayout.setTranslationY(scrollOffsetY + currentPanTranslationY);
-            searchEmptyView.setTranslationY(scrollOffsetY + currentPanTranslationY) ;
+            searchEmptyView.setTranslationY(scrollOffsetY + currentPanTranslationY);
             containerView.invalidate();
         }
     }
@@ -1225,10 +1237,9 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
             android.content.ClipboardManager clipboard = (android.content.ClipboardManager) ApplicationLoader.applicationContext.getSystemService(Context.CLIPBOARD_SERVICE);
             android.content.ClipData clip = android.content.ClipData.newPlainText("label", linkToCopy != null ? linkToCopy : exportedMessageLink.link);
             clipboard.setPrimaryClip(clip);
-            if (exportedMessageLink != null && exportedMessageLink.link.contains("/c/")) {
-                Toast.makeText(ApplicationLoader.applicationContext, LocaleController.getString("LinkCopiedPrivate", R.string.LinkCopiedPrivate), Toast.LENGTH_SHORT).show();
-            } else {
-                Toast.makeText(ApplicationLoader.applicationContext, LocaleController.getString("LinkCopied", R.string.LinkCopied), Toast.LENGTH_SHORT).show();
+            if ((delegate == null || !delegate.didCopy()) && parentActivity instanceof LaunchActivity) {
+                final boolean isPrivate = exportedMessageLink != null && exportedMessageLink.link.contains("/c/");
+                ((LaunchActivity) parentActivity).showBulletin(factory -> factory.createCopyLinkBulletin(isPrivate));
             }
         } catch (Exception e) {
             FileLog.e(e);

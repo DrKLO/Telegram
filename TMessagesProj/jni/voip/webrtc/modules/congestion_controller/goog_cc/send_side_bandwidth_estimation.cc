@@ -19,6 +19,8 @@
 #include "absl/strings/match.h"
 #include "api/rtc_event_log/rtc_event.h"
 #include "api/rtc_event_log/rtc_event_log.h"
+#include "api/transport/webrtc_key_value_config.h"
+#include "api/units/time_delta.h"
 #include "logging/rtc_event_log/events/rtc_event_bwe_update_loss_based.h"
 #include "modules/remote_bitrate_estimator/include/bwe_defines.h"
 #include "rtc_base/checks.h"
@@ -153,19 +155,24 @@ DataRate LinkCapacityTracker::estimate() const {
   return DataRate::BitsPerSec(capacity_estimate_bps_);
 }
 
-RttBasedBackoff::RttBasedBackoff()
-    : rtt_limit_("limit", TimeDelta::Seconds(3)),
+RttBasedBackoff::RttBasedBackoff(const WebRtcKeyValueConfig* key_value_config)
+    : disabled_("Disabled"),
+      configured_limit_("limit", TimeDelta::Seconds(3)),
       drop_fraction_("fraction", 0.8),
       drop_interval_("interval", TimeDelta::Seconds(1)),
       bandwidth_floor_("floor", DataRate::KilobitsPerSec(5)),
+      rtt_limit_(TimeDelta::PlusInfinity()),
       // By initializing this to plus infinity, we make sure that we never
       // trigger rtt backoff unless packet feedback is enabled.
       last_propagation_rtt_update_(Timestamp::PlusInfinity()),
       last_propagation_rtt_(TimeDelta::Zero()),
       last_packet_sent_(Timestamp::MinusInfinity()) {
-  ParseFieldTrial(
-      {&rtt_limit_, &drop_fraction_, &drop_interval_, &bandwidth_floor_},
-      field_trial::FindFullName("WebRTC-Bwe-MaxRttLimit"));
+  ParseFieldTrial({&disabled_, &configured_limit_, &drop_fraction_,
+                   &drop_interval_, &bandwidth_floor_},
+                  key_value_config->Lookup("WebRTC-Bwe-MaxRttLimit"));
+  if (!disabled_) {
+    rtt_limit_ = configured_limit_.Get();
+  }
 }
 
 void RttBasedBackoff::UpdatePropagationRtt(Timestamp at_time,
@@ -186,8 +193,11 @@ TimeDelta RttBasedBackoff::CorrectedRtt(Timestamp at_time) const {
 
 RttBasedBackoff::~RttBasedBackoff() = default;
 
-SendSideBandwidthEstimation::SendSideBandwidthEstimation(RtcEventLog* event_log)
-    : lost_packets_since_last_loss_update_(0),
+SendSideBandwidthEstimation::SendSideBandwidthEstimation(
+    const WebRtcKeyValueConfig* key_value_config,
+    RtcEventLog* event_log)
+    : rtt_backoff_(key_value_config),
+      lost_packets_since_last_loss_update_(0),
       expected_packets_since_last_loss_update_(0),
       current_target_(DataRate::Zero()),
       last_logged_target_(DataRate::Zero()),

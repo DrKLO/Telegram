@@ -70,7 +70,7 @@ ScopedJavaLocalRef<jobject> NativeToJavaEncodedImage(
       static_cast<int>(image._encodedWidth),
       static_cast<int>(image._encodedHeight),
       image.capture_time_ms_ * rtc::kNumNanosecsPerMillisec, frame_type,
-      static_cast<jint>(image.rotation_), image._completeFrame, qp);
+      static_cast<jint>(image.rotation_), qp);
 }
 
 ScopedJavaLocalRef<jobjectArray> NativeToJavaFrameTypeArray(
@@ -98,8 +98,6 @@ EncodedImage JavaToNativeEncodedImage(JNIEnv* env,
       Java_EncodedImage_getEncodedHeight(env, j_encoded_image);
   frame.rotation_ =
       (VideoRotation)Java_EncodedImage_getRotation(env, j_encoded_image);
-  frame._completeFrame =
-      Java_EncodedImage_getCompleteFrame(env, j_encoded_image);
 
   frame.qp_ = JavaToNativeOptionalInt(
                   env, Java_EncodedImage_getQp(env, j_encoded_image))

@@ -88,10 +88,10 @@
     const uint8_t *psrc_lw_m = (const uint8_t *)(psrc);          \
     uint32_t val_lw_m;                                           \
                                                                  \
-    __asm__ __volatile__("ulw  %[val_lw_m],  %[psrc_lw_m]  \n\t" \
-                                                                 \
-                         : [val_lw_m] "=r"(val_lw_m)             \
-                         : [psrc_lw_m] "m"(*psrc_lw_m));         \
+    __asm__ __volatile__("lwr %[val_lw_m], 0(%[psrc_lw_m]) \n\t" \
+                         "lwl %[val_lw_m], 3(%[psrc_lw_m]) \n\t" \
+                         : [val_lw_m] "=&r"(val_lw_m)            \
+                         : [psrc_lw_m] "r"(psrc_lw_m));          \
                                                                  \
     val_lw_m;                                                    \
   })
@@ -102,10 +102,10 @@
     const uint8_t *psrc_ld_m = (const uint8_t *)(psrc);          \
     uint64_t val_ld_m = 0;                                       \
                                                                  \
-    __asm__ __volatile__("uld  %[val_ld_m],  %[psrc_ld_m]  \n\t" \
-                                                                 \
-                         : [val_ld_m] "=r"(val_ld_m)             \
-                         : [psrc_ld_m] "m"(*psrc_ld_m));         \
+    __asm__ __volatile__("ldr %[val_ld_m], 0(%[psrc_ld_m]) \n\t" \
+                         "ldl %[val_ld_m], 7(%[psrc_ld_m]) \n\t" \
+                         : [val_ld_m] "=&r"(val_ld_m)            \
+                         : [psrc_ld_m] "r"(psrc_ld_m));          \
                                                                  \
     val_ld_m;                                                    \
   })

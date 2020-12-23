@@ -3766,9 +3766,6 @@ static int wiener_var_segment(VP9_COMP *cpi, BLOCK_SIZE bsize, int mi_row,
 static int get_rdmult_delta(VP9_COMP *cpi, BLOCK_SIZE bsize, int mi_row,
                             int mi_col, int orig_rdmult) {
   const int gf_group_index = cpi->twopass.gf_group.index;
-  TplDepFrame *tpl_frame = &cpi->tpl_stats[gf_group_index];
-  TplDepStats *tpl_stats = tpl_frame->tpl_stats_ptr;
-  int tpl_stride = tpl_frame->stride;
   int64_t intra_cost = 0;
   int64_t mc_dep_cost = 0;
   int mi_wide = num_8x8_blocks_wide_lookup[bsize];
@@ -3779,11 +3776,18 @@ static int get_rdmult_delta(VP9_COMP *cpi, BLOCK_SIZE bsize, int mi_row,
   int count = 0;
   double r0, rk, beta;
 
-  if (tpl_frame->is_valid == 0) return orig_rdmult;
-
-  if (cpi->twopass.gf_group.layer_depth[gf_group_index] > 1) return orig_rdmult;
+  TplDepFrame *tpl_frame;
+  TplDepStats *tpl_stats;
+  int tpl_stride;
 
   if (gf_group_index >= MAX_ARF_GOP_SIZE) return orig_rdmult;
+  tpl_frame = &cpi->tpl_stats[gf_group_index];
+
+  if (tpl_frame->is_valid == 0) return orig_rdmult;
+  tpl_stats = tpl_frame->tpl_stats_ptr;
+  tpl_stride = tpl_frame->stride;
+
+  if (cpi->twopass.gf_group.layer_depth[gf_group_index] > 1) return orig_rdmult;
 
   for (row = mi_row; row < mi_row + mi_high; ++row) {
     for (col = mi_col; col < mi_col + mi_wide; ++col) {
@@ -5086,8 +5090,8 @@ static void nonrd_pick_partition(VP9_COMP *cpi, ThreadData *td,
 
   (void)*tp_orig;
 
-  // Avoid checking for rectangular partitions for speed >= 6.
-  if (cpi->oxcf.speed >= 6) do_rect = 0;
+  // Avoid checking for rectangular partitions for speed >= 5.
+  if (cpi->oxcf.speed >= 5) do_rect = 0;
 
   assert(num_8x8_blocks_wide_lookup[bsize] ==
          num_8x8_blocks_high_lookup[bsize]);

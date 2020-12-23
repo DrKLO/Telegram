@@ -100,6 +100,30 @@ struct TimingFrameInfo {
   uint8_t flags;  // Flags indicating validity and/or why tracing was triggered.
 };
 
+// Minimum and maximum playout delay values from capture to render.
+// These are best effort values.
+//
+// A value < 0 indicates no change from previous valid value.
+//
+// min = max = 0 indicates that the receiver should try and render
+// frame as soon as possible.
+//
+// min = x, max = y indicates that the receiver is free to adapt
+// in the range (x, y) based on network jitter.
+struct VideoPlayoutDelay {
+  VideoPlayoutDelay() = default;
+  VideoPlayoutDelay(int min_ms, int max_ms) : min_ms(min_ms), max_ms(max_ms) {}
+  int min_ms = -1;
+  int max_ms = -1;
+
+  bool operator==(const VideoPlayoutDelay& rhs) const {
+    return min_ms == rhs.min_ms && max_ms == rhs.max_ms;
+  }
+};
+
+// TODO(bugs.webrtc.org/7660): Old name, delete after downstream use is updated.
+using PlayoutDelay = VideoPlayoutDelay;
+
 }  // namespace webrtc
 
 #endif  // API_VIDEO_VIDEO_TIMING_H_

@@ -123,6 +123,7 @@ public class RecyclerListView extends RecyclerView {
     private boolean animateEmptyView;
     private int emptyViewAnimationType;
     private int selectorRadius;
+    private int topBottomSelectorRadius;
 
     public interface OnItemClickListener {
         void onItemClick(View view, int position);
@@ -974,6 +975,10 @@ public class RecyclerListView extends RecyclerView {
         selectorRadius = radius;
     }
 
+    public void setTopBottomSelectorRadius(int radius) {
+        topBottomSelectorRadius = radius;
+    }
+
     public void setDrawSelectorBehind(boolean value) {
         drawSelectorBehind = value;
     }
@@ -982,7 +987,9 @@ public class RecyclerListView extends RecyclerView {
         if (selectorDrawable != null) {
             selectorDrawable.setCallback(null);
         }
-        if (selectorRadius > 0) {
+        if (topBottomSelectorRadius > 0) {
+            selectorDrawable = Theme.createRadSelectorDrawable(color, topBottomSelectorRadius, topBottomSelectorRadius);
+        } else if (selectorRadius > 0) {
             selectorDrawable = Theme.createSimpleSelectorRoundRectDrawable(selectorRadius, 0, color, 0xff000000);
         } else if (selectorType == 2) {
             selectorDrawable = Theme.getSelectorDrawable(color, false);
@@ -1516,7 +1523,9 @@ public class RecyclerListView extends RecyclerView {
         if (position != NO_POSITION) {
             selectorPosition = position;
         }
-
+        if (topBottomSelectorRadius > 0 && getAdapter() != null) {
+            Theme.setMaskDrawableRad(selectorDrawable, position == 0 ? topBottomSelectorRadius : 0, position == getAdapter().getItemCount() - 2 ? topBottomSelectorRadius : 0);
+        }
         selectorRect.set(sel.getLeft(), sel.getTop(), sel.getRight(), sel.getBottom() - bottomPadding);
 
         final boolean enabled = sel.isEnabled();

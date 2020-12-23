@@ -107,7 +107,7 @@
 
 SECTION .text
 
-global sym(vpx_filter_block1d4_v2_ssse3) PRIVATE
+globalsym(vpx_filter_block1d4_v2_ssse3)
 sym(vpx_filter_block1d4_v2_ssse3):
     push        rbp
     mov         rbp, rsp
@@ -131,7 +131,7 @@ sym(vpx_filter_block1d4_v2_ssse3):
     pop         rbp
     ret
 
-global sym(vpx_filter_block1d8_v2_ssse3) PRIVATE
+globalsym(vpx_filter_block1d8_v2_ssse3)
 sym(vpx_filter_block1d8_v2_ssse3):
     push        rbp
     mov         rbp, rsp
@@ -157,7 +157,7 @@ sym(vpx_filter_block1d8_v2_ssse3):
     pop         rbp
     ret
 
-global sym(vpx_filter_block1d16_v2_ssse3) PRIVATE
+globalsym(vpx_filter_block1d16_v2_ssse3)
 sym(vpx_filter_block1d16_v2_ssse3):
     push        rbp
     mov         rbp, rsp
@@ -184,7 +184,7 @@ sym(vpx_filter_block1d16_v2_ssse3):
     pop         rbp
     ret
 
-global sym(vpx_filter_block1d4_v2_avg_ssse3) PRIVATE
+globalsym(vpx_filter_block1d4_v2_avg_ssse3)
 sym(vpx_filter_block1d4_v2_avg_ssse3):
     push        rbp
     mov         rbp, rsp
@@ -208,7 +208,7 @@ sym(vpx_filter_block1d4_v2_avg_ssse3):
     pop         rbp
     ret
 
-global sym(vpx_filter_block1d8_v2_avg_ssse3) PRIVATE
+globalsym(vpx_filter_block1d8_v2_avg_ssse3)
 sym(vpx_filter_block1d8_v2_avg_ssse3):
     push        rbp
     mov         rbp, rsp
@@ -234,7 +234,7 @@ sym(vpx_filter_block1d8_v2_avg_ssse3):
     pop         rbp
     ret
 
-global sym(vpx_filter_block1d16_v2_avg_ssse3) PRIVATE
+globalsym(vpx_filter_block1d16_v2_avg_ssse3)
 sym(vpx_filter_block1d16_v2_avg_ssse3):
     push        rbp
     mov         rbp, rsp
@@ -261,7 +261,7 @@ sym(vpx_filter_block1d16_v2_avg_ssse3):
     pop         rbp
     ret
 
-global sym(vpx_filter_block1d4_h2_ssse3) PRIVATE
+globalsym(vpx_filter_block1d4_h2_ssse3)
 sym(vpx_filter_block1d4_h2_ssse3):
     push        rbp
     mov         rbp, rsp
@@ -286,7 +286,7 @@ sym(vpx_filter_block1d4_h2_ssse3):
     pop         rbp
     ret
 
-global sym(vpx_filter_block1d8_h2_ssse3) PRIVATE
+globalsym(vpx_filter_block1d8_h2_ssse3)
 sym(vpx_filter_block1d8_h2_ssse3):
     push        rbp
     mov         rbp, rsp
@@ -313,7 +313,7 @@ sym(vpx_filter_block1d8_h2_ssse3):
     pop         rbp
     ret
 
-global sym(vpx_filter_block1d16_h2_ssse3) PRIVATE
+globalsym(vpx_filter_block1d16_h2_ssse3)
 sym(vpx_filter_block1d16_h2_ssse3):
     push        rbp
     mov         rbp, rsp
@@ -340,7 +340,7 @@ sym(vpx_filter_block1d16_h2_ssse3):
     pop         rbp
     ret
 
-global sym(vpx_filter_block1d4_h2_avg_ssse3) PRIVATE
+globalsym(vpx_filter_block1d4_h2_avg_ssse3)
 sym(vpx_filter_block1d4_h2_avg_ssse3):
     push        rbp
     mov         rbp, rsp
@@ -365,7 +365,7 @@ sym(vpx_filter_block1d4_h2_avg_ssse3):
     pop         rbp
     ret
 
-global sym(vpx_filter_block1d8_h2_avg_ssse3) PRIVATE
+globalsym(vpx_filter_block1d8_h2_avg_ssse3)
 sym(vpx_filter_block1d8_h2_avg_ssse3):
     push        rbp
     mov         rbp, rsp
@@ -392,7 +392,7 @@ sym(vpx_filter_block1d8_h2_avg_ssse3):
     pop         rbp
     ret
 
-global sym(vpx_filter_block1d16_h2_avg_ssse3) PRIVATE
+globalsym(vpx_filter_block1d16_h2_avg_ssse3)
 sym(vpx_filter_block1d16_h2_avg_ssse3):
     push        rbp
     mov         rbp, rsp

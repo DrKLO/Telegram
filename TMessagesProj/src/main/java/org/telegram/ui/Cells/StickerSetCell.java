@@ -24,11 +24,13 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.DocumentObject;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.R;
+import org.telegram.messenger.SvgHelper;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
@@ -179,12 +181,11 @@ public class StickerSetCell extends FrameLayout {
             valueTextView.setText(LocaleController.formatPluralString("Stickers", documents.size()));
 
             TLRPC.Document sticker = documents.get(0);
-            TLObject object;
-            if (set.set.thumb instanceof TLRPC.TL_photoSize || set.set.thumb instanceof TLRPC.TL_photoSizeProgressive) {
-                object = set.set.thumb;
-            } else {
+            TLObject object = FileLoader.getClosestPhotoSizeWithSize(set.set.thumbs, 90);
+            if (object == null) {
                 object = sticker;
             }
+            SvgHelper.SvgDrawable svgThumb = DocumentObject.getSvgThumb(set.set.thumbs, Theme.key_windowBackgroundGray, 1.0f);
             ImageLocation imageLocation;
 
             if (object instanceof TLRPC.Document) {
@@ -196,11 +197,15 @@ public class StickerSetCell extends FrameLayout {
             }
 
             if (object instanceof TLRPC.Document && MessageObject.isAnimatedStickerDocument(sticker, true)) {
-                imageView.setImage(ImageLocation.getForDocument(sticker), "50_50", imageLocation, null, 0, set);
+                if (svgThumb != null) {
+                    imageView.setImage(ImageLocation.getForDocument(sticker), "50_50", svgThumb, 0, set);
+                } else {
+                    imageView.setImage(ImageLocation.getForDocument(sticker), "50_50", imageLocation, null, 0, set);
+                }
             } else if (imageLocation != null && imageLocation.imageType == FileLoader.IMAGE_TYPE_LOTTIE) {
-                imageView.setImage(imageLocation, "50_50", "tgs", null, set);
+                imageView.setImage(imageLocation, "50_50", "tgs", svgThumb, set);
             } else {
-                imageView.setImage(imageLocation, "50_50", "webp", null, set);
+                imageView.setImage(imageLocation, "50_50", "webp", svgThumb, set);
             }
         } else {
             valueTextView.setText(LocaleController.formatPluralString("Stickers", 0));

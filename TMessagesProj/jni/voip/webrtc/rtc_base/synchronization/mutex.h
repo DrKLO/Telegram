@@ -15,7 +15,6 @@
 
 #include "absl/base/const_init.h"
 #include "rtc_base/checks.h"
-#include "rtc_base/platform_thread_types.h"
 #include "rtc_base/system/unused.h"
 #include "rtc_base/thread_annotations.h"
 
@@ -40,54 +39,17 @@ class RTC_LOCKABLE Mutex final {
   Mutex& operator=(const Mutex&) = delete;
 
   void Lock() RTC_EXCLUSIVE_LOCK_FUNCTION() {
-    rtc::PlatformThreadRef current = CurrentThreadRefAssertingNotBeingHolder();
     impl_.Lock();
-    // |holder_| changes from 0 to CurrentThreadRef().
-    holder_.store(current, std::memory_order_relaxed);
   }
   RTC_WARN_UNUSED_RESULT bool TryLock() RTC_EXCLUSIVE_TRYLOCK_FUNCTION(true) {
-    rtc::PlatformThreadRef current = CurrentThreadRefAssertingNotBeingHolder();
-    if (impl_.TryLock()) {
-      // |holder_| changes from 0 to CurrentThreadRef().
-      holder_.store(current, std::memory_order_relaxed);
-      return true;
-    }
-    return false;
+    return impl_.TryLock();
   }
   void Unlock() RTC_UNLOCK_FUNCTION() {
-    // |holder_| changes from CurrentThreadRef() to 0. If something else than
-    // CurrentThreadRef() is stored in |holder_|, the Unlock results in
-    // undefined behavior as mutexes can't be unlocked from another thread than
-    // the one that locked it, or called while not being locked.
-    holder_.store(0, std::memory_order_relaxed);
     impl_.Unlock();
   }
 
  private:
-  rtc::PlatformThreadRef CurrentThreadRefAssertingNotBeingHolder() {
-    rtc::PlatformThreadRef holder = holder_.load(std::memory_order_relaxed);
-    rtc::PlatformThreadRef current = rtc::CurrentThreadRef();
-    // TODO(bugs.webrtc.org/11567): remove this temporary check after migrating
-    // fully to Mutex.
-    RTC_CHECK_NE(holder, current);
-    return current;
-  }
-
   MutexImpl impl_;
-  // TODO(bugs.webrtc.org/11567): remove |holder_| after migrating fully to
-  // Mutex.
-  // |holder_| contains the PlatformThreadRef of the thread currently holding
-  // the lock, or 0.
-  // Remarks on the used memory orders: the atomic load in
-  // CurrentThreadRefAssertingNotBeingHolder() observes either of two things:
-  // 1. our own previous write to holder_ with our thread ID.
-  // 2. another thread (with ID y) writing y and then 0 from an initial value of
-  // 0. If we're observing case 1, our own stores are obviously ordered before
-  // the load, and hit the CHECK. If we're observing case 2, the value observed
-  // w.r.t |impl_| being locked depends on the memory order. Since we only care
-  // that it's different from CurrentThreadRef()), we use the more performant
-  // option, memory_order_relaxed.
-  std::atomic<rtc::PlatformThreadRef> holder_ = {0};
 };
 
 // MutexLock, for serializing execution through a scope.

@@ -264,9 +264,12 @@ static vpx_codec_err_t validate_img(vpx_codec_alg_priv_t *ctx,
                                     const vpx_image_t *img) {
   switch (img->fmt) {
     case VPX_IMG_FMT_YV12:
-    case VPX_IMG_FMT_I420: break;
+    case VPX_IMG_FMT_I420:
+    case VPX_IMG_FMT_NV12: break;
     default:
-      ERROR("Invalid image format. Only YV12 and I420 images are supported");
+      ERROR(
+          "Invalid image format. Only YV12, I420 and NV12 images are "
+          "supported");
   }
 
   if ((img->d_w != ctx->cfg.g_w) || (img->d_h != ctx->cfg.g_h))

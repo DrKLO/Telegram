@@ -20,10 +20,13 @@
 #include <vector>
 
 #include "api/fec_controller_override.h"
+#include "api/transport/webrtc_key_value_config.h"
 #include "api/video_codecs/video_encoder.h"
+#include "common_video/include/video_frame_buffer_pool.h"
 #include "media/base/vp9_profile.h"
 #include "modules/video_coding/codecs/vp9/include/vp9.h"
 #include "modules/video_coding/codecs/vp9/vp9_frame_buffer_pool.h"
+#include "modules/video_coding/svc/scalable_video_controller.h"
 #include "modules/video_coding/utility/framerate_controller.h"
 #include "vpx/vp8cx.h"
 #include "vpx/vpx_decoder.h"
@@ -34,6 +37,8 @@ namespace webrtc {
 class VP9EncoderImpl : public VP9Encoder {
  public:
   explicit VP9EncoderImpl(const cricket::VideoCodec& codec);
+  VP9EncoderImpl(const cricket::VideoCodec& codec,
+                 const WebRtcKeyValueConfig& trials);
 
   ~VP9EncoderImpl() override;
 
@@ -98,6 +103,8 @@ class VP9EncoderImpl : public VP9Encoder {
 
   size_t SteadyStateSize(int sid, int tid);
 
+  void MaybeRewrapRawWithFormat(const vpx_img_fmt fmt);
+
   EncodedImage encoded_image_;
   CodecSpecificInfo codec_specific_;
   EncodedImageCallback* encoded_complete_callback_;
@@ -125,7 +132,6 @@ class VP9EncoderImpl : public VP9Encoder {
   InterLayerPredMode inter_layer_pred_;
   bool external_ref_control_;
   const bool trusted_rate_controller_;
-  const bool dynamic_rate_settings_;
   bool layer_buffering_;
   const bool full_superframe_drop_;
   vpx_svc_frame_drop_t svc_drop_frame_;
@@ -133,7 +139,9 @@ class VP9EncoderImpl : public VP9Encoder {
   VideoBitrateAllocation current_bitrate_allocation_;
   bool ss_info_needed_;
   bool force_all_active_layers_;
+  const bool use_svc_controller_;
 
+  std::unique_ptr<ScalableVideoController> svc_controller_;
   std::vector<FramerateController> framerate_controller_;
 
   // Used for flexible mode.
@@ -157,6 +165,7 @@ class VP9EncoderImpl : public VP9Encoder {
     size_t temporal_layer_id = 0;
   };
   std::map<size_t, RefFrameBuffer> ref_buf_;
+  std::vector<ScalableVideoController::LayerFrameConfig> layer_frames_;
 
   // Variable frame-rate related fields and methods.
   const struct VariableFramerateExperiment {
@@ -173,7 +182,7 @@ class VP9EncoderImpl : public VP9Encoder {
     int frames_before_steady_state;
   } variable_framerate_experiment_;
   static VariableFramerateExperiment ParseVariableFramerateConfig(
-      std::string group_name);
+      const WebRtcKeyValueConfig& trials);
   FramerateController variable_framerate_controller_;
 
   const struct QualityScalerExperiment {
@@ -182,7 +191,14 @@ class VP9EncoderImpl : public VP9Encoder {
     bool enabled;
   } quality_scaler_experiment_;
   static QualityScalerExperiment ParseQualityScalerConfig(
-      std::string group_name);
+      const WebRtcKeyValueConfig& trials);
+  const bool external_ref_ctrl_;
+
+  const struct SpeedSettings {
+    bool enabled;
+    int layers[kMaxSpatialLayers];
+  } per_layer_speed_;
+  static SpeedSettings ParsePerLayerSpeed(const WebRtcKeyValueConfig& trials);
 
   int num_steady_state_frames_;
   // Only set config when this flag is set.
@@ -192,6 +208,7 @@ class VP9EncoderImpl : public VP9Encoder {
 class VP9DecoderImpl : public VP9Decoder {
  public:
   VP9DecoderImpl();
+  explicit VP9DecoderImpl(const WebRtcKeyValueConfig& trials);
 
   virtual ~VP9DecoderImpl();
 
@@ -214,13 +231,18 @@ class VP9DecoderImpl : public VP9Decoder {
                   const webrtc::ColorSpace* explicit_color_space);
 
   // Memory pool used to share buffers between libvpx and webrtc.
-  Vp9FrameBufferPool frame_buffer_pool_;
+  Vp9FrameBufferPool libvpx_buffer_pool_;
+  // Buffer pool used to allocate additionally needed NV12 buffers.
+  VideoFrameBufferPool output_buffer_pool_;
   DecodedImageCallback* decode_complete_callback_;
   bool inited_;
   vpx_codec_ctx_t* decoder_;
   bool key_frame_required_;
   VideoCodec current_codec_;
   int num_cores_;
+
+  // Decoder should produce this format if possible.
+  const VideoFrameBuffer::Type preferred_output_format_;
 };
 }  // namespace webrtc
 

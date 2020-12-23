@@ -21,6 +21,7 @@
 
 #include "absl/types/optional.h"
 #include "api/transport/network_types.h"
+#include "api/transport/webrtc_key_value_config.h"
 #include "api/units/data_rate.h"
 #include "api/units/time_delta.h"
 #include "api/units/timestamp.h"
@@ -54,17 +55,19 @@ class LinkCapacityTracker {
 
 class RttBasedBackoff {
  public:
-  RttBasedBackoff();
+  explicit RttBasedBackoff(const WebRtcKeyValueConfig* key_value_config);
   ~RttBasedBackoff();
   void UpdatePropagationRtt(Timestamp at_time, TimeDelta propagation_rtt);
   TimeDelta CorrectedRtt(Timestamp at_time) const;
 
-  FieldTrialParameter<TimeDelta> rtt_limit_;
+  FieldTrialFlag disabled_;
+  FieldTrialParameter<TimeDelta> configured_limit_;
   FieldTrialParameter<double> drop_fraction_;
   FieldTrialParameter<TimeDelta> drop_interval_;
   FieldTrialParameter<DataRate> bandwidth_floor_;
 
  public:
+  TimeDelta rtt_limit_;
   Timestamp last_propagation_rtt_update_;
   TimeDelta last_propagation_rtt_;
   Timestamp last_packet_sent_;
@@ -73,7 +76,8 @@ class RttBasedBackoff {
 class SendSideBandwidthEstimation {
  public:
   SendSideBandwidthEstimation() = delete;
-  explicit SendSideBandwidthEstimation(RtcEventLog* event_log);
+  SendSideBandwidthEstimation(const WebRtcKeyValueConfig* key_value_config,
+                              RtcEventLog* event_log);
   ~SendSideBandwidthEstimation();
 
   void OnRouteChange();

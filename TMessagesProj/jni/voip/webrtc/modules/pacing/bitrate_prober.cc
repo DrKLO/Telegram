@@ -37,9 +37,8 @@ BitrateProberConfig::BitrateProberConfig(
     : min_probe_packets_sent("min_probe_packets_sent", 5),
       min_probe_delta("min_probe_delta", TimeDelta::Millis(1)),
       min_probe_duration("min_probe_duration", TimeDelta::Millis(15)),
-      max_probe_delay("max_probe_delay", TimeDelta::Millis(3)),
-      // TODO(bugs.webrtc.org/11780): Change to default true.
-      abort_delayed_probes("abort_delayed_probes", false) {
+      max_probe_delay("max_probe_delay", TimeDelta::Millis(10)),
+      abort_delayed_probes("abort_delayed_probes", true) {
   ParseFieldTrial(
       {&min_probe_packets_sent, &min_probe_delta, &min_probe_duration,
        &max_probe_delay, &abort_delayed_probes},

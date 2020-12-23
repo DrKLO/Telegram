@@ -26,7 +26,7 @@ namespace {
 
 bool IsSse2Available() {
 #if defined(WEBRTC_ARCH_X86_FAMILY)
-  return WebRtc_GetCPUInfo(kSSE2) != 0;
+  return GetCPUInfo(kSSE2) != 0;
 #else
   return false;
 #endif

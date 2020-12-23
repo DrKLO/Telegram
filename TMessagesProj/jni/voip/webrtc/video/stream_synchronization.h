@@ -44,6 +44,12 @@ class StreamSynchronization {
   // |target_delay_ms|.
   void SetTargetBufferingDelay(int target_delay_ms);
 
+  // Lowers the audio delay by 10%. Can be used to recover from errors.
+  void ReduceAudioDelay();
+
+  // Lowers the video delay by 10%. Can be used to recover from errors.
+  void ReduceVideoDelay();
+
   uint32_t audio_stream_id() const { return audio_stream_id_; }
   uint32_t video_stream_id() const { return video_stream_id_; }
 

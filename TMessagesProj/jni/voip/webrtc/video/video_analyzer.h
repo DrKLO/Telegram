@@ -35,7 +35,7 @@ class VideoAnalyzer : public PacketReceiver,
                       public Transport,
                       public rtc::VideoSinkInterface<VideoFrame> {
  public:
-  using Statistics = RunningStatistics<double>;
+  using Statistics = webrtc_impl::RunningStatistics<double>;
 
   VideoAnalyzer(test::LayerFilteringTransport* transport,
                 const std::string& test_label,

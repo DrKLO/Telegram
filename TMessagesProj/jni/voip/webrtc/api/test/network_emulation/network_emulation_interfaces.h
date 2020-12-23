@@ -16,6 +16,7 @@
 
 #include "absl/types/optional.h"
 #include "api/array_view.h"
+#include "api/numerics/samples_stats_counter.h"
 #include "api/units/data_rate.h"
 #include "api/units/data_size.h"
 #include "api/units/timestamp.h"
@@ -69,6 +70,12 @@ class EmulatedNetworkOutgoingStats {
 
   virtual DataSize BytesSent() const = 0;
 
+  // Returns the timestamped sizes of all sent packets if
+  // EmulatedEndpointConfig::stats_gatherming_mode was set to
+  // StatsGatheringMode::kDebug; otherwise, the returned value will be empty.
+  // Returned reference is valid until the next call to a non-const method.
+  virtual const SamplesStatsCounter& SentPacketsSizeCounter() const = 0;
+
   virtual DataSize FirstSentPacketSize() const = 0;
 
   // Returns time of the first packet sent or infinite value if no packets were
@@ -91,10 +98,21 @@ class EmulatedNetworkIncomingStats {
   virtual int64_t PacketsReceived() const = 0;
   // Total amount of bytes in received packets.
   virtual DataSize BytesReceived() const = 0;
+  // Returns the timestamped sizes of all received packets if
+  // EmulatedEndpointConfig::stats_gatherming_mode was set to
+  // StatsGatheringMode::kDebug; otherwise, the returned value will be empty.
+  // Returned reference is valid until the next call to a non-const method.
+  virtual const SamplesStatsCounter& ReceivedPacketsSizeCounter() const = 0;
   // Total amount of packets that were received, but no destination was found.
   virtual int64_t PacketsDropped() const = 0;
   // Total amount of bytes in dropped packets.
   virtual DataSize BytesDropped() const = 0;
+  // Returns the timestamped sizes of all packets that were received,
+  // but no destination was found if
+  // EmulatedEndpointConfig::stats_gatherming_mode was set to
+  // StatsGatheringMode::kDebug; otherwise, the returned value will be empty.
+  // Returned reference is valid until the next call to a non-const method.
+  virtual const SamplesStatsCounter& DroppedPacketsSizeCounter() const = 0;
 
   virtual DataSize FirstReceivedPacketSize() const = 0;
 
@@ -120,6 +138,17 @@ class EmulatedNetworkStats {
   virtual int64_t PacketsSent() const = 0;
 
   virtual DataSize BytesSent() const = 0;
+  // Returns the timestamped sizes of all sent packets if
+  // EmulatedEndpointConfig::stats_gatherming_mode was set to
+  // StatsGatheringMode::kDebug; otherwise, the returned value will be empty.
+  // Returned reference is valid until the next call to a non-const method.
+  virtual const SamplesStatsCounter& SentPacketsSizeCounter() const = 0;
+  // Returns the timestamped duration between packet was received on
+  // network interface and was dispatched to the network in microseconds if
+  // EmulatedEndpointConfig::stats_gatherming_mode was set to
+  // StatsGatheringMode::kDebug; otherwise, the returned value will be empty.
+  // Returned reference is valid until the next call to a non-const method.
+  virtual const SamplesStatsCounter& SentPacketsQueueWaitTimeUs() const = 0;
 
   virtual DataSize FirstSentPacketSize() const = 0;
   // Returns time of the first packet sent or infinite value if no packets were
@@ -134,10 +163,21 @@ class EmulatedNetworkStats {
   virtual int64_t PacketsReceived() const = 0;
   // Total amount of bytes in received packets.
   virtual DataSize BytesReceived() const = 0;
+  // Returns the timestamped sizes of all received packets if
+  // EmulatedEndpointConfig::stats_gatherming_mode was set to
+  // StatsGatheringMode::kDebug; otherwise, the returned value will be empty.
+  // Returned reference is valid until the next call to a non-const method.
+  virtual const SamplesStatsCounter& ReceivedPacketsSizeCounter() const = 0;
   // Total amount of packets that were received, but no destination was found.
   virtual int64_t PacketsDropped() const = 0;
   // Total amount of bytes in dropped packets.
   virtual DataSize BytesDropped() const = 0;
+  // Returns counter with timestamped sizes of all packets that were received,
+  // but no destination was found if
+  // EmulatedEndpointConfig::stats_gatherming_mode was set to
+  // StatsGatheringMode::kDebug; otherwise, the returned value will be empty.
+  // Returned reference is valid until the next call to a non-const method.
+  virtual const SamplesStatsCounter& DroppedPacketsSizeCounter() const = 0;
 
   virtual DataSize FirstReceivedPacketSize() const = 0;
   // Returns time of the first packet received or infinite value if no packets
@@ -159,7 +199,8 @@ class EmulatedNetworkStats {
 };
 
 // EmulatedEndpoint is an abstraction for network interface on device. Instances
-// of this are created by NetworkEmulationManager::CreateEndpoint.
+// of this are created by NetworkEmulationManager::CreateEndpoint and
+// thread safe.
 class EmulatedEndpoint : public EmulatedNetworkReceiverInterface {
  public:
   // Send packet into network.

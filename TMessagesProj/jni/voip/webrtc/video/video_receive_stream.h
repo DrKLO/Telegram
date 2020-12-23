@@ -37,7 +37,6 @@ namespace webrtc {
 
 class CallStats;
 class ProcessThread;
-class RTPFragmentationHeader;
 class RtpStreamReceiverInterface;
 class RtpStreamReceiverControllerInterface;
 class RtxReceiveStream;
@@ -127,7 +126,7 @@ class VideoReceiveStream : public webrtc::VideoReceiveStream,
                                          int64_t time_ms) override;
 
   // SetMinimumPlayoutDelay is only called by A/V sync.
-  void SetMinimumPlayoutDelay(int delay_ms) override;
+  bool SetMinimumPlayoutDelay(int delay_ms) override;
 
   std::vector<webrtc::RtpSource> GetSources() const override;
 

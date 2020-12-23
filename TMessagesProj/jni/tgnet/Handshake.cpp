@@ -206,7 +206,7 @@ inline bool factorizeValue(uint64_t what, uint32_t &p, uint32_t &q) {
 
 inline bool check_prime(BIGNUM *p) {
     int result = 0;
-    if (!BN_primality_test(&result, p, BN_prime_checks, bnContext, 0, NULL)) {
+    if (!BN_primality_test(&result, p, 64, bnContext, 0, NULL)) {
         if (LOGS_ENABLED) DEBUG_E("OpenSSL error at BN_primality_test");
         return false;
     }

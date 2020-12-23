@@ -244,13 +244,8 @@ std::unique_ptr<SSLCertificate> OpenSSLCertificate::Clone() const {
 
 std::string OpenSSLCertificate::ToPEMString() const {
   BIO* bio = BIO_new(BIO_s_mem());
-  if (!bio) {
-    FATAL() << "Unreachable code.";
-  }
-  if (!PEM_write_bio_X509(bio, x509_)) {
-    BIO_free(bio);
-    FATAL() << "Unreachable code.";
-  }
+  RTC_CHECK(bio);
+  RTC_CHECK(PEM_write_bio_X509(bio, x509_));
   BIO_write(bio, "\0", 1);
   char* buffer;
   BIO_get_mem_data(bio, &buffer);
@@ -264,13 +259,8 @@ void OpenSSLCertificate::ToDER(Buffer* der_buffer) const {
   der_buffer->SetSize(0);
   // Calculates the DER representation of the certificate, from scratch.
   BIO* bio = BIO_new(BIO_s_mem());
-  if (!bio) {
-    FATAL() << "Unreachable code.";
-  }
-  if (!i2d_X509_bio(bio, x509_)) {
-    BIO_free(bio);
-    FATAL() << "Unreachable code.";
-  }
+  RTC_CHECK(bio);
+  RTC_CHECK(i2d_X509_bio(bio, x509_));
   char* data = nullptr;
   size_t length = BIO_get_mem_data(bio, &data);
   der_buffer->SetData(data, length);

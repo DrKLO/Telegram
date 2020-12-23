@@ -21,7 +21,6 @@
 #include "api/transport/data_channel_transport_interface.h"
 #include "media/base/media_channel.h"
 #include "pc/data_channel_utils.h"
-#include "rtc_base/async_invoker.h"
 #include "rtc_base/ssl_stream_adapter.h"  // For SSLRole
 #include "rtc_base/third_party/sigslot/sigslot.h"
 
@@ -277,7 +276,6 @@ class SctpDataChannel : public DataChannelInterface,
   PacketQueue queued_control_data_ RTC_GUARDED_BY(signaling_thread_);
   PacketQueue queued_received_data_ RTC_GUARDED_BY(signaling_thread_);
   PacketQueue queued_send_data_ RTC_GUARDED_BY(signaling_thread_);
-  rtc::AsyncInvoker invoker_ RTC_GUARDED_BY(signaling_thread_);
 };
 
 }  // namespace webrtc

@@ -42,8 +42,9 @@ AudioRtpReceiver::AudioRtpReceiver(
     : worker_thread_(worker_thread),
       id_(receiver_id),
       source_(new rtc::RefCountedObject<RemoteAudioSource>(worker_thread)),
-      track_(AudioTrackProxy::Create(rtc::Thread::Current(),
-                                     AudioTrack::Create(receiver_id, source_))),
+      track_(AudioTrackProxyWithInternal<AudioTrack>::Create(
+          rtc::Thread::Current(),
+          AudioTrack::Create(receiver_id, source_))),
       cached_track_enabled_(track_->enabled()),
       attachment_id_(GenerateUniqueId()),
       delay_(JitterBufferDelayProxy::Create(
@@ -144,6 +145,11 @@ void AudioRtpReceiver::Stop() {
     SetOutputVolume(0.0);
   }
   stopped_ = true;
+}
+
+void AudioRtpReceiver::StopAndEndTrack() {
+  Stop();
+  track_->internal()->set_ended();
 }
 
 void AudioRtpReceiver::RestartMediaChannel(absl::optional<uint32_t> ssrc) {

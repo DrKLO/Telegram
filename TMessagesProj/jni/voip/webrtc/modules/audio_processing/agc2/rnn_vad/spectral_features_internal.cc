@@ -15,6 +15,7 @@
 #include <cstddef>
 
 #include "rtc_base/checks.h"
+#include "rtc_base/numerics/safe_compare.h"
 
 namespace webrtc {
 namespace rnn_vad {
@@ -105,9 +106,9 @@ void SpectralCorrelator::ComputeCrossCorrelation(
   RTC_DCHECK_EQ(x[1], 0.f) << "The Nyquist coefficient must be zeroed.";
   RTC_DCHECK_EQ(y[1], 0.f) << "The Nyquist coefficient must be zeroed.";
   constexpr auto kOpusScaleNumBins24kHz20ms = GetOpusScaleNumBins24kHz20ms();
-  size_t k = 0;  // Next Fourier coefficient index.
+  int k = 0;  // Next Fourier coefficient index.
   cross_corr[0] = 0.f;
-  for (size_t i = 0; i < kOpusBands24kHz - 1; ++i) {
+  for (int i = 0; i < kOpusBands24kHz - 1; ++i) {
     cross_corr[i + 1] = 0.f;
     for (int j = 0; j < kOpusScaleNumBins24kHz20ms[i]; ++j) {  // Band size.
       const float v = x[2 * k] * y[2 * k] + x[2 * k + 1] * y[2 * k + 1];
@@ -137,11 +138,11 @@ void ComputeSmoothedLogMagnitudeSpectrum(
     return x;
   };
   // Smoothing over the bands for which the band energy is defined.
-  for (size_t i = 0; i < bands_energy.size(); ++i) {
+  for (int i = 0; rtc::SafeLt(i, bands_energy.size()); ++i) {
     log_bands_energy[i] = smooth(std::log10(kOneByHundred + bands_energy[i]));
   }
   // Smoothing over the remaining bands (zero energy).
-  for (size_t i = bands_energy.size(); i < kNumBands; ++i) {
+  for (int i = bands_energy.size(); i < kNumBands; ++i) {
     log_bands_energy[i] = smooth(kLogOneByHundred);
   }
 }
@@ -149,8 +150,8 @@ void ComputeSmoothedLogMagnitudeSpectrum(
 std::array<float, kNumBands * kNumBands> ComputeDctTable() {
   std::array<float, kNumBands * kNumBands> dct_table;
   const double k = std::sqrt(0.5);
-  for (size_t i = 0; i < kNumBands; ++i) {
-    for (size_t j = 0; j < kNumBands; ++j)
+  for (int i = 0; i < kNumBands; ++i) {
+    for (int j = 0; j < kNumBands; ++j)
       dct_table[i * kNumBands + j] = std::cos((i + 0.5) * j * kPi / kNumBands);
     dct_table[i * kNumBands] *= k;
   }
@@ -173,9 +174,9 @@ void ComputeDct(rtc::ArrayView<const float> in,
   RTC_DCHECK_LE(in.size(), kNumBands);
   RTC_DCHECK_LE(1, out.size());
   RTC_DCHECK_LE(out.size(), in.size());
-  for (size_t i = 0; i < out.size(); ++i) {
+  for (int i = 0; rtc::SafeLt(i, out.size()); ++i) {
     out[i] = 0.f;
-    for (size_t j = 0; j < in.size(); ++j) {
+    for (int j = 0; rtc::SafeLt(j, in.size()); ++j) {
       out[i] += in[j] * dct_table[j * kNumBands + i];
     }
     // TODO(bugs.webrtc.org/10480): Scaling factor in the DCT table.

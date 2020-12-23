@@ -27,7 +27,7 @@ SECTION .text
 ;    unsigned int    output_width,
 ;    short           * vp8_filter
 ;)
-global sym(vp8_filter_block1d_h6_mmx) PRIVATE
+globalsym(vp8_filter_block1d_h6_mmx)
 sym(vp8_filter_block1d_h6_mmx):
     push        rbp
     mov         rbp, rsp
@@ -124,7 +124,7 @@ sym(vp8_filter_block1d_h6_mmx):
 ;   unsigned int output_width,
 ;   short * vp8_filter
 ;)
-global sym(vp8_filter_block1dc_v6_mmx) PRIVATE
+globalsym(vp8_filter_block1dc_v6_mmx)
 sym(vp8_filter_block1dc_v6_mmx):
     push        rbp
     mov         rbp, rsp

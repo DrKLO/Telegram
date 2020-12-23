@@ -21,7 +21,7 @@
 
 SECTION .text
 
-global sym(vp8_idct_dequant_0_2x_sse2) PRIVATE
+globalsym(vp8_idct_dequant_0_2x_sse2)
 sym(vp8_idct_dequant_0_2x_sse2):
     push        rbp
     mov         rbp, rsp
@@ -103,7 +103,7 @@ sym(vp8_idct_dequant_0_2x_sse2):
 ;   unsigned char *dst  - 2
 ;   int dst_stride      - 3
 ; )
-global sym(vp8_idct_dequant_full_2x_sse2) PRIVATE
+globalsym(vp8_idct_dequant_full_2x_sse2)
 sym(vp8_idct_dequant_full_2x_sse2):
     push        rbp
     mov         rbp, rsp
@@ -360,7 +360,7 @@ sym(vp8_idct_dequant_full_2x_sse2):
 ;   int dst_stride      - 3
 ;   short *dc           - 4
 ; )
-global sym(vp8_idct_dequant_dc_0_2x_sse2) PRIVATE
+globalsym(vp8_idct_dequant_dc_0_2x_sse2)
 sym(vp8_idct_dequant_dc_0_2x_sse2):
     push        rbp
     mov         rbp, rsp
@@ -436,7 +436,7 @@ sym(vp8_idct_dequant_dc_0_2x_sse2):
 ;   int dst_stride      - 3
 ;   short *dc           - 4
 ; )
-global sym(vp8_idct_dequant_dc_full_2x_sse2) PRIVATE
+globalsym(vp8_idct_dequant_dc_full_2x_sse2)
 sym(vp8_idct_dequant_dc_full_2x_sse2):
     push        rbp
     mov         rbp, rsp

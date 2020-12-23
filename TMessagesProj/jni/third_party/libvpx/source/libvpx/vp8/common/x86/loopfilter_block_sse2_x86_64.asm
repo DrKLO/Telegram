@@ -135,7 +135,7 @@ SECTION .text
 ;    const char    *limit,
 ;    const char    *thresh
 ;)
-global sym(vp8_loop_filter_bh_y_sse2) PRIVATE
+globalsym(vp8_loop_filter_bh_y_sse2)
 sym(vp8_loop_filter_bh_y_sse2):
 
 %if LIBVPX_YASM_WIN64
@@ -277,7 +277,7 @@ LF_FILTER xmm0, xmm1, xmm3, xmm8, xmm4, xmm2
 ;    const char    *thresh
 ;)
 
-global sym(vp8_loop_filter_bv_y_sse2) PRIVATE
+globalsym(vp8_loop_filter_bv_y_sse2)
 sym(vp8_loop_filter_bv_y_sse2):
 
 %if LIBVPX_YASM_WIN64

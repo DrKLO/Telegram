@@ -9,6 +9,7 @@ import android.transition.ChangeBounds;
 import android.transition.Fade;
 import android.transition.TransitionManager;
 import android.transition.TransitionSet;
+import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
 import android.widget.FrameLayout;
@@ -77,10 +78,10 @@ public class LegendSignatureView extends FrameLayout {
         content.setOrientation(LinearLayout.VERTICAL);
 
         time = new TextView(context);
-        time.setTextSize(14);
+        time.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         time.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
         hourTime = new TextView(context);
-        hourTime.setTextSize(14);
+        hourTime.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         hourTime.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
 
         chevron = new ImageView(context);
@@ -262,7 +263,7 @@ public class LegendSignatureView extends FrameLayout {
                 percentage.getLayoutParams().width = AndroidUtilities.dp(36);
                 percentage.setVisibility(GONE);
                 percentage.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
-                percentage.setTextSize(13);
+                percentage.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
             }
 
             root.addView(signature = new TextView(getContext()));
@@ -273,10 +274,10 @@ public class LegendSignatureView extends FrameLayout {
             value.setGravity(Gravity.END);
 
             value.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
-            value.setTextSize(13);
+            value.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
             value.setMinEms(4);
             value.setMaxEms(4);
-            signature.setTextSize(13);
+            signature.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
         }
     }
 }

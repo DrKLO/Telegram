@@ -20,49 +20,6 @@ namespace libyuv {
 extern "C" {
 #endif
 
-// Definition for ScaleFilterCols, ScaleARGBCols and ScaleARGBFilterCols
-#define CANY(NAMEANY, TERP_SIMD, TERP_C, BPP, MASK)                            \
-  void NAMEANY(uint8_t* dst_ptr, const uint8_t* src_ptr, int dst_width, int x, \
-               int dx) {                                                       \
-    int r = dst_width & MASK;                                                  \
-    int n = dst_width & ~MASK;                                                 \
-    if (n > 0) {                                                               \
-      TERP_SIMD(dst_ptr, src_ptr, n, x, dx);                                   \
-    }                                                                          \
-    TERP_C(dst_ptr + n * BPP, src_ptr, r, x + n * dx, dx);                     \
-  }
-
-#ifdef HAS_SCALEFILTERCOLS_NEON
-CANY(ScaleFilterCols_Any_NEON, ScaleFilterCols_NEON, ScaleFilterCols_C, 1, 7)
-#endif
-#ifdef HAS_SCALEFILTERCOLS_MSA
-CANY(ScaleFilterCols_Any_MSA, ScaleFilterCols_MSA, ScaleFilterCols_C, 1, 15)
-#endif
-#ifdef HAS_SCALEARGBCOLS_NEON
-CANY(ScaleARGBCols_Any_NEON, ScaleARGBCols_NEON, ScaleARGBCols_C, 4, 7)
-#endif
-#ifdef HAS_SCALEARGBCOLS_MSA
-CANY(ScaleARGBCols_Any_MSA, ScaleARGBCols_MSA, ScaleARGBCols_C, 4, 3)
-#endif
-#ifdef HAS_SCALEARGBCOLS_MMI
-CANY(ScaleARGBCols_Any_MMI, ScaleARGBCols_MMI, ScaleARGBCols_C, 4, 0)
-#endif
-#ifdef HAS_SCALEARGBFILTERCOLS_NEON
-CANY(ScaleARGBFilterCols_Any_NEON,
-     ScaleARGBFilterCols_NEON,
-     ScaleARGBFilterCols_C,
-     4,
-     3)
-#endif
-#ifdef HAS_SCALEARGBFILTERCOLS_MSA
-CANY(ScaleARGBFilterCols_Any_MSA,
-     ScaleARGBFilterCols_MSA,
-     ScaleARGBFilterCols_C,
-     4,
-     7)
-#endif
-#undef CANY
-
 // Fixed scale down.
 // Mask may be non-power of 2, so use MOD
 #define SDANY(NAMEANY, SCALEROWDOWN_SIMD, SCALEROWDOWN_C, FACTOR, BPP, MASK)   \
@@ -113,6 +70,22 @@ SDODD(ScaleRowDown2Box_Odd_SSSE3,
       1,
       15)
 #endif
+#ifdef HAS_SCALEUVROWDOWN2BOX_SSSE3
+SDANY(ScaleUVRowDown2Box_Any_SSSE3,
+      ScaleUVRowDown2Box_SSSE3,
+      ScaleUVRowDown2Box_C,
+      2,
+      2,
+      4)
+#endif
+#ifdef HAS_SCALEUVROWDOWN2BOX_AVX2
+SDANY(ScaleUVRowDown2Box_Any_AVX2,
+      ScaleUVRowDown2Box_AVX2,
+      ScaleUVRowDown2Box_C,
+      2,
+      2,
+      8)
+#endif
 #ifdef HAS_SCALEROWDOWN2_AVX2
 SDANY(ScaleRowDown2_Any_AVX2, ScaleRowDown2_AVX2, ScaleRowDown2_C, 2, 1, 31)
 SDANY(ScaleRowDown2Linear_Any_AVX2,
@@ -155,6 +128,15 @@ SDODD(ScaleRowDown2Box_Odd_NEON,
       1,
       15)
 #endif
+#ifdef HAS_SCALEUVROWDOWN2BOX_NEON
+SDANY(ScaleUVRowDown2Box_Any_NEON,
+      ScaleUVRowDown2Box_NEON,
+      ScaleUVRowDown2Box_C,
+      2,
+      2,
+      8)
+#endif
+
 #ifdef HAS_SCALEROWDOWN2_MSA
 SDANY(ScaleRowDown2_Any_MSA, ScaleRowDown2_MSA, ScaleRowDown2_C, 2, 1, 31)
 SDANY(ScaleRowDown2Linear_Any_MSA,
@@ -508,6 +490,13 @@ SDAANY(ScaleARGBRowDownEvenBox_Any_MMI,
        4,
        1)
 #endif
+#ifdef HAS_SCALEUVROWDOWNEVEN_NEON
+SDAANY(ScaleUVRowDownEven_Any_NEON,
+       ScaleUVRowDownEven_NEON,
+       ScaleUVRowDownEven_C,
+       2,
+       3)
+#endif
 
 #ifdef SASIMDONLY
 // This also works and uses memcpy and SIMD instead of C, but is slower on ARM
@@ -576,6 +565,49 @@ SAANY(ScaleAddRow_Any_MMI, ScaleAddRow_MMI, ScaleAddRow_C, 7)
 #undef SAANY
 
 #endif  // SASIMDONLY
+
+// Definition for ScaleFilterCols, ScaleARGBCols and ScaleARGBFilterCols
+#define CANY(NAMEANY, TERP_SIMD, TERP_C, BPP, MASK)                            \
+  void NAMEANY(uint8_t* dst_ptr, const uint8_t* src_ptr, int dst_width, int x, \
+               int dx) {                                                       \
+    int r = dst_width & MASK;                                                  \
+    int n = dst_width & ~MASK;                                                 \
+    if (n > 0) {                                                               \
+      TERP_SIMD(dst_ptr, src_ptr, n, x, dx);                                   \
+    }                                                                          \
+    TERP_C(dst_ptr + n * BPP, src_ptr, r, x + n * dx, dx);                     \
+  }
+
+#ifdef HAS_SCALEFILTERCOLS_NEON
+CANY(ScaleFilterCols_Any_NEON, ScaleFilterCols_NEON, ScaleFilterCols_C, 1, 7)
+#endif
+#ifdef HAS_SCALEFILTERCOLS_MSA
+CANY(ScaleFilterCols_Any_MSA, ScaleFilterCols_MSA, ScaleFilterCols_C, 1, 15)
+#endif
+#ifdef HAS_SCALEARGBCOLS_NEON
+CANY(ScaleARGBCols_Any_NEON, ScaleARGBCols_NEON, ScaleARGBCols_C, 4, 7)
+#endif
+#ifdef HAS_SCALEARGBCOLS_MSA
+CANY(ScaleARGBCols_Any_MSA, ScaleARGBCols_MSA, ScaleARGBCols_C, 4, 3)
+#endif
+#ifdef HAS_SCALEARGBCOLS_MMI
+CANY(ScaleARGBCols_Any_MMI, ScaleARGBCols_MMI, ScaleARGBCols_C, 4, 0)
+#endif
+#ifdef HAS_SCALEARGBFILTERCOLS_NEON
+CANY(ScaleARGBFilterCols_Any_NEON,
+     ScaleARGBFilterCols_NEON,
+     ScaleARGBFilterCols_C,
+     4,
+     3)
+#endif
+#ifdef HAS_SCALEARGBFILTERCOLS_MSA
+CANY(ScaleARGBFilterCols_Any_MSA,
+     ScaleARGBFilterCols_MSA,
+     ScaleARGBFilterCols_C,
+     4,
+     7)
+#endif
+#undef CANY
 
 #ifdef __cplusplus
 }  // extern "C"

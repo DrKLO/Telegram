@@ -1,7 +1,6 @@
 package org.telegram.ui.Adapters;
 
 import android.content.Context;
-import android.graphics.Color;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.text.TextUtils;
@@ -340,7 +339,7 @@ public class StickersSearchAdapter extends RecyclerListView.SelectionAdapter {
         View view = null;
         switch (viewType) {
             case 0:
-                StickerEmojiCell stickerEmojiCell = new StickerEmojiCell(context) {
+                StickerEmojiCell stickerEmojiCell = new StickerEmojiCell(context, false) {
                     public void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
                         super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(82), MeasureSpec.EXACTLY));
                     }

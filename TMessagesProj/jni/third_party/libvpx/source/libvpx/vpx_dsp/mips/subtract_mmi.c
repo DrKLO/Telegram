@@ -24,7 +24,7 @@ void vpx_subtract_block_mmi(int rows, int cols, int16_t *diff,
     switch (rows) {
       case 4:
         __asm__ volatile(
-            "xor        %[ftmp0],   %[ftmp0],           %[ftmp0]        \n\t"
+            "pxor       %[ftmp0],   %[ftmp0],           %[ftmp0]        \n\t"
 #if _MIPS_SIM == _ABIO32
             "ulw        %[tmp0],    0x00(%[src])                        \n\t"
             "mtc1       %[tmp0],    %[ftmp1]                            \n\t"
@@ -118,7 +118,7 @@ void vpx_subtract_block_mmi(int rows, int cols, int16_t *diff,
         break;
       case 8:
         __asm__ volatile(
-            "xor        %[ftmp0],   %[ftmp0],           %[ftmp0]        \n\t"
+            "pxor       %[ftmp0],   %[ftmp0],           %[ftmp0]        \n\t"
             "li         %[tmp0],    0x02                                \n\t"
             "1:                                                         \n\t"
             "gsldlc1    %[ftmp1],   0x07(%[src])                        \n\t"
@@ -206,7 +206,7 @@ void vpx_subtract_block_mmi(int rows, int cols, int16_t *diff,
         break;
       case 16:
         __asm__ volatile(
-            "xor        %[ftmp0],   %[ftmp0],           %[ftmp0]        \n\t"
+            "pxor       %[ftmp0],   %[ftmp0],           %[ftmp0]        \n\t"
             "li         %[tmp0],    0x08                                \n\t"
             "1:                                                         \n\t"
             "gsldlc1    %[ftmp1],   0x07(%[src])                        \n\t"

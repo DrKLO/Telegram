@@ -65,8 +65,7 @@ void GainController2::NotifyAnalogLevel(int level) {
 
 void GainController2::ApplyConfig(
     const AudioProcessing::Config::GainController2& config) {
-  RTC_DCHECK(Validate(config))
-      << " the invalid config was " << ToString(config);
+  RTC_DCHECK(Validate(config));
 
   config_ = config;
   if (config.fixed_digital.gain_db != config_.fixed_digital.gain_db) {
@@ -84,40 +83,19 @@ void GainController2::ApplyConfig(
 
 bool GainController2::Validate(
     const AudioProcessing::Config::GainController2& config) {
-  return config.fixed_digital.gain_db >= 0.f &&
-         config.fixed_digital.gain_db < 50.f &&
-         config.adaptive_digital.extra_saturation_margin_db >= 0.f &&
-         config.adaptive_digital.extra_saturation_margin_db <= 100.f;
-}
-
-std::string GainController2::ToString(
-    const AudioProcessing::Config::GainController2& config) {
-  rtc::StringBuilder ss;
-  std::string adaptive_digital_level_estimator;
-  using LevelEstimatorType =
-      AudioProcessing::Config::GainController2::LevelEstimator;
-  switch (config.adaptive_digital.level_estimator) {
-    case LevelEstimatorType::kRms:
-      adaptive_digital_level_estimator = "RMS";
-      break;
-    case LevelEstimatorType::kPeak:
-      adaptive_digital_level_estimator = "peak";
-      break;
-  }
-  // clang-format off
-  // clang formatting doesn't respect custom nested style.
-  ss << "{"
-        "enabled: " << (config.enabled ? "true" : "false") << ", "
-        "fixed_digital: {gain_db: " << config.fixed_digital.gain_db << "}, "
-        "adaptive_digital: {"
-          "enabled: "
-            << (config.adaptive_digital.enabled ? "true" : "false") << ", "
-          "level_estimator: " << adaptive_digital_level_estimator << ", "
-          "extra_saturation_margin_db:"
-            << config.adaptive_digital.extra_saturation_margin_db << "}"
-          "}";
-  // clang-format on
-  return ss.Release();
+  const auto& fixed = config.fixed_digital;
+  const auto& adaptive = config.adaptive_digital;
+  return fixed.gain_db >= 0.f && fixed.gain_db < 50.f &&
+         adaptive.vad_probability_attack > 0.f &&
+         adaptive.vad_probability_attack <= 1.f &&
+         adaptive.level_estimator_adjacent_speech_frames_threshold >= 1 &&
+         adaptive.initial_saturation_margin_db >= 0.f &&
+         adaptive.initial_saturation_margin_db <= 100.f &&
+         adaptive.extra_saturation_margin_db >= 0.f &&
+         adaptive.extra_saturation_margin_db <= 100.f &&
+         adaptive.gain_applier_adjacent_speech_frames_threshold >= 1 &&
+         adaptive.max_gain_change_db_per_second > 0.f &&
+         adaptive.max_output_noise_level_dbfs <= 0.f;
 }
 
 }  // namespace webrtc

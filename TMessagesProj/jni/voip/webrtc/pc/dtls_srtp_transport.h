@@ -63,6 +63,16 @@ class DtlsSrtpTransport : public SrtpTransport {
     active_reset_srtp_params_ = active_reset_srtp_params;
   }
 
+  virtual void OnErrorDemuxingPacket(uint32_t ssrc) override {
+    if (SignalOnErrorDemuxingPacket_) {
+      SignalOnErrorDemuxingPacket_(ssrc);
+    }
+  }
+
+  void SetOnErrorDemuxingPacket(std::function<void(uint32_t)> f) {
+    SignalOnErrorDemuxingPacket_ = std::move(f);
+  }
+
  private:
   bool IsDtlsActive();
   bool IsDtlsConnected();
@@ -96,6 +106,8 @@ class DtlsSrtpTransport : public SrtpTransport {
   absl::optional<std::vector<int>> recv_extension_ids_;
 
   bool active_reset_srtp_params_ = false;
+
+  std::function<void(uint32_t)> SignalOnErrorDemuxingPacket_ = nullptr;
 };
 
 }  // namespace webrtc

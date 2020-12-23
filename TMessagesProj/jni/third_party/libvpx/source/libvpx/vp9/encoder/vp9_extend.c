@@ -18,18 +18,26 @@
 static void copy_and_extend_plane(const uint8_t *src, int src_pitch,
                                   uint8_t *dst, int dst_pitch, int w, int h,
                                   int extend_top, int extend_left,
-                                  int extend_bottom, int extend_right) {
-  int i, linesize;
+                                  int extend_bottom, int extend_right,
+                                  int interleave_step) {
+  int i, j, linesize;
+  const int step = interleave_step < 1 ? 1 : interleave_step;
 
   // copy the left and right most columns out
   const uint8_t *src_ptr1 = src;
-  const uint8_t *src_ptr2 = src + w - 1;
+  const uint8_t *src_ptr2 = src + (w - 1) * step;
   uint8_t *dst_ptr1 = dst - extend_left;
   uint8_t *dst_ptr2 = dst + w;
 
   for (i = 0; i < h; i++) {
     memset(dst_ptr1, src_ptr1[0], extend_left);
-    memcpy(dst_ptr1 + extend_left, src_ptr1, w);
+    if (step == 1) {
+      memcpy(dst_ptr1 + extend_left, src_ptr1, w);
+    } else {
+      for (j = 0; j < w; j++) {
+        dst_ptr1[extend_left + j] = src_ptr1[step * j];
+      }
+    }
     memset(dst_ptr2, src_ptr2[0], extend_right);
     src_ptr1 += src_pitch;
     src_ptr2 += src_pitch;
@@ -122,6 +130,8 @@ void vp9_copy_and_extend_frame(const YV12_BUFFER_CONFIG *src,
   const int el_uv = el_y >> uv_width_subsampling;
   const int eb_uv = eb_y >> uv_height_subsampling;
   const int er_uv = er_y >> uv_width_subsampling;
+  // detect nv12 colorspace
+  const int chroma_step = src->v_buffer - src->u_buffer == 1 ? 2 : 1;
 
 #if CONFIG_VP9_HIGHBITDEPTH
   if (src->flags & YV12_FLAG_HIGHBITDEPTH) {
@@ -142,15 +152,15 @@ void vp9_copy_and_extend_frame(const YV12_BUFFER_CONFIG *src,
 
   copy_and_extend_plane(src->y_buffer, src->y_stride, dst->y_buffer,
                         dst->y_stride, src->y_crop_width, src->y_crop_height,
-                        et_y, el_y, eb_y, er_y);
+                        et_y, el_y, eb_y, er_y, 1);
 
   copy_and_extend_plane(src->u_buffer, src->uv_stride, dst->u_buffer,
                         dst->uv_stride, src->uv_crop_width, src->uv_crop_height,
-                        et_uv, el_uv, eb_uv, er_uv);
+                        et_uv, el_uv, eb_uv, er_uv, chroma_step);
 
   copy_and_extend_plane(src->v_buffer, src->uv_stride, dst->v_buffer,
                         dst->uv_stride, src->uv_crop_width, src->uv_crop_height,
-                        et_uv, el_uv, eb_uv, er_uv);
+                        et_uv, el_uv, eb_uv, er_uv, chroma_step);
 }
 
 void vp9_copy_and_extend_frame_with_rect(const YV12_BUFFER_CONFIG *src,
@@ -176,16 +186,18 @@ void vp9_copy_and_extend_frame_with_rect(const YV12_BUFFER_CONFIG *src,
   const int dst_uv_offset = ((srcy * dst->uv_stride) >> 1) + (srcx >> 1);
   const int srch_uv = ROUND_POWER_OF_TWO(srch, 1);
   const int srcw_uv = ROUND_POWER_OF_TWO(srcw, 1);
+  // detect nv12 colorspace
+  const int chroma_step = src->v_buffer - src->u_buffer == 1 ? 2 : 1;
 
   copy_and_extend_plane(src->y_buffer + src_y_offset, src->y_stride,
                         dst->y_buffer + dst_y_offset, dst->y_stride, srcw, srch,
-                        et_y, el_y, eb_y, er_y);
+                        et_y, el_y, eb_y, er_y, 1);
 
   copy_and_extend_plane(src->u_buffer + src_uv_offset, src->uv_stride,
                         dst->u_buffer + dst_uv_offset, dst->uv_stride, srcw_uv,
-                        srch_uv, et_uv, el_uv, eb_uv, er_uv);
+                        srch_uv, et_uv, el_uv, eb_uv, er_uv, chroma_step);
 
   copy_and_extend_plane(src->v_buffer + src_uv_offset, src->uv_stride,
                         dst->v_buffer + dst_uv_offset, dst->uv_stride, srcw_uv,
-                        srch_uv, et_uv, el_uv, eb_uv, er_uv);
+                        srch_uv, et_uv, el_uv, eb_uv, er_uv, chroma_step);
 }

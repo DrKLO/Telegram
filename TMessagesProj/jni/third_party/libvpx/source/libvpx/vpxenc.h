@@ -28,6 +28,7 @@ typedef enum {
   I444,  // 4:4:4 8+ bit-depth
   I440,  // 4:4:0 8+ bit-depth
   YV12,  // 4:2:0 with uv flipped, only 8-bit depth
+  NV12,  // 4:2:0 with uv interleaved
 } ColorInputType;
 
 struct VpxInterface;

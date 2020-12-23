@@ -27,11 +27,11 @@ constexpr int kSendSideDelayWindowMs = 1000;
 constexpr int kBitrateStatisticsWindowMs = 1000;
 constexpr size_t kRtpSequenceNumberMapMaxEntries = 1 << 13;
 
-bool IsEnabled(absl::string_view name,
-               const WebRtcKeyValueConfig* field_trials) {
+bool IsDisabled(absl::string_view name,
+                const WebRtcKeyValueConfig* field_trials) {
   FieldTrialBasedConfig default_trials;
   auto& trials = field_trials ? *field_trials : default_trials;
-  return absl::StartsWith(trials.Lookup(name), "Enabled");
+  return absl::StartsWith(trials.Lookup(name), "Disabled");
 }
 }  // namespace
 
@@ -63,7 +63,7 @@ DEPRECATED_RtpSenderEgress::DEPRECATED_RtpSenderEgress(
                                          : absl::nullopt),
       populate_network2_timestamp_(config.populate_network2_timestamp),
       send_side_bwe_with_overhead_(
-          IsEnabled("WebRTC-SendSideBwe-WithOverhead", config.field_trials)),
+          !IsDisabled("WebRTC-SendSideBwe-WithOverhead", config.field_trials)),
       clock_(config.clock),
       packet_history_(packet_history),
       transport_(config.outgoing_transport),

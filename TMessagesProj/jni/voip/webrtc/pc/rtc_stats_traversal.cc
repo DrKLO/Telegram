@@ -76,7 +76,8 @@ std::vector<const std::string*> GetStatsReferencedIds(const RTCStats& stats) {
     const auto& certificate = static_cast<const RTCCertificateStats&>(stats);
     AddIdIfDefined(certificate.issuer_certificate_id, &neighbor_ids);
   } else if (type == RTCCodecStats::kType) {
-    // RTCCodecStats does not have any neighbor references.
+    const auto& codec = static_cast<const RTCCodecStats&>(stats);
+    AddIdIfDefined(codec.transport_id, &neighbor_ids);
   } else if (type == RTCDataChannelStats::kType) {
     // RTCDataChannelStats does not have any neighbor references.
   } else if (type == RTCIceCandidatePairStats::kType) {

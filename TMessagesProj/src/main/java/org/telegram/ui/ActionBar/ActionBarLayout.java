@@ -44,6 +44,7 @@ import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.ui.Components.CubicBezierInterpolator;
+import org.telegram.ui.Components.GroupCallPip;
 import org.telegram.ui.Components.LayoutHelper;
 
 import java.util.ArrayList;
@@ -277,6 +278,7 @@ public class ActionBarLayout extends FrameLayout {
 
     public ArrayList<BaseFragment> fragmentsStack;
     private Rect rect = new Rect();
+    private boolean delayedAnimationResumed;
 
     public ActionBarLayout(Context context) {
         super(context);
@@ -732,7 +734,10 @@ public class ActionBarLayout extends FrameLayout {
         if (transitionAnimationPreviewMode || startedTracking || checkTransitionAnimation() || fragmentsStack.isEmpty()) {
             return;
         }
-        if (!currentActionBar.isActionModeShowed() && currentActionBar != null && currentActionBar.isSearchFieldVisible) {
+        if (GroupCallPip.onBackPressed()) {
+            return;
+        }
+        if (currentActionBar != null && !currentActionBar.isActionModeShowed() && currentActionBar.isSearchFieldVisible) {
             currentActionBar.closeSearchField();
             return;
         }
@@ -908,7 +913,8 @@ public class ActionBarLayout extends FrameLayout {
     }
 
     public void resumeDelayedFragmentAnimation() {
-        if (delayedOpenAnimationRunnable == null) {
+        delayedAnimationResumed = true;
+        if (delayedOpenAnimationRunnable == null || waitingForKeyboardCloseRunnable != null) {
             return;
         }
         AndroidUtilities.cancelRunOnUIThread(delayedOpenAnimationRunnable);
@@ -1081,6 +1087,8 @@ public class ActionBarLayout extends FrameLayout {
                     }
                     fragment.onTransitionAnimationStart(true, false);
                 }
+
+                delayedAnimationResumed = false;
                 oldFragment = currentFragment;
                 newFragment = fragment;
                 AnimatorSet animation = null;
@@ -1099,6 +1107,9 @@ public class ActionBarLayout extends FrameLayout {
                         containerView.setScaleY(1.0f);
                     }
                     if (containerView.isKeyboardVisible || containerViewBack.isKeyboardVisible) {
+                        if (currentFragment != null) {
+                            currentFragment.saveKeyboardPositionBeforeTransition();
+                        }
                         waitingForKeyboardCloseRunnable = new Runnable() {
                             @Override
                             public void run() {
@@ -1106,15 +1117,38 @@ public class ActionBarLayout extends FrameLayout {
                                     return;
                                 }
                                 waitingForKeyboardCloseRunnable = null;
-                                if (!noDelay) {
+                                if (noDelay) {
                                     if (currentFragment != null) {
                                         currentFragment.onTransitionAnimationStart(false, false);
                                     }
                                     fragment.onTransitionAnimationStart(true, false);
+                                    startLayoutAnimation(true, true, preview);
+                                } else if (delayedOpenAnimationRunnable != null) {
+                                    AndroidUtilities.cancelRunOnUIThread(delayedOpenAnimationRunnable);
+                                    if (delayedAnimationResumed) {
+                                        delayedOpenAnimationRunnable.run();
+                                    } else {
+                                        AndroidUtilities.runOnUIThread(delayedOpenAnimationRunnable, 200);
+                                    }
                                 }
-                                startLayoutAnimation(true, true, preview);
                             }
                         };
+                        if (fragment.needDelayOpenAnimation()) {
+                            delayedOpenAnimationRunnable = new Runnable() {
+                                @Override
+                                public void run() {
+                                    if (delayedOpenAnimationRunnable != this) {
+                                        return;
+                                    }
+                                    delayedOpenAnimationRunnable = null;
+                                    if (currentFragment != null) {
+                                        currentFragment.onTransitionAnimationStart(false, false);
+                                    }
+                                    fragment.onTransitionAnimationStart(true, false);
+                                    startLayoutAnimation(true, true, preview);
+                                }
+                            };
+                        }
                         AndroidUtilities.runOnUIThread(waitingForKeyboardCloseRunnable, SharedConfig.smoothKeyboard ? 250 : 200);
                     } else if (fragment.needDelayOpenAnimation()) {
                         delayedOpenAnimationRunnable = new Runnable() {
@@ -1124,9 +1158,6 @@ public class ActionBarLayout extends FrameLayout {
                                     return;
                                 }
                                 delayedOpenAnimationRunnable = null;
-                                if (currentFragment != null) {
-                                    currentFragment.onTransitionAnimationStart(false, false);
-                                }
                                 fragment.onTransitionAnimationStart(true, false);
                                 startLayoutAnimation(true, true, preview);
                             }
@@ -1136,8 +1167,9 @@ public class ActionBarLayout extends FrameLayout {
                         startLayoutAnimation(true, true, preview);
                     }
                 } else {
-                    containerView.setAlpha(1.0f);
-                    containerView.setTranslationX(0.0f);
+                    if (containerView.isKeyboardVisible || containerViewBack.isKeyboardVisible && currentFragment != null) {
+                        currentFragment.saveKeyboardPositionBeforeTransition();
+                    }
                     currentAnimation = animation;
                 }
             }

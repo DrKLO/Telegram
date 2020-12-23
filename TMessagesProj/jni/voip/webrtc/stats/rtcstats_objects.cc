@@ -92,6 +92,7 @@ RTCCertificateStats::~RTCCertificateStats() {}
 
 // clang-format off
 WEBRTC_RTCSTATS_IMPL(RTCCodecStats, RTCStats, "codec",
+    &transport_id,
     &payload_type,
     &mime_type,
     &clock_rate,
@@ -104,6 +105,7 @@ RTCCodecStats::RTCCodecStats(const std::string& id, int64_t timestamp_us)
 
 RTCCodecStats::RTCCodecStats(std::string&& id, int64_t timestamp_us)
     : RTCStats(std::move(id), timestamp_us),
+      transport_id("transportId"),
       payload_type("payloadType"),
       mime_type("mimeType"),
       clock_rate("clockRate"),
@@ -112,6 +114,7 @@ RTCCodecStats::RTCCodecStats(std::string&& id, int64_t timestamp_us)
 
 RTCCodecStats::RTCCodecStats(const RTCCodecStats& other)
     : RTCStats(other.id(), other.timestamp_us()),
+      transport_id(other.transport_id),
       payload_type(other.payload_type),
       mime_type(other.mime_type),
       clock_rate(other.clock_rate),

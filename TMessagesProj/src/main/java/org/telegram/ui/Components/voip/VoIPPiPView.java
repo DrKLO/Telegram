@@ -88,7 +88,6 @@ public class VoIPPiPView implements VoIPBaseService.StateListener, NotificationC
     };
 
     float[] point = new float[2];
-    int[] location = new int[2];
 
     public int xOffset;
     public int yOffset;
@@ -143,7 +142,12 @@ public class VoIPPiPView implements VoIPBaseService.StateListener, NotificationC
         WindowManager.LayoutParams windowLayoutParams = createWindowLayoutParams(activity, parentWidth, parentHeight, SCALE_NORMAL);
         instance = new VoIPPiPView(activity, parentWidth, parentHeight, false);
 
-        WindowManager wm = (WindowManager) activity.getSystemService(Context.WINDOW_SERVICE);
+        WindowManager wm;
+        if (AndroidUtilities.checkInlinePermissions(activity)) {
+            wm = (WindowManager) ApplicationLoader.applicationContext.getSystemService(Context.WINDOW_SERVICE);
+        } else {
+            wm = (WindowManager) activity.getSystemService(Context.WINDOW_SERVICE);
+        }
         instance.currentAccount = account;
         instance.windowManager = wm;
         instance.windowLayoutParams = windowLayoutParams;
@@ -383,7 +387,7 @@ public class VoIPPiPView implements VoIPBaseService.StateListener, NotificationC
     @Override
     public void onStateChanged(int state) {
         if (state == VoIPBaseService.STATE_ENDED || state == VoIPService.STATE_BUSY || state == VoIPService.STATE_FAILED || state == VoIPService.STATE_HANGING_UP) {
-            AndroidUtilities.runOnUIThread(() -> finish(), 200);
+            AndroidUtilities.runOnUIThread(VoIPPiPView::finish, 200);
         }
         VoIPService service = VoIPService.getSharedInstance();
         if (service == null) {
@@ -491,7 +495,6 @@ public class VoIPPiPView implements VoIPBaseService.StateListener, NotificationC
             finish();
         }
     }
-
 
     private class FloatingView extends FrameLayout {
 

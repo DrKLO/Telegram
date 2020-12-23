@@ -195,7 +195,7 @@ public class CheckBoxCell extends FrameLayout {
         if (checkBoxRound != null) {
             return checkBoxRound.isChecked();
         } else {
-            return  checkBoxSquare.isChecked();
+            return checkBoxSquare.isChecked();
         }
     }
 

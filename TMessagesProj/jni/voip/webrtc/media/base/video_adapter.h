@@ -20,6 +20,7 @@
 #include "media/base/video_common.h"
 #include "rtc_base/constructor_magic.h"
 #include "rtc_base/synchronization/mutex.h"
+#include "rtc_base/system/rtc_export.h"
 #include "rtc_base/thread_annotations.h"
 
 namespace cricket {
@@ -28,7 +29,7 @@ namespace cricket {
 // specified input and output formats. The adaptation includes dropping frames
 // to reduce frame rate and scaling frames.
 // VideoAdapter is thread safe.
-class VideoAdapter {
+class RTC_EXPORT VideoAdapter {
  public:
   VideoAdapter();
   // The source requests output frames whose width and height are divisible
@@ -97,6 +98,14 @@ class VideoAdapter {
   void OnSinkWants(const rtc::VideoSinkWants& sink_wants)
       RTC_LOCKS_EXCLUDED(mutex_);
 
+  // Returns maximum image area, which shouldn't impose any adaptations.
+  // Can return |numeric_limits<int>::max()| if no limit is set.
+  int GetTargetPixels() const;
+
+  // Returns current frame-rate limit.
+  // Can return |numeric_limits<float>::infinity()| if no limit is set.
+  float GetMaxFramerate() const;
+
  private:
   // Determine if frame should be dropped based on input fps and requested fps.
   bool KeepFrame(int64_t in_timestamp_ns) RTC_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
@@ -136,7 +145,7 @@ class VideoAdapter {
   int max_framerate_request_ RTC_GUARDED_BY(mutex_);
 
   // The critical section to protect the above variables.
-  webrtc::Mutex mutex_;
+  mutable webrtc::Mutex mutex_;
 
   RTC_DISALLOW_COPY_AND_ASSIGN(VideoAdapter);
 };

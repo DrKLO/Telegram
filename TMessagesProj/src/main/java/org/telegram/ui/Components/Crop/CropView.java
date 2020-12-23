@@ -777,7 +777,9 @@ public class CropView extends FrameLayout implements CropAreaView.AreaViewListen
 
         float x = previousAreaRect.centerX() - areaView.getCropCenterX();
         float y = previousAreaRect.centerY() - areaView.getCropCenterY();
-        state.translate(x, y);
+        if (state != null) {
+            state.translate(x, y);
+        }
         updateMatrix();
 
         areaView.getCropRect(previousAreaRect);

@@ -12,8 +12,8 @@ import android.content.Context;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.TextUtils;
-import android.text.style.ForegroundColorSpan;
 import android.util.LongSparseArray;
+import android.util.SparseArray;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
@@ -42,7 +42,6 @@ import org.telegram.ui.Cells.DialogCell;
 import org.telegram.ui.Cells.GraySectionCell;
 import org.telegram.ui.Cells.HashtagSearchCell;
 import org.telegram.ui.Cells.HintDialogCell;
-import org.telegram.ui.Cells.LoadingCell;
 import org.telegram.ui.Cells.ProfileSearchCell;
 import org.telegram.ui.Cells.TextCell;
 import org.telegram.ui.Components.FlickerLoadingView;
@@ -202,7 +201,7 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
                     searchResultHashtags.add(arrayList.get(a).hashtag);
                 }
                 if (delegate != null) {
-                    delegate.searchStateChanged(false, false);
+                    delegate.searchStateChanged(waitingResponseCount > 0, false);
                 }
                 notifyDataSetChanged();
             }
@@ -264,8 +263,6 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
         req.limit = 20;
         req.q = query;
         req.filter = new TLRPC.TL_inputMessagesFilterEmpty();
-        req.flags |= 1;
-        req.folder_id = folderId;
         if (query.equals(lastMessagesSearchString) && !searchResultMessages.isEmpty()) {
             MessageObject lastMessage = searchResultMessages.get(searchResultMessages.size() - 1);
             req.offset_id = lastMessage.getId();
@@ -290,9 +287,19 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
             final ArrayList<MessageObject> messageObjects = new ArrayList<>();
             if (error == null) {
                 TLRPC.messages_Messages res = (TLRPC.messages_Messages) response;
+                SparseArray<TLRPC.Chat> chatsMap = new SparseArray<>();
+                SparseArray<TLRPC.User> usersMap = new SparseArray<>();
+                for (int a = 0; a < res.chats.size(); a++) {
+                    TLRPC.Chat chat = res.chats.get(a);
+                    chatsMap.put(chat.id, chat);
+                }
+                for (int a = 0; a < res.users.size(); a++) {
+                    TLRPC.User user = res.users.get(a);
+                    usersMap.put(user.id, user);
+                }
                 for (int a = 0; a < res.messages.size(); a++) {
                     TLRPC.Message message = res.messages.get(a);
-                    MessageObject messageObject = new MessageObject(currentAccount, message, false, true);
+                    MessageObject messageObject = new MessageObject(currentAccount, message, usersMap, chatsMap, false, true);
                     messageObjects.add(messageObject);
                     messageObject.setQuery(query);
                 }
@@ -639,9 +646,7 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
             searchResultNames.clear();
             searchResultHashtags.clear();
             searchAdapterHelper.mergeResults(null);
-            if (needMessagesSearch != 2) {
-                searchAdapterHelper.queryServerSearch(null, true, true, true, true, dialogsType == 2, 0, dialogsType == 0, 0, 0);
-            }
+            searchAdapterHelper.queryServerSearch(null, true, true, true, true, dialogsType == 2, 0, dialogsType == 0, 0, 0);
             searchWas = false;
             lastSearchId = 0;
             waitingResponseCount = 0;
@@ -677,10 +682,8 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
             final int searchId = ++lastSearchId;
             waitingResponseCount = 3;
             notifyDataSetChanged();
-            if (needMessagesSearch != 2 && delegate != null) {
+            if (delegate != null) {
                 delegate.searchStateChanged(true, false);
-            } else {
-                waitingResponseCount--;
             }
 
             Utilities.searchQueue.postRunnable(searchRunnable = () -> {
@@ -694,7 +697,7 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
                     if (needMessagesSearch != 2) {
                         searchAdapterHelper.queryServerSearch(query, true, dialogsType != 4, true, dialogsType != 4, dialogsType == 2, 0, dialogsType == 0, 0, searchId);
                     } else {
-                        waitingResponseCount--;
+                        waitingResponseCount -= 2;
                     }
                     if (needMessagesSearch == 0) {
                         waitingResponseCount--;

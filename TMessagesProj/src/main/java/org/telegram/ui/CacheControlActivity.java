@@ -14,12 +14,12 @@ import android.content.SharedPreferences;
 import android.os.Build;
 import android.os.Environment;
 import android.os.StatFs;
+import android.text.TextUtils;
 import android.transition.ChangeBounds;
 import android.transition.Fade;
 import android.transition.TransitionManager;
 import android.transition.TransitionSet;
 import android.view.Gravity;
-import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
@@ -41,6 +41,7 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.MessagesStorage;
+import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.UserConfig;
@@ -154,31 +155,49 @@ public class CacheControlActivity extends BaseFragment {
             audioSize = getDirectorySize(FileLoader.checkDirectory(FileLoader.MEDIA_DIR_AUDIO), 0);
             totalSize = cacheSize + videoSize + audioSize + photoSize + documentsSize + musicSize + stickersSize;
 
-            File path = Environment.getDataDirectory();
-            StatFs stat = new StatFs(path.getPath());
+            File path;
+            if (Build.VERSION.SDK_INT >= 19) {
+                ArrayList<File> storageDirs = AndroidUtilities.getRootDirs();
+                String dir = (path = storageDirs.get(0)).getAbsolutePath();
+                if (!TextUtils.isEmpty(SharedConfig.storageCacheDir)) {
+                    for (int a = 0, N = storageDirs.size(); a < N; a++) {
+                        File file = storageDirs.get(a);
+                        if (file.getAbsolutePath().startsWith(SharedConfig.storageCacheDir)) {
+                            path = file;
+                            break;
+                        }
+                    }
+                }
+            } else {
+                path = new File(SharedConfig.storageCacheDir);
+            }
+            try {
+                StatFs stat = new StatFs(path.getPath());
+                long blockSize;
+                long blockSizeExternal;
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.JELLY_BEAN_MR2) {
+                    blockSize = stat.getBlockSizeLong();
+                } else {
+                    blockSize = stat.getBlockSize();
+                }
+                long availableBlocks;
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.JELLY_BEAN_MR2) {
+                    availableBlocks = stat.getAvailableBlocksLong();
+                } else {
+                    availableBlocks = stat.getAvailableBlocks();
+                }
+                long blocksTotal;
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.JELLY_BEAN_MR2) {
+                    blocksTotal = stat.getBlockCountLong();
+                } else {
+                    blocksTotal = stat.getBlockCount();
+                }
 
-            long blockSize;
-            long blockSizeExternal;
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.JELLY_BEAN_MR2) {
-                blockSize = stat.getBlockSizeLong();
-            } else {
-                blockSize = stat.getBlockSize();
+                totalDeviceSize = blocksTotal * blockSize;
+                totalDeviceFreeSize = availableBlocks * blockSize;
+            } catch (Exception e) {
+                FileLog.e(e);
             }
-            long availableBlocks;
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.JELLY_BEAN_MR2) {
-                availableBlocks = stat.getAvailableBlocksLong();
-            } else {
-                availableBlocks = stat.getAvailableBlocks();
-            }
-            long blocksTotal;
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.JELLY_BEAN_MR2) {
-                blocksTotal = stat.getBlockCountLong();
-            } else {
-                blocksTotal = stat.getBlockCount();
-            }
-
-            totalDeviceSize = blocksTotal * blockSize;
-            totalDeviceFreeSize = availableBlocks * blockSize;
 
             AndroidUtilities.runOnUIThread(() -> {
                 calculating = false;
@@ -515,6 +534,7 @@ public class CacheControlActivity extends BaseFragment {
             final AlertDialog progressDialog = new AlertDialog(getParentActivity(), 3);
             progressDialog.setCanCacnel(false);
             progressDialog.showDelayed(500);
+            MessagesController.getInstance(currentAccount).clearQueryTime();
             MessagesStorage.getInstance(currentAccount).getStorageQueue().postRunnable(() -> {
                 try {
                     SQLiteDatabase database = MessagesStorage.getInstance(currentAccount).getDatabase();
@@ -604,6 +624,7 @@ public class CacheControlActivity extends BaseFragment {
                             databaseSize = MessagesStorage.getInstance(currentAccount).getDatabaseSize();
                             listAdapter.notifyDataSetChanged();
                         }
+                        NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.didDatabaseCleared);
                     });
                 }
             });

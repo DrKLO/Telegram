@@ -28,7 +28,7 @@ namespace cricket {
 
 // Fake NetworkInterface that sends/receives RTP/RTCP packets.
 class FakeNetworkInterface : public MediaChannel::NetworkInterface,
-                             public rtc::MessageHandler {
+                             public rtc::MessageHandlerAutoCleanup {
  public:
   FakeNetworkInterface()
       : thread_(rtc::Thread::Current()),

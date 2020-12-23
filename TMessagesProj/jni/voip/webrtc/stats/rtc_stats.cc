@@ -35,6 +35,20 @@ std::string VectorToString(const std::vector<T>& vector) {
   return sb.Release();
 }
 
+// This overload is required because std::vector<bool> range loops don't
+// return references but objects, causing -Wrange-loop-analysis diagnostics.
+std::string VectorToString(const std::vector<bool>& vector) {
+  rtc::StringBuilder sb;
+  sb << "[";
+  const char* separator = "";
+  for (bool element : vector) {
+    sb << separator << rtc::ToString(element);
+    separator = ",";
+  }
+  sb << "]";
+  return sb.Release();
+}
+
 // Produces "[\"a\",\"b\",\"c\"]". Works for vectors of both const char* and
 // std::string element types.
 template <typename T>

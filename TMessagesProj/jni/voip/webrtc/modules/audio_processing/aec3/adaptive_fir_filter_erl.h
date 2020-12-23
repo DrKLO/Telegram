@@ -36,6 +36,10 @@ void ErlComputer_NEON(
 void ErlComputer_SSE2(
     const std::vector<std::array<float, kFftLengthBy2Plus1>>& H2,
     rtc::ArrayView<float> erl);
+
+void ErlComputer_AVX2(
+    const std::vector<std::array<float, kFftLengthBy2Plus1>>& H2,
+    rtc::ArrayView<float> erl);
 #endif
 
 }  // namespace aec3

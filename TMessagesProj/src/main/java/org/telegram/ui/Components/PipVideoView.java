@@ -60,6 +60,8 @@ public class PipVideoView {
     private SharedPreferences preferences;
     private DecelerateInterpolator decelerateInterpolator;
 
+    private AnimatorSet animatorSet;
+
     private class MiniControlsView extends FrameLayout {
 
         private Paint progressPaint;
@@ -352,8 +354,12 @@ public class PipVideoView {
             }
 
             @Override
-            public boolean onInterceptTouchEvent(MotionEvent event) {
-                return super.onInterceptTouchEvent(event);
+            protected void onDetachedFromWindow() {
+                super.onDetachedFromWindow();
+                if (animatorSet != null) {
+                    animatorSet.cancel();
+                    animatorSet = null;
+                }
             }
         };
 
@@ -562,7 +568,7 @@ public class PipVideoView {
             if (decelerateInterpolator == null) {
                 decelerateInterpolator = new DecelerateInterpolator();
             }
-            AnimatorSet animatorSet = new AnimatorSet();
+            animatorSet = new AnimatorSet();
             animatorSet.setInterpolator(decelerateInterpolator);
             animatorSet.setDuration(150);
             if (slideOut) {
@@ -570,6 +576,7 @@ public class PipVideoView {
                 animatorSet.addListener(new AnimatorListenerAdapter() {
                     @Override
                     public void onAnimationEnd(Animator animation) {
+                        animatorSet = null;
                         if (parentSheet != null) {
                             parentSheet.destroy();
                         } else if (photoViewer != null) {

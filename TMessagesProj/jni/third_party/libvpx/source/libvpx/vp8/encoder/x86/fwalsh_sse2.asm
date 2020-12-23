@@ -14,7 +14,7 @@
 SECTION .text
 
 ;void vp8_short_walsh4x4_sse2(short *input, short *output, int pitch)
-global sym(vp8_short_walsh4x4_sse2) PRIVATE
+globalsym(vp8_short_walsh4x4_sse2)
 sym(vp8_short_walsh4x4_sse2):
     push        rbp
     mov         rbp, rsp

@@ -100,7 +100,7 @@ void vp8_dequant_idct_add_mmi(int16_t *input, int16_t *dq, unsigned char *dest,
   vp8_short_idct4x4llm_mmi(input, dest, stride, dest, stride);
 
   __asm__ volatile(
-      "xor        %[ftmp0],   %[ftmp0],       %[ftmp0]        \n\t"
+      "pxor       %[ftmp0],   %[ftmp0],       %[ftmp0]        \n\t"
       "gssdlc1    %[ftmp0],   0x07(%[input])                  \n\t"
       "gssdrc1    %[ftmp0],   0x00(%[input])                  \n\t"
       "sdl        $0,         0x0f(%[input])                  \n\t"

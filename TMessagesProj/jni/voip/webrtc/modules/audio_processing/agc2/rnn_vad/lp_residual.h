@@ -19,7 +19,7 @@ namespace webrtc {
 namespace rnn_vad {
 
 // LPC inverse filter length.
-constexpr size_t kNumLpcCoefficients = 5;
+constexpr int kNumLpcCoefficients = 5;
 
 // Given a frame |x|, computes a post-processed version of LPC coefficients
 // tailored for pitch estimation.

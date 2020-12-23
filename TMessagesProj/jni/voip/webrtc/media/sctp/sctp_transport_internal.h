@@ -142,18 +142,6 @@ class SctpTransportInternal {
   virtual void set_debug_name_for_testing(const char* debug_name) = 0;
 };
 
-// Factory class which can be used to allow fake SctpTransports to be injected
-// for testing. Or, theoretically, SctpTransportInternal implementations that
-// use something other than usrsctp.
-class SctpTransportInternalFactory {
- public:
-  virtual ~SctpTransportInternalFactory() {}
-
-  // Create an SCTP transport using |channel| for the underlying transport.
-  virtual std::unique_ptr<SctpTransportInternal> CreateSctpTransport(
-      rtc::PacketTransportInternal* channel) = 0;
-};
-
 }  // namespace cricket
 
 #endif  // MEDIA_SCTP_SCTP_TRANSPORT_INTERNAL_H_

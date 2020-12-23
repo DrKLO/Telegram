@@ -12,7 +12,7 @@
 %include "vpx_ports/x86_abi_support.asm"
 
 section .text
-global sym(vpx_clear_system_state) PRIVATE
+globalsym(vpx_clear_system_state)
 sym(vpx_clear_system_state):
     emms
     ret

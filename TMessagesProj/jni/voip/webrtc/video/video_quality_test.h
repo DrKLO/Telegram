@@ -30,6 +30,7 @@
 #include "video/video_analyzer.h"
 #ifdef WEBRTC_WIN
 #include "modules/audio_device/win/core_audio_utility_win.h"
+#include "rtc_base/win/scoped_com_initializer.h"
 #endif
 
 namespace webrtc {
@@ -137,7 +138,7 @@ class VideoQualityTest : public test::CallTest,
 #ifdef WEBRTC_WIN
   // Windows Core Audio based ADM needs to run on a COM initialized thread.
   // Only referenced in combination with --audio --use_real_adm flags.
-  std::unique_ptr<webrtc_win::ScopedCOMInitializer> com_initializer_;
+  std::unique_ptr<ScopedCOMInitializer> com_initializer_;
 #endif
 };
 

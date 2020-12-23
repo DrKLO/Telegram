@@ -22,7 +22,8 @@ public class SessionDescription {
   public static enum Type {
     OFFER,
     PRANSWER,
-    ANSWER;
+    ANSWER,
+    ROLLBACK;
 
     public String canonicalForm() {
       return name().toLowerCase(Locale.US);

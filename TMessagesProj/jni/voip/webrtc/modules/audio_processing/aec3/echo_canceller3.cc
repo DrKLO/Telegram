@@ -213,6 +213,12 @@ void CopyBufferIntoFrame(const AudioBuffer& buffer,
 EchoCanceller3Config AdjustConfig(const EchoCanceller3Config& config) {
   EchoCanceller3Config adjusted_cfg = config;
 
+  if (field_trial::IsEnabled("WebRTC-Aec3AntiHowlingMinimizationKillSwitch")) {
+    adjusted_cfg.suppressor.high_bands_suppression
+        .anti_howling_activation_threshold = 25.f;
+    adjusted_cfg.suppressor.high_bands_suppression.anti_howling_gain = 0.01f;
+  }
+
   if (field_trial::IsEnabled("WebRTC-Aec3UseShortConfigChangeDuration")) {
     adjusted_cfg.filter.config_change_duration_blocks = 10;
   }
@@ -362,6 +368,10 @@ EchoCanceller3Config AdjustConfig(const EchoCanceller3Config& config) {
     adjusted_cfg.suppressor.nearend_tuning.max_dec_factor_lf = .2f;
   }
 
+  if (field_trial::IsEnabled("WebRTC-Aec3EnforceConservativeHfSuppression")) {
+    adjusted_cfg.suppressor.conservative_hf_suppression = true;
+  }
+
   if (field_trial::IsEnabled("WebRTC-Aec3EnforceStationarityProperties")) {
     adjusted_cfg.echo_audibility.use_stationarity_properties = true;
   }
@@ -376,6 +386,10 @@ EchoCanceller3Config AdjustConfig(const EchoCanceller3Config& config) {
   } else if (field_trial::IsEnabled(
                  "WebRTC-Aec3EnforceVeryLowActiveRenderLimit")) {
     adjusted_cfg.render_levels.active_render_limit = 30.f;
+  }
+
+  if (field_trial::IsEnabled("WebRTC-Aec3NonlinearModeReverbKillSwitch")) {
+    adjusted_cfg.echo_model.model_reverb_in_nonlinear_mode = false;
   }
 
   // Field-trial based override for the whole suppressor tuning.
@@ -564,6 +578,11 @@ class EchoCanceller3::RenderWriter {
                          Aec3RenderQueueItemVerifier>* render_transfer_queue,
                size_t num_bands,
                size_t num_channels);
+
+  RenderWriter() = delete;
+  RenderWriter(const RenderWriter&) = delete;
+  RenderWriter& operator=(const RenderWriter&) = delete;
+
   ~RenderWriter();
   void Insert(const AudioBuffer& input);
 
@@ -575,7 +594,6 @@ class EchoCanceller3::RenderWriter {
   std::vector<std::vector<std::vector<float>>> render_queue_input_frame_;
   SwapQueue<std::vector<std::vector<std::vector<float>>>,
             Aec3RenderQueueItemVerifier>* render_transfer_queue_;
-  RTC_DISALLOW_IMPLICIT_CONSTRUCTORS(RenderWriter);
 };
 
 EchoCanceller3::RenderWriter::RenderWriter(

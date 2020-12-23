@@ -116,6 +116,7 @@ PROXY_METHOD2(void,
               SetRemoteDescription,
               SetSessionDescriptionObserver*,
               SessionDescriptionInterface*)
+PROXY_METHOD1(bool, ShouldFireNegotiationNeededEvent, uint32_t)
 PROXY_METHOD0(PeerConnectionInterface::RTCConfiguration, GetConfiguration)
 PROXY_METHOD1(RTCError,
               SetConfiguration,

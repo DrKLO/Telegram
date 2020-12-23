@@ -10,10 +10,10 @@
 #ifndef RTC_BASE_NUMERICS_SAMPLE_STATS_H_
 #define RTC_BASE_NUMERICS_SAMPLE_STATS_H_
 
+#include "api/numerics/samples_stats_counter.h"
 #include "api/units/data_rate.h"
 #include "api/units/time_delta.h"
 #include "api/units/timestamp.h"
-#include "rtc_base/numerics/samples_stats_counter.h"
 
 namespace webrtc {
 template <typename T>

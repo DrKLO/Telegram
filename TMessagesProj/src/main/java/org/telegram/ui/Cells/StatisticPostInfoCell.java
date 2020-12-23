@@ -3,6 +3,7 @@ package org.telegram.ui.Cells;
 import android.content.Context;
 import android.graphics.Color;
 import android.text.TextUtils;
+import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
 import android.widget.FrameLayout;
@@ -45,13 +46,13 @@ public class StatisticPostInfoCell extends FrameLayout {
 
         message = new TextView(context);
         message.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
-        message.setTextSize(15);
+        message.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
         message.setTextColor(Color.BLACK);
         message.setLines(1);
         message.setEllipsize(TextUtils.TruncateAt.END);
 
         views = new TextView(context);
-        views.setTextSize(15);
+        views.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
         views.setTextColor(Color.BLACK);
 
         linearLayout.addView(message, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1f, Gravity.NO_GRAVITY, 0, 0, 16, 0));
@@ -59,13 +60,13 @@ public class StatisticPostInfoCell extends FrameLayout {
         contentLayout.addView(linearLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.START | Gravity.TOP, 0, 8, 0, 0));
 
         date = new TextView(context);
-        date.setTextSize(13);
+        date.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
         date.setTextColor(Color.BLACK);
         date.setLines(1);
         date.setEllipsize(TextUtils.TruncateAt.END);
 
         shares = new TextView(context);
-        shares.setTextSize(13);
+        shares.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
         shares.setTextColor(Color.BLACK);
 
         linearLayout = new LinearLayout(context);

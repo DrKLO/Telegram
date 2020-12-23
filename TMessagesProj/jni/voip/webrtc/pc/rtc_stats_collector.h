@@ -215,7 +215,8 @@ class RTCStatsCollector : public virtual rtc::RefCountInterface,
   PrepareTransportCertificateStats_n(
       const std::map<std::string, cricket::TransportStats>&
           transport_stats_by_name) const;
-  std::vector<RtpTransceiverStatsInfo> PrepareTransceiverStatsInfos_s_w() const;
+  // The results are stored in |transceiver_stats_infos_| and |call_stats_|.
+  void PrepareTransceiverStatsInfosAndCallStats_s_w();
   std::set<std::string> PrepareTransportNames_s() const;
 
   // Stats gathering on a particular thread.

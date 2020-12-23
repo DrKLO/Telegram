@@ -18,6 +18,9 @@ namespace webrtc {
 
 class DecoderDatabase;
 
+static const size_t kRedHeaderLength = 4;  // 4 bytes RED header.
+static const size_t kRedLastHeaderLength =
+    1;  // reduced size for last RED header.
 // This class handles splitting of RED payloads into smaller parts.
 // Codec-specific packet splitting can be performed by
 // AudioDecoder::ParsePayload.

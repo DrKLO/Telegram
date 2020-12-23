@@ -83,7 +83,6 @@ static base::android::ScopedJavaLocalRef<jobject> Java_EncodedImage_Constructor(
     jlong captureTimeNs,
     const base::android::JavaRef<jobject>& frameType,
     JniIntWrapper rotation,
-    jboolean completeFrame,
     const base::android::JavaRef<jobject>& qp) {
   jclass clazz = org_webrtc_EncodedImage_clazz(env);
   CHECK_CLAZZ(env, clazz,
@@ -95,14 +94,13 @@ static base::android::ScopedJavaLocalRef<jobject> Java_EncodedImage_Constructor(
           env,
           clazz,
           "<init>",
-"(Ljava/nio/ByteBuffer;Ljava/lang/Runnable;IIJLorg/webrtc/EncodedImage$FrameType;IZLjava/lang/Integer;)V",
+"(Ljava/nio/ByteBuffer;Ljava/lang/Runnable;IIJLorg/webrtc/EncodedImage$FrameType;ILjava/lang/Integer;)V",
           &g_org_webrtc_EncodedImage_Constructor);
 
   jobject ret =
       env->NewObject(clazz,
           call_context.base.method_id, buffer.obj(), releaseCallback.obj(), as_jint(encodedWidth),
-              as_jint(encodedHeight), captureTimeNs, frameType.obj(), as_jint(rotation),
-              completeFrame, qp.obj());
+              as_jint(encodedHeight), captureTimeNs, frameType.obj(), as_jint(rotation), qp.obj());
   return base::android::ScopedJavaLocalRef<jobject>(env, ret);
 }
 
@@ -233,28 +231,6 @@ static jint Java_EncodedImage_getRotation(JNIEnv* env, const base::android::Java
 
   jint ret =
       env->CallIntMethod(obj.obj(),
-          call_context.base.method_id);
-  return ret;
-}
-
-static std::atomic<jmethodID> g_org_webrtc_EncodedImage_getCompleteFrame(nullptr);
-static jboolean Java_EncodedImage_getCompleteFrame(JNIEnv* env, const
-    base::android::JavaRef<jobject>& obj) {
-  jclass clazz = org_webrtc_EncodedImage_clazz(env);
-  CHECK_CLAZZ(env, obj.obj(),
-      org_webrtc_EncodedImage_clazz(env), false);
-
-  jni_generator::JniJavaCallContextChecked call_context;
-  call_context.Init<
-      base::android::MethodID::TYPE_INSTANCE>(
-          env,
-          clazz,
-          "getCompleteFrame",
-          "()Z",
-          &g_org_webrtc_EncodedImage_getCompleteFrame);
-
-  jboolean ret =
-      env->CallBooleanMethod(obj.obj(),
           call_context.base.method_id);
   return ret;
 }

@@ -16,6 +16,8 @@ public class FillLastLinearLayoutManager extends LinearLayoutManager {
     private int additionalHeight;
     private RecyclerView listView;
     private boolean skipFirstItem;
+    private boolean bind = true;
+    private boolean canScrollVertically = true;
 
     public FillLastLinearLayoutManager(Context context, int h, RecyclerView recyclerView) {
         super(context);
@@ -35,6 +37,19 @@ public class FillLastLinearLayoutManager extends LinearLayoutManager {
 
     public void setSkipFirstItem() {
         skipFirstItem = true;
+    }
+
+    public void setBind(boolean value) {
+        bind = value;
+    }
+
+    public void setCanScrollVertically(boolean value) {
+        canScrollVertically = value;
+    }
+
+    @Override
+    public boolean canScrollVertically() {
+        return canScrollVertically;
     }
 
     @SuppressWarnings("unchecked")
@@ -58,7 +73,9 @@ public class FillLastLinearLayoutManager extends LinearLayoutManager {
                     holder.itemView.setLayoutParams(generateDefaultLayoutParams());
                 }
             }
-            adapter.onBindViewHolder(holder, a);
+            if (bind) {
+                adapter.onBindViewHolder(holder, a);
+            }
 
             final RecyclerView.LayoutParams lp = (RecyclerView.LayoutParams) holder.itemView.getLayoutParams();
             final int widthSpec = getChildMeasureSpec(listWidth, getWidthMode(), getPaddingLeft() + getPaddingRight() + lp.leftMargin + lp.rightMargin, lp.width, canScrollHorizontally());

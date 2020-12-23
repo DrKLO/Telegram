@@ -106,8 +106,9 @@ enum class SessionState {
               // process will be started.
 };
 
-class RTC_EXPORT BasicPortAllocatorSession : public PortAllocatorSession,
-                                             public rtc::MessageHandler {
+class RTC_EXPORT BasicPortAllocatorSession
+    : public PortAllocatorSession,
+      public rtc::MessageHandlerAutoCleanup {
  public:
   BasicPortAllocatorSession(BasicPortAllocator* allocator,
                             const std::string& content_name,
@@ -323,7 +324,7 @@ class TurnPort;
 
 // Performs the allocation of ports, in a sequenced (timed) manner, for a given
 // network and IP address.
-class AllocationSequence : public rtc::MessageHandler,
+class AllocationSequence : public rtc::MessageHandlerAutoCleanup,
                            public sigslot::has_slots<> {
  public:
   enum State {

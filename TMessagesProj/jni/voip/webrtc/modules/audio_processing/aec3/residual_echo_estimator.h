@@ -68,7 +68,6 @@ class ResidualEchoEstimator {
   const float late_reflections_transparent_mode_gain_;
   const float early_reflections_general_gain_;
   const float late_reflections_general_gain_;
-  const bool model_reverb_in_nonlinear_mode_;
   std::array<float, kFftLengthBy2Plus1> X2_noise_floor_;
   std::array<int, kFftLengthBy2Plus1> X2_noise_floor_counter_;
   ReverbModel echo_reverb_;

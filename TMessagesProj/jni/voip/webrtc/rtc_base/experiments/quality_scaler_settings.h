@@ -21,6 +21,8 @@ class QualityScalerSettings final {
  public:
   static QualityScalerSettings ParseFromFieldTrials();
 
+  absl::optional<int> SamplingPeriodMs() const;
+  absl::optional<int> AverageQpWindow() const;
   absl::optional<int> MinFrames() const;
   absl::optional<double> InitialScaleFactor() const;
   absl::optional<double> ScaleFactor() const;
@@ -31,6 +33,8 @@ class QualityScalerSettings final {
   explicit QualityScalerSettings(
       const WebRtcKeyValueConfig* const key_value_config);
 
+  FieldTrialOptional<int> sampling_period_ms_;
+  FieldTrialOptional<int> average_qp_window_;
   FieldTrialOptional<int> min_frames_;
   FieldTrialOptional<double> initial_scale_factor_;
   FieldTrialOptional<double> scale_factor_;

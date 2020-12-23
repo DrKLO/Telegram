@@ -184,4 +184,12 @@ void StreamSynchronization::SetTargetBufferingDelay(int target_delay_ms) {
   base_target_delay_ms_ = target_delay_ms;
 }
 
+void StreamSynchronization::ReduceAudioDelay() {
+  audio_delay_.extra_ms *= 0.9f;
+}
+
+void StreamSynchronization::ReduceVideoDelay() {
+  video_delay_.extra_ms *= 0.9f;
+}
+
 }  // namespace webrtc

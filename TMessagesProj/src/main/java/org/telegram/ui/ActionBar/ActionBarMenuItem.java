@@ -57,7 +57,6 @@ import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
-import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.Adapters.FiltersView;
@@ -205,7 +204,7 @@ public class ActionBarMenuItem extends FrameLayout {
     @Override
     public boolean onTouchEvent(MotionEvent event) {
         if (event.getActionMasked() == MotionEvent.ACTION_DOWN) {
-            if (longClickEnabled && hasSubMenu() && (popupWindow == null || popupWindow != null && !popupWindow.isShowing())) {
+            if (longClickEnabled && hasSubMenu() && (popupWindow == null || !popupWindow.isShowing())) {
                 showMenuRunnable = () -> {
                     if (getParent() != null) {
                         getParent().requestDisallowInterceptTouchEvent(true);
@@ -215,7 +214,7 @@ public class ActionBarMenuItem extends FrameLayout {
                 AndroidUtilities.runOnUIThread(showMenuRunnable, 200);
             }
         } else if (event.getActionMasked() == MotionEvent.ACTION_MOVE) {
-            if (showSubmenuByMove && hasSubMenu() && (popupWindow == null || popupWindow != null && !popupWindow.isShowing())) {
+            if (showSubmenuByMove && hasSubMenu() && (popupWindow == null || !popupWindow.isShowing())) {
                 if (event.getY() > getHeight()) {
                     if (getParent() != null) {
                         getParent().requestDisallowInterceptTouchEvent(true);
@@ -234,7 +233,8 @@ public class ActionBarMenuItem extends FrameLayout {
                 for (int a = 0; a < popupLayout.getItemsCount(); a++) {
                     View child = popupLayout.getItemAt(a);
                     child.getHitRect(rect);
-                    if ((Integer) child.getTag() < 100) {
+                    Object tag = child.getTag();
+                    if (tag instanceof Integer && (Integer) tag < 100) {
                         if (!rect.contains((int) x, (int) y)) {
                             child.setPressed(false);
                             child.setSelected(false);
@@ -431,7 +431,7 @@ public class ActionBarMenuItem extends FrameLayout {
     public ActionBarMenuSubItem addSubItem(int id, int icon, CharSequence text, boolean needCheck) {
         createPopupLayout();
 
-        ActionBarMenuSubItem cell = new ActionBarMenuSubItem(getContext(), needCheck);
+        ActionBarMenuSubItem cell = new ActionBarMenuSubItem(getContext(), needCheck, false, false);
         cell.setTextAndIcon(text, icon);
         cell.setMinimumWidth(AndroidUtilities.dp(196));
         cell.setTag(id);
@@ -457,6 +457,22 @@ public class ActionBarMenuItem extends FrameLayout {
                 delegate.onItemClick((Integer) view.getTag());
             }
         });
+        return cell;
+    }
+
+    public View addDivider(int color) {
+        createPopupLayout();
+
+        TextView cell = new TextView(getContext());
+        cell.setBackgroundColor(color);
+        cell.setMinimumWidth(AndroidUtilities.dp(196));
+        popupLayout.addView(cell);
+        LinearLayout.LayoutParams layoutParams = (LinearLayout.LayoutParams) cell.getLayoutParams();
+        layoutParams.width = LayoutHelper.MATCH_PARENT;
+        layoutParams.height = 1;
+        layoutParams.topMargin = layoutParams.bottomMargin = AndroidUtilities.dp(3);
+        cell.setLayoutParams(layoutParams);
+
         return cell;
     }
 
@@ -498,6 +514,12 @@ public class ActionBarMenuItem extends FrameLayout {
             if (child instanceof ActionBarMenuSubItem) {
                 ((ActionBarMenuSubItem) child).setSelectorColor(color);
             }
+        }
+    }
+
+    public void setupPopupRadialSelectors(int color) {
+        if (popupLayout != null) {
+            popupLayout.setupRadialSelectors(color);
         }
     }
 
@@ -567,6 +589,7 @@ public class ActionBarMenuItem extends FrameLayout {
         } else {
             updateOrShowPopup(true, false);
         }
+        popupLayout.updateRadialSelectors();
         popupWindow.startAnimation();
     }
 
@@ -592,7 +615,6 @@ public class ActionBarMenuItem extends FrameLayout {
         if (listener != null) {
             Animator animator = listener.getCustomToggleTransition();
             if (animator != null) {
-                searchField.setText("");
                 animator.start();
                 return true;
             }
@@ -1042,6 +1064,18 @@ public class ActionBarMenuItem extends FrameLayout {
                         return true;
                     }
                     return super.onKeyDown(keyCode, event);
+                }
+
+                @Override
+                public boolean onTouchEvent(MotionEvent event) {
+                    boolean result = super.onTouchEvent(event);
+                    if (event.getAction() == MotionEvent.ACTION_UP) { //hack to fix android bug with not opening keyboard
+                        if (!AndroidUtilities.showKeyboard(this)) {
+                            clearFocus();
+                            requestFocus();
+                        }
+                    }
+                    return result;
                 }
             };
             searchField.setScrollContainer(false);

@@ -191,6 +191,9 @@ public class EmuDetector {
             if (!detectResult) {
                 detectResult = checkPackageName();
             }
+            if (!detectResult) {
+                detectResult = EmuInputDevicesDetector.detect();
+            }
             return detectResult;
         } catch (Exception ignore) {
 

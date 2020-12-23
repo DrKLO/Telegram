@@ -28,6 +28,8 @@ std::unique_ptr<Port> TurnPortFactory::Create(
       args.username, args.password, *args.server_address,
       args.config->credentials, args.config->priority, args.origin,
       args.turn_customizer);
+  if (!port)
+    return nullptr;
   port->SetTlsCertPolicy(args.config->tls_cert_policy);
   port->SetTurnLoggingId(args.config->turn_logging_id);
   return std::move(port);
@@ -42,6 +44,8 @@ std::unique_ptr<Port> TurnPortFactory::Create(const CreateRelayPortArgs& args,
       args.config->credentials, args.config->priority, args.origin,
       args.config->tls_alpn_protocols, args.config->tls_elliptic_curves,
       args.turn_customizer, args.config->tls_cert_verifier);
+  if (!port)
+    return nullptr;
   port->SetTlsCertPolicy(args.config->tls_cert_policy);
   port->SetTurnLoggingId(args.config->turn_logging_id);
   return std::move(port);

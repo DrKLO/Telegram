@@ -48,16 +48,9 @@ enum StreamResult { SR_ERROR, SR_SUCCESS, SR_BLOCK, SR_EOS };
 //  SE_WRITE: Data can be written, so Write is likely to not return SR_BLOCK
 enum StreamEvent { SE_OPEN = 1, SE_READ = 2, SE_WRITE = 4, SE_CLOSE = 8 };
 
-struct StreamEventData : public MessageData {
-  int events, error;
-  StreamEventData(int ev, int er) : events(ev), error(er) {}
-};
-
-class RTC_EXPORT StreamInterface : public MessageHandler {
+class RTC_EXPORT StreamInterface {
  public:
-  enum { MSG_POST_EVENT = 0xF1F1, MSG_MAX = MSG_POST_EVENT };
-
-  ~StreamInterface() override;
+  virtual ~StreamInterface() {}
 
   virtual StreamState GetState() const = 0;
 
@@ -96,13 +89,6 @@ class RTC_EXPORT StreamInterface : public MessageHandler {
   // certain events will be raised in the future.
   sigslot::signal3<StreamInterface*, int, int> SignalEvent;
 
-  // Like calling SignalEvent, but posts a message to the specified thread,
-  // which will call SignalEvent.  This helps unroll the stack and prevent
-  // re-entrancy.
-  void PostEvent(Thread* t, int events, int err);
-  // Like the aforementioned method, but posts to the current thread.
-  void PostEvent(int events, int err);
-
   // Return true if flush is successful.
   virtual bool Flush();
 
@@ -124,9 +110,6 @@ class RTC_EXPORT StreamInterface : public MessageHandler {
 
  protected:
   StreamInterface();
-
-  // MessageHandler Interface
-  void OnMessage(Message* msg) override;
 
  private:
   RTC_DISALLOW_COPY_AND_ASSIGN(StreamInterface);

@@ -361,7 +361,7 @@ public class AvatarDrawable extends Drawable {
         } else if (drawDeleted && Theme.avatarDrawables[1] != null) {
             int w = Theme.avatarDrawables[1].getIntrinsicWidth();
             int h = Theme.avatarDrawables[1].getIntrinsicHeight();
-            if (w > size || h > size) {
+            if (w > size - AndroidUtilities.dp(6) || h > size - AndroidUtilities.dp(6)) {
                 float scale = size / (float) AndroidUtilities.dp(50);
                 w *= scale;
                 h *= scale;

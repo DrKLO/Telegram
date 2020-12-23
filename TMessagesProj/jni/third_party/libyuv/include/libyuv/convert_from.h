@@ -132,6 +132,10 @@ int I420ToUYVY(const uint8_t* src_y,
                int width,
                int height);
 
+// The following are from convert_argb.h
+// DEPRECATED: The prototypes will be removed in future.  Use convert_argb.h
+
+// Convert I420 to ARGB.
 LIBYUV_API
 int I420ToARGB(const uint8_t* src_y,
                int src_stride_y,
@@ -144,18 +148,7 @@ int I420ToARGB(const uint8_t* src_y,
                int width,
                int height);
 
-LIBYUV_API
-int I420ToBGRA(const uint8_t* src_y,
-               int src_stride_y,
-               const uint8_t* src_u,
-               int src_stride_u,
-               const uint8_t* src_v,
-               int src_stride_v,
-               uint8_t* dst_bgra,
-               int dst_stride_bgra,
-               int width,
-               int height);
-
+// Convert I420 to ABGR.
 LIBYUV_API
 int I420ToABGR(const uint8_t* src_y,
                int src_stride_y,
@@ -165,205 +158,6 @@ int I420ToABGR(const uint8_t* src_y,
                int src_stride_v,
                uint8_t* dst_abgr,
                int dst_stride_abgr,
-               int width,
-               int height);
-
-LIBYUV_API
-int I420ToRGBA(const uint8_t* src_y,
-               int src_stride_y,
-               const uint8_t* src_u,
-               int src_stride_u,
-               const uint8_t* src_v,
-               int src_stride_v,
-               uint8_t* dst_rgba,
-               int dst_stride_rgba,
-               int width,
-               int height);
-
-LIBYUV_API
-int I420ToRGB24(const uint8_t* src_y,
-                int src_stride_y,
-                const uint8_t* src_u,
-                int src_stride_u,
-                const uint8_t* src_v,
-                int src_stride_v,
-                uint8_t* dst_rgb24,
-                int dst_stride_rgb24,
-                int width,
-                int height);
-
-LIBYUV_API
-int I420ToRAW(const uint8_t* src_y,
-              int src_stride_y,
-              const uint8_t* src_u,
-              int src_stride_u,
-              const uint8_t* src_v,
-              int src_stride_v,
-              uint8_t* dst_raw,
-              int dst_stride_raw,
-              int width,
-              int height);
-
-LIBYUV_API
-int H420ToRGB24(const uint8_t* src_y,
-                int src_stride_y,
-                const uint8_t* src_u,
-                int src_stride_u,
-                const uint8_t* src_v,
-                int src_stride_v,
-                uint8_t* dst_rgb24,
-                int dst_stride_rgb24,
-                int width,
-                int height);
-
-LIBYUV_API
-int H420ToRAW(const uint8_t* src_y,
-              int src_stride_y,
-              const uint8_t* src_u,
-              int src_stride_u,
-              const uint8_t* src_v,
-              int src_stride_v,
-              uint8_t* dst_raw,
-              int dst_stride_raw,
-              int width,
-              int height);
-
-LIBYUV_API
-int J420ToRGB24(const uint8_t* src_y,
-                int src_stride_y,
-                const uint8_t* src_u,
-                int src_stride_u,
-                const uint8_t* src_v,
-                int src_stride_v,
-                uint8_t* dst_rgb24,
-                int dst_stride_rgb24,
-                int width,
-                int height);
-
-LIBYUV_API
-int J420ToRAW(const uint8_t* src_y,
-              int src_stride_y,
-              const uint8_t* src_u,
-              int src_stride_u,
-              const uint8_t* src_v,
-              int src_stride_v,
-              uint8_t* dst_raw,
-              int dst_stride_raw,
-              int width,
-              int height);
-
-LIBYUV_API
-int I420ToRGB565(const uint8_t* src_y,
-                 int src_stride_y,
-                 const uint8_t* src_u,
-                 int src_stride_u,
-                 const uint8_t* src_v,
-                 int src_stride_v,
-                 uint8_t* dst_rgb565,
-                 int dst_stride_rgb565,
-                 int width,
-                 int height);
-
-LIBYUV_API
-int J420ToRGB565(const uint8_t* src_y,
-                 int src_stride_y,
-                 const uint8_t* src_u,
-                 int src_stride_u,
-                 const uint8_t* src_v,
-                 int src_stride_v,
-                 uint8_t* dst_rgb565,
-                 int dst_stride_rgb565,
-                 int width,
-                 int height);
-
-LIBYUV_API
-int H420ToRGB565(const uint8_t* src_y,
-                 int src_stride_y,
-                 const uint8_t* src_u,
-                 int src_stride_u,
-                 const uint8_t* src_v,
-                 int src_stride_v,
-                 uint8_t* dst_rgb565,
-                 int dst_stride_rgb565,
-                 int width,
-                 int height);
-
-LIBYUV_API
-int I422ToRGB565(const uint8_t* src_y,
-                 int src_stride_y,
-                 const uint8_t* src_u,
-                 int src_stride_u,
-                 const uint8_t* src_v,
-                 int src_stride_v,
-                 uint8_t* dst_rgb565,
-                 int dst_stride_rgb565,
-                 int width,
-                 int height);
-
-// Convert I420 To RGB565 with 4x4 dither matrix (16 bytes).
-// Values in dither matrix from 0 to 7 recommended.
-// The order of the dither matrix is first byte is upper left.
-
-LIBYUV_API
-int I420ToRGB565Dither(const uint8_t* src_y,
-                       int src_stride_y,
-                       const uint8_t* src_u,
-                       int src_stride_u,
-                       const uint8_t* src_v,
-                       int src_stride_v,
-                       uint8_t* dst_rgb565,
-                       int dst_stride_rgb565,
-                       const uint8_t* dither4x4,
-                       int width,
-                       int height);
-
-LIBYUV_API
-int I420ToARGB1555(const uint8_t* src_y,
-                   int src_stride_y,
-                   const uint8_t* src_u,
-                   int src_stride_u,
-                   const uint8_t* src_v,
-                   int src_stride_v,
-                   uint8_t* dst_argb1555,
-                   int dst_stride_argb1555,
-                   int width,
-                   int height);
-
-LIBYUV_API
-int I420ToARGB4444(const uint8_t* src_y,
-                   int src_stride_y,
-                   const uint8_t* src_u,
-                   int src_stride_u,
-                   const uint8_t* src_v,
-                   int src_stride_v,
-                   uint8_t* dst_argb4444,
-                   int dst_stride_argb4444,
-                   int width,
-                   int height);
-
-// Convert I420 to AR30.
-LIBYUV_API
-int I420ToAR30(const uint8_t* src_y,
-               int src_stride_y,
-               const uint8_t* src_u,
-               int src_stride_u,
-               const uint8_t* src_v,
-               int src_stride_v,
-               uint8_t* dst_ar30,
-               int dst_stride_ar30,
-               int width,
-               int height);
-
-// Convert H420 to AR30.
-LIBYUV_API
-int H420ToAR30(const uint8_t* src_y,
-               int src_stride_y,
-               const uint8_t* src_u,
-               int src_stride_u,
-               const uint8_t* src_v,
-               int src_stride_v,
-               uint8_t* dst_ar30,
-               int dst_stride_ar30,
                int width,
                int height);
 

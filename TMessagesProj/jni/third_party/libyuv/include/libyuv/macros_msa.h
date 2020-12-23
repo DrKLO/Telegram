@@ -140,6 +140,9 @@
 #define LD_B(RTYPE, psrc) *((RTYPE*)(psrc)) /* NOLINT */
 #define LD_UB(...) LD_B(const v16u8, __VA_ARGS__)
 
+#define LD_H(RTYPE, psrc) *((RTYPE*)(psrc)) /* NOLINT */
+#define LD_UH(...) LD_H(const v8u16, __VA_ARGS__)
+
 #define ST_B(RTYPE, in, pdst) *((RTYPE*)(pdst)) = (in) /* NOLINT */
 #define ST_UB(...) ST_B(v16u8, __VA_ARGS__)
 

@@ -21,7 +21,6 @@
 #include "call/audio_receive_stream.h"
 #include "call/syncable.h"
 #include "modules/rtp_rtcp/source/source_tracker.h"
-#include "rtc_base/constructor_magic.h"
 #include "rtc_base/thread_checker.h"
 #include "system_wrappers/include/clock.h"
 
@@ -61,24 +60,24 @@ class AudioReceiveStream final : public webrtc::AudioReceiveStream,
       const rtc::scoped_refptr<webrtc::AudioState>& audio_state,
       webrtc::RtcEventLog* event_log,
       std::unique_ptr<voe::ChannelReceiveInterface> channel_receive);
+
+  AudioReceiveStream() = delete;
+  AudioReceiveStream(const AudioReceiveStream&) = delete;
+  AudioReceiveStream& operator=(const AudioReceiveStream&) = delete;
+
   ~AudioReceiveStream() override;
 
   // webrtc::AudioReceiveStream implementation.
   void Reconfigure(const webrtc::AudioReceiveStream::Config& config) override;
   void Start() override;
   void Stop() override;
-  webrtc::AudioReceiveStream::Stats GetStats() const override;
+  webrtc::AudioReceiveStream::Stats GetStats(
+      bool get_and_clear_legacy_stats) const override;
   void SetSink(AudioSinkInterface* sink) override;
   void SetGain(float gain) override;
   bool SetBaseMinimumPlayoutDelayMs(int delay_ms) override;
   int GetBaseMinimumPlayoutDelayMs() const override;
   std::vector<webrtc::RtpSource> GetSources() const override;
-
-  // TODO(nisse): We don't formally implement RtpPacketSinkInterface, and this
-  // method shouldn't be needed. But it's currently used by the
-  // AudioReceiveStreamTest.ReceiveRtpPacket unittest. Figure out if that test
-  // shuld be refactored or deleted, and then delete this method.
-  void OnRtpPacket(const RtpPacketReceived& packet);
 
   // AudioMixer::Source
   AudioFrameInfo GetAudioFrameWithInfo(int sample_rate_hz,
@@ -93,7 +92,7 @@ class AudioReceiveStream final : public webrtc::AudioReceiveStream,
                               int64_t* time_ms) const override;
   void SetEstimatedPlayoutNtpTimestampMs(int64_t ntp_timestamp_ms,
                                          int64_t time_ms) override;
-  void SetMinimumPlayoutDelay(int delay_ms) override;
+  bool SetMinimumPlayoutDelay(int delay_ms) override;
 
   void AssociateSendStream(AudioSendStream* send_stream);
   void DeliverRtcp(const uint8_t* packet, size_t length);
@@ -118,8 +117,6 @@ class AudioReceiveStream final : public webrtc::AudioReceiveStream,
   bool playing_ RTC_GUARDED_BY(worker_thread_checker_) = false;
 
   std::unique_ptr<RtpStreamReceiverInterface> rtp_stream_receiver_;
-
-  RTC_DISALLOW_IMPLICIT_CONSTRUCTORS(AudioReceiveStream);
 };
 }  // namespace internal
 }  // namespace webrtc

@@ -76,6 +76,8 @@ class RtpTransport : public RtpTransportInternal {
 
   bool UnregisterRtpDemuxerSink(RtpPacketSinkInterface* sink) override;
 
+  virtual void OnErrorDemuxingPacket(uint32_t ssrc);
+
  protected:
   // These methods will be used in the subclasses.
   void DemuxPacket(rtc::CopyOnWriteBuffer packet, int64_t packet_time_us);

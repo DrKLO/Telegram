@@ -305,7 +305,7 @@ class VirtualSocketServer : public SocketServer, public sigslot::has_slots<> {
 // Implements the socket interface using the virtual network.  Packets are
 // passed as messages using the message queue of the socket server.
 class VirtualSocket : public AsyncSocket,
-                      public MessageHandler,
+                      public MessageHandlerAutoCleanup,
                       public sigslot::has_slots<> {
  public:
   VirtualSocket(VirtualSocketServer* server, int family, int type, bool async);

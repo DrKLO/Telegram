@@ -539,14 +539,23 @@ public class PhonebookShareAlert extends BottomSheet {
                     android.content.ClipboardManager clipboard = (android.content.ClipboardManager) ApplicationLoader.applicationContext.getSystemService(Context.CLIPBOARD_SERVICE);
                     android.content.ClipData clip = android.content.ClipData.newPlainText("label", item.getValue(false));
                     clipboard.setPrimaryClip(clip);
-                    if (item.type == 0) {
-                        Toast.makeText(this.parentFragment.getParentActivity(), LocaleController.getString("PhoneCopied", R.string.PhoneCopied), Toast.LENGTH_SHORT).show();
-                    } else if (item.type == 1) {
-                        Toast.makeText(this.parentFragment.getParentActivity(), LocaleController.getString("EmailCopied", R.string.EmailCopied), Toast.LENGTH_SHORT).show();
-                    } else if (item.type == 3) {
-                        Toast.makeText(this.parentFragment.getParentActivity(), LocaleController.getString("LinkCopied", R.string.LinkCopied), Toast.LENGTH_SHORT).show();
-                    } else {
-                        Toast.makeText(this.parentFragment.getParentActivity(), LocaleController.getString("TextCopied", R.string.TextCopied), Toast.LENGTH_SHORT).show();
+                    if (BulletinFactory.canShowBulletin(parentFragment)) {
+                        if (item.type == 3) {
+                            BulletinFactory.of((FrameLayout) containerView).createCopyLinkBulletin().show();
+                        } else {
+                            final Bulletin.SimpleLayout layout = new Bulletin.SimpleLayout(context);
+                            if (item.type == 0) {
+                                layout.textView.setText(LocaleController.getString("PhoneCopied", R.string.PhoneCopied));
+                                layout.imageView.setImageResource(R.drawable.menu_calls);
+                            } else if (item.type == 1) {
+                                layout.textView.setText(LocaleController.getString("EmailCopied", R.string.EmailCopied));
+                                layout.imageView.setImageResource(R.drawable.menu_mail);
+                            } else {
+                                layout.textView.setText(LocaleController.getString("TextCopied", R.string.TextCopied));
+                                layout.imageView.setImageResource(R.drawable.menu_info);
+                            }
+                            Bulletin.make((FrameLayout) containerView, layout, Bulletin.DURATION_SHORT).show();
+                        }
                     }
                     return true;
                 });
@@ -903,6 +912,23 @@ public class PhonebookShareAlert extends BottomSheet {
                 }
             }
         });
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        Bulletin.addDelegate((FrameLayout) containerView, new Bulletin.Delegate() {
+            @Override
+            public int getBottomOffset() {
+                return AndroidUtilities.dp(74);
+            }
+        });
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        Bulletin.removeDelegate((FrameLayout) containerView);
     }
 
     public void setDelegate(ChatAttachAlertContactsLayout.PhonebookShareAlertDelegate phonebookShareAlertDelegate) {

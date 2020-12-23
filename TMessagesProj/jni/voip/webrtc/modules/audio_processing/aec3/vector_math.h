@@ -40,6 +40,7 @@ class VectorMath {
       : optimization_(optimization) {}
 
   // Elementwise square root.
+  void SqrtAVX2(rtc::ArrayView<float> x);
   void Sqrt(rtc::ArrayView<float> x) {
     switch (optimization_) {
 #if defined(WEBRTC_ARCH_X86_FAMILY)
@@ -110,6 +111,9 @@ class VectorMath {
   }
 
   // Elementwise vector multiplication z = x * y.
+  void MultiplyAVX2(rtc::ArrayView<const float> x,
+                    rtc::ArrayView<const float> y,
+                    rtc::ArrayView<float> z);
   void Multiply(rtc::ArrayView<const float> x,
                 rtc::ArrayView<const float> y,
                 rtc::ArrayView<float> z) {
@@ -133,6 +137,9 @@ class VectorMath {
           z[j] = x[j] * y[j];
         }
       } break;
+      case Aec3Optimization::kAvx2:
+        MultiplyAVX2(x, y, z);
+        break;
 #endif
 #if defined(WEBRTC_HAS_NEON)
       case Aec3Optimization::kNeon: {
@@ -159,6 +166,7 @@ class VectorMath {
   }
 
   // Elementwise vector accumulation z += x.
+  void AccumulateAVX2(rtc::ArrayView<const float> x, rtc::ArrayView<float> z);
   void Accumulate(rtc::ArrayView<const float> x, rtc::ArrayView<float> z) {
     RTC_DCHECK_EQ(z.size(), x.size());
     switch (optimization_) {
@@ -179,6 +187,9 @@ class VectorMath {
           z[j] += x[j];
         }
       } break;
+      case Aec3Optimization::kAvx2:
+        AccumulateAVX2(x, z);
+        break;
 #endif
 #if defined(WEBRTC_HAS_NEON)
       case Aec3Optimization::kNeon: {

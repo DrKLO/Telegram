@@ -371,7 +371,7 @@ constexpr uint8_t PlayoutDelayLimits::kValueSizeBytes;
 constexpr const char PlayoutDelayLimits::kUri[];
 
 bool PlayoutDelayLimits::Parse(rtc::ArrayView<const uint8_t> data,
-                               PlayoutDelay* playout_delay) {
+                               VideoPlayoutDelay* playout_delay) {
   RTC_DCHECK(playout_delay);
   if (data.size() != 3)
     return false;
@@ -386,7 +386,7 @@ bool PlayoutDelayLimits::Parse(rtc::ArrayView<const uint8_t> data,
 }
 
 bool PlayoutDelayLimits::Write(rtc::ArrayView<uint8_t> data,
-                               const PlayoutDelay& playout_delay) {
+                               const VideoPlayoutDelay& playout_delay) {
   RTC_DCHECK_EQ(data.size(), 3);
   RTC_DCHECK_LE(0, playout_delay.min_ms);
   RTC_DCHECK_LE(playout_delay.min_ms, playout_delay.max_ms);

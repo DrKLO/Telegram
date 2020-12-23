@@ -24,9 +24,23 @@
 #include "rtc_base/ref_counted_object.h"
 
 namespace webrtc {
+
+struct AudioMixerImpl::SourceStatus {
+  SourceStatus(Source* audio_source, bool is_mixed, float gain)
+      : audio_source(audio_source), is_mixed(is_mixed), gain(gain) {}
+  Source* audio_source = nullptr;
+  bool is_mixed = false;
+  float gain = 0.0f;
+
+  // A frame that will be passed to audio_source->GetAudioFrameWithInfo.
+  AudioFrame audio_frame;
+};
+
 namespace {
 
 struct SourceFrame {
+  SourceFrame() = default;
+
   SourceFrame(AudioMixerImpl::SourceStatus* source_status,
               AudioFrame* audio_frame,
               bool muted)
@@ -57,6 +71,7 @@ struct SourceFrame {
 };
 
 // ShouldMixBefore(a, b) is used to select mixer sources.
+// Returns true if `a` is preferred over `b` as a source to be mixed.
 bool ShouldMixBefore(const SourceFrame& a, const SourceFrame& b) {
   if (a.muted != b.muted) {
     return b.muted;
@@ -73,7 +88,7 @@ bool ShouldMixBefore(const SourceFrame& a, const SourceFrame& b) {
 }
 
 void RampAndUpdateGain(
-    const std::vector<SourceFrame>& mixed_sources_and_frames) {
+    rtc::ArrayView<const SourceFrame> mixed_sources_and_frames) {
   for (const auto& source_frame : mixed_sources_and_frames) {
     float target_gain = source_frame.source_status->is_mixed ? 1.0f : 0.0f;
     Ramp(source_frame.source_status->gain, target_gain,
@@ -82,9 +97,11 @@ void RampAndUpdateGain(
   }
 }
 
-AudioMixerImpl::SourceStatusList::const_iterator FindSourceInList(
+std::vector<std::unique_ptr<AudioMixerImpl::SourceStatus>>::const_iterator
+FindSourceInList(
     AudioMixerImpl::Source const* audio_source,
-    AudioMixerImpl::SourceStatusList const* audio_source_list) {
+    std::vector<std::unique_ptr<AudioMixerImpl::SourceStatus>> const*
+        audio_source_list) {
   return std::find_if(
       audio_source_list->begin(), audio_source_list->end(),
       [audio_source](const std::unique_ptr<AudioMixerImpl::SourceStatus>& p) {
@@ -93,14 +110,31 @@ AudioMixerImpl::SourceStatusList::const_iterator FindSourceInList(
 }
 }  // namespace
 
+struct AudioMixerImpl::HelperContainers {
+  void resize(size_t size) {
+    audio_to_mix.resize(size);
+    audio_source_mixing_data_list.resize(size);
+    ramp_list.resize(size);
+    preferred_rates.resize(size);
+  }
+
+  std::vector<AudioFrame*> audio_to_mix;
+  std::vector<SourceFrame> audio_source_mixing_data_list;
+  std::vector<SourceFrame> ramp_list;
+  std::vector<int> preferred_rates;
+};
+
 AudioMixerImpl::AudioMixerImpl(
     std::unique_ptr<OutputRateCalculator> output_rate_calculator,
     bool use_limiter)
     : output_rate_calculator_(std::move(output_rate_calculator)),
-      output_frequency_(0),
-      sample_size_(0),
       audio_source_list_(),
-      frame_combiner_(use_limiter) {}
+      helper_containers_(std::make_unique<HelperContainers>()),
+      frame_combiner_(use_limiter) {
+  const int kTypicalMaxNumberOfMixedStreams = 3;
+  audio_source_list_.reserve(kTypicalMaxNumberOfMixedStreams);
+  helper_containers_->resize(kTypicalMaxNumberOfMixedStreams);
+}
 
 AudioMixerImpl::~AudioMixerImpl() {}
 
@@ -121,40 +155,23 @@ rtc::scoped_refptr<AudioMixerImpl> AudioMixerImpl::Create(
 void AudioMixerImpl::Mix(size_t number_of_channels,
                          AudioFrame* audio_frame_for_mixing) {
   RTC_DCHECK(number_of_channels >= 1);
-  RTC_DCHECK_RUNS_SERIALIZED(&race_checker_);
-
-  CalculateOutputFrequency();
-
-  {
-    MutexLock lock(&mutex_);
-    const size_t number_of_streams = audio_source_list_.size();
-    frame_combiner_.Combine(GetAudioFromSources(), number_of_channels,
-                            OutputFrequency(), number_of_streams,
-                            audio_frame_for_mixing);
-  }
-
-  return;
-}
-
-void AudioMixerImpl::CalculateOutputFrequency() {
-  RTC_DCHECK_RUNS_SERIALIZED(&race_checker_);
   MutexLock lock(&mutex_);
 
-  std::vector<int> preferred_rates;
+  size_t number_of_streams = audio_source_list_.size();
+
   std::transform(audio_source_list_.begin(), audio_source_list_.end(),
-                 std::back_inserter(preferred_rates),
+                 helper_containers_->preferred_rates.begin(),
                  [&](std::unique_ptr<SourceStatus>& a) {
                    return a->audio_source->PreferredSampleRate();
                  });
 
-  output_frequency_ =
-      output_rate_calculator_->CalculateOutputRate(preferred_rates);
-  sample_size_ = (output_frequency_ * kFrameDurationInMs) / 1000;
-}
+  int output_frequency = output_rate_calculator_->CalculateOutputRateFromRange(
+      rtc::ArrayView<const int>(helper_containers_->preferred_rates.data(),
+                                number_of_streams));
 
-int AudioMixerImpl::OutputFrequency() const {
-  RTC_DCHECK_RUNS_SERIALIZED(&race_checker_);
-  return output_frequency_;
+  frame_combiner_.Combine(GetAudioFromSources(output_frequency),
+                          number_of_channels, output_frequency,
+                          number_of_streams, audio_frame_for_mixing);
 }
 
 bool AudioMixerImpl::AddSource(Source* audio_source) {
@@ -164,6 +181,7 @@ bool AudioMixerImpl::AddSource(Source* audio_source) {
              audio_source_list_.end())
       << "Source already added to mixer";
   audio_source_list_.emplace_back(new SourceStatus(audio_source, false, 0));
+  helper_containers_->resize(audio_source_list_.size());
   return true;
 }
 
@@ -175,35 +193,37 @@ void AudioMixerImpl::RemoveSource(Source* audio_source) {
   audio_source_list_.erase(iter);
 }
 
-AudioFrameList AudioMixerImpl::GetAudioFromSources() {
-  RTC_DCHECK_RUNS_SERIALIZED(&race_checker_);
-  AudioFrameList result;
-  std::vector<SourceFrame> audio_source_mixing_data_list;
-  std::vector<SourceFrame> ramp_list;
-
+rtc::ArrayView<AudioFrame* const> AudioMixerImpl::GetAudioFromSources(
+    int output_frequency) {
   // Get audio from the audio sources and put it in the SourceFrame vector.
+  int audio_source_mixing_data_count = 0;
   for (auto& source_and_status : audio_source_list_) {
     const auto audio_frame_info =
         source_and_status->audio_source->GetAudioFrameWithInfo(
-            OutputFrequency(), &source_and_status->audio_frame);
+            output_frequency, &source_and_status->audio_frame);
 
     if (audio_frame_info == Source::AudioFrameInfo::kError) {
       RTC_LOG_F(LS_WARNING) << "failed to GetAudioFrameWithInfo() from source";
       continue;
     }
-    audio_source_mixing_data_list.emplace_back(
-        source_and_status.get(), &source_and_status->audio_frame,
-        audio_frame_info == Source::AudioFrameInfo::kMuted);
+    helper_containers_
+        ->audio_source_mixing_data_list[audio_source_mixing_data_count++] =
+        SourceFrame(source_and_status.get(), &source_and_status->audio_frame,
+                    audio_frame_info == Source::AudioFrameInfo::kMuted);
   }
+  rtc::ArrayView<SourceFrame> audio_source_mixing_data_view(
+      helper_containers_->audio_source_mixing_data_list.data(),
+      audio_source_mixing_data_count);
 
   // Sort frames by sorting function.
-  std::sort(audio_source_mixing_data_list.begin(),
-            audio_source_mixing_data_list.end(), ShouldMixBefore);
+  std::sort(audio_source_mixing_data_view.begin(),
+            audio_source_mixing_data_view.end(), ShouldMixBefore);
 
   int max_audio_frame_counter = kMaximumAmountOfMixedAudioSources;
-
+  int ramp_list_lengh = 0;
+  int audio_to_mix_count = 0;
   // Go through list in order and put unmuted frames in result list.
-  for (const auto& p : audio_source_mixing_data_list) {
+  for (const auto& p : audio_source_mixing_data_view) {
     // Filter muted.
     if (p.muted) {
       p.source_status->is_mixed = false;
@@ -214,19 +234,21 @@ AudioFrameList AudioMixerImpl::GetAudioFromSources() {
     bool is_mixed = false;
     if (max_audio_frame_counter > 0) {
       --max_audio_frame_counter;
-      result.push_back(p.audio_frame);
-      ramp_list.emplace_back(p.source_status, p.audio_frame, false, -1);
+      helper_containers_->audio_to_mix[audio_to_mix_count++] = p.audio_frame;
+      helper_containers_->ramp_list[ramp_list_lengh++] =
+          SourceFrame(p.source_status, p.audio_frame, false, -1);
       is_mixed = true;
     }
     p.source_status->is_mixed = is_mixed;
   }
-  RampAndUpdateGain(ramp_list);
-  return result;
+  RampAndUpdateGain(rtc::ArrayView<SourceFrame>(
+      helper_containers_->ramp_list.data(), ramp_list_lengh));
+  return rtc::ArrayView<AudioFrame* const>(
+      helper_containers_->audio_to_mix.data(), audio_to_mix_count);
 }
 
 bool AudioMixerImpl::GetAudioSourceMixabilityStatusForTest(
     AudioMixerImpl::Source* audio_source) const {
-  RTC_DCHECK_RUNS_SERIALIZED(&race_checker_);
   MutexLock lock(&mutex_);
 
   const auto iter = FindSourceInList(audio_source, &audio_source_list_);

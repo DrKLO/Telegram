@@ -70,19 +70,8 @@ bool VideoCodecH265::operator==(const VideoCodecH265& other) const {
 }
 #endif
 
-bool SpatialLayer::operator==(const SpatialLayer& other) const {
-  return (width == other.width && height == other.height &&
-          maxFramerate == other.maxFramerate &&
-          numberOfTemporalLayers == other.numberOfTemporalLayers &&
-          maxBitrate == other.maxBitrate &&
-          targetBitrate == other.targetBitrate &&
-          minBitrate == other.minBitrate && qpMax == other.qpMax &&
-          active == other.active);
-}
-
 VideoCodec::VideoCodec()
     : codecType(kVideoCodecGeneric),
-      plType(0),
       width(0),
       height(0),
       startBitrate(0),
@@ -162,6 +151,7 @@ const char* CodecTypeToPayloadString(VideoCodecType type) {
 	default:
       return kPayloadNameGeneric;
   }
+  RTC_CHECK_NOTREACHED();
 }
 
 VideoCodecType PayloadStringToCodecType(const std::string& name) {

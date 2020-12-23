@@ -162,6 +162,8 @@ class NetEqImpl : public webrtc::NetEq {
   // after the call.
   int NetworkStatistics(NetEqNetworkStatistics* stats) override;
 
+  NetEqNetworkStatistics CurrentNetworkStatistics() const override;
+
   NetEqLifetimeStatistics GetLifetimeStatistics() const override;
 
   NetEqOperationsAndState GetOperationsAndState() const override;
@@ -328,6 +330,9 @@ class NetEqImpl : public webrtc::NetEq {
 
   // Updates Expand and Merge.
   virtual void UpdatePlcComponents(int fs_hz, size_t channels)
+      RTC_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
+
+  NetEqNetworkStatistics CurrentNetworkStatisticsInternal() const
       RTC_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
 
   Clock* const clock_;

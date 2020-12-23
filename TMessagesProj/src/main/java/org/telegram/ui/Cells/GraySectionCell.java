@@ -62,6 +62,12 @@ public class GraySectionCell extends FrameLayout {
         super.onMeasure(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(32), MeasureSpec.EXACTLY));
     }
 
+    public void setTextColor(String key) {
+        int color = Theme.getColor(key);
+        textView.setTextColor(color);
+        rightTextView.setTextColor(color);
+    }
+
     public void setText(String text) {
         textView.setText(text);
         rightTextView.setVisibility(GONE);
@@ -78,5 +84,9 @@ public class GraySectionCell extends FrameLayout {
         descriptions.add(new ThemeDescription(listView, 0, new Class[]{GraySectionCell.class}, new String[]{"textView"}, null, null, null, Theme.key_graySectionText));
         descriptions.add(new ThemeDescription(listView, 0, new Class[]{GraySectionCell.class}, new String[]{"rightTextView"}, null, null, null, Theme.key_graySectionText));
         descriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_CELLBACKGROUNDCOLOR, new Class[]{GraySectionCell.class}, null, null, null, Theme.key_graySection));
+    }
+
+    public TextView getTextView() {
+        return textView;
     }
 }

@@ -49,6 +49,13 @@ static constexpr int64_t kMaxVbaThrottleTimeMs = 500;
 
 constexpr TimeDelta kEncoderTimeOut = TimeDelta::Seconds(2);
 
+// When send-side BWE is used a stricter 1.1x pacing factor is used, rather than
+// the 2.5x which is used with receive-side BWE. Provides a more careful
+// bandwidth rampup with less risk of overshoots causing adverse effects like
+// packet loss. Not used for receive side BWE, since there we lack the probing
+// feature and so may result in too slow initial rampup.
+static constexpr double kStrictPacingMultiplier = 1.1;
+
 bool TransportSeqNumExtensionConfigured(const VideoSendStream::Config& config) {
   const std::vector<RtpExtension>& extensions = config.rtp.extensions;
   return absl::c_any_of(extensions, [](const RtpExtension& ext) {
@@ -175,7 +182,7 @@ bool SameStreamsEnabled(const VideoBitrateAllocation& lhs,
 }  // namespace
 
 PacingConfig::PacingConfig()
-    : pacing_factor("factor", PacedSender::kDefaultPaceMultiplier),
+    : pacing_factor("factor", kStrictPacingMultiplier),
       max_pacing_delay("max_delay",
                        TimeDelta::Millis(PacedSender::kMaxQueueLengthMs)) {
   ParseFieldTrial({&pacing_factor, &max_pacing_delay},
@@ -300,17 +307,6 @@ VideoSendStreamImpl::VideoSendStreamImpl(
 
   video_stream_encoder_->SetStartBitrate(
       bitrate_allocator_->GetStartBitrate(this));
-
-  // Only request rotation at the source when we positively know that the remote
-  // side doesn't support the rotation extension. This allows us to prepare the
-  // encoder in the expectation that rotation is supported - which is the common
-  // case.
-  bool rotation_applied = absl::c_none_of(
-      config_->rtp.extensions, [](const RtpExtension& extension) {
-        return extension.uri == RtpExtension::kVideoRotationUri;
-      });
-
-  video_stream_encoder_->SetSink(this, rotation_applied);
 }
 
 VideoSendStreamImpl::~VideoSendStreamImpl() {
@@ -323,6 +319,21 @@ VideoSendStreamImpl::~VideoSendStreamImpl() {
 
 void VideoSendStreamImpl::RegisterProcessThread(
     ProcessThread* module_process_thread) {
+  // Called on libjingle's worker thread (not worker_queue_), as part of the
+  // initialization steps. That's also the correct thread/queue for setting the
+  // state for |video_stream_encoder_|.
+
+  // Only request rotation at the source when we positively know that the remote
+  // side doesn't support the rotation extension. This allows us to prepare the
+  // encoder in the expectation that rotation is supported - which is the common
+  // case.
+  bool rotation_applied = absl::c_none_of(
+      config_->rtp.extensions, [](const RtpExtension& extension) {
+        return extension.uri == RtpExtension::kVideoRotationUri;
+      });
+
+  video_stream_encoder_->SetSink(this, rotation_applied);
+
   rtp_video_sender_->RegisterProcessThread(module_process_thread);
 }
 
@@ -468,6 +479,20 @@ void VideoSendStreamImpl::OnBitrateAllocationUpdated(
   }
 }
 
+void VideoSendStreamImpl::OnVideoLayersAllocationUpdated(
+    VideoLayersAllocation allocation) {
+  if (!worker_queue_->IsCurrent()) {
+    auto ptr = weak_ptr_;
+    worker_queue_->PostTask([allocation = std::move(allocation), ptr] {
+      if (!ptr.get())
+        return;
+      ptr->OnVideoLayersAllocationUpdated(allocation);
+    });
+    return;
+  }
+  rtp_video_sender_->OnVideoLayersAllocationUpdated(allocation);
+}
+
 void VideoSendStreamImpl::SignalEncoderActive() {
   RTC_DCHECK_RUN_ON(worker_queue_);
   if (rtp_video_sender_->IsActive()) {
@@ -558,8 +583,7 @@ void VideoSendStreamImpl::OnEncoderConfigurationChanged(
 
 EncodedImageCallback::Result VideoSendStreamImpl::OnEncodedImage(
     const EncodedImage& encoded_image,
-    const CodecSpecificInfo* codec_specific_info,
-    const RTPFragmentationHeader* fragmentation) {
+    const CodecSpecificInfo* codec_specific_info) {
   // Encoded is called on whatever thread the real encoder implementation run
   // on. In the case of hardware encoders, there might be several encoders
   // running in parallel on different threads.
@@ -582,8 +606,8 @@ EncodedImageCallback::Result VideoSendStreamImpl::OnEncodedImage(
   }
 
   EncodedImageCallback::Result result(EncodedImageCallback::Result::OK);
-  result = rtp_video_sender_->OnEncodedImage(encoded_image, codec_specific_info,
-                                             fragmentation);
+  result =
+      rtp_video_sender_->OnEncodedImage(encoded_image, codec_specific_info);
   // Check if there's a throttled VideoBitrateAllocation that we should try
   // sending.
   rtc::WeakPtr<VideoSendStreamImpl> send_stream = weak_ptr_;

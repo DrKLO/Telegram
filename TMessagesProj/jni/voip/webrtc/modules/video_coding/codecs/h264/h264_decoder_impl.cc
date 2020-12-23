@@ -36,6 +36,7 @@ extern "C" {
 #include "rtc_base/logging.h"
 #include "system_wrappers/include/field_trial.h"
 #include "system_wrappers/include/metrics.h"
+#include "third_party/libyuv/include/libyuv/convert.h"
 
 namespace webrtc {
 
@@ -103,7 +104,7 @@ int H264DecoderImpl::AVGetBuffer2(AVCodecContext* context,
   // TODO(nisse): Delete that feature from the video pool, instead add
   // an explicit call to InitializeData here.
   rtc::scoped_refptr<I420Buffer> frame_buffer =
-      decoder->pool_.CreateBuffer(width, height);
+      decoder->ffmpeg_buffer_pool_.CreateI420Buffer(width, height);
 
   int y_size = width * height;
   int uv_size = frame_buffer->ChromaWidth() * frame_buffer->ChromaHeight();
@@ -150,10 +151,13 @@ void H264DecoderImpl::AVFreeBuffer2(void* opaque, uint8_t* data) {
 }
 
 H264DecoderImpl::H264DecoderImpl()
-    : pool_(true),
+    : ffmpeg_buffer_pool_(true),
       decoded_image_callback_(nullptr),
       has_reported_init_(false),
-      has_reported_error_(false) {}
+      has_reported_error_(false),
+      preferred_output_format_(field_trial::IsEnabled("WebRTC-NV12Decode")
+                                   ? VideoFrameBuffer::Type::kNV12
+                                   : VideoFrameBuffer::Type::kI420) {}
 
 H264DecoderImpl::~H264DecoderImpl() {
   Release();
@@ -219,7 +223,8 @@ int32_t H264DecoderImpl::InitDecode(const VideoCodec* codec_settings,
   av_frame_.reset(av_frame_alloc());
 
   if (codec_settings && codec_settings->buffer_pool_size) {
-    if (!pool_.Resize(*codec_settings->buffer_pool_size)) {
+    if (!ffmpeg_buffer_pool_.Resize(*codec_settings->buffer_pool_size) ||
+        !output_buffer_pool_.Resize(*codec_settings->buffer_pool_size)) {
       return WEBRTC_VIDEO_CODEC_UNINITIALIZED;
     }
   }
@@ -325,11 +330,24 @@ int32_t H264DecoderImpl::Decode(const EncodedImage& input_image,
                 i420_buffer->DataV() +
                     i420_buffer->StrideV() * i420_buffer->height() / 2);
 
-  auto cropped_buffer = WrapI420Buffer(
+  rtc::scoped_refptr<webrtc::VideoFrameBuffer> cropped_buffer = WrapI420Buffer(
       av_frame_->width, av_frame_->height, av_frame_->data[kYPlaneIndex],
       av_frame_->linesize[kYPlaneIndex], av_frame_->data[kUPlaneIndex],
       av_frame_->linesize[kUPlaneIndex], av_frame_->data[kVPlaneIndex],
       av_frame_->linesize[kVPlaneIndex], rtc::KeepRefUntilDone(i420_buffer));
+
+  if (preferred_output_format_ == VideoFrameBuffer::Type::kNV12) {
+    const I420BufferInterface* cropped_i420 = cropped_buffer->GetI420();
+    auto nv12_buffer = output_buffer_pool_.CreateNV12Buffer(
+        cropped_i420->width(), cropped_i420->height());
+    libyuv::I420ToNV12(cropped_i420->DataY(), cropped_i420->StrideY(),
+                       cropped_i420->DataU(), cropped_i420->StrideU(),
+                       cropped_i420->DataV(), cropped_i420->StrideV(),
+                       nv12_buffer->MutableDataY(), nv12_buffer->StrideY(),
+                       nv12_buffer->MutableDataUV(), nv12_buffer->StrideUV(),
+                       i420_buffer->width(), i420_buffer->height());
+    cropped_buffer = nv12_buffer;
+  }
 
   // Pass on color space from input frame if explicitly specified.
   const ColorSpace& color_space =

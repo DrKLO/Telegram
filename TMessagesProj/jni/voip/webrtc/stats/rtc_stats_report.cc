@@ -98,13 +98,12 @@ std::unique_ptr<const RTCStats> RTCStatsReport::Take(const std::string& id) {
   return stats;
 }
 
-void RTCStatsReport::TakeMembersFrom(
-    rtc::scoped_refptr<RTCStatsReport> victim) {
-  for (StatsMap::iterator it = victim->stats_.begin();
-       it != victim->stats_.end(); ++it) {
+void RTCStatsReport::TakeMembersFrom(rtc::scoped_refptr<RTCStatsReport> other) {
+  for (StatsMap::iterator it = other->stats_.begin(); it != other->stats_.end();
+       ++it) {
     AddStats(std::unique_ptr<const RTCStats>(it->second.release()));
   }
-  victim->stats_.clear();
+  other->stats_.clear();
 }
 
 RTCStatsReport::ConstIterator RTCStatsReport::begin() const {

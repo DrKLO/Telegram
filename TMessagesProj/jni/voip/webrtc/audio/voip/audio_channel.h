@@ -18,6 +18,7 @@
 
 #include "api/task_queue/task_queue_factory.h"
 #include "api/voip/voip_base.h"
+#include "api/voip/voip_statistics.h"
 #include "audio/voip/audio_egress.h"
 #include "audio/voip/audio_ingress.h"
 #include "modules/rtp_rtcp/source/rtp_rtcp_impl2.h"
@@ -63,6 +64,13 @@ class AudioChannel : public rtc::RefCountInterface {
   absl::optional<SdpAudioFormat> GetEncoderFormat() const {
     return egress_->GetEncoderFormat();
   }
+  void RegisterTelephoneEventType(int rtp_payload_type, int sample_rate_hz) {
+    egress_->RegisterTelephoneEventType(rtp_payload_type, sample_rate_hz);
+  }
+  bool SendTelephoneEvent(int dtmf_event, int duration_ms) {
+    return egress_->SendTelephoneEvent(dtmf_event, duration_ms);
+  }
+  void SetMute(bool enable) { egress_->SetMute(enable); }
 
   // APIs relayed to AudioIngress.
   bool IsPlaying() const { return ingress_->IsPlaying(); }
@@ -74,6 +82,28 @@ class AudioChannel : public rtc::RefCountInterface {
   }
   void SetReceiveCodecs(const std::map<int, SdpAudioFormat>& codecs) {
     ingress_->SetReceiveCodecs(codecs);
+  }
+  IngressStatistics GetIngressStatistics();
+
+  // See comments on the methods used from AudioEgress and AudioIngress.
+  // Conversion to double is following what is done in
+  // DoubleAudioLevelFromIntAudioLevel method in rtc_stats_collector.cc to be
+  // consistent.
+  double GetInputAudioLevel() const {
+    return egress_->GetInputAudioLevel() / 32767.0;
+  }
+  double GetInputTotalEnergy() const { return egress_->GetInputTotalEnergy(); }
+  double GetInputTotalDuration() const {
+    return egress_->GetInputTotalDuration();
+  }
+  double GetOutputAudioLevel() const {
+    return ingress_->GetOutputAudioLevel() / 32767.0;
+  }
+  double GetOutputTotalEnergy() const {
+    return ingress_->GetOutputTotalEnergy();
+  }
+  double GetOutputTotalDuration() const {
+    return ingress_->GetOutputTotalDuration();
   }
 
  private:

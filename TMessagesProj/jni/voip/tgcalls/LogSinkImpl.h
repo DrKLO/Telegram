@@ -6,11 +6,11 @@
 
 namespace tgcalls {
 
-struct Config;
+struct FilePath;
 
 class LogSinkImpl final : public rtc::LogSink {
 public:
-	LogSinkImpl(const Config &config);
+	LogSinkImpl(const FilePath &logPath);
 
 	void OnLogMessage(const std::string &msg, rtc::LoggingSeverity severity, const char *tag) override;
 	void OnLogMessage(const std::string &message, rtc::LoggingSeverity severity) override;

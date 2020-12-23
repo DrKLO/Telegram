@@ -14,7 +14,7 @@ namespace cricket {
 
 const int kVideoCodecClockrate = 90000;
 const int kDataCodecClockrate = 90000;
-const int kDataMaxBandwidth = 30720;  // bps
+const int kRtpDataMaxBandwidth = 30720;  // bps
 
 const float kHighSystemCpuThreshold = 0.85f;
 const float kLowSystemCpuThreshold = 0.65f;
@@ -107,7 +107,6 @@ const char kH264CodecName[] = "H264";
 #ifndef DISABLE_H265
 const char kH265CodecName[] = "H265";
 #endif
-const char kHEVCCodecName[] = "H265X";
 
 // RFC 6184 RTP Payload Format for H.264 video
 const char kH264FmtpProfileLevelId[] = "profile-level-id";

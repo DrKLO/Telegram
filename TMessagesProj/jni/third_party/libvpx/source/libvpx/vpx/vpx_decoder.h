@@ -58,6 +58,10 @@ extern "C" {
 #define VPX_CODEC_CAP_ERROR_CONCEALMENT 0x80000
 /*!\brief Can receive encoded frames one fragment at a time */
 #define VPX_CODEC_CAP_INPUT_FRAGMENTS 0x100000
+/*!\brief Can support frame-based multi-threading */
+#define VPX_CODEC_CAP_FRAME_THREADING 0x200000
+/*!brief Can support external frame buffers */
+#define VPX_CODEC_CAP_EXTERNAL_FRAME_BUFFER 0x400000
 
 /*! \brief Initialization-time Feature Enabling
  *
@@ -66,11 +70,6 @@ extern "C" {
  *
  *  The available flags are specified by VPX_CODEC_USE_* defines.
  */
-/*!\brief Can support frame-based multi-threading */
-#define VPX_CODEC_CAP_FRAME_THREADING 0x200000
-/*!brief Can support external frame buffers */
-#define VPX_CODEC_CAP_EXTERNAL_FRAME_BUFFER 0x400000
-
 #define VPX_CODEC_USE_POSTPROC 0x10000 /**< Postprocess decoded frame */
 /*!\brief Conceal errors in decoded frames */
 #define VPX_CODEC_USE_ERROR_CONCEALMENT 0x20000
@@ -185,8 +184,8 @@ vpx_codec_err_t vpx_codec_get_stream_info(vpx_codec_ctx_t *ctx,
 /*!\brief Decode data
  *
  * Processes a buffer of coded data. If the processing results in a new
- * decoded frame becoming available, PUT_SLICE and PUT_FRAME events may be
- * generated, as appropriate. Encoded data \ref MUST be passed in DTS (decode
+ * decoded frame becoming available, put_slice and put_frame callbacks may be
+ * invoked, as appropriate. Encoded data \ref MUST be passed in DTS (decode
  * time stamp) order. Frames produced will always be in PTS (presentation
  * time stamp) order.
  * If the decoder is configured with VPX_CODEC_USE_INPUT_FRAGMENTS enabled,
@@ -199,8 +198,8 @@ vpx_codec_err_t vpx_codec_get_stream_info(vpx_codec_ctx_t *ctx,
  *
  * \param[in] ctx          Pointer to this instance's context
  * \param[in] data         Pointer to this block of new coded data. If
- *                         NULL, a VPX_CODEC_CB_PUT_FRAME event is posted
- *                         for the previously decoded frame.
+ *                         NULL, the put_frame callback is invoked for
+ *                         the previously decoded frame.
  * \param[in] data_sz      Size of the coded data, in bytes.
  * \param[in] user_priv    Application specific data to associate with
  *                         this frame.
@@ -236,11 +235,10 @@ vpx_image_t *vpx_codec_get_frame(vpx_codec_ctx_t *ctx, vpx_codec_iter_t *iter);
 
 /*!\defgroup cap_put_frame Frame-Based Decoding Functions
  *
- * The following functions are required to be implemented for all decoders
- * that advertise the VPX_CODEC_CAP_PUT_FRAME capability. Calling these
- * functions
- * for codecs that don't advertise this capability will result in an error
- * code being returned, usually VPX_CODEC_ERROR
+ * The following function is required to be implemented for all decoders
+ * that advertise the VPX_CODEC_CAP_PUT_FRAME capability. Calling this
+ * function for codecs that don't advertise this capability will result in
+ * an error code being returned, usually VPX_CODEC_INCAPABLE.
  * @{
  */
 
@@ -264,8 +262,9 @@ typedef void (*vpx_codec_put_frame_cb_fn_t)(void *user_priv,
  * \retval #VPX_CODEC_OK
  *     Callback successfully registered.
  * \retval #VPX_CODEC_ERROR
- *     Decoder context not initialized, or algorithm not capable of
- *     posting slice completion.
+ *     Decoder context not initialized.
+ * \retval #VPX_CODEC_INCAPABLE
+ *     Algorithm not capable of posting frame completion.
  */
 vpx_codec_err_t vpx_codec_register_put_frame_cb(vpx_codec_ctx_t *ctx,
                                                 vpx_codec_put_frame_cb_fn_t cb,
@@ -275,18 +274,17 @@ vpx_codec_err_t vpx_codec_register_put_frame_cb(vpx_codec_ctx_t *ctx,
 
 /*!\defgroup cap_put_slice Slice-Based Decoding Functions
  *
- * The following functions are required to be implemented for all decoders
- * that advertise the VPX_CODEC_CAP_PUT_SLICE capability. Calling these
- * functions
- * for codecs that don't advertise this capability will result in an error
- * code being returned, usually VPX_CODEC_ERROR
+ * The following function is required to be implemented for all decoders
+ * that advertise the VPX_CODEC_CAP_PUT_SLICE capability. Calling this
+ * function for codecs that don't advertise this capability will result in
+ * an error code being returned, usually VPX_CODEC_INCAPABLE.
  * @{
  */
 
 /*!\brief put slice callback prototype
  *
  * This callback is invoked by the decoder to notify the application of
- * the availability of partially decoded image data. The
+ * the availability of partially decoded image data.
  */
 typedef void (*vpx_codec_put_slice_cb_fn_t)(void *user_priv,
                                             const vpx_image_t *img,
@@ -305,8 +303,9 @@ typedef void (*vpx_codec_put_slice_cb_fn_t)(void *user_priv,
  * \retval #VPX_CODEC_OK
  *     Callback successfully registered.
  * \retval #VPX_CODEC_ERROR
- *     Decoder context not initialized, or algorithm not capable of
- *     posting slice completion.
+ *     Decoder context not initialized.
+ * \retval #VPX_CODEC_INCAPABLE
+ *     Algorithm not capable of posting slice completion.
  */
 vpx_codec_err_t vpx_codec_register_put_slice_cb(vpx_codec_ctx_t *ctx,
                                                 vpx_codec_put_slice_cb_fn_t cb,
@@ -316,10 +315,10 @@ vpx_codec_err_t vpx_codec_register_put_slice_cb(vpx_codec_ctx_t *ctx,
 
 /*!\defgroup cap_external_frame_buffer External Frame Buffer Functions
  *
- * The following section is required to be implemented for all decoders
+ * The following function is required to be implemented for all decoders
  * that advertise the VPX_CODEC_CAP_EXTERNAL_FRAME_BUFFER capability.
  * Calling this function for codecs that don't advertise this capability
- * will result in an error code being returned, usually VPX_CODEC_ERROR.
+ * will result in an error code being returned, usually VPX_CODEC_INCAPABLE.
  *
  * \note
  * Currently this only works with VP9.
@@ -344,8 +343,9 @@ vpx_codec_err_t vpx_codec_register_put_slice_cb(vpx_codec_ctx_t *ctx,
  * \retval #VPX_CODEC_INVALID_PARAM
  *     One or more of the callbacks were NULL.
  * \retval #VPX_CODEC_ERROR
- *     Decoder context not initialized, or algorithm not capable of
- *     using external frame buffers.
+ *     Decoder context not initialized.
+ * \retval #VPX_CODEC_INCAPABLE
+ *     Algorithm not capable of using external frame buffers.
  *
  * \note
  * When decoding VP9, the application may be required to pass in at least

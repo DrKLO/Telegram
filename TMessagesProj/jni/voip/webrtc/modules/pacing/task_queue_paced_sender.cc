@@ -224,9 +224,13 @@ void TaskQueuePacedSender::MaybeProcessPackets(
     // If we're probing and there isn't already a wakeup scheduled for the next
     // process time, always post a task and just round sleep time down to
     // nearest millisecond.
-    time_to_next_process =
-        std::max(TimeDelta::Zero(),
-                 (next_process_time - now).RoundDownTo(TimeDelta::Millis(1)));
+    if (next_process_time.IsMinusInfinity()) {
+      time_to_next_process = TimeDelta::Zero();
+    } else {
+      time_to_next_process =
+          std::max(TimeDelta::Zero(),
+                   (next_process_time - now).RoundDownTo(TimeDelta::Millis(1)));
+    }
   } else if (next_process_time_.IsMinusInfinity() ||
              next_process_time <= next_process_time_ - hold_back_window_) {
     // Schedule a new task since there is none currently scheduled

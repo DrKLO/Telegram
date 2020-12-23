@@ -309,9 +309,7 @@ struct LoggedRtpPacketOutgoing {
 };
 
 struct LoggedRtcpPacket {
-  LoggedRtcpPacket(int64_t timestamp_us,
-                   const uint8_t* packet,
-                   size_t total_length);
+  LoggedRtcpPacket(int64_t timestamp_us, const std::vector<uint8_t>& packet);
   LoggedRtcpPacket(int64_t timestamp_us, const std::string& packet);
   LoggedRtcpPacket(const LoggedRtcpPacket&);
   ~LoggedRtcpPacket();
@@ -325,9 +323,8 @@ struct LoggedRtcpPacket {
 
 struct LoggedRtcpPacketIncoming {
   LoggedRtcpPacketIncoming(int64_t timestamp_us,
-                           const uint8_t* packet,
-                           size_t total_length)
-      : rtcp(timestamp_us, packet, total_length) {}
+                           const std::vector<uint8_t>& packet)
+      : rtcp(timestamp_us, packet) {}
   LoggedRtcpPacketIncoming(uint64_t timestamp_us, const std::string& packet)
       : rtcp(timestamp_us, packet) {}
 
@@ -339,9 +336,8 @@ struct LoggedRtcpPacketIncoming {
 
 struct LoggedRtcpPacketOutgoing {
   LoggedRtcpPacketOutgoing(int64_t timestamp_us,
-                           const uint8_t* packet,
-                           size_t total_length)
-      : rtcp(timestamp_us, packet, total_length) {}
+                           const std::vector<uint8_t>& packet)
+      : rtcp(timestamp_us, packet) {}
   LoggedRtcpPacketOutgoing(uint64_t timestamp_us, const std::string& packet)
       : rtcp(timestamp_us, packet) {}
 

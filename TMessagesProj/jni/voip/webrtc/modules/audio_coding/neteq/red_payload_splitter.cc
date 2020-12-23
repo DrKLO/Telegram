@@ -29,10 +29,10 @@ namespace webrtc {
 // The method loops through a list of packets {A, B, C, ...}. Each packet is
 // split into its corresponding RED payloads, {A1, A2, ...}, which is
 // temporarily held in the list |new_packets|.
-// When the first packet in |packet_list| has been processed, the orignal packet
-// is replaced by the new ones in |new_packets|, so that |packet_list| becomes:
-// {A1, A2, ..., B, C, ...}. The method then continues with B, and C, until all
-// the original packets have been replaced by their split payloads.
+// When the first packet in |packet_list| has been processed, the original
+// packet is replaced by the new ones in |new_packets|, so that |packet_list|
+// becomes: {A1, A2, ..., B, C, ...}. The method then continues with B, and C,
+// until all the original packets have been replaced by their split payloads.
 bool RedPayloadSplitter::SplitRed(PacketList* packet_list) {
   // Too many RED blocks indicates that something is wrong. Clamp it at some
   // reasonable value.
@@ -43,6 +43,7 @@ bool RedPayloadSplitter::SplitRed(PacketList* packet_list) {
     const Packet& red_packet = *it;
     assert(!red_packet.payload.empty());
     const uint8_t* payload_ptr = red_packet.payload.data();
+    size_t payload_length = red_packet.payload.size();
 
     // Read RED headers (according to RFC 2198):
     //
@@ -67,6 +68,10 @@ bool RedPayloadSplitter::SplitRed(PacketList* packet_list) {
     bool last_block = false;
     size_t sum_length = 0;
     while (!last_block) {
+      if (payload_length == 0) {
+        RTC_LOG(LS_WARNING) << "SplitRed header too short";
+        return false;
+      }
       RedHeader new_header;
       // Check the F bit. If F == 0, this was the last block.
       last_block = ((*payload_ptr & 0x80) == 0);
@@ -74,11 +79,16 @@ bool RedPayloadSplitter::SplitRed(PacketList* packet_list) {
       new_header.payload_type = payload_ptr[0] & 0x7F;
       if (last_block) {
         // No more header data to read.
-        ++sum_length;  // Account for RED header size of 1 byte.
+        sum_length += kRedLastHeaderLength;  // Account for RED header size.
         new_header.timestamp = red_packet.timestamp;
         new_header.payload_length = red_packet.payload.size() - sum_length;
-        payload_ptr += 1;  // Advance to first payload byte.
+        payload_ptr += kRedLastHeaderLength;  // Advance to first payload byte.
+        payload_length -= kRedLastHeaderLength;
       } else {
+        if (payload_length < kRedHeaderLength) {
+          RTC_LOG(LS_WARNING) << "SplitRed header too short";
+          return false;
+        }
         // Bits 8 through 21 are timestamp offset.
         int timestamp_offset =
             (payload_ptr[1] << 6) + ((payload_ptr[2] & 0xFC) >> 2);
@@ -86,12 +96,17 @@ bool RedPayloadSplitter::SplitRed(PacketList* packet_list) {
         // Bits 22 through 31 are payload length.
         new_header.payload_length =
             ((payload_ptr[2] & 0x03) << 8) + payload_ptr[3];
-        payload_ptr += 4;  // Advance to next RED header.
+
+        sum_length += new_header.payload_length;
+        sum_length += kRedHeaderLength;  // Account for RED header size.
+
+        payload_ptr += kRedHeaderLength;  // Advance to next RED header.
+        payload_length -= kRedHeaderLength;
       }
-      sum_length += new_header.payload_length;
-      sum_length += 4;  // Account for RED header size of 4 bytes.
       // Store in new list of packets.
-      new_headers.push_back(new_header);
+      if (new_header.payload_length > 0) {
+        new_headers.push_back(new_header);
+      }
     }
 
     if (new_headers.size() <= kMaxRedBlocks) {

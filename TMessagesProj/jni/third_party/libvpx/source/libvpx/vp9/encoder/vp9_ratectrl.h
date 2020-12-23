@@ -195,7 +195,8 @@ typedef struct {
   int use_post_encode_drop;
   // External flag to enable post encode frame dropping, controlled by user.
   int ext_use_post_encode_drop;
-
+  // Flag to disable CBR feature to increase Q on overshoot detection.
+  int disable_overshoot_maxq_cbr;
   int damped_adjustment[RATE_FACTOR_LEVELS];
   double arf_active_best_quality_adjustment_factor;
   int arf_increase_active_best_quality;
@@ -252,6 +253,9 @@ int vp9_rc_get_default_max_gf_interval(double framerate, int min_gf_interval);
 // encode_frame_to_data_rate() function.
 void vp9_rc_get_one_pass_vbr_params(struct VP9_COMP *cpi);
 void vp9_rc_get_one_pass_cbr_params(struct VP9_COMP *cpi);
+int vp9_calc_pframe_target_size_one_pass_cbr(const struct VP9_COMP *cpi);
+int vp9_calc_iframe_target_size_one_pass_cbr(const struct VP9_COMP *cpi);
+void vp9_update_buffer_level_preencode(struct VP9_COMP *cpi);
 void vp9_rc_get_svc_params(struct VP9_COMP *cpi);
 
 // Post encode update of the rate control parameters based

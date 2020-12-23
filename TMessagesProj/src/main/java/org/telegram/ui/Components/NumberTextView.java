@@ -36,6 +36,9 @@ public class NumberTextView extends View {
     private float progress = 0.0f;
     private int currentNumber = 1;
     private boolean addNumber;
+    private boolean center;
+    private float textWidth;
+    private float oldTextWidth;
 
     public NumberTextView(Context context) {
         super(context);
@@ -82,15 +85,27 @@ public class NumberTextView extends View {
             text = String.format(Locale.US, "%d", number);
             forwardAnimation = number > currentNumber;
         }
+        boolean replace = false;
+        if (center) {
+            textWidth = textPaint.measureText(text);
+            oldTextWidth = textPaint.measureText(oldText);
+            if (textWidth != oldTextWidth) {
+                replace = true;
+            }
+        }
+
         currentNumber = number;
         progress = 0;
         for (int a = 0; a < text.length(); a++) {
             String ch = text.substring(a, a + 1);
             String oldCh = !oldLetters.isEmpty() && a < oldText.length() ? oldText.substring(a, a + 1) : null;
-            if (oldCh != null && oldCh.equals(ch)) {
+            if (!replace && oldCh != null && oldCh.equals(ch)) {
                 letters.add(oldLetters.get(a));
                 oldLetters.set(a, null);
             } else {
+                if (replace && oldCh == null) {
+                    oldLetters.add(new StaticLayout("", textPaint, 0, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false));
+                }
                 StaticLayout layout = new StaticLayout(ch, textPaint, (int) Math.ceil(textPaint.measureText(ch)), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
                 letters.add(layout);
             }
@@ -129,6 +144,10 @@ public class NumberTextView extends View {
         setNumber(currentNumber, false);
     }
 
+    public void setCenterAlign(boolean center) {
+        this.center = center;
+    }
+
     @Override
     protected void onDraw(Canvas canvas) {
         if (letters.isEmpty()) {
@@ -136,8 +155,15 @@ public class NumberTextView extends View {
         }
         float height = letters.get(0).getHeight();
         float translationHeight = addNumber ? AndroidUtilities.dp(4) : height;
+
+        float x = 0;
+        float oldDx = 0;
+        if (center) {
+            x = (getMeasuredWidth() - textWidth) / 2f;
+            oldDx = (getMeasuredWidth() - oldTextWidth) / 2f - x;
+        }
         canvas.save();
-        canvas.translate(getPaddingLeft(), (getMeasuredHeight() - height) / 2);
+        canvas.translate(getPaddingLeft() + x, (getMeasuredHeight() - height) / 2);
         int count = Math.max(letters.size(), oldLetters.size());
         for (int a = 0; a < count; a++) {
             canvas.save();
@@ -147,7 +173,7 @@ public class NumberTextView extends View {
                 if (old != null) {
                     textPaint.setAlpha((int) (255 * progress));
                     canvas.save();
-                    canvas.translate(0, (progress - 1.0f) * translationHeight);
+                    canvas.translate(oldDx, (progress - 1.0f) * translationHeight);
                     old.draw(canvas);
                     canvas.restore();
                     if (layout != null) {
@@ -161,7 +187,7 @@ public class NumberTextView extends View {
                 if (old != null) {
                     textPaint.setAlpha((int) (255 * -progress));
                     canvas.save();
-                    canvas.translate(0, (1.0f + progress) * translationHeight);
+                    canvas.translate(oldDx, (1.0f + progress) * translationHeight);
                     old.draw(canvas);
                     canvas.restore();
                 }
@@ -181,6 +207,9 @@ public class NumberTextView extends View {
             }
             canvas.restore();
             canvas.translate(layout != null ? layout.getLineWidth(0) : old.getLineWidth(0) + AndroidUtilities.dp(1), 0);
+            if (layout != null && old != null) {
+                oldDx += old.getLineWidth(0) - layout.getLineWidth(0);
+            }
         }
         canvas.restore();
     }

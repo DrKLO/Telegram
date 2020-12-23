@@ -21,7 +21,7 @@ namespace cricket {
 
 extern const int kVideoCodecClockrate;
 extern const int kDataCodecClockrate;
-extern const int kDataMaxBandwidth;  // bps
+extern const int kRtpDataMaxBandwidth;  // bps
 
 // Default CPU thresholds.
 extern const float kHighSystemCpuThreshold;
@@ -133,7 +133,6 @@ RTC_EXPORT extern const char kH264CodecName[];
 #ifndef DISABLE_H265
 RTC_EXPORT extern const char kH265CodecName[];
 #endif
-RTC_EXPORT extern const char kHEVCCodecName[];
 
 // RFC 6184 RTP Payload Format for H.264 video
 RTC_EXPORT extern const char kH264FmtpProfileLevelId[];

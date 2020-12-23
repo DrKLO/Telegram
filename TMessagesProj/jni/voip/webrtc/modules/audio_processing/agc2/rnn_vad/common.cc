@@ -18,7 +18,7 @@ namespace rnn_vad {
 
 Optimization DetectOptimization() {
 #if defined(WEBRTC_ARCH_X86_FAMILY)
-  if (WebRtc_GetCPUInfo(kSSE2) != 0) {
+  if (GetCPUInfo(kSSE2) != 0) {
     return Optimization::kSse2;
   }
 #endif

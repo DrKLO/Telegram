@@ -248,10 +248,6 @@ class AndroidVideoDecoder implements VideoDecoder, VideoSink {
         Logging.e(TAG, "decode() - key frame required first");
         return VideoCodecStatus.NO_OUTPUT;
       }
-      if (!frame.completeFrame) {
-        Logging.e(TAG, "decode() - complete frame required first");
-        return VideoCodecStatus.NO_OUTPUT;
-      }
     }
 
     int index;

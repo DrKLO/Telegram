@@ -204,7 +204,8 @@ class MediaChannel : public sigslot::has_slots<> {
   // ssrc must be the first SSRC of the media stream if the stream uses
   // multiple SSRCs.
   virtual bool RemoveRecvStream(uint32_t ssrc) = 0;
-  // Resets any cached StreamParams for an unsignaled RecvStream.
+  // Resets any cached StreamParams for an unsignaled RecvStream, and removes
+  // any existing unsignaled streams.
   virtual void ResetUnsignaledRecvStream() = 0;
   // Returns the absoulte sendtime extension id value from media channel.
   virtual int GetRtpSendTimeExtnId() const;
@@ -833,7 +834,8 @@ class VoiceMediaChannel : public MediaChannel, public Delayable {
   // DTMF event 0-9, *, #, A-D.
   virtual bool InsertDtmf(uint32_t ssrc, int event, int duration) = 0;
   // Gets quality stats for the channel.
-  virtual bool GetStats(VoiceMediaInfo* info) = 0;
+  virtual bool GetStats(VoiceMediaInfo* info,
+                        bool get_and_clear_legacy_stats) = 0;
 
   virtual void SetRawAudioSink(
       uint32_t ssrc,

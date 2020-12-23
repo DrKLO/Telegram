@@ -658,17 +658,6 @@ public class FileRefController extends BaseController {
                         }
                         if (result != null) {
                             if (cache) {
-                                if (message.peer_id != null && message.peer_id.channel_id != 0) {
-                                    for (int a = 0, N2 = res.chats.size(); a < N2; a++) {
-                                        TLRPC.Chat chat = res.chats.get(a);
-                                        if (chat.id == message.peer_id.channel_id) {
-                                            if (chat.megagroup) {
-                                                message.flags |= TLRPC.MESSAGE_FLAG_MEGAGROUP;
-                                            }
-                                            break;
-                                        }
-                                    }
-                                }
                                 getMessagesStorage().replaceMessageIfExists(message, res.users, res.chats, false);
                             }
                             break;

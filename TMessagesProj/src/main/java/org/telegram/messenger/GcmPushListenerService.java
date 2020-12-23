@@ -695,6 +695,22 @@ public class GcmPushListenerService extends FirebaseMessagingService {
                                         messageText = LocaleController.formatString("NotificationGroupAddMember", R.string.NotificationGroupAddMember, args[0], args[1], args[2]);
                                         break;
                                     }
+                                    case "CHAT_VOICECHAT_START": {
+                                        messageText = LocaleController.formatString("NotificationGroupCreatedCall", R.string.NotificationGroupCreatedCall, args[0], args[1]);
+                                        break;
+                                    }
+                                    case "CHAT_VOICECHAT_INVITE": {
+                                        messageText = LocaleController.formatString("NotificationGroupInvitedToCall", R.string.NotificationGroupInvitedToCall, args[0], args[1], args[2]);
+                                        break;
+                                    }
+                                    case "CHAT_VOICECHAT_END": {
+                                        messageText = LocaleController.formatString("NotificationGroupEndedCall", R.string.NotificationGroupEndedCall, args[0], args[1]);
+                                        break;
+                                    }
+                                    case "CHAT_VOICECHAT_INVITE_YOU": {
+                                        messageText = LocaleController.formatString("NotificationGroupInvitedYouToCall", R.string.NotificationGroupInvitedYouToCall, args[0], args[1]);
+                                        break;
+                                    }
                                     case "CHAT_DELETE_MEMBER": {
                                         messageText = LocaleController.formatString("NotificationGroupKickMember", R.string.NotificationGroupKickMember, args[0], args[1]);
                                         break;
@@ -996,7 +1012,7 @@ public class GcmPushListenerService extends FirebaseMessagingService {
                                         messageOwner.action = new TLRPC.TL_messageActionPinMessage();
                                     }
                                     if (supergroup) {
-                                        messageOwner.flags |= TLRPC.MESSAGE_FLAG_MEGAGROUP;
+                                        messageOwner.flags |= 0x80000000;
                                     }
                                     messageOwner.dialog_id = dialogId;
                                     if (channel_id != 0) {
@@ -1026,7 +1042,7 @@ public class GcmPushListenerService extends FirebaseMessagingService {
                                     messageOwner.silent = silent;
                                     messageOwner.from_scheduled = scheduled;
 
-                                    MessageObject messageObject = new MessageObject(currentAccount, messageOwner, messageText, name, userName, localMessage, channel, edited);
+                                    MessageObject messageObject = new MessageObject(currentAccount, messageOwner, messageText, name, userName, localMessage, channel, supergroup, edited);
                                     ArrayList<MessageObject> arrayList = new ArrayList<>();
                                     arrayList.add(messageObject);
                                     canRelease = false;

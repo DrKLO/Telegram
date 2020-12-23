@@ -111,7 +111,8 @@ class RTC_EXPORT RtpTransceiverInterface : public rtc::RefCountInterface {
   // https://w3c.github.io/webrtc-pc/#dom-rtcrtptransceiver-direction
   // TODO(hta): Deprecate SetDirection without error and rename
   // SetDirectionWithError to SetDirection, remove default implementations.
-  virtual void SetDirection(RtpTransceiverDirection new_direction);
+  RTC_DEPRECATED virtual void SetDirection(
+      RtpTransceiverDirection new_direction);
   virtual RTCError SetDirectionWithError(RtpTransceiverDirection new_direction);
 
   // The current_direction attribute indicates the current direction negotiated

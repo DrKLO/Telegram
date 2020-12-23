@@ -67,6 +67,7 @@ public class BottomSheet extends Dialog {
     protected boolean keyboardVisible;
     private WindowInsets lastInsets;
     protected boolean drawNavigationBar;
+    protected boolean scrollNavBar;
 
     protected boolean useSmoothKeyboard;
 
@@ -94,6 +95,7 @@ public class BottomSheet extends Dialog {
     protected ColorDrawable backDrawable = new ColorDrawable(0xff000000);
 
     protected boolean useLightStatusBar = true;
+    protected boolean useLightNavBar;
 
     protected String behindKeyboardColorKey = Theme.key_dialogBackground;
     protected int behindKeyboardColor;
@@ -114,6 +116,7 @@ public class BottomSheet extends Dialog {
     private boolean focusable;
 
     private boolean dimBehind = true;
+    private int dimBehindAlpha = 51;
 
     protected boolean allowNestedScroll = true;
 
@@ -136,6 +139,9 @@ public class BottomSheet extends Dialog {
     protected View nestedScrollChild;
     private boolean disableScroll;
     private float currentPanTranslationY;
+
+    protected String navBarColorKey = Theme.key_windowBackgroundGray;
+    protected int navBarColor;
 
     public void setDisableScroll(boolean b) {
         disableScroll = b;
@@ -513,12 +519,16 @@ public class BottomSheet extends Dialog {
             super.dispatchDraw(canvas);
             if ((drawNavigationBar && bottomInset != 0) || currentPanTranslationY != 0) {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    backgroundPaint.setColor(Theme.getColor(Theme.key_windowBackgroundGray));
+                    if (navBarColorKey != null) {
+                        backgroundPaint.setColor(Theme.getColor(navBarColorKey));
+                    } else {
+                        backgroundPaint.setColor(navBarColor);
+                    }
                 } else {
                     backgroundPaint.setColor(0xff000000);
                 }
                 float translation = 0;
-                if (Build.VERSION.SDK_INT >= 29 && getAdditionalMandatoryOffsets() > 0) {
+                if (scrollNavBar || Build.VERSION.SDK_INT >= 29 && getAdditionalMandatoryOffsets() > 0) {
                     float dist = containerView.getMeasuredHeight() - containerView.getTranslationY();
                     translation = Math.max(0, bottomInset - dist);
                 }
@@ -739,6 +749,9 @@ public class BottomSheet extends Dialog {
                 container.setSystemUiVisibility(flags);
             }
         }
+        if (useLightNavBar && Build.VERSION.SDK_INT >= 26) {
+            AndroidUtilities.setLightNavigationBar(getWindow(), false);
+        }
 
         if (containerView == null) {
             containerView = new FrameLayout(getContext()) {
@@ -871,14 +884,14 @@ public class BottomSheet extends Dialog {
         cancelSheetAnimation();
         containerView.measure(View.MeasureSpec.makeMeasureSpec(AndroidUtilities.displaySize.x + backgroundPaddingLeft * 2, View.MeasureSpec.AT_MOST), View.MeasureSpec.makeMeasureSpec(AndroidUtilities.displaySize.y, View.MeasureSpec.AT_MOST));
         if (showWithoutAnimation) {
-            backDrawable.setAlpha(dimBehind ? 51 : 0);
+            backDrawable.setAlpha(dimBehind ? dimBehindAlpha : 0);
             containerView.setTranslationY(0);
             return;
         }
         backDrawable.setAlpha(0);
         if (Build.VERSION.SDK_INT >= 18) {
             layoutCount = 2;
-            containerView.setTranslationY(containerView.getMeasuredHeight());
+            containerView.setTranslationY((Build.VERSION.SDK_INT >= 21 ? AndroidUtilities.statusBarHeight : 0) + containerView.getMeasuredHeight());
             AndroidUtilities.runOnUIThread(startAnimationRunnable = new Runnable() {
                 @Override
                 public void run() {
@@ -986,7 +999,7 @@ public class BottomSheet extends Dialog {
             currentSheetAnimation = new AnimatorSet();
             currentSheetAnimation.playTogether(
                     ObjectAnimator.ofFloat(containerView, View.TRANSLATION_Y, 0),
-                    ObjectAnimator.ofInt(backDrawable, AnimationProperties.COLOR_DRAWABLE_ALPHA, dimBehind ? 51 : 0));
+                    ObjectAnimator.ofInt(backDrawable, AnimationProperties.COLOR_DRAWABLE_ALPHA, dimBehind ? dimBehindAlpha : 0));
             currentSheetAnimation.setDuration(400);
             currentSheetAnimation.setStartDelay(20);
             currentSheetAnimation.setInterpolator(openInterpolator);
@@ -1043,6 +1056,10 @@ public class BottomSheet extends Dialog {
 
     public void setDimBehind(boolean value) {
         dimBehind = value;
+    }
+
+    public void setDimBehindAlpha(int value) {
+        dimBehindAlpha = value;
     }
 
     public void setItemText(int item, CharSequence text) {

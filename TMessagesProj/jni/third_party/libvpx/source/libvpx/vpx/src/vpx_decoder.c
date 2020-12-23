@@ -138,9 +138,10 @@ vpx_codec_err_t vpx_codec_register_put_frame_cb(vpx_codec_ctx_t *ctx,
 
   if (!ctx || !cb)
     res = VPX_CODEC_INVALID_PARAM;
-  else if (!ctx->iface || !ctx->priv ||
-           !(ctx->iface->caps & VPX_CODEC_CAP_PUT_FRAME))
+  else if (!ctx->iface || !ctx->priv)
     res = VPX_CODEC_ERROR;
+  else if (!(ctx->iface->caps & VPX_CODEC_CAP_PUT_FRAME))
+    res = VPX_CODEC_INCAPABLE;
   else {
     ctx->priv->dec.put_frame_cb.u.put_frame = cb;
     ctx->priv->dec.put_frame_cb.user_priv = user_priv;
@@ -157,9 +158,10 @@ vpx_codec_err_t vpx_codec_register_put_slice_cb(vpx_codec_ctx_t *ctx,
 
   if (!ctx || !cb)
     res = VPX_CODEC_INVALID_PARAM;
-  else if (!ctx->iface || !ctx->priv ||
-           !(ctx->iface->caps & VPX_CODEC_CAP_PUT_SLICE))
+  else if (!ctx->iface || !ctx->priv)
     res = VPX_CODEC_ERROR;
+  else if (!(ctx->iface->caps & VPX_CODEC_CAP_PUT_SLICE))
+    res = VPX_CODEC_INCAPABLE;
   else {
     ctx->priv->dec.put_slice_cb.u.put_slice = cb;
     ctx->priv->dec.put_slice_cb.user_priv = user_priv;
@@ -176,9 +178,10 @@ vpx_codec_err_t vpx_codec_set_frame_buffer_functions(
 
   if (!ctx || !cb_get || !cb_release) {
     res = VPX_CODEC_INVALID_PARAM;
-  } else if (!ctx->iface || !ctx->priv ||
-             !(ctx->iface->caps & VPX_CODEC_CAP_EXTERNAL_FRAME_BUFFER)) {
+  } else if (!ctx->iface || !ctx->priv) {
     res = VPX_CODEC_ERROR;
+  } else if (!(ctx->iface->caps & VPX_CODEC_CAP_EXTERNAL_FRAME_BUFFER)) {
+    res = VPX_CODEC_INCAPABLE;
   } else {
     res = ctx->iface->dec.set_fb_fn(get_alg_priv(ctx), cb_get, cb_release,
                                     cb_priv);

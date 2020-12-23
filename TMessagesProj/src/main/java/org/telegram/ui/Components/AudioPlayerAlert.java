@@ -1986,7 +1986,7 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
         protected abstract void onImageUpdated(ImageReceiver imageReceiver);
     }
 
-    private abstract static class ClippingTextViewSwitcher extends FrameLayout {
+    public abstract static class ClippingTextViewSwitcher extends FrameLayout {
 
         private final TextView[] textViews = new TextView[2];
         private final float[] clipProgress = new float[]{0f, 0.75f};

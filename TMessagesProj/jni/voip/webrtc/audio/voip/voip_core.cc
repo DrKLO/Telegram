@@ -37,29 +37,39 @@ static constexpr int kMaxChannelId = 100000;
 
 }  // namespace
 
-bool VoipCore::Init(rtc::scoped_refptr<AudioEncoderFactory> encoder_factory,
-                    rtc::scoped_refptr<AudioDecoderFactory> decoder_factory,
-                    std::unique_ptr<TaskQueueFactory> task_queue_factory,
-                    rtc::scoped_refptr<AudioDeviceModule> audio_device_module,
-                    rtc::scoped_refptr<AudioProcessing> audio_processing) {
+VoipCore::VoipCore(rtc::scoped_refptr<AudioEncoderFactory> encoder_factory,
+                   rtc::scoped_refptr<AudioDecoderFactory> decoder_factory,
+                   std::unique_ptr<TaskQueueFactory> task_queue_factory,
+                   rtc::scoped_refptr<AudioDeviceModule> audio_device_module,
+                   rtc::scoped_refptr<AudioProcessing> audio_processing,
+                   std::unique_ptr<ProcessThread> process_thread) {
   encoder_factory_ = std::move(encoder_factory);
   decoder_factory_ = std::move(decoder_factory);
   task_queue_factory_ = std::move(task_queue_factory);
   audio_device_module_ = std::move(audio_device_module);
+  audio_processing_ = std::move(audio_processing);
+  process_thread_ = std::move(process_thread);
 
-  process_thread_ = ProcessThread::Create("ModuleProcessThread");
-  audio_mixer_ = AudioMixerImpl::Create();
-
-  if (audio_processing) {
-    audio_processing_ = std::move(audio_processing);
-    AudioProcessing::Config apm_config = audio_processing_->GetConfig();
-    apm_config.echo_canceller.enabled = true;
-    audio_processing_->ApplyConfig(apm_config);
+  if (!process_thread_) {
+    process_thread_ = ProcessThread::Create("ModuleProcessThread");
   }
+  audio_mixer_ = AudioMixerImpl::Create();
 
   // AudioTransportImpl depends on audio mixer and audio processing instances.
   audio_transport_ = std::make_unique<AudioTransportImpl>(
-      audio_mixer_.get(), audio_processing_.get());
+      audio_mixer_.get(), audio_processing_.get(), nullptr);
+}
+
+bool VoipCore::InitializeIfNeeded() {
+  // |audio_device_module_| internally owns a lock and the whole logic here
+  // needs to be executed atomically once using another lock in VoipCore.
+  // Further changes in this method will need to make sure that no deadlock is
+  // introduced in the future.
+  MutexLock lock(&lock_);
+
+  if (initialized_) {
+    return true;
+  }
 
   // Initialize ADM.
   if (audio_device_module_->Init() != 0) {
@@ -72,7 +82,6 @@ bool VoipCore::Init(rtc::scoped_refptr<AudioEncoderFactory> encoder_factory,
   // recording device functioning (e.g webinar where only speaker is available).
   // It's also possible that there are other audio devices available that may
   // work.
-  // TODO(natim@webrtc.org): consider moving this part out of initialization.
 
   // Initialize default speaker device.
   if (audio_device_module_->SetPlayoutDevice(kAudioDeviceId) != 0) {
@@ -113,13 +122,15 @@ bool VoipCore::Init(rtc::scoped_refptr<AudioEncoderFactory> encoder_factory,
     RTC_LOG(LS_WARNING) << "Unable to register audio callback.";
   }
 
+  initialized_ = true;
+
   return true;
 }
 
 absl::optional<ChannelId> VoipCore::CreateChannel(
     Transport* transport,
     absl::optional<uint32_t> local_ssrc) {
-  absl::optional<ChannelId> channel;
+  absl::optional<ChannelId> channel_id;
 
   // Set local ssrc to random if not set by caller.
   if (!local_ssrc) {
@@ -127,16 +138,22 @@ absl::optional<ChannelId> VoipCore::CreateChannel(
     local_ssrc = random.Rand<uint32_t>();
   }
 
-  rtc::scoped_refptr<AudioChannel> audio_channel =
+  rtc::scoped_refptr<AudioChannel> channel =
       new rtc::RefCountedObject<AudioChannel>(
           transport, local_ssrc.value(), task_queue_factory_.get(),
           process_thread_.get(), audio_mixer_.get(), decoder_factory_);
 
+  // Check if we need to start the process thread.
+  bool start_process_thread = false;
+
   {
     MutexLock lock(&lock_);
 
-    channel = static_cast<ChannelId>(next_channel_id_);
-    channels_[*channel] = audio_channel;
+    // Start process thread if the channel is the first one.
+    start_process_thread = channels_.empty();
+
+    channel_id = static_cast<ChannelId>(next_channel_id_);
+    channels_[*channel_id] = channel;
     next_channel_id_++;
     if (next_channel_id_ >= kMaxChannelId) {
       next_channel_id_ = 0;
@@ -144,41 +161,64 @@ absl::optional<ChannelId> VoipCore::CreateChannel(
   }
 
   // Set ChannelId in audio channel for logging/debugging purpose.
-  audio_channel->SetId(*channel);
+  channel->SetId(*channel_id);
 
-  return channel;
+  if (start_process_thread) {
+    process_thread_->Start();
+  }
+
+  return channel_id;
 }
 
-void VoipCore::ReleaseChannel(ChannelId channel) {
+void VoipCore::ReleaseChannel(ChannelId channel_id) {
   // Destroy channel outside of the lock.
-  rtc::scoped_refptr<AudioChannel> audio_channel;
+  rtc::scoped_refptr<AudioChannel> channel;
+
+  bool no_channels_after_release = false;
+
   {
     MutexLock lock(&lock_);
 
-    auto iter = channels_.find(channel);
+    auto iter = channels_.find(channel_id);
     if (iter != channels_.end()) {
-      audio_channel = std::move(iter->second);
+      channel = std::move(iter->second);
       channels_.erase(iter);
     }
+
+    no_channels_after_release = channels_.empty();
   }
-  if (!audio_channel) {
-    RTC_LOG(LS_WARNING) << "Channel " << channel << " not found";
+
+  if (!channel) {
+    RTC_LOG(LS_WARNING) << "Channel " << channel_id << " not found";
+  }
+
+  if (no_channels_after_release) {
+    // Release audio channel first to have it DeRegisterModule first.
+    channel = nullptr;
+    process_thread_->Stop();
+
+    // Make sure to stop playout on ADM if it is playing.
+    if (audio_device_module_->Playing()) {
+      if (audio_device_module_->StopPlayout() != 0) {
+        RTC_LOG(LS_WARNING) << "StopPlayout failed";
+      }
+    }
   }
 }
 
-rtc::scoped_refptr<AudioChannel> VoipCore::GetChannel(ChannelId channel) {
-  rtc::scoped_refptr<AudioChannel> audio_channel;
+rtc::scoped_refptr<AudioChannel> VoipCore::GetChannel(ChannelId channel_id) {
+  rtc::scoped_refptr<AudioChannel> channel;
   {
     MutexLock lock(&lock_);
-    auto iter = channels_.find(channel);
+    auto iter = channels_.find(channel_id);
     if (iter != channels_.end()) {
-      audio_channel = iter->second;
+      channel = iter->second;
     }
   }
-  if (!audio_channel) {
-    RTC_LOG(LS_ERROR) << "Channel " << channel << " not found";
+  if (!channel) {
+    RTC_LOG(LS_ERROR) << "Channel " << channel_id << " not found";
   }
-  return audio_channel;
+  return channel;
 }
 
 bool VoipCore::UpdateAudioTransportWithSenders() {
@@ -216,6 +256,11 @@ bool VoipCore::UpdateAudioTransportWithSenders() {
 
   // Depending on availability of senders, turn on or off ADM recording.
   if (!audio_senders.empty()) {
+    // Initialize audio device module and default device if needed.
+    if (!InitializeIfNeeded()) {
+      return false;
+    }
+
     if (!audio_device_module_->Recording()) {
       if (audio_device_module_->InitRecording() != 0) {
         RTC_LOG(LS_ERROR) << "InitRecording failed";
@@ -236,29 +281,45 @@ bool VoipCore::UpdateAudioTransportWithSenders() {
   return true;
 }
 
-bool VoipCore::StartSend(ChannelId channel) {
-  auto audio_channel = GetChannel(channel);
-  if (!audio_channel || !audio_channel->StartSend()) {
+bool VoipCore::StartSend(ChannelId channel_id) {
+  rtc::scoped_refptr<AudioChannel> channel = GetChannel(channel_id);
+
+  if (!channel || !channel->StartSend()) {
     return false;
   }
 
   return UpdateAudioTransportWithSenders();
 }
 
-bool VoipCore::StopSend(ChannelId channel) {
-  auto audio_channel = GetChannel(channel);
-  if (!audio_channel) {
+bool VoipCore::StopSend(ChannelId channel_id) {
+  rtc::scoped_refptr<AudioChannel> channel = GetChannel(channel_id);
+
+  if (!channel) {
     return false;
   }
 
-  audio_channel->StopSend();
+  channel->StopSend();
 
   return UpdateAudioTransportWithSenders();
 }
 
-bool VoipCore::StartPlayout(ChannelId channel) {
-  auto audio_channel = GetChannel(channel);
-  if (!audio_channel || !audio_channel->StartPlay()) {
+bool VoipCore::StartPlayout(ChannelId channel_id) {
+  rtc::scoped_refptr<AudioChannel> channel = GetChannel(channel_id);
+
+  if (!channel) {
+    return false;
+  }
+
+  if (channel->IsPlaying()) {
+    return true;
+  }
+
+  if (!channel->StartPlay()) {
+    return false;
+  }
+
+  // Initialize audio device module and default device if needed.
+  if (!InitializeIfNeeded()) {
     return false;
   }
 
@@ -275,69 +336,119 @@ bool VoipCore::StartPlayout(ChannelId channel) {
   return true;
 }
 
-bool VoipCore::StopPlayout(ChannelId channel) {
-  auto audio_channel = GetChannel(channel);
-  if (!audio_channel) {
+bool VoipCore::StopPlayout(ChannelId channel_id) {
+  rtc::scoped_refptr<AudioChannel> channel = GetChannel(channel_id);
+
+  if (!channel) {
     return false;
   }
 
-  audio_channel->StopPlay();
+  channel->StopPlay();
 
-  bool stop_device = true;
-  {
-    MutexLock lock(&lock_);
-    for (auto kv : channels_) {
-      rtc::scoped_refptr<AudioChannel>& channel = kv.second;
-      if (channel->IsPlaying()) {
-        stop_device = false;
-        break;
-      }
-    }
-  }
-
-  if (stop_device && audio_device_module_->Playing()) {
-    if (audio_device_module_->StopPlayout() != 0) {
-      RTC_LOG(LS_ERROR) << "StopPlayout failed";
-      return false;
-    }
-  }
   return true;
 }
 
-void VoipCore::ReceivedRTPPacket(ChannelId channel,
+void VoipCore::ReceivedRTPPacket(ChannelId channel_id,
                                  rtc::ArrayView<const uint8_t> rtp_packet) {
-  // Failure to locate channel is logged internally in GetChannel.
-  if (auto audio_channel = GetChannel(channel)) {
-    audio_channel->ReceivedRTPPacket(rtp_packet);
+  rtc::scoped_refptr<AudioChannel> channel = GetChannel(channel_id);
+
+  if (channel) {
+    channel->ReceivedRTPPacket(rtp_packet);
   }
 }
 
-void VoipCore::ReceivedRTCPPacket(ChannelId channel,
+void VoipCore::ReceivedRTCPPacket(ChannelId channel_id,
                                   rtc::ArrayView<const uint8_t> rtcp_packet) {
-  // Failure to locate channel is logged internally in GetChannel.
-  if (auto audio_channel = GetChannel(channel)) {
-    audio_channel->ReceivedRTCPPacket(rtcp_packet);
+  rtc::scoped_refptr<AudioChannel> channel = GetChannel(channel_id);
+
+  if (channel) {
+    channel->ReceivedRTCPPacket(rtcp_packet);
   }
 }
 
-void VoipCore::SetSendCodec(ChannelId channel,
+void VoipCore::SetSendCodec(ChannelId channel_id,
                             int payload_type,
                             const SdpAudioFormat& encoder_format) {
-  // Failure to locate channel is logged internally in GetChannel.
-  if (auto audio_channel = GetChannel(channel)) {
+  rtc::scoped_refptr<AudioChannel> channel = GetChannel(channel_id);
+
+  if (channel) {
     auto encoder = encoder_factory_->MakeAudioEncoder(
         payload_type, encoder_format, absl::nullopt);
-    audio_channel->SetEncoder(payload_type, encoder_format, std::move(encoder));
+    channel->SetEncoder(payload_type, encoder_format, std::move(encoder));
   }
 }
 
 void VoipCore::SetReceiveCodecs(
-    ChannelId channel,
+    ChannelId channel_id,
     const std::map<int, SdpAudioFormat>& decoder_specs) {
-  // Failure to locate channel is logged internally in GetChannel.
-  if (auto audio_channel = GetChannel(channel)) {
-    audio_channel->SetReceiveCodecs(decoder_specs);
+  rtc::scoped_refptr<AudioChannel> channel = GetChannel(channel_id);
+
+  if (channel) {
+    channel->SetReceiveCodecs(decoder_specs);
   }
+}
+
+void VoipCore::RegisterTelephoneEventType(ChannelId channel_id,
+                                          int rtp_payload_type,
+                                          int sample_rate_hz) {
+  rtc::scoped_refptr<AudioChannel> channel = GetChannel(channel_id);
+
+  if (channel) {
+    channel->RegisterTelephoneEventType(rtp_payload_type, sample_rate_hz);
+  }
+}
+
+bool VoipCore::SendDtmfEvent(ChannelId channel_id,
+                             DtmfEvent dtmf_event,
+                             int duration_ms) {
+  rtc::scoped_refptr<AudioChannel> channel = GetChannel(channel_id);
+
+  if (channel) {
+    return channel->SendTelephoneEvent(static_cast<int>(dtmf_event),
+                                       duration_ms);
+  }
+  return false;
+}
+
+absl::optional<IngressStatistics> VoipCore::GetIngressStatistics(
+    ChannelId channel_id) {
+  rtc::scoped_refptr<AudioChannel> channel = GetChannel(channel_id);
+
+  if (channel) {
+    return channel->GetIngressStatistics();
+  }
+  return absl::nullopt;
+}
+
+void VoipCore::SetInputMuted(ChannelId channel_id, bool enable) {
+  rtc::scoped_refptr<AudioChannel> channel = GetChannel(channel_id);
+  if (channel) {
+    channel->SetMute(enable);
+  }
+}
+
+absl::optional<VolumeInfo> VoipCore::GetInputVolumeInfo(ChannelId channel_id) {
+  rtc::scoped_refptr<AudioChannel> channel = GetChannel(channel_id);
+  if (channel) {
+    VolumeInfo input_volume;
+    input_volume.audio_level = channel->GetInputAudioLevel();
+    input_volume.total_energy = channel->GetInputTotalEnergy();
+    input_volume.total_duration = channel->GetInputTotalDuration();
+    return input_volume;
+  }
+  return absl::nullopt;
+}
+
+absl::optional<VolumeInfo> VoipCore::GetOutputVolumeInfo(ChannelId channel_id) {
+  rtc::scoped_refptr<AudioChannel> channel = GetChannel(channel_id);
+  if (channel) {
+    VolumeInfo output_volume;
+    output_volume.audio_level = channel->GetOutputAudioLevel();
+    output_volume.total_energy = channel->GetOutputTotalEnergy();
+    output_volume.total_duration = channel->GetOutputTotalDuration();
+    return output_volume;
+  }
+  return absl::nullopt;
 }
 
 }  // namespace webrtc

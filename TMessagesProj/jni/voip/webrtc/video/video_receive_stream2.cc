@@ -113,8 +113,6 @@ class WebRtcRecordableEncodedFrame : public RecordableEncodedFrame {
 
 VideoCodec CreateDecoderVideoCodec(const VideoReceiveStream::Decoder& decoder) {
   VideoCodec codec;
-  memset(&codec, 0, sizeof(codec));
-
   codec.codecType = PayloadStringToCodecType(decoder.video_format.name);
 
   if (codec.codecType == kVideoCodecVP8) {
@@ -132,8 +130,19 @@ VideoCodec CreateDecoderVideoCodec(const VideoReceiveStream::Decoder& decoder) {
     return associated_codec;
   }
 
-  codec.width = 320;
-  codec.height = 180;
+  FieldTrialOptional<int> width("w");
+  FieldTrialOptional<int> height("h");
+  ParseFieldTrial(
+      {&width, &height},
+      field_trial::FindFullName("WebRTC-Video-InitialDecoderResolution"));
+  if (width && height) {
+    codec.width = width.Value();
+    codec.height = height.Value();
+  } else {
+    codec.width = 320;
+    codec.height = 180;
+  }
+
   const int kDefaultStartBitrate = 300;
   codec.startBitrate = codec.minBitrate = codec.maxBitrate =
       kDefaultStartBitrate;
@@ -222,6 +231,9 @@ VideoReceiveStream2::VideoReceiveStream2(
       max_wait_for_frame_ms_(KeyframeIntervalSettings::ParseFromFieldTrials()
                                  .MaxWaitForFrameMs()
                                  .value_or(kMaxWaitForFrameMs)),
+      low_latency_renderer_enabled_("enabled", true),
+      low_latency_renderer_include_predecode_buffer_("include_predecode_buffer",
+                                                     true),
       decode_queue_(task_queue_factory_->CreateTaskQueue(
           "DecodingQueue",
           TaskQueueFactory::Priority::HIGH)) {
@@ -262,6 +274,10 @@ VideoReceiveStream2::VideoReceiveStream2(
     rtp_receive_statistics_->EnableRetransmitDetection(config.rtp.remote_ssrc,
                                                        true);
   }
+
+  ParseFieldTrial({&low_latency_renderer_enabled_,
+                   &low_latency_renderer_include_predecode_buffer_},
+                  field_trial::FindFullName("WebRTC-LowLatencyRenderer"));
 }
 
 VideoReceiveStream2::~VideoReceiveStream2() {
@@ -544,7 +560,7 @@ void VideoReceiveStream2::OnCompleteFrame(
   }
   last_complete_frame_time_ms_ = time_now_ms;
 
-  const PlayoutDelay& playout_delay = frame->EncodedImage().playout_delay_;
+  const VideoPlayoutDelay& playout_delay = frame->EncodedImage().playout_delay_;
   if (playout_delay.min_ms >= 0) {
     frame_minimum_playout_delay_ms_ = playout_delay.min_ms;
     UpdatePlayoutDelays();
@@ -596,10 +612,11 @@ void VideoReceiveStream2::SetEstimatedPlayoutNtpTimestampMs(
   RTC_NOTREACHED();
 }
 
-void VideoReceiveStream2::SetMinimumPlayoutDelay(int delay_ms) {
+bool VideoReceiveStream2::SetMinimumPlayoutDelay(int delay_ms) {
   RTC_DCHECK_RUN_ON(&worker_sequence_checker_);
   syncable_minimum_playout_delay_ms_ = delay_ms;
   UpdatePlayoutDelays();
+  return true;
 }
 
 int64_t VideoReceiveStream2::GetMaxWaitMs() const {
@@ -768,6 +785,22 @@ void VideoReceiveStream2::UpdatePlayoutDelays() const {
                 syncable_minimum_playout_delay_ms_});
   if (minimum_delay_ms >= 0) {
     timing_->set_min_playout_delay(minimum_delay_ms);
+    if (frame_minimum_playout_delay_ms_ == 0 &&
+        frame_maximum_playout_delay_ms_ > 0 && low_latency_renderer_enabled_) {
+      // TODO(kron): Estimate frame rate from video stream.
+      constexpr double kFrameRate = 60.0;
+      // Convert playout delay in ms to number of frames.
+      int max_composition_delay_in_frames = std::lrint(
+          static_cast<double>(frame_maximum_playout_delay_ms_ * kFrameRate) /
+          rtc::kNumMillisecsPerSec);
+      if (low_latency_renderer_include_predecode_buffer_) {
+        // Subtract frames in buffer.
+        max_composition_delay_in_frames = std::max<int16_t>(
+            max_composition_delay_in_frames - frame_buffer_->Size(), 0);
+      }
+      timing_->SetMaxCompositionDelayInFrames(
+          absl::make_optional(max_composition_delay_in_frames));
+    }
   }
 
   const int maximum_delay_ms = frame_maximum_playout_delay_ms_;

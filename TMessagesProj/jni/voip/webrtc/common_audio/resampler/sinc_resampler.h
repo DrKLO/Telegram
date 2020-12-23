@@ -112,6 +112,10 @@ class SincResampler {
                             const float* k1,
                             const float* k2,
                             double kernel_interpolation_factor);
+  static float Convolve_AVX2(const float* input_ptr,
+                             const float* k1,
+                             const float* k2,
+                             double kernel_interpolation_factor);
 #elif defined(WEBRTC_HAS_NEON)
   static float Convolve_NEON(const float* input_ptr,
                              const float* k1,
@@ -155,13 +159,11 @@ class SincResampler {
 // TODO(ajm): Move to using a global static which must only be initialized
 // once by the user. We're not doing this initially, because we don't have
 // e.g. a LazyInstance helper in webrtc.
-#if defined(WEBRTC_ARCH_X86_FAMILY) && !defined(__SSE2__)
   typedef float (*ConvolveProc)(const float*,
                                 const float*,
                                 const float*,
                                 double);
   ConvolveProc convolve_proc_;
-#endif
 
   // Pointers to the various regions inside |input_buffer_|.  See the diagram at
   // the top of the .cc file for more information.

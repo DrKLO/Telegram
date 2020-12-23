@@ -93,6 +93,8 @@ class LibvpxInterface {
       vpx_codec_ctx_t* ctx,
       vpx_codec_iter_t* iter) const = 0;
 
+  virtual const char* codec_error_detail(vpx_codec_ctx_t* ctx) const = 0;
+
   // Returns interface wrapping the actual libvpx functions.
   static std::unique_ptr<LibvpxInterface> CreateEncoder();
 };

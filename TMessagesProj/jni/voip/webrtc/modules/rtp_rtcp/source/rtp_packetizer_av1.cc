@@ -88,10 +88,12 @@ int MaxFragmentSize(int remaining_bytes) {
 
 RtpPacketizerAv1::RtpPacketizerAv1(rtc::ArrayView<const uint8_t> payload,
                                    RtpPacketizer::PayloadSizeLimits limits,
-                                   VideoFrameType frame_type)
+                                   VideoFrameType frame_type,
+                                   bool is_last_frame_in_picture)
     : frame_type_(frame_type),
       obus_(ParseObus(payload)),
-      packets_(Packetize(obus_, limits)) {}
+      packets_(Packetize(obus_, limits)),
+      is_last_frame_in_picture_(is_last_frame_in_picture) {}
 
 std::vector<RtpPacketizerAv1::Obu> RtpPacketizerAv1::ParseObus(
     rtc::ArrayView<const uint8_t> payload) {
@@ -414,11 +416,8 @@ bool RtpPacketizerAv1::NextPacket(RtpPacketToSend* packet) {
                 kAggregationHeaderSize + next_packet.packet_size);
 
   ++packet_index_;
-  if (packet_index_ == packets_.size()) {
-    // TODO(danilchap): To support spatial scalability pass and use information
-    // if this frame is the last in the temporal unit.
-    packet->SetMarker(true);
-  }
+  bool is_last_packet_in_frame = packet_index_ == packets_.size();
+  packet->SetMarker(is_last_packet_in_frame && is_last_frame_in_picture_);
   return true;
 }
 

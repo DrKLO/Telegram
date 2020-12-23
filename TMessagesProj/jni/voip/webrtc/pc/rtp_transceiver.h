@@ -71,7 +71,8 @@ class RtpTransceiver final
       rtc::scoped_refptr<RtpReceiverProxyWithInternal<RtpReceiverInternal>>
           receiver,
       cricket::ChannelManager* channel_manager,
-      std::vector<RtpHeaderExtensionCapability> HeaderExtensionsToOffer);
+      std::vector<RtpHeaderExtensionCapability> HeaderExtensionsToOffer,
+      std::function<void()> on_negotiation_needed);
   ~RtpTransceiver() override;
 
   // Returns the Voice/VideoChannel set for this transceiver. May be null if
@@ -177,9 +178,13 @@ class RtpTransceiver final
   // PeerConnection is closed.
   void SetPeerConnectionClosed();
 
+  // Executes the "stop the RTCRtpTransceiver" procedure from
+  // the webrtc-pc specification, described under the stop() method.
+  void StopTransceiverProcedure();
+
   // Fired when the RtpTransceiver state changes such that negotiation is now
   // needed (e.g., in response to a direction change).
-  sigslot::signal0<> SignalNegotiationNeeded;
+  //  sigslot::signal0<> SignalNegotiationNeeded;
 
   // RtpTransceiverInterface implementation.
   cricket::MediaType media_type() const override;
@@ -189,7 +194,6 @@ class RtpTransceiver final
   bool stopped() const override;
   bool stopping() const override;
   RtpTransceiverDirection direction() const override;
-  void SetDirection(RtpTransceiverDirection new_direction) override;
   RTCError SetDirectionWithError(
       RtpTransceiverDirection new_direction) override;
   absl::optional<RtpTransceiverDirection> current_direction() const override;
@@ -237,18 +241,18 @@ class RtpTransceiver final
   cricket::ChannelManager* channel_manager_ = nullptr;
   std::vector<RtpCodecCapability> codec_preferences_;
   std::vector<RtpHeaderExtensionCapability> header_extensions_to_offer_;
+  const std::function<void()> on_negotiation_needed_;
 };
 
 BEGIN_SIGNALING_PROXY_MAP(RtpTransceiver)
 PROXY_SIGNALING_THREAD_DESTRUCTOR()
-PROXY_CONSTMETHOD0(cricket::MediaType, media_type)
+BYPASS_PROXY_CONSTMETHOD0(cricket::MediaType, media_type)
 PROXY_CONSTMETHOD0(absl::optional<std::string>, mid)
 PROXY_CONSTMETHOD0(rtc::scoped_refptr<RtpSenderInterface>, sender)
 PROXY_CONSTMETHOD0(rtc::scoped_refptr<RtpReceiverInterface>, receiver)
 PROXY_CONSTMETHOD0(bool, stopped)
 PROXY_CONSTMETHOD0(bool, stopping)
 PROXY_CONSTMETHOD0(RtpTransceiverDirection, direction)
-PROXY_METHOD1(void, SetDirection, RtpTransceiverDirection)
 PROXY_METHOD1(webrtc::RTCError, SetDirectionWithError, RtpTransceiverDirection)
 PROXY_CONSTMETHOD0(absl::optional<RtpTransceiverDirection>, current_direction)
 PROXY_CONSTMETHOD0(absl::optional<RtpTransceiverDirection>, fired_direction)

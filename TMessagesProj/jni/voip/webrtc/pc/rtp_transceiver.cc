@@ -119,12 +119,14 @@ RtpTransceiver::RtpTransceiver(
     rtc::scoped_refptr<RtpReceiverProxyWithInternal<RtpReceiverInternal>>
         receiver,
     cricket::ChannelManager* channel_manager,
-    std::vector<RtpHeaderExtensionCapability> header_extensions_offered)
+    std::vector<RtpHeaderExtensionCapability> header_extensions_offered,
+    std::function<void()> on_negotiation_needed)
     : thread_(GetCurrentTaskQueueOrThread()),
       unified_plan_(true),
       media_type_(sender->media_type()),
       channel_manager_(channel_manager),
-      header_extensions_to_offer_(std::move(header_extensions_offered)) {
+      header_extensions_to_offer_(std::move(header_extensions_offered)),
+      on_negotiation_needed_(std::move(on_negotiation_needed)) {
   RTC_DCHECK(media_type_ == cricket::MEDIA_TYPE_AUDIO ||
              media_type_ == cricket::MEDIA_TYPE_VIDEO);
   RTC_DCHECK_EQ(sender->media_type(), receiver->media_type());
@@ -299,10 +301,6 @@ RtpTransceiverDirection RtpTransceiver::direction() const {
   return direction_;
 }
 
-void RtpTransceiver::SetDirection(RtpTransceiverDirection new_direction) {
-  SetDirectionWithError(new_direction);
-}
-
 RTCError RtpTransceiver::SetDirectionWithError(
     RtpTransceiverDirection new_direction) {
   if (unified_plan_ && stopping()) {
@@ -318,14 +316,14 @@ RTCError RtpTransceiver::SetDirectionWithError(
   }
 
   direction_ = new_direction;
-  SignalNegotiationNeeded();
+  on_negotiation_needed_();
 
   return RTCError::OK();
 }
 
 absl::optional<RtpTransceiverDirection> RtpTransceiver::current_direction()
     const {
-  if (unified_plan_ && stopping())
+  if (unified_plan_ && stopped())
     return webrtc::RtpTransceiverDirection::kStopped;
 
   return current_direction_;
@@ -350,7 +348,7 @@ void RtpTransceiver::StopSendingAndReceiving() {
 
   // 5. Stop receiving media with receiver.
   for (const auto& receiver : receivers_)
-    receiver->internal()->Stop();
+    receiver->internal()->StopAndEndTrack();
 
   stopping_ = true;
   direction_ = webrtc::RtpTransceiverDirection::kInactive;
@@ -358,7 +356,11 @@ void RtpTransceiver::StopSendingAndReceiving() {
 
 RTCError RtpTransceiver::StopStandard() {
   RTC_DCHECK_RUN_ON(thread_);
-  RTC_DCHECK(unified_plan_);
+  // If we're on Plan B, do what Stop() used to do there.
+  if (!unified_plan_) {
+    StopInternal();
+    return RTCError::OK();
+  }
   // 1. Let transceiver be the RTCRtpTransceiver object on which the method is
   // invoked.
   //
@@ -378,13 +380,18 @@ RTCError RtpTransceiver::StopStandard() {
   // 5. Stop sending and receiving given transceiver, and update the
   // negotiation-needed flag for connection.
   StopSendingAndReceiving();
-  SignalNegotiationNeeded();
+  on_negotiation_needed_();
 
   return RTCError::OK();
 }
 
 void RtpTransceiver::StopInternal() {
+  StopTransceiverProcedure();
+}
+
+void RtpTransceiver::StopTransceiverProcedure() {
   RTC_DCHECK_RUN_ON(thread_);
+  // As specified in the "Stop the RTCRtpTransceiver" procedure
   // 1. If transceiver.[[Stopping]] is false, stop sending and receiving given
   // transceiver.
   if (!stopping_)

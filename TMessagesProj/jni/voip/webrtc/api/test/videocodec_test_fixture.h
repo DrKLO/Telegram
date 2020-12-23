@@ -138,6 +138,9 @@ class VideoCodecTestFixture {
       bool save_encoded_ivf = false;
       bool save_decoded_y4m = false;
     } visualization_params;
+
+    // Enables quality analysis for dropped frames.
+    bool analyze_quality_of_dropped_frames = false;
   };
 
   virtual ~VideoCodecTestFixture() = default;

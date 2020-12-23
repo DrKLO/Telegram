@@ -58,6 +58,7 @@ static constexpr size_t kSctpMtu = 1200;
 
 // Set the initial value of the static SCTP Data Engines reference count.
 ABSL_CONST_INIT int g_usrsctp_usage_count = 0;
+ABSL_CONST_INIT bool g_usrsctp_initialized_ = false;
 ABSL_CONST_INIT webrtc::GlobalMutex g_usrsctp_lock_(absl::kConstInit);
 
 // DataMessageType is used for the SCTP "Payload Protocol Identifier", as
@@ -262,9 +263,19 @@ class SctpTransport::UsrSctpWrapper {
  public:
   static void InitializeUsrSctp() {
     RTC_LOG(LS_INFO) << __FUNCTION__;
-    // First argument is udp_encapsulation_port, which is not releveant for our
-    // AF_CONN use of sctp.
-    usrsctp_init(0, &UsrSctpWrapper::OnSctpOutboundPacket, &DebugSctpPrintf);
+    // UninitializeUsrSctp tries to call usrsctp_finish in a loop for three
+    // seconds; if that failed and we were left in a still-initialized state, we
+    // don't want to call usrsctp_init again as that will result in undefined
+    // behavior.
+    if (g_usrsctp_initialized_) {
+      RTC_LOG(LS_WARNING) << "Not reinitializing usrsctp since last attempt at "
+                             "usrsctp_finish failed.";
+    } else {
+      // First argument is udp_encapsulation_port, which is not releveant for
+      // our AF_CONN use of sctp.
+      usrsctp_init(0, &UsrSctpWrapper::OnSctpOutboundPacket, &DebugSctpPrintf);
+      g_usrsctp_initialized_ = true;
+    }
 
     // To turn on/off detailed SCTP debugging. You will also need to have the
     // SCTP_DEBUG cpp defines flag, which can be turned on in media/BUILD.gn.
@@ -318,6 +329,7 @@ class SctpTransport::UsrSctpWrapper {
     // closed. Wait and try again until it succeeds for up to 3 seconds.
     for (size_t i = 0; i < 300; ++i) {
       if (usrsctp_finish() == 0) {
+        g_usrsctp_initialized_ = false;
         delete g_transport_map_;
         g_transport_map_ = nullptr;
         return;
@@ -394,7 +406,17 @@ class SctpTransport::UsrSctpWrapper {
                                  struct sctp_rcvinfo rcv,
                                  int flags,
                                  void* ulp_info) {
-    SctpTransport* transport = static_cast<SctpTransport*>(ulp_info);
+    SctpTransport* transport = GetTransportFromSocket(sock);
+    if (!transport) {
+      RTC_LOG(LS_ERROR)
+          << "OnSctpInboundPacket: Failed to get transport for socket " << sock
+          << "; possibly was already destroyed.";
+      free(data);
+      return 0;
+    }
+    // Sanity check that both methods of getting the SctpTransport pointer
+    // yield the same result.
+    RTC_CHECK_EQ(transport, static_cast<SctpTransport*>(ulp_info));
     int result =
         transport->OnDataOrNotificationFromSctp(data, length, rcv, flags);
     free(data);
@@ -427,6 +449,8 @@ class SctpTransport::UsrSctpWrapper {
     return transport;
   }
 
+  // TODO(crbug.com/webrtc/11899): This is a legacy callback signature, remove
+  // when usrsctp is updated.
   static int SendThresholdCallback(struct socket* sock, uint32_t sb_free) {
     // Fired on our I/O thread. SctpTransport::OnPacketReceived() gets
     // a packet containing acknowledgments, which goes into usrsctp_conninput,
@@ -435,9 +459,29 @@ class SctpTransport::UsrSctpWrapper {
     if (!transport) {
       RTC_LOG(LS_ERROR)
           << "SendThresholdCallback: Failed to get transport for socket "
-          << sock;
+          << sock << "; possibly was already destroyed.";
       return 0;
     }
+    transport->OnSendThresholdCallback();
+    return 0;
+  }
+
+  static int SendThresholdCallback(struct socket* sock,
+                                   uint32_t sb_free,
+                                   void* ulp_info) {
+    // Fired on our I/O thread. SctpTransport::OnPacketReceived() gets
+    // a packet containing acknowledgments, which goes into usrsctp_conninput,
+    // and then back here.
+    SctpTransport* transport = GetTransportFromSocket(sock);
+    if (!transport) {
+      RTC_LOG(LS_ERROR)
+          << "SendThresholdCallback: Failed to get transport for socket "
+          << sock << "; possibly was already destroyed.";
+      return 0;
+    }
+    // Sanity check that both methods of getting the SctpTransport pointer
+    // yield the same result.
+    RTC_CHECK_EQ(transport, static_cast<SctpTransport*>(ulp_info));
     transport->OnSendThresholdCallback();
     return 0;
   }
@@ -870,9 +914,11 @@ bool SctpTransport::ConfigureSctpSocket() {
   }
 
   // Subscribe to SCTP event notifications.
+  // TODO(crbug.com/1137936): Subscribe to SCTP_SEND_FAILED_EVENT once deadlock
+  // is fixed upstream, or we switch to the upcall API:
+  // https://github.com/sctplab/usrsctp/issues/537
   int event_types[] = {SCTP_ASSOC_CHANGE, SCTP_PEER_ADDR_CHANGE,
-                       SCTP_SEND_FAILED_EVENT, SCTP_SENDER_DRY_EVENT,
-                       SCTP_STREAM_RESET_EVENT};
+                       SCTP_SENDER_DRY_EVENT, SCTP_STREAM_RESET_EVENT};
   struct sctp_event event = {0};
   event.se_assoc_id = SCTP_ALL_ASSOC;
   event.se_on = 1;
@@ -1102,8 +1148,8 @@ int SctpTransport::OnDataOrNotificationFromSctp(void* data,
   // If data is NULL, the SCTP association has been closed.
   if (!data) {
     RTC_LOG(LS_INFO) << debug_name_
-                     << "->OnSctpInboundPacket(...): "
-                        "No data, closing.";
+                     << "->OnDataOrNotificationFromSctp(...): "
+                        "No data; association closed.";
     return kSctpSuccessReturn;
   }
 
@@ -1112,9 +1158,10 @@ int SctpTransport::OnDataOrNotificationFromSctp(void* data,
   //       be handled early and entirely separate from the reassembly
   //       process.
   if (flags & MSG_NOTIFICATION) {
-    RTC_LOG(LS_VERBOSE) << debug_name_
-                        << "->OnSctpInboundPacket(...): SCTP notification"
-                        << " length=" << length;
+    RTC_LOG(LS_VERBOSE)
+        << debug_name_
+        << "->OnDataOrNotificationFromSctp(...): SCTP notification"
+        << " length=" << length;
 
     // Copy and dispatch asynchronously
     rtc::CopyOnWriteBuffer notification(reinterpret_cast<uint8_t*>(data),
@@ -1128,7 +1175,7 @@ int SctpTransport::OnDataOrNotificationFromSctp(void* data,
   // Log data chunk
   const uint32_t ppid = rtc::NetworkToHost32(rcv.rcv_ppid);
   RTC_LOG(LS_VERBOSE) << debug_name_
-                      << "->OnSctpInboundPacket(...): SCTP data chunk"
+                      << "->OnDataOrNotificationFromSctp(...): SCTP data chunk"
                       << " length=" << length << ", sid=" << rcv.rcv_sid
                       << ", ppid=" << ppid << ", ssn=" << rcv.rcv_ssn
                       << ", cum-tsn=" << rcv.rcv_cumtsn
@@ -1219,14 +1266,31 @@ void SctpTransport::OnDataFromSctpToTransport(
 void SctpTransport::OnNotificationFromSctp(
     const rtc::CopyOnWriteBuffer& buffer) {
   RTC_DCHECK_RUN_ON(network_thread_);
+  if (buffer.size() < sizeof(sctp_notification::sn_header)) {
+    RTC_LOG(LS_ERROR) << "SCTP notification is shorter than header size: "
+                      << buffer.size();
+    return;
+  }
+
   const sctp_notification& notification =
       reinterpret_cast<const sctp_notification&>(*buffer.data());
-  RTC_DCHECK(notification.sn_header.sn_length == buffer.size());
+  if (buffer.size() != notification.sn_header.sn_length) {
+    RTC_LOG(LS_ERROR) << "SCTP notification length (" << buffer.size()
+                      << ") does not match sn_length field ("
+                      << notification.sn_header.sn_length << ").";
+    return;
+  }
 
   // TODO(ldixon): handle notifications appropriately.
   switch (notification.sn_header.sn_type) {
     case SCTP_ASSOC_CHANGE:
       RTC_LOG(LS_VERBOSE) << "SCTP_ASSOC_CHANGE";
+      if (buffer.size() < sizeof(notification.sn_assoc_change)) {
+        RTC_LOG(LS_ERROR)
+            << "SCTP_ASSOC_CHANGE notification has less than required length: "
+            << buffer.size();
+        return;
+      }
       OnNotificationAssocChange(notification.sn_assoc_change);
       break;
     case SCTP_REMOTE_ERROR:
@@ -1253,6 +1317,12 @@ void SctpTransport::OnNotificationFromSctp(
       RTC_LOG(LS_INFO) << "SCTP_NOTIFICATIONS_STOPPED_EVENT";
       break;
     case SCTP_SEND_FAILED_EVENT: {
+      if (buffer.size() < sizeof(notification.sn_send_failed_event)) {
+        RTC_LOG(LS_ERROR) << "SCTP_SEND_FAILED_EVENT notification has less "
+                             "than required length: "
+                          << buffer.size();
+        return;
+      }
       const struct sctp_send_failed_event& ssfe =
           notification.sn_send_failed_event;
       RTC_LOG(LS_WARNING) << "SCTP_SEND_FAILED_EVENT: message with"
@@ -1265,6 +1335,12 @@ void SctpTransport::OnNotificationFromSctp(
       break;
     }
     case SCTP_STREAM_RESET_EVENT:
+      if (buffer.size() < sizeof(notification.sn_strreset_event)) {
+        RTC_LOG(LS_ERROR) << "SCTP_STREAM_RESET_EVENT notification has less "
+                             "than required length: "
+                          << buffer.size();
+        return;
+      }
       OnStreamResetEvent(&notification.sn_strreset_event);
       break;
     case SCTP_ASSOC_RESET_EVENT:

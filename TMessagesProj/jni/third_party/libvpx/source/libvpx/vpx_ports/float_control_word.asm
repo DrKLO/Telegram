@@ -14,7 +14,7 @@
 section .text
 
 %if LIBVPX_YASM_WIN64
-global sym(vpx_winx64_fldcw) PRIVATE
+globalsym(vpx_winx64_fldcw)
 sym(vpx_winx64_fldcw):
     sub   rsp, 8
     mov   [rsp], rcx ; win x64 specific
@@ -23,7 +23,7 @@ sym(vpx_winx64_fldcw):
     ret
 
 
-global sym(vpx_winx64_fstcw) PRIVATE
+globalsym(vpx_winx64_fstcw)
 sym(vpx_winx64_fstcw):
     sub   rsp, 8
     fstcw [rsp]

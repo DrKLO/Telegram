@@ -14,7 +14,6 @@
 #include <string>
 
 #include "api/adaptation/resource.h"
-#include "api/scoped_refptr.h"
 #include "call/adaptation/video_source_restrictions.h"
 #include "call/adaptation/video_stream_input_state.h"
 
@@ -34,8 +33,7 @@ class AdaptationConstraint {
   virtual bool IsAdaptationUpAllowed(
       const VideoStreamInputState& input_state,
       const VideoSourceRestrictions& restrictions_before,
-      const VideoSourceRestrictions& restrictions_after,
-      rtc::scoped_refptr<Resource> reason_resource) const = 0;
+      const VideoSourceRestrictions& restrictions_after) const = 0;
 };
 
 }  // namespace webrtc

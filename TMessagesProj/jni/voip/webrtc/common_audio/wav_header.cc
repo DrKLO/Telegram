@@ -132,7 +132,7 @@ uint16_t MapWavFormatToHeaderField(WavFormat format) {
     case WavFormat::kWavFormatMuLaw:
       return 7;
   }
-  RTC_CHECK(false);
+  RTC_CHECK_NOTREACHED();
 }
 
 WavFormat MapHeaderFieldToWavFormat(uint16_t format_header_value) {
@@ -278,10 +278,8 @@ size_t GetFormatBytesPerSample(WavFormat format) {
       return 1;
     case WavFormat::kWavFormatIeeeFloat:
       return 4;
-    default:
-      RTC_CHECK(false);
-      return 2;
   }
+  RTC_CHECK_NOTREACHED();
 }
 
 bool CheckWavParameters(size_t num_channels,

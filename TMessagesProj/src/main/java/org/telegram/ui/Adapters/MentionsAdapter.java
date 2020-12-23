@@ -563,7 +563,7 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter {
             AndroidUtilities.cancelRunOnUIThread(searchGlobalRunnable);
             searchGlobalRunnable = null;
         }
-        if (TextUtils.isEmpty(text)) {
+        if (TextUtils.isEmpty(text) || text.length() > MessagesController.getInstance(currentAccount).maxMessageLength) {
             searchForContextBot(null, null);
             delegate.needChangePanelVisibility(false);
             lastText = null;

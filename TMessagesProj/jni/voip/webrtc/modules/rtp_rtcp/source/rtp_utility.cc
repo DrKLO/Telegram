@@ -492,6 +492,10 @@ void RtpHeaderParser::ParseOneByteExtensionHeader(
                                       &header->extension.video_timing);
           break;
         }
+        case kRtpExtensionVideoLayersAllocation:
+          RTC_LOG(WARNING) << "VideoLayersAllocation extension unsupported by "
+                              "rtp header parser.";
+          break;
         case kRtpExtensionRtpStreamId: {
           std::string name(reinterpret_cast<const char*>(ptr), len + 1);
           if (IsLegalRsidName(name)) {

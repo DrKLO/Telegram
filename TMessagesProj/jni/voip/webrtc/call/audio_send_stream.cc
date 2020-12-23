@@ -34,6 +34,9 @@ std::string AudioSendStream::Config::ToString() const {
   ss << ", send_transport: " << (send_transport ? "(Transport)" : "null");
   ss << ", min_bitrate_bps: " << min_bitrate_bps;
   ss << ", max_bitrate_bps: " << max_bitrate_bps;
+  ss << ", has audio_network_adaptor_config: "
+     << (audio_network_adaptor_config ? "true" : "false");
+  ss << ", has_dscp: " << (has_dscp ? "true" : "false");
   ss << ", send_codec_spec: "
      << (send_codec_spec ? send_codec_spec->ToString() : "<unset>");
   ss << '}';

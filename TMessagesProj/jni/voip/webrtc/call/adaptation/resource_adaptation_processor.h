@@ -54,13 +54,11 @@ class ResourceAdaptationProcessor : public ResourceAdaptationProcessorInterface,
                                     public VideoSourceRestrictionsListener,
                                     public ResourceListener {
  public:
-  ResourceAdaptationProcessor(
-      VideoStreamEncoderObserver* encoder_stats_observer,
+  explicit ResourceAdaptationProcessor(
       VideoStreamAdapter* video_stream_adapter);
   ~ResourceAdaptationProcessor() override;
 
-  void SetResourceAdaptationQueue(
-      TaskQueueBase* resource_adaptation_queue) override;
+  void SetTaskQueue(TaskQueueBase* task_queue) override;
 
   // ResourceAdaptationProcessorInterface implementation.
   void AddResourceLimitationsListener(
@@ -92,7 +90,7 @@ class ResourceAdaptationProcessor : public ResourceAdaptationProcessorInterface,
    public:
     explicit ResourceListenerDelegate(ResourceAdaptationProcessor* processor);
 
-    void SetResourceAdaptationQueue(TaskQueueBase* resource_adaptation_queue);
+    void SetTaskQueue(TaskQueueBase* task_queue);
     void OnProcessorDestroyed();
 
     // ResourceListener implementation.
@@ -100,9 +98,8 @@ class ResourceAdaptationProcessor : public ResourceAdaptationProcessorInterface,
                                       ResourceUsageState usage_state) override;
 
    private:
-    TaskQueueBase* resource_adaptation_queue_;
-    ResourceAdaptationProcessor* processor_
-        RTC_GUARDED_BY(resource_adaptation_queue_);
+    TaskQueueBase* task_queue_;
+    ResourceAdaptationProcessor* processor_ RTC_GUARDED_BY(task_queue_);
   };
 
   enum class MitigationResult {
@@ -130,7 +127,7 @@ class ResourceAdaptationProcessor : public ResourceAdaptationProcessorInterface,
   void UpdateResourceLimitations(rtc::scoped_refptr<Resource> reason_resource,
                                  const VideoSourceRestrictions& restrictions,
                                  const VideoAdaptationCounters& counters)
-      RTC_RUN_ON(resource_adaptation_queue_);
+      RTC_RUN_ON(task_queue_);
 
   // Searches |adaptation_limits_by_resources_| for each resource with the
   // highest total adaptation counts. Adaptation up may only occur if the
@@ -139,35 +136,31 @@ class ResourceAdaptationProcessor : public ResourceAdaptationProcessorInterface,
   // corresponding adaptation of that resource.
   std::pair<std::vector<rtc::scoped_refptr<Resource>>,
             VideoStreamAdapter::RestrictionsWithCounters>
-  FindMostLimitedResources() const RTC_RUN_ON(resource_adaptation_queue_);
+  FindMostLimitedResources() const RTC_RUN_ON(task_queue_);
 
   void RemoveLimitationsImposedByResource(
       rtc::scoped_refptr<Resource> resource);
 
-  TaskQueueBase* resource_adaptation_queue_;
+  TaskQueueBase* task_queue_;
   rtc::scoped_refptr<ResourceListenerDelegate> resource_listener_delegate_;
   // Input and output.
-  VideoStreamEncoderObserver* const encoder_stats_observer_
-      RTC_GUARDED_BY(resource_adaptation_queue_);
   mutable Mutex resources_lock_;
   std::vector<rtc::scoped_refptr<Resource>> resources_
       RTC_GUARDED_BY(resources_lock_);
   std::vector<ResourceLimitationsListener*> resource_limitations_listeners_
-      RTC_GUARDED_BY(resource_adaptation_queue_);
+      RTC_GUARDED_BY(task_queue_);
   // Purely used for statistics, does not ensure mapped resources stay alive.
   std::map<rtc::scoped_refptr<Resource>,
            VideoStreamAdapter::RestrictionsWithCounters>
-      adaptation_limits_by_resources_
-          RTC_GUARDED_BY(resource_adaptation_queue_);
+      adaptation_limits_by_resources_ RTC_GUARDED_BY(task_queue_);
   // Responsible for generating and applying possible adaptations.
-  VideoStreamAdapter* const stream_adapter_
-      RTC_GUARDED_BY(resource_adaptation_queue_);
+  VideoStreamAdapter* const stream_adapter_ RTC_GUARDED_BY(task_queue_);
   VideoSourceRestrictions last_reported_source_restrictions_
-      RTC_GUARDED_BY(resource_adaptation_queue_);
+      RTC_GUARDED_BY(task_queue_);
   // Keeps track of previous mitigation results per resource since the last
   // successful adaptation. Used to avoid RTC_LOG spam.
   std::map<Resource*, MitigationResult> previous_mitigation_results_
-      RTC_GUARDED_BY(resource_adaptation_queue_);
+      RTC_GUARDED_BY(task_queue_);
 };
 
 }  // namespace webrtc

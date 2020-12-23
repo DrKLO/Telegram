@@ -50,10 +50,4 @@ std::string ToHex(const int i) {
   return std::string(buffer);
 }
 
-std::string LeftPad(char padding, unsigned length, std::string s) {
-  if (s.length() >= length)
-    return s;
-  return std::string(length - s.length(), padding) + s;
-}
-
 }  // namespace rtc

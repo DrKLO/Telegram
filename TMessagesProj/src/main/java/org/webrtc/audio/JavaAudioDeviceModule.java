@@ -11,13 +11,14 @@
 package org.webrtc.audio;
 
 import android.content.Context;
+import android.media.AudioAttributes;
 import android.media.AudioDeviceInfo;
 import android.media.AudioManager;
 import android.os.Build;
+import androidx.annotation.RequiresApi;
+import java.util.concurrent.ScheduledExecutorService;
 import org.webrtc.JniCommon;
 import org.webrtc.Logging;
-
-import androidx.annotation.RequiresApi;
 
 /**
  * AudioDeviceModule implemented using android.media.AudioRecord as input and
@@ -32,6 +33,7 @@ public class JavaAudioDeviceModule implements AudioDeviceModule {
 
   public static class Builder {
     private final Context context;
+    private ScheduledExecutorService scheduler;
     private final AudioManager audioManager;
     private int inputSampleRate;
     private int outputSampleRate;
@@ -46,12 +48,18 @@ public class JavaAudioDeviceModule implements AudioDeviceModule {
     private boolean useHardwareNoiseSuppressor = isBuiltInNoiseSuppressorSupported();
     private boolean useStereoInput;
     private boolean useStereoOutput;
+    private AudioAttributes audioAttributes;
 
     private Builder(Context context) {
       this.context = context;
       this.audioManager = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
       this.inputSampleRate = WebRtcAudioManager.getSampleRate(audioManager);
       this.outputSampleRate = WebRtcAudioManager.getSampleRate(audioManager);
+    }
+
+    public Builder setScheduler(ScheduledExecutorService scheduler) {
+      this.scheduler = scheduler;
+      return this;
     }
 
     /**
@@ -188,10 +196,18 @@ public class JavaAudioDeviceModule implements AudioDeviceModule {
     }
 
     /**
+     * Set custom {@link AudioAttributes} to use.
+     */
+    public Builder setAudioAttributes(AudioAttributes audioAttributes) {
+      this.audioAttributes = audioAttributes;
+      return this;
+    }
+
+    /**
      * Construct an AudioDeviceModule based on the supplied arguments. The caller takes ownership
      * and is responsible for calling release().
      */
-    public AudioDeviceModule createAudioDeviceModule() {
+    public JavaAudioDeviceModule createAudioDeviceModule() {
       Logging.d(TAG, "createAudioDeviceModule");
       if (useHardwareNoiseSuppressor) {
         Logging.d(TAG, "HW NS will be used.");
@@ -209,11 +225,15 @@ public class JavaAudioDeviceModule implements AudioDeviceModule {
         }
         Logging.d(TAG, "HW AEC will not be used.");
       }
-      final WebRtcAudioRecord audioInput = new WebRtcAudioRecord(context, audioManager, audioSource,
-          audioFormat, audioRecordErrorCallback, audioRecordStateCallback, samplesReadyCallback,
-          useHardwareAcousticEchoCanceler, useHardwareNoiseSuppressor);
+      ScheduledExecutorService executor = this.scheduler;
+      if (executor == null) {
+        executor = WebRtcAudioRecord.newDefaultScheduler();
+      }
+      final WebRtcAudioRecord audioInput = new WebRtcAudioRecord(context, executor, audioManager,
+          audioSource, audioFormat, audioRecordErrorCallback, audioRecordStateCallback,
+          samplesReadyCallback, useHardwareAcousticEchoCanceler, useHardwareNoiseSuppressor);
       final WebRtcAudioTrack audioOutput = new WebRtcAudioTrack(
-          context, audioManager, audioTrackErrorCallback, audioTrackStateCallback);
+          context, audioManager, audioAttributes, audioTrackErrorCallback, audioTrackStateCallback);
       return new JavaAudioDeviceModule(context, audioManager, audioInput, audioOutput,
           inputSampleRate, outputSampleRate, useStereoInput, useStereoOutput);
     }

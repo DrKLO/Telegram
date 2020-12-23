@@ -97,12 +97,6 @@ struct NetworkStatistics {
   uint64_t fecPacketsReceived;
   uint64_t fecPacketsDiscarded;
   // Stats below DO NOT correspond directly to anything in the WebRTC stats
-  // Loss rate (network + late); fraction between 0 and 1, scaled to Q14.
-  uint16_t currentPacketLossRate;
-  // Late loss rate; fraction between 0 and 1, scaled to Q14.
-  union {
-    RTC_DEPRECATED uint16_t currentDiscardRate;
-  };
   // fraction (of original stream) of synthesized audio inserted through
   // expansion (in Q14)
   uint16_t currentExpandRate;
@@ -123,14 +117,8 @@ struct NetworkStatistics {
   uint16_t currentSecondaryDiscardedRate;
   // average packet waiting time in the jitter buffer (ms)
   int meanWaitingTimeMs;
-  // median packet waiting time in the jitter buffer (ms)
-  int medianWaitingTimeMs;
-  // min packet waiting time in the jitter buffer (ms)
-  int minWaitingTimeMs;
   // max packet waiting time in the jitter buffer (ms)
   int maxWaitingTimeMs;
-  // added samples in off mode due to packet loss
-  size_t addedSamples;
   // count of the number of buffer flushes
   uint64_t packetBufferFlushes;
   // number of samples expanded due to delayed packets

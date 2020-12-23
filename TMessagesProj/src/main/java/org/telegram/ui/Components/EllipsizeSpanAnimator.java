@@ -13,8 +13,8 @@ import java.util.ArrayList;
 
 public class EllipsizeSpanAnimator {
 
-    private TextAlphaSpan[] ellSpans = new TextAlphaSpan[]{new TextAlphaSpan(), new TextAlphaSpan(), new TextAlphaSpan()};
-    private AnimatorSet ellAnimator;
+    private final TextAlphaSpan[] ellSpans = new TextAlphaSpan[]{new TextAlphaSpan(), new TextAlphaSpan(), new TextAlphaSpan()};
+    private final AnimatorSet ellAnimator;
 
     boolean attachedToWindow;
     public ArrayList<View> ellipsizedViews = new ArrayList<>();
@@ -33,8 +33,12 @@ public class EllipsizeSpanAnimator {
             private Runnable restarter = new Runnable() {
                 @Override
                 public void run() {
-                    if (attachedToWindow && !ellipsizedViews.isEmpty()) {
-                        ellAnimator.start();
+                    if (attachedToWindow && !ellipsizedViews.isEmpty() && !ellAnimator.isRunning()) {
+                        try {
+                            ellAnimator.start();
+                        } catch (Exception ignored) {
+
+                        }
                     }
                 }
             };
@@ -90,7 +94,9 @@ public class EllipsizeSpanAnimator {
         if (ellipsizedViews.isEmpty()) {
             ellAnimator.start();
         }
-        ellipsizedViews.add(view);
+        if (!ellipsizedViews.contains(view)) {
+            ellipsizedViews.add(view);
+        }
     }
 
     public void removeView(View view) {

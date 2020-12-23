@@ -16,6 +16,17 @@
 ; In general, we make the source use 64 bit syntax, then twiddle with it using
 ; the preprocessor to get the 32 bit syntax on 32 bit platforms.
 ;
+%ifidn __OUTPUT_FORMAT__,elf32
+%define ABI_IS_32BIT 1
+%elifidn __OUTPUT_FORMAT__,macho32
+%define ABI_IS_32BIT 1
+%elifidn __OUTPUT_FORMAT__,win32
+%define ABI_IS_32BIT 1
+%elifidn __OUTPUT_FORMAT__,aout
+%define ABI_IS_32BIT 1
+%else
+%define ABI_IS_32BIT 0
+%endif
 
 %if ABI_IS_32BIT
 %define rax eax
@@ -78,34 +89,51 @@
 %define LIBVPX_YASM_WIN64 0
 %endif
 
+; Declare groups of platforms
+%ifidn   __OUTPUT_FORMAT__,elf32
+  %define LIBVPX_ELF 1
+%elifidn   __OUTPUT_FORMAT__,elfx32
+  %define LIBVPX_ELF 1
+%elifidn   __OUTPUT_FORMAT__,elf64
+  %define LIBVPX_ELF 1
+%else
+  %define LIBVPX_ELF 0
+%endif
+
+%ifidn __OUTPUT_FORMAT__,macho32
+  %define LIBVPX_MACHO 1
+%elifidn __OUTPUT_FORMAT__,macho64
+  %define LIBVPX_MACHO 1
+%else
+  %define LIBVPX_MACHO 0
+%endif
+
 ; sym()
 ; Return the proper symbol name for the target ABI.
 ;
 ; Certain ABIs, notably MS COFF and Darwin MACH-O, require that symbols
 ; with C linkage be prefixed with an underscore.
 ;
-%ifidn   __OUTPUT_FORMAT__,elf32
-%define sym(x) x
-%elifidn __OUTPUT_FORMAT__,elf64
-%define sym(x) x
-%elifidn __OUTPUT_FORMAT__,elfx32
-%define sym(x) x
-%elif LIBVPX_YASM_WIN64
-%define sym(x) x
+%if LIBVPX_ELF || LIBVPX_YASM_WIN64
+  %define sym(x) x
 %else
-%define sym(x) _ %+ x
+  ; Mach-O / COFF
+  %define sym(x) _ %+ x
 %endif
 
-;  PRIVATE
-;  Macro for the attribute to hide a global symbol for the target ABI.
-;  This is only active if CHROMIUM is defined.
+; globalsym()
+; Return a global declaration with the proper decoration for the target ABI.
 ;
-;  Chromium doesn't like exported global symbols due to symbol clashing with
-;  plugins among other things.
+; When CHROMIUM is defined, include attributes to hide the symbol from the
+; global namespace.
 ;
-;  Requires Chromium's patched copy of yasm:
-;    http://src.chromium.org/viewvc/chrome?view=rev&revision=73761
-;    http://www.tortall.net/projects/yasm/ticket/236
+; Chromium doesn't like exported global symbols due to symbol clashing with
+; plugins among other things.
+;
+; Requires Chromium's patched copy of yasm:
+;   http://src.chromium.org/viewvc/chrome?view=rev&revision=73761
+;   http://www.tortall.net/projects/yasm/ticket/236
+; or nasm > 2.14.
 ;
 %ifdef CHROMIUM
   %ifdef __NASM_VER__
@@ -115,19 +143,16 @@
     %endif
   %endif
 
-  %ifidn   __OUTPUT_FORMAT__,elf32
-    %define PRIVATE :hidden
-  %elifidn __OUTPUT_FORMAT__,elf64
-    %define PRIVATE :hidden
-  %elifidn __OUTPUT_FORMAT__,elfx32
-    %define PRIVATE :hidden
-  %elif LIBVPX_YASM_WIN64
-    %define PRIVATE
+  %if LIBVPX_ELF
+    %define globalsym(x) global sym(x) %+ :function hidden
+  %elif LIBVPX_MACHO
+    %define globalsym(x) global sym(x) %+ :private_extern
   %else
-    %define PRIVATE :private_extern
+    ; COFF / PE32+
+    %define globalsym(x) global sym(x)
   %endif
 %else
-  %define PRIVATE
+  %define globalsym(x) global sym(x)
 %endif
 
 ; arg()

@@ -71,6 +71,8 @@ static __inline int TestCpuFlag(int test_flag) {
 // Internal function for parsing /proc/cpuinfo.
 LIBYUV_API
 int ArmCpuCaps(const char* cpuinfo_name);
+LIBYUV_API
+int MipsCpuCaps(const char* cpuinfo_name);
 
 // For testing, allow CPU flags to be disabled.
 // ie MaskCpuFlags(~kCpuHasSSSE3) to disable SSSE3.

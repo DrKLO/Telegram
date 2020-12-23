@@ -40,7 +40,7 @@ public class Emoji {
     private static int bigImgSize;
     private static boolean inited = false;
     private static Paint placeholderPaint;
-    private static int[] emojiCounts = new int[]{1620, 184, 115, 328, 125, 207, 288, 258};
+    private static int[] emojiCounts = new int[]{1695, 199, 123, 332, 128, 222, 290, 259};
     private static Bitmap[][] emojiBmp = new Bitmap[8][];
     private static boolean[][] loadingEmoji = new boolean[8][];
 
@@ -279,9 +279,9 @@ public class Emoji {
                 b = getBounds();
             }
 
-            //if (!canvas.quickReject(b.left, b.top, b.right, b.bottom, Canvas.EdgeType.AA)) {
-            canvas.drawBitmap(emojiBmp[info.page][info.page2], null, b, paint);
-            //}
+            if (!canvas.quickReject(b.left, b.top, b.right, b.bottom, Canvas.EdgeType.AA)) {
+                canvas.drawBitmap(emojiBmp[info.page][info.page2], null, b, paint);
+            }
         }
 
         @Override
@@ -360,11 +360,13 @@ public class Emoji {
         boolean doneEmoji = false;
         int nextValidLength;
         boolean nextValid;
+        boolean notOnlyEmoji;
         //s.setSpansCount(emojiCount);
 
         try {
             for (int i = 0; i < length; i++) {
                 c = cs.charAt(i);
+                notOnlyEmoji = false;
                 if (c >= 0xD83C && c <= 0xD83E || (buf != 0 && (buf & 0xFFFFFFFF00000000L) == 0 && (buf & 0xFFFF) == 0xD83C && (c >= 0xDDE6 && c <= 0xDDFF))) {
                     if (startIndex == -1) {
                         startIndex = i;
@@ -407,10 +409,7 @@ public class Emoji {
                     startLength = 0;
                     doneEmoji = false;
                 } else if (c != 0xfe0f) {
-                    if (emojiOnly != null) {
-                        emojiOnly[0] = 0;
-                        emojiOnly = null;
-                    }
+                    notOnlyEmoji = true;
                 }
                 if (doneEmoji && i + 2 < length) {
                     char next = cs.charAt(i + 1);
@@ -442,18 +441,26 @@ public class Emoji {
                         c = cs.charAt(i + 1);
                         if (a == 1) {
                             if (c == 0x200D && emojiCode.length() > 0) {
+                                notOnlyEmoji = false;
                                 emojiCode.append(c);
                                 i++;
                                 startLength++;
                                 doneEmoji = false;
                             }
-                        } else if (startIndex != -1 || prevCh == '*' || prevCh >= '1' && prevCh <= '9') {
+                        } else if (startIndex != -1 || prevCh == '*' || prevCh == '#' || prevCh >= '0' && prevCh <= '9') {
                             if (c >= 0xFE00 && c <= 0xFE0F) {
                                 i++;
                                 startLength++;
+                                if (!doneEmoji) {
+                                    doneEmoji = i + 1 >= length;
+                                }
                             }
                         }
                     }
+                }
+                if (notOnlyEmoji && emojiOnly != null) {
+                    emojiOnly[0] = 0;
+                    emojiOnly = null;
                 }
                 if (doneEmoji && i + 2 < length && cs.charAt(i + 1) == 0xD83C) {
                     char next = cs.charAt(i + 2);

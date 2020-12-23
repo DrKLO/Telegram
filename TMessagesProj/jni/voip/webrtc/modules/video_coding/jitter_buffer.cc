@@ -298,8 +298,7 @@ VCMEncodedFrame* VCMJitterBuffer::ExtractAndSetDecode(uint32_t timestamp) {
   last_decoded_state_.SetState(frame);
   DropPacketsFromNackList(last_decoded_state_.sequence_num());
 
-  if ((*frame).IsSessionComplete())
-    UpdateAveragePacketsPerFrame(frame->NumPackets());
+  UpdateAveragePacketsPerFrame(frame->NumPackets());
 
   return frame;
 }

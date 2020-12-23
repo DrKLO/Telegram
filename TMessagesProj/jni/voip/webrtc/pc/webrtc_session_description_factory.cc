@@ -11,9 +11,10 @@
 #include "pc/webrtc_session_description_factory.h"
 
 #include <stddef.h>
-
+#include <algorithm>
 #include <memory>
 #include <string>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
@@ -22,6 +23,7 @@
 #include "api/jsep.h"
 #include "api/jsep_session_description.h"
 #include "api/rtc_error.h"
+#include "pc/sdp_state_provider.h"
 #include "pc/session_description.h"
 #include "rtc_base/checks.h"
 #include "rtc_base/location.h"
@@ -125,11 +127,14 @@ void WebRtcSessionDescriptionFactory::CopyCandidatesFromSessionDescription(
 WebRtcSessionDescriptionFactory::WebRtcSessionDescriptionFactory(
     rtc::Thread* signaling_thread,
     cricket::ChannelManager* channel_manager,
-    PeerConnectionInternal* pc,
+    const SdpStateProvider* sdp_info,
     const std::string& session_id,
+    bool dtls_enabled,
     std::unique_ptr<rtc::RTCCertificateGeneratorInterface> cert_generator,
     const rtc::scoped_refptr<rtc::RTCCertificate>& certificate,
-    UniqueRandomIdGenerator* ssrc_generator)
+    UniqueRandomIdGenerator* ssrc_generator,
+    std::function<void(const rtc::scoped_refptr<rtc::RTCCertificate>&)>
+        on_certificate_ready)
     : signaling_thread_(signaling_thread),
       session_desc_factory_(channel_manager,
                             &transport_desc_factory_,
@@ -139,20 +144,21 @@ WebRtcSessionDescriptionFactory::WebRtcSessionDescriptionFactory(
       // to just use a random number as session id and start version from
       // |kInitSessionVersion|.
       session_version_(kInitSessionVersion),
-      cert_generator_(std::move(cert_generator)),
-      pc_(pc),
+      cert_generator_(dtls_enabled ? std::move(cert_generator) : nullptr),
+      sdp_info_(sdp_info),
       session_id_(session_id),
-      certificate_request_state_(CERTIFICATE_NOT_NEEDED) {
+      certificate_request_state_(CERTIFICATE_NOT_NEEDED),
+      on_certificate_ready_(on_certificate_ready) {
   RTC_DCHECK(signaling_thread_);
-  RTC_DCHECK(!(cert_generator_ && certificate));
-  bool dtls_enabled = cert_generator_ || certificate;
-  // SRTP-SDES is disabled if DTLS is on.
-  SetSdesPolicy(dtls_enabled ? cricket::SEC_DISABLED : cricket::SEC_REQUIRED);
+
   if (!dtls_enabled) {
+    SetSdesPolicy(cricket::SEC_REQUIRED);
     RTC_LOG(LS_VERBOSE) << "DTLS-SRTP disabled.";
     return;
   }
 
+  // SRTP-SDES is disabled if DTLS is on.
+  SetSdesPolicy(cricket::SEC_DISABLED);
   if (certificate) {
     // Use |certificate|.
     certificate_request_state_ = CERTIFICATE_WAITING;
@@ -252,13 +258,13 @@ void WebRtcSessionDescriptionFactory::CreateAnswer(
     PostCreateSessionDescriptionFailed(observer, error);
     return;
   }
-  if (!pc_->remote_description()) {
+  if (!sdp_info_->remote_description()) {
     error += " can't be called before SetRemoteDescription.";
     RTC_LOG(LS_ERROR) << error;
     PostCreateSessionDescriptionFailed(observer, error);
     return;
   }
-  if (pc_->remote_description()->GetType() != SdpType::kOffer) {
+  if (sdp_info_->remote_description()->GetType() != SdpType::kOffer) {
     error += " failed because remote_description is not an offer.";
     RTC_LOG(LS_ERROR) << error;
     PostCreateSessionDescriptionFailed(observer, error);
@@ -325,12 +331,12 @@ void WebRtcSessionDescriptionFactory::OnMessage(rtc::Message* msg) {
 
 void WebRtcSessionDescriptionFactory::InternalCreateOffer(
     CreateSessionDescriptionRequest request) {
-  if (pc_->local_description()) {
+  if (sdp_info_->local_description()) {
     // If the needs-ice-restart flag is set as described by JSEP, we should
     // generate an offer with a new ufrag/password to trigger an ICE restart.
     for (cricket::MediaDescriptionOptions& options :
          request.options.media_description_options) {
-      if (pc_->NeedsIceRestart(options.mid)) {
+      if (sdp_info_->NeedsIceRestart(options.mid)) {
         options.transport_options.ice_restart = true;
       }
     }
@@ -338,8 +344,8 @@ void WebRtcSessionDescriptionFactory::InternalCreateOffer(
 
   std::unique_ptr<cricket::SessionDescription> desc =
       session_desc_factory_.CreateOffer(
-          request.options, pc_->local_description()
-                               ? pc_->local_description()->description()
+          request.options, sdp_info_->local_description()
+                               ? sdp_info_->local_description()->description()
                                : nullptr);
   if (!desc) {
     PostCreateSessionDescriptionFailed(request.observer,
@@ -360,11 +366,11 @@ void WebRtcSessionDescriptionFactory::InternalCreateOffer(
   auto offer = std::make_unique<JsepSessionDescription>(
       SdpType::kOffer, std::move(desc), session_id_,
       rtc::ToString(session_version_++));
-  if (pc_->local_description()) {
+  if (sdp_info_->local_description()) {
     for (const cricket::MediaDescriptionOptions& options :
          request.options.media_description_options) {
       if (!options.transport_options.ice_restart) {
-        CopyCandidatesFromSessionDescription(pc_->local_description(),
+        CopyCandidatesFromSessionDescription(sdp_info_->local_description(),
                                              options.mid, offer.get());
       }
     }
@@ -374,31 +380,34 @@ void WebRtcSessionDescriptionFactory::InternalCreateOffer(
 
 void WebRtcSessionDescriptionFactory::InternalCreateAnswer(
     CreateSessionDescriptionRequest request) {
-  if (pc_->remote_description()) {
+  if (sdp_info_->remote_description()) {
     for (cricket::MediaDescriptionOptions& options :
          request.options.media_description_options) {
       // According to http://tools.ietf.org/html/rfc5245#section-9.2.1.1
       // an answer should also contain new ICE ufrag and password if an offer
       // has been received with new ufrag and password.
       options.transport_options.ice_restart =
-          pc_->IceRestartPending(options.mid);
-      // We should pass the current SSL role to the transport description
+          sdp_info_->IceRestartPending(options.mid);
+      // We should pass the current DTLS role to the transport description
       // factory, if there is already an existing ongoing session.
-      rtc::SSLRole ssl_role;
-      if (pc_->GetSslRole(options.mid, &ssl_role)) {
+      absl::optional<rtc::SSLRole> dtls_role =
+          sdp_info_->GetDtlsRole(options.mid);
+      if (dtls_role) {
         options.transport_options.prefer_passive_role =
-            (rtc::SSL_SERVER == ssl_role);
+            (rtc::SSL_SERVER == *dtls_role);
       }
     }
   }
 
   std::unique_ptr<cricket::SessionDescription> desc =
       session_desc_factory_.CreateAnswer(
-          pc_->remote_description() ? pc_->remote_description()->description()
-                                    : nullptr,
+          sdp_info_->remote_description()
+              ? sdp_info_->remote_description()->description()
+              : nullptr,
           request.options,
-          pc_->local_description() ? pc_->local_description()->description()
-                                   : nullptr);
+          sdp_info_->local_description()
+              ? sdp_info_->local_description()->description()
+              : nullptr);
   if (!desc) {
     PostCreateSessionDescriptionFailed(request.observer,
                                        "Failed to initialize the answer.");
@@ -416,13 +425,13 @@ void WebRtcSessionDescriptionFactory::InternalCreateAnswer(
   auto answer = std::make_unique<JsepSessionDescription>(
       SdpType::kAnswer, std::move(desc), session_id_,
       rtc::ToString(session_version_++));
-  if (pc_->local_description()) {
+  if (sdp_info_->local_description()) {
     // Include all local ICE candidates in the SessionDescription unless
     // the remote peer has requested an ICE restart.
     for (const cricket::MediaDescriptionOptions& options :
          request.options.media_description_options) {
       if (!options.transport_options.ice_restart) {
-        CopyCandidatesFromSessionDescription(pc_->local_description(),
+        CopyCandidatesFromSessionDescription(sdp_info_->local_description(),
                                              options.mid, answer.get());
       }
     }
@@ -481,7 +490,8 @@ void WebRtcSessionDescriptionFactory::SetCertificate(
   RTC_LOG(LS_VERBOSE) << "Setting new certificate.";
 
   certificate_request_state_ = CERTIFICATE_SUCCEEDED;
-  SignalCertificateReady(certificate);
+
+  on_certificate_ready_(certificate);
 
   transport_desc_factory_.set_certificate(certificate);
   transport_desc_factory_.set_secure(cricket::SEC_ENABLED);

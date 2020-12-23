@@ -442,6 +442,8 @@ class RTCStatsReportVerifier {
 
   bool VerifyRTCCodecStats(const RTCCodecStats& codec) {
     RTCStatsVerifier verifier(report_, &codec);
+    verifier.TestMemberIsIDReference(codec.transport_id,
+                                     RTCTransportStats::kType);
     verifier.TestMemberIsDefined(codec.payload_type);
     verifier.TestMemberIsDefined(codec.mime_type);
     verifier.TestMemberIsPositive<uint32_t>(codec.clock_rate);

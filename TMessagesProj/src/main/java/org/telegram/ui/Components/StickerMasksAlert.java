@@ -32,11 +32,14 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.DocumentObject;
 import org.telegram.messenger.Emoji;
+import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
+import org.telegram.messenger.SvgHelper;
 import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLObject;
@@ -109,7 +112,7 @@ public class StickerMasksAlert extends BottomSheet implements NotificationCenter
 
     private ContentPreviewViewer.ContentPreviewViewerDelegate contentPreviewViewerDelegate = new ContentPreviewViewer.ContentPreviewViewerDelegate() {
         @Override
-        public void sendSticker(TLRPC.Document sticker, Object parent, boolean notify, int scheduleDate) {
+        public void sendSticker(TLRPC.Document sticker, String query, Object parent, boolean notify, int scheduleDate) {
             delegate.onStickerSelected(parent, sticker);
         }
 
@@ -821,14 +824,13 @@ public class StickerMasksAlert extends BottomSheet implements NotificationCenter
         }
         for (int a = 0; a < stickerSets[currentType].size(); a++) {
             TLRPC.TL_messages_stickerSet stickerSet = stickerSets[currentType].get(a);
-            TLObject thumb;
             TLRPC.Document document = stickerSet.documents.get(0);
-            if (stickerSet.set.thumb instanceof TLRPC.TL_photoSize || stickerSet.set.thumb instanceof TLRPC.TL_photoSizeProgressive) {
-                thumb = stickerSet.set.thumb;
-            } else {
+            TLObject thumb = FileLoader.getClosestPhotoSizeWithSize(stickerSet.set.thumbs, 90);
+            SvgHelper.SvgDrawable svgThumb = DocumentObject.getSvgThumb(stickerSet.set.thumbs, Theme.key_windowBackgroundGray, 1.0f);
+            if (thumb == null) {
                 thumb = document;
             }
-            stickersTab.addStickerTab(thumb, document, stickerSet).setContentDescription(stickerSet.set.title + ", " + LocaleController.getString("AccDescrStickerSet", R.string.AccDescrStickerSet));
+            stickersTab.addStickerTab(thumb, svgThumb, document, stickerSet).setContentDescription(stickerSet.set.title + ", " + LocaleController.getString("AccDescrStickerSet", R.string.AccDescrStickerSet));
         }
         stickersTab.commitUpdate();
         stickersTab.updateTabStyles();
@@ -1046,7 +1048,7 @@ public class StickerMasksAlert extends BottomSheet implements NotificationCenter
             View view = null;
             switch (viewType) {
                 case 0:
-                    view = new StickerEmojiCell(context) {
+                    view = new StickerEmojiCell(context, false) {
                         public void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
                             super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(82), MeasureSpec.EXACTLY));
                         }
@@ -1453,7 +1455,7 @@ public class StickerMasksAlert extends BottomSheet implements NotificationCenter
             View view = null;
             switch (viewType) {
                 case 0:
-                    view = new StickerEmojiCell(context) {
+                    view = new StickerEmojiCell(context, false) {
                         public void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
                             super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(82), MeasureSpec.EXACTLY));
                         }

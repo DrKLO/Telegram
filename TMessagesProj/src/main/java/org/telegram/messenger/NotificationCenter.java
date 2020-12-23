@@ -30,6 +30,7 @@ public class NotificationCenter {
     public static final int commentsRead = totalEvents++;
     public static final int changeRepliesCounter = totalEvents++;
     public static final int messagesDidLoad = totalEvents++;
+    public static final int messagesDidLoadWithoutProcess = totalEvents++;
     public static final int loadingMessagesFailed = totalEvents++;
     public static final int messageReceivedByAck = totalEvents++;
     public static final int messageReceivedByServer = totalEvents++;
@@ -108,6 +109,8 @@ public class NotificationCenter {
     public static final int didVerifyMessagesStickers = totalEvents++;
     public static final int scheduledMessagesUpdated = totalEvents++;
     public static final int newSuggestionsAvailable = totalEvents++;
+    public static final int didLoadChatInviter = totalEvents++;
+    public static final int didLoadChatAdmins = totalEvents++;
 
     public static final int walletPendingTransactionsChanged = totalEvents++;
     public static final int walletSyncProgressChanged = totalEvents++;
@@ -146,8 +149,11 @@ public class NotificationCenter {
     public static final int audioRouteChanged = totalEvents++;
 
     public static final int didStartedCall = totalEvents++;
+    public static final int groupCallUpdated = totalEvents++;
+    public static final int groupCallTypingsUpdated = totalEvents++;
     public static final int didEndCall = totalEvents++;
     public static final int closeInCallActivity = totalEvents++;
+    public static final int groupCallVisibilityChanged = totalEvents++;
 
     public static final int appDidLogout = totalEvents++;
 
@@ -197,7 +203,10 @@ public class NotificationCenter {
     public static final int closeSearchByActiveAction = totalEvents++;
     public static final int messagePlayingSpeedChanged = totalEvents++;
     public static final int screenStateChanged = totalEvents++;
+    public static final int didDatabaseCleared = totalEvents++;
     public static final int voipServiceCreated = totalEvents++;
+    public static final int webRtcMicAmplitudeEvent = totalEvents++;
+    public static final int webRtcSpeakerAmplitudeEvent = totalEvents++;
 
     private SparseArray<ArrayList<NotificationCenterDelegate>> observers = new SparseArray<>();
     private SparseArray<ArrayList<NotificationCenterDelegate>> removeAfterBroadcast = new SparseArray<>();

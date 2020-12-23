@@ -38,7 +38,8 @@ RtpFrameObject::RtpFrameObject(
     const absl::optional<webrtc::ColorSpace>& color_space,
     RtpPacketInfos packet_infos,
     rtc::scoped_refptr<EncodedImageBuffer> image_buffer)
-    : first_seq_num_(first_seq_num),
+    : image_buffer_(image_buffer),
+      first_seq_num_(first_seq_num),
       last_seq_num_(last_seq_num),
       last_packet_received_time_(last_packet_received_time),
       times_nacked_(times_nacked) {
@@ -50,7 +51,6 @@ RtpFrameObject::RtpFrameObject(
   // TODO(philipel): Remove when encoded image is replaced by EncodedFrame.
   // VCMEncodedFrame members
   CopyCodecSpecific(&rtp_video_header_);
-  _completeFrame = true;
   _payloadType = payload_type;
   SetTimestamp(rtp_timestamp);
   ntp_time_ms_ = ntp_time_ms;
@@ -60,7 +60,7 @@ RtpFrameObject::RtpFrameObject(
   // as of the first packet's.
   SetPlayoutDelay(rtp_video_header_.playout_delay);
 
-  SetEncodedData(std::move(image_buffer));
+  SetEncodedData(image_buffer_);
   _encodedWidth = rtp_video_header_.width;
   _encodedHeight = rtp_video_header_.height;
 

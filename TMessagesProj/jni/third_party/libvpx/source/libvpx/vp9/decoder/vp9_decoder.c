@@ -153,6 +153,11 @@ static int vp9_dec_alloc_mi(VP9_COMMON *cm, int mi_size) {
 }
 
 static void vp9_dec_free_mi(VP9_COMMON *cm) {
+#if CONFIG_VP9_POSTPROC
+  // MFQE allocates an additional mip and swaps it with cm->mip.
+  vpx_free(cm->postproc_state.prev_mip);
+  cm->postproc_state.prev_mip = NULL;
+#endif
   vpx_free(cm->mip);
   cm->mip = NULL;
   vpx_free(cm->mi_grid_base);

@@ -24,15 +24,6 @@ class NetworkMonitorInterface;
  */
 class NetworkMonitorFactory {
  public:
-  // This is not thread-safe; it should be called once (or once per audio/video
-  // call) during the call initialization.
-  // DEPRECATED: Should pass NetworkMonitorFactory through
-  // PeerConnectionFactoryDependencies instead.
-  static void SetFactory(NetworkMonitorFactory* factory);
-
-  static void ReleaseFactory(NetworkMonitorFactory* factory);
-  static NetworkMonitorFactory* GetFactory();
-
   virtual NetworkMonitorInterface* CreateNetworkMonitor() = 0;
 
   virtual ~NetworkMonitorFactory();

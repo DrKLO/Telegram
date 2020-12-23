@@ -13,14 +13,17 @@
 
 #include <vector>
 
+#include "api/array_view.h"
+
 namespace webrtc {
 
 // Decides the sample rate of a mixing iteration given the preferred
 // sample rates of the sources.
 class OutputRateCalculator {
  public:
-  virtual int CalculateOutputRate(
-      const std::vector<int>& preferred_sample_rates) = 0;
+  virtual int CalculateOutputRateFromRange(
+      rtc::ArrayView<const int> preferred_sample_rates) = 0;
+
   virtual ~OutputRateCalculator() {}
 };
 

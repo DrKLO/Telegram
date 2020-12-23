@@ -16,7 +16,7 @@ SECTION .text
 ;void vpx_plane_add_noise_sse2(uint8_t *start, const int8_t *noise,
 ;                              int blackclamp, int whiteclamp,
 ;                              int width, int height, int pitch)
-global sym(vpx_plane_add_noise_sse2) PRIVATE
+globalsym(vpx_plane_add_noise_sse2)
 sym(vpx_plane_add_noise_sse2):
     push        rbp
     mov         rbp, rsp

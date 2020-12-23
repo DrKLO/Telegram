@@ -13,6 +13,7 @@ import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.PorterDuffXfermode;
 import android.graphics.drawable.Drawable;
+import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
 import android.view.accessibility.AccessibilityNodeInfo;
@@ -32,6 +33,7 @@ import org.telegram.ui.Components.LayoutHelper;
 public class VoIPToggleButton extends FrameLayout {
 
     Paint circlePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private boolean drawBackground = true;
     Drawable[] icon = new Drawable[2];
     TextView[] textView = new TextView[2];
 
@@ -66,18 +68,28 @@ public class VoIPToggleButton extends FrameLayout {
 
     private boolean checkable;
     private boolean checked;
+    private float checkedProgress;
+    private int backgroundCheck1;
+    private int backgroundCheck2;
+
+    private float radius;
+    private ValueAnimator checkAnimator;
 
     public VoIPToggleButton(@NonNull Context context) {
+        this(context, 52f);
+    }
+    public VoIPToggleButton(@NonNull Context context, float radius) {
         super(context);
+        this.radius = radius;
         setWillNotDraw(false);
 
         for (int i = 0; i < 2; i++) {
             TextView textView = new TextView(context);
             textView.setGravity(Gravity.CENTER_HORIZONTAL);
-            textView.setTextSize(11f);
+            textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 11);
             textView.setTextColor(Color.WHITE);
             textView.setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO);
-            addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 58, 0, 0));
+            addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, radius + 4, 0, 0));
             this.textView[i] = textView;
         }
         textView[1].setVisibility(View.GONE);
@@ -89,10 +101,17 @@ public class VoIPToggleButton extends FrameLayout {
         crossPaint.setStrokeWidth(AndroidUtilities.dp(2));
         crossPaint.setStrokeCap(Paint.Cap.ROUND);
 
-        rippleDrawable = Theme.createSimpleSelectorCircleDrawable(AndroidUtilities.dp(52), 0, Color.BLACK);
-        rippleDrawable.setCallback(this);
-
         bitmapPaint.setFilterBitmap(true);
+    }
+
+    public void setTextSize(int size) {
+        for (int i = 0; i < 2; i++) {
+            textView[i].setTextSize(TypedValue.COMPLEX_UNIT_DIP, size);
+        }
+    }
+
+    public void setDrawBackground(boolean value) {
+        drawBackground = value;
     }
 
     @SuppressLint("DrawAllocation")
@@ -105,9 +124,15 @@ public class VoIPToggleButton extends FrameLayout {
         }
 
         float cx = getWidth() / 2f;
-        float cy = AndroidUtilities.dp(52) / 2f;
-        float radius = AndroidUtilities.dp(52) / 2f;
-        canvas.drawCircle(cx, cy, AndroidUtilities.dp(52) / 2f, circlePaint);
+        float cy = AndroidUtilities.dp(radius) / 2f;
+        float radius = AndroidUtilities.dp(this.radius) / 2f;
+        if (drawBackground) {
+            canvas.drawCircle(cx, cy, AndroidUtilities.dp(this.radius) / 2f, circlePaint);
+        }
+        if (rippleDrawable == null) {
+            rippleDrawable = Theme.createSimpleSelectorCircleDrawable(AndroidUtilities.dp(this.radius), 0, Color.BLACK);
+            rippleDrawable.setCallback(this);
+        }
         rippleDrawable.setBounds((int) (cx - radius), (int) (cy - radius), (int) (cx + radius), (int) (cy + radius));
         rippleDrawable.draw(canvas);
 
@@ -179,7 +204,7 @@ public class VoIPToggleButton extends FrameLayout {
             for (int i = 0; i < ((replaceProgress == 0 || iconChangeColor) ? 1 : 2); i++) {
                 if (icon[i] != null) {
                     canvas.save();
-                    if (replaceProgress != 0 && !iconChangeColor) {
+                    if (replaceProgress != 0 && !iconChangeColor && icon[0] != null && icon[1] != null) {
                         float p = i == 0 ? 1f - replaceProgress : replaceProgress;
                         canvas.scale(p, p, cx, cy);
                         icon[i].setAlpha((int) (255 * p));
@@ -203,22 +228,39 @@ public class VoIPToggleButton extends FrameLayout {
         }
     }
 
+    public void setBackgroundColor(int backgroundColor, int backgroundColorChecked) {
+        backgroundCheck1 = backgroundColor;
+        backgroundCheck2 = backgroundColorChecked;
+        this.backgroundColor = ColorUtils.blendARGB(backgroundColor, backgroundColorChecked, checkedProgress);
+        invalidate();
+    }
+
     public void setData(int iconRes, int iconColor, int backgroundColor, String text, boolean cross, boolean animated) {
+        setData(iconRes, iconColor, backgroundColor, 1.0f, true, text, cross, animated);
+    }
+
+    public void setData(int iconRes, int iconColor, int backgroundColor, float selectorAlpha, boolean recreateRipple, String text, boolean cross, boolean animated) {
         if (getVisibility() != View.VISIBLE) {
             animated = false;
             setVisibility(View.VISIBLE);
         }
 
-        if (currentIconRes == iconRes && currentIconColor == iconColor && currentBackgroundColor == backgroundColor && (currentText != null && currentText.equals(text))) {
+        if (currentIconRes == iconRes && currentIconColor == iconColor && (checkable || currentBackgroundColor == backgroundColor) && (currentText != null && currentText.equals(text))) {
             return;
         }
 
-        if (Color.alpha(backgroundColor) == 255 && AndroidUtilities.computePerceivedBrightness(backgroundColor) > 0.5) {
-            rippleDrawable = Theme.createSimpleSelectorCircleDrawable(AndroidUtilities.dp(52), 0, ColorUtils.setAlphaComponent(Color.BLACK, (int) (255 * 0.1f)));
-            rippleDrawable.setCallback(this);
-        } else {
-            rippleDrawable = Theme.createSimpleSelectorCircleDrawable(AndroidUtilities.dp(52), 0, ColorUtils.setAlphaComponent(Color.WHITE, (int) (255 * 0.3f)));
-            rippleDrawable.setCallback(this);
+        if (rippleDrawable == null || recreateRipple) {
+            if (Color.alpha(backgroundColor) == 255 && AndroidUtilities.computePerceivedBrightness(backgroundColor) > 0.5) {
+                rippleDrawable = Theme.createSimpleSelectorCircleDrawable(AndroidUtilities.dp(radius), 0, ColorUtils.setAlphaComponent(Color.BLACK, (int) (255 * 0.1f * selectorAlpha)));
+                rippleDrawable.setCallback(this);
+            } else {
+                rippleDrawable = Theme.createSimpleSelectorCircleDrawable(AndroidUtilities.dp(radius), 0, ColorUtils.setAlphaComponent(Color.WHITE, (int) (255 * 0.3f * selectorAlpha)));
+                rippleDrawable.setCallback(this);
+            }
+        }
+
+        if (replaceAnimator != null) {
+            replaceAnimator.cancel();
         }
 
         iconChangeColor = currentIconRes == iconRes;
@@ -231,15 +273,13 @@ public class VoIPToggleButton extends FrameLayout {
         currentText = text;
         drawCross = cross;
 
-        if (replaceAnimator != null) {
-            replaceAnimator.cancel();
-        }
-
         if (!animated) {
             icon[0] = ContextCompat.getDrawable(getContext(), iconRes).mutate();
             icon[0].setColorFilter(new PorterDuffColorFilter(iconColor, PorterDuff.Mode.MULTIPLY));
             crossPaint.setColor(iconColor);
-            this.backgroundColor = backgroundColor;
+            if (!checkable) {
+                this.backgroundColor = backgroundColor;
+            }
             textView[0].setText(text);
             crossProgress = drawCross ? 1f : 0;
             iconChangeColor = false;
@@ -250,7 +290,9 @@ public class VoIPToggleButton extends FrameLayout {
                 icon[1] = ContextCompat.getDrawable(getContext(), iconRes).mutate();
                 icon[1].setColorFilter(new PorterDuffColorFilter(iconColor, PorterDuff.Mode.MULTIPLY));
             }
-            this.animateToBackgroundColor = backgroundColor;
+            if (!checkable) {
+                this.animateToBackgroundColor = backgroundColor;
+            }
 
             boolean animateText = !textView[0].getText().toString().equals(text);
 
@@ -281,6 +323,7 @@ public class VoIPToggleButton extends FrameLayout {
             replaceAnimator.addListener(new AnimatorListenerAdapter() {
                 @Override
                 public void onAnimationEnd(Animator animation) {
+                    replaceAnimator = null;
                     if (animateText) {
                         TextView tv = textView[0];
                         textView[0] = textView[1];
@@ -310,7 +353,9 @@ public class VoIPToggleButton extends FrameLayout {
     @Override
     protected void drawableStateChanged() {
         super.drawableStateChanged();
-        rippleDrawable.setState(getDrawableState());
+        if (rippleDrawable != null) {
+            rippleDrawable.setState(getDrawableState());
+        }
     }
 
     @Override
@@ -330,8 +375,35 @@ public class VoIPToggleButton extends FrameLayout {
         this.checkable = checkable;
     }
 
-    public void setChecked(boolean checked) {
+    public void setChecked(boolean checked, boolean animated) {
         this.checked = checked;
+        if (animated) {
+            if (checkAnimator != null) {
+                checkAnimator.removeAllListeners();
+                checkAnimator.cancel();
+            }
+            checkAnimator = ValueAnimator.ofFloat(checkedProgress,  checked ? 1f : 0);
+            checkAnimator.addUpdateListener(valueAnimator -> {
+                checkedProgress = (float) valueAnimator.getAnimatedValue();
+                setBackgroundColor(backgroundCheck1, backgroundCheck2);
+            });
+            checkAnimator.addListener(new AnimatorListenerAdapter() {
+                @Override
+                public void onAnimationEnd(Animator animation) {
+                    checkedProgress = checked ? 1f : 0;
+                    setBackgroundColor(backgroundCheck1, backgroundCheck2);
+                }
+            });
+            checkAnimator.setDuration(150);
+            checkAnimator.start();
+        } else {
+            checkedProgress = checked ? 1f : 0;
+            setBackgroundColor(backgroundCheck1, backgroundCheck2);
+        }
+    }
+
+    public boolean isChecked() {
+        return checked;
     }
 
     @Override
@@ -343,5 +415,10 @@ public class VoIPToggleButton extends FrameLayout {
             info.setCheckable(true);
             info.setChecked(checked);
         }
+    }
+
+    public void shakeView() {
+        AndroidUtilities.shakeView(textView[0], 2, 0);
+        AndroidUtilities.shakeView(textView[1], 2, 0);
     }
 }

@@ -39,7 +39,6 @@ AudioTrack::~AudioTrack() {
 }
 
 std::string AudioTrack::kind() const {
-  RTC_DCHECK(thread_checker_.IsCurrent());
   return kAudioKind;
 }
 

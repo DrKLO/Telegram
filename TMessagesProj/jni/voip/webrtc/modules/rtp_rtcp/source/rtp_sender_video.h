@@ -24,6 +24,7 @@
 #include "api/transport/rtp/dependency_descriptor.h"
 #include "api/video/video_codec_type.h"
 #include "api/video/video_frame_type.h"
+#include "api/video/video_layers_allocation.h"
 #include "modules/rtp_rtcp/include/rtp_rtcp_defines.h"
 #include "modules/rtp_rtcp/source/absolute_capture_time_sender.h"
 #include "modules/rtp_rtcp/source/active_decode_targets_helper.h"
@@ -70,8 +71,6 @@ class RTPSenderVideo {
     // expected to outlive the RTPSenderVideo object they are passed to.
     Clock* clock = nullptr;
     RTPSender* rtp_sender = nullptr;
-    FlexfecSender* flexfec_sender = nullptr;
-    VideoFecGenerator* fec_generator = nullptr;
     // Some FEC data is duplicated here in preparation of moving FEC to
     // the egress stage.
     absl::optional<VideoFecGenerator::FecType> fec_type;
@@ -91,13 +90,19 @@ class RTPSenderVideo {
 
   // expected_retransmission_time_ms.has_value() -> retransmission allowed.
   // Calls to this method is assumed to be externally serialized.
+  // |estimated_capture_clock_offset_ms| is an estimated clock offset between
+  // this sender and the original capturer, for this video packet. See
+  // http://www.webrtc.org/experiments/rtp-hdrext/abs-capture-time for more
+  // details. If the sender and the capture has the same clock, it is supposed
+  // to be zero valued, which is given as the default.
   bool SendVideo(int payload_type,
                  absl::optional<VideoCodecType> codec_type,
                  uint32_t rtp_timestamp,
                  int64_t capture_time_ms,
                  rtc::ArrayView<const uint8_t> payload,
                  RTPVideoHeader video_header,
-                 absl::optional<int64_t> expected_retransmission_time_ms);
+                 absl::optional<int64_t> expected_retransmission_time_ms,
+                 absl::optional<int64_t> estimated_capture_clock_offset_ms = 0);
 
   bool SendEncodedImage(
       int payload_type,
@@ -113,14 +118,27 @@ class RTPSenderVideo {
   // All calls to SendVideo after this call must use video_header compatible
   // with the video_structure.
   void SetVideoStructure(const FrameDependencyStructure* video_structure);
-  void SetVideoStructureUnderLock(
+  // Should only be used by a RTPSenderVideoFrameTransformerDelegate and exists
+  // to ensure correct syncronization.
+  void SetVideoStructureAfterTransformation(
       const FrameDependencyStructure* video_structure);
 
-  uint32_t VideoBitrateSent() const;
+  // Sets current active VideoLayersAllocation. The allocation will be sent
+  // using the rtp video layers allocation extension. The allocation will be
+  // sent in full on every key frame. The allocation will be sent once on a
+  // none discardable delta frame per call to this method and will not contain
+  // resolution and frame rate.
+  void SetVideoLayersAllocation(VideoLayersAllocation allocation);
+  // Should only be used by a RTPSenderVideoFrameTransformerDelegate and exists
+  // to ensure correct syncronization.
+  void SetVideoLayersAllocationAfterTransformation(
+      VideoLayersAllocation allocation);
 
   // Returns the current packetization overhead rate, in bps. Note that this is
   // the payload overhead, eg the VP8 payload headers, not the RTP headers
   // or extension/
+  // TODO(sprang): Consider moving this to RtpSenderEgress so it's in the same
+  // place as the other rate stats.
   uint32_t PacketizationOverheadBps() const;
 
  protected:
@@ -140,6 +158,10 @@ class RTPSenderVideo {
     RateStatistics frame_rate_fp1000s;
     int64_t last_frame_time_ms;
   };
+
+  void SetVideoStructureInternal(
+      const FrameDependencyStructure* video_structure);
+  void SetVideoLayersAllocationInternal(VideoLayersAllocation allocation);
 
   void AddRtpHeaderExtensions(
       const RTPVideoHeader& video_header,
@@ -177,24 +199,28 @@ class RTPSenderVideo {
   bool transmit_color_space_next_frame_ RTC_GUARDED_BY(send_checker_);
   std::unique_ptr<FrameDependencyStructure> video_structure_
       RTC_GUARDED_BY(send_checker_);
+  absl::optional<VideoLayersAllocation> allocation_
+      RTC_GUARDED_BY(send_checker_);
+  // Flag indicating if we should send |allocation_|.
+  bool send_allocation_ RTC_GUARDED_BY(send_checker_);
 
   // Current target playout delay.
-  PlayoutDelay current_playout_delay_ RTC_GUARDED_BY(send_checker_);
-  // Flag indicating if we need to propagate |current_playout_delay_| in order
+  VideoPlayoutDelay current_playout_delay_ RTC_GUARDED_BY(send_checker_);
+  // Flag indicating if we need to send |current_playout_delay_| in order
   // to guarantee it gets delivered.
   bool playout_delay_pending_;
+  // Set by the field trial WebRTC-ForceSendPlayoutDelay to override the playout
+  // delay of outgoing video frames.
+  const absl::optional<VideoPlayoutDelay> forced_playout_delay_;
 
   // Should never be held when calling out of this class.
   Mutex mutex_;
 
   const absl::optional<int> red_payload_type_;
-  VideoFecGenerator* const fec_generator_;
   absl::optional<VideoFecGenerator::FecType> fec_type_;
   const size_t fec_overhead_bytes_;  // Per packet max FEC overhead.
 
   mutable Mutex stats_mutex_;
-  // Bitrate used for video payload and RTP headers.
-  RateStatistics video_bitrate_ RTC_GUARDED_BY(stats_mutex_);
   RateStatistics packetization_overhead_bitrate_ RTC_GUARDED_BY(stats_mutex_);
 
   std::map<int, TemporalLayerStats> frame_stats_by_temporal_layer_
@@ -218,6 +244,8 @@ class RTPSenderVideo {
 
   const rtc::scoped_refptr<RTPSenderVideoFrameTransformerDelegate>
       frame_transformer_delegate_;
+
+  const bool include_capture_clock_offset_;
 };
 
 }  // namespace webrtc

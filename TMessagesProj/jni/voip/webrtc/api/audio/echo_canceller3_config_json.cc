@@ -302,6 +302,8 @@ void Aec3ConfigFromJsonString(absl::string_view json_string,
               &cfg.echo_model.render_pre_window_size);
     ReadParam(section, "render_post_window_size",
               &cfg.echo_model.render_post_window_size);
+    ReadParam(section, "model_reverb_in_nonlinear_mode",
+              &cfg.echo_model.model_reverb_in_nonlinear_mode);
   }
 
   if (rtc::GetValueFromJsonObject(aec3_root, "comfort_noise", &section)) {
@@ -381,6 +383,8 @@ void Aec3ConfigFromJsonString(absl::string_view json_string,
 
     ReadParam(section, "floor_first_increase",
               &cfg.suppressor.floor_first_increase);
+    ReadParam(section, "conservative_hf_suppression",
+              &cfg.suppressor.conservative_hf_suppression);
   }
 }
 
@@ -585,7 +589,9 @@ std::string Aec3ConfigToJsonString(const EchoCanceller3Config& config) {
   ost << "\"render_pre_window_size\": "
       << config.echo_model.render_pre_window_size << ",";
   ost << "\"render_post_window_size\": "
-      << config.echo_model.render_post_window_size;
+      << config.echo_model.render_post_window_size << ",";
+  ost << "\"model_reverb_in_nonlinear_mode\": "
+      << (config.echo_model.model_reverb_in_nonlinear_mode ? "true" : "false");
   ost << "},";
 
   ost << "\"comfort_noise\": {";
@@ -672,7 +678,10 @@ std::string Aec3ConfigToJsonString(const EchoCanceller3Config& config) {
   ost << "\"anti_howling_gain\": "
       << config.suppressor.high_bands_suppression.anti_howling_gain;
   ost << "},";
-  ost << "\"floor_first_increase\": " << config.suppressor.floor_first_increase;
+  ost << "\"floor_first_increase\": " << config.suppressor.floor_first_increase
+      << ",";
+  ost << "\"conservative_hf_suppression\": "
+      << config.suppressor.conservative_hf_suppression;
   ost << "}";
   ost << "}";
   ost << "}";

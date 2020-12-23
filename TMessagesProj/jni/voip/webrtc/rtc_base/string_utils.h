@@ -88,8 +88,6 @@ std::string string_trim(const std::string& s);
 // TODO(jonasolsson): replace with absl::Hex when that becomes available.
 std::string ToHex(const int i);
 
-std::string LeftPad(char padding, unsigned length, std::string s);
-
 }  // namespace rtc
 
 #endif  // RTC_BASE_STRING_UTILS_H_

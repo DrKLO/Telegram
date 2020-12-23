@@ -290,11 +290,9 @@ rtclog2::IceCandidatePairEvent::IceCandidatePairEventType ConvertToProtoFormat(
 }
 
 // Copies all RTCP blocks except APP, SDES and unknown from |packet| to
-// |buffer|. |buffer| must have space for |IP_PACKET_SIZE| bytes. |packet| must
-// be at most |IP_PACKET_SIZE| bytes long.
+// |buffer|. |buffer| must have space for at least |packet.size()| bytes.
 size_t RemoveNonWhitelistedRtcpBlocks(const rtc::Buffer& packet,
                                       uint8_t* buffer) {
-  RTC_DCHECK(packet.size() <= IP_PACKET_SIZE);
   RTC_DCHECK(buffer != nullptr);
   rtcp::CommonHeader header;
   const uint8_t* block_begin = packet.data();
@@ -348,10 +346,10 @@ void EncodeRtcpPacket(rtc::ArrayView<const EventType*> batch,
   const EventType* const base_event = batch[0];
   proto_batch->set_timestamp_ms(base_event->timestamp_ms());
   {
-    uint8_t buffer[IP_PACKET_SIZE];
+    std::vector<uint8_t> buffer(base_event->packet().size());
     size_t buffer_length =
-        RemoveNonWhitelistedRtcpBlocks(base_event->packet(), buffer);
-    proto_batch->set_raw_packet(buffer, buffer_length);
+        RemoveNonWhitelistedRtcpBlocks(base_event->packet(), buffer.data());
+    proto_batch->set_raw_packet(buffer.data(), buffer_length);
   }
 
   if (batch.size() == 1) {
@@ -700,7 +698,8 @@ std::string RtcEventLogEncoderNewFormat::EncodeBatch(
     std::vector<const RtcEventBweUpdateLossBased*> bwe_loss_based_updates;
     std::vector<const RtcEventDtlsTransportState*> dtls_transport_states;
     std::vector<const RtcEventDtlsWritableState*> dtls_writable_states;
-    std::vector<const RtcEventFrameDecoded*> frames_decoded;
+    std::map<uint32_t /* SSRC */, std::vector<const RtcEventFrameDecoded*>>
+        frames_decoded;
     std::vector<const RtcEventGenericAckReceived*> generic_acks_received;
     std::vector<const RtcEventGenericPacketReceived*> generic_packets_received;
     std::vector<const RtcEventGenericPacketSent*> generic_packets_sent;
@@ -886,8 +885,7 @@ std::string RtcEventLogEncoderNewFormat::EncodeBatch(
         case RtcEvent::Type::FrameDecoded: {
           auto* rtc_event =
               static_cast<const RtcEventFrameDecoded* const>(it->get());
-          // TODO(terelius):  Group by SSRC
-          frames_decoded.push_back(rtc_event);
+          frames_decoded[rtc_event->ssrc()].emplace_back(rtc_event);
           break;
         }
       }
@@ -903,7 +901,9 @@ std::string RtcEventLogEncoderNewFormat::EncodeBatch(
     EncodeBweUpdateLossBased(bwe_loss_based_updates, &event_stream);
     EncodeDtlsTransportState(dtls_transport_states, &event_stream);
     EncodeDtlsWritableState(dtls_writable_states, &event_stream);
-    EncodeFramesDecoded(frames_decoded, &event_stream);
+    for (const auto& kv : frames_decoded) {
+      EncodeFramesDecoded(kv.second, &event_stream);
+    }
     EncodeGenericAcksReceived(generic_acks_received, &event_stream);
     EncodeGenericPacketsReceived(generic_packets_received, &event_stream);
     EncodeGenericPacketsSent(generic_packets_sent, &event_stream);
@@ -1409,7 +1409,7 @@ void RtcEventLogEncoderNewFormat::EncodeRemoteEstimate(
   // link_capacity_lower_kbps
   for (size_t i = 0; i < values.size(); ++i) {
     const auto* event = batch[i + 1];
-    if (base_event->link_capacity_lower_.IsFinite()) {
+    if (event->link_capacity_lower_.IsFinite()) {
       values[i] = event->link_capacity_lower_.kbps<uint32_t>();
     } else {
       values[i].reset();
@@ -1423,7 +1423,7 @@ void RtcEventLogEncoderNewFormat::EncodeRemoteEstimate(
   // link_capacity_upper_kbps
   for (size_t i = 0; i < values.size(); ++i) {
     const auto* event = batch[i + 1];
-    if (base_event->link_capacity_upper_.IsFinite()) {
+    if (event->link_capacity_upper_.IsFinite()) {
       values[i] = event->link_capacity_upper_.kbps<uint32_t>();
     } else {
       values[i].reset();
@@ -1464,7 +1464,7 @@ void RtcEventLogEncoderNewFormat::EncodeRtpPacketIncoming(
 }
 
 void RtcEventLogEncoderNewFormat::EncodeFramesDecoded(
-    rtc::ArrayView<const RtcEventFrameDecoded*> batch,
+    rtc::ArrayView<const RtcEventFrameDecoded* const> batch,
     rtclog2::EventStream* event_stream) {
   if (batch.empty()) {
     return;

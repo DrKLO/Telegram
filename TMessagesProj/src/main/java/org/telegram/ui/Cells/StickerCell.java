@@ -20,6 +20,7 @@ import android.view.animation.AccelerateInterpolator;
 import android.widget.FrameLayout;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.DocumentObject;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.LocaleController;
@@ -29,6 +30,7 @@ import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.messenger.SvgHelper;
 
 public class StickerCell extends FrameLayout {
 
@@ -78,14 +80,25 @@ public class StickerCell extends FrameLayout {
         parentObject = parent;
         if (document != null) {
             TLRPC.PhotoSize thumb = FileLoader.getClosestPhotoSizeWithSize(document.thumbs, 90);
+            SvgHelper.SvgDrawable svgThumb = DocumentObject.getSvgThumb(document, Theme.key_windowBackgroundGray, 1.0f);
             if (MessageObject.canAutoplayAnimatedSticker(document)) {
-                if (thumb != null) {
+                if (svgThumb != null) {
+                    imageView.setImage(ImageLocation.getForDocument(document), "80_80", null, svgThumb, parentObject);
+                } else if (thumb != null) {
                     imageView.setImage(ImageLocation.getForDocument(document), "80_80", ImageLocation.getForDocument(thumb, document), null, 0, parentObject);
                 } else {
                     imageView.setImage(ImageLocation.getForDocument(document), "80_80", null, null, parentObject);
                 }
             } else {
-                imageView.setImage(ImageLocation.getForDocument(thumb, document), null, "webp", null, parentObject);
+                if (svgThumb != null) {
+                    if (thumb != null) {
+                        imageView.setImage(ImageLocation.getForDocument(thumb, document), null, "webp", svgThumb, parentObject);
+                    } else {
+                        imageView.setImage(ImageLocation.getForDocument(document), null, "webp", svgThumb, parentObject);
+                    }
+                } else {
+                    imageView.setImage(ImageLocation.getForDocument(thumb, document), null, "webp", null, parentObject);
+                }
             }
         }
         sticker = document;

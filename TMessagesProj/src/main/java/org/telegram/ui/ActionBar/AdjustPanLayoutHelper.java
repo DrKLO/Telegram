@@ -23,8 +23,7 @@ import java.util.ArrayList;
 
 public class AdjustPanLayoutHelper {
 
-    private final static float[] interpolatorValues = new float[]{0f, 0.11162791f, 0.40232557f, 0.6534884f, 0.7930232f, 0.8802326f, 0.9302326f, 0.96046513f, 0.9767442f, 0.9860465f, 0.99186045f, 0.9953488f, 0.9976744f, 0.99883723f, 1};
-    public final static Interpolator keyboardInterpolator = CubicBezierInterpolator.DEFAULT;//new LookupTableInterpolator(interpolatorValues);
+    public final static Interpolator keyboardInterpolator = CubicBezierInterpolator.DEFAULT;
     public final static long keyboardDuration = 250;
 
     private final View parent;
@@ -250,48 +249,11 @@ public class AdjustPanLayoutHelper {
 
     }
 
-
     public void setResizableView(FrameLayout windowView) {
         resizableViewToSet = windowView;
     }
 
     public boolean animationInProgress() {
         return animationInProgress;
-    }
-
-    /**
-     * copy from androidx.interpolator.view.animation.LookupTableInterpolator
-     */
-    static class LookupTableInterpolator implements Interpolator {
-
-        private final float[] mValues;
-        private final float mStepSize;
-
-        protected LookupTableInterpolator(float[] values) {
-            mValues = values;
-            mStepSize = 1f / (mValues.length - 1);
-        }
-
-        @Override
-        public float getInterpolation(float input) {
-            if (input >= 1.0f) {
-                return 1.0f;
-            }
-            if (input <= 0f) {
-                return 0f;
-            }
-
-            // Calculate index - We use min with length - 2 to avoid IndexOutOfBoundsException when
-            // we lerp (linearly interpolate) in the return statement
-            int position = Math.min((int) (input * (mValues.length - 1)), mValues.length - 2);
-
-            // Calculate values to account for small offsets as the lookup table has discrete values
-            float quantized = position * mStepSize;
-            float diff = input - quantized;
-            float weight = diff / mStepSize;
-
-            // Linearly interpolate between the table values
-            return mValues[position] + weight * (mValues[position + 1] - mValues[position]);
-        }
     }
 }

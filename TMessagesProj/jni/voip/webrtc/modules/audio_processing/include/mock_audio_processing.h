@@ -88,10 +88,6 @@ class MockAudioProcessing : public ::testing::NiceMock<AudioProcessing> {
               (const ProcessingConfig& processing_config),
               (override));
   MOCK_METHOD(void, ApplyConfig, (const Config& config), (override));
-  MOCK_METHOD(void,
-              SetExtraOptions,
-              (const webrtc::Config& config),
-              (override));
   MOCK_METHOD(int, proc_sample_rate_hz, (), (const, override));
   MOCK_METHOD(int, proc_split_sample_rate_hz, (), (const, override));
   MOCK_METHOD(size_t, num_input_channels, (), (const, override));

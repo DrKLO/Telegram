@@ -180,12 +180,6 @@ int ConvertToARGB(const uint8_t* sample,
       r = NV21ToARGB(src, src_width, src_uv, aligned_src_width, dst_argb,
                      dst_stride_argb, crop_width, inv_crop_height);
       break;
-    case FOURCC_M420:
-      src = sample + (src_width * crop_y) * 12 / 8 + crop_x;
-      r = M420ToARGB(src, src_width, dst_argb, dst_stride_argb, crop_width,
-                     inv_crop_height);
-      break;
-
     // Triplanar formats
     case FOURCC_I420:
     case FOURCC_YV12: {

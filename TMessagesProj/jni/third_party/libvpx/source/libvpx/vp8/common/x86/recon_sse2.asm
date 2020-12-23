@@ -19,7 +19,7 @@ SECTION .text
 ;    unsigned char *dst,
 ;    int dst_stride
 ;    )
-global sym(vp8_copy_mem16x16_sse2) PRIVATE
+globalsym(vp8_copy_mem16x16_sse2)
 sym(vp8_copy_mem16x16_sse2):
     push        rbp
     mov         rbp, rsp

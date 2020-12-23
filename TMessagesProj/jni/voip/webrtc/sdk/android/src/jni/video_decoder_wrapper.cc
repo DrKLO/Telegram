@@ -257,17 +257,6 @@ absl::optional<uint8_t> VideoDecoderWrapper::ParseQP(
       }
       break;
     }
-#ifndef DISABLE_H265
-    case kVideoCodecH265: {
-      h265_bitstream_parser_.ParseBitstream(input_image.data(),
-                                            input_image.size());
-      int qp_int;
-      if (h265_bitstream_parser_.GetLastSliceQp(&qp_int)) {
-        qp = qp_int;
-      }
-      break;
-    }
-#endif
     default:
       break;  // Default is to not provide QP.
   }

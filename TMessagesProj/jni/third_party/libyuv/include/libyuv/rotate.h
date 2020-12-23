@@ -118,6 +118,10 @@ void RotatePlane270(const uint8_t* src,
                     int width,
                     int height);
 
+// Rotations for when U and V are interleaved.
+// These functions take one input pointer and
+// split the data into two buffers while
+// rotating them. Deprecated.
 LIBYUV_API
 void RotateUV90(const uint8_t* src,
                 int src_stride,
@@ -128,10 +132,6 @@ void RotateUV90(const uint8_t* src,
                 int width,
                 int height);
 
-// Rotations for when U and V are interleaved.
-// These functions take one input pointer and
-// split the data into two buffers while
-// rotating them. Deprecated.
 LIBYUV_API
 void RotateUV180(const uint8_t* src,
                  int src_stride,

@@ -34,7 +34,7 @@
   "ld          " #reg ",        " #bias "(" #addr ")               \n\t"
 
 #define MMI_SRL(reg1, reg2, shift) \
-  "dsrl        " #reg1 ",       " #reg2 ",       " #shift "        \n\t"
+  "ssrld       " #reg1 ",       " #reg2 ",       " #shift "        \n\t"
 
 #define MMI_SLL(reg1, reg2, shift) \
   "dsll        " #reg1 ",       " #reg2 ",       " #shift "        \n\t"
@@ -63,7 +63,7 @@
   "lw          " #reg ",        " #bias "(" #addr ")               \n\t"
 
 #define MMI_SRL(reg1, reg2, shift) \
-  "srl         " #reg1 ",       " #reg2 ",       " #shift "        \n\t"
+  "ssrlw       " #reg1 ",       " #reg2 ",       " #shift "        \n\t"
 
 #define MMI_SLL(reg1, reg2, shift) \
   "sll         " #reg1 ",       " #reg2 ",       " #shift "        \n\t"

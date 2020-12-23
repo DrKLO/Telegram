@@ -38,52 +38,52 @@ void TransposeWx8_NEON(const uint8_t* src,
 
       // handle 8x8 blocks. this should be the majority of the plane
       "1:                                        \n"
-      "mov         %0, %1                      \n"
+      "mov         %0, %1                        \n"
 
-      "vld1.8      {d0}, [%0], %2              \n"
-      "vld1.8      {d1}, [%0], %2              \n"
-      "vld1.8      {d2}, [%0], %2              \n"
-      "vld1.8      {d3}, [%0], %2              \n"
-      "vld1.8      {d4}, [%0], %2              \n"
-      "vld1.8      {d5}, [%0], %2              \n"
-      "vld1.8      {d6}, [%0], %2              \n"
-      "vld1.8      {d7}, [%0]                  \n"
+      "vld1.8      {d0}, [%0], %2                \n"
+      "vld1.8      {d1}, [%0], %2                \n"
+      "vld1.8      {d2}, [%0], %2                \n"
+      "vld1.8      {d3}, [%0], %2                \n"
+      "vld1.8      {d4}, [%0], %2                \n"
+      "vld1.8      {d5}, [%0], %2                \n"
+      "vld1.8      {d6}, [%0], %2                \n"
+      "vld1.8      {d7}, [%0]                    \n"
 
-      "vtrn.8      d1, d0                      \n"
-      "vtrn.8      d3, d2                      \n"
-      "vtrn.8      d5, d4                      \n"
-      "vtrn.8      d7, d6                      \n"
+      "vtrn.8      d1, d0                        \n"
+      "vtrn.8      d3, d2                        \n"
+      "vtrn.8      d5, d4                        \n"
+      "vtrn.8      d7, d6                        \n"
 
-      "vtrn.16     d1, d3                      \n"
-      "vtrn.16     d0, d2                      \n"
-      "vtrn.16     d5, d7                      \n"
-      "vtrn.16     d4, d6                      \n"
+      "vtrn.16     d1, d3                        \n"
+      "vtrn.16     d0, d2                        \n"
+      "vtrn.16     d5, d7                        \n"
+      "vtrn.16     d4, d6                        \n"
 
-      "vtrn.32     d1, d5                      \n"
-      "vtrn.32     d0, d4                      \n"
-      "vtrn.32     d3, d7                      \n"
-      "vtrn.32     d2, d6                      \n"
+      "vtrn.32     d1, d5                        \n"
+      "vtrn.32     d0, d4                        \n"
+      "vtrn.32     d3, d7                        \n"
+      "vtrn.32     d2, d6                        \n"
 
-      "vrev16.8    q0, q0                      \n"
-      "vrev16.8    q1, q1                      \n"
-      "vrev16.8    q2, q2                      \n"
-      "vrev16.8    q3, q3                      \n"
+      "vrev16.8    q0, q0                        \n"
+      "vrev16.8    q1, q1                        \n"
+      "vrev16.8    q2, q2                        \n"
+      "vrev16.8    q3, q3                        \n"
 
-      "mov         %0, %3                      \n"
+      "mov         %0, %3                        \n"
 
-      "vst1.8      {d1}, [%0], %4              \n"
-      "vst1.8      {d0}, [%0], %4              \n"
-      "vst1.8      {d3}, [%0], %4              \n"
-      "vst1.8      {d2}, [%0], %4              \n"
-      "vst1.8      {d5}, [%0], %4              \n"
-      "vst1.8      {d4}, [%0], %4              \n"
-      "vst1.8      {d7}, [%0], %4              \n"
-      "vst1.8      {d6}, [%0]                  \n"
+      "vst1.8      {d1}, [%0], %4                \n"
+      "vst1.8      {d0}, [%0], %4                \n"
+      "vst1.8      {d3}, [%0], %4                \n"
+      "vst1.8      {d2}, [%0], %4                \n"
+      "vst1.8      {d5}, [%0], %4                \n"
+      "vst1.8      {d4}, [%0], %4                \n"
+      "vst1.8      {d7}, [%0], %4                \n"
+      "vst1.8      {d6}, [%0]                    \n"
 
-      "add         %1, #8                      \n"  // src += 8
-      "add         %3, %3, %4, lsl #3          \n"  // dst += 8 * dst_stride
-      "subs        %5,  #8                     \n"  // w   -= 8
-      "bge         1b                          \n"
+      "add         %1, #8                        \n"  // src += 8
+      "add         %3, %3, %4, lsl #3            \n"  // dst += 8 * dst_stride
+      "subs        %5,  #8                       \n"  // w   -= 8
+      "bge         1b                            \n"
 
       // add 8 back to counter. if the result is 0 there are
       // no residuals.
@@ -208,68 +208,70 @@ void TransposeUVWx8_NEON(const uint8_t* src,
 
       // handle 8x8 blocks. this should be the majority of the plane
       "1:                                        \n"
-      "mov         %0, %1                      \n"
+      "mov         %0, %1                        \n"
 
-      "vld2.8      {d0,  d1},  [%0], %2        \n"
-      "vld2.8      {d2,  d3},  [%0], %2        \n"
-      "vld2.8      {d4,  d5},  [%0], %2        \n"
-      "vld2.8      {d6,  d7},  [%0], %2        \n"
-      "vld2.8      {d16, d17}, [%0], %2        \n"
-      "vld2.8      {d18, d19}, [%0], %2        \n"
-      "vld2.8      {d20, d21}, [%0], %2        \n"
-      "vld2.8      {d22, d23}, [%0]            \n"
+      "vld2.8      {d0,  d1},  [%0], %2          \n"
+      "vld2.8      {d2,  d3},  [%0], %2          \n"
+      "vld2.8      {d4,  d5},  [%0], %2          \n"
+      "vld2.8      {d6,  d7},  [%0], %2          \n"
+      "vld2.8      {d16, d17}, [%0], %2          \n"
+      "vld2.8      {d18, d19}, [%0], %2          \n"
+      "vld2.8      {d20, d21}, [%0], %2          \n"
+      "vld2.8      {d22, d23}, [%0]              \n"
 
-      "vtrn.8      q1, q0                      \n"
-      "vtrn.8      q3, q2                      \n"
-      "vtrn.8      q9, q8                      \n"
-      "vtrn.8      q11, q10                    \n"
+      "vtrn.8      q1, q0                        \n"
+      "vtrn.8      q3, q2                        \n"
+      "vtrn.8      q9, q8                        \n"
+      "vtrn.8      q11, q10                      \n"
 
-      "vtrn.16     q1, q3                      \n"
-      "vtrn.16     q0, q2                      \n"
-      "vtrn.16     q9, q11                     \n"
-      "vtrn.16     q8, q10                     \n"
+      "vtrn.16     q1, q3                        \n"
+      "vtrn.16     q0, q2                        \n"
+      "vtrn.16     q9, q11                       \n"
+      "vtrn.16     q8, q10                       \n"
 
-      "vtrn.32     q1, q9                      \n"
-      "vtrn.32     q0, q8                      \n"
-      "vtrn.32     q3, q11                     \n"
-      "vtrn.32     q2, q10                     \n"
+      "vtrn.32     q1, q9                        \n"
+      "vtrn.32     q0, q8                        \n"
+      "vtrn.32     q3, q11                       \n"
+      "vtrn.32     q2, q10                       \n"
 
-      "vrev16.8    q0, q0                      \n"
-      "vrev16.8    q1, q1                      \n"
-      "vrev16.8    q2, q2                      \n"
-      "vrev16.8    q3, q3                      \n"
-      "vrev16.8    q8, q8                      \n"
-      "vrev16.8    q9, q9                      \n"
-      "vrev16.8    q10, q10                    \n"
-      "vrev16.8    q11, q11                    \n"
+      "vrev16.8    q0, q0                        \n"
+      "vrev16.8    q1, q1                        \n"
+      "vrev16.8    q2, q2                        \n"
+      "vrev16.8    q3, q3                        \n"
+      "vrev16.8    q8, q8                        \n"
+      "vrev16.8    q9, q9                        \n"
+      "vrev16.8    q10, q10                      \n"
+      "vrev16.8    q11, q11                      \n"
 
-      "mov         %0, %3                      \n"
+      "mov         %0, %3                        \n"
 
-      "vst1.8      {d2},  [%0], %4             \n"
-      "vst1.8      {d0},  [%0], %4             \n"
-      "vst1.8      {d6},  [%0], %4             \n"
-      "vst1.8      {d4},  [%0], %4             \n"
-      "vst1.8      {d18}, [%0], %4             \n"
-      "vst1.8      {d16}, [%0], %4             \n"
-      "vst1.8      {d22}, [%0], %4             \n"
-      "vst1.8      {d20}, [%0]                 \n"
+      "vst1.8      {d2},  [%0], %4               \n"
+      "vst1.8      {d0},  [%0], %4               \n"
+      "vst1.8      {d6},  [%0], %4               \n"
+      "vst1.8      {d4},  [%0], %4               \n"
+      "vst1.8      {d18}, [%0], %4               \n"
+      "vst1.8      {d16}, [%0], %4               \n"
+      "vst1.8      {d22}, [%0], %4               \n"
+      "vst1.8      {d20}, [%0]                   \n"
 
-      "mov         %0, %5                      \n"
+      "mov         %0, %5                        \n"
 
-      "vst1.8      {d3},  [%0], %6             \n"
-      "vst1.8      {d1},  [%0], %6             \n"
-      "vst1.8      {d7},  [%0], %6             \n"
-      "vst1.8      {d5},  [%0], %6             \n"
-      "vst1.8      {d19}, [%0], %6             \n"
-      "vst1.8      {d17}, [%0], %6             \n"
-      "vst1.8      {d23}, [%0], %6             \n"
-      "vst1.8      {d21}, [%0]                 \n"
+      "vst1.8      {d3},  [%0], %6               \n"
+      "vst1.8      {d1},  [%0], %6               \n"
+      "vst1.8      {d7},  [%0], %6               \n"
+      "vst1.8      {d5},  [%0], %6               \n"
+      "vst1.8      {d19}, [%0], %6               \n"
+      "vst1.8      {d17}, [%0], %6               \n"
+      "vst1.8      {d23}, [%0], %6               \n"
+      "vst1.8      {d21}, [%0]                   \n"
 
-      "add         %1, #8*2                    \n"  // src   += 8*2
-      "add         %3, %3, %4, lsl #3          \n"  // dst_a += 8 * dst_stride_a
-      "add         %5, %5, %6, lsl #3          \n"  // dst_b += 8 * dst_stride_b
-      "subs        %7,  #8                     \n"  // w     -= 8
-      "bge         1b                          \n"
+      "add         %1, #8*2                      \n"  // src   += 8*2
+      "add         %3, %3, %4, lsl #3            \n"  // dst_a += 8 *
+                                                      // dst_stride_a
+      "add         %5, %5, %6, lsl #3            \n"  // dst_b += 8 *
+                                                      // dst_stride_b
+      "subs        %7,  #8                       \n"  // w     -= 8
+      "bge         1b                            \n"
 
       // add 8 back to counter. if the result is 0 there are
       // no residuals.

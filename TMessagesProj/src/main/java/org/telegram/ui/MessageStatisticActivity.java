@@ -18,6 +18,7 @@ import android.os.Bundle;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.TextUtils;
+import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
@@ -253,7 +254,7 @@ public class MessageStatisticActivity extends BaseFragment implements Notificati
         imageView.playAnimation();
 
         TextView loadingTitle = new TextView(context);
-        loadingTitle.setTextSize(20);
+        loadingTitle.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
         loadingTitle.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
         loadingTitle.setTextColor(Theme.getColor(Theme.key_player_actionBarTitle));
         loadingTitle.setTag(Theme.key_player_actionBarTitle);
@@ -261,7 +262,7 @@ public class MessageStatisticActivity extends BaseFragment implements Notificati
         loadingTitle.setGravity(Gravity.CENTER_HORIZONTAL);
 
         TextView loadingSubtitle = new TextView(context);
-        loadingSubtitle.setTextSize(15);
+        loadingSubtitle.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
         loadingSubtitle.setTextColor(Theme.getColor(Theme.key_player_actionBarSubtitle));
         loadingSubtitle.setTag(Theme.key_player_actionBarSubtitle);
         loadingSubtitle.setText(LocaleController.getString("LoadingStatsDescription", R.string.LoadingStatsDescription));
@@ -371,7 +372,7 @@ public class MessageStatisticActivity extends BaseFragment implements Notificati
 
         if (!messageObject.needDrawBluredPreview() && (messageObject.isPhoto() || messageObject.isNewGif() || messageObject.isVideo())) {
             String type = messageObject.isWebpage() ? messageObject.messageOwner.media.webpage.type : null;
-            if (!("app".equals(type) || "profile".equals(type) || "article".equals(type))) {
+            if (!("app".equals(type) || "profile".equals(type) || "article".equals(type) || type != null && type.startsWith("telegram_"))) {
                 TLRPC.PhotoSize smallThumb = FileLoader.getClosestPhotoSizeWithSize(messageObject.photoThumbs, 40);
                 TLRPC.PhotoSize bigThumb = FileLoader.getClosestPhotoSizeWithSize(messageObject.photoThumbs, AndroidUtilities.getPhotoSize());
                 if (smallThumb == bigThumb) {
@@ -848,8 +849,8 @@ public class MessageStatisticActivity extends BaseFragment implements Notificati
                 title[j] = new TextView(context);
 
                 primary[j].setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
-                primary[j].setTextSize(17);
-                title[j].setTextSize(13);
+                primary[j].setTextSize(TypedValue.COMPLEX_UNIT_DIP, 17);
+                title[j].setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
 
                 contentCell.addView(primary[j]);
                 contentCell.addView(title[j]);

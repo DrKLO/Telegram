@@ -47,16 +47,19 @@ int32_t AudioMixerManagerLinuxALSA::Close() {
 
   MutexLock lock(&mutex_);
 
-  CloseSpeaker();
-  CloseMicrophone();
+  CloseSpeakerLocked();
+  CloseMicrophoneLocked();
 
   return 0;
 }
 
 int32_t AudioMixerManagerLinuxALSA::CloseSpeaker() {
-  RTC_LOG(LS_VERBOSE) << __FUNCTION__;
-
   MutexLock lock(&mutex_);
+  return CloseSpeakerLocked();
+}
+
+int32_t AudioMixerManagerLinuxALSA::CloseSpeakerLocked() {
+  RTC_LOG(LS_VERBOSE) << __FUNCTION__;
 
   int errVal = 0;
 
@@ -86,9 +89,12 @@ int32_t AudioMixerManagerLinuxALSA::CloseSpeaker() {
 }
 
 int32_t AudioMixerManagerLinuxALSA::CloseMicrophone() {
-  RTC_LOG(LS_VERBOSE) << __FUNCTION__;
-
   MutexLock lock(&mutex_);
+  return CloseMicrophoneLocked();
+}
+
+int32_t AudioMixerManagerLinuxALSA::CloseMicrophoneLocked() {
+  RTC_LOG(LS_VERBOSE) << __FUNCTION__;
 
   int errVal = 0;
 

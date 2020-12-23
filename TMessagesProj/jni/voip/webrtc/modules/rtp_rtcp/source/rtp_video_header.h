@@ -23,7 +23,6 @@
 #include "api/video/video_frame_type.h"
 #include "api/video/video_rotation.h"
 #include "api/video/video_timing.h"
-#include "common_types.h"  // NOLINT(build/include_directory)
 #include "modules/video_coding/codecs/h264/include/h264_globals.h"
 #ifndef DISABLE_H265
 #include "modules/video_coding/codecs/h265/include/h265_globals.h"
@@ -83,10 +82,11 @@ struct RTPVideoHeader {
   VideoContentType content_type = VideoContentType::UNSPECIFIED;
   bool is_first_packet_in_frame = false;
   bool is_last_packet_in_frame = false;
+  bool is_last_frame_in_picture = true;
   uint8_t simulcastIdx = 0;
   VideoCodecType codec = VideoCodecType::kVideoCodecGeneric;
 
-  PlayoutDelay playout_delay = {-1, -1};
+  VideoPlayoutDelay playout_delay;
   VideoSendTiming video_timing;
   absl::optional<ColorSpace> color_space;
   RTPVideoTypeHeader video_type_header;

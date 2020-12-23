@@ -36,18 +36,16 @@ struct VideoRateControlConfig {
   bool alr_probing = false;
   absl::optional<int> vp8_qp_max;
   absl::optional<int> vp8_min_pixels;
-  bool trust_vp8 = false;
-  bool trust_vp9 = false;
-  double video_hysteresis = 1.0;
+  bool trust_vp8 = true;
+  bool trust_vp9 = true;
+  double video_hysteresis = 1.2;
   // Default to 35% hysteresis for simulcast screenshare.
   double screenshare_hysteresis = 1.35;
   bool probe_max_allocation = true;
-  bool bitrate_adjuster = false;
-  bool adjuster_use_headroom = false;
-  bool vp8_s0_boost = true;
+  bool bitrate_adjuster = true;
+  bool adjuster_use_headroom = true;
+  bool vp8_s0_boost = false;
   bool vp8_base_heavy_tl3_alloc = false;
-  bool vp8_dynamic_rate = false;
-  bool vp9_dynamic_rate = false;
 
   std::unique_ptr<StructParametersParser> Parser();
 };

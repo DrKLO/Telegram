@@ -61,7 +61,7 @@ void EncodedImageBuffer::Realloc(size_t size) {
   size_ = size;
 }
 
-EncodedImage::EncodedImage() : EncodedImage(nullptr, 0, 0) {}
+EncodedImage::EncodedImage() = default;
 
 EncodedImage::EncodedImage(EncodedImage&&) = default;
 EncodedImage::EncodedImage(const EncodedImage&) = default;

@@ -13,6 +13,7 @@
 #include <stddef.h>
 
 #include <algorithm>
+#include <cmath>
 
 #include "api/video/video_timing.h"
 #include "modules/video_coding/include/video_error_codes.h"
@@ -31,12 +32,18 @@ VCMDecodedFrameCallback::VCMDecodedFrameCallback(VCMTiming* timing,
     : _clock(clock),
       _timing(timing),
       _timestampMap(kDecoderFrameMemoryLength),
-      _extra_decode_time("t", absl::nullopt) {
+      _extra_decode_time("t", absl::nullopt),
+      low_latency_renderer_enabled_("enabled", true),
+      low_latency_renderer_include_predecode_buffer_("include_predecode_buffer",
+                                                     true) {
   ntp_offset_ =
       _clock->CurrentNtpInMilliseconds() - _clock->TimeInMilliseconds();
 
   ParseFieldTrial({&_extra_decode_time},
                   field_trial::FindFullName("WebRTC-SlowDownDecoder"));
+  ParseFieldTrial({&low_latency_renderer_enabled_,
+                   &low_latency_renderer_include_predecode_buffer_},
+                  field_trial::FindFullName("WebRTC-LowLatencyRenderer"));
 }
 
 VCMDecodedFrameCallback::~VCMDecodedFrameCallback() {}
@@ -85,9 +92,11 @@ void VCMDecodedFrameCallback::Decoded(VideoFrame& decodedImage,
   // TODO(holmer): We should improve this so that we can handle multiple
   // callbacks from one call to Decode().
   VCMFrameInformation* frameInfo;
+  int timestamp_map_size = 0;
   {
     MutexLock lock(&lock_);
     frameInfo = _timestampMap.Pop(decodedImage.timestamp());
+    timestamp_map_size = _timestampMap.Size();
   }
 
   if (frameInfo == NULL) {
@@ -101,13 +110,30 @@ void VCMDecodedFrameCallback::Decoded(VideoFrame& decodedImage,
   decodedImage.set_packet_infos(frameInfo->packet_infos);
   decodedImage.set_rotation(frameInfo->rotation);
 
-  const Timestamp now = _clock->CurrentTime();
-  RTC_DCHECK(frameInfo->decodeStart);
-  if (!decode_time_ms) {
-    decode_time_ms = (now - *frameInfo->decodeStart).ms();
+  if (low_latency_renderer_enabled_ && frameInfo->playout_delay.min_ms == 0 &&
+      frameInfo->playout_delay.max_ms > 0) {
+    absl::optional<int> max_composition_delay_in_frames =
+        _timing->MaxCompositionDelayInFrames();
+    if (max_composition_delay_in_frames) {
+      // Subtract frames that are in flight.
+      if (low_latency_renderer_include_predecode_buffer_) {
+        *max_composition_delay_in_frames -= timestamp_map_size;
+        *max_composition_delay_in_frames =
+            std::max(0, *max_composition_delay_in_frames);
+      }
+      decodedImage.set_max_composition_delay_in_frames(
+          max_composition_delay_in_frames);
+    }
   }
-  _timing->StopDecodeTimer(*decode_time_ms, now.ms());
-  decodedImage.set_processing_time({*frameInfo->decodeStart, now});
+
+  RTC_DCHECK(frameInfo->decodeStart);
+  const Timestamp now = _clock->CurrentTime();
+  const TimeDelta decode_time = decode_time_ms
+                                    ? TimeDelta::Millis(*decode_time_ms)
+                                    : now - *frameInfo->decodeStart;
+  _timing->StopDecodeTimer(decode_time.ms(), now.ms());
+  decodedImage.set_processing_time(
+      {*frameInfo->decodeStart, *frameInfo->decodeStart + decode_time});
 
   // Report timing information.
   TimingFrameInfo timing_frame_info;
@@ -161,7 +187,7 @@ void VCMDecodedFrameCallback::Decoded(VideoFrame& decodedImage,
 
   decodedImage.set_timestamp_us(frameInfo->renderTimeMs *
                                 rtc::kNumMicrosecsPerMillisec);
-  _receiveCallback->FrameToRender(decodedImage, qp, *decode_time_ms,
+  _receiveCallback->FrameToRender(decodedImage, qp, decode_time.ms(),
                                   frameInfo->content_type);
 }
 
@@ -223,6 +249,7 @@ int32_t VCMGenericDecoder::Decode(const VCMEncodedFrame& frame, Timestamp now) {
   _frameInfos[_nextFrameInfoIdx].decodeStart = now;
   _frameInfos[_nextFrameInfoIdx].renderTimeMs = frame.RenderTimeMs();
   _frameInfos[_nextFrameInfoIdx].rotation = frame.rotation();
+  _frameInfos[_nextFrameInfoIdx].playout_delay = frame.PlayoutDelay();
   _frameInfos[_nextFrameInfoIdx].timing = frame.video_timing();
   _frameInfos[_nextFrameInfoIdx].ntp_time_ms =
       frame.EncodedImage().ntp_time_ms_;

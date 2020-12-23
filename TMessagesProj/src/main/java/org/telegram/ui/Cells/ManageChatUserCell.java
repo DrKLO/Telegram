@@ -39,6 +39,7 @@ public class ManageChatUserCell extends FrameLayout {
     private SimpleTextView nameTextView;
     private SimpleTextView statusTextView;
     private ImageView optionsButton;
+    private ImageView customImageView;
 
     private AvatarDrawable avatarDrawable;
     private Object currentObject;
@@ -59,6 +60,8 @@ public class ManageChatUserCell extends FrameLayout {
     private int namePadding;
 
     private int currentAccount = UserConfig.selectedAccount;
+
+    private String dividerColor;
 
     private ManageChatUserCellDelegate delegate;
 
@@ -99,10 +102,25 @@ public class ManageChatUserCell extends FrameLayout {
             optionsButton.setImageResource(R.drawable.ic_ab_other);
             optionsButton.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_stickers_menu), PorterDuff.Mode.MULTIPLY));
             optionsButton.setScaleType(ImageView.ScaleType.CENTER);
-            addView(optionsButton, LayoutHelper.createFrame(52, 64, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.TOP));
+            addView(optionsButton, LayoutHelper.createFrame(60, 64, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.TOP));
             optionsButton.setOnClickListener(v -> delegate.onOptionsButtonCheck(ManageChatUserCell.this, true));
             optionsButton.setContentDescription(LocaleController.getString("AccDescrUserOptions", R.string.AccDescrUserOptions));
         }
+    }
+
+    public void setCustomRightImage(int resId) {
+        customImageView = new ImageView(getContext());
+        customImageView.setImageResource(resId);
+        customImageView.setScaleType(ImageView.ScaleType.CENTER);
+        customImageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_voipgroup_mutedIconUnscrolled), PorterDuff.Mode.MULTIPLY));
+        addView(customImageView, LayoutHelper.createFrame(52, 64, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.TOP));
+    }
+
+    public void setCustomImageVisible(boolean visible) {
+        if (customImageView == null) {
+            return;
+        }
+        customImageView.setVisibility(visible ? VISIBLE : GONE);
     }
 
     public void setData(Object object, CharSequence name, CharSequence status, boolean divider) {
@@ -123,6 +141,10 @@ public class ManageChatUserCell extends FrameLayout {
             optionsButton.setVisibility(visible ? VISIBLE : INVISIBLE);
             nameTextView.setLayoutParams(LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 20, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? (visible ? 46 : 28) : (68 + namePadding), status == null || status.length() > 0 ? 11.5f : 20.5f, LocaleController.isRTL ? (68 + namePadding) : (visible ? 46 : 28), 0));
             statusTextView.setLayoutParams(LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 20, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? (visible ? 46 : 28) : (68 + namePadding), 34.5f, LocaleController.isRTL ? (68 + namePadding) : (visible ? 46 : 28), 0));
+        } else if (customImageView != null) {
+            boolean visible = customImageView.getVisibility() == VISIBLE;
+            nameTextView.setLayoutParams(LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 20, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? (visible ? 54 : 28) : (68 + namePadding), status == null || status.length() > 0 ? 11.5f : 20.5f, LocaleController.isRTL ? (68 + namePadding) : (visible ? 54 : 28), 0));
+            statusTextView.setLayoutParams(LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 20, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? (visible ? 54 : 28) : (68 + namePadding), 34.5f, LocaleController.isRTL ? (68 + namePadding) : (visible ? 54 : 28), 0));
         }
         needDivider = divider;
         setWillNotDraw(!needDivider);
@@ -152,6 +174,14 @@ public class ManageChatUserCell extends FrameLayout {
 
     public boolean hasAvatarSet() {
         return avatarImageView.getImageReceiver().hasNotThumb();
+    }
+
+    public void setNameColor(int color) {
+        nameTextView.setTextColor(color);
+    }
+
+    public void setDividerColor(String key) {
+        dividerColor = key;
     }
 
     public void update(int mask) {
@@ -317,7 +347,10 @@ public class ManageChatUserCell extends FrameLayout {
     @Override
     protected void onDraw(Canvas canvas) {
         if (needDivider) {
-            canvas.drawLine(LocaleController.isRTL ? 0 : AndroidUtilities.dp(68), getMeasuredHeight() - 1, getMeasuredWidth() - (LocaleController.isRTL ? AndroidUtilities.dp(68) : 0), getMeasuredHeight() - 1, Theme.dividerPaint);
+            if (dividerColor != null) {
+                Theme.dividerExtraPaint.setColor(Theme.getColor(dividerColor));
+            }
+            canvas.drawLine(LocaleController.isRTL ? 0 : AndroidUtilities.dp(68), getMeasuredHeight() - 1, getMeasuredWidth() - (LocaleController.isRTL ? AndroidUtilities.dp(68) : 0), getMeasuredHeight() - 1, dividerColor != null ? Theme.dividerExtraPaint : Theme.dividerPaint);
         }
     }
 }

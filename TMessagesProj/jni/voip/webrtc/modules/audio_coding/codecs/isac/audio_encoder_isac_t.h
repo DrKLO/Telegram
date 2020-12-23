@@ -93,7 +93,7 @@ class AudioEncoderIsacT final : public AudioEncoder {
 
   // Cache the value of the "WebRTC-SendSideBwe-WithOverhead" field trial.
   const bool send_side_bwe_with_overhead_ =
-      field_trial::IsEnabled("WebRTC-SendSideBwe-WithOverhead");
+      !field_trial::IsDisabled("WebRTC-SendSideBwe-WithOverhead");
 
   // When we send a packet, expect this many bytes of headers to be added to it.
   // Start out with a reasonable default that we can use until we receive a real

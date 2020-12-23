@@ -19,8 +19,6 @@ import android.os.Handler;
 import android.os.HandlerThread;
 import androidx.annotation.Nullable;
 import java.util.concurrent.Callable;
-
-import org.telegram.messenger.FileLog;
 import org.webrtc.EglBase.Context;
 import org.webrtc.TextureBufferImpl.RefCountMonitor;
 import org.webrtc.VideoFrame.TextureBuffer;
@@ -201,6 +199,10 @@ public class SurfaceTextureHelper {
     oesTextureId = GlUtil.generateTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES);
     surfaceTexture = new SurfaceTexture(oesTextureId);
     setOnFrameAvailableListener(surfaceTexture, (SurfaceTexture st) -> {
+      if (hasPendingTexture) {
+        Logging.d(TAG, "A frame is already pending, dropping frame.");
+      }
+
       hasPendingTexture = true;
       tryDeliverTextureFrame();
     }, handler);

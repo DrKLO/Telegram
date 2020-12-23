@@ -24,6 +24,7 @@ import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Handler;
 import android.os.PowerManager;
+import android.os.SystemClock;
 import android.telephony.TelephonyManager;
 import android.text.TextUtils;
 
@@ -49,10 +50,14 @@ public class ApplicationLoader extends Application {
     private static ConnectivityManager connectivityManager;
     private static volatile boolean applicationInited = false;
 
+    public static long startTime;
+
     public static volatile boolean isScreenOn = false;
     public static volatile boolean mainInterfacePaused = true;
+    public static volatile boolean mainInterfaceStopped = true;
     public static volatile boolean externalInterfacePaused = true;
     public static volatile boolean mainInterfacePausedStageQueue = true;
+    public static boolean canDrawOverlays;
     public static volatile long mainInterfacePausedStageQueueTime;
 
     public static boolean hasPlayServices;
@@ -85,11 +90,10 @@ public class ApplicationLoader extends Application {
         if (applicationInited) {
             return;
         }
-
         applicationInited = true;
 
         try {
-            LocaleController.getInstance();
+            LocaleController.getInstance(); //TODO improve
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -138,7 +142,7 @@ public class ApplicationLoader extends Application {
         }
 
         SharedConfig.loadConfig();
-        for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
+        for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) { //TODO improve account
             UserConfig.getInstance(a).loadConfig();
             MessagesController.getInstance(a);
             if (a == 0) {
@@ -160,7 +164,7 @@ public class ApplicationLoader extends Application {
         }
 
         MediaController.getInstance();
-        for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
+        for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) { //TODO improve account
             ContactsController.getInstance(a).checkAppAccount();
             DownloadController.getInstance(a);
         }
@@ -182,6 +186,9 @@ public class ApplicationLoader extends Application {
 
         super.onCreate();
 
+        if (BuildVars.LOGS_ENABLED) {
+            FileLog.d("app start time = " + (startTime = SystemClock.elapsedRealtime()));
+        }
         if (applicationContext == null) {
             applicationContext = getApplicationContext();
         }
@@ -198,6 +205,9 @@ public class ApplicationLoader extends Application {
                 }
             }
         };
+        if (BuildVars.LOGS_ENABLED) {
+            FileLog.d("load libs time = " + (SystemClock.elapsedRealtime() - startTime));
+        }
 
         applicationHandler = new Handler(applicationContext.getMainLooper());
 

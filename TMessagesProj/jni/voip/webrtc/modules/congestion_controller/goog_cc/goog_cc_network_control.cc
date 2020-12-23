@@ -96,7 +96,8 @@ GoogCcNetworkController::GoogCcNetworkController(NetworkControllerConfig config,
                     key_value_config_)
               : nullptr),
       bandwidth_estimation_(
-          std::make_unique<SendSideBandwidthEstimation>(event_log_)),
+          std::make_unique<SendSideBandwidthEstimation>(key_value_config_,
+                                                        event_log_)),
       alr_detector_(
           std::make_unique<AlrDetector>(key_value_config_, config.event_log)),
       probe_bitrate_estimator_(new ProbeBitrateEstimator(config.event_log)),

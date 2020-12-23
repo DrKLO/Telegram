@@ -50,8 +50,9 @@ class SpsVuiRewriter : private SpsParser {
       rtc::Buffer* destination,
       Direction Direction);
 
-  // Parses NAL units from |buffer| and rewrites VUI in SPS blocks if necessary.
-  static rtc::Buffer ParseOutgoingBitstreamAndRewriteSps(
+  // Parses NAL units from |buffer|, strips AUD blocks and rewrites VUI in SPS
+  // blocks if necessary.
+  static rtc::Buffer ParseOutgoingBitstreamAndRewrite(
       rtc::ArrayView<const uint8_t> buffer,
       const ColorSpace* color_space);
 

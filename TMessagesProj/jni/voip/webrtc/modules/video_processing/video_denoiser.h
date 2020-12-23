@@ -15,7 +15,7 @@
 
 #include "api/scoped_refptr.h"
 #include "api/video/video_frame_buffer.h"
-#include "common_video/include/i420_buffer_pool.h"
+#include "common_video/include/video_frame_buffer_pool.h"
 #include "modules/video_processing/util/denoiser_filter.h"
 #include "modules/video_processing/util/noise_estimation.h"
 #include "modules/video_processing/util/skin_detection.h"
@@ -77,7 +77,7 @@ class VideoDenoiser {
   std::unique_ptr<uint8_t[]> y_density_;
   // Save the return values by MbDenoise for each block.
   std::unique_ptr<DenoiserDecision[]> mb_filter_decision_;
-  I420BufferPool buffer_pool_;
+  VideoFrameBufferPool buffer_pool_;
   rtc::scoped_refptr<I420BufferInterface> prev_buffer_;
 };
 

@@ -88,8 +88,9 @@ vpx_codec_err_t image2yuvconfig(const vpx_image_t *img,
   yv12->y_width = img->d_w;
   yv12->y_height = img->d_h;
 
-  yv12->uv_width =
-      img->x_chroma_shift == 1 ? (1 + yv12->y_width) / 2 : yv12->y_width;
+  yv12->uv_width = img->x_chroma_shift == 1 || img->fmt == VPX_IMG_FMT_NV12
+                       ? (1 + yv12->y_width) / 2
+                       : yv12->y_width;
   yv12->uv_height =
       img->y_chroma_shift == 1 ? (1 + yv12->y_height) / 2 : yv12->y_height;
   yv12->uv_crop_width = yv12->uv_width;
@@ -127,5 +128,9 @@ vpx_codec_err_t image2yuvconfig(const vpx_image_t *img,
 #endif  // CONFIG_VP9_HIGHBITDEPTH
   yv12->subsampling_x = img->x_chroma_shift;
   yv12->subsampling_y = img->y_chroma_shift;
+  // When reading the data, UV are in one plane for NV12 format, thus
+  // x_chroma_shift is 0. After converting, UV are in separate planes, and
+  // subsampling_x should be set to 1.
+  if (img->fmt == VPX_IMG_FMT_NV12) yv12->subsampling_x = 1;
   return VPX_CODEC_OK;
 }

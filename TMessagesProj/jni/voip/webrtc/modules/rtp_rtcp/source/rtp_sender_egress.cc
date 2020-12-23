@@ -30,11 +30,12 @@ constexpr size_t kRtpSequenceNumberMapMaxEntries = 1 << 13;
 constexpr TimeDelta kUpdateInterval =
     TimeDelta::Millis(kBitrateStatisticsWindowMs);
 
-bool IsEnabled(absl::string_view name,
-               const WebRtcKeyValueConfig* field_trials) {
+bool IsTrialSetTo(const WebRtcKeyValueConfig* field_trials,
+                  absl::string_view name,
+                  absl::string_view value) {
   FieldTrialBasedConfig default_trials;
   auto& trials = field_trials ? *field_trials : default_trials;
-  return absl::StartsWith(trials.Lookup(name), "Enabled");
+  return absl::StartsWith(trials.Lookup(name), value);
 }
 }  // namespace
 
@@ -89,7 +90,9 @@ RtpSenderEgress::RtpSenderEgress(const RtpRtcpInterface::Configuration& config,
                                          : absl::nullopt),
       populate_network2_timestamp_(config.populate_network2_timestamp),
       send_side_bwe_with_overhead_(
-          IsEnabled("WebRTC-SendSideBwe-WithOverhead", config.field_trials)),
+          !IsTrialSetTo(config.field_trials,
+                        "WebRTC-SendSideBwe-WithOverhead",
+                        "Disabled")),
       clock_(config.clock),
       packet_history_(packet_history),
       transport_(config.outgoing_transport),
@@ -98,10 +101,7 @@ RtpSenderEgress::RtpSenderEgress(const RtpRtcpInterface::Configuration& config,
       is_audio_(config.audio),
 #endif
       need_rtp_packet_infos_(config.need_rtp_packet_infos),
-      fec_generator_(
-          IsEnabled("WebRTC-DeferredFecGeneration", config.field_trials)
-              ? config.fec_generator
-              : nullptr),
+      fec_generator_(config.fec_generator),
       transport_feedback_observer_(config.transport_feedback_callback),
       send_side_delay_observer_(config.send_side_delay_observer),
       send_packet_observer_(config.send_packet_observer),
@@ -172,7 +172,7 @@ void RtpSenderEgress::SendPacket(RtpPacketToSend* packet,
   }
 
   if (fec_generator_ && packet->fec_protect_packet()) {
-    // Deferred fec generation is used, add packet to generator.
+    // This packet should be protected by FEC, add it to packet generator.
     RTC_DCHECK(fec_generator_);
     RTC_DCHECK(packet->packet_type() == RtpPacketMediaType::kVideo);
     absl::optional<std::pair<FecProtectionParams, FecProtectionParams>>

@@ -58,6 +58,7 @@ class AudioContentDescription;
 class VideoContentDescription;
 class RtpDataContentDescription;
 class SctpDataContentDescription;
+class UnsupportedContentDescription;
 
 // Describes a session description media section. There are subclasses for each
 // media type (audio, video, data) that will have additional information.
@@ -85,6 +86,11 @@ class MediaContentDescription {
 
   virtual SctpDataContentDescription* as_sctp() { return nullptr; }
   virtual const SctpDataContentDescription* as_sctp() const { return nullptr; }
+
+  virtual UnsupportedContentDescription* as_unsupported() { return nullptr; }
+  virtual const UnsupportedContentDescription* as_unsupported() const {
+    return nullptr;
+  }
 
   virtual bool has_codecs() const = 0;
 
@@ -406,13 +412,37 @@ class SctpDataContentDescription : public MediaContentDescription {
   int max_message_size_ = 64 * 1024;
 };
 
+class UnsupportedContentDescription : public MediaContentDescription {
+ public:
+  explicit UnsupportedContentDescription(const std::string& media_type)
+      : media_type_(media_type) {}
+  MediaType type() const override { return MEDIA_TYPE_UNSUPPORTED; }
+
+  UnsupportedContentDescription* as_unsupported() override { return this; }
+  const UnsupportedContentDescription* as_unsupported() const override {
+    return this;
+  }
+
+  bool has_codecs() const override { return false; }
+  const std::string& media_type() const { return media_type_; }
+
+ private:
+  UnsupportedContentDescription* CloneInternal() const override {
+    return new UnsupportedContentDescription(*this);
+  }
+
+  std::string media_type_;
+};
+
 // Protocol used for encoding media. This is the "top level" protocol that may
 // be wrapped by zero or many transport protocols (UDP, ICE, etc.).
 enum class MediaProtocolType {
-  kRtp,  // Section will use the RTP protocol (e.g., for audio or video).
-         // https://tools.ietf.org/html/rfc3550
-  kSctp  // Section will use the SCTP protocol (e.g., for a data channel).
-         // https://tools.ietf.org/html/rfc4960
+  kRtp,   // Section will use the RTP protocol (e.g., for audio or video).
+          // https://tools.ietf.org/html/rfc3550
+  kSctp,  // Section will use the SCTP protocol (e.g., for a data channel).
+          // https://tools.ietf.org/html/rfc4960
+  kOther  // Section will use another top protocol which is not
+          // explicitly supported.
 };
 
 // Represents a session description section. Most information about the section

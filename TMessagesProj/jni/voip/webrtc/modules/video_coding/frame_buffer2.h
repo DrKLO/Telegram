@@ -23,7 +23,6 @@
 #include "modules/video_coding/inter_frame_delay.h"
 #include "modules/video_coding/jitter_estimator.h"
 #include "modules/video_coding/utility/decoded_frames_history.h"
-#include "rtc_base/constructor_magic.h"
 #include "rtc_base/event.h"
 #include "rtc_base/experiments/rtt_mult_experiment.h"
 #include "rtc_base/numerics/sequence_number_util.h"
@@ -49,6 +48,10 @@ class FrameBuffer {
   FrameBuffer(Clock* clock,
               VCMTiming* timing,
               VCMReceiveStatisticsCallback* stats_callback);
+
+  FrameBuffer() = delete;
+  FrameBuffer(const FrameBuffer&) = delete;
+  FrameBuffer& operator=(const FrameBuffer&) = delete;
 
   virtual ~FrameBuffer();
 
@@ -80,6 +83,8 @@ class FrameBuffer {
 
   // Clears the FrameBuffer, removing all the buffered frames.
   void Clear();
+
+  int Size();
 
  private:
   struct FrameInfo {
@@ -188,8 +193,6 @@ class FrameBuffer {
 
   // rtt_mult experiment settings.
   const absl::optional<RttMultExperiment::Settings> rtt_mult_settings_;
-
-  RTC_DISALLOW_IMPLICIT_CONSTRUCTORS(FrameBuffer);
 };
 
 }  // namespace video_coding

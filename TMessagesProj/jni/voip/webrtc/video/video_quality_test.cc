@@ -238,8 +238,7 @@ class QualityTestVideoEncoder : public VideoEncoder,
  private:
   // Implement EncodedImageCallback
   Result OnEncodedImage(const EncodedImage& encoded_image,
-                        const CodecSpecificInfo* codec_specific_info,
-                        const RTPFragmentationHeader* fragmentation) override {
+                        const CodecSpecificInfo* codec_specific_info) override {
     if (codec_specific_info) {
       int simulcast_index;
       if (codec_specific_info->codecType == kVideoCodecVP9) {
@@ -258,8 +257,7 @@ class QualityTestVideoEncoder : public VideoEncoder,
       }
     }
 
-    return callback_->OnEncodedImage(encoded_image, codec_specific_info,
-                                     fragmentation);
+    return callback_->OnEncodedImage(encoded_image, codec_specific_info);
   }
 
   void OnDroppedFrame(DropReason reason) override {
@@ -864,6 +862,10 @@ void VideoQualityTest::SetupVideo(Transport* send_transport,
       video_encoder_configs_[video_idx].encoder_specific_settings =
           new rtc::RefCountedObject<
               VideoEncoderConfig::Vp9EncoderSpecificSettings>(vp9_settings);
+      RTC_DCHECK_EQ(video_encoder_configs_[video_idx].simulcast_layers.size(),
+                    1);
+      // Min bitrate will be enforced by spatial layer config instead.
+      video_encoder_configs_[video_idx].simulcast_layers[0].min_bitrate_bps = 0;
     } else if (params_.video[video_idx].automatic_scaling) {
       if (params_.video[video_idx].codec == "VP8") {
         VideoCodecVP8 vp8_settings = VideoEncoder::GetDefaultVp8Settings();
@@ -1106,6 +1108,11 @@ void VideoQualityTest::CreateCapturers() {
           static_cast<int>(params_.video[video_idx].width),
           static_cast<int>(params_.video[video_idx].height),
           test::FrameGeneratorInterface::OutputType::kI010, absl::nullopt);
+    } else if (params_.video[video_idx].clip_path == "GeneratorNV12") {
+      frame_generator = test::CreateSquareFrameGenerator(
+          static_cast<int>(params_.video[video_idx].width),
+          static_cast<int>(params_.video[video_idx].height),
+          test::FrameGeneratorInterface::OutputType::kNV12, absl::nullopt);
     } else if (params_.video[video_idx].clip_path.empty()) {
       video_sources_[video_idx] = test::CreateVideoCapturer(
           params_.video[video_idx].width, params_.video[video_idx].height,
@@ -1341,8 +1348,8 @@ rtc::scoped_refptr<AudioDeviceModule> VideoQualityTest::CreateAudioDevice() {
   // CO_E_NOTINITIALIZED otherwise. The legacy ADM for Windows used internal
   // COM initialization but the new ADM requires COM to be initialized
   // externally.
-  com_initializer_ = std::make_unique<webrtc_win::ScopedCOMInitializer>(
-      webrtc_win::ScopedCOMInitializer::kMTA);
+  com_initializer_ =
+      std::make_unique<ScopedCOMInitializer>(ScopedCOMInitializer::kMTA);
   RTC_CHECK(com_initializer_->Succeeded());
   RTC_CHECK(webrtc_win::core_audio_utility::IsSupported());
   RTC_CHECK(webrtc_win::core_audio_utility::IsMMCSSSupported());

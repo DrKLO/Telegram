@@ -21,17 +21,21 @@ namespace libyuv {
 extern "C" {
 #endif
 
-static void ARGBTranspose(const uint8_t* src_argb,
-                          int src_stride_argb,
-                          uint8_t* dst_argb,
-                          int dst_stride_argb,
-                          int width,
-                          int height) {
+static int ARGBTranspose(const uint8_t* src_argb,
+                         int src_stride_argb,
+                         uint8_t* dst_argb,
+                         int dst_stride_argb,
+                         int width,
+                         int height) {
   int i;
   int src_pixel_step = src_stride_argb >> 2;
   void (*ScaleARGBRowDownEven)(
       const uint8_t* src_argb, ptrdiff_t src_stride_argb, int src_step,
       uint8_t* dst_argb, int dst_width) = ScaleARGBRowDownEven_C;
+  // Check stride is a multiple of 4.
+  if (src_stride_argb & 3) {
+    return -1;
+  }
 #if defined(HAS_SCALEARGBROWDOWNEVEN_SSE2)
   if (TestCpuFlag(kCpuHasSSE2)) {
     ScaleARGBRowDownEven = ScaleARGBRowDownEven_Any_SSE2;
@@ -48,19 +52,19 @@ static void ARGBTranspose(const uint8_t* src_argb,
     }
   }
 #endif
-#if defined(HAS_SCALEARGBROWDOWNEVEN_MSA)
-  if (TestCpuFlag(kCpuHasMSA)) {
-    ScaleARGBRowDownEven = ScaleARGBRowDownEven_Any_MSA;
-    if (IS_ALIGNED(height, 4)) {  // Width of dest.
-      ScaleARGBRowDownEven = ScaleARGBRowDownEven_MSA;
-    }
-  }
-#endif
 #if defined(HAS_SCALEARGBROWDOWNEVEN_MMI)
   if (TestCpuFlag(kCpuHasMMI)) {
     ScaleARGBRowDownEven = ScaleARGBRowDownEven_Any_MMI;
     if (IS_ALIGNED(height, 4)) {  // Width of dest.
       ScaleARGBRowDownEven = ScaleARGBRowDownEven_MMI;
+    }
+  }
+#endif
+#if defined(HAS_SCALEARGBROWDOWNEVEN_MSA)
+  if (TestCpuFlag(kCpuHasMSA)) {
+    ScaleARGBRowDownEven = ScaleARGBRowDownEven_Any_MSA;
+    if (IS_ALIGNED(height, 4)) {  // Width of dest.
+      ScaleARGBRowDownEven = ScaleARGBRowDownEven_MSA;
     }
   }
 #endif
@@ -70,44 +74,45 @@ static void ARGBTranspose(const uint8_t* src_argb,
     dst_argb += dst_stride_argb;
     src_argb += 4;
   }
+  return 0;
 }
 
-void ARGBRotate90(const uint8_t* src_argb,
-                  int src_stride_argb,
-                  uint8_t* dst_argb,
-                  int dst_stride_argb,
-                  int width,
-                  int height) {
+static int ARGBRotate90(const uint8_t* src_argb,
+                        int src_stride_argb,
+                        uint8_t* dst_argb,
+                        int dst_stride_argb,
+                        int width,
+                        int height) {
   // Rotate by 90 is a ARGBTranspose with the source read
   // from bottom to top. So set the source pointer to the end
   // of the buffer and flip the sign of the source stride.
   src_argb += src_stride_argb * (height - 1);
   src_stride_argb = -src_stride_argb;
-  ARGBTranspose(src_argb, src_stride_argb, dst_argb, dst_stride_argb, width,
-                height);
+  return ARGBTranspose(src_argb, src_stride_argb, dst_argb, dst_stride_argb,
+                       width, height);
 }
 
-void ARGBRotate270(const uint8_t* src_argb,
-                   int src_stride_argb,
-                   uint8_t* dst_argb,
-                   int dst_stride_argb,
-                   int width,
-                   int height) {
+static int ARGBRotate270(const uint8_t* src_argb,
+                         int src_stride_argb,
+                         uint8_t* dst_argb,
+                         int dst_stride_argb,
+                         int width,
+                         int height) {
   // Rotate by 270 is a ARGBTranspose with the destination written
   // from bottom to top. So set the destination pointer to the end
   // of the buffer and flip the sign of the destination stride.
   dst_argb += dst_stride_argb * (width - 1);
   dst_stride_argb = -dst_stride_argb;
-  ARGBTranspose(src_argb, src_stride_argb, dst_argb, dst_stride_argb, width,
-                height);
+  return ARGBTranspose(src_argb, src_stride_argb, dst_argb, dst_stride_argb,
+                       width, height);
 }
 
-void ARGBRotate180(const uint8_t* src_argb,
-                   int src_stride_argb,
-                   uint8_t* dst_argb,
-                   int dst_stride_argb,
-                   int width,
-                   int height) {
+static int ARGBRotate180(const uint8_t* src_argb,
+                         int src_stride_argb,
+                         uint8_t* dst_argb,
+                         int dst_stride_argb,
+                         int width,
+                         int height) {
   // Swap first and last row and mirror the content. Uses a temporary row.
   align_buffer_64(row, width * 4);
   const uint8_t* src_bot = src_argb + src_stride_argb * (height - 1);
@@ -121,7 +126,7 @@ void ARGBRotate180(const uint8_t* src_argb,
 #if defined(HAS_ARGBMIRRORROW_NEON)
   if (TestCpuFlag(kCpuHasNEON)) {
     ARGBMirrorRow = ARGBMirrorRow_Any_NEON;
-    if (IS_ALIGNED(width, 4)) {
+    if (IS_ALIGNED(width, 8)) {
       ARGBMirrorRow = ARGBMirrorRow_NEON;
     }
   }
@@ -142,19 +147,19 @@ void ARGBRotate180(const uint8_t* src_argb,
     }
   }
 #endif
-#if defined(HAS_ARGBMIRRORROW_MSA)
-  if (TestCpuFlag(kCpuHasMSA)) {
-    ARGBMirrorRow = ARGBMirrorRow_Any_MSA;
-    if (IS_ALIGNED(width, 16)) {
-      ARGBMirrorRow = ARGBMirrorRow_MSA;
-    }
-  }
-#endif
 #if defined(HAS_ARGBMIRRORROW_MMI)
   if (TestCpuFlag(kCpuHasMMI)) {
     ARGBMirrorRow = ARGBMirrorRow_Any_MMI;
     if (IS_ALIGNED(width, 2)) {
       ARGBMirrorRow = ARGBMirrorRow_MMI;
+    }
+  }
+#endif
+#if defined(HAS_ARGBMIRRORROW_MSA)
+  if (TestCpuFlag(kCpuHasMSA)) {
+    ARGBMirrorRow = ARGBMirrorRow_Any_MSA;
+    if (IS_ALIGNED(width, 16)) {
+      ARGBMirrorRow = ARGBMirrorRow_MSA;
     }
   }
 #endif
@@ -190,6 +195,7 @@ void ARGBRotate180(const uint8_t* src_argb,
     dst_bot -= dst_stride_argb;
   }
   free_aligned_buffer_64(row);
+  return 0;
 }
 
 LIBYUV_API
@@ -217,17 +223,14 @@ int ARGBRotate(const uint8_t* src_argb,
       return ARGBCopy(src_argb, src_stride_argb, dst_argb, dst_stride_argb,
                       width, height);
     case kRotate90:
-      ARGBRotate90(src_argb, src_stride_argb, dst_argb, dst_stride_argb, width,
-                   height);
-      return 0;
+      return ARGBRotate90(src_argb, src_stride_argb, dst_argb, dst_stride_argb,
+                          width, height);
     case kRotate270:
-      ARGBRotate270(src_argb, src_stride_argb, dst_argb, dst_stride_argb, width,
-                    height);
-      return 0;
+      return ARGBRotate270(src_argb, src_stride_argb, dst_argb, dst_stride_argb,
+                           width, height);
     case kRotate180:
-      ARGBRotate180(src_argb, src_stride_argb, dst_argb, dst_stride_argb, width,
-                    height);
-      return 0;
+      return ARGBRotate180(src_argb, src_stride_argb, dst_argb, dst_stride_argb,
+                           width, height);
     default:
       break;
   }

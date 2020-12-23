@@ -116,7 +116,7 @@ class AudioDeviceLinuxPulse : public AudioDeviceGeneric {
 
   // Main initializaton and termination
   InitStatus Init() override;
-  int32_t Terminate() override;
+  int32_t Terminate() RTC_LOCKS_EXCLUDED(mutex_) override;
   bool Initialized() const override;
 
   // Device enumeration
@@ -139,18 +139,18 @@ class AudioDeviceLinuxPulse : public AudioDeviceGeneric {
 
   // Audio transport initialization
   int32_t PlayoutIsAvailable(bool& available) override;
-  int32_t InitPlayout() override;
+  int32_t InitPlayout() RTC_LOCKS_EXCLUDED(mutex_) override;
   bool PlayoutIsInitialized() const override;
   int32_t RecordingIsAvailable(bool& available) override;
   int32_t InitRecording() override;
   bool RecordingIsInitialized() const override;
 
   // Audio transport control
-  int32_t StartPlayout() override;
-  int32_t StopPlayout() override;
+  int32_t StartPlayout() RTC_LOCKS_EXCLUDED(mutex_) override;
+  int32_t StopPlayout() RTC_LOCKS_EXCLUDED(mutex_) override;
   bool Playing() const override;
-  int32_t StartRecording() override;
-  int32_t StopRecording() override;
+  int32_t StartRecording() RTC_LOCKS_EXCLUDED(mutex_) override;
+  int32_t StopRecording() RTC_LOCKS_EXCLUDED(mutex_) override;
   bool Recording() const override;
 
   // Audio mixer initialization
@@ -192,7 +192,8 @@ class AudioDeviceLinuxPulse : public AudioDeviceGeneric {
   int32_t StereoRecording(bool& enabled) const override;
 
   // Delay information and control
-  int32_t PlayoutDelay(uint16_t& delayMS) const override;
+  int32_t PlayoutDelay(uint16_t& delayMS) const
+      RTC_LOCKS_EXCLUDED(mutex_) override;
 
   void AttachAudioBuffer(AudioDeviceBuffer* audioBuffer) override;
 
@@ -256,8 +257,8 @@ class AudioDeviceLinuxPulse : public AudioDeviceGeneric {
 
   static void RecThreadFunc(void*);
   static void PlayThreadFunc(void*);
-  bool RecThreadProcess();
-  bool PlayThreadProcess();
+  bool RecThreadProcess() RTC_LOCKS_EXCLUDED(mutex_);
+  bool PlayThreadProcess() RTC_LOCKS_EXCLUDED(mutex_);
 
   AudioDeviceBuffer* _ptrAudioBuffer;
 

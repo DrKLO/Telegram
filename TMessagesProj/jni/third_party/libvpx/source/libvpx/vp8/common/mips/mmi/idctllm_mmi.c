@@ -13,25 +13,25 @@
 #include "vpx_ports/asmdefs_mmi.h"
 
 #define TRANSPOSE_4H \
-  "xor           %[ftmp0],    %[ftmp0],    %[ftmp0]          \n\t" \
+  "pxor          %[ftmp0],    %[ftmp0],    %[ftmp0]          \n\t" \
   MMI_LI(%[tmp0], 0x93)                                            \
   "mtc1          %[tmp0],     %[ftmp10]                      \n\t" \
   "punpcklhw     %[ftmp5],    %[ftmp1],    %[ftmp0]          \n\t" \
   "punpcklhw     %[ftmp9],    %[ftmp2],    %[ftmp0]          \n\t" \
   "pshufh        %[ftmp9],    %[ftmp9],    %[ftmp10]         \n\t" \
-  "or            %[ftmp5],    %[ftmp5],    %[ftmp9]          \n\t" \
+  "por           %[ftmp5],    %[ftmp5],    %[ftmp9]          \n\t" \
   "punpckhhw     %[ftmp6],    %[ftmp1],    %[ftmp0]          \n\t" \
   "punpckhhw     %[ftmp9],    %[ftmp2],    %[ftmp0]          \n\t" \
   "pshufh        %[ftmp9],    %[ftmp9],    %[ftmp10]         \n\t" \
-  "or            %[ftmp6],    %[ftmp6],    %[ftmp9]          \n\t" \
+  "por           %[ftmp6],    %[ftmp6],    %[ftmp9]          \n\t" \
   "punpcklhw     %[ftmp7],    %[ftmp3],    %[ftmp0]          \n\t" \
   "punpcklhw     %[ftmp9],    %[ftmp4],    %[ftmp0]          \n\t" \
   "pshufh        %[ftmp9],    %[ftmp9],    %[ftmp10]         \n\t" \
-  "or            %[ftmp7],    %[ftmp7],    %[ftmp9]          \n\t" \
+  "por           %[ftmp7],    %[ftmp7],    %[ftmp9]          \n\t" \
   "punpckhhw     %[ftmp8],    %[ftmp3],    %[ftmp0]          \n\t" \
   "punpckhhw     %[ftmp9],    %[ftmp4],    %[ftmp0]          \n\t" \
   "pshufh        %[ftmp9],    %[ftmp9],    %[ftmp10]         \n\t" \
-  "or            %[ftmp8],    %[ftmp8],    %[ftmp9]          \n\t" \
+  "por           %[ftmp8],    %[ftmp8],    %[ftmp9]          \n\t" \
   "punpcklwd     %[ftmp1],    %[ftmp5],    %[ftmp7]          \n\t" \
   "punpckhwd     %[ftmp2],    %[ftmp5],    %[ftmp7]          \n\t" \
   "punpcklwd     %[ftmp3],    %[ftmp6],    %[ftmp8]          \n\t" \
@@ -41,15 +41,19 @@ void vp8_short_idct4x4llm_mmi(int16_t *input, unsigned char *pred_ptr,
                               int pred_stride, unsigned char *dst_ptr,
                               int dst_stride) {
   double ftmp[12];
-  uint32_t tmp[0];
-  DECLARE_ALIGNED(8, const uint64_t, ff_ph_04) = { 0x0004000400040004ULL };
-  DECLARE_ALIGNED(8, const uint64_t, ff_ph_4e7b) = { 0x4e7b4e7b4e7b4e7bULL };
-  DECLARE_ALIGNED(8, const uint64_t, ff_ph_22a3) = { 0x22a322a322a322a3ULL };
+  uint64_t tmp[1];
+  double ff_ph_04, ff_ph_4e7b, ff_ph_22a3;
 
   __asm__ volatile (
+    "dli        %[tmp0],    0x0004000400040004                  \n\t"
+    "dmtc1      %[tmp0],    %[ff_ph_04]                         \n\t"
+    "dli        %[tmp0],    0x4e7b4e7b4e7b4e7b                  \n\t"
+    "dmtc1      %[tmp0],    %[ff_ph_4e7b]                       \n\t"
+    "dli        %[tmp0],    0x22a322a322a322a3                  \n\t"
+    "dmtc1      %[tmp0],    %[ff_ph_22a3]                       \n\t"
     MMI_LI(%[tmp0], 0x02)
-    "mtc1       %[tmp0],    %[ftmp11]                           \n\t"
-    "xor        %[ftmp0],   %[ftmp0],       %[ftmp0]            \n\t"
+    "dmtc1      %[tmp0],    %[ftmp11]                           \n\t"
+    "pxor       %[ftmp0],   %[ftmp0],       %[ftmp0]            \n\t"
 
     "gsldlc1    %[ftmp1],   0x07(%[ip])                         \n\t"
     "gsldrc1    %[ftmp1],   0x00(%[ip])                         \n\t"
@@ -186,9 +190,10 @@ void vp8_short_idct4x4llm_mmi(int16_t *input, unsigned char *pred_ptr,
       [ftmp6]"=&f"(ftmp[6]), [ftmp7]"=&f"(ftmp[7]), [ftmp8]"=&f"(ftmp[8]),
       [ftmp9]"=&f"(ftmp[9]), [ftmp10]"=&f"(ftmp[10]),
       [ftmp11]"=&f"(ftmp[11]), [tmp0]"=&r"(tmp[0]),
-      [pred_ptr]"+&r"(pred_ptr), [dst_ptr]"+&r"(dst_ptr)
-    : [ip]"r"(input), [ff_ph_22a3]"f"(ff_ph_22a3),
-      [ff_ph_4e7b]"f"(ff_ph_4e7b), [ff_ph_04]"f"(ff_ph_04),
+      [pred_ptr]"+&r"(pred_ptr), [dst_ptr]"+&r"(dst_ptr),
+      [ff_ph_4e7b]"=&f"(ff_ph_4e7b), [ff_ph_04]"=&f"(ff_ph_04),
+      [ff_ph_22a3]"=&f"(ff_ph_22a3)
+    : [ip]"r"(input),
       [pred_stride]"r"((mips_reg)pred_stride),
       [dst_stride]"r"((mips_reg)dst_stride)
     : "memory"
@@ -198,12 +203,13 @@ void vp8_short_idct4x4llm_mmi(int16_t *input, unsigned char *pred_ptr,
 void vp8_dc_only_idct_add_mmi(int16_t input_dc, unsigned char *pred_ptr,
                               int pred_stride, unsigned char *dst_ptr,
                               int dst_stride) {
-  int a1 = ((input_dc + 4) >> 3);
-  double ftmp[5];
+  int a0 = ((input_dc + 4) >> 3);
+  double a1, ftmp[5];
   int low32;
 
   __asm__ volatile (
-    "xor        %[ftmp0],   %[ftmp0],       %[ftmp0]        \n\t"
+    "pxor       %[ftmp0],   %[ftmp0],       %[ftmp0]        \n\t"
+    "dmtc1      %[a0],      %[a1]                           \n\t"
     "pshufh     %[a1],      %[a1],          %[ftmp0]        \n\t"
     "ulw        %[low32],   0x00(%[pred_ptr])               \n\t"
     "mtc1       %[low32],   %[ftmp1]                        \n\t"
@@ -244,9 +250,9 @@ void vp8_dc_only_idct_add_mmi(int16_t input_dc, unsigned char *pred_ptr,
     "gsswrc1    %[ftmp1],   0x00(%[dst_ptr])                \n\t"
     : [ftmp0]"=&f"(ftmp[0]), [ftmp1]"=&f"(ftmp[1]), [ftmp2]"=&f"(ftmp[2]),
       [ftmp3]"=&f"(ftmp[3]), [ftmp4]"=&f"(ftmp[4]), [low32]"=&r"(low32),
-      [dst_ptr]"+&r"(dst_ptr), [pred_ptr]"+&r"(pred_ptr)
+      [dst_ptr]"+&r"(dst_ptr), [pred_ptr]"+&r"(pred_ptr), [a1]"=&f"(a1)
     : [dst_stride]"r"((mips_reg)dst_stride),
-      [pred_stride]"r"((mips_reg)pred_stride), [a1]"f"(a1)
+      [pred_stride]"r"((mips_reg)pred_stride), [a0]"r"(a0)
     : "memory"
   );
 }
@@ -254,14 +260,15 @@ void vp8_dc_only_idct_add_mmi(int16_t input_dc, unsigned char *pred_ptr,
 void vp8_short_inv_walsh4x4_mmi(int16_t *input, int16_t *mb_dqcoeff) {
   int i;
   int16_t output[16];
-  double ftmp[12];
-  uint32_t tmp[1];
-  DECLARE_ALIGNED(8, const uint64_t, ff_ph_03) = { 0x0003000300030003ULL };
+  double ff_ph_03, ftmp[12];
+  uint64_t tmp[1];
 
   __asm__ volatile (
+    "dli        %[tmp0],    0x0003000300030003                  \n\t"
+    "dmtc1      %[tmp0],    %[ff_ph_03]                         \n\t"
     MMI_LI(%[tmp0], 0x03)
-    "xor        %[ftmp0],   %[ftmp0],       %[ftmp0]            \n\t"
-    "mtc1       %[tmp0],    %[ftmp11]                           \n\t"
+    "pxor       %[ftmp0],   %[ftmp0],       %[ftmp0]            \n\t"
+    "dmtc1      %[tmp0],    %[ftmp11]                           \n\t"
     "gsldlc1    %[ftmp1],   0x07(%[ip])                         \n\t"
     "gsldrc1    %[ftmp1],   0x00(%[ip])                         \n\t"
     "gsldlc1    %[ftmp2],   0x0f(%[ip])                         \n\t"
@@ -317,8 +324,8 @@ void vp8_short_inv_walsh4x4_mmi(int16_t *input, int16_t *mb_dqcoeff) {
       [ftmp3]"=&f"(ftmp[3]), [ftmp4]"=&f"(ftmp[4]), [ftmp5]"=&f"(ftmp[5]),
       [ftmp6]"=&f"(ftmp[6]), [ftmp7]"=&f"(ftmp[7]), [ftmp8]"=&f"(ftmp[8]),
       [ftmp9]"=&f"(ftmp[9]), [ftmp10]"=&f"(ftmp[10]),
-      [ftmp11]"=&f"(ftmp[11]), [tmp0]"=&r"(tmp[0])
-    : [ip]"r"(input), [op]"r"(output), [ff_ph_03]"f"(ff_ph_03)
+      [ftmp11]"=&f"(ftmp[11]), [tmp0]"=&r"(tmp[0]), [ff_ph_03]"=&f"(ff_ph_03)
+    : [ip]"r"(input), [op]"r"(output)
     : "memory"
   );
 

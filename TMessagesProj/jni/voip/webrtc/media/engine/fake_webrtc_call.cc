@@ -100,7 +100,8 @@ void FakeAudioReceiveStream::Reconfigure(
   config_ = config;
 }
 
-webrtc::AudioReceiveStream::Stats FakeAudioReceiveStream::GetStats() const {
+webrtc::AudioReceiveStream::Stats FakeAudioReceiveStream::GetStats(
+    bool get_and_clear_legacy_stats) const {
   return stats_;
 }
 

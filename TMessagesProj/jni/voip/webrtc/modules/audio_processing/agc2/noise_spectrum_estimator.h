@@ -12,7 +12,6 @@
 #define MODULES_AUDIO_PROCESSING_AGC2_NOISE_SPECTRUM_ESTIMATOR_H_
 
 #include "api/array_view.h"
-#include "rtc_base/constructor_magic.h"
 
 namespace webrtc {
 
@@ -21,6 +20,11 @@ class ApmDataDumper;
 class NoiseSpectrumEstimator {
  public:
   explicit NoiseSpectrumEstimator(ApmDataDumper* data_dumper);
+
+  NoiseSpectrumEstimator() = delete;
+  NoiseSpectrumEstimator(const NoiseSpectrumEstimator&) = delete;
+  NoiseSpectrumEstimator& operator=(const NoiseSpectrumEstimator&) = delete;
+
   void Initialize();
   void Update(rtc::ArrayView<const float> spectrum, bool first_update);
 
@@ -31,8 +35,6 @@ class NoiseSpectrumEstimator {
  private:
   ApmDataDumper* data_dumper_;
   float noise_spectrum_[65];
-
-  RTC_DISALLOW_IMPLICIT_CONSTRUCTORS(NoiseSpectrumEstimator);
 };
 
 }  // namespace webrtc

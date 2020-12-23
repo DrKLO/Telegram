@@ -217,7 +217,10 @@ bool AudioDeviceLinuxALSA::Initialized() const {
 
 int32_t AudioDeviceLinuxALSA::InitSpeaker() {
   MutexLock lock(&mutex_);
+  return InitSpeakerLocked();
+}
 
+int32_t AudioDeviceLinuxALSA::InitSpeakerLocked() {
   if (_playing) {
     return -1;
   }
@@ -229,7 +232,10 @@ int32_t AudioDeviceLinuxALSA::InitSpeaker() {
 
 int32_t AudioDeviceLinuxALSA::InitMicrophone() {
   MutexLock lock(&mutex_);
+  return InitMicrophoneLocked();
+}
 
+int32_t AudioDeviceLinuxALSA::InitMicrophoneLocked() {
   if (_recording) {
     return -1;
   }
@@ -421,22 +427,22 @@ int32_t AudioDeviceLinuxALSA::StereoRecordingIsAvailable(bool& available) {
 
   // Stop/uninitialize recording if initialized (and possibly started)
   if (_recIsInitialized) {
-    StopRecording();
+    StopRecordingLocked();
   }
 
   // Try init in stereo;
   _recChannels = 2;
-  if (InitRecording() == 0) {
+  if (InitRecordingLocked() == 0) {
     available = true;
   }
 
   // Stop/uninitialize recording
-  StopRecording();
+  StopRecordingLocked();
 
   // Recover previous states
   _recChannels = recChannels;
   if (recIsInitialized) {
-    InitRecording();
+    InitRecordingLocked();
   }
   if (recording) {
     StartRecording();
@@ -481,22 +487,22 @@ int32_t AudioDeviceLinuxALSA::StereoPlayoutIsAvailable(bool& available) {
 
   // Stop/uninitialize recording if initialized (and possibly started)
   if (_playIsInitialized) {
-    StopPlayout();
+    StopPlayoutLocked();
   }
 
   // Try init in stereo;
   _playChannels = 2;
-  if (InitPlayout() == 0) {
+  if (InitPlayoutLocked() == 0) {
     available = true;
   }
 
   // Stop/uninitialize recording
-  StopPlayout();
+  StopPlayoutLocked();
 
   // Recover previous states
   _playChannels = playChannels;
   if (playIsInitialized) {
-    InitPlayout();
+    InitPlayoutLocked();
   }
   if (playing) {
     StartPlayout();
@@ -745,9 +751,13 @@ int32_t AudioDeviceLinuxALSA::RecordingIsAvailable(bool& available) {
 }
 
 int32_t AudioDeviceLinuxALSA::InitPlayout() {
+  MutexLock lock(&mutex_);
+  return InitPlayoutLocked();
+}
+
+int32_t AudioDeviceLinuxALSA::InitPlayoutLocked() {
   int errVal = 0;
 
-  MutexLock lock(&mutex_);
   if (_playing) {
     return -1;
   }
@@ -760,7 +770,7 @@ int32_t AudioDeviceLinuxALSA::InitPlayout() {
     return 0;
   }
   // Initialize the speaker (devices might have been added or removed)
-  if (InitSpeaker() == -1) {
+  if (InitSpeakerLocked() == -1) {
     RTC_LOG(LS_WARNING) << "InitSpeaker() failed";
   }
 
@@ -864,9 +874,12 @@ int32_t AudioDeviceLinuxALSA::InitPlayout() {
 }
 
 int32_t AudioDeviceLinuxALSA::InitRecording() {
-  int errVal = 0;
-
   MutexLock lock(&mutex_);
+  return InitRecordingLocked();
+}
+
+int32_t AudioDeviceLinuxALSA::InitRecordingLocked() {
+  int errVal = 0;
 
   if (_recording) {
     return -1;
@@ -881,7 +894,7 @@ int32_t AudioDeviceLinuxALSA::InitRecording() {
   }
 
   // Initialize the microphone (devices might have been added or removed)
-  if (InitMicrophone() == -1) {
+  if (InitMicrophoneLocked() == -1) {
     RTC_LOG(LS_WARNING) << "InitMicrophone() failed";
   }
 
@@ -1058,28 +1071,28 @@ int32_t AudioDeviceLinuxALSA::StartRecording() {
 }
 
 int32_t AudioDeviceLinuxALSA::StopRecording() {
-  {
     MutexLock lock(&mutex_);
+    return StopRecordingLocked();
+}
 
-    if (!_recIsInitialized) {
-      return 0;
-    }
-
-    if (_handleRecord == NULL) {
-      return -1;
-    }
-
-    // Make sure we don't start recording (it's asynchronous).
-    _recIsInitialized = false;
-    _recording = false;
+int32_t AudioDeviceLinuxALSA::StopRecordingLocked() {
+  if (!_recIsInitialized) {
+    return 0;
   }
+
+  if (_handleRecord == NULL) {
+    return -1;
+  }
+
+  // Make sure we don't start recording (it's asynchronous).
+  _recIsInitialized = false;
+  _recording = false;
 
   if (_ptrThreadRec) {
     _ptrThreadRec->Stop();
     _ptrThreadRec.reset();
   }
 
-  MutexLock lock(&mutex_);
   _recordingFramesLeft = 0;
   if (_recordingBuffer) {
     delete[] _recordingBuffer;
@@ -1162,27 +1175,26 @@ int32_t AudioDeviceLinuxALSA::StartPlayout() {
 }
 
 int32_t AudioDeviceLinuxALSA::StopPlayout() {
-  {
     MutexLock lock(&mutex_);
+    return StopPlayoutLocked();
+}
 
-    if (!_playIsInitialized) {
-      return 0;
-    }
-
-    if (_handlePlayout == NULL) {
-      return -1;
-    }
-
-    _playing = false;
+int32_t AudioDeviceLinuxALSA::StopPlayoutLocked() {
+  if (!_playIsInitialized) {
+    return 0;
   }
+
+  if (_handlePlayout == NULL) {
+    return -1;
+  }
+
+  _playing = false;
 
   // stop playout thread first
   if (_ptrThreadPlay) {
     _ptrThreadPlay->Stop();
     _ptrThreadPlay.reset();
   }
-
-  MutexLock lock(&mutex_);
 
   _playoutFramesLeft = 0;
   delete[] _playoutBuffer;

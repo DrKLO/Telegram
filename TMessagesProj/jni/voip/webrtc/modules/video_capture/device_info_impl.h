@@ -18,7 +18,8 @@
 #include "api/video/video_rotation.h"
 #include "modules/video_capture/video_capture.h"
 #include "modules/video_capture/video_capture_defines.h"
-#include "rtc_base/synchronization/rw_lock_wrapper.h"
+#include "rtc_base/synchronization/mutex.h"
+#include "rtc_base/thread_annotations.h"
 
 namespace webrtc {
 namespace videocapturemodule {
@@ -45,15 +46,16 @@ class DeviceInfoImpl : public VideoCaptureModule::DeviceInfo {
    * Fills the member variable _captureCapabilities with capabilities for the
    * given device name.
    */
-  virtual int32_t CreateCapabilityMap(const char* deviceUniqueIdUTF8) = 0;
+  virtual int32_t CreateCapabilityMap(const char* deviceUniqueIdUTF8)
+      RTC_EXCLUSIVE_LOCKS_REQUIRED(_apiLock) = 0;
 
  protected:
   // Data members
   typedef std::vector<VideoCaptureCapability> VideoCaptureCapabilities;
-  VideoCaptureCapabilities _captureCapabilities;
-  RWLockWrapper& _apiLock;
-  char* _lastUsedDeviceName;
-  uint32_t _lastUsedDeviceNameLength;
+  VideoCaptureCapabilities _captureCapabilities RTC_GUARDED_BY(_apiLock);
+  Mutex _apiLock;
+  char* _lastUsedDeviceName RTC_GUARDED_BY(_apiLock);
+  uint32_t _lastUsedDeviceNameLength RTC_GUARDED_BY(_apiLock);
 };
 }  // namespace videocapturemodule
 }  // namespace webrtc

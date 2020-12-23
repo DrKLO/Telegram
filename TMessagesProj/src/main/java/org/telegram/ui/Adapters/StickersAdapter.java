@@ -220,19 +220,22 @@ public class StickersAdapter extends RecyclerListView.SelectionAdapter implement
     public void loadStikersForEmoji(CharSequence emoji, boolean emojiOnly) {
         boolean searchEmoji = emoji != null && emoji.length() > 0 && emoji.length() <= 14;
 
-        String originalEmoji = emoji.toString();
-        int length = emoji.length();
-        for (int a = 0; a < length; a++) {
-            char ch = emoji.charAt(a);
-            char nch = a < length - 1 ? emoji.charAt(a + 1) : 0;
-            if (a < length - 1 && ch == 0xD83C && nch >= 0xDFFB && nch <= 0xDFFF) {
-                emoji = TextUtils.concat(emoji.subSequence(0, a), emoji.subSequence(a + 2, emoji.length()));
-                length -= 2;
-                a--;
-            } else if (ch == 0xfe0f) {
-                emoji = TextUtils.concat(emoji.subSequence(0, a), emoji.subSequence(a + 1, emoji.length()));
-                length--;
-                a--;
+        String originalEmoji = "";
+        if (searchEmoji) {
+            originalEmoji = emoji.toString();
+            int length = emoji.length();
+            for (int a = 0; a < length; a++) {
+                char ch = emoji.charAt(a);
+                char nch = a < length - 1 ? emoji.charAt(a + 1) : 0;
+                if (a < length - 1 && ch == 0xD83C && nch >= 0xDFFB && nch <= 0xDFFF) {
+                    emoji = TextUtils.concat(emoji.subSequence(0, a), emoji.subSequence(a + 2, emoji.length()));
+                    length -= 2;
+                    a--;
+                } else if (ch == 0xfe0f) {
+                    emoji = TextUtils.concat(emoji.subSequence(0, a), emoji.subSequence(a + 1, emoji.length()));
+                    length--;
+                    a--;
+                }
             }
         }
         lastSticker = emoji.toString().trim();
@@ -401,6 +404,10 @@ public class StickersAdapter extends RecyclerListView.SelectionAdapter implement
             ConnectionsManager.getInstance(currentAccount).cancelRequest(lastReqId, true);
             lastReqId = 0;
         }
+    }
+
+    public String getQuery() {
+        return lastSticker;
     }
 
     public boolean isShowingKeywords() {

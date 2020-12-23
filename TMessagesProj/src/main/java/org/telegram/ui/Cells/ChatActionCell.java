@@ -145,7 +145,7 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
         }
     }
 
-    public void setCustomText(String text) {
+    public void setCustomText(CharSequence text) {
         customText = text;
         if (customText != null) {
             updateTextInternal(false);

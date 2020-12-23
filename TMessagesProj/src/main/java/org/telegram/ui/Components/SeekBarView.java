@@ -38,7 +38,7 @@ public class SeekBarView extends FrameLayout {
     private int thumbDX;
     private float progressToSet;
     private boolean pressed;
-    private SeekBarViewDelegate delegate;
+    public SeekBarViewDelegate delegate;
     private boolean reportChanges;
     private float bufferedProgress;
     private Drawable hoverDrawable;

@@ -64,7 +64,7 @@ SECTION .text
 ; or pavgb At this point this is just meant to be first pass for calculating
 ; all the parms needed for 16x16 ssim so we can play with dssim as distortion
 ; in mode selection code.
-global sym(vpx_ssim_parms_16x16_sse2) PRIVATE
+globalsym(vpx_ssim_parms_16x16_sse2)
 sym(vpx_ssim_parms_16x16_sse2):
     push        rbp
     mov         rbp, rsp
@@ -154,7 +154,7 @@ sym(vpx_ssim_parms_16x16_sse2):
 ; or pavgb At this point this is just meant to be first pass for calculating
 ; all the parms needed for 16x16 ssim so we can play with dssim as distortion
 ; in mode selection code.
-global sym(vpx_ssim_parms_8x8_sse2) PRIVATE
+globalsym(vpx_ssim_parms_8x8_sse2)
 sym(vpx_ssim_parms_8x8_sse2):
     push        rbp
     mov         rbp, rsp

@@ -39,7 +39,8 @@ static vpx_image_t *img_alloc_helper(vpx_image_t *img, vpx_img_fmt_t fmt,
   /* Get sample size for this format */
   switch (fmt) {
     case VPX_IMG_FMT_I420:
-    case VPX_IMG_FMT_YV12: bps = 12; break;
+    case VPX_IMG_FMT_YV12:
+    case VPX_IMG_FMT_NV12: bps = 12; break;
     case VPX_IMG_FMT_I422:
     case VPX_IMG_FMT_I440: bps = 16; break;
     case VPX_IMG_FMT_I444: bps = 24; break;
@@ -51,6 +52,8 @@ static vpx_image_t *img_alloc_helper(vpx_image_t *img, vpx_img_fmt_t fmt,
   }
 
   /* Get chroma shift values for this format */
+  // For VPX_IMG_FMT_NV12, xcs needs to be 0 such that UV data is all read at
+  // one time.
   switch (fmt) {
     case VPX_IMG_FMT_I420:
     case VPX_IMG_FMT_YV12:
@@ -62,6 +65,7 @@ static vpx_image_t *img_alloc_helper(vpx_image_t *img, vpx_img_fmt_t fmt,
 
   switch (fmt) {
     case VPX_IMG_FMT_I420:
+    case VPX_IMG_FMT_NV12:
     case VPX_IMG_FMT_I440:
     case VPX_IMG_FMT_YV12:
     case VPX_IMG_FMT_I42016:
@@ -173,7 +177,12 @@ int vpx_img_set_rect(vpx_image_t *img, unsigned int x, unsigned int y,
           data + x * bytes_per_sample + y * img->stride[VPX_PLANE_Y];
       data += img->h * img->stride[VPX_PLANE_Y];
 
-      if (!(img->fmt & VPX_IMG_FMT_UV_FLIP)) {
+      if (img->fmt == VPX_IMG_FMT_NV12) {
+        img->planes[VPX_PLANE_U] =
+            data + (x >> img->x_chroma_shift) +
+            (y >> img->y_chroma_shift) * img->stride[VPX_PLANE_U];
+        img->planes[VPX_PLANE_V] = img->planes[VPX_PLANE_U] + 1;
+      } else if (!(img->fmt & VPX_IMG_FMT_UV_FLIP)) {
         img->planes[VPX_PLANE_U] =
             data + (x >> img->x_chroma_shift) * bytes_per_sample +
             (y >> img->y_chroma_shift) * img->stride[VPX_PLANE_U];

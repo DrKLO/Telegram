@@ -24,19 +24,19 @@
   "punpcklhw  %[ftmp5],   %[ftmp1],   %[ftmp0]         \n\t" \
   "punpcklhw  %[ftmp9],   %[ftmp2],   %[ftmp0]         \n\t" \
   "pshufh     %[ftmp9],   %[ftmp9],   %[ftmp10]        \n\t" \
-  "or         %[ftmp5],   %[ftmp5],   %[ftmp9]         \n\t" \
+  "por        %[ftmp5],   %[ftmp5],   %[ftmp9]         \n\t" \
   "punpckhhw  %[ftmp6],   %[ftmp1],   %[ftmp0]         \n\t" \
   "punpckhhw  %[ftmp9],   %[ftmp2],   %[ftmp0]         \n\t" \
   "pshufh     %[ftmp9],   %[ftmp9],   %[ftmp10]        \n\t" \
-  "or         %[ftmp6],   %[ftmp6],   %[ftmp9]         \n\t" \
+  "por        %[ftmp6],   %[ftmp6],   %[ftmp9]         \n\t" \
   "punpcklhw  %[ftmp7],   %[ftmp3],   %[ftmp0]         \n\t" \
   "punpcklhw  %[ftmp9],   %[ftmp4],   %[ftmp0]         \n\t" \
   "pshufh     %[ftmp9],   %[ftmp9],   %[ftmp10]        \n\t" \
-  "or         %[ftmp7],   %[ftmp7],   %[ftmp9]         \n\t" \
+  "por        %[ftmp7],   %[ftmp7],   %[ftmp9]         \n\t" \
   "punpckhhw  %[ftmp8],   %[ftmp3],   %[ftmp0]         \n\t" \
   "punpckhhw  %[ftmp9],   %[ftmp4],   %[ftmp0]         \n\t" \
   "pshufh     %[ftmp9],   %[ftmp9],   %[ftmp10]        \n\t" \
-  "or         %[ftmp8],   %[ftmp8],   %[ftmp9]         \n\t" \
+  "por        %[ftmp8],   %[ftmp8],   %[ftmp9]         \n\t" \
   "punpcklwd  %[ftmp1],   %[ftmp5],   %[ftmp7]         \n\t" \
   "punpckhwd  %[ftmp2],   %[ftmp5],   %[ftmp7]         \n\t" \
   "punpcklwd  %[ftmp3],   %[ftmp6],   %[ftmp8]         \n\t" \
@@ -46,6 +46,7 @@
 void vp8_short_fdct4x4_mmi(int16_t *input, int16_t *output, int pitch) {
   uint64_t tmp[1];
   int16_t *ip = input;
+  double ff_ph_op1, ff_ph_op3;
 
 #if _MIPS_SIM == _ABIO32
   register double ftmp0 asm("$f0");
@@ -83,14 +84,17 @@ void vp8_short_fdct4x4_mmi(int16_t *input, int16_t *output, int pitch) {
   DECLARE_ALIGNED(8, const uint64_t, ff_pw_51000) = { 0x0000c7380000c738ULL };
   DECLARE_ALIGNED(8, const uint64_t, ff_pw_14500) = { 0x000038a4000038a4ULL };
   DECLARE_ALIGNED(8, const uint64_t, ff_pw_7500) = { 0x00001d4c00001d4cULL };
-  DECLARE_ALIGNED(8, const uint64_t, ff_ph_op1) = { 0x14e808a914e808a9ULL };
-  DECLARE_ALIGNED(8, const uint64_t, ff_ph_op3) = { 0xeb1808a9eb1808a9ULL };
   DECLARE_ALIGNED(8, const uint64_t, ff_pw_5352) = { 0x000014e8000014e8ULL };
   DECLARE_ALIGNED(8, const uint64_t, ff_pw_2217) = { 0x000008a9000008a9ULL };
   DECLARE_ALIGNED(8, const uint64_t, ff_ph_8) = { 0x0008000800080008ULL };
 
+  /* clang-format off */
   __asm__ volatile (
-    "xor        %[ftmp0],   %[ftmp0],      %[ftmp0]         \n\t"
+    "dli        %[tmp0],    0x14e808a914e808a9              \n\t"
+    "dmtc1      %[tmp0],    %[ff_ph_op1]                    \n\t"
+    "dli        %[tmp0],    0xeb1808a9eb1808a9              \n\t"
+    "dmtc1      %[tmp0],    %[ff_ph_op3]                    \n\t"
+    "pxor       %[ftmp0],   %[ftmp0],      %[ftmp0]         \n\t"
     "gsldlc1    %[ftmp1],   0x07(%[ip])                     \n\t"
     "gsldrc1    %[ftmp1],   0x00(%[ip])                     \n\t"
     MMI_ADDU(%[ip], %[ip], %[pitch])
@@ -129,7 +133,7 @@ void vp8_short_fdct4x4_mmi(int16_t *input, int16_t *output, int pitch) {
 
     // op[1] = (c1 * 2217 + d1 * 5352 + 14500) >> 12
     MMI_LI(%[tmp0], 0x0c)
-    "mtc1       %[tmp0],    %[ftmp11]                       \n\t"
+    "dmtc1      %[tmp0],    %[ftmp11]                       \n\t"
     "ldc1       %[ftmp12],  %[ff_pw_14500]                  \n\t"
     "punpcklhw  %[ftmp9],   %[ftmp7],       %[ftmp8]        \n\t"
     "pmaddhw    %[ftmp5],   %[ftmp9],       %[ff_ph_op1]    \n\t"
@@ -169,7 +173,7 @@ void vp8_short_fdct4x4_mmi(int16_t *input, int16_t *output, int pitch) {
     "paddh      %[ftmp1],   %[ftmp1],       %[ftmp9]        \n\t"
     "paddh      %[ftmp2],   %[ftmp2],       %[ftmp9]        \n\t"
     MMI_LI(%[tmp0], 0x04)
-    "mtc1       %[tmp0],    %[ftmp9]                        \n\t"
+    "dmtc1      %[tmp0],    %[ftmp9]                        \n\t"
     "psrah      %[ftmp1],   %[ftmp1],       %[ftmp9]        \n\t"
     "psrah      %[ftmp2],   %[ftmp2],       %[ftmp9]        \n\t"
 
@@ -211,15 +215,16 @@ void vp8_short_fdct4x4_mmi(int16_t *input, int16_t *output, int pitch) {
       [ftmp3] "=&f"(ftmp3), [ftmp4] "=&f"(ftmp4), [ftmp5] "=&f"(ftmp5),
       [ftmp6] "=&f"(ftmp6), [ftmp7] "=&f"(ftmp7), [ftmp8] "=&f"(ftmp8),
       [ftmp9] "=&f"(ftmp9), [ftmp10] "=&f"(ftmp10), [ftmp11] "=&f"(ftmp11),
-      [ftmp12] "=&f"(ftmp12), [tmp0] "=&r"(tmp[0]), [ip]"+&r"(ip)
+      [ftmp12] "=&f"(ftmp12), [tmp0] "=&r"(tmp[0]), [ip]"+&r"(ip),
+      [ff_ph_op1] "=&f"(ff_ph_op1), [ff_ph_op3] "=&f"(ff_ph_op3)
     : [ff_ph_01] "m"(ff_ph_01), [ff_ph_07] "m"(ff_ph_07),
-      [ff_ph_op1] "f"(ff_ph_op1), [ff_ph_op3] "f"(ff_ph_op3),
       [ff_pw_14500] "m"(ff_pw_14500), [ff_pw_7500] "m"(ff_pw_7500),
       [ff_pw_12000] "m"(ff_pw_12000), [ff_pw_51000] "m"(ff_pw_51000),
       [ff_pw_5352]"m"(ff_pw_5352), [ff_pw_2217]"m"(ff_pw_2217),
       [ff_ph_8]"m"(ff_ph_8), [pitch]"r"(pitch), [output] "r"(output)
     : "memory"
   );
+  /* clang-format on */
 }
 
 void vp8_short_fdct8x4_mmi(int16_t *input, int16_t *output, int pitch) {
@@ -228,17 +233,22 @@ void vp8_short_fdct8x4_mmi(int16_t *input, int16_t *output, int pitch) {
 }
 
 void vp8_short_walsh4x4_mmi(int16_t *input, int16_t *output, int pitch) {
-  double ftmp[13];
-  uint32_t tmp[1];
-  DECLARE_ALIGNED(8, const uint64_t, ff_ph_01) = { 0x0001000100010001ULL };
-  DECLARE_ALIGNED(8, const uint64_t, ff_pw_01) = { 0x0000000100000001ULL };
-  DECLARE_ALIGNED(8, const uint64_t, ff_pw_03) = { 0x0000000300000003ULL };
-  DECLARE_ALIGNED(8, const uint64_t, ff_pw_mask) = { 0x0001000000010000ULL };
+  double ftmp[13], ff_ph_01, ff_pw_01, ff_pw_03, ff_pw_mask;
+  uint64_t tmp[1];
 
+  /* clang-format off */
   __asm__ volatile (
+    "dli        %[tmp0],    0x0001000100010001                  \n\t"
+    "dmtc1      %[tmp0],    %[ff_ph_01]                         \n\t"
+    "dli        %[tmp0],    0x0000000100000001                  \n\t"
+    "dmtc1      %[tmp0],    %[ff_pw_01]                         \n\t"
+    "dli        %[tmp0],    0x0000000300000003                  \n\t"
+    "dmtc1      %[tmp0],    %[ff_pw_03]                         \n\t"
+    "dli        %[tmp0],    0x0001000000010000                  \n\t"
+    "dmtc1      %[tmp0],    %[ff_pw_mask]                       \n\t"
     MMI_LI(%[tmp0], 0x02)
-    "xor        %[ftmp0],   %[ftmp0],       %[ftmp0]            \n\t"
-    "mtc1       %[tmp0],    %[ftmp11]                           \n\t"
+    "pxor       %[ftmp0],   %[ftmp0],       %[ftmp0]            \n\t"
+    "dmtc1      %[tmp0],    %[ftmp11]                           \n\t"
 
     "gsldlc1    %[ftmp1],   0x07(%[ip])                         \n\t"
     "gsldrc1    %[ftmp1],   0x00(%[ip])                         \n\t"
@@ -337,52 +347,52 @@ void vp8_short_walsh4x4_mmi(int16_t *input, int16_t *output, int pitch) {
     "psubw      %[ftmp4],   %[ftmp9],       %[ftmp10]           \n\t"
 
     MMI_LI(%[tmp0], 0x03)
-    "mtc1       %[tmp0],    %[ftmp11]                           \n\t"
+    "dmtc1      %[tmp0],    %[ftmp11]                           \n\t"
 
     "pcmpgtw    %[ftmp9],   %[ftmp0],       %[ftmp1]            \n\t"
-    "and        %[ftmp9],   %[ftmp9],       %[ff_pw_01]         \n\t"
+    "pand       %[ftmp9],   %[ftmp9],       %[ff_pw_01]         \n\t"
     "paddw      %[ftmp1],   %[ftmp1],       %[ftmp9]            \n\t"
     "paddw      %[ftmp1],   %[ftmp1],       %[ff_pw_03]         \n\t"
     "psraw      %[ftmp1],   %[ftmp1],       %[ftmp11]           \n\t"
 
     "pcmpgtw    %[ftmp9],   %[ftmp0],       %[ftmp2]            \n\t"
-    "and        %[ftmp9],   %[ftmp9],       %[ff_pw_01]         \n\t"
+    "pand       %[ftmp9],   %[ftmp9],       %[ff_pw_01]         \n\t"
     "paddw      %[ftmp2],   %[ftmp2],       %[ftmp9]            \n\t"
     "paddw      %[ftmp2],   %[ftmp2],       %[ff_pw_03]         \n\t"
     "psraw      %[ftmp2],   %[ftmp2],       %[ftmp11]           \n\t"
 
     "pcmpgtw    %[ftmp9],   %[ftmp0],       %[ftmp3]            \n\t"
-    "and        %[ftmp9],   %[ftmp9],       %[ff_pw_01]         \n\t"
+    "pand       %[ftmp9],   %[ftmp9],       %[ff_pw_01]         \n\t"
     "paddw      %[ftmp3],   %[ftmp3],       %[ftmp9]            \n\t"
     "paddw      %[ftmp3],   %[ftmp3],       %[ff_pw_03]         \n\t"
     "psraw      %[ftmp3],   %[ftmp3],       %[ftmp11]           \n\t"
 
     "pcmpgtw    %[ftmp9],   %[ftmp0],       %[ftmp4]            \n\t"
-    "and        %[ftmp9],   %[ftmp9],       %[ff_pw_01]         \n\t"
+    "pand       %[ftmp9],   %[ftmp9],       %[ff_pw_01]         \n\t"
     "paddw      %[ftmp4],   %[ftmp4],       %[ftmp9]            \n\t"
     "paddw      %[ftmp4],   %[ftmp4],       %[ff_pw_03]         \n\t"
     "psraw      %[ftmp4],   %[ftmp4],       %[ftmp11]           \n\t"
 
     "pcmpgtw    %[ftmp9],   %[ftmp0],       %[ftmp5]            \n\t"
-    "and        %[ftmp9],   %[ftmp9],       %[ff_pw_01]         \n\t"
+    "pand       %[ftmp9],   %[ftmp9],       %[ff_pw_01]         \n\t"
     "paddw      %[ftmp5],   %[ftmp5],       %[ftmp9]            \n\t"
     "paddw      %[ftmp5],   %[ftmp5],       %[ff_pw_03]         \n\t"
     "psraw      %[ftmp5],   %[ftmp5],       %[ftmp11]           \n\t"
 
     "pcmpgtw    %[ftmp9],   %[ftmp0],       %[ftmp6]            \n\t"
-    "and        %[ftmp9],   %[ftmp9],       %[ff_pw_01]         \n\t"
+    "pand       %[ftmp9],   %[ftmp9],       %[ff_pw_01]         \n\t"
     "paddw      %[ftmp6],   %[ftmp6],       %[ftmp9]            \n\t"
     "paddw      %[ftmp6],   %[ftmp6],       %[ff_pw_03]         \n\t"
     "psraw      %[ftmp6],   %[ftmp6],       %[ftmp11]           \n\t"
 
     "pcmpgtw    %[ftmp9],   %[ftmp0],       %[ftmp7]            \n\t"
-    "and        %[ftmp9],   %[ftmp9],       %[ff_pw_01]         \n\t"
+    "pand       %[ftmp9],   %[ftmp9],       %[ff_pw_01]         \n\t"
     "paddw      %[ftmp7],   %[ftmp7],       %[ftmp9]            \n\t"
     "paddw      %[ftmp7],   %[ftmp7],       %[ff_pw_03]         \n\t"
     "psraw      %[ftmp7],   %[ftmp7],       %[ftmp11]           \n\t"
 
     "pcmpgtw    %[ftmp9],   %[ftmp0],       %[ftmp8]            \n\t"
-    "and        %[ftmp9],   %[ftmp9],       %[ff_pw_01]         \n\t"
+    "pand       %[ftmp9],   %[ftmp9],       %[ff_pw_01]         \n\t"
     "paddw      %[ftmp8],   %[ftmp8],       %[ftmp9]            \n\t"
     "paddw      %[ftmp8],   %[ftmp8],       %[ff_pw_03]         \n\t"
     "psraw      %[ftmp8],   %[ftmp8],       %[ftmp11]           \n\t"
@@ -393,7 +403,7 @@ void vp8_short_walsh4x4_mmi(int16_t *input, int16_t *output, int pitch) {
     "packsswh   %[ftmp4],   %[ftmp4],       %[ftmp8]            \n\t"
 
     MMI_LI(%[tmp0], 0x72)
-    "mtc1       %[tmp0],    %[ftmp11]                           \n\t"
+    "dmtc1      %[tmp0],    %[ftmp11]                           \n\t"
     "pshufh     %[ftmp1],   %[ftmp1],       %[ftmp11]           \n\t"
     "pshufh     %[ftmp2],   %[ftmp2],       %[ftmp11]           \n\t"
     "pshufh     %[ftmp3],   %[ftmp3],       %[ftmp11]           \n\t"
@@ -413,13 +423,12 @@ void vp8_short_walsh4x4_mmi(int16_t *input, int16_t *output, int pitch) {
       [ftmp6]"=&f"(ftmp[6]),            [ftmp7]"=&f"(ftmp[7]),
       [ftmp8]"=&f"(ftmp[8]),            [ftmp9]"=&f"(ftmp[9]),
       [ftmp10]"=&f"(ftmp[10]),          [ftmp11]"=&f"(ftmp[11]),
-      [ftmp12]"=&f"(ftmp[12]),
-      [tmp0]"=&r"(tmp[0]),
-      [ip]"+&r"(input)
-    : [op]"r"(output),
-      [ff_pw_01]"f"(ff_pw_01),          [pitch]"r"((mips_reg)pitch),
-      [ff_pw_03]"f"(ff_pw_03),          [ff_pw_mask]"f"(ff_pw_mask),
-      [ff_ph_01]"f"(ff_ph_01)
+      [ftmp12]"=&f"(ftmp[12]),          [ff_pw_mask]"=&f"(ff_pw_mask),
+      [tmp0]"=&r"(tmp[0]),              [ff_pw_01]"=&f"(ff_pw_01),
+      [ip]"+&r"(input),                 [ff_pw_03]"=&f"(ff_pw_03),
+      [ff_ph_01]"=&f"(ff_ph_01)
+    : [op]"r"(output),                  [pitch]"r"((mips_reg)pitch)
     : "memory"
   );
+  /* clang-format on */
 }

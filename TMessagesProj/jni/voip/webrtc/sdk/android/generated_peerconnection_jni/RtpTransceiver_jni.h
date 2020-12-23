@@ -157,10 +157,10 @@ JNI_GENERATOR_EXPORT void Java_org_webrtc_RtpTransceiver_nativeStopStandard(
   return JNI_RtpTransceiver_StopStandard(env, rtpTransceiver);
 }
 
-static void JNI_RtpTransceiver_SetDirection(JNIEnv* env, jlong rtpTransceiver,
+static jboolean JNI_RtpTransceiver_SetDirection(JNIEnv* env, jlong rtpTransceiver,
     const base::android::JavaParamRef<jobject>& rtpTransceiverDirection);
 
-JNI_GENERATOR_EXPORT void Java_org_webrtc_RtpTransceiver_nativeSetDirection(
+JNI_GENERATOR_EXPORT jboolean Java_org_webrtc_RtpTransceiver_nativeSetDirection(
     JNIEnv* env,
     jclass jcaller,
     jlong rtpTransceiver,

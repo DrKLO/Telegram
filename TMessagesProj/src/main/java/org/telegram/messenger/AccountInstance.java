@@ -88,4 +88,8 @@ public class AccountInstance {
     public SharedPreferences getNotificationsSettings() {
         return MessagesController.getNotificationsSettings(currentAccount);
     }
+
+    public int getCurrentAccount() {
+        return currentAccount;
+    }
 }

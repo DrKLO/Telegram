@@ -17,11 +17,11 @@
 #include <memory>
 
 #include "absl/strings/string_view.h"
+#include "api/transport/field_trial_based_config.h"
 #include "modules/audio_coding/include/audio_coding_module_typedefs.h"
 #include "modules/rtp_rtcp/source/absolute_capture_time_sender.h"
 #include "modules/rtp_rtcp/source/dtmf_queue.h"
 #include "modules/rtp_rtcp/source/rtp_sender.h"
-#include "rtc_base/constructor_magic.h"
 #include "rtc_base/one_time_event.h"
 #include "rtc_base/synchronization/mutex.h"
 #include "rtc_base/thread_annotations.h"
@@ -32,6 +32,11 @@ namespace webrtc {
 class RTPSenderAudio {
  public:
   RTPSenderAudio(Clock* clock, RTPSender* rtp_sender);
+
+  RTPSenderAudio() = delete;
+  RTPSenderAudio(const RTPSenderAudio&) = delete;
+  RTPSenderAudio& operator=(const RTPSenderAudio&) = delete;
+
   ~RTPSenderAudio();
 
   int32_t RegisterAudioPayload(absl::string_view payload_name,
@@ -106,7 +111,8 @@ class RTPSenderAudio {
 
   AbsoluteCaptureTimeSender absolute_capture_time_sender_;
 
-  RTC_DISALLOW_IMPLICIT_CONSTRUCTORS(RTPSenderAudio);
+  const FieldTrialBasedConfig field_trials_;
+  const bool include_capture_clock_offset_;
 };
 
 }  // namespace webrtc

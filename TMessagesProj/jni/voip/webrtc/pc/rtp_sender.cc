@@ -17,8 +17,7 @@
 #include "api/audio_options.h"
 #include "api/media_stream_interface.h"
 #include "media/base/media_engine.h"
-#include "pc/peer_connection.h"
-#include "pc/stats_collector.h"
+#include "pc/stats_collector_interface.h"
 #include "rtc_base/checks.h"
 #include "rtc_base/helpers.h"
 #include "rtc_base/location.h"
@@ -418,7 +417,7 @@ void LocalAudioSinkAdapter::SetSink(cricket::AudioSource::Sink* sink) {
 rtc::scoped_refptr<AudioRtpSender> AudioRtpSender::Create(
     rtc::Thread* worker_thread,
     const std::string& id,
-    StatsCollector* stats,
+    StatsCollectorInterface* stats,
     SetStreamsObserver* set_streams_observer) {
   return rtc::scoped_refptr<AudioRtpSender>(
       new rtc::RefCountedObject<AudioRtpSender>(worker_thread, id, stats,
@@ -427,7 +426,7 @@ rtc::scoped_refptr<AudioRtpSender> AudioRtpSender::Create(
 
 AudioRtpSender::AudioRtpSender(rtc::Thread* worker_thread,
                                const std::string& id,
-                               StatsCollector* stats,
+                               StatsCollectorInterface* stats,
                                SetStreamsObserver* set_streams_observer)
     : RtpSenderBase(worker_thread, id, set_streams_observer),
       stats_(stats),

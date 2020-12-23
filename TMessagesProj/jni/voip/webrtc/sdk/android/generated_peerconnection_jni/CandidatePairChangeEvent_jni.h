@@ -44,7 +44,8 @@ static base::android::ScopedJavaLocalRef<jobject> Java_CandidatePairChangeEvent_
     env, const base::android::JavaRef<jobject>& local,
     const base::android::JavaRef<jobject>& remote,
     JniIntWrapper lastDataReceivedMs,
-    const base::android::JavaRef<jstring>& reason) {
+    const base::android::JavaRef<jstring>& reason,
+    JniIntWrapper estimatedDisconnectedTimeMs) {
   jclass clazz = org_webrtc_CandidatePairChangeEvent_clazz(env);
   CHECK_CLAZZ(env, clazz,
       org_webrtc_CandidatePairChangeEvent_clazz(env), NULL);
@@ -55,13 +56,13 @@ static base::android::ScopedJavaLocalRef<jobject> Java_CandidatePairChangeEvent_
           env,
           clazz,
           "<init>",
-          "(Lorg/webrtc/IceCandidate;Lorg/webrtc/IceCandidate;ILjava/lang/String;)V",
+          "(Lorg/webrtc/IceCandidate;Lorg/webrtc/IceCandidate;ILjava/lang/String;I)V",
           &g_org_webrtc_CandidatePairChangeEvent_Constructor);
 
   jobject ret =
       env->NewObject(clazz,
           call_context.base.method_id, local.obj(), remote.obj(), as_jint(lastDataReceivedMs),
-              reason.obj());
+              reason.obj(), as_jint(estimatedDisconnectedTimeMs));
   return base::android::ScopedJavaLocalRef<jobject>(env, ret);
 }
 

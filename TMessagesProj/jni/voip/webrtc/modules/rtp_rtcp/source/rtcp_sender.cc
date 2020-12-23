@@ -37,7 +37,6 @@
 #include "modules/rtp_rtcp/source/time_util.h"
 #include "modules/rtp_rtcp/source/tmmbr_help.h"
 #include "rtc_base/checks.h"
-#include "rtc_base/constructor_magic.h"
 #include "rtc_base/logging.h"
 #include "rtc_base/numerics/safe_conversions.h"
 #include "rtc_base/trace_event.h"
@@ -55,10 +54,10 @@ class PacketContainer : public rtcp::CompoundPacket {
  public:
   PacketContainer(Transport* transport, RtcEventLog* event_log)
       : transport_(transport), event_log_(event_log) {}
-  ~PacketContainer() override {
-    for (RtcpPacket* packet : appended_packets_)
-      delete packet;
-  }
+
+  PacketContainer() = delete;
+  PacketContainer(const PacketContainer&) = delete;
+  PacketContainer& operator=(const PacketContainer&) = delete;
 
   size_t SendPackets(size_t max_payload_length) {
     size_t bytes_sent = 0;
@@ -76,8 +75,6 @@ class PacketContainer : public rtcp::CompoundPacket {
  private:
   Transport* transport_;
   RtcEventLog* const event_log_;
-
-  RTC_DISALLOW_IMPLICIT_CONSTRUCTORS(PacketContainer);
 };
 
 // Helper to put several RTCP packets into lower layer datagram RTCP packet.
@@ -792,14 +789,14 @@ absl::optional<int32_t> RTCPSender::ComputeCompoundRTCPPacket(
       if (builder_it->first == kRtcpBye) {
         packet_bye = std::move(packet);
       } else {
-        out_packet->Append(packet.release());
+        out_packet->Append(std::move(packet));
       }
     }
   }
 
   // Append the BYE now at the end
   if (packet_bye) {
-    out_packet->Append(packet_bye.release());
+    out_packet->Append(std::move(packet_bye));
   }
 
   if (packet_type_counter_observer_ != nullptr) {

@@ -173,7 +173,7 @@
 
 SECTION .text
 
-global sym(vpx_highbd_filter_block1d4_v2_sse2) PRIVATE
+globalsym(vpx_highbd_filter_block1d4_v2_sse2)
 sym(vpx_highbd_filter_block1d4_v2_sse2):
     push        rbp
     mov         rbp, rsp
@@ -198,7 +198,7 @@ sym(vpx_highbd_filter_block1d4_v2_sse2):
     ret
 
 %if VPX_ARCH_X86_64
-global sym(vpx_highbd_filter_block1d8_v2_sse2) PRIVATE
+globalsym(vpx_highbd_filter_block1d8_v2_sse2)
 sym(vpx_highbd_filter_block1d8_v2_sse2):
     push        rbp
     mov         rbp, rsp
@@ -224,7 +224,7 @@ sym(vpx_highbd_filter_block1d8_v2_sse2):
     pop         rbp
     ret
 
-global sym(vpx_highbd_filter_block1d16_v2_sse2) PRIVATE
+globalsym(vpx_highbd_filter_block1d16_v2_sse2)
 sym(vpx_highbd_filter_block1d16_v2_sse2):
     push        rbp
     mov         rbp, rsp
@@ -253,7 +253,7 @@ sym(vpx_highbd_filter_block1d16_v2_sse2):
     ret
 %endif
 
-global sym(vpx_highbd_filter_block1d4_v2_avg_sse2) PRIVATE
+globalsym(vpx_highbd_filter_block1d4_v2_avg_sse2)
 sym(vpx_highbd_filter_block1d4_v2_avg_sse2):
     push        rbp
     mov         rbp, rsp
@@ -278,7 +278,7 @@ sym(vpx_highbd_filter_block1d4_v2_avg_sse2):
     ret
 
 %if VPX_ARCH_X86_64
-global sym(vpx_highbd_filter_block1d8_v2_avg_sse2) PRIVATE
+globalsym(vpx_highbd_filter_block1d8_v2_avg_sse2)
 sym(vpx_highbd_filter_block1d8_v2_avg_sse2):
     push        rbp
     mov         rbp, rsp
@@ -304,7 +304,7 @@ sym(vpx_highbd_filter_block1d8_v2_avg_sse2):
     pop         rbp
     ret
 
-global sym(vpx_highbd_filter_block1d16_v2_avg_sse2) PRIVATE
+globalsym(vpx_highbd_filter_block1d16_v2_avg_sse2)
 sym(vpx_highbd_filter_block1d16_v2_avg_sse2):
     push        rbp
     mov         rbp, rsp
@@ -333,7 +333,7 @@ sym(vpx_highbd_filter_block1d16_v2_avg_sse2):
     ret
 %endif
 
-global sym(vpx_highbd_filter_block1d4_h2_sse2) PRIVATE
+globalsym(vpx_highbd_filter_block1d4_h2_sse2)
 sym(vpx_highbd_filter_block1d4_h2_sse2):
     push        rbp
     mov         rbp, rsp
@@ -359,7 +359,7 @@ sym(vpx_highbd_filter_block1d4_h2_sse2):
     ret
 
 %if VPX_ARCH_X86_64
-global sym(vpx_highbd_filter_block1d8_h2_sse2) PRIVATE
+globalsym(vpx_highbd_filter_block1d8_h2_sse2)
 sym(vpx_highbd_filter_block1d8_h2_sse2):
     push        rbp
     mov         rbp, rsp
@@ -385,7 +385,7 @@ sym(vpx_highbd_filter_block1d8_h2_sse2):
     pop         rbp
     ret
 
-global sym(vpx_highbd_filter_block1d16_h2_sse2) PRIVATE
+globalsym(vpx_highbd_filter_block1d16_h2_sse2)
 sym(vpx_highbd_filter_block1d16_h2_sse2):
     push        rbp
     mov         rbp, rsp
@@ -414,7 +414,7 @@ sym(vpx_highbd_filter_block1d16_h2_sse2):
     ret
 %endif
 
-global sym(vpx_highbd_filter_block1d4_h2_avg_sse2) PRIVATE
+globalsym(vpx_highbd_filter_block1d4_h2_avg_sse2)
 sym(vpx_highbd_filter_block1d4_h2_avg_sse2):
     push        rbp
     mov         rbp, rsp
@@ -440,7 +440,7 @@ sym(vpx_highbd_filter_block1d4_h2_avg_sse2):
     ret
 
 %if VPX_ARCH_X86_64
-global sym(vpx_highbd_filter_block1d8_h2_avg_sse2) PRIVATE
+globalsym(vpx_highbd_filter_block1d8_h2_avg_sse2)
 sym(vpx_highbd_filter_block1d8_h2_avg_sse2):
     push        rbp
     mov         rbp, rsp
@@ -466,7 +466,7 @@ sym(vpx_highbd_filter_block1d8_h2_avg_sse2):
     pop         rbp
     ret
 
-global sym(vpx_highbd_filter_block1d16_h2_avg_sse2) PRIVATE
+globalsym(vpx_highbd_filter_block1d16_h2_avg_sse2)
 sym(vpx_highbd_filter_block1d16_h2_avg_sse2):
     push        rbp
     mov         rbp, rsp

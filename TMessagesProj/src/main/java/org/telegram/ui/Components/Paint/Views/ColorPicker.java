@@ -5,6 +5,7 @@ import android.animation.ObjectAnimator;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.LinearGradient;
@@ -108,7 +109,9 @@ public class ColorPicker extends FrameLayout {
             }
         });
 
-        location = context.getSharedPreferences("paint", Activity.MODE_PRIVATE).getFloat("last_color_location", 1.0f);
+        SharedPreferences preferences = context.getSharedPreferences("paint", Activity.MODE_PRIVATE);
+        location = preferences.getFloat("last_color_location", 1.0f);
+        setWeight(preferences.getFloat("last_color_weight", 0.016773745f));
         setLocation(location);
     }
 
@@ -225,7 +228,10 @@ public class ColorPicker extends FrameLayout {
         if (action == MotionEvent.ACTION_CANCEL || action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_POINTER_UP) {
             if (interacting && delegate != null) {
                 delegate.onFinishedColorPicking();
-                getContext().getSharedPreferences("paint", Activity.MODE_PRIVATE).edit().putFloat("last_color_location", location).commit();
+                SharedPreferences.Editor editor = getContext().getSharedPreferences("paint", Activity.MODE_PRIVATE).edit();
+                editor.putFloat("last_color_location", location);
+                editor.putFloat("last_color_weight", weight);
+                editor.commit();
             }
             interacting = false;
             wasChangingWeight = changingWeight;

@@ -57,8 +57,7 @@ class MultiplexEncoderAdapter : public VideoEncoder {
   EncodedImageCallback::Result OnEncodedImage(
       AlphaCodecStream stream_idx,
       const EncodedImage& encodedImage,
-      const CodecSpecificInfo* codecSpecificInfo,
-      const RTPFragmentationHeader* fragmentation);
+      const CodecSpecificInfo* codecSpecificInfo);
 
  private:
   // Wrapper class that redirects OnEncodedImage() calls.

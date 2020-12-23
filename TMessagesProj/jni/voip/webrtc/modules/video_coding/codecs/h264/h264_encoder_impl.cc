@@ -87,19 +87,15 @@ VideoFrameType ConvertToVideoFrameType(EVideoFrameType type) {
 }  // namespace
 
 // Helper method used by H264EncoderImpl::Encode.
-// Copies the encoded bytes from |info| to |encoded_image| and updates the
-// fragmentation information of |frag_header|. The |encoded_image->_buffer| may
-// be deleted and reallocated if a bigger buffer is required.
+// Copies the encoded bytes from |info| to |encoded_image|. The
+// |encoded_image->_buffer| may be deleted and reallocated if a bigger buffer is
+// required.
 //
 // After OpenH264 encoding, the encoded bytes are stored in |info| spread out
 // over a number of layers and "NAL units". Each NAL unit is a fragment starting
 // with the four-byte start code {0,0,0,1}. All of this data (including the
-// start codes) is copied to the |encoded_image->_buffer| and the |frag_header|
-// is updated to point to each fragment, with offsets and lengths set as to
-// exclude the start codes.
-static void RtpFragmentize(EncodedImage* encoded_image,
-                           SFrameBSInfo* info,
-                           RTPFragmentationHeader* frag_header) {
+// start codes) is copied to the |encoded_image->_buffer|.
+static void RtpFragmentize(EncodedImage* encoded_image, SFrameBSInfo* info) {
   // Calculate minimum buffer size required to hold encoded data.
   size_t required_capacity = 0;
   size_t fragments_count = 0;
@@ -114,12 +110,12 @@ static void RtpFragmentize(EncodedImage* encoded_image,
     }
   }
   // TODO(nisse): Use a cache or buffer pool to avoid allocation?
-  encoded_image->SetEncodedData(EncodedImageBuffer::Create(required_capacity));
+  auto buffer = EncodedImageBuffer::Create(required_capacity);
+  encoded_image->SetEncodedData(buffer);
 
   // Iterate layers and NAL units, note each NAL unit as a fragment and copy
   // the data to |encoded_image->_buffer|.
   const uint8_t start_code[4] = {0, 0, 0, 1};
-  frag_header->VerifyAndAllocateFragmentationHeader(fragments_count);
   size_t frag = 0;
   encoded_image->set_size(0);
   for (int layer = 0; layer < info->iLayerNum; ++layer) {
@@ -134,15 +130,10 @@ static void RtpFragmentize(EncodedImage* encoded_image,
       RTC_DCHECK_EQ(layerInfo.pBsBuf[layer_len + 1], start_code[1]);
       RTC_DCHECK_EQ(layerInfo.pBsBuf[layer_len + 2], start_code[2]);
       RTC_DCHECK_EQ(layerInfo.pBsBuf[layer_len + 3], start_code[3]);
-      frag_header->fragmentationOffset[frag] =
-          encoded_image->size() + layer_len + sizeof(start_code);
-      frag_header->fragmentationLength[frag] =
-          layerInfo.pNalLengthInByte[nal] - sizeof(start_code);
       layer_len += layerInfo.pNalLengthInByte[nal];
     }
     // Copy the entire layer's data (including start codes).
-    memcpy(encoded_image->data() + encoded_image->size(), layerInfo.pBsBuf,
-           layer_len);
+    memcpy(buffer->data() + encoded_image->size(), layerInfo.pBsBuf, layer_len);
     encoded_image->set_size(encoded_image->size() + layer_len);
   }
 }
@@ -284,7 +275,6 @@ int32_t H264EncoderImpl::InitEncode(const VideoCodec* inst,
         CalcBufferSize(VideoType::kI420, codec_.simulcastStream[idx].width,
                        codec_.simulcastStream[idx].height);
     encoded_images_[i].SetEncodedData(EncodedImageBuffer::Create(new_capacity));
-    encoded_images_[i]._completeFrame = true;
     encoded_images_[i]._encodedWidth = codec_.simulcastStream[idx].width;
     encoded_images_[i]._encodedHeight = codec_.simulcastStream[idx].height;
     encoded_images_[i].set_size(0);
@@ -485,8 +475,7 @@ int32_t H264EncoderImpl::Encode(
 
     // Split encoded image up into fragments. This also updates
     // |encoded_image_|.
-    RTPFragmentationHeader frag_header;
-    RtpFragmentize(&encoded_images_[i], &info, &frag_header);
+    RtpFragmentize(&encoded_images_[i], &info);
 
     // Encoder can skip frames to save bandwidth in which case
     // |encoded_images_[i]._length| == 0.
@@ -518,7 +507,7 @@ int32_t H264EncoderImpl::Encode(
         }
       }
       encoded_image_callback_->OnEncodedImage(encoded_images_[i],
-                                              &codec_specific, &frag_header);
+                                              &codec_specific);
     }
   }
   return WEBRTC_VIDEO_CODEC_OK;
@@ -555,6 +544,12 @@ SEncParamExt H264EncoderImpl::CreateEncoderParams(size_t i) const {
   // |uiIntraPeriod|    - multiple of GOP size
   // |keyFrameInterval| - number of frames
   encoder_params.uiIntraPeriod = configurations_[i].key_frame_interval;
+  // Reuse SPS id if possible. This helps to avoid reset of chromium HW decoder
+  // on each key-frame.
+  // Note that WebRTC resets encoder on resolution change which makes all
+  // EParameterSetStrategy modes except INCREASING_ID (default) essentially
+  // equivalent to CONSTANT_ID.
+  encoder_params.eSpsPpsIdStrategy = SPS_LISTING;
   encoder_params.uiMaxNalSize = 0;
   // Threading model: use auto.
   //  0: auto (dynamic imp. internal encoder)
@@ -625,6 +620,7 @@ VideoEncoder::EncoderInfo H264EncoderImpl::GetEncoderInfo() const {
   info.is_hardware_accelerated = false;
   info.has_internal_source = false;
   info.supports_simulcast = true;
+  info.preferred_pixel_formats = {VideoFrameBuffer::Type::kI420};
   return info;
 }
 

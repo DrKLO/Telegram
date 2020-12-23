@@ -18,6 +18,7 @@
 #include "api/array_view.h"
 #include "api/call/bitrate_allocation.h"
 #include "api/fec_controller_override.h"
+#include "api/video/video_layers_allocation.h"
 #include "call/rtp_config.h"
 #include "modules/rtp_rtcp/include/rtp_rtcp_defines.h"
 #include "modules/rtp_rtcp/source/rtp_sequence_number_map.h"
@@ -50,6 +51,8 @@ class RtpVideoSenderInterface : public EncodedImageCallback,
 
   virtual void OnBitrateAllocationUpdated(
       const VideoBitrateAllocation& bitrate) = 0;
+  virtual void OnVideoLayersAllocationUpdated(
+      const VideoLayersAllocation& allocation) = 0;
   virtual void OnBitrateUpdated(BitrateAllocationUpdate update,
                                 int framerate) = 0;
   virtual void OnTransportOverheadChanged(

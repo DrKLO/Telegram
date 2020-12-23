@@ -75,6 +75,12 @@ bool IvfFileWriter::WriteHeader() {
       ivf_header[10] = '9';
       ivf_header[11] = '0';
       break;
+    case kVideoCodecAV1:
+      ivf_header[8] = 'A';
+      ivf_header[9] = 'V';
+      ivf_header[10] = '0';
+      ivf_header[11] = '1';
+      break;
     case kVideoCodecH264:
       ivf_header[8] = 'H';
       ivf_header[9] = '2';

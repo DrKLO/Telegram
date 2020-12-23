@@ -224,7 +224,7 @@ class RTC_EXPORT NetworkManagerBase : public NetworkManager {
 // Basic implementation of the NetworkManager interface that gets list
 // of networks using OS APIs.
 class RTC_EXPORT BasicNetworkManager : public NetworkManagerBase,
-                                       public MessageHandler,
+                                       public MessageHandlerAutoCleanup,
                                        public sigslot::has_slots<> {
  public:
   BasicNetworkManager();

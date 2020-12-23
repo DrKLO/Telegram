@@ -9,9 +9,12 @@
 package org.telegram.ui;
 
 import android.Manifest;
+import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
 import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
 import android.animation.StateListAnimator;
+import android.animation.ValueAnimator;
 import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.app.Activity;
@@ -43,30 +46,38 @@ import android.view.ViewGroup;
 import android.view.ViewOutlineProvider;
 import android.view.ViewTreeObserver;
 import android.view.animation.AccelerateDecelerateInterpolator;
+import android.view.animation.DecelerateInterpolator;
 import android.view.inputmethod.EditorInfo;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.Toast;
 
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.ChatObject;
+import org.telegram.messenger.ContactsController;
+import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.MessagesStorage;
+import org.telegram.messenger.NotificationCenter;
+import org.telegram.messenger.R;
 import org.telegram.messenger.SecretChatHelper;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
-import org.telegram.tgnet.TLRPC;
-import org.telegram.messenger.ContactsController;
-import org.telegram.messenger.FileLog;
-import org.telegram.messenger.MessagesController;
-import org.telegram.messenger.NotificationCenter;
-import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
+import org.telegram.tgnet.TLRPC;
+import org.telegram.ui.ActionBar.ActionBar;
+import org.telegram.ui.ActionBar.ActionBarMenu;
+import org.telegram.ui.ActionBar.ActionBarMenuItem;
 import org.telegram.ui.ActionBar.AlertDialog;
+import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ActionBar.ThemeDescription;
 import org.telegram.ui.Adapters.ContactsAdapter;
@@ -76,26 +87,22 @@ import org.telegram.ui.Cells.LetterSectionCell;
 import org.telegram.ui.Cells.ProfileSearchCell;
 import org.telegram.ui.Cells.TextCell;
 import org.telegram.ui.Cells.UserCell;
-import org.telegram.ui.ActionBar.ActionBar;
-import org.telegram.ui.ActionBar.ActionBarMenu;
-import org.telegram.ui.ActionBar.ActionBarMenuItem;
-import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.Components.AlertsCreator;
 import org.telegram.ui.Components.CombinedDrawable;
+import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.EditTextBoldCursor;
-import org.telegram.ui.Components.EmptyTextProgressView;
+import org.telegram.ui.Components.FlickerLoadingView;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.RLottieImageView;
 import org.telegram.ui.Components.RecyclerListView;
+import org.telegram.ui.Components.StickerEmptyView;
 
 import java.util.ArrayList;
-
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
 
 public class ContactsActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
 
     private ContactsAdapter listViewAdapter;
-    private EmptyTextProgressView emptyView;
+    private StickerEmptyView emptyView;
     private RecyclerListView listView;
     private LinearLayoutManager layoutManager;
     private SearchAdapter searchListViewAdapter;
@@ -103,7 +110,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
     private ActionBarMenuItem sortItem;
     private boolean sortByName;
 
-    private ImageView floatingButton;
+    private RLottieImageView floatingButton;
     private FrameLayout floatingButtonContainer;
     private AccelerateDecelerateInterpolator floatingInterpolator = new AccelerateDecelerateInterpolator();
     private int prevPosition;
@@ -142,6 +149,8 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
 
     private final static int search_button = 0;
     private final static int sort_button = 1;
+    private AnimatorSet bounceIconAnimator;
+    private int animationIndex = -1;
 
     public interface ContactsActivityDelegate {
         void didSelectContact(TLRPC.User user, String param, ContactsActivity activity);
@@ -197,6 +206,13 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.encryptedChatCreated);
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.closeChats);
         delegate = null;
+        AndroidUtilities.removeAdjustResize(getParentActivity(), classGuid);
+    }
+
+    @Override
+    protected void onTransitionAnimationProgress(boolean isOpen, float progress) {
+        super.onTransitionAnimationProgress(isOpen, progress);
+        fragmentView.invalidate();
     }
 
     @Override
@@ -257,8 +273,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                 listViewAdapter.notifyDataSetChanged();
                 listView.setFastScrollVisible(true);
                 listView.setVerticalScrollBarEnabled(false);
-                listView.setEmptyView(null);
-                emptyView.setText(LocaleController.getString("NoContacts", R.string.NoContacts));
+               // emptyView.setText(LocaleController.getString("NoContacts", R.string.NoContacts));
                 if (floatingButtonContainer != null) {
                     floatingButtonContainer.setVisibility(View.VISIBLE);
                     floatingHidden = true;
@@ -285,12 +300,14 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                         listView.setFastScrollVisible(false);
                         listView.setVerticalScrollBarEnabled(true);
                     }
-                    if (emptyView != null) {
-                        listView.setEmptyView(emptyView);
-                        emptyView.setText(LocaleController.getString("NoResult", R.string.NoResult));
+                    emptyView.showProgress(true, true);
+                    searchListViewAdapter.searchDialogs(text);
+                } else {
+                    if (listView != null) {
+                        listView.setAdapter(listViewAdapter);
+                        listView.setSectionsType(1);
                     }
                 }
-                searchListViewAdapter.searchDialogs(text);
             }
         });
         item.setSearchFieldHint(LocaleController.getString("Search", R.string.Search));
@@ -300,7 +317,15 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
             sortItem.setContentDescription(LocaleController.getString("AccDescrContactSorting", R.string.AccDescrContactSorting));
         }
 
-        searchListViewAdapter = new SearchAdapter(context, ignoreUsers, allowUsernameSearch, false, false, allowBots, allowSelf, true, 0);
+        searchListViewAdapter = new SearchAdapter(context, ignoreUsers, allowUsernameSearch, false, false, allowBots, allowSelf, true, 0) {
+            @Override
+            protected void onSearchProgressChanged() {
+                if (!searchInProgress() && getItemCount() == 0) {
+                    emptyView.showProgress(false, true);
+                }
+                showItemsAnimated();
+            }
+        };
         int inviteViaLink;
         if (chatId != 0) {
             TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(chatId);
@@ -323,10 +348,10 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                 if (listView != null && listView.getAdapter() == this) {
                     int count = super.getItemCount();
                     if (needPhonebook) {
-                        emptyView.setVisibility(count == 2 ? View.VISIBLE : View.GONE);
+                      //  emptyView.setVisibility(count == 2 ? View.VISIBLE : View.GONE);
                         listView.setFastScrollVisible(count != 2);
                     } else {
-                        emptyView.setVisibility(count == 0 ? View.VISIBLE : View.GONE);
+                        //emptyView.setVisibility(count == 0 ? View.VISIBLE : View.GONE);
                         listView.setFastScrollVisible(count != 0);
                     }
                 }
@@ -350,10 +375,16 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
         };
         FrameLayout frameLayout = (FrameLayout) fragmentView;
 
-        emptyView = new EmptyTextProgressView(context);
-        emptyView.setShowAtCenter(true);
-        emptyView.setText(LocaleController.getString("NoContacts", R.string.NoContacts));
-        emptyView.showTextView();
+        FlickerLoadingView flickerLoadingView = new FlickerLoadingView(context);
+        flickerLoadingView.setViewType(FlickerLoadingView.USERS_TYPE);
+        flickerLoadingView.showDate(false);
+
+        emptyView = new StickerEmptyView(context, flickerLoadingView, StickerEmptyView.STICKER_TYPE_SEARCH);
+        emptyView.addView(flickerLoadingView, 0);
+        emptyView.setAnimateLayoutChange(true);
+        emptyView.showProgress(true, false);
+        emptyView.title.setText(LocaleController.getString("NoResult", R.string.NoResult));
+        emptyView.subtitle.setText(LocaleController.getString("SearchEmptyViewFilteredSubtitle2", R.string.SearchEmptyViewFilteredSubtitle2));
         frameLayout.addView(emptyView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
 
         listView = new RecyclerListView(context) {
@@ -372,8 +403,11 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
         listView.setAdapter(listViewAdapter);
         frameLayout.addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
 
+        listView.setEmptyView(emptyView);
+        listView.setAnimateEmptyView(true, 0);
+
         listView.setOnItemClickListener((view, position) -> {
-            if (searching && searchWas) {
+            if (listView.getAdapter() == searchListViewAdapter) {
                 Object object = searchListViewAdapter.getItem(position);
                 if (object instanceof TLRPC.User) {
                     TLRPC.User user = (TLRPC.User) object;
@@ -579,10 +613,10 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
 
         if (!createSecretChat && !returnAsResult) {
             floatingButtonContainer = new FrameLayout(context);
-            frameLayout.addView(floatingButtonContainer, LayoutHelper.createFrame((Build.VERSION.SDK_INT >= 21 ? 56 : 60) + 20, (Build.VERSION.SDK_INT >= 21 ? 56 : 60) + 14, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.BOTTOM, LocaleController.isRTL ? 4 : 0, 0, LocaleController.isRTL ? 0 : 4, 0));
+            frameLayout.addView(floatingButtonContainer, LayoutHelper.createFrame((Build.VERSION.SDK_INT >= 21 ? 56 : 60) + 20, (Build.VERSION.SDK_INT >= 21 ? 56 : 60) + 20, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.BOTTOM, LocaleController.isRTL ? 4 : 0, 0, LocaleController.isRTL ? 0 : 4, 0));
             floatingButtonContainer.setOnClickListener(v -> presentFragment(new NewContactActivity()));
 
-            floatingButton = new ImageView(context);
+            floatingButton = new RLottieImageView(context);
             floatingButton.setScaleType(ImageView.ScaleType.CENTER);
             Drawable drawable = Theme.createSimpleSelectorCircleDrawable(AndroidUtilities.dp(56), Theme.getColor(Theme.key_chats_actionBackground), Theme.getColor(Theme.key_chats_actionPressedBackground));
             if (Build.VERSION.SDK_INT < 21) {
@@ -594,7 +628,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
             }
             floatingButton.setBackgroundDrawable(drawable);
             floatingButton.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_chats_actionIcon), PorterDuff.Mode.MULTIPLY));
-            floatingButton.setImageResource(R.drawable.add_contact_new);
+            floatingButton.setAnimation(R.raw.write_contacts_fab_icon, 52, 52);
             floatingButtonContainer.setContentDescription(LocaleController.getString("CreateNewContact", R.string.CreateNewContact));
             if (Build.VERSION.SDK_INT >= 21) {
                 StateListAnimator animator = new StateListAnimator();
@@ -609,7 +643,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                     }
                 });
             }
-            floatingButtonContainer.addView(floatingButton, LayoutHelper.createFrame((Build.VERSION.SDK_INT >= 21 ? 56 : 60), (Build.VERSION.SDK_INT >= 21 ? 56 : 60), Gravity.LEFT | Gravity.TOP, 10, 0, 10, 0));
+            floatingButtonContainer.addView(floatingButton, LayoutHelper.createFrame((Build.VERSION.SDK_INT >= 21 ? 56 : 60), (Build.VERSION.SDK_INT >= 21 ? 56 : 60), Gravity.LEFT | Gravity.TOP, 10, 6, 10, 0));
         }
 
         if (initialSearchString != null) {
@@ -739,6 +773,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
     @Override
     public void onResume() {
         super.onResume();
+        AndroidUtilities.requestAdjustResize(getParentActivity(), classGuid);
         if (listViewAdapter != null) {
             listViewAdapter.notifyDataSetChanged();
         }
@@ -917,6 +952,240 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
         this.initialSearchString = initialSearchString;
     }
 
+    private void showItemsAnimated() {
+        int from = layoutManager == null ? 0 : layoutManager.findLastVisibleItemPosition();
+        listView.invalidate();
+        listView.getViewTreeObserver().addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
+            @Override
+            public boolean onPreDraw() {
+                listView.getViewTreeObserver().removeOnPreDrawListener(this);
+                int n = listView.getChildCount();
+                AnimatorSet animatorSet = new AnimatorSet();
+                for (int i = 0; i < n; i++) {
+                    View child = listView.getChildAt(i);
+                    if (listView.getChildAdapterPosition(child) <= from) {
+                        continue;
+                    }
+                    child.setAlpha(0);
+                    int s = Math.min(listView.getMeasuredHeight(), Math.max(0, child.getTop()));
+                    int delay = (int) ((s / (float) listView.getMeasuredHeight()) * 100);
+                    ObjectAnimator a = ObjectAnimator.ofFloat(child, View.ALPHA, 0, 1f);
+                    a.setStartDelay(delay);
+                    a.setDuration(200);
+                    animatorSet.playTogether(a);
+                }
+                animatorSet.start();
+                return true;
+            }
+        });
+    }
+
+    @Override
+    protected AnimatorSet onCustomTransitionAnimation(boolean isOpen, Runnable callback) {
+        ValueAnimator valueAnimator = isOpen ? ValueAnimator.ofFloat(1f, 0) : ValueAnimator.ofFloat(0, 1f);
+        ViewGroup parent = (ViewGroup) fragmentView.getParent();
+        BaseFragment previousFragment = parentLayout.fragmentsStack.size() > 1 ? parentLayout.fragmentsStack.get(parentLayout.fragmentsStack.size() - 2) : null;
+        DialogsActivity dialogsActivity = null;
+        if (previousFragment instanceof DialogsActivity) {
+            dialogsActivity = (DialogsActivity) previousFragment;
+        }
+        if (dialogsActivity == null) {
+            return null;
+        }
+        RLottieImageView previousFab = dialogsActivity.getFloatingButton();
+        if (previousFab == null || floatingButtonContainer == null || previousFab.getVisibility() != View.VISIBLE || Math.abs(previousFab.getTranslationY()) > AndroidUtilities.dp(4) || Math.abs(floatingButtonContainer.getTranslationY()) > AndroidUtilities.dp(4)) {
+            return null;
+        }
+        previousFab.setVisibility(View.GONE);
+        if (isOpen) {
+            parent.setAlpha(0f);
+        }
+        valueAnimator.addUpdateListener(valueAnimator1 -> {
+            float v = (float) valueAnimator.getAnimatedValue();
+            parent.setTranslationX(AndroidUtilities.dp(48) * v);
+            parent.setAlpha(1f - v);
+        });
+        if (floatingButtonContainer != null) {
+            ((ViewGroup) fragmentView).removeView(floatingButtonContainer);
+            ((FrameLayout) parent.getParent()).addView(floatingButtonContainer);
+        }
+        valueAnimator.setDuration(150);
+        valueAnimator.setInterpolator(new DecelerateInterpolator(1.5f));
+
+        final int currentAccount = this.currentAccount;
+
+        AnimatorSet animatorSet = new AnimatorSet();
+        animatorSet.addListener(new AnimatorListenerAdapter() {
+            @Override
+            public void onAnimationEnd(Animator animation) {
+                if (floatingButtonContainer != null) {
+                    ViewGroup viewParent;
+                    if (floatingButtonContainer.getParent() instanceof ViewGroup) {
+                        viewParent = (ViewGroup) floatingButtonContainer.getParent();
+                        viewParent.removeView(floatingButtonContainer);
+                    }
+                    ((ViewGroup) fragmentView).addView(floatingButtonContainer);
+
+                    previousFab.setVisibility(View.VISIBLE);
+                    if (!isOpen) {
+                        previousFab.setAnimation(R.raw.write_contacts_fab_icon_reverse, 52, 52);
+                        previousFab.getAnimatedDrawable().setCurrentFrame(floatingButton.getAnimatedDrawable().getCurrentFrame());
+                        previousFab.playAnimation();
+                    }
+                }
+                callback.run();
+            }
+        });
+        animatorSet.playTogether(valueAnimator);
+        AndroidUtilities.runOnUIThread(() -> {
+            animationIndex = NotificationCenter.getInstance(currentAccount).setAnimationInProgress(animationIndex, null);
+            animatorSet.start();
+            if (isOpen) {
+                floatingButton.setAnimation(R.raw.write_contacts_fab_icon, 52, 52);
+                floatingButton.playAnimation();
+            } else {
+                floatingButton.setAnimation(R.raw.write_contacts_fab_icon_reverse, 52, 52);
+                floatingButton.playAnimation();
+            }
+            if (bounceIconAnimator != null) {
+                bounceIconAnimator.cancel();
+            }
+            bounceIconAnimator = new AnimatorSet();
+            float totalDuration = floatingButton.getAnimatedDrawable().getDuration();
+            long delay = 0;
+            if (isOpen) {
+                for (int i = 0; i < 6; i++) {
+                    AnimatorSet set = new AnimatorSet();
+                    if (i == 0) {
+                        set.playTogether(
+                                ObjectAnimator.ofFloat(floatingButton, View.SCALE_X, 1f, 0.9f),
+                                ObjectAnimator.ofFloat(floatingButton, View.SCALE_Y, 1f, 0.9f),
+                                ObjectAnimator.ofFloat(previousFab, View.SCALE_X, 1f, 0.9f),
+                                ObjectAnimator.ofFloat(previousFab, View.SCALE_Y, 1f, 0.9f)
+                        );
+                        set.setDuration((long) (6f / 47f * totalDuration));
+                        set.setInterpolator(CubicBezierInterpolator.EASE_OUT);
+                    } else if (i == 1) {
+                        set.playTogether(
+                                ObjectAnimator.ofFloat(floatingButton, View.SCALE_X, 0.9f, 1.06f),
+                                ObjectAnimator.ofFloat(floatingButton, View.SCALE_Y, 0.9f, 1.06f),
+                                ObjectAnimator.ofFloat(previousFab, View.SCALE_X, 0.9f, 1.06f),
+                                ObjectAnimator.ofFloat(previousFab, View.SCALE_Y, 0.9f, 1.06f)
+                        );
+                        set.setDuration((long) (17f / 47f * totalDuration));
+                        set.setInterpolator(CubicBezierInterpolator.EASE_BOTH);
+                    } else if (i == 2) {
+                        set.playTogether(
+                                ObjectAnimator.ofFloat(floatingButton, View.SCALE_X, 1.06f, 0.9f),
+                                ObjectAnimator.ofFloat(floatingButton, View.SCALE_Y, 1.06f, 0.9f),
+                                ObjectAnimator.ofFloat(previousFab, View.SCALE_X, 1.06f, 0.9f),
+                                ObjectAnimator.ofFloat(previousFab, View.SCALE_Y, 1.06f, 0.9f)
+                        );
+                        set.setDuration((long) (10f / 47f * totalDuration));
+                        set.setInterpolator(CubicBezierInterpolator.EASE_BOTH);
+                    } else if (i == 3) {
+                        set.playTogether(
+                                ObjectAnimator.ofFloat(floatingButton, View.SCALE_X, 0.9f, 1.03f),
+                                ObjectAnimator.ofFloat(floatingButton, View.SCALE_Y, 0.9f, 1.03f),
+                                ObjectAnimator.ofFloat(previousFab, View.SCALE_X, 0.9f, 1.03f),
+                                ObjectAnimator.ofFloat(previousFab, View.SCALE_Y, 0.9f, 1.03f)
+                        );
+                        set.setDuration((long) (5f / 47f * totalDuration));
+                        set.setInterpolator(CubicBezierInterpolator.EASE_BOTH);
+                    } else if (i == 4) {
+                        set.playTogether(
+                                ObjectAnimator.ofFloat(floatingButton, View.SCALE_X, 1.03f, 0.98f),
+                                ObjectAnimator.ofFloat(floatingButton, View.SCALE_Y, 1.03f, 0.98f),
+                                ObjectAnimator.ofFloat(previousFab, View.SCALE_X, 1.03f, 0.98f),
+                                ObjectAnimator.ofFloat(previousFab, View.SCALE_Y, 1.03f, 0.98f)
+                        );
+                        set.setDuration((long) (5f / 47f * totalDuration));
+                        set.setInterpolator(CubicBezierInterpolator.EASE_BOTH);
+                    } else {
+                        set.playTogether(
+                                ObjectAnimator.ofFloat(floatingButton, View.SCALE_X, 0.98f, 1f),
+                                ObjectAnimator.ofFloat(floatingButton, View.SCALE_Y, 0.98f, 1f),
+                                ObjectAnimator.ofFloat(previousFab, View.SCALE_X, 0.98f, 1f),
+                                ObjectAnimator.ofFloat(previousFab, View.SCALE_Y, 0.98f, 1f)
+                        );
+
+                        set.setDuration((long) (4f / 47f * totalDuration));
+                        set.setInterpolator(CubicBezierInterpolator.EASE_IN);
+                    }
+                    set.setStartDelay(delay);
+                    delay += set.getDuration();
+                    bounceIconAnimator.playTogether(set);
+                }
+            } else {
+                for (int i = 0; i < 5; i++) {
+                    AnimatorSet set = new AnimatorSet();
+                    if (i == 0) {
+                        set.playTogether(
+                                ObjectAnimator.ofFloat(floatingButton, View.SCALE_X, 1f, 0.9f),
+                                ObjectAnimator.ofFloat(floatingButton, View.SCALE_Y, 1f, 0.9f),
+                                ObjectAnimator.ofFloat(previousFab, View.SCALE_X, 1f, 0.9f),
+                                ObjectAnimator.ofFloat(previousFab, View.SCALE_Y, 1f, 0.9f)
+                        );
+                        set.setDuration((long) (7f / 36f * totalDuration));
+                        set.setInterpolator(CubicBezierInterpolator.EASE_OUT);
+                    } else if (i == 1) {
+                        set.playTogether(
+                                ObjectAnimator.ofFloat(floatingButton, View.SCALE_X, 0.9f, 1.06f),
+                                ObjectAnimator.ofFloat(floatingButton, View.SCALE_Y, 0.9f, 1.06f),
+                                ObjectAnimator.ofFloat(previousFab, View.SCALE_X, 0.9f, 1.06f),
+                                ObjectAnimator.ofFloat(previousFab, View.SCALE_Y, 0.9f, 1.06f)
+                        );
+                        set.setDuration((long) (8f / 36f * totalDuration));
+                        set.setInterpolator(CubicBezierInterpolator.EASE_BOTH);
+                    } else if (i == 2) {
+                        set.playTogether(
+                                ObjectAnimator.ofFloat(floatingButton, View.SCALE_X, 1.06f, 0.92f),
+                                ObjectAnimator.ofFloat(floatingButton, View.SCALE_Y, 1.06f, 0.92f),
+                                ObjectAnimator.ofFloat(previousFab, View.SCALE_X, 1.06f, 0.92f),
+                                ObjectAnimator.ofFloat(previousFab, View.SCALE_Y, 1.06f, 0.92f)
+                        );
+                        set.setDuration((long) (7f / 36f * totalDuration));
+                        set.setInterpolator(CubicBezierInterpolator.EASE_BOTH);
+                    } else if (i == 3) {
+                        set.playTogether(
+                                ObjectAnimator.ofFloat(floatingButton, View.SCALE_X, 0.92f, 1.02f),
+                                ObjectAnimator.ofFloat(floatingButton, View.SCALE_Y, 0.92f, 1.02f),
+                                ObjectAnimator.ofFloat(previousFab, View.SCALE_X, 0.92f, 1.02f),
+                                ObjectAnimator.ofFloat(previousFab, View.SCALE_Y, 0.92f, 1.02f)
+                        );
+                        set.setDuration((long) (9f / 36f * totalDuration));
+                        set.setInterpolator(CubicBezierInterpolator.EASE_BOTH);
+                    } else {
+                        set.playTogether(
+                                ObjectAnimator.ofFloat(floatingButton, View.SCALE_X, 1.02f, 1f),
+                                ObjectAnimator.ofFloat(floatingButton, View.SCALE_Y, 1.02f, 1f),
+                                ObjectAnimator.ofFloat(previousFab, View.SCALE_X, 1.02f, 1f),
+                                ObjectAnimator.ofFloat(previousFab, View.SCALE_Y, 1.02f, 1f)
+                        );
+                        set.setDuration((long) (5f / 47f * totalDuration));
+                        set.setInterpolator(CubicBezierInterpolator.EASE_IN);
+                    }
+                    set.setStartDelay(delay);
+                    delay += set.getDuration();
+                    bounceIconAnimator.playTogether(set);
+                }
+            }
+            bounceIconAnimator.addListener(new AnimatorListenerAdapter() {
+                @Override
+                public void onAnimationEnd(Animator animation) {
+                    floatingButton.setScaleX(1f);
+                    floatingButton.setScaleY(1f);
+                    previousFab.setScaleX(1f);
+                    previousFab.setScaleY(1f);
+                    bounceIconAnimator = null;
+                    NotificationCenter.getInstance(currentAccount).onAnimationFinish(animationIndex);
+                }
+            });
+            bounceIconAnimator.start();
+        }, 50);
+        return animatorSet;
+    }
+
     @Override
     public ArrayList<ThemeDescription> getThemeDescriptions() {
         ArrayList<ThemeDescription> themeDescriptions = new ArrayList<>();
@@ -950,8 +1219,6 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
         themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_SECTIONS, new Class[]{LetterSectionCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteGrayText4));
 
         themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{View.class}, Theme.dividerPaint, null, null, Theme.key_divider));
-
-        themeDescriptions.add(new ThemeDescription(emptyView, ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_emptyListPlaceholder));
 
         themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_FASTSCROLL, null, null, null, null, Theme.key_fastScrollActive));
         themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_FASTSCROLL, null, null, null, null, Theme.key_fastScrollInactive));

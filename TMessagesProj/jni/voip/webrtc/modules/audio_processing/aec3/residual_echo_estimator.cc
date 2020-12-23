@@ -23,57 +23,23 @@
 namespace webrtc {
 namespace {
 
-bool UseLowEarlyReflectionsTransparentModeGain() {
-  return field_trial::IsEnabled(
-      "WebRTC-Aec3UseLowEarlyReflectionsTransparentModeGain");
-}
-
-bool UseLowLateReflectionsTransparentModeGain() {
-  return field_trial::IsEnabled(
-      "WebRTC-Aec3UseLowLateReflectionsTransparentModeGain");
-}
-
-bool UseLowEarlyReflectionsDefaultGain() {
-  return field_trial::IsEnabled("WebRTC-Aec3UseLowEarlyReflectionsDefaultGain");
-}
-
-bool UseLowLateReflectionsDefaultGain() {
-  return field_trial::IsEnabled("WebRTC-Aec3UseLowLateReflectionsDefaultGain");
-}
-
-bool ModelReverbInNonlinearMode() {
-  return !field_trial::IsEnabled("WebRTC-Aec3rNonlinearModeReverbKillSwitch");
-}
-
 constexpr float kDefaultTransparentModeGain = 0.01f;
 
-float GetEarlyReflectionsTransparentModeGain() {
-  if (UseLowEarlyReflectionsTransparentModeGain()) {
-    return 0.001f;
-  }
-  return kDefaultTransparentModeGain;
-}
-
-float GetLateReflectionsTransparentModeGain() {
-  if (UseLowLateReflectionsTransparentModeGain()) {
-    return 0.001f;
-  }
-
+float GetTransparentModeGain() {
   return kDefaultTransparentModeGain;
 }
 
 float GetEarlyReflectionsDefaultModeGain(
     const EchoCanceller3Config::EpStrength& config) {
-  if (UseLowEarlyReflectionsDefaultGain()) {
+  if (field_trial::IsEnabled("WebRTC-Aec3UseLowEarlyReflectionsDefaultGain")) {
     return 0.1f;
   }
-
   return config.default_gain;
 }
 
 float GetLateReflectionsDefaultModeGain(
     const EchoCanceller3Config::EpStrength& config) {
-  if (UseLowLateReflectionsDefaultGain()) {
+  if (field_trial::IsEnabled("WebRTC-Aec3UseLowLateReflectionsDefaultGain")) {
     return 0.1f;
   }
   return config.default_gain;
@@ -201,15 +167,12 @@ ResidualEchoEstimator::ResidualEchoEstimator(const EchoCanceller3Config& config,
                                              size_t num_render_channels)
     : config_(config),
       num_render_channels_(num_render_channels),
-      early_reflections_transparent_mode_gain_(
-          GetEarlyReflectionsTransparentModeGain()),
-      late_reflections_transparent_mode_gain_(
-          GetLateReflectionsTransparentModeGain()),
+      early_reflections_transparent_mode_gain_(GetTransparentModeGain()),
+      late_reflections_transparent_mode_gain_(GetTransparentModeGain()),
       early_reflections_general_gain_(
           GetEarlyReflectionsDefaultModeGain(config_.ep_strength)),
       late_reflections_general_gain_(
-          GetLateReflectionsDefaultModeGain(config_.ep_strength)),
-      model_reverb_in_nonlinear_mode_(ModelReverbInNonlinearMode()) {
+          GetLateReflectionsDefaultModeGain(config_.ep_strength)) {
   Reset();
 }
 
@@ -277,7 +240,8 @@ void ResidualEchoEstimator::Estimate(
       NonLinearEstimate(echo_path_gain, X2, R2);
     }
 
-    if (model_reverb_in_nonlinear_mode_ && !aec_state.TransparentMode()) {
+    if (config_.echo_model.model_reverb_in_nonlinear_mode &&
+        !aec_state.TransparentModeActive()) {
       AddReverb(ReverbType::kNonLinear, aec_state, render_buffer, R2);
     }
   }
@@ -395,7 +359,7 @@ float ResidualEchoEstimator::GetEchoPathGain(
     const AecState& aec_state,
     bool gain_for_early_reflections) const {
   float gain_amplitude;
-  if (aec_state.TransparentMode()) {
+  if (aec_state.TransparentModeActive()) {
     gain_amplitude = gain_for_early_reflections
                          ? early_reflections_transparent_mode_gain_
                          : late_reflections_transparent_mode_gain_;

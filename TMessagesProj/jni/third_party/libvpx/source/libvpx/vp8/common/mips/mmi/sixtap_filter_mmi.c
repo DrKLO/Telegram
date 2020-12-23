@@ -70,9 +70,8 @@ static INLINE void vp8_filter_block1d_h6_mmi(unsigned char *src_ptr,
                                              unsigned int output_height,
                                              unsigned int output_width,
                                              const int16_t *vp8_filter) {
-  uint32_t tmp[1];
-  DECLARE_ALIGNED(8, const uint64_t, ff_ph_40) = { 0x0040004000400040ULL };
-
+  uint64_t tmp[1];
+  double ff_ph_40;
 #if _MIPS_SIM == _ABIO32
   register double fzero asm("$f0");
   register double ftmp0 asm("$f2");
@@ -103,18 +102,21 @@ static INLINE void vp8_filter_block1d_h6_mmi(unsigned char *src_ptr,
   register double ftmp11 asm("$f12");
 #endif  // _MIPS_SIM == _ABIO32
 
+  /* clang-format off */
   __asm__ volatile (
+    "dli        %[tmp0],        0x0040004000400040                    \n\t"
+    "dmtc1      %[tmp0],        %[ff_ph_40]                           \n\t"
     "ldc1       %[ftmp0],       0x00(%[vp8_filter])                   \n\t"
     "ldc1       %[ftmp1],       0x10(%[vp8_filter])                   \n\t"
     "ldc1       %[ftmp2],       0x20(%[vp8_filter])                   \n\t"
     "ldc1       %[ftmp3],       0x30(%[vp8_filter])                   \n\t"
     "ldc1       %[ftmp4],       0x40(%[vp8_filter])                   \n\t"
     "ldc1       %[ftmp5],       0x50(%[vp8_filter])                   \n\t"
-    "xor        %[fzero],       %[fzero],           %[fzero]          \n\t"
-    "li         %[tmp0],        0x07                                  \n\t"
-    "mtc1       %[tmp0],        %[ftmp7]                              \n\t"
-    "li         %[tmp0],        0x08                                  \n\t"
-    "mtc1       %[tmp0],        %[ftmp11]                             \n\t"
+    "pxor       %[fzero],       %[fzero],           %[fzero]          \n\t"
+    "dli        %[tmp0],        0x07                                  \n\t"
+    "dmtc1      %[tmp0],        %[ftmp7]                              \n\t"
+    "dli        %[tmp0],        0x08                                  \n\t"
+    "dmtc1      %[tmp0],        %[ftmp11]                             \n\t"
 
     "1:                                                               \n\t"
     "gsldlc1    %[ftmp9],       0x05(%[src_ptr])                      \n\t"
@@ -137,12 +139,12 @@ static INLINE void vp8_filter_block1d_h6_mmi(unsigned char *src_ptr,
     "pmullh     %[ftmp6],       %[ftmp6],          %[ftmp5]           \n\t"
     "paddsh     %[ftmp8],       %[ftmp8],          %[ftmp6]           \n\t"
 
-    "dsrl       %[ftmp10],      %[ftmp10],         %[ftmp11]          \n\t"
+    "ssrld      %[ftmp10],      %[ftmp10],         %[ftmp11]          \n\t"
     "punpcklbh  %[ftmp6],       %[ftmp10],         %[fzero]           \n\t"
     "pmullh     %[ftmp6],       %[ftmp6],          %[ftmp2]           \n\t"
     "paddsh     %[ftmp8],       %[ftmp8],          %[ftmp6]           \n\t"
 
-    "dsrl       %[ftmp10],      %[ftmp10],         %[ftmp11]          \n\t"
+    "ssrld      %[ftmp10],      %[ftmp10],         %[ftmp11]          \n\t"
     "punpcklbh  %[ftmp6],       %[ftmp10],         %[fzero]           \n\t"
     "pmullh     %[ftmp6],       %[ftmp6],          %[ftmp3]           \n\t"
     "paddsh     %[ftmp8],       %[ftmp8],          %[ftmp6]           \n\t"
@@ -166,21 +168,22 @@ static INLINE void vp8_filter_block1d_h6_mmi(unsigned char *src_ptr,
       [ftmp9]"=&f"(ftmp9),              [ftmp10]"=&f"(ftmp10),
       [ftmp11]"=&f"(ftmp11),            [tmp0]"=&r"(tmp[0]),
       [output_ptr]"+&r"(output_ptr),    [output_height]"+&r"(output_height),
-      [src_ptr]"+&r"(src_ptr)
+      [src_ptr]"+&r"(src_ptr),          [ff_ph_40]"=&f"(ff_ph_40)
     : [src_pixels_per_line]"r"((mips_reg)src_pixels_per_line),
-      [vp8_filter]"r"(vp8_filter),      [output_width]"r"(output_width),
-      [ff_ph_40]"f"(ff_ph_40)
+      [vp8_filter]"r"(vp8_filter),      [output_width]"r"(output_width)
     : "memory"
     );
+  /* clang-format on */
 }
 
 /* Horizontal filter:  pixel_step is always W */
 static INLINE void vp8_filter_block1dc_v6_mmi(
     uint16_t *src_ptr, unsigned char *output_ptr, unsigned int output_height,
     int output_pitch, unsigned int pixels_per_line, const int16_t *vp8_filter) {
-  DECLARE_ALIGNED(8, const uint64_t, ff_ph_40) = { 0x0040004000400040ULL };
-  uint32_t tmp[1];
+  double ff_ph_40;
+  uint64_t tmp[1];
   mips_reg addr[1];
+
 #if _MIPS_SIM == _ABIO32
   register double fzero asm("$f0");
   register double ftmp0 asm("$f2");
@@ -215,16 +218,19 @@ static INLINE void vp8_filter_block1dc_v6_mmi(
   register double ftmp13 asm("$f14");
 #endif  // _MIPS_SIM == _ABIO32
 
+  /* clang-format off */
   __asm__ volatile (
+    "dli        %[tmp0],      0x0040004000400040                      \n\t"
+    "dmtc1      %[tmp0],      %[ff_ph_40]                             \n\t"
     "ldc1       %[ftmp0],     0x00(%[vp8_filter])                     \n\t"
     "ldc1       %[ftmp1],     0x10(%[vp8_filter])                     \n\t"
     "ldc1       %[ftmp2],     0x20(%[vp8_filter])                     \n\t"
     "ldc1       %[ftmp3],     0x30(%[vp8_filter])                     \n\t"
     "ldc1       %[ftmp4],     0x40(%[vp8_filter])                     \n\t"
     "ldc1       %[ftmp5],     0x50(%[vp8_filter])                     \n\t"
-    "xor        %[fzero],     %[fzero],        %[fzero]               \n\t"
-    "li         %[tmp0],      0x07                                    \n\t"
-    "mtc1       %[tmp0],      %[ftmp13]                               \n\t"
+    "pxor       %[fzero],     %[fzero],        %[fzero]               \n\t"
+    "dli        %[tmp0],      0x07                                    \n\t"
+    "dmtc1      %[tmp0],      %[ftmp13]                               \n\t"
 
     /* In order to make full use of memory load delay slot,
      * Operation of memory loading and calculating has been rearranged.
@@ -285,15 +291,16 @@ static INLINE void vp8_filter_block1dc_v6_mmi(
       [ftmp11]"=&f"(ftmp11),            [ftmp12]"=&f"(ftmp12),
       [ftmp13]"=&f"(ftmp13),            [tmp0]"=&r"(tmp[0]),
       [addr0]"=&r"(addr[0]),            [src_ptr]"+&r"(src_ptr),
-      [output_ptr]"+&r"(output_ptr),    [output_height]"+&r"(output_height)
+      [output_ptr]"+&r"(output_ptr),    [output_height]"+&r"(output_height),
+      [ff_ph_40]"=&f"(ff_ph_40)
     : [pixels_per_line]"r"((mips_reg)pixels_per_line),
       [pixels_per_line_x2]"r"((mips_reg)(pixels_per_line<<1)),
       [pixels_per_line_x4]"r"((mips_reg)(pixels_per_line<<2)),
       [vp8_filter]"r"(vp8_filter),
-      [output_pitch]"r"((mips_reg)output_pitch),
-      [ff_ph_40]"f"(ff_ph_40)
+      [output_pitch]"r"((mips_reg)output_pitch)
     : "memory"
     );
+  /* clang-format on */
 }
 
 /* When xoffset == 0, vp8_filter= {0,0,128,0,0,0},
@@ -313,8 +320,9 @@ static INLINE void vp8_filter_block1d_h6_filter0_mmi(
   register double ftmp1 asm("$f2");
 #endif  // _MIPS_SIM == _ABIO32
 
+  /* clang-format off */
   __asm__ volatile (
-    "xor        %[fzero],       %[fzero],           %[fzero]          \n\t"
+    "pxor       %[fzero],       %[fzero],           %[fzero]          \n\t"
 
     "1:                                                               \n\t"
     "gsldlc1    %[ftmp0],       0x07(%[src_ptr])                      \n\t"
@@ -335,6 +343,7 @@ static INLINE void vp8_filter_block1d_h6_filter0_mmi(
       [output_width]"r"(output_width)
     : "memory"
     );
+  /* clang-format on */
 }
 
 static INLINE void vp8_filter_block1dc_v6_filter0_mmi(
@@ -350,8 +359,9 @@ static INLINE void vp8_filter_block1dc_v6_filter0_mmi(
   register double ftmp1 asm("$f2");
 #endif  // _MIPS_SIM == _ABIO32
 
+  /* clang-format on */
   __asm__ volatile (
-    "xor        %[fzero],     %[fzero],        %[fzero]               \n\t"
+    "pxor       %[fzero],     %[fzero],        %[fzero]               \n\t"
 
     "1:                                                               \n\t"
     "gsldlc1    %[ftmp0],     0x07(%[src_ptr])                        \n\t"
@@ -371,6 +381,7 @@ static INLINE void vp8_filter_block1dc_v6_filter0_mmi(
       [output_pitch]"r"((mips_reg)output_pitch)
     : "memory"
     );
+  /* clang-format on */
 }
 
 #define sixtapNxM(n, m)                                                        \

@@ -32,10 +32,6 @@ import java.util.List;
 
 public class ChatListItemAnimator extends DefaultItemAnimator {
 
-    public static final int ANIMATION_TYPE_OUT = 1;
-    public static final int ANIMATION_TYPE_IN = 2;
-    public static final int ANIMATION_TYPE_MOVE = 3;
-
     private final ChatActivity activity;
     private final RecyclerListView recyclerListView;
 
@@ -598,7 +594,7 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
     }
 
     @Override
-    void animateMoveImpl(RecyclerView.ViewHolder holder, MoveInfo moveInfo) {
+    protected void animateMoveImpl(RecyclerView.ViewHolder holder, MoveInfo moveInfo) {
         if (BuildVars.LOGS_ENABLED) {
             FileLog.d("animate move impl");
         }

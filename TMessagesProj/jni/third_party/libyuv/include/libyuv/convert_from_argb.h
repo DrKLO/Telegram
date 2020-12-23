@@ -77,6 +77,10 @@ int ARGBToAR30(const uint8_t* src_argb,
                int width,
                int height);
 
+// Aliases
+#define ABGRToRGB24 ARGBToRAW
+#define ABGRToRAW ARGBToRGB24
+
 // Convert ARGB To RGB24.
 LIBYUV_API
 int ARGBToRGB24(const uint8_t* src_argb,
@@ -274,17 +278,6 @@ int ABGRToNV12(const uint8_t* src_abgr,
 LIBYUV_API
 int ABGRToNV21(const uint8_t* src_abgr,
                int src_stride_abgr,
-               uint8_t* dst_y,
-               int dst_stride_y,
-               uint8_t* dst_vu,
-               int dst_stride_vu,
-               int width,
-               int height);
-
-// Convert ARGB To NV21.
-LIBYUV_API
-int ARGBToNV21(const uint8_t* src_argb,
-               int src_stride_argb,
                uint8_t* dst_y,
                int dst_stride_y,
                uint8_t* dst_vu,

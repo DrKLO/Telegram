@@ -14,7 +14,7 @@
 SECTION .text
 
 ;int vp8_block_error_sse2(short *coeff_ptr,  short *dcoef_ptr)
-global sym(vp8_block_error_sse2) PRIVATE
+globalsym(vp8_block_error_sse2)
 sym(vp8_block_error_sse2):
     push        rbp
     mov         rbp, rsp
@@ -62,7 +62,7 @@ sym(vp8_block_error_sse2):
     ret
 
 ;int vp8_mbblock_error_sse2_impl(short *coeff_ptr, short *dcoef_ptr, int dc);
-global sym(vp8_mbblock_error_sse2_impl) PRIVATE
+globalsym(vp8_mbblock_error_sse2_impl)
 sym(vp8_mbblock_error_sse2_impl):
     push        rbp
     mov         rbp, rsp
@@ -132,7 +132,7 @@ sym(vp8_mbblock_error_sse2_impl):
 
 
 ;int vp8_mbuverror_sse2_impl(short *s_ptr, short *d_ptr);
-global sym(vp8_mbuverror_sse2_impl) PRIVATE
+globalsym(vp8_mbuverror_sse2_impl)
 sym(vp8_mbuverror_sse2_impl):
     push        rbp
     mov         rbp, rsp

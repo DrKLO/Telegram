@@ -395,7 +395,7 @@ target_compile_definitions(sqlite PUBLIC
 #voip
 include(${CMAKE_HOME_DIRECTORY}/voip/CMakeLists.txt)
 
-set(NATIVE_LIB "tmessages.34")
+set(NATIVE_LIB "tmessages.35")
 
 #tmessages
 add_library(${NATIVE_LIB} SHARED
@@ -642,7 +642,8 @@ target_sources(${NATIVE_LIB} PRIVATE
         third_party/libyuv/source/scale_neon64.cc
         third_party/libyuv/source/scale_win.cc
         third_party/libyuv/source/scale.cc
-        third_party/libyuv/source/video_common.cc)
+        third_party/libyuv/source/video_common.cc
+        third_party/libyuv/source/scale_uv.cc)
 
 target_include_directories(${NATIVE_LIB} PUBLIC
         opus/include

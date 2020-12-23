@@ -55,6 +55,7 @@ public:
         bool enableTCP,
         bool enableStunMarking,
 		std::vector<RtcServer> const &rtcServers,
+        std::unique_ptr<Proxy> proxy,
 		std::function<void(const State &)> stateUpdated,
 		std::function<void(DecryptedMessage &&)> transportMessageReceived,
 		std::function<void(Message &&)> sendSignalingMessage,
@@ -85,6 +86,7 @@ private:
     bool _enableTCP = false;
     bool _enableStunMarking = false;
     std::vector<RtcServer> _rtcServers;
+    std::unique_ptr<Proxy> _proxy;
 	EncryptedConnection _transport;
 	bool _isOutgoing = false;
 	std::function<void(const NetworkManager::State &)> _stateUpdated;

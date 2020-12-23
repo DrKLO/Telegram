@@ -8,20 +8,23 @@
 
 package org.telegram.ui;
 
-import android.animation.AnimatorSet;
 import android.app.Dialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.SharedPreferences;
+import android.os.Build;
+import android.text.TextUtils;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.DownloadController;
+import org.telegram.messenger.ImageLoader;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
@@ -35,6 +38,7 @@ import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ActionBar.ThemeDescription;
 import org.telegram.ui.Cells.HeaderCell;
 import org.telegram.ui.Cells.NotificationsCheckCell;
+import org.telegram.ui.Cells.RadioColorCell;
 import org.telegram.ui.Cells.ShadowSectionCell;
 import org.telegram.ui.Cells.TextCheckCell;
 import org.telegram.ui.Cells.TextInfoPrivacyCell;
@@ -44,6 +48,7 @@ import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.voip.VoIPHelper;
 
+import java.io.File;
 import java.util.ArrayList;
 
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -55,12 +60,14 @@ public class DataSettingsActivity extends BaseFragment {
     private RecyclerListView listView;
     @SuppressWarnings("FieldCanBeLocal")
     private LinearLayoutManager layoutManager;
-    private AnimatorSet animatorSet;
+
+    private ArrayList<File> storageDirs;
 
     private int mediaDownloadSectionRow;
     private int mobileRow;
     private int roamingRow;
     private int wifiRow;
+    private int storageNumRow;
     private int resetDownloadRow;
     private int mediaDownloadSection2Row;
     private int usageSectionRow;
@@ -98,6 +105,13 @@ public class DataSettingsActivity extends BaseFragment {
         usageSectionRow = rowCount++;
         storageUsageRow = rowCount++;
         dataUsageRow = rowCount++;
+        storageNumRow = -1;
+        if (Build.VERSION.SDK_INT >= 19) {
+            storageDirs = AndroidUtilities.getRootDirs();
+            if (storageDirs.size() > 1) {
+                storageNumRow = rowCount++;
+            }
+        }
         usageSection2Row = rowCount++;
         mediaDownloadSectionRow = rowCount++;
         mobileRow = rowCount++;
@@ -323,6 +337,42 @@ public class DataSettingsActivity extends BaseFragment {
                 dlg.show();
             } else if (position == dataUsageRow) {
                 presentFragment(new DataUsageActivity());
+            } else if (position == storageNumRow) {
+                AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+                builder.setTitle(LocaleController.getString("StoragePath", R.string.StoragePath));
+                final LinearLayout linearLayout = new LinearLayout(getParentActivity());
+                linearLayout.setOrientation(LinearLayout.VERTICAL);
+                builder.setView(linearLayout);
+
+                String dir = storageDirs.get(0).getAbsolutePath();
+                if (!TextUtils.isEmpty(SharedConfig.storageCacheDir)) {
+                    for (int a = 0, N = storageDirs.size(); a < N; a++) {
+                        String path = storageDirs.get(a).getAbsolutePath();
+                        if (path.startsWith(SharedConfig.storageCacheDir)) {
+                            dir = path;
+                            break;
+                        }
+                    }
+                }
+
+                for (int a = 0, N = storageDirs.size(); a < N; a++) {
+                    String storageDir = storageDirs.get(a).getAbsolutePath();
+                    RadioColorCell cell = new RadioColorCell(context);
+                    cell.setPadding(AndroidUtilities.dp(4), 0, AndroidUtilities.dp(4), 0);
+                    cell.setTag(a);
+                    cell.setCheckColor(Theme.getColor(Theme.key_radioBackground), Theme.getColor(Theme.key_dialogRadioBackgroundChecked));
+                    cell.setTextAndValue(storageDir, storageDir.startsWith(dir));
+                    linearLayout.addView(cell);
+                    cell.setOnClickListener(v -> {
+                        SharedConfig.storageCacheDir = storageDir;
+                        SharedConfig.saveConfig();
+                        ImageLoader.getInstance().checkMediaPaths();
+                        builder.getDismissRunnable().run();
+                        listAdapter.notifyItemChanged(storageNumRow);
+                    });
+                }
+                builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+                showDialog(builder.create());
             } else if (position == proxyRow) {
                 presentFragment(new ProxyListActivity());
             } else if (position == enableStreamRow) {
@@ -436,7 +486,19 @@ public class DataSettingsActivity extends BaseFragment {
                         }
                         textCell.setTextAndValue(LocaleController.getString("VoipUseLessData", R.string.VoipUseLessData), value, true);
                     } else if (position == dataUsageRow) {
-                        textCell.setText(LocaleController.getString("NetworkUsage", R.string.NetworkUsage), false);
+                        textCell.setText(LocaleController.getString("NetworkUsage", R.string.NetworkUsage), storageNumRow != -1);
+                    } else if (position == storageNumRow) {
+                        String dir = storageDirs.get(0).getAbsolutePath();
+                        if (!TextUtils.isEmpty(SharedConfig.storageCacheDir)) {
+                            for (int a = 0, N = storageDirs.size(); a < N; a++) {
+                                String path = storageDirs.get(a).getAbsolutePath();
+                                if (path.startsWith(SharedConfig.storageCacheDir)) {
+                                    dir = path;
+                                    break;
+                                }
+                            }
+                        }
+                        textCell.setTextAndValue(LocaleController.getString("StoragePath", R.string.StoragePath), dir, false);
                     } else if (position == proxyRow) {
                         textCell.setText(LocaleController.getString("ProxySettings", R.string.ProxySettings), false);
                     } else if (position == resetDownloadRow) {
@@ -587,7 +649,8 @@ public class DataSettingsActivity extends BaseFragment {
                         !controller.highPreset.equals(controller.getCurrentWiFiPreset()) || controller.highPreset.isEnabled() != controller.wifiPreset.enabled;
             }
             return position == mobileRow || position == roamingRow || position == wifiRow || position == storageUsageRow || position == useLessDataForCallsRow || position == dataUsageRow || position == proxyRow || position == clearDraftsRow ||
-                    position == enableCacheStreamRow || position == enableStreamRow || position == enableAllStreamRow || position == enableMkvRow || position == quickRepliesRow || position == autoplayVideoRow || position == autoplayGifsRow;
+                    position == enableCacheStreamRow || position == enableStreamRow || position == enableAllStreamRow || position == enableMkvRow || position == quickRepliesRow || position == autoplayVideoRow || position == autoplayGifsRow ||
+                    position == storageNumRow;
         }
 
         @Override
@@ -619,6 +682,7 @@ public class DataSettingsActivity extends BaseFragment {
                     view.setBackgroundDrawable(Theme.getThemedDrawable(mContext, R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow));
                     break;
                 case 5:
+                default:
                     view = new NotificationsCheckCell(mContext);
                     view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
                     break;

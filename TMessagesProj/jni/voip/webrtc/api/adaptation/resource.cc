@@ -10,6 +10,8 @@
 
 #include "api/adaptation/resource.h"
 
+#include "rtc_base/checks.h"
+
 namespace webrtc {
 
 const char* ResourceUsageStateToString(ResourceUsageState usage_state) {
@@ -19,6 +21,7 @@ const char* ResourceUsageStateToString(ResourceUsageState usage_state) {
     case ResourceUsageState::kUnderuse:
       return "kUnderuse";
   }
+  RTC_CHECK_NOTREACHED();
 }
 
 ResourceListener::~ResourceListener() {}

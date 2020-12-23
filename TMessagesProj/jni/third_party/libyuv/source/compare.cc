@@ -149,14 +149,14 @@ uint64_t ComputeHammingDistance(const uint8_t* src_a,
     HammingDistance = HammingDistance_AVX2;
   }
 #endif
-#if defined(HAS_HAMMINGDISTANCE_MSA)
-  if (TestCpuFlag(kCpuHasMSA)) {
-    HammingDistance = HammingDistance_MSA;
-  }
-#endif
 #if defined(HAS_HAMMINGDISTANCE_MMI)
   if (TestCpuFlag(kCpuHasMMI)) {
     HammingDistance = HammingDistance_MMI;
+  }
+#endif
+#if defined(HAS_HAMMINGDISTANCE_MSA)
+  if (TestCpuFlag(kCpuHasMSA)) {
+    HammingDistance = HammingDistance_MSA;
   }
 #endif
 
@@ -211,14 +211,14 @@ uint64_t ComputeSumSquareError(const uint8_t* src_a,
     SumSquareError = SumSquareError_AVX2;
   }
 #endif
-#if defined(HAS_SUMSQUAREERROR_MSA)
-  if (TestCpuFlag(kCpuHasMSA)) {
-    SumSquareError = SumSquareError_MSA;
-  }
-#endif
 #if defined(HAS_SUMSQUAREERROR_MMI)
   if (TestCpuFlag(kCpuHasMMI)) {
     SumSquareError = SumSquareError_MMI;
+  }
+#endif
+#if defined(HAS_SUMSQUAREERROR_MSA)
+  if (TestCpuFlag(kCpuHasMSA)) {
+    SumSquareError = SumSquareError_MSA;
   }
 #endif
 #ifdef _OPENMP

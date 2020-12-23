@@ -186,6 +186,16 @@ class RTC_EXPORT VideoFrame {
     color_space_ = color_space;
   }
 
+  // max_composition_delay_in_frames() is used in an experiment of a low-latency
+  // renderer algorithm see crbug.com/1138888.
+  absl::optional<int32_t> max_composition_delay_in_frames() const {
+    return max_composition_delay_in_frames_;
+  }
+  void set_max_composition_delay_in_frames(
+      absl::optional<int32_t> max_composition_delay_in_frames) {
+    max_composition_delay_in_frames_ = max_composition_delay_in_frames;
+  }
+
   // Get render time in milliseconds.
   // TODO(nisse): Deprecated. Migrate all users to timestamp_us().
   int64_t render_time_ms() const;
@@ -255,6 +265,7 @@ class RTC_EXPORT VideoFrame {
   int64_t timestamp_us_;
   VideoRotation rotation_;
   absl::optional<ColorSpace> color_space_;
+  absl::optional<int32_t> max_composition_delay_in_frames_;
   // Updated since the last frame area. If present it means that the bounding
   // box of all the changes is within the rectangular area and is close to it.
   // If absent, it means that there's no information about the change at all and

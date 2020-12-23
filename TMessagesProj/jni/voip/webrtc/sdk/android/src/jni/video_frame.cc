@@ -152,14 +152,14 @@ const ScopedJavaGlobalRef<jobject>& AndroidVideoBuffer::video_frame_buffer()
   return j_video_frame_buffer_;
 }
 
-rtc::scoped_refptr<AndroidVideoBuffer> AndroidVideoBuffer::CropAndScale(
-    JNIEnv* jni,
+rtc::scoped_refptr<VideoFrameBuffer> AndroidVideoBuffer::CropAndScale(
     int crop_x,
     int crop_y,
     int crop_width,
     int crop_height,
     int scale_width,
     int scale_height) {
+  JNIEnv* jni = AttachCurrentThreadIfNeeded();
   return Adopt(jni, Java_Buffer_cropAndScale(jni, j_video_frame_buffer_, crop_x,
                                              crop_y, crop_width, crop_height,
                                              scale_width, scale_height));

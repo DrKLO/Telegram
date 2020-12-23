@@ -31,6 +31,7 @@ DtlsTransportState TranslateState(cricket::DtlsTransportState internal_state) {
     case cricket::DTLS_TRANSPORT_FAILED:
       return DtlsTransportState::kFailed;
   }
+  RTC_CHECK_NOTREACHED();
 }
 
 }  // namespace

@@ -349,4 +349,22 @@ void VideoAdapter::OnSinkWants(const rtc::VideoSinkWants& sink_wants) {
       source_resolution_alignment_, sink_wants.resolution_alignment);
 }
 
+int VideoAdapter::GetTargetPixels() const {
+  webrtc::MutexLock lock(&mutex_);
+  return resolution_request_target_pixel_count_;
+}
+
+float VideoAdapter::GetMaxFramerate() const {
+  webrtc::MutexLock lock(&mutex_);
+  // Minimum of |max_fps_| and |max_framerate_request_| is used to throttle
+  // frame-rate.
+  int framerate = std::min(max_framerate_request_,
+                           max_fps_.value_or(max_framerate_request_));
+  if (framerate == std::numeric_limits<int>::max()) {
+    return std::numeric_limits<float>::infinity();
+  } else {
+    return max_framerate_request_;
+  }
+}
+
 }  // namespace cricket

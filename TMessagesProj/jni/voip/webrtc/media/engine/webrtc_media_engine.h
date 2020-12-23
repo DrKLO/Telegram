@@ -15,12 +15,14 @@
 #include <string>
 #include <vector>
 
+#include "api/audio/audio_frame_processor.h"
 #include "api/audio/audio_mixer.h"
 #include "api/audio_codecs/audio_decoder_factory.h"
 #include "api/audio_codecs/audio_encoder_factory.h"
 #include "api/rtp_parameters.h"
 #include "api/task_queue/task_queue_factory.h"
 #include "api/transport/bitrate_settings.h"
+#include "api/transport/webrtc_key_value_config.h"
 #include "api/video_codecs/video_decoder_factory.h"
 #include "api/video_codecs/video_encoder_factory.h"
 #include "media/base/codec.h"
@@ -45,9 +47,14 @@ struct MediaEngineDependencies {
   rtc::scoped_refptr<webrtc::AudioDecoderFactory> audio_decoder_factory;
   rtc::scoped_refptr<webrtc::AudioMixer> audio_mixer;
   rtc::scoped_refptr<webrtc::AudioProcessing> audio_processing;
+  webrtc::AudioFrameProcessor* audio_frame_processor = nullptr;
 
   std::unique_ptr<webrtc::VideoEncoderFactory> video_encoder_factory;
   std::unique_ptr<webrtc::VideoDecoderFactory> video_decoder_factory;
+
+  std::function<void(uint32_t)> onUnknownAudioSsrc = nullptr;
+
+  const webrtc::WebRtcKeyValueConfig* trials = nullptr;
 };
 
 // CreateMediaEngine may be called on any thread, though the engine is
@@ -66,7 +73,8 @@ bool ValidateRtpExtensions(const std::vector<webrtc::RtpExtension>& extensions);
 std::vector<webrtc::RtpExtension> FilterRtpExtensions(
     const std::vector<webrtc::RtpExtension>& extensions,
     bool (*supported)(absl::string_view),
-    bool filter_redundant_extensions);
+    bool filter_redundant_extensions,
+    const webrtc::WebRtcKeyValueConfig& trials);
 
 webrtc::BitrateConstraints GetBitrateConfigForCodec(const Codec& codec);
 

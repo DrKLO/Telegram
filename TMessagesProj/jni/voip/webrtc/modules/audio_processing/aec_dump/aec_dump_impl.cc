@@ -203,6 +203,12 @@ void AecDumpImpl::WriteRuntimeSetting(
       setting->set_capture_fixed_post_gain(x);
       break;
     }
+    case AudioProcessing::RuntimeSetting::Type::kCaptureOutputUsed: {
+      bool x;
+      runtime_setting.GetBool(&x);
+      setting->set_capture_output_used(x);
+      break;
+    }
     case AudioProcessing::RuntimeSetting::Type::kPlayoutVolumeChange: {
       int x;
       runtime_setting.GetInt(&x);

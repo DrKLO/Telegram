@@ -15,7 +15,6 @@
 
 namespace webrtc {
 
-// Thread-safe retrieval of degradation preferences.
 class DegradationPreferenceProvider {
  public:
   virtual ~DegradationPreferenceProvider();

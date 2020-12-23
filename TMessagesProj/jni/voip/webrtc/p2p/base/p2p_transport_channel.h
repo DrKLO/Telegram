@@ -358,6 +358,9 @@ class RTC_EXPORT P2PTransportChannel : public IceTransportInternal {
     return const_cast<Connection*>(conn);
   }
 
+  int64_t ComputeEstimatedDisconnectedTimeMs(int64_t now,
+                                             Connection* old_connection);
+
   std::string transport_name_ RTC_GUARDED_BY(network_thread_);
   int component_ RTC_GUARDED_BY(network_thread_);
   PortAllocator* allocator_ RTC_GUARDED_BY(network_thread_);
@@ -439,6 +442,10 @@ class RTC_EXPORT P2PTransportChannel : public IceTransportInternal {
 
   // Number of times the selected_connection_ has been modified.
   uint32_t selected_candidate_pair_changes_ = 0;
+
+  // When was last data received on a existing connection,
+  // from connection->last_data_received() that uses rtc::TimeMillis().
+  int64_t last_data_received_ms_ = 0;
 
   IceFieldTrials field_trials_;
 

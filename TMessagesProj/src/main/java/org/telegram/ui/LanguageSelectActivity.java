@@ -414,6 +414,9 @@ public class LanguageSelectActivity extends BaseFragment implements Notification
 
         @Override
         public int getItemViewType(int i) {
+            if (search) {
+                return 0;
+            }
             if (!unofficialLanguages.isEmpty() && (i == unofficialLanguages.size() || i == unofficialLanguages.size() + sortedLanguages.size() + 1) || unofficialLanguages.isEmpty() && i == sortedLanguages.size()) {
                 return 1;
             }

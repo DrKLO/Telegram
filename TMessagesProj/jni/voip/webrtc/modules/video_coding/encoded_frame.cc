@@ -43,7 +43,6 @@ void VCMEncodedFrame::Reset() {
   _frameType = VideoFrameType::kVideoFrameDelta;
   _encodedWidth = 0;
   _encodedHeight = 0;
-  _completeFrame = false;
   _missingFrame = false;
   set_size(0);
   _codecSpecificInfo.codecType = kVideoCodecGeneric;

@@ -25,6 +25,7 @@
 #endif
 #include "modules/video_coding/codecs/vp9/include/vp9_globals.h"
 #include "modules/video_coding/include/video_error_codes.h"
+#include "rtc_base/deprecation.h"
 #include "rtc_base/system/rtc_export.h"
 
 namespace webrtc {
@@ -82,7 +83,7 @@ struct CodecSpecificInfoVP9 {
   uint8_t num_ref_pics;
   uint8_t p_diff[kMaxVp9RefPics];
 
-  bool end_of_picture;
+  RTC_DEPRECATED bool end_of_picture;
 };
 static_assert(std::is_pod<CodecSpecificInfoVP9>::value, "");
 
@@ -123,6 +124,7 @@ struct RTC_EXPORT CodecSpecificInfo {
 
   VideoCodecType codecType;
   CodecSpecificInfoUnion codecSpecific;
+  bool end_of_picture = true;
   absl::optional<GenericFrameInfo> generic_frame_info;
   absl::optional<FrameDependencyStructure> template_structure;
 };

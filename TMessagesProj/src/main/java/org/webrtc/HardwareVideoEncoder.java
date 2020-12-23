@@ -336,6 +336,7 @@ class HardwareVideoEncoder implements VideoEncoder {
 
     final VideoFrame.Buffer videoFrameBuffer = videoFrame.getBuffer();
     final boolean isTextureBuffer = videoFrameBuffer instanceof VideoFrame.TextureBuffer;
+    //TODO back to texture buffer
 
     // If input resolution changed, restart the codec with the new resolution.
     final int frameWidth = videoFrame.getBuffer().getWidth();
@@ -370,7 +371,6 @@ class HardwareVideoEncoder implements VideoEncoder {
     int bufferSize = videoFrameBuffer.getHeight() * videoFrameBuffer.getWidth() * 3 / 2;
     EncodedImage.Builder builder = EncodedImage.builder()
                                        .setCaptureTimeNs(videoFrame.getTimestampNs())
-                                       .setCompleteFrame(true)
                                        .setEncodedWidth(videoFrame.getBuffer().getWidth())
                                        .setEncodedHeight(videoFrame.getBuffer().getHeight())
                                        .setRotation(videoFrame.getRotation());

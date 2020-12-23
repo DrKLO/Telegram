@@ -307,7 +307,7 @@ public class RLottieDrawable extends BitmapDrawable implements Animatable {
                     } else {
                         if (customEndFrame >= 0 && playInDirectionOfCustomEndFrame) {
                             if (currentFrame > customEndFrame) {
-                                if (currentFrame - framesPerUpdates > customEndFrame) {
+                                if (currentFrame - framesPerUpdates >= customEndFrame) {
                                     currentFrame -= framesPerUpdates;
                                     nextFrameIsLast = false;
                                 } else {
@@ -543,6 +543,10 @@ public class RLottieDrawable extends BitmapDrawable implements Animatable {
         return currentFrame;
     }
 
+    public int getCustomEndFrame() {
+        return customEndFrame;
+    }
+
     public long getDuration() {
         return (long) (metaData[0] / (float) metaData[1] * 1000);
     }
@@ -551,11 +555,12 @@ public class RLottieDrawable extends BitmapDrawable implements Animatable {
         playInDirectionOfCustomEndFrame = value;
     }
 
-    public void setCustomEndFrame(int frame) {
-        if (customEndFrame > metaData[0]) {
-            return;
+    public boolean setCustomEndFrame(int frame) {
+        if (customEndFrame == frame || customEndFrame > metaData[0]) {
+            return false;
         }
         customEndFrame = frame;
+        return true;
     }
 
     public void addParentView(View view) {
@@ -776,7 +781,7 @@ public class RLottieDrawable extends BitmapDrawable implements Animatable {
     }
 
     public void setCurrentFrame(int frame, boolean async) {
-        setCurrentFrame(frame, true, false);
+        setCurrentFrame(frame, async, false);
     }
 
     public void setCurrentFrame(int frame, boolean async, boolean resetFrame) {
@@ -845,13 +850,17 @@ public class RLottieDrawable extends BitmapDrawable implements Animatable {
             return true;
         }
         for (int a = 0, N = parentViews.size(); a < N; a++) {
-            if (parentViews.get(a).get() == null) {
+            View view = parentViews.get(a).get();
+            if (view == null) {
                 parentViews.remove(a);
                 N--;
                 a--;
                 continue;
             }
-            return parentViews.get(a).get() == currentParentView;
+            if (!view.isShown()) {
+                continue;
+            }
+            return view == currentParentView;
         }
         return true;
     }

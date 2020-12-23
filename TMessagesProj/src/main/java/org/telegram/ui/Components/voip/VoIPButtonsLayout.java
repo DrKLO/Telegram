@@ -19,6 +19,9 @@ public class VoIPButtonsLayout extends FrameLayout {
     int childWidth;
     int childPadding;
 
+    private int childSize = 68;
+    private boolean startPadding = true;
+
     @Override
     public boolean dispatchTouchEvent(MotionEvent ev) {
         if (!isEnabled()) {
@@ -30,14 +33,14 @@ public class VoIPButtonsLayout extends FrameLayout {
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         int width = MeasureSpec.getSize(widthMeasureSpec);
-        int heigth = MeasureSpec.getSize(heightMeasureSpec);
+
         visibleChildCount = 0;
         for (int i = 0; i < getChildCount(); i++) {
             if (getChildAt(i).getVisibility() != View.GONE) {
                 visibleChildCount++;
             }
         }
-        childWidth = AndroidUtilities.dp(68);
+        childWidth = AndroidUtilities.dp(childSize);
         int maxChildHeigth = 0;
         childPadding = (width / getChildCount() - childWidth) / 2;
         for (int i = 0; i < getChildCount(); i++) {
@@ -55,13 +58,33 @@ public class VoIPButtonsLayout extends FrameLayout {
 
     @Override
     protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
-        int startFrom = (int) ((getChildCount() - visibleChildCount) / 2f * (childWidth + childPadding * 2));
-        for (int i = 0; i < getChildCount(); i++) {
-            View child = getChildAt(i);
-            if (child.getVisibility() != View.GONE) {
-                child.layout(startFrom + childPadding, 0, startFrom + childPadding + child.getMeasuredWidth(), child.getMeasuredHeight());
-                startFrom += childPadding * 2 + child.getMeasuredWidth();
+        if (startPadding) {
+            int startFrom = (int) ((getChildCount() - visibleChildCount) / 2f * (childWidth + childPadding * 2));
+            for (int i = 0; i < getChildCount(); i++) {
+                View child = getChildAt(i);
+                if (child.getVisibility() != View.GONE) {
+                    child.layout(startFrom + childPadding, 0, startFrom + childPadding + child.getMeasuredWidth(), child.getMeasuredHeight());
+                    startFrom += childPadding * 2 + child.getMeasuredWidth();
+                }
+            }
+        } else  {
+            int padding = visibleChildCount > 0 ? (getMeasuredWidth() - childWidth) / (visibleChildCount - 1) : 0;
+            int k = 0;
+            for (int i = 0; i < getChildCount(); i++) {
+                View child = getChildAt(i);
+                if (child.getVisibility() != View.GONE) {
+                    child.layout(k * padding, 0, k * padding + child.getMeasuredWidth(), child.getMeasuredHeight());
+                    k++;
+                }
             }
         }
+    }
+
+    public void setChildSize(int childSize) {
+        this.childSize = childSize;
+    }
+
+    public void setUseStartPadding(boolean startPadding) {
+        this.startPadding = startPadding;
     }
 }

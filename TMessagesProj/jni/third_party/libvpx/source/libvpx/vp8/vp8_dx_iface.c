@@ -687,7 +687,7 @@ static vpx_codec_err_t vp8_set_decryptor(vpx_codec_alg_priv_t *ctx,
   return VPX_CODEC_OK;
 }
 
-vpx_codec_ctrl_fn_map_t vp8_ctf_maps[] = {
+static vpx_codec_ctrl_fn_map_t vp8_ctf_maps[] = {
   { VP8_SET_REFERENCE, vp8_set_reference },
   { VP8_COPY_REFERENCE, vp8_get_reference },
   { VP8_SET_POSTPROC, vp8_set_postproc },

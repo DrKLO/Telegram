@@ -13,58 +13,69 @@
 
 #include <array>
 
+#include "absl/types/optional.h"
 #include "modules/audio_processing/agc2/agc2_common.h"
-#include "modules/audio_processing/agc2/vad_with_level.h"
+#include "rtc_base/numerics/safe_compare.h"
 
 namespace webrtc {
+namespace saturation_protector_impl {
 
-class ApmDataDumper;
-
-class SaturationProtector {
+// Ring buffer which only supports (i) push back and (ii) read oldest item.
+class RingBuffer {
  public:
-  explicit SaturationProtector(ApmDataDumper* apm_data_dumper);
+  bool operator==(const RingBuffer& b) const;
+  inline bool operator!=(const RingBuffer& b) const { return !(*this == b); }
 
-  SaturationProtector(ApmDataDumper* apm_data_dumper,
-                      float extra_saturation_margin_db);
+  // Maximum number of values that the buffer can contain.
+  int Capacity() const { return buffer_.size(); }
+  // Number of values in the buffer.
+  int Size() const { return size_; }
 
-  // Update and return margin estimate. This method should be called
-  // whenever a frame is reliably classified as 'speech'.
-  //
-  // Returned value is in DB scale.
-  void UpdateMargin(const VadWithLevel::LevelAndProbability& vad_data,
-                    float last_speech_level_estimate_dbfs);
-
-  // Returns latest computed margin. Used in cases when speech is not
-  // detected.
-  float LastMargin() const;
-
-  // Resets the internal memory.
   void Reset();
-
-  void DebugDumpEstimate() const;
+  // Pushes back `v`. If the buffer is full, the oldest value is replaced.
+  void PushBack(float v);
+  // Returns the oldest item in the buffer. Returns an empty value if the
+  // buffer is empty.
+  absl::optional<float> Front() const;
 
  private:
-  // Computes a delayed envelope of peaks.
-  class PeakEnveloper {
-   public:
-    PeakEnveloper();
-    void Process(float frame_peak_dbfs);
-
-    float Query() const;
-
-   private:
-    size_t speech_time_in_estimate_ms_ = 0;
-    float current_superframe_peak_dbfs_ = -90.f;
-    size_t elements_in_buffer_ = 0;
-    std::array<float, kPeakEnveloperBufferSize> peak_delay_buffer_ = {};
-  };
-
-  ApmDataDumper* apm_data_dumper_;
-
-  float last_margin_;
-  PeakEnveloper peak_enveloper_;
-  const float extra_saturation_margin_db_;
+  inline int FrontIndex() const {
+    return rtc::SafeEq(size_, buffer_.size()) ? next_ : 0;
+  }
+  // `buffer_` has `size_` elements (up to the size of `buffer_`) and `next_` is
+  // the position where the next new value is written in `buffer_`.
+  std::array<float, kPeakEnveloperBufferSize> buffer_;
+  int next_ = 0;
+  int size_ = 0;
 };
+
+}  // namespace saturation_protector_impl
+
+// Saturation protector state. Exposed publicly for check-pointing and restore
+// ops.
+struct SaturationProtectorState {
+  bool operator==(const SaturationProtectorState& s) const;
+  inline bool operator!=(const SaturationProtectorState& s) const {
+    return !(*this == s);
+  }
+
+  float margin_db;  // Recommended margin.
+  saturation_protector_impl::RingBuffer peak_delay_buffer;
+  float max_peaks_dbfs;
+  int time_since_push_ms;  // Time since the last ring buffer push operation.
+};
+
+// Resets the saturation protector state.
+void ResetSaturationProtectorState(float initial_margin_db,
+                                   SaturationProtectorState& state);
+
+// Updates `state` by analyzing the estimated speech level `speech_level_dbfs`
+// and the peak power `speech_peak_dbfs` for an observed frame which is
+// reliably classified as "speech". `state` must not be modified without calling
+// this function.
+void UpdateSaturationProtectorState(float speech_peak_dbfs,
+                                    float speech_level_dbfs,
+                                    SaturationProtectorState& state);
 
 }  // namespace webrtc
 

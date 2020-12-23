@@ -705,6 +705,7 @@ typedef struct vpx_svc_parameters {
   int scaling_factor_den[VPX_MAX_LAYERS]; /**< Scaling factor-denominator */
   int speed_per_layer[VPX_MAX_LAYERS];    /**< Speed setting for each sl */
   int temporal_layering_mode;             /**< Temporal layering mode */
+  int loopfilter_ctrl[VPX_MAX_LAYERS];    /**< Loopfilter ctrl for each sl */
 } vpx_svc_extra_cfg_t;
 
 /*!\brief Initialize an encoder instance

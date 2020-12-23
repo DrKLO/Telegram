@@ -200,9 +200,9 @@ public class RtpTransceiver {
    * sendrecv, sendonly, recvonly, or inactive.
    * https://w3c.github.io/webrtc-pc/#dom-rtcrtptransceiver-direction
    */
-  public void setDirection(RtpTransceiverDirection rtpTransceiverDirection) {
+  public boolean setDirection(RtpTransceiverDirection rtpTransceiverDirection) {
     checkRtpTransceiverExists();
-    nativeSetDirection(nativeRtpTransceiver, rtpTransceiverDirection);
+    return nativeSetDirection(nativeRtpTransceiver, rtpTransceiverDirection);
   }
 
   /**
@@ -260,6 +260,6 @@ public class RtpTransceiver {
   private static native RtpTransceiverDirection nativeCurrentDirection(long rtpTransceiver);
   private static native void nativeStopInternal(long rtpTransceiver);
   private static native void nativeStopStandard(long rtpTransceiver);
-  private static native void nativeSetDirection(
+  private static native boolean nativeSetDirection(
       long rtpTransceiver, RtpTransceiverDirection rtpTransceiverDirection);
 }

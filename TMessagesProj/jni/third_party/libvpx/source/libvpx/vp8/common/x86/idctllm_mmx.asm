@@ -35,7 +35,7 @@ SECTION .text
 
 ;void vp8_short_idct4x4llm_mmx(short *input, unsigned char *pred,
 ;int pitch, unsigned char *dest,int stride)
-global sym(vp8_short_idct4x4llm_mmx) PRIVATE
+globalsym(vp8_short_idct4x4llm_mmx)
 sym(vp8_short_idct4x4llm_mmx):
     push        rbp
     mov         rbp, rsp
@@ -225,7 +225,7 @@ sym(vp8_short_idct4x4llm_mmx):
 ;int pred_stride,
 ;unsigned char *dst_ptr,
 ;int stride)
-global sym(vp8_dc_only_idct_add_mmx) PRIVATE
+globalsym(vp8_dc_only_idct_add_mmx)
 sym(vp8_dc_only_idct_add_mmx):
     push        rbp
     mov         rbp, rsp

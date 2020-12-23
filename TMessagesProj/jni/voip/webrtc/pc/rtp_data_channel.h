@@ -191,7 +191,6 @@ class RtpDataChannel : public DataChannelInterface,
   uint32_t send_ssrc_ RTC_GUARDED_BY(signaling_thread_) = 0;
   uint32_t receive_ssrc_ RTC_GUARDED_BY(signaling_thread_) = 0;
   PacketQueue queued_received_data_ RTC_GUARDED_BY(signaling_thread_);
-  rtc::AsyncInvoker invoker_ RTC_GUARDED_BY(signaling_thread_);
 };
 
 }  // namespace webrtc

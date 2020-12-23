@@ -14,6 +14,7 @@
 #include <memory>
 #include <vector>
 
+#include "api/array_view.h"
 #include "api/audio/audio_frame.h"
 #include "modules/audio_processing/agc2/limiter.h"
 
@@ -32,7 +33,7 @@ class FrameCombiner {
   // because 'mix_list' can be empty. The parameter
   // 'number_of_streams' is used for determining whether to pass the
   // data through a limiter.
-  void Combine(const std::vector<AudioFrame*>& mix_list,
+  void Combine(rtc::ArrayView<AudioFrame* const> mix_list,
                size_t number_of_channels,
                int sample_rate,
                size_t number_of_streams,
@@ -46,7 +47,7 @@ class FrameCombiner {
                                   kMaximumNumberOfChannels>;
 
  private:
-  void LogMixingStats(const std::vector<AudioFrame*>& mix_list,
+  void LogMixingStats(rtc::ArrayView<const AudioFrame* const> mix_list,
                       int sample_rate,
                       size_t number_of_streams) const;
 

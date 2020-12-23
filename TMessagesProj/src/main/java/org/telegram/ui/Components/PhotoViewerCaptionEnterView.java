@@ -10,8 +10,6 @@ package org.telegram.ui.Components;
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
-import android.animation.AnimatorSet;
-import android.animation.ObjectAnimator;
 import android.animation.ValueAnimator;
 import android.content.Context;
 import android.graphics.Canvas;
@@ -21,6 +19,7 @@ import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
+import android.os.Vibrator;
 import android.text.Editable;
 import android.text.InputFilter;
 import android.text.SpannableStringBuilder;
@@ -40,6 +39,8 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 
+import androidx.core.graphics.ColorUtils;
+
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.Emoji;
 import org.telegram.messenger.LocaleController;
@@ -55,6 +56,12 @@ import org.telegram.ui.ActionBar.Theme;
 
 public class PhotoViewerCaptionEnterView extends FrameLayout implements NotificationCenter.NotificationCenterDelegate, SizeNotifierFrameLayoutPhoto.SizeNotifierFrameLayoutPhotoDelegate {
 
+    private final ImageView doneButton;
+
+    public int getCaptionLimitOffset() {
+        return captionMaxLength - codePointCount;
+    }
+
     public interface PhotoViewerCaptionEnterViewDelegate {
         void onCaptionEnter();
         void onTextChanged(CharSequence text);
@@ -68,20 +75,15 @@ public class PhotoViewerCaptionEnterView extends FrameLayout implements Notifica
     private ReplaceableIconDrawable emojiIconDrawable;
     private EmojiView emojiView;
     private SizeNotifierFrameLayoutPhoto sizeNotifierLayout;
-    private Drawable drawable;
+    private Drawable doneDrawable;
     private Drawable checkDrawable;
+    private NumberTextView captionLimitView;
     private int lineCount;
     private boolean isInitLineCount;
     private boolean shouldAnimateEditTextWithBounds;
     private int messageEditTextPredrawHeigth;
     private int messageEditTextPredrawScrollY;
     private float chatActivityEnterViewAnimateFromTop;
-
-    private AnimatorSet runningAnimation;
-    private AnimatorSet runningAnimation2;
-    private ObjectAnimator runningAnimationAudio;
-    private int runningAnimationType;
-    private int audioInterfaceState;
 
     private int lastSizeChangeValue1;
     private boolean lastSizeChangeValue2;
@@ -97,8 +99,13 @@ public class PhotoViewerCaptionEnterView extends FrameLayout implements Notifica
     private boolean popupAnimating;
 
     private int captionMaxLength = 1024;
+    private int codePointCount;
 
     private PhotoViewerCaptionEnterViewDelegate delegate;
+
+    boolean sendButtonEnabled = true;
+    private float sendButtonEnabledProgress = 1f;
+    private ValueAnimator sendButtonColorAnimator;
 
     private View windowView;
 
@@ -206,9 +213,6 @@ public class PhotoViewerCaptionEnterView extends FrameLayout implements Notifica
         messageEditText.setTextColor(0xffffffff);
         messageEditText.setHighlightColor(0x4fffffff);
         messageEditText.setHintTextColor(0xb2ffffff);
-        InputFilter[] inputFilters = new InputFilter[1];
-        inputFilters[0] = new InputFilter.LengthFilter(captionMaxLength);
-        messageEditText.setFilters(inputFilters);
         frameLayout.addView(messageEditText, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.BOTTOM, 52, 0, 6, 0));
         messageEditText.setOnKeyListener((view, i, keyEvent) -> {
             if (i == KeyEvent.KEYCODE_BACK) {
@@ -233,7 +237,6 @@ public class PhotoViewerCaptionEnterView extends FrameLayout implements Notifica
 
             @Override
             public void beforeTextChanged(CharSequence charSequence, int i, int i2, int i3) {
-
             }
 
             @Override
@@ -266,31 +269,94 @@ public class PhotoViewerCaptionEnterView extends FrameLayout implements Notifica
                     lengthText = null;
                 }
                 PhotoViewerCaptionEnterView.this.invalidate();
-                if (innerTextChange) {
-                    return;
-                }
-                if (processChange) {
-                    ImageSpan[] spans = editable.getSpans(0, editable.length(), ImageSpan.class);
-                    for (int i = 0; i < spans.length; i++) {
-                        editable.removeSpan(spans[i]);
+                if (!innerTextChange) {
+                    if (processChange) {
+                        ImageSpan[] spans = editable.getSpans(0, editable.length(), ImageSpan.class);
+                        for (int i = 0; i < spans.length; i++) {
+                            editable.removeSpan(spans[i]);
+                        }
+                        Emoji.replaceEmoji(editable, messageEditText.getPaint().getFontMetricsInt(), AndroidUtilities.dp(20), false);
+                        processChange = false;
                     }
-                    Emoji.replaceEmoji(editable, messageEditText.getPaint().getFontMetricsInt(), AndroidUtilities.dp(20), false);
-                    processChange = false;
+                }
+
+                int beforeLimit;
+                codePointCount = Character.codePointCount(editable, 0, editable.length());
+                boolean sendButtonEnabledLocal = true;
+                if (captionMaxLength > 0 && (beforeLimit = captionMaxLength - codePointCount) <= 100) {
+                    if (beforeLimit < -9999) {
+                        beforeLimit = -9999;
+                    }
+                    captionLimitView.setNumber(beforeLimit, captionLimitView.getVisibility() == View.VISIBLE);
+                    if (captionLimitView.getVisibility() != View.VISIBLE) {
+                        captionLimitView.setVisibility(View.VISIBLE);
+                        captionLimitView.setAlpha(0);
+                        captionLimitView.setScaleX(0.5f);
+                        captionLimitView.setScaleY(0.5f);
+                    }
+                    captionLimitView.animate().setListener(null).cancel();
+                    captionLimitView.animate().alpha(1f).scaleX(1f).scaleY(1f).setDuration(100).start();
+                    if (beforeLimit < 0) {
+                        sendButtonEnabledLocal = false;
+                        captionLimitView.setTextColor(0xffEC7777);
+                    } else {
+                        captionLimitView.setTextColor(0xffffffff);
+                    }
+                } else {
+                    captionLimitView.animate().alpha(0).scaleX(0.5f).scaleY(0.5f).setDuration(100).setListener(new AnimatorListenerAdapter() {
+                        @Override
+                        public void onAnimationEnd(Animator animation) {
+                            captionLimitView.setVisibility(View.GONE);
+                        }
+                    });
+                }
+                if (sendButtonEnabled != sendButtonEnabledLocal) {
+                    sendButtonEnabled = sendButtonEnabledLocal;
+                    if (sendButtonColorAnimator != null) {
+                        sendButtonColorAnimator.cancel();
+                    }
+                    sendButtonColorAnimator = ValueAnimator.ofFloat(sendButtonEnabled ? 0 : 1f, sendButtonEnabled ? 1f : 0);
+                    sendButtonColorAnimator.addUpdateListener(valueAnimator -> {
+                        sendButtonEnabledProgress = (float) valueAnimator.getAnimatedValue();
+                        int color = Theme.getColor(Theme.key_dialogFloatingIcon);
+                        int alpha = Color.alpha(color);
+                        Theme.setDrawableColor(checkDrawable, ColorUtils.setAlphaComponent(color, (int) (alpha * (0.58f + 0.42f * sendButtonEnabledProgress))));
+                        doneButton.invalidate();
+                    });
+                    sendButtonColorAnimator.setDuration(150).start();
                 }
             }
         });
 
-        drawable = Theme.createCircleDrawable(AndroidUtilities.dp(16), 0xff66bffa);
+        doneDrawable = Theme.createCircleDrawable(AndroidUtilities.dp(16), 0xff66bffa);
         checkDrawable = context.getResources().getDrawable(R.drawable.input_done).mutate();
-        CombinedDrawable combinedDrawable = new CombinedDrawable(drawable, checkDrawable, 0, AndroidUtilities.dp(1));
+        CombinedDrawable combinedDrawable = new CombinedDrawable(doneDrawable, checkDrawable, 0, AndroidUtilities.dp(1));
         combinedDrawable.setCustomSize(AndroidUtilities.dp(32), AndroidUtilities.dp(32));
 
-        ImageView doneButton = new ImageView(context);
+        doneButton = new ImageView(context);
         doneButton.setScaleType(ImageView.ScaleType.CENTER);
         doneButton.setImageDrawable(combinedDrawable);
         textFieldContainer.addView(doneButton, LayoutHelper.createLinear(48, 48, Gravity.BOTTOM));
-        doneButton.setOnClickListener(view -> delegate.onCaptionEnter());
+        doneButton.setOnClickListener(view -> {
+            if (captionMaxLength - codePointCount < 0) {
+                AndroidUtilities.shakeView(captionLimitView, 2, 0);
+                Vibrator v = (Vibrator) captionLimitView.getContext().getSystemService(Context.VIBRATOR_SERVICE);
+                if (v != null) {
+                    v.vibrate(200);
+                }
+                return;
+            }
+            delegate.onCaptionEnter();
+        });
         doneButton.setContentDescription(LocaleController.getString("Done", R.string.Done));
+
+        captionLimitView = new NumberTextView(context);
+        captionLimitView.setVisibility(View.GONE);
+        captionLimitView.setTextSize(15);
+        captionLimitView.setTextColor(0xffffffff);
+        captionLimitView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        captionLimitView.setCenterAlign(true);
+        addView(captionLimitView, LayoutHelper.createFrame(48, 20, Gravity.BOTTOM | Gravity.RIGHT, 3, 0, 3, 48));
     }
 
     private void onLineCountChanged(int lineCountOld, int lineCountNew) {
@@ -356,22 +422,22 @@ public class PhotoViewerCaptionEnterView extends FrameLayout implements Notifica
             chatActivityEnterViewAnimateFromTop = 0;
         }
 
-        if (lengthText != null && getMeasuredHeight() > AndroidUtilities.dp(48)) {
-            int width = (int) Math.ceil(lengthTextPaint.measureText(lengthText));
-            int x = (AndroidUtilities.dp(56) - width) / 2;
-            canvas.drawText(lengthText, x, getMeasuredHeight() - AndroidUtilities.dp(48), lengthTextPaint);
-            if (animationProgress < 1.0f) {
-                animationProgress += 17.0f / 120.0f;
-                invalidate();
-                if (animationProgress >= 1.0f) {
-                    animationProgress = 1.0f;
-                }
-                lengthTextPaint.setAlpha((int) (255 * animationProgress));
-            }
-        } else {
-            lengthTextPaint.setAlpha(0);
-            animationProgress = 0.0f;
-        }
+//        if (lengthText != null && getMeasuredHeight() > AndroidUtilities.dp(48)) {
+//            int width = (int) Math.ceil(lengthTextPaint.measureText(lengthText));
+//            int x = (AndroidUtilities.dp(56) - width) / 2;
+//            canvas.drawText(lengthText, x, getMeasuredHeight() - AndroidUtilities.dp(48), lengthTextPaint);
+//            if (animationProgress < 1.0f) {
+//                animationProgress += 17.0f / 120.0f;
+//                invalidate();
+//                if (animationProgress >= 1.0f) {
+//                    animationProgress = 1.0f;
+//                }
+//                lengthTextPaint.setAlpha((int) (255 * animationProgress));
+//            }
+//        } else {
+//            lengthTextPaint.setAlpha(0);
+//            animationProgress = 0.0f;
+//        }
     }
 
     public void setForceFloatingEmoji(boolean value) {
@@ -379,8 +445,10 @@ public class PhotoViewerCaptionEnterView extends FrameLayout implements Notifica
     }
 
     public void updateColors() {
-        Theme.setDrawableColor(drawable, Theme.getColor(Theme.key_dialogFloatingButton));
-        Theme.setDrawableColor(checkDrawable, Theme.getColor(Theme.key_dialogFloatingIcon));
+        Theme.setDrawableColor(doneDrawable, Theme.getColor(Theme.key_dialogFloatingButton));
+        int color = Theme.getColor(Theme.key_dialogFloatingIcon);
+        int alpha = Color.alpha(color);
+        Theme.setDrawableColor(checkDrawable, ColorUtils.setAlphaComponent(color, (int) (alpha * (0.58f + 0.42f * sendButtonEnabledProgress))));
         if (emojiView != null) {
             emojiView.updateColors();
         }
@@ -443,13 +511,7 @@ public class PhotoViewerCaptionEnterView extends FrameLayout implements Notifica
         if (delegate != null) {
             delegate.onTextChanged(messageEditText.getText());
         }
-        int old = captionMaxLength;
         captionMaxLength = MessagesController.getInstance(UserConfig.selectedAccount).maxCaptionLength;
-        if (old != captionMaxLength) {
-            InputFilter[] inputFilters = new InputFilter[1];
-            inputFilters[0] = new InputFilter.LengthFilter(captionMaxLength);
-            messageEditText.setFilters(inputFilters);
-        }
     }
 
     public int getSelectionLength() {
@@ -488,9 +550,6 @@ public class PhotoViewerCaptionEnterView extends FrameLayout implements Notifica
 
             @Override
             public void onEmojiSelected(String symbol) {
-                if (messageEditText.length() + symbol.length() > captionMaxLength) {
-                    return;
-                }
                 int i = messageEditText.getSelectionEnd();
                 if (i < 0) {
                     i = 0;
@@ -759,5 +818,9 @@ public class PhotoViewerCaptionEnterView extends FrameLayout implements Notifica
 
     public void setAllowTextEntitiesIntersection(boolean value) {
         messageEditText.setAllowTextEntitiesIntersection(value);
+    }
+
+    public EditTextCaption getMessageEditText() {
+        return messageEditText;
     }
 }

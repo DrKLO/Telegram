@@ -20,6 +20,7 @@
 #include "modules/audio_processing/agc2/rnn_vad/features_extraction.h"
 #include "modules/audio_processing/agc2/rnn_vad/rnn.h"
 #include "rtc_base/logging.h"
+#include "rtc_base/numerics/safe_compare.h"
 
 ABSL_FLAG(std::string, i, "", "Path to the input wav file");
 ABSL_FLAG(std::string, f, "", "Path to the output features file");
@@ -56,7 +57,7 @@ int main(int argc, char* argv[]) {
   }
 
   // Initialize.
-  const size_t frame_size_10ms =
+  const int frame_size_10ms =
       rtc::CheckedDivExact(wav_reader.sample_rate(), 100);
   std::vector<float> samples_10ms;
   samples_10ms.resize(frame_size_10ms);
@@ -69,9 +70,9 @@ int main(int argc, char* argv[]) {
   // Compute VAD probabilities.
   while (true) {
     // Read frame at the input sample rate.
-    const auto read_samples =
+    const size_t read_samples =
         wav_reader.ReadSamples(frame_size_10ms, samples_10ms.data());
-    if (read_samples < frame_size_10ms) {
+    if (rtc::SafeLt(read_samples, frame_size_10ms)) {
       break;  // EOF.
     }
     // Resample input.

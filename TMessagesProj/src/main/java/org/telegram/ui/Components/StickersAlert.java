@@ -76,7 +76,7 @@ import androidx.recyclerview.widget.RecyclerView;
 public class StickersAlert extends BottomSheet implements NotificationCenter.NotificationCenterDelegate {
 
     public interface StickersAlertDelegate {
-        void onStickerSelected(TLRPC.Document sticker, Object parent, boolean clearsInputField, boolean notify, int scheduleDate);
+        void onStickerSelected(TLRPC.Document sticker, String query, Object parent, boolean clearsInputField, boolean notify, int scheduleDate);
         boolean canSchedule();
         boolean isInScheduleMode();
     }
@@ -142,11 +142,11 @@ public class StickersAlert extends BottomSheet implements NotificationCenter.Not
 
     private ContentPreviewViewer.ContentPreviewViewerDelegate previewDelegate = new ContentPreviewViewer.ContentPreviewViewerDelegate() {
         @Override
-        public void sendSticker(TLRPC.Document sticker, Object parent, boolean notify, int scheduleDate) {
+        public void sendSticker(TLRPC.Document sticker, String query, Object parent, boolean notify, int scheduleDate) {
             if (delegate == null) {
                 return;
             }
-            delegate.onStickerSelected(sticker, parent, clearsInputField, notify, scheduleDate);
+            delegate.onStickerSelected(sticker, query, parent, clearsInputField, notify, scheduleDate);
             dismiss();
         }
 
@@ -281,41 +281,43 @@ public class StickersAlert extends BottomSheet implements NotificationCenter.Not
                 ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
                     reqId = 0;
                     if (error == null) {
-                        Transition addTarget = new Transition() {
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+                            Transition addTarget = new Transition() {
 
-                            @Override
-                            public void captureStartValues(TransitionValues transitionValues) {
-                                transitionValues.values.put("start", true);
-                                transitionValues.values.put("offset", containerView.getTop() + scrollOffsetY);
-                            }
+                                @Override
+                                public void captureStartValues(TransitionValues transitionValues) {
+                                    transitionValues.values.put("start", true);
+                                    transitionValues.values.put("offset", containerView.getTop() + scrollOffsetY);
+                                }
 
-                            @Override
-                            public void captureEndValues(TransitionValues transitionValues) {
-                                transitionValues.values.put("start", false);
-                                transitionValues.values.put("offset", containerView.getTop() + scrollOffsetY);
-                            }
+                                @Override
+                                public void captureEndValues(TransitionValues transitionValues) {
+                                    transitionValues.values.put("start", false);
+                                    transitionValues.values.put("offset", containerView.getTop() + scrollOffsetY);
+                                }
 
-                            @Override
-                            public Animator createAnimator(ViewGroup sceneRoot, TransitionValues startValues, TransitionValues endValues) {
-                                int scrollOffsetY = StickersAlert.this.scrollOffsetY;
-                                int startValue = (int) startValues.values.get("offset") - (int) endValues.values.get("offset");
-                                final ValueAnimator animator = ValueAnimator.ofFloat(0f, 1f);
-                                animator.setDuration(250);
-                                animator.addUpdateListener(a -> {
-                                    float fraction = a.getAnimatedFraction();
-                                    gridView.setAlpha(fraction);
-                                    titleTextView.setAlpha(fraction);
-                                    if (startValue != 0) {
-                                        int value = (int) (startValue * (1f - fraction));
-                                        setScrollOffsetY(scrollOffsetY + value);
-                                        gridView.setTranslationY(value);
-                                    }
-                                });
-                                return animator;
-                            }
-                        };
-                        addTarget.addTarget(containerView);
-                        TransitionManager.beginDelayedTransition(container, addTarget);
+                                @Override
+                                public Animator createAnimator(ViewGroup sceneRoot, TransitionValues startValues, TransitionValues endValues) {
+                                    int scrollOffsetY = StickersAlert.this.scrollOffsetY;
+                                    int startValue = (int) startValues.values.get("offset") - (int) endValues.values.get("offset");
+                                    final ValueAnimator animator = ValueAnimator.ofFloat(0f, 1f);
+                                    animator.setDuration(250);
+                                    animator.addUpdateListener(a -> {
+                                        float fraction = a.getAnimatedFraction();
+                                        gridView.setAlpha(fraction);
+                                        titleTextView.setAlpha(fraction);
+                                        if (startValue != 0) {
+                                            int value = (int) (startValue * (1f - fraction));
+                                            setScrollOffsetY(scrollOffsetY + value);
+                                            gridView.setTranslationY(value);
+                                        }
+                                    });
+                                    return animator;
+                                }
+                            };
+                            addTarget.addTarget(containerView);
+                            TransitionManager.beginDelayedTransition(container, addTarget);
+                        }
                         optionsButton.setVisibility(View.VISIBLE);
                         stickerSet = (TLRPC.TL_messages_stickerSet) response;
                         showEmoji = !stickerSet.set.masks;
@@ -658,7 +660,7 @@ public class StickersAlert extends BottomSheet implements NotificationCenter.Not
         previewSendButton.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
         stickerPreviewLayout.addView(previewSendButton, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.BOTTOM | Gravity.LEFT));
         previewSendButton.setOnClickListener(v -> {
-            delegate.onStickerSelected(selectedSticker, stickerSet, clearsInputField, true, 0);
+            delegate.onStickerSelected(selectedSticker, null, stickerSet, clearsInputField, true, 0);
             dismiss();
         });
 
@@ -703,7 +705,14 @@ public class StickersAlert extends BottomSheet implements NotificationCenter.Not
         }
         String stickersUrl = "https://" + MessagesController.getInstance(currentAccount).linkPrefix + "/addstickers/" + stickerSet.set.short_name;
         if (id == 1) {
-            ShareAlert alert = new ShareAlert(getContext(), null, stickersUrl, false, stickersUrl, false);
+            Context context = parentActivity;
+            if (context == null && parentFragment != null) {
+                context = parentFragment.getParentActivity();
+            }
+            if (context == null) {
+                context = getContext();
+            }
+            ShareAlert alert = new ShareAlert(context, null, stickersUrl, false, stickersUrl, false);
             if (parentFragment != null) {
                 parentFragment.showDialog(alert);
             } else {
@@ -712,7 +721,7 @@ public class StickersAlert extends BottomSheet implements NotificationCenter.Not
         } else if (id == 2) {
             try {
                 AndroidUtilities.addToClipboard(stickersUrl);
-                Toast.makeText(ApplicationLoader.applicationContext, LocaleController.getString("LinkCopied", R.string.LinkCopied), Toast.LENGTH_SHORT).show();
+                BulletinFactory.of((FrameLayout) containerView).createCopyLinkBulletin().show();
             } catch (Exception e) {
                 FileLog.e(e);
             }
@@ -747,9 +756,7 @@ public class StickersAlert extends BottomSheet implements NotificationCenter.Not
                             dismiss();
                         }
                     };
-                    if (url != null) {
-                        stringBuilder.setSpan(url, start, end, 0);
-                    }
+                    stringBuilder.setSpan(url, start, end, 0);
                 }
             } catch (Exception e) {
                 FileLog.e(e);
@@ -758,7 +765,7 @@ public class StickersAlert extends BottomSheet implements NotificationCenter.Not
 
             if (stickerSet.set == null || !MediaDataController.getInstance(currentAccount).isStickerPackInstalled(stickerSet.set.id)) {
                 String text;
-                if (stickerSet.set.masks) {
+                if (stickerSet.set != null && stickerSet.set.masks) {
                     text = LocaleController.formatString("AddStickersCount", R.string.AddStickersCount, LocaleController.formatPluralString("MasksCount", stickerSet.documents.size())).toUpperCase();
                 } else {
                     text = LocaleController.formatString("AddStickersCount", R.string.AddStickersCount, LocaleController.formatPluralString("Stickers", stickerSet.documents.size())).toUpperCase();
@@ -930,6 +937,23 @@ public class StickersAlert extends BottomSheet implements NotificationCenter.Not
     }
 
     @Override
+    protected void onStart() {
+        super.onStart();
+        Bulletin.addDelegate((FrameLayout) containerView, new Bulletin.Delegate() {
+            @Override
+            public int getBottomOffset() {
+                return pickerBottomLayout != null ? pickerBottomLayout.getHeight() : 0;
+            }
+        });
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        Bulletin.removeDelegate((FrameLayout) containerView);
+    }
+
+    @Override
     public void didReceivedNotification(int id, int account, Object... args) {
         if (id == NotificationCenter.emojiDidLoad) {
             if (gridView != null) {
@@ -1075,7 +1099,7 @@ public class StickersAlert extends BottomSheet implements NotificationCenter.Not
             View view = null;
             switch (viewType) {
                 case 0:
-                    StickerEmojiCell cell = new StickerEmojiCell(context) {
+                    StickerEmojiCell cell = new StickerEmojiCell(context, false) {
                         public void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
                             super.onMeasure(MeasureSpec.makeMeasureSpec(itemSize, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(82), MeasureSpec.EXACTLY));
                         }

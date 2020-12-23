@@ -267,13 +267,6 @@ class RtpRtcpInterface : public RtcpFeedbackSenderInterface {
   // bitrate estimate since the stream participates in the bitrate allocation.
   virtual void SetAsPartOfAllocation(bool part_of_allocation) = 0;
 
-  // TODO(sprang): Remove when all call sites have been moved to
-  // GetSendRates(). Fetches the current send bitrates in bits/s.
-  virtual void BitrateSent(uint32_t* total_rate,
-                           uint32_t* video_rate,
-                           uint32_t* fec_rate,
-                           uint32_t* nack_rate) const = 0;
-
   // Returns bitrate sent (post-pacing) per packet type.
   virtual RtpSendRates GetSendRates() const = 0;
 

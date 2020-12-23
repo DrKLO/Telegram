@@ -105,6 +105,7 @@
 #include "api/transport/bitrate_settings.h"
 #include "api/transport/enums.h"
 #include "api/transport/network_control.h"
+#include "api/transport/sctp_transport_factory_interface.h"
 #include "api/transport/webrtc_key_value_config.h"
 #include "api/turn_customizer.h"
 #include "media/base/media_config.h"
@@ -639,6 +640,9 @@ class RTC_EXPORT PeerConnectionInterface : public rtc::RefCountInterface {
     // Whether network condition based codec switching is allowed.
     absl::optional<bool> allow_codec_switching;
 
+    // The delay before doing a usage histogram report for long-lived
+    // PeerConnections. Used for testing only.
+    absl::optional<int> report_usage_pattern_delay_ms;
     //
     // Don't forget to update operator== if adding something.
     //
@@ -1003,6 +1007,16 @@ class RTC_EXPORT PeerConnectionInterface : public rtc::RefCountInterface {
   virtual void SetRemoteDescription(SetSessionDescriptionObserver* observer,
                                     SessionDescriptionInterface* desc) {}
 
+  // According to spec, we must only fire "negotiationneeded" if the Operations
+  // Chain is empty. This method takes care of validating an event previously
+  // generated with PeerConnectionObserver::OnNegotiationNeededEvent() to make
+  // sure that even if there was a delay (e.g. due to a PostTask) between the
+  // event being generated and the time of firing, the Operations Chain is empty
+  // and the event is still valid to be fired.
+  virtual bool ShouldFireNegotiationNeededEvent(uint32_t event_id) {
+    return true;
+  }
+
   virtual PeerConnectionInterface::RTCConfiguration GetConfiguration() = 0;
 
   // Sets the PeerConnection's global configuration to |config|.
@@ -1176,7 +1190,17 @@ class PeerConnectionObserver {
 
   // Triggered when renegotiation is needed. For example, an ICE restart
   // has begun.
-  virtual void OnRenegotiationNeeded() = 0;
+  // TODO(hbos): Delete in favor of OnNegotiationNeededEvent() when downstream
+  // projects have migrated.
+  virtual void OnRenegotiationNeeded() {}
+  // Used to fire spec-compliant onnegotiationneeded events, which should only
+  // fire when the Operations Chain is empty. The observer is responsible for
+  // queuing a task (e.g. Chromium: jump to main thread) to maybe fire the
+  // event. The event identified using |event_id| must only fire if
+  // PeerConnection::ShouldFireNegotiationNeededEvent() returns true since it is
+  // possible for the event to become invalidated by operations subsequently
+  // chained.
+  virtual void OnNegotiationNeededEvent(uint32_t event_id) {}
 
   // Called any time the legacy IceConnectionState changes.
   //
@@ -1272,7 +1296,24 @@ class PeerConnectionObserver {
   // The heuristics for defining what constitutes "interesting" are
   // implementation-defined.
   virtual void OnInterestingUsage(int usage_pattern) {}
+
+  virtual void OnErrorDemuxingPacket(uint32_t ssrc) {}
 };
+
+class ErrorDemuxingPacketObserver : public rtc::RefCountInterface {
+public:
+  ErrorDemuxingPacketObserver(PeerConnectionObserver *observer) :
+          observer_(observer) {
+  }
+
+  void OnErrorDemuxingPacket(uint32_t ssrc) {
+    observer_->OnErrorDemuxingPacket(ssrc);
+  }
+
+private:
+  PeerConnectionObserver *observer_ = nullptr;
+};
+
 
 // PeerConnectionDependencies holds all of PeerConnections dependencies.
 // A dependency is distinct from a configuration as it defines significant
@@ -1343,6 +1384,7 @@ struct RTC_EXPORT PeerConnectionFactoryDependencies final {
   // used.
   std::unique_ptr<rtc::NetworkMonitorFactory> network_monitor_factory;
   std::unique_ptr<NetEqFactory> neteq_factory;
+  std::unique_ptr<SctpTransportFactoryInterface> sctp_factory;
   std::unique_ptr<WebRtcKeyValueConfig> trials;
 };
 

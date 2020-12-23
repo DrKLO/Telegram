@@ -32,18 +32,15 @@ namespace webrtc {
 class QualityScalerResource : public VideoStreamEncoderResource,
                               public QualityScalerQpUsageHandlerInterface {
  public:
-  static rtc::scoped_refptr<QualityScalerResource> Create(
-      DegradationPreferenceProvider* degradation_preference_provider);
+  static rtc::scoped_refptr<QualityScalerResource> Create();
 
-  explicit QualityScalerResource(
-      DegradationPreferenceProvider* degradation_preference_provider);
+  QualityScalerResource();
   ~QualityScalerResource() override;
 
   bool is_started() const;
 
   void StartCheckForOveruse(VideoEncoder::QpThresholds qp_thresholds);
   void StopCheckForOveruse();
-
   void SetQpThresholds(VideoEncoder::QpThresholds qp_thresholds);
   bool QpFastFilterLow();
   void OnEncodeCompleted(const EncodedImage& encoded_image,
@@ -55,15 +52,8 @@ class QualityScalerResource : public VideoStreamEncoderResource,
   void OnReportQpUsageLow() override;
 
  private:
-  // Members accessed on the encoder queue.
   std::unique_ptr<QualityScaler> quality_scaler_
       RTC_GUARDED_BY(encoder_queue());
-  // The timestamp of the last time we reported underuse because this resource
-  // was disabled in order to prevent getting stuck with QP adaptations. Used to
-  // make sure underuse reporting is not too spammy.
-  absl::optional<int64_t> last_underuse_due_to_disabled_timestamp_ms_
-      RTC_GUARDED_BY(encoder_queue());
-  DegradationPreferenceProvider* const degradation_preference_provider_;
 };
 
 }  // namespace webrtc

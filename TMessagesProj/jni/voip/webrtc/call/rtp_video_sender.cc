@@ -197,7 +197,6 @@ std::vector<RtpStreamSender> CreateRtpStreamSenders(
     FrameEncryptorInterface* frame_encryptor,
     const CryptoOptions& crypto_options,
     rtc::scoped_refptr<FrameTransformerInterface> frame_transformer,
-    bool use_deferred_fec,
     const WebRtcKeyValueConfig& trials) {
   RTC_DCHECK_GT(rtp_config.ssrcs.size(), 0);
 
@@ -245,9 +244,6 @@ std::vector<RtpStreamSender> CreateRtpStreamSenders(
     std::unique_ptr<VideoFecGenerator> fec_generator =
         MaybeCreateFecGenerator(clock, rtp_config, suspended_ssrcs, i, trials);
     configuration.fec_generator = fec_generator.get();
-    if (!use_deferred_fec) {
-      video_config.fec_generator = fec_generator.get();
-    }
 
     configuration.rtx_send_ssrc =
         rtp_config.GetRtxSsrcAssociatedWithMediaSsrc(rtp_config.ssrcs[i]);
@@ -331,19 +327,10 @@ RtpVideoSender::RtpVideoSender(
     FrameEncryptorInterface* frame_encryptor,
     const CryptoOptions& crypto_options,
     rtc::scoped_refptr<FrameTransformerInterface> frame_transformer)
-    : send_side_bwe_with_overhead_(absl::StartsWith(
+    : send_side_bwe_with_overhead_(!absl::StartsWith(
           field_trials_.Lookup("WebRTC-SendSideBwe-WithOverhead"),
-          "Enabled")),
-      account_for_packetization_overhead_(!absl::StartsWith(
-          field_trials_.Lookup("WebRTC-SubtractPacketizationOverhead"),
-          "Disabled")),
-      use_early_loss_detection_(!absl::StartsWith(
-          field_trials_.Lookup("WebRTC-UseEarlyLossDetection"),
           "Disabled")),
       has_packet_feedback_(TransportSeqNumExtensionConfigured(rtp_config)),
-      use_deferred_fec_(
-          absl::StartsWith(field_trials_.Lookup("WebRTC-DeferredFecGeneration"),
-                           "Enabled")),
       active_(false),
       module_process_thread_(nullptr),
       suspended_ssrcs_(std::move(suspended_ssrcs)),
@@ -362,7 +349,6 @@ RtpVideoSender::RtpVideoSender(
                                           frame_encryptor,
                                           crypto_options,
                                           std::move(frame_transformer),
-                                          use_deferred_fec_,
                                           field_trials_)),
       rtp_config_(rtp_config),
       codec_type_(GetVideoCodecType(rtp_config)),
@@ -606,6 +592,18 @@ void RtpVideoSender::OnBitrateAllocationUpdated(
     }
   }
 }
+void RtpVideoSender::OnVideoLayersAllocationUpdated(
+    const VideoLayersAllocation& allocation) {
+  MutexLock lock(&mutex_);
+  if (IsActiveLocked()) {
+    for (size_t i = 0; i < rtp_streams_.size(); ++i) {
+      VideoLayersAllocation stream_allocation = allocation;
+      stream_allocation.rtp_stream_index = i;
+      rtp_streams_[i].sender_video->SetVideoLayersAllocation(
+          std::move(stream_allocation));
+    }
+  }
+}
 
 bool RtpVideoSender::NackEnabled() const {
   const bool nack_enabled = rtp_config_.nack.rtp_history_ms > 0;
@@ -789,16 +787,13 @@ void RtpVideoSender::OnBitrateUpdated(BitrateAllocationUpdate update,
     // since |fec_allowed_| may be toggled back on at any moment.
   }
 
-  uint32_t packetization_rate_bps = 0;
-  if (account_for_packetization_overhead_) {
     // Subtract packetization overhead from the encoder target. If target rate
     // is really low, cap the overhead at 50%. This also avoids the case where
     // |encoder_target_rate_bps_| is 0 due to encoder pause event while the
     // packetization rate is positive since packets are still flowing.
-    packetization_rate_bps =
-        std::min(GetPacketizationOverheadRate(), encoder_target_rate_bps_ / 2);
-    encoder_target_rate_bps_ -= packetization_rate_bps;
-  }
+  uint32_t packetization_rate_bps =
+      std::min(GetPacketizationOverheadRate(), encoder_target_rate_bps_ / 2);
+  encoder_target_rate_bps_ -= packetization_rate_bps;
 
   loss_mask_vector_.clear();
 
@@ -853,7 +848,6 @@ int RtpVideoSender::ProtectionRequest(const FecProtectionParams* delta_params,
   *sent_nack_rate_bps = 0;
   *sent_fec_rate_bps = 0;
   for (const RtpStreamSender& stream : rtp_streams_) {
-    if (use_deferred_fec_) {
       stream.rtp_rtcp->SetFecProtectionParams(*delta_params, *key_params);
 
       auto send_bitrate = stream.rtp_rtcp->GetSendRates();
@@ -862,17 +856,6 @@ int RtpVideoSender::ProtectionRequest(const FecProtectionParams* delta_params,
           send_bitrate[RtpPacketMediaType::kForwardErrorCorrection].bps();
       *sent_nack_rate_bps +=
           send_bitrate[RtpPacketMediaType::kRetransmission].bps();
-    } else {
-      if (stream.fec_generator) {
-        stream.fec_generator->SetProtectionParameters(*delta_params,
-                                                      *key_params);
-        *sent_fec_rate_bps += stream.fec_generator->CurrentFecRate().bps();
-      }
-      *sent_video_rate_bps += stream.sender_video->VideoBitrateSent();
-      *sent_nack_rate_bps +=
-          stream.rtp_rtcp->GetSendRates()[RtpPacketMediaType::kRetransmission]
-              .bps<uint32_t>();
-    }
   }
   return 0;
 }
@@ -899,7 +882,6 @@ void RtpVideoSender::OnPacketFeedbackVector(
     }
   }
 
-  if (use_early_loss_detection_) {
     // Map from SSRC to vector of RTP sequence numbers that are indicated as
     // lost by feedback, without being trailed by any received packets.
     std::map<uint32_t, std::vector<uint16_t>> early_loss_detected_per_ssrc;
@@ -925,7 +907,6 @@ void RtpVideoSender::OnPacketFeedbackVector(
         rtp_sender->ReSendPacket(sequence_number);
       }
     }
-  }
 
   for (const auto& kv : acked_packets_per_ssrc) {
     const uint32_t ssrc = kv.first;

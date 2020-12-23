@@ -62,16 +62,16 @@ class VideoStreamDecoderImpl : public VideoStreamDecoderInterface {
     kDecodeFailure,
   };
 
-  struct FrameTimestamps {
-    int64_t timestamp;
+  struct FrameInfo {
+    int64_t timestamp = -1;
     int64_t decode_start_time_ms;
     int64_t render_time_us;
+    VideoContentType content_type;
   };
 
-  void SaveFrameTimestamps(const video_coding::EncodedFrame& frame)
+  void SaveFrameInfo(const video_coding::EncodedFrame& frame)
       RTC_RUN_ON(bookkeeping_queue_);
-  FrameTimestamps* GetFrameTimestamps(int64_t timestamp)
-      RTC_RUN_ON(bookkeeping_queue_);
+  FrameInfo* GetFrameInfo(int64_t timestamp) RTC_RUN_ON(bookkeeping_queue_);
   void StartNextDecode() RTC_RUN_ON(bookkeeping_queue_);
   void OnNextFrameCallback(std::unique_ptr<video_coding::EncodedFrame> frame,
                            video_coding::FrameBuffer::ReturnReason res)
@@ -90,10 +90,10 @@ class VideoStreamDecoderImpl : public VideoStreamDecoderInterface {
 
   // Some decoders are pipelined so it is not sufficient to save frame info
   // for the last frame only.
-  static constexpr int kFrameTimestampsMemory = 8;
-  std::array<FrameTimestamps, kFrameTimestampsMemory> frame_timestamps_
+  static constexpr int kFrameInfoMemory = 8;
+  std::array<FrameInfo, kFrameInfoMemory> frame_info_
       RTC_GUARDED_BY(bookkeeping_queue_);
-  int next_frame_timestamps_index_ RTC_GUARDED_BY(bookkeeping_queue_);
+  int next_frame_info_index_ RTC_GUARDED_BY(bookkeeping_queue_);
   VideoStreamDecoderInterface::Callbacks* const callbacks_
       RTC_PT_GUARDED_BY(bookkeeping_queue_);
   video_coding::VideoLayerFrameId last_continuous_id_

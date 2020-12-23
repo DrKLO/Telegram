@@ -92,8 +92,15 @@ void RtpStreamsSynchronizer::UpdateDelay() {
     log_stats = true;
   }
 
+  int64_t last_audio_receive_time_ms =
+      audio_measurement_.latest_receive_time_ms;
   absl::optional<Syncable::Info> audio_info = syncable_audio_->GetInfo();
   if (!audio_info || !UpdateMeasurements(&audio_measurement_, *audio_info)) {
+    return;
+  }
+
+  if (last_audio_receive_time_ms == audio_measurement_.latest_receive_time_ms) {
+    // No new audio packet has been received since last update.
     return;
   }
 
@@ -147,8 +154,12 @@ void RtpStreamsSynchronizer::UpdateDelay() {
                      << "target_delay_ms: " << target_video_delay_ms << "} ";
   }
 
-  syncable_audio_->SetMinimumPlayoutDelay(target_audio_delay_ms);
-  syncable_video_->SetMinimumPlayoutDelay(target_video_delay_ms);
+  if (!syncable_audio_->SetMinimumPlayoutDelay(target_audio_delay_ms)) {
+    sync_->ReduceAudioDelay();
+  }
+  if (!syncable_video_->SetMinimumPlayoutDelay(target_video_delay_ms)) {
+    sync_->ReduceVideoDelay();
+  }
 }
 
 // TODO(https://bugs.webrtc.org/7065): Move RtpToNtpEstimator out of

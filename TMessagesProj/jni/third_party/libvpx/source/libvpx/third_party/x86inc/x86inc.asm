@@ -1,12 +1,12 @@
 ;*****************************************************************************
 ;* x86inc.asm: x264asm abstraction layer
 ;*****************************************************************************
-;* Copyright (C) 2005-2016 x264 project
+;* Copyright (C) 2005-2019 x264 project
 ;*
 ;* Authors: Loren Merritt <lorenm@u.washington.edu>
+;*          Henrik Gramner <henrik@gramner.com>
 ;*          Anton Mitrofanov <BugMaster@narod.ru>
 ;*          Fiona Glaser <fiona@x264.com>
-;*          Henrik Gramner <henrik@gramner.com>
 ;*
 ;* Permission to use, copy, modify, and/or distribute this software for any
 ;* purpose with or without fee is hereby granted, provided that the above
@@ -67,19 +67,19 @@
 %endif
 
 %define FORMAT_ELF 0
+%define FORMAT_MACHO 0
 %ifidn __OUTPUT_FORMAT__,elf
     %define FORMAT_ELF 1
 %elifidn __OUTPUT_FORMAT__,elf32
     %define FORMAT_ELF 1
 %elifidn __OUTPUT_FORMAT__,elf64
     %define FORMAT_ELF 1
-%endif
-
-%define FORMAT_MACHO 0
-%ifidn __OUTPUT_FORMAT__,macho32
-     %define FORMAT_MACHO 1
+%elifidn __OUTPUT_FORMAT__,macho
+    %define FORMAT_MACHO 1
+%elifidn __OUTPUT_FORMAT__,macho32
+    %define FORMAT_MACHO 1
 %elifidn __OUTPUT_FORMAT__,macho64
-     %define FORMAT_MACHO 1
+    %define FORMAT_MACHO 1
 %endif
 
 ; Set PREFIX for libvpx builds.
@@ -103,7 +103,11 @@
 ; works around the issue. It appears to be specific to the way libvpx
 ; handles the tables.
 %macro SECTION_RODATA 0-1 16
-    %ifidn __OUTPUT_FORMAT__,macho32
+    %ifidn __OUTPUT_FORMAT__,win32
+        SECTION .rdata align=%1
+    %elif WIN64
+        SECTION .rdata align=%1
+    %elifidn __OUTPUT_FORMAT__,macho32
         SECTION .text align=%1
         fakegot:
     %elifidn __OUTPUT_FORMAT__,aout
@@ -113,8 +117,7 @@
     %endif
 %endmacro
 
-; PIC macros are copied from vpx_ports/x86_abi_support.asm. The "define PIC"
-; from original code is added in for 64bit.
+; PIC macros from vpx_ports/x86_abi_support.asm.
 %ifidn __OUTPUT_FORMAT__,elf32
 %define ABI_IS_32BIT 1
 %elifidn __OUTPUT_FORMAT__,macho32
@@ -203,10 +206,24 @@
 %ifndef GET_GOT_DEFINED
     %define GET_GOT_DEFINED 0
 %endif
-; Done with PIC macros
+; End PIC macros from vpx_ports/x86_abi_support.asm.
+
+; libvpx explicitly sets visibilty in shared object builds. Avoid setting
+; visibility to hidden as it may break builds that split sources on e.g.,
+; directory boundaries.
+%ifdef CHROMIUM
+    %define VISIBILITY hidden
+    %define HAVE_PRIVATE_EXTERN 1
+%else
+    %define VISIBILITY
+    %define HAVE_PRIVATE_EXTERN 0
+%endif
 
 %ifdef __NASM_VER__
     %use smartalign
+    %if __NASM_VERSION_ID__ < 0x020e0000 ; 2.14
+        %define HAVE_PRIVATE_EXTERN 0
+    %endif
 %endif
 
 ; Macros to eliminate most code duplication between x86_32 and x86_64:
@@ -324,6 +341,18 @@ DECLARE_REG_TMP_SIZE 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14
     %define gprsize 4
 %endif
 
+%macro LEA 2
+%if VPX_ARCH_X86_64
+    lea %1, [%2]
+%elif PIC
+    call $+5 ; special-cased to not affect the RSB on most CPU:s
+    pop %1
+    add %1, (%2)-$+1
+%else
+    mov %1, %2
+%endif
+%endmacro
+
 %macro PUSH 1
     push %1
     %ifidn rstk, rsp
@@ -385,6 +414,10 @@ DECLARE_REG_TMP_SIZE 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14
     %endif
 %endmacro
 
+%if VPX_ARCH_X86_64 == 0
+    %define movsxd movifnidn
+%endif
+
 %macro movsxdifnidn 2
     %ifnidn %1, %2
         movsxd %1, %2
@@ -433,6 +466,8 @@ DECLARE_REG_TMP_SIZE 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14
 %endmacro
 
 %define required_stack_alignment ((mmsize + 15) & ~15)
+%define vzeroupper_required (mmsize > 16 && (VPX_ARCH_X86_64 == 0 || xmm_regs_used > 16 || notcpuflag(avx512)))
+%define high_mm_regs (16*cpuflag(avx512))
 
 %macro ALLOC_STACK 1-2 0 ; stack_size, n_xmm_regs (for win64 only)
     %ifnum %1
@@ -483,10 +518,18 @@ DECLARE_REG_TMP_SIZE 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14
     %ifnum %1
         %if %1 != 0 && required_stack_alignment > STACK_ALIGNMENT
             %if %1 > 0
+                ; Reserve an additional register for storing the original stack pointer, but avoid using
+                ; eax/rax for this purpose since it can potentially get overwritten as a return value.
                 %assign regs_used (regs_used + 1)
+                %if VPX_ARCH_X86_64 && regs_used == 7
+                    %assign regs_used 8
+                %elif VPX_ARCH_X86_64 == 0 && regs_used == 1
+                    %assign regs_used 2
+                %endif
             %endif
             %if VPX_ARCH_X86_64 && regs_used < 5 + UNIX64 * 3
-                ; Ensure that we don't clobber any registers containing arguments
+                ; Ensure that we don't clobber any registers containing arguments. For UNIX64 we also preserve r6 (rax)
+                ; since it's used as a hidden argument in vararg functions to specify the number of vector registers used.
                 %assign regs_used 5 + UNIX64 * 3
             %endif
         %endif
@@ -516,10 +559,10 @@ DECLARE_REG 7,  rdi, 64
 DECLARE_REG 8,  rsi, 72
 DECLARE_REG 9,  rbx, 80
 DECLARE_REG 10, rbp, 88
-DECLARE_REG 11, R12, 96
-DECLARE_REG 12, R13, 104
-DECLARE_REG 13, R14, 112
-DECLARE_REG 14, R15, 120
+DECLARE_REG 11, R14, 96
+DECLARE_REG 12, R15, 104
+DECLARE_REG 13, R12, 112
+DECLARE_REG 14, R13, 120
 
 %macro PROLOGUE 2-5+ 0 ; #args, #regs, #xmm_regs, [stack_size,] arg_names...
     %assign num_args %1
@@ -538,15 +581,16 @@ DECLARE_REG 14, R15, 120
 
 %macro WIN64_PUSH_XMM 0
     ; Use the shadow space to store XMM6 and XMM7, the rest needs stack space allocated.
-    %if xmm_regs_used > 6
+    %if xmm_regs_used > 6 + high_mm_regs
         movaps [rstk + stack_offset +  8], xmm6
     %endif
-    %if xmm_regs_used > 7
+    %if xmm_regs_used > 7 + high_mm_regs
         movaps [rstk + stack_offset + 24], xmm7
     %endif
-    %if xmm_regs_used > 8
+    %assign %%xmm_regs_on_stack xmm_regs_used - high_mm_regs - 8
+    %if %%xmm_regs_on_stack > 0
         %assign %%i 8
-        %rep xmm_regs_used-8
+        %rep %%xmm_regs_on_stack
             movaps [rsp + (%%i-8)*16 + stack_size + 32], xmm %+ %%i
             %assign %%i %%i+1
         %endrep
@@ -555,53 +599,56 @@ DECLARE_REG 14, R15, 120
 
 %macro WIN64_SPILL_XMM 1
     %assign xmm_regs_used %1
-    ASSERT xmm_regs_used <= 16
-    %if xmm_regs_used > 8
+    ASSERT xmm_regs_used <= 16 + high_mm_regs
+    %assign %%xmm_regs_on_stack xmm_regs_used - high_mm_regs - 8
+    %if %%xmm_regs_on_stack > 0
         ; Allocate stack space for callee-saved xmm registers plus shadow space and align the stack.
-        %assign %%pad (xmm_regs_used-8)*16 + 32
+        %assign %%pad %%xmm_regs_on_stack*16 + 32
         %assign stack_size_padded %%pad + ((-%%pad-stack_offset-gprsize) & (STACK_ALIGNMENT-1))
         SUB rsp, stack_size_padded
     %endif
     WIN64_PUSH_XMM
 %endmacro
 
-%macro WIN64_RESTORE_XMM_INTERNAL 1
+%macro WIN64_RESTORE_XMM_INTERNAL 0
     %assign %%pad_size 0
-    %if xmm_regs_used > 8
-        %assign %%i xmm_regs_used
-        %rep xmm_regs_used-8
+    %assign %%xmm_regs_on_stack xmm_regs_used - high_mm_regs - 8
+    %if %%xmm_regs_on_stack > 0
+        %assign %%i xmm_regs_used - high_mm_regs
+        %rep %%xmm_regs_on_stack
             %assign %%i %%i-1
-            movaps xmm %+ %%i, [%1 + (%%i-8)*16 + stack_size + 32]
+            movaps xmm %+ %%i, [rsp + (%%i-8)*16 + stack_size + 32]
         %endrep
     %endif
     %if stack_size_padded > 0
         %if stack_size > 0 && required_stack_alignment > STACK_ALIGNMENT
             mov rsp, rstkm
         %else
-            add %1, stack_size_padded
+            add rsp, stack_size_padded
             %assign %%pad_size stack_size_padded
         %endif
     %endif
-    %if xmm_regs_used > 7
-        movaps xmm7, [%1 + stack_offset - %%pad_size + 24]
+    %if xmm_regs_used > 7 + high_mm_regs
+        movaps xmm7, [rsp + stack_offset - %%pad_size + 24]
     %endif
-    %if xmm_regs_used > 6
-        movaps xmm6, [%1 + stack_offset - %%pad_size +  8]
+    %if xmm_regs_used > 6 + high_mm_regs
+        movaps xmm6, [rsp + stack_offset - %%pad_size +  8]
     %endif
 %endmacro
 
-%macro WIN64_RESTORE_XMM 1
-    WIN64_RESTORE_XMM_INTERNAL %1
+%macro WIN64_RESTORE_XMM 0
+    WIN64_RESTORE_XMM_INTERNAL
     %assign stack_offset (stack_offset-stack_size_padded)
+    %assign stack_size_padded 0
     %assign xmm_regs_used 0
 %endmacro
 
-%define has_epilogue regs_used > 7 || xmm_regs_used > 6 || mmsize == 32 || stack_size > 0
+%define has_epilogue regs_used > 7 || stack_size > 0 || vzeroupper_required || xmm_regs_used > 6+high_mm_regs
 
 %macro RET 0
-    WIN64_RESTORE_XMM_INTERNAL rsp
+    WIN64_RESTORE_XMM_INTERNAL
     POP_IF_USED 14, 13, 12, 11, 10, 9, 8, 7
-    %if mmsize == 32
+    %if vzeroupper_required
         vzeroupper
     %endif
     AUTO_REP_RET
@@ -620,14 +667,15 @@ DECLARE_REG 7,  R10, 16
 DECLARE_REG 8,  R11, 24
 DECLARE_REG 9,  rbx, 32
 DECLARE_REG 10, rbp, 40
-DECLARE_REG 11, R12, 48
-DECLARE_REG 12, R13, 56
-DECLARE_REG 13, R14, 64
-DECLARE_REG 14, R15, 72
+DECLARE_REG 11, R14, 48
+DECLARE_REG 12, R15, 56
+DECLARE_REG 13, R12, 64
+DECLARE_REG 14, R13, 72
 
-%macro PROLOGUE 2-5+ ; #args, #regs, #xmm_regs, [stack_size,] arg_names...
+%macro PROLOGUE 2-5+ 0 ; #args, #regs, #xmm_regs, [stack_size,] arg_names...
     %assign num_args %1
     %assign regs_used %2
+    %assign xmm_regs_used %3
     ASSERT regs_used >= num_args
     SETUP_STACK_POINTER %4
     ASSERT regs_used <= 15
@@ -637,7 +685,7 @@ DECLARE_REG 14, R15, 72
     DEFINE_ARGS_INTERNAL %0, %4, %5
 %endmacro
 
-%define has_epilogue regs_used > 9 || mmsize == 32 || stack_size > 0
+%define has_epilogue regs_used > 9 || stack_size > 0 || vzeroupper_required
 
 %macro RET 0
     %if stack_size_padded > 0
@@ -648,7 +696,7 @@ DECLARE_REG 14, R15, 72
         %endif
     %endif
     POP_IF_USED 14, 13, 12, 11, 10, 9
-    %if mmsize == 32
+    %if vzeroupper_required
         vzeroupper
     %endif
     AUTO_REP_RET
@@ -693,7 +741,7 @@ DECLARE_ARG 7, 8, 9, 10, 11, 12, 13, 14
     DEFINE_ARGS_INTERNAL %0, %4, %5
 %endmacro
 
-%define has_epilogue regs_used > 3 || mmsize == 32 || stack_size > 0
+%define has_epilogue regs_used > 3 || stack_size > 0 || vzeroupper_required
 
 %macro RET 0
     %if stack_size_padded > 0
@@ -704,7 +752,7 @@ DECLARE_ARG 7, 8, 9, 10, 11, 12, 13, 14
         %endif
     %endif
     POP_IF_USED 6, 5, 4, 3
-    %if mmsize == 32
+    %if vzeroupper_required
         vzeroupper
     %endif
     AUTO_REP_RET
@@ -715,7 +763,7 @@ DECLARE_ARG 7, 8, 9, 10, 11, 12, 13, 14
 %if WIN64 == 0
     %macro WIN64_SPILL_XMM 1
     %endmacro
-    %macro WIN64_RESTORE_XMM 1
+    %macro WIN64_RESTORE_XMM 0
     %endmacro
     %macro WIN64_PUSH_XMM 0
     %endmacro
@@ -726,7 +774,7 @@ DECLARE_ARG 7, 8, 9, 10, 11, 12, 13, 14
 ; We can automatically detect "follows a branch", but not a branch target.
 ; (SSSE3 is a sufficient condition to know that your cpu doesn't have this problem.)
 %macro REP_RET 0
-    %if has_epilogue
+    %if has_epilogue || cpuflag(ssse3)
         RET
     %else
         rep ret
@@ -758,7 +806,7 @@ DECLARE_ARG 7, 8, 9, 10, 11, 12, 13, 14
 
 BRANCH_INSTR jz, je, jnz, jne, jl, jle, jnl, jnle, jg, jge, jng, jnge, ja, jae, jna, jnae, jb, jbe, jnb, jnbe, jc, jnc, js, jns, jo, jno, jp, jnp
 
-%macro TAIL_CALL 2 ; callee, is_nonadjacent
+%macro TAIL_CALL 1-2 1 ; callee, is_nonadjacent
     %if has_epilogue
         call %1
         RET
@@ -788,35 +836,25 @@ BRANCH_INSTR jz, je, jnz, jne, jl, jle, jnl, jnle, jg, jge, jng, jnge, ja, jae, 
 %endmacro
 %macro cglobal_internal 2-3+
     annotate_function_size
-    %if %1
-        %xdefine %%FUNCTION_PREFIX private_prefix
-        ; libvpx explicitly sets visibility in shared object builds. Avoid
-        ; setting visibility to hidden as it may break builds that split
-        ; sources on e.g., directory boundaries.
-        %ifdef CHROMIUM
-            %xdefine %%VISIBILITY hidden
-        %else
-            %xdefine %%VISIBILITY
-        %endif
-    %else
-        %xdefine %%FUNCTION_PREFIX public_prefix
-        %xdefine %%VISIBILITY
-    %endif
     %ifndef cglobaled_%2
-        %xdefine %2 mangle(%%FUNCTION_PREFIX %+ _ %+ %2)
+        %if %1
+            %xdefine %2 mangle(private_prefix %+ _ %+ %2)
+        %else
+            %xdefine %2 mangle(public_prefix %+ _ %+ %2)
+        %endif
         %xdefine %2.skip_prologue %2 %+ .skip_prologue
         CAT_XDEFINE cglobaled_, %2, 1
     %endif
     %xdefine current_function %2
     %xdefine current_function_section __SECT__
     %if FORMAT_ELF
-        global %2:function %%VISIBILITY
-    %elif FORMAT_MACHO
-        %ifdef __NASM_VER__
-            global %2
+        %if %1
+            global %2:function VISIBILITY
         %else
-            global %2:private_extern
+            global %2:function
         %endif
+    %elif FORMAT_MACHO && HAVE_PRIVATE_EXTERN && %1
+        global %2:private_extern
     %else
         global %2
     %endif
@@ -827,10 +865,22 @@ BRANCH_INSTR jz, je, jnz, jne, jl, jle, jnl, jnle, jg, jge, jng, jnge, ja, jae, 
     %assign stack_offset 0      ; stack pointer offset relative to the return address
     %assign stack_size 0        ; amount of stack space that can be freely used inside a function
     %assign stack_size_padded 0 ; total amount of allocated stack space, including space for callee-saved xmm registers on WIN64 and alignment padding
-    %assign xmm_regs_used 0     ; number of XMM registers requested, used for dealing with callee-saved registers on WIN64
+    %assign xmm_regs_used 0     ; number of XMM registers requested, used for dealing with callee-saved registers on WIN64 and vzeroupper
     %ifnidn %3, ""
         PROLOGUE %3
     %endif
+%endmacro
+
+; Create a global symbol from a local label with the correct name mangling and type
+%macro cglobal_label 1
+    %if FORMAT_ELF
+        global current_function %+ %1:function VISIBILITY
+    %elif FORMAT_MACHO && HAVE_PRIVATE_EXTERN
+        global current_function %+ %1:private_extern
+    %else
+        global current_function %+ %1
+    %endif
+    %1:
 %endmacro
 
 %macro cextern 1
@@ -851,7 +901,9 @@ BRANCH_INSTR jz, je, jnz, jne, jl, jle, jnl, jnle, jg, jge, jng, jnge, ja, jae, 
 %macro const 1-2+
     %xdefine %1 mangle(private_prefix %+ _ %+ %1)
     %if FORMAT_ELF
-        global %1:data hidden
+        global %1:data VISIBILITY
+    %elif FORMAT_MACHO && HAVE_PRIVATE_EXTERN
+        global %1:private_extern
     %else
         global %1
     %endif
@@ -890,24 +942,26 @@ BRANCH_INSTR jz, je, jnz, jne, jl, jle, jnl, jnle, jg, jge, jng, jnge, ja, jae, 
 %assign cpuflags_sse      (1<<4) | cpuflags_mmx2
 %assign cpuflags_sse2     (1<<5) | cpuflags_sse
 %assign cpuflags_sse2slow (1<<6) | cpuflags_sse2
-%assign cpuflags_sse3     (1<<7) | cpuflags_sse2
-%assign cpuflags_ssse3    (1<<8) | cpuflags_sse3
-%assign cpuflags_sse4     (1<<9) | cpuflags_ssse3
-%assign cpuflags_sse42    (1<<10)| cpuflags_sse4
-%assign cpuflags_avx      (1<<11)| cpuflags_sse42
-%assign cpuflags_xop      (1<<12)| cpuflags_avx
-%assign cpuflags_fma4     (1<<13)| cpuflags_avx
-%assign cpuflags_fma3     (1<<14)| cpuflags_avx
-%assign cpuflags_avx2     (1<<15)| cpuflags_fma3
+%assign cpuflags_lzcnt    (1<<7) | cpuflags_sse2
+%assign cpuflags_sse3     (1<<8) | cpuflags_sse2
+%assign cpuflags_ssse3    (1<<9) | cpuflags_sse3
+%assign cpuflags_sse4     (1<<10)| cpuflags_ssse3
+%assign cpuflags_sse42    (1<<11)| cpuflags_sse4
+%assign cpuflags_aesni    (1<<12)| cpuflags_sse42
+%assign cpuflags_gfni     (1<<13)| cpuflags_sse42
+%assign cpuflags_avx      (1<<14)| cpuflags_sse42
+%assign cpuflags_xop      (1<<15)| cpuflags_avx
+%assign cpuflags_fma4     (1<<16)| cpuflags_avx
+%assign cpuflags_fma3     (1<<17)| cpuflags_avx
+%assign cpuflags_bmi1     (1<<18)| cpuflags_avx|cpuflags_lzcnt
+%assign cpuflags_bmi2     (1<<19)| cpuflags_bmi1
+%assign cpuflags_avx2     (1<<20)| cpuflags_fma3|cpuflags_bmi2
+%assign cpuflags_avx512   (1<<21)| cpuflags_avx2 ; F, CD, BW, DQ, VL
 
-%assign cpuflags_cache32  (1<<16)
-%assign cpuflags_cache64  (1<<17)
-%assign cpuflags_slowctz  (1<<18)
-%assign cpuflags_lzcnt    (1<<19)
-%assign cpuflags_aligned  (1<<20) ; not a cpu feature, but a function variant
-%assign cpuflags_atom     (1<<21)
-%assign cpuflags_bmi1     (1<<22)|cpuflags_lzcnt
-%assign cpuflags_bmi2     (1<<23)|cpuflags_bmi1
+%assign cpuflags_cache32  (1<<22)
+%assign cpuflags_cache64  (1<<23)
+%assign cpuflags_aligned  (1<<24) ; not a cpu feature, but a function variant
+%assign cpuflags_atom     (1<<25)
 
 ; Returns a boolean value expressing whether or not the specified cpuflag is enabled.
 %define    cpuflag(x) (((((cpuflags & (cpuflags_ %+ x)) ^ (cpuflags_ %+ x)) - 1) >> 31) & 1)
@@ -950,7 +1004,7 @@ BRANCH_INSTR jz, je, jnz, jne, jl, jle, jnl, jnle, jg, jge, jng, jnge, ja, jae, 
 
     %if VPX_ARCH_X86_64 || cpuflag(sse2)
         %ifdef __NASM_VER__
-            ALIGNMODE k8
+            ALIGNMODE p6
         %else
             CPU amdnop
         %endif
@@ -963,11 +1017,12 @@ BRANCH_INSTR jz, je, jnz, jne, jl, jle, jnl, jnle, jg, jge, jng, jnge, ja, jae, 
     %endif
 %endmacro
 
-; Merge mmx and sse*
+; Merge mmx, sse*, and avx*
 ; m# is a simd register of the currently selected size
 ; xm# is the corresponding xmm register if mmsize >= 16, otherwise the same as m#
 ; ym# is the corresponding ymm register if mmsize >= 32, otherwise the same as m#
-; (All 3 remain in sync through SWAP.)
+; zm# is the corresponding zmm register if mmsize >= 64, otherwise the same as m#
+; (All 4 remain in sync through SWAP.)
 
 %macro CAT_XDEFINE 3
     %xdefine %1%2 %3
@@ -977,69 +1032,99 @@ BRANCH_INSTR jz, je, jnz, jne, jl, jle, jnl, jnle, jg, jge, jng, jnge, ja, jae, 
     %undef %1%2
 %endmacro
 
+%macro DEFINE_MMREGS 1 ; mmtype
+    %assign %%prev_mmregs 0
+    %ifdef num_mmregs
+        %assign %%prev_mmregs num_mmregs
+    %endif
+
+    %assign num_mmregs 8
+    %if VPX_ARCH_X86_64 && mmsize >= 16
+        %assign num_mmregs 16
+        %if cpuflag(avx512) || mmsize == 64
+            %assign num_mmregs 32
+        %endif
+    %endif
+
+    %assign %%i 0
+    %rep num_mmregs
+        CAT_XDEFINE m, %%i, %1 %+ %%i
+        CAT_XDEFINE nn%1, %%i, %%i
+        %assign %%i %%i+1
+    %endrep
+    %if %%prev_mmregs > num_mmregs
+        %rep %%prev_mmregs - num_mmregs
+            CAT_UNDEF m, %%i
+            CAT_UNDEF nn %+ mmtype, %%i
+            %assign %%i %%i+1
+        %endrep
+    %endif
+    %xdefine mmtype %1
+%endmacro
+
+; Prefer registers 16-31 over 0-15 to avoid having to use vzeroupper
+%macro AVX512_MM_PERMUTATION 0-1 0 ; start_reg
+    %if VPX_ARCH_X86_64 && cpuflag(avx512)
+        %assign %%i %1
+        %rep 16-%1
+            %assign %%i_high %%i+16
+            SWAP %%i, %%i_high
+            %assign %%i %%i+1
+        %endrep
+    %endif
+%endmacro
+
 %macro INIT_MMX 0-1+
     %assign avx_enabled 0
     %define RESET_MM_PERMUTATION INIT_MMX %1
     %define mmsize 8
-    %define num_mmregs 8
     %define mova movq
     %define movu movq
     %define movh movd
     %define movnta movntq
-    %assign %%i 0
-    %rep 8
-        CAT_XDEFINE m, %%i, mm %+ %%i
-        CAT_XDEFINE nnmm, %%i, %%i
-        %assign %%i %%i+1
-    %endrep
-    %rep 8
-        CAT_UNDEF m, %%i
-        CAT_UNDEF nnmm, %%i
-        %assign %%i %%i+1
-    %endrep
     INIT_CPUFLAGS %1
+    DEFINE_MMREGS mm
 %endmacro
 
 %macro INIT_XMM 0-1+
     %assign avx_enabled 0
     %define RESET_MM_PERMUTATION INIT_XMM %1
     %define mmsize 16
-    %define num_mmregs 8
-    %if VPX_ARCH_X86_64
-        %define num_mmregs 16
-    %endif
     %define mova movdqa
     %define movu movdqu
     %define movh movq
     %define movnta movntdq
-    %assign %%i 0
-    %rep num_mmregs
-        CAT_XDEFINE m, %%i, xmm %+ %%i
-        CAT_XDEFINE nnxmm, %%i, %%i
-        %assign %%i %%i+1
-    %endrep
     INIT_CPUFLAGS %1
+    DEFINE_MMREGS xmm
+    %if WIN64
+        AVX512_MM_PERMUTATION 6 ; Swap callee-saved registers with volatile registers
+    %endif
 %endmacro
 
 %macro INIT_YMM 0-1+
     %assign avx_enabled 1
     %define RESET_MM_PERMUTATION INIT_YMM %1
     %define mmsize 32
-    %define num_mmregs 8
-    %if VPX_ARCH_X86_64
-        %define num_mmregs 16
-    %endif
     %define mova movdqa
     %define movu movdqu
     %undef movh
     %define movnta movntdq
-    %assign %%i 0
-    %rep num_mmregs
-        CAT_XDEFINE m, %%i, ymm %+ %%i
-        CAT_XDEFINE nnymm, %%i, %%i
-        %assign %%i %%i+1
-    %endrep
     INIT_CPUFLAGS %1
+    DEFINE_MMREGS ymm
+    AVX512_MM_PERMUTATION
+%endmacro
+
+%macro INIT_ZMM 0-1+
+    %assign avx_enabled 1
+    %define RESET_MM_PERMUTATION INIT_ZMM %1
+    %define mmsize 64
+    %define mova movdqa
+    %define movu movdqu
+    %undef movh
+    %define movnta movntdq
+    INIT_CPUFLAGS %1
+    DEFINE_MMREGS zmm
+    AVX512_MM_PERMUTATION
 %endmacro
 
 INIT_XMM
@@ -1048,18 +1133,26 @@ INIT_XMM
     %define  mmmm%1   mm%1
     %define  mmxmm%1  mm%1
     %define  mmymm%1  mm%1
+    %define  mmzmm%1  mm%1
     %define xmmmm%1   mm%1
     %define xmmxmm%1 xmm%1
     %define xmmymm%1 xmm%1
+    %define xmmzmm%1 xmm%1
     %define ymmmm%1   mm%1
     %define ymmxmm%1 xmm%1
     %define ymmymm%1 ymm%1
+    %define ymmzmm%1 ymm%1
+    %define zmmmm%1   mm%1
+    %define zmmxmm%1 xmm%1
+    %define zmmymm%1 ymm%1
+    %define zmmzmm%1 zmm%1
     %define xm%1 xmm %+ m%1
     %define ym%1 ymm %+ m%1
+    %define zm%1 zmm %+ m%1
 %endmacro
 
 %assign i 0
-%rep 16
+%rep 32
     DECLARE_MMCAST i
     %assign i i+1
 %endrep
@@ -1129,25 +1222,42 @@ INIT_XMM
     %endif
     %assign %%i 0
     %rep num_mmregs
-        CAT_XDEFINE %%f, %%i, m %+ %%i
+        %xdefine %%tmp m %+ %%i
+        CAT_XDEFINE %%f, %%i, regnumof %+ %%tmp
         %assign %%i %%i+1
     %endrep
 %endmacro
 
-%macro LOAD_MM_PERMUTATION 1 ; name to load from
-    %ifdef %1_m0
+%macro LOAD_MM_PERMUTATION 0-1 ; name to load from
+    %if %0
+        %xdefine %%f %1_m
+    %else
+        %xdefine %%f current_function %+ _m
+    %endif
+    %xdefine %%tmp %%f %+ 0
+    %ifnum %%tmp
+        RESET_MM_PERMUTATION
         %assign %%i 0
         %rep num_mmregs
-            CAT_XDEFINE m, %%i, %1_m %+ %%i
-            CAT_XDEFINE nn, m %+ %%i, %%i
+            %xdefine %%tmp %%f %+ %%i
+            CAT_XDEFINE %%m, %%i, m %+ %%tmp
             %assign %%i %%i+1
+        %endrep
+        %rep num_mmregs
+            %assign %%i %%i-1
+            CAT_XDEFINE m, %%i, %%m %+ %%i
+            CAT_XDEFINE nn, m %+ %%i, %%i
         %endrep
     %endif
 %endmacro
 
 ; Append cpuflags to the callee's name iff the appended name is known and the plain name isn't
 %macro call 1
-    call_internal %1 %+ SUFFIX, %1
+    %ifid %1
+        call_internal %1 %+ SUFFIX, %1
+    %else
+        call %1
+    %endif
 %endmacro
 %macro call_internal 2
     %xdefine %%i %2
@@ -1190,12 +1300,17 @@ INIT_XMM
 ;=============================================================================
 
 %assign i 0
-%rep 16
+%rep 32
     %if i < 8
         CAT_XDEFINE sizeofmm, i, 8
+        CAT_XDEFINE regnumofmm, i, i
     %endif
     CAT_XDEFINE sizeofxmm, i, 16
     CAT_XDEFINE sizeofymm, i, 32
+    CAT_XDEFINE sizeofzmm, i, 64
+    CAT_XDEFINE regnumofxmm, i, i
+    CAT_XDEFINE regnumofymm, i, i
+    CAT_XDEFINE regnumofzmm, i, i
     %assign i i+1
 %endrep
 %undef i
@@ -1214,7 +1329,7 @@ INIT_XMM
 ;%1 == instruction
 ;%2 == minimal instruction set
 ;%3 == 1 if float, 0 if int
-;%4 == 1 if non-destructive or 4-operand (xmm, xmm, xmm, imm), 0 otherwise
+;%4 == 1 if 4-operand emulation, 0 if 3-operand emulation, 255 otherwise (no emulation)
 ;%5 == 1 if commutative (i.e. doesn't matter which src arg is which), 0 if not
 ;%6+: operands
 %macro RUN_AVX_INSTR 6-9+
@@ -1238,8 +1353,22 @@ INIT_XMM
         %ifdef cpuname
             %if notcpuflag(%2)
                 %error use of ``%1'' %2 instruction in cpuname function: current_function
-            %elif cpuflags_%2 < cpuflags_sse && notcpuflag(sse2) && __sizeofreg > 8
+            %elif %3 == 0 && __sizeofreg == 16 && notcpuflag(sse2)
                 %error use of ``%1'' sse2 instruction in cpuname function: current_function
+            %elif %3 == 0 && __sizeofreg == 32 && notcpuflag(avx2)
+                %error use of ``%1'' avx2 instruction in cpuname function: current_function
+            %elif __sizeofreg == 16 && notcpuflag(sse)
+                %error use of ``%1'' sse instruction in cpuname function: current_function
+            %elif __sizeofreg == 32 && notcpuflag(avx)
+                %error use of ``%1'' avx instruction in cpuname function: current_function
+            %elif __sizeofreg == 64 && notcpuflag(avx512)
+                %error use of ``%1'' avx512 instruction in cpuname function: current_function
+            %elifidn %1, pextrw ; special case because the base instruction is mmx2,
+                %ifnid %6       ; but sse4 is required for memory operands
+                    %if notcpuflag(sse4)
+                        %error use of ``%1'' sse4 instruction in cpuname function: current_function
+                    %endif
+                %endif
             %endif
         %endif
     %endif
@@ -1247,20 +1376,25 @@ INIT_XMM
     %if __emulate_avx
         %xdefine __src1 %7
         %xdefine __src2 %8
-        %ifnidn %6, %7
-            %if %0 >= 9
-                CHECK_AVX_INSTR_EMU {%1 %6, %7, %8, %9}, %6, %8, %9
-            %else
-                CHECK_AVX_INSTR_EMU {%1 %6, %7, %8}, %6, %8
-            %endif
-            %if %5 && %4 == 0
-                %ifnid %8
+        %if %5 && %4 == 0
+            %ifnidn %6, %7
+                %ifidn %6, %8
+                    %xdefine __src1 %8
+                    %xdefine __src2 %7
+                %elifnnum sizeof%8
                     ; 3-operand AVX instructions with a memory arg can only have it in src2,
                     ; whereas SSE emulation prefers to have it in src1 (i.e. the mov).
                     ; So, if the instruction is commutative with a memory arg, swap them.
                     %xdefine __src1 %8
                     %xdefine __src2 %7
                 %endif
+            %endif
+        %endif
+        %ifnidn %6, __src1
+            %if %0 >= 9
+                CHECK_AVX_INSTR_EMU {%1 %6, %7, %8, %9}, %6, __src2, %9
+            %else
+                CHECK_AVX_INSTR_EMU {%1 %6, %7, %8}, %6, __src2
             %endif
             %if __sizeofreg == 8
                 MOVQ %6, __src1
@@ -1278,9 +1412,40 @@ INIT_XMM
     %elif %0 >= 9
         __instr %6, %7, %8, %9
     %elif %0 == 8
-        __instr %6, %7, %8
+        %if avx_enabled && %5
+            %xdefine __src1 %7
+            %xdefine __src2 %8
+            %ifnum regnumof%7
+                %ifnum regnumof%8
+                    %if regnumof%7 < 8 && regnumof%8 >= 8 && regnumof%8 < 16 && sizeof%8 <= 32
+                        ; Most VEX-encoded instructions require an additional byte to encode when
+                        ; src2 is a high register (e.g. m8..15). If the instruction is commutative
+                        ; we can swap src1 and src2 when doing so reduces the instruction length.
+                        %xdefine __src1 %8
+                        %xdefine __src2 %7
+                    %endif
+                %endif
+            %endif
+            __instr %6, __src1, __src2
+        %else
+            __instr %6, %7, %8
+        %endif
     %elif %0 == 7
-        __instr %6, %7
+        %if avx_enabled && %5
+            %xdefine __src1 %6
+            %xdefine __src2 %7
+            %ifnum regnumof%6
+                %ifnum regnumof%7
+                    %if regnumof%6 < 8 && regnumof%7 >= 8 && regnumof%7 < 16 && sizeof%7 <= 32
+                        %xdefine __src1 %7
+                        %xdefine __src2 %6
+                    %endif
+                %endif
+            %endif
+            __instr %6, __src1, __src2
+        %else
+            __instr %6, %7
+        %endif
     %else
         __instr %6
     %endif
@@ -1289,9 +1454,9 @@ INIT_XMM
 ;%1 == instruction
 ;%2 == minimal instruction set
 ;%3 == 1 if float, 0 if int
-;%4 == 1 if non-destructive or 4-operand (xmm, xmm, xmm, imm), 0 otherwise
+;%4 == 1 if 4-operand emulation, 0 if 3-operand emulation, 255 otherwise (no emulation)
 ;%5 == 1 if commutative (i.e. doesn't matter which src arg is which), 0 if not
-%macro AVX_INSTR 1-5 fnord, 0, 1, 0
+%macro AVX_INSTR 1-5 fnord, 0, 255, 0
     %macro %1 1-10 fnord, fnord, fnord, fnord, %1, %2, %3, %4, %5
         %ifidn %2, fnord
             RUN_AVX_INSTR %6, %7, %8, %9, %10, %1
@@ -1307,77 +1472,112 @@ INIT_XMM
     %endmacro
 %endmacro
 
-; Instructions with both VEX and non-VEX encodings
+; Instructions with both VEX/EVEX and legacy encodings
 ; Non-destructive instructions are written without parameters
 AVX_INSTR addpd, sse2, 1, 0, 1
 AVX_INSTR addps, sse, 1, 0, 1
-AVX_INSTR addsd, sse2, 1, 0, 1
-AVX_INSTR addss, sse, 1, 0, 1
+AVX_INSTR addsd, sse2, 1, 0, 0
+AVX_INSTR addss, sse, 1, 0, 0
 AVX_INSTR addsubpd, sse3, 1, 0, 0
 AVX_INSTR addsubps, sse3, 1, 0, 0
-AVX_INSTR aesdec, fnord, 0, 0, 0
-AVX_INSTR aesdeclast, fnord, 0, 0, 0
-AVX_INSTR aesenc, fnord, 0, 0, 0
-AVX_INSTR aesenclast, fnord, 0, 0, 0
-AVX_INSTR aesimc
-AVX_INSTR aeskeygenassist
+AVX_INSTR aesdec, aesni, 0, 0, 0
+AVX_INSTR aesdeclast, aesni, 0, 0, 0
+AVX_INSTR aesenc, aesni, 0, 0, 0
+AVX_INSTR aesenclast, aesni, 0, 0, 0
+AVX_INSTR aesimc, aesni
+AVX_INSTR aeskeygenassist, aesni
 AVX_INSTR andnpd, sse2, 1, 0, 0
 AVX_INSTR andnps, sse, 1, 0, 0
 AVX_INSTR andpd, sse2, 1, 0, 1
 AVX_INSTR andps, sse, 1, 0, 1
-AVX_INSTR blendpd, sse4, 1, 0, 0
-AVX_INSTR blendps, sse4, 1, 0, 0
-AVX_INSTR blendvpd, sse4, 1, 0, 0
-AVX_INSTR blendvps, sse4, 1, 0, 0
+AVX_INSTR blendpd, sse4, 1, 1, 0
+AVX_INSTR blendps, sse4, 1, 1, 0
+AVX_INSTR blendvpd, sse4 ; can't be emulated
+AVX_INSTR blendvps, sse4 ; can't be emulated
+AVX_INSTR cmpeqpd, sse2, 1, 0, 1
+AVX_INSTR cmpeqps, sse, 1, 0, 1
+AVX_INSTR cmpeqsd, sse2, 1, 0, 0
+AVX_INSTR cmpeqss, sse, 1, 0, 0
+AVX_INSTR cmplepd, sse2, 1, 0, 0
+AVX_INSTR cmpleps, sse, 1, 0, 0
+AVX_INSTR cmplesd, sse2, 1, 0, 0
+AVX_INSTR cmpless, sse, 1, 0, 0
+AVX_INSTR cmpltpd, sse2, 1, 0, 0
+AVX_INSTR cmpltps, sse, 1, 0, 0
+AVX_INSTR cmpltsd, sse2, 1, 0, 0
+AVX_INSTR cmpltss, sse, 1, 0, 0
+AVX_INSTR cmpneqpd, sse2, 1, 0, 1
+AVX_INSTR cmpneqps, sse, 1, 0, 1
+AVX_INSTR cmpneqsd, sse2, 1, 0, 0
+AVX_INSTR cmpneqss, sse, 1, 0, 0
+AVX_INSTR cmpnlepd, sse2, 1, 0, 0
+AVX_INSTR cmpnleps, sse, 1, 0, 0
+AVX_INSTR cmpnlesd, sse2, 1, 0, 0
+AVX_INSTR cmpnless, sse, 1, 0, 0
+AVX_INSTR cmpnltpd, sse2, 1, 0, 0
+AVX_INSTR cmpnltps, sse, 1, 0, 0
+AVX_INSTR cmpnltsd, sse2, 1, 0, 0
+AVX_INSTR cmpnltss, sse, 1, 0, 0
+AVX_INSTR cmpordpd, sse2 1, 0, 1
+AVX_INSTR cmpordps, sse 1, 0, 1
+AVX_INSTR cmpordsd, sse2 1, 0, 0
+AVX_INSTR cmpordss, sse 1, 0, 0
 AVX_INSTR cmppd, sse2, 1, 1, 0
 AVX_INSTR cmpps, sse, 1, 1, 0
 AVX_INSTR cmpsd, sse2, 1, 1, 0
 AVX_INSTR cmpss, sse, 1, 1, 0
-AVX_INSTR comisd, sse2
-AVX_INSTR comiss, sse
-AVX_INSTR cvtdq2pd, sse2
-AVX_INSTR cvtdq2ps, sse2
-AVX_INSTR cvtpd2dq, sse2
-AVX_INSTR cvtpd2ps, sse2
-AVX_INSTR cvtps2dq, sse2
-AVX_INSTR cvtps2pd, sse2
-AVX_INSTR cvtsd2si, sse2
-AVX_INSTR cvtsd2ss, sse2
-AVX_INSTR cvtsi2sd, sse2
-AVX_INSTR cvtsi2ss, sse
-AVX_INSTR cvtss2sd, sse2
-AVX_INSTR cvtss2si, sse
-AVX_INSTR cvttpd2dq, sse2
-AVX_INSTR cvttps2dq, sse2
-AVX_INSTR cvttsd2si, sse2
-AVX_INSTR cvttss2si, sse
+AVX_INSTR cmpunordpd, sse2, 1, 0, 1
+AVX_INSTR cmpunordps, sse, 1, 0, 1
+AVX_INSTR cmpunordsd, sse2, 1, 0, 0
+AVX_INSTR cmpunordss, sse, 1, 0, 0
+AVX_INSTR comisd, sse2, 1
+AVX_INSTR comiss, sse, 1
+AVX_INSTR cvtdq2pd, sse2, 1
+AVX_INSTR cvtdq2ps, sse2, 1
+AVX_INSTR cvtpd2dq, sse2, 1
+AVX_INSTR cvtpd2ps, sse2, 1
+AVX_INSTR cvtps2dq, sse2, 1
+AVX_INSTR cvtps2pd, sse2, 1
+AVX_INSTR cvtsd2si, sse2, 1
+AVX_INSTR cvtsd2ss, sse2, 1, 0, 0
+AVX_INSTR cvtsi2sd, sse2, 1, 0, 0
+AVX_INSTR cvtsi2ss, sse, 1, 0, 0
+AVX_INSTR cvtss2sd, sse2, 1, 0, 0
+AVX_INSTR cvtss2si, sse, 1
+AVX_INSTR cvttpd2dq, sse2, 1
+AVX_INSTR cvttps2dq, sse2, 1
+AVX_INSTR cvttsd2si, sse2, 1
+AVX_INSTR cvttss2si, sse, 1
 AVX_INSTR divpd, sse2, 1, 0, 0
 AVX_INSTR divps, sse, 1, 0, 0
 AVX_INSTR divsd, sse2, 1, 0, 0
 AVX_INSTR divss, sse, 1, 0, 0
 AVX_INSTR dppd, sse4, 1, 1, 0
 AVX_INSTR dpps, sse4, 1, 1, 0
-AVX_INSTR extractps, sse4
+AVX_INSTR extractps, sse4, 1
+AVX_INSTR gf2p8affineinvqb, gfni, 0, 1, 0
+AVX_INSTR gf2p8affineqb, gfni, 0, 1, 0
+AVX_INSTR gf2p8mulb, gfni, 0, 0, 0
 AVX_INSTR haddpd, sse3, 1, 0, 0
 AVX_INSTR haddps, sse3, 1, 0, 0
 AVX_INSTR hsubpd, sse3, 1, 0, 0
 AVX_INSTR hsubps, sse3, 1, 0, 0
 AVX_INSTR insertps, sse4, 1, 1, 0
 AVX_INSTR lddqu, sse3
-AVX_INSTR ldmxcsr, sse
+AVX_INSTR ldmxcsr, sse, 1
 AVX_INSTR maskmovdqu, sse2
 AVX_INSTR maxpd, sse2, 1, 0, 1
 AVX_INSTR maxps, sse, 1, 0, 1
-AVX_INSTR maxsd, sse2, 1, 0, 1
-AVX_INSTR maxss, sse, 1, 0, 1
+AVX_INSTR maxsd, sse2, 1, 0, 0
+AVX_INSTR maxss, sse, 1, 0, 0
 AVX_INSTR minpd, sse2, 1, 0, 1
 AVX_INSTR minps, sse, 1, 0, 1
-AVX_INSTR minsd, sse2, 1, 0, 1
-AVX_INSTR minss, sse, 1, 0, 1
-AVX_INSTR movapd, sse2
-AVX_INSTR movaps, sse
+AVX_INSTR minsd, sse2, 1, 0, 0
+AVX_INSTR minss, sse, 1, 0, 0
+AVX_INSTR movapd, sse2, 1
+AVX_INSTR movaps, sse, 1
 AVX_INSTR movd, mmx
-AVX_INSTR movddup, sse3
+AVX_INSTR movddup, sse3, 1
 AVX_INSTR movdqa, sse2
 AVX_INSTR movdqu, sse2
 AVX_INSTR movhlps, sse, 1, 0, 0
@@ -1386,24 +1586,24 @@ AVX_INSTR movhps, sse, 1, 0, 0
 AVX_INSTR movlhps, sse, 1, 0, 0
 AVX_INSTR movlpd, sse2, 1, 0, 0
 AVX_INSTR movlps, sse, 1, 0, 0
-AVX_INSTR movmskpd, sse2
-AVX_INSTR movmskps, sse
+AVX_INSTR movmskpd, sse2, 1
+AVX_INSTR movmskps, sse, 1
 AVX_INSTR movntdq, sse2
 AVX_INSTR movntdqa, sse4
-AVX_INSTR movntpd, sse2
-AVX_INSTR movntps, sse
+AVX_INSTR movntpd, sse2, 1
+AVX_INSTR movntps, sse, 1
 AVX_INSTR movq, mmx
 AVX_INSTR movsd, sse2, 1, 0, 0
-AVX_INSTR movshdup, sse3
-AVX_INSTR movsldup, sse3
+AVX_INSTR movshdup, sse3, 1
+AVX_INSTR movsldup, sse3, 1
 AVX_INSTR movss, sse, 1, 0, 0
-AVX_INSTR movupd, sse2
-AVX_INSTR movups, sse
-AVX_INSTR mpsadbw, sse4
+AVX_INSTR movupd, sse2, 1
+AVX_INSTR movups, sse, 1
+AVX_INSTR mpsadbw, sse4, 0, 1, 0
 AVX_INSTR mulpd, sse2, 1, 0, 1
 AVX_INSTR mulps, sse, 1, 0, 1
-AVX_INSTR mulsd, sse2, 1, 0, 1
-AVX_INSTR mulss, sse, 1, 0, 1
+AVX_INSTR mulsd, sse2, 1, 0, 0
+AVX_INSTR mulss, sse, 1, 0, 0
 AVX_INSTR orpd, sse2, 1, 0, 1
 AVX_INSTR orps, sse, 1, 0, 1
 AVX_INSTR pabsb, ssse3
@@ -1421,14 +1621,18 @@ AVX_INSTR paddsb, mmx, 0, 0, 1
 AVX_INSTR paddsw, mmx, 0, 0, 1
 AVX_INSTR paddusb, mmx, 0, 0, 1
 AVX_INSTR paddusw, mmx, 0, 0, 1
-AVX_INSTR palignr, ssse3
+AVX_INSTR palignr, ssse3, 0, 1, 0
 AVX_INSTR pand, mmx, 0, 0, 1
 AVX_INSTR pandn, mmx, 0, 0, 0
 AVX_INSTR pavgb, mmx2, 0, 0, 1
 AVX_INSTR pavgw, mmx2, 0, 0, 1
-AVX_INSTR pblendvb, sse4, 0, 0, 0
-AVX_INSTR pblendw, sse4
-AVX_INSTR pclmulqdq
+AVX_INSTR pblendvb, sse4 ; can't be emulated
+AVX_INSTR pblendw, sse4, 0, 1, 0
+AVX_INSTR pclmulqdq, fnord, 0, 1, 0
+AVX_INSTR pclmulhqhqdq, fnord, 0, 0, 0
+AVX_INSTR pclmulhqlqdq, fnord, 0, 0, 0
+AVX_INSTR pclmullqhqdq, fnord, 0, 0, 0
+AVX_INSTR pclmullqlqdq, fnord, 0, 0, 0
 AVX_INSTR pcmpestri, sse42
 AVX_INSTR pcmpestrm, sse42
 AVX_INSTR pcmpistri, sse42
@@ -1452,10 +1656,10 @@ AVX_INSTR phminposuw, sse4
 AVX_INSTR phsubw, ssse3, 0, 0, 0
 AVX_INSTR phsubd, ssse3, 0, 0, 0
 AVX_INSTR phsubsw, ssse3, 0, 0, 0
-AVX_INSTR pinsrb, sse4
-AVX_INSTR pinsrd, sse4
-AVX_INSTR pinsrq, sse4
-AVX_INSTR pinsrw, mmx2
+AVX_INSTR pinsrb, sse4, 0, 1, 0
+AVX_INSTR pinsrd, sse4, 0, 1, 0
+AVX_INSTR pinsrq, sse4, 0, 1, 0
+AVX_INSTR pinsrw, mmx2, 0, 1, 0
 AVX_INSTR pmaddwd, mmx, 0, 0, 1
 AVX_INSTR pmaddubsw, ssse3, 0, 0, 0
 AVX_INSTR pmaxsb, sse4, 0, 0, 1
@@ -1527,27 +1731,27 @@ AVX_INSTR punpcklwd, mmx, 0, 0, 0
 AVX_INSTR punpckldq, mmx, 0, 0, 0
 AVX_INSTR punpcklqdq, sse2, 0, 0, 0
 AVX_INSTR pxor, mmx, 0, 0, 1
-AVX_INSTR rcpps, sse, 1, 0, 0
+AVX_INSTR rcpps, sse, 1
 AVX_INSTR rcpss, sse, 1, 0, 0
-AVX_INSTR roundpd, sse4
-AVX_INSTR roundps, sse4
-AVX_INSTR roundsd, sse4
-AVX_INSTR roundss, sse4
-AVX_INSTR rsqrtps, sse, 1, 0, 0
+AVX_INSTR roundpd, sse4, 1
+AVX_INSTR roundps, sse4, 1
+AVX_INSTR roundsd, sse4, 1, 1, 0
+AVX_INSTR roundss, sse4, 1, 1, 0
+AVX_INSTR rsqrtps, sse, 1
 AVX_INSTR rsqrtss, sse, 1, 0, 0
 AVX_INSTR shufpd, sse2, 1, 1, 0
 AVX_INSTR shufps, sse, 1, 1, 0
-AVX_INSTR sqrtpd, sse2, 1, 0, 0
-AVX_INSTR sqrtps, sse, 1, 0, 0
+AVX_INSTR sqrtpd, sse2, 1
+AVX_INSTR sqrtps, sse, 1
 AVX_INSTR sqrtsd, sse2, 1, 0, 0
 AVX_INSTR sqrtss, sse, 1, 0, 0
-AVX_INSTR stmxcsr, sse
+AVX_INSTR stmxcsr, sse, 1
 AVX_INSTR subpd, sse2, 1, 0, 0
 AVX_INSTR subps, sse, 1, 0, 0
 AVX_INSTR subsd, sse2, 1, 0, 0
 AVX_INSTR subss, sse, 1, 0, 0
-AVX_INSTR ucomisd, sse2
-AVX_INSTR ucomiss, sse
+AVX_INSTR ucomisd, sse2, 1
+AVX_INSTR ucomiss, sse, 1
 AVX_INSTR unpckhpd, sse2, 1, 0, 0
 AVX_INSTR unpckhps, sse, 1, 0, 0
 AVX_INSTR unpcklpd, sse2, 1, 0, 0
@@ -1559,6 +1763,38 @@ AVX_INSTR xorps, sse, 1, 0, 1
 AVX_INSTR pfadd, 3dnow, 1, 0, 1
 AVX_INSTR pfsub, 3dnow, 1, 0, 0
 AVX_INSTR pfmul, 3dnow, 1, 0, 1
+
+;%1 == instruction
+;%2 == minimal instruction set
+%macro GPR_INSTR 2
+    %macro %1 2-5 fnord, %1, %2
+        %ifdef cpuname
+            %if notcpuflag(%5)
+                %error use of ``%4'' %5 instruction in cpuname function: current_function
+            %endif
+        %endif
+        %ifidn %3, fnord
+            %4 %1, %2
+        %else
+            %4 %1, %2, %3
+        %endif
+    %endmacro
+%endmacro
+
+GPR_INSTR andn, bmi1
+GPR_INSTR bextr, bmi1
+GPR_INSTR blsi, bmi1
+GPR_INSTR blsr, bmi1
+GPR_INSTR blsmsk, bmi1
+GPR_INSTR bzhi, bmi2
+GPR_INSTR mulx, bmi2
+GPR_INSTR pdep, bmi2
+GPR_INSTR pext, bmi2
+GPR_INSTR popcnt, sse42
+GPR_INSTR rorx, bmi2
+GPR_INSTR sarx, bmi2
+GPR_INSTR shlx, bmi2
+GPR_INSTR shrx, bmi2
 
 ; base-4 constants for shuffles
 %assign i 0
@@ -1610,7 +1846,7 @@ FMA_INSTR pmadcswd, pmaddwd, paddd
                 v%5%6 %1, %2, %3, %4
             %elifidn %1, %2
                 ; If %3 or %4 is a memory operand it needs to be encoded as the last operand.
-                %ifid %3
+                %ifnum sizeof%3
                     v%{5}213%6 %2, %3, %4
                 %else
                     v%{5}132%6 %2, %4, %3
@@ -1635,15 +1871,53 @@ FMA4_INSTR fmsubadd, pd, ps
 FMA4_INSTR fnmadd,   pd, ps, sd, ss
 FMA4_INSTR fnmsub,   pd, ps, sd, ss
 
-; workaround: vpbroadcastq is broken in x86_32 due to a yasm bug (fixed in 1.3.0)
-%ifdef __YASM_VER__
-    %if __YASM_VERSION_ID__ < 0x01030000 && VPX_ARCH_X86_64 == 0
-        %macro vpbroadcastq 2
-            %if sizeof%1 == 16
-                movddup %1, %2
-            %else
-                vbroadcastsd %1, %2
+; Macros for converting VEX instructions to equivalent EVEX ones.
+%macro EVEX_INSTR 2-3 0 ; vex, evex, prefer_evex
+    %macro %1 2-7 fnord, fnord, %1, %2, %3
+        %ifidn %3, fnord
+            %define %%args %1, %2
+        %elifidn %4, fnord
+            %define %%args %1, %2, %3
+        %else
+            %define %%args %1, %2, %3, %4
+        %endif
+        %assign %%evex_required cpuflag(avx512) & %7
+        %ifnum regnumof%1
+            %if regnumof%1 >= 16 || sizeof%1 > 32
+                %assign %%evex_required 1
             %endif
-        %endmacro
-    %endif
-%endif
+        %endif
+        %ifnum regnumof%2
+            %if regnumof%2 >= 16 || sizeof%2 > 32
+                %assign %%evex_required 1
+            %endif
+        %endif
+        %ifnum regnumof%3
+            %if regnumof%3 >= 16 || sizeof%3 > 32
+                %assign %%evex_required 1
+            %endif
+        %endif
+        %if %%evex_required
+            %6 %%args
+        %else
+            %5 %%args ; Prefer VEX over EVEX due to shorter instruction length
+        %endif
+    %endmacro
+%endmacro
+
+EVEX_INSTR vbroadcastf128, vbroadcastf32x4
+EVEX_INSTR vbroadcasti128, vbroadcasti32x4
+EVEX_INSTR vextractf128,   vextractf32x4
+EVEX_INSTR vextracti128,   vextracti32x4
+EVEX_INSTR vinsertf128,    vinsertf32x4
+EVEX_INSTR vinserti128,    vinserti32x4
+EVEX_INSTR vmovdqa,        vmovdqa32
+EVEX_INSTR vmovdqu,        vmovdqu32
+EVEX_INSTR vpand,          vpandd
+EVEX_INSTR vpandn,         vpandnd
+EVEX_INSTR vpor,           vpord
+EVEX_INSTR vpxor,          vpxord
+EVEX_INSTR vrcpps,         vrcp14ps,   1 ; EVEX versions have higher precision
+EVEX_INSTR vrcpss,         vrcp14ss,   1
+EVEX_INSTR vrsqrtps,       vrsqrt14ps, 1
+EVEX_INSTR vrsqrtss,       vrsqrt14ss, 1

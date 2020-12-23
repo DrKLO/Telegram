@@ -17,6 +17,7 @@ enum : int { kMaxEncoderBuffers = 8 };
 enum : int { kMaxSimulcastStreams = 3 };
 enum : int { kMaxSpatialLayers = 5 };
 enum : int { kMaxTemporalStreams = 4 };
+enum : int { kMaxPreferredPixelFormats = 5 };
 
 }  // namespace webrtc
 

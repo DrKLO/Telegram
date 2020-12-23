@@ -37,15 +37,30 @@ public class CheckBoxSquare extends View {
 
     private final static float progressBounceDiff = 0.2f;
 
+    private String key1;
+    private String key2;
+    private String key3;
+
     public CheckBoxSquare(Context context, boolean alert) {
         super(context);
         if (Theme.checkboxSquare_backgroundPaint == null) {
             Theme.createCommonResources(context);
         }
+
+        key1 = isAlert ? Theme.key_dialogCheckboxSquareUnchecked : Theme.key_checkboxSquareUnchecked;
+        key2 = isAlert ? Theme.key_dialogCheckboxSquareBackground : Theme.key_checkboxSquareBackground;
+        key3 = isAlert ? Theme.key_dialogCheckboxSquareCheck : Theme.key_checkboxSquareCheck;
+
         rectF = new RectF();
         drawBitmap = Bitmap.createBitmap(AndroidUtilities.dp(18), AndroidUtilities.dp(18), Bitmap.Config.ARGB_4444);
         drawCanvas = new Canvas(drawBitmap);
         isAlert = alert;
+    }
+
+    public void setColors(String unchecked, String checked, String check) {
+        key1 = unchecked;
+        key2 = checked;
+        key3 = check;
     }
 
     @Keep
@@ -121,8 +136,8 @@ public class CheckBoxSquare extends View {
 
         float checkProgress;
         float bounceProgress;
-        int uncheckedColor = Theme.getColor(isAlert ? Theme.key_dialogCheckboxSquareUnchecked : Theme.key_checkboxSquareUnchecked);
-        int color = Theme.getColor(isAlert ? Theme.key_dialogCheckboxSquareBackground : Theme.key_checkboxSquareBackground);
+        int uncheckedColor = Theme.getColor(key1);
+        int color = Theme.getColor(key2);
         if (progress <= 0.5f) {
             bounceProgress = checkProgress = progress / 0.5f;
             int rD = (int) ((Color.red(color) - Color.red(uncheckedColor)) * checkProgress);
@@ -151,7 +166,7 @@ public class CheckBoxSquare extends View {
         }
 
         if (progress > 0.5f) {
-            Theme.checkboxSquare_checkPaint.setColor(Theme.getColor(isAlert ? Theme.key_dialogCheckboxSquareCheck : Theme.key_checkboxSquareCheck));
+            Theme.checkboxSquare_checkPaint.setColor(Theme.getColor(key3));
 
             int endX = (int) (AndroidUtilities.dp(7) - AndroidUtilities.dp(3) * (1.0f - bounceProgress));
             int endY = (int) (AndroidUtilities.dpf2(13) - AndroidUtilities.dp(3) * (1.0f - bounceProgress));

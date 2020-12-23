@@ -29,7 +29,7 @@ namespace rnn_vad {
 // values are written at the end of the buffer.
 // The class also provides a view on the most recent M values, where 0 < M <= S
 // and by default M = N.
-template <typename T, size_t S, size_t N, size_t M = N>
+template <typename T, int S, int N, int M = N>
 class SequenceBuffer {
   static_assert(N <= S,
                 "The new chunk size cannot be larger than the sequence buffer "
@@ -45,8 +45,8 @@ class SequenceBuffer {
   SequenceBuffer(const SequenceBuffer&) = delete;
   SequenceBuffer& operator=(const SequenceBuffer&) = delete;
   ~SequenceBuffer() = default;
-  size_t size() const { return S; }
-  size_t chunks_size() const { return N; }
+  int size() const { return S; }
+  int chunks_size() const { return N; }
   // Sets the sequence buffer values to zero.
   void Reset() { std::fill(buffer_.begin(), buffer_.end(), 0); }
   // Returns a view on the whole buffer.

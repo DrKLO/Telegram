@@ -13,8 +13,16 @@ package org.webrtc;
 import android.annotation.TargetApi;
 import android.media.MediaCodecInfo;
 import android.media.MediaCodecInfo.CodecCapabilities;
+import android.media.MediaCodecList;
 import android.os.Build;
+
+import org.telegram.messenger.FileLog;
+
 import androidx.annotation.Nullable;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -65,6 +73,24 @@ class MediaCodecUtils {
     } else {
       return new int[] {};
     }
+  }
+
+  public static ArrayList<MediaCodecInfo> getSortedCodecsList() {
+    ArrayList<MediaCodecInfo> result = new ArrayList<>();
+    try {
+      int numberOfCodecs = MediaCodecList.getCodecCount();
+      for (int a = 0; a < numberOfCodecs; a++) {
+        try {
+          result.add(MediaCodecList.getCodecInfoAt(a));
+        } catch (IllegalArgumentException e) {
+          Logging.e(TAG, "Cannot retrieve codec info", e);
+        }
+      }
+      Collections.sort(result, (o1, o2) -> o1.getName().compareTo(o2.getName()));
+    } catch (Exception e) {
+      FileLog.e(e);
+    }
+    return result;
   }
 
   static @Nullable Integer selectColorFormat(

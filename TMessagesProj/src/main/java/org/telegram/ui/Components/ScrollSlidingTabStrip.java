@@ -39,6 +39,7 @@ import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.R;
+import org.telegram.messenger.SvgHelper;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
@@ -293,7 +294,7 @@ public class ScrollSlidingTabStrip extends HorizontalScrollView {
         tabTypes.put(key, tab);
     }
 
-    public View addStickerTab(TLObject thumb, TLRPC.Document sticker, TLRPC.TL_messages_stickerSet parentObject) {
+    public View addStickerTab(TLObject thumb, SvgHelper.SvgDrawable svgThumb, TLRPC.Document sticker, TLRPC.TL_messages_stickerSet parentObject) {
         String key = "set" + parentObject.set.id;
         final int position = tabCount++;
 
@@ -315,6 +316,7 @@ public class ScrollSlidingTabStrip extends HorizontalScrollView {
         tab.setTag(R.id.index_tag, position);
         tab.setTag(R.id.parent_tag, parentObject);
         tab.setTag(R.id.object_tag, sticker);
+        tab.setTag(R.id.svg_tag, svgThumb);
         tab.setSelected(position == currentPosition);
 
         tabTypes.put(key, tab);
@@ -367,6 +369,7 @@ public class ScrollSlidingTabStrip extends HorizontalScrollView {
             View child = tabsContainer.getChildAt(a);
             Object object = child.getTag();
             Object parentObject = child.getTag(R.id.parent_tag);
+            SvgHelper.SvgDrawable svgThumb = (SvgHelper.SvgDrawable) child.getTag(R.id.svg_tag);
             TLRPC.Document sticker = (TLRPC.Document) child.getTag(R.id.object_tag);
             ImageLocation imageLocation;
 
@@ -384,11 +387,15 @@ public class ScrollSlidingTabStrip extends HorizontalScrollView {
             }
             BackupImageView imageView = (BackupImageView) ((FrameLayout) child).getChildAt(0);
             if (object instanceof TLRPC.Document && MessageObject.isAnimatedStickerDocument(sticker, true)) {
-                imageView.setImage(ImageLocation.getForDocument(sticker), "30_30", imageLocation, null, 0, parentObject);
+                if (svgThumb != null) {
+                    imageView.setImage(ImageLocation.getForDocument(sticker), "30_30", svgThumb, 0, parentObject);
+                } else {
+                    imageView.setImage(ImageLocation.getForDocument(sticker), "30_30", imageLocation, null, 0, parentObject);
+                }
             } else if (imageLocation.imageType == FileLoader.IMAGE_TYPE_LOTTIE) {
-                imageView.setImage(imageLocation, "30_30", "tgs", null, parentObject);
+                imageView.setImage(imageLocation, "30_30", "tgs", svgThumb, parentObject);
             } else {
-                imageView.setImage(imageLocation, null, "webp", null, parentObject);
+                imageView.setImage(imageLocation, null, "webp", svgThumb, parentObject);
             }
         }
     }

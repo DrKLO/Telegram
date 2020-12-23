@@ -48,11 +48,8 @@ class EchoRemoverMetrics {
   void ResetMetrics();
 
   int block_counter_ = 0;
-  std::array<DbMetric, 2> erl_;
   DbMetric erl_time_domain_;
-  std::array<DbMetric, 2> erle_;
   DbMetric erle_time_domain_;
-  int active_render_count_ = 0;
   bool saturated_capture_ = false;
   bool metrics_reported_ = false;
 

@@ -744,7 +744,7 @@ public class MediaCodecVideoConvertor {
                     readAndWriteTracks(extractor, mediaMuxer, info, startTime, endTime, duration, cacheFile, bitrate != -1);
                 }
             }
-        } catch (Exception e) {
+        } catch (Throwable e) {
             error = true;
             FileLog.e("bitrate: " + bitrate + " framerate: " + framerate + " size: " + resultHeight + "x" + resultWidth);
             FileLog.e(e);
@@ -756,7 +756,7 @@ public class MediaCodecVideoConvertor {
                 try {
                     mediaMuxer.finishMovie();
                     endPresentationTime = mediaMuxer.getLastFrameTimestamp(videoTrackIndex);
-                } catch (Exception e) {
+                } catch (Throwable e) {
                     FileLog.e(e);
                 }
             }

@@ -36,7 +36,6 @@ struct NetEqNetworkStatistics {
   uint16_t preferred_buffer_size_ms;  // Target buffer size in ms.
   uint16_t jitter_peaks_found;        // 1 if adding extra delay due to peaky
                                       // jitter; 0 otherwise.
-  uint16_t packet_loss_rate;          // Loss rate (network + late) in Q14.
   uint16_t expand_rate;         // Fraction (of original stream) of synthesized
                                 // audio inserted through expansion (in Q14).
   uint16_t speech_expand_rate;  // Fraction (of original stream) of synthesized
@@ -49,7 +48,6 @@ struct NetEqNetworkStatistics {
                                       // decoding (in Q14).
   uint16_t secondary_discarded_rate;  // Fraction of discarded FEC/RED data (in
                                       // Q14).
-  size_t added_zero_samples;  // Number of zero samples added in "off" mode.
   // Statistics for packet waiting times, i.e., the time between a packet
   // arrives until it is decoded.
   int mean_waiting_time_ms;
@@ -273,6 +271,9 @@ class NetEq {
   // Writes the current network statistics to |stats|. The statistics are reset
   // after the call.
   virtual int NetworkStatistics(NetEqNetworkStatistics* stats) = 0;
+
+  // Current values only, not resetting any state.
+  virtual NetEqNetworkStatistics CurrentNetworkStatistics() const = 0;
 
   // Returns a copy of this class's lifetime statistics. These statistics are
   // never reset.

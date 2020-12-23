@@ -12,6 +12,7 @@
 #ifndef MODULES_RTP_RTCP_SOURCE_RTCP_PACKET_COMPOUND_PACKET_H_
 #define MODULES_RTP_RTCP_SOURCE_RTCP_PACKET_COMPOUND_PACKET_H_
 
+#include <memory>
 #include <vector>
 
 #include "modules/rtp_rtcp/source/rtcp_packet.h"
@@ -25,7 +26,7 @@ class CompoundPacket : public RtcpPacket {
   CompoundPacket();
   ~CompoundPacket() override;
 
-  void Append(RtcpPacket* packet);
+  void Append(std::unique_ptr<RtcpPacket> packet);
 
   // Size of this packet in bytes (i.e. total size of nested packets).
   size_t BlockLength() const override;
@@ -36,7 +37,7 @@ class CompoundPacket : public RtcpPacket {
               PacketReadyCallback callback) const override;
 
  protected:
-  std::vector<RtcpPacket*> appended_packets_;
+  std::vector<std::unique_ptr<RtcpPacket>> appended_packets_;
 
  private:
   RTC_DISALLOW_COPY_AND_ASSIGN(CompoundPacket);

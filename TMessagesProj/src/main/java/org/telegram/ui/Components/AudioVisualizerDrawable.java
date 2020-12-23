@@ -118,6 +118,10 @@ public class AudioVisualizerDrawable {
             p1.setColor(Theme.getColor(Theme.key_chat_inLoader));
             p1.setAlpha(ALPHA);
         }
+        this.draw(canvas, cx, cy);
+    }
+
+    public void draw(Canvas canvas, float cx, float cy) {
         for (int i = 0; i < 8; i++) {
             if (animateTo[i] != current[i]) {
                 current[i] += dt[i] * 16;
@@ -148,15 +152,10 @@ public class AudioVisualizerDrawable {
         if (enterProgress == 0 && radiusProgress == 0) {
             return;
         }
-        // float idleProgress = radiusProgress > 0.4f ? 0 : (1f - radiusProgress / 0.4f);
 
         for (int i = 0; i < 3; i++) {
             tmpWaveform[i] = (int) (current[i] * WAVE_RADIUS);
         }
-
-        //drawables[0].idleStateDiff = enterProgress * idleProgress * IDLE_AMPLITUDE;
-        //drawables[1].idleStateDiff = enterProgress * idleProgress * IDLE_AMPLITUDE;
-
         drawables[0].setAdditionals(tmpWaveform);
 
         for (int i = 0; i < 3; i++) {
@@ -188,11 +187,15 @@ public class AudioVisualizerDrawable {
         canvas.restore();
     }
 
-    public void setParentView(ChatMessageCell parentView) {
+    public void setParentView(View parentView) {
         this.parentView = parentView;
     }
 
     public View getParentView() {
         return parentView;
+    }
+
+    public void setColor(int color) {
+        p1.setColor(color);
     }
 }

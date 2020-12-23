@@ -16,9 +16,7 @@ namespace webrtc {
 struct EchoPathVariability {
   enum class DelayAdjustment {
     kNone,
-    kBufferReadjustment,
     kBufferFlush,
-    kDelayReset,
     kNewDetectedDelay
   };
 

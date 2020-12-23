@@ -21,6 +21,7 @@
 #include "rtc_base/location.h"
 #include "rtc_base/logging.h"
 #include "rtc_base/ref_counted_object.h"
+#include "rtc_base/task_utils/to_queued_task.h"
 #include "rtc_base/thread.h"
 
 namespace webrtc {
@@ -206,8 +207,14 @@ bool SctpDataChannel::Init() {
   // Chrome glue and WebKit) are not wired up properly until after this
   // function returns.
   if (provider_->ReadyToSendData()) {
-    invoker_.AsyncInvoke<void>(RTC_FROM_HERE, rtc::Thread::Current(),
-                               [this] { OnTransportReady(true); });
+    AddRef();
+    rtc::Thread::Current()->PostTask(ToQueuedTask(
+        [this] {
+          RTC_DCHECK_RUN_ON(signaling_thread_);
+          if (state_ != kClosed)
+            OnTransportReady(true);
+        },
+        [this] { Release(); }));
   }
 
   return true;

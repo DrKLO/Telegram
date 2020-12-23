@@ -273,7 +273,7 @@ public class ProfileGalleryView extends CircularViewPager implements Notificatio
         boolean result = false;
 
         if (isScrollingListView) {
-            result |= parentListView.onTouchEvent(ev);
+            result = parentListView.onTouchEvent(ev);
         }
 
         if (isSwipingViewPager) {
@@ -309,7 +309,7 @@ public class ProfileGalleryView extends CircularViewPager implements Notificatio
         if (imageLocation == null || thumbLocation == null || settingMainPhoto != 0) {
             return false;
         }
-        if (prevImageLocation == null && imageLocation != null || prevImageLocation != null && prevImageLocation.location.local_id != imageLocation.location.local_id) {
+        if (prevImageLocation == null || prevImageLocation.location.local_id != imageLocation.location.local_id) {
             imagesLocations.clear();
             MessagesController.getInstance(currentAccount).loadDialogPhotos((int) dialogId, 80, 0, true, parentClassGuid);
         }
@@ -748,7 +748,7 @@ public class ProfileGalleryView extends CircularViewPager implements Notificatio
                                 } else {
                                     filter = null;
                                 }
-                                setImageMedia(videoLocations.get(realPosition), filter, imagesLocations.get(realPosition), null, parentAvatarImageView.getImageReceiver().getBitmap(), imagesLocationsSizes.get(realPosition), 1, null);
+                                setImageMedia(videoLocations.get(realPosition), filter, imagesLocations.get(realPosition), null, parentAvatarImageView.getImageReceiver().getBitmap(), imagesLocationsSizes.get(realPosition), 1, "avatar_" + dialogId);
                             }
                         } else {
                             final ImageLocation videoLocation = videoLocations.get(realPosition);
@@ -756,7 +756,7 @@ public class ProfileGalleryView extends CircularViewPager implements Notificatio
                             needProgress = true;
                             ImageLocation location = thumbsLocations.get(realPosition);
                             String filter = location.photoSize instanceof TLRPC.TL_photoStrippedSize ? "b" : null;
-                            setImageMedia(videoLocation, null, imagesLocations.get(realPosition), null, thumbsLocations.get(realPosition), filter, null, 0, 1, imagesLocationsSizes.get(realPosition));
+                            setImageMedia(videoLocation, null, imagesLocations.get(realPosition), null, thumbsLocations.get(realPosition), filter, null, imagesLocationsSizes.get(realPosition), 1, "avatar_" + dialogId);
                         }
                         if (needProgress) {
                             radialProgress = radialProgresses.get(realPosition);

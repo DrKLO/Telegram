@@ -35,7 +35,7 @@ using MixingBuffer =
     std::array<std::array<float, FrameCombiner::kMaximumChannelSize>,
                FrameCombiner::kMaximumNumberOfChannels>;
 
-void SetAudioFrameFields(const std::vector<AudioFrame*>& mix_list,
+void SetAudioFrameFields(rtc::ArrayView<const AudioFrame* const> mix_list,
                          size_t number_of_channels,
                          int sample_rate,
                          size_t number_of_streams,
@@ -61,7 +61,7 @@ void SetAudioFrameFields(const std::vector<AudioFrame*>& mix_list,
   }
 }
 
-void MixFewFramesWithNoLimiter(const std::vector<AudioFrame*>& mix_list,
+void MixFewFramesWithNoLimiter(rtc::ArrayView<const AudioFrame* const> mix_list,
                                AudioFrame* audio_frame_for_mixing) {
   if (mix_list.empty()) {
     audio_frame_for_mixing->Mute();
@@ -74,7 +74,7 @@ void MixFewFramesWithNoLimiter(const std::vector<AudioFrame*>& mix_list,
             audio_frame_for_mixing->mutable_data());
 }
 
-void MixToFloatFrame(const std::vector<AudioFrame*>& mix_list,
+void MixToFloatFrame(rtc::ArrayView<const AudioFrame* const> mix_list,
                      size_t samples_per_channel,
                      size_t number_of_channels,
                      MixingBuffer* mixing_buffer) {
@@ -140,7 +140,7 @@ FrameCombiner::FrameCombiner(bool use_limiter)
 
 FrameCombiner::~FrameCombiner() = default;
 
-void FrameCombiner::Combine(const std::vector<AudioFrame*>& mix_list,
+void FrameCombiner::Combine(rtc::ArrayView<AudioFrame* const> mix_list,
                             size_t number_of_channels,
                             int sample_rate,
                             size_t number_of_streams,
@@ -195,9 +195,10 @@ void FrameCombiner::Combine(const std::vector<AudioFrame*>& mix_list,
   InterleaveToAudioFrame(mixing_buffer_view, audio_frame_for_mixing);
 }
 
-void FrameCombiner::LogMixingStats(const std::vector<AudioFrame*>& mix_list,
-                                   int sample_rate,
-                                   size_t number_of_streams) const {
+void FrameCombiner::LogMixingStats(
+    rtc::ArrayView<const AudioFrame* const> mix_list,
+    int sample_rate,
+    size_t number_of_streams) const {
   // Log every second.
   uma_logging_counter_++;
   if (uma_logging_counter_ > 1000 / AudioMixerImpl::kFrameDurationInMs) {

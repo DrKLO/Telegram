@@ -13,18 +13,17 @@
 
 #include <stddef.h>
 
-#include "rtc_base/constructor_magic.h"
-
 namespace webrtc {
 
 // Helper class with generators for various signal transform windows.
 class WindowGenerator {
  public:
+  WindowGenerator() = delete;
+  WindowGenerator(const WindowGenerator&) = delete;
+  WindowGenerator& operator=(const WindowGenerator&) = delete;
+
   static void Hanning(int length, float* window);
   static void KaiserBesselDerived(float alpha, size_t length, float* window);
-
- private:
-  RTC_DISALLOW_IMPLICIT_CONSTRUCTORS(WindowGenerator);
 };
 
 }  // namespace webrtc

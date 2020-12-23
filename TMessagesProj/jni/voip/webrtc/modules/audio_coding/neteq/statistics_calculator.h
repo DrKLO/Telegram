@@ -62,9 +62,6 @@ class StatisticsCalculator {
   // Reports that |num_samples| samples were removed through accelerate.
   void AcceleratedSamples(size_t num_samples);
 
-  // Reports that |num_samples| zeros were inserted into the output.
-  void AddZeros(size_t num_samples);
-
   // Reports that |num_packets| packets were discarded.
   virtual void PacketsDiscarded(size_t num_packets);
 
@@ -73,9 +70,6 @@ class StatisticsCalculator {
 
   // Reports that |num_packets| secondary (FEC) packets were received.
   virtual void SecondaryPacketsReceived(size_t num_packets);
-
-  // Reports that |num_samples| were lost.
-  void LostSamples(size_t num_samples);
 
   // Increases the report interval counter with |num_samples| at a sample rate
   // of |fs_hz|. This is how the StatisticsCalculator gets notified that current
@@ -107,15 +101,11 @@ class StatisticsCalculator {
   // period caused not by an actual packet loss, but by a delayed packet.
   virtual void LogDelayedPacketOutageEvent(int num_samples, int fs_hz);
 
-  // Returns the current network statistics in |stats|. The current sample rate
-  // is |fs_hz|, the total number of samples in packet buffer and sync buffer
-  // yet to play out is |num_samples_in_buffers|, and the number of samples per
-  // packet is |samples_per_packet|. The method does not populate
+  // Returns the current network statistics in |stats|. The number of samples
+  // per packet is |samples_per_packet|. The method does not populate
   // |preferred_buffer_size_ms|, |jitter_peaks_found| or |clockdrift_ppm|; use
   // the PopulateDelayManagerStats method for those.
-  void GetNetworkStatistics(int fs_hz,
-                            size_t num_samples_in_buffers,
-                            size_t samples_per_packet,
+  void GetNetworkStatistics(size_t samples_per_packet,
                             NetEqNetworkStatistics* stats);
 
   // Returns a copy of this class's lifetime statistics. These statistics are
@@ -196,12 +186,9 @@ class StatisticsCalculator {
   size_t silent_concealed_samples_correction_ = 0;
   size_t preemptive_samples_;
   size_t accelerate_samples_;
-  size_t added_zero_samples_;
   size_t expanded_speech_samples_;
   size_t expanded_noise_samples_;
   size_t concealed_samples_at_event_end_ = 0;
-  size_t discarded_packets_;
-  size_t lost_timestamps_;
   uint32_t timestamps_since_last_report_;
   std::deque<int> waiting_times_;
   uint32_t secondary_decoded_samples_;

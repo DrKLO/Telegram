@@ -128,12 +128,13 @@ class ChannelReceive : public ChannelReceiveInterface {
   double GetTotalOutputDuration() const override;
 
   // Stats.
-  NetworkStatistics GetNetworkStatistics() const override;
+  NetworkStatistics GetNetworkStatistics(
+      bool get_and_clear_legacy_stats) const override;
   AudioDecodingCallStats GetDecodingCallStatistics() const override;
 
   // Audio+Video Sync.
   uint32_t GetDelayEstimate() const override;
-  void SetMinimumPlayoutDelay(int delayMs) override;
+  bool SetMinimumPlayoutDelay(int delayMs) override;
   bool GetPlayoutRtpTimestamp(uint32_t* rtp_timestamp,
                               int64_t* time_ms) const override;
   void SetEstimatedPlayoutNtpTimestampMs(int64_t ntp_timestamp_ms,
@@ -801,10 +802,11 @@ void ChannelReceive::SetDepacketizerToDecoderFrameTransformer(
   InitFrameTransformerDelegate(std::move(frame_transformer));
 }
 
-NetworkStatistics ChannelReceive::GetNetworkStatistics() const {
+NetworkStatistics ChannelReceive::GetNetworkStatistics(
+    bool get_and_clear_legacy_stats) const {
   RTC_DCHECK(worker_thread_checker_.IsCurrent());
   NetworkStatistics stats;
-  acm_receiver_.GetNetworkStatistics(&stats);
+  acm_receiver_.GetNetworkStatistics(&stats, get_and_clear_legacy_stats);
   return stats;
 }
 
@@ -822,7 +824,7 @@ uint32_t ChannelReceive::GetDelayEstimate() const {
   return acm_receiver_.FilteredCurrentDelayMs() + playout_delay_ms_;
 }
 
-void ChannelReceive::SetMinimumPlayoutDelay(int delay_ms) {
+bool ChannelReceive::SetMinimumPlayoutDelay(int delay_ms) {
   RTC_DCHECK(module_process_thread_checker_.IsCurrent());
   // Limit to range accepted by both VoE and ACM, so we're at least getting as
   // close as possible, instead of failing.
@@ -831,7 +833,9 @@ void ChannelReceive::SetMinimumPlayoutDelay(int delay_ms) {
   if (acm_receiver_.SetMinimumDelay(delay_ms) != 0) {
     RTC_DLOG(LS_ERROR)
         << "SetMinimumPlayoutDelay() failed to set min playout delay";
+    return false;
   }
+  return true;
 }
 
 bool ChannelReceive::GetPlayoutRtpTimestamp(uint32_t* rtp_timestamp,

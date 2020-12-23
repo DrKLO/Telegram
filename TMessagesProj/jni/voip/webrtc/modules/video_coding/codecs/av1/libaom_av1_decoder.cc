@@ -19,7 +19,7 @@
 #include "api/video/i420_buffer.h"
 #include "api/video_codecs/video_codec.h"
 #include "api/video_codecs/video_decoder.h"
-#include "common_video/include/i420_buffer_pool.h"
+#include "common_video/include/video_frame_buffer_pool.h"
 #include "modules/video_coding/include/video_error_codes.h"
 #include "rtc_base/logging.h"
 #include "third_party/libaom/source/libaom/aom/aom_decoder.h"
@@ -59,7 +59,7 @@ class LibaomAv1Decoder final : public VideoDecoder {
   aom_codec_ctx_t context_;
   bool inited_;
   // Pool of memory buffers to store decoded image data for application access.
-  I420BufferPool buffer_pool_;
+  VideoFrameBufferPool buffer_pool_;
   DecodedImageCallback* decode_complete_callback_;
 };
 
@@ -138,7 +138,7 @@ int32_t LibaomAv1Decoder::Decode(const EncodedImage& encoded_image,
 
     // Allocate memory for decoded frame.
     rtc::scoped_refptr<I420Buffer> buffer =
-        buffer_pool_.CreateBuffer(decoded_image->d_w, decoded_image->d_h);
+        buffer_pool_.CreateI420Buffer(decoded_image->d_w, decoded_image->d_h);
     if (!buffer.get()) {
       // Pool has too many pending frames.
       RTC_LOG(LS_WARNING) << "LibaomAv1Decoder::Decode returned due to lack of"

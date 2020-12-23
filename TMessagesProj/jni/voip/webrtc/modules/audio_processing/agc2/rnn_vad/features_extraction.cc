@@ -67,13 +67,12 @@ bool FeaturesExtractor::CheckSilenceComputeFeatures(
   ComputeLpResidual(lpc_coeffs, pitch_buf_24kHz_view_, lp_residual_view_);
   // Estimate pitch on the LP-residual and write the normalized pitch period
   // into the output vector (normalization based on training data stats).
-  pitch_info_48kHz_ = pitch_estimator_.Estimate(lp_residual_view_);
-  feature_vector[kFeatureVectorSize - 2] =
-      0.01f * (static_cast<int>(pitch_info_48kHz_.period) - 300);
+  pitch_period_48kHz_ = pitch_estimator_.Estimate(lp_residual_view_);
+  feature_vector[kFeatureVectorSize - 2] = 0.01f * (pitch_period_48kHz_ - 300);
   // Extract lagged frames (according to the estimated pitch period).
-  RTC_DCHECK_LE(pitch_info_48kHz_.period / 2, kMaxPitch24kHz);
+  RTC_DCHECK_LE(pitch_period_48kHz_ / 2, kMaxPitch24kHz);
   auto lagged_frame = pitch_buf_24kHz_view_.subview(
-      kMaxPitch24kHz - pitch_info_48kHz_.period / 2, kFrameSize20ms24kHz);
+      kMaxPitch24kHz - pitch_period_48kHz_ / 2, kFrameSize20ms24kHz);
   // Analyze reference and lagged frames checking if silence has been detected
   // and write the feature vector.
   return spectral_features_extractor_.CheckSilenceComputeFeatures(

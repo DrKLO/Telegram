@@ -630,7 +630,7 @@ public class VideoPlayer implements ExoPlayer.EventListener, SimpleExoPlayer.Vid
                 if (parent != null) {
                     int i = parent.indexOfChild(textureView);
                     parent.removeView(textureView);
-                    parent.addView(textureView,i);
+                    parent.addView(textureView, i);
                 }
                 player.clearVideoTextureView(textureView);
                 player.setVideoTextureView(textureView);

@@ -137,7 +137,7 @@ class RTC_EXPORT RTCError {
 
   RTCErrorDetailType error_detail() const { return error_detail_; }
   void set_error_detail(RTCErrorDetailType detail) { error_detail_ = detail; }
-  absl::optional<uint16_t> sctp_cause_code() { return sctp_cause_code_; }
+  absl::optional<uint16_t> sctp_cause_code() const { return sctp_cause_code_; }
   void set_sctp_cause_code(uint16_t cause_code) {
     sctp_cause_code_ = cause_code;
   }

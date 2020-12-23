@@ -59,6 +59,8 @@
 #include <utility>
 
 #include "api/scoped_refptr.h"
+#include "api/task_queue/queued_task.h"
+#include "api/task_queue/task_queue_base.h"
 #include "rtc_base/event.h"
 #include "rtc_base/message_handler.h"
 #include "rtc_base/ref_counted_object.h"
@@ -96,27 +98,8 @@ class ReturnType<void> {
   void moved_result() {}
 };
 
-namespace internal {
-
-class RTC_EXPORT SynchronousMethodCall : public rtc::MessageData,
-                                         public rtc::MessageHandler {
- public:
-  explicit SynchronousMethodCall(rtc::MessageHandler* proxy);
-  ~SynchronousMethodCall() override;
-
-  void Invoke(const rtc::Location& posted_from, rtc::Thread* t);
-
- private:
-  void OnMessage(rtc::Message*) override;
-
-  rtc::Event e_;
-  rtc::MessageHandler* proxy_;
-};
-
-}  // namespace internal
-
 template <typename C, typename R, typename... Args>
-class MethodCall : public rtc::Message, public rtc::MessageHandler {
+class MethodCall : public QueuedTask {
  public:
   typedef R (C::*Method)(Args...);
   MethodCall(C* c, Method m, Args&&... args)
@@ -125,12 +108,21 @@ class MethodCall : public rtc::Message, public rtc::MessageHandler {
         args_(std::forward_as_tuple(std::forward<Args>(args)...)) {}
 
   R Marshal(const rtc::Location& posted_from, rtc::Thread* t) {
-    internal::SynchronousMethodCall(this).Invoke(posted_from, t);
+    if (t->IsCurrent()) {
+      Invoke(std::index_sequence_for<Args...>());
+    } else {
+      t->PostTask(std::unique_ptr<QueuedTask>(this));
+      event_.Wait(rtc::Event::kForever);
+    }
     return r_.moved_result();
   }
 
  private:
-  void OnMessage(rtc::Message*) { Invoke(std::index_sequence_for<Args...>()); }
+  bool Run() override {
+    Invoke(std::index_sequence_for<Args...>());
+    event_.Set();
+    return false;
+  }
 
   template <size_t... Is>
   void Invoke(std::index_sequence<Is...>) {
@@ -141,10 +133,11 @@ class MethodCall : public rtc::Message, public rtc::MessageHandler {
   Method m_;
   ReturnType<R> r_;
   std::tuple<Args&&...> args_;
+  rtc::Event event_;
 };
 
 template <typename C, typename R, typename... Args>
-class ConstMethodCall : public rtc::Message, public rtc::MessageHandler {
+class ConstMethodCall : public QueuedTask {
  public:
   typedef R (C::*Method)(Args...) const;
   ConstMethodCall(const C* c, Method m, Args&&... args)
@@ -153,12 +146,21 @@ class ConstMethodCall : public rtc::Message, public rtc::MessageHandler {
         args_(std::forward_as_tuple(std::forward<Args>(args)...)) {}
 
   R Marshal(const rtc::Location& posted_from, rtc::Thread* t) {
-    internal::SynchronousMethodCall(this).Invoke(posted_from, t);
+    if (t->IsCurrent()) {
+      Invoke(std::index_sequence_for<Args...>());
+    } else {
+      t->PostTask(std::unique_ptr<QueuedTask>(this));
+      event_.Wait(rtc::Event::kForever);
+    }
     return r_.moved_result();
   }
 
  private:
-  void OnMessage(rtc::Message*) { Invoke(std::index_sequence_for<Args...>()); }
+  bool Run() override {
+    Invoke(std::index_sequence_for<Args...>());
+    event_.Set();
+    return false;
+  }
 
   template <size_t... Is>
   void Invoke(std::index_sequence<Is...>) {
@@ -169,6 +171,7 @@ class ConstMethodCall : public rtc::Message, public rtc::MessageHandler {
   Method m_;
   ReturnType<R> r_;
   std::tuple<Args&&...> args_;
+  rtc::Event event_;
 };
 
 // Helper macros to reduce code duplication.

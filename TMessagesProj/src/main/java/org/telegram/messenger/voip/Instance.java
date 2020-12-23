@@ -330,6 +330,80 @@ public final class Instance {
         }
     }
 
+    public static final class Fingerprint {
+
+        public final String hash;
+        public final String setup;
+        public final String fingerprint;
+
+        public Fingerprint(String hash, String setup, String fingerprint) {
+            this.hash = hash;
+            this.setup = setup;
+            this.fingerprint = fingerprint;
+        }
+
+        @Override
+        public String toString() {
+            return "Fingerprint{" +
+                    "hash=" + hash +
+                    ", setup=" + setup +
+                    ", fingerprint=" + fingerprint +
+                    '}';
+        }
+    }
+
+    public static final class Candidate {
+
+        public final String port;
+        public final String protocol;
+        public final String network;
+        public final String generation;
+        public final String id;
+        public final String component;
+        public final String foundation;
+        public final String priority;
+        public final String ip;
+        public final String type;
+        public final String tcpType;
+        public final String relAddr;
+        public final String relPort;
+
+        public Candidate(String port, String protocol, String network, String generation, String id, String component, String foundation, String priority, String ip, String type, String tcpType, String relAddr, String relPort) {
+            this.port = port;
+            this.protocol = protocol;
+            this.network = network;
+            this.generation = generation;
+            this.id = id;
+            this.component = component;
+            this.foundation = foundation;
+            this.priority = priority;
+            this.ip = ip;
+            this.type = type;
+            this.tcpType = tcpType;
+            this.relAddr = relAddr;
+            this.relPort = relPort;
+        }
+
+        @Override
+        public String toString() {
+            return "Candidate{" +
+                    "port=" + port +
+                    ", protocol=" + protocol +
+                    ", network=" + network +
+                    ", generation=" + generation +
+                    ", id=" + id +
+                    ", component=" + component +
+                    ", foundation=" + foundation +
+                    ", priority=" + priority +
+                    ", ip=" + ip +
+                    ", type=" + type +
+                    ", tcpType=" + tcpType +
+                    ", relAddr=" + relAddr +
+                    ", relPort=" + relPort +
+                    '}';
+        }
+    }
+
     public static final class ServerConfig {
 
         public final boolean useSystemNs;

@@ -167,7 +167,8 @@ class AudioReceiveStream {
   // When a stream is stopped, it can't receive, process or deliver packets.
   virtual void Stop() = 0;
 
-  virtual Stats GetStats() const = 0;
+  virtual Stats GetStats(bool get_and_clear_legacy_stats) const = 0;
+  Stats GetStats() { return GetStats(/*get_and_clear_legacy_stats=*/true); }
 
   // Sets an audio sink that receives unmixed audio from the receive stream.
   // Ownership of the sink is managed by the caller.

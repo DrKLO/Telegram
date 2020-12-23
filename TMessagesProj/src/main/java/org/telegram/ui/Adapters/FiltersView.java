@@ -688,7 +688,7 @@ public class FiltersView extends RecyclerListView {
         }
     };
 
-    public class FilterView extends FrameLayout {
+    public static class FilterView extends FrameLayout {
 
         BackupImageView avatarImageView;
         TextView titleView;
@@ -832,7 +832,7 @@ public class FiltersView extends RecyclerListView {
         return super.onTouchEvent(e);
     }
 
-    private class UpdateCallback implements ListUpdateCallback {
+    private static class UpdateCallback implements ListUpdateCallback {
 
         final RecyclerView.Adapter adapter;
         boolean changed;

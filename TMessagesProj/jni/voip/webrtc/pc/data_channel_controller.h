@@ -221,8 +221,9 @@ class DataChannelController : public RtpDataChannelProviderInterface,
   sigslot::signal1<SctpDataChannel*> SignalSctpDataChannelCreated_
       RTC_GUARDED_BY(signaling_thread());
 
-  // Used to invoke data channel transport signals on the signaling thread.
-  std::unique_ptr<rtc::AsyncInvoker> data_channel_transport_invoker_
+  // Used from the network thread to invoke data channel transport signals on
+  // the signaling thread.
+  rtc::AsyncInvoker data_channel_transport_invoker_
       RTC_GUARDED_BY(network_thread());
 
   // Owning PeerConnection.

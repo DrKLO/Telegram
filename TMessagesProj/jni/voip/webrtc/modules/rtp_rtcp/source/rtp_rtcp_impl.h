@@ -264,11 +264,6 @@ class ModuleRtpRtcpImpl : public RtpRtcp, public RTCPReceiver::ModuleRtpRtcp {
                        uint32_t* NTPfrac,
                        uint32_t* remote_sr) const;
 
-  void BitrateSent(uint32_t* total_rate,
-                   uint32_t* video_rate,
-                   uint32_t* fec_rate,
-                   uint32_t* nackRate) const override;
-
   RtpSendRates GetSendRates() const override;
 
   void OnReceivedNack(

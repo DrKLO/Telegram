@@ -193,6 +193,9 @@ VoiceChannel* ChannelManager::CreateVoiceChannel(
     const webrtc::CryptoOptions& crypto_options,
     rtc::UniqueRandomIdGenerator* ssrc_generator,
     const AudioOptions& options) {
+  // TODO(bugs.webrtc.org/11992): Remove this workaround after updates in
+  // PeerConnection and add the expectation that we're already on the right
+  // thread.
   if (!worker_thread_->IsCurrent()) {
     return worker_thread_->Invoke<VoiceChannel*>(RTC_FROM_HERE, [&] {
       return CreateVoiceChannel(call, media_config, rtp_transport,
@@ -262,6 +265,9 @@ VideoChannel* ChannelManager::CreateVideoChannel(
     rtc::UniqueRandomIdGenerator* ssrc_generator,
     const VideoOptions& options,
     webrtc::VideoBitrateAllocatorFactory* video_bitrate_allocator_factory) {
+  // TODO(bugs.webrtc.org/11992): Remove this workaround after updates in
+  // PeerConnection and add the expectation that we're already on the right
+  // thread.
   if (!worker_thread_->IsCurrent()) {
     return worker_thread_->Invoke<VideoChannel*>(RTC_FROM_HERE, [&] {
       return CreateVideoChannel(call, media_config, rtp_transport,

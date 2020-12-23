@@ -40,7 +40,7 @@ class RollingAccumulator {
   size_t count() const { return static_cast<size_t>(stats_.Size()); }
 
   void Reset() {
-    stats_ = webrtc::RunningStatistics<T>();
+    stats_ = webrtc::webrtc_impl::RunningStatistics<T>();
     next_index_ = 0U;
     max_ = T();
     max_stale_ = false;
@@ -129,7 +129,7 @@ class RollingAccumulator {
   double ComputeVariance() const { return stats_.GetVariance().value_or(0); }
 
  private:
-  webrtc::RunningStatistics<T> stats_;
+  webrtc::webrtc_impl::RunningStatistics<T> stats_;
   size_t next_index_;
   mutable T max_;
   mutable bool max_stale_;

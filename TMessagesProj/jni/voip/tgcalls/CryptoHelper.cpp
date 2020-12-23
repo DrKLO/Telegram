@@ -1,6 +1,7 @@
 #include "CryptoHelper.h"
 
 #include <cstring>
+#include <limits.h>
 
 namespace tgcalls {
 

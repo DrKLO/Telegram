@@ -23,11 +23,13 @@ namespace tgcalls {
 class VideoCaptureInterface;
 class PlatformContext;
 
+struct FilePath {
 #ifndef _WIN32
-using FilePath = std::string;
+	std::string data;
 #else
-using FilePath = std::wstring;
+	std::wstring data;
 #endif
+};
 
 struct Proxy {
 	std::string host;
@@ -217,6 +219,7 @@ struct Descriptor {
 	std::shared_ptr<VideoCaptureInterface> videoCapture;
 	std::function<void(State)> stateUpdated;
 	std::function<void(int)> signalBarsUpdated;
+    std::function<void(float)> audioLevelUpdated;
     std::function<void(bool)> remoteBatteryLevelIsLowUpdated;
 	std::function<void(AudioState, VideoState)> remoteMediaStateUpdated;
     std::function<void(float)> remotePrefferedAspectRatioUpdated;

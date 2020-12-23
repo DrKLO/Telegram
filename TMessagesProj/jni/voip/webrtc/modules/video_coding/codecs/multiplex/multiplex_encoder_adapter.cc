@@ -17,7 +17,6 @@
 #include "common_video/include/video_frame_buffer.h"
 #include "common_video/libyuv/include/webrtc_libyuv.h"
 #include "media/base/video_common.h"
-#include "modules/include/module_common_types.h"
 #include "modules/video_coding/codecs/multiplex/include/augmented_video_frame_buffer.h"
 #include "rtc_base/keep_ref_until_done.h"
 #include "rtc_base/logging.h"
@@ -35,12 +34,11 @@ class MultiplexEncoderAdapter::AdapterEncodedImageCallback
 
   EncodedImageCallback::Result OnEncodedImage(
       const EncodedImage& encoded_image,
-      const CodecSpecificInfo* codec_specific_info,
-      const RTPFragmentationHeader* fragmentation) override {
+      const CodecSpecificInfo* codec_specific_info) override {
     if (!adapter_)
       return Result(Result::OK);
     return adapter_->OnEncodedImage(stream_idx_, encoded_image,
-                                    codec_specific_info, fragmentation);
+                                    codec_specific_info);
   }
 
  private:
@@ -109,6 +107,7 @@ int MultiplexEncoderAdapter::InitEncode(
   encoder_info_ = EncoderInfo();
   encoder_info_.implementation_name = "MultiplexEncoderAdapter (";
   encoder_info_.requested_resolution_alignment = 1;
+  encoder_info_.apply_alignment_to_all_simulcast_layers = false;
   // This needs to be false so that we can do the split in Encode().
   encoder_info_.supports_native_handle = false;
 
@@ -144,6 +143,10 @@ int MultiplexEncoderAdapter::InitEncode(
     encoder_info_.requested_resolution_alignment = cricket::LeastCommonMultiple(
         encoder_info_.requested_resolution_alignment,
         encoder_impl_info.requested_resolution_alignment);
+
+    if (encoder_impl_info.apply_alignment_to_all_simulcast_layers) {
+      encoder_info_.apply_alignment_to_all_simulcast_layers = true;
+    }
 
     encoder_info_.has_internal_source = false;
 
@@ -292,8 +295,7 @@ VideoEncoder::EncoderInfo MultiplexEncoderAdapter::GetEncoderInfo() const {
 EncodedImageCallback::Result MultiplexEncoderAdapter::OnEncodedImage(
     AlphaCodecStream stream_idx,
     const EncodedImage& encodedImage,
-    const CodecSpecificInfo* codecSpecificInfo,
-    const RTPFragmentationHeader* fragmentation) {
+    const CodecSpecificInfo* codecSpecificInfo) {
   // Save the image
   MultiplexImageComponent image_component;
   image_component.component_index = stream_idx;
@@ -330,8 +332,7 @@ EncodedImageCallback::Result MultiplexEncoderAdapter::OnEncodedImage(
 
       CodecSpecificInfo codec_info = *codecSpecificInfo;
       codec_info.codecType = kVideoCodecMultiplex;
-      encoded_complete_callback_->OnEncodedImage(combined_image_, &codec_info,
-                                                 fragmentation);
+      encoded_complete_callback_->OnEncodedImage(combined_image_, &codec_info);
     }
 
     stashed_images_.erase(stashed_images_.begin(), stashed_image_next_itr);

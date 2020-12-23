@@ -20,6 +20,7 @@
 #include "api/crypto/frame_decryptor_interface.h"
 #include "api/frame_transformer_interface.h"
 #include "api/media_stream_interface.h"
+#include "api/media_stream_track_proxy.h"
 #include "api/media_types.h"
 #include "api/rtp_parameters.h"
 #include "api/rtp_receiver_interface.h"
@@ -31,6 +32,7 @@
 #include "pc/jitter_buffer_delay_interface.h"
 #include "pc/rtp_receiver.h"
 #include "pc/video_rtp_track_source.h"
+#include "pc/video_track.h"
 #include "rtc_base/ref_counted_object.h"
 #include "rtc_base/thread.h"
 
@@ -89,6 +91,7 @@ class VideoRtpReceiver : public rtc::RefCountedObject<RtpReceiverInternal>,
 
   // RtpReceiverInternal implementation.
   void Stop() override;
+  void StopAndEndTrack() override;
   void SetupMediaChannel(uint32_t ssrc) override;
   void SetupUnsignaledMediaChannel() override;
   uint32_t ssrc() const override { return ssrc_.value_or(0); }
@@ -130,7 +133,7 @@ class VideoRtpReceiver : public rtc::RefCountedObject<RtpReceiverInternal>,
   // |source_| is held here to be able to change the state of the source when
   // the VideoRtpReceiver is stopped.
   rtc::scoped_refptr<VideoRtpTrackSource> source_;
-  rtc::scoped_refptr<VideoTrackInterface> track_;
+  rtc::scoped_refptr<VideoTrackProxyWithInternal<VideoTrack>> track_;
   std::vector<rtc::scoped_refptr<MediaStreamInterface>> streams_;
   bool stopped_ = true;
   RtpReceiverObserverInterface* observer_ = nullptr;

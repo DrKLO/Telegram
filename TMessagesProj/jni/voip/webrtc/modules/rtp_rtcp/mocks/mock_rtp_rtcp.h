@@ -82,13 +82,6 @@ class MockRtpRtcpInterface : public RtpRtcpInterface {
   MOCK_METHOD(bool, SendingMedia, (), (const, override));
   MOCK_METHOD(bool, IsAudioConfigured, (), (const, override));
   MOCK_METHOD(void, SetAsPartOfAllocation, (bool), (override));
-  MOCK_METHOD(void,
-              BitrateSent,
-              (uint32_t * total_rate,
-               uint32_t* video_rate,
-               uint32_t* fec_rate,
-               uint32_t* nack_rate),
-              (const, override));
   MOCK_METHOD(RtpSendRates, GetSendRates, (), (const, override));
   MOCK_METHOD(bool,
               OnSendingRtpFrame,

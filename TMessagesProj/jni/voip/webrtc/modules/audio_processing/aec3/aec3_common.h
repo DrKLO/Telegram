@@ -23,12 +23,12 @@ namespace webrtc {
 #define ALIGN16_END __attribute__((aligned(16)))
 #endif
 
-enum class Aec3Optimization { kNone, kSse2, kNeon };
+enum class Aec3Optimization { kNone, kSse2, kAvx2, kNeon };
 
 constexpr int kNumBlocksPerSecond = 250;
 
 constexpr int kMetricsReportingIntervalBlocks = 10 * kNumBlocksPerSecond;
-constexpr int kMetricsComputationBlocks = 7;
+constexpr int kMetricsComputationBlocks = 3;
 constexpr int kMetricsCollectionBlocks =
     kMetricsReportingIntervalBlocks - kMetricsComputationBlocks;
 

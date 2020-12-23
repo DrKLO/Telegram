@@ -286,7 +286,7 @@ public class PeopleNearbyActivity extends BaseFragment implements NotificationCe
                         args1.putBoolean("expandPhoto", true);
                     }
                     args1.putInt("nearby_distance", peerLocated.distance);
-                    MessagesController.getInstance(currentAccount).ensureMessagesLoaded(peerLocated.peer.user_id, false, 0, null, null);
+                    MessagesController.getInstance(currentAccount).ensureMessagesLoaded(peerLocated.peer.user_id, 0, null);
                     presentFragment(new ProfileActivity(args1));
                 }
             } else if (position >= chatsStartRow && position < chatsEndRow) {

@@ -68,7 +68,7 @@ class H264EncoderImpl : public H264Encoder {
       EncodedImageCallback* callback) override;
   void SetRates(const RateControlParameters& parameters) override;
 
-  // The result of encoding - an EncodedImage and RTPFragmentationHeader - are
+  // The result of encoding - an EncodedImage and CodecSpecificInfo - are
   // passed to the encode complete callback.
   int32_t Encode(const VideoFrame& frame,
                  const std::vector<VideoFrameType>* frame_types) override;

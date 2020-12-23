@@ -26,7 +26,7 @@ VideoStreamDecoderImpl::VideoStreamDecoderImpl(
     std::map<int, std::pair<SdpVideoFormat, int>> decoder_settings)
     : timing_(Clock::GetRealTimeClock()),
       decode_callbacks_(this),
-      next_frame_timestamps_index_(0),
+      next_frame_info_index_(0),
       callbacks_(callbacks),
       keyframe_required_(true),
       decoder_factory_(decoder_factory),
@@ -39,7 +39,6 @@ VideoStreamDecoderImpl::VideoStreamDecoderImpl(
       decode_queue_(task_queue_factory->CreateTaskQueue(
           "video_stream_decoder_decode_queue",
           TaskQueueFactory::Priority::NORMAL)) {
-  frame_timestamps_.fill({-1, -1, -1});
   bookkeeping_queue_.PostTask([this]() {
     RTC_DCHECK_RUN_ON(&bookkeeping_queue_);
     StartNextDecode();
@@ -125,16 +124,15 @@ VideoDecoder* VideoStreamDecoderImpl::GetDecoder(int payload_type) {
   return decoder_.get();
 }
 
-void VideoStreamDecoderImpl::SaveFrameTimestamps(
+void VideoStreamDecoderImpl::SaveFrameInfo(
     const video_coding::EncodedFrame& frame) {
-  FrameTimestamps* frame_timestamps =
-      &frame_timestamps_[next_frame_timestamps_index_];
-  frame_timestamps->timestamp = frame.Timestamp();
-  frame_timestamps->decode_start_time_ms = rtc::TimeMillis();
-  frame_timestamps->render_time_us = frame.RenderTimeMs() * 1000;
+  FrameInfo* frame_info = &frame_info_[next_frame_info_index_];
+  frame_info->timestamp = frame.Timestamp();
+  frame_info->decode_start_time_ms = rtc::TimeMillis();
+  frame_info->render_time_us = frame.RenderTimeMs() * 1000;
+  frame_info->content_type = frame.EncodedImage().content_type_;
 
-  next_frame_timestamps_index_ =
-      Add<kFrameTimestampsMemory>(next_frame_timestamps_index_, 1);
+  next_frame_info_index_ = Add<kFrameInfoMemory>(next_frame_info_index_, 1);
 }
 
 void VideoStreamDecoderImpl::StartNextDecode() {
@@ -155,7 +153,7 @@ void VideoStreamDecoderImpl::OnNextFrameCallback(
   switch (result) {
     case video_coding::FrameBuffer::kFrameFound: {
       RTC_DCHECK(frame);
-      SaveFrameTimestamps(*frame);
+      SaveFrameInfo(*frame);
 
       MutexLock lock(&shut_down_mutex_);
       if (shut_down_) {
@@ -230,14 +228,14 @@ VideoStreamDecoderImpl::DecodeResult VideoStreamDecoderImpl::DecodeFrame(
   }
 }
 
-VideoStreamDecoderImpl::FrameTimestamps*
-VideoStreamDecoderImpl::GetFrameTimestamps(int64_t timestamp) {
-  int start_time_index = next_frame_timestamps_index_;
-  for (int i = 0; i < kFrameTimestampsMemory; ++i) {
-    start_time_index = Subtract<kFrameTimestampsMemory>(start_time_index, 1);
+VideoStreamDecoderImpl::FrameInfo* VideoStreamDecoderImpl::GetFrameInfo(
+    int64_t timestamp) {
+  int start_time_index = next_frame_info_index_;
+  for (int i = 0; i < kFrameInfoMemory; ++i) {
+    start_time_index = Subtract<kFrameInfoMemory>(start_time_index, 1);
 
-    if (frame_timestamps_[start_time_index].timestamp == timestamp)
-      return &frame_timestamps_[start_time_index];
+    if (frame_info_[start_time_index].timestamp == timestamp)
+      return &frame_info_[start_time_index];
   }
 
   return nullptr;
@@ -250,29 +248,33 @@ void VideoStreamDecoderImpl::OnDecodedFrameCallback(
   int64_t decode_stop_time_ms = rtc::TimeMillis();
 
   bookkeeping_queue_.PostTask([this, decode_stop_time_ms, decoded_image,
-                               decode_time_ms, qp]() {
+                               decode_time_ms, qp]() mutable {
     RTC_DCHECK_RUN_ON(&bookkeeping_queue_);
 
-    FrameTimestamps* frame_timestamps =
-        GetFrameTimestamps(decoded_image.timestamp());
-    if (!frame_timestamps) {
+    FrameInfo* frame_info = GetFrameInfo(decoded_image.timestamp());
+    if (!frame_info) {
       RTC_LOG(LS_ERROR) << "No frame information found for frame with timestamp"
                         << decoded_image.timestamp();
       return;
     }
 
-    absl::optional<int> casted_qp;
+    Callbacks::FrameInfo callback_info;
+    callback_info.content_type = frame_info->content_type;
+
     if (qp)
-      casted_qp.emplace(*qp);
+      callback_info.qp.emplace(*qp);
 
-    absl::optional<int> casted_decode_time_ms(decode_time_ms.value_or(
-        decode_stop_time_ms - frame_timestamps->decode_start_time_ms));
+    if (!decode_time_ms) {
+      decode_time_ms = decode_stop_time_ms - frame_info->decode_start_time_ms;
+    }
+    decoded_image.set_processing_time(
+        {Timestamp::Millis(frame_info->decode_start_time_ms),
+         Timestamp::Millis(frame_info->decode_start_time_ms +
+                           *decode_time_ms)});
+    decoded_image.set_timestamp_us(frame_info->render_time_us);
+    timing_.StopDecodeTimer(*decode_time_ms, decode_stop_time_ms);
 
-    timing_.StopDecodeTimer(*casted_decode_time_ms, decode_stop_time_ms);
-
-    VideoFrame copy = decoded_image;
-    copy.set_timestamp_us(frame_timestamps->render_time_us);
-    callbacks_->OnDecodedFrame(copy, casted_decode_time_ms, casted_qp);
+    callbacks_->OnDecodedFrame(decoded_image, callback_info);
   });
 }
 

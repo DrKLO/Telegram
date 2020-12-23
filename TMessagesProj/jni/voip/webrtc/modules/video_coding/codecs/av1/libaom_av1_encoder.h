@@ -14,7 +14,7 @@
 
 #include "absl/base/attributes.h"
 #include "api/video_codecs/video_encoder.h"
-#include "modules/video_coding/codecs/av1/scalable_video_controller.h"
+#include "modules/video_coding/svc/scalable_video_controller.h"
 
 namespace webrtc {
 

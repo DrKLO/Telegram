@@ -323,7 +323,7 @@ OouraFft::OouraFft(bool sse2_available) {
 
 OouraFft::OouraFft() {
 #if defined(WEBRTC_ARCH_X86_FAMILY)
-  use_sse2_ = (WebRtc_GetCPUInfo(kSSE2) != 0);
+  use_sse2_ = (GetCPUInfo(kSSE2) != 0);
 #else
   use_sse2_ = false;
 #endif

@@ -59,7 +59,7 @@ enum {
 // Encapsulates a TURN permission.
 // The object is created when a create permission request is received by an
 // allocation, and self-deletes when its lifetime timer expires.
-class TurnServerAllocation::Permission : public rtc::MessageHandler {
+class TurnServerAllocation::Permission : public rtc::MessageHandlerAutoCleanup {
  public:
   Permission(rtc::Thread* thread, const rtc::IPAddress& peer);
   ~Permission() override;
@@ -79,7 +79,7 @@ class TurnServerAllocation::Permission : public rtc::MessageHandler {
 // Encapsulates a TURN channel binding.
 // The object is created when a channel bind request is received by an
 // allocation, and self-deletes when its lifetime timer expires.
-class TurnServerAllocation::Channel : public rtc::MessageHandler {
+class TurnServerAllocation::Channel : public rtc::MessageHandlerAutoCleanup {
  public:
   Channel(rtc::Thread* thread, int id, const rtc::SocketAddress& peer);
   ~Channel() override;

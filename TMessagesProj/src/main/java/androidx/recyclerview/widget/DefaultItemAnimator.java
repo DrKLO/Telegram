@@ -65,7 +65,7 @@ public class DefaultItemAnimator extends SimpleItemAnimator {
         public RecyclerView.ViewHolder holder;
         public int fromX, fromY, toX, toY;
 
-        MoveInfo(RecyclerView.ViewHolder holder, int fromX, int fromY, int toX, int toY) {
+        public MoveInfo(RecyclerView.ViewHolder holder, int fromX, int fromY, int toX, int toY) {
             this.holder = holder;
             this.fromX = fromX;
             this.fromY = fromY;
@@ -298,7 +298,7 @@ public class DefaultItemAnimator extends SimpleItemAnimator {
 
     }
 
-    void animateMoveImpl(final RecyclerView.ViewHolder holder, MoveInfo moveInfo) {
+    protected void animateMoveImpl(final RecyclerView.ViewHolder holder, MoveInfo moveInfo) {
         int fromX = moveInfo.fromX;
         int fromY = moveInfo.fromY;
         int toX = moveInfo.toX;

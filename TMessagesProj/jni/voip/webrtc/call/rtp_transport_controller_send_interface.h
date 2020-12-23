@@ -26,6 +26,7 @@
 #include "api/transport/bitrate_settings.h"
 #include "api/units/timestamp.h"
 #include "call/rtp_config.h"
+#include "common_video/frame_counts.h"
 #include "modules/rtp_rtcp/include/report_block_data.h"
 #include "modules/rtp_rtcp/include/rtcp_statistics.h"
 #include "modules/rtp_rtcp/include/rtp_packet_sender.h"
@@ -153,6 +154,8 @@ class RtpTransportControllerSendInterface {
 
   virtual void AccountForAudioPacketsInPacedSender(bool account_for_audio) = 0;
   virtual void IncludeOverheadInPacedSender() = 0;
+
+  virtual void EnsureStarted() = 0;
 };
 
 }  // namespace webrtc

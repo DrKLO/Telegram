@@ -88,7 +88,6 @@ void ComputeErl(const Aec3Optimization& optimization,
 #endif
 #if defined(WEBRTC_HAS_NEON)
     case Aec3Optimization::kNeon:
-
       aec3::ErlComputer_NEON(H2, erl);
       break;
 #endif

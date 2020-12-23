@@ -104,7 +104,7 @@ StreamResult FifoBuffer::Read(void* buffer,
 
     // if we were full before, and now we're not, post an event
     if (!was_writable && copy > 0) {
-      PostEvent(owner_, SE_WRITE, 0);
+      PostEvent(SE_WRITE, 0);
     }
   }
   return result;
@@ -129,7 +129,7 @@ StreamResult FifoBuffer::Write(const void* buffer,
 
     // if we didn't have any data to read before, and now we do, post an event
     if (!was_readable && copy > 0) {
-      PostEvent(owner_, SE_READ, 0);
+      PostEvent(SE_READ, 0);
     }
   }
   return result;
@@ -155,7 +155,7 @@ void FifoBuffer::ConsumeReadData(size_t size) {
   read_position_ = (read_position_ + size) % buffer_length_;
   data_length_ -= size;
   if (!was_writable && size > 0) {
-    PostEvent(owner_, SE_WRITE, 0);
+    PostEvent(SE_WRITE, 0);
   }
 }
 
@@ -185,7 +185,7 @@ void FifoBuffer::ConsumeWriteBuffer(size_t size) {
   const bool was_readable = (data_length_ > 0);
   data_length_ += size;
   if (!was_readable && size > 0) {
-    PostEvent(owner_, SE_READ, 0);
+    PostEvent(SE_READ, 0);
   }
 }
 

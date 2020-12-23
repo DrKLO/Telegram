@@ -5,7 +5,6 @@ import android.animation.AnimatorListenerAdapter;
 import android.animation.ValueAnimator;
 import android.content.Context;
 import android.content.res.Configuration;
-import android.graphics.Paint;
 import android.util.LongSparseArray;
 import android.util.SparseArray;
 import android.view.Gravity;
@@ -388,7 +387,7 @@ public class TrendingStickersLayout extends FrameLayout implements NotificationC
         if (delegate.canSendSticker()) {
             stickersAlertDelegate = new StickersAlert.StickersAlertDelegate() {
                 @Override
-                public void onStickerSelected(TLRPC.Document sticker, Object parent, boolean clearsInputField, boolean notify, int scheduleDate) {
+                public void onStickerSelected(TLRPC.Document sticker, String query, Object parent, boolean clearsInputField, boolean notify, int scheduleDate) {
                     delegate.onStickerSelected(sticker, parent, clearsInputField, notify, scheduleDate);
                 }
 
@@ -636,7 +635,7 @@ public class TrendingStickersLayout extends FrameLayout implements NotificationC
             View view = null;
             switch (viewType) {
                 case 0:
-                    StickerEmojiCell stickerCell = new StickerEmojiCell(context) {
+                    StickerEmojiCell stickerCell = new StickerEmojiCell(context, false) {
                         public void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
                             super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(82), MeasureSpec.EXACTLY));
                         }
@@ -761,7 +760,6 @@ public class TrendingStickersLayout extends FrameLayout implements NotificationC
                 installing = false;
             } else if (removing && !isSetInstalled) {
                 removingStickerSets.remove(stickerSetCovered.set.id);
-                removing = false;
             }
             final FeaturedStickerSetInfoCell cell = (FeaturedStickerSetInfoCell) view;
             cell.setStickerSet(stickerSetCovered, unread, animated, 0, 0, forceInstalled);

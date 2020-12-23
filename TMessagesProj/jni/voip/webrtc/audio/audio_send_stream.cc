@@ -149,7 +149,7 @@ AudioSendStream::AudioSendStream(
       enable_audio_alr_probing_(
           !field_trial::IsDisabled("WebRTC-Audio-AlrProbing")),
       send_side_bwe_with_overhead_(
-          field_trial::IsEnabled("WebRTC-SendSideBwe-WithOverhead")),
+          !field_trial::IsDisabled("WebRTC-SendSideBwe-WithOverhead")),
       config_(Config(/*send_transport=*/nullptr)),
       audio_state_(audio_state),
       channel_send_(std::move(channel_send)),
@@ -638,11 +638,11 @@ bool AudioSendStream::SetupSendCodec(const Config& new_config) {
   if (new_config.audio_network_adaptor_config) {
     if (encoder->EnableAudioNetworkAdaptor(
             *new_config.audio_network_adaptor_config, event_log_)) {
-      RTC_DLOG(LS_INFO) << "Audio network adaptor enabled on SSRC "
-                        << new_config.rtp.ssrc;
+      RTC_LOG(LS_INFO) << "Audio network adaptor enabled on SSRC "
+                       << new_config.rtp.ssrc;
     } else {
-      RTC_DLOG(LS_INFO) << "Failed to enable Audio network adaptor on SSRC "
-                        << new_config.rtp.ssrc;
+      RTC_LOG(LS_INFO) << "Failed to enable Audio network adaptor on SSRC "
+                       << new_config.rtp.ssrc;
     }
   }
 
@@ -734,21 +734,29 @@ void AudioSendStream::ReconfigureANA(const Config& new_config) {
     return;
   }
   if (new_config.audio_network_adaptor_config) {
+    // This lock needs to be acquired before CallEncoder, since it aquires
+    // another lock and we need to maintain the same order at all call sites to
+    // avoid deadlock.
+    MutexLock lock(&overhead_per_packet_lock_);
+    size_t overhead = GetPerPacketOverheadBytes();
     channel_send_->CallEncoder([&](AudioEncoder* encoder) {
       if (encoder->EnableAudioNetworkAdaptor(
               *new_config.audio_network_adaptor_config, event_log_)) {
-        RTC_DLOG(LS_INFO) << "Audio network adaptor enabled on SSRC "
-                          << new_config.rtp.ssrc;
+        RTC_LOG(LS_INFO) << "Audio network adaptor enabled on SSRC "
+                         << new_config.rtp.ssrc;
+        if (overhead > 0) {
+          encoder->OnReceivedOverhead(overhead);
+        }
       } else {
-        RTC_DLOG(LS_INFO) << "Failed to enable Audio network adaptor on SSRC "
-                          << new_config.rtp.ssrc;
+        RTC_LOG(LS_INFO) << "Failed to enable Audio network adaptor on SSRC "
+                         << new_config.rtp.ssrc;
       }
     });
   } else {
     channel_send_->CallEncoder(
         [&](AudioEncoder* encoder) { encoder->DisableAudioNetworkAdaptor(); });
-    RTC_DLOG(LS_INFO) << "Audio network adaptor disabled on SSRC "
-                      << new_config.rtp.ssrc;
+    RTC_LOG(LS_INFO) << "Audio network adaptor disabled on SSRC "
+                     << new_config.rtp.ssrc;
   }
 }
 

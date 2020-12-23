@@ -112,7 +112,10 @@ public class NetworkMonitorAutoDetect extends BroadcastReceiver implements Netwo
     public void onLinkPropertiesChanged(Network network, LinkProperties linkProperties) {
       // A link property change may indicate the IP address changes.
       // so forward the new NetworkInformation to the observer.
-      Logging.d(TAG, "link properties changed: " + linkProperties.toString());
+      //
+      // linkProperties.toString() has PII that cannot be redacted
+      // very reliably, so do not include in log.
+      Logging.d(TAG, "link properties changed");
       onNetworkChanged(network);
     }
 

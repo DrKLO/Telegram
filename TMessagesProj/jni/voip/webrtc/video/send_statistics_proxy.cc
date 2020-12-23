@@ -976,13 +976,11 @@ void SendStatisticsProxy::OnSendEncodedImage(
   stats->frames_encoded++;
   stats->total_encode_time_ms += encoded_image.timing_.encode_finish_ms -
                                  encoded_image.timing_.encode_start_ms;
-  // Report resolution of top spatial layer in case of VP9 SVC.
-  bool is_svc_low_spatial_layer =
-      (codec_info && codec_info->codecType == kVideoCodecVP9)
-          ? !codec_info->codecSpecific.VP9.end_of_picture
-          : false;
+  // Report resolution of the top spatial layer.
+  bool is_top_spatial_layer =
+      codec_info == nullptr || codec_info->end_of_picture;
 
-  if (!stats->width || !stats->height || !is_svc_low_spatial_layer) {
+  if (!stats->width || !stats->height || is_top_spatial_layer) {
     stats->width = encoded_image._encodedWidth;
     stats->height = encoded_image._encodedHeight;
     update_times_[ssrc].resolution_update_ms = clock_->TimeInMilliseconds();

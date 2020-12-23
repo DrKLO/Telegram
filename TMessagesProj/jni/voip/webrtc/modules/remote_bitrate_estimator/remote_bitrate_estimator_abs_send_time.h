@@ -27,7 +27,6 @@
 #include "modules/remote_bitrate_estimator/overuse_detector.h"
 #include "modules/remote_bitrate_estimator/overuse_estimator.h"
 #include "rtc_base/checks.h"
-#include "rtc_base/constructor_magic.h"
 #include "rtc_base/race_checker.h"
 #include "rtc_base/rate_statistics.h"
 #include "rtc_base/synchronization/mutex.h"
@@ -76,6 +75,13 @@ class RemoteBitrateEstimatorAbsSendTime : public RemoteBitrateEstimator {
  public:
   RemoteBitrateEstimatorAbsSendTime(RemoteBitrateObserver* observer,
                                     Clock* clock);
+
+  RemoteBitrateEstimatorAbsSendTime() = delete;
+  RemoteBitrateEstimatorAbsSendTime(const RemoteBitrateEstimatorAbsSendTime&) =
+      delete;
+  RemoteBitrateEstimatorAbsSendTime& operator=(
+      const RemoteBitrateEstimatorAbsSendTime&) = delete;
+
   ~RemoteBitrateEstimatorAbsSendTime() override;
 
   void IncomingPacket(int64_t arrival_time_ms,
@@ -141,8 +147,6 @@ class RemoteBitrateEstimatorAbsSendTime : public RemoteBitrateEstimator {
   mutable Mutex mutex_;
   Ssrcs ssrcs_ RTC_GUARDED_BY(&mutex_);
   AimdRateControl remote_rate_ RTC_GUARDED_BY(&mutex_);
-
-  RTC_DISALLOW_IMPLICIT_CONSTRUCTORS(RemoteBitrateEstimatorAbsSendTime);
 };
 
 }  // namespace webrtc

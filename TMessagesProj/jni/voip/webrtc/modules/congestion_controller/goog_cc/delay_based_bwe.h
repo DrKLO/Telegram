@@ -26,7 +26,6 @@
 #include "modules/remote_bitrate_estimator/aimd_rate_control.h"
 #include "modules/remote_bitrate_estimator/include/bwe_defines.h"
 #include "modules/remote_bitrate_estimator/inter_arrival.h"
-#include "rtc_base/constructor_magic.h"
 #include "rtc_base/experiments/struct_parameters_parser.h"
 #include "rtc_base/race_checker.h"
 
@@ -78,6 +77,11 @@ class DelayBasedBwe {
   explicit DelayBasedBwe(const WebRtcKeyValueConfig* key_value_config,
                          RtcEventLog* event_log,
                          NetworkStatePredictor* network_state_predictor);
+
+  DelayBasedBwe() = delete;
+  DelayBasedBwe(const DelayBasedBwe&) = delete;
+  DelayBasedBwe& operator=(const DelayBasedBwe&) = delete;
+
   virtual ~DelayBasedBwe();
 
   Result IncomingPacketFeedbackVector(
@@ -143,7 +147,6 @@ class DelayBasedBwe {
   bool has_once_detected_overuse_;
   BandwidthUsage prev_state_;
   bool alr_limited_backoff_enabled_;
-  RTC_DISALLOW_IMPLICIT_CONSTRUCTORS(DelayBasedBwe);
 };
 
 }  // namespace webrtc

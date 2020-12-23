@@ -91,10 +91,13 @@ int read_yuv_frame(struct VpxInputContext *input_ctx, vpx_image_t *yuv_frame) {
 
   for (plane = 0; plane < 3; ++plane) {
     uint8_t *ptr;
-    const int w = vpx_img_plane_width(yuv_frame, plane);
+    int w = vpx_img_plane_width(yuv_frame, plane);
     const int h = vpx_img_plane_height(yuv_frame, plane);
     int r;
-
+    // Assuming that for nv12 we read all chroma data at one time
+    if (yuv_frame->fmt == VPX_IMG_FMT_NV12 && plane > 1) break;
+    // Fixing NV12 chroma width it is odd
+    if (yuv_frame->fmt == VPX_IMG_FMT_NV12 && plane == 1) w = (w + 1) & ~1;
     /* Determine the correct plane based on the image format. The for-loop
      * always counts in Y,U,V order, but this may not match the order of
      * the data on disk.

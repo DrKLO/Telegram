@@ -14,7 +14,7 @@
 
 #include <vector>
 
-#include "common_types.h"  // NOLINT(build/include)
+#include "api/video_codecs/spatial_layer.h"
 
 namespace webrtc {
 

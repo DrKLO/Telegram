@@ -89,8 +89,15 @@ void RtpStreamsSynchronizer::Process() {
     log_stats = true;
   }
 
+  int64_t last_audio_receive_time_ms =
+      audio_measurement_.latest_receive_time_ms;
   absl::optional<Syncable::Info> audio_info = syncable_audio_->GetInfo();
   if (!audio_info || !UpdateMeasurements(&audio_measurement_, *audio_info)) {
+    return;
+  }
+
+  if (last_audio_receive_time_ms == audio_measurement_.latest_receive_time_ms) {
+    // No new audio packet has been received since last update.
     return;
   }
 

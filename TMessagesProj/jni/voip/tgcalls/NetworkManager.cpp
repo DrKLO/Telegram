@@ -23,6 +23,41 @@ extern "C" {
 
 namespace tgcalls {
 
+class TgCallsCryptStringImpl : public rtc::CryptStringImpl {
+public:
+    TgCallsCryptStringImpl(std::string const &value) :
+    _value(value) {
+    }
+    
+    virtual ~TgCallsCryptStringImpl() override {
+    }
+    
+    virtual size_t GetLength() const override {
+        return _value.size();
+    }
+    
+    virtual void CopyTo(char* dest, bool nullterminate) const override {
+        memcpy(dest, _value.data(), _value.size());
+        if (nullterminate) {
+            dest[_value.size()] = 0;
+        }
+    }
+    virtual std::string UrlEncode() const override {
+        return _value;
+    }
+    virtual CryptStringImpl* Copy() const override {
+        return new TgCallsCryptStringImpl(_value);
+    }
+    
+    virtual void CopyRawTo(std::vector<unsigned char>* dest) const override {
+        dest->resize(_value.size());
+        memcpy(dest->data(), _value.data(), _value.size());
+    }
+    
+private:
+    std::string _value;
+};
+
 class TurnCustomizerImpl : public webrtc::TurnCustomizer {
 public:
     TurnCustomizerImpl() {
@@ -48,6 +83,7 @@ NetworkManager::NetworkManager(
     bool enableTCP,
     bool enableStunMarking,
 	std::vector<RtcServer> const &rtcServers,
+    std::unique_ptr<Proxy> proxy,
 	std::function<void(const NetworkManager::State &)> stateUpdated,
 	std::function<void(DecryptedMessage &&)> transportMessageReceived,
 	std::function<void(Message &&)> sendSignalingMessage,
@@ -57,6 +93,7 @@ _enableP2P(enableP2P),
 _enableTCP(enableTCP),
 _enableStunMarking(enableStunMarking),
 _rtcServers(rtcServers),
+_proxy(std::move(proxy)),
 _transport(
 	EncryptedConnection::Type::Transport,
 	encryptionKey,
@@ -100,6 +137,16 @@ void NetworkManager::start() {
         flags |= cricket::PORTALLOCATOR_DISABLE_UDP;
         flags |= cricket::PORTALLOCATOR_DISABLE_STUN;
     }
+    
+    if (_proxy) {
+        rtc::ProxyInfo proxyInfo;
+        proxyInfo.type = rtc::ProxyType::PROXY_SOCKS5;
+        proxyInfo.address = rtc::SocketAddress(_proxy->host, _proxy->port);
+        proxyInfo.username = _proxy->login;
+        proxyInfo.password = rtc::CryptString(TgCallsCryptStringImpl(_proxy->password));
+        _portAllocator->set_proxy("t/1.0", proxyInfo);
+    }
+    
     _portAllocator->set_flags(_portAllocator->flags() | flags);
     _portAllocator->Initialize();
 

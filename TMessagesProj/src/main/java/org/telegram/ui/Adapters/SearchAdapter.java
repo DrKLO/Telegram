@@ -11,6 +11,7 @@ package org.telegram.ui.Adapters;
 import android.content.Context;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
+import android.text.TextUtils;
 import android.util.SparseArray;
 import android.view.View;
 import android.view.ViewGroup;
@@ -58,6 +59,10 @@ public class SearchAdapter extends RecyclerListView.SelectionAdapter {
     private boolean allowSelf;
     private boolean allowPhoneNumbers;
     private int channelId;
+    private boolean searchInProgress;
+    private int searchReqId;
+    private int searchPointer;
+
 
     public SearchAdapter(Context context, SparseArray<TLRPC.User> arg1, boolean usernameSearch, boolean mutual, boolean chats, boolean bots, boolean self, boolean phones, int searchChannelId) {
         mContext = context;
@@ -74,6 +79,9 @@ public class SearchAdapter extends RecyclerListView.SelectionAdapter {
             @Override
             public void onDataSetChanged(int searchId) {
                 notifyDataSetChanged();
+                if (searchId != 0) {
+                    onSearchProgressChanged();
+                }
             }
 
             @Override
@@ -99,14 +107,13 @@ public class SearchAdapter extends RecyclerListView.SelectionAdapter {
         } catch (Exception e) {
             FileLog.e(e);
         }
-        if (query == null) {
-            searchResult.clear();
-            searchResultNames.clear();
-            if (allowUsernameSearch) {
-                searchAdapterHelper.queryServerSearch(null, true, allowChats, allowBots, allowSelf, false, channelId, allowPhoneNumbers, 0, 0);
-            }
-            notifyDataSetChanged();
-        } else {
+        searchResult.clear();
+        searchResultNames.clear();
+        if (allowUsernameSearch) {
+            searchAdapterHelper.queryServerSearch(null, true, allowChats, allowBots, allowSelf, false, channelId, allowPhoneNumbers, 0, 0);
+        }
+        notifyDataSetChanged();
+        if (!TextUtils.isEmpty(query)) {
             searchTimer = new Timer();
             searchTimer.schedule(new TimerTask() {
                 @Override
@@ -126,14 +133,17 @@ public class SearchAdapter extends RecyclerListView.SelectionAdapter {
     private void processSearch(final String query) {
         AndroidUtilities.runOnUIThread(() -> {
             if (allowUsernameSearch) {
-                searchAdapterHelper.queryServerSearch(query, true, allowChats, allowBots, allowSelf, false, channelId, allowPhoneNumbers, -1, 0);
+                searchAdapterHelper.queryServerSearch(query, true, allowChats, allowBots, allowSelf, false, channelId, allowPhoneNumbers, -1, 1);
             }
             final int currentAccount = UserConfig.selectedAccount;
             final ArrayList<TLRPC.TL_contact> contactsCopy = new ArrayList<>(ContactsController.getInstance(currentAccount).contacts);
+            searchInProgress = true;
+            searchReqId = searchPointer++;
+            int searchReqIdFinal = searchReqId;
             Utilities.searchQueue.postRunnable(() -> {
                 String search1 = query.trim().toLowerCase();
                 if (search1.length() == 0) {
-                    updateSearchResults(new ArrayList<>(), new ArrayList<>());
+                    updateSearchResults(searchReqIdFinal, new ArrayList<>(), new ArrayList<>());
                     return;
                 }
                 String search2 = LocaleController.getInstance().getTranslitString(search1);
@@ -191,19 +201,30 @@ public class SearchAdapter extends RecyclerListView.SelectionAdapter {
                         }
                     }
                 }
-
-                updateSearchResults(resultArray, resultArrayNames);
+                updateSearchResults(searchReqIdFinal, resultArray, resultArrayNames);
             });
         });
     }
 
-    private void updateSearchResults(final ArrayList<TLObject> users, final ArrayList<CharSequence> names) {
+    private void updateSearchResults(int searchReqIdFinal, final ArrayList<TLObject> users, final ArrayList<CharSequence> names) {
         AndroidUtilities.runOnUIThread(() -> {
-            searchResult = users;
-            searchResultNames = names;
-            searchAdapterHelper.mergeResults(users);
-            notifyDataSetChanged();
+            if (searchReqIdFinal == searchReqId) {
+                searchResult = users;
+                searchResultNames = names;
+                searchAdapterHelper.mergeResults(users);
+                searchInProgress = false;
+                notifyDataSetChanged();
+                onSearchProgressChanged();
+            }
         });
+    }
+
+    protected void onSearchProgressChanged() {
+
+    }
+
+    public boolean searchInProgress() {
+        return searchInProgress || searchAdapterHelper.isSearchInProgress();
     }
 
     @Override

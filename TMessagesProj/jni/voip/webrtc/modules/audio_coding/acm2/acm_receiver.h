@@ -138,7 +138,8 @@ class AcmReceiver {
   // Output:
   //   - statistics           : The current network statistics.
   //
-  void GetNetworkStatistics(NetworkStatistics* statistics) const;
+  void GetNetworkStatistics(NetworkStatistics* statistics,
+                            bool get_and_clear_legacy_stats = true) const;
 
   //
   // Flushes the NetEq packet and speech buffers.

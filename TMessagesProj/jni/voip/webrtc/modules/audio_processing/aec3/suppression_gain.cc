@@ -27,39 +27,40 @@
 namespace webrtc {
 namespace {
 
-void PostprocessGains(std::array<float, kFftLengthBy2Plus1>* gain) {
-  // TODO(gustaf): Investigate if this can be relaxed to achieve higher
-  // transparency above 2 kHz.
-
+void LimitLowFrequencyGains(std::array<float, kFftLengthBy2Plus1>* gain) {
   // Limit the low frequency gains to avoid the impact of the high-pass filter
   // on the lower-frequency gain influencing the overall achieved gain.
   (*gain)[0] = (*gain)[1] = std::min((*gain)[1], (*gain)[2]);
+}
 
-  // Limit the high frequency gains to avoid the impact of the anti-aliasing
-  // filter on the upper-frequency gains influencing the overall achieved
-  // gain. TODO(peah): Update this when new anti-aliasing filters are
-  // implemented.
-  constexpr size_t kAntiAliasingImpactLimit = (64 * 2000) / 8000;
-  const float min_upper_gain = (*gain)[kAntiAliasingImpactLimit];
+void LimitHighFrequencyGains(bool conservative_hf_suppression,
+                             std::array<float, kFftLengthBy2Plus1>* gain) {
+  // Limit the high frequency gains to avoid echo leakage due to an imperfect
+  // filter.
+  constexpr size_t kFirstBandToLimit = (64 * 2000) / 8000;
+  const float min_upper_gain = (*gain)[kFirstBandToLimit];
   std::for_each(
-      gain->begin() + kAntiAliasingImpactLimit, gain->end() - 1,
+      gain->begin() + kFirstBandToLimit + 1, gain->end(),
       [min_upper_gain](float& a) { a = std::min(a, min_upper_gain); });
   (*gain)[kFftLengthBy2] = (*gain)[kFftLengthBy2Minus1];
 
-  // Limits the gain in the frequencies for which the adaptive filter has not
-  // converged.
-  // TODO(peah): Make adaptive to take the actual filter error into account.
-  constexpr size_t kUpperAccurateBandPlus1 = 29;
+  if (conservative_hf_suppression) {
+    // Limits the gain in the frequencies for which the adaptive filter has not
+    // converged.
+    // TODO(peah): Make adaptive to take the actual filter error into account.
+    constexpr size_t kUpperAccurateBandPlus1 = 29;
 
-  constexpr float oneByBandsInSum =
-      1 / static_cast<float>(kUpperAccurateBandPlus1 - 20);
-  const float hf_gain_bound =
-      std::accumulate(gain->begin() + 20,
-                      gain->begin() + kUpperAccurateBandPlus1, 0.f) *
-      oneByBandsInSum;
+    constexpr float oneByBandsInSum =
+        1 / static_cast<float>(kUpperAccurateBandPlus1 - 20);
+    const float hf_gain_bound =
+        std::accumulate(gain->begin() + 20,
+                        gain->begin() + kUpperAccurateBandPlus1, 0.f) *
+        oneByBandsInSum;
 
-  std::for_each(gain->begin() + kUpperAccurateBandPlus1, gain->end(),
-                [hf_gain_bound](float& a) { a = std::min(a, hf_gain_bound); });
+    std::for_each(
+        gain->begin() + kUpperAccurateBandPlus1, gain->end(),
+        [hf_gain_bound](float& a) { a = std::min(a, hf_gain_bound); });
+  }
 }
 
 // Scales the echo according to assessed audibility at the other end.
@@ -265,6 +266,7 @@ void SuppressionGain::LowerBandGain(
         suppressor_input,
     rtc::ArrayView<const std::array<float, kFftLengthBy2Plus1>> residual_echo,
     rtc::ArrayView<const std::array<float, kFftLengthBy2Plus1>> comfort_noise,
+    bool clock_drift,
     std::array<float, kFftLengthBy2Plus1>* gain) {
   gain->fill(1.f);
   const bool saturated_echo = aec_state.SaturatedEcho();
@@ -298,8 +300,14 @@ void SuppressionGain::LowerBandGain(
               last_echo_[ch].begin());
   }
 
-  // Limit high-frequency gains.
-  PostprocessGains(gain);
+  LimitLowFrequencyGains(gain);
+  // Use conservative high-frequency gains during clock-drift or when not in
+  // dominant nearend.
+  if (!dominant_nearend_detector_->IsNearendState() || clock_drift ||
+      config_.suppressor.conservative_hf_suppression) {
+    LimitHighFrequencyGains(config_.suppressor.conservative_hf_suppression,
+                            gain);
+  }
 
   // Store computed gains.
   std::copy(gain->begin(), gain->end(), last_gain_.begin());
@@ -352,6 +360,7 @@ void SuppressionGain::GetGain(
     const RenderSignalAnalyzer& render_signal_analyzer,
     const AecState& aec_state,
     const std::vector<std::vector<std::vector<float>>>& render,
+    bool clock_drift,
     float* high_bands_gain,
     std::array<float, kFftLengthBy2Plus1>* low_band_gain) {
   RTC_DCHECK(high_bands_gain);
@@ -364,7 +373,8 @@ void SuppressionGain::GetGain(
   // Compute gain for the lower band.
   bool low_noise_render = low_render_detector_.Detect(render);
   LowerBandGain(low_noise_render, aec_state, nearend_spectrum,
-                residual_echo_spectrum, comfort_noise_spectrum, low_band_gain);
+                residual_echo_spectrum, comfort_noise_spectrum, clock_drift,
+                low_band_gain);
 
   // Compute the gain for the upper bands.
   const absl::optional<int> narrow_peak_band =

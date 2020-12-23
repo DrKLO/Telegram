@@ -12,6 +12,7 @@ import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.util.SparseIntArray;
+import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
@@ -211,7 +212,7 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
                 if (recentPostsAll.size() > 0) {
                     int lastPostId = recentPostsAll.get(0).counters.msg_id;
                     int count = recentPostsAll.size();
-                    getMessagesStorage().getMessages(-chat.id, 0, false, count, lastPostId, 0, 0, classGuid, 0, true, false, 0, 0);
+                    getMessagesStorage().getMessages(-chat.id, 0, false, count, lastPostId, 0, 0, classGuid, 0, true, false, 0, 0, true);
                 }
 
                 AndroidUtilities.runOnUIThread(() -> {
@@ -410,7 +411,7 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
         imageView.playAnimation();
 
         TextView loadingTitle = new TextView(context);
-        loadingTitle.setTextSize(20);
+        loadingTitle.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
         loadingTitle.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
         loadingTitle.setTextColor(Theme.getColor(Theme.key_player_actionBarTitle));
         loadingTitle.setTag(Theme.key_player_actionBarTitle);
@@ -418,7 +419,7 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
         loadingTitle.setGravity(Gravity.CENTER_HORIZONTAL);
 
         TextView loadingSubtitle = new TextView(context);
-        loadingSubtitle.setTextSize(15);
+        loadingSubtitle.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
         loadingSubtitle.setTextColor(Theme.getColor(Theme.key_player_actionBarSubtitle));
         loadingSubtitle.setTag(Theme.key_player_actionBarSubtitle);
         loadingSubtitle.setText(LocaleController.getString("LoadingStatsDescription", R.string.LoadingStatsDescription));
@@ -703,7 +704,7 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
 
         @Override
         public long getItemId(int position) {
-            if (position >= recentPostsStartRow && position <= recentPostsEndRow) {
+            if (position >= recentPostsStartRow && position < recentPostsEndRow) {
                 return recentPostsLoaded.get(position - recentPostsStartRow).counters.msg_id;
             }
             if (position == growCell) {
@@ -1290,7 +1291,7 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
             frameLayout.addView(progressView, LayoutHelper.createFrame(44, 44, Gravity.CENTER, 0, 0, 0, 60));
 
             errorTextView = new TextView(context);
-            errorTextView.setTextSize(15);
+            errorTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
             frameLayout.addView(errorTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER, 0, 0, 0, 30));
             progressView.setVisibility(View.GONE);
 
@@ -2382,9 +2383,9 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
                     title[i * 2 + j] = new TextView(context);
 
                     primary[i * 2 + j].setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
-                    primary[i * 2 + j].setTextSize(17);
-                    title[i * 2 + j].setTextSize(13);
-                    secondary[i * 2 + j].setTextSize(13);
+                    primary[i * 2 + j].setTextSize(TypedValue.COMPLEX_UNIT_DIP, 17);
+                    title[i * 2 + j].setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
+                    secondary[i * 2 + j].setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
 
                     secondary[i * 2 + j].setPadding(AndroidUtilities.dp(4), 0, 0, 0);
 

@@ -216,7 +216,7 @@ public class WebRtcAudioManager {
     if (blacklisted) {
       Logging.d(TAG, Build.MODEL + " is blacklisted for OpenSL ES usage!");
     }
-    return blacklisted;
+    return true;//blacklisted;
   }
 
   private void storeAudioParameters() {

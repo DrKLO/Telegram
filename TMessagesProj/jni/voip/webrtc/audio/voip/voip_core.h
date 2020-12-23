@@ -23,8 +23,11 @@
 #include "api/task_queue/task_queue_factory.h"
 #include "api/voip/voip_base.h"
 #include "api/voip/voip_codec.h"
+#include "api/voip/voip_dtmf.h"
 #include "api/voip/voip_engine.h"
 #include "api/voip/voip_network.h"
+#include "api/voip/voip_statistics.h"
+#include "api/voip/voip_volume_control.h"
 #include "audio/audio_transport_impl.h"
 #include "audio/voip/audio_channel.h"
 #include "modules/audio_device/include/audio_device.h"
@@ -45,53 +48,86 @@ namespace webrtc {
 class VoipCore : public VoipEngine,
                  public VoipBase,
                  public VoipNetwork,
-                 public VoipCodec {
+                 public VoipCodec,
+                 public VoipDtmf,
+                 public VoipStatistics,
+                 public VoipVolumeControl {
  public:
+  // Construct VoipCore with provided arguments.
+  // ProcessThread implementation can be injected by |process_thread|
+  // (mainly for testing purpose) and when set to nullptr, default
+  // implementation will be used.
+  VoipCore(rtc::scoped_refptr<AudioEncoderFactory> encoder_factory,
+           rtc::scoped_refptr<AudioDecoderFactory> decoder_factory,
+           std::unique_ptr<TaskQueueFactory> task_queue_factory,
+           rtc::scoped_refptr<AudioDeviceModule> audio_device_module,
+           rtc::scoped_refptr<AudioProcessing> audio_processing,
+           std::unique_ptr<ProcessThread> process_thread = nullptr);
   ~VoipCore() override = default;
-
-  // Initialize VoipCore components with provided arguments.
-  // Returns false only when |audio_device_module| fails to initialize which
-  // would presumably render further processing useless.
-  // TODO(natim@webrtc.org): Need to report audio device errors to user layer.
-  bool Init(rtc::scoped_refptr<AudioEncoderFactory> encoder_factory,
-            rtc::scoped_refptr<AudioDecoderFactory> decoder_factory,
-            std::unique_ptr<TaskQueueFactory> task_queue_factory,
-            rtc::scoped_refptr<AudioDeviceModule> audio_device_module,
-            rtc::scoped_refptr<AudioProcessing> audio_processing);
 
   // Implements VoipEngine interfaces.
   VoipBase& Base() override { return *this; }
   VoipNetwork& Network() override { return *this; }
   VoipCodec& Codec() override { return *this; }
+  VoipDtmf& Dtmf() override { return *this; }
+  VoipStatistics& Statistics() override { return *this; }
+  VoipVolumeControl& VolumeControl() override { return *this; }
 
   // Implements VoipBase interfaces.
   absl::optional<ChannelId> CreateChannel(
       Transport* transport,
       absl::optional<uint32_t> local_ssrc) override;
-  void ReleaseChannel(ChannelId channel) override;
-  bool StartSend(ChannelId channel) override;
-  bool StopSend(ChannelId channel) override;
-  bool StartPlayout(ChannelId channel) override;
-  bool StopPlayout(ChannelId channel) override;
+  void ReleaseChannel(ChannelId channel_id) override;
+  bool StartSend(ChannelId channel_id) override;
+  bool StopSend(ChannelId channel_id) override;
+  bool StartPlayout(ChannelId channel_id) override;
+  bool StopPlayout(ChannelId channel_id) override;
 
   // Implements VoipNetwork interfaces.
-  void ReceivedRTPPacket(ChannelId channel,
+  void ReceivedRTPPacket(ChannelId channel_id,
                          rtc::ArrayView<const uint8_t> rtp_packet) override;
-  void ReceivedRTCPPacket(ChannelId channel,
+  void ReceivedRTCPPacket(ChannelId channel_id,
                           rtc::ArrayView<const uint8_t> rtcp_packet) override;
 
   // Implements VoipCodec interfaces.
-  void SetSendCodec(ChannelId channel,
+  void SetSendCodec(ChannelId channel_id,
                     int payload_type,
                     const SdpAudioFormat& encoder_format) override;
   void SetReceiveCodecs(
-      ChannelId channel,
+      ChannelId channel_id,
       const std::map<int, SdpAudioFormat>& decoder_specs) override;
 
+  // Implements VoipDtmf interfaces.
+  void RegisterTelephoneEventType(ChannelId channel_id,
+                                  int rtp_payload_type,
+                                  int sample_rate_hz) override;
+  bool SendDtmfEvent(ChannelId channel_id,
+                     DtmfEvent dtmf_event,
+                     int duration_ms) override;
+
+  // Implements VoipStatistics interfaces.
+  absl::optional<IngressStatistics> GetIngressStatistics(
+      ChannelId channel_id) override;
+
+  // Implements VoipVolumeControl interfaces.
+  void SetInputMuted(ChannelId channel_id, bool enable) override;
+  absl::optional<VolumeInfo> GetInputVolumeInfo(ChannelId channel_id) override;
+  absl::optional<VolumeInfo> GetOutputVolumeInfo(ChannelId channel_id) override;
+
  private:
+  // Initialize ADM and default audio device if needed.
+  // Returns true if ADM is successfully initialized or already in such state
+  // (e.g called more than once). Returns false when ADM fails to initialize
+  // which would presumably render further processing useless. Note that such
+  // failure won't necessarily succeed in next initialization attempt as it
+  // would mean changing the ADM implementation. From Android N and onwards, the
+  // mobile app may not be able to gain microphone access when in background
+  // mode. Therefore it would be better to delay the logic as late as possible.
+  bool InitializeIfNeeded();
+
   // Fetches the corresponding AudioChannel assigned with given |channel|.
   // Returns nullptr if not found.
-  rtc::scoped_refptr<AudioChannel> GetChannel(ChannelId channel);
+  rtc::scoped_refptr<AudioChannel> GetChannel(ChannelId channel_id);
 
   // Updates AudioTransportImpl with a new set of actively sending AudioSender
   // (AudioEgress). This needs to be invoked whenever StartSend/StopSend is
@@ -104,7 +140,7 @@ class VoipCore : public VoipEngine,
   rtc::scoped_refptr<AudioDecoderFactory> decoder_factory_;
   std::unique_ptr<TaskQueueFactory> task_queue_factory_;
 
-  // Synchronization is handled internally by AudioProessing.
+  // Synchronization is handled internally by AudioProcessing.
   // Must be placed before |audio_device_module_| for proper destruction.
   rtc::scoped_refptr<AudioProcessing> audio_processing_;
 
@@ -132,6 +168,9 @@ class VoipCore : public VoipEngine,
   // ChannelId.
   std::unordered_map<ChannelId, rtc::scoped_refptr<AudioChannel>> channels_
       RTC_GUARDED_BY(lock_);
+
+  // Boolean flag to ensure initialization only occurs once.
+  bool initialized_ RTC_GUARDED_BY(lock_) = false;
 };
 
 }  // namespace webrtc

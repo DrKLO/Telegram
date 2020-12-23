@@ -11,36 +11,46 @@
 #ifndef MODULES_AUDIO_PROCESSING_AGC2_VAD_WITH_LEVEL_H_
 #define MODULES_AUDIO_PROCESSING_AGC2_VAD_WITH_LEVEL_H_
 
-#include "common_audio/resampler/include/push_resampler.h"
-#include "modules/audio_processing/agc2/rnn_vad/features_extraction.h"
-#include "modules/audio_processing/agc2/rnn_vad/rnn.h"
+#include <memory>
+
 #include "modules/audio_processing/include/audio_frame_view.h"
 
 namespace webrtc {
-class VadWithLevel {
+
+// Class to analyze voice activity and audio levels.
+class VadLevelAnalyzer {
  public:
-  struct LevelAndProbability {
-    constexpr LevelAndProbability(float prob, float rms, float peak)
-        : speech_probability(prob),
-          speech_rms_dbfs(rms),
-          speech_peak_dbfs(peak) {}
-    LevelAndProbability() = default;
-    float speech_probability = 0;
-    float speech_rms_dbfs = 0;  // Root mean square in decibels to full-scale.
-    float speech_peak_dbfs = 0;
+  struct Result {
+    float speech_probability;  // Range: [0, 1].
+    float rms_dbfs;            // Root mean square power (dBFS).
+    float peak_dbfs;           // Peak power (dBFS).
   };
 
-  VadWithLevel();
-  ~VadWithLevel();
+  // Voice Activity Detector (VAD) interface.
+  class VoiceActivityDetector {
+   public:
+    virtual ~VoiceActivityDetector() = default;
+    // Analyzes an audio frame and returns the speech probability.
+    virtual float ComputeProbability(AudioFrameView<const float> frame) = 0;
+  };
 
-  LevelAndProbability AnalyzeFrame(AudioFrameView<const float> frame);
+  // Ctor. Uses the default VAD.
+  VadLevelAnalyzer();
+  explicit VadLevelAnalyzer(float vad_probability_attack);
+  // Ctor. Uses a custom `vad`.
+  VadLevelAnalyzer(float vad_probability_attack,
+                   std::unique_ptr<VoiceActivityDetector> vad);
+  VadLevelAnalyzer(const VadLevelAnalyzer&) = delete;
+  VadLevelAnalyzer& operator=(const VadLevelAnalyzer&) = delete;
+  ~VadLevelAnalyzer();
+
+  // Computes the speech probability and the level for `frame`.
+  Result AnalyzeFrame(AudioFrameView<const float> frame);
 
  private:
-  void SetSampleRate(int sample_rate_hz);
-
-  rnn_vad::RnnBasedVad rnn_vad_;
-  rnn_vad::FeaturesExtractor features_extractor_;
-  PushResampler<float> resampler_;
+  std::unique_ptr<VoiceActivityDetector> vad_;
+  const float vad_probability_attack_;
+  float vad_probability_ = 0.f;
 };
 
 }  // namespace webrtc

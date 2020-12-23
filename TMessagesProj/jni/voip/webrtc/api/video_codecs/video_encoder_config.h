@@ -64,6 +64,8 @@ struct VideoStream {
   // between multiple streams.
   absl::optional<double> bitrate_priority;
 
+  absl::optional<std::string> scalability_mode;
+
   // If this stream is enabled by the user, or not.
   bool active;
 };

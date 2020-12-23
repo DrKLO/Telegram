@@ -22,7 +22,7 @@ SECTION .text
 ;   int             filter_weight,    |  5
 ;   unsigned int   *accumulator,      |  6
 ;   unsigned short *count)            |  7
-global sym(vp8_temporal_filter_apply_sse2) PRIVATE
+globalsym(vp8_temporal_filter_apply_sse2)
 sym(vp8_temporal_filter_apply_sse2):
 
     push        rbp

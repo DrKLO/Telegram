@@ -727,19 +727,6 @@ void ModuleRtpRtcpImpl::SetRemoteSSRC(const uint32_t ssrc) {
   rtcp_receiver_.SetRemoteSSRC(ssrc);
 }
 
-void ModuleRtpRtcpImpl::BitrateSent(uint32_t* total_rate,
-                                    uint32_t* video_rate,
-                                    uint32_t* fec_rate,
-                                    uint32_t* nack_rate) const {
-  RtpSendRates send_rates = rtp_sender_->packet_sender.GetSendRates();
-  *total_rate = send_rates.Sum().bps<uint32_t>();
-  if (video_rate)
-    *video_rate = 0;
-  if (fec_rate)
-    *fec_rate = 0;
-  *nack_rate = send_rates[RtpPacketMediaType::kRetransmission].bps<uint32_t>();
-}
-
 RtpSendRates ModuleRtpRtcpImpl::GetSendRates() const {
   return rtp_sender_->packet_sender.GetSendRates();
 }

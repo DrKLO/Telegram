@@ -27,13 +27,6 @@
 namespace webrtc {
 namespace {
 
-constexpr size_t kBlocksSinceConvergencedFilterInit = 10000;
-constexpr size_t kBlocksSinceConsistentEstimateInit = 10000;
-
-bool DeactivateTransparentMode() {
-  return field_trial::IsEnabled("WebRTC-Aec3TransparentModeKillSwitch");
-}
-
 bool DeactivateInitialStateResetAtEchoPathChange() {
   return field_trial::IsEnabled(
       "WebRTC-Aec3DeactivateInitialStateResetKillSwitch");
@@ -134,7 +127,6 @@ AecState::AecState(const EchoCanceller3Config& config,
           new ApmDataDumper(rtc::AtomicOps::Increment(&instance_count_))),
       config_(config),
       num_capture_channels_(num_capture_channels),
-      transparent_mode_activated_(!DeactivateTransparentMode()),
       deactivate_initial_state_reset_at_echo_path_change_(
           DeactivateInitialStateResetAtEchoPathChange()),
       full_reset_at_echo_path_change_(FullResetAtEchoPathChange()),
@@ -142,7 +134,7 @@ AecState::AecState(const EchoCanceller3Config& config,
           SubtractorAnalyzerResetAtEchoPathChange()),
       initial_state_(config_),
       delay_state_(config_, num_capture_channels_),
-      transparent_state_(config_),
+      transparent_state_(TransparentMode::Create(config_)),
       filter_quality_state_(config_, num_capture_channels_),
       erl_estimator_(2 * kNumBlocksPerSecond),
       erle_estimator_(2 * kNumBlocksPerSecond, config_, num_capture_channels_),
@@ -164,7 +156,9 @@ void AecState::HandleEchoPathChange(
     if (!deactivate_initial_state_reset_at_echo_path_change_) {
       initial_state_.Reset();
     }
-    transparent_state_.Reset();
+    if (transparent_state_) {
+      transparent_state_->Reset();
+    }
     erle_estimator_.Reset(true);
     erl_estimator_.Reset();
     filter_quality_state_.Reset();
@@ -203,8 +197,10 @@ void AecState::Update(
 
   // Analyze the filter outputs and filters.
   bool any_filter_converged;
+  bool any_coarse_filter_converged;
   bool all_filters_diverged;
   subtractor_output_analyzer_.Update(subtractor_output, &any_filter_converged,
+                                     &any_coarse_filter_converged,
                                      &all_filters_diverged);
 
   bool any_filter_consistent;
@@ -277,13 +273,15 @@ void AecState::Update(
   initial_state_.Update(active_render, SaturatedCapture());
 
   // Detect whether the transparent mode should be activated.
-  transparent_state_.Update(delay_state_.MinDirectPathFilterDelay(),
-                            any_filter_consistent, any_filter_converged,
-                            all_filters_diverged, active_render,
-                            SaturatedCapture());
+  if (transparent_state_) {
+    transparent_state_->Update(
+        delay_state_.MinDirectPathFilterDelay(), any_filter_consistent,
+        any_filter_converged, any_coarse_filter_converged, all_filters_diverged,
+        active_render, SaturatedCapture());
+  }
 
   // Analyze the quality of the filter.
-  filter_quality_state_.Update(active_render, TransparentMode(),
+  filter_quality_state_.Update(active_render, TransparentModeActive(),
                                SaturatedCapture(), external_delay,
                                any_filter_converged);
 
@@ -301,11 +299,12 @@ void AecState::Update(
 
   erle_estimator_.Dump(data_dumper_);
   reverb_model_estimator_.Dump(data_dumper_.get());
+  data_dumper_->DumpRaw("aec3_active_render", active_render);
   data_dumper_->DumpRaw("aec3_erl", Erl());
   data_dumper_->DumpRaw("aec3_erl_time_domain", ErlTimeDomain());
   data_dumper_->DumpRaw("aec3_erle", Erle()[0]);
   data_dumper_->DumpRaw("aec3_usable_linear_estimate", UsableLinearEstimate());
-  data_dumper_->DumpRaw("aec3_transparent_mode", TransparentMode());
+  data_dumper_->DumpRaw("aec3_transparent_mode", TransparentModeActive());
   data_dumper_->DumpRaw("aec3_filter_delay",
                         filter_analyzer_.MinFilterDelayBlocks());
 
@@ -315,6 +314,8 @@ void AecState::Update(
   data_dumper_->DumpRaw("aec3_capture_saturation", SaturatedCapture());
   data_dumper_->DumpRaw("aec3_echo_saturation", SaturatedEcho());
   data_dumper_->DumpRaw("aec3_any_filter_converged", any_filter_converged);
+  data_dumper_->DumpRaw("aec3_any_coarse_filter_converged",
+                        any_coarse_filter_converged);
   data_dumper_->DumpRaw("aec3_all_filters_diverged", all_filters_diverged);
 
   data_dumper_->DumpRaw("aec3_external_delay_avaliable",
@@ -353,8 +354,9 @@ void AecState::InitialState::InitialState::Update(bool active_render,
 
 AecState::FilterDelay::FilterDelay(const EchoCanceller3Config& config,
                                    size_t num_capture_channels)
-    : delay_headroom_samples_(config.delay.delay_headroom_samples),
-      filter_delays_blocks_(num_capture_channels, 0) {}
+    : delay_headroom_blocks_(config.delay.delay_headroom_samples / kBlockSize),
+      filter_delays_blocks_(num_capture_channels, delay_headroom_blocks_),
+      min_filter_delay_(delay_headroom_blocks_) {}
 
 void AecState::FilterDelay::Update(
     rtc::ArrayView<const int> analyzer_filter_delay_estimates_blocks,
@@ -372,7 +374,7 @@ void AecState::FilterDelay::Update(
   const bool delay_estimator_may_not_have_converged =
       blocks_with_proper_filter_adaptation < 2 * kNumBlocksPerSecond;
   if (delay_estimator_may_not_have_converged && external_delay_) {
-    int delay_guess = delay_headroom_samples_ / kBlockSize;
+    const int delay_guess = delay_headroom_blocks_;
     std::fill(filter_delays_blocks_.begin(), filter_delays_blocks_.end(),
               delay_guess);
   } else {
@@ -385,92 +387,6 @@ void AecState::FilterDelay::Update(
 
   min_filter_delay_ = *std::min_element(filter_delays_blocks_.begin(),
                                         filter_delays_blocks_.end());
-}
-
-AecState::TransparentMode::TransparentMode(const EchoCanceller3Config& config)
-    : bounded_erl_(config.ep_strength.bounded_erl),
-      linear_and_stable_echo_path_(
-          config.echo_removal_control.linear_and_stable_echo_path),
-      active_blocks_since_sane_filter_(kBlocksSinceConsistentEstimateInit),
-      non_converged_sequence_size_(kBlocksSinceConvergencedFilterInit) {}
-
-void AecState::TransparentMode::Reset() {
-  non_converged_sequence_size_ = kBlocksSinceConvergencedFilterInit;
-  diverged_sequence_size_ = 0;
-  strong_not_saturated_render_blocks_ = 0;
-  if (linear_and_stable_echo_path_) {
-    recent_convergence_during_activity_ = false;
-  }
-}
-
-void AecState::TransparentMode::Update(int filter_delay_blocks,
-                                       bool any_filter_consistent,
-                                       bool any_filter_converged,
-                                       bool all_filters_diverged,
-                                       bool active_render,
-                                       bool saturated_capture) {
-  ++capture_block_counter_;
-  strong_not_saturated_render_blocks_ +=
-      active_render && !saturated_capture ? 1 : 0;
-
-  if (any_filter_consistent && filter_delay_blocks < 5) {
-    sane_filter_observed_ = true;
-    active_blocks_since_sane_filter_ = 0;
-  } else if (active_render) {
-    ++active_blocks_since_sane_filter_;
-  }
-
-  bool sane_filter_recently_seen;
-  if (!sane_filter_observed_) {
-    sane_filter_recently_seen =
-        capture_block_counter_ <= 5 * kNumBlocksPerSecond;
-  } else {
-    sane_filter_recently_seen =
-        active_blocks_since_sane_filter_ <= 30 * kNumBlocksPerSecond;
-  }
-
-  if (any_filter_converged) {
-    recent_convergence_during_activity_ = true;
-    active_non_converged_sequence_size_ = 0;
-    non_converged_sequence_size_ = 0;
-    ++num_converged_blocks_;
-  } else {
-    if (++non_converged_sequence_size_ > 20 * kNumBlocksPerSecond) {
-      num_converged_blocks_ = 0;
-    }
-
-    if (active_render &&
-        ++active_non_converged_sequence_size_ > 60 * kNumBlocksPerSecond) {
-      recent_convergence_during_activity_ = false;
-    }
-  }
-
-  if (!all_filters_diverged) {
-    diverged_sequence_size_ = 0;
-  } else if (++diverged_sequence_size_ >= 60) {
-    // TODO(peah): Change these lines to ensure proper triggering of usable
-    // filter.
-    non_converged_sequence_size_ = kBlocksSinceConvergencedFilterInit;
-  }
-
-  if (active_non_converged_sequence_size_ > 60 * kNumBlocksPerSecond) {
-    finite_erl_recently_detected_ = false;
-  }
-  if (num_converged_blocks_ > 50) {
-    finite_erl_recently_detected_ = true;
-  }
-
-  if (bounded_erl_) {
-    transparency_activated_ = false;
-  } else if (finite_erl_recently_detected_) {
-    transparency_activated_ = false;
-  } else if (sane_filter_recently_seen && recent_convergence_during_activity_) {
-    transparency_activated_ = false;
-  } else {
-    const bool filter_should_have_converged =
-        strong_not_saturated_render_blocks_ > 6 * kNumBlocksPerSecond;
-    transparency_activated_ = filter_should_have_converged;
-  }
 }
 
 AecState::FilteringQualityAnalyzer::FilteringQualityAnalyzer(

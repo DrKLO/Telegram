@@ -25,10 +25,11 @@
 #include "api/video/video_frame.h"
 #include "api/video_codecs/video_codec.h"
 #include "api/video_codecs/video_encoder.h"
-#include "modules/video_coding/codecs/av1/scalable_video_controller.h"
-#include "modules/video_coding/codecs/av1/scalable_video_controller_no_layering.h"
 #include "modules/video_coding/include/video_codec_interface.h"
 #include "modules/video_coding/include/video_error_codes.h"
+#include "modules/video_coding/svc/create_scalability_structure.h"
+#include "modules/video_coding/svc/scalable_video_controller.h"
+#include "modules/video_coding/svc/scalable_video_controller_no_layering.h"
 #include "rtc_base/checks.h"
 #include "rtc_base/logging.h"
 #include "third_party/libaom/source/libaom/aom/aom_codec.h"
@@ -93,7 +94,7 @@ class LibaomAv1Encoder final : public VideoEncoder {
   void SetSvcRefFrameConfig(
       const ScalableVideoController::LayerFrameConfig& layer_frame);
 
-  const std::unique_ptr<ScalableVideoController> svc_controller_;
+  std::unique_ptr<ScalableVideoController> svc_controller_;
   bool inited_;
   absl::optional<aom_svc_params_t> svc_params_;
   VideoCodec encoder_settings_;
@@ -164,6 +165,21 @@ int LibaomAv1Encoder::InitEncode(const VideoCodec* codec_settings,
                            "LibaomAv1Encoder.";
     return result;
   }
+  if (encoder_settings_.numberOfSimulcastStreams > 1) {
+    RTC_LOG(LS_WARNING) << "Simulcast is not implemented by LibaomAv1Encoder.";
+    return result;
+  }
+  absl::string_view scalability_mode = encoder_settings_.ScalabilityMode();
+  // When scalability_mode is not set, keep using svc_controller_ created
+  // at construction of the encoder.
+  if (!scalability_mode.empty()) {
+    svc_controller_ = CreateScalabilityStructure(scalability_mode);
+  }
+  if (svc_controller_ == nullptr) {
+    RTC_LOG(LS_WARNING) << "Failed to set scalability mode "
+                        << scalability_mode;
+    return WEBRTC_VIDEO_CODEC_ERR_PARAMETER;
+  }
 
   if (!SetSvcParams(svc_controller_->StreamConfig())) {
     return WEBRTC_VIDEO_CODEC_ERROR;
@@ -221,6 +237,12 @@ int LibaomAv1Encoder::InitEncode(const VideoCodec* codec_settings,
   if (ret != AOM_CODEC_OK) {
     RTC_LOG(LS_WARNING) << "LibaomAv1Encoder::EncodeInit returned " << ret
                         << " on control AV1E_SET_CPUUSED.";
+    return WEBRTC_VIDEO_CODEC_ERROR;
+  }
+  ret = aom_codec_control(&ctx_, AV1E_SET_ENABLE_CDEF, 1);
+  if (ret != AOM_CODEC_OK) {
+    RTC_LOG(LS_WARNING) << "LibaomAv1Encoder::EncodeInit returned " << ret
+                        << " on control AV1E_SET_ENABLE_CDEF.";
     return WEBRTC_VIDEO_CODEC_ERROR;
   }
   ret = aom_codec_control(&ctx_, AV1E_SET_ENABLE_TPL_MODEL, 0);
@@ -440,7 +462,10 @@ int32_t LibaomAv1Encoder::Encode(
   const uint32_t duration =
       kRtpTicksPerSecond / static_cast<float>(encoder_settings_.maxFramerate);
 
-  for (ScalableVideoController::LayerFrameConfig& layer_frame : layer_frames) {
+  for (size_t i = 0; i < layer_frames.size(); ++i) {
+    ScalableVideoController::LayerFrameConfig& layer_frame = layer_frames[i];
+    const bool end_of_picture = i == layer_frames.size() - 1;
+
     aom_enc_frame_flags_t flags =
         layer_frame.IsKeyframe() ? AOM_EFLAG_FORCE_KF : 0;
 
@@ -460,7 +485,6 @@ int32_t LibaomAv1Encoder::Encode(
 
     // Get encoded image data.
     EncodedImage encoded_image;
-    encoded_image._completeFrame = true;
     aom_codec_iter_t iter = nullptr;
     int data_pkt_count = 0;
     while (const aom_codec_cx_pkt_t* pkt =
@@ -507,6 +531,7 @@ int32_t LibaomAv1Encoder::Encode(
     if (encoded_image.size() > 0) {
       CodecSpecificInfo codec_specific_info;
       codec_specific_info.codecType = kVideoCodecAV1;
+      codec_specific_info.end_of_picture = end_of_picture;
       bool is_keyframe = layer_frame.IsKeyframe();
       codec_specific_info.generic_frame_info =
           svc_controller_->OnEncodeDone(std::move(layer_frame));
@@ -527,7 +552,7 @@ int32_t LibaomAv1Encoder::Encode(
         }
       }
       encoded_image_callback_->OnEncodedImage(encoded_image,
-                                              &codec_specific_info, nullptr);
+                                              &codec_specific_info);
     }
   }
 
@@ -597,6 +622,7 @@ VideoEncoder::EncoderInfo LibaomAv1Encoder::GetEncoderInfo() const {
   info.has_trusted_rate_controller = true;
   info.is_hardware_accelerated = false;
   info.scaling_settings = VideoEncoder::ScalingSettings(kMinQindex, kMaxQindex);
+  info.preferred_pixel_formats = {VideoFrameBuffer::Type::kI420};
   return info;
 }
 

@@ -116,7 +116,9 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable {
     private DispatchQueue decodeQueue;
     private float startTime;
     private float endTime;
-
+    private int renderingHeight;
+    private int renderingWidth;
+    private float scaleFactor = 1f;
 
     private View parentView;
     private ArrayList<View> secondParentViews = new ArrayList<>();
@@ -238,13 +240,21 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable {
                         destroyDecoder(nativePtr);
                         nativePtr = 0;
                     }
+                    if (renderingHeight > 0 && renderingWidth > 0 && metaData[0] > 0 && metaData[1] > 0) {
+                        scaleFactor = Math.max(renderingWidth / (float) metaData[0], renderingHeight / (float) metaData[1]);
+                        if (scaleFactor <= 0 || scaleFactor > 0.7) {
+                            scaleFactor = 1;
+                        }
+                    } else {
+                        scaleFactor = 1f;
+                    }
                     decoderCreated = true;
                 }
                 try {
                     if (nativePtr != 0 || metaData[0] == 0 || metaData[1] == 0) {
                         if (backgroundBitmap == null && metaData[0] > 0 && metaData[1] > 0) {
                             try {
-                                backgroundBitmap = Bitmap.createBitmap(metaData[0], metaData[1], Bitmap.Config.ARGB_8888);
+                                backgroundBitmap = Bitmap.createBitmap((int) (metaData[0] * scaleFactor), (int) (metaData[1] * scaleFactor), Bitmap.Config.ARGB_8888);
                             } catch (Throwable e) {
                                 FileLog.e(e);
                             }
@@ -300,9 +310,15 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable {
     };
 
     public AnimatedFileDrawable(File file, boolean createDecoder, long streamSize, TLRPC.Document document, ImageLocation location, Object parentObject, long seekTo, int account, boolean preview) {
+        this(file, createDecoder, streamSize, document, location, parentObject, seekTo ,account, preview, 0, 0);
+    }
+
+    public AnimatedFileDrawable(File file, boolean createDecoder, long streamSize, TLRPC.Document document, ImageLocation location, Object parentObject, long seekTo, int account, boolean preview, int w, int h) {
         path = file;
         streamFileSize = streamSize;
         currentAccount = account;
+        renderingHeight = h;
+        renderingWidth = w;
         getPaint().setFlags(Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG);
         if (streamSize != 0 && (document != null || location != null)) {
             stream = new AnimatedFileDrawableStream(document, location, parentObject, account, preview);
@@ -312,6 +328,14 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable {
             if (nativePtr != 0 && (metaData[0] > 3840 || metaData[1] > 3840)) {
                 destroyDecoder(nativePtr);
                 nativePtr = 0;
+            }
+            if (renderingHeight > 0 && renderingWidth > 0 && metaData[0] > 0 && metaData[1] > 0) {
+                scaleFactor = Math.max(renderingWidth / (float) metaData[0], renderingHeight / (float) metaData[1]);
+                if (scaleFactor <= 0 || scaleFactor > 0.7) {
+                    scaleFactor = 1f;
+                }
+            } else {
+                scaleFactor = 1f;
             }
             decoderCreated = true;
         }
@@ -336,7 +360,7 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable {
             seekToMs(nativePtr, ms, precise);
         }
         if (backgroundBitmap == null) {
-            backgroundBitmap = Bitmap.createBitmap(metaData[0], metaData[1], Bitmap.Config.ARGB_8888);
+            backgroundBitmap = Bitmap.createBitmap((int) (metaData[0] * scaleFactor), (int) (metaData[1] * scaleFactor), Bitmap.Config.ARGB_8888);
         }
         int result;
         if (precise) {
@@ -551,6 +575,8 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable {
         int height = decoderCreated ? (metaData[2] == 90 || metaData[2] == 270 ? metaData[0] : metaData[1]) : 0;
         if (height == 0) {
             return AndroidUtilities.dp(100);
+        } else {
+            height *= scaleFactor;
         }
         return height;
     }
@@ -560,6 +586,8 @@ public class AnimatedFileDrawable extends BitmapDrawable implements Animatable {
         int width = decoderCreated ? (metaData[2] == 90 || metaData[2] == 270 ? metaData[1] : metaData[0]) : 0;
         if (width == 0) {
             return AndroidUtilities.dp(100);
+        } else {
+            width *= scaleFactor;
         }
         return width;
     }

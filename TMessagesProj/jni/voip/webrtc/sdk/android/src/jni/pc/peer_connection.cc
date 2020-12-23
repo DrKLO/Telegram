@@ -128,7 +128,8 @@ ScopedJavaLocalRef<jobject> NativeToJavaCandidatePairChange(
       env, NativeToJavaCandidate(env, selected_pair.local_candidate()),
       NativeToJavaCandidate(env, selected_pair.remote_candidate()),
       static_cast<int>(event.last_data_received_ms),
-      NativeToJavaString(env, event.reason));
+      NativeToJavaString(env, event.reason),
+      static_cast<int>(event.estimated_disconnected_time_ms));
 }
 
 }  // namespace

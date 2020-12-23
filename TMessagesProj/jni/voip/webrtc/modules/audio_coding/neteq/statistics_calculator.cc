@@ -115,11 +115,8 @@ void StatisticsCalculator::PeriodicUmaAverage::Reset() {
 StatisticsCalculator::StatisticsCalculator()
     : preemptive_samples_(0),
       accelerate_samples_(0),
-      added_zero_samples_(0),
       expanded_speech_samples_(0),
       expanded_noise_samples_(0),
-      discarded_packets_(0),
-      lost_timestamps_(0),
       timestamps_since_last_report_(0),
       secondary_decoded_samples_(0),
       discarded_secondary_packets_(0),
@@ -139,7 +136,6 @@ StatisticsCalculator::~StatisticsCalculator() = default;
 void StatisticsCalculator::Reset() {
   preemptive_samples_ = 0;
   accelerate_samples_ = 0;
-  added_zero_samples_ = 0;
   expanded_speech_samples_ = 0;
   expanded_noise_samples_ = 0;
   secondary_decoded_samples_ = 0;
@@ -148,8 +144,6 @@ void StatisticsCalculator::Reset() {
 }
 
 void StatisticsCalculator::ResetMcu() {
-  discarded_packets_ = 0;
-  lost_timestamps_ = 0;
   timestamps_since_last_report_ = 0;
 }
 
@@ -237,10 +231,6 @@ void StatisticsCalculator::AcceleratedSamples(size_t num_samples) {
   lifetime_stats_.removed_samples_for_acceleration += num_samples;
 }
 
-void StatisticsCalculator::AddZeros(size_t num_samples) {
-  added_zero_samples_ += num_samples;
-}
-
 void StatisticsCalculator::PacketsDiscarded(size_t num_packets) {
   operations_and_state_.discarded_primary_packets += num_packets;
 }
@@ -254,10 +244,6 @@ void StatisticsCalculator::SecondaryPacketsReceived(size_t num_packets) {
   lifetime_stats_.fec_packets_received += num_packets;
 }
 
-void StatisticsCalculator::LostSamples(size_t num_samples) {
-  lost_timestamps_ += num_samples;
-}
-
 void StatisticsCalculator::IncreaseCounter(size_t num_samples, int fs_hz) {
   const int time_step_ms =
       rtc::CheckedDivExact(static_cast<int>(1000 * num_samples), fs_hz);
@@ -267,9 +253,7 @@ void StatisticsCalculator::IncreaseCounter(size_t num_samples, int fs_hz) {
   timestamps_since_last_report_ += static_cast<uint32_t>(num_samples);
   if (timestamps_since_last_report_ >
       static_cast<uint32_t>(fs_hz * kMaxReportPeriod)) {
-    lost_timestamps_ = 0;
     timestamps_since_last_report_ = 0;
-    discarded_packets_ = 0;
   }
   lifetime_stats_.total_samples_received += num_samples;
 }
@@ -321,19 +305,9 @@ void StatisticsCalculator::StoreWaitingTime(int waiting_time_ms) {
   operations_and_state_.last_waiting_time_ms = waiting_time_ms;
 }
 
-void StatisticsCalculator::GetNetworkStatistics(int fs_hz,
-                                                size_t num_samples_in_buffers,
-                                                size_t samples_per_packet,
+void StatisticsCalculator::GetNetworkStatistics(size_t samples_per_packet,
                                                 NetEqNetworkStatistics* stats) {
-  RTC_DCHECK_GT(fs_hz, 0);
   RTC_DCHECK(stats);
-
-  stats->added_zero_samples = added_zero_samples_;
-  stats->current_buffer_size_ms =
-      static_cast<uint16_t>(num_samples_in_buffers * 1000 / fs_hz);
-
-  stats->packet_loss_rate =
-      CalculateQ14Ratio(lost_timestamps_, timestamps_since_last_report_);
 
   stats->accelerate_rate =
       CalculateQ14Ratio(accelerate_samples_, timestamps_since_last_report_);

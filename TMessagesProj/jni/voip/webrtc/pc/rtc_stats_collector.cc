@@ -216,6 +216,7 @@ const char* QualityLimitationReasonToRTCQualityLimitationReason(
     case QualityLimitationReason::kOther:
       return RTCQualityLimitationReason::kOther;
   }
+  RTC_CHECK_NOTREACHED();
 }
 
 double DoubleAudioLevelFromIntAudioLevel(int audio_level) {
@@ -227,6 +228,7 @@ double DoubleAudioLevelFromIntAudioLevel(int audio_level) {
 std::unique_ptr<RTCCodecStats> CodecStatsFromRtpCodecParameters(
     uint64_t timestamp_us,
     const std::string& mid,
+    const std::string& transport_id,
     bool inbound,
     const RtpCodecParameters& codec_params) {
   RTC_DCHECK_GE(codec_params.payload_type, 0);
@@ -249,6 +251,7 @@ std::unique_ptr<RTCCodecStats> CodecStatsFromRtpCodecParameters(
   if (WriteFmtpParameters(codec_params.parameters, &fmtp)) {
     codec_stats->sdp_fmtp_line = fmtp.Release();
   }
+  codec_stats->transport_id = transport_id;
   return codec_stats;
 }
 
@@ -305,7 +308,10 @@ void SetInboundRTPStreamStatsFromVoiceReceiverInfo(
       voice_receiver_info.inserted_samples_for_deceleration;
   inbound_audio->removed_samples_for_acceleration =
       voice_receiver_info.removed_samples_for_acceleration;
-  inbound_audio->audio_level = voice_receiver_info.audio_level;
+  if (voice_receiver_info.audio_level >= 0) {
+    inbound_audio->audio_level =
+        DoubleAudioLevelFromIntAudioLevel(voice_receiver_info.audio_level);
+  }
   inbound_audio->total_audio_energy = voice_receiver_info.total_output_energy;
   inbound_audio->total_samples_duration =
       voice_receiver_info.total_output_duration;
@@ -1070,23 +1076,13 @@ void RTCStatsCollector::GetStatsReportInternal(
     num_pending_partial_reports_ = 2;
     partial_report_timestamp_us_ = cache_now_us;
 
-    // Prepare |transceiver_stats_infos_| for use in
+    // Prepare |transceiver_stats_infos_| and |call_stats_| for use in
     // |ProducePartialResultsOnNetworkThread| and
     // |ProducePartialResultsOnSignalingThread|.
-    transceiver_stats_infos_ = PrepareTransceiverStatsInfos_s_w();
+    PrepareTransceiverStatsInfosAndCallStats_s_w();
     // Prepare |transport_names_| for use in
     // |ProducePartialResultsOnNetworkThread|.
     transport_names_ = PrepareTransportNames_s();
-
-    // Prepare |call_stats_| here since GetCallStats() will hop to the worker
-    // thread.
-    // TODO(holmer): To avoid the hop we could move BWE and BWE stats to the
-    // network thread, where it more naturally belongs.
-    // TODO(https://crbug.com/webrtc/11767): In the meantime we can piggyback on
-    // the blocking-invoke that is already performed in
-    // PrepareTransceiverStatsInfos_s_w() so that we can call GetCallStats()
-    // without additional blocking-invokes.
-    call_stats_ = pc_->GetCallStats();
 
     // Don't touch |network_report_| on the signaling thread until
     // ProducePartialResultsOnNetworkThread() has signaled the
@@ -1288,6 +1284,9 @@ void RTCStatsCollector::ProduceCodecStats_n(
     if (!stats.mid) {
       continue;
     }
+    std::string transport_id = RTCTransportStatsIDFromTransportChannel(
+        *stats.transport_name, cricket::ICE_CANDIDATE_COMPONENT_RTP);
+
     const cricket::VoiceMediaInfo* voice_media_info =
         stats.track_media_info_map->voice_media_info();
     const cricket::VideoMediaInfo* video_media_info =
@@ -1297,12 +1296,12 @@ void RTCStatsCollector::ProduceCodecStats_n(
       // Inbound
       for (const auto& pair : voice_media_info->receive_codecs) {
         report->AddStats(CodecStatsFromRtpCodecParameters(
-            timestamp_us, *stats.mid, true, pair.second));
+            timestamp_us, *stats.mid, transport_id, true, pair.second));
       }
       // Outbound
       for (const auto& pair : voice_media_info->send_codecs) {
         report->AddStats(CodecStatsFromRtpCodecParameters(
-            timestamp_us, *stats.mid, false, pair.second));
+            timestamp_us, *stats.mid, transport_id, false, pair.second));
       }
     }
     // Video
@@ -1310,12 +1309,12 @@ void RTCStatsCollector::ProduceCodecStats_n(
       // Inbound
       for (const auto& pair : video_media_info->receive_codecs) {
         report->AddStats(CodecStatsFromRtpCodecParameters(
-            timestamp_us, *stats.mid, true, pair.second));
+            timestamp_us, *stats.mid, transport_id, true, pair.second));
       }
       // Outbound
       for (const auto& pair : video_media_info->send_codecs) {
         report->AddStats(CodecStatsFromRtpCodecParameters(
-            timestamp_us, *stats.mid, false, pair.second));
+            timestamp_us, *stats.mid, transport_id, false, pair.second));
       }
     }
   }
@@ -1894,11 +1893,10 @@ RTCStatsCollector::PrepareTransportCertificateStats_n(
   return transport_cert_stats;
 }
 
-std::vector<RTCStatsCollector::RtpTransceiverStatsInfo>
-RTCStatsCollector::PrepareTransceiverStatsInfos_s_w() const {
+void RTCStatsCollector::PrepareTransceiverStatsInfosAndCallStats_s_w() {
   RTC_DCHECK(signaling_thread_->IsCurrent());
 
-  std::vector<RtpTransceiverStatsInfo> transceiver_stats_infos;
+  transceiver_stats_infos_.clear();
   // These are used to invoke GetStats for all the media channels together in
   // one worker thread hop.
   std::map<cricket::VoiceMediaChannel*,
@@ -1916,8 +1914,8 @@ RTCStatsCollector::PrepareTransceiverStatsInfos_s_w() const {
 
       // Prepare stats entry. The TrackMediaInfoMap will be filled in after the
       // stats have been fetched on the worker thread.
-      transceiver_stats_infos.emplace_back();
-      RtpTransceiverStatsInfo& stats = transceiver_stats_infos.back();
+      transceiver_stats_infos_.emplace_back();
+      RtpTransceiverStatsInfo& stats = transceiver_stats_infos_.back();
       stats.transceiver = transceiver->internal();
       stats.media_type = media_type;
 
@@ -1948,14 +1946,16 @@ RTCStatsCollector::PrepareTransceiverStatsInfos_s_w() const {
     }
   }
 
-  // We jump to the worker thread and call GetStats() on each media channel. At
-  // the same time we construct the TrackMediaInfoMaps, which also needs info
-  // from the worker thread. This minimizes the number of thread jumps.
+  // We jump to the worker thread and call GetStats() on each media channel as
+  // well as GetCallStats(). At the same time we construct the
+  // TrackMediaInfoMaps, which also needs info from the worker thread. This
+  // minimizes the number of thread jumps.
   worker_thread_->Invoke<void>(RTC_FROM_HERE, [&] {
     rtc::Thread::ScopedDisallowBlockingCalls no_blocking_calls;
 
     for (const auto& entry : voice_stats) {
-      if (!entry.first->GetStats(entry.second.get())) {
+      if (!entry.first->GetStats(entry.second.get(),
+                                 /*get_and_clear_legacy_stats=*/false)) {
         RTC_LOG(LS_WARNING) << "Failed to get voice stats.";
       }
     }
@@ -1966,7 +1966,7 @@ RTCStatsCollector::PrepareTransceiverStatsInfos_s_w() const {
     }
 
     // Create the TrackMediaInfoMap for each transceiver stats object.
-    for (auto& stats : transceiver_stats_infos) {
+    for (auto& stats : transceiver_stats_infos_) {
       auto transceiver = stats.transceiver;
       std::unique_ptr<cricket::VoiceMediaInfo> voice_media_info;
       std::unique_ptr<cricket::VideoMediaInfo> video_media_info;
@@ -1998,9 +1998,9 @@ RTCStatsCollector::PrepareTransceiverStatsInfos_s_w() const {
           std::move(voice_media_info), std::move(video_media_info), senders,
           receivers);
     }
-  });
 
-  return transceiver_stats_infos;
+    call_stats_ = pc_->GetCallStats();
+  });
 }
 
 std::set<std::string> RTCStatsCollector::PrepareTransportNames_s() const {

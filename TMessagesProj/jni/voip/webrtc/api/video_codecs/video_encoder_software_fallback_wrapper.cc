@@ -56,7 +56,7 @@ struct ForcedFallbackParams {
 
   bool SupportsTemporalBasedSwitch(const VideoCodec& codec) const {
     return enable_temporal_based_switch &&
-           SimulcastUtility::NumberOfTemporalLayers(codec, 0) > 1;
+           SimulcastUtility::NumberOfTemporalLayers(codec, 0) != 1;
   }
 
   bool enable_temporal_based_switch = false;
@@ -162,6 +162,7 @@ class VideoEncoderSoftwareFallbackWrapper final : public VideoEncoder {
       case EncoderState::kForcedFallback:
         return fallback_encoder_.get();
     }
+    RTC_CHECK_NOTREACHED();
   }
 
   // Updates encoder with last observed parameters, such as callbacks, rates,
@@ -345,7 +346,9 @@ int32_t VideoEncoderSoftwareFallbackWrapper::Encode(
     case EncoderState::kForcedFallback:
       return fallback_encoder_->Encode(frame, frame_types);
   }
+  RTC_CHECK_NOTREACHED();
 }
+
 int32_t VideoEncoderSoftwareFallbackWrapper::EncodeWithMainEncoder(
     const VideoFrame& frame,
     const std::vector<VideoFrameType>* frame_types) {
@@ -367,9 +370,12 @@ int32_t VideoEncoderSoftwareFallbackWrapper::EncodeWithMainEncoder(
         RTC_LOG(LS_ERROR) << "Failed to convert from to I420";
         return WEBRTC_VIDEO_CODEC_ENCODER_FAILURE;
       }
-      rtc::scoped_refptr<I420Buffer> dst_buffer =
-          I420Buffer::Create(codec_settings_.width, codec_settings_.height);
-      dst_buffer->ScaleFrom(*src_buffer);
+      rtc::scoped_refptr<VideoFrameBuffer> dst_buffer =
+          src_buffer->Scale(codec_settings_.width, codec_settings_.height);
+      if (!dst_buffer) {
+        RTC_LOG(LS_ERROR) << "Failed to scale video frame.";
+        return WEBRTC_VIDEO_CODEC_ENCODER_FAILURE;
+      }
       VideoFrame scaled_frame = frame;
       scaled_frame.set_video_frame_buffer(dst_buffer);
       scaled_frame.set_update_rect(VideoFrame::UpdateRect{
@@ -456,7 +462,7 @@ bool VideoEncoderSoftwareFallbackWrapper::TryInitForcedFallbackEncoder() {
     }
 
     if (encoder_state_ == EncoderState::kMainEncoderUsed &&
-        encoder_->GetEncoderInfo().fps_allocation[0].size() > 1) {
+        encoder_->GetEncoderInfo().fps_allocation[0].size() != 1) {
       // Primary encoder already supports temporal layers, use that instead.
       return true;
     }
@@ -465,7 +471,7 @@ bool VideoEncoderSoftwareFallbackWrapper::TryInitForcedFallbackEncoder() {
     if (fallback_encoder_->InitEncode(&codec_settings_,
                                       encoder_settings_.value()) ==
         WEBRTC_VIDEO_CODEC_OK) {
-      if (fallback_encoder_->GetEncoderInfo().fps_allocation[0].size() > 1) {
+      if (fallback_encoder_->GetEncoderInfo().fps_allocation[0].size() != 1) {
         // Fallback encoder available and supports temporal layers, use it!
         if (encoder_state_ == EncoderState::kMainEncoderUsed) {
           // Main encoder initialized but does not support temporal layers,

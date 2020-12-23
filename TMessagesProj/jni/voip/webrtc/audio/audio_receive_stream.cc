@@ -173,7 +173,8 @@ void AudioReceiveStream::Stop() {
   audio_state()->RemoveReceivingStream(this);
 }
 
-webrtc::AudioReceiveStream::Stats AudioReceiveStream::GetStats() const {
+webrtc::AudioReceiveStream::Stats AudioReceiveStream::GetStats(
+    bool get_and_clear_legacy_stats) const {
   RTC_DCHECK_RUN_ON(&worker_thread_checker_);
   webrtc::AudioReceiveStream::Stats stats;
   stats.remote_ssrc = config_.rtp.remote_ssrc;
@@ -210,7 +211,7 @@ webrtc::AudioReceiveStream::Stats AudioReceiveStream::GetStats() const {
           rtc::TimeMillis());
 
   // Get jitter buffer and total delay (alg + jitter + playout) stats.
-  auto ns = channel_receive_->GetNetworkStatistics();
+  auto ns = channel_receive_->GetNetworkStatistics(get_and_clear_legacy_stats);
   stats.fec_packets_received = ns.fecPacketsReceived;
   stats.fec_packets_discarded = ns.fecPacketsDiscarded;
   stats.jitter_buffer_ms = ns.currentBufferSize;
@@ -329,7 +330,7 @@ void AudioReceiveStream::SetEstimatedPlayoutNtpTimestampMs(
                                                       time_ms);
 }
 
-void AudioReceiveStream::SetMinimumPlayoutDelay(int delay_ms) {
+bool AudioReceiveStream::SetMinimumPlayoutDelay(int delay_ms) {
   RTC_DCHECK_RUN_ON(&module_process_thread_checker_);
   return channel_receive_->SetMinimumPlayoutDelay(delay_ms);
 }
@@ -347,14 +348,6 @@ void AudioReceiveStream::DeliverRtcp(const uint8_t* packet, size_t length) {
   // thread. Then this check can be enabled.
   // RTC_DCHECK(!thread_checker_.IsCurrent());
   channel_receive_->ReceivedRTCPPacket(packet, length);
-}
-
-void AudioReceiveStream::OnRtpPacket(const RtpPacketReceived& packet) {
-  // TODO(solenberg): Tests call this function on a network thread, libjingle
-  // calls on the worker thread. We should move towards always using a network
-  // thread. Then this check can be enabled.
-  // RTC_DCHECK(!thread_checker_.IsCurrent());
-  channel_receive_->OnRtpPacket(packet);
 }
 
 const webrtc::AudioReceiveStream::Config& AudioReceiveStream::config() const {

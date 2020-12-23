@@ -38,8 +38,6 @@ class GainController2 {
 
   void ApplyConfig(const AudioProcessing::Config::GainController2& config);
   static bool Validate(const AudioProcessing::Config::GainController2& config);
-  static std::string ToString(
-      const AudioProcessing::Config::GainController2& config);
 
  private:
   static int instance_count_;

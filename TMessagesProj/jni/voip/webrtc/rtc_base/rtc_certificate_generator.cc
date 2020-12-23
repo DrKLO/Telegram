@@ -30,75 +30,6 @@ namespace {
 const char kIdentityName[] = "WebRTC";
 const uint64_t kYearInSeconds = 365 * 24 * 60 * 60;
 
-enum {
-  MSG_GENERATE,
-  MSG_GENERATE_DONE,
-};
-
-// Helper class for generating certificates asynchronously; a single task
-// instance is responsible for a single asynchronous certificate generation
-// request. We are using a separate helper class so that a generation request
-// can outlive the |RTCCertificateGenerator| that spawned it.
-class RTCCertificateGenerationTask : public RefCountInterface,
-                                     public MessageHandler {
- public:
-  RTCCertificateGenerationTask(
-      Thread* signaling_thread,
-      Thread* worker_thread,
-      const KeyParams& key_params,
-      const absl::optional<uint64_t>& expires_ms,
-      const scoped_refptr<RTCCertificateGeneratorCallback>& callback)
-      : signaling_thread_(signaling_thread),
-        worker_thread_(worker_thread),
-        key_params_(key_params),
-        expires_ms_(expires_ms),
-        callback_(callback) {
-    RTC_DCHECK(signaling_thread_);
-    RTC_DCHECK(worker_thread_);
-    RTC_DCHECK(callback_);
-  }
-  ~RTCCertificateGenerationTask() override {}
-
-  // Handles |MSG_GENERATE| and its follow-up |MSG_GENERATE_DONE|.
-  void OnMessage(Message* msg) override {
-    switch (msg->message_id) {
-      case MSG_GENERATE:
-        RTC_DCHECK(worker_thread_->IsCurrent());
-        // Perform the certificate generation work here on the worker thread.
-        certificate_ = RTCCertificateGenerator::GenerateCertificate(
-            key_params_, expires_ms_);
-        // Handle callbacks on signaling thread. Pass on the |msg->pdata|
-        // (which references |this| with ref counting) to that thread.
-        signaling_thread_->Post(RTC_FROM_HERE, this, MSG_GENERATE_DONE,
-                                msg->pdata);
-        break;
-      case MSG_GENERATE_DONE:
-        RTC_DCHECK(signaling_thread_->IsCurrent());
-        // Perform callback with result here on the signaling thread.
-        if (certificate_) {
-          callback_->OnSuccess(certificate_);
-        } else {
-          callback_->OnFailure();
-        }
-        // Destroy |msg->pdata| which references |this| with ref counting. This
-        // may result in |this| being deleted - do not touch member variables
-        // after this line.
-        delete msg->pdata;
-        return;
-      default:
-        RTC_NOTREACHED();
-    }
-  }
-
- private:
-  Thread* const signaling_thread_;
-  Thread* const worker_thread_;
-  const KeyParams key_params_;
-  const absl::optional<uint64_t> expires_ms_;
-  const scoped_refptr<RTCCertificateGeneratorCallback> callback_;
-  scoped_refptr<RTCCertificate> certificate_;
-};
-
 }  // namespace
 
 // static
@@ -148,13 +79,16 @@ void RTCCertificateGenerator::GenerateCertificateAsync(
   // Create a new |RTCCertificateGenerationTask| for this generation request. It
   // is reference counted and referenced by the message data, ensuring it lives
   // until the task has completed (independent of |RTCCertificateGenerator|).
-  ScopedRefMessageData<RTCCertificateGenerationTask>* msg_data =
-      new ScopedRefMessageData<RTCCertificateGenerationTask>(
-          new RefCountedObject<RTCCertificateGenerationTask>(
-              signaling_thread_, worker_thread_, key_params, expires_ms,
-              callback));
-  worker_thread_->Post(RTC_FROM_HERE, msg_data->data().get(), MSG_GENERATE,
-                       msg_data);
+  worker_thread_->PostTask(RTC_FROM_HERE, [key_params, expires_ms,
+                                           signaling_thread = signaling_thread_,
+                                           cb = callback]() {
+    scoped_refptr<RTCCertificate> certificate =
+        RTCCertificateGenerator::GenerateCertificate(key_params, expires_ms);
+    signaling_thread->PostTask(
+        RTC_FROM_HERE, [cert = std::move(certificate), cb = std::move(cb)]() {
+          cert ? cb->OnSuccess(cert) : cb->OnFailure();
+        });
+  });
 }
 
 }  // namespace rtc

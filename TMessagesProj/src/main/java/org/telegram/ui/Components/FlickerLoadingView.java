@@ -21,21 +21,29 @@ public class FlickerLoadingView extends View {
     public final static int FILES_TYPE = 3;
     public final static int AUDIO_TYPE = 4;
     public final static int LINKS_TYPE = 5;
+    public final static int USERS_TYPE = 6;
 
-    int gradientWidth;
-    LinearGradient gradient;
-    Paint paint = new Paint();
+    private int gradientWidth;
+    private LinearGradient gradient;
+    private Paint paint = new Paint();
+    private Paint headerPaint = new Paint();
     private long lastUpdateTime;
     private int totalTranslation;
     private Matrix matrix;
-    RectF rectF = new RectF();
-    int color0;
-    int color1;
-    private boolean showDate = true;
+    private RectF rectF = new RectF();
+    private int color0;
+    private int color1;
+    private int skipDrawItemsCount;
 
+    private boolean showDate = true;
+    private boolean useHeaderOffset;
     private boolean isSingleCell;
 
-    int viewType;
+    private int viewType;
+
+    private String colorKey1 = Theme.key_windowBackgroundWhite;
+    private String colorKey2 = Theme.key_windowBackgroundGray;
+    private String colorKey3;
 
     public void setViewType(int type) {
         this.viewType = type;
@@ -54,6 +62,13 @@ public class FlickerLoadingView extends View {
         return 2;
     }
 
+    public void setColors(String key1, String key2, String key3) {
+        colorKey1 = key1;
+        colorKey2 = key2;
+        colorKey3 = key3;
+        invalidate();
+    }
+
     public FlickerLoadingView(Context context) {
         super(context);
         matrix = new Matrix();
@@ -62,7 +77,7 @@ public class FlickerLoadingView extends View {
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         if (isSingleCell) {
-            super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(getCellHeight(), MeasureSpec.EXACTLY));
+            super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(getCellHeight(MeasureSpec.getSize(widthMeasureSpec)), MeasureSpec.EXACTLY));
         } else {
             super.onMeasure(widthMeasureSpec, heightMeasureSpec);
         }
@@ -70,8 +85,8 @@ public class FlickerLoadingView extends View {
 
     @Override
     protected void onDraw(Canvas canvas) {
-        int color0 = Theme.getColor(Theme.key_dialogBackground);
-        int color1 = Theme.getColor(Theme.key_windowBackgroundGray);
+        int color0 = Theme.getColor(colorKey1);
+        int color1 = Theme.getColor(colorKey2);
         if (this.color1 != color1 || this.color0 != color0) {
             this.color0 = color0;
             this.color1 = color1;
@@ -82,8 +97,16 @@ public class FlickerLoadingView extends View {
             }
             paint.setShader(gradient);
         }
+
+        int h = 0;
+        if (useHeaderOffset) {
+            h += AndroidUtilities.dp(32);
+            if (colorKey3 != null) {
+                headerPaint.setColor(Theme.getColor(colorKey3));
+            }
+            canvas.drawRect(0,0, getMeasuredWidth(), AndroidUtilities.dp(32), colorKey3 != null ? headerPaint : paint);
+        }
         if (getViewType() == DIALOG_TYPE) {
-            int h = 0;
             while (h < getMeasuredHeight()) {
                 int r = AndroidUtilities.dp(25);
                 canvas.drawCircle(checkRtl(AndroidUtilities.dp(9) + r), h + (AndroidUtilities.dp(78) >> 1), r, paint);
@@ -102,26 +125,29 @@ public class FlickerLoadingView extends View {
                     canvas.drawRoundRect(rectF, AndroidUtilities.dp(4), AndroidUtilities.dp(4), paint);
                 }
 
-                h += getCellHeight();
+                h += getCellHeight(getMeasuredWidth());
                 if (isSingleCell) {
                     break;
                 }
             }
         } else if (getViewType() == PHOTOS_TYPE) {
             int photoWidth = (getMeasuredWidth() - (AndroidUtilities.dp(2) * (getColumnsCount() - 1))) / getColumnsCount();
-            int h = 0;
-            while (h < getMeasuredHeight()) {
+            int k = 0;
+            while (h < getMeasuredHeight() || isSingleCell) {
                 for (int i = 0; i < getColumnsCount(); i++) {
+                    if (k == 0 && i < skipDrawItemsCount) {
+                         continue;
+                    }
                     int x = i * (photoWidth + AndroidUtilities.dp(2));
                     canvas.drawRect(x, h, x + photoWidth, h + photoWidth, paint);
                 }
                 h += photoWidth + AndroidUtilities.dp(2);
-                if (isSingleCell) {
+                k++;
+                if (isSingleCell && k >= 2) {
                     break;
                 }
             }
         } else if (getViewType() == 3) {
-            int h = 0;
             while (h < getMeasuredHeight()) {
                 rectF.set(AndroidUtilities.dp(12), h + AndroidUtilities.dp(8), AndroidUtilities.dp(52), h + AndroidUtilities.dp(48));
                 checkRtl(rectF);
@@ -141,13 +167,12 @@ public class FlickerLoadingView extends View {
                     canvas.drawRoundRect(rectF, AndroidUtilities.dp(4), AndroidUtilities.dp(4), paint);
                 }
 
-                h += getCellHeight();
+                h += getCellHeight(getMeasuredWidth());
                 if (isSingleCell) {
                     break;
                 }
             }
         } else if (getViewType() == 4) {
-            int h = 0;
             while (h < getMeasuredHeight()) {
                 int radius = AndroidUtilities.dp(44) >> 1;
                 canvas.drawCircle(checkRtl(AndroidUtilities.dp(12) + radius), h + AndroidUtilities.dp(6) + radius, radius, paint);
@@ -166,13 +191,12 @@ public class FlickerLoadingView extends View {
                     canvas.drawRoundRect(rectF, AndroidUtilities.dp(4), AndroidUtilities.dp(4), paint);
                 }
 
-                h += getCellHeight();
+                h += getCellHeight(getMeasuredWidth());
                 if (isSingleCell) {
                     break;
                 }
             }
         } else if (getViewType() == 5) {
-            int h = 0;
             while (h < getMeasuredHeight()) {
                 rectF.set(AndroidUtilities.dp(10), h + AndroidUtilities.dp(11), AndroidUtilities.dp(62), h + AndroidUtilities.dp(11 + 52));
                 checkRtl(rectF);
@@ -196,7 +220,31 @@ public class FlickerLoadingView extends View {
                     canvas.drawRoundRect(rectF, AndroidUtilities.dp(4), AndroidUtilities.dp(4), paint);
                 }
 
-                h += getCellHeight();
+                h += getCellHeight(getMeasuredWidth());
+                if (isSingleCell) {
+                    break;
+                }
+            }
+        } else if (getViewType() == 6) {
+            while (h < getMeasuredHeight()) {
+                int r = AndroidUtilities.dp(23);
+                canvas.drawCircle(checkRtl(AndroidUtilities.dp(9) + r), h + (AndroidUtilities.dp(64) >> 1), r, paint);
+
+                rectF.set(AndroidUtilities.dp(68), h + AndroidUtilities.dp(17), AndroidUtilities.dp(260), h + AndroidUtilities.dp(25));
+                checkRtl(rectF);
+                canvas.drawRoundRect(rectF, AndroidUtilities.dp(4), AndroidUtilities.dp(4), paint);
+
+                rectF.set(AndroidUtilities.dp(68), h + AndroidUtilities.dp(39), AndroidUtilities.dp(140), h + AndroidUtilities.dp(47));
+                checkRtl(rectF);
+                canvas.drawRoundRect(rectF, AndroidUtilities.dp(4), AndroidUtilities.dp(4), paint);
+
+                if (showDate) {
+                    rectF.set(getMeasuredWidth() - AndroidUtilities.dp(50), h + AndroidUtilities.dp(20), getMeasuredWidth() - AndroidUtilities.dp(12), h + AndroidUtilities.dp(28));
+                    checkRtl(rectF);
+                    canvas.drawRoundRect(rectF, AndroidUtilities.dp(4), AndroidUtilities.dp(4), paint);
+                }
+
+                h += getCellHeight(getMeasuredWidth());
                 if (isSingleCell) {
                     break;
                 }
@@ -240,11 +288,11 @@ public class FlickerLoadingView extends View {
         }
     }
 
-    private int getCellHeight() {
+    private int getCellHeight(int width) {
         if (getViewType() == DIALOG_TYPE) {
             return AndroidUtilities.dp(78) + 1;
         } else if (getViewType() == PHOTOS_TYPE) {
-            int photoWidth = (getMeasuredWidth() - (AndroidUtilities.dp(2) * (getColumnsCount() - 1))) / getColumnsCount();
+            int photoWidth = (width - (AndroidUtilities.dp(2) * (getColumnsCount() - 1))) / getColumnsCount();
             return photoWidth + AndroidUtilities.dp(2);
         } else if (getViewType() == 3) {
             return AndroidUtilities.dp(56) + 1;
@@ -252,11 +300,21 @@ public class FlickerLoadingView extends View {
             return AndroidUtilities.dp(56) + 1;
         } else if (getViewType() == 5) {
             return AndroidUtilities.dp(80);
+        } else if (getViewType() == USERS_TYPE) {
+            return AndroidUtilities.dp(64);
         }
         return 0;
     }
 
     public void showDate(boolean showDate) {
         this.showDate = showDate;
+    }
+
+    public void setUseHeaderOffset(boolean useHeaderOffset) {
+        this.useHeaderOffset = useHeaderOffset;
+    }
+
+    public void skipDrawItemsCount(int i) {
+        skipDrawItemsCount = i;
     }
 }

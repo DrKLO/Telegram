@@ -43,6 +43,7 @@ std::string VideoStream::ToString() const {
   ss << ", num_temporal_layers: " << num_temporal_layers.value_or(1);
   ss << ", bitrate_priority: " << bitrate_priority.value_or(0);
   ss << ", active: " << active;
+  ss << ", scale_down_by: " << scale_resolution_down_by;
 
   return ss.str();
 }

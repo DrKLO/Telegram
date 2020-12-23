@@ -25,34 +25,25 @@ namespace webrtc {
 namespace videocapturemodule {
 
 DeviceInfoImpl::DeviceInfoImpl()
-    : _apiLock(*RWLockWrapper::CreateRWLock()),
-      _lastUsedDeviceName(NULL),
-      _lastUsedDeviceNameLength(0) {}
+    : _lastUsedDeviceName(NULL), _lastUsedDeviceNameLength(0) {}
 
 DeviceInfoImpl::~DeviceInfoImpl(void) {
-  _apiLock.AcquireLockExclusive();
+  MutexLock lock(&_apiLock);
   free(_lastUsedDeviceName);
-  _apiLock.ReleaseLockExclusive();
-
-  delete &_apiLock;
 }
 
 int32_t DeviceInfoImpl::NumberOfCapabilities(const char* deviceUniqueIdUTF8) {
   if (!deviceUniqueIdUTF8)
     return -1;
 
-  _apiLock.AcquireLockShared();
+  MutexLock lock(&_apiLock);
 
   // Is it the same device that is asked for again.
   if (absl::EqualsIgnoreCase(
           deviceUniqueIdUTF8,
           absl::string_view(_lastUsedDeviceName, _lastUsedDeviceNameLength))) {
-    _apiLock.ReleaseLockShared();
     return static_cast<int32_t>(_captureCapabilities.size());
   }
-  // Need to get exclusive rights to create the new capability map.
-  _apiLock.ReleaseLockShared();
-  WriteLockScoped cs2(_apiLock);
 
   int32_t ret = CreateCapabilityMap(deviceUniqueIdUTF8);
   return ret;
@@ -63,20 +54,14 @@ int32_t DeviceInfoImpl::GetCapability(const char* deviceUniqueIdUTF8,
                                       VideoCaptureCapability& capability) {
   assert(deviceUniqueIdUTF8 != NULL);
 
-  ReadLockScoped cs(_apiLock);
+  MutexLock lock(&_apiLock);
 
   if (!absl::EqualsIgnoreCase(
           deviceUniqueIdUTF8,
           absl::string_view(_lastUsedDeviceName, _lastUsedDeviceNameLength))) {
-    _apiLock.ReleaseLockShared();
-    _apiLock.AcquireLockExclusive();
     if (-1 == CreateCapabilityMap(deviceUniqueIdUTF8)) {
-      _apiLock.ReleaseLockExclusive();
-      _apiLock.AcquireLockShared();
       return -1;
     }
-    _apiLock.ReleaseLockExclusive();
-    _apiLock.AcquireLockShared();
   }
 
   // Make sure the number is valid
@@ -98,17 +83,13 @@ int32_t DeviceInfoImpl::GetBestMatchedCapability(
   if (!deviceUniqueIdUTF8)
     return -1;
 
-  ReadLockScoped cs(_apiLock);
+  MutexLock lock(&_apiLock);
   if (!absl::EqualsIgnoreCase(
           deviceUniqueIdUTF8,
           absl::string_view(_lastUsedDeviceName, _lastUsedDeviceNameLength))) {
-    _apiLock.ReleaseLockShared();
-    _apiLock.AcquireLockExclusive();
     if (-1 == CreateCapabilityMap(deviceUniqueIdUTF8)) {
       return -1;
     }
-    _apiLock.ReleaseLockExclusive();
-    _apiLock.AcquireLockShared();
   }
 
   int32_t bestformatIndex = -1;

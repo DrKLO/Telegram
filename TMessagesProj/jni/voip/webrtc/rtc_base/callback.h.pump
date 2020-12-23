@@ -1,0 +1,104 @@
+/*
+ *  Copyright 2012 The WebRTC Project Authors. All rights reserved.
+ *
+ *  Use of this source code is governed by a BSD-style license
+ *  that can be found in the LICENSE file in the root of the source
+ *  tree. An additional intellectual property rights grant can be found
+ *  in the file PATENTS.  All contributing project authors may
+ *  be found in the AUTHORS file in the root of the source tree.
+ */
+
+// To generate callback.h from callback.h.pump, execute:
+// ../third_party/googletest/src/googletest/scripts/pump.py callback.h.pump
+
+// Callbacks are callable object containers. They can hold a function pointer
+// or a function object and behave like a value type. Internally, data is
+// reference-counted, making copies and pass-by-value inexpensive.
+//
+// Callbacks are typed using template arguments.  The format is:
+//   CallbackN<ReturnType, ParamType1, ..., ParamTypeN>
+// where N is the number of arguments supplied to the callable object.
+// Callbacks are invoked using operator(), just like a function or a function
+// object. Default-constructed callbacks are "empty," and executing an empty
+// callback does nothing. A callback can be made empty by assigning it from
+// a default-constructed callback.
+//
+// Callbacks are similar in purpose to std::function (which isn't available on
+// all platforms we support) and a lightweight alternative to sigslots. Since
+// they effectively hide the type of the object they call, they're useful in
+// breaking dependencies between objects that need to interact with one another.
+// Notably, they can hold the results of Bind(), std::bind*, etc, without needing
+// to know the resulting object type of those calls.
+//
+// Sigslots, on the other hand, provide a fuller feature set, such as multiple
+// subscriptions to a signal, optional thread-safety, and lifetime tracking of
+// slots. When these features are needed, choose sigslots.
+//
+// Example:
+//   int sqr(int x) { return x * x; }
+//   struct AddK {
+//     int k;
+//     int operator()(int x) const { return x + k; }
+//   } add_k = {5};
+//
+//   Callback1<int, int> my_callback;
+//   cout << my_callback.empty() << endl;  // true
+//
+//   my_callback = Callback1<int, int>(&sqr);
+//   cout << my_callback.empty() << endl;  // false
+//   cout << my_callback(3) << endl;  // 9
+//
+//   my_callback = Callback1<int, int>(add_k);
+//   cout << my_callback(10) << endl;  // 15
+//
+//   my_callback = Callback1<int, int>();
+//   cout << my_callback.empty() << endl;  // true
+
+#ifndef RTC_BASE_CALLBACK_H_
+#define RTC_BASE_CALLBACK_H_
+
+#include "rtc_base/ref_count.h"
+#include "rtc_base/ref_counted_object.h"
+#include "api/scoped_refptr.h"
+
+namespace rtc {
+
+$var n = 5
+$range i 0..n
+$for i [[
+$range j 1..i
+
+template <class R$for j [[,
+          class P$j]]>
+class Callback$i {
+ public:
+  // Default copy operations are appropriate for this class.
+  Callback$i() {}
+  template <class T> Callback$i(const T& functor)
+      : helper_(new RefCountedObject< HelperImpl<T> >(functor)) {}
+  R operator()($for j , [[P$j p$j]]) {
+    if (empty())
+      return R();
+    return helper_->Run($for j , [[p$j]]);
+  }
+  bool empty() const { return !helper_; }
+
+ private:
+  struct Helper : RefCountInterface {
+    virtual ~Helper() {}
+    virtual R Run($for j , [[P$j p$j]]) = 0;
+  };
+  template <class T> struct HelperImpl : Helper {
+    explicit HelperImpl(const T& functor) : functor_(functor) {}
+    virtual R Run($for j , [[P$j p$j]]) {
+      return functor_($for j , [[p$j]]);
+    }
+    T functor_;
+  };
+  scoped_refptr<Helper> helper_;
+};
+
+]]
+}  // namespace rtc
+
+#endif  // RTC_BASE_CALLBACK_H_

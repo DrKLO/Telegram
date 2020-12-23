@@ -16,8 +16,10 @@
 #include "absl/types/optional.h"
 #include "api/video/video_timing.h"
 #include "modules/video_coding/codec_timer.h"
+#include "rtc_base/experiments/field_trial_parser.h"
 #include "rtc_base/synchronization/mutex.h"
 #include "rtc_base/thread_annotations.h"
+#include "rtc_base/time/timestamp_extrapolator.h"
 
 namespace webrtc {
 
@@ -26,10 +28,8 @@ class TimestampExtrapolator;
 
 class VCMTiming {
  public:
-  // The primary timing component should be passed
-  // if this is the dual timing component.
-  explicit VCMTiming(Clock* clock, VCMTiming* master_timing = NULL);
-  virtual ~VCMTiming();
+  explicit VCMTiming(Clock* clock);
+  virtual ~VCMTiming() = default;
 
   // Resets the timing to the initial state.
   void Reset();
@@ -100,6 +100,10 @@ class VCMTiming {
   void SetTimingFrameInfo(const TimingFrameInfo& info);
   absl::optional<TimingFrameInfo> GetTimingFrameInfo();
 
+  void SetMaxCompositionDelayInFrames(
+      absl::optional<int> max_composition_delay_in_frames);
+  absl::optional<int> MaxCompositionDelayInFrames() const;
+
   enum { kDefaultRenderDelayMs = 10 };
   enum { kDelayMaxChangeMsPerS = 100 };
 
@@ -112,9 +116,10 @@ class VCMTiming {
  private:
   mutable Mutex mutex_;
   Clock* const clock_;
-  bool master_ RTC_GUARDED_BY(mutex_);
-  TimestampExtrapolator* ts_extrapolator_ RTC_GUARDED_BY(mutex_);
-  std::unique_ptr<VCMCodecTimer> codec_timer_ RTC_GUARDED_BY(mutex_);
+  const std::unique_ptr<TimestampExtrapolator> ts_extrapolator_
+      RTC_PT_GUARDED_BY(mutex_);
+  std::unique_ptr<VCMCodecTimer> codec_timer_ RTC_GUARDED_BY(mutex_)
+      RTC_PT_GUARDED_BY(mutex_);
   int render_delay_ms_ RTC_GUARDED_BY(mutex_);
   // Best-effort playout delay range for frames from capture to render.
   // The receiver tries to keep the delay between |min_playout_delay_ms_|
@@ -128,6 +133,12 @@ class VCMTiming {
   uint32_t prev_frame_timestamp_ RTC_GUARDED_BY(mutex_);
   absl::optional<TimingFrameInfo> timing_frame_info_ RTC_GUARDED_BY(mutex_);
   size_t num_decoded_frames_ RTC_GUARDED_BY(mutex_);
+  // Set by the field trial WebRTC-LowLatencyRenderer. The parameter enabled
+  // determines if the low-latency renderer algorithm should be used for the
+  // case min playout delay=0 and max playout delay>0.
+  FieldTrialParameter<bool> low_latency_renderer_enabled_
+      RTC_GUARDED_BY(mutex_);
+  absl::optional<int> max_composition_delay_in_frames_ RTC_GUARDED_BY(mutex_);
 };
 }  // namespace webrtc
 

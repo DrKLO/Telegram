@@ -73,6 +73,8 @@ rtc::StreamResult StreamInterfaceChannel::Read(void* buffer,
                                                size_t buffer_len,
                                                size_t* read,
                                                int* error) {
+  RTC_DCHECK_RUN_ON(&sequence_checker_);
+
   if (state_ == rtc::SS_CLOSED)
     return rtc::SR_EOS;
   if (state_ == rtc::SS_OPENING)
@@ -89,6 +91,7 @@ rtc::StreamResult StreamInterfaceChannel::Write(const void* data,
                                                 size_t data_len,
                                                 size_t* written,
                                                 int* error) {
+  RTC_DCHECK_RUN_ON(&sequence_checker_);
   // Always succeeds, since this is an unreliable transport anyway.
   // TODO(zhihuang): Should this block if ice_transport_'s temporarily
   // unwritable?
@@ -102,6 +105,7 @@ rtc::StreamResult StreamInterfaceChannel::Write(const void* data,
 }
 
 bool StreamInterfaceChannel::OnPacketReceived(const char* data, size_t size) {
+  RTC_DCHECK_RUN_ON(&sequence_checker_);
   if (packets_.size() > 0) {
     RTC_LOG(LS_WARNING) << "Packet already in queue.";
   }
@@ -118,10 +122,12 @@ bool StreamInterfaceChannel::OnPacketReceived(const char* data, size_t size) {
 }
 
 rtc::StreamState StreamInterfaceChannel::GetState() const {
+  RTC_DCHECK_RUN_ON(&sequence_checker_);
   return state_;
 }
 
 void StreamInterfaceChannel::Close() {
+  RTC_DCHECK_RUN_ON(&sequence_checker_);
   packets_.Clear();
   state_ = rtc::SS_CLOSED;
 }

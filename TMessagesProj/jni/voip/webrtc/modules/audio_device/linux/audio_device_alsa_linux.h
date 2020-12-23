@@ -40,8 +40,8 @@ class AudioDeviceLinuxALSA : public AudioDeviceGeneric {
       AudioDeviceModule::AudioLayer& audioLayer) const override;
 
   // Main initializaton and termination
-  InitStatus Init() override;
-  int32_t Terminate() override;
+  InitStatus Init() RTC_LOCKS_EXCLUDED(mutex_) override;
+  int32_t Terminate() RTC_LOCKS_EXCLUDED(mutex_) override;
   bool Initialized() const override;
 
   // Device enumeration
@@ -64,24 +64,24 @@ class AudioDeviceLinuxALSA : public AudioDeviceGeneric {
 
   // Audio transport initialization
   int32_t PlayoutIsAvailable(bool& available) override;
-  int32_t InitPlayout() override;
+  int32_t InitPlayout() RTC_LOCKS_EXCLUDED(mutex_) override;
   bool PlayoutIsInitialized() const override;
   int32_t RecordingIsAvailable(bool& available) override;
-  int32_t InitRecording() override;
+  int32_t InitRecording() RTC_LOCKS_EXCLUDED(mutex_) override;
   bool RecordingIsInitialized() const override;
 
   // Audio transport control
   int32_t StartPlayout() override;
-  int32_t StopPlayout() override;
+  int32_t StopPlayout() RTC_LOCKS_EXCLUDED(mutex_) override;
   bool Playing() const override;
   int32_t StartRecording() override;
-  int32_t StopRecording() override;
+  int32_t StopRecording() RTC_LOCKS_EXCLUDED(mutex_) override;
   bool Recording() const override;
 
   // Audio mixer initialization
-  int32_t InitSpeaker() override;
+  int32_t InitSpeaker() RTC_LOCKS_EXCLUDED(mutex_) override;
   bool SpeakerIsInitialized() const override;
-  int32_t InitMicrophone() override;
+  int32_t InitMicrophone() RTC_LOCKS_EXCLUDED(mutex_) override;
   bool MicrophoneIsInitialized() const override;
 
   // Speaker volume controls
@@ -109,19 +109,28 @@ class AudioDeviceLinuxALSA : public AudioDeviceGeneric {
   int32_t MicrophoneMute(bool& enabled) const override;
 
   // Stereo support
-  int32_t StereoPlayoutIsAvailable(bool& available) override;
+  int32_t StereoPlayoutIsAvailable(bool& available)
+      RTC_LOCKS_EXCLUDED(mutex_) override;
   int32_t SetStereoPlayout(bool enable) override;
   int32_t StereoPlayout(bool& enabled) const override;
-  int32_t StereoRecordingIsAvailable(bool& available) override;
+  int32_t StereoRecordingIsAvailable(bool& available)
+      RTC_LOCKS_EXCLUDED(mutex_) override;
   int32_t SetStereoRecording(bool enable) override;
   int32_t StereoRecording(bool& enabled) const override;
 
   // Delay information and control
   int32_t PlayoutDelay(uint16_t& delayMS) const override;
 
-  void AttachAudioBuffer(AudioDeviceBuffer* audioBuffer) override;
+  void AttachAudioBuffer(AudioDeviceBuffer* audioBuffer)
+      RTC_LOCKS_EXCLUDED(mutex_) override;
 
  private:
+  int32_t InitRecordingLocked() RTC_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
+  int32_t StopRecordingLocked() RTC_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
+  int32_t StopPlayoutLocked() RTC_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
+  int32_t InitPlayoutLocked() RTC_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
+  int32_t InitSpeakerLocked() RTC_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
+  int32_t InitMicrophoneLocked() RTC_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
   int32_t GetDevicesInfo(const int32_t function,
                          const bool playback,
                          const int32_t enumDeviceNo = 0,

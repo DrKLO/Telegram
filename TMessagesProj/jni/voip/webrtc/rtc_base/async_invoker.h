@@ -87,7 +87,7 @@ namespace rtc {
 //   destruction. This can be done by starting each chain of invocations on the
 //   same thread on which it will be destroyed, or by using some other
 //   synchronization method.
-class AsyncInvoker : public MessageHandler {
+class AsyncInvoker : public MessageHandlerAutoCleanup {
  public:
   AsyncInvoker();
   ~AsyncInvoker() override;

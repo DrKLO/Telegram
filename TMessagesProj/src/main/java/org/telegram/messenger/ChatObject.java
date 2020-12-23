@@ -8,7 +8,17 @@
 
 package org.telegram.messenger;
 
+import android.os.SystemClock;
+import android.text.TextUtils;
+import android.util.SparseArray;
+
+import org.telegram.messenger.voip.VoIPService;
+import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
 
 public class ChatObject {
 
@@ -31,6 +41,360 @@ public class ChatObject {
     public static final int ACTION_VIEW = 11;
     public static final int ACTION_EDIT_MESSAGES = 12;
     public static final int ACTION_DELETE_MESSAGES = 13;
+    public static final int ACTION_MANAGE_CALLS = 14;
+
+    public static class Call {
+        public TLRPC.GroupCall call;
+        public int chatId;
+        public SparseArray<TLRPC.TL_groupCallParticipant> participants = new SparseArray<>();
+        public ArrayList<TLRPC.TL_groupCallParticipant> sortedParticipants = new ArrayList<>();
+        public ArrayList<Integer> invitedUsers = new ArrayList<>();
+        public HashSet<Integer> invitedUsersMap = new HashSet<>();
+        public SparseArray<TLRPC.TL_groupCallParticipant> participantsBySources = new SparseArray<>();
+        private String nextLoadOffset;
+        public boolean membersLoadEndReached;
+        public boolean loadingMembers;
+        public int currentAccount;
+        public int speakingMembersCount;
+        private Runnable typingUpdateRunnable = () -> {
+            typingUpdateRunnableScheduled = false;
+            checkOnlineParticipants();
+            NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.groupCallTypingsUpdated);
+        };
+        private boolean typingUpdateRunnableScheduled;
+        private int lastLoadGuid;
+        private HashSet<Integer> loadingGuids = new HashSet<>();
+
+        public void setCall(int account, int chatId, TLRPC.TL_phone_groupCall groupCall) {
+            this.chatId = chatId;
+            currentAccount = account;
+            call = groupCall.call;
+            int date = Integer.MAX_VALUE;
+            for (int a = 0, N = groupCall.participants.size(); a < N; a++) {
+                TLRPC.TL_groupCallParticipant participant = groupCall.participants.get(a);
+                participants.put(participant.user_id, participant);
+                sortedParticipants.add(participant);
+                participantsBySources.put(participant.source, participant);
+                date = Math.min(date, participant.date);
+            }
+            sortParticipants();
+            nextLoadOffset = groupCall.participants_next_offset;
+            loadMembers(true);
+        }
+
+        public void migrateToChat(TLRPC.Chat chat) {
+            chatId = chat.id;
+            VoIPService voIPService = VoIPService.getSharedInstance();
+            if (voIPService != null && voIPService.getAccount() == currentAccount && voIPService.getChat() != null && voIPService.getChat().id == -chatId) {
+                voIPService.migrateToChat(chat);
+            }
+        }
+
+        public void loadMembers(boolean fromBegin) {
+            if (fromBegin) {
+                membersLoadEndReached = false;
+                nextLoadOffset = null;
+            }
+            if (membersLoadEndReached) {
+                return;
+            }
+            loadingMembers = true;
+            TLRPC.TL_phone_getGroupParticipants req = new TLRPC.TL_phone_getGroupParticipants();
+            req.call = new TLRPC.TL_inputGroupCall();
+            req.call.id = call.id;
+            req.call.access_hash = call.access_hash;
+            req.offset = nextLoadOffset != null ? nextLoadOffset : "";
+            req.limit = 20;
+            ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
+                if (response != null) {
+                    loadingMembers = false;
+                    TLRPC.TL_phone_groupParticipants groupParticipants = (TLRPC.TL_phone_groupParticipants) response;
+                    MessagesController.getInstance(currentAccount).putUsers(groupParticipants.users, false);
+                    SparseArray<TLRPC.TL_groupCallParticipant> old = null;
+                    if (TextUtils.isEmpty(req.offset)) {
+                        if (participants.size() != 0) {
+                            old = participants;
+                            participants = new SparseArray<>();
+                        } else {
+                            participants.clear();
+                        }
+                        sortedParticipants.clear();
+                        participantsBySources.clear();
+                        loadingGuids.clear();
+                    }
+                    nextLoadOffset = groupParticipants.next_offset;
+                    if (groupParticipants.participants.isEmpty() || TextUtils.isEmpty(nextLoadOffset)) {
+                        membersLoadEndReached = true;
+                    }
+                    if (TextUtils.isEmpty(req.offset)) {
+                        call.version = groupParticipants.version;
+                        call.participants_count = groupParticipants.count;
+                    }
+                    for (int a = 0, N = groupParticipants.participants.size(); a < N; a++) {
+                        TLRPC.TL_groupCallParticipant participant = groupParticipants.participants.get(a);
+                        TLRPC.TL_groupCallParticipant oldParticipant = participants.get(participant.user_id);
+                        if (oldParticipant != null) {
+                            sortedParticipants.remove(oldParticipant);
+                            participantsBySources.remove(oldParticipant.source);
+                            participant.active_date = Math.max(participant.active_date, oldParticipant.active_date);
+                        } else if (old != null) {
+                            oldParticipant = old.get(participant.user_id);
+                            if (oldParticipant != null) {
+                                participant.active_date = Math.max(participant.active_date, oldParticipant.active_date);
+                            }
+                        }
+                        participants.put(participant.user_id, participant);
+                        sortedParticipants.add(participant);
+                        participantsBySources.put(participant.source, participant);
+                    }
+                    if (call.participants_count < participants.size()) {
+                        call.participants_count = participants.size();
+                    }
+                    sortParticipants();
+                    NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.groupCallUpdated, chatId, call.id, false);
+                }
+            }));
+        }
+
+        public void addInvitedUser(int uid) {
+            if (participants.get(uid) != null || invitedUsersMap.contains(uid)) {
+                return;
+            }
+            invitedUsersMap.add(uid);
+            invitedUsers.add(uid);
+        }
+
+        public void processTypingsUpdate(AccountInstance accountInstance, ArrayList<Integer> uids, int date) {
+            boolean updated = false;
+            ArrayList<Integer> participantsToLoad = null;
+            for (int a = 0, N = uids.size(); a < N; a++) {
+                Integer id = uids.get(a);
+                TLRPC.TL_groupCallParticipant participant = participants.get(id);
+                if (participant != null) {
+                    participant.active_date = date;
+                    updated = true;
+                } else {
+                    if (participantsToLoad == null) {
+                        participantsToLoad = new ArrayList<>();
+                    }
+                    participantsToLoad.add(id);
+                }
+            }
+            if (participantsToLoad != null) {
+                int guid = ++lastLoadGuid;
+                loadingGuids.add(guid);
+                TLRPC.TL_phone_getGroupParticipants req = new TLRPC.TL_phone_getGroupParticipants();
+                req.call = new TLRPC.TL_inputGroupCall();
+                req.call.id = call.id;
+                req.call.access_hash = call.access_hash;
+                req.ids = participantsToLoad;
+                req.offset = "";
+                req.limit = 100;
+                ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
+                    if (!loadingGuids.remove(guid)) {
+                        return;
+                    }
+                    if (response != null) {
+                        TLRPC.TL_phone_groupParticipants groupParticipants = (TLRPC.TL_phone_groupParticipants) response;
+                        MessagesController.getInstance(currentAccount).putUsers(groupParticipants.users, false);
+                        for (int a = 0, N = groupParticipants.participants.size(); a < N; a++) {
+                            TLRPC.TL_groupCallParticipant participant = groupParticipants.participants.get(a);
+                            TLRPC.TL_groupCallParticipant oldParticipant = participants.get(participant.user_id);
+                            if (oldParticipant != null) {
+                                sortedParticipants.remove(oldParticipant);
+                                participantsBySources.remove(oldParticipant.source);
+                            }
+                            participants.put(participant.user_id, participant);
+                            sortedParticipants.add(participant);
+                            participantsBySources.put(participant.source, participant);
+                            if (invitedUsersMap.contains(participant.user_id)) {
+                                Integer id = participant.user_id;
+                                invitedUsersMap.remove(id);
+                                invitedUsers.remove(id);
+                            }
+                        }
+                        if (call.participants_count < participants.size()) {
+                            call.participants_count = participants.size();
+                        }
+                        sortParticipants();
+                        NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.groupCallUpdated, chatId, call.id, false);
+                    }
+                }));
+            }
+            if (updated) {
+                sortParticipants();
+                NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.groupCallUpdated, chatId, call.id, false);
+            }
+        }
+
+        public void processVoiceLevelsUpdate(int[] ssrc, float[] levels, boolean[] voice) {
+            boolean updated = false;
+            int currentTime = ConnectionsManager.getInstance(currentAccount).getCurrentTime();
+            for (int a = 0; a < ssrc.length; a++) {
+                TLRPC.TL_groupCallParticipant participant;
+                if (ssrc[a] == 0) {
+                    participant = participants.get(UserConfig.getInstance(currentAccount).getClientUserId());
+                } else {
+                    participant = participantsBySources.get(ssrc[a]);
+                }
+                if (participant != null) {
+                    participant.hasVoice = voice[a];
+                    if (levels[a] > 0.1f) {
+                        if (voice[a] && participant.active_date + 1 < currentTime) {
+                            participant.active_date = currentTime;
+                            updated = true;
+                        }
+                        participant.lastSpeakTime = SystemClock.uptimeMillis();
+                        participant.amplitude = levels[a];
+                    } else {
+                        participant.amplitude = 0;
+                    }
+                }
+            }
+            if (updated) {
+                sortParticipants();
+                NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.groupCallUpdated, chatId, call.id, false);
+            }
+        }
+
+        public void processParticipantsUpdate(AccountInstance accountInstance, TLRPC.TL_updateGroupCallParticipants update) {
+            boolean versioned = false;
+            for (int a = 0, N = update.participants.size(); a < N; a++) {
+                TLRPC.TL_groupCallParticipant participant = update.participants.get(a);
+                if (participant.versioned) {
+                    versioned = true;
+                    break;
+                }
+            }
+            if (versioned && call.version + 1 < update.version) {
+                nextLoadOffset = null;
+                loadMembers(true);
+                return;
+            }
+            if (update.version < call.version) {
+                return;
+            }
+            boolean updated = false;
+            boolean selfUpdated = false;
+            int selfId = accountInstance.getUserConfig().getClientUserId();
+            for (int a = 0, N = update.participants.size(); a < N; a++) {
+                TLRPC.TL_groupCallParticipant participant = update.participants.get(a);
+                TLRPC.TL_groupCallParticipant oldParticipant = participants.get(participant.user_id);
+                if (participant.left) {
+                    if (update.version == call.version) {
+                        continue;
+                    }
+                    if (oldParticipant != null) {
+                        participants.remove(participant.user_id);
+                        participantsBySources.remove(participant.source);
+                        sortedParticipants.remove(oldParticipant);
+                    }
+                    call.participants_count--;
+                    if (call.participants_count < 0) {
+                        call.participants_count = 0;
+                    }
+                    updated = true;
+                } else {
+                    if (invitedUsersMap.contains(participant.user_id)) {
+                        Integer id = participant.user_id;
+                        invitedUsersMap.remove(id);
+                        invitedUsers.remove(id);
+                    }
+                    if (oldParticipant != null) {
+                        oldParticipant.flags = participant.flags;
+                        oldParticipant.muted = participant.muted;
+                        oldParticipant.can_self_unmute = participant.can_self_unmute;
+                        oldParticipant.date = participant.date;
+                        oldParticipant.active_date = Math.max(oldParticipant.active_date, participant.active_date);
+                        if (oldParticipant.source != participant.source) {
+                            participantsBySources.remove(oldParticipant.source);
+                            oldParticipant.source = participant.source;
+                            participantsBySources.put(oldParticipant.source, oldParticipant);
+                        }
+                    } else {
+                        if (participant.just_joined && update.version != call.version) {
+                            call.participants_count++;
+                        }
+                        sortedParticipants.add(participant);
+                        participants.put(participant.user_id, participant);
+                        participantsBySources.put(participant.source, participant);
+                    }
+                    if (participant.user_id == selfId && participant.active_date == 0) {
+                        participant.active_date = accountInstance.getConnectionsManager().getCurrentTime();
+                    }
+                    updated = true;
+                }
+                if (participant.user_id == selfId) {
+                    selfUpdated = true;
+                }
+            }
+            if (update.version > call.version) {
+                call.version = update.version;
+            }
+            if (call.participants_count < participants.size()) {
+                call.participants_count = participants.size();
+            }
+            if (updated) {
+                sortParticipants();
+                NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.groupCallUpdated, chatId, call.id, selfUpdated);
+            }
+        }
+
+        public void processGroupCallUpdate(AccountInstance accountInstance, TLRPC.TL_updateGroupCall update) {
+            if (call.version < update.call.version) {
+                nextLoadOffset = null;
+                loadMembers(true);
+            }
+            call = update.call;
+            NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.groupCallUpdated, chatId, call.id, false);
+        }
+
+        public TLRPC.TL_inputGroupCall getInputGroupCall() {
+            TLRPC.TL_inputGroupCall inputGroupCall = new TLRPC.TL_inputGroupCall();
+            inputGroupCall.id = call.id;
+            inputGroupCall.access_hash = call.access_hash;
+            return inputGroupCall;
+        }
+
+        private void sortParticipants() {
+            Collections.sort(sortedParticipants, (o1, o2) -> {
+                if (o1.active_date != 0 && o2.active_date != 0) {
+                    return Integer.compare(o2.active_date, o1.active_date);
+                } else if (o1.active_date != 0 && o2.active_date == 0) {
+                    return -1;
+                } else if (o1.active_date == 0 && o2.active_date != 0) {
+                    return 1;
+                }
+                return Integer.compare(o2.date, o1.date);
+            });
+            checkOnlineParticipants();
+        }
+
+        private void checkOnlineParticipants() {
+            if (typingUpdateRunnableScheduled) {
+                AndroidUtilities.cancelRunOnUIThread(typingUpdateRunnable);
+                typingUpdateRunnableScheduled = false;
+            }
+            speakingMembersCount = 0;
+            int currentTime = ConnectionsManager.getInstance(currentAccount).getCurrentTime();
+            int minDiff = Integer.MAX_VALUE;
+            for (int a = 0, N = sortedParticipants.size(); a < N; a++) {
+                TLRPC.TL_groupCallParticipant participant = sortedParticipants.get(a);
+                int diff = currentTime - participant.active_date;
+                if (diff < 5) {
+                    speakingMembersCount++;
+                    minDiff = Math.min(diff, minDiff);
+                }
+                if (Math.max(participant.date, participant.active_date) <= currentTime - 5) {
+                    break;
+                }
+            }
+            if (minDiff != Integer.MAX_VALUE) {
+                AndroidUtilities.runOnUIThread(typingUpdateRunnable, minDiff * 1000);
+                typingUpdateRunnableScheduled = true;
+            }
+        }
+    }
 
     private static boolean isBannableAction(int action) {
         switch (action) {
@@ -136,6 +500,9 @@ public class ChatObject {
                 case ACTION_BLOCK_USERS:
                     value = chat.admin_rights.ban_users;
                     break;
+                case ACTION_MANAGE_CALLS:
+                    value = chat.admin_rights.manage_call;
+                    break;
                 default:
                     value = false;
                     break;
@@ -201,6 +568,11 @@ public class ChatObject {
         return (chat instanceof TLRPC.TL_channel || chat instanceof TLRPC.TL_channelForbidden) && chat.megagroup;
     }
 
+    public static boolean isMegagroup(int currentAccount, int chatId) {
+        TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(chatId);
+        return ChatObject.isChannel(chat) && chat.megagroup;
+    }
+
     public static boolean hasAdminRights(TLRPC.Chat chat) {
         return chat != null && (chat.creator || chat.admin_rights != null && chat.admin_rights.flags != 0);
     }
@@ -215,6 +587,10 @@ public class ChatObject {
 
     public static boolean canBlockUsers(TLRPC.Chat chat) {
         return canUserDoAction(chat, ACTION_BLOCK_USERS);
+    }
+
+    public static boolean canManageCalls(TLRPC.Chat chat) {
+        return canUserDoAction(chat, ACTION_MANAGE_CALLS);
     }
 
     public static boolean canSendStickers(TLRPC.Chat chat) {

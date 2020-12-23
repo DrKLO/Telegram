@@ -19,6 +19,7 @@ import android.widget.FrameLayout;
 import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.DocumentObject;
 import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.Emoji;
 import org.telegram.messenger.FileLoader;
@@ -28,8 +29,10 @@ import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.messenger.SvgHelper;
 
 public class StickerEmojiCell extends FrameLayout {
 
@@ -46,9 +49,12 @@ public class StickerEmojiCell extends FrameLayout {
     private boolean recent;
     private static AccelerateInterpolator interpolator = new AccelerateInterpolator(0.5f);
     private int currentAccount = UserConfig.selectedAccount;
+    private boolean fromEmojiPanel;
 
-    public StickerEmojiCell(Context context) {
+    public StickerEmojiCell(Context context, boolean isEmojiPanel) {
         super(context);
+
+        fromEmojiPanel = isEmojiPanel;
 
         imageView = new BackupImageView(context);
         imageView.setAspectFit(true);
@@ -86,14 +92,23 @@ public class StickerEmojiCell extends FrameLayout {
             sticker = document;
             parentObject = parent;
             TLRPC.PhotoSize thumb = FileLoader.getClosestPhotoSizeWithSize(document.thumbs, 90);
+            SvgHelper.SvgDrawable svgThumb = DocumentObject.getSvgThumb(document, fromEmojiPanel ? Theme.key_emptyListPlaceholder : Theme.key_windowBackgroundGray, fromEmojiPanel ? 0.2f : 1.0f);
             if (MessageObject.canAutoplayAnimatedSticker(document)) {
-                if (thumb != null) {
+                if (svgThumb != null) {
+                    imageView.setImage(ImageLocation.getForDocument(document), "80_80", null, svgThumb, parentObject);
+                } else if (thumb != null) {
                     imageView.setImage(ImageLocation.getForDocument(document), "80_80", ImageLocation.getForDocument(thumb, document), null, 0, parentObject);
                 } else {
                     imageView.setImage(ImageLocation.getForDocument(document), "80_80", null, null, parentObject);
                 }
             } else {
-                if (thumb != null) {
+                if (svgThumb != null) {
+                    if (thumb != null) {
+                        imageView.setImage(ImageLocation.getForDocument(thumb, document), null, "webp", svgThumb, parentObject);
+                    } else {
+                        imageView.setImage(ImageLocation.getForDocument(document), null, "webp", svgThumb, parentObject);
+                    }
+                } else if (thumb != null) {
                     imageView.setImage(ImageLocation.getForDocument(thumb, document), null, "webp", null, parentObject);
                 } else {
                     imageView.setImage(ImageLocation.getForDocument(document), null, "webp", null, parentObject);
