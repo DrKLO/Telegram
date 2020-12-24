@@ -1799,6 +1799,7 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
                 actionBarAnimation.cancel();
                 actionBarAnimation = null;
             }
+            setUseLightStatusBar(actionBar.getTag() == null);
 
             actionBar.getBackButton().animate()
                     .scaleX(show ? 1.0f : 0.9f)

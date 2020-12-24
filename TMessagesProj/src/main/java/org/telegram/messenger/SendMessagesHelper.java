@@ -1239,9 +1239,9 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
         int lower_id = (int) peer;
         int sendResult = 0;
         int myId = getUserConfig().getClientUserId();
+        boolean isChannel = false;
         if (lower_id != 0) {
             final TLRPC.Peer peer_id = getMessagesController().getPeer((int) peer);
-            boolean isMegagroup = false;
             boolean isSignature = false;
             boolean canSendStickers = true;
             boolean canSendMedia = true;
@@ -1259,10 +1259,10 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
             } else {
                 chat = getMessagesController().getChat(-lower_id);
                 if (ChatObject.isChannel(chat)) {
-                    isMegagroup = chat.megagroup;
                     isSignature = chat.signatures;
+                    isChannel = !chat.megagroup;
 
-                    if (!isMegagroup && chat.has_link) {
+                    if (isChannel && chat.has_link) {
                         TLRPC.ChatFull chatFull = getMessagesController().getChatFull(chat.id);
                         if (chatFull != null) {
                             linkedToGroup = chatFull.linked_chat_id;
@@ -1331,7 +1331,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                         newMsg.fwd_from.flags |= 8;
                         newMsg.fwd_from.post_author = msgObj.messageOwner.fwd_from.post_author;
                     }
-                    if ((msgObj.messageOwner.fwd_from.flags & 16) != 0 && !UserObject.isReplyUser(msgObj.getDialogId())) {
+                    if ((peer == myId || isChannel) && (msgObj.messageOwner.fwd_from.flags & 16) != 0 && !UserObject.isReplyUser(msgObj.getDialogId())) {
                         newMsg.fwd_from.flags |= 16;
                         newMsg.fwd_from.saved_from_peer = msgObj.messageOwner.fwd_from.saved_from_peer;
                         newMsg.fwd_from.saved_from_msg_id = msgObj.messageOwner.fwd_from.saved_from_msg_id;
@@ -1457,7 +1457,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                     newMsg.grouped_id = gId;
                     newMsg.flags |= 131072;
                 }
-                if (peer_id.channel_id != 0 && !isMegagroup) {
+                if (peer_id.channel_id != 0 && isChannel) {
                     if (isSignature) {
                         newMsg.from_id = new TLRPC.TL_peerUser();
                         newMsg.from_id.user_id = myId;
@@ -1483,7 +1483,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                 messagesByRandomIds.put(newMsg.random_id, newMsg);
                 ids.add(newMsg.fwd_msg_id);
                 newMsg.date = scheduleDate != 0 ? scheduleDate : getConnectionsManager().getCurrentTime();
-                if (inputPeer instanceof TLRPC.TL_inputPeerChannel && !isMegagroup) {
+                if (inputPeer instanceof TLRPC.TL_inputPeerChannel && isChannel) {
                     if (scheduleDate == 0) {
                         newMsg.views = 1;
                         newMsg.flags |= TLRPC.MESSAGE_FLAG_HAS_VIEWS;
@@ -5063,7 +5063,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                     }
                 }
             }
-            sentMessage.message = newMsg.message;
+            newMsg.message = sentMessage.message;
             sentMessage.attachPath = newMsg.attachPath;
             newMsg.media.photo.id = sentMessage.media.photo.id;
             newMsg.media.photo.dc_id = sentMessage.media.photo.dc_id;

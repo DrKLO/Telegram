@@ -11910,26 +11910,35 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     endReached[loadIndex] = true;
                 }
 
-                if (isThreadChat() && load_type == 0 && forwardEndReached[0] && !pendingSendMessages.isEmpty()) {
-                    int pasteIndex = 0;
-                    int date = pendingSendMessages.get(0).messageOwner.date;
-                    if (!messArr.isEmpty()) {
-                        if (date >= messArr.get(0).messageOwner.date) {
-                            pasteIndex = 0;
-                        } else if (date <= messArr.get(messArr.size() - 1).messageOwner.date) {
-                            pasteIndex = messArr.size();
-                        } else {
-                            for (int a = 0, N = messArr.size(); a < N - 1; a++) {
-                                if (messArr.get(a).messageOwner.date >= date && messArr.get(a + 1).messageOwner.date <= date) {
-                                    pasteIndex = a + 1;
+                if (load_type == 0 && forwardEndReached[0] && !pendingSendMessages.isEmpty()) {
+                    for (int a = 0, N = messArr.size(); a < N; a++) {
+                        MessageObject existing = pendingSendMessagesDict.get(messArr.get(a).getId());
+                        if (existing != null) {
+                            pendingSendMessagesDict.remove(existing.getId());
+                            pendingSendMessages.remove(existing);
+                        }
+                    }
+                    if (!pendingSendMessages.isEmpty()) {
+                        int pasteIndex = 0;
+                        int date = pendingSendMessages.get(0).messageOwner.date;
+                        if (!messArr.isEmpty()) {
+                            if (date >= messArr.get(0).messageOwner.date) {
+                                pasteIndex = 0;
+                            } else if (date <= messArr.get(messArr.size() - 1).messageOwner.date) {
+                                pasteIndex = messArr.size();
+                            } else {
+                                for (int a = 0, N = messArr.size(); a < N - 1; a++) {
+                                    if (messArr.get(a).messageOwner.date >= date && messArr.get(a + 1).messageOwner.date <= date) {
+                                        pasteIndex = a + 1;
+                                    }
                                 }
                             }
                         }
+                        messArr = new ArrayList<>(messArr);
+                        messArr.addAll(pasteIndex, pendingSendMessages);
+                        pendingSendMessages.clear();
+                        pendingSendMessagesDict.clear();
                     }
-                    messArr = new ArrayList<>(messArr);
-                    messArr.addAll(pasteIndex, pendingSendMessages);
-                    pendingSendMessages.clear();
-                    pendingSendMessagesDict.clear();
                 }
 
                 if (!threadMessageAdded && isThreadChat() && (load_type == 0 && messArr.size() < count || (load_type == 2 || load_type == 3) && endReached[0])) {
@@ -14426,10 +14435,10 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 if (messageId > 0 && messageId <= (messageObject.isOut() ? threadMaxOutboxReadId : threadMaxInboxReadId)) {
                     messageObject.setIsRead();
                 }
-                if (!forwardEndReached[0] && messageId < 0) {
-                    pendingSendMessagesDict.put(messageId, messageObject);
-                    pendingSendMessages.add(messageObject);
-                }
+            }
+            if (currentEncryptedChat == null && !forwardEndReached[0] && messageId < 0) {
+                pendingSendMessagesDict.put(messageId, messageObject);
+                pendingSendMessages.add(0, messageObject);
             }
             if (messageObject.isDice() && !messageObject.isForwarded()) {
                 messageObject.wasUnread = true;
@@ -16017,7 +16026,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
     }
 
     private boolean hidePinnedMessageView(boolean animated) {
-        if (pinnedMessageView.getTag() == null) {
+        if (pinnedMessageView != null && pinnedMessageView.getTag() == null) {
             for (int a = 0; a < pinnedNextAnimation.length; a++) {
                 if (pinnedNextAnimation[a] != null) {
                     pinnedNextAnimation[a].cancel();
@@ -19778,6 +19787,10 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
     }
 
     private void openOriginalReplyChat(MessageObject messageObject) {
+        if (UserObject.isUserSelf(currentUser) && messageObject.messageOwner.fwd_from.saved_from_peer.user_id == currentUser.id) {
+            scrollToMessageId(messageObject.messageOwner.fwd_from.saved_from_msg_id, messageObject.getId(), true, 0, true, 0);
+            return;
+        }
         Bundle args = new Bundle();
         if (messageObject.messageOwner.fwd_from.saved_from_peer.channel_id != 0) {
             args.putInt("chat_id", messageObject.messageOwner.fwd_from.saved_from_peer.channel_id);

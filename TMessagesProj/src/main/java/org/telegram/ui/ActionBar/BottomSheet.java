@@ -845,6 +845,20 @@ public class BottomSheet extends Dialog {
         window.setAttributes(params);
     }
 
+    public void setUseLightStatusBar(boolean value) {
+        useLightStatusBar = value;
+        if (Build.VERSION.SDK_INT >= 23) {
+            int color = Theme.getColor(Theme.key_actionBarDefault, null, true);
+            int flags = container.getSystemUiVisibility();
+            if (useLightStatusBar && color == 0xffffffff) {
+                flags |= View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
+            } else {
+                flags &=~ View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
+            }
+            container.setSystemUiVisibility(flags);
+        }
+    }
+
     public boolean isFocusable() {
         return focusable;
     }

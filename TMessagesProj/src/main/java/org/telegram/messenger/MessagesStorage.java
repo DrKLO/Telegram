@@ -9744,7 +9744,6 @@ public class MessagesStorage extends BaseController {
     public void putMessages(final TLRPC.messages_Messages messages, final long dialog_id, final int load_type, final int max_id, final boolean createDialog, final boolean scheduled) {
         storageQueue.postRunnable(() -> {
             try {
-                FileLog.d("put messages to " + dialog_id);
                 if (scheduled) {
                     database.executeFast(String.format(Locale.US, "DELETE FROM scheduled_messages WHERE uid = %d AND mid > 0", dialog_id)).stepThis().dispose();
                     SQLitePreparedStatement state_messages = database.executeFast("REPLACE INTO scheduled_messages VALUES(?, ?, ?, ?, ?, ?, NULL)");

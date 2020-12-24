@@ -2055,6 +2055,16 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                             break;
                         }
                     }
+                    if (view == null) {
+                        view = listView.getChildAt(0);
+                        if (view != null) {
+                            RecyclerView.ViewHolder holder = listView.findContainingViewHolder(view);
+                            pos = holder.getAdapterPosition();
+                            if (pos == RecyclerView.NO_POSITION) {
+                                pos = holder.getPosition();
+                            }
+                        }
+                    }
 
                     int top = 0;
                     if (view != null) {
