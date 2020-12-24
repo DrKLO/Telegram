@@ -900,12 +900,6 @@ public class VoIPService extends VoIPBaseService {
 					FileLog.d("phone.discardCall " + response);
 				}
 			}
-			if (!wasNotConnected) {
-				AndroidUtilities.cancelRunOnUIThread(stopper);
-				if (onDone != null) {
-					onDone.run();
-				}
-			}
 		}, ConnectionsManager.RequestFlagFailOnServerErrors);
 	}
 
