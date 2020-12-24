@@ -289,7 +289,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
     TextSelectionHelper.ArticleTextSelectionHelper textSelectionHelper;
     TextSelectionHelper.ArticleTextSelectionHelper textSelectionHelperBottomSheet;
 
-    int allowAnimationIndex = -1;
+    private int allowAnimationIndex = -1;
 
     private final String BOTTOM_SHEET_VIEW_TAG = "bottomSheet";
 

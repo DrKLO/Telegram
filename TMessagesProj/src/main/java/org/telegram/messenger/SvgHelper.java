@@ -23,6 +23,7 @@ limitations under the License.
 package org.telegram.messenger;
 
 import android.graphics.Bitmap;
+import android.graphics.BitmapShader;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.ColorFilter;
@@ -37,6 +38,7 @@ import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.Shader;
 import android.graphics.drawable.Drawable;
+import android.os.Build;
 import android.os.SystemClock;
 
 import org.telegram.ui.ActionBar.Theme;
@@ -103,7 +105,9 @@ public class SvgHelper {
         private int height;
         private static int[] parentPosition = new int[2];
 
-        private LinearGradient backgroundGradient;
+        private Shader backgroundGradient;
+        private Bitmap backgroundBitmap;
+        private Canvas backgroundCanvas;
         private LinearGradient placeholderGradient;
         private Matrix placeholderMatrix;
         private static float totalTranslation;
@@ -233,7 +237,16 @@ public class SvgHelper {
                 color = Color.argb((int) (Color.alpha(color) / 2 * colorAlpha), Color.red(color), Color.green(color), Color.blue(color));
                 float centerX = (1.0f - w) / 2;
                 placeholderGradient = new LinearGradient(0, 0, gradientWidth, 0, new int[]{0x00000000, 0x00000000, color, 0x00000000, 0x00000000}, new float[]{0.0f, centerX - w / 2.0f, centerX, centerX + w / 2.0f, 1.0f}, Shader.TileMode.REPEAT);
-                backgroundGradient = new LinearGradient(0, 0, gradientWidth, 0, new int[]{color, color}, null, Shader.TileMode.REPEAT);
+                if (Build.VERSION.SDK_INT >= 28) {
+                    backgroundGradient = new LinearGradient(0, 0, gradientWidth, 0, new int[]{color, color}, null, Shader.TileMode.REPEAT);
+                } else {
+                    if (backgroundBitmap == null) {
+                        backgroundBitmap = Bitmap.createBitmap(1, 1, Bitmap.Config.ARGB_8888);
+                        backgroundCanvas = new Canvas(backgroundBitmap);
+                    }
+                    backgroundCanvas.drawColor(color);
+                    backgroundGradient = new BitmapShader(backgroundBitmap, Shader.TileMode.REPEAT, Shader.TileMode.REPEAT);
+                }
                 placeholderMatrix = new Matrix();
                 placeholderGradient.setLocalMatrix(placeholderMatrix);
                 for (Paint paint : paints.values()) {

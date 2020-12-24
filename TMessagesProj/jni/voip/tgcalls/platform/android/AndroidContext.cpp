@@ -1,13 +1,15 @@
+#include <tgnet/FileLog.h>
 #include "AndroidContext.h"
 
 #include "sdk/android/native_api/jni/jvm.h"
 
 namespace tgcalls {
 
-AndroidContext::AndroidContext(JNIEnv *env) {
+AndroidContext::AndroidContext(JNIEnv *env, jobject instance) {
     VideoCameraCapturerClass = (jclass) env->NewGlobalRef(env->FindClass("org/telegram/messenger/voip/VideoCameraCapturer"));
     jmethodID initMethodId = env->GetMethodID(VideoCameraCapturerClass, "<init>", "()V");
     javaCapturer = env->NewGlobalRef(env->NewObject(VideoCameraCapturerClass, initMethodId));
+    javaInstance = env->NewGlobalRef(instance);
 }
 
 AndroidContext::~AndroidContext() {
@@ -19,6 +21,18 @@ AndroidContext::~AndroidContext() {
     javaCapturer = nullptr;
 
     env->DeleteGlobalRef(VideoCameraCapturerClass);
+
+    if (javaInstance) {
+        env->DeleteGlobalRef(javaInstance);
+    }
+}
+
+void AndroidContext::setJavaInstance(JNIEnv *env, jobject instance) {
+    javaInstance = env->NewGlobalRef(instance);
+}
+
+jobject AndroidContext::getJavaInstance() {
+    return javaInstance;
 }
 
 jobject AndroidContext::getJavaCapturer() {

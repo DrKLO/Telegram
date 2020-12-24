@@ -57,9 +57,6 @@ public class VoIPToggleButton extends FrameLayout {
     private float crossProgress;
     private boolean drawCross;
 
-    private Bitmap iconBitmap;
-    private Canvas iconCanvas;
-
     private float crossOffset;
 
     Drawable rippleDrawable;
@@ -144,14 +141,6 @@ public class VoIPToggleButton extends FrameLayout {
             }
             icon[0].setAlpha(255);
 
-            if (iconBitmap == null) {
-                iconBitmap = Bitmap.createBitmap(AndroidUtilities.dp(32), AndroidUtilities.dp(32), Bitmap.Config.ARGB_8888);
-                iconCanvas = new Canvas(iconBitmap);
-            } else {
-                iconBitmap.eraseColor(Color.TRANSPARENT);
-            }
-            float x = iconBitmap.getWidth() >> 1;
-            float y = iconBitmap.getHeight() >> 1;
             if (replaceProgress != 0 && iconChangeColor) {
                 int color = ColorUtils.blendARGB(replaceColorFrom, currentIconColor, replaceProgress);
                 icon[0].setColorFilter(new PorterDuffColorFilter(color, PorterDuff.Mode.MULTIPLY));
@@ -175,8 +164,8 @@ public class VoIPToggleButton extends FrameLayout {
                 }
             }
             if (crossProgress > 0) {
-                int left = (int) (x - icon[0].getIntrinsicWidth() / 2f);
-                int top = (int) (x - icon[0].getIntrinsicHeight() / 2);
+                int left = (int) (cx - icon[0].getIntrinsicWidth() / 2f);
+                int top = (int) (cy - icon[0].getIntrinsicHeight() / 2);
 
                 float startX = left + AndroidUtilities.dpf2(8) + crossOffset;
                 float startY = top + AndroidUtilities.dpf2(8);
@@ -184,15 +173,16 @@ public class VoIPToggleButton extends FrameLayout {
                 float endX = startX - AndroidUtilities.dp(1) + AndroidUtilities.dp(17) * CubicBezierInterpolator.DEFAULT.getInterpolation(crossProgress);
                 float endY = startY + AndroidUtilities.dp(17) * CubicBezierInterpolator.DEFAULT.getInterpolation(crossProgress);
 
+                canvas.saveLayerAlpha(0, 0, getMeasuredWidth(), getMeasuredHeight(), 255, Canvas.ALL_SAVE_FLAG);
                 icon[0].setBounds(
-                        (int) (x - icon[0].getIntrinsicWidth() / 2f), (int) (y - icon[0].getIntrinsicHeight() / 2),
-                        (int) (x + icon[0].getIntrinsicWidth() / 2), (int) (y + icon[0].getIntrinsicHeight() / 2)
+                        (int) (cx - icon[0].getIntrinsicWidth() / 2f), (int) (cy - icon[0].getIntrinsicHeight() / 2),
+                        (int) (cx + icon[0].getIntrinsicWidth() / 2), (int) (cy + icon[0].getIntrinsicHeight() / 2)
                 );
-                icon[0].draw(iconCanvas);
+                icon[0].draw(canvas);
 
-                iconCanvas.drawLine(startX, startY - AndroidUtilities.dp(2f), endX, endY - AndroidUtilities.dp(2f), xRefPaint);
-                iconCanvas.drawLine(startX, startY, endX, endY, crossPaint);
-                canvas.drawBitmap(iconBitmap, cx - x, cy - y, bitmapPaint);
+                canvas.drawLine(startX, startY - AndroidUtilities.dp(2f), endX, endY - AndroidUtilities.dp(2f), xRefPaint);
+                canvas.drawLine(startX, startY, endX, endY, crossPaint);
+                canvas.restore();
             } else {
                 icon[0].setBounds(
                         (int) (cx - icon[0].getIntrinsicWidth() / 2f), (int) (cy - icon[0].getIntrinsicHeight() / 2),
@@ -371,34 +361,37 @@ public class VoIPToggleButton extends FrameLayout {
         }
     }
 
+    //animate background if true
     public void setCheckable(boolean checkable) {
         this.checkable = checkable;
     }
 
     public void setChecked(boolean checked, boolean animated) {
         this.checked = checked;
-        if (animated) {
-            if (checkAnimator != null) {
-                checkAnimator.removeAllListeners();
-                checkAnimator.cancel();
-            }
-            checkAnimator = ValueAnimator.ofFloat(checkedProgress,  checked ? 1f : 0);
-            checkAnimator.addUpdateListener(valueAnimator -> {
-                checkedProgress = (float) valueAnimator.getAnimatedValue();
-                setBackgroundColor(backgroundCheck1, backgroundCheck2);
-            });
-            checkAnimator.addListener(new AnimatorListenerAdapter() {
-                @Override
-                public void onAnimationEnd(Animator animation) {
-                    checkedProgress = checked ? 1f : 0;
-                    setBackgroundColor(backgroundCheck1, backgroundCheck2);
+        if (checkable) {
+            if (animated) {
+                if (checkAnimator != null) {
+                    checkAnimator.removeAllListeners();
+                    checkAnimator.cancel();
                 }
-            });
-            checkAnimator.setDuration(150);
-            checkAnimator.start();
-        } else {
-            checkedProgress = checked ? 1f : 0;
-            setBackgroundColor(backgroundCheck1, backgroundCheck2);
+                checkAnimator = ValueAnimator.ofFloat(checkedProgress, checked ? 1f : 0);
+                checkAnimator.addUpdateListener(valueAnimator -> {
+                    checkedProgress = (float) valueAnimator.getAnimatedValue();
+                    setBackgroundColor(backgroundCheck1, backgroundCheck2);
+                });
+                checkAnimator.addListener(new AnimatorListenerAdapter() {
+                    @Override
+                    public void onAnimationEnd(Animator animation) {
+                        checkedProgress = checked ? 1f : 0;
+                        setBackgroundColor(backgroundCheck1, backgroundCheck2);
+                    }
+                });
+                checkAnimator.setDuration(150);
+                checkAnimator.start();
+            } else {
+                checkedProgress = checked ? 1f : 0;
+                setBackgroundColor(backgroundCheck1, backgroundCheck2);
+            }
         }
     }
 

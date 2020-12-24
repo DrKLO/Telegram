@@ -20,6 +20,7 @@ import android.os.Bundle;
 import android.text.TextUtils;
 import android.view.Gravity;
 import android.view.View;
+import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 
@@ -74,16 +75,31 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
         super(context);
         parentFragment = chatActivity;
 
-        avatarImageView = new BackupImageView(context);
+        final boolean avatarClickable = parentFragment != null && parentFragment.getChatMode() == 0 && !UserObject.isReplyUser(parentFragment.getCurrentUser());
+        avatarImageView = new BackupImageView(context) {
+            @Override
+            public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
+                super.onInitializeAccessibilityNodeInfo(info);
+                if (avatarClickable && getImageReceiver().hasNotThumb()) {
+                    info.setText(LocaleController.getString("AccDescrProfilePicture", R.string.AccDescrProfilePicture));
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                        info.addAction(new AccessibilityNodeInfo.AccessibilityAction(AccessibilityNodeInfo.ACTION_CLICK, LocaleController.getString("Open", R.string.Open)));
+                    }
+                } else {
+                    info.setVisibleToUser(false);
+                }
+            }
+        };
         if (parentFragment != null) {
             sharedMediaPreloader = new SharedMediaLayout.SharedMediaPreloader(chatActivity);
             if (parentFragment.isThreadChat() || parentFragment.getChatMode() == 2) {
                 avatarImageView.setVisibility(GONE);
             }
         }
+        avatarImageView.setContentDescription(LocaleController.getString("AccDescrProfilePicture", R.string.AccDescrProfilePicture));
         avatarImageView.setRoundRadius(AndroidUtilities.dp(21));
         addView(avatarImageView);
-        if (parentFragment != null && parentFragment.getChatMode() == 0 && !UserObject.isReplyUser(parentFragment.getCurrentUser())) {
+        if (avatarClickable) {
             avatarImageView.setOnClickListener(v -> openProfile(true));
         }
 
@@ -645,6 +661,14 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
             subtitleTextView.setText(title);
             subtitleTextView.setTextColor(Theme.getColor(Theme.key_actionBarDefaultSubtitle));
             subtitleTextView.setTag(Theme.key_actionBarDefaultSubtitle);
+        }
+    }
+
+    @Override
+    public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
+        super.onInitializeAccessibilityNodeInfo(info);
+        if (info.isClickable() && Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            info.addAction(new AccessibilityNodeInfo.AccessibilityAction(AccessibilityNodeInfo.ACTION_CLICK, LocaleController.getString("OpenProfile", R.string.OpenProfile)));
         }
     }
 }

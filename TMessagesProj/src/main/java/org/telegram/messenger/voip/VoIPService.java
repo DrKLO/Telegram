@@ -1341,6 +1341,7 @@ public class VoIPService extends VoIPBaseService {
 			tgVoip.stopGroup();
 		}
 		cancelGroupCheckShortPoll();
+		wasConnected = false;
 		tgVoip = NativeInstance.makeGroup(this::startGroupCall, (uids, levels, voice) -> {
 			if (sharedInstance == null || groupCall == null) {
 				return;
@@ -1377,10 +1378,12 @@ public class VoIPService extends VoIPBaseService {
 			if (state == 0) {
 				startGroupCheckShortpoll();
 				if (playedConnectedSound && spPlayID == 0) {
-					if (spPlayID != 0) {
-						soundPool.stop(spPlayID);
-					}
-					spPlayID = soundPool.play(spVoiceChatConnecting, 1.0f, 1.0f, 0, -1, 1);
+					Utilities.globalQueue.postRunnable(() -> {
+						if (spPlayID != 0) {
+							soundPool.stop(spPlayID);
+						}
+						spPlayID = soundPool.play(spVoiceChatConnecting, 1.0f, 1.0f, 0, -1, 1);
+					});
 				}
 			} else {
 				cancelGroupCheckShortPoll();
@@ -1398,6 +1401,12 @@ public class VoIPService extends VoIPBaseService {
 				} else {
 					Utilities.globalQueue.postRunnable(() -> soundPool.play(spVoiceChatStartId, 1.0f, 1.0f, 0, 0, 1));
 					playedConnectedSound = true;
+				}
+				if (!wasConnected) {
+					if (!micMute) {
+						tgVoip.setMuteMicrophone(false);
+					}
+					wasConnected = true;
 				}
 			}
 		});

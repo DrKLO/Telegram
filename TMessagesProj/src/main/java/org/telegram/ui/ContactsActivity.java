@@ -147,10 +147,11 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
 
     private boolean checkPermission = true;
 
-    private final static int search_button = 0;
-    private final static int sort_button = 1;
     private AnimatorSet bounceIconAnimator;
     private int animationIndex = -1;
+
+    private final static int search_button = 0;
+    private final static int sort_button = 1;
 
     public interface ContactsActivityDelegate {
         void didSelectContact(TLRPC.User user, String param, ContactsActivity activity);
@@ -207,6 +208,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.closeChats);
         delegate = null;
         AndroidUtilities.removeAdjustResize(getParentActivity(), classGuid);
+        getNotificationCenter().onAnimationFinish(animationIndex);
     }
 
     @Override
@@ -1038,7 +1040,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
         });
         animatorSet.playTogether(valueAnimator);
         AndroidUtilities.runOnUIThread(() -> {
-            animationIndex = NotificationCenter.getInstance(currentAccount).setAnimationInProgress(animationIndex, null);
+            animationIndex = getNotificationCenter().setAnimationInProgress(animationIndex, null);
             animatorSet.start();
             if (isOpen) {
                 floatingButton.setAnimation(R.raw.write_contacts_fab_icon, 52, 52);
@@ -1178,7 +1180,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                     previousFab.setScaleX(1f);
                     previousFab.setScaleY(1f);
                     bounceIconAnimator = null;
-                    NotificationCenter.getInstance(currentAccount).onAnimationFinish(animationIndex);
+                    getNotificationCenter().onAnimationFinish(animationIndex);
                 }
             });
             bounceIconAnimator.start();

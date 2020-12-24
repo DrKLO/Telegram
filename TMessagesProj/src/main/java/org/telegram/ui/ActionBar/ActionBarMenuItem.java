@@ -51,6 +51,7 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import androidx.core.graphics.ColorUtils;
+import androidx.core.view.ViewCompat;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ImageLocation;
@@ -811,6 +812,14 @@ public class ActionBarMenuItem extends FrameLayout {
         checkClearButton();
     }
 
+    public static boolean checkRtl (String string) {
+        if (TextUtils.isEmpty(string)) {
+            return false;
+        }
+        char c = string.charAt(0);
+        return c >= 0x590 && c <= 0x6ff;
+    }
+
 
     public void setClearsTextOnSearchCollapse(boolean value) {
         clearsTextOnSearchCollapse = value;
@@ -948,7 +957,7 @@ public class ActionBarMenuItem extends FrameLayout {
                         ignoreRequestLayout = true;
                         measureChildWithMargins(searchFilterLayout, widthMeasureSpec, width, heightMeasureSpec, 0);
                         int filterWidth = searchFilterLayout.getVisibility() == View.VISIBLE ? searchFilterLayout.getMeasuredWidth() : 0;
-                        measureChildWithMargins(searchField, MeasureSpec.makeMeasureSpec(minWidth - AndroidUtilities.dp(6), MeasureSpec.UNSPECIFIED), width + filterWidth, heightMeasureSpec, 0);
+                        measureChildWithMargins(searchField, MeasureSpec.makeMeasureSpec(minWidth - AndroidUtilities.dp(12), MeasureSpec.UNSPECIFIED), width + filterWidth, heightMeasureSpec, 0);
                         ignoreRequestLayout = false;
                         setMeasuredDimension(Math.max(filterWidth + searchField.getMeasuredWidth(), minWidth), MeasureSpec.getSize(heightMeasureSpec));
                     }

@@ -545,7 +545,7 @@ public class ChatLinkActivity extends BaseFragment implements NotificationCenter
             } else {
                 finishFragment();
             }
-        }));
+        }), ConnectionsManager.RequestFlagInvokeAfter);
         AndroidUtilities.runOnUIThread(() -> {
             if (progressDialog[0] == null) {
                 return;

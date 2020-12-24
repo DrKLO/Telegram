@@ -2913,13 +2913,15 @@ public class NotificationsController extends BaseController {
                 if (!settings.equals(newSettingsHash)) {
                     SharedPreferences.Editor editor = null;
                     if (channelImportance == NotificationManager.IMPORTANCE_NONE) {
-                        if (isInApp) {
-                            editor = preferences.edit();
-                            if (isDefault) {
+                        editor = preferences.edit();
+                        if (isDefault) {
+                            if (!isInApp) {
                                 editor.putInt(getGlobalNotificationsKey(type), Integer.MAX_VALUE);
-                            } else {
-                                editor.putInt("notify2_" + dialogId, 2);
+                                updateServerNotificationsSettings(type);
                             }
+                        } else {
+                            editor.putInt("notify2_" + dialogId, 2);
+                            updateServerNotificationsSettings(dialogId, true);
                         }
                         edited = true;
                     } else if (channelImportance != importance) {
@@ -3063,7 +3065,7 @@ public class NotificationsController extends BaseController {
 
         if (edited && newSettingsHash != null) {
             preferences.edit().putString(key, channelId).putString(key + "_s", newSettingsHash).commit();
-        } else {
+        } else if (!isInApp || !isDefault) {
             for (int a = 0; a < vibrationPattern.length; a++) {
                 newSettings.append(vibrationPattern[a]);
             }

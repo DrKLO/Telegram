@@ -3233,7 +3233,7 @@ public class ImageLoader {
             fileDir = location.volume_id != Integer.MIN_VALUE ? FileLoader.getDirectory(FileLoader.MEDIA_DIR_IMAGE) : FileLoader.getDirectory(FileLoader.MEDIA_DIR_CACHE);
         }
         final File cacheFile = new File(fileDir, fileName);
-        if (compressFormat == Bitmap.CompressFormat.JPEG && progressive) {
+        if (compressFormat == Bitmap.CompressFormat.JPEG && progressive && BuildVars.DEBUG_VERSION) {
             photoSize.size = Utilities.saveProgressiveJpeg(scaledBitmap, scaledBitmap.getWidth(), scaledBitmap.getHeight(), scaledBitmap.getRowBytes(), quality, cacheFile.getAbsolutePath());
         } else {
             FileOutputStream stream = new FileOutputStream(cacheFile);

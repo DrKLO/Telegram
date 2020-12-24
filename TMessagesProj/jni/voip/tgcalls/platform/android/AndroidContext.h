@@ -9,15 +9,19 @@ namespace tgcalls {
 
 class AndroidContext final : public PlatformContext {
 public:
-    AndroidContext(JNIEnv *env);
+    AndroidContext(JNIEnv *env, jobject instance);
     ~AndroidContext() override;
 
     jobject getJavaCapturer();
+    jobject getJavaInstance();
     jclass getJavaCapturerClass();
+
+    void setJavaInstance(JNIEnv *env, jobject instance);
 
 private:
     jclass VideoCameraCapturerClass = nullptr;
     jobject javaCapturer = nullptr;
+    jobject javaInstance = nullptr;
 
 };
 

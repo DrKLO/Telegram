@@ -1724,7 +1724,9 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             @Override
             protected void onPanTranslationUpdate(float y, float progress, boolean keyboardVisible) {
                 currentPanTranslationY = y;
-                actionBar.setTranslationY(y);
+                if (currentEditMode != 3) {
+                    actionBar.setTranslationY(y);
+                }
                 if (miniProgressView != null) {
                     miniProgressView.setTranslationY(y);
                 }
@@ -2916,7 +2918,6 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                     for (int a = 0; a < arr.size(); a++) {
                         MessageObject message = arr.get(a);
                         if (imagesByIdsTemp[loadIndex].indexOfKey(message.getId()) < 0) {
-                            FileLog.d("add message " + message.getId() + " media = " + message.messageOwner.media);
                             imagesByIdsTemp[loadIndex].put(message.getId(), message);
                             if (opennedFromMedia) {
                                 imagesArrTemp.add(message);
@@ -8128,6 +8129,13 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                     }
                     drawable.setProgressMs(videoPlayer.getCurrentPosition() - (startTime > 0 ? startTime / 1000 : 0));
                 }
+
+                @Override
+                protected void onTextAdd() {
+                    if (!windowView.isFocusable()) {
+                        makeFocusable();
+                    }
+                }
             };
             containerView.addView(photoPaintView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
             photoPaintView.getDoneTextView().setOnClickListener(v -> {
@@ -11380,11 +11388,12 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                         }
                         animatorSet.playTogether(animators);
                         animatorSet.setDuration(200);
+                        int account = currentAccount;
                         animatorSet.addListener(new AnimatorListenerAdapter() {
                             @Override
                             public void onAnimationEnd(Animator animation) {
                                 AndroidUtilities.runOnUIThread(() -> {
-                                    NotificationCenter.getInstance(currentAccount).onAnimationFinish(transitionIndex);
+                                    NotificationCenter.getInstance(account).onAnimationFinish(transitionIndex);
                                     if (animationEndRunnable != null) {
                                         animationEndRunnable.run();
                                         animationEndRunnable = null;
@@ -11399,7 +11408,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                         setCaptionHwLayerEnabled(false);
                         transitionAnimationStartTime = System.currentTimeMillis();
                         AndroidUtilities.runOnUIThread(() -> {
-                            transitionIndex = NotificationCenter.getInstance(currentAccount).setAnimationInProgress(transitionIndex, new int[]{NotificationCenter.dialogsNeedReload, NotificationCenter.closeChats, NotificationCenter.mediaCountDidLoad, NotificationCenter.mediaDidLoad, NotificationCenter.dialogPhotosLoaded});
+                            transitionIndex = NotificationCenter.getInstance(account).setAnimationInProgress(transitionIndex, new int[]{NotificationCenter.dialogsNeedReload, NotificationCenter.closeChats, NotificationCenter.mediaCountDidLoad, NotificationCenter.mediaDidLoad, NotificationCenter.dialogPhotosLoaded});
                             animatorSet.start();
                         });
                     } else {

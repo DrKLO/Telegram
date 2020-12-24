@@ -29,7 +29,6 @@ public class AdjustPanLayoutHelper {
     private final View parent;
     private View resizableViewToSet;
 
-    private ViewGroup decorView;
     private ViewGroup contentView;
     private View resizableView;
     private boolean animationInProgress;
@@ -119,7 +118,7 @@ public class AdjustPanLayoutHelper {
         }
         animator.addUpdateListener(animation -> {
             float v = (float) animation.getAnimatedValue();
-            float y = from * v + to * (1f - v);
+            float y = (int) (from * v + to * (1f - v));
             parent.setTranslationY(y);
             onPanTranslationUpdate(-y, v, isKeyboardVisible);
         });
@@ -186,7 +185,7 @@ public class AdjustPanLayoutHelper {
         Context context = parent.getContext();
         Activity activity = getActivity(context);
         if (activity != null) {
-            decorView = (android.view.ViewGroup) activity.getWindow().getDecorView();
+            ViewGroup decorView = (ViewGroup) activity.getWindow().getDecorView();
             contentView = decorView.findViewById(Window.ID_ANDROID_CONTENT);
         }
         resizableView = findResizableView(parent);

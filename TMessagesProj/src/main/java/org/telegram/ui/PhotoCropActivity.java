@@ -444,7 +444,7 @@ public class PhotoCropActivity extends BaseFragment {
         });
 
         ActionBarMenu menu = actionBar.createMenu();
-        menu.addItemWithWidth(done_button, R.drawable.ic_done, AndroidUtilities.dp(56));
+        menu.addItemWithWidth(done_button, R.drawable.ic_done, AndroidUtilities.dp(56), LocaleController.getString("Done", R.string.Done));
 
         fragmentView = view = new PhotoCropView(context);
         ((PhotoCropView) fragmentView).freeform = getArguments().getBoolean("freeform", false);

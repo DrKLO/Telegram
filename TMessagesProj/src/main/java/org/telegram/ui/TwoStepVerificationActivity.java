@@ -173,7 +173,7 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
         frameLayout.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
 
         ActionBarMenu menu = actionBar.createMenu();
-        doneItem = menu.addItemWithWidth(done_button, R.drawable.ic_done, AndroidUtilities.dp(56));
+        doneItem = menu.addItemWithWidth(done_button, R.drawable.ic_done, AndroidUtilities.dp(56), LocaleController.getString("Done", R.string.Done));
 
         scrollView = new ScrollView(context);
         scrollView.setFillViewport(true);

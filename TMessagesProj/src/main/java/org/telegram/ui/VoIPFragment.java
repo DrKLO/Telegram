@@ -1814,7 +1814,6 @@ public class VoIPFragment implements VoIPBaseService.StateListener, Notification
     }
 
     private void setMicrohoneAction(VoIPToggleButton bottomButton, VoIPService service, boolean animated) {
-        bottomButton.setCheckable(false);
         if (service.isMicMute()) {
             bottomButton.setData(R.drawable.calls_unmute, Color.BLACK, Color.WHITE, LocaleController.getString("VoipUnmute", R.string.VoipUnmute), true, animated);
         } else {
@@ -1873,12 +1872,10 @@ public class VoIPFragment implements VoIPBaseService.StateListener, Notification
                     }
                 }
             });
-            bottomButton.setCheckable(false);
             bottomButton.setEnabled(true);
         } else {
             bottomButton.setData(R.drawable.calls_video, ColorUtils.setAlphaComponent(Color.WHITE, (int) (255 * 0.5f)), ColorUtils.setAlphaComponent(Color.WHITE, (int) (255 * 0.12f)), "Video", false, animated);
             bottomButton.setOnClickListener(null);
-            bottomButton.setCheckable(false);
             bottomButton.setEnabled(false);
         }
     }
@@ -1920,7 +1917,6 @@ public class VoIPFragment implements VoIPBaseService.StateListener, Notification
     }
 
     private void setFrontalCameraAction(VoIPToggleButton bottomButton, VoIPService service, boolean animated) {
-        bottomButton.setCheckable(false);
         if (!currentUserIsVideo) {
             bottomButton.setData(R.drawable.calls_flip,  ColorUtils.setAlphaComponent(Color.WHITE, (int) (255 * 0.5f)), ColorUtils.setAlphaComponent(Color.WHITE, (int) (255 * 0.12f)), LocaleController.getString("VoipFlip", R.string.VoipFlip), false, animated);
             bottomButton.setOnClickListener(null);

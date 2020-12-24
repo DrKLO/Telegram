@@ -1845,11 +1845,11 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
         circleOptions.center(new LatLng(myLocation.getLatitude(), myLocation.getLongitude()));
         circleOptions.radius(meters);
         if (isActiveThemeDark()) {
-            circleOptions.strokeColor(0xffffffff);
-            circleOptions.fillColor(0x20ffffff);
+            circleOptions.strokeColor(0x9666A3D7);
+            circleOptions.fillColor(0x1c66A3D7);
         } else {
-            circleOptions.strokeColor(0xff000000);
-            circleOptions.fillColor(0x20000000);
+            circleOptions.strokeColor(0x964286F5);
+            circleOptions.fillColor(0x1c4286F5);
         }
         circleOptions.strokePattern(PATTERN_POLYGON_ALPHA);
         circleOptions.strokeWidth(2);
@@ -2704,7 +2704,7 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
         themeDescriptions.add(new ThemeDescription(searchListView, 0, new Class[]{LocationCell.class}, new String[]{"addressTextView"}, null, null, null, Theme.key_windowBackgroundWhiteGrayText3));
 
         themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{SharingLiveLocationCell.class}, new String[]{"nameTextView"}, null, null, null, Theme.key_windowBackgroundWhiteBlackText));
-        themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{SharingLiveLocationCell.class}, new String[]{"distanceTextView"}, null, null, null, Theme.key_windowBackgroundWhiteGrayText2));
+        themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{SharingLiveLocationCell.class}, new String[]{"distanceTextView"}, null, null, null, Theme.key_windowBackgroundWhiteGrayText3));
 
         themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{LocationLoadingCell.class}, new String[]{"progressBar"}, null, null, null, Theme.key_progressCircle));
         themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{LocationLoadingCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteGrayText3));

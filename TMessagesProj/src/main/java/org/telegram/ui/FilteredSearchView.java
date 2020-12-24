@@ -253,7 +253,7 @@ public class FilteredSearchView extends FrameLayout implements NotificationCente
     public final LinearLayoutManager layoutManager;
     private final FlickerLoadingView loadingView;
     private boolean firstLoading = true;
-    int animationIndex = -1;
+    private int animationIndex = -1;
     public int keyboardHeight;
     private final ChatActionCell floatingDateView;
 
@@ -768,7 +768,6 @@ public class FilteredSearchView extends FrameLayout implements NotificationCente
                                     @Override
                                     public void onAnimationEnd(Animator animation) {
                                         NotificationCenter.getInstance(currentAccount).onAnimationFinish(animationIndex);
-                                        super.onAnimationEnd(animation);
                                     }
                                 });
                                 animationIndex = NotificationCenter.getInstance(currentAccount).setAnimationInProgress(animationIndex, null);

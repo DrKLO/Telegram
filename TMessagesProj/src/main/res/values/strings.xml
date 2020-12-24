@@ -2602,6 +2602,7 @@
     <string name="TwoStepVerificationPasswordReturnSettings">Return to Settings</string>
     <string name="TwoStepVerificationPasswordReturnPassport">Return to Passport</string>
     <string name="TwoStepVerificationSetPassword">Set Password</string>
+    <string name="TwoStepVerificationShowPassword">Show password</string>
     <string name="SetAdditionalPassword">Set Additional Password</string>
     <string name="SetAdditionalPasswordInfo">You can set a password that will be required when you log in on a new device in addition to the code you get in the SMS.</string>
     <string name="YourPassword">Your Password</string>
@@ -3866,6 +3867,7 @@
     <string name="AccDescrOpenMenu">Open navigation menu</string>
     <string name="AccDescrOpenMenu2">Open menu</string>
     <string name="AccDescrCloseMenu">Close menu</string>
+    <string name="AccDescrOpenInPhotoViewer">Open in photo viewer</string>
     <string name="AccDescrMusicInfo">%2$s by %1$s</string>
     <string name="AccDescrMoreOptions">More options</string>
     <string name="AccActionPlay">Play</string>

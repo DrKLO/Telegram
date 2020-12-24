@@ -157,7 +157,7 @@ public class GroupStickersActivity extends BaseFragment implements NotificationC
         });
 
         ActionBarMenu menu = actionBar.createMenu();
-        doneItem = menu.addItemWithWidth(done_button, R.drawable.ic_done, AndroidUtilities.dp(56));
+        doneItem = menu.addItemWithWidth(done_button, R.drawable.ic_done, AndroidUtilities.dp(56), LocaleController.getString("Done", R.string.Done));
         progressView = new ContextProgressView(context, 1);
         progressView.setAlpha(0.0f);
         progressView.setScaleX(0.1f);

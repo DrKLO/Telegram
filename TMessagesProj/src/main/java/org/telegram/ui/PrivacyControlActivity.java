@@ -326,7 +326,7 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
         });
 
         ActionBarMenu menu = actionBar.createMenu();
-        doneButton = menu.addItemWithWidth(done_button, R.drawable.ic_done, AndroidUtilities.dp(56));
+        doneButton = menu.addItemWithWidth(done_button, R.drawable.ic_done, AndroidUtilities.dp(56), LocaleController.getString("Done", R.string.Done));
         boolean hasChanges = hasChanges();
         doneButton.setAlpha(hasChanges ? 1.0f : 0.0f);
         doneButton.setScaleX(hasChanges ? 1.0f : 0.0f);

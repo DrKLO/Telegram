@@ -3410,7 +3410,9 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
         if (requestCode == 105) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 if (ApplicationLoader.canDrawOverlays = Settings.canDrawOverlays(this)) {
-                    GroupCallActivity.groupCallInstance.dismissInternal();
+                    if (GroupCallActivity.groupCallInstance != null) {
+                        GroupCallActivity.groupCallInstance.dismissInternal();
+                    }
                     AndroidUtilities.runOnUIThread(() -> {
                         GroupCallPip.clearForce();
                         GroupCallPip.updateVisibility(LaunchActivity.this);

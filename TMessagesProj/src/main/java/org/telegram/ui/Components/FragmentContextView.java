@@ -1316,10 +1316,6 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
                     animatorSet = null;
                 }
                 final int currentAccount = account;
-                if (animatorSet != null) {
-                    animatorSet.cancel();
-                    animatorSet = null;
-                }
                 animationIndex = NotificationCenter.getInstance(currentAccount).setAnimationInProgress(animationIndex, null);
                 animatorSet = new AnimatorSet();
                 animatorSet.playTogether(ObjectAnimator.ofFloat(this, "topPadding", 0));

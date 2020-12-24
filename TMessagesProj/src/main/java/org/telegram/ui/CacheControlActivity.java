@@ -624,7 +624,7 @@ public class CacheControlActivity extends BaseFragment {
                             databaseSize = MessagesStorage.getInstance(currentAccount).getDatabaseSize();
                             listAdapter.notifyDataSetChanged();
                         }
-                        NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.didDatabaseCleared);
+                        NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.didClearDatabase);
                     });
                 }
             });

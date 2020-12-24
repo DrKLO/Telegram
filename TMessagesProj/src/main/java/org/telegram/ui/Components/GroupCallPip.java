@@ -239,6 +239,11 @@ public class GroupCallPip implements NotificationCenter.NotificationCenterDelega
                         AndroidUtilities.cancelRunOnUIThread(micRunnable);
                         AndroidUtilities.cancelRunOnUIThread(pressedRunnable);
                         if (animateToPrepareRemove) {
+                            if (pressed) {
+                                if (VoIPService.getSharedInstance() != null) {
+                                    VoIPService.getSharedInstance().setMicMute(true, false, false);
+                                }
+                            }
                             pressed = false;
                             remove();
                             return false;

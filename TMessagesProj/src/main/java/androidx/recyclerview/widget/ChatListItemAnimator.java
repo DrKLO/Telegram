@@ -616,7 +616,7 @@ public class ChatListItemAnimator extends DefaultItemAnimator {
 
         if (holder.itemView instanceof BotHelpCell) {
             BotHelpCell botCell = (BotHelpCell) holder.itemView ;
-            int top = recyclerListView.getMeasuredHeight() / 2 - botCell.getMeasuredHeight() / 2 + activity.getChatListViewPadding();
+            float top = recyclerListView.getMeasuredHeight() / 2 - botCell.getMeasuredHeight() / 2 + activity.getChatListViewPadding();
             float animateTo = 0;
             if (botCell.getTop() > top) {
                 animateTo = top - botCell.getTop();

@@ -127,7 +127,7 @@
     <string name="NoChatsHelp">Tippe unten auf den Stift für deine erste Chatnachricht.</string>
     <string name="NoChatsContactsHelp">Tippe unten rechts auf den Stift\nfür deine erste Chatnachricht.</string>
     <string name="WaitingForNetwork">Warte auf Netzwerk...</string>
-    <string name="Connecting">Verbinde...</string>
+    <string name="Connecting">Verbinden...</string>
     <string name="Connected">Verbunden</string>
     <string name="Ping">Ping: %1$d ms</string>
     <string name="Checking">Prüfe...</string>
@@ -165,6 +165,7 @@
     <string name="DialogPin">Anheften</string>
     <string name="DialogUnpin">Loslösen</string>
     <string name="Archive">Archivieren</string>
+    <string name="ArchiveSearchFilter">Archiv</string>
     <string name="Unarchive">Einblenden</string>
     <string name="ArchivedChats">Archivierte Chats</string>
     <string name="DeleteChatUser">Chat löschen</string>
@@ -181,7 +182,7 @@
     <string name="MuteFor">Stumm für %1$s</string>
     <string name="UnmuteNotifications">Stumm aus</string>
     <string name="WillUnmuteIn">In %1$s</string>
-    <string name="MuteDisable">Dauerhaft Stumm</string>
+    <string name="MuteDisable">Deaktivieren</string>
     <string name="Hashtags">HASHTAGS</string>
     <string name="Recent">Letzte</string>
     <string name="ChatHints">Leute</string>
@@ -295,7 +296,7 @@
     <string name="NoBlockedChannel2">Nutzer, die von Admins aus dem Kanal entfernt wurden, können ihn nicht mehr über Einladungslinks betreten.</string>
     <string name="NewChannel">Neuer Kanal</string>
     <string name="EnterChannelName">Kanalname</string>
-    <string name="AddMutual">Kontakte zum Kanal hinzufügen</string>
+    <string name="AddMutual">Leute zum Kanal hinzufügen</string>
     <string name="ChannelUsernameHelp">Mit einem dauerhaften Link können andere deinen Kanal finden und abonnieren. \n\nErlaubt sind a-z, 0-9 und Unterstriche.\nDie Mindestlänge beträgt 5 Zeichen.</string>
     <string name="MegaUsernameHelp">Mit einem dauerhaften Link können andere deine Gruppe finden und beitreten.\n\nErlaubt sind a-z, 0-9 und Unterstriche.\nDie Mindestlänge beträgt 5 Zeichen.</string>
     <string name="ChannelVerifiedWarning">Warnung</string>
@@ -371,9 +372,9 @@
     <string name="ActionChannelChangedVideo">Kanalvideo geändert</string>
     <string name="ActionChannelRemovedPhoto">Bild gelöscht</string>
     <string name="ActionChannelChangedTitle">Kanalname zu un2 geändert</string>
-    <string name="ChangePublicLimitReached">Du hast leider zu viele öffentliche Benutzernamen erstellt. Du kannst jederzeit den Link einer älteren Gruppe oder eines Kanals entfernen.</string>
+    <string name="ChangePublicLimitReached">Du hast leider zu viele öffentliche Benutzernamen erstellt. Du kannst jederzeit den Link einer älteren Gruppe oder eines Kanals entfernen oder private erstellen.</string>
     <string name="ChannelCreator">Inhaber</string>
-    <string name="ChannelAdministrator">Administrator</string>
+    <string name="ChannelAdministrator">Admin</string>
     <string name="ChannelAdmin">Admin</string>
     <string name="ChannelMute">STUMM</string>
     <string name="ChannelUnmute">STUMM AUS</string>
@@ -384,7 +385,7 @@
     <string name="ChannelInviteViaLink">Per Link einladen</string>
     <string name="ChannelRemoveUserAdmin">Admin entlassen</string>
     <string name="ChannelEditPermissions">Berechtigungen bearbeiten</string>
-    <string name="ChannelMembersInfo">Nur Administratoren sehen diese Liste.</string>
+    <string name="ChannelMembersInfo">Nur Kanal-Admins sehen diese Liste.</string>
     <string name="ChannelLinkInfo">Jeder, der Telegram installiert hat, kann anhand dieses Links in deinen Kanal.</string>
     <string name="ChannelAdminsInfo">Administratoren helfen dir, deinen Kanal zu verwalten. Tippen und halten, um sie zu löschen.</string>
     <string name="ChannelJoinTo">Möchtest du dem Kanal \'%1$s\' beitreten?</string>
@@ -444,7 +445,7 @@
     <string name="EditAdminDeleteMessages">Nachrichten von anderen löschen</string>
     <string name="EditAdminGroupDeleteMessages">Nachrichten löschen</string>
     <string name="EditAdminAddAdmins">Neue Admins hinzufügen</string>
-    <string name="EditAdminSendAnonymously">Anonym senden</string>
+    <string name="EditAdminSendAnonymously">Anonym bleiben</string>
     <string name="EditAdminRemoveAdmin">Admin entlassen</string>
     <string name="EditAdminGroupTransfer">Neuen Inhaber ernennen</string>
     <string name="EditAdminChannelTransfer">Neuen Inhaber ernennen</string>
@@ -541,7 +542,7 @@
     <string name="DiscussionChannelHelp3">Wähle eine Gruppe aus, die Kommentare aus deinem Kanal anzeigen soll.</string>
     <string name="DiscussionChannelHelp2">Alles, was du in diesem Kanal veröffentlichst, wird an die Gruppe weitergeleitet.</string>
     <string name="DiscussionChannelGroupSetHelp2">**%1$s** wurde als Gruppe für die Kanal-Kommentare ausgewählt.</string>
-    <string name="DiscussionGroupHelp">**%1$s** verknüpft die Gruppe als Diskussionsgruppe.</string>
+    <string name="DiscussionGroupHelp">Diese Gruppe dient %1$s\nals Diskussionsgruppe.</string>
     <string name="DiscussionGroupHelp2">Alle neuen Nachrichten, die in diesem Kanal veröffentlicht werden, werden an die Gruppe weitergeleitet.</string>
     <string name="DiscussionCreateGroup">Neue Gruppe erstellen</string>
     <string name="DiscussionUnlinkGroup">Gruppe nicht mehr verknüpfen</string>
@@ -567,6 +568,7 @@
     <string name="SlowmodeSelectSendError">Langsamer Modus ist aktiv, du kannst nicht mehr Elemente auswählen.</string>
     <string name="SlowmodeSendErrorTooLong">Dieser Text ist für eine einzelne Nachricht leider zu lang.\n\nLangsamer Modus ist aktiv, du kannst nicht mehr als eine gleichzeitig senden.</string>
     <string name="UserSetAsAdminHint">**%1$s** als Admin ernannt</string>
+    <string name="UserRemovedFromChatHint">**%1$s** aus **%2$s** entfernt</string>
     <!--polls-->
     <string name="NewPoll">Neue Umfrage</string>
     <string name="NewQuiz">Neues Quiz</string>
@@ -639,14 +641,14 @@
     <!--event log-->
     <string name="EventLog">Letzte Aktionen</string>
     <string name="EventLogAllEvents">Alle Aktionen</string>
-    <string name="EventLogSelectedEvents">Ausgewählte Aktionen</string>
+    <string name="EventLogSelectedEvents">ausgewählte Aktionen</string>
     <string name="EventLogAllAdmins">Alle Admins</string>
     <string name="EventLogEmpty">**Noch keine Aktionen!**\n\nMitglieder und Admins\nhaben noch keine Aktionen in den\nletzten 48 Stunden durchgeführt.</string>
     <string name="EventLogEmptyChannel">**Noch keine Aktionen!**\n\nMitglieder und Admins\nhaben noch keine Aktionen\nin den letzten 48 Stunden durchgeführt.</string>
     <string name="EventLogEmptySearch">**Keine Aktionen gefunden**\n\nKeine kürzlichen Ereignisse gefunden,\ndie deinen Suchbegriff beinhalten.</string>
     <string name="EventLogEmptyTextSearch">Keine kürzlichen Aktionen gefunden, die \'**%1$s**\' beinhalten.</string>
     <string name="EventLogInfoTitle">Was sind letzte Aktionen?</string>
-    <string name="EventLogInfoDetail">Das ist eine Liste aller Aktionen, die von Gruppenmitgliedern und Admins in den letzten 48 Stunden durchgeführt wurden.</string>
+    <string name="EventLogInfoDetail">Das ist eine Liste wichtiger Aktionen, die von Gruppenmitgliedern und Admins in den letzten 48 Stunden durchgeführt wurden.</string>
     <string name="EventLogInfoDetailChannel">Das ist eine Liste aller Aktionen, die von Kanalmitgliedern und Admins in den letzten 48 Stunden durchgeführt wurden.</string>
     <string name="EventLogEditedGroupTitle">un1 hat die Gruppe \"%1$s\" umbenannt</string>
     <string name="EventLogEditedChannelTitle">un1 hat den Kanal in \"%1$s\" umbenannt</string>
@@ -675,8 +677,8 @@
     <string name="EventLogStopPoll">un1 hat Umfrage beendet:</string>
     <string name="EventLogStopQuiz">un1 hat das Quiz beendet:</string>
     <string name="EventLogDeletedMessages">un1 hat diese Nachricht gelöscht:</string>
-    <string name="EventLogChangedLocation">un1 hat Gruppenstandort zu \"%1$s\" geändert</string>
-    <string name="EventLogRemovedLocation">un1 hat Gruppenstandort entfernt</string>
+    <string name="EventLogChangedLocation">un1 hat den Gruppenstandort zu \"%1$s\" geändert</string>
+    <string name="EventLogRemovedLocation">un1 hat den Gruppenstandort entfernt</string>
     <string name="EventLogChangedOwnership">hat Inhaberschaft an %1$s übertragen</string>
     <string name="EventLogChangedStickersSet">un1 hat das Sticker-Paket der Gruppe geändert</string>
     <string name="EventLogRemovedStickersSet">un1 hat das Sticker-Paket der Gruppe entfernt</string>
@@ -716,8 +718,9 @@
     <string name="EventLogPromotedEditMessages">Nachrichten bearbeiten</string>
     <string name="EventLogPromotedDeleteMessages">Nachrichten löschen</string>
     <string name="EventLogPromotedAddAdmins">Admins hinzufügen</string>
-    <string name="EventLogPromotedSendAnonymously">Anonym senden</string>
+    <string name="EventLogPromotedSendAnonymously">Anonym bleiben</string>
     <string name="EventLogPromotedBanUsers">Nutzer sperren</string>
+    <string name="EventLogPromotedManageCall">Sprachchats verwalten</string>
     <string name="EventLogPromotedAddUsers">Nutzer hinzufügen</string>
     <string name="EventLogPromotedTitle">Bezeichnung: %1$s</string>
     <string name="EventLogPromotedRemovedTitle">Bezeichnung</string>
@@ -732,8 +735,15 @@
     <string name="EventLogFilterEditedMessages">Bearbeitete Nachrichten</string>
     <string name="EventLogFilterPinnedMessages">Angeheftete Nachrichten</string>
     <string name="EventLogFilterLeavingMembers">Ehemalige Mitglieder</string>
+    <string name="EventLogFilterCalls">Sprachchats</string>
     <string name="EventLogToggledSlowmodeOn">un1 hat den Timer des langsamen Modus auf %1$s gestellt</string>
     <string name="EventLogToggledSlowmodeOff">un1 hat den langsamen Modus deaktiviert</string>
+    <string name="EventLogStartedVoiceChat">un1 hat einen Sprachchat gestartet</string>
+    <string name="EventLogEndedVoiceChat">un1 hat den Sprachchat beendet</string>
+    <string name="EventLogVoiceChatMuted">un1 hat un2 in einem Sprachchat stummgeschaltet</string>
+    <string name="EventLogVoiceChatUnmuted">un1 hat Stummschaltung von un2 in einem Sprachchat aufgehoben</string>
+    <string name="EventLogVoiceChatAllowedToSpeak">un1 hat neuen Teilnehmern im Sprachchat erlaubt zu sprechen</string>
+    <string name="EventLogVoiceChatNotAllowedToSpeak">un1 hat neue Teilnehmer des Sprachchats stummgeschaltet</string>
     <!--broadcasts-->
     <string name="NewBroadcastList">Neue Broadcast Liste</string>
     <string name="EnterListName">Listenname</string>
@@ -810,8 +820,8 @@
     <string name="IsSendingGame">%1$s spielt ein Spiel...</string>
     <string name="IsSendingVideo">%1$s sendet Video...</string>
     <string name="IsSendingFile">%1$s sendet Datei...</string>
-    <string name="RecordingAudio">nimmt eine Sprachnachricht auf...</string>
-    <string name="RecordingRound">nimmt eine Videonachricht auf...</string>
+    <string name="RecordingAudio">nimmt Sprachnachricht auf...</string>
+    <string name="RecordingRound">nimmt Videonachricht auf...</string>
     <string name="SendingAudio">schickt Audio...</string>
     <string name="SendingPhoto">schickt Bild...</string>
     <string name="SendingGame">spielt ein Spiel...</string>
@@ -852,7 +862,7 @@
     <string name="SlideToCancel">WISCHEN UM ABZUBRECHEN</string>
     <string name="SaveToDownloads">In Downloads speichern</string>
     <string name="SaveToGIFs">GIF hinzufügen</string>
-    <string name="DeleteGif">GIF löschen?</string>
+    <string name="DeleteGif">GIF aus diesem Bereich löschen?</string>
     <string name="SaveToMusic">Musik speichern</string>
     <string name="ShareFile">Teilen</string>
     <string name="ApplyLocalizationFile">Sprachdatei benutzen</string>
@@ -904,7 +914,7 @@
     <string name="PinMessageAlertTitle">Nachricht anheften</string>
     <string name="UnpinMessageAlertTitle">Nachricht loslösen</string>
     <string name="PinOldMessageAlert">Möchtest du eine ältere Nachricht anheften, während du eine neuere Nachricht angeheftet lässt?</string>
-    <string name="PinMessageAlert">Wirklich diese Nachricht in der Gruppe für alle Mitglieder anheften?</string>
+    <string name="PinMessageAlert">Diese Nachricht in der Gruppe anheften?</string>
     <string name="PinMessageAlertChannel">Nachricht im Kanal wirklich anheften?</string>
     <string name="PinMessageAlertChat">Möchtest du diese Nachricht ganz oben im Chat anheften?</string>
     <string name="UnpinMessageAlert">Angeheftete Nachricht wieder entfernen?</string>
@@ -935,6 +945,13 @@
     <string name="EditMessage">Nachricht bearbeiten</string>
     <string name="EditCaption">Beschriftung bearbeiten</string>
     <string name="EditMessageMedia">Antippen, um Medium zu bearbeiten</string>
+    <string name="EditMessageEditPhoto">Bild bearbeiten</string>
+    <string name="EditMessageEditVideo">Dieses Video bearbeiten</string>
+    <string name="EditMessageReplacePhoto">Bild ersetzen</string>
+    <string name="EditMessageReplaceVideo">Video ersetzen</string>
+    <string name="EditMessageReplaceGif">Medium ersetzen</string>
+    <string name="EditMessageReplaceFile">Datei ersetzen</string>
+    <string name="EditMessageReplaceAudio">Audiodatei ersetzen</string>
     <string name="AttachBotsHelp">Runterscrollen für Bots</string>
     <string name="TimeToEdit">%1$s</string>
     <string name="TimeToEditExpired">Bearbeitungszeit leider abgelaufen.</string>
@@ -1003,6 +1020,8 @@
     <string name="TapForVideo">Tippen für Foto, halten für Video</string>
     <string name="TapToViewAsList">Antippen für Listenansicht</string>
     <string name="SendWithoutSound">Ohne Ton senden</string>
+    <string name="SendAsNewPhoto">Als neues Bild senden</string>
+    <string name="ReplacePhoto">Bild ersetzen</string>
     <string name="MessageScheduleSend">Jetzt senden</string>
     <string name="MessageScheduleEditTime">Umplanen</string>
     <string name="MessageScheduleToday">Heute</string>
@@ -1052,7 +1071,7 @@
     <string name="BotOwnershipTransfer">Bot-Inhaberschaft übertragen</string>
     <string name="BotOwnershipTransferReadyAlertText">Das wird die **vollständigen Eigentümerrechte** des Bots an den ausgewählten Nutzer übertragen.</string>
     <string name="BotOwnershipTransferChangeOwner">Inhaber ändern</string>
-    <string name="BotOwnershipTransferAlertText">Nur so kannst du einen Bot übertragen:</string>
+    <string name="BotOwnershipTransferAlertText">So kannst du nur diesen Bot übertragen:</string>
     <string name="LeaveAComment">Kommentar hinterlassen</string>
     <string name="CommentsTitle">Kommentare</string>
     <string name="Comment">Kommentar</string>
@@ -1116,7 +1135,7 @@
     <string name="NotificationMessageGroupDocument">%1$s hat eine Datei an die Gruppe %2$s gesendet</string>
     <string name="NotificationMessageGroupGif">%1$s hat ein GIF an die Gruppe %2$s gesendet</string>
     <string name="NotificationMessageGroupInvoice">%1$s hat eine Rechnung der Gruppe %2$s für %3$s gesendet</string>
-    <string name="NotificationMessageGroupAudio">%1$s hat eine Sprachnachricht an die Gruppe %2$s gesendet</string>
+    <string name="NotificationMessageGroupAudio">%1$s hat eine Sprachnachricht an %2$s gesendet</string>
     <string name="NotificationMessageGroupRound">%1$s hat eine Videonachricht an die Gruppe %2$s gesendet</string>
     <string name="NotificationMessageGroupMusic">%1$s hat Audiodatei an die Gruppe %2$s gesendet</string>
     <string name="NotificationMessageGroupSticker">%1$s hat einen Sticker an die Gruppe %2$s gesendet</string>
@@ -1126,13 +1145,17 @@
     <string name="NotificationEditedGroupPhoto">%1$s hat das Gruppenbild von %2$s geändert</string>
     <string name="NotificationEditedGroupVideo">%1$s hat das Gruppenvideo bei %2$s geändert</string>
     <string name="NotificationGroupAddMember">%1$s hat %3$s in die Gruppe %2$s eingeladen</string>
+    <string name="NotificationGroupInvitedToCall">%1$s hat %3$s in den Sprachchat in %2$s eingeladen</string>
+    <string name="NotificationGroupInvitedYouToCall">%1$s hat dich in den Sprachchat in %2$s eingeladen</string>
+    <string name="NotificationGroupCreatedCall">%1$s hat einen Sprachchat in %2$s gestartet</string>
+    <string name="NotificationGroupEndedCall">%1$s hat Sprachchat in der Gruppe %2$s beendet</string>
     <string name="NotificationGroupAddSelf">%1$s ist in die Gruppe %2$s zurückgekehrt</string>
     <string name="NotificationGroupAddSelfMega">%1$s ist der Gruppe %2$s beigetreten</string>
     <string name="NotificationGroupKickMember">%1$s hat %3$s aus der Gruppe %2$s entfernt</string>
     <string name="NotificationGroupKickYou">%1$s hat dich aus der Gruppe %2$s entfernt</string>
     <string name="NotificationGroupLeftMember">%1$s hat die Gruppe %2$s verlassen</string>
     <string name="NotificationContactJoined">%1$s benutzt jetzt Telegram!</string>
-    <string name="NotificationUnrecognizedDevice">%1$s,\nWir haben eine Anmeldung von einem neuen Gerät am %2$s festgestellt.\n\nGerät: %3$s\nStandort: %4$s\n\nWenn du das nicht selbst gewesen bist, melde die entsprechende Sitzung in den Telegram Einstellungen unter Privatsphäre und Sicherheit - Sitzungen unverzüglich ab.\n\nKennst du schon unsere zweistufige Bestätigung? Diese kannst du in den Telegram Einstellungen unter Privatsphäre und Sicherheit optional aktivieren.\n\nDein Telegram Team</string>
+    <string name="NotificationUnrecognizedDevice">%1$s,\nwir haben eine Anmeldung von einem neuen Gerät am %2$s festgestellt.\n\nGerät: %3$s\nStandort: %4$s\n\nWenn du das nicht selbst gewesen bist, melde die entsprechende Sitzung in den Telegram Einstellungen unter Geräte unverzüglich ab.\n\nWenn du der Meinung bist, dass sich jemand gegen deinen Willen bei deinem Konto angemeldet hat, kannst du in den Einstellungen unter Privatsphäre und Sicherheit die zweistufige Bestätigung aktivieren.\n\nDein Telegram Team</string>
     <string name="NotificationContactNewPhoto">%1$s hat das Profilbild geändert</string>
     <string name="NotificationInvitedToGroupByLink">%1$s ist per Einladungslink der Gruppe %2$s beigetreten</string>
     <string name="NotificationGroupFew">%1$s hat %3$s an die Gruppe %2$s gesendet</string>
@@ -1158,7 +1181,7 @@
     <string name="NotificationActionPinnedFile">%1$s hat eine Datei in der Gruppe %2$s angeheftet</string>
     <string name="NotificationActionPinnedSticker">%1$s hat einen Sticker in der Gruppe %2$s angeheftet</string>
     <string name="NotificationActionPinnedStickerEmoji">%1$s hat einen %3$s Sticker in der Gruppe %2$s angeheftet</string>
-    <string name="NotificationActionPinnedVoice">%1$s hat eine Sprachnachricht in der Gruppe %2$s angeheftet</string>
+    <string name="NotificationActionPinnedVoice">%1$s hat eine Sprachnachricht bei %2$s angeheftet</string>
     <string name="NotificationActionPinnedRound">%1$s hat eine Videonachricht in der Gruppe %2$s angeheftet</string>
     <string name="NotificationActionPinnedContact2">%1$s hat einen Kontakt %3$s in der Gruppe %2$s angeheftet</string>
     <string name="NotificationActionPinnedGeo">%1$s hat einen Standort in der Gruppe %2$s angeheftet</string>
@@ -1262,6 +1285,7 @@
     <string name="JoinByPeekJoin">BEITRETEN</string>
     <string name="LinkCopied">Link in die Zwischenablage kopiert</string>
     <string name="LinkCopiedPrivate">Link in Zwischenablage kopiert.\nDer Link funktioniert nur für Mitglieder dieses Chats.</string>
+    <string name="LinkCopiedPrivateInfo">This link will only work for members of this chat.</string>
     <string name="LinkNotFound">Leider kannst du auf diese Nachricht nicht zugreifen. Du bist kein Mitglied des Chats, in dem sie veröffentlicht wurde.</string>
     <string name="PhoneCopied">Telefon in die Zwischenablage kopiert</string>
     <string name="EmailCopied">E-Mail in die Zwischenablage kopiert</string>
@@ -1284,7 +1308,7 @@
     <string name="SETTINGS">Einstellungen</string>
     <string name="AddSubscriber">Abonnent hinzufügen</string>
     <string name="AddMember">Mitglied hinzufügen</string>
-    <string name="SetAdmins">Administratoren</string>
+    <string name="SetAdmins">Admins festlegen</string>
     <string name="BanFromTheGroup">NUTZER EINSCHRÄNKEN</string>
     <string name="DeleteAndExit">Löschen und Gruppe verlassen</string>
     <string name="DeleteAndExitButton">Löschen und Gruppe verlassen</string>
@@ -1366,7 +1390,7 @@
     <string name="UsernameInvalid">Benutzername leider nicht erlaubt.</string>
     <string name="UsernameInvalidShort">Ein Benutzername benötigt mindestens 5 Zeichen.</string>
     <string name="UsernameInvalidLong">Ein Benutzername darf maximal 32 Zeichen haben.</string>
-    <string name="UsernameInvalidStartNumber">Benutzernamen dürfen leider nicht mit einer Zahl anfangen.</string>
+    <string name="UsernameInvalidStartNumber">Darf nicht mit einer Zahl beginnen.</string>
     <string name="UsernameHelp">Wähle einen öffentlichen Benutzernamen, wenn du von anderen bei  **Telegram** gefunden werden willst — ohne, dass sie deine Nummer kennen müssen.\n\nErlaubt sind **a–z**, **0–9** und Unterstriche. Die Mindestlänge beträgt **5** Zeichen.</string>
     <string name="UsernameHelpLink">Dieser Link öffnet einen Chat mit dir:\n%1$s</string>
     <string name="UsernameChecking">Prüfe Benutzername...</string>
@@ -1435,7 +1459,7 @@
     <string name="ArchivedMasks">Archivierte Masken</string>
     <string name="ArchivedStickersEmpty">Keine archivierten Sticker</string>
     <string name="ArchivedMasksEmpty">Keine archivierten Masken</string>
-    <string name="ArchivedStickersInfo">Bis zu 200 Sticker-Pakete kannst du installieren.\nAlle folgenden werden archiviert.</string>
+    <string name="ArchivedStickersInfo">Bis zu 200 Sticker-Pakete kannst du installieren.\nVorherige werden danach archiviert.</string>
     <string name="ArchivedMasksInfo">Bis zu 200 Masken-Pakete kannst du installieren. Unbenutzte werden archiviert, sobald du neue installierst.</string>
     <string name="SendSticker">STICKER SENDEN</string>
     <string name="ArchivedStickersAlertTitle">Archivierte Sticker</string>
@@ -1814,6 +1838,10 @@
     <string name="InChatSound">In-Chat-Töne</string>
     <string name="SoundDefault">Standard</string>
     <string name="VibrationDefault">Standard</string>
+    <string name="NotificationsDefault">Standard</string>
+    <string name="NotificationsInAppDefault">In-App Standard</string>
+    <string name="NotificationsChatInApp">%1$s In-App</string>
+    <string name="NotificationsSilent">Lautlos</string>
     <string name="SmartNotifications">Schlaue Benachrichtigungen</string>
     <string name="NotificationsExceptions">Ausnahmen</string>
     <string name="NotificationsAddAnException">Eine Ausnahme hinzufügen</string>
@@ -1960,7 +1988,7 @@
     <string name="CalculatingSize">Berechne...</string>
     <string name="LocalDocumentCache">Dateien</string>
     <string name="LocalPhotoCache">Bilder</string>
-    <string name="LocalAudioCache">Sprach-/Videonachrichten</string>
+    <string name="LocalAudioCache">Sprach- &amp; Videonachrichten</string>
     <string name="LocalVideoCache">Videos</string>
     <string name="LocalMusicCache">Musik</string>
     <string name="LocalGifCache">GIFs</string>
@@ -2160,7 +2188,7 @@
     <string name="PassportLanguage_VI">Vietnamesisch</string>
     <!--sessions view-->
     <string name="SessionsTitle">Aktive Sitzungen</string>
-    <string name="CurrentSession">Aktuelle Sitzung</string>
+    <string name="CurrentSession">Dieses Gerät</string>
     <string name="NoOtherSessions">Keine anderen Sitzungen</string>
     <string name="NoOtherSessionsInfo">Du kannst dich von jedem Handy, Tablet und Computer bei Telegram mit derselben Telefonnummer anmelden. Alles wird immer sofort synchronisiert.</string>
     <string name="OtherSessions">Aktive Sitzungen</string>
@@ -2574,6 +2602,7 @@
     <string name="TwoStepVerificationPasswordReturnSettings">Zurück zu Einstellungen</string>
     <string name="TwoStepVerificationPasswordReturnPassport">Zurück zu Passport</string>
     <string name="TwoStepVerificationSetPassword">Passwort festlegen</string>
+    <string name="TwoStepVerificationShowPassword">Show password</string>
     <string name="SetAdditionalPassword">Zusätzliches Passwort festlegen</string>
     <string name="SetAdditionalPasswordInfo">Hier kannst du ein eigenes Passwort festlegen, um dich an einem neuen Gerät anzumelden, zusätzlich zum Code, der per SMS kommt.</string>
     <string name="YourPassword">Dein Passwort</string>
@@ -2630,7 +2659,7 @@
     <string name="RestoreEmailSentTitle">Wiederherstellungscode</string>
     <string name="RestoreEmailSent">Wir haben den Wiederherstellungscode an diese Adresse geschickt:\n\n%1$s</string>
     <string name="RestoreEmailSentInfo">Überprüfe deine Mails und gib den 6-stelligen Code aus unserer E-Mail ein.</string>
-    <string name="RestoreEmailTrouble">Du hast keinen Zugang zu deiner Adresse %1$s?</string>
+    <string name="RestoreEmailTrouble">Keinen Zugang zu %1$s?</string>
     <string name="RestoreEmailTroubleNoEmail">Kein Zugang zu deiner E-Mail-Adresse?</string>
     <string name="RestoreEmailTroubleText">Wenn du nicht in deine E-Mails kommst, kannst du nur hoffen, dass dir dein Passwort wieder einfällt oder du musst dein Telegram-Konto zurücksetzen.</string>
     <string name="ResetMyAccount">KONTO ZURÜCKSETZEN</string>
@@ -2654,6 +2683,7 @@
     <string name="DataUsage">Daten- und Speichernutzung</string>
     <string name="StorageUsage">Speichernutzung</string>
     <string name="NetworkUsage">Datenbenutzung</string>
+    <string name="StoragePath">Speicherpfad</string>
     <string name="NetworkUsageMobileTab">Mobil</string>
     <string name="NetworkUsageWiFiTab">WLAN</string>
     <string name="NetworkUsageRoamingTab">Roaming</string>
@@ -2676,7 +2706,7 @@
     <string name="PrivacySettings">Privatsphäre und Sicherheit</string>
     <string name="PrivacyTitle">Privatsphäre</string>
     <string name="PrivacyLastSeen">Zuletzt gesehen</string>
-    <string name="PrivacyProfilePhoto">Profilbild</string>
+    <string name="PrivacyProfilePhoto">Profilbilder</string>
     <string name="PrivacyProfilePhotoTitle">Wer darf mein Profilbild sehen?</string>
     <string name="PrivacyProfilePhotoInfo">Hier kannst du per Feineinstellung bestimmen, wer dein Profilbild sehen darf.</string>
     <string name="PrivacyProfilePhotoInfo2">Du kannst Kontakte oder ganze Gruppen hinzufügen, für die eine Ausnahme gemacht werden soll.</string>
@@ -2852,6 +2882,14 @@
     <string name="ActionUserWithinRadius">un1 ist jetzt %1$s von dir entfernt</string>
     <string name="ActionUserWithinYouRadius">Du befindest dich jetzt innerhalb %1$s von un1</string>
     <string name="ActionUserWithinOtherRadius">un1 ist jetzt %1$s von un2 entfernt</string>
+    <string name="ActionUserInvitedToGroup">un1 hat dich in diese Gruppe eingeladen</string>
+    <string name="ActionUserInvitedToChannel">un1 hat dich in diesen Kanal eingeladen</string>
+    <string name="ActionGroupCallStarted">un1 hat einen Sprachchat gestartet</string>
+    <string name="ActionGroupCallStartedByYou">Du hast einen Sprachchat gestartet</string>
+    <string name="ActionGroupCallEnded">Sprachchat beendet (%s)</string>
+    <string name="ActionGroupCallInvited">un1 hat un2 in den Sprachchat eingeladen</string>
+    <string name="ActionGroupCallYouInvited">Du hast un2 in den Sprachchat eingeladen</string>
+    <string name="ActionGroupCallInvitedYou">un1 hat dich in den Sprachchat eingeladen</string>
     <string name="ActionBotAllowed">Du hast diesem Bot erlaubt, dich anzuschreiben, als du dich auf %1$s angemeldet hast.</string>
     <string name="ActionBotDocuments">%1$s hat die folgenden Dokumente erhalten: %2$s</string>
     <string name="ActionBotDocumentIdentity">Persönliche Daten</string>
@@ -2867,7 +2905,7 @@
     <string name="ActionBotDocumentRentalAgreement">Mietvertrag</string>
     <string name="ActionBotDocumentPhone">Telefonnummer</string>
     <string name="ActionBotDocumentEmail">E-Mail-Adresse</string>
-    <string name="UnsupportedMedia">Diese Nachricht wird von deiner Telegram-Version nicht unterstützt. Bitte aktualisiere Telegram um sie zu sehen: https://telegram.org/update</string>
+    <string name="UnsupportedMedia">Diese Nachricht wird von deiner Telegram-Version nicht unterstützt. Bitte aktualisiere die App: https://telegram.org/update</string>
     <string name="AttachPhoto">Bild</string>
     <string name="AttachVideo">Video</string>
     <string name="AttachDestructingPhoto">Selbstzerstörendes Bild</string>
@@ -2910,7 +2948,7 @@
     <string name="CodeExpired">Code ist abgelaufen, bitte melde dich erneut an</string>
     <string name="FloodWait">Zu viele Versuche in zu kurzer Zeit, versuche es bitte später erneut.</string>
     <string name="FloodWaitTime">Zu viele Versuche, bitte erneut in %1$s versuchen</string>
-    <string name="InvalidCode">Ungültiger Code</string>
+    <string name="InvalidCode">Ungültiger Code. Bitte versuche es später erneut.</string>
     <string name="PhoneNumberFlood">Du hast dein Konto leider zu oft gelöscht. Bitte warte einige Tage, erst dann kannst du dich erneut registrieren.</string>
     <string name="InvalidFirstName">Ungültiger Vorname</string>
     <string name="InvalidLastName">Dieser Name kann leider nicht benutzt werden</string>
@@ -2946,7 +2984,7 @@
     <string name="AreYouSureDeleteThisChatWithUser">Wirklich den Chat mit **%1$s** löschen?</string>
     <string name="AreYouSureDeleteThisChatWithBot">Wirklich **%1$s** blockieren und den Chat löschen?</string>
     <string name="AreYouSureDeleteThisChatSavedMessages">Wirklich den Chat **Gespeichertes** löschen?</string>
-    <string name="AreYouSureDeleteThisChatWithSecretUser">Wirklich den Geheimen Chat mit **%1$s** löschen?</string>
+    <string name="AreYouSureDeleteThisChatWithSecretUser">Wirklich deinen Geheimen Chat mit **%1$s** löschen?</string>
     <string name="AreYouSureDeleteThisChatWithGroup">Wirklich den Chat **%1$s** löschen?</string>
     <string name="AreYouSureClearDraftsTitle">Cloud-Entwürfe löschen</string>
     <string name="AreYouSureClearDrafts">Wirklich all deine Cloud-Entwürfe löschen?</string>
@@ -3026,9 +3064,12 @@
     <string name="PermissionNoLocation">"Telegram benötigt Zugriff auf deinen Standort, damit du ihn mit Freunden teilen kannst. "</string>
     <string name="PermissionNoLocationPosition">Telegram benötigt Zugriff auf deinen Standort.</string>
     <string name="PermissionDrawAboveOtherApps">Telegram braucht Zugriff auf die Funktion \'Über andere Apps einblenden\'. Nur so können Videos im Bild in Bild Modus wiedergegeben werden.</string>
+    <string name="PermissionDrawAboveOtherAppsGroupCall">Der Überlagerungsmodus erlaubt dir die Verwendung von Push-To-Talk und die Anzeige, wer gerade spricht, selbst wenn du dich ausserhalb von Telegram befindest.</string>
     <string name="PermissionOpenSettings">EINSTELLUNGEN</string>
     <string name="PermissionXiaomiLockscreen">Bitte erlaube Telegram auf dem Sperrbildschirm, damit Anrufe signalisiert werden können.</string>
     <string name="PermissionBackgroundLocation">Um deinen Live-Standort in diesem Chat zu teilen, muss Telegram die ganze Zeit Zugang zu deinem Standort haben, auch während die App im Hintergrund läuft.\n\nWir greifen nur für die von dir gewählte Dauer auf deinen Standort zu und du kannst jederzeit aufhören, ihn zu teilen. Wir werden deinen Standort für keinen anderen Zweck nutzen, als ihn in diesem Chat zu teilen.</string>
+    <string name="PermissionDrawAboveOtherAppsTitle">Bild-in-Bild</string>
+    <string name="PermissionDrawAboveOtherAppsGroupCallTitle">Sprachchat-Überlagerung</string>
     <!--charts-->
     <string name="GrowthChartTitle">Wachstum</string>
     <string name="FollowersChartTitle">Abonnenten</string>
@@ -3129,7 +3170,7 @@
     <string name="AccountSettings">Kontoeinstellungen</string>
     <string name="VoipUseLessData">Weniger Daten benutzen</string>
     <string name="VoipIncoming">Eingehender Anruf</string>
-    <string name="VoipConnecting">Verbinde</string>
+    <string name="VoipConnecting">Verbinden</string>
     <string name="VoipExchangingKeys">Tausche Schlüssel aus</string>
     <string name="VoipWaiting">Warte</string>
     <string name="VoipRequesting">Wird angefordert</string>
@@ -3141,9 +3182,14 @@
     <string name="VoipInCallBranding">Telegram-Anruf</string>
     <string name="VoipInVideoCallBranding">Telegram Videoanruf</string>
     <string name="VoipOutgoingCall">Laufender Telegram-Anruf</string>
+    <string name="VoipVoiceChat">Laufender Sprachchat</string>
     <string name="VoipEndCall">Auflegen</string>
     <string name="VoipOngoingAlertTitle">Ein anderer Anruf ist bereits aktiv</string>
-    <string name="VoipOngoingAlert">Du bist mit **%1$s** bereits im Gespräch. Möchtest du den Anruf beenden und einen neuen mit **%2$s** starten?</string>
+    <string name="VoipOngoingAlert">Gespräch mit **%1$s** beenden und neues mit **%2$s** beginnen?</string>
+    <string name="VoipOngoingAlert2">Gespräch mit **%1$s** beenden und neuen Sprachchat bei **%2$s** starten?</string>
+    <string name="VoipOngoingChatAlertTitle">Es ist bereits ein anderer Sprachchat aktiv</string>
+    <string name="VoipOngoingChatAlert">Sprachchat bei **%1$s** verlassen und einen neuen bei **%2$s** starten?</string>
+    <string name="VoipOngoingChatAlert2">Sprachchat in **%1$s** verlassen und **%2$s** anrufen?</string>
     <string name="VoipNotificationSettings">Anrufe</string>
     <string name="VoipSettingsRingtone">Klingelton</string>
     <string name="VoipRingtoneInfo">Hier kannst du den Klingelton für Sprachanrufe festlegen.</string>
@@ -3160,7 +3206,9 @@
     <string name="VoipAnswerCall">Annehmen</string>
     <string name="VoipDeclineCall">Ablehnen</string>
     <string name="VoipOffline">Du bist derzeit offline. Bitte verbinde dich mit dem Internet und versuche es erneut.</string>
+    <string name="VoipGroupOffline">Du bist offline. Bitte verbinde dich mit dem Internet, um an Sprachchat teilzunehmen.</string>
     <string name="VoipOfflineAirplane">Du hast derzeit den Flugmodus aktiviert. Deaktiviere den Flugmodus oder verbinde dich per W-LAN um jemanden anzurufen.</string>
+    <string name="VoipGroupOfflineAirplane">Derzeit nutzt du den Flugmodus, deaktiviere diesen oder verbinde dich mit einem W-LAN, um Sprachchats teilzunehmen.</string>
     <string name="VoipOfflineTitle">Offline</string>
     <string name="VoipOfflineAirplaneTitle">Flugmodus</string>
     <string name="VoipOfflineOpenSettings">Einstellungen</string>
@@ -3226,10 +3274,15 @@
     <string name="RateCallVideoPixelated">Video war verpixelt</string>
     <string name="TapToTurnCamera">Hier tippen, um Kamera einzuschalten</string>
     <string name="VoipUnmute">Stumm aus</string>
+    <string name="VoipHoldAndTalk">oder halten und sprechen</string>
+    <string name="VoipTapToMute">Du bist live</string>
+    <string name="VoipMutedByAdmin">Durch Admin stummgeschaltet</string>
+    <string name="VoipMutedByAdminShort">Stumm</string>
+    <string name="VoipMutedByAdminInfo">Du befindest dich im Nur-Zuhören-Modus</string>
     <string name="VoipMute">Stumm</string>
     <string name="VoipStartVideo">Video ein</string>
     <string name="VoipStopVideo">Video aus</string>
-    <string name="VoipSpeaker">Lautsprecher</string>
+    <string name="VoipSpeaker">Audio</string>
     <string name="VoipFlip">Wechseln</string>
     <string name="VoipSwitchToVideoCall">Zu Videoanruf wechseln?</string>
     <string name="VoipSwitch">WECHSELN</string>
@@ -3244,6 +3297,61 @@
     <string name="VideoCallAlert">Wirklich einen Videoanruf mit **%1$s** starten?</string>
     <string name="VideoCallAlertTitle">Videoanruf</string>
     <string name="VoipReconnecting">Erneut verbinden</string>
+    <string name="StartVoipChat">Sprachchat erstellen</string>
+    <string name="StartVoipChatTitle">Sprachchat</string>
+    <string name="StartVoipChatAlertText">Sprachchat in dieser Gruppe starten?</string>
+    <string name="StartVoipChatPermission">Sprachchats verwalten</string>
+    <string name="VoipChatJoin">Beitreten</string>
+    <string name="MembersTalking_zero">%1$s Mitglieder sprechen</string>
+    <string name="MembersTalking_one">%1$s Mitglied spricht</string>
+    <string name="MembersTalking_two">%1$s Mitglieder sprechen</string>
+    <string name="MembersTalking_few">%1$s Mitglieder sprechen</string>
+    <string name="MembersTalking_many">%1$s Mitglieder sprechen</string>
+    <string name="MembersTalking_other">%1$s Mitglieder sprechen</string>
+    <string name="Speaking">spricht</string>
+    <string name="Listening">hört zu</string>
+    <string name="Invited">eingeladen</string>
+    <string name="VoipGroupLeave">Verlassen</string>
+    <string name="VoipGroupEnd">Beenden</string>
+    <string name="VoipGroupMuteMemberAlertTitle">Mikrofon stummschalten</string>
+    <string name="VoipGroupMuteMemberAlertText">Wirklich **%1$s** in diesem Sprachchat stummschalten?</string>
+    <string name="VoipGroupRemoveMemberAlertTitle">Mitglied entfernen</string>
+    <string name="VoipGroupRemoveMemberAlertText">%1$s wirklich aus der Gruppe entfernen?</string>
+    <string name="VoipGroupRemovedFromGroup">**%1$s** aus der Gruppe entfernt.</string>
+    <string name="VoipGroupUserCanNowSpeak">**%1$s** kann jetzt sprechen.</string>
+    <string name="VoipGroupUserCantNowSpeak">**%1$s** ist jetzt stummgeschaltet.</string>
+    <string name="VoipGroupMute">Stumm ein</string>
+    <string name="VoipGroupAllCanSpeak">Neue dürfen sprechen</string>
+    <string name="VoipGroupOnlyAdminsCanSpeak">Neue sind stumm</string>
+    <string name="VoipGroupShareInviteLink">Einladungslink teilen</string>
+    <string name="VoipGroupEndChat">Sprachchat beenden</string>
+    <string name="VoipGroupConnecting">Verbinden...</string>
+    <string name="VoipGroupLeaveAlertTitle">Sprachchat verlassen</string>
+    <string name="VoipGroupLeaveAlertText">Wirklich diesen Sprachchat verlassen?</string>
+    <string name="VoipGroupEndAlertTitle">Sprachchat beenden</string>
+    <string name="VoipGroupEndAlertText">Wirklich diesen Sprachchat beenden?</string>
+    <string name="VoipGroupLeaveAlertEndChat">Sprachchat beenden</string>
+    <string name="VoipGroupViewVoiceChat">SPRACHCHAT</string>
+    <string name="VoipGroupVoiceChat">Sprachchat</string>
+    <string name="VoipGroupOpenVoiceChat">Sprachchat öffnen</string>
+    <string name="VoipGroupInviteAlreadyParticipant">Ausgewählter Nutzer ist bereits in diesem Sprachchat.</string>
+    <string name="VoipGroupJoinAnonymousAdmin">Leider kannst du an Sprachchats als anonymer Admin nicht teilnehmen.</string>
+    <string name="VoipGroupInvitedToVoiceChat">un1 hat un2 in den Sprachchat eingeladen</string>
+    <string name="VoipGroupJoinCall">Am Sprachchat teilnehmen</string>
+    <string name="VoipGroupInviteText">Hallo! Tritt unserem Sprachchat bei: %1$s</string>
+    <string name="VoipGroupInviteMember">Mitglieder einladen</string>
+    <string name="VoipGroupUserRemove">Entfernen</string>
+    <string name="VoipGroupAllowToSpeak">Darf sprechen</string>
+    <string name="VoipGroupSearchMembers">Mitglieder zum Anruf hinzufügen</string>
+    <string name="VoipGroupCopyInviteLink">Einladungslink kopieren</string>
+    <string name="VoipGroupCopyInviteLinkCopied">Einladungslink in Zwischenablage kopiert.</string>
+    <string name="VoipGroupUnmute">Stumm aus</string>
+    <string name="VoipGroupEndedStartNew">Sprachchat beendet. Neuen starten?</string>
+    <string name="VoipGroupAddMemberTitle">Mitglied hinzufügen</string>
+    <string name="VoipGroupAddMemberText">**%1$s** zu **%2$s** hinzufügen?</string>
+    <string name="VoipGroupInvitedUser">Du hast **%1$s** in den Sprachchat eingeladen.</string>
+    <string name="VoipGroupAdd">Hinzufügen</string>
+    <string name="MembersTalkingNobody">Zum Beitreten antippen</string>
     <!--contacts shortcuts-->
     <string name="ContactShortcutMessage">Nachricht in Telegram %1$s</string>
     <string name="ContactShortcutVoiceCall">Sprachanruf in Telegram %1$s</string>
@@ -3327,6 +3435,12 @@
     <string name="Members_few">%1$d Mitglieder</string>
     <string name="Members_many">%1$d Mitglieder</string>
     <string name="Members_other">%1$d Mitglieder</string>
+    <string name="Participants_zero">%1$d Teilnehmer</string>
+    <string name="Participants_one">%1$d Teilnehmer</string>
+    <string name="Participants_two">%1$d Teilnehmer</string>
+    <string name="Participants_few">%1$d Teilnehmer</string>
+    <string name="Participants_many">%1$d Teilnehmer</string>
+    <string name="Participants_other">%1$d Teilnehmer</string>
     <string name="AndMoreTyping_zero">und %1$d weitere tippen</string>
     <string name="AndMoreTyping_one">und %1$d weitere tippen</string>
     <string name="AndMoreTyping_two">und %1$d weitere tippen</string>
@@ -3751,6 +3865,9 @@
     <string name="AccDescrScheduledDate">Geplant am %s</string>
     <string name="AccDescrGoBack">Zurückgehen</string>
     <string name="AccDescrOpenMenu">Navigationsmenü öffnen</string>
+    <string name="AccDescrOpenMenu2">Menü öffnen</string>
+    <string name="AccDescrCloseMenu">Menü schliessen</string>
+    <string name="AccDescrOpenInPhotoViewer">Open in photo viewer</string>
     <string name="AccDescrMusicInfo">%2$s von %1$s</string>
     <string name="AccDescrMoreOptions">Weitere Optionen</string>
     <string name="AccActionPlay">Abspielen</string>
@@ -3898,4 +4015,5 @@
     <string name="RemindTodayAt">\'Heute um\' HH:mm \'erinnern\'</string>
     <string name="RemindDayAt">\'Am\' d MMM \'um\' HH:mm \'erinnern\'</string>
     <string name="RemindDayYearAt">\'Am\' d MMM yyyy \'um\' HH:mm \'erinnern\'</string>
+    <string name="Enable">Aktivieren</string>
 </resources>

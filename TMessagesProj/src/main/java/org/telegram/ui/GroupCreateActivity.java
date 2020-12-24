@@ -115,7 +115,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
 
     private SparseArray<TLObject> ignoreUsers;
 
-    private int maxCount = MessagesController.getInstance(currentAccount).maxMegagroupCount;
+    private int maxCount = getMessagesController().maxMegagroupCount;
     private int chatType = ChatObject.CHAT_TYPE_CHAT;
     private boolean isAlwaysShare;
     private boolean isNeverShare;
@@ -239,11 +239,11 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
                     currentAnimation.addListener(new AnimatorListenerAdapter() {
                         @Override
                         public void onAnimationEnd(Animator animation) {
-                            NotificationCenter.getInstance(currentAccount).onAnimationFinish(animationIndex);
+                            getNotificationCenter().onAnimationFinish(animationIndex);
                             requestLayout();
                         }
                     });
-                    animationIndex = NotificationCenter.getInstance(currentAccount).setAnimationInProgress(animationIndex, null);
+                    animationIndex = getNotificationCenter().setAnimationInProgress(animationIndex, null);
                     currentAnimation.start();
                     animationStarted = true;
                 } else {
@@ -349,24 +349,24 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
         if (isAlwaysShare || isNeverShare || addToGroup) {
             maxCount = 0;
         } else {
-            maxCount = chatType == ChatObject.CHAT_TYPE_CHAT ? MessagesController.getInstance(currentAccount).maxMegagroupCount : MessagesController.getInstance(currentAccount).maxBroadcastCount;
+            maxCount = chatType == ChatObject.CHAT_TYPE_CHAT ? getMessagesController().maxMegagroupCount : getMessagesController().maxBroadcastCount;
         }
     }
 
     @Override
     public boolean onFragmentCreate() {
-        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.contactsDidLoad);
-        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.updateInterfaces);
-        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.chatDidCreated);
+        getNotificationCenter().addObserver(this, NotificationCenter.contactsDidLoad);
+        getNotificationCenter().addObserver(this, NotificationCenter.updateInterfaces);
+        getNotificationCenter().addObserver(this, NotificationCenter.chatDidCreated);
         return super.onFragmentCreate();
     }
 
     @Override
     public void onFragmentDestroy() {
         super.onFragmentDestroy();
-        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.contactsDidLoad);
-        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.updateInterfaces);
-        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.chatDidCreated);
+        getNotificationCenter().removeObserver(this, NotificationCenter.contactsDidLoad);
+        getNotificationCenter().removeObserver(this, NotificationCenter.updateInterfaces);
+        getNotificationCenter().removeObserver(this, NotificationCenter.chatDidCreated);
     }
 
     @Override
@@ -698,7 +698,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
                     if (maxCount != 0 && selectedContacts.size() == maxCount) {
                         return;
                     }
-                    if (chatType == ChatObject.CHAT_TYPE_CHAT && selectedContacts.size() == MessagesController.getInstance(currentAccount).maxGroupCount) {
+                    if (chatType == ChatObject.CHAT_TYPE_CHAT && selectedContacts.size() == getMessagesController().maxGroupCount) {
                         AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
                         builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
                         builder.setMessage(LocaleController.getString("SoftUserLimitAlert", R.string.SoftUserLimitAlert));
@@ -718,7 +718,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
                                 return;
                             }
                             if (channelId != 0) {
-                                TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(channelId);
+                                TLRPC.Chat chat = getMessagesController().getChat(channelId);
                                 AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
                                 if (ChatObject.canAddAdmins(chat)) {
                                     builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
@@ -738,10 +738,10 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
                                 return;
                             }
                         }
-                        MessagesController.getInstance(currentAccount).putUser(user, !searching);
+                        getMessagesController().putUser(user, !searching);
                     } else {
                         TLRPC.Chat chat = (TLRPC.Chat) object;
-                        MessagesController.getInstance(currentAccount).putChat(chat, !searching);
+                        getMessagesController().putChat(chat, !searching);
                     }
                     GroupCreateSpan span = new GroupCreateSpan(editText.getContext(), object);
                     spansContainer.addSpan(span);
@@ -1024,13 +1024,13 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
             if (chatType == ChatObject.CHAT_TYPE_CHANNEL) {
                 ArrayList<TLRPC.InputUser> result = new ArrayList<>();
                 for (int a = 0; a < selectedContacts.size(); a++) {
-                    TLRPC.InputUser user = MessagesController.getInstance(currentAccount).getInputUser(MessagesController.getInstance(currentAccount).getUser(selectedContacts.keyAt(a)));
+                    TLRPC.InputUser user = getMessagesController().getInputUser(getMessagesController().getUser(selectedContacts.keyAt(a)));
                     if (user != null) {
                         result.add(user);
                     }
                 }
-                MessagesController.getInstance(currentAccount).addUsersToChannel(chatId, result, null);
-                NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.closeChats);
+                getMessagesController().addUsersToChannel(chatId, result, null);
+                getNotificationCenter().postNotificationName(NotificationCenter.closeChats);
                 Bundle args2 = new Bundle();
                 args2.putInt("chat_id", chatId);
                 presentFragment(new ChatActivity(args2), true);
@@ -1151,9 +1151,9 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
         public GroupCreateAdapter(Context ctx) {
             context = ctx;
 
-            ArrayList<TLRPC.TL_contact> arrayList = ContactsController.getInstance(currentAccount).contacts;
+            ArrayList<TLRPC.TL_contact> arrayList = getContactsController().contacts;
             for (int a = 0; a < arrayList.size(); a++) {
-                TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(arrayList.get(a).user_id);
+                TLRPC.User user = getMessagesController().getUser(arrayList.get(a).user_id);
                 if (user == null || user.self || user.deleted) {
                     continue;
                 }
@@ -1260,10 +1260,10 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
                 count = contacts.size();
                 if (addToGroup) {
                     if (chatId != 0) {
-                        TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(chatId);
+                        TLRPC.Chat chat = getMessagesController().getChat(chatId);
                         inviteViaLink = ChatObject.canUserDoAdminAction(chat, ChatObject.ACTION_INVITE) ? 1 : 0;
                     } else if (channelId != 0) {
-                        TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(channelId);
+                        TLRPC.Chat chat = getMessagesController().getChat(channelId);
                         inviteViaLink = ChatObject.canUserDoAdminAction(chat, ChatObject.ACTION_INVITE) && TextUtils.isEmpty(chat.username) ? 2 : 0;
                     } else {
                         inviteViaLink = 0;

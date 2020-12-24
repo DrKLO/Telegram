@@ -84,7 +84,7 @@ public class SharingLiveLocationCell extends FrameLayout {
 
             distanceTextView = new SimpleTextView(context);
             distanceTextView.setTextSize(14);
-            distanceTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2));
+            distanceTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText3));
             distanceTextView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
 
             addView(distanceTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 20, Gravity.TOP | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT), LocaleController.isRTL ? padding : 73, 37, LocaleController.isRTL ? 73 : padding, 0));

@@ -777,6 +777,18 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
                             public void didChangeOwner(TLRPC.User user) {
                                 onOwnerChaged(user);
                             }
+
+                            @Override
+                            public void didSelectUser(int uid) {
+                                final TLRPC.User user = getMessagesController().getUser(uid);
+                                if (user != null) {
+                                    AndroidUtilities.runOnUIThread(() -> {
+                                        if (BulletinFactory.canShowBulletin(ChatUsersActivity.this)) {
+                                            BulletinFactory.createPromoteToAdminBulletin(ChatUsersActivity.this, user.first_name).show();
+                                        }
+                                    }, 200);
+                                }
+                            }
                         });
                         fragment.setInfo(info);
                         presentFragment(fragment);
@@ -1291,6 +1303,9 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
                     channelParticipant.admin_rights = rightsAdmin;
                     channelParticipant.banned_rights = rightsBanned;
                     channelParticipant.rank = rank;
+                }
+                if (delegate != null && rights == 1) {
+                    delegate.didSelectUser(user_id);
                 }
                 if (removeFragment) {
                     removeSelfFromStack();
