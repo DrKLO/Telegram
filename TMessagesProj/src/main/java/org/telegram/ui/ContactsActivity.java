@@ -630,7 +630,9 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
             }
             floatingButton.setBackgroundDrawable(drawable);
             floatingButton.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_chats_actionIcon), PorterDuff.Mode.MULTIPLY));
-            floatingButton.setAnimation(R.raw.write_contacts_fab_icon, 52, 52);
+            SharedPreferences preferences = MessagesController.getGlobalMainSettings();
+            boolean configAnimationsEnabled = preferences.getBoolean("view_animations", true);
+            floatingButton.setAnimation(configAnimationsEnabled ? R.raw.write_contacts_fab_icon : R.raw.write_contacts_fab_icon_reverse, 52, 52);
             floatingButtonContainer.setContentDescription(LocaleController.getString("CreateNewContact", R.string.CreateNewContact));
             if (Build.VERSION.SDK_INT >= 21) {
                 StateListAnimator animator = new StateListAnimator();

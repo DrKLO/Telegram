@@ -48,6 +48,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 
+import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -842,6 +843,10 @@ public class RecyclerListView extends RecyclerView {
         @Override
         public void onItemRangeInserted(int positionStart, int itemCount) {
             checkIfEmpty(true);
+            if (pinnedHeader != null && pinnedHeader.getAlpha() == 0) {
+                currentFirst = -1;
+                invalidateViews();
+            }
         }
 
         @Override

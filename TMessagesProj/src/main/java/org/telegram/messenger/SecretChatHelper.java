@@ -763,7 +763,7 @@ public class SecretChatHelper extends BaseController {
                                 if (isSecretInvisibleMessage(newMsgObj)) {
                                     res.date = 0;
                                 }
-                                getMessagesStorage().updateMessageStateAndId(newMsgObj.random_id, newMsgObj.id, newMsgObj.id, res.date, false, 0, 0);
+                                getMessagesStorage().updateMessageStateAndId(newMsgObj.random_id, (long) newMsgObj.id, newMsgObj.id, res.date, false, 0, 0);
                                 AndroidUtilities.runOnUIThread(() -> {
                                     newMsgObj.send_state = MessageObject.MESSAGE_SEND_STATE_SENT;
                                     getNotificationCenter().postNotificationName(NotificationCenter.messageReceivedByServer, newMsgObj.id, newMsgObj.id, newMsgObj, newMsgObj.dialog_id, 0L, existFlags, false);

@@ -841,7 +841,12 @@ public class DialogCell extends BaseCell {
                     startPadding = statusDrawable.getIntrinsicWidth() + AndroidUtilities.dp(3);
                 }
                 SpannableStringBuilder spannableStringBuilder = new SpannableStringBuilder();
-                spannableStringBuilder.append(" ").append(TextUtils.replace(printingString, new String[]{"..."}, new String[]{""})).setSpan(new FixedWidthSpan(startPadding), 0, 1, 0);
+                if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP && LocaleController.isRTL && (int) currentDialogId < 0) {
+                    spannableStringBuilder.append(TextUtils.replace(printingString, new String[]{"..."}, new String[]{""})).append(" ");
+                    spannableStringBuilder.setSpan(new FixedWidthSpan(startPadding), spannableStringBuilder.length() - 1, spannableStringBuilder.length(), 0);
+                } else {
+                    spannableStringBuilder.append(" ").append(TextUtils.replace(printingString, new String[]{"..."}, new String[]{""})).setSpan(new FixedWidthSpan(startPadding), 0, 1, 0);
+                }
                 messageString = spannableStringBuilder;
                 currentMessagePaint = Theme.dialogs_messagePrintingPaint[paintIndex];
                 checkMessage = false;
@@ -2430,7 +2435,7 @@ public class DialogCell extends BaseCell {
                 StatusDrawable statusDrawable = Theme.getChatStatusDrawable(printingStringType);
                 if (statusDrawable != null) {
                     canvas.save();
-                    int left = (LocaleController.isRTL || messageLayout.isRtlCharAt(0)) ? messageLeft + messageLayout.getWidth() - statusDrawable.getIntrinsicWidth() : messageLeft;
+                    int left = (LocaleController.isRTL || messageLayout.isRtlCharAt(0)) ? getMeasuredWidth() - AndroidUtilities.dp(72) - statusDrawable.getIntrinsicWidth() : messageLeft;
                     if (printingStringType == 1 || printingStringType == 4) {
                         canvas.translate(left, messageTop + (printingStringType == 1 ? AndroidUtilities.dp(1) : 0));
                     } else {

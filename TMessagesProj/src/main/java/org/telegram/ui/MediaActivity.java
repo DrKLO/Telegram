@@ -2130,7 +2130,7 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                 view = new GraySectionCell(mContext);
                 view.setBackgroundColor(Theme.getColor(Theme.key_graySection) & 0xf2ffffff);
             }
-            if (sharedMediaData[3].sections.size() == 0 && !sharedMediaData[3].loading) {
+            if (sharedMediaData[3].sections.size() == 0) {
                 view.setAlpha(0);
             } else if (section < sharedMediaData[3].sections.size()) {
                 view.setAlpha(1f);
@@ -2262,7 +2262,7 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                 view = new GraySectionCell(mContext);
                 view.setBackgroundColor(Theme.getColor(Theme.key_graySection) & 0xf2ffffff);
             }
-            if (sharedMediaData[currentType].sections.size() == 0 && !sharedMediaData[currentType].loading) {
+            if (sharedMediaData[currentType].sections.size() == 0) {
                 view.setAlpha(0);
             } else if (section < sharedMediaData[currentType].sections.size()) {
                 view.setAlpha(1f);
@@ -2433,7 +2433,7 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                 view = new SharedMediaSectionCell(mContext);
                 view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite) & 0xe5ffffff);
             }
-            if (sharedMediaData[0].sections.size() == 0 && !sharedMediaData[0].loading) {
+            if (sharedMediaData[0].sections.size() == 0) {
                 view.setAlpha(0);
             } else if (section < sharedMediaData[0].sections.size()) {
                 view.setAlpha(1f);

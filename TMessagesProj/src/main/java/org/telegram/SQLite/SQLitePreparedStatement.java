@@ -31,7 +31,7 @@ public class SQLitePreparedStatement {
 
     public SQLitePreparedStatement(SQLiteDatabase db, String sql) throws SQLiteException {
         sqliteStatementHandle = prepare(db.getSQLiteHandle(), sql);
-        if (BuildVars.DEBUG_VERSION) {
+        if (BuildVars.LOGS_ENABLED) {
             query = sql;
             startTime = SystemClock.elapsedRealtime();
             /*if (hashMap == null) {
@@ -101,7 +101,7 @@ public class SQLitePreparedStatement {
         if (isFinalized) {
             return;
         }
-        if (BuildVars.DEBUG_VERSION) {
+        if (BuildVars.LOGS_ENABLED) {
             long diff = SystemClock.elapsedRealtime() - startTime;
             if (diff > 500) {
                 FileLog.d("sqlite query " + query + " took " + diff + "ms");

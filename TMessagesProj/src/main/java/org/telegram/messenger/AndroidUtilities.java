@@ -3530,13 +3530,17 @@ public class AndroidUtilities {
                 if ((flags & View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR) == 0) {
                     flags |= View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
                     decorView.setSystemUiVisibility(flags);
-                    window.setStatusBarColor(0x0f000000);
+                    if (!SharedConfig.noStatusBar) {
+                        window.setStatusBarColor(0x0f000000);
+                    }
                 }
             } else {
                 if ((flags & View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR) != 0) {
                     flags &= ~View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
                     decorView.setSystemUiVisibility(flags);
-                    window.setStatusBarColor(0x33000000);
+                    if (!SharedConfig.noStatusBar) {
+                        window.setStatusBarColor(0x33000000);
+                    }
                 }
             }
         }

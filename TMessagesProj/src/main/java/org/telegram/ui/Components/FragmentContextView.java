@@ -117,6 +117,7 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
     private int animationIndex = -1;
 
     boolean checkCallAfterAnimation;
+    boolean checkPlayerAfterAnimation;
 
     @Override
     public void onAudioSettingsChanged() {
@@ -773,7 +774,7 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
 
             if (VoIPService.getSharedInstance() != null && !VoIPService.getSharedInstance().isHangingUp() && VoIPService.getSharedInstance().getCallState() != VoIPService.STATE_WAITING_INCOMING && !GroupCallPip.isShowing()) {
                 checkCall(true);
-            } else if (fragment instanceof ChatActivity && ((ChatActivity) fragment).getGroupCall() != null && !GroupCallPip.isShowing()) {
+            } else if (fragment instanceof ChatActivity && ((ChatActivity) fragment).getGroupCall() != null && !GroupCallPip.isShowing() && !isPlayingVoice()) {
                 checkCall(true);
             } else {
                 checkPlayer(true);
@@ -821,7 +822,7 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
                 }
             }
         } else if (id == NotificationCenter.messagePlayingDidStart || id == NotificationCenter.messagePlayingPlayStateChanged || id == NotificationCenter.messagePlayingDidReset || id == NotificationCenter.didEndCall) {
-            if (currentStyle == 3) {
+            if (currentStyle == 3 || currentStyle == 4) {
                 checkCall(false);
             }
             checkPlayer(false);
@@ -1080,7 +1081,7 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
     }
 
     private void checkPlayer(boolean create) {
-        if (visible && (currentStyle == 3 || currentStyle == 4)) {
+        if (visible && (currentStyle == 3 || currentStyle == 4 && !isPlayingVoice())) {
             return;
         }
         MessageObject messageObject = MediaController.getInstance().getPlayingMessageObject();
@@ -1093,7 +1094,7 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
         if (messageObject == null || messageObject.getId() == 0 || messageObject.isVideo()) {
             lastMessageObject = null;
             boolean callAvailable = supportsCalls && VoIPService.getSharedInstance() != null && !VoIPService.getSharedInstance().isHangingUp() && VoIPService.getSharedInstance().getCallState() != VoIPService.STATE_WAITING_INCOMING && !GroupCallPip.isShowing();
-            if (!callAvailable && fragment instanceof ChatActivity && ((ChatActivity) fragment).getGroupCall() != null && !GroupCallPip.isShowing()) {
+            if (!isPlayingVoice() && !callAvailable && fragment instanceof ChatActivity && ((ChatActivity) fragment).getGroupCall() != null && !GroupCallPip.isShowing()) {
                 callAvailable = true;
             }
             if (callAvailable) {
@@ -1131,7 +1132,11 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
                                 animatorSet = null;
                                 if (checkCallAfterAnimation) {
                                     checkCall(false);
+                                } else if (checkPlayerAfterAnimation) {
+                                    checkPlayer(false);
                                 }
+                                checkCallAfterAnimation = false;
+                                checkPlayerAfterAnimation = false;
                             }
                         }
                     });
@@ -1141,6 +1146,10 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
                 setVisibility(View.GONE);
             }
         } else {
+            if (currentStyle != 0 && animatorSet != null && !create) {
+                checkPlayerAfterAnimation = true;
+                return;
+            }
             int prevStyle = currentStyle;
             updateStyle(0);
             if (create && topPadding == 0) {
@@ -1180,7 +1189,11 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
                                 animatorSet = null;
                                 if (checkCallAfterAnimation) {
                                     checkCall(false);
+                                } else if (checkPlayerAfterAnimation) {
+                                    checkPlayer(false);
                                 }
+                                checkCallAfterAnimation = false;
+                                checkPlayerAfterAnimation = false;
                             }
                         }
                     });
@@ -1235,6 +1248,11 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
         }
     }
 
+    private boolean isPlayingVoice() {
+        MessageObject messageObject = MediaController.getInstance().getPlayingMessageObject();
+        return messageObject != null && messageObject.isVoice();
+    }
+
     public void checkCall(boolean create) {
         View fragmentView = fragment.getFragmentView();
         if (!create && fragmentView != null) {
@@ -1253,7 +1271,7 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
                 callAvailable = false;
             }
             groupActive = false;
-            if (!GroupCallActivity.groupCallUiVisible && supportsCalls && !callAvailable && fragment instanceof ChatActivity && ((ChatActivity) fragment).getGroupCall() != null) {
+            if (!isPlayingVoice() && !GroupCallActivity.groupCallUiVisible && supportsCalls && !callAvailable && fragment instanceof ChatActivity && ((ChatActivity) fragment).getGroupCall() != null) {
                 callAvailable = true;
                 groupActive = true;
             }
@@ -1287,13 +1305,17 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
                                 animatorSet = null;
                                 if (checkCallAfterAnimation) {
                                     checkCall(false);
+                                } else if (checkPlayerAfterAnimation) {
+                                    checkPlayer(false);
                                 }
+                                checkCallAfterAnimation = false;
+                                checkPlayerAfterAnimation = false;
                             }
                         }
                     });
                     animatorSet.start();
                 }
-            } else if (currentStyle == -1 || currentStyle == 4 || currentStyle == 3){
+            } else if (currentStyle == -1 || currentStyle == 4 || currentStyle == 3) {
                 visible = false;
                 setVisibility(GONE);
             }
@@ -1382,7 +1404,11 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
                             }
                             if (checkCallAfterAnimation) {
                                 checkCall(false);
+                            } else if (checkPlayerAfterAnimation) {
+                                checkPlayer(false);
                             }
+                            checkCallAfterAnimation = false;
+                            checkPlayerAfterAnimation = false;
                         }
                     });
                     animatorSet.start();

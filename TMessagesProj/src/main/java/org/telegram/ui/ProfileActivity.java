@@ -2066,7 +2066,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                         }
                     }
 
-                    int top = 0;
+                    int top = paddingTop;
                     if (view != null) {
                         top = view.getTop();
                     }
@@ -2075,6 +2075,9 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                         layoutManager.scrollToPositionWithOffset(sharedMediaRow, -paddingTop);
                         layout = true;
                     } else if ((!changed || !allowPullingDown) && view != null) {
+                        if (pos == 0 && !allowPullingDown && top > AndroidUtilities.dp(88)) {
+                            top = AndroidUtilities.dp(88);
+                        }
                         layoutManager.scrollToPositionWithOffset(pos, top - paddingTop);
                         layout = true;
                     }
@@ -2584,7 +2587,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                                 LocaleController.getString("DebugMenuReadAllDialogs", R.string.DebugMenuReadAllDialogs),
                                 SharedConfig.pauseMusicOnRecord ? LocaleController.getString("DebugMenuDisablePauseMusic", R.string.DebugMenuDisablePauseMusic) : LocaleController.getString("DebugMenuEnablePauseMusic", R.string.DebugMenuEnablePauseMusic),
                                 BuildVars.DEBUG_VERSION && !AndroidUtilities.isTablet() && Build.VERSION.SDK_INT >= 23 ? (SharedConfig.smoothKeyboard ? LocaleController.getString("DebugMenuDisableSmoothKeyboard", R.string.DebugMenuDisableSmoothKeyboard) : LocaleController.getString("DebugMenuEnableSmoothKeyboard", R.string.DebugMenuEnableSmoothKeyboard)) : null,
-                                BuildVars.DEBUG_PRIVATE_VERSION ? (SharedConfig.disableVoiceAudioEffects ? "Enable voip audio effects" : "Disable voip audio effects") : null
+                                BuildVars.DEBUG_PRIVATE_VERSION ? (SharedConfig.disableVoiceAudioEffects ? "Enable voip audio effects" : "Disable voip audio effects") : null,
+                                Build.VERSION.SDK_INT >= 21 ? (SharedConfig.noStatusBar ? "Show status bar background" : "Hide status bar background") : null
                         };
                         builder.setItems(items, (dialog, which) -> {
                             if (which == 0) {
@@ -2630,6 +2634,15 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                                 }
                             } else if (which == 13) {
                                 SharedConfig.toggleDisableVoiceAudioEffects();
+                            } else if (which == 14) {
+                                SharedConfig.toggleNoStatusBar();
+                                if (getParentActivity() != null) {
+                                    if (SharedConfig.noStatusBar) {
+                                        getParentActivity().getWindow().setStatusBarColor(0);
+                                    } else {
+                                        getParentActivity().getWindow().setStatusBarColor(0x33000000);
+                                    }
+                                }
                             }
                         });
                         builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);

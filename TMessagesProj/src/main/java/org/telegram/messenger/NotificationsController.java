@@ -2559,7 +2559,7 @@ public class NotificationsController extends BaseController {
                 return;
             }
             notificationsQueue.postRunnable(() -> {
-                if (Math.abs(System.currentTimeMillis() - lastSoundPlay) <= 500) {
+                if (Math.abs(SystemClock.elapsedRealtime() - lastSoundPlay) <= 500) {
                     return;
                 }
                 try {
@@ -2804,19 +2804,53 @@ public class NotificationsController extends BaseController {
     protected void ensureGroupsCreated() {
         SharedPreferences preferences = getAccountInstance().getNotificationsSettings();
         if (groupsCreated == null) {
-            groupsCreated = preferences.getBoolean("groupsCreated", false);
+            groupsCreated = preferences.getBoolean("groupsCreated4", false);
         }
         if (!groupsCreated) {
             try {
                 String keyStart = currentAccount + "channel";
                 List<NotificationChannel> list = systemNotificationManager.getNotificationChannels();
                 int count = list.size();
+                SharedPreferences.Editor editor = null;
                 for (int a = 0; a < count; a++) {
                     NotificationChannel channel = list.get(a);
                     String id = channel.getId();
                     if (id.startsWith(keyStart)) {
+                        int importance = channel.getImportance();
+                        if (importance != NotificationManager.IMPORTANCE_HIGH && importance != NotificationManager.IMPORTANCE_MAX) { //TODO remove after some time, 7.3.0 bug fix
+                            if (id.contains("_ia_")) {
+                                //do nothing
+                            } else if (id.contains("_channels_")) {
+                                if (editor == null) {
+                                    editor = getAccountInstance().getNotificationsSettings().edit();
+                                }
+                                editor.remove("priority_channel").remove("vibrate_channel").remove("ChannelSoundPath").remove("ChannelSound");
+                            } else if (id.contains("_groups_")) {
+                                if (editor == null) {
+                                    editor = getAccountInstance().getNotificationsSettings().edit();
+                                }
+                                editor.remove("priority_group").remove("vibrate_group").remove("GroupSoundPath").remove("GroupSound");
+                            } else if (id.contains("_private_")) {
+                                if (editor == null) {
+                                    editor = getAccountInstance().getNotificationsSettings().edit();
+                                }
+                                editor.remove("priority_messages");
+                                editor.remove("priority_group").remove("vibrate_messages").remove("GlobalSoundPath").remove("GlobalSound");
+                            } else {
+                                long dialogId = Utilities.parseLong(id.substring(9, id.indexOf('_', 9)));
+                                if (dialogId != 0) {
+                                    if (editor == null) {
+                                        editor = getAccountInstance().getNotificationsSettings().edit();
+                                    }
+                                    editor.remove("priority_" + dialogId).remove("vibrate_" + dialogId).remove("sound_path_" + dialogId).remove("sound_" + dialogId);
+                                }
+                            }
+                        }
                         systemNotificationManager.deleteNotificationChannel(id);
                     }
+                }
+                if (editor != null) {
+                    editor.commit();
                 }
             } catch (Exception e) {
                 FileLog.e(e);
@@ -2831,13 +2865,15 @@ public class NotificationsController extends BaseController {
             } else {
                 userName = "";
             }
+
             systemNotificationManager.createNotificationChannelGroups(Arrays.asList(
                     new NotificationChannelGroup("channels" + currentAccount, LocaleController.getString("NotificationsChannels", R.string.NotificationsChannels) + userName),
                     new NotificationChannelGroup("groups" + currentAccount, LocaleController.getString("NotificationsGroups", R.string.NotificationsGroups) + userName),
                     new NotificationChannelGroup("private" + currentAccount, LocaleController.getString("NotificationsPrivateChats", R.string.NotificationsPrivateChats) + userName),
                     new NotificationChannelGroup("other" + currentAccount, LocaleController.getString("NotificationsOther", R.string.NotificationsOther) + userName)
             ));
-            preferences.edit().putBoolean("groupsCreated", true).commit();
+
+            preferences.edit().putBoolean("groupsCreated4", true).commit();
             groupsCreated = true;
         }
     }
@@ -2888,184 +2924,192 @@ public class NotificationsController extends BaseController {
         StringBuilder newSettings = new StringBuilder();
         String newSettingsHash = null;
 
-        if (!isSilent && channelId != null) {
+        if (channelId != null) {
             NotificationChannel existingChannel = systemNotificationManager.getNotificationChannel(channelId);
             if (existingChannel != null) {
-                int channelImportance = existingChannel.getImportance();
-                Uri channelSound = existingChannel.getSound();
-                long[] channelVibrationPattern = existingChannel.getVibrationPattern();
-                int channelLedColor = existingChannel.getLightColor();
-                if (channelVibrationPattern != null) {
-                    for (int a = 0; a < channelVibrationPattern.length; a++) {
-                        newSettings.append(channelVibrationPattern[a]);
+                if (!isSilent) {
+                    int channelImportance = existingChannel.getImportance();
+                    Uri channelSound = existingChannel.getSound();
+                    long[] channelVibrationPattern = existingChannel.getVibrationPattern();
+                    boolean vibrate = existingChannel.shouldVibrate();
+                    if (!vibrate && channelVibrationPattern == null) {
+                        channelVibrationPattern = new long[]{0, 0};
                     }
-                }
-                newSettings.append(channelLedColor);
-                if (channelSound != null) {
-                    newSettings.append(channelSound.toString());
-                }
-                newSettings.append(channelImportance);
-                if (secretChat) {
-                    newSettings.append("secret");
-                }
-                newSettingsHash = Utilities.MD5(newSettings.toString());
-                newSettings.setLength(0);
-                if (!settings.equals(newSettingsHash)) {
-                    SharedPreferences.Editor editor = null;
-                    if (channelImportance == NotificationManager.IMPORTANCE_NONE) {
-                        editor = preferences.edit();
-                        if (isDefault) {
-                            if (!isInApp) {
-                                editor.putInt(getGlobalNotificationsKey(type), Integer.MAX_VALUE);
-                                updateServerNotificationsSettings(type);
-                            }
-                        } else {
-                            editor.putInt("notify2_" + dialogId, 2);
-                            updateServerNotificationsSettings(dialogId, true);
+                    int channelLedColor = existingChannel.getLightColor();
+                    if (channelVibrationPattern != null) {
+                        for (int a = 0; a < channelVibrationPattern.length; a++) {
+                            newSettings.append(channelVibrationPattern[a]);
                         }
-                        edited = true;
-                    } else if (channelImportance != importance) {
-                        if (!isInApp) {
+                    }
+                    newSettings.append(channelLedColor);
+                    if (channelSound != null) {
+                        newSettings.append(channelSound.toString());
+                    }
+                    newSettings.append(channelImportance);
+                    if (!isDefault && secretChat) {
+                        newSettings.append("secret");
+                    }
+                    newSettingsHash = Utilities.MD5(newSettings.toString());
+                    newSettings.setLength(0);
+                    if (!newSettingsHash.equals(settings)) {
+                        SharedPreferences.Editor editor = null;
+                        if (channelImportance == NotificationManager.IMPORTANCE_NONE) {
                             editor = preferences.edit();
-                            int priority;
-                            if (channelImportance == NotificationManager.IMPORTANCE_HIGH || channelImportance == NotificationManager.IMPORTANCE_MAX) {
-                                priority = 1;
-                            } else if (channelImportance == NotificationManager.IMPORTANCE_MIN) {
-                                priority = 4;
-                            } else if (channelImportance == NotificationManager.IMPORTANCE_LOW) {
-                                priority = 5;
-                            } else {
-                                priority = 0;
-                            }
                             if (isDefault) {
-                                editor.putInt(getGlobalNotificationsKey(type), 0).commit();
-                                if (type == TYPE_CHANNEL) {
-                                    editor.putInt("priority_channel", priority);
-                                } else if (type == TYPE_GROUP) {
-                                    editor.putInt("priority_group", priority);
-                                } else {
-                                    editor.putInt("priority_messages", priority);
+                                if (!isInApp) {
+                                    editor.putInt(getGlobalNotificationsKey(type), Integer.MAX_VALUE);
+                                    updateServerNotificationsSettings(type);
                                 }
                             } else {
-                                editor.putInt("notify2_" + dialogId, 0);
-                                editor.remove("notifyuntil_" + dialogId);
-                                editor.putInt("priority_" + dialogId, priority);
+                                editor.putInt("notify2_" + dialogId, 2);
+                                updateServerNotificationsSettings(dialogId, true);
                             }
-                        }
-                        edited = true;
-                    }
-                    if (channelSound == null && sound != null || channelSound != null && (sound == null || !TextUtils.equals(channelSound.toString(), sound.toString()))) {
-                        if (!isInApp) {
-                            if (editor == null) {
+                            edited = true;
+                        } else if (channelImportance != importance) {
+                            if (!isInApp) {
                                 editor = preferences.edit();
-                            }
-                            String newSound;
-                            if (channelSound == null) {
-                                newSound = "NoSound";
+                                int priority;
+                                if (channelImportance == NotificationManager.IMPORTANCE_HIGH || channelImportance == NotificationManager.IMPORTANCE_MAX) {
+                                    priority = 1;
+                                } else if (channelImportance == NotificationManager.IMPORTANCE_MIN) {
+                                    priority = 4;
+                                } else if (channelImportance == NotificationManager.IMPORTANCE_LOW) {
+                                    priority = 5;
+                                } else {
+                                    priority = 0;
+                                }
                                 if (isDefault) {
+                                    editor.putInt(getGlobalNotificationsKey(type), 0).commit();
                                     if (type == TYPE_CHANNEL) {
-                                        editor.putString("ChannelSound", "NoSound");
+                                        editor.putInt("priority_channel", priority);
                                     } else if (type == TYPE_GROUP) {
-                                        editor.putString("GroupSound", "NoSound");
+                                        editor.putInt("priority_group", priority);
                                     } else {
-                                        editor.putString("GlobalSound", "NoSound");
+                                        editor.putInt("priority_messages", priority);
                                     }
                                 } else {
-                                    editor.putString("sound_" + dialogId, "NoSound");
+                                    editor.putInt("notify2_" + dialogId, 0);
+                                    editor.remove("notifyuntil_" + dialogId);
+                                    editor.putInt("priority_" + dialogId, priority);
                                 }
-                            } else {
-                                newSound = channelSound.toString();
-                                Ringtone rng = RingtoneManager.getRingtone(ApplicationLoader.applicationContext, channelSound);
-                                String ringtoneName = null;
-                                if (rng != null) {
-                                    if (channelSound.equals(Settings.System.DEFAULT_RINGTONE_URI)) {
-                                        ringtoneName = LocaleController.getString("DefaultRingtone", R.string.DefaultRingtone);
-                                    } else {
-                                        ringtoneName = rng.getTitle(ApplicationLoader.applicationContext);
-                                    }
-                                    rng.stop();
+                            }
+                            edited = true;
+                        }
+                        if (channelSound == null && sound != null || channelSound != null && (sound == null || !TextUtils.equals(channelSound.toString(), sound.toString()))) {
+                            if (!isInApp) {
+                                if (editor == null) {
+                                    editor = preferences.edit();
                                 }
-                                if (ringtoneName != null) {
+                                String newSound;
+                                if (channelSound == null) {
+                                    newSound = "NoSound";
                                     if (isDefault) {
                                         if (type == TYPE_CHANNEL) {
-                                            editor.putString("ChannelSound", ringtoneName);
+                                            editor.putString("ChannelSound", "NoSound");
                                         } else if (type == TYPE_GROUP) {
-                                            editor.putString("GroupSound", ringtoneName);
+                                            editor.putString("GroupSound", "NoSound");
                                         } else {
-                                            editor.putString("GlobalSound", ringtoneName);
+                                            editor.putString("GlobalSound", "NoSound");
                                         }
                                     } else {
-                                        editor.putString("sound_" + dialogId, ringtoneName);
+                                        editor.putString("sound_" + dialogId, "NoSound");
+                                    }
+                                } else {
+                                    newSound = channelSound.toString();
+                                    Ringtone rng = RingtoneManager.getRingtone(ApplicationLoader.applicationContext, channelSound);
+                                    String ringtoneName = null;
+                                    if (rng != null) {
+                                        if (channelSound.equals(Settings.System.DEFAULT_RINGTONE_URI)) {
+                                            ringtoneName = LocaleController.getString("DefaultRingtone", R.string.DefaultRingtone);
+                                        } else {
+                                            ringtoneName = rng.getTitle(ApplicationLoader.applicationContext);
+                                        }
+                                        rng.stop();
+                                    }
+                                    if (ringtoneName != null) {
+                                        if (isDefault) {
+                                            if (type == TYPE_CHANNEL) {
+                                                editor.putString("ChannelSound", ringtoneName);
+                                            } else if (type == TYPE_GROUP) {
+                                                editor.putString("GroupSound", ringtoneName);
+                                            } else {
+                                                editor.putString("GlobalSound", ringtoneName);
+                                            }
+                                        } else {
+                                            editor.putString("sound_" + dialogId, ringtoneName);
+                                        }
                                     }
                                 }
-                            }
-                            if (isDefault) {
-                                if (type == TYPE_CHANNEL) {
-                                    editor.putString("ChannelSoundPath", newSound);
-                                } else if (type == TYPE_GROUP) {
-                                    editor.putString("GroupSoundPath", newSound);
+                                if (isDefault) {
+                                    if (type == TYPE_CHANNEL) {
+                                        editor.putString("ChannelSoundPath", newSound);
+                                    } else if (type == TYPE_GROUP) {
+                                        editor.putString("GroupSoundPath", newSound);
+                                    } else {
+                                        editor.putString("GlobalSoundPath", newSound);
+                                    }
                                 } else {
-                                    editor.putString("GlobalSoundPath", newSound);
+                                    editor.putString("sound_path_" + dialogId, newSound);
                                 }
-                            } else {
-                                editor.putString("sound_path_" + dialogId, newSound);
                             }
+                            sound = channelSound;
+                            edited = true;
                         }
-                        sound = channelSound;
-                        edited = true;
-                    }
-                    boolean vibrate = existingChannel.shouldVibrate();
-                    boolean hasVibration = !isEmptyVibration(vibrationPattern);
-                    if (hasVibration != vibrate) {
-                        if (!isInApp) {
-                            if (editor == null) {
-                                editor = preferences.edit();
-                            }
-                            if (isDefault) {
-                                if (type == TYPE_CHANNEL) {
-                                    editor.putInt("vibrate_channel", vibrate ? 0 : 2);
-                                } else if (type == TYPE_GROUP) {
-                                    editor.putInt("vibrate_group", vibrate ? 0 : 2);
+                        boolean hasVibration = !isEmptyVibration(vibrationPattern);
+                        if (hasVibration != vibrate) {
+                            if (!isInApp) {
+                                if (editor == null) {
+                                    editor = preferences.edit();
+                                }
+                                if (isDefault) {
+                                    if (type == TYPE_CHANNEL) {
+                                        editor.putInt("vibrate_channel", vibrate ? 0 : 2);
+                                    } else if (type == TYPE_GROUP) {
+                                        editor.putInt("vibrate_group", vibrate ? 0 : 2);
+                                    } else {
+                                        editor.putInt("vibrate_messages", vibrate ? 0 : 2);
+                                    }
                                 } else {
-                                    editor.putInt("vibrate_messages", vibrate ? 0 : 2);
+                                    editor.putInt("vibrate_" + dialogId, vibrate ? 0 : 2);
                                 }
-                            } else {
-                                editor.putInt("vibrate_" + dialogId, vibrate ? 0 : 2);
                             }
+                            vibrationPattern = channelVibrationPattern;
+                            edited = true;
                         }
-                        vibrationPattern = new long[]{};
-                        edited = true;
-                    }
-                    if (channelLedColor != ledColor) {
-                        if (!isInApp) {
-                            if (editor == null) {
-                                editor = preferences.edit();
-                            }
-                            if (isDefault) {
-                                if (type == TYPE_CHANNEL) {
-                                    editor.putInt("ChannelLed", channelLedColor);
-                                } else if (type == TYPE_GROUP) {
-                                    editor.putInt("GroupLed", channelLedColor);
+                        if (channelLedColor != ledColor) {
+                            if (!isInApp) {
+                                if (editor == null) {
+                                    editor = preferences.edit();
+                                }
+                                if (isDefault) {
+                                    if (type == TYPE_CHANNEL) {
+                                        editor.putInt("ChannelLed", channelLedColor);
+                                    } else if (type == TYPE_GROUP) {
+                                        editor.putInt("GroupLed", channelLedColor);
+                                    } else {
+                                        editor.putInt("MessagesLed", channelLedColor);
+                                    }
                                 } else {
-                                    editor.putInt("MessagesLed", channelLedColor);
+                                    editor.putInt("color_" + dialogId, channelLedColor);
                                 }
-                            } else {
-                                editor.putInt("color_" + dialogId, channelLedColor);
                             }
+                            ledColor = channelLedColor;
+                            edited = true;
                         }
-                        ledColor = channelLedColor;
-                        edited = true;
-                    }
-                    if (editor != null) {
-                        editor.commit();
+                        if (editor != null) {
+                            editor.commit();
+                        }
                     }
                 }
+            } else {
+                channelId = null;
+                settings = null;
             }
         }
 
         if (edited && newSettingsHash != null) {
             preferences.edit().putString(key, channelId).putString(key + "_s", newSettingsHash).commit();
-        } else if (!isInApp || !isDefault) {
+        } else if (newSettingsHash == null || !isInApp || !isDefault) {
             for (int a = 0; a < vibrationPattern.length; a++) {
                 newSettings.append(vibrationPattern[a]);
             }
@@ -3074,12 +3118,12 @@ public class NotificationsController extends BaseController {
                 newSettings.append(sound.toString());
             }
             newSettings.append(importance);
-            if (secretChat) {
+            if (!isDefault && secretChat) {
                 newSettings.append("secret");
             }
             newSettingsHash = Utilities.MD5(newSettings.toString());
 
-            if (channelId != null && !settings.equals(newSettingsHash)) {
+            if (!isSilent && channelId != null && !settings.equals(newSettingsHash)) {
                 systemNotificationManager.deleteNotificationChannel(channelId);
                 channelId = null;
             }
@@ -3174,7 +3218,113 @@ public class NotificationsController extends BaseController {
             } else {
                 value = notifyOverride != 2;
             }
-            if (!notifyAboutLast || !value) {
+
+            String name;
+            String chatName;
+            boolean replace = true;
+            if (((chat_id != 0 && chat == null) || user == null) && lastMessageObject.isFcmMessage()) {
+                chatName = lastMessageObject.localName;
+            } else if (chat != null) {
+                chatName = chat.title;
+            } else {
+                chatName = UserObject.getUserName(user);
+            }
+            boolean passcode = AndroidUtilities.needShowPasscode() || SharedConfig.isWaitingForPasscodeEnter;
+            if ((int) dialog_id == 0 || pushDialogs.size() > 1 || passcode) {
+                if (passcode) {
+                    if (chat_id != 0) {
+                        name = LocaleController.getString("NotificationHiddenChatName", R.string.NotificationHiddenChatName);
+                    } else {
+                        name = LocaleController.getString("NotificationHiddenName", R.string.NotificationHiddenName);
+                    }
+                } else {
+                    name = LocaleController.getString("AppName", R.string.AppName);
+                }
+                replace = false;
+            } else {
+                name = chatName;
+            }
+
+            String detailText;
+            if (UserConfig.getActivatedAccountsCount() > 1) {
+                if (pushDialogs.size() == 1) {
+                    detailText = UserObject.getFirstName(getUserConfig().getCurrentUser());
+                } else {
+                    detailText = UserObject.getFirstName(getUserConfig().getCurrentUser()) + "・";
+                }
+            } else {
+                detailText = "";
+            }
+            if (pushDialogs.size() != 1 || Build.VERSION.SDK_INT < 23) {
+                if (pushDialogs.size() == 1) {
+                    detailText += LocaleController.formatPluralString("NewMessages", total_unread_count);
+                } else {
+                    detailText += LocaleController.formatString("NotificationMessagesPeopleDisplayOrder", R.string.NotificationMessagesPeopleDisplayOrder, LocaleController.formatPluralString("NewMessages", total_unread_count), LocaleController.formatPluralString("FromChats", pushDialogs.size()));
+                }
+            }
+
+            NotificationCompat.Builder mBuilder = new NotificationCompat.Builder(ApplicationLoader.applicationContext);
+
+            int silent = 2;
+            String lastMessage = null;
+            boolean hasNewMessages = false;
+            if (pushMessages.size() == 1) {
+                MessageObject messageObject = pushMessages.get(0);
+                boolean[] text = new boolean[1];
+                String message = lastMessage = getStringForMessage(messageObject, false, text, null);
+                silent = messageObject.messageOwner.silent ? 1 : 0;
+                if (message == null) {
+                    return;
+                }
+                if (replace) {
+                    if (chat != null) {
+                        message = message.replace(" @ " + name, "");
+                    } else {
+                        if (text[0]) {
+                            message = message.replace(name + ": ", "");
+                        } else {
+                            message = message.replace(name + " ", "");
+                        }
+                    }
+                }
+                mBuilder.setContentText(message);
+                mBuilder.setStyle(new NotificationCompat.BigTextStyle().bigText(message));
+            } else {
+                mBuilder.setContentText(detailText);
+                NotificationCompat.InboxStyle inboxStyle = new NotificationCompat.InboxStyle();
+                inboxStyle.setBigContentTitle(name);
+                int count = Math.min(10, pushMessages.size());
+                boolean[] text = new boolean[1];
+                for (int i = 0; i < count; i++) {
+                    MessageObject messageObject = pushMessages.get(i);
+                    String message = getStringForMessage(messageObject, false, text, null);
+                    if (message == null || messageObject.messageOwner.date <= dismissDate) {
+                        continue;
+                    }
+                    if (silent == 2) {
+                        lastMessage = message;
+                        silent = messageObject.messageOwner.silent ? 1 : 0;
+                    }
+                    if (pushDialogs.size() == 1) {
+                        if (replace) {
+                            if (chat != null) {
+                                message = message.replace(" @ " + name, "");
+                            } else {
+                                if (text[0]) {
+                                    message = message.replace(name + ": ", "");
+                                } else {
+                                    message = message.replace(name + " ", "");
+                                }
+                            }
+                        }
+                    }
+                    inboxStyle.addLine(message);
+                }
+                inboxStyle.setSummaryText(detailText);
+                mBuilder.setStyle(inboxStyle);
+            }
+
+            if (!notifyAboutLast || !value || MediaController.getInstance().isRecordingAudio() || silent == 1) {
                 notifyDisabled = true;
             }
 
@@ -3191,16 +3341,16 @@ public class NotificationsController extends BaseController {
                 if (notifyMaxCount != 0) {
                     Point dialogInfo = smartNotificationsDialogs.get(dialog_id);
                     if (dialogInfo == null) {
-                        dialogInfo = new Point(1, (int) (System.currentTimeMillis() / 1000));
+                        dialogInfo = new Point(1, (int) (SystemClock.elapsedRealtime() / 1000));
                         smartNotificationsDialogs.put(dialog_id, dialogInfo);
                     } else {
                         int lastTime = dialogInfo.y;
-                        if (lastTime + notifyDelay < System.currentTimeMillis() / 1000) {
-                            dialogInfo.set(1, (int) (System.currentTimeMillis() / 1000));
+                        if (lastTime + notifyDelay < SystemClock.elapsedRealtime() / 1000) {
+                            dialogInfo.set(1, (int) (SystemClock.elapsedRealtime() / 1000));
                         } else {
                             int count = dialogInfo.x;
                             if (count < notifyMaxCount) {
-                                dialogInfo.set(count + 1, (int) (System.currentTimeMillis() / 1000));
+                                dialogInfo.set(count + 1, (int) (SystemClock.elapsedRealtime() / 1000));
                             } else {
                                 notifyDisabled = true;
                             }
@@ -3342,52 +3492,7 @@ public class NotificationsController extends BaseController {
             intent.putExtra("currentAccount", currentAccount);
             PendingIntent contentIntent = PendingIntent.getActivity(ApplicationLoader.applicationContext, 0, intent, PendingIntent.FLAG_ONE_SHOT);
 
-            String name;
-            String chatName;
-            boolean replace = true;
-            if (((chat_id != 0 && chat == null) || user == null) && lastMessageObject.isFcmMessage()) {
-                chatName = lastMessageObject.localName;
-            } else if (chat != null) {
-                chatName = chat.title;
-            } else {
-                chatName = UserObject.getUserName(user);
-            }
-            boolean passcode = AndroidUtilities.needShowPasscode() || SharedConfig.isWaitingForPasscodeEnter;
-            if ((int) dialog_id == 0 || pushDialogs.size() > 1 || passcode) {
-                if (passcode) {
-                    if (chat_id != 0) {
-                        name = LocaleController.getString("NotificationHiddenChatName", R.string.NotificationHiddenChatName);
-                    } else {
-                        name = LocaleController.getString("NotificationHiddenName", R.string.NotificationHiddenName);
-                    }
-                } else {
-                    name = LocaleController.getString("AppName", R.string.AppName);
-                }
-                replace = false;
-            } else {
-                name = chatName;
-            }
-
-            String detailText;
-            if (UserConfig.getActivatedAccountsCount() > 1) {
-                if (pushDialogs.size() == 1) {
-                    detailText = UserObject.getFirstName(getUserConfig().getCurrentUser());
-                } else {
-                    detailText = UserObject.getFirstName(getUserConfig().getCurrentUser()) + "・";
-                }
-            } else {
-                detailText = "";
-            }
-            if (pushDialogs.size() != 1 || Build.VERSION.SDK_INT < 23) {
-                if (pushDialogs.size() == 1) {
-                    detailText += LocaleController.formatPluralString("NewMessages", total_unread_count);
-                } else {
-                    detailText += LocaleController.formatString("NotificationMessagesPeopleDisplayOrder", R.string.NotificationMessagesPeopleDisplayOrder, LocaleController.formatPluralString("NewMessages", total_unread_count), LocaleController.formatPluralString("FromChats", pushDialogs.size()));
-                }
-            }
-
-            NotificationCompat.Builder mBuilder = new NotificationCompat.Builder(ApplicationLoader.applicationContext)
-                    .setContentTitle(name)
+            mBuilder.setContentTitle(name)
                     .setSmallIcon(R.drawable.notification)
                     .setAutoCancel(true)
                     .setNumber(total_unread_count)
@@ -3404,65 +3509,6 @@ public class NotificationsController extends BaseController {
             mBuilder.setCategory(NotificationCompat.CATEGORY_MESSAGE);
             if (chat == null && user != null && user.phone != null && user.phone.length() > 0) {
                 mBuilder.addPerson("tel:+" + user.phone);
-            }
-
-            int silent = 2;
-            String lastMessage = null;
-            boolean hasNewMessages = false;
-            if (pushMessages.size() == 1) {
-                MessageObject messageObject = pushMessages.get(0);
-                boolean[] text = new boolean[1];
-                String message = lastMessage = getStringForMessage(messageObject, false, text, null);
-                silent = messageObject.messageOwner.silent ? 1 : 0;
-                if (message == null) {
-                    return;
-                }
-                if (replace) {
-                    if (chat != null) {
-                        message = message.replace(" @ " + name, "");
-                    } else {
-                        if (text[0]) {
-                            message = message.replace(name + ": ", "");
-                        } else {
-                            message = message.replace(name + " ", "");
-                        }
-                    }
-                }
-                mBuilder.setContentText(message);
-                mBuilder.setStyle(new NotificationCompat.BigTextStyle().bigText(message));
-            } else {
-                mBuilder.setContentText(detailText);
-                NotificationCompat.InboxStyle inboxStyle = new NotificationCompat.InboxStyle();
-                inboxStyle.setBigContentTitle(name);
-                int count = Math.min(10, pushMessages.size());
-                boolean[] text = new boolean[1];
-                for (int i = 0; i < count; i++) {
-                    MessageObject messageObject = pushMessages.get(i);
-                    String message = getStringForMessage(messageObject, false, text, null);
-                    if (message == null || messageObject.messageOwner.date <= dismissDate) {
-                        continue;
-                    }
-                    if (silent == 2) {
-                        lastMessage = message;
-                        silent = messageObject.messageOwner.silent ? 1 : 0;
-                    }
-                    if (pushDialogs.size() == 1) {
-                        if (replace) {
-                            if (chat != null) {
-                                message = message.replace(" @ " + name, "");
-                            } else {
-                                if (text[0]) {
-                                    message = message.replace(name + ": ", "");
-                                } else {
-                                    message = message.replace(name + " ", "");
-                                }
-                            }
-                        }
-                    }
-                    inboxStyle.addLine(message);
-                }
-                inboxStyle.setSummaryText(detailText);
-                mBuilder.setStyle(inboxStyle);
             }
 
             Intent dismissIntent = new Intent(ApplicationLoader.applicationContext, NotificationDismissReceiver.class);
@@ -3529,29 +3575,27 @@ public class NotificationsController extends BaseController {
                     }
                     mBuilder.setTicker(lastMessage);
                 }
-                if (!MediaController.getInstance().isRecordingAudio()) {
-                    if (soundPath != null && !soundPath.equals("NoSound")) {
-                        if (Build.VERSION.SDK_INT >= 26) {
-                            if (soundPath.equals(defaultPath)) {
-                                sound = Settings.System.DEFAULT_NOTIFICATION_URI;
-                            } else {
-                                sound = Uri.parse(soundPath);
-                            }
+                if (soundPath != null && !soundPath.equals("NoSound")) {
+                    if (Build.VERSION.SDK_INT >= 26) {
+                        if (soundPath.equals(defaultPath)) {
+                            sound = Settings.System.DEFAULT_NOTIFICATION_URI;
                         } else {
-                            if (soundPath.equals(defaultPath)) {
-                                mBuilder.setSound(Settings.System.DEFAULT_NOTIFICATION_URI, AudioManager.STREAM_NOTIFICATION);
-                            } else {
-                                if (Build.VERSION.SDK_INT >= 24 && soundPath.startsWith("file://") && !AndroidUtilities.isInternalUri(Uri.parse(soundPath))) {
-                                    try {
-                                        Uri uri = FileProvider.getUriForFile(ApplicationLoader.applicationContext, BuildConfig.APPLICATION_ID + ".provider", new File(soundPath.replace("file://", "")));
-                                        ApplicationLoader.applicationContext.grantUriPermission("com.android.systemui", uri, Intent.FLAG_GRANT_READ_URI_PERMISSION);
-                                        mBuilder.setSound(uri, AudioManager.STREAM_NOTIFICATION);
-                                    } catch (Exception e) {
-                                        mBuilder.setSound(Uri.parse(soundPath), AudioManager.STREAM_NOTIFICATION);
-                                    }
-                                } else {
+                            sound = Uri.parse(soundPath);
+                        }
+                    } else {
+                        if (soundPath.equals(defaultPath)) {
+                            mBuilder.setSound(Settings.System.DEFAULT_NOTIFICATION_URI, AudioManager.STREAM_NOTIFICATION);
+                        } else {
+                            if (Build.VERSION.SDK_INT >= 24 && soundPath.startsWith("file://") && !AndroidUtilities.isInternalUri(Uri.parse(soundPath))) {
+                                try {
+                                    Uri uri = FileProvider.getUriForFile(ApplicationLoader.applicationContext, BuildConfig.APPLICATION_ID + ".provider", new File(soundPath.replace("file://", "")));
+                                    ApplicationLoader.applicationContext.grantUriPermission("com.android.systemui", uri, Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                                    mBuilder.setSound(uri, AudioManager.STREAM_NOTIFICATION);
+                                } catch (Exception e) {
                                     mBuilder.setSound(Uri.parse(soundPath), AudioManager.STREAM_NOTIFICATION);
                                 }
+                            } else {
+                                mBuilder.setSound(Uri.parse(soundPath), AudioManager.STREAM_NOTIFICATION);
                             }
                         }
                     }
@@ -3559,7 +3603,7 @@ public class NotificationsController extends BaseController {
                 if (ledColor != 0) {
                     mBuilder.setLights(ledColor, 1000, 1000);
                 }
-                if (vibrate == 2 || MediaController.getInstance().isRecordingAudio()) {
+                if (vibrate == 2) {
                     mBuilder.setVibrate(vibrationPattern = new long[]{0, 0});
                 } else if (vibrate == 1) {
                     mBuilder.setVibrate(vibrationPattern = new long[]{0, 100, 0, 100});
@@ -3609,7 +3653,7 @@ public class NotificationsController extends BaseController {
             if (Build.VERSION.SDK_INT >= 26) {
                 mBuilder.setChannelId(validateChannelId(dialog_id, chatName, vibrationPattern, ledColor, sound, configImportance, isDefault, isInApp, notifyDisabled, chatType));
             }
-            showExtraNotifications(mBuilder, notifyAboutLast, detailText);
+            showExtraNotifications(mBuilder, detailText);
             scheduleNotificationRepeat();
         } catch (Exception e) {
             FileLog.e(e);
@@ -3626,7 +3670,7 @@ public class NotificationsController extends BaseController {
     }
 
     @SuppressLint("InlinedApi")
-    private void showExtraNotifications(NotificationCompat.Builder notificationBuilder, boolean notifyAboutLast, String summary) {
+    private void showExtraNotifications(NotificationCompat.Builder notificationBuilder, String summary) {
         Notification mainNotification = notificationBuilder.build();
         if (Build.VERSION.SDK_INT < 18) {
             notificationManager.notify(notificationId, mainNotification);
@@ -4337,10 +4381,10 @@ public class NotificationsController extends BaseController {
         }
         notificationsQueue.postRunnable(() -> {
             try {
-                if (Math.abs(System.currentTimeMillis() - lastSoundOutPlay) <= 100) {
+                if (Math.abs(SystemClock.elapsedRealtime() - lastSoundOutPlay) <= 100) {
                     return;
                 }
-                lastSoundOutPlay = System.currentTimeMillis();
+                lastSoundOutPlay = SystemClock.elapsedRealtime();
                 if (soundPool == null) {
                     soundPool = new SoundPool(3, AudioManager.STREAM_SYSTEM, 0);
                     soundPool.setOnLoadCompleteListener((soundPool, sampleId, status) -> {

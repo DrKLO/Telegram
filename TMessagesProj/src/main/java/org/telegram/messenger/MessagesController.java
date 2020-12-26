@@ -2724,7 +2724,7 @@ public class MessagesController extends BaseController implements NotificationCe
                         putUsers(groupCall.users, false);
 
                         ChatObject.Call call = new ChatObject.Call();
-                        call.setCall(currentAccount, chatId, groupCall);
+                        call.setCall(getAccountInstance(), chatId, groupCall);
                         groupCalls.put(groupCall.call.id, call);
                         groupCallsByChatId.put(chatId, call);
                         getNotificationCenter().postNotificationName(NotificationCenter.groupCallUpdated, chatId, groupCall.call.id, false);
@@ -4716,7 +4716,7 @@ public class MessagesController extends BaseController implements NotificationCe
                 for (int a = 0; a < updatesQueueChannels.size(); a++) {
                     int key = updatesQueueChannels.keyAt(a);
                     long updatesStartWaitTime = updatesStartWaitTimeChannels.valueAt(a);
-                    if (updatesStartWaitTime + 1500 < currentTime) {
+                    if (Math.abs(currentTime - updatesStartWaitTime) >= 1500) {
                         if (BuildVars.LOGS_ENABLED) {
                             FileLog.d("QUEUE CHANNEL " + key + " UPDATES WAIT TIMEOUT - CHECK QUEUE");
                         }
@@ -4726,7 +4726,7 @@ public class MessagesController extends BaseController implements NotificationCe
             }
 
             for (int a = 0; a < 3; a++) {
-                if (getUpdatesStartTime(a) != 0 && getUpdatesStartTime(a) + 1500 < currentTime) {
+                if (getUpdatesStartTime(a) != 0 && Math.abs(currentTime - getUpdatesStartTime(a)) >= 1500) {
                     if (BuildVars.LOGS_ENABLED) {
                         FileLog.d(a + " QUEUE UPDATES WAIT TIMEOUT - CHECK QUEUE");
                     }
@@ -5779,6 +5779,7 @@ public class MessagesController extends BaseController implements NotificationCe
         if (BuildVars.LOGS_ENABLED) {
             FileLog.d("processLoadedMessages size " + messagesRes.messages.size() + " in chat " + dialogId + " count " + count + " max_id " + max_id + " cache " + isCache + " guid " + classGuid + " load_type " + load_type + " last_message_id " + last_message_id + " isChannel " + isChannel + " index " + loadIndex + " firstUnread " + first_unread + " unread_count " + unread_count + " last_date " + last_date + " queryFromServer " + queryFromServer);
         }
+        long startProcessTime = SystemClock.elapsedRealtime();
         boolean createDialog = false;
         if (messagesRes instanceof TLRPC.TL_messages_channelMessages) {
             int channelId = -(int) dialogId;
@@ -5897,10 +5898,13 @@ public class MessagesController extends BaseController implements NotificationCe
         final ArrayList<Integer> messagesToReload = new ArrayList<>();
         final HashMap<String, ArrayList<MessageObject>> webpagesToReload = new HashMap<>();
         TLRPC.InputChannel inputChannel = null;
+        long fileProcessTime = 0;
         for (int a = 0; a < size; a++) {
             TLRPC.Message message = messagesRes.messages.get(a);
             message.dialog_id = dialogId;
+            long checkFileTime = SystemClock.elapsedRealtime();
             MessageObject messageObject = new MessageObject(currentAccount, message, usersDict, chatsDict, true, true);
+            fileProcessTime += (SystemClock.elapsedRealtime() - checkFileTime);
             messageObject.scheduled = mode == 1;
             objects.add(messageObject);
             if (isCache) {
@@ -5924,6 +5928,9 @@ public class MessagesController extends BaseController implements NotificationCe
                     }
                 }
             }
+        }
+        if (BuildVars.LOGS_ENABLED) {
+            FileLog.d("process time = " + (SystemClock.elapsedRealtime() - startProcessTime) + " file time = " + fileProcessTime + " for dialog = " + dialogId);
         }
         AndroidUtilities.runOnUIThread(() -> {
             putUsers(messagesRes.users, isCache);
@@ -7230,7 +7237,7 @@ public class MessagesController extends BaseController implements NotificationCe
                                 }
                             }
                         } else {
-                            if (newMsg == null && oldMsg.isSent() || newMsg != null && newMsg.messageOwner.date > oldMsg.messageOwner.date) {
+                            if (newMsg == null && oldMsg.getId() > 0 || newMsg != null && newMsg.messageOwner.date > oldMsg.messageOwner.date) {
                                 dialogs_dict.put(key, value);
                                 dialogMessage.put(key, newMsg);
                                 if (oldMsg.messageOwner.peer_id.channel_id == 0) {
@@ -12435,7 +12442,7 @@ public class MessagesController extends BaseController implements NotificationCe
                         TLRPC.TL_updateGroupCallParticipants update = (TLRPC.TL_updateGroupCallParticipants) baseUpdate;
                         ChatObject.Call call = groupCalls.get(update.call.id);
                         if (call != null) {
-                            call.processParticipantsUpdate(getAccountInstance(), update);
+                            call.processParticipantsUpdate(update, false);
                         }
                         if (VoIPService.getSharedInstance() != null) {
                             VoIPService.getSharedInstance().onGroupCallParticipantsUpdate(update);

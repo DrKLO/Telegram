@@ -9,6 +9,7 @@
 package org.telegram.messenger;
 
 import android.content.SharedPreferences;
+import android.os.SystemClock;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.TextUtils;
@@ -6016,6 +6017,7 @@ public class MessagesStorage extends BaseController {
         boolean isEnd = false;
         int num = dialogId == 777000 ? 10 : 1;
         int messagesCount = 0;
+        long startLoadTime = SystemClock.elapsedRealtime();
         try {
             ArrayList<Integer> usersToLoad = new ArrayList<>();
             ArrayList<Integer> chatsToLoad = new ArrayList<>();
@@ -6697,6 +6699,9 @@ public class MessagesStorage extends BaseController {
             res.chats.clear();
             res.users.clear();
             FileLog.e(e);
+        }
+        if (BuildVars.LOGS_ENABLED) {
+            FileLog.d("messages load time = " + (SystemClock.elapsedRealtime() - startLoadTime) + " for dialog = " + dialogId);
         }
         int countQueryFinal = count_query;
         int maxIdOverrideFinal = max_id_override;
@@ -8514,7 +8519,7 @@ public class MessagesStorage extends BaseController {
         });
     }
 
-    private long[] updateMessageStateAndIdInternal(long random_id, Integer _oldId, int newId, int date, int channelId, int scheduled) {
+    private long[] updateMessageStateAndIdInternal(long random_id, Long _oldId, int newId, int date, int channelId, int scheduled) {
         SQLiteCursor cursor = null;
         long oldMessageId;
         long newMessageId = newId;
@@ -8523,7 +8528,7 @@ public class MessagesStorage extends BaseController {
             try {
                 cursor = database.queryFinalized(String.format(Locale.US, "SELECT mid FROM randoms WHERE random_id = %d LIMIT 1", random_id));
                 if (cursor.next()) {
-                    _oldId = cursor.intValue(0);
+                    _oldId = cursor.longValue(0);
                 }
             } catch (Exception e) {
                 FileLog.e(e);
@@ -8535,11 +8540,48 @@ public class MessagesStorage extends BaseController {
             if (_oldId == null) {
                 return null;
             }
+            if (channelId == 0) {
+                channelId = (int) (_oldId >> 32);
+            }
         }
         oldMessageId = _oldId;
         if (channelId != 0) {
             oldMessageId |= ((long) channelId) << 32;
             newMessageId |= ((long) channelId) << 32;
+        }
+        if (_oldId < 0 && scheduled == 1) {
+            SQLitePreparedStatement state = null;
+            try {
+                state = database.executeFast("UPDATE randoms SET mid = ? WHERE random_id = ? and mid = ?");
+                state.bindLong(1, newMessageId);
+                state.bindLong(2, random_id);
+                state.bindLong(3, oldMessageId);
+                state.step();
+            } catch (Exception e) {
+                FileLog.e(e);
+            } finally {
+                if (state != null) {
+                    state.dispose();
+                }
+            }
+        } else if (_oldId > 0) {
+            TLRPC.TL_updateDeleteScheduledMessages update = new TLRPC.TL_updateDeleteScheduledMessages();
+            update.messages.add((int) oldMessageId);
+            if (channelId != 0) {
+                update.peer = new TLRPC.TL_peerChannel();
+                update.peer.channel_id = channelId;
+            } else {
+                update.peer = new TLRPC.TL_peerUser();
+            }
+            TLRPC.TL_updates updates = new TLRPC.TL_updates();
+            updates.updates.add(update);
+            Utilities.stageQueue.postRunnable(() -> getMessagesController().processUpdates(updates, false));
+            try {
+                database.executeFast(String.format(Locale.US, "DELETE FROM randoms WHERE random_id = %d AND mid = %d", random_id, _oldId)).stepThis().dispose();
+            } catch (Exception e) {
+                FileLog.e(e);
+            }
+            return null;
         }
 
         long did = 0;
@@ -8671,7 +8713,7 @@ public class MessagesStorage extends BaseController {
         }
     }
 
-    public long[] updateMessageStateAndId(final long random_id, final Integer _oldId, final int newId, final int date, boolean useQueue, final int channelId, int scheduled) {
+    public long[] updateMessageStateAndId(final long random_id, final Long _oldId, final int newId, final int date, boolean useQueue, final int channelId, int scheduled) {
         if (useQueue) {
             storageQueue.postRunnable(() -> updateMessageStateAndIdInternal(random_id, _oldId, newId, date, channelId, scheduled));
         } else {

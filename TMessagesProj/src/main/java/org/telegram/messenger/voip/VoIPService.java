@@ -35,6 +35,7 @@ import android.widget.Toast;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
+import org.telegram.messenger.AccountInstance;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.BuildVars;
@@ -860,32 +861,6 @@ public class VoIPService extends VoIPBaseService {
 				req.reason = new TLRPC.TL_phoneCallDiscardReasonHangup();
 				break;
 		}
-		final boolean wasNotConnected = ConnectionsManager.getInstance(currentAccount).getConnectionState() != ConnectionsManager.ConnectionStateConnected;
-		final Runnable stopper;
-		if (wasNotConnected) {
-			if (onDone != null) {
-				onDone.run();
-			}
-			callEnded();
-			stopper = null;
-		} else {
-			stopper = new Runnable() {
-				private boolean done = false;
-
-				@Override
-				public void run() {
-					if (done) {
-						return;
-					}
-					done = true;
-					if (onDone != null) {
-						onDone.run();
-					}
-					callEnded();
-				}
-			};
-			AndroidUtilities.runOnUIThread(stopper, (int) (Instance.getGlobalServerConfig().hangupUiTimeout * 1000));
-		}
 		ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> {
 			if (error != null) {
 				if (BuildVars.LOGS_ENABLED) {
@@ -900,13 +875,9 @@ public class VoIPService extends VoIPBaseService {
 					FileLog.d("phone.discardCall " + response);
 				}
 			}
-			if (!wasNotConnected) {
-				AndroidUtilities.cancelRunOnUIThread(stopper);
-				if (onDone != null) {
-					onDone.run();
-				}
-			}
 		}, ConnectionsManager.RequestFlagFailOnServerErrors);
+		onDestroyRunnable = onDone;
+		callEnded();
 	}
 
 	public void onSignalingData(TLRPC.TL_updatePhoneCallSignalingData data) {
@@ -1222,7 +1193,7 @@ public class VoIPService extends VoIPBaseService {
 			groupCall.call.version = 1;
 			groupCall.call.can_change_join_muted = true;
 			groupCall.chatId = chat.id;
-			groupCall.currentAccount = currentAccount;
+			groupCall.currentAccount = AccountInstance.getInstance(currentAccount);
 
 			dispatchStateChanged(STATE_CREATING);
 			TLRPC.TL_phone_createGroupCall req = new TLRPC.TL_phone_createGroupCall();

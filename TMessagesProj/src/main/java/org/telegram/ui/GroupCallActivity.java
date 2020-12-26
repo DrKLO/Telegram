@@ -61,7 +61,6 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
-import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
 import org.telegram.messenger.Utilities;
 import org.telegram.messenger.voip.VoIPBaseService;
@@ -2125,7 +2124,7 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
             VoIPService.getSharedInstance().hangUp(discard ? 1 : 0);
         }
         if (call != null) {
-            int selfUserId = UserConfig.getInstance(call.currentAccount).clientUserId;
+            int selfUserId = call.currentAccount.getUserConfig().clientUserId;
             TLRPC.TL_groupCallParticipant participant = call.participants.get(selfUserId);
             if (participant != null) {
                 call.participants.delete(selfUserId);

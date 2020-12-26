@@ -132,7 +132,7 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter {
     public int getItemCount() {
         ArrayList<TLRPC.Dialog> array = DialogsActivity.getDialogsArray(currentAccount, dialogsType, folderId, dialogsListFrozen);
         int dialogsCount = array.size();
-        if (dialogsType != 7 && dialogsType != 8 && dialogsCount == 0 && (folderId != 0 || MessagesController.getInstance(currentAccount).isLoadingDialogs(folderId))) {
+        if (dialogsType != 7 && dialogsType != 8 && dialogsCount == 0 && (folderId != 0 || MessagesController.getInstance(currentAccount).isLoadingDialogs(folderId) || !MessagesController.getInstance(currentAccount).isDialogsEndReached(folderId))) {
             onlineContacts = null;
             if (folderId == 1 && showArchiveHint) {
                 return (currentCount = 2);
