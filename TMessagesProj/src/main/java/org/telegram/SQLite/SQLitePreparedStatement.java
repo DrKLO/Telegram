@@ -34,10 +34,12 @@ public class SQLitePreparedStatement {
         if (BuildVars.LOGS_ENABLED) {
             query = sql;
             startTime = SystemClock.elapsedRealtime();
-            /*if (hashMap == null) {
-                hashMap = new HashMap<>();
-            }
-            hashMap.put(this, sql);*/
+            /*if (BuildVars.DEBUG_PRIVATE_VERSION) {
+                if (hashMap == null) {
+                    hashMap = new HashMap<>();
+                }
+                hashMap.put(this, sql);
+            }*/
         }
     }
 
@@ -108,7 +110,7 @@ public class SQLitePreparedStatement {
             }
         }
         try {
-            /*if (BuildVars.DEBUG_VERSION) {
+            /*if (BuildVars.DEBUG_PRIVATE_VERSION) {
                 hashMap.remove(this);
             }*/
             isFinalized = true;

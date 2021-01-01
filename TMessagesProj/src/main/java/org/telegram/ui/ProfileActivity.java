@@ -2080,6 +2080,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                         }
                         layoutManager.scrollToPositionWithOffset(pos, top - paddingTop);
                         layout = true;
+                    } else {
+                        layoutManager.scrollToPositionWithOffset(0, AndroidUtilities.dp(88) - paddingTop);
                     }
                     if (currentPaddingTop != paddingTop || listView.getPaddingBottom() != paddingBottom) {
                         listView.setPadding(0, paddingTop, 0, paddingBottom);
@@ -6630,10 +6632,15 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 case 8:
                     UserCell userCell = (UserCell) holder.itemView;
                     TLRPC.ChatParticipant part;
-                    if (!sortedUsers.isEmpty()) {
-                        part = chatInfo.participants.participants.get(sortedUsers.get(position - membersStartRow));
-                    } else {
-                        part = chatInfo.participants.participants.get(position - membersStartRow);
+                    try {
+                        if (!sortedUsers.isEmpty()) {
+                            part = chatInfo.participants.participants.get(sortedUsers.get(position - membersStartRow));
+                        } else {
+                            part = chatInfo.participants.participants.get(position - membersStartRow);
+                        }
+                    } catch (Exception e) {
+                        part = null;
+                        FileLog.e(e);
                     }
                     if (part != null) {
                         String role;
@@ -7362,8 +7369,10 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         arrayList.add(new ThemeDescription(null, 0, null, null, null, themeDelegate, Theme.key_profile_status));
         arrayList.add(new ThemeDescription(null, 0, null, null, null, themeDelegate, Theme.key_avatar_subtitleInProfileBlue));
 
-        arrayList.add(new ThemeDescription(mediaCounterTextView.getTextView(), ThemeDescription.FLAG_TEXTCOLOR, null, null, null, themeDelegate, Theme.key_player_actionBarSubtitle));
-        arrayList.add(new ThemeDescription(mediaCounterTextView.getNextTextView(), ThemeDescription.FLAG_TEXTCOLOR, null, null, null, themeDelegate, Theme.key_player_actionBarSubtitle));
+        if (mediaCounterTextView != null) {
+            arrayList.add(new ThemeDescription(mediaCounterTextView.getTextView(), ThemeDescription.FLAG_TEXTCOLOR, null, null, null, themeDelegate, Theme.key_player_actionBarSubtitle));
+            arrayList.add(new ThemeDescription(mediaCounterTextView.getNextTextView(), ThemeDescription.FLAG_TEXTCOLOR, null, null, null, themeDelegate, Theme.key_player_actionBarSubtitle));
+        }
 
         arrayList.add(new ThemeDescription(topView, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_avatar_backgroundActionBarBlue));
         arrayList.add(new ThemeDescription(listView, ThemeDescription.FLAG_SELECTOR, null, null, null, null, Theme.key_listSelector));

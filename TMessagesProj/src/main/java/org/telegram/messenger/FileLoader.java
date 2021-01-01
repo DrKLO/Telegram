@@ -1029,6 +1029,10 @@ public class FileLoader extends BaseController {
     }
 
     public static TLRPC.PhotoSize getClosestPhotoSizeWithSize(ArrayList<TLRPC.PhotoSize> sizes, int side, boolean byMinSide) {
+        return getClosestPhotoSizeWithSize(sizes, side, byMinSide, null);
+    }
+
+    public static TLRPC.PhotoSize getClosestPhotoSizeWithSize(ArrayList<TLRPC.PhotoSize> sizes, int side, boolean byMinSide, TLRPC.PhotoSize toIgnore) {
         if (sizes == null || sizes.isEmpty()) {
             return null;
         }
@@ -1036,7 +1040,7 @@ public class FileLoader extends BaseController {
         TLRPC.PhotoSize closestObject = null;
         for (int a = 0; a < sizes.size(); a++) {
             TLRPC.PhotoSize obj = sizes.get(a);
-            if (obj == null || obj instanceof TLRPC.TL_photoSizeEmpty || obj instanceof TLRPC.TL_photoPathSize) {
+            if (obj == null || obj == toIgnore || obj instanceof TLRPC.TL_photoSizeEmpty || obj instanceof TLRPC.TL_photoPathSize) {
                 continue;
             }
             if (byMinSide) {

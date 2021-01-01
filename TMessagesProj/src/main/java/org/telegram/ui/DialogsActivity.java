@@ -3069,7 +3069,13 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         }
 
         if (!onlySelect && initialDialogsType == 0) {
-            blurredView = new View(context);
+            blurredView = new View(context) {
+                @Override
+                public void setAlpha(float alpha) {
+                    super.setAlpha(alpha);
+                    fragmentView.invalidate();
+                }
+            };
             blurredView.setVisibility(View.GONE);
             contentView.addView(blurredView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
         }

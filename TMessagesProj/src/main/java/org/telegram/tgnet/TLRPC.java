@@ -18269,87 +18269,85 @@ public class TLRPC {
 		}
 	}
 
-	public static abstract class InputPaymentCredentials extends TLObject {
-		public int flags;
-		public boolean save;
-		public TL_dataJSON data;
-		public TL_dataJSON payment_token;
-		public String google_transaction_id;
-		public String id;
-		public byte[] tmp_password;
+    public static abstract class InputPaymentCredentials extends TLObject {
 
-		public static InputPaymentCredentials TLdeserialize(AbstractSerializedData stream, int constructor, boolean exception) {
-			InputPaymentCredentials result = null;
-			switch (constructor) {
-				case 0x3417d728:
-					result = new TL_inputPaymentCredentials();
-					break;
-				case 0xca05d50e:
-					result = new TL_inputPaymentCredentialsAndroidPay();
-					break;
-				case 0xc10eb2cf:
-					result = new TL_inputPaymentCredentialsSaved();
-					break;
-			}
-			if (result == null && exception) {
-				throw new RuntimeException(String.format("can't parse magic %x in InputPaymentCredentials", constructor));
-			}
-			if (result != null) {
-				result.readParams(stream, exception);
-			}
-			return result;
-		}
-	}
+        public int flags;
+        public boolean save;
+        public TL_dataJSON data;
+        public String id;
+        public byte[] tmp_password;
+        public TL_dataJSON payment_token;
 
-	public static class TL_inputPaymentCredentials extends InputPaymentCredentials {
-		public static int constructor = 0x3417d728;
+        public static InputPaymentCredentials TLdeserialize(AbstractSerializedData stream, int constructor, boolean exception) {
+            InputPaymentCredentials result = null;
+            switch (constructor) {
+                case 0x3417d728:
+                    result = new TL_inputPaymentCredentials();
+                    break;
+                case 0x8ac32801:
+                    result = new TL_inputPaymentCredentialsGooglePay();
+                    break;
+                case 0xc10eb2cf:
+                    result = new TL_inputPaymentCredentialsSaved();
+                    break;
+            }
+            if (result == null && exception) {
+                throw new RuntimeException(String.format("can't parse magic %x in InputPaymentCredentials", constructor));
+            }
+            if (result != null) {
+                result.readParams(stream, exception);
+            }
+            return result;
+        }
+    }
 
-
-		public void readParams(AbstractSerializedData stream, boolean exception) {
-			flags = stream.readInt32(exception);
-			save = (flags & 1) != 0;
-			data = TL_dataJSON.TLdeserialize(stream, stream.readInt32(exception), exception);
-		}
-
-		public void serializeToStream(AbstractSerializedData stream) {
-			stream.writeInt32(constructor);
-			flags = save ? (flags | 1) : (flags &~ 1);
-			stream.writeInt32(flags);
-			data.serializeToStream(stream);
-		}
-	}
-
-	public static class TL_inputPaymentCredentialsAndroidPay extends InputPaymentCredentials {
-		public static int constructor = 0xca05d50e;
+    public static class TL_inputPaymentCredentials extends InputPaymentCredentials {
+        public static int constructor = 0x3417d728;
 
 
-		public void readParams(AbstractSerializedData stream, boolean exception) {
-			payment_token = TL_dataJSON.TLdeserialize(stream, stream.readInt32(exception), exception);
-			google_transaction_id = stream.readString(exception);
-		}
+        public void readParams(AbstractSerializedData stream, boolean exception) {
+            flags = stream.readInt32(exception);
+            save = (flags & 1) != 0;
+            data = TL_dataJSON.TLdeserialize(stream, stream.readInt32(exception), exception);
+        }
 
-		public void serializeToStream(AbstractSerializedData stream) {
-			stream.writeInt32(constructor);
-			payment_token.serializeToStream(stream);
-			stream.writeString(google_transaction_id);
-		}
-	}
+        public void serializeToStream(AbstractSerializedData stream) {
+            stream.writeInt32(constructor);
+            flags = save ? (flags | 1) : (flags &~ 1);
+            stream.writeInt32(flags);
+            data.serializeToStream(stream);
+        }
+    }
 
-	public static class TL_inputPaymentCredentialsSaved extends InputPaymentCredentials {
-		public static int constructor = 0xc10eb2cf;
+    public static class TL_inputPaymentCredentialsGooglePay extends InputPaymentCredentials {
+        public static int constructor = 0x8ac32801;
 
 
-		public void readParams(AbstractSerializedData stream, boolean exception) {
-			id = stream.readString(exception);
-			tmp_password = stream.readByteArray(exception);
-		}
+        public void readParams(AbstractSerializedData stream, boolean exception) {
+            payment_token = TL_dataJSON.TLdeserialize(stream, stream.readInt32(exception), exception);
+        }
 
-		public void serializeToStream(AbstractSerializedData stream) {
-			stream.writeInt32(constructor);
-			stream.writeString(id);
-			stream.writeByteArray(tmp_password);
-		}
-	}
+        public void serializeToStream(AbstractSerializedData stream) {
+            stream.writeInt32(constructor);
+            payment_token.serializeToStream(stream);
+        }
+    }
+
+    public static class TL_inputPaymentCredentialsSaved extends InputPaymentCredentials {
+        public static int constructor = 0xc10eb2cf;
+
+
+        public void readParams(AbstractSerializedData stream, boolean exception) {
+            id = stream.readString(exception);
+            tmp_password = stream.readByteArray(exception);
+        }
+
+        public void serializeToStream(AbstractSerializedData stream) {
+            stream.writeInt32(constructor);
+            stream.writeString(id);
+            stream.writeByteArray(tmp_password);
+        }
+    }
 
 	public static class TL_exportedMessageLink extends TLObject {
 		public static int constructor = 0x5dab1af4;

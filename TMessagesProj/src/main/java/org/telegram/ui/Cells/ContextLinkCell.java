@@ -28,6 +28,7 @@ import android.view.animation.AccelerateInterpolator;
 import android.widget.FrameLayout;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.DocumentObject;
 import org.telegram.messenger.DownloadController;
 import org.telegram.messenger.Emoji;
 import org.telegram.messenger.FileLoader;
@@ -40,6 +41,7 @@ import org.telegram.messenger.MediaController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
+import org.telegram.messenger.SvgHelper;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.messenger.WebFile;
@@ -341,11 +343,20 @@ public class ContextLinkCell extends FrameLayout implements DownloadController.F
                 }
             } else {
                 if (currentPhotoObject != null) {
+                    SvgHelper.SvgDrawable svgThumb = DocumentObject.getSvgThumb(documentAttach, Theme.key_windowBackgroundGray, 1.0f);
                     if (MessageObject.canAutoplayAnimatedSticker(documentAttach)) {
-                        linkImageView.setImage(ImageLocation.getForDocument(documentAttach), "80_80", ImageLocation.getForDocument(currentPhotoObject, documentAttach), currentPhotoFilterThumb, currentPhotoObject.size, null, parentObject, 0);
+                        if (svgThumb != null) {
+                            linkImageView.setImage(ImageLocation.getForDocument(documentAttach), "80_80", svgThumb, currentPhotoObject.size, ext, parentObject, 0);
+                        } else {
+                            linkImageView.setImage(ImageLocation.getForDocument(documentAttach), "80_80", ImageLocation.getForDocument(currentPhotoObject, documentAttach), currentPhotoFilterThumb, currentPhotoObject.size, ext, parentObject, 0);
+                        }
                     } else {
                         if (documentAttach != null) {
-                            linkImageView.setImage(ImageLocation.getForDocument(currentPhotoObject, documentAttach), currentPhotoFilter, ImageLocation.getForPhoto(currentPhotoObjectThumb, photoAttach), currentPhotoFilterThumb, currentPhotoObject.size, ext, parentObject, 0);
+                            if (svgThumb != null) {
+                                linkImageView.setImage(ImageLocation.getForDocument(currentPhotoObject, documentAttach), currentPhotoFilter, svgThumb, currentPhotoObject.size, ext, parentObject, 0);
+                            } else {
+                                linkImageView.setImage(ImageLocation.getForDocument(currentPhotoObject, documentAttach), currentPhotoFilter, ImageLocation.getForPhoto(currentPhotoObjectThumb, photoAttach), currentPhotoFilterThumb, currentPhotoObject.size, ext, parentObject, 0);
+                            }
                         } else {
                             linkImageView.setImage(ImageLocation.getForPhoto(currentPhotoObject, photoAttach), currentPhotoFilter, ImageLocation.getForPhoto(currentPhotoObjectThumb, photoAttach), currentPhotoFilterThumb, currentPhotoObject.size, ext, parentObject, 0);
                         }

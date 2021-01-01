@@ -39,7 +39,6 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.Emoji;
 import org.telegram.messenger.FileLoader;

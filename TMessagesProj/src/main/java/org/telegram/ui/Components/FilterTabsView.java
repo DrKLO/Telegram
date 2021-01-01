@@ -20,17 +20,18 @@ import android.graphics.Paint;
 import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
+import android.os.Build;
 import android.os.SystemClock;
 import android.text.Layout;
 import android.text.SpannableStringBuilder;
 import android.text.StaticLayout;
 import android.text.TextPaint;
 import android.text.TextUtils;
-import android.util.Log;
 import android.util.Property;
 import android.util.SparseIntArray;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.FrameLayout;
 import android.widget.TextView;
 
@@ -169,6 +170,7 @@ public class FilterTabsView extends FrameLayout {
         public void setTab(Tab tab, int position) {
             currentTab = tab;
             currentPosition = position;
+            setContentDescription(tab.title);
             requestLayout();
         }
 
@@ -549,6 +551,17 @@ public class FilterTabsView extends FrameLayout {
             }
 
             return changed;
+        }
+
+        @Override
+        public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
+            super.onInitializeAccessibilityNodeInfo(info);
+            info.addAction(AccessibilityNodeInfo.ACTION_CLICK);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                info.addAction(new AccessibilityNodeInfo.AccessibilityAction(AccessibilityNodeInfo.ACTION_LONG_CLICK, LocaleController.getString("AccDescrOpenMenu2", R.string.AccDescrOpenMenu2)));
+            } else {
+                info.addAction(AccessibilityNodeInfo.ACTION_LONG_CLICK);
+            }
         }
     }
 

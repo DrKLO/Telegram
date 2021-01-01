@@ -188,7 +188,7 @@ public class WebRtcAudioTrack {
         try {
           audioTrack.stop();
           Logging.d(TAG, "AudioTrack.stop is done.");
-        } catch (IllegalStateException e) {
+        } catch (Exception e) {
           Logging.e(TAG, "AudioTrack.stop failed: " + e.getMessage());
         }
       }

@@ -671,4 +671,8 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
             info.addAction(new AccessibilityNodeInfo.AccessibilityAction(AccessibilityNodeInfo.ACTION_CLICK, LocaleController.getString("OpenProfile", R.string.OpenProfile)));
         }
     }
+
+    public SharedMediaLayout.SharedMediaPreloader getSharedMediaPreloader() {
+        return sharedMediaPreloader;
+    }
 }

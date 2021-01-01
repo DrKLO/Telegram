@@ -267,6 +267,7 @@ public class DialogCell extends BaseCell {
     private boolean statusDrawableAnimationInProgress;
     private ValueAnimator statusDrawableAnimator;
     long lastDialogChangedTime;
+    private int statusDrawableLeft;
 
     public static class BounceInterpolator implements Interpolator {
 
@@ -841,12 +842,8 @@ public class DialogCell extends BaseCell {
                     startPadding = statusDrawable.getIntrinsicWidth() + AndroidUtilities.dp(3);
                 }
                 SpannableStringBuilder spannableStringBuilder = new SpannableStringBuilder();
-                if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP && LocaleController.isRTL && (int) currentDialogId < 0) {
-                    spannableStringBuilder.append(TextUtils.replace(printingString, new String[]{"..."}, new String[]{""})).append(" ");
-                    spannableStringBuilder.setSpan(new FixedWidthSpan(startPadding), spannableStringBuilder.length() - 1, spannableStringBuilder.length(), 0);
-                } else {
-                    spannableStringBuilder.append(" ").append(TextUtils.replace(printingString, new String[]{"..."}, new String[]{""})).setSpan(new FixedWidthSpan(startPadding), 0, 1, 0);
-                }
+                spannableStringBuilder.append(" ").append(TextUtils.replace(printingString, new String[]{"..."}, new String[]{""})).setSpan(new FixedWidthSpan(startPadding), 0, 1, 0);
+
                 messageString = spannableStringBuilder;
                 currentMessagePaint = Theme.dialogs_messagePrintingPaint[paintIndex];
                 checkMessage = false;
@@ -1683,6 +1680,15 @@ public class DialogCell extends BaseCell {
                 FileLog.e(e);
             }
         }
+        if (messageLayout != null && printingStringType >= 0) {
+            float x1 = messageLayout.getPrimaryHorizontal(0);
+            float x2 = messageLayout.getPrimaryHorizontal(1);
+            if (x1 < x2) {
+                statusDrawableLeft = (int) (messageLeft + x1);
+            } else {
+                statusDrawableLeft = (int) (messageLeft + x2 + AndroidUtilities.dp(3));
+            }
+        }
     }
 
     private void drawCheckStatus(Canvas canvas, boolean drawClock, boolean drawCheck1, boolean drawCheck2, boolean moveCheck,  float alpha) {
@@ -2435,14 +2441,13 @@ public class DialogCell extends BaseCell {
                 StatusDrawable statusDrawable = Theme.getChatStatusDrawable(printingStringType);
                 if (statusDrawable != null) {
                     canvas.save();
-                    int left = (LocaleController.isRTL || messageLayout.isRtlCharAt(0)) ? getMeasuredWidth() - AndroidUtilities.dp(72) - statusDrawable.getIntrinsicWidth() : messageLeft;
                     if (printingStringType == 1 || printingStringType == 4) {
-                        canvas.translate(left, messageTop + (printingStringType == 1 ? AndroidUtilities.dp(1) : 0));
+                        canvas.translate(statusDrawableLeft, messageTop + (printingStringType == 1 ? AndroidUtilities.dp(1) : 0));
                     } else {
-                        canvas.translate(left, messageTop + (AndroidUtilities.dp(18) - statusDrawable.getIntrinsicHeight()) / 2f);
+                        canvas.translate(statusDrawableLeft, messageTop + (AndroidUtilities.dp(18) - statusDrawable.getIntrinsicHeight()) / 2f);
                     }
                     statusDrawable.draw(canvas);
-                    invalidate(left, messageTop, left + statusDrawable.getIntrinsicWidth(), messageTop + statusDrawable.getIntrinsicHeight());
+                    invalidate(statusDrawableLeft, messageTop, statusDrawableLeft + statusDrawable.getIntrinsicWidth(), messageTop + statusDrawable.getIntrinsicHeight());
                     canvas.restore();
                 }
             }
@@ -2965,8 +2970,12 @@ public class DialogCell extends BaseCell {
     @Override
     public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
         super.onInitializeAccessibilityNodeInfo(info);
-        info.addAction(AccessibilityNodeInfo.ACTION_CLICK);
-        info.addAction(AccessibilityNodeInfo.ACTION_LONG_CLICK);
+        if (currentDialogFolderId != 0 && archiveHidden) {
+            info.setVisibleToUser(false);
+        } else {
+            info.addAction(AccessibilityNodeInfo.ACTION_CLICK);
+            info.addAction(AccessibilityNodeInfo.ACTION_LONG_CLICK);
+        }
     }
 
     @Override

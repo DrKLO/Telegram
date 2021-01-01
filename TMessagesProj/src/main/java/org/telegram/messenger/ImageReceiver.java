@@ -1068,7 +1068,20 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
                 }
             }
         } else {
-            drawRegion.set(imageX, imageY, imageX + imageW, imageY + imageH);
+            if (isAspectFit) {
+                int bitmapW = drawable.getIntrinsicWidth();
+                int bitmapH = drawable.getIntrinsicHeight();
+                float realImageW = imageW - sideClip * 2;
+                float realImageH = imageH - sideClip * 2;
+                float scaleW = imageW == 0 ? 1.0f : (bitmapW / realImageW);
+                float scaleH = imageH == 0 ? 1.0f : (bitmapH / realImageH);
+                float scale = Math.max(scaleW, scaleH);
+                bitmapW /= scale;
+                bitmapH /= scale;
+                drawRegion.set(imageX + (imageW - bitmapW) / 2.0f, imageY + (imageH - bitmapH) / 2.0f, imageX + (imageW + bitmapW) / 2.0f, imageY + (imageH + bitmapH) / 2.0f);
+            } else {
+                drawRegion.set(imageX, imageY, imageX + imageW, imageY + imageH);
+            }
             drawable.setBounds((int) drawRegion.left, (int) drawRegion.top, (int) drawRegion.right, (int) drawRegion.bottom);
             if (isVisible) {
                 try {

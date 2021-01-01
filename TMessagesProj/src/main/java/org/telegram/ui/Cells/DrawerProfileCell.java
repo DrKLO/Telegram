@@ -26,6 +26,7 @@ import android.os.Build;
 import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
+import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -116,7 +117,17 @@ public class DrawerProfileCell extends FrameLayout {
             sunDrawable.setCurrentFrame(36);
         }
         sunDrawable.setPlayInDirectionOfCustomEndFrame(true);
-        darkThemeView = new RLottieImageView(context);
+        darkThemeView = new RLottieImageView(context) {
+            @Override
+            public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
+                super.onInitializeAccessibilityNodeInfo(info);
+                if (sunDrawable.getCustomEndFrame() == 0) {
+                    info.setText(LocaleController.getString("AccDescrSwitchToNightTheme", R.string.AccDescrSwitchToNightTheme));
+                } else {
+                    info.setText(LocaleController.getString("AccDescrSwitchToDayTheme", R.string.AccDescrSwitchToDayTheme));
+                }
+            }
+        };
         sunDrawable.beginApplyLayerColors();
         int color = Theme.getColor(Theme.key_chats_menuName);
         sunDrawable.setLayerColor("Sunny.**", color);

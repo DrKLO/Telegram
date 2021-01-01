@@ -533,7 +533,7 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
     }
 
     private void openSharingLocation(final LocationController.SharingLocationInfo info) {
-        if (info == null || fragment.getParentActivity() == null) {
+        if (info == null || !(fragment.getParentActivity() instanceof LaunchActivity)) {
             return;
         }
         LaunchActivity launchActivity = ((LaunchActivity) fragment.getParentActivity());

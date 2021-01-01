@@ -4960,6 +4960,7 @@ public class MessagesStorage extends BaseController {
                     } else {
                         SQLiteCursor cursor = database.queryFinalized(String.format(Locale.US, "SELECT COUNT(mid) FROM chat_pinned_v2 WHERE uid = %d AND mid IN (%s)", dialogId, TextUtils.join(",", ids)));
                         alreadyAdded = cursor.next() ? cursor.intValue(0) : 0;
+                        cursor.dispose();
                     }
                     SQLitePreparedStatement state = database.executeFast("REPLACE INTO chat_pinned_v2 VALUES(?, ?, ?)");
                     for (int a = 0, N = ids.size(); a < N; a++) {

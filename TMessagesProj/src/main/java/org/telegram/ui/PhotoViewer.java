@@ -524,6 +524,9 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         @Override
         public boolean onTouchEvent(@NonNull TextView widget, @NonNull Spannable buffer, @NonNull MotionEvent event) {
             try {
+                if (!imagesArrLocals.isEmpty()) {
+                    return false;
+                }
                 int action = event.getAction();
                 boolean result = false;
 

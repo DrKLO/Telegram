@@ -6971,6 +6971,9 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     } else {
                         getNotificationCenter().postNotificationName(NotificationCenter.didLoadPinnedMessages, dialog_id, ids, false, null, null, 0, 0, true);
                     }
+                    if (pinBulletin != null) {
+                        pinBulletin.hide();
+                    }
                     showPinBulletin = true;
                     int tag = ++pinBullerinTag;
                     int oldTotalPinnedCount = getPinnedMessagesCount();
@@ -9842,7 +9845,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             if (view instanceof ChatMessageCell) {
                 ChatMessageCell messageCell = (ChatMessageCell) view;
                 messageObject = messageCell.getMessageObject();
-                if (messageObject.getId() > maxVisibleId) {
+                if (messageObject.getDialogId() == dialog_id && messageObject.getId() > maxVisibleId) {
                     maxVisibleId = messageObject.getId();
                     maxVisibleMessageObject = messageObject;
                 }
@@ -9873,7 +9876,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 }
             } else if (view instanceof ChatActionCell) {
                 messageObject = ((ChatActionCell) view).getMessageObject();
-                if (messageObject != null) {
+                if (messageObject != null && messageObject.getDialogId() == dialog_id && messageObject.getId() > maxVisibleId) {
                     maxVisibleId = Math.max(maxVisibleId, messageObject.getId());
                 }
             } else if (view instanceof BotHelpCell) {
@@ -18485,6 +18488,9 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         if (messageObject == null) {
             return;
         }
+        if (pinBulletin != null) {
+            pinBulletin.hide(false);
+        }
         ArrayList<MessageObject> objects = new ArrayList<>();
         objects.add(selectedObject);
         ArrayList<Integer> ids = new ArrayList<>();
@@ -18747,7 +18753,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                         messageObjects.add(selectedObject);
                     }
                     MediaController.saveFilesFromMessages(getParentActivity(), getAccountInstance(), messageObjects, (count) -> {
-                        if (getParentActivity() == null) {
+                        if (getParentActivity() == null || fragmentView == null) {
                             return;
                         }
                         if (count > 0) {
@@ -19956,7 +19962,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                         args.putLong("dialog_id", dialog_id);
                     }
                 }
-                ProfileActivity fragment = new ProfileActivity(args);
+                ProfileActivity fragment = new ProfileActivity(args, avatarContainer.getSharedMediaPreloader());
                 fragment.setPlayProfileAnimation(1);
                 fragment.setChatInfo(chatInfo);
                 fragment.setUserInfo(userInfo);

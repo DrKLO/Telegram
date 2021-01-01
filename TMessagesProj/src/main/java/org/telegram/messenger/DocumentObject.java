@@ -70,6 +70,9 @@ public class DocumentObject {
     }
 
     public static SvgHelper.SvgDrawable getSvgThumb(TLRPC.Document document, String colorKey, float alpha, float zoom) {
+        if (document == null) {
+            return null;
+        }
         SvgHelper.SvgDrawable pathThumb = null;
         for (int b = 0, N2 = document.thumbs.size(); b < N2; b++) {
             TLRPC.PhotoSize size = document.thumbs.get(b);

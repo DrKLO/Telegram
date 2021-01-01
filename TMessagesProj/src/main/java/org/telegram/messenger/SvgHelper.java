@@ -122,6 +122,16 @@ public class SvgHelper {
         private float crossfadeAlpha;
 
         @Override
+        public int getIntrinsicHeight() {
+            return width;
+        }
+
+        @Override
+        public int getIntrinsicWidth() {
+            return height;
+        }
+
+        @Override
         public void draw(Canvas canvas) {
             if (currentColorKey != null) {
                 setupGradient(currentColorKey, colorAlpha);

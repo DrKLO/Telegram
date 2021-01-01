@@ -3870,6 +3870,8 @@
     <string name="AccDescrOpenInPhotoViewer">Open in photo viewer</string>
     <string name="AccDescrMusicInfo">%2$s by %1$s</string>
     <string name="AccDescrMoreOptions">More options</string>
+    <string name="AccDescrSwitchToNightTheme">Switch to night theme</string>
+    <string name="AccDescrSwitchToDayTheme">Switch to day theme</string>
     <string name="AccActionPlay">Play</string>
     <string name="AccActionPause">Pause</string>
     <string name="AccActionDownload">Download</string>
