@@ -8,7 +8,7 @@ def compareFiles(first, second):
 		if firstBytes != secondBytes:
 			return False
 
-		if firstBytes == b"":
+		if firstBytes == "b":
 			break
 
 	return True
