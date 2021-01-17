@@ -308,7 +308,7 @@ public class BubbleActivity extends Activity implements ActionBarLayout.ActionBa
         } else if (drawerLayoutContainer.isDrawerOpened()) {
             drawerLayoutContainer.closeDrawer(false);
         } else {
-            super.onBackPressed()
+            super.onBackPressed();
         }
     }
 
