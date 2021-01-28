@@ -3,6 +3,7 @@ package org.telegram.ui.ActionBar;
 import android.content.Context;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
+import android.graphics.drawable.Drawable;
 import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -19,6 +20,7 @@ import org.telegram.ui.Components.LayoutHelper;
 public class ActionBarMenuSubItem extends FrameLayout {
 
     private TextView textView;
+    private TextView subtextView;
     private ImageView imageView;
     private ImageView checkView;
 
@@ -82,9 +84,17 @@ public class ActionBarMenuSubItem extends FrameLayout {
     }
 
     public void setTextAndIcon(CharSequence text, int icon) {
+        setTextAndIcon(text, icon, null);
+    }
+
+    public void setTextAndIcon(CharSequence text, int icon, Drawable iconDrawable) {
         textView.setText(text);
-        if (icon != 0 || checkView != null) {
-            imageView.setImageResource(icon);
+        if (icon != 0 || iconDrawable != null || checkView != null) {
+            if (iconDrawable != null) {
+                imageView.setImageDrawable(iconDrawable);
+            } else {
+                imageView.setImageResource(icon);
+            }
             imageView.setVisibility(VISIBLE);
             textView.setPadding(LocaleController.isRTL ? 0 : AndroidUtilities.dp(43), 0, LocaleController.isRTL ? AndroidUtilities.dp(43) : 0, 0);
         } else {
@@ -118,8 +128,36 @@ public class ActionBarMenuSubItem extends FrameLayout {
         textView.setText(text);
     }
 
+    public void setSubtext(String text) {
+        if (subtextView == null) {
+            subtextView = new TextView(getContext());
+            subtextView.setLines(1);
+            subtextView.setSingleLine(true);
+            subtextView.setGravity(Gravity.LEFT);
+            subtextView.setEllipsize(TextUtils.TruncateAt.END);
+            subtextView.setTextColor(0xff7C8286);
+            subtextView.setVisibility(GONE);
+            subtextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
+            subtextView.setPadding(LocaleController.isRTL ? 0 : AndroidUtilities.dp(43), 0, LocaleController.isRTL ? AndroidUtilities.dp(43) : 0, 0);
+            addView(subtextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL, 0, 10, 0, 0));
+        }
+        boolean visible = !TextUtils.isEmpty(text);
+        boolean oldVisible = subtextView.getVisibility() == VISIBLE;
+        if (visible != oldVisible) {
+            subtextView.setVisibility(visible ? VISIBLE : GONE);
+            FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) textView.getLayoutParams();
+            layoutParams.bottomMargin = visible ? AndroidUtilities.dp(10) : 0;
+            textView.setLayoutParams(layoutParams);
+        }
+        subtextView.setText(text);
+    }
+
     public TextView getTextView() {
         return textView;
+    }
+
+    public ImageView getImageView() {
+        return imageView;
     }
 
     public void setSelectorColor(int selectorColor) {

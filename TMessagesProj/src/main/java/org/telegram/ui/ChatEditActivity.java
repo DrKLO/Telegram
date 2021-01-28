@@ -44,7 +44,6 @@ import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.MessagesStorage;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
-import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
@@ -108,6 +107,7 @@ public class ChatEditActivity extends BaseFragment implements ImageUpdater.Image
 
     private LinearLayout infoContainer;
     private TextCell membersCell;
+    private TextCell inviteLinksCell;
     private TextCell adminCell;
     private TextCell blockCell;
     private TextCell logCell;
@@ -209,7 +209,26 @@ public class ChatEditActivity extends BaseFragment implements ImageUpdater.Image
         signMessages = currentChat.signatures;
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.chatInfoDidLoad);
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.updateInterfaces);
+
+        if (info != null) {
+            loadLinksCount();
+        }
         return super.onFragmentCreate();
+    }
+
+    private void loadLinksCount() {
+//        TLRPC.TL_messages_getExportedChatInvites req = new TLRPC.TL_messages_getExportedChatInvites();
+//        req.peer = getMessagesController().getInputPeer(-chatId);
+//        req.admin_id = getMessagesController().getInputUser(getUserConfig().getCurrentUser());
+//        req.limit = 0;
+//        getConnectionsManager().sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
+//            if (error == null) {
+//                TLRPC.TL_messages_exportedChatInvites invites = (TLRPC.TL_messages_exportedChatInvites) response;
+//                info.invitesCount = invites.count;
+//                getMessagesStorage().saveChatLinksCount(chatId, info.invitesCount);
+//                updateFields(false);
+//            }
+//        }));
     }
 
     @Override
@@ -555,7 +574,7 @@ public class ChatEditActivity extends BaseFragment implements ImageUpdater.Image
                 MessagesController.getInstance(currentAccount).changeChatAvatar(chatId, null, null, null, 0, null, null, null);
                 showAvatarProgress(false, true);
                 avatarImage.setImage(null, null, avatarDrawable, currentChat);
-            }));
+            }, null));
             settingsContainer.addView(setAvatarCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
         }
 
@@ -753,6 +772,14 @@ public class ChatEditActivity extends BaseFragment implements ImageUpdater.Image
             presentFragment(fragment);
         });
 
+//        inviteLinksCell = new TextCell(context);
+//        inviteLinksCell.setBackgroundDrawable(Theme.getSelectorDrawable(false));
+//        inviteLinksCell.setOnClickListener(v -> {
+//            ManageLinksActivity fragment = new ManageLinksActivity(chatId);
+//            fragment.setInfo(info, info.exported_invite);
+//            presentFragment(fragment);
+//        });
+
         adminCell = new TextCell(context);
         adminCell.setBackgroundDrawable(Theme.getSelectorDrawable(false));
         adminCell.setOnClickListener(v -> {
@@ -785,6 +812,7 @@ public class ChatEditActivity extends BaseFragment implements ImageUpdater.Image
         if (!isChannel) {
             infoContainer.addView(blockCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
         }
+     //   infoContainer.addView(inviteLinksCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
         infoContainer.addView(adminCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
         infoContainer.addView(membersCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
         if (isChannel) {
@@ -832,20 +860,18 @@ public class ChatEditActivity extends BaseFragment implements ImageUpdater.Image
             deleteCell.setBackgroundDrawable(Theme.getSelectorDrawable(false));
             if (isChannel) {
                 deleteCell.setText(LocaleController.getString("ChannelDelete", R.string.ChannelDelete), false);
-            } else if (currentChat.megagroup) {
-                deleteCell.setText(LocaleController.getString("DeleteMega", R.string.DeleteMega), false);
             } else {
                 deleteCell.setText(LocaleController.getString("DeleteAndExitButton", R.string.DeleteAndExitButton), false);
             }
             deleteContainer.addView(deleteCell, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
-            deleteCell.setOnClickListener(v -> AlertsCreator.createClearOrDeleteDialogAlert(ChatEditActivity.this, false, true, false, currentChat, null, false, (param) -> {
+            deleteCell.setOnClickListener(v -> AlertsCreator.createClearOrDeleteDialogAlert(ChatEditActivity.this, false, true, false, currentChat, null, false, true, (param) -> {
                 if (AndroidUtilities.isTablet()) {
-                    NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.closeChats, -(long) chatId);
+                    getNotificationCenter().postNotificationName(NotificationCenter.closeChats, -(long) chatId);
                 } else {
-                    NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.closeChats);
+                    getNotificationCenter().postNotificationName(NotificationCenter.closeChats);
                 }
-                MessagesController.getInstance(currentAccount).deleteUserFromChat(chatId, MessagesController.getInstance(currentAccount).getUser(UserConfig.getInstance(currentAccount).getClientUserId()), info, true, false);
                 finishFragment();
+                getNotificationCenter().postNotificationName(NotificationCenter.needDeleteDialog, (long) -currentChat.id, null, currentChat, param);
             }));
 
             deleteInfoCell = new ShadowSectionCell(context);
@@ -917,9 +943,13 @@ public class ChatEditActivity extends BaseFragment implements ImageUpdater.Image
                 if (info == null && descriptionTextView != null) {
                     descriptionTextView.setText(chatFull.about);
                 }
+                boolean infoWasEmpty = info == null;
                 info = chatFull;
                 historyHidden = !ChatObject.isChannel(currentChat) || info.hidden_prehistory;
                 updateFields(false);
+                if (infoWasEmpty) {
+                    loadLinksCount();
+                }
             }
         } else if (id == NotificationCenter.updateInterfaces) {
             int mask = (Integer) args[0];
@@ -1324,6 +1354,11 @@ public class ChatEditActivity extends BaseFragment implements ImageUpdater.Image
                 }
                 adminCell.setTextAndIcon(LocaleController.getString("ChannelAdministrators", R.string.ChannelAdministrators), R.drawable.actions_addadmin, true);
             }
+//            if (info != null && info.invitesCount >= 0) {
+//                inviteLinksCell.setTextAndValueAndIcon(LocaleController.getString("InviteLinks", R.string.InviteLinks), Integer.toString(info.invitesCount), R.drawable.actions_link, true);
+//            } else {
+//                inviteLinksCell.setTextAndIcon(LocaleController.getString("InviteLinks", R.string.InviteLinks), R.drawable.actions_link, true);
+//            }
         }
 
         if (stickersCell != null && info != null) {
@@ -1361,6 +1396,10 @@ public class ChatEditActivity extends BaseFragment implements ImageUpdater.Image
         themeDescriptions.add(new ThemeDescription(adminCell, ThemeDescription.FLAG_SELECTOR, null, null, null, null, Theme.key_listSelector));
         themeDescriptions.add(new ThemeDescription(adminCell, ThemeDescription.FLAG_TEXTCOLOR, new Class[]{TextCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlackText));
         themeDescriptions.add(new ThemeDescription(adminCell, 0, new Class[]{TextCell.class}, new String[]{"imageView"}, null, null, null, Theme.key_windowBackgroundWhiteGrayIcon));
+//        themeDescriptions.add(new ThemeDescription(inviteLinksCell, ThemeDescription.FLAG_SELECTOR, null, null, null, null, Theme.key_listSelector));
+//        themeDescriptions.add(new ThemeDescription(inviteLinksCell, ThemeDescription.FLAG_TEXTCOLOR, new Class[]{TextCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlackText));
+//        themeDescriptions.add(new ThemeDescription(inviteLinksCell, 0, new Class[]{TextCell.class}, new String[]{"imageView"}, null, null, null, Theme.key_windowBackgroundWhiteGrayIcon));
+
         themeDescriptions.add(new ThemeDescription(blockCell, ThemeDescription.FLAG_SELECTOR, null, null, null, null, Theme.key_listSelector));
         themeDescriptions.add(new ThemeDescription(blockCell, ThemeDescription.FLAG_TEXTCOLOR, new Class[]{TextCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlackText));
         themeDescriptions.add(new ThemeDescription(blockCell, 0, new Class[]{TextCell.class}, new String[]{"imageView"}, null, null, null, Theme.key_windowBackgroundWhiteGrayIcon));

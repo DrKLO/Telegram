@@ -113,7 +113,7 @@ public class SessionsActivity extends BaseFragment implements NotificationCenter
     }
 
     @Override
-    public View createView(Context context) {
+    public View createView(Context context)  {
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
         actionBar.setAllowOverlayTitle(true);
         if (currentType == 0) {

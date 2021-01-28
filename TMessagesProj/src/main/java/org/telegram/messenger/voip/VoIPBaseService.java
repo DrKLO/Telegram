@@ -148,6 +148,7 @@ public abstract class VoIPBaseService extends Service implements SensorEventList
 	protected PowerManager.WakeLock cpuWakelock;
 	protected boolean isProximityNear;
 	protected boolean isHeadsetPlugged;
+	protected int previousAudioOutput;
 	protected ArrayList<StateListener> stateListeners = new ArrayList<>();
 	protected MediaPlayer ringtonePlayer;
 	protected Vibrator vibrator;
@@ -274,6 +275,22 @@ public abstract class VoIPBaseService extends Service implements SensorEventList
 				isHeadsetPlugged = intent.getIntExtra("state", 0) == 1;
 				if (isHeadsetPlugged && proximityWakelock != null && proximityWakelock.isHeld()) {
 					proximityWakelock.release();
+				}
+				if (isHeadsetPlugged) {
+					AudioManager am = (AudioManager) getSystemService(AUDIO_SERVICE);
+					if (am.isSpeakerphoneOn()) {
+						previousAudioOutput = 0;
+					} else if (am.isBluetoothScoOn()) {
+						previousAudioOutput = 2;
+					} else {
+						previousAudioOutput = 1;
+					}
+					setAudioOutput(1);
+				} else {
+					if (previousAudioOutput >= 0) {
+						setAudioOutput(previousAudioOutput);
+						previousAudioOutput = -1;
+					}
 				}
 				isProximityNear = false;
 				updateOutputGainControlState();
@@ -416,7 +433,7 @@ public abstract class VoIPBaseService extends Service implements SensorEventList
 				}
 			}
 			if (send) {
-				editCallMember(UserConfig.getInstance(currentAccount).getCurrentUser(), mute);
+				editCallMember(UserConfig.getInstance(currentAccount).getCurrentUser(), mute, -1);
 				Utilities.globalQueue.postRunnable(updateNotificationRunnable = () -> {
 					if (updateNotificationRunnable == null) {
 						return;
@@ -435,7 +452,7 @@ public abstract class VoIPBaseService extends Service implements SensorEventList
 		}
 	}
 
-	public void editCallMember(TLObject object, boolean mute) {
+	public void editCallMember(TLObject object, boolean mute, int volume) {
 		if (groupCall == null) {
 			return;
 		}
@@ -452,6 +469,10 @@ public abstract class VoIPBaseService extends Service implements SensorEventList
 			}
 		}
 		req.muted = mute;
+		if (volume >= 0) {
+			req.volume = volume;
+			req.flags |= 2;
+		}
 		int account = currentAccount;
 		AccountInstance.getInstance(account).getConnectionsManager().sendRequest(req, (response, error) -> {
 			if (response != null) {
@@ -1554,8 +1575,8 @@ public abstract class VoIPBaseService extends Service implements SensorEventList
 			if (groupCall == null) {
 				Utilities.globalQueue.postRunnable(() -> soundPool.play(spEndId, 1, 1, 0, 0, 1));
 			} else {
-				Utilities.globalQueue.postRunnable(() -> soundPool.play(spVoiceChatEndId, 1.0f, 1.0f, 0, 0, 1));
-				delay = 400;
+				Utilities.globalQueue.postRunnable(() -> soundPool.play(spVoiceChatEndId, 1.0f, 1.0f, 0, 0, 1), 100);
+				delay = 500;
 			}
 			AndroidUtilities.runOnUIThread(afterSoundRunnable, delay);
 		}

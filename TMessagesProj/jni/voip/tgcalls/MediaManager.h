@@ -164,6 +164,8 @@ private:
     
     float _currentAudioLevel = 0.0f;
     float _currentMyAudioLevel = 0.0f;
+    int _myAudioLevelPeakCount = 0;
+    int _myAudioLevelPeak = 0;
 
 	std::unique_ptr<MediaManager::NetworkInterfaceImpl> _audioNetworkInterface;
 	std::unique_ptr<MediaManager::NetworkInterfaceImpl> _videoNetworkInterface;

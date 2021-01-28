@@ -50,6 +50,7 @@ import android.provider.Settings;
 
 import androidx.core.content.FileProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 import androidx.viewpager.widget.ViewPager;
 
 import android.telephony.TelephonyManager;
@@ -65,6 +66,10 @@ import android.text.TextUtils;
 import android.text.method.LinkMovementMethod;
 import android.text.style.URLSpan;
 import android.text.util.Linkify;
+import android.transition.ChangeBounds;
+import android.transition.TransitionSet;
+import android.transition.TransitionValues;
+import android.transition.Visibility;
 import android.util.DisplayMetrics;
 import android.util.StateSet;
 import android.util.TypedValue;
@@ -107,12 +112,14 @@ import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBarLayout;
+import org.telegram.ui.ActionBar.ActionBarMenuItem;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.TextDetailSettingsCell;
 import org.telegram.ui.Components.BackgroundGradientDrawable;
+import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.ForegroundColorSpanThemable;
 import org.telegram.ui.Components.ForegroundDetector;
 import org.telegram.ui.Components.LayoutHelper;
@@ -3623,5 +3630,26 @@ public class AndroidUtilities {
             return true;
         }
         return false;
+    }
+
+    public static void updateVisibleRows(RecyclerListView listView) {
+        if (listView == null) {
+            return;
+        }
+        RecyclerView.Adapter adapter = listView.getAdapter();
+        if (adapter == null) {
+            return;
+        }
+        for (int i = 0; i < listView.getChildCount(); i++) {
+            View child = listView.getChildAt(i);
+            int p = listView.getChildAdapterPosition(child);
+            if (p >= 0) {
+                RecyclerView.ViewHolder holder = listView.getChildViewHolder(child);
+                if (holder == null || holder.shouldIgnore()) {
+                    continue;
+                }
+                adapter.onBindViewHolder(holder, p);
+            }
+        }
     }
 }

@@ -51,7 +51,6 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import androidx.core.graphics.ColorUtils;
-import androidx.core.view.ViewCompat;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ImageLocation;
@@ -67,6 +66,8 @@ import org.telegram.ui.Components.CombinedDrawable;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.EditTextBoldCursor;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.RLottieDrawable;
+import org.telegram.ui.Components.RLottieImageView;
 
 import java.util.ArrayList;
 
@@ -133,7 +134,7 @@ public class ActionBarMenuItem extends FrameLayout {
     private ArrayList<SearchFilterView> searchFilterViews = new ArrayList<>();
     private TextView searchFieldCaption;
     private ImageView clearButton;
-    protected ImageView iconView;
+    protected RLottieImageView iconView;
     protected TextView textView;
     private FrameLayout searchContainer;
     private boolean isSearchField;
@@ -188,7 +189,7 @@ public class ActionBarMenuItem extends FrameLayout {
             }
             addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT));
         } else {
-            iconView = new ImageView(context);
+            iconView = new RLottieImageView(context);
             iconView.setScaleType(ImageView.ScaleType.CENTER);
             iconView.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
             addView(iconView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
@@ -426,14 +427,18 @@ public class ActionBarMenuItem extends FrameLayout {
     }
 
     public ActionBarMenuSubItem addSubItem(int id, int icon, CharSequence text) {
-        return addSubItem(id, icon, text, false);
+        return addSubItem(id, icon, null, text, false);
     }
 
     public ActionBarMenuSubItem addSubItem(int id, int icon, CharSequence text, boolean needCheck) {
+        return addSubItem(id, icon, null, text, needCheck);
+    }
+
+    public ActionBarMenuSubItem addSubItem(int id, int icon, Drawable iconDrawable, CharSequence text, boolean needCheck) {
         createPopupLayout();
 
         ActionBarMenuSubItem cell = new ActionBarMenuSubItem(getContext(), needCheck, false, false);
-        cell.setTextAndIcon(text, icon);
+        cell.setTextAndIcon(text, icon, iconDrawable);
         cell.setMinimumWidth(AndroidUtilities.dp(196));
         cell.setTag(id);
         popupLayout.addView(cell);
@@ -839,10 +844,14 @@ public class ActionBarMenuItem extends FrameLayout {
         if (iconView == null) {
             return;
         }
-        iconView.setImageDrawable(drawable);
+        if (drawable instanceof RLottieDrawable) {
+            iconView.setAnimation((RLottieDrawable) drawable);
+        } else {
+            iconView.setImageDrawable(drawable);
+        }
     }
 
-    public ImageView getIconView() {
+    public RLottieImageView getIconView() {
         return iconView;
     }
 

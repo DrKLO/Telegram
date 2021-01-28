@@ -41,6 +41,7 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import androidx.core.view.accessibility.AccessibilityNodeInfoCompat;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -988,6 +989,15 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                     }
                     return getItemCount();
                 }
+
+                @Override
+                public void onInitializeAccessibilityNodeInfoForItem(RecyclerView.Recycler recycler, RecyclerView.State state, View host, AccessibilityNodeInfoCompat info) {
+                    super.onInitializeAccessibilityNodeInfoForItem(recycler, state, host, info);
+                    final AccessibilityNodeInfoCompat.CollectionItemInfoCompat itemInfo = info.getCollectionItemInfo();
+                    if (itemInfo != null && itemInfo.isHeading()) {
+                        info.setCollectionItemInfo(AccessibilityNodeInfoCompat.CollectionItemInfoCompat.obtain(itemInfo.getRowIndex(), itemInfo.getRowSpan(), itemInfo.getColumnIndex(), itemInfo.getColumnSpan(), false));
+                    }
+                }
             };
             layoutManager.setSpanSizeLookup(new GridLayoutManager.SpanSizeLookup() {
                 @Override
@@ -1254,7 +1264,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
     @Override
     protected void dispatchDraw(Canvas canvas) {
         super.dispatchDraw(canvas);
-        if (fragmentContextView != null && fragmentContextView.getCurrentStyle() == 3) {
+        if (fragmentContextView != null && fragmentContextView.isCallStyle()) {
             canvas.save();
             canvas.translate(fragmentContextView.getX(), fragmentContextView.getY());
             fragmentContextView.setDrawOverlay(true);
@@ -2461,41 +2471,41 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
         if (!profileActivity.isFragmentOpened) {
             animated = false;
         }
-        boolean changed = false;
+        int changed = 0;
         if ((chatUsersAdapter.chatInfo == null) == scrollSlidingTextTabStrip.hasTab(7)) {
-            changed = true;
+            changed++;
         }
         if ((hasMedia[0] <= 0) == scrollSlidingTextTabStrip.hasTab(0)) {
-            changed = true;
+            changed++;
         }
         if ((hasMedia[1] <= 0) == scrollSlidingTextTabStrip.hasTab(1)) {
-            changed = true;
+            changed++;
         }
         if ((int) dialog_id != 0) {
             if ((hasMedia[3] <= 0) == scrollSlidingTextTabStrip.hasTab(3)) {
-                changed = true;
+                changed++;
             }
             if ((hasMedia[4] <= 0) == scrollSlidingTextTabStrip.hasTab(4)) {
-                changed = true;
+                changed++;
             }
         } else {
             TLRPC.EncryptedChat currentEncryptedChat = profileActivity.getMessagesController().getEncryptedChat((int) (dialog_id >> 32));
             if (currentEncryptedChat != null && AndroidUtilities.getPeerLayerVersion(currentEncryptedChat.layer) >= 46) {
                 if ((hasMedia[4] <= 0) == scrollSlidingTextTabStrip.hasTab(4)) {
-                    changed = true;
+                    changed++;
                 }
             }
         }
         if ((hasMedia[2] <= 0) == scrollSlidingTextTabStrip.hasTab(2)) {
-            changed = true;
+            changed++;
         }
         if ((hasMedia[5] <= 0) == scrollSlidingTextTabStrip.hasTab(5)) {
-            changed = true;
+            changed++;
         }
         if ((hasMedia[6] <= 0) == scrollSlidingTextTabStrip.hasTab(6)) {
-            changed = true;
+            changed++;
         }
-        if (changed) {
+        if (changed > 0) {
             if (animated && Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
                 final TransitionSet transitionSet = new TransitionSet();
                 transitionSet.setOrdering(TransitionSet.ORDERING_TOGETHER);
@@ -2530,6 +2540,9 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                 scrollSlidingTextTabStrip.recordIndicatorParams();
             }
             SparseArray<View> idToView = scrollSlidingTextTabStrip.removeTabs();
+            if (changed > 3) {
+                idToView = null;
+            }
             if (chatUsersAdapter.chatInfo != null) {
                 if (!scrollSlidingTextTabStrip.hasTab(7)) {
                     scrollSlidingTextTabStrip.addTextTab(7, LocaleController.getString("GroupMembers", R.string.GroupMembers), idToView);
@@ -2912,10 +2925,10 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                     } else if (!cell.isLoading()) {
                         MessageObject messageObject = cell.getMessage();
                         profileActivity.getFileLoader().loadFile(document, messageObject, 0, 0);
-                        cell.updateFileExistIcon();
+                        cell.updateFileExistIcon(true);
                     } else {
                         profileActivity.getFileLoader().cancelLoadFile(document);
-                        cell.updateFileExistIcon();
+                        cell.updateFileExistIcon(true);
                     }
                 }
             } else if (selectedMode == 3) {
@@ -4033,6 +4046,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
             loading = true;
             notifyDataSetChanged();
             int reqId = profileActivity.getConnectionsManager().sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
+                int oldCount = getItemCount();
                 if (error == null) {
                     TLRPC.messages_Chats res = (TLRPC.messages_Chats) response;
                     profileActivity.getMessagesController().putChats(res.chats, false);
@@ -4046,7 +4060,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                     if (mediaPages[a].selectedType == 6) {
                         if (mediaPages[a].listView != null) {
                             final RecyclerListView listView = mediaPages[a].listView;
-                            if (firstLoaded) {
+                            if (firstLoaded || oldCount == 0) {
                                 animateItemsEnter(listView, 0);
                             }
                         }

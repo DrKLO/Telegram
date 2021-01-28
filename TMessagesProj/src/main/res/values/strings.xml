@@ -171,6 +171,7 @@
     <string name="DeleteChatUser">Delete chat</string>
     <string name="HiddenName">Deleted Account</string>
     <string name="SelectChat">Select Chat</string>
+    <string name="SelectChats">Select Chats</string>
     <string name="ForwardTo">Forward to...</string>
     <string name="DisappearingPhoto">Secret Photo</string>
     <string name="DisappearingVideo">Secret Video</string>
@@ -252,6 +253,34 @@
     <string name="SearchAllChatsShort">Chats</string>
     <string name="MessagePinnedHint">Message pinned</string>
     <string name="MessageUnpinnedHint">Message unpinned</string>
+    <string name="TapOnThePencil">Tap on the pencil to start a new chat</string>
+    <string name="CreateGroupForImport">Create a New Group to Import</string>
+    <string name="ImportMessages">Import Messages</string>
+    <string name="ImportErrorTitle">Import Error</string>
+    <string name="ImportErrorFileFormatInvalid">Invalid file format.</string>
+    <string name="ImportErrorFileLang">Unknown file language.</string>
+    <string name="ImportErrorNotAdmin">You must be an admin in the group to import messages.</string>
+    <string name="ImportErrorChatInvalidUser">The file format is for a group, but you selected a user.</string>
+    <string name="ImportErrorChatInvalidGroup">The file format is for a user, but you selected a group.</string>
+    <string name="ImportErrorUserBlocked">Unable to import messages due to privacy settings.</string>
+    <string name="Import">IMPORT</string>
+    <string name="ImportToUser">Do you want to import messages from **%1$s** to the chat with **%2$s**?</string>
+    <string name="ImportToUserNoTitle">Do you want to import messages to the chat with **%1$s**?</string>
+    <string name="ImportToChat">Do you want to import messages from **%1$s** to the group **%2$s**?</string>
+    <string name="ImportToChatNoTitle">Do you want to import messages to the group **%1$s**?</string>
+    <string name="ImportMutualError">You can only import messages into private chats with users with whom you are mutual contacts.</string>
+    <string name="ImportNotAdmin">You must be an admin in the group to import messages.</string>
+    <string name="ImportedInfo">This message was imported from another app. We can\'t guarantee it\'s real.</string>
+    <string name="ImportUploading">Importing messages and media... **%d%%**</string>
+    <string name="ImportImportingTitle">Importing chat</string>
+    <string name="ImportImportingInfo">Please keep Telegram open\nuntil the import is completed.</string>
+    <string name="ImportCount">%1$s of %2$s</string>
+    <string name="ImportDone">Done</string>
+    <string name="ImportDoneTitle">Chat imported successfully!</string>
+    <string name="ImportDoneInfo">Save space on your device by importing more chats to Telegram.</string>
+    <string name="ImporImportingService">Importing messages and media...</string>
+    <string name="ImportHeader">Import messages and media to...</string>
+    <string name="ImportHeaderContacts">Or choose one of your contacts</string>
     <!--channels-->
     <string name="SetAsAdmin">Promote to admin</string>
     <string name="EditAdminRights">Edit admin rights</string>
@@ -262,6 +291,7 @@
     <string name="MegaDeleteInfo">You will lose all messages in this group.</string>
     <string name="MegaAdminsInfo">You can add administrators to help you manage your group. Tap and hold to remove them.</string>
     <string name="MegaDeleteAlert">Wait! Deleting this group will remove all members and all messages will be lost. Delete the group anyway?</string>
+    <string name="DeleteGroupForAll">Delete the group for all members</string>
     <string name="ActionCreateMega">Group created</string>
     <string name="MegaAddedBy">un1 added you to this group</string>
     <string name="MegaLeaveAlert">Are you sure you want to leave the group?</string>
@@ -933,6 +963,7 @@
     <string name="ReportChat">Report</string>
     <string name="ReportChatSent">Report sent</string>
     <string name="ReportChatSpam">Spam</string>
+    <string name="ReportChatFakeAccount">Fake Account</string>
     <string name="ReportChatViolence">Violence</string>
     <string name="ReportChatPornography">Pornography</string>
     <string name="ReportChatChild">Child Abuse</string>
@@ -1014,6 +1045,7 @@
     <string name="MapPreviewProviderNobody">No previews</string>
     <string name="InstallGoogleMaps">Install Google Maps?</string>
     <string name="ScamMessage">SCAM</string>
+    <string name="FakeMessage">FAKE</string>
     <string name="ViaBot">via</string>
     <string name="MessageNotFound">Message doesn\'t exist</string>
     <string name="SlowModeHint">Slow Mode is enabled. You can send\nyour next message in %1$s</string>
@@ -1059,6 +1091,7 @@
     <string name="PsaHideChatAlertText">Are you sure you want to hide the selected chat?</string>
     <string name="PsaHide">Hide</string>
     <string name="NearbyPeopleGreetingsDescription">Send a message or tap on the greeting below to show that you are ready to chat</string>
+    <string name="NoMessagesGreetingsDescription">Send a message or tap the greeting below.</string>
     <string name="NearbyPeopleGreetingsMessage">%1$s is in %2$s</string>
     <string name="ChatDistanceToPeer">%1$s is %2$s</string>
     <string name="ChatWasMovedToMainList">The chat was moved to your main list.</string>
@@ -1089,6 +1122,20 @@
     <string name="HidePinnedMessages">HIDE PINNED MESSAGES</string>
     <string name="PinnedMessagesHidden">Pinned messages hidden</string>
     <string name="PinnedMessagesHiddenInfo">You will see the bar with pinned messages only if a new message is pinned.</string>
+    <string name="ImportedMessage">Imported</string>
+    <string name="AudioSpeedNormal">Audio will play at normal speed.</string>
+    <string name="AudioSpeedFast">Audio will play two times faster.</string>
+    <string name="MessageCopied">Message copied to clipboard.</string>
+    <string name="HintSent">Delivered</string>
+    <string name="HintRead">Read</string>
+    <string name="FwdMessageToSavedMessages">Message forwarded to **Saved Messages**.</string>
+    <string name="FwdMessagesToSavedMessages">Messages forwarded to **Saved Messages**.</string>
+    <string name="FwdMessageToGroup">Message forwarded to **%1$s**.</string>
+    <string name="FwdMessagesToGroup">Messages forwarded to **%1$s**.</string>
+    <string name="FwdMessageToUser">Message forwarded to **%1$s**.</string>
+    <string name="FwdMessagesToUser">Messages forwarded to **%1$s**.</string>
+    <string name="FwdMessageToChats">Message forwarded to **%1$s**.</string>
+    <string name="FwdMessagesToChats">Messages forwarded to **%1$s**.</string>
     <!--notification-->
     <string name="MessageLifetimeChanged">%1$s set the self-destruct timer to %2$s</string>
     <string name="MessageLifetimeChangedOutgoing">You set the self-destruct timer to %1$s</string>
@@ -1291,6 +1338,7 @@
     <string name="EmailCopied">Email copied to clipboard</string>
     <string name="InviteToGroupByLink">Invite to Group via Link</string>
     <string name="InviteLink">Invite Link</string>
+    <string name="InviteLinks">Invite Links</string>
     <string name="RevokeAlert">Are you sure you want to revoke this link? Once the link is revoked, no one will be able to join using it.</string>
     <string name="RevokeAlertNewLink">The previous invite link is now inactive. A new link has been generated.</string>
     <string name="RevokeButton">Revoke</string>
@@ -2851,6 +2899,7 @@
     <string name="SignUp">Sign Up</string>
     <string name="DeclineDeactivate">Decline &amp; Delete</string>
     <string name="Next">Next</string>
+    <string name="Enable">Enable</string>
     <!--messages-->
     <string name="ActionInviteYou">You joined the group via invite link</string>
     <string name="ActionInviteUser">un1 joined the group via invite link</string>
@@ -3194,6 +3243,11 @@
     <string name="VoipSettingsRingtone">Ringtone</string>
     <string name="VoipRingtoneInfo">You can customize the ringtone used when this contact calls you on Telegram.</string>
     <string name="Calls">Calls</string>
+    <string name="DeleteAllCalls">Delete all calls</string>
+    <string name="DeleteCalls">Delete calls</string>
+    <string name="DeleteCallsForEveryone">Delete for everyone</string>
+    <string name="DeleteAllCallsText">Do you want to delete all recent calls?</string>
+    <string name="DeleteSelectedCallsText">Do you want to delete selected calls from recent?</string>
     <string name="CustomP2PInfo">Peer-to-peer in calls will or will not be used with these users regardless of the settings above.</string>
     <string name="P2PEnabledWith">Use peer-to-peer with</string>
     <string name="WhoCanCallMe">Who can call me?</string>
@@ -3319,7 +3373,9 @@
     <string name="VoipGroupRemoveMemberAlertText">Do you want to remove %1$s from the group chat?</string>
     <string name="VoipGroupRemovedFromGroup">**%1$s** removed from the group.</string>
     <string name="VoipGroupUserCanNowSpeak">**%1$s** can now speak.</string>
+    <string name="VoipGroupUserCanNowSpeakForYou">**%1$s** is now unmuted for you.</string>
     <string name="VoipGroupUserCantNowSpeak">**%1$s** is now muted in this chat.</string>
+    <string name="VoipGroupUserCantNowSpeakForYou">**%1$s** is now muted in this chat for you.</string>
     <string name="VoipGroupMute">Mute</string>
     <string name="VoipGroupAllCanSpeak">New participants can speak</string>
     <string name="VoipGroupOnlyAdminsCanSpeak">New paricipants are muted</string>
@@ -3341,6 +3397,7 @@
     <string name="VoipGroupInviteText">Hey! Join our voice chat: %1$s</string>
     <string name="VoipGroupInviteMember">Invite Members</string>
     <string name="VoipGroupUserRemove">Remove</string>
+    <string name="VoipGroupOpenProfile">Open Profile</string>
     <string name="VoipGroupAllowToSpeak">Allow to speak</string>
     <string name="VoipGroupSearchMembers">Search members to invite...</string>
     <string name="VoipGroupCopyInviteLink">Copy Invite Link</string>
@@ -3351,7 +3408,50 @@
     <string name="VoipGroupAddMemberText">Do you want to add **%1$s** to **%2$s**?</string>
     <string name="VoipGroupInvitedUser">You invited **%1$s** to the voice chat.</string>
     <string name="VoipGroupAdd">Add</string>
+    <string name="VoipGroupVolume">Volume</string>
+    <string name="VoipGroupMuteForMe">Mute for me</string>
+    <string name="VoipGroupMutedForMe">Muted for me</string>
+    <string name="VoipGroupUnmuteForMe">Unmute for me</string>
     <string name="MembersTalkingNobody">Nobody talking</string>
+    <string name="VoipGroupRecordCall">Start recording</string>
+    <string name="VoipGroupStopRecordCall">Stop recording</string>
+    <!--invite links-->
+    <string name="ManageInviteLinks">Manage Invite Links</string>
+    <string name="ManageLinksInfoHelp">You can create additional invite links that have limited time or number of usages</string>
+    <string name="PrimaryLinkHelp">Anyone on Telegram will be able to join your group by following this link.</string>
+    <string name="EditLink">Edit link</string>
+    <string name="SaveLink">Save Link</string>
+    <string name="NoLimit">No limit</string>
+    <string name="LimitByPeriod">Limit by time period</string>
+    <string name="LimitNumberOfUses">Limit number of uses</string>
+    <string name="NewLink">New Link</string>
+    <string name="TimeLimitHint">Set custom duration</string>
+    <string name="UsesLimitHint">Enter custom limit</string>
+    <string name="TimeLimitHelp">Your can make the link expire after a certain time.</string>
+    <string name="UsesLimitHelp">You can make the link expire after it has been used for a certain number of times.</string>
+    <string name="NoOneJoinedYet">No one joined yet</string>
+    <string name="Expired">Expired</string>
+    <string name="GetQRCode">Get QR code</string>
+    <string name="LinkCreatedeBy">Link created by</string>
+    <string name="InviteByQRCode">Invite by QR Code</string>
+    <string name="ShareQrCode">Share QR Code</string>
+    <string name="Revoked">Revoked</string>
+    <string name="LinkExpiresIn">The link expires %s</string>
+    <string name="ExpireAfter">Expire after</string>
+    <string name="SetTimeLimit">Set Time Limit</string>
+    <string name="RevokedLinks">Revoked Links</string>
+    <string name="DeleteLink">Delete Link</string>
+    <string name="RevokedLink">Revoked Link</string>
+    <string name="LinkIsNoActive">This link is no longer active</string>
+    <string name="LinkIsExpired">This link is expired</string>
+    <string name="CreateNewLink">Create a New Link</string>
+    <string name="DeleteAllRevokedLinks">Delete All Revoked Links</string>
+    <string name="NoOneJoined">No one joined</string>
+    <string name="LinkLimitReached">Limit reached</string>
+    <string name="QRCodeLinkHelp">Everyone on Telegram can scan this code to join your group</string>
+    <string name="DeleteLinkHelp">This will delete link.</string>
+    <string name="DeleteAllRevokedLinkHelp">This will delete all revoked links.</string>
+    <string name="CreateNewLinkHelp">You can generate invite links that will expire after they\'ve been used.</string>
     <!--contacts shortcuts-->
     <string name="ContactShortcutMessage">Message %1$s</string>
     <string name="ContactShortcutVoiceCall">Voice call %1$s</string>
@@ -3387,6 +3487,12 @@
     <string name="InviteTextNum_few">Hey, I\'m using Telegram to chat – and so are %1$d of our other contacts. Join us! Download it here: %2$s</string>
     <string name="InviteTextNum_many">Hey, I\'m using Telegram to chat – and so are %1$d of our other contacts. Join us! Download it here: %2$s</string>
     <string name="InviteTextNum_other">Hey, I\'m using Telegram to chat – and so are %1$d of our other contacts. Join us! Download it here: %2$s</string>
+    <string name="PeopleJoined_zero">%1$d people joined</string>
+    <string name="PeopleJoined_one">%1$d people joined</string>
+    <string name="PeopleJoined_two">%1$d people joined</string>
+    <string name="PeopleJoined_few">%1$d people joined</string>
+    <string name="PeopleJoined_many">%1$d people joined</string>
+    <string name="PeopleJoined_other">%1$d people joined</string>
     <string name="Chats_zero">%1$d chats</string>
     <string name="Chats_one">%1$d chat</string>
     <string name="Chats_two">%1$d chats</string>
@@ -3981,6 +4087,7 @@
     <string name="AccDescrShareInChats_many">Share in %1$d chats</string>
     <string name="AccDescrShareInChats_other">Share in %1$d chats</string>
     <string name="AccDescrQuizCorrectAnswer">Correct answer</string>
+    <string name="AccDescrQuizExplanation">Explanation</string>
     <string name="AccDescrPipMode">Picture-in-Picture mode</string>
     <string name="AccDescrVoipMicOn">Microphone is on</string>
     <string name="AccDescrVoipMicOff">Microphone is off</string>
@@ -3989,6 +4096,8 @@
     <string name="AccDescrVoipCamOn">Camera is on</string>
     <string name="AccDescrVoipCamOff">Camera is off</string>
     <string name="AccPinnedMessagesList">Pinned messages list</string>
+    <string name="AccSwitchToFullscreen">Switch to fullscreen</string>
+    <string name="AccExitFullscreen">Exit fullscreen</string>
     <!--date formatters-->
     <string name="formatterMonthYear">MMM yyyy</string>
     <string name="formatterStats12H">MMM dd yyyy, h:mm a</string>
@@ -4017,5 +4126,4 @@
     <string name="RemindTodayAt">\'Remind today at\' HH:mm</string>
     <string name="RemindDayAt">\'Remind on\' MMM d \'at\' HH:mm</string>
     <string name="RemindDayYearAt">\'Remind on\' MMM d yyyy \'at\' HH:mm</string>
-    <string name="Enable">Enable</string>
 </resources>

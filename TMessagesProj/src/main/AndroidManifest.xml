@@ -199,6 +199,24 @@
                 <category android:name="android.intent.category.DEFAULT"/>
             </intent-filter>
         </activity>
+<!--        <activity-->
+<!--            android:name="org.telegram.ui.ShortcutWidgetConfigActivity"-->
+<!--            android:configChanges="keyboard|keyboardHidden|orientation|screenSize|uiMode"-->
+<!--            android:hardwareAccelerated="@bool/useHardwareAcceleration"-->
+<!--            android:windowSoftInputMode="adjustPan">-->
+<!--            <intent-filter android:icon="@mipmap/ic_launcher" android:roundIcon="@mipmap/ic_launcher_round">-->
+<!--                <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE"/>-->
+<!--            </intent-filter>-->
+<!--        </activity>-->
+<!--        <activity-->
+<!--            android:name="org.telegram.ui.FeedWidgetConfigActivity"-->
+<!--            android:configChanges="keyboard|keyboardHidden|orientation|screenSize|uiMode"-->
+<!--            android:hardwareAccelerated="@bool/useHardwareAcceleration"-->
+<!--            android:windowSoftInputMode="adjustPan">-->
+<!--            <intent-filter android:icon="@mipmap/ic_launcher" android:roundIcon="@mipmap/ic_launcher_round">-->
+<!--                <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE"/>-->
+<!--            </intent-filter>-->
+<!--        </activity>-->
         <activity
             android:name="org.telegram.ui.IntroActivity"
             android:launchMode="singleTask"
@@ -302,6 +320,7 @@
         <service android:name=".NotificationsService" android:enabled="true"/>
         <service android:name=".NotificationRepeat" android:exported="false"/>
         <service android:name=".VideoEncodingService" android:enabled="true"/>
+        <service android:name=".ImportingService" android:enabled="true"/>
         <service android:name=".LocationSharingService"
             android:foregroundServiceType="location"
             android:enabled="true"/>
@@ -395,6 +414,30 @@
             android:authorities="${applicationId}.call_sound_provider"
             android:name=".voip.CallNotificationSoundProvider"
             android:exported="true"/>
+
+<!--        <receiver android:name=".ShortcutWidgetProvider">-->
+<!--            <meta-data android:name="android.appwidget.provider"-->
+<!--                android:resource="@xml/shortcut_widget_info" />-->
+<!--            <intent-filter>-->
+<!--                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />-->
+<!--            </intent-filter>-->
+<!--        </receiver>-->
+
+<!--        <service android:name=".ShortcutWidgetService"-->
+<!--            android:permission="android.permission.BIND_REMOTEVIEWS"-->
+<!--            android:exported="false" />-->
+
+<!--        <receiver android:name=".FeedWidgetProvider">-->
+<!--            <meta-data android:name="android.appwidget.provider"-->
+<!--                android:resource="@xml/feed_widget_info" />-->
+<!--            <intent-filter>-->
+<!--                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />-->
+<!--            </intent-filter>-->
+<!--        </receiver>-->
+
+<!--        <service android:name=".FeedWidgetService"-->
+<!--            android:permission="android.permission.BIND_REMOTEVIEWS"-->
+<!--            android:exported="false" />-->
 
         <uses-library android:name="com.sec.android.app.multiwindow" android:required="false" />
         <meta-data android:name="com.sec.android.support.multiwindow" android:value="true" />

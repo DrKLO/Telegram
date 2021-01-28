@@ -22,6 +22,7 @@ import android.os.Vibrator;
 import android.text.Editable;
 import android.text.InputFilter;
 import android.text.InputType;
+import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -35,7 +36,6 @@ import android.widget.ScrollView;
 import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ImageLocation;
@@ -59,12 +59,14 @@ import org.telegram.ui.Cells.ShadowSectionCell;
 import org.telegram.ui.Cells.TextBlockCell;
 import org.telegram.ui.Cells.TextInfoPrivacyCell;
 import org.telegram.ui.Components.AvatarDrawable;
-import org.telegram.ui.Components.BulletinFactory;
 import org.telegram.ui.Components.EditTextEmoji;
 import org.telegram.ui.Components.ImageUpdater;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.EditTextBoldCursor;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.LinkActionView;
+import org.telegram.ui.Components.RLottieDrawable;
+import org.telegram.ui.Components.RLottieImageView;
 import org.telegram.ui.Components.RadialProgressView;
 import org.telegram.ui.Components.SizeNotifierFrameLayout;
 
@@ -78,7 +80,7 @@ public class ChannelCreateActivity extends BaseFragment implements NotificationC
     private ShadowSectionCell sectionCell;
     private BackupImageView avatarImage;
     private View avatarOverlay;
-    private ImageView avatarEditor;
+    private RLottieImageView avatarEditor;
     private AnimatorSet avatarAnimation;
     private RadialProgressView avatarProgressView;
     private AvatarDrawable avatarDrawable;
@@ -91,11 +93,14 @@ public class ChannelCreateActivity extends BaseFragment implements NotificationC
     private HeaderCell headerCell2;
     private EditTextBoldCursor editText;
 
+    private RLottieDrawable cameraDrawable;
+
     private LinearLayout linearLayout;
     private LinearLayout adminnedChannelsLayout;
     private LinearLayout linkContainer;
     private LinearLayout publicContainer;
-    private TextBlockCell privateContainer;
+    private LinearLayout privateContainer;
+    private LinkActionView permanentLinkView;
     private RadioButtonCell radioButtonCell1;
     private RadioButtonCell radioButtonCell2;
     private TextInfoPrivacyCell typeInfoCell;
@@ -108,7 +113,7 @@ public class ChannelCreateActivity extends BaseFragment implements NotificationC
     private boolean lastNameAvailable;
     private boolean isPrivate;
     private boolean loadingInvite;
-    private TLRPC.ExportedChatInvite invite;
+    private TLRPC.TL_chatInviteExported invite;
 
     private boolean loadingAdminedChannels;
     private TextInfoPrivacyCell adminedInfoCell;
@@ -270,7 +275,7 @@ public class ChannelCreateActivity extends BaseFragment implements NotificationC
                             progressDialog.show();
                             return;
                         }
-                        final int reqId = MessagesController.getInstance(currentAccount).createChat(nameTextView.getText().toString(), new ArrayList<>(), descriptionTextView.getText().toString(), ChatObject.CHAT_TYPE_CHANNEL, null, null, ChannelCreateActivity.this);
+                        final int reqId = MessagesController.getInstance(currentAccount).createChat(nameTextView.getText().toString(), new ArrayList<>(), descriptionTextView.getText().toString(), ChatObject.CHAT_TYPE_CHANNEL, false, null, null, ChannelCreateActivity.this);
                         progressDialog = new AlertDialog(getParentActivity(), 3);
                         progressDialog.setOnCancelListener(dialog -> {
                             ConnectionsManager.getInstance(currentAccount).cancelRequest(reqId, true);
@@ -481,18 +486,30 @@ public class ChannelCreateActivity extends BaseFragment implements NotificationC
                 }
             };
             frameLayout.addView(avatarOverlay, LayoutHelper.createFrame(64, 64, Gravity.TOP | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT), LocaleController.isRTL ? 0 : 16, 12, LocaleController.isRTL ? 16 : 0, 12));
-            avatarOverlay.setOnClickListener(view -> imageUpdater.openMenu(avatar != null, () -> {
-                avatar = null;
-                avatarBig = null;
-                inputPhoto = null;
-                inputVideo = null;
-                inputVideoPath = null;
-                videoTimestamp = 0;
-                showAvatarProgress(false, true);
-                avatarImage.setImage(null, null, avatarDrawable, null);
-            }));
+            avatarOverlay.setOnClickListener(view -> {
+                imageUpdater.openMenu(avatar != null, () -> {
+                    avatar = null;
+                    avatarBig = null;
+                    inputPhoto = null;
+                    inputVideo = null;
+                    inputVideoPath = null;
+                    videoTimestamp = 0;
+                    showAvatarProgress(false, true);
+                    avatarImage.setImage(null, null, avatarDrawable, null);
+                    avatarEditor.setAnimation(cameraDrawable);
+                    cameraDrawable.setCurrentFrame(0);
+                }, dialog -> {
+                    cameraDrawable.setCustomEndFrame(86);
+                    avatarEditor.playAnimation();
+                });
+                cameraDrawable.setCurrentFrame(0);
+                cameraDrawable.setCustomEndFrame(43);
+                avatarEditor.playAnimation();
+            });
 
-            avatarEditor = new ImageView(context) {
+            cameraDrawable = new RLottieDrawable(R.raw.camera, "" + R.raw.camera, AndroidUtilities.dp(60), AndroidUtilities.dp(60), false, null);
+
+            avatarEditor = new RLottieImageView(context) {
                 @Override
                 public void invalidate(int l, int t, int r, int b) {
                     super.invalidate(l, t, r, b);
@@ -506,9 +523,10 @@ public class ChannelCreateActivity extends BaseFragment implements NotificationC
                 }
             };
             avatarEditor.setScaleType(ImageView.ScaleType.CENTER);
-            avatarEditor.setImageResource(R.drawable.menu_camera_av);
+            avatarEditor.setAnimation(cameraDrawable);
             avatarEditor.setEnabled(false);
             avatarEditor.setClickable(false);
+            avatarEditor.setPadding(AndroidUtilities.dp(2), 0, 0, AndroidUtilities.dp(1));
             frameLayout.addView(avatarEditor, LayoutHelper.createFrame(64, 64, Gravity.TOP | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT), LocaleController.isRTL ? 0 : 16, 12, LocaleController.isRTL ? 16 : 0, 12));
 
             avatarProgressView = new RadialProgressView(context);
@@ -528,6 +546,15 @@ public class ChannelCreateActivity extends BaseFragment implements NotificationC
             InputFilter[] inputFilters = new InputFilter[1];
             inputFilters[0] = new InputFilter.LengthFilter(100);
             nameTextView.setFilters(inputFilters);
+            nameTextView.getEditText().setSingleLine(true);
+            nameTextView.getEditText().setImeOptions(EditorInfo.IME_ACTION_NEXT);
+            nameTextView.getEditText().setOnEditorActionListener((textView, i, keyEvent) -> {
+                if (i == EditorInfo.IME_ACTION_NEXT && !TextUtils.isEmpty(nameTextView.getEditText().getText())) {
+                    descriptionTextView.requestFocus();
+                    return true;
+                }
+                return false;
+            });
             frameLayout.addView(nameTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL, LocaleController.isRTL ? 5 : 96, 0, LocaleController.isRTL ? 96 : 5, 0));
 
             descriptionTextView = new EditTextBoldCursor(context);
@@ -687,24 +714,14 @@ public class ChannelCreateActivity extends BaseFragment implements NotificationC
                 }
             });
 
-            privateContainer = new TextBlockCell(context);
-            privateContainer.setBackgroundDrawable(Theme.getSelectorDrawable(false));
-            linkContainer.addView(privateContainer);
-            privateContainer.setOnClickListener(v -> {
-                if (invite == null) {
-                    return;
-                }
-                try {
-                    android.content.ClipboardManager clipboard = (android.content.ClipboardManager) ApplicationLoader.applicationContext.getSystemService(Context.CLIPBOARD_SERVICE);
-                    android.content.ClipData clip = android.content.ClipData.newPlainText("label", invite.link);
-                    clipboard.setPrimaryClip(clip);
-                    if (BulletinFactory.canShowBulletin(ChannelCreateActivity.this)) {
-                        BulletinFactory.createCopyLinkBulletin(ChannelCreateActivity.this).show();
-                    }
-                } catch (Exception e) {
-                    FileLog.e(e);
-                }
-            });
+            privateContainer = new LinearLayout(context);
+            privateContainer.setOrientation(LinearLayout.VERTICAL);
+            linkContainer.addView(privateContainer, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+
+            permanentLinkView = new LinkActionView(context, this, null, chatId, true);
+            permanentLinkView.showOptions(false);
+            permanentLinkView.setUsers(0, null);
+            privateContainer.addView(permanentLinkView);
 
             checkTextView = new TextView(context);
             checkTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
@@ -739,14 +756,18 @@ public class ChannelCreateActivity extends BaseFragment implements NotificationC
             return;
         }
         loadingInvite = true;
-        TLRPC.TL_messages_exportChatInvite req = new TLRPC.TL_messages_exportChatInvite();
-        req.peer = MessagesController.getInstance(currentAccount).getInputPeer(-chatId);
+        TLRPC.TL_messages_getExportedChatInvites req = new TLRPC.TL_messages_getExportedChatInvites();
+        req.peer = getMessagesController().getInputPeer(-chatId);
+        req.admin_id = getMessagesController().getInputUser(getUserConfig().getCurrentUser());
+        req.limit = 1;
+
         ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
             if (error == null) {
-                invite = (TLRPC.ExportedChatInvite) response;
+                TLRPC.TL_messages_exportedChatInvites invites = (TLRPC.TL_messages_exportedChatInvites) response;
+                invite = (TLRPC.TL_chatInviteExported) invites.invites.get(0);
             }
             loadingInvite = false;
-            privateContainer.setText(invite != null ? invite.link : LocaleController.getString("Loading", R.string.Loading), false);
+            permanentLinkView.setLink(invite != null ? invite.link : null);
         }));
     }
 
@@ -785,7 +806,7 @@ public class ChannelCreateActivity extends BaseFragment implements NotificationC
             publicContainer.setVisibility(isPrivate ? View.GONE : View.VISIBLE);
             privateContainer.setVisibility(isPrivate ? View.VISIBLE : View.GONE);
             linkContainer.setPadding(0, 0, 0, isPrivate ? 0 : AndroidUtilities.dp(7));
-            privateContainer.setText(invite != null ? invite.link : LocaleController.getString("Loading", R.string.Loading), false);
+            permanentLinkView.setLink(invite != null ? invite.link : null);
             checkTextView.setVisibility(!isPrivate && checkTextView.length() != 0 ? View.VISIBLE : View.GONE);
         }
         radioButtonCell1.setChecked(!isPrivate, true);
@@ -917,7 +938,7 @@ public class ChannelCreateActivity extends BaseFragment implements NotificationC
             }
             if (nameTextView != null) {
                 String text = nameTextView.getText().toString();
-                if (text != null && text.length() != 0) {
+                if (text.length() != 0) {
                     args.putString("nameTextView", text);
                 }
             }

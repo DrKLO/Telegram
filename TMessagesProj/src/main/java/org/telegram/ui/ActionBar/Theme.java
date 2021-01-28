@@ -2019,6 +2019,7 @@ public class Theme {
     public static Drawable dialogs_muteDrawable;
     public static Drawable dialogs_verifiedDrawable;
     public static ScamDrawable dialogs_scamDrawable;
+    public static ScamDrawable dialogs_fakeDrawable;
     public static Drawable dialogs_verifiedCheckDrawable;
     public static Drawable dialogs_pinnedDrawable;
     public static Drawable dialogs_mentionDrawable;
@@ -5886,7 +5887,7 @@ public class Theme {
         }
     }
 
-    private static void applyDayNightThemeMaybe(boolean night) {
+    public static void applyDayNightThemeMaybe(boolean night) {
         if (previousTheme != null) {
             return;
         }
@@ -6907,7 +6908,8 @@ public class Theme {
             dialogs_broadcastDrawable = resources.getDrawable(R.drawable.list_broadcast);
             dialogs_muteDrawable = resources.getDrawable(R.drawable.list_mute).mutate();
             dialogs_verifiedDrawable = resources.getDrawable(R.drawable.verified_area);
-            dialogs_scamDrawable = new ScamDrawable(11);
+            dialogs_scamDrawable = new ScamDrawable(11, 0);
+            dialogs_fakeDrawable = new ScamDrawable(11, 1);
             dialogs_verifiedCheckDrawable = resources.getDrawable(R.drawable.verified_check);
             dialogs_mentionDrawable = resources.getDrawable(R.drawable.mentionchatslist);
             dialogs_botDrawable = resources.getDrawable(R.drawable.list_bot);
@@ -6969,6 +6971,7 @@ public class Theme {
         setDrawableColorByKey(dialogs_verifiedCheckDrawable, key_chats_verifiedCheck);
         setDrawableColorByKey(dialogs_holidayDrawable, key_actionBarDefaultTitle);
         setDrawableColorByKey(dialogs_scamDrawable, key_chats_draft);
+        setDrawableColorByKey(dialogs_fakeDrawable, key_chats_draft);
     }
 
     public static void destroyResources() {

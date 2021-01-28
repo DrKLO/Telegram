@@ -6,13 +6,15 @@ import android.animation.ObjectAnimator;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.res.Configuration;
+import android.graphics.Canvas;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.Rect;
 import android.graphics.Typeface;
-import android.graphics.drawable.InsetDrawable;
+import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.text.TextUtils;
+import android.util.Property;
 import android.util.TypedValue;
 import android.view.GestureDetector;
 import android.view.Gravity;
@@ -32,6 +34,7 @@ import androidx.annotation.Nullable;
 import androidx.core.util.Consumer;
 import androidx.core.view.ViewCompat;
 import androidx.dynamicanimation.animation.DynamicAnimation;
+import androidx.dynamicanimation.animation.FloatPropertyCompat;
 import androidx.dynamicanimation.animation.SpringAnimation;
 import androidx.dynamicanimation.animation.SpringForce;
 
@@ -104,7 +107,7 @@ public final class Bulletin {
 
     private boolean showing;
     private boolean canHide;
-    private int currentBottomOffset;
+    public int currentBottomOffset;
     private Delegate currentDelegate;
     private Layout.Transition layoutTransition;
 
@@ -126,6 +129,10 @@ public final class Bulletin {
         };
         this.containerLayout = containerLayout;
         this.duration = duration;
+    }
+
+    public static Bulletin getVisibleBulletin() {
+        return visibleBulletin;
     }
 
     public Bulletin show() {
@@ -154,14 +161,12 @@ public final class Bulletin {
                             currentDelegate.onShow(Bulletin.this);
                         }
                         if (isTransitionsEnabled()) {
-                            if (currentBottomOffset != 0) {
-                                ViewCompat.setClipBounds(parentLayout, new Rect(left, top - currentBottomOffset, right, bottom - currentBottomOffset));
-                            } else {
-                                ViewCompat.setClipBounds(parentLayout, null);
-                            }
                             ensureLayoutTransitionCreated();
+                            layout.transitionRunning = true;
+                            layout.delegate = currentDelegate;
+                            layout.invalidate();
                             layoutTransition.animateEnter(layout, layout::onEnterTransitionStart, () -> {
-                                ViewCompat.setClipBounds(parentLayout, null);
+                                layout.transitionRunning = false;
                                 layout.onEnterTransitionEnd();
                                 setCanHide(true);
                             }, offset -> {
@@ -173,7 +178,7 @@ public final class Bulletin {
                             if (currentDelegate != null) {
                                 currentDelegate.onOffsetChange(layout.getHeight() - currentBottomOffset);
                             }
-                            layout.setTranslationY(-currentBottomOffset);
+                            updatePosition();
                             layout.onEnterTransitionStart();
                             layout.onEnterTransitionEnd();
                             setCanHide(true);
@@ -233,18 +238,16 @@ public final class Bulletin {
             if (ViewCompat.isLaidOut(layout)) {
                 layout.removeCallbacks(hideRunnable);
                 if (animated) {
-                    if (bottomOffset != 0) {
-                        ViewCompat.setClipBounds(parentLayout, new Rect(layout.getLeft(), layout.getTop() - bottomOffset, layout.getRight(), layout.getBottom() - bottomOffset));
-                    } else {
-                        ViewCompat.setClipBounds(parentLayout, null);
-                    }
+                    layout.transitionRunning = true;
+                    layout.delegate = currentDelegate;
+                    layout.invalidate();
                     ensureLayoutTransitionCreated();
                     layoutTransition.animateExit(layout, layout::onExitTransitionStart, () -> {
                         if (currentDelegate != null) {
                             currentDelegate.onOffsetChange(0);
                             currentDelegate.onHide(this);
                         }
-                        ViewCompat.setClipBounds(parentLayout, null);
+                        layout.transitionRunning = false;
                         layout.onExitTransitionEnd();
                         layout.onHide();
                         containerLayout.removeView(parentLayout);
@@ -282,6 +285,10 @@ public final class Bulletin {
 
     private static boolean isTransitionsEnabled() {
         return MessagesController.getGlobalMainSettings().getBoolean("view_animations", true) && Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2;
+    }
+
+    public void updatePosition() {
+        layout.updatePosition();
     }
 
     @Retention(SOURCE)
@@ -461,6 +468,9 @@ public final class Bulletin {
     public abstract static class Layout extends FrameLayout {
 
         private final List<Callback> callbacks = new ArrayList<>();
+        public boolean transitionRunning;
+        Delegate delegate;
+        public float inOutOffset;
 
         protected Bulletin bulletin;
 
@@ -473,12 +483,41 @@ public final class Bulletin {
             this(context, Theme.getColor(Theme.key_undo_background));
         }
 
+        Drawable background;
+
         public Layout(@NonNull Context context, @ColorInt int backgroundColor) {
             super(context);
             setMinimumHeight(AndroidUtilities.dp(48));
-            setBackground(new InsetDrawable(Theme.createRoundRectDrawable(AndroidUtilities.dp(6), backgroundColor), AndroidUtilities.dp(8)));
+            background = Theme.createRoundRectDrawable(AndroidUtilities.dp(6), backgroundColor);
             updateSize();
+            setPadding(AndroidUtilities.dp(8), AndroidUtilities.dp(8),  AndroidUtilities.dp(8),  AndroidUtilities.dp(8));
+            setWillNotDraw(false);
         }
+
+        public final static FloatPropertyCompat<Layout> IN_OUT_OFFSET_Y = new FloatPropertyCompat<Layout>("offsetY") {
+            @Override
+            public float getValue(Layout object) {
+                return object.inOutOffset;
+            }
+
+            @Override
+            public void setValue(Layout object, float value) {
+                object.setInOutOffset(value);
+            }
+        };
+
+        public final static Property<Layout, Float> IN_OUT_OFFSET_Y2 = new AnimationProperties.FloatProperty<Layout>("offsetY") {
+
+            @Override
+            public Float get(Layout layout) {
+                return layout.inOutOffset;
+            }
+
+            @Override
+            public void setValue(Layout object, float value) {
+                object.setInOutOffset(value);
+            }
+        };
 
         @Override
         protected void onConfigurationChanged(Configuration newConfig) {
@@ -602,6 +641,14 @@ public final class Bulletin {
             callbacks.remove(callback);
         }
 
+        public void updatePosition() {
+            float tranlsation = 0;
+            if (delegate != null) {
+                tranlsation += delegate.getBottomOffset() ;
+            }
+            setTranslationY(-tranlsation + inOutOffset);
+        }
+
         public interface Callback {
 
             void onAttach(@NonNull Layout layout, @NonNull Bulletin bulletin);
@@ -637,7 +684,11 @@ public final class Bulletin {
 
             @Override
             public void animateEnter(@NonNull Layout layout, @Nullable Runnable startAction, @Nullable Runnable endAction, @Nullable Consumer<Float> onUpdate, int bottomOffset) {
-                final ObjectAnimator animator = ObjectAnimator.ofFloat(layout, View.TRANSLATION_Y, layout.getHeight(), -bottomOffset);
+                layout.setInOutOffset(layout.getMeasuredHeight());
+                if (onUpdate != null) {
+                    onUpdate.accept(layout.getTranslationY());
+                }
+                final ObjectAnimator animator = ObjectAnimator.ofFloat(layout, IN_OUT_OFFSET_Y2, 0);
                 animator.setDuration(225);
                 animator.setInterpolator(Easings.easeOutQuad);
                 if (startAction != null || endAction != null) {
@@ -658,14 +709,14 @@ public final class Bulletin {
                     });
                 }
                 if (onUpdate != null) {
-                    animator.addUpdateListener(a -> onUpdate.accept((Float) a.getAnimatedValue()));
+                    animator.addUpdateListener(a -> onUpdate.accept(layout.getTranslationY()));
                 }
                 animator.start();
             }
 
             @Override
             public void animateExit(@NonNull Layout layout, @Nullable Runnable startAction, @Nullable Runnable endAction, @Nullable Consumer<Float> onUpdate, int bottomOffset) {
-                final ObjectAnimator animator = ObjectAnimator.ofFloat(layout, View.TRANSLATION_Y, layout.getTranslationY(), layout.getHeight());
+                final ObjectAnimator animator = ObjectAnimator.ofFloat(layout, IN_OUT_OFFSET_Y2, layout.getHeight());
                 animator.setDuration(175);
                 animator.setInterpolator(Easings.easeInQuad);
                 if (startAction != null || endAction != null) {
@@ -686,7 +737,7 @@ public final class Bulletin {
                     });
                 }
                 if (onUpdate != null) {
-                    animator.addUpdateListener(a -> onUpdate.accept((Float) a.getAnimatedValue()));
+                    animator.addUpdateListener(a -> onUpdate.accept(layout.getTranslationY()));
                 }
                 animator.start();
             }
@@ -699,23 +750,23 @@ public final class Bulletin {
 
             @Override
             public void animateEnter(@NonNull Layout layout, @Nullable Runnable startAction, @Nullable Runnable endAction, @Nullable Consumer<Float> onUpdate, int bottomOffset) {
-                final int translationY = layout.getHeight() - bottomOffset;
-                layout.setTranslationY(translationY);
+                layout.setInOutOffset(layout.getMeasuredHeight());
                 if (onUpdate != null) {
-                    onUpdate.accept((float) translationY);
+                    onUpdate.accept(layout.getTranslationY());
                 }
-                final SpringAnimation springAnimation = new SpringAnimation(layout, SpringAnimation.TRANSLATION_Y, -bottomOffset);
+                final SpringAnimation springAnimation = new SpringAnimation(layout, IN_OUT_OFFSET_Y, 0);
                 springAnimation.getSpring().setDampingRatio(DAMPING_RATIO);
                 springAnimation.getSpring().setStiffness(STIFFNESS);
                 if (endAction != null) {
                     springAnimation.addEndListener((animation, canceled, value, velocity) -> {
+                        layout.setInOutOffset(0);
                         if (!canceled) {
                             endAction.run();
                         }
                     });
                 }
                 if (onUpdate != null) {
-                    springAnimation.addUpdateListener((animation, value, velocity) -> onUpdate.accept(value));
+                    springAnimation.addUpdateListener((animation, value, velocity) -> onUpdate.accept(layout.getTranslationY()));
                 }
                 springAnimation.start();
                 if (startAction != null) {
@@ -725,7 +776,7 @@ public final class Bulletin {
 
             @Override
             public void animateExit(@NonNull Layout layout, @Nullable Runnable startAction, @Nullable Runnable endAction, @Nullable Consumer<Float> onUpdate,int bottomOffset) {
-                final SpringAnimation springAnimation = new SpringAnimation(layout, SpringAnimation.TRANSLATION_Y, layout.getHeight() - bottomOffset);
+                final SpringAnimation springAnimation = new SpringAnimation(layout, IN_OUT_OFFSET_Y, layout.getHeight());
                 springAnimation.getSpring().setDampingRatio(DAMPING_RATIO);
                 springAnimation.getSpring().setStiffness(STIFFNESS);
                 if (endAction != null) {
@@ -736,7 +787,7 @@ public final class Bulletin {
                     });
                 }
                 if (onUpdate != null) {
-                    springAnimation.addUpdateListener((animation, value, velocity) -> onUpdate.accept(value));
+                    springAnimation.addUpdateListener((animation, value, velocity) -> onUpdate.accept(layout.getTranslationY()));
                 }
                 springAnimation.start();
                 if (startAction != null) {
@@ -744,6 +795,30 @@ public final class Bulletin {
                 }
             }
         }
+
+        private void setInOutOffset(float offset) {
+            inOutOffset = offset;
+            updatePosition();
+        }
+
+        @Override
+        protected void dispatchDraw(Canvas canvas) {
+            background.setBounds(AndroidUtilities.dp(8), AndroidUtilities.dp(8), getMeasuredWidth() - AndroidUtilities.dp(8), getMeasuredHeight() - AndroidUtilities.dp(8));
+            if (transitionRunning && delegate != null) {
+                int clipBottom = ((View)getParent()).getMeasuredHeight() - delegate.getBottomOffset();
+                int viewBottom = (int) (getY() + getMeasuredHeight());
+                canvas.save();
+                canvas.clipRect(0, 0, getMeasuredWidth(), getMeasuredHeight() - (viewBottom - clipBottom));
+                background.draw(canvas);
+                super.dispatchDraw(canvas);
+                canvas.restore();
+                invalidate();
+            } else {
+                background.draw(canvas);
+                super.dispatchDraw(canvas);
+            }
+        }
+
         //endregion
     }
 

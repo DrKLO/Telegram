@@ -786,7 +786,7 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                 if (parentLayout != null) {
                     parentLayout.drawHeaderShadow(canvas, actionBar.getMeasuredHeight() + (int) actionBar.getTranslationY());
                 }
-                if (fragmentContextView != null && fragmentContextView.getCurrentStyle() == 3) {
+                if (fragmentContextView != null && fragmentContextView.isCallStyle()) {
                     canvas.save();
                     canvas.translate(fragmentContextView.getX(), fragmentContextView.getY());
                     fragmentContextView.setDrawOverlay(true);
@@ -798,7 +798,7 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
 
             @Override
             protected boolean drawChild(Canvas canvas, View child, long drawingTime) {
-                if (child == fragmentContextView && fragmentContextView.getCurrentStyle() == 3) {
+                if (child == fragmentContextView && fragmentContextView.isCallStyle()) {
                     return true;
                 }
                 return super.drawChild(canvas, child, drawingTime);
@@ -1949,10 +1949,10 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                     } else if (!cell.isLoading()) {
                         MessageObject messageObject = cell.getMessage();
                         FileLoader.getInstance(currentAccount).loadFile(document, messageObject, 0, 0);
-                        cell.updateFileExistIcon();
+                        cell.updateFileExistIcon(true);
                     } else {
                         FileLoader.getInstance(currentAccount).cancelLoadFile(document);
-                        cell.updateFileExistIcon();
+                        cell.updateFileExistIcon(true);
                     }
                 }
             } else if (selectedMode == 3) {

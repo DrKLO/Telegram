@@ -1068,6 +1068,7 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
                     }
                     SendMessagesHelper.getInstance(currentAccount).sendMessage(sendingMessageObjects, key, true, 0);
                 }
+                onSend(selectedDialogs, sendingMessageObjects.size());
             } else if (sendingText != null) {
                 for (int a = 0; a < selectedDialogs.size(); a++) {
                     long key = selectedDialogs.keyAt(a);
@@ -1122,6 +1123,10 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
         if (listAdapter.dialogs.isEmpty()) {
             NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.dialogsNeedReload);
         }
+    }
+
+    protected void onSend(LongSparseArray<TLRPC.Dialog> dids, int count) {
+
     }
 
     private int getCurrentTop() {

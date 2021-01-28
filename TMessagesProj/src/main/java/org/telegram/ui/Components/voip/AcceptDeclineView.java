@@ -474,6 +474,17 @@ public class AcceptDeclineView extends View {
                         outRect.setEmpty();
                     }
                 }
+
+                @Override
+                protected void onVirtualViewClick(int virtualViewId) {
+                    if (listener != null) {
+                        if (virtualViewId == ACCEPT_VIEW_ID) {
+                            listener.onAccept();
+                        } else if (virtualViewId == DECLINE_VIEW_ID) {
+                            listener.onDicline();
+                        }
+                    }
+                }
             };
         }
         return accessibilityNodeProvider;
@@ -535,6 +546,9 @@ public class AcceptDeclineView extends View {
             } else {
                 if (action == AccessibilityNodeInfo.ACTION_ACCESSIBILITY_FOCUS) {
                     sendAccessibilityEventForVirtualView(virtualViewId, AccessibilityEvent.TYPE_VIEW_ACCESSIBILITY_FOCUSED);
+                } else if (action == AccessibilityNodeInfo.ACTION_CLICK) {
+                    onVirtualViewClick(virtualViewId);
+                    return true;
                 }
             }
             return false;
@@ -580,5 +594,7 @@ public class AcceptDeclineView extends View {
         protected abstract void getVirtualViewBoundsInScreen(int virtualViewId, Rect outRect);
 
         protected abstract void getVirtualViewBoundsInParent(int virtualViewId, Rect outRect);
+
+        protected abstract void onVirtualViewClick(int virtualViewId);
     }
 }

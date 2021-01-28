@@ -299,6 +299,10 @@ public class BubbleActivity extends Activity implements ActionBarLayout.ActionBa
 
     @Override
     public void onBackPressed() {
+        if (mainFragmentsStack.size() == 1) {
+            super.onBackPressed();
+            return;
+        }
         if (passcodeView.getVisibility() == View.VISIBLE) {
             finish();
             return;

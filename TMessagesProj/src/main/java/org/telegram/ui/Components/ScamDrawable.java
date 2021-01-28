@@ -19,21 +19,32 @@ public class ScamDrawable extends Drawable {
     private TextPaint textPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
     private int textWidth;
     private String text;
+    private int currentType;
 
-    public ScamDrawable(int textSize) {
+    public ScamDrawable(int textSize, int type) {
         super();
+        currentType = type;
         textPaint.setTextSize(AndroidUtilities.dp(textSize));
         textPaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
 
         paint.setStyle(Paint.Style.STROKE);
         paint.setStrokeWidth(AndroidUtilities.dp(1));
 
-        text = LocaleController.getString("ScamMessage", R.string.ScamMessage);
+        if (type == 0) {
+            text = LocaleController.getString("ScamMessage", R.string.ScamMessage);
+        } else {
+            text = LocaleController.getString("FakeMessage", R.string.FakeMessage);
+        }
         textWidth = (int) Math.ceil(textPaint.measureText(text));
     }
 
     public void checkText() {
-        String newText = LocaleController.getString("ScamMessage", R.string.ScamMessage);
+        String newText;
+        if (currentType == 0) {
+            newText = LocaleController.getString("ScamMessage", R.string.ScamMessage);
+        } else {
+            newText = LocaleController.getString("FakeMessage", R.string.FakeMessage);
+        }
         if (!newText.equals(text)) {
             text = newText;
             textWidth = (int) Math.ceil(textPaint.measureText(text));

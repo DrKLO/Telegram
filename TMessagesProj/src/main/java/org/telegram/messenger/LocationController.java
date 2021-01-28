@@ -1064,7 +1064,7 @@ public class LocationController extends BaseController implements NotificationCe
                     arg = address.getThoroughfare();
                     if (!TextUtils.isEmpty(arg)) {
                         if (nameBuilder.length() > 0) {
-                            nameBuilder.append(", ");
+                            nameBuilder.append(" ");
                         }
                         nameBuilder.append(arg);
                         hasAny = true;

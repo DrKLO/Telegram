@@ -113,6 +113,8 @@ public class NotificationCenter {
     public static final int newSuggestionsAvailable = totalEvents++;
     public static final int didLoadChatInviter = totalEvents++;
     public static final int didLoadChatAdmins = totalEvents++;
+    public static final int historyImportProgressChanged = totalEvents++;
+    public static final int dialogDeleted = totalEvents++;
 
     public static final int walletPendingTransactionsChanged = totalEvents++;
     public static final int walletSyncProgressChanged = totalEvents++;
@@ -152,6 +154,7 @@ public class NotificationCenter {
 
     public static final int didStartedCall = totalEvents++;
     public static final int groupCallUpdated = totalEvents++;
+    public static final int applyGroupCallVisibleParticipants = totalEvents++;
     public static final int groupCallTypingsUpdated = totalEvents++;
     public static final int didEndCall = totalEvents++;
     public static final int closeInCallActivity = totalEvents++;

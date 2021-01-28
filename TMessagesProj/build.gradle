@@ -21,7 +21,7 @@ dependencies {
     implementation 'androidx.exifinterface:exifinterface:1.3.2'
     implementation 'androidx.dynamicanimation:dynamicanimation:1.0.0'
     implementation 'androidx.multidex:multidex:2.0.1'
-    implementation "androidx.sharetarget:sharetarget:1.0.0"
+    implementation "androidx.sharetarget:sharetarget:1.1.0"
 
     compileOnly 'org.checkerframework:checker-qual:2.5.2'
     compileOnly 'org.checkerframework:checker-compat-qual:2.5.0'
@@ -290,7 +290,7 @@ android {
         }
     }
 
-    defaultConfig.versionCode = 2206
+    defaultConfig.versionCode = 2221
 
     applicationVariants.all { variant ->
         variant.outputs.all { output ->
@@ -309,7 +309,7 @@ android {
     defaultConfig {
         minSdkVersion 16
         targetSdkVersion 29
-        versionName "7.3.1"
+        versionName "7.4.0"
 
         vectorDrawables.generatedDensities = ['mdpi', 'hdpi', 'xhdpi', 'xxhdpi']
 

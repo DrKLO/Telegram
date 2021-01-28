@@ -1027,6 +1027,15 @@ public class EmbedBottomSheet extends BottomSheet {
         dismissInternal();
     }
 
+    @Override
+    public void dismissInternal() {
+        super.dismissInternal();
+        if (orientationEventListener != null) {
+            orientationEventListener.disable();
+            orientationEventListener = null;
+        }
+    }
+
     public void exitFromPip() {
         if (webView == null || pipVideoView == null) {
             return;

@@ -35,12 +35,13 @@ public class NativeInstance {
         void run(int[] uids, float[] levels, boolean[] voice);
     }
 
-    public static NativeInstance make(String version, Instance.Config config, String path, Instance.Endpoint[] endpoints, Instance.Proxy proxy, int networkType, Instance.EncryptionKey encryptionKey, VideoSink remoteSink, long videoCapturer) {
+    public static NativeInstance make(String version, Instance.Config config, String path, Instance.Endpoint[] endpoints, Instance.Proxy proxy, int networkType, Instance.EncryptionKey encryptionKey, VideoSink remoteSink, long videoCapturer, AudioLevelsCallback audioLevelsCallback) {
         if (BuildVars.LOGS_ENABLED) {
             FileLog.d("create new tgvoip instance, version " + version);
         }
         NativeInstance instance = new NativeInstance();
         instance.persistentStateFilePath = path;
+        instance.audioLevelsCallback = audioLevelsCallback;
         float aspectRatio = Math.min(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y) / (float) Math.max(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y);
         instance.nativePtr = makeNativeInstance(version, instance, config, path, endpoints, proxy, networkType, encryptionKey, remoteSink, videoCapturer, aspectRatio);
         return instance;
@@ -112,7 +113,7 @@ public class NativeInstance {
     }
 
     private void onAudioLevelsUpdated(int[] uids, float[] levels, boolean[] voice) {
-        if (uids.length == 0) {
+        if (isGroup && uids != null && uids.length == 0) {
             return;
         }
         AndroidUtilities.runOnUIThread(() -> audioLevelsCallback.run(uids, levels, voice));
@@ -178,6 +179,7 @@ public class NativeInstance {
     public native String getVersion();
     public native void setNetworkType(int networkType);
     public native void setMuteMicrophone(boolean muteMicrophone);
+    public native void setVolume(int ssrc, double volume);
     public native void setAudioOutputGainControlEnabled(boolean enabled);
     public native void setEchoCancellationStrength(int strength);
     public native String getLastError();

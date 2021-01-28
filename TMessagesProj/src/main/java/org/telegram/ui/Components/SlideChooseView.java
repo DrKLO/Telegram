@@ -72,7 +72,6 @@ public class SlideChooseView extends View {
     }
 
     public void setOptions(int selected, String... options) {
-        this.callback = callback;
         this.optionsStr = options;
         selectedIndex = selected;
         optionsSizes = new int[optionsStr.length];
@@ -201,6 +200,10 @@ public class SlideChooseView extends View {
     @Override
     public boolean performAccessibilityAction(int action, Bundle arguments) {
         return super.performAccessibilityAction(action, arguments) || accessibilityDelegate.performAccessibilityActionInternal(this, action, arguments);
+    }
+
+    public int getSelectedIndex() {
+        return selectedIndex;
     }
 
     public interface Callback {

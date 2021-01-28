@@ -236,7 +236,7 @@ public class GroupedPhotosListView extends View implements GestureDetector.OnGes
             }
         }
         if (!changed) {
-            if (newCount != currentPhotos.size() || currentObjects.indexOf(currentObject) == -1) {
+            if (newCount != currentPhotos.size() || !currentObjects.contains(currentObject)) {
                 changed = true;
             } else {
                 int newImageIndex = currentObjects.indexOf(currentObject);

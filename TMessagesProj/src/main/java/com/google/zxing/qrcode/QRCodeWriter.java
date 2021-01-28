@@ -32,6 +32,9 @@ import com.google.zxing.qrcode.encoder.Encoder;
 import com.google.zxing.qrcode.encoder.QRCode;
 
 import org.telegram.messenger.R;
+import org.telegram.messenger.SvgHelper;
+import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Components.RLottieDrawable;
 
 import java.util.Arrays;
 import java.util.Map;
@@ -115,7 +118,7 @@ public final class QRCodeWriter {
       imageBloks++;
     }
     imageBlockX = (inputWidth - imageBloks) / 2;
-    int imageSize = imageBloks * multiple;
+    int imageSize = imageBloks * multiple - 24;
     int imageX = (size - imageSize) / 2;
 
     for (int a = 0; a < 3; a++) {
@@ -206,9 +209,14 @@ public final class QRCodeWriter {
       }
     }
 
-    Drawable drawable = context.getResources().getDrawable(R.drawable.gem_l).mutate();
-    drawable.setBounds(imageX, imageX, imageX + imageSize, imageX + imageSize);
-    drawable.draw(canvas);
+    String svg = RLottieDrawable.readRes(null, R.raw.qr_logo);
+    Bitmap icon = SvgHelper.getBitmap(svg, imageSize, imageSize, false);
+
+//    Drawable drawable = context.getResources().getDrawable(R.drawable.ic_launcher_dr).mutate();
+//    drawable.setBounds(imageX, imageX, imageX + imageSize, imageX + imageSize);
+//    drawable.draw(canvas);
+    canvas.drawBitmap(icon, imageX, imageX, null);
+    icon.recycle();
 
     canvas.setBitmap(null);
 

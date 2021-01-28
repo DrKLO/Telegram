@@ -102,6 +102,8 @@ public:
     void setIsMuted(bool isMuted);
     void setAudioOutputDevice(std::string id);
     void setAudioInputDevice(std::string id);
+    
+    void setVolume(uint32_t ssrc, double volume);
 
     struct AudioDevice {
       enum class Type {Input, Output};

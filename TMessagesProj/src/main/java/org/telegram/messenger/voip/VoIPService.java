@@ -1374,14 +1374,32 @@ public class VoIPService extends VoIPBaseService {
 					playedConnectedSound = true;
 				}
 				if (!wasConnected) {
-					if (!micMute) {
-						tgVoip.setMuteMicrophone(false);
-					}
 					wasConnected = true;
+					NativeInstance instance = tgVoip;
+					if (instance != null) {
+						if (!micMute) {
+							tgVoip.setMuteMicrophone(false);
+						}
+						for (int a = 0, N = groupCall.participants.size(); a < N; a++) {
+							TLRPC.TL_groupCallParticipant participant = groupCall.participants.valueAt(a);
+							if (participant.source == 0) {
+								continue;
+							}
+							if (participant.muted_by_you) {
+								instance.setVolume(participant.source, 0);
+							} else {
+								instance.setVolume(participant.source, ChatObject.getParticipantVolume(participant) / 10000.0);
+							}
+						}
+					}
 				}
 			}
 		});
 		dispatchStateChanged(STATE_WAIT_INIT);
+	}
+
+	public void setParticipantVolume(int ssrc, int volume) {
+		tgVoip.setVolume(ssrc, volume / 10000.0);
 	}
 
 	private void initiateActualEncryptedCall() {
@@ -1490,7 +1508,12 @@ public class VoIPService extends VoIPBaseService {
 				videoState = Instance.VIDEO_STATE_INACTIVE;
 			}
 			// init
-			tgVoip = Instance.makeInstance(privateCall.protocol.library_versions.get(0), config, persistentStateFilePath, endpoints, proxy, getNetworkType(), encryptionKey, remoteSink, videoCapturer);
+			tgVoip = Instance.makeInstance(privateCall.protocol.library_versions.get(0), config, persistentStateFilePath, endpoints, proxy, getNetworkType(), encryptionKey, remoteSink, videoCapturer, (uids, levels, voice) -> {
+				if (sharedInstance == null || privateCall == null) {
+					return;
+				}
+				NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.webRtcMicAmplitudeEvent, levels[0]);
+			});
 			tgVoip.setOnStateUpdatedListener(this::onConnectionStateChanged);
 			tgVoip.setOnSignalBarsUpdatedListener(this::onSignalBarCountChanged);
 			tgVoip.setOnSignalDataListener(this::onSignalingData);

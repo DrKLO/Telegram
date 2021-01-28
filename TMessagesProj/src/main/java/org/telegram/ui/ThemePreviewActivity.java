@@ -50,6 +50,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewOutlineProvider;
 import android.view.ViewTreeObserver;
+import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
@@ -650,7 +651,13 @@ public class ThemePreviewActivity extends BaseFragment implements DownloadContro
                 ActionBarMenu menu2 = actionBar2.createMenu();
                 saveItem = menu2.addItem(4, LocaleController.getString("Save", R.string.Save).toUpperCase());
 
-                dropDownContainer = new ActionBarMenuItem(context, menu2, 0, 0);
+                dropDownContainer = new ActionBarMenuItem(context, menu2, 0, 0) {
+                    @Override
+                    public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
+                        super.onInitializeAccessibilityNodeInfo(info);
+                        info.setText(dropDown.getText());
+                    }
+                };
                 dropDownContainer.setSubMenuOpenSide(1);
                 dropDownContainer.addSubItem(1, LocaleController.getString("ColorPickerMainColor", R.string.ColorPickerMainColor));
                 dropDownContainer.addSubItem(2, LocaleController.getString("ColorPickerBackground", R.string.ColorPickerBackground));
@@ -661,6 +668,7 @@ public class ThemePreviewActivity extends BaseFragment implements DownloadContro
                 dropDownContainer.setOnClickListener(view -> dropDownContainer.toggleSubMenu());
 
                 dropDown = new TextView(context);
+                dropDown.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
                 dropDown.setGravity(Gravity.LEFT);
                 dropDown.setSingleLine(true);
                 dropDown.setLines(1);
@@ -2858,7 +2866,7 @@ public class ThemePreviewActivity extends BaseFragment implements DownloadContro
         public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup viewGroup, int viewType) {
             View view = null;
             if (viewType == 0) {
-                view = new DialogCell(mContext, false, false);
+                view = new DialogCell(null, mContext, false, false);
             } else if (viewType == 1) {
                 view = new LoadingCell(mContext);
             }

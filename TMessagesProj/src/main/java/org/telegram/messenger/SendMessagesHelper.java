@@ -10,6 +10,7 @@ package org.telegram.messenger;
 
 import android.content.ClipDescription;
 import android.content.Context;
+import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.PorterDuff;
@@ -67,10 +68,12 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.RandomAccessFile;
+import java.lang.ref.WeakReference;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Locale;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -90,6 +93,169 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
     private HashMap<String, Boolean> waitingForCallback = new HashMap<>();
     private HashMap<String, byte[]> waitingForVote = new HashMap<>();
     private LongSparseArray<Long> voteSendTime = new LongSparseArray();
+    private HashMap<String, ImportingHistory> importingHistoryFiles = new HashMap<>();
+    private LongSparseArray<ImportingHistory> importingHistoryMap = new LongSparseArray<>();
+
+    public class ImportingHistory {
+        public String historyPath;
+        public ArrayList<Uri> mediaPaths = new ArrayList<>();
+        public HashMap<String, TLRPC.InputFile> uploadedMedias = new HashMap<>();
+        public HashSet<String> uploadSet = new HashSet<>();
+        public HashMap<String, Float> uploadProgresses = new HashMap<>();
+        public HashMap<String, Long> uploadSize = new HashMap<>();
+        public ArrayList<String> uploadMedia = new ArrayList<>();
+        public TLRPC.InputPeer peer;
+        public long totalSize;
+        public long uploadedSize;
+        public long dialogId;
+        public long importId;
+        public int uploadProgress;
+        public double estimatedUploadSpeed;
+        private long lastUploadTime;
+        private long lastUploadSize;
+        public int timeUntilFinish = Integer.MAX_VALUE;
+
+        private void initImport(TLRPC.InputFile inputFile) {
+            TLRPC.TL_messages_initHistoryImport req = new TLRPC.TL_messages_initHistoryImport();
+            req.file = inputFile;
+            req.media_count = mediaPaths.size();
+            req.peer = peer;
+            getConnectionsManager().sendRequest(req, new RequestDelegate() {
+                @Override
+                public void run(TLObject response, TLRPC.TL_error error) {
+                    AndroidUtilities.runOnUIThread(() -> {
+                        if (response instanceof TLRPC.TL_messages_historyImport) {
+                            importId = ((TLRPC.TL_messages_historyImport) response).id;
+                            uploadSet.remove(historyPath);
+                            getNotificationCenter().postNotificationName(NotificationCenter.historyImportProgressChanged, dialogId);
+                            if (uploadSet.isEmpty()) {
+                                startImport();
+                            }
+                            lastUploadTime = SystemClock.elapsedRealtime();
+                            for (int a = 0, N = uploadMedia.size(); a < N; a++) {
+                                getFileLoader().uploadFile(uploadMedia.get(a), false, true, ConnectionsManager.FileTypeFile);
+                            }
+                        } else {
+                            importingHistoryMap.remove(dialogId);
+                            getNotificationCenter().postNotificationName(NotificationCenter.historyImportProgressChanged, dialogId, req, error);
+                        }
+                    });
+                }
+            });
+        }
+
+        public long getUploadedCount() {
+            return uploadedSize;
+        }
+
+        public long getTotalCount() {
+            return totalSize;
+        }
+        
+        private void addUploadProgress(String path, long sz, float progress) {
+            uploadProgresses.put(path, progress);
+            uploadSize.put(path, sz);
+            uploadedSize = 0;
+            for (HashMap.Entry<String, Long> entry : uploadSize.entrySet()) {
+                uploadedSize += entry.getValue();
+            }
+            long newTime = SystemClock.elapsedRealtime();
+            if (!path.equals(historyPath) && uploadedSize != lastUploadSize && newTime != lastUploadTime) {
+                double dt = (newTime - lastUploadTime) / 1000.0;
+                double uploadSpeed = (uploadedSize - lastUploadSize) / dt;
+                if (estimatedUploadSpeed == 0) {
+                    estimatedUploadSpeed = uploadSpeed;
+                } else {
+                    double coef = 0.01;
+                    estimatedUploadSpeed = coef * uploadSpeed + (1 - coef) * estimatedUploadSpeed;
+                }
+                timeUntilFinish = (int) ((totalSize - uploadedSize) * 1000 / (double) estimatedUploadSpeed);
+                lastUploadSize = uploadedSize;
+                lastUploadTime = newTime;
+            }
+            float pr = getUploadedCount() / (float) getTotalCount();
+            int newProgress = (int) (pr * 100);
+            if (uploadProgress != newProgress) {
+                uploadProgress = newProgress;
+                getNotificationCenter().postNotificationName(NotificationCenter.historyImportProgressChanged, dialogId);
+            }
+        }
+
+        private void onMediaImport(String path, long size, TLRPC.InputFile inputFile) {
+            addUploadProgress(path, size, 1.0f);
+            uploadedMedias.put(path, inputFile);
+            TLRPC.TL_messages_uploadImportedMedia req = new TLRPC.TL_messages_uploadImportedMedia();
+            req.peer = peer;
+            req.import_id = importId;
+            req.file_name = new File(path).getName();
+
+            MimeTypeMap myMime = MimeTypeMap.getSingleton();
+            String ext = "txt";
+            int idx = req.file_name.lastIndexOf('.');
+            if (idx != -1) {
+                ext = req.file_name.substring(idx + 1).toLowerCase();
+            }
+            String mimeType = myMime.getMimeTypeFromExtension(ext);
+            if (mimeType == null) {
+                if ("opus".equals(ext)) {
+                    mimeType = "audio/opus";
+                } else if ("webp".equals(ext)) {
+                    mimeType = "image/webp";
+                } else {
+                    mimeType = "text/plain";
+                }
+            }
+            if (mimeType.equals("image/jpg") || mimeType.equals("image/jpeg")) {
+                TLRPC.TL_inputMediaUploadedPhoto inputMediaUploadedPhoto = new TLRPC.TL_inputMediaUploadedPhoto();
+                inputMediaUploadedPhoto.file = inputFile;
+                req.media = inputMediaUploadedPhoto;
+            } else {
+                TLRPC.TL_inputMediaUploadedDocument inputMediaDocument = new TLRPC.TL_inputMediaUploadedDocument();
+                inputMediaDocument.file = inputFile;
+                inputMediaDocument.mime_type = mimeType;
+                req.media = inputMediaDocument;
+            }
+
+            getConnectionsManager().sendRequest(req, new RequestDelegate() {
+                @Override
+                public void run(TLObject response, TLRPC.TL_error error) {
+                    AndroidUtilities.runOnUIThread(() -> {
+                        uploadSet.remove(path);
+                        getNotificationCenter().postNotificationName(NotificationCenter.historyImportProgressChanged, dialogId);
+                        if (uploadSet.isEmpty()) {
+                            startImport();
+                        }
+                    });
+                }
+            });
+        }
+
+        private void startImport() {
+            TLRPC.TL_messages_startHistoryImport req = new TLRPC.TL_messages_startHistoryImport();
+            req.peer = peer;
+            req.import_id = importId;
+            getConnectionsManager().sendRequest(req, new RequestDelegate() {
+                @Override
+                public void run(TLObject response, TLRPC.TL_error error) {
+                    AndroidUtilities.runOnUIThread(() -> {
+                        importingHistoryMap.remove(dialogId);
+                        if (error == null) {
+                            getNotificationCenter().postNotificationName(NotificationCenter.historyImportProgressChanged, dialogId);
+                        } else {
+                            getNotificationCenter().postNotificationName(NotificationCenter.historyImportProgressChanged, dialogId, req, error);
+                        }
+                    });
+                }
+            });
+        }
+
+        public void setImportProgress(int value) {
+            if (value == 100) {
+                importingHistoryMap.remove(dialogId);
+            }
+            getNotificationCenter().postNotificationName(NotificationCenter.historyImportProgressChanged, dialogId);
+        }
+    }
 
     private static DispatchQueue mediaSendQueue = new DispatchQueue("mediaSendQueue");
     private static ThreadPoolExecutor mediaSendThreadPool;
@@ -421,6 +587,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
 
         AndroidUtilities.runOnUIThread(() -> {
             getNotificationCenter().addObserver(SendMessagesHelper.this, NotificationCenter.FileDidUpload);
+            getNotificationCenter().addObserver(SendMessagesHelper.this, NotificationCenter.FileUploadProgressChanged);
             getNotificationCenter().addObserver(SendMessagesHelper.this, NotificationCenter.FileDidFailUpload);
             getNotificationCenter().addObserver(SendMessagesHelper.this, NotificationCenter.filePreparingStarted);
             getNotificationCenter().addObserver(SendMessagesHelper.this, NotificationCenter.fileNewChunkAvailable);
@@ -443,15 +610,35 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
         waitingForLocation.clear();
         waitingForCallback.clear();
         waitingForVote.clear();
+        importingHistoryFiles.clear();
+        importingHistoryMap.clear();
         locationProvider.stop();
     }
 
     @Override
     public void didReceivedNotification(int id, int account, final Object... args) {
-        if (id == NotificationCenter.FileDidUpload) {
+        if (id == NotificationCenter.FileUploadProgressChanged) {
+            String fileName = (String) args[0];
+            ImportingHistory importingHistory = importingHistoryFiles.get(fileName);
+            if (importingHistory != null) {
+                Long loadedSize = (Long) args[1];
+                Long totalSize = (Long) args[2];
+                importingHistory.addUploadProgress(fileName, loadedSize, loadedSize / (float) totalSize);
+            }
+        } else if (id == NotificationCenter.FileDidUpload) {
             final String location = (String) args[0];
             final TLRPC.InputFile file = (TLRPC.InputFile) args[1];
             final TLRPC.InputEncryptedFile encryptedFile = (TLRPC.InputEncryptedFile) args[2];
+
+            ImportingHistory importingHistory = importingHistoryFiles.get(location);
+            if (importingHistory != null) {
+                if (location.equals(importingHistory.historyPath)) {
+                    importingHistory.initImport(file);
+                } else {
+                    importingHistory.onMediaImport(location, (Long) args[5], file);
+                }
+            }
+
             ArrayList<DelayedMessage> arr = delayedMessages.get(location);
             if (arr != null) {
                 for (int a = 0; a < arr.size(); a++) {
@@ -4007,7 +4194,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                         }
                         putToDelayedMessages(location, message);
                         if (message.obj.videoEditedInfo != null && message.obj.videoEditedInfo.needConvert()) {
-                            getFileLoader().uploadFile(location, false, false, document.size, ConnectionsManager.FileTypeVideo);
+                            getFileLoader().uploadFile(location, false, false, document.size, ConnectionsManager.FileTypeVideo, false);
                         } else {
                             getFileLoader().uploadFile(location, false, false, ConnectionsManager.FileTypeVideo);
                         }
@@ -4034,7 +4221,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                     }
                     putToDelayedMessages(location, message);
                     if (message.obj.videoEditedInfo != null && message.obj.videoEditedInfo.needConvert()) {
-                        getFileLoader().uploadFile(location, true, false, document.size, ConnectionsManager.FileTypeVideo);
+                        getFileLoader().uploadFile(location, true, false, document.size, ConnectionsManager.FileTypeVideo, false);
                     } else {
                         getFileLoader().uploadFile(location, true, false, ConnectionsManager.FileTypeVideo);
                     }
@@ -4126,7 +4313,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                                     message.extraHashMap.put(documentLocation + "_t", message.photoSize);
                                 }
                                 if (messageObject.videoEditedInfo != null && messageObject.videoEditedInfo.needConvert()) {
-                                    getFileLoader().uploadFile(documentLocation, false, false, document.size, ConnectionsManager.FileTypeVideo);
+                                    getFileLoader().uploadFile(documentLocation, false, false, document.size, ConnectionsManager.FileTypeVideo, false);
                                 } else {
                                     getFileLoader().uploadFile(documentLocation, false, false, ConnectionsManager.FileTypeVideo);
                                 }
@@ -4150,7 +4337,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                                 message.extraHashMap.put(documentLocation + "_t", message.photoSize);
                             }
                             if (messageObject.videoEditedInfo != null && messageObject.videoEditedInfo.needConvert()) {
-                                getFileLoader().uploadFile(documentLocation, true, false, document.size, ConnectionsManager.FileTypeVideo);
+                                getFileLoader().uploadFile(documentLocation, true, false, document.size, ConnectionsManager.FileTypeVideo, false);
                             } else {
                                 getFileLoader().uploadFile(documentLocation, true, false, ConnectionsManager.FileTypeVideo);
                             }
@@ -5231,6 +5418,95 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
         });
     }
 
+    public ImportingHistory getImportingHistory(long dialogId) {
+        return importingHistoryMap.get(dialogId);
+    }
+
+    public boolean isImportingHistory() {
+        return importingHistoryMap.size() != 0;
+    }
+
+    public void prepareImportHistory(long dialogId, Uri uri, ArrayList<Uri> mediaUris, MessagesStorage.IntCallback onStartImport) {
+        if (importingHistoryMap.get(dialogId) != null) {
+            onStartImport.run(0);
+            return;
+        }
+        int lowerId = (int) dialogId;
+        if (lowerId < 0) {
+            TLRPC.Chat chat = getMessagesController().getChat(-lowerId);
+            if (chat != null && !chat.megagroup) {
+                getMessagesController().convertToMegaGroup(null, -lowerId, null, (chatId) -> {
+                    if (chatId != 0) {
+                        prepareImportHistory(-chatId, uri, mediaUris, onStartImport);
+                    } else {
+                        onStartImport.run(0);
+                    }
+                });
+                return;
+            }
+        }
+        new Thread(() -> {
+            ArrayList<Uri> uris = mediaUris != null ? mediaUris : new ArrayList<>();
+            ImportingHistory importingHistory = new ImportingHistory();
+            importingHistory.mediaPaths = uris;
+            importingHistory.dialogId = dialogId;
+            importingHistory.peer = getMessagesController().getInputPeer((int) dialogId);
+            HashMap<String, ImportingHistory> files = new HashMap<>();
+            for (int a = 0, N = uris.size(); a < N + 1; a++) {
+                Uri mediaUri;
+                if (a == 0) {
+                    mediaUri = uri;
+                } else {
+                    mediaUri = uris.get(a - 1);
+                }
+                if (mediaUri == null || AndroidUtilities.isInternalUri(mediaUri)) {
+                    if (a == 0) {
+                        AndroidUtilities.runOnUIThread(() -> {
+                            onStartImport.run(0);
+                        });
+                        return;
+                    }
+                    continue;
+                }
+
+                String path = MediaController.copyFileToCache(mediaUri, "txt");
+                final File f = new File(path);
+                long size;
+                if (!f.exists() || (size = f.length()) == 0) {
+                    if (a == 0) {
+                        AndroidUtilities.runOnUIThread(() -> {
+                            onStartImport.run(0);
+                        });
+                        return;
+                    }
+                    continue;
+                }
+                importingHistory.totalSize += size;
+                if (a == 0) {
+                    importingHistory.historyPath = path;
+                } else {
+                    importingHistory.uploadMedia.add(path);
+                }
+                importingHistory.uploadSet.add(path);
+                files.put(path, importingHistory);
+            }
+            AndroidUtilities.runOnUIThread(() -> {
+                importingHistoryFiles.putAll(files);
+                importingHistoryMap.put(dialogId, importingHistory);
+                getFileLoader().uploadFile(importingHistory.historyPath, false, true, 0, ConnectionsManager.FileTypeFile, true);
+                getNotificationCenter().postNotificationName(NotificationCenter.historyImportProgressChanged, dialogId);
+                onStartImport.run((int) dialogId);
+
+                Intent intent = new Intent(ApplicationLoader.applicationContext, ImportingService.class);
+                try {
+                    ApplicationLoader.applicationContext.startService(intent);
+                } catch (Throwable e) {
+                    FileLog.e(e);
+                }
+            });
+        }).start();
+    }
+
     public TLRPC.TL_photo generatePhotoSizes(String path, Uri imageUri) {
         return generatePhotoSizes(null, path, imageUri);
     }
@@ -5501,9 +5777,13 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
             params.put("parentObject", parentFinal);
         }
         Integer prevType = 0;
+        boolean isSticker = false;
         if (docType != null) {
             prevType = docType[0];
-            if (document.mime_type != null && (document.mime_type.toLowerCase().startsWith("image/") || document.mime_type.toLowerCase().startsWith("video/mp4")) || MessageObject.canPreviewDocument(document)) {
+            if (document.mime_type != null && document.mime_type.toLowerCase().startsWith("image/webp")) {
+                docType[0] = -1;
+                isSticker = true;
+            } else if (document.mime_type != null && (document.mime_type.toLowerCase().startsWith("image/") || document.mime_type.toLowerCase().startsWith("video/mp4")) || MessageObject.canPreviewDocument(document)) {
                 docType[0] = 1;
             } else if (attributeAudio != null) {
                 docType[0] = 2;
@@ -5516,9 +5796,11 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                 finishGroup(accountInstance, groupId[0], scheduleDate);
                 groupId[0] = Utilities.random.nextLong();
             }
-            params.put("groupId", "" + groupId[0]);
-            if (isGroupFinal) {
-                params.put("final", "1");
+            if (!isSticker) {
+                params.put("groupId", "" + groupId[0]);
+                if (isGroupFinal) {
+                    params.put("final", "1");
+                }
             }
         }
 
@@ -5685,7 +5967,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                     if (!prepareSendingDocumentInternal(accountInstance, paths.get(a), originalPaths.get(a), null, mime, dialogId, replyToMsg, replyToTopMsg, captionFinal, null, editingMessageObject, groupId, mediaCount == 10 || a == count - 1, inputContent == null, notify, scheduleDate, docType)) {
                         error = true;
                     }
-                    if (prevGroupId != groupId[0]) {
+                    if (prevGroupId != groupId[0] || groupId[0] == -1) {
                         mediaCount = 1;
                     }
                 }
@@ -5708,7 +5990,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                     if (!prepareSendingDocumentInternal(accountInstance, null, null, uris.get(a), mime, dialogId, replyToMsg, replyToTopMsg, captionFinal, null, editingMessageObject, groupId, mediaCount == 10 || a == count - 1, inputContent == null, notify, scheduleDate, docType)) {
                         error = true;
                     }
-                    if (prevGroupId != groupId[0]) {
+                    if (prevGroupId != groupId[0] || groupId[0] == -1) {
                         mediaCount = 1;
                     }
                 }

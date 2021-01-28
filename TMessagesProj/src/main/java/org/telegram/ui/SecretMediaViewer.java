@@ -610,7 +610,11 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
                 if (oldInsets == null || !oldInsets.toString().equals(insets.toString())) {
                     windowView.requestLayout();
                 }
-                return insets.consumeSystemWindowInsets();
+                if (Build.VERSION.SDK_INT >= 30) {
+                    return WindowInsets.CONSUMED;
+                } else {
+                    return insets.consumeSystemWindowInsets();
+                }
             });
             containerView.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN);
         }

@@ -2153,6 +2153,10 @@ public class MediaDataController extends BaseController {
                             messagesSearchEndReached[1] = res.messages.isEmpty();
                             messagesSearchCount[1] = res instanceof TLRPC.TL_messages_messagesSlice ? res.count : res.messages.size();
                             searchMessagesInChat(req.q, dialogId, mergeDialogId, guid, direction, replyMessageId, true, user, chat, jumpToMessage);
+                        } else {
+                            messagesSearchEndReached[1] = true;
+                            messagesSearchCount[1] = 0;
+                            searchMessagesInChat(req.q, dialogId, mergeDialogId, guid, direction, replyMessageId, true, user, chat, jumpToMessage);
                         }
                     }
                 }), ConnectionsManager.RequestFlagFailOnServerErrors);

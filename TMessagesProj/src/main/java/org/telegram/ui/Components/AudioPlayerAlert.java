@@ -33,24 +33,26 @@ import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
-
-import androidx.annotation.NonNull;
-import androidx.core.content.FileProvider;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
-
 import android.os.SystemClock;
 import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewConfiguration;
 import android.view.ViewGroup;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+
+import androidx.annotation.NonNull;
+import androidx.core.content.FileProvider;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
+import com.google.android.exoplayer2.C;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
@@ -162,6 +164,58 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
     private int TAG;
 
     private LaunchActivity parentActivity;
+    int rewindingState;
+    float rewindingProgress = -1;
+
+    int rewindingForwardPressedCount;
+    long lastRewindingTime;
+    long lastUpdateRewindingPlayerTime;
+
+    private final Runnable forwardSeek = new Runnable() {
+        @Override
+        public void run() {
+            long duration = MediaController.getInstance().getDuration();
+            if (duration == 0 || duration == C.TIME_UNSET) {
+                lastRewindingTime = System.currentTimeMillis();
+                return;
+            }
+            float currentProgress = rewindingProgress;
+
+            long t = System.currentTimeMillis();
+            long dt = t - lastRewindingTime;
+            lastRewindingTime = t;
+            long updateDt = t - lastUpdateRewindingPlayerTime;
+            if (rewindingForwardPressedCount == 1) {
+                dt = dt * 3 - dt;
+            } else if (rewindingForwardPressedCount == 2) {
+                dt = dt * 6 - dt;
+            } else {
+                dt = dt * 12 - dt;
+            }
+            long currentTime = (long) (duration * currentProgress + dt);
+            currentProgress = currentTime / (float) duration;
+            if (currentProgress < 0) {
+                currentProgress = 0;
+            }
+            rewindingProgress = currentProgress;
+            MessageObject messageObject = MediaController.getInstance().getPlayingMessageObject();
+            if (messageObject != null && messageObject.isMusic()) {
+                if (!MediaController.getInstance().isMessagePaused()) {
+                    MediaController.getInstance().getPlayingMessageObject().audioProgress = rewindingProgress;
+                }
+                updateProgress(messageObject);
+            }
+            if (rewindingState == 1 && rewindingForwardPressedCount > 0 && MediaController.getInstance().isMessagePaused()) {
+                if (updateDt > 200 || rewindingProgress == 0) {
+                    lastUpdateRewindingPlayerTime = t;
+                    MediaController.getInstance().seekToProgress(MediaController.getInstance().getPlayingMessageObject(), currentProgress);
+                }
+                if (rewindingForwardPressedCount > 0 && rewindingProgress > 0) {
+                    AndroidUtilities.runOnUIThread(forwardSeek, 16);
+                }
+            }
+        }
+    };
 
     public AudioPlayerAlert(final Context context) {
         super(context, true);
@@ -524,12 +578,43 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
                 textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
                 textView.setEllipsize(TextUtils.TruncateAt.END);
                 textView.setSingleLine(true);
+                textView.setPadding(AndroidUtilities.dp(6), 0, AndroidUtilities.dp(6), AndroidUtilities.dp(1));
+                textView.setBackground(Theme.createRadSelectorDrawable(Theme.getColor(Theme.key_listSelector), AndroidUtilities.dp(4), AndroidUtilities.dp(4)));
+
+                textView.setOnClickListener(view -> {
+                    int dialogsCount = MessagesController.getInstance(currentAccount).getTotalDialogsCount();
+                    if (dialogsCount <= 10) {
+                        return;
+                    }
+                    String query = (String) textView.getText();
+                    if (parentActivity.getActionBarLayout().getLastFragment() instanceof DialogsActivity) {
+                        DialogsActivity dialogsActivity = (DialogsActivity) parentActivity.getActionBarLayout().getLastFragment();
+                        if (!dialogsActivity.onlyDialogsAdapter()) {
+                            dialogsActivity.setShowSearch(query, 4);
+                            dismiss();
+                            return;
+                        }
+                    }
+                    DialogsActivity fragment = new DialogsActivity(null);
+                    fragment.setSearchString(query);
+                    fragment.setInitialSearchType(4);
+                    parentActivity.presentFragment(fragment, false, false);
+                    dismiss();
+                });
                 return textView;
             }
         };
-        playerLayout.addView(authorTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.LEFT, 20, 47, 72, 0));
+        playerLayout.addView(authorTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.LEFT, 14, 47, 72, 0));
 
-        seekBarView = new SeekBarView(context);
+        seekBarView = new SeekBarView(context) {
+            @Override
+            boolean onTouch(MotionEvent ev) {
+                if (rewindingState != 0) {
+                    return false;
+                }
+                return super.onTouch(ev);
+            }
+        };
         seekBarView.setDelegate(new SeekBarView.SeekBarViewDelegate() {
             @Override
             public void onSeekBarDrag(boolean stop, float progress) {
@@ -659,8 +744,135 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
         });
 
         final int iconColor = Theme.getColor(Theme.key_player_button);
+        float touchSlop = ViewConfiguration.get(context).getScaledTouchSlop();
 
-        buttons[1] = prevButton = new RLottieImageView(context);
+        buttons[1] = prevButton = new RLottieImageView(context) {
+            float startX;
+            float startY;
+
+            int pressedCount = 0;
+
+            long lastTime;
+            long lastUpdateTime;
+
+            private final Runnable pressedRunnable = new Runnable() {
+                @Override
+                public void run() {
+                    pressedCount++;
+                    if (pressedCount == 1) {
+                        rewindingState = -1;
+                        rewindingProgress = MediaController.getInstance().getPlayingMessageObject().audioProgress;
+                        lastTime = System.currentTimeMillis();
+                        AndroidUtilities.runOnUIThread(this, 2000);
+                        AndroidUtilities.runOnUIThread(backSeek);
+                    } else if (pressedCount == 2) {
+                        AndroidUtilities.runOnUIThread(this, 2000);
+                    }
+                }
+            };
+
+            private final Runnable backSeek = new Runnable() {
+                @Override
+                public void run() {
+                    long duration = MediaController.getInstance().getDuration();
+                    if (duration == 0 || duration == C.TIME_UNSET) {
+                        lastTime = System.currentTimeMillis();
+                        return;
+                    }
+                    float currentProgress = rewindingProgress;
+
+                    long t = System.currentTimeMillis();
+                    long dt = t - lastTime;
+                    lastTime = t;
+                    long updateDt = t - lastUpdateTime;
+                    if (pressedCount == 1) {
+                        dt *= 3;
+                    } else if (pressedCount == 2) {
+                        dt *= 6;
+                    } else {
+                        dt *= 12;
+                    }
+                    long currentTime = (long) (duration * currentProgress - dt);
+                    currentProgress = currentTime / (float) duration;
+                    if (currentProgress < 0) {
+                        currentProgress = 0;
+                    }
+                    rewindingProgress = currentProgress;
+                    MessageObject messageObject = MediaController.getInstance().getPlayingMessageObject();
+                    if (messageObject != null && messageObject.isMusic()) {
+                        updateProgress(messageObject);
+                    }
+                    if (rewindingState == -1 && pressedCount > 0) {
+                        if (updateDt > 200 || rewindingProgress == 0) {
+                            lastUpdateTime = t;
+                            if (rewindingProgress == 0) {
+                                MediaController.getInstance().seekToProgress(MediaController.getInstance().getPlayingMessageObject(), 0);
+                                MediaController.getInstance().pauseByRewind();
+                            } else {
+                                MediaController.getInstance().seekToProgress(MediaController.getInstance().getPlayingMessageObject(), currentProgress);
+                            }
+                        }
+                        if (pressedCount > 0 && rewindingProgress > 0) {
+                            AndroidUtilities.runOnUIThread(backSeek, 16);
+                        }
+                    }
+                }
+            };
+
+            long startTime;
+
+            @Override
+            public boolean onTouchEvent(MotionEvent event) {
+                if (seekBarView.isDragging() || rewindingState == 1) {
+                    return false;
+                }
+                float x = event.getRawX();
+                float y = event.getRawY();
+
+                switch (event.getAction()) {
+                    case MotionEvent.ACTION_DOWN:
+                        startX = x;
+                        startY = y;
+                        startTime = System.currentTimeMillis();
+                        rewindingState = 0;
+                        AndroidUtilities.runOnUIThread(pressedRunnable, 300);
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP && getBackground() != null) {
+                            getBackground().setHotspot(startX, startY);
+                        }
+                        setPressed(true);
+                        break;
+                    case MotionEvent.ACTION_MOVE:
+                        float dx = x - startX;
+                        float dy = y - startY;
+
+                        if ((dx * dx + dy * dy) > touchSlop * touchSlop && rewindingState == 0) {
+                            AndroidUtilities.cancelRunOnUIThread(pressedRunnable);
+                            setPressed(false);
+                        }
+                        break;
+                    case MotionEvent.ACTION_CANCEL:
+                    case MotionEvent.ACTION_UP:
+                        AndroidUtilities.cancelRunOnUIThread(pressedRunnable);
+                        AndroidUtilities.cancelRunOnUIThread(backSeek);
+                        if (rewindingState == 0 && event.getAction() == MotionEvent.ACTION_UP && (System.currentTimeMillis() - startTime < 300)) {
+                            MediaController.getInstance().playPreviousMessage();
+                            prevButton.setProgress(0f);
+                            prevButton.playAnimation();
+                        }
+                        if (pressedCount > 0) {
+                            lastUpdateTime = 0;
+                            backSeek.run();
+                            MediaController.getInstance().resumeByRewind();
+                        }
+                        rewindingProgress = -1;
+                        setPressed(false);
+                        rewindingState = 0;
+                        pressedCount = 0;
+                        break;
+                }
+                return true;
+            }
+        };
         prevButton.setScaleType(ImageView.ScaleType.CENTER);
         prevButton.setAnimation(R.raw.player_prev, 20, 20);
         prevButton.setLayerColor("Triangle 3.**", iconColor);
@@ -670,11 +882,6 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
             prevButton.setBackgroundDrawable(Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector), 1, AndroidUtilities.dp(22)));
         }
         bottomView.addView(prevButton, LayoutHelper.createFrame(48, 48, Gravity.LEFT | Gravity.TOP));
-        prevButton.setOnClickListener(v -> {
-            MediaController.getInstance().playPreviousMessage();
-            prevButton.setProgress(0f);
-            prevButton.playAnimation();
-        });
         prevButton.setContentDescription(LocaleController.getString("AccDescrPrevious", R.string.AccDescrPrevious));
 
         buttons[2] = playButton = new ImageView(context);
@@ -697,7 +904,92 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
             }
         });
 
-        buttons[3] = nextButton = new RLottieImageView(context);
+        buttons[3] = nextButton = new RLottieImageView(context) {
+
+            float startX;
+            float startY;
+            boolean pressed;
+
+            private final Runnable pressedRunnable = new Runnable() {
+                @Override
+                public void run() {
+                    if (MediaController.getInstance().getPlayingMessageObject() == null) {
+                        return;
+                    }
+                    rewindingForwardPressedCount++;
+                    if (rewindingForwardPressedCount == 1) {
+                        pressed = true;
+                        rewindingState = 1;
+                        if (MediaController.getInstance().isMessagePaused()) {
+                            startForwardRewindingSeek();
+                        } else if (rewindingState == 1) {
+                            AndroidUtilities.cancelRunOnUIThread(forwardSeek);
+                            lastUpdateRewindingPlayerTime = 0;
+                        }
+                        MediaController.getInstance().setPlaybackSpeed(true, 4);
+                        AndroidUtilities.runOnUIThread(this, 2000);
+                    } else if (rewindingForwardPressedCount == 2) {
+                        MediaController.getInstance().setPlaybackSpeed(true, 7);
+                        AndroidUtilities.runOnUIThread(this, 2000);
+                    } else {
+                        MediaController.getInstance().setPlaybackSpeed(true, 13);
+                    }
+                }
+            };
+
+            @Override
+            public boolean onTouchEvent(MotionEvent event) {
+                if (seekBarView.isDragging() || rewindingState == -1) {
+                    return false;
+                }
+                float x = event.getRawX();
+                float y = event.getRawY();
+
+                switch (event.getAction()) {
+                    case MotionEvent.ACTION_DOWN:
+                        pressed = false;
+                        startX = x;
+                        startY = y;
+                        AndroidUtilities.runOnUIThread(pressedRunnable, 300);
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP && getBackground() != null) {
+                            getBackground().setHotspot(startX, startY);
+                        }
+                        setPressed(true);
+                        break;
+                    case MotionEvent.ACTION_MOVE:
+                        float dx = x - startX;
+                        float dy = y - startY;
+
+                        if ((dx * dx + dy * dy) > touchSlop * touchSlop && !pressed) {
+                            AndroidUtilities.cancelRunOnUIThread(pressedRunnable);
+                            setPressed(false);
+                        }
+                        break;
+                    case MotionEvent.ACTION_CANCEL:
+                    case MotionEvent.ACTION_UP:
+                        if (!pressed && event.getAction() == MotionEvent.ACTION_UP && isPressed()) {
+                            MediaController.getInstance().playNextMessage();
+                            nextButton.setProgress(0f);
+                            nextButton.playAnimation();
+                        }
+                        AndroidUtilities.cancelRunOnUIThread(pressedRunnable);
+                        if (rewindingForwardPressedCount > 0) {
+                            MediaController.getInstance().setPlaybackSpeed(true, 1f);
+                            if (MediaController.getInstance().isMessagePaused()) {
+                                lastUpdateRewindingPlayerTime = 0;
+                                forwardSeek.run();
+                            }
+                        }
+                        rewindingState = 0;
+                        setPressed(false);
+                        rewindingForwardPressedCount = 0;
+                        rewindingProgress = -1;
+                        break;
+                }
+                return true;
+            }
+
+        };
         nextButton.setScaleType(ImageView.ScaleType.CENTER);
         nextButton.setAnimation(R.raw.player_prev, 20, 20);
         nextButton.setLayerColor("Triangle 3.**", iconColor);
@@ -708,11 +1000,6 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
             nextButton.setBackgroundDrawable(Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector), 1, AndroidUtilities.dp(22)));
         }
         bottomView.addView(nextButton, LayoutHelper.createFrame(48, 48, Gravity.LEFT | Gravity.TOP));
-        nextButton.setOnClickListener(v -> {
-            MediaController.getInstance().playNextMessage();
-            nextButton.setProgress(0f);
-            nextButton.playAnimation();
-        });
         nextButton.setContentDescription(LocaleController.getString("Next", R.string.Next));
 
         buttons[4] = optionsButton = new ActionBarMenuItem(context, null, 0, iconColor);
@@ -886,6 +1173,15 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
         updateTitle(false);
         updateRepeatButton();
         updateEmptyView();
+    }
+
+    private void startForwardRewindingSeek() {
+        if (rewindingState == 1) {
+            lastRewindingTime = System.currentTimeMillis();
+            rewindingProgress = MediaController.getInstance().getPlayingMessageObject().audioProgress;
+            AndroidUtilities.cancelRunOnUIThread(forwardSeek);
+            AndroidUtilities.runOnUIThread(forwardSeek);
+        }
     }
 
     private void updateEmptyViewPosition() {
@@ -1201,6 +1497,18 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
                         }
                     }
                 }
+                if (id == NotificationCenter.messagePlayingPlayStateChanged) {
+                    if (MediaController.getInstance().getPlayingMessageObject() != null) {
+                        if (MediaController.getInstance().isMessagePaused()) {
+                            startForwardRewindingSeek();
+                        } else if (rewindingState == 1 && rewindingProgress != -1f) {
+                            AndroidUtilities.cancelRunOnUIThread(forwardSeek);
+                            lastUpdateRewindingPlayerTime = 0;
+                            forwardSeek.run();
+                            rewindingProgress = -1f;
+                        }
+                    }
+                }
             } else if (id == NotificationCenter.messagePlayingDidStart) {
                 MessageObject messageObject = (MessageObject) args[0];
                 if (messageObject.eventId != 0) {
@@ -1433,7 +1741,12 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
             if (seekBarView.isDragging()) {
                 newTime = (int) (messageObject.getDuration() * seekBarView.getProgress());
             } else {
-                seekBarView.setProgress(messageObject.audioProgress, animated);
+                boolean updateRewinding = rewindingProgress >= 0 && (rewindingState == -1 || (rewindingState == 1 && MediaController.getInstance().isMessagePaused()));
+                if (updateRewinding) {
+                    seekBarView.setProgress(rewindingProgress, animated);
+                } else {
+                    seekBarView.setProgress(messageObject.audioProgress, animated);
+                }
 
                 float bufferedProgress;
                 if (currentAudioFinishedLoading) {
@@ -1450,7 +1763,12 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
                 if (bufferedProgress != -1) {
                     seekBarView.setBufferedProgress(bufferedProgress);
                 }
-                newTime = messageObject.audioProgressSec;
+                if (updateRewinding) {
+                    newTime = (int) (messageObject.getDuration() * seekBarView.getProgress());
+                    messageObject.audioProgressSec = newTime;
+                } else {
+                    newTime = messageObject.audioProgressSec;
+                }
             }
             if (lastTime != newTime) {
                 lastTime = newTime;
@@ -1999,6 +2317,8 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
         private int activeIndex;
         private AnimatorSet animatorSet;
         private LinearGradient gradientShader;
+        private int stableOffest = -1;
+        private final RectF rectF = new RectF();
 
         public ClippingTextViewSwitcher(@NonNull Context context) {
             super(context);
@@ -2028,7 +2348,27 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
         protected boolean drawChild(Canvas canvas, View child, long drawingTime) {
             final int index = child == textViews[0] ? 0 : 1;
             final boolean result;
-            if (clipProgress[index] > 0f) {
+            boolean hasStableRect = false;
+            if (stableOffest > 0 && textViews[activeIndex].getAlpha() != 1f && textViews[activeIndex].getLayout() != null) {
+                float x1 = textViews[activeIndex].getLayout().getPrimaryHorizontal(0);
+                float x2 = textViews[activeIndex].getLayout().getPrimaryHorizontal(stableOffest);
+                hasStableRect = true;
+                if (x1 == x2) {
+                    hasStableRect = false;
+                } else if (x2 > x1) {
+                    rectF.set(x1, 0, x2, getMeasuredHeight());
+                } else {
+                    rectF.set(x2, 0, x1, getMeasuredHeight());
+                }
+
+                if (hasStableRect && index == activeIndex) {
+                    canvas.save();
+                    canvas.clipRect(rectF);
+                    textViews[0].draw(canvas);
+                    canvas.restore();
+                }
+            }
+            if (clipProgress[index] > 0f || hasStableRect) {
                 final int width = child.getWidth();
                 final int height = child.getHeight();
                 final int saveCount = canvas.saveLayer(0, 0, width, height, null, Canvas.ALL_SAVE_FLAG);
@@ -2041,6 +2381,9 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
                 if (width > gradientEnd) {
                     canvas.drawRect(gradientEnd, 0, width, height, erasePaint);
                 }
+                if (hasStableRect) {
+                    canvas.drawRect(rectF, erasePaint);
+                }
                 canvas.restoreToCount(saveCount);
             } else {
                 result = super.drawChild(canvas, child, drawingTime);
@@ -2049,13 +2392,29 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
         }
 
         public void setText(CharSequence text) {
+            setText(text, true);
+        }
+
+        public void setText(CharSequence text, boolean animated) {
             final CharSequence currentText = textViews[activeIndex].getText();
 
-            if (TextUtils.isEmpty(currentText)) {
+            if (TextUtils.isEmpty(currentText) || !animated) {
                 textViews[activeIndex].setText(text);
                 return;
             } else if (TextUtils.equals(text, currentText)) {
                 return;
+            }
+
+            stableOffest = 0;
+            int n = Math.min(text.length(), currentText.length());
+            for (int i = 0; i < n; i++) {
+                if (text.charAt(i) != currentText.charAt(i)) {
+                    break;
+                }
+                stableOffest++;
+            }
+            if (stableOffest <= 3) {
+                stableOffest = -1;
             }
 
             final int index = activeIndex == 0 ? 1 : 0;

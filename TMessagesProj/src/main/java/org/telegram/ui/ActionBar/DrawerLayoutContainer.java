@@ -119,7 +119,11 @@ public class DrawerLayoutContainer extends FrameLayout {
                     hasCutout = cutout != null && cutout.getBoundingRects().size() != 0;
                 }
                 invalidate();
-                return insets.consumeSystemWindowInsets();
+                if (Build.VERSION.SDK_INT >= 30) {
+                    return WindowInsets.CONSUMED;
+                } else {
+                    return insets.consumeSystemWindowInsets();
+                }
             });
             setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN);
         }

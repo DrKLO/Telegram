@@ -97,6 +97,8 @@ public class FileLoadOperation {
 
     private boolean nextPartWasPreloaded;
 
+    protected long lastProgressUpdateTime;
+
     private ArrayList<Range> notLoadedBytesRanges;
     private volatile ArrayList<Range> notLoadedBytesRangesCopy;
     private ArrayList<Range> notRequestedBytesRanges;

@@ -19,6 +19,7 @@
 #include "system_wrappers/include/field_trial.h"
 #include "api/stats/rtcstats_objects.h"
 #include "modules/audio_processing/audio_buffer.h"
+#include "modules/audio_device/include/audio_device_factory.h"
 #include "common_audio/include/audio_util.h"
 #include "common_audio/vad/include/webrtc_vad.h"
 #include "modules/audio_processing/agc2/vad_with_level.h"
@@ -1091,6 +1092,14 @@ public:
                     dependencies.task_queue_factory.get());
                 return (result && (result->Init() == 0)) ? result : nullptr;
             };
+#ifdef WEBRTC_WIN
+            if (auto result = webrtc::CreateWindowsCoreAudioAudioDeviceModule(dependencies.task_queue_factory.get())) {
+                if (result->Init() == 0) {
+                    _adm_use_withAudioDeviceModule = new rtc::RefCountedObject<WrappedAudioDeviceModule>(result);
+                    return;
+                }
+            }
+#endif // WEBRTC_WIN
             if (auto result = check(webrtc::AudioDeviceModule::kPlatformDefaultAudio)) {
                 _adm_use_withAudioDeviceModule = new rtc::RefCountedObject<WrappedAudioDeviceModule>(result);
 #ifdef WEBRTC_LINUX
@@ -1326,7 +1335,7 @@ public:
 			adm->EnableBuiltInAEC(false);
 #endif // WEBRTC_WIN
 
-            if (adm->InitPlayout()) {
+            if (adm->InitPlayout() == 0) {
                 adm->StartPlayout();
             } else {
                 getMediaThread()->PostDelayedTask(RTC_FROM_HERE, [weak](){
@@ -1335,7 +1344,7 @@ public:
                         return;
                     }
                     strong->withAudioDeviceModule([](webrtc::AudioDeviceModule *adm) {
-                        if (adm->InitPlayout()) {
+                        if (adm->InitPlayout() == 0) {
                             adm->StartPlayout();
                         }
                     });
@@ -1442,6 +1451,27 @@ public:
             return finish();
         });
 #endif
+    }
+    
+    void setVolume(uint32_t ssrc, double volume) {
+        auto current = _audioTrackVolumes.find(ssrc);
+        bool updated = false;
+        if (current != _audioTrackVolumes.end()) {
+            if (abs(current->second - volume) > 0.001) {
+                updated = true;
+            }
+        } else {
+            if (volume < 1.0 - 0.001) {
+                updated = true;
+            }
+        }
+        if (updated) {
+            _audioTrackVolumes[ssrc] = volume;
+            auto track = _audioTracks.find(ssrc);
+            if (track != _audioTracks.end()) {
+                track->second->GetSource()->SetVolume(volume);
+            }
+        }
     }
 
     void updateIsConnected(bool isConnected) {
@@ -1792,7 +1822,14 @@ public:
                 uint32_t ssrc = 0;
                 iss >> ssrc;
 
-                auto remoteAudioTrack = static_cast<webrtc::AudioTrackInterface *>(transceiver->receiver()->track().get());
+                rtc::scoped_refptr<webrtc::AudioTrackInterface> remoteAudioTrack(static_cast<webrtc::AudioTrackInterface *>(transceiver->receiver()->track().get()));
+                if (_audioTracks.find(ssrc) == _audioTracks.end()) {
+                    _audioTracks.insert(std::make_pair(ssrc, remoteAudioTrack));
+                }
+                auto currentVolume = _audioTrackVolumes.find(ssrc);
+                if (currentVolume != _audioTrackVolumes.end()) {
+                    remoteAudioTrack->GetSource()->SetVolume(currentVolume->second);
+                }
                 if (_audioTrackSinks.find(ssrc) == _audioTrackSinks.end()) {
                     const auto weak = std::weak_ptr<GroupInstanceManager>(shared_from_this());
                     std::shared_ptr<AudioTrackSinkInterfaceImpl> sink(new AudioTrackSinkInterfaceImpl([weak, ssrc](float level, bool hasSpeech) {
@@ -1821,6 +1858,7 @@ public:
                     }));
                     _audioTrackSinks[ssrc] = sink;
                     remoteAudioTrack->AddSink(sink.get());
+                    //remoteAudioTrack->GetSource()->SetVolume(0.01);
                 }
             }
         }
@@ -2048,8 +2086,10 @@ private:
     rtc::Thread *_adm_thread = nullptr;
     rtc::scoped_refptr<webrtc::AudioDeviceModule> _adm_use_withAudioDeviceModule;
 
+    std::map<uint32_t, rtc::scoped_refptr<webrtc::AudioTrackInterface>> _audioTracks;
     std::map<uint32_t, std::shared_ptr<AudioTrackSinkInterfaceImpl>> _audioTrackSinks;
     std::map<uint32_t, GroupLevelValue> _audioLevels;
+    std::map<uint32_t, double> _audioTrackVolumes;
     
     std::shared_ptr<PlatformContext> _platformContext;
 };
@@ -2119,6 +2159,12 @@ void GroupInstanceImpl::setAudioInputDevice(std::string id) {
 void GroupInstanceImpl::setAudioOutputDevice(std::string id) {
     _manager->perform(RTC_FROM_HERE, [id](GroupInstanceManager *manager) {
         manager->setAudioOutputDevice(id);
+    });
+}
+
+void GroupInstanceImpl::setVolume(uint32_t ssrc, double volume) {
+    _manager->perform(RTC_FROM_HERE, [ssrc, volume](GroupInstanceManager *manager) {
+        manager->setVolume(ssrc, volume);
     });
 }
 

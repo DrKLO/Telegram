@@ -155,28 +155,25 @@ public class StickersSearchAdapter extends RecyclerListView.SelectionAdapter {
                     MediaDataController.getInstance(currentAccount).fetchNewEmojiKeywords(newLanguage);
                 }
                 delegate.setLastSearchKeyboardLanguage(newLanguage);
-                MediaDataController.getInstance(currentAccount).getEmojiSuggestions(delegate.getLastSearchKeyboardLanguage(), searchQuery, false, new MediaDataController.KeywordResultCallback() {
-                    @Override
-                    public void run(ArrayList<MediaDataController.KeywordResult> param, String alias) {
-                        if (lastId != emojiSearchId) {
-                            return;
-                        }
-                        boolean added = false;
-                        for (int a = 0, size = param.size(); a < size; a++) {
-                            String emoji = param.get(a).emoji;
-                            ArrayList<TLRPC.Document> newStickers = allStickers != null ? allStickers.get(emoji) : null;
-                            if (newStickers != null && !newStickers.isEmpty()) {
-                                clear();
-                                if (!emojiStickers.containsKey(newStickers)) {
-                                    emojiStickers.put(newStickers, emoji);
-                                    emojiArrays.add(newStickers);
-                                    added = true;
-                                }
+                MediaDataController.getInstance(currentAccount).getEmojiSuggestions(delegate.getLastSearchKeyboardLanguage(), searchQuery, false, (param, alias) -> {
+                    if (lastId != emojiSearchId) {
+                        return;
+                    }
+                    boolean added = false;
+                    for (int a = 0, size = param.size(); a < size; a++) {
+                        String emoji = param.get(a).emoji;
+                        ArrayList<TLRPC.Document> newStickers = allStickers != null ? allStickers.get(emoji) : null;
+                        if (newStickers != null && !newStickers.isEmpty()) {
+                            clear();
+                            if (!emojiStickers.containsKey(newStickers)) {
+                                emojiStickers.put(newStickers, emoji);
+                                emojiArrays.add(newStickers);
+                                added = true;
                             }
                         }
-                        if (added) {
-                            notifyDataSetChanged();
-                        }
+                    }
+                    if (added) {
+                        notifyDataSetChanged();
                     }
                 });
             }
@@ -400,7 +397,6 @@ public class StickersSearchAdapter extends RecyclerListView.SelectionAdapter {
         return new RecyclerListView.Holder(view);
     }
 
-    @SuppressWarnings("unchecked")
     @Override
     public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
         switch (holder.getItemViewType()) {
@@ -449,8 +445,6 @@ public class StickersSearchAdapter extends RecyclerListView.SelectionAdapter {
             if (holder.getItemViewType() == 3) {
                 bindFeaturedStickerSetInfoCell((FeaturedStickerSetInfoCell) holder.itemView, position, true);
             }
-        } else {
-            super.onBindViewHolder(holder, position, payloads);
         }
     }
 
@@ -545,7 +539,6 @@ public class StickersSearchAdapter extends RecyclerListView.SelectionAdapter {
                 installing = false;
             } else if (removing && !cell.isInstalled()) {
                 removingStickerSets.remove(stickerSetCovered.set.id);
-                removing = false;
             }
         }
         cell.setAddDrawProgress(!forceInstalled && installing, animated);
@@ -601,7 +594,7 @@ public class StickersSearchAdapter extends RecyclerListView.SelectionAdapter {
                         }
                     }
                     int count = (int) Math.ceil(documentsCount / (float) delegate.getStickersPerRow());
-                    for (int b = 0, N = count; b < N; b++) {
+                    for (int b = 0; b < count; b++) {
                         rowStartPack.put(startRow + b, documentsCount);
                     }
                     totalItems += count * delegate.getStickersPerRow();

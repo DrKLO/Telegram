@@ -127,11 +127,6 @@ public class EditTextEmoji extends FrameLayout implements NotificationCenter.Not
             }
 
             @Override
-            public void setImeOptions(int imeOptions) {
-                super.setImeOptions(imeOptions);
-            }
-
-            @Override
             protected void onLineCountChanged(int oldLineCount, int newLineCount) {
                 EditTextEmoji.this.onLineCountChanged(oldLineCount, newLineCount);
             }

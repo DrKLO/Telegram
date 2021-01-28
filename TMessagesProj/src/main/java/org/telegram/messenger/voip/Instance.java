@@ -95,11 +95,11 @@ public final class Instance {
         instance = null;
     }
 
-    public static NativeInstance makeInstance(String version, Config config, String persistentStateFilePath, Endpoint[] endpoints, Proxy proxy, int networkType, EncryptionKey encryptionKey, VideoSink remoteSink, long videoCapturer) {
+    public static NativeInstance makeInstance(String version, Config config, String persistentStateFilePath, Endpoint[] endpoints, Proxy proxy, int networkType, EncryptionKey encryptionKey, VideoSink remoteSink, long videoCapturer, NativeInstance.AudioLevelsCallback audioLevelsCallback) {
         if (!"2.4.4".equals(version)) {
             ContextUtils.initialize(ApplicationLoader.applicationContext);
         }
-        instance = NativeInstance.make(version, config, persistentStateFilePath, endpoints, proxy, networkType, encryptionKey, remoteSink, videoCapturer);
+        instance = NativeInstance.make(version, config, persistentStateFilePath, endpoints, proxy, networkType, encryptionKey, remoteSink, videoCapturer, audioLevelsCallback);
         setGlobalServerConfig(globalServerConfig.jsonObject.toString());
         setBufferSize(bufferSize);
         return instance;
