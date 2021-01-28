@@ -4628,7 +4628,7 @@ public class MessagesStorage extends BaseController {
                     final TLRPC.ChatFull finalInfo = info;
                     AndroidUtilities.runOnUIThread(() -> getNotificationCenter().postNotificationName(NotificationCenter.chatInfoDidLoad, finalInfo, 0, false));
 
-                    SQLitePreparedStatement state = database.executeFast("REPLACE INTO chat_settings_v2 VALUES(?, ?, ?, ?, ?)");
+                    SQLitePreparedStatement state = database.executeFast("REPLACE INTO chat_settings_v2 VALUES(?, ?, ?, ?, ?, ?)");
                     NativeByteBuffer data = new NativeByteBuffer(info.getObjectSize());
                     info.serializeToStream(data);
                     state.bindInteger(1, info.id);
@@ -4636,6 +4636,7 @@ public class MessagesStorage extends BaseController {
                     state.bindInteger(3, info.pinned_msg_id);
                     state.bindInteger(4, info.online_count);
                     state.bindInteger(5, info.inviterId);
+                    state.bindInteger(6, info.invitesCount);
                     state.step();
                     state.dispose();
                     data.reuse();
@@ -5180,7 +5181,7 @@ public class MessagesStorage extends BaseController {
                     final TLRPC.ChatFull finalInfo = info;
                     AndroidUtilities.runOnUIThread(() -> getNotificationCenter().postNotificationName(NotificationCenter.chatInfoDidLoad, finalInfo, 0, false));
 
-                    SQLitePreparedStatement state = database.executeFast("REPLACE INTO chat_settings_v2 VALUES(?, ?, ?, ?, ?)");
+                    SQLitePreparedStatement state = database.executeFast("REPLACE INTO chat_settings_v2 VALUES(?, ?, ?, ?, ?, ?)");
                     NativeByteBuffer data = new NativeByteBuffer(info.getObjectSize());
                     info.serializeToStream(data);
                     state.bindInteger(1, chat_id);
@@ -5188,6 +5189,7 @@ public class MessagesStorage extends BaseController {
                     state.bindInteger(3, info.pinned_msg_id);
                     state.bindInteger(4, info.online_count);
                     state.bindInteger(5, info.inviterId);
+                    state.bindInteger(6, info.invitesCount);
                     state.step();
                     state.dispose();
                     data.reuse();

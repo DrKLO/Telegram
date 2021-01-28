@@ -16,6 +16,7 @@ import android.view.WindowManager;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.ScrollView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -63,6 +64,8 @@ public class LinkActionView extends LinearLayout {
     boolean loadingImporters;
     private QRCodeBottomSheet qrCodeBottomSheet;
     private boolean isPublic;
+
+    float[] point = new float[2];
 
     public LinkActionView(Context context, BaseFragment fragment, BottomSheet bottomSheet, int chatId, boolean permanent) {
         super(context);
@@ -227,41 +230,29 @@ public class LinkActionView extends LinearLayout {
             layout.addView(subItem, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48));
 
             FrameLayout container;
-            float y = 0;
             if (bottomSheet == null) {
                 container = fragment.getParentLayout();
             } else {
                 container = bottomSheet.getContainer();
             }
 
-            View v = frameLayout;
-            while (v != container) {
-                y += v.getY();
-                v = (View) v.getParent();
-                if (!(v instanceof ViewGroup)) {
-                    return;
-                }
-            }
+
 
             if (container != null) {
-                FrameLayout finalContainer = container;
+                float x = 0;
+                float y;
+                getPointOnScreen(frameLayout, container, point);
+                y = point[1];
+
+                final FrameLayout finalContainer = container;
                 View dimView = new View(context) {
+
                     @Override
                     protected void onDraw(Canvas canvas) {
                         canvas.drawColor(0x33000000);
-                        float x = 0;
-                        float y = 0;
-                        View v = frameLayout;
-                        while (v != finalContainer) {
-                            y += v.getY();
-                            x += v.getX();
-                            v = (View) v.getParent();
-                            if (!(v instanceof ViewGroup)) {
-                                return;
-                            }
-                        }
+                        getPointOnScreen(frameLayout, finalContainer, point);
                         canvas.save();
-                        canvas.translate(x, y);
+                        canvas.translate(point[0], point[1]);
                         frameLayout.draw(canvas);
                         canvas.restore();
                     }
@@ -302,7 +293,11 @@ public class LinkActionView extends LinearLayout {
                     }
                 });
 
-                actionBarPopupWindow.showAtLocation(container, 0, (int) container.getMeasuredWidth() - layout.getMeasuredWidth() - AndroidUtilities.dp(16), (int) y + frameLayout.getMeasuredHeight());
+                if (AndroidUtilities.isTablet()) {
+                    y += container.getPaddingTop();
+                    x -= container.getPaddingLeft();
+                }
+                actionBarPopupWindow.showAtLocation(container, 0, (int) (container.getMeasuredWidth() - layout.getMeasuredWidth() - AndroidUtilities.dp(16) + container.getX() + x), (int) (y + frameLayout.getMeasuredHeight() + container.getY()));
             }
 
         });
@@ -314,6 +309,27 @@ public class LinkActionView extends LinearLayout {
             }
         });
         updateColors();
+    }
+
+    private void getPointOnScreen(FrameLayout frameLayout, FrameLayout finalContainer, float[] point) {
+        float x = 0;
+        float y = 0;
+        View v = frameLayout;
+        while (v != finalContainer) {
+            y += v.getY();
+            x += v.getX();
+            if (v instanceof ScrollView) {
+                y -= v.getScrollY();
+            }
+            v = (View) v.getParent();
+            if (!(v instanceof ViewGroup)) {
+                return;
+            }
+        }
+        x -= finalContainer.getPaddingLeft();
+        y -= finalContainer.getPaddingTop();
+        point[0] = x;
+        point[1] = y;
     }
 
     private void showQrCode() {

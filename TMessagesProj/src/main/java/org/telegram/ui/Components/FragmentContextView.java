@@ -541,6 +541,10 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
                 }
                 VoIPHelper.startCall(chatActivity.getMessagesController().getChat(call.chatId), false, fragment.getParentActivity());
             } else if (currentStyle == 5) {
+                SendMessagesHelper.ImportingHistory importingHistory = parentFragment.getSendMessagesHelper().getImportingHistory(((ChatActivity) parentFragment).getDialogId());
+                if (importingHistory == null) {
+                    return;
+                }
                 ImportingAlert importingAlert = new ImportingAlert(getContext(), (ChatActivity) fragment);
                 importingAlert.setOnHideListener(dialog -> checkImport(false));
                 fragment.showDialog(importingAlert);
@@ -610,7 +614,7 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
                 show = true;
             } else if (fragment instanceof ChatActivity && fragment.getSendMessagesHelper().getImportingHistory(((ChatActivity) fragment).getDialogId()) != null && !isPlayingVoice()) {
                 show = true;
-            } else if (fragment instanceof ChatActivity && ((ChatActivity) fragment).getGroupCall() != null && !GroupCallPip.isShowing() && !isPlayingVoice()) {
+            } else if (fragment instanceof ChatActivity && ((ChatActivity) fragment).getGroupCall() != null && ((ChatActivity) fragment).getGroupCall().call.participants_count > 0 && !GroupCallPip.isShowing() && !isPlayingVoice()) {
                 show = true;
             } else {
                 MessageObject messageObject = MediaController.getInstance().getPlayingMessageObject();
@@ -881,7 +885,7 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
                 checkCall(true);
             } else if (fragment instanceof ChatActivity && fragment.getSendMessagesHelper().getImportingHistory(((ChatActivity) fragment).getDialogId()) != null && !isPlayingVoice()) {
                 checkImport(true);
-            } else if (fragment instanceof ChatActivity && ((ChatActivity) fragment).getGroupCall() != null && !GroupCallPip.isShowing() && !isPlayingVoice()) {
+            } else if (fragment instanceof ChatActivity && ((ChatActivity) fragment).getGroupCall() != null && ((ChatActivity) fragment).getGroupCall().call.participants_count > 0 && !GroupCallPip.isShowing() && !isPlayingVoice()) {
                 checkCall(true);
             } else {
                 checkPlayer(true);
@@ -1220,8 +1224,9 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
         if (messageObject == null || messageObject.getId() == 0 || messageObject.isVideo()) {
             lastMessageObject = null;
             boolean callAvailable = supportsCalls && VoIPService.getSharedInstance() != null && !VoIPService.getSharedInstance().isHangingUp() && VoIPService.getSharedInstance().getCallState() != VoIPService.STATE_WAITING_INCOMING && !GroupCallPip.isShowing();
-            if (!isPlayingVoice() && !callAvailable && fragment instanceof ChatActivity && ((ChatActivity) fragment).getGroupCall() != null && !GroupCallPip.isShowing()) {
-                callAvailable = true;
+            if (!isPlayingVoice() && !callAvailable && fragment instanceof ChatActivity && !GroupCallPip.isShowing()) {
+                ChatObject.Call call = ((ChatActivity) fragment).getGroupCall();
+                callAvailable = call != null && call.call.participants_count > 0;
             }
             if (callAvailable) {
                 checkCall(false);
@@ -1600,7 +1605,7 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
                     });
                     animatorSet.start();
                 }
-            } else if (currentStyle == -1 || currentStyle == 4 || currentStyle == 3 || currentStyle == 1) {
+            } else if (visible && (currentStyle == -1 || currentStyle == 4 || currentStyle == 3 || currentStyle == 1)) {
                 visible = false;
                 setVisibility(GONE);
             }

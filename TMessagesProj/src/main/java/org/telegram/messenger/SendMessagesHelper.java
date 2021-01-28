@@ -5470,6 +5470,9 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                 }
 
                 String path = MediaController.copyFileToCache(mediaUri, "txt");
+                if (path == null) {
+                    continue;
+                }
                 final File f = new File(path);
                 long size;
                 if (!f.exists() || (size = f.length()) == 0) {
@@ -5483,6 +5486,14 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                 }
                 importingHistory.totalSize += size;
                 if (a == 0) {
+                    if (size > 32 * 1024 * 1024) {
+                        f.delete();
+                        AndroidUtilities.runOnUIThread(() -> {
+                            Toast.makeText(ApplicationLoader.applicationContext, LocaleController.getString("ImportFileTooLarge", R.string.ImportFileTooLarge), Toast.LENGTH_SHORT).show();
+                            onStartImport.run(0);
+                        });
+                        return;
+                    }
                     importingHistory.historyPath = path;
                 } else {
                     importingHistory.uploadMedia.add(path);

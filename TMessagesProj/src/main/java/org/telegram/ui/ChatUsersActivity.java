@@ -745,7 +745,9 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
             @Override
             public void invalidate() {
                 super.invalidate();
-                fragmentView.invalidate();
+                if (fragmentView != null) {
+                    fragmentView.invalidate();
+                }
             }
         };
         listView.setLayoutManager(layoutManager = new LinearLayoutManager(context, LinearLayoutManager.VERTICAL, false) {

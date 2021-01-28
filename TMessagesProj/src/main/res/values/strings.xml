@@ -1123,6 +1123,7 @@
     <string name="PinnedMessagesHidden">Pinned messages hidden</string>
     <string name="PinnedMessagesHiddenInfo">You will see the bar with pinned messages only if a new message is pinned.</string>
     <string name="ImportedMessage">Imported</string>
+    <string name="ImportFileTooLarge">Importing file is too large.</string>
     <string name="AudioSpeedNormal">Audio will play at normal speed.</string>
     <string name="AudioSpeedFast">Audio will play two times faster.</string>
     <string name="MessageCopied">Message copied to clipboard.</string>

@@ -398,7 +398,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
 
     private int transitionIndex;
     private TLRPC.Document preloadedSticker;
-    private ArrayList<TLRPC.ChatParticipant> chatParticipants = new ArrayList<>();
+    private ArrayList<TLRPC.ChatParticipant> visibleChatParticipants = new ArrayList<>();
+    private ArrayList<Integer> visibleSortedUsers = new ArrayList<>();
     private int usersForceShowingIn = 0;
 
     private final Property<ProfileActivity, Float> HEADER_SHADOW = new AnimationProperties.FloatProperty<ProfileActivity>("headerShadow") {
@@ -1328,7 +1329,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             getNotificationCenter().addObserver(this, NotificationCenter.groupCallUpdated);
 
             sortedUsers = new ArrayList<>();
-            updateOnlineCount();
+            updateOnlineCount(true);
             if (chatInfo == null) {
                 chatInfo = getMessagesController().getChatFull(chat_id);
             }
@@ -3455,7 +3456,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                                 }
                             }
                             if (changed) {
-                                updateOnlineCount();
+                                updateOnlineCount(true);
                                 updateRowsIds();
                                 listAdapter.notifyDataSetChanged();
                             }
@@ -3819,10 +3820,20 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     if (chatInfo.participants == null) {
                         chatInfo.participants = new TLRPC.TL_chatParticipants();
                     }
-                    TLRPC.ChatParticipant participant = new TLRPC.TL_chatParticipant();
-                    participant.user_id = user.id;
-                    participant.inviter_id = getAccountInstance().getUserConfig().clientUserId;
-                    chatInfo.participants.participants.add(participant);
+                    if (ChatObject.isChannel(currentChat)) {
+                        TLRPC.TL_chatChannelParticipant channelParticipant1 = new TLRPC.TL_chatChannelParticipant();
+                        channelParticipant1.channelParticipant = new TLRPC.TL_channelParticipant();
+                        channelParticipant1.channelParticipant.inviter_id = getUserConfig().getClientUserId();
+                        channelParticipant1.channelParticipant.user_id = user.id;
+                        channelParticipant1.channelParticipant.date = getConnectionsManager().getCurrentTime();
+                        chatInfo.participants.participants.add(channelParticipant1);
+                    } else {
+                        TLRPC.ChatParticipant participant = new TLRPC.TL_chatParticipant();
+                        participant.user_id = user.id;
+                        participant.inviter_id = getAccountInstance().getUserConfig().clientUserId;
+                        chatInfo.participants.participants.add(participant);
+                    }
+                    chatInfo.participants_count++;
                     getMessagesController().putUser(user, false);
                 }
             }
@@ -4330,7 +4341,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     if ((mask & MessagesController.UPDATE_MASK_CHAT) != 0) {
                         updateListAnimated(true);
                     } else {
-                        updateOnlineCount();
+                        updateOnlineCount(true);
                     }
                     updateProfileData();
                 }
@@ -4352,7 +4363,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 return;
             }
             chatInfo.online_count = (Integer) args[1];
-            updateOnlineCount();
+            updateOnlineCount(true);
             updateProfileData();
         } else if (id == NotificationCenter.contactsDidLoad) {
             createActionBarMenu(true);
@@ -4855,7 +4866,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         return null;
     }
 
-    private void updateOnlineCount() {
+    private void updateOnlineCount(boolean notify) {
         onlineCount = 0;
         int currentTime = getConnectionsManager().getCurrentTime();
         sortedUsers.clear();
@@ -4918,7 +4929,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 FileLog.e(e);
             }
 
-            if (listAdapter != null && membersStartRow > 0) {
+            if (notify && listAdapter != null && membersStartRow > 0) {
                 listAdapter.notifyItemRangeChanged(membersStartRow, sortedUsers.size());
             }
             if (sharedMediaLayout != null && sharedMediaRow != -1 && (sortedUsers.size() > 5 || usersForceShowingIn == 2) && usersForceShowingIn != 1) {
@@ -5052,7 +5063,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         unblockRow = -1;
         joinRow = -1;
         lastSectionRow = -1;
-        chatParticipants.clear();
+        visibleChatParticipants.clear();
+        visibleSortedUsers.clear();
 
         boolean hasMedia = false;
         if (sharedMediaPreloader != null) {
@@ -5201,7 +5213,10 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                         rowCount += count;
                         membersEndRow = rowCount;
                         membersSectionRow = rowCount++;
-                        chatParticipants.addAll(chatInfo.participants.participants);
+                        visibleChatParticipants.addAll(chatInfo.participants.participants);
+                        if (sortedUsers != null) {
+                            visibleSortedUsers.addAll(sortedUsers);
+                        }
                         usersForceShowingIn = 1;
                         if (sharedMediaLayout != null) {
                             sharedMediaLayout.setChatUsers(null, null);
@@ -5237,7 +5252,10 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                         rowCount += chatInfo.participants.participants.size();
                         membersEndRow = rowCount;
                         membersSectionRow = rowCount++;
-                        chatParticipants.addAll(chatInfo.participants.participants);
+                        visibleChatParticipants.addAll(chatInfo.participants.participants);
+                        if (sortedUsers != null) {
+                            visibleSortedUsers.addAll(sortedUsers);
+                        }
                         if (sharedMediaLayout != null) {
                             sharedMediaLayout.setChatUsers(null, null);
                         }
@@ -6686,10 +6704,10 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     UserCell userCell = (UserCell) holder.itemView;
                     TLRPC.ChatParticipant part;
                     try {
-                        if (!sortedUsers.isEmpty()) {
-                            part = chatInfo.participants.participants.get(sortedUsers.get(position - membersStartRow));
+                        if (!visibleSortedUsers.isEmpty()) {
+                            part = visibleChatParticipants.get(visibleSortedUsers.get(position - membersStartRow));
                         } else {
-                            part = chatInfo.participants.participants.get(position - membersStartRow);
+                            part = visibleChatParticipants.get(position - membersStartRow);
                         }
                     } catch (Exception e) {
                         part = null;
@@ -7511,7 +7529,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     public void updateListAnimated(boolean updateOnlineCount) {
         if (listAdapter == null) {
             if (updateOnlineCount) {
-                updateOnlineCount();
+                updateOnlineCount(false);
             }
             updateRowsIds();
             return;
@@ -7522,14 +7540,12 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         diffCallback.fillPositions(diffCallback.oldPositionToItem);
         diffCallback.oldChatParticipant.clear();
         diffCallback.oldChatParticipantSorted.clear();
-        if (sortedUsers != null) {
-            diffCallback.oldChatParticipantSorted.addAll(sortedUsers);
-        }
-        diffCallback.oldChatParticipant.addAll(chatParticipants);
+        diffCallback.oldChatParticipant.addAll(visibleChatParticipants);
+        diffCallback.oldChatParticipantSorted.addAll(visibleSortedUsers);
         diffCallback.oldMembersStartRow = membersStartRow;
         diffCallback.oldMembersEndRow = membersEndRow;
         if (updateOnlineCount) {
-            updateOnlineCount();
+            updateOnlineCount(false);
         }
         updateRowsIds();
         diffCallback.fillPositions(diffCallback.newPositionToItem);
@@ -7589,9 +7605,9 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     }
 
                     if (!sortedUsers.isEmpty()) {
-                        newItem = chatParticipants.get(sortedUsers.get(newItemPosition - membersStartRow));
+                        newItem = visibleChatParticipants.get(visibleSortedUsers.get(newItemPosition - membersStartRow));
                     } else {
-                        newItem = chatParticipants.get(newItemPosition - membersStartRow);
+                        newItem = visibleChatParticipants.get(newItemPosition - membersStartRow);
                     }
                     return oldItem.user_id == newItem.user_id;
                 }
