@@ -99,7 +99,7 @@ public class LinkActionView extends LinearLayout {
         copyView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         copyView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
         copyView.setLines(1);
-        linearLayout.addView(copyView, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1f, 0, 4, 0, 4, 0));
+        linearLayout.addView(copyView, LayoutHelper.createLinear(0, 40, 1f, 0, 4, 0, 4, 0));
 
         shareView = new TextView(context);
         shareView.setGravity(Gravity.CENTER_HORIZONTAL);
@@ -114,7 +114,7 @@ public class LinkActionView extends LinearLayout {
         shareView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         shareView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
         shareView.setLines(1);
-        linearLayout.addView(shareView, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1f, 4, 0, 4, 0));
+        linearLayout.addView(shareView, LayoutHelper.createLinear(0, 40, 1f, 4, 0, 4, 0));
 
 
         removeView = new TextView(context);

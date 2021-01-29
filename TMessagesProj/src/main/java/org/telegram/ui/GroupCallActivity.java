@@ -358,6 +358,7 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
         private float colorChangeProgress;
         private long lastUpdateTime;
         private float[] volumeAlphas = new float[3];
+        private boolean dragging;
 
         public VolumeSlider(Context context, TLRPC.TL_groupCallParticipant participant) {
             super(context);
@@ -446,14 +447,14 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
                         } else if (thumbX > getMeasuredWidth()) {
                             thumbX = getMeasuredWidth();
                         }
-                        pressed = true;
+                        dragging = true;
                     }
                 }
-                if (pressed) {
+                if (dragging) {
                     if (ev.getAction() == MotionEvent.ACTION_UP) {
                         onSeekBarDrag(thumbX / (double) getMeasuredWidth(), true);
                     }
-                    pressed = false;
+                    dragging = false;
                     invalidate();
                     return true;
                 }
@@ -473,13 +474,13 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
                             } else if (thumbX > getMeasuredWidth()) {
                                 thumbX = getMeasuredWidth();
                             }
-                            pressed = true;
+                            dragging = true;
                             invalidate();
                             return true;
                         }
                     }
                 } else {
-                    if (pressed) {
+                    if (dragging) {
                         thumbX = (int) ev.getX();
                         if (thumbX < 0) {
                             thumbX = 0;

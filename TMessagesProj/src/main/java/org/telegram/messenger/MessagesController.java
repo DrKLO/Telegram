@@ -730,12 +730,15 @@ public class MessagesController extends BaseController implements NotificationCe
             pendingSuggestions = new HashSet<>();
         }
 
-        exportUri = mainPreferences.getStringSet("exportUri", null);
+        exportUri = mainPreferences.getStringSet("exportUri2", null);
         if (exportUri != null) {
             exportUri = new HashSet<>(exportUri);
         } else {
             exportUri = new HashSet<>();
-            exportUri.add("content://com.whatsapp.provider.media/export_chat/");
+            exportUri.add("content://(\\d+@)?com\\.whatsapp\\.provider\\.media/export_chat/");
+            exportUri.add("content://(\\d+@)?com\\.whatsapp\\.w4b\\.provider\\.media/export_chat/");
+            exportUri.add("content://jp\\.naver\\.line\\.android\\.line\\.common\\.FileProvider/export-chat/");
+            exportUri.add(".*WhatsApp.*\\.txt$");
         }
 
         exportGroupUri = mainPreferences.getStringSet("exportGroupUri", null);
@@ -1493,7 +1496,7 @@ public class MessagesController extends BaseController implements NotificationCe
                             }
                             break;
                         }
-                        case "export_urls": {
+                        case "export_regex": {
                             HashSet<String> newExport = new HashSet<>();
                             if (value.value instanceof TLRPC.TL_jsonArray) {
                                 TLRPC.TL_jsonArray array = (TLRPC.TL_jsonArray) value.value;
@@ -1507,7 +1510,7 @@ public class MessagesController extends BaseController implements NotificationCe
                             }
                             if (!exportUri.equals(newExport)) {
                                 exportUri = newExport;
-                                editor.putStringSet("exportUri", exportUri);
+                                editor.putStringSet("exportUri2", exportUri);
                                 changed = true;
                             }
                             break;
