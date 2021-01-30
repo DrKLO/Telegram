@@ -29,6 +29,7 @@ import android.util.SparseIntArray;
 import android.util.StateSet;
 import android.view.GestureDetector;
 import android.view.HapticFeedbackConstants;
+import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.SoundEffectConstants;
 import android.view.View;
@@ -43,6 +44,7 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.FileLog;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Cells.BaseCell;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -52,7 +54,7 @@ import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-public class RecyclerListView extends RecyclerView {
+public class RecyclerListView extends RecyclerView implements BaseCell.BaseCellDelegate {
 
     private OnItemClickListener onItemClickListener;
     private OnItemClickListenerExtended onItemClickListenerExtended;
@@ -525,59 +527,72 @@ public class RecyclerListView extends RecyclerView {
         }
     }
 
+    @Override
+    public void didEnterWithKeyboard(BaseCell cell) {
+        currentChildView = cell;
+        currentChildPosition = getChildLayoutPosition(currentChildView);
+        MotionEvent e = MotionEvent.obtain(SystemClock.uptimeMillis(), SystemClock.uptimeMillis(), MotionEvent.ACTION_UP, cell.getX(), cell.getY(), 0);
+        handleItemClick(e);
+    }
+
+    private void handleItemClick(MotionEvent e) {
+        if (currentChildView != null && (onItemClickListener != null || onItemClickListenerExtended != null)) {
+            final float x = e.getX();
+            final float y = e.getY();
+            onChildPressed(currentChildView, x, y, true);
+            final View view = currentChildView;
+            final int position = currentChildPosition;
+
+            if (instantClick && position != -1) {
+                view.playSoundEffect(SoundEffectConstants.CLICK);
+                view.sendAccessibilityEvent(AccessibilityEvent.TYPE_VIEW_CLICKED);
+                if (onItemClickListener != null) {
+                    onItemClickListener.onItemClick(view, position);
+                } else if (onItemClickListenerExtended != null) {
+                    onItemClickListenerExtended.onItemClick(view, position, x - view.getX(), y - view.getY());
+                }
+            }
+            AndroidUtilities.runOnUIThread(clickRunnable = new Runnable() {
+                @Override
+                public void run() {
+                    if (this == clickRunnable) {
+                        clickRunnable = null;
+                    }
+                    if (view != null) {
+                        onChildPressed(view, 0, 0, false);
+                        if (!instantClick) {
+                            view.playSoundEffect(SoundEffectConstants.CLICK);
+                            view.sendAccessibilityEvent(AccessibilityEvent.TYPE_VIEW_CLICKED);
+                            if (position != -1) {
+                                if (onItemClickListener != null) {
+                                    onItemClickListener.onItemClick(view, position);
+                                } else if (onItemClickListenerExtended != null) {
+                                    onItemClickListenerExtended.onItemClick(view, position, x - view.getX(), y - view.getY());
+                                }
+                            }
+                        }
+                    }
+                }
+            }, ViewConfiguration.getPressedStateDuration());
+
+            if (selectChildRunnable != null) {
+                View pressedChild = currentChildView;
+                AndroidUtilities.cancelRunOnUIThread(selectChildRunnable);
+                selectChildRunnable = null;
+                currentChildView = null;
+                interceptedByChild = false;
+                removeSelection(pressedChild, e);
+            }
+        }
+    }
+
     private class RecyclerListViewItemClickListener implements OnItemTouchListener {
 
         public RecyclerListViewItemClickListener(Context context) {
             gestureDetector = new GestureDetector(context, new GestureDetector.OnGestureListener() {
                 @Override
                 public boolean onSingleTapUp(MotionEvent e) {
-                    if (currentChildView != null && (onItemClickListener != null || onItemClickListenerExtended != null)) {
-                        final float x = e.getX();
-                        final float y = e.getY();
-                        onChildPressed(currentChildView, x, y, true);
-                        final View view = currentChildView;
-                        final int position = currentChildPosition;
-                        if (instantClick && position != -1) {
-                            view.playSoundEffect(SoundEffectConstants.CLICK);
-                            view.sendAccessibilityEvent(AccessibilityEvent.TYPE_VIEW_CLICKED);
-                            if (onItemClickListener != null) {
-                                onItemClickListener.onItemClick(view, position);
-                            } else if (onItemClickListenerExtended != null) {
-                                onItemClickListenerExtended.onItemClick(view, position, x - view.getX(), y - view.getY());
-                            }
-                        }
-                        AndroidUtilities.runOnUIThread(clickRunnable = new Runnable() {
-                            @Override
-                            public void run() {
-                                if (this == clickRunnable) {
-                                    clickRunnable = null;
-                                }
-                                if (view != null) {
-                                    onChildPressed(view, 0, 0, false);
-                                    if (!instantClick) {
-                                        view.playSoundEffect(SoundEffectConstants.CLICK);
-                                        view.sendAccessibilityEvent(AccessibilityEvent.TYPE_VIEW_CLICKED);
-                                        if (position != -1) {
-                                            if (onItemClickListener != null) {
-                                                onItemClickListener.onItemClick(view, position);
-                                            } else if (onItemClickListenerExtended != null) {
-                                                onItemClickListenerExtended.onItemClick(view, position, x - view.getX(), y - view.getY());
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }, ViewConfiguration.getPressedStateDuration());
-
-                        if (selectChildRunnable != null) {
-                            View pressedChild = currentChildView;
-                            AndroidUtilities.cancelRunOnUIThread(selectChildRunnable);
-                            selectChildRunnable = null;
-                            currentChildView = null;
-                            interceptedByChild = false;
-                            removeSelection(pressedChild, e);
-                        }
-                    }
+                    handleItemClick(e);
                     return true;
                 }
 
