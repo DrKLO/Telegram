@@ -580,6 +580,17 @@ public class FilterTabsView extends FrameLayout {
                 info.addAction(AccessibilityNodeInfo.ACTION_LONG_CLICK);
             }
         }
+
+        public void clearTransitionParams() {
+            animateChange = false;
+            animateTabCounter = false;
+            animateCounterChange = false;
+            animateTextChange = false;
+            animateTextX = false;
+            animateTabWidth = false;
+            changeAnimator = null;
+            invalidate();
+        }
     }
 
     private TextPaint textPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
@@ -814,14 +825,7 @@ public class FilterTabsView extends FrameLayout {
                         valueAnimator.addListener(new AnimatorListenerAdapter() {
                             @Override
                             public void onAnimationEnd(Animator animation) {
-                                tabView.animateChange = false;
-                                tabView.animateTabCounter = false;
-                                tabView.animateCounterChange = false;
-                                tabView.animateTextChange = false;
-                                tabView.animateTextX = false;
-                                tabView.animateTabWidth = false;
-                                tabView.changeAnimator = null;
-                                tabView.invalidate();
+                                tabView.clearTransitionParams();
                             }
                         });
                         tabView.changeAnimator = valueAnimator;
@@ -835,6 +839,18 @@ public class FilterTabsView extends FrameLayout {
             public void onMoveFinished(RecyclerView.ViewHolder item) {
                 super.onMoveFinished(item);
                 item.itemView.setTranslationX(0);
+                if (item.itemView instanceof TabView) {
+                    ((TabView) item.itemView).clearTransitionParams();
+                }
+            }
+
+            @Override
+            public void endAnimation(RecyclerView.ViewHolder item) {
+                super.endAnimation(item);
+                item.itemView.setTranslationX(0);
+                if (item.itemView instanceof TabView) {
+                    ((TabView) item.itemView).clearTransitionParams();
+                }
             }
         };
         itemAnimator.setDelayAnimations(false);

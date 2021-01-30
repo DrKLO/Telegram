@@ -140,6 +140,8 @@ public class AlertsCreator {
                 showSimpleAlert(fragment, LocaleController.getString("ImportErrorTitle", R.string.ImportErrorTitle), LocaleController.getString("ImportErrorFileLang", R.string.ImportErrorFileLang));
             } else if (error.text.contains("IMPORT_UPLOAD_FAILED")) {
                 showSimpleAlert(fragment, LocaleController.getString("ImportErrorTitle", R.string.ImportErrorTitle), LocaleController.getString("ImportFailedToUpload", R.string.ImportFailedToUpload));
+            } else if (error.text.startsWith("FLOOD_WAIT")) {
+                showFloodWaitAlert(error.text, fragment);
             } else {
                 showSimpleAlert(fragment, LocaleController.getString("ImportErrorTitle", R.string.ImportErrorTitle), LocaleController.getString("ErrorOccurred", R.string.ErrorOccurred) + "\n" + error.text);
             }
@@ -171,7 +173,7 @@ public class AlertsCreator {
                 }
                 return null;
             } else if (fragment != null) {
-                AlertsCreator.showAddUserAlert(error.text, fragment, args != null && args.length > 0 ? (Boolean) args[0] : false, request);
+                showAddUserAlert(error.text, fragment, args != null && args.length > 0 ? (Boolean) args[0] : false, request);
             } else {
                 if (error.text.equals("PEER_FLOOD")) {
                     NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.needShowAlert, 1);
@@ -182,18 +184,18 @@ public class AlertsCreator {
                 fragment.presentFragment(new TooManyCommunitiesActivity(TooManyCommunitiesActivity.TYPE_CREATE));
                 return null;
             } else if (error.text.startsWith("FLOOD_WAIT")) {
-                AlertsCreator.showFloodWaitAlert(error.text, fragment);
+                showFloodWaitAlert(error.text, fragment);
             } else {
-                AlertsCreator.showAddUserAlert(error.text, fragment, false, request);
+                showAddUserAlert(error.text, fragment, false, request);
             }
         } else if (request instanceof TLRPC.TL_channels_createChannel) {
             if (error.text.equals("CHANNELS_TOO_MUCH")) {
                 fragment.presentFragment(new TooManyCommunitiesActivity(TooManyCommunitiesActivity.TYPE_CREATE));
                 return null;
             } else if (error.text.startsWith("FLOOD_WAIT")) {
-                AlertsCreator.showFloodWaitAlert(error.text, fragment);
+                showFloodWaitAlert(error.text, fragment);
             } else {
-                AlertsCreator.showAddUserAlert(error.text, fragment, false, request);
+                showAddUserAlert(error.text, fragment, false, request);
             }
         } else if (request instanceof TLRPC.TL_messages_editMessage) {
             if (!error.text.equals("MESSAGE_NOT_MODIFIED")) {
@@ -484,7 +486,7 @@ public class AlertsCreator {
                     }
                 }
                 if (few) {
-                    AlertsCreator.createSimpleAlert(context, chat.title, LocaleController.getString("SlowmodeSendError", R.string.SlowmodeSendError)).show();
+                    createSimpleAlert(context, chat.title, LocaleController.getString("SlowmodeSendError", R.string.SlowmodeSendError)).show();
                     return true;
                 }
             }

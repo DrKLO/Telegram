@@ -1115,20 +1115,12 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         public void addView(View child, int index, ViewGroup.LayoutParams params) {
             super.addView(child, index, params);
             child.setTranslationY(viewOffset);
-            int position = getChildAdapterPosition(child);
-            Float alpha = listAlphaItems.get(position);
-            if (alpha != null) {
-                child.setAlpha(alpha);
-            } else {
-                child.setAlpha(1f);
-            }
         }
 
         @Override
         public void removeView(View view) {
             super.removeView(view);
             view.setTranslationY(0);
-            view.setAlpha(1f);
         }
 
         @Override
@@ -1150,6 +1142,16 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
 
         @Override
         protected void dispatchDraw(Canvas canvas) {
+            for (int i = 0; i < getChildCount(); i++) {
+                View child = getChildAt(i);
+                int position = getChildAdapterPosition(child);
+                Float alpha = listAlphaItems.get(position, null);
+                if (alpha == null) {
+                    child.setAlpha(1f);
+                } else {
+                    child.setAlpha(alpha);
+                }
+            }
             super.dispatchDraw(canvas);
             if (slidingView != null && pacmanAnimation != null) {
                 pacmanAnimation.draw(canvas, slidingView.getTop() + slidingView.getMeasuredHeight() / 2);
@@ -5411,6 +5413,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             updateAnimated = true;
         } else {
             createActionMode();
+            actionBar.setActionModeOverrideColor(Theme.getColor(Theme.key_windowBackgroundWhite));
             actionBar.showActionMode();
             resetScroll();
             if (menuDrawable != null) {
@@ -5939,7 +5942,6 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 listView.getViewTreeObserver().removeOnPreDrawListener(this);
                 int n = listView.getChildCount();
                 AnimatorSet animatorSet = new AnimatorSet();
-                boolean animated = false;
                 for (int i = 0; i < n; i++) {
                     View child = listView.getChildAt(i);
                     int position = listView.getChildAdapterPosition(child);
@@ -5952,29 +5954,13 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                         a.addUpdateListener(valueAnimator -> {
                             Float alpha = (Float) valueAnimator.getAnimatedValue();
                             listAlphaItems.put(position, alpha);
-                            if (listView.getChildAdapterPosition(child) == position) {
-                                child.setAlpha(alpha);
-                            } else {
-                                RecyclerView.ViewHolder vh = listView.findViewHolderForAdapterPosition(position);
-                                if (vh != null) {
-                                    vh.itemView.setAlpha(1f);
-                                }
-                            }
+                            listView.invalidate();
                         });
                         a.addListener(new AnimatorListenerAdapter() {
                             @Override
                             public void onAnimationEnd(Animator animation) {
                                 listAlphaItems.remove(position);
-                                if (listAlphaItems.size() == 0) {
-                                    for (int i = 0; i < listView.getChildCount(); i++) {
-                                        listView.getChildAt(i).setAlpha(1f);
-                                    }
-                                } else {
-                                    RecyclerView.ViewHolder vh = listView.findViewHolderForAdapterPosition(position);
-                                    if (vh != null) {
-                                        vh.itemView.setAlpha(1f);
-                                    }
-                                }
+                                listView.invalidate();
                             }
                         });
                         a.setStartDelay(delay);

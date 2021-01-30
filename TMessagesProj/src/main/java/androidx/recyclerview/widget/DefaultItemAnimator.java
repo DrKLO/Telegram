@@ -209,6 +209,7 @@ public class DefaultItemAnimator extends SimpleItemAnimator {
         return true;
     }
 
+
     public void setDelayAnimations(boolean value) {
         delayAnimations = value;
     }

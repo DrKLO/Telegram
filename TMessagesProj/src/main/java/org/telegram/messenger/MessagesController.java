@@ -475,6 +475,9 @@ public class MessagesController extends BaseController implements NotificationCe
         }
 
         public boolean includesDialog(AccountInstance accountInstance, int lowerId, TLRPC.Dialog d) {
+            if (neverShow.contains(lowerId)) {
+                return false;
+            }
             if (alwaysShow.contains(lowerId)) {
                 return true;
             }
@@ -485,8 +488,7 @@ public class MessagesController extends BaseController implements NotificationCe
             ContactsController contactsController = accountInstance.getContactsController();
             boolean skip = false;
             if ((flags & DIALOG_FILTER_FLAG_EXCLUDE_MUTED) != 0 && messagesController.isDialogMuted(d.id) && d.unread_mentions_count == 0 ||
-                    (flags & DIALOG_FILTER_FLAG_EXCLUDE_READ) != 0 && d.unread_count == 0 && !d.unread_mark && d.unread_mentions_count == 0 ||
-                    neverShow.contains(lowerId)) {
+                    (flags & DIALOG_FILTER_FLAG_EXCLUDE_READ) != 0 && d.unread_count == 0 && !d.unread_mark && d.unread_mentions_count == 0) {
                 return false;
             }
             if (lowerId > 0) {
@@ -2915,7 +2917,7 @@ public class MessagesController extends BaseController implements NotificationCe
                         value = 0;
                     }
                     dialogs_read_outbox_max.put(dialog.id, Math.max(dialog.read_outbox_max_id, value));
-                    if (value == 0) {
+                    if (dialog.read_outbox_max_id > value) {
                         if (dialog.peer.channel_id != 0) {
                             TLRPC.TL_updateReadChannelOutbox update = new TLRPC.TL_updateReadChannelOutbox();
                             update.channel_id = dialog.peer.channel_id;
@@ -3042,7 +3044,7 @@ public class MessagesController extends BaseController implements NotificationCe
                     }
 
                     dialogs_read_inbox_max.put(dialog_id, Math.max(res.full_chat.read_inbox_max_id, value));
-                    if (value == 0) {
+                    if (res.full_chat.read_inbox_max_id > value) {
                         ArrayList<TLRPC.Update> arrayList = new ArrayList<>();
                         TLRPC.TL_updateReadChannelInbox update = new TLRPC.TL_updateReadChannelInbox();
                         update.channel_id = chat_id;
@@ -3056,7 +3058,7 @@ public class MessagesController extends BaseController implements NotificationCe
                         value = getMessagesStorage().getDialogReadMax(true, dialog_id);
                     }
                     dialogs_read_outbox_max.put(dialog_id, Math.max(res.full_chat.read_outbox_max_id, value));
-                    if (value == 0) {
+                    if (res.full_chat.read_outbox_max_id > value) {
                         ArrayList<TLRPC.Update> arrayList = new ArrayList<>();
                         TLRPC.TL_updateReadChannelOutbox update = new TLRPC.TL_updateReadChannelOutbox();
                         update.channel_id = chat_id;
@@ -11812,6 +11814,9 @@ public class MessagesController extends BaseController implements NotificationCe
                 dialogs_read_inbox_max.put(dialog_id, Math.max(value, update.max_id));
             } else if (baseUpdate instanceof TLRPC.TL_updateReadChannelOutbox) {
                 TLRPC.TL_updateReadChannelOutbox update = (TLRPC.TL_updateReadChannelOutbox) baseUpdate;
+                if (BuildVars.LOGS_ENABLED) {
+                    FileLog.d(baseUpdate + " channelId = " + update.channel_id);
+                }
                 long message_id = update.max_id;
                 message_id |= ((long) update.channel_id) << 32;
                 long dialog_id = -update.channel_id;

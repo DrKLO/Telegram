@@ -905,14 +905,23 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
                                     getMessagesController().putUser(user, false);
 
                                     if (map.get(user.id) == null) {
-                                        TLRPC.ChatParticipant participant = new TLRPC.TL_chatParticipant();
-                                        participant.inviter_id = getUserConfig().getClientUserId();
-                                        participant.user_id = user.id;
-                                        participant.date = getConnectionsManager().getCurrentTime();
+                                        if (ChatObject.isChannel(currentChat)) {
+                                            TLRPC.TL_channelParticipant channelParticipant1 = new TLRPC.TL_channelParticipant();
+                                            channelParticipant1.inviter_id = getUserConfig().getClientUserId();
+                                            channelParticipant1.user_id = user.id;
+                                            channelParticipant1.date = getConnectionsManager().getCurrentTime();
+                                            array.add(k, channelParticipant1);
+                                            k++;
+                                            map.put(user.id, channelParticipant1);
+                                        } else {
+                                            TLRPC.ChatParticipant participant = new TLRPC.TL_chatParticipant();
+                                            participant.user_id = user.id;
+                                            participant.inviter_id = getUserConfig().getClientUserId();
+                                            array.add(k, participant);
+                                            k++;
+                                            map.put(user.id, participant);
+                                        }
 
-                                        array.add(k, participant);
-                                        k++;
-                                        map.put(user.id, participant);
                                     }
                                 }
                                 if (array == participants) {

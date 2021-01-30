@@ -51,6 +51,7 @@ class ShortcutRemoteViewsFactory implements RemoteViewsService.RemoteViewsFactor
 
     public ShortcutRemoteViewsFactory(Context context, Intent intent) {
         mContext = context;
+        Theme.createDialogsResources(context);
         appWidgetId = intent.getIntExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, AppWidgetManager.INVALID_APPWIDGET_ID);
         SharedPreferences preferences = context.getSharedPreferences("shortcut_widget", Activity.MODE_PRIVATE);
         int accountId = preferences.getInt("account" + appWidgetId, -1);

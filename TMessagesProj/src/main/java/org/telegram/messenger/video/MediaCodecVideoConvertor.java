@@ -424,7 +424,7 @@ public class MediaCodecVideoConvertor {
                                             FileLog.e(e); //s20 ultra exception
                                         }
                                         if (maxBufferSize <= 0) {
-                                            maxBufferSize = 16 * 1024;
+                                            maxBufferSize = 64 * 1024;
                                         }
                                         audioBuffer = ByteBuffer.allocateDirect(maxBufferSize);
 
@@ -487,10 +487,12 @@ public class MediaCodecVideoConvertor {
                                             }
                                         }
                                     } else if (copyAudioBuffer && audioIndex != -1 && index == audioIndex) {
-                                        long size = extractor.getSampleSize();
-                                        if (size > maxBufferSize) {
-                                            maxBufferSize = (int) (size + 1024);
-                                            audioBuffer = ByteBuffer.allocateDirect(maxBufferSize);
+                                        if (Build.VERSION.SDK_INT >= 28) {
+                                            long size = extractor.getSampleSize();
+                                            if (size > maxBufferSize) {
+                                                maxBufferSize = (int) (size + 1024);
+                                                audioBuffer = ByteBuffer.allocateDirect(maxBufferSize);
+                                            }
                                         }
                                         info.size = extractor.readSampleData(audioBuffer, 0);
                                         if (Build.VERSION.SDK_INT < 21) {
@@ -834,7 +836,7 @@ public class MediaCodecVideoConvertor {
             }
         }
         if (maxBufferSize <= 0) {
-            maxBufferSize = 16 * 1024;
+            maxBufferSize = 64 * 1024;
         }
         ByteBuffer buffer = ByteBuffer.allocateDirect(maxBufferSize);
         if (audioTrackIndex >= 0 || videoTrackIndex >= 0) {
@@ -844,10 +846,12 @@ public class MediaCodecVideoConvertor {
                 checkConversionCanceled();
                 boolean eof = false;
                 int muxerTrackIndex;
-                long size = extractor.getSampleSize();
-                if (size > maxBufferSize) {
-                    maxBufferSize = (int) (size + 1024);
-                    buffer = ByteBuffer.allocateDirect(maxBufferSize);
+                if (Build.VERSION.SDK_INT >= 28) {
+                    long size = extractor.getSampleSize();
+                    if (size > maxBufferSize) {
+                        maxBufferSize = (int) (size + 1024);
+                        buffer = ByteBuffer.allocateDirect(maxBufferSize);
+                    }
                 }
                 info.size = extractor.readSampleData(buffer, 0);
                 int index = extractor.getSampleTrackIndex();

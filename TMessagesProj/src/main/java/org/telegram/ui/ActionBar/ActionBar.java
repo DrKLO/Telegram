@@ -447,10 +447,15 @@ public class ActionBar extends FrameLayout {
             actionMode = null;
         }
         actionModeTag = tag;
-        actionMode = new ActionBarMenu(getContext(), this);
+        actionMode = new ActionBarMenu(getContext(), this) {
+            @Override
+            public void setBackgroundColor(int color) {
+                super.setBackgroundColor(actionModeColor = color);
+            }
+        };
         actionMode.isActionMode = true;
         actionMode.setClickable(true);
-        actionMode.setBackgroundColor(actionModeColor = Theme.getColor(Theme.key_actionBarActionModeDefault));
+        actionMode.setBackgroundColor(Theme.getColor(Theme.key_actionBarActionModeDefault));
         addView(actionMode, indexOfChild(backButtonImageView));
         actionMode.setPadding(0, occupyStatusBar ? AndroidUtilities.statusBarHeight : 0, 0, 0);
         FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) actionMode.getLayoutParams();
@@ -680,8 +685,12 @@ public class ActionBar extends FrameLayout {
 
     public void setActionModeColor(int color) {
         if (actionMode != null) {
-            actionMode.setBackgroundColor(actionModeColor = color);
+            actionMode.setBackgroundColor(color);
         }
+    }
+
+    public void setActionModeOverrideColor(int color) {
+        actionModeColor = color;
     }
 
     @Override

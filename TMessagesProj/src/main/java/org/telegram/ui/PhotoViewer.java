@@ -1910,6 +1910,11 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                 groupedPhotosHeight = 0;
             }
 
+            if (videoPlayerControlFrameLayout != null) {
+                videoPlayerControlFrameLayout.parentWidth = widthSize;
+                videoPlayerControlFrameLayout.parentHeight = heightSize;
+            }
+
             widthSize -= (getPaddingRight() + getPaddingLeft());
             heightSize -= getPaddingBottom();
 
@@ -2208,6 +2213,9 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         private float progress = 1f;
         private boolean seekBarTransitionEnabled;
         private boolean translationYAnimationEnabled = true;
+        private boolean ignoreLayout;
+        private int parentWidth;
+        private int parentHeight;
 
         public VideoPlayerControlFrameLayout(@NonNull Context context) {
             super(context);
@@ -2228,10 +2236,19 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         }
 
         @Override
+        public void requestLayout() {
+            if (ignoreLayout) {
+                return;
+            }
+            super.requestLayout();
+        }
+
+        @Override
         protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
             int extraWidth;
+            ignoreLayout = true;
             FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) videoPlayerTime.getLayoutParams();
-            if (containerView.getMeasuredWidth() > containerView.getMeasuredHeight()) {
+            if (parentWidth > parentHeight) {
                 if (exitFullscreenButton.getVisibility() != VISIBLE) {
                     exitFullscreenButton.setVisibility(VISIBLE);
                 }
@@ -2244,6 +2261,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                 extraWidth = 0;
                 layoutParams.rightMargin = AndroidUtilities.dp(12);
             }
+            ignoreLayout = false;
             super.onMeasure(widthMeasureSpec, heightMeasureSpec);
             long duration;
             if (videoPlayer != null) {
@@ -6885,7 +6903,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                     break;
                 }
             }
-            if (containerView.getMeasuredHeight() > containerView.getMeasuredWidth() && !(videoTextureView instanceof VideoEditTextureView) && w > h) {
+            if (AndroidUtilities.displaySize.y > AndroidUtilities.displaySize.x && !(videoTextureView instanceof VideoEditTextureView) && w > h) {
                 if (fullscreenButton[b].getVisibility() != View.VISIBLE) {
                     fullscreenButton[b].setVisibility(View.VISIBLE);
                 }
@@ -6898,6 +6916,22 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                     fullscreenButton[b].setVisibility(View.INVISIBLE);
                 }
             }
+
+            float currentTranslationX;
+            if (imageMoveAnimation != null) {
+                currentTranslationX = translationX + (animateToX - translationX) * animationValue;
+            } else {
+                currentTranslationX = translationX;
+            }
+            float offsetX;
+            if (b == 1) {
+                offsetX = 0;
+            } else if (b == 2) {
+                offsetX = -AndroidUtilities.displaySize.x - AndroidUtilities.dp(15) + (currentTranslationX - maxX);
+            } else {
+                offsetX = currentTranslationX < minX ? (currentTranslationX - minX) : 0;
+            }
+            fullscreenButton[b].setTranslationX(offsetX + AndroidUtilities.displaySize.x - AndroidUtilities.dp(48));
         }
     }
 
