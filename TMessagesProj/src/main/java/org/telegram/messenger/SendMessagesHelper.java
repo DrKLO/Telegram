@@ -99,7 +99,6 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
     public class ImportingHistory {
         public String historyPath;
         public ArrayList<Uri> mediaPaths = new ArrayList<>();
-        public HashMap<String, TLRPC.InputFile> uploadedMedias = new HashMap<>();
         public HashSet<String> uploadSet = new HashSet<>();
         public HashMap<String, Float> uploadProgresses = new HashMap<>();
         public HashMap<String, Long> uploadSize = new HashMap<>();
@@ -151,6 +150,18 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
         public long getTotalCount() {
             return totalSize;
         }
+
+        private void onFileFailedToUpload(String path) {
+            if (path.equals(historyPath)) {
+                importingHistoryMap.remove(dialogId);
+                TLRPC.TL_error error = new TLRPC.TL_error();
+                error.code = 400;
+                error.text = "IMPORT_UPLOAD_FAILED";
+                getNotificationCenter().postNotificationName(NotificationCenter.historyImportProgressChanged, dialogId, new TLRPC.TL_messages_initHistoryImport(), error);
+            } else {
+                uploadSet.remove(path);
+            }
+        }
         
         private void addUploadProgress(String path, long sz, float progress) {
             uploadProgresses.put(path, progress);
@@ -183,7 +194,6 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
 
         private void onMediaImport(String path, long size, TLRPC.InputFile inputFile) {
             addUploadProgress(path, size, 1.0f);
-            uploadedMedias.put(path, inputFile);
             TLRPC.TL_messages_uploadImportedMedia req = new TLRPC.TL_messages_uploadImportedMedia();
             req.peer = peer;
             req.import_id = importId;
@@ -757,6 +767,12 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
         } else if (id == NotificationCenter.FileDidFailUpload) {
             final String location = (String) args[0];
             final boolean enc = (Boolean) args[1];
+
+            ImportingHistory importingHistory = importingHistoryFiles.get(location);
+            if (importingHistory != null) {
+                importingHistory.onFileFailedToUpload(location);
+            }
+
             ArrayList<DelayedMessage> arr = delayedMessages.get(location);
             if (arr != null) {
                 for (int a = 0; a < arr.size(); a++) {

@@ -1,7 +1,6 @@
 package org.telegram.ui.Components;
 
 import android.content.Context;
-import android.view.ViewGroup;
 import android.widget.FrameLayout;
 
 import androidx.annotation.CheckResult;
@@ -24,20 +23,6 @@ public final class BulletinFactory {
 
     public static boolean canShowBulletin(BaseFragment fragment) {
         return fragment != null && fragment.getParentActivity() != null && fragment.getLayoutContainer() != null;
-    }
-
-    public Bulletin createMembersNotifyInfo(boolean on) {
-        if (on) {
-            final Bulletin.LottieLayout layout = new Bulletin.LottieLayout(getContext());
-            layout.setAnimation(R.raw.silent_unmute, 36, 36, "NULL BODY", "BODY", "Waves R", "Waves L", "Bottom");
-            layout.textView.setText(LocaleController.getString("ChannelNotifyMembersInfoOn", R.string.ChannelNotifyMembersInfoOn));
-            return create(layout, Bulletin.DURATION_SHORT);
-        } else {
-            final Bulletin.LottieLayout layout = new Bulletin.LottieLayout(getContext());
-            layout.setAnimation(R.raw.silent_mute, 36, 36, "NULL BODY", "BODY", "Pieces", "Line Cross", "Bottom");
-            layout.textView.setText(LocaleController.getString("ChannelNotifyMembersInfoOff", R.string.ChannelNotifyMembersInfoOff));
-            return create(layout, Bulletin.DURATION_SHORT);
-        }
     }
 
     public enum FileType {
@@ -241,6 +226,12 @@ public final class BulletinFactory {
 
     @CheckResult
     public static Bulletin createUnpinAllMessagesBulletin(BaseFragment fragment, int count, boolean hide, Runnable undoAction, Runnable delayedAction) {
+        if (fragment.getParentActivity() == null) {
+            if (delayedAction != null) {
+                delayedAction.run();
+            }
+            return null;
+        }
         Bulletin.ButtonLayout buttonLayout;
         if (hide) {
             final Bulletin.TwoLineLottieLayout layout = new Bulletin.TwoLineLottieLayout(fragment.getParentActivity());

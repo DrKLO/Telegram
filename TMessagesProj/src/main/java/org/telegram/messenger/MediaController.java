@@ -3031,7 +3031,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                             } else {
                                 cleanupPlayer(true, true, messageObject != null && messageObject.isVoice(), false);
                             }
-                        } else if (seekToProgressPending != 0 && (playbackState == ExoPlayer.STATE_READY || playbackState == ExoPlayer.STATE_IDLE)) {
+                        } else if (audioPlayer != null && seekToProgressPending != 0 && (playbackState == ExoPlayer.STATE_READY || playbackState == ExoPlayer.STATE_IDLE)) {
                             int seekTo = (int) (audioPlayer.getDuration() * seekToProgressPending);
                             audioPlayer.seekTo(seekTo);
                             lastProgress = seekTo;

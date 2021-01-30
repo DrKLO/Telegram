@@ -756,7 +756,18 @@ public class ChannelCreateActivity extends BaseFragment implements NotificationC
             return;
         }
         loadingInvite = true;
-        TLRPC.TL_messages_getExportedChatInvites req = new TLRPC.TL_messages_getExportedChatInvites();
+        TLRPC.TL_messages_exportChatInvite req = new TLRPC.TL_messages_exportChatInvite();
+        req.peer = getMessagesController().getInputPeer(-chatId);
+        final int reqId = getConnectionsManager().sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
+            if (error == null) {
+                invite = (TLRPC.TL_chatInviteExported) response;
+            }
+            loadingInvite = false;
+            permanentLinkView.setLink(invite != null ? invite.link : null);
+        }));
+        getConnectionsManager().bindRequestToGuid(reqId, classGuid);
+
+        /*TLRPC.TL_messages_getExportedChatInvites req = new TLRPC.TL_messages_getExportedChatInvites();  TODO layer 124
         req.peer = getMessagesController().getInputPeer(-chatId);
         req.admin_id = getMessagesController().getInputUser(getUserConfig().getCurrentUser());
         req.limit = 1;
@@ -768,7 +779,7 @@ public class ChannelCreateActivity extends BaseFragment implements NotificationC
             }
             loadingInvite = false;
             permanentLinkView.setLink(invite != null ? invite.link : null);
-        }));
+        }));*/
     }
 
     private void updatePrivatePublic() {

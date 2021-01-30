@@ -125,6 +125,8 @@ public class UndoView extends FrameLayout {
     public final static int ACTION_PLAYBACK_SPEED_DISABLED = 51;
     public final static int ACTION_TEXT_COPIED = 52;
     public final static int ACTION_FWD_MESSAGES = 53;
+    public final static int ACTION_NOTIFY_ON = 54;
+    public final static int ACTION_NOTIFY_OFF = 55;
 
     private CharSequence infoText;
 
@@ -586,41 +588,56 @@ public class UndoView extends FrameLayout {
             undoButton.setVisibility(GONE);
         } else if (currentAction == ACTION_IMPORT_NOT_MUTUAL || currentAction == ACTION_IMPORT_GROUP_NOT_ADMIN || currentAction == ACTION_IMPORT_INFO ||
                 currentAction == ACTION_PLAYBACK_SPEED_DISABLED || currentAction == ACTION_PLAYBACK_SPEED_ENABLED || currentAction == ACTION_TEXT_COPIED ||
-                currentAction == ACTION_FWD_MESSAGES) {
+                currentAction == ACTION_FWD_MESSAGES || currentAction == ACTION_NOTIFY_ON || currentAction == ACTION_NOTIFY_OFF) {
             undoImageView.setVisibility(GONE);
             leftImageView.setVisibility(VISIBLE);
 
             infoTextView.setTypeface(Typeface.DEFAULT);
-            infoTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
 
             if (currentAction == ACTION_IMPORT_NOT_MUTUAL) {
                 infoTextView.setText(LocaleController.getString("ImportMutualError", R.string.ImportMutualError));
                 leftImageView.setAnimation(R.raw.error, 36, 36);
                 infoOnly = true;
                 layoutParams.topMargin = AndroidUtilities.dp(10);
+                infoTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             } else if (currentAction == ACTION_IMPORT_GROUP_NOT_ADMIN) {
                 infoTextView.setText(LocaleController.getString("ImportNotAdmin", R.string.ImportNotAdmin));
                 leftImageView.setAnimation(R.raw.error, 36, 36);
                 infoOnly = true;
                 layoutParams.topMargin = AndroidUtilities.dp(10);
+                infoTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             } else if (currentAction == ACTION_IMPORT_INFO) {
                 infoTextView.setText(LocaleController.getString("ImportedInfo", R.string.ImportedInfo));
                 leftImageView.setAnimation(R.raw.imported, 36, 36);
                 leftImageView.setPadding(0, 0, 0, AndroidUtilities.dp(5));
                 infoOnly = true;
                 layoutParams.topMargin = AndroidUtilities.dp(10);
+                infoTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             } else if (currentAction == ACTION_PLAYBACK_SPEED_DISABLED) {
                 infoTextView.setText(LocaleController.getString("AudioSpeedNormal", R.string.AudioSpeedNormal));
                 leftImageView.setAnimation(R.raw.audio_stop_speed, 36, 36);
                 timeLeft = 3000;
+                infoTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
             } else if (currentAction == ACTION_PLAYBACK_SPEED_ENABLED) {
                 infoTextView.setText(LocaleController.getString("AudioSpeedFast", R.string.AudioSpeedFast));
                 leftImageView.setAnimation(R.raw.audio_speed, 36, 36);
                 timeLeft = 3000;
+                infoTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
             } else if (currentAction == ACTION_TEXT_COPIED) {
                 infoTextView.setText(LocaleController.getString("MessageCopied", R.string.MessageCopied));
                 leftImageView.setAnimation(R.raw.copy, 30, 30);
                 timeLeft = 3000;
+                infoTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
+            } else if (currentAction == ACTION_NOTIFY_ON) {
+                infoTextView.setText(LocaleController.getString("ChannelNotifyMembersInfoOn", R.string.ChannelNotifyMembersInfoOn));
+                leftImageView.setAnimation(R.raw.silent_unmute, 30, 30);
+                timeLeft = 3000;
+                infoTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
+            } else if (currentAction == ACTION_NOTIFY_OFF) {
+                infoTextView.setText(LocaleController.getString("ChannelNotifyMembersInfoOff", R.string.ChannelNotifyMembersInfoOff));
+                leftImageView.setAnimation(R.raw.silent_mute, 30, 30);
+                timeLeft = 3000;
+                infoTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
             } else if (currentAction == ACTION_FWD_MESSAGES) {
                 Integer count = (Integer) infoObject;
                 if (infoObject2 == null) {

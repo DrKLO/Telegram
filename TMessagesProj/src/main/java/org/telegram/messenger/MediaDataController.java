@@ -1423,6 +1423,9 @@ public class MediaDataController extends BaseController {
                 req.stickerset = inputStickerSetShortName;
             }
             getConnectionsManager().sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
+                if (BuildConfig.DEBUG && error != null) { //supress test backend warning
+                    return;
+                }
                 if (response instanceof TLRPC.TL_messages_stickerSet) {
                     processLoadedDiceStickers(name, isEmoji, (TLRPC.TL_messages_stickerSet) response, false, (int) (System.currentTimeMillis() / 1000));
                 } else {

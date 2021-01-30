@@ -355,7 +355,7 @@ public class StickersSearchAdapter extends RecyclerListView.SelectionAdapter {
                 ((FeaturedStickerSetInfoCell) view).setAddOnClickListener(v -> {
                     final FeaturedStickerSetInfoCell cell = (FeaturedStickerSetInfoCell) v.getParent();
                     TLRPC.StickerSetCovered pack = cell.getStickerSet();
-                    if (installingStickerSets.indexOfKey(pack.set.id) >= 0 || removingStickerSets.indexOfKey(pack.set.id) >= 0) {
+                    if (pack == null || installingStickerSets.indexOfKey(pack.set.id) >= 0 || removingStickerSets.indexOfKey(pack.set.id) >= 0) {
                         return;
                     }
                     if (cell.isInstalled()) {
@@ -439,11 +439,14 @@ public class StickersSearchAdapter extends RecyclerListView.SelectionAdapter {
         }
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position, @NonNull List payloads) {
         if (payloads.contains(PAYLOAD_ANIMATED)) {
             if (holder.getItemViewType() == 3) {
                 bindFeaturedStickerSetInfoCell((FeaturedStickerSetInfoCell) holder.itemView, position, true);
+            } else {
+                super.onBindViewHolder(holder, position, payloads);
             }
         }
     }

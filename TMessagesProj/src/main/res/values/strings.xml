@@ -292,6 +292,7 @@
     <string name="MegaAdminsInfo">You can add administrators to help you manage your group. Tap and hold to remove them.</string>
     <string name="MegaDeleteAlert">Wait! Deleting this group will remove all members and all messages will be lost. Delete the group anyway?</string>
     <string name="DeleteGroupForAll">Delete the group for all members</string>
+    <string name="DeleteChannelForAll">Delete for all subscribers</string>
     <string name="ActionCreateMega">Group created</string>
     <string name="MegaAddedBy">un1 added you to this group</string>
     <string name="MegaLeaveAlert">Are you sure you want to leave the group?</string>
@@ -1124,6 +1125,7 @@
     <string name="PinnedMessagesHiddenInfo">You will see the bar with pinned messages only if a new message is pinned.</string>
     <string name="ImportedMessage">Imported</string>
     <string name="ImportFileTooLarge">Importing file is too large.</string>
+    <string name="ImportFailedToUpload">Failed to upload file.</string>
     <string name="AudioSpeedNormal">Audio will play at normal speed.</string>
     <string name="AudioSpeedFast">Audio will play two times faster.</string>
     <string name="MessageCopied">Message copied to clipboard.</string>
@@ -3029,6 +3031,7 @@
     <string name="AreYouSureClearHistoryFewChats">Are you sure you want to clear history in selected chats?</string>
     <string name="AreYouSureClearHistoryCacheFewChats">Delete all cached text and media from selected chats?</string>
     <string name="AreYouSureDeleteAndExit">Are you sure you want to delete and leave the group?</string>
+    <string name="AreYouSureDeleteAndExitChannel">Are you sure you want to delete and leave the channel?</string>
     <string name="AreYouSureDeleteAndExitName">Are you sure you want to delete and leave the group **%1$s**?</string>
     <string name="AreYouSureDeleteThisChat">Are you sure you want to delete this chat?</string>
     <string name="AreYouSureDeleteThisChatWithUser">Are you sure you want to delete the chat with **%1$s**?</string>

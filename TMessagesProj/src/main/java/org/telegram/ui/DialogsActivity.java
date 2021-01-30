@@ -41,6 +41,7 @@ import android.os.Bundle;
 import android.os.Vibrator;
 import android.text.TextUtils;
 import android.util.Property;
+import android.util.SparseArray;
 import android.util.StateSet;
 import android.view.Gravity;
 import android.view.HapticFeedbackConstants;
@@ -398,6 +399,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
     private float filterTabsMoveFrom;
     private float tabsYOffset;
     private float scrollAdditionalOffset;
+    private SparseArray<Float> listAlphaItems = new SparseArray<>();
 
     public final Property<DialogsActivity, Float> SCROLL_Y = new AnimationProperties.FloatProperty<DialogsActivity>("animationValue") {
         @Override
@@ -1083,6 +1085,11 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             parentPage = page;
         }
 
+        @Override
+        protected boolean updateEmptyViewAnimated() {
+            return true;
+        }
+
         public void setViewsOffset(float viewOffset) {
             DialogsActivity.viewOffset = viewOffset;
             int n = getChildCount();
@@ -1108,12 +1115,20 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         public void addView(View child, int index, ViewGroup.LayoutParams params) {
             super.addView(child, index, params);
             child.setTranslationY(viewOffset);
+            int position = getChildAdapterPosition(child);
+            Float alpha = listAlphaItems.get(position);
+            if (alpha != null) {
+                child.setAlpha(alpha);
+            } else {
+                child.setAlpha(1f);
+            }
         }
 
         @Override
         public void removeView(View view) {
             super.removeView(view);
             view.setTranslationY(0);
+            view.setAlpha(1f);
         }
 
         @Override
@@ -1139,7 +1154,6 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             if (slidingView != null && pacmanAnimation != null) {
                 pacmanAnimation.draw(canvas, slidingView.getTop() + slidingView.getMeasuredHeight() / 2);
             }
-
         }
 
         @Override
@@ -1434,16 +1448,19 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                     parentPage.listView.toggleArchiveHidden(false, dialogCell);
                     return;
                 }
+                TLRPC.Dialog dialog = getMessagesController().dialogs_dict.get(dialogId);
+                if (dialog == null) {
+                    return;
+                }
 
                 slidingView = dialogCell;
                 int position = viewHolder.getAdapterPosition();
-                int dialogIndex = parentPage.dialogsAdapter.fixPosition(position);
                 int count = parentPage.dialogsAdapter.getItemCount();
                 Runnable finishRunnable = () -> {
                     if (frozenDialogsList == null) {
                         return;
                     }
-                    TLRPC.Dialog dialog = frozenDialogsList.remove(dialogIndex);
+                    frozenDialogsList.remove(dialog);
                     int pinnedNum = dialog.pinnedNum;
                     slidingView = null;
                     parentPage.listView.invalidate();
@@ -5922,13 +5939,44 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 listView.getViewTreeObserver().removeOnPreDrawListener(this);
                 int n = listView.getChildCount();
                 AnimatorSet animatorSet = new AnimatorSet();
+                boolean animated = false;
                 for (int i = 0; i < n; i++) {
                     View child = listView.getChildAt(i);
-                    if (child != finalProgressView && listView.getChildAdapterPosition(child) >= finalFrom - 1) {
+                    int position = listView.getChildAdapterPosition(child);
+                    if (child != finalProgressView && position >= finalFrom - 1 && listAlphaItems.get(position, null) == null) {
+                        listAlphaItems.put(position, 0f);
                         child.setAlpha(0);
                         int s = Math.min(listView.getMeasuredHeight(), Math.max(0, child.getTop()));
                         int delay = (int) ((s / (float) listView.getMeasuredHeight()) * 100);
-                        ObjectAnimator a = ObjectAnimator.ofFloat(child, View.ALPHA, 0, 1f);
+                        ValueAnimator a = ValueAnimator.ofFloat(0, 1f);
+                        a.addUpdateListener(valueAnimator -> {
+                            Float alpha = (Float) valueAnimator.getAnimatedValue();
+                            listAlphaItems.put(position, alpha);
+                            if (listView.getChildAdapterPosition(child) == position) {
+                                child.setAlpha(alpha);
+                            } else {
+                                RecyclerView.ViewHolder vh = listView.findViewHolderForAdapterPosition(position);
+                                if (vh != null) {
+                                    vh.itemView.setAlpha(1f);
+                                }
+                            }
+                        });
+                        a.addListener(new AnimatorListenerAdapter() {
+                            @Override
+                            public void onAnimationEnd(Animator animation) {
+                                listAlphaItems.remove(position);
+                                if (listAlphaItems.size() == 0) {
+                                    for (int i = 0; i < listView.getChildCount(); i++) {
+                                        listView.getChildAt(i).setAlpha(1f);
+                                    }
+                                } else {
+                                    RecyclerView.ViewHolder vh = listView.findViewHolderForAdapterPosition(position);
+                                    if (vh != null) {
+                                        vh.itemView.setAlpha(1f);
+                                    }
+                                }
+                            }
+                        });
                         a.setStartDelay(delay);
                         a.setDuration(200);
                         animatorSet.playTogether(a);
@@ -5952,7 +6000,6 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                         animator.start();
                     }
                 }
-
                 animatorSet.start();
                 return true;
             }

@@ -2200,7 +2200,14 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
                     }
                     if (type == TYPE_USERS) {
                         for (int a = 0, N = participants.size(); a < N; a++) {
-                            TLRPC.ChannelParticipant participant = (TLRPC.ChannelParticipant) participants.get(a);
+                            TLObject object = participants.get(a);
+                            if (!(object instanceof TLRPC.ChannelParticipant)) {
+                                participants.remove(a);
+                                a--;
+                                N--;
+                                continue;
+                            }
+                            TLRPC.ChannelParticipant participant = (TLRPC.ChannelParticipant) object;
                             boolean remove = false;
                             if (contactsMap.get(participant.user_id) != null || botsMap.get(participant.user_id) != null) {
                                 remove = true;

@@ -436,10 +436,16 @@ public class ChatObject {
                         invitedUsers.remove(id);
                     }
                     if (oldParticipant != null) {
-                        oldParticipant.flags = participant.flags;
                         oldParticipant.muted = participant.muted;
                         oldParticipant.muted_by_you = participant.muted_by_you;
-                        oldParticipant.volume = participant.volume;
+                        if (!participant.min) {
+                            oldParticipant.volume = participant.volume;
+                        } else {
+                            if ((participant.flags & 128) != 0 && (oldParticipant.flags & 128) == 0) {
+                                participant.flags &=~ 128;
+                            }
+                        }
+                        oldParticipant.flags = participant.flags;
                         oldParticipant.can_self_unmute = participant.can_self_unmute;
                         oldParticipant.date = participant.date;
                         oldParticipant.lastTypingDate = Math.max(oldParticipant.active_date, participant.active_date);

@@ -36971,6 +36971,7 @@ public class TLRPC {
         public boolean can_self_unmute;
         public boolean just_joined;
         public boolean versioned;
+        public boolean min;
         public boolean muted_by_you;
         public int user_id;
         public int date;
@@ -37004,6 +37005,7 @@ public class TLRPC {
             can_self_unmute = (flags & 4) != 0;
             just_joined = (flags & 16) != 0;
             versioned = (flags & 32) != 0;
+            min = (flags & 256) != 0;
             muted_by_you = (flags & 512) != 0;
             user_id = stream.readInt32(exception);
             date = stream.readInt32(exception);
@@ -37023,6 +37025,7 @@ public class TLRPC {
             flags = can_self_unmute ? (flags | 4) : (flags &~ 4);
             flags = just_joined ? (flags | 16) : (flags &~ 16);
             flags = versioned ? (flags | 32) : (flags &~ 32);
+            flags = min ? (flags | 256) : (flags &~ 256);
             flags = muted_by_you ? (flags | 512) : (flags &~ 512);
             stream.writeInt32(flags);
             stream.writeInt32(user_id);
@@ -45243,6 +45246,8 @@ public class TLRPC {
             id = stream.readInt32(exception);
             if ((flags & 1) != 0) {
                 peer_id = Peer.TLdeserialize(stream, stream.readInt32(exception), exception);
+            } else {
+                peer_id = new TL_peerUser();
             }
         }
 

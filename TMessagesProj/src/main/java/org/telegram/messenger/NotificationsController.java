@@ -285,7 +285,14 @@ public class NotificationsController extends BaseController {
                         NotificationChannel channel = list.get(a);
                         String id = channel.getId();
                         if (id.startsWith(keyStart)) {
-                            systemNotificationManager.deleteNotificationChannel(id);
+                            try {
+                                systemNotificationManager.deleteNotificationChannel(id);
+                            } catch (Exception e) {
+                                FileLog.e(e);
+                            }
+                            if (BuildVars.LOGS_ENABLED) {
+                                FileLog.d("delete channel cleanup " + id);
+                            }
                         }
                     }
                 } catch (Throwable e) {
@@ -2575,7 +2582,14 @@ public class NotificationsController extends BaseController {
                 String channelId = preferences.getString(key, null);
                 if (channelId != null) {
                     editor.remove(key).remove(key + "_s");
-                    systemNotificationManager.deleteNotificationChannel(channelId);
+                    try {
+                        systemNotificationManager.deleteNotificationChannel(channelId);
+                    } catch (Exception e) {
+                        FileLog.e(e);
+                    }
+                    if (BuildVars.LOGS_ENABLED) {
+                        FileLog.d("delete channel internal " + channelId);
+                    }
                 }
             }
             if (what == 1 || what == -1) {
@@ -2583,7 +2597,14 @@ public class NotificationsController extends BaseController {
                 String channelId = preferences.getString(key, null);
                 if (channelId != null) {
                     editor.remove(key).remove(key + "_s");
-                    systemNotificationManager.deleteNotificationChannel(channelId);
+                    try {
+                        systemNotificationManager.deleteNotificationChannel(channelId);
+                    } catch (Exception e) {
+                        FileLog.e(e);
+                    }
+                    if (BuildVars.LOGS_ENABLED) {
+                        FileLog.d("delete channel internal " + channelId);
+                    }
                 }
             }
             editor.commit();
@@ -2622,7 +2643,14 @@ public class NotificationsController extends BaseController {
                 String channelId = preferences.getString(key, null);
                 if (channelId != null) {
                     editor.remove(key).remove(key + "_s");
-                    systemNotificationManager.deleteNotificationChannel(channelId);
+                    try {
+                        systemNotificationManager.deleteNotificationChannel(channelId);
+                    } catch (Exception e) {
+                        FileLog.e(e);
+                    }
+                    if (BuildVars.LOGS_ENABLED) {
+                        FileLog.d("delete channel global internal " + channelId);
+                    }
                 }
             }
 
@@ -2638,9 +2666,25 @@ public class NotificationsController extends BaseController {
                 String channelId = preferences.getString(key, null);
                 if (channelId != null) {
                     editor.remove(key).remove(key + "_s");
-                    systemNotificationManager.deleteNotificationChannel(channelId);
+                    try {
+                        systemNotificationManager.deleteNotificationChannel(channelId);
+                    } catch (Exception e) {
+                        FileLog.e(e);
+                    }
+                    if (BuildVars.LOGS_ENABLED) {
+                        FileLog.d("delete channel global internal " + channelId);
+                    }
                 }
             }
+            String overwriteKey;
+            if (type == TYPE_CHANNEL) {
+                overwriteKey = "overwrite_channel";
+            } else if (type == TYPE_GROUP) {
+                overwriteKey = "overwrite_group";
+            } else {
+                overwriteKey = "overwrite_private";
+            }
+            editor.remove(overwriteKey);
             editor.commit();
         } catch (Exception e) {
             FileLog.e(e);
@@ -2667,7 +2711,11 @@ public class NotificationsController extends BaseController {
                     String key = entry.getKey();
                     if (key.startsWith("org.telegram.key")) {
                         if (!key.endsWith("_s")) {
-                            systemNotificationManager.deleteNotificationChannel((String) entry.getValue());
+                            String id = (String) entry.getValue();
+                            systemNotificationManager.deleteNotificationChannel(id);
+                            if (BuildVars.LOGS_ENABLED) {
+                                FileLog.d("delete all channel " + id);
+                            }
                         }
                         editor.remove(key);
                     }
@@ -2824,19 +2872,25 @@ public class NotificationsController extends BaseController {
 
         String key;
         String groupId;
+        String overwriteKey;
         if (isSilent) {
             groupId = "other" + currentAccount;
+            overwriteKey = null;
         } else {
             if (type == TYPE_CHANNEL) {
                 groupId = "channels" + currentAccount;
+                overwriteKey = "overwrite_channel";
             } else if (type == TYPE_GROUP) {
                 groupId = "groups" + currentAccount;
+                overwriteKey = "overwrite_group";
             } else {
                 groupId = "private" + currentAccount;
+                overwriteKey = "overwrite_private";
             }
         }
 
         boolean secretChat = !isDefault && (int) dialogId == 0;
+        boolean shouldOverwrite = !isInApp && overwriteKey != null && preferences.getBoolean(overwriteKey, false);
 
         if (isSilent) {
             name = LocaleController.getString("NotificationsSilent", R.string.NotificationsSilent);
@@ -2864,8 +2918,11 @@ public class NotificationsController extends BaseController {
 
         if (channelId != null) {
             NotificationChannel existingChannel = systemNotificationManager.getNotificationChannel(channelId);
+            if (BuildVars.LOGS_ENABLED) {
+                FileLog.d("current channel for " + channelId + " = " + existingChannel);
+            }
             if (existingChannel != null) {
-                if (!isSilent) {
+                if (!isSilent && !shouldOverwrite) {
                     int channelImportance = existingChannel.getImportance();
                     Uri channelSound = existingChannel.getSound();
                     long[] channelVibrationPattern = existingChannel.getVibrationPattern();
@@ -2886,6 +2943,9 @@ public class NotificationsController extends BaseController {
                     newSettings.append(channelImportance);
                     if (!isDefault && secretChat) {
                         newSettings.append("secret");
+                    }
+                    if (BuildVars.LOGS_ENABLED) {
+                        FileLog.d("current channel settings for " + channelId + " = " + newSettings + " old = " + settings);
                     }
                     newSettingsHash = Utilities.MD5(newSettings.toString());
                     newSettings.setLength(0);
@@ -3047,7 +3107,10 @@ public class NotificationsController extends BaseController {
 
         if (edited && newSettingsHash != null) {
             preferences.edit().putString(key, channelId).putString(key + "_s", newSettingsHash).commit();
-        } else if (newSettingsHash == null || !isInApp || !isDefault) {
+            if (BuildVars.LOGS_ENABLED) {
+                FileLog.d("change edited channel " + channelId);
+            }
+        } else if (shouldOverwrite || newSettingsHash == null || !isInApp || !isDefault) {
             for (int a = 0; a < vibrationPattern.length; a++) {
                 newSettings.append(vibrationPattern[a]);
             }
@@ -3061,8 +3124,15 @@ public class NotificationsController extends BaseController {
             }
             newSettingsHash = Utilities.MD5(newSettings.toString());
 
-            if (!isSilent && channelId != null && !settings.equals(newSettingsHash)) {
-                systemNotificationManager.deleteNotificationChannel(channelId);
+            if (!isSilent && channelId != null && (shouldOverwrite || !settings.equals(newSettingsHash))) {
+                try {
+                    systemNotificationManager.deleteNotificationChannel(channelId);
+                } catch (Exception e) {
+                    FileLog.e(e);
+                }
+                if (BuildVars.LOGS_ENABLED) {
+                    FileLog.d("delete channel by settings change " + channelId);
+                }
                 channelId = null;
             }
         }
@@ -3095,6 +3165,9 @@ public class NotificationsController extends BaseController {
                 notificationChannel.setSound(sound, builder.build());
             } else {
                 notificationChannel.setSound(null, builder.build());
+            }
+            if (BuildVars.LOGS_ENABLED) {
+                FileLog.d("create new channel " + channelId);
             }
             systemNotificationManager.createNotificationChannel(notificationChannel);
             preferences.edit().putString(key, channelId).putString(key + "_s", newSettingsHash).commit();

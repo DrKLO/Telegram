@@ -57,8 +57,6 @@ import java.util.ArrayList;
 
 public class FilterTabsView extends FrameLayout {
 
-    private final ItemTouchHelper itemTouchHelper;
-
     public interface FilterTabsViewDelegate {
         void onPageSelected(int page, boolean forward);
         void onPageScrolled(float progress);
@@ -176,6 +174,24 @@ public class FilterTabsView extends FrameLayout {
 
         public int getId() {
             return currentTab.id;
+        }
+
+        @Override
+        protected void onDetachedFromWindow() {
+            super.onDetachedFromWindow();
+            animateChange = false;
+            animateTabCounter = false;
+            animateCounterChange = false;
+            animateTextChange = false;
+            animateTextX = false;
+            animateTabWidth = false;
+            if (changeAnimator != null) {
+                changeAnimator.removeAllListeners();
+                changeAnimator.removeAllUpdateListeners();
+                changeAnimator.cancel();
+                changeAnimator = null;
+            }
+            invalidate();
         }
 
         @Override
@@ -787,6 +803,7 @@ public class FilterTabsView extends FrameLayout {
                     if (tabView.animateChange) {
                         if (tabView.changeAnimator != null) {
                             tabView.changeAnimator.removeAllListeners();
+                            tabView.changeAnimator.removeAllUpdateListeners();
                             tabView.changeAnimator.cancel();
                         }
                         ValueAnimator valueAnimator = ValueAnimator.ofFloat(0, 1f);
@@ -863,7 +880,7 @@ public class FilterTabsView extends FrameLayout {
                 return super.scrollHorizontallyBy(dx, recycler, state);
             }
         });
-        itemTouchHelper = new ItemTouchHelper(new TouchHelperCallback());
+        ItemTouchHelper itemTouchHelper = new ItemTouchHelper(new TouchHelperCallback());
         itemTouchHelper.attachToRecyclerView(listView);
         listView.setPadding(AndroidUtilities.dp(7), 0, AndroidUtilities.dp(7), 0);
         listView.setClipToPadding(false);
