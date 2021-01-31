@@ -1051,12 +1051,13 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 }
                 processRowSelect(view, outside, x, y);
             }
+            swipeBackEnabled = false;
             return true;
         }
 
         @Override
         public void onLongClickRelease() {
-
+            swipeBackEnabled = true;
         }
 
         @Override
