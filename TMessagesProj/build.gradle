@@ -29,6 +29,7 @@ dependencies {
     implementation 'com.google.firebase:firebase-config:20.0.2'
     implementation 'com.google.firebase:firebase-datatransport:17.0.10'
     implementation 'com.google.firebase:firebase-appindexing:19.1.0'
+    implementation 'com.google.android.play:core:1.9.0'
     implementation 'com.google.android.gms:play-services-maps:17.0.0'
     implementation 'com.google.android.gms:play-services-auth:19.0.0'
     implementation 'com.google.android.gms:play-services-vision:16.2.0'
