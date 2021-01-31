@@ -726,7 +726,7 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter {
                     TLObject object;
                     int id;
                     if (a == -1) {
-                        if (chat == null) {
+                        if (TextUtils.isEmpty(chat.username)) {
                             continue;
                         }
                         if (usernameString.length() == 0) {
