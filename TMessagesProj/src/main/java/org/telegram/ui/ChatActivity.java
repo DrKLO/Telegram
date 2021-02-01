@@ -4416,6 +4416,9 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     if (!wasManualScroll && dy != 0) {
                         wasManualScroll = true;
                     }
+                    if (getParentActivity() != null) {
+                        AndroidUtilities.hideKeyboard(getParentActivity().getCurrentFocus());
+                    }
                 }
                 if (dy != 0) {
                     hideHints(true);
