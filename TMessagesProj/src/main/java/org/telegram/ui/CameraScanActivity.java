@@ -52,9 +52,9 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MrzRecognizer;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SendMessagesHelper;
-import org.telegram.messenger.camera.CameraController;
-import org.telegram.messenger.camera.CameraSession;
-import org.telegram.messenger.camera.CameraView;
+import org.telegram.messenger.camera.Camera1Controller;
+import org.telegram.messenger.camera.Camera1Session;
+import org.telegram.messenger.camera.Camera1View;
 import org.telegram.messenger.camera.Size;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarLayout;
@@ -74,7 +74,7 @@ public class CameraScanActivity extends BaseFragment implements Camera.PreviewCa
 
     private TextView titleTextView;
     private TextView descriptionText;
-    private CameraView cameraView;
+    private Camera1View cameraView;
     private HandlerThread backgroundHandlerThread = new HandlerThread("ScanCamera");
     private Handler handler;
     private TextView recognizedMrzView;
@@ -165,7 +165,7 @@ public class CameraScanActivity extends BaseFragment implements Camera.PreviewCa
 
     public CameraScanActivity(int type) {
         super();
-        CameraController.getInstance().initCamera(() -> {
+        Camera1Controller.getInstance().initCamera(() -> {
             if (cameraView != null) {
                 cameraView.initCamera();
             }
@@ -323,12 +323,12 @@ public class CameraScanActivity extends BaseFragment implements Camera.PreviewCa
         viewGroup.setOnTouchListener((v, event) -> true);
         fragmentView = viewGroup;
 
-        cameraView = new CameraView(context, false);
+        cameraView = new Camera1View(context, false);
         cameraView.setUseMaxPreview(true);
         cameraView.setOptimizeForBarcode(true);
-        cameraView.setDelegate(new CameraView.CameraViewDelegate() {
+        cameraView.setDelegate(new Camera1View.CameraViewDelegate() {
             @Override
-            public void onCameraCreated(Camera camera) {
+            public void onCameraCreated() {
 
             }
 
@@ -452,7 +452,7 @@ public class CameraScanActivity extends BaseFragment implements Camera.PreviewCa
             flashButton.setBackgroundDrawable(Theme.createCircleDrawable(AndroidUtilities.dp(60), 0x22ffffff));
             viewGroup.addView(flashButton);
             flashButton.setOnClickListener(currentImage -> {
-                CameraSession session = cameraView.getCameraSession();
+                Camera1Session session = cameraView.getCamera1Session();
                 if (session != null) {
                     ShapeDrawable shapeDrawable = (ShapeDrawable) flashButton.getBackground();
                     if (flashAnimator != null) {
@@ -533,8 +533,8 @@ public class CameraScanActivity extends BaseFragment implements Camera.PreviewCa
         AndroidUtilities.runOnUIThread(new Runnable() {
             @Override
             public void run() {
-                if (cameraView != null && !recognized && cameraView.getCameraSession() != null) {
-                    cameraView.getCameraSession().setOneShotPreviewCallback(org.telegram.ui.CameraScanActivity.this);
+                if (cameraView != null && !recognized && cameraView.getCamera1Session() != null) {
+                    cameraView.getCamera1Session().setOneShotPreviewCallback(org.telegram.ui.CameraScanActivity.this);
                     AndroidUtilities.runOnUIThread(this, 500);
                 }
             }
@@ -556,7 +556,7 @@ public class CameraScanActivity extends BaseFragment implements Camera.PreviewCa
             try {
                 Size size = cameraView.getPreviewSize();
                 if (currentType == TYPE_MRZ) {
-                    final MrzRecognizer.Result res = MrzRecognizer.recognize(data, size.getWidth(), size.getHeight(), cameraView.getCameraSession().getDisplayOrientation());
+                    final MrzRecognizer.Result res = MrzRecognizer.recognize(data, size.getWidth(), size.getHeight(), cameraView.getCamera1Session().getDisplayOrientation());
                     if (res != null && !TextUtils.isEmpty(res.firstName) && !TextUtils.isEmpty(res.lastName) && !TextUtils.isEmpty(res.number) && res.birthDay != 0 && (res.expiryDay != 0 || res.doesNotExpire) && res.gender != MrzRecognizer.Result.GENDER_UNKNOWN) {
                         recognized = true;
                         camera.stopPreview();

@@ -70,6 +70,8 @@
 
     <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
 
+    <uses-sdk tools:overrideLibrary="androidx.camera.view, androidx.camera.extensions, androidx.camera.lifecycle, androidx.camera.camera2, androidx.camera.core" />
+
     <application
         android:name="org.telegram.messenger.ApplicationLoader"
         android:allowBackup="false"

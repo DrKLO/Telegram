@@ -27,9 +27,9 @@ import org.telegram.messenger.FileLog;
 import java.util.ArrayList;
 import java.util.List;
 
-public class CameraSession {
+public class Camera1Session {
 
-    protected CameraInfo cameraInfo;
+    protected Camera1Info camera1Info;
     private String currentFlashMode;
     private OrientationEventListener orientationEventListener;
     private int lastOrientation = -1;
@@ -59,14 +59,14 @@ public class CameraSession {
         }
     };
 
-    public CameraSession(CameraInfo info, Size preview, Size picture, int format) {
+    public Camera1Session(Camera1Info info, Size preview, Size picture, int format) {
         previewSize = preview;
         pictureSize = picture;
         pictureFormat = format;
-        cameraInfo = info;
+        camera1Info = info;
 
         SharedPreferences sharedPreferences = ApplicationLoader.applicationContext.getSharedPreferences("camera", Activity.MODE_PRIVATE);
-        currentFlashMode = sharedPreferences.getString(cameraInfo.frontCamera != 0 ? "flashMode_front" : "flashMode", Camera.Parameters.FLASH_MODE_OFF);
+        currentFlashMode = sharedPreferences.getString(camera1Info.frontCamera != 0 ? "flashMode_front" : "flashMode", Camera.Parameters.FLASH_MODE_OFF);
 
         orientationEventListener = new OrientationEventListener(ApplicationLoader.applicationContext) {
             @Override
@@ -116,21 +116,21 @@ public class CameraSession {
     }
 
     public void checkFlashMode(String mode) {
-        ArrayList<String> modes = CameraController.getInstance().availableFlashModes;
+        ArrayList<String> modes = Camera1Controller.getInstance().availableFlashModes;
         if (modes.contains(currentFlashMode)) {
             return;
         }
         currentFlashMode = mode;
         configurePhotoCamera();
         SharedPreferences sharedPreferences = ApplicationLoader.applicationContext.getSharedPreferences("camera", Activity.MODE_PRIVATE);
-        sharedPreferences.edit().putString(cameraInfo.frontCamera != 0 ? "flashMode_front" : "flashMode", mode).commit();
+        sharedPreferences.edit().putString(camera1Info.frontCamera != 0 ? "flashMode_front" : "flashMode", mode).commit();
     }
 
     public void setCurrentFlashMode(String mode) {
         currentFlashMode = mode;
         configurePhotoCamera();
         SharedPreferences sharedPreferences = ApplicationLoader.applicationContext.getSharedPreferences("camera", Activity.MODE_PRIVATE);
-        sharedPreferences.edit().putString(cameraInfo.frontCamera != 0 ? "flashMode_front" : "flashMode", mode).commit();
+        sharedPreferences.edit().putString(camera1Info.frontCamera != 0 ? "flashMode_front" : "flashMode", mode).commit();
     }
 
     public void setTorchEnabled(boolean enabled) {
@@ -147,7 +147,7 @@ public class CameraSession {
     }
 
     public String getNextFlashMode() {
-        ArrayList<String> modes = CameraController.getInstance().availableFlashModes;
+        ArrayList<String> modes = Camera1Controller.getInstance().availableFlashModes;
         for (int a = 0; a < modes.size(); a++) {
             String mode = modes.get(a);
             if (mode.equals(currentFlashMode)) {
@@ -192,7 +192,7 @@ public class CameraSession {
     protected void configureRoundCamera() {
         try {
             isVideo = true;
-            Camera camera = cameraInfo.camera;
+            Camera camera = camera1Info.camera;
             if (camera != null) {
                 Camera.CameraInfo info = new Camera.CameraInfo();
                 Camera.Parameters params = null;
@@ -202,7 +202,7 @@ public class CameraSession {
                     FileLog.e(e);
                 }
 
-                Camera.getCameraInfo(cameraInfo.getCameraId(), info);
+                Camera.getCameraInfo(camera1Info.getCameraId(), info);
 
                 int displayOrientation = getDisplayOrientation(info, true);
                 int cameraDisplayOrientation;
@@ -299,7 +299,7 @@ public class CameraSession {
 
     protected void configurePhotoCamera() {
         try {
-            Camera camera = cameraInfo.camera;
+            Camera camera = camera1Info.camera;
             if (camera != null) {
                 Camera.CameraInfo info = new Camera.CameraInfo();
                 Camera.Parameters params = null;
@@ -309,7 +309,7 @@ public class CameraSession {
                     FileLog.e(e);
                 }
 
-                Camera.getCameraInfo(cameraInfo.getCameraId(), info);
+                Camera.getCameraInfo(camera1Info.getCameraId(), info);
 
                 int displayOrientation = getDisplayOrientation(info, true);
                 int cameraDisplayOrientation;
@@ -408,7 +408,7 @@ public class CameraSession {
 
     protected void focusToRect(Rect focusRect, Rect meteringRect) {
         try {
-            Camera camera = cameraInfo.camera;
+            Camera camera = camera1Info.camera;
             if (camera != null) {
                 camera.cancelAutoFocus();
                 Camera.Parameters parameters = null;
@@ -454,7 +454,7 @@ public class CameraSession {
 
     protected void configureRecorder(int quality, MediaRecorder recorder) {
         Camera.CameraInfo info = new Camera.CameraInfo();
-        Camera.getCameraInfo(cameraInfo.cameraId, info);
+        Camera.getCameraInfo(camera1Info.cameraId, info);
         int displayOrientation = getDisplayOrientation(info, false);
 
 
@@ -469,12 +469,12 @@ public class CameraSession {
         recorder.setOrientationHint(outputOrientation);
 
         int highProfile = getHigh();
-        boolean canGoHigh = CamcorderProfile.hasProfile(cameraInfo.cameraId, highProfile);
-        boolean canGoLow = CamcorderProfile.hasProfile(cameraInfo.cameraId, CamcorderProfile.QUALITY_LOW);
+        boolean canGoHigh = CamcorderProfile.hasProfile(camera1Info.cameraId, highProfile);
+        boolean canGoLow = CamcorderProfile.hasProfile(camera1Info.cameraId, CamcorderProfile.QUALITY_LOW);
         if (canGoHigh && (quality == 1 || !canGoLow)) {
-            recorder.setProfile(CamcorderProfile.get(cameraInfo.cameraId, highProfile));
+            recorder.setProfile(CamcorderProfile.get(camera1Info.cameraId, highProfile));
         } else if (canGoLow) {
-            recorder.setProfile(CamcorderProfile.get(cameraInfo.cameraId, CamcorderProfile.QUALITY_LOW));
+            recorder.setProfile(CamcorderProfile.get(camera1Info.cameraId, CamcorderProfile.QUALITY_LOW));
         } else {
             throw new IllegalStateException("cannot find valid CamcorderProfile");
         }
@@ -535,7 +535,7 @@ public class CameraSession {
     public int getDisplayOrientation() {
         try {
             Camera.CameraInfo info = new Camera.CameraInfo();
-            Camera.getCameraInfo(cameraInfo.getCameraId(), info);
+            Camera.getCameraInfo(camera1Info.getCameraId(), info);
             return getDisplayOrientation(info, true);
         } catch (Exception e) {
             FileLog.e(e);
@@ -544,13 +544,13 @@ public class CameraSession {
     }
 
     public void setPreviewCallback(Camera.PreviewCallback callback){
-        cameraInfo.camera.setPreviewCallback(callback);
+        camera1Info.camera.setPreviewCallback(callback);
     }
 
     public void setOneShotPreviewCallback(Camera.PreviewCallback callback) {
-        if (cameraInfo != null && cameraInfo.camera != null) {
+        if (camera1Info != null && camera1Info.camera != null) {
             try {
-                cameraInfo.camera.setOneShotPreviewCallback(callback);
+                camera1Info.camera.setOneShotPreviewCallback(callback);
             } catch (Exception ignore) {
 
             }

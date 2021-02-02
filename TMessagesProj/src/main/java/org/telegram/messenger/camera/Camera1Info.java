@@ -12,7 +12,7 @@ import android.hardware.Camera;
 
 import java.util.ArrayList;
 
-public class CameraInfo {
+public class Camera1Info {
 
     protected int cameraId;
     protected Camera camera;
@@ -20,7 +20,7 @@ public class CameraInfo {
     protected ArrayList<Size> previewSizes = new ArrayList<>();
     protected final int frontCamera;
 
-    public CameraInfo(int id, int frontFace) {
+    public Camera1Info(int id, int frontFace) {
         cameraId = id;
         frontCamera = frontFace;
     }
