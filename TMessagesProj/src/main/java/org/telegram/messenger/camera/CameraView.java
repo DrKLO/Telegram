@@ -2,6 +2,7 @@ package org.telegram.messenger.camera;
 
 import android.content.Context;
 import android.util.AttributeSet;
+import android.view.TextureView;
 import android.widget.FrameLayout;
 
 import androidx.annotation.NonNull;
@@ -32,7 +33,7 @@ public abstract class CameraView extends FrameLayout {
         void onCameraCreated();
         void onCameraInit();
     }
-
+    public abstract TextureView getTextureView();
     public abstract void initCamera();
     public abstract void switchCamera();
     public abstract boolean hasFrontFaceCamera();

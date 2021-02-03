@@ -95,7 +95,7 @@ public class Camera1View extends CameraView implements TextureView.SurfaceTextur
     public boolean isFrontface() {
         return isFrontface;
     }
-
+    @Override
     public TextureView getTextureView() {
         return textureView;
     }

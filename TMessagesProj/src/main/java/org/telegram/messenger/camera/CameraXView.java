@@ -10,6 +10,7 @@ import android.graphics.Paint;
 import android.graphics.drawable.BitmapDrawable;
 import android.media.MediaMetadataRetriever;
 import android.provider.MediaStore;
+import android.view.TextureView;
 import android.view.View;
 import android.view.animation.DecelerateInterpolator;
 
@@ -25,6 +26,14 @@ import androidx.camera.core.MeteringPoint;
 import androidx.camera.core.MeteringPointFactory;
 import androidx.camera.core.Preview;
 import androidx.camera.core.VideoCapture;
+import androidx.camera.extensions.BeautyImageCaptureExtender;
+import androidx.camera.extensions.BeautyPreviewExtender;
+import androidx.camera.extensions.BokehImageCaptureExtender;
+import androidx.camera.extensions.BokehPreviewExtender;
+import androidx.camera.extensions.HdrImageCaptureExtender;
+import androidx.camera.extensions.HdrPreviewExtender;
+import androidx.camera.extensions.NightImageCaptureExtender;
+import androidx.camera.extensions.NightPreviewExtender;
 import androidx.camera.lifecycle.ProcessCameraProvider;
 import androidx.camera.view.PreviewView;
 import androidx.core.content.ContextCompat;
@@ -74,6 +83,15 @@ public class CameraXView extends CameraView {
     private VideoSavedCallback videoSavedCallback;
     private boolean abandonCurrentVideo = false;
     private ImageCapture iCapture;
+    private BokehImageCaptureExtender iBokehExt;
+    private BeautyImageCaptureExtender iBeautyExt;
+    private HdrImageCaptureExtender iHdrExt;
+    private NightImageCaptureExtender iNightExt;
+    private BokehPreviewExtender pBokehExt;
+    private BeautyPreviewExtender pBeautyExt;
+    private HdrPreviewExtender pHdrExt;
+    private NightPreviewExtender pNightExt;
+
 
     public interface VideoSavedCallback {
         void onFinishVideoRecording(String thumbPath, long duration);
@@ -159,6 +177,10 @@ public class CameraXView extends CameraView {
     public static boolean hasGoodCamera(Context context) {
         return context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_CAMERA);
     }
+    @Override
+    public TextureView getTextureView(){
+        return (TextureView)(previewView.getChildAt(0));
+    }
 
 
     private String getNextFlashMode(String legacyMode) {
@@ -231,10 +253,11 @@ public class CameraXView extends CameraView {
 
     }
 
-    @SuppressLint("RestrictedApi")
+    @SuppressLint({"RestrictedApi", "UnsafeExperimentalUsageError"})
     private void bindUseCases() {
-        Preview preview = new Preview.Builder().build();
-        preview.setSurfaceProvider(previewView.getSurfaceProvider());
+        Preview.Builder previewBuilder = new Preview.Builder();
+
+
         cameraSelector = new CameraSelector.Builder()
                 .requireLensFacing(isFrontface ? CameraSelector.LENS_FACING_FRONT : CameraSelector.LENS_FACING_BACK)
                 .build();
@@ -247,13 +270,54 @@ public class CameraXView extends CameraView {
                 .setDefaultResolution(new android.util.Size(1024, 720))
                 .build();
 
-        iCapture = new ImageCapture.Builder()
+
+        ImageCapture.Builder iCaptureBuilder = new ImageCapture.Builder()
                 .setCaptureMode(ImageCapture.CAPTURE_MODE_MAXIMIZE_QUALITY)
                 .setMaxResolution(new android.util.Size(1024, 1024))
-                .setDefaultResolution(new android.util.Size(1024, 720))
-                .build();
+                .setDefaultResolution(new android.util.Size(1024, 720));
+
+        iBokehExt = BokehImageCaptureExtender.create(iCaptureBuilder);
+        iBeautyExt = BeautyImageCaptureExtender.create(iCaptureBuilder);
+        iHdrExt = HdrImageCaptureExtender.create(iCaptureBuilder);
+        iNightExt = NightImageCaptureExtender.create(iCaptureBuilder);
+        pBokehExt = BokehPreviewExtender.create(previewBuilder);
+        pBeautyExt = BeautyPreviewExtender.create(previewBuilder);
+        pHdrExt = HdrPreviewExtender.create(previewBuilder);
+        pNightExt = NightPreviewExtender.create(previewBuilder);
+
+        if(iBokehExt.isExtensionAvailable(cameraSelector)){
+            iBokehExt.enableExtension(cameraSelector);
+            if(pBokehExt.isExtensionAvailable(cameraSelector)){
+                pBokehExt.enableExtension(cameraSelector);
+            }
+        }
+
+        if(iBeautyExt.isExtensionAvailable(cameraSelector)){
+            iBeautyExt.enableExtension(cameraSelector);
+            if(pBeautyExt.isExtensionAvailable(cameraSelector)){
+                pBeautyExt.enableExtension(cameraSelector);
+            }
+        }
+
+        if(iHdrExt.isExtensionAvailable(cameraSelector)){
+            iHdrExt.enableExtension(cameraSelector);
+            if(pHdrExt.isExtensionAvailable(cameraSelector)){
+                pHdrExt.enableExtension(cameraSelector);
+            }
+        }
+
+        if(iNightExt.isExtensionAvailable(cameraSelector)){
+            iNightExt.enableExtension(cameraSelector);
+            if(pNightExt.isExtensionAvailable(cameraSelector)){
+                pNightExt.enableExtension(cameraSelector);
+            }
+        }
+
+        iCapture = iCaptureBuilder.build();
 
         provider.unbindAll();
+        Preview preview = previewBuilder.build();
+        preview.setSurfaceProvider(previewView.getSurfaceProvider());
         camera = provider.bindToLifecycle(lifecycle, cameraSelector, preview, vCapture, iCapture);
     }
 
@@ -274,9 +338,6 @@ public class CameraXView extends CameraView {
 
     @Override
     public void focusToPoint(int x, int y) {
-        //MeteringPointFactory factory = new DisplayOrientedMeteringPointFactory();
-        //camera.getCameraControl().startFocusAndMetering()
-
         MeteringPointFactory factory = previewView.getMeteringPointFactory();
         MeteringPoint point = factory.createPoint(x, y);
         FocusMeteringAction action = new FocusMeteringAction.Builder(point).build();
