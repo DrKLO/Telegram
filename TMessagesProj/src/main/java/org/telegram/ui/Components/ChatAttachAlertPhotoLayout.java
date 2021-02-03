@@ -1000,13 +1000,15 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
                     return;
                 }
                 String next = null;
-                if (Build.VERSION.SDK_INT < 23) { //TODO
+                if (Build.VERSION.SDK_INT < 23) {
                     String current = ((Camera1View) cameraView).getCamera1Session().getCurrentFlashMode();
                     next = ((Camera1View) cameraView).getCamera1Session().getNextFlashMode();
                     if (current.equals(next)) {
                         return;
                     }
                     ((Camera1View) cameraView).getCamera1Session().setCurrentFlashMode(next);
+                } else {
+                    next = ((CameraXView) cameraView).setNextFlashMode();
                 }
 
 
@@ -1590,20 +1592,10 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
                     }
                     deviceHasGoodCamera = false;
                 } else {
-                    if (request || SharedConfig.hasCameraCache) {
-                        //Camera1Controller.getInstance().initCamera(null); //TODO:
-                        //cameraView.initCamera();
-                    }
-                    deviceHasGoodCamera = true;
+                    deviceHasGoodCamera = CameraXView.hasGoodCamera(getContext());;
                 }
             } else if (Build.VERSION.SDK_INT >= 21){
-
-                if (request || SharedConfig.hasCameraCache) {
-                    //Camera1Controller.getInstance().initCamera(null);  //TODO:
-                    //cameraView.initCamera();
-                }
-                deviceHasGoodCamera = true;
-
+                deviceHasGoodCamera = CameraXView.hasGoodCamera(getContext());
             } else {
                 if (request || SharedConfig.hasCameraCache) {
                     Camera1Controller.getInstance().initCamera(null);
@@ -1752,7 +1744,7 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
                 public void onCameraInit() {
                     String current = null;
                     String next = null;
-                    if (Build.VERSION.SDK_INT < 21) { //TODO:
+                    if (Build.VERSION.SDK_INT < 21) {
                         current = ((Camera1View) cameraView).getCamera1Session().getCurrentFlashMode();
                         next = ((Camera1View) cameraView).getCamera1Session().getNextFlashMode();
                         if (current.equals(next)) {
@@ -1766,6 +1758,21 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
                             for (int a = 0; a < 2; a++) {
                                 flashModeButton[a].setVisibility(a == 0 ? View.VISIBLE : View.INVISIBLE);
                                 flashModeButton[a].setAlpha(a == 0 && cameraOpened ? 1.0f : 0.0f);
+                                flashModeButton[a].setTranslationY(0.0f);
+                            }
+                        }
+                    } else {
+                        if(((CameraXView) cameraView).isFlashAvailable()){
+                            setCameraFlashModeIcon(flashModeButton[0], ((CameraXView) cameraView).getCurrentFlashMode());
+                            for (int a = 0; a < 2; a++) {
+                                flashModeButton[a].setVisibility(a == 0 ? View.VISIBLE : View.INVISIBLE);
+                                flashModeButton[a].setAlpha(a == 0 && cameraOpened ? 1.0f : 0.0f);
+                                flashModeButton[a].setTranslationY(0.0f);
+                            }
+                        } else {
+                            for (int a = 0; a < 2; a++) {
+                                flashModeButton[a].setVisibility(View.INVISIBLE);
+                                flashModeButton[a].setAlpha(0.0f);
                                 flashModeButton[a].setTranslationY(0.0f);
                             }
                         }

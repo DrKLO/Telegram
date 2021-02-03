@@ -3,6 +3,7 @@ package org.telegram.messenger.camera;
 import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.content.Context;
+import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Paint;
@@ -23,9 +24,7 @@ import androidx.camera.core.ImageCaptureException;
 import androidx.camera.core.MeteringPoint;
 import androidx.camera.core.MeteringPointFactory;
 import androidx.camera.core.Preview;
-import androidx.camera.core.SurfaceOrientedMeteringPointFactory;
 import androidx.camera.core.VideoCapture;
-import androidx.camera.core.ZoomState;
 import androidx.camera.lifecycle.ProcessCameraProvider;
 import androidx.camera.view.PreviewView;
 import androidx.core.content.ContextCompat;
@@ -114,6 +113,7 @@ public class CameraXView extends CameraView {
         clipBottom = cameraViewOffsetBottomY;
     }
 
+
     @Override
     public void initCamera() {
         ListenableFuture<ProcessCameraProvider> providerFtr = ProcessCameraProvider.getInstance(getContext());
@@ -133,7 +133,7 @@ public class CameraXView extends CameraView {
 
     private void observeStream() {
         previewView.getPreviewStreamState().observe(lifecycle, streamState -> {
-            if (streamState == PreviewView.StreamState.STREAMING && !isInited) {
+            if (streamState == PreviewView.StreamState.STREAMING /*&& !isInited*/) {
                 delegate.onCameraInit();
                 isInited = true;
             }
@@ -153,6 +153,67 @@ public class CameraXView extends CameraView {
                 .requireLensFacing(CameraSelector.LENS_FACING_FRONT)
                 .build());
         return frontCam != null;
+    }
+
+    @SuppressLint("RestrictedApi")
+    public static boolean hasGoodCamera(Context context) {
+        return context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_CAMERA);
+    }
+
+
+    private String getNextFlashMode(String legacyMode) {
+        String next = null;
+        switch (legacyMode) {
+            case android.hardware.Camera.Parameters.FLASH_MODE_AUTO:
+                next = android.hardware.Camera.Parameters.FLASH_MODE_ON;
+                break;
+            case android.hardware.Camera.Parameters.FLASH_MODE_ON:
+                next = android.hardware.Camera.Parameters.FLASH_MODE_OFF;
+                break;
+            case android.hardware.Camera.Parameters.FLASH_MODE_OFF:
+                next = android.hardware.Camera.Parameters.FLASH_MODE_AUTO;
+                break;
+        }
+        return next;
+    }
+
+    public String setNextFlashMode() {
+        String next = getNextFlashMode(getCurrentFlashMode());
+        int iCaptureFlashMode = ImageCapture.FLASH_MODE_AUTO;
+        switch (next) {
+            case android.hardware.Camera.Parameters.FLASH_MODE_AUTO:
+                iCaptureFlashMode = ImageCapture.FLASH_MODE_AUTO;
+                break;
+            case android.hardware.Camera.Parameters.FLASH_MODE_OFF:
+                iCaptureFlashMode = ImageCapture.FLASH_MODE_OFF;
+                break;
+            case android.hardware.Camera.Parameters.FLASH_MODE_ON:
+                iCaptureFlashMode = ImageCapture.FLASH_MODE_ON;
+                break;
+        }
+        iCapture.setFlashMode(iCaptureFlashMode);
+        return next;
+    }
+
+    public String getCurrentFlashMode() {
+        int mode = iCapture.getFlashMode();
+        String legacyMode = null;
+        switch (mode) {
+            case ImageCapture.FLASH_MODE_AUTO:
+                legacyMode = android.hardware.Camera.Parameters.FLASH_MODE_AUTO;
+                break;
+            case ImageCapture.FLASH_MODE_OFF:
+                legacyMode = android.hardware.Camera.Parameters.FLASH_MODE_OFF;
+                break;
+            case ImageCapture.FLASH_MODE_ON:
+                legacyMode = android.hardware.Camera.Parameters.FLASH_MODE_ON;
+                break;
+        }
+        return legacyMode;
+    }
+
+    public boolean isFlashAvailable() {
+        return camera.getCameraInfo().hasFlashUnit();
     }
 
     @Override
@@ -303,6 +364,9 @@ public class CameraXView extends CameraView {
                 .Builder(path)
                 .build();
 
+        if (iCapture.getFlashMode() == ImageCapture.FLASH_MODE_ON) {
+            camera.getCameraControl().enableTorch(true);
+        }
         vCapture.startRecording(fileOpt, ContextCompat.getMainExecutor(getContext()), new VideoCapture.OnVideoSavedCallback() {
             @Override
             public void onVideoSaved(@NonNull VideoCapture.OutputFileResults outputFileResults) {
@@ -310,6 +374,9 @@ public class CameraXView extends CameraView {
                     abandonCurrentVideo = false;
                 } else {
                     finishRecordingVideo(path, mirror);
+                    if (iCapture.getFlashMode() == ImageCapture.FLASH_MODE_ON) {
+                        camera.getCameraControl().enableTorch(false);
+                    }
                 }
             }
 
