@@ -16,8 +16,16 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.camera.core.Camera;
 import androidx.camera.core.CameraSelector;
+import androidx.camera.core.CameraX;
+import androidx.camera.core.FocusMeteringAction;
+import androidx.camera.core.ImageCapture;
+import androidx.camera.core.ImageCaptureException;
+import androidx.camera.core.MeteringPoint;
+import androidx.camera.core.MeteringPointFactory;
 import androidx.camera.core.Preview;
+import androidx.camera.core.SurfaceOrientedMeteringPointFactory;
 import androidx.camera.core.VideoCapture;
+import androidx.camera.core.ZoomState;
 import androidx.camera.lifecycle.ProcessCameraProvider;
 import androidx.camera.view.PreviewView;
 import androidx.core.content.ContextCompat;
@@ -52,6 +60,7 @@ public class CameraXView extends CameraView {
     private CameraLifecycle lifecycle;
     ProcessCameraProvider provider;
     Camera camera;
+    CameraSelector cameraSelector;
     private Camera1View.CameraViewDelegate delegate;
     private int clipTop;
     private int clipBottom;
@@ -62,9 +71,11 @@ public class CameraXView extends CameraView {
     private long lastDrawTime;
     private int cx;
     private int cy;
-    VideoCapture vCapture;
-    VideoSavedCallback videoSavedCallback;
-    boolean abandonCurrentVideo = false;
+    private VideoCapture vCapture;
+    private VideoSavedCallback videoSavedCallback;
+    private boolean abandonCurrentVideo = false;
+    private ImageCapture iCapture;
+
     public interface VideoSavedCallback {
         void onFinishVideoRecording(String thumbPath, long duration);
     }
@@ -131,12 +142,17 @@ public class CameraXView extends CameraView {
 
     @Override
     public void switchCamera() {
-
+        isFrontface = !isFrontface;
+        bindUseCases();
     }
 
+    @SuppressLint("RestrictedApi")
     @Override
     public boolean hasFrontFaceCamera() {
-        return false;
+        Camera frontCam = CameraX.getCameraWithCameraSelector(new CameraSelector.Builder()
+                .requireLensFacing(CameraSelector.LENS_FACING_FRONT)
+                .build());
+        return frontCam != null;
     }
 
     @Override
@@ -158,8 +174,8 @@ public class CameraXView extends CameraView {
     private void bindUseCases() {
         Preview preview = new Preview.Builder().build();
         preview.setSurfaceProvider(previewView.getSurfaceProvider());
-        CameraSelector cameraSelector = new CameraSelector.Builder()
-                .requireLensFacing(CameraSelector.LENS_FACING_BACK)
+        cameraSelector = new CameraSelector.Builder()
+                .requireLensFacing(isFrontface ? CameraSelector.LENS_FACING_FRONT : CameraSelector.LENS_FACING_BACK)
                 .build();
 
         vCapture = new VideoCapture.Builder()
@@ -170,7 +186,14 @@ public class CameraXView extends CameraView {
                 .setDefaultResolution(new android.util.Size(1024, 720))
                 .build();
 
-        camera = provider.bindToLifecycle(lifecycle, cameraSelector, preview, vCapture);
+        iCapture = new ImageCapture.Builder()
+                .setCaptureMode(ImageCapture.CAPTURE_MODE_MAXIMIZE_QUALITY)
+                .setMaxResolution(new android.util.Size(1024, 1024))
+                .setDefaultResolution(new android.util.Size(1024, 720))
+                .build();
+
+        provider.unbindAll();
+        camera = provider.bindToLifecycle(lifecycle, cameraSelector, preview, vCapture, iCapture);
     }
 
     @Override
@@ -185,12 +208,26 @@ public class CameraXView extends CameraView {
 
     @Override
     public void setZoom(float value) {
-
+        camera.getCameraControl().setLinearZoom(value);
     }
 
     @Override
     public void focusToPoint(int x, int y) {
+        //MeteringPointFactory factory = new DisplayOrientedMeteringPointFactory();
+        //camera.getCameraControl().startFocusAndMetering()
 
+        MeteringPointFactory factory = previewView.getMeteringPointFactory();
+        MeteringPoint point = factory.createPoint(x, y);
+        FocusMeteringAction action = new FocusMeteringAction.Builder(point).build();
+        camera.getCameraControl().startFocusAndMetering(action);
+
+        focusProgress = 0.0f;
+        innerAlpha = 1.0f;
+        outerAlpha = 1.0f;
+        cx = x;
+        cy = y;
+        lastDrawTime = System.currentTimeMillis();
+        invalidate();
     }
 
     @Override
@@ -269,7 +306,7 @@ public class CameraXView extends CameraView {
         vCapture.startRecording(fileOpt, ContextCompat.getMainExecutor(getContext()), new VideoCapture.OnVideoSavedCallback() {
             @Override
             public void onVideoSaved(@NonNull VideoCapture.OutputFileResults outputFileResults) {
-                if(abandonCurrentVideo){
+                if (abandonCurrentVideo) {
                     abandonCurrentVideo = false;
                 } else {
                     finishRecordingVideo(path, mirror);
@@ -338,8 +375,31 @@ public class CameraXView extends CameraView {
 
 
     @SuppressLint("RestrictedApi")
-    public void stopVideoRecording(final boolean abandon){
+    public void stopVideoRecording(final boolean abandon) {
         abandonCurrentVideo = abandon;
         vCapture.stopRecording();
+    }
+
+
+    public void takePicture(final File file, Runnable onTake) {
+        ImageCapture.OutputFileOptions fileOpt = new ImageCapture.OutputFileOptions
+                .Builder(file)
+                .build();
+
+        iCapture.takePicture(fileOpt, ContextCompat.getMainExecutor(getContext()), new ImageCapture.OnImageSavedCallback() {
+            @Override
+            public void onImageSaved(@NonNull ImageCapture.OutputFileResults outputFileResults) {
+                onTake.run();
+            }
+
+            @Override
+            public void onError(@NonNull ImageCaptureException exception) {
+                FileLog.e(exception);
+            }
+        });
+    }
+
+    private float mix(Float v1, Float v2, Float a) {
+        return v1 * (1 - a) + v2 * a;
     }
 }

@@ -801,7 +801,7 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
                 };
                 AndroidUtilities.lockOrientation(parentAlert.baseFragment.getParentActivity());
 
-                if (Build.VERSION.SDK_INT < 23) { //TODO
+                if (Build.VERSION.SDK_INT < 23) {
                     Camera1Controller.getInstance().recordVideo(((Camera1View) cameraView).getCamera1Session(), outputFile, parentAlert.avatarPicker != 0, (thumbPath, duration) -> {
                         if (outputFile == null || parentAlert.baseFragment == null || cameraView == null) {
                             return;
@@ -857,8 +857,12 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
 
             @Override
             public void shutterReleased() {
-                if (Build.VERSION.SDK_INT < 23) { //TODO
+                if (Build.VERSION.SDK_INT < 23) {
                     if (takingPhoto || cameraView == null || ((Camera1View) cameraView).getCamera1Session() == null) {
+                        return;
+                    }
+                } else {
+                    if (takingPhoto || cameraView == null) {
                         return;
                     }
                 }
@@ -874,10 +878,41 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
                     return;
                 }
                 final File cameraFile = AndroidUtilities.generatePicturePath(parentAlert.baseFragment instanceof ChatActivity && ((ChatActivity) parentAlert.baseFragment).isSecretChat(), null);
-                if (Build.VERSION.SDK_INT < 23) { //TODO
+                if (Build.VERSION.SDK_INT < 23) {
                     final boolean sameTakePictureOrientation = ((Camera1View) cameraView).getCamera1Session().isSameTakePictureOrientation();
                     ((Camera1View) cameraView).getCamera1Session().setFlipFront(parentAlert.baseFragment instanceof ChatActivity || parentAlert.avatarPicker == 2);
                     takingPhoto = Camera1Controller.getInstance().takePicture(cameraFile, ((Camera1View) cameraView).getCamera1Session(), () -> {
+                        takingPhoto = false;
+                        if (cameraFile == null || parentAlert.baseFragment == null) {
+                            return;
+                        }
+                        int orientation = 0;
+                        try {
+                            ExifInterface ei = new ExifInterface(cameraFile.getAbsolutePath());
+                            int exif = ei.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL);
+                            switch (exif) {
+                                case ExifInterface.ORIENTATION_ROTATE_90:
+                                    orientation = 90;
+                                    break;
+                                case ExifInterface.ORIENTATION_ROTATE_180:
+                                    orientation = 180;
+                                    break;
+                                case ExifInterface.ORIENTATION_ROTATE_270:
+                                    orientation = 270;
+                                    break;
+                            }
+                        } catch (Exception e) {
+                            FileLog.e(e);
+                        }
+                        mediaFromExternalCamera = false;
+                        MediaController.PhotoEntry photoEntry = new MediaController.PhotoEntry(0, lastImageId--, 0, cameraFile.getAbsolutePath(), orientation, false, 0, 0, 0);
+                        photoEntry.canDeleteAfter = true;
+                        openPhotoViewer(photoEntry, sameTakePictureOrientation, false);
+                    });
+                } else {
+                    final boolean sameTakePictureOrientation = true; //TODO
+                    takingPhoto = true;
+                    ((CameraXView) cameraView).takePicture(cameraFile, () -> {
                         takingPhoto = false;
                         if (cameraFile == null || parentAlert.baseFragment == null) {
                             return;
