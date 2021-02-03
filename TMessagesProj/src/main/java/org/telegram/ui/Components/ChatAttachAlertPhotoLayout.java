@@ -53,6 +53,8 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.LinearSmoothScroller;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.android.exoplayer2.util.Log;
+
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.BuildVars;
@@ -2231,7 +2233,8 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
             cameraIcon.setTranslationX(cameraViewLocation[0]);
             cameraIcon.setTranslationY(cameraViewLocation[1] + currentPanTranslationY);
             int finalWidth = (int) (itemSize - cameraViewOffsetX);
-            int finalHeight = (int) (itemSize - cameraViewOffsetY - cameraViewOffsetBottomY);
+            int finalHeight = (int) clamp(itemSize - cameraViewOffsetY - cameraViewOffsetBottomY, 0.0f, itemSize);
+
 
             FrameLayout.LayoutParams layoutParams;
             if (!cameraOpened) {
@@ -3205,5 +3208,9 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
                 progressView.setVisibility(getItemCount() == 1 && selectedAlbumEntry == null || !mediaEnabled ? View.VISIBLE : View.INVISIBLE);
             }
         }
+    }
+
+    public static float clamp(float x, float min, float max) {
+        return Math.max(min, Math.min(max, x));
     }
 }

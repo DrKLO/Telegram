@@ -9,6 +9,7 @@
 package org.telegram.messenger.camera;
 
 import android.annotation.SuppressLint;
+import android.annotation.TargetApi;
 import android.app.Activity;
 import android.content.Context;
 import android.graphics.Canvas;
@@ -30,7 +31,7 @@ import org.telegram.messenger.ApplicationLoader;
 import java.util.ArrayList;
 import java.util.concurrent.CountDownLatch;
 
-@SuppressLint("NewApi")
+@TargetApi(16)
 public class Camera1View extends CameraView implements TextureView.SurfaceTextureListener {
 
     private Size previewSize;
