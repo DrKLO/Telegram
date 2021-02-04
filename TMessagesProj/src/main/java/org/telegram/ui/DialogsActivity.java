@@ -1963,10 +1963,12 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
 
                 @Override
                 public void setTranslationY(float translationY) {
-                    super.setTranslationY(translationY);
-                    updateContextViewPosition();
-                    if (fragmentView != null) {
-                        fragmentView.invalidate();
+                    if(translationY != getTranslationY()) {
+                        super.setTranslationY(translationY);
+                        updateContextViewPosition();
+                        if (fragmentView != null) {
+                            fragmentView.invalidate();
+                        }
                     }
                 }
 
