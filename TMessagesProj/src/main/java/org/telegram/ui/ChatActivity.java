@@ -226,6 +226,8 @@ import java.util.Calendar;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -15434,7 +15436,19 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     messageObject.stableId = old.stableId;
                     messages.set(index, messageObject);
                     if (chatAdapter != null) {
-                        chatAdapter.updateRowAtPosition(chatAdapter.messagesStartRow + index);
+                        List<Integer> messagesToUpdate = new LinkedList<>();
+                        messagesToUpdate.add(index);
+                        for (int i = 0; i < messages.size(); i++) {
+                            MessageObject messageToCheckReply = messages.get(i);
+                            if (messageToCheckReply.replyMessageObject != null && messageToCheckReply.replyMessageObject.equals(messageObject)) {
+                                messageToCheckReply.replyMessageObject = messageObject;
+                                messageToCheckReply.forceUpdate = true;
+                                messagesToUpdate.add(i);
+                            }
+                        }
+                        for (Integer indexToUpdate : messagesToUpdate) {
+                            chatAdapter.updateRowAtPosition(chatAdapter.messagesStartRow + indexToUpdate);
+                        }
                     }
                     if (index2 >= 0) {
                         dayArr.set(index2, messageObject);
@@ -16313,7 +16327,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     if (animated) {
                         ValueAnimator animator = ValueAnimator.ofFloat(pinnedMessageEnterOffset, 0);
                         animator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
-                            int position = -1;
+
                             @Override
                             public void onAnimationUpdate(ValueAnimator animation) {
                                 pinnedMessageEnterOffset = (float) animation.getAnimatedValue();
