@@ -11,8 +11,7 @@ import android.graphics.drawable.BitmapDrawable;
 import android.media.MediaMetadataRetriever;
 import android.provider.MediaStore;
 import android.view.Surface;
-import android.view.TextureView;
-import android.view.View;
+import android.view.WindowManager;
 import android.view.animation.DecelerateInterpolator;
 
 import androidx.annotation.NonNull;
@@ -23,10 +22,13 @@ import androidx.camera.core.CameraX;
 import androidx.camera.core.FocusMeteringAction;
 import androidx.camera.core.ImageCapture;
 import androidx.camera.core.ImageCaptureException;
+import androidx.camera.core.ImageProxy;
 import androidx.camera.core.MeteringPoint;
 import androidx.camera.core.MeteringPointFactory;
 import androidx.camera.core.Preview;
 import androidx.camera.core.VideoCapture;
+import androidx.camera.core.impl.utils.Exif;
+import androidx.camera.core.internal.compat.workaround.ExifRotationAvailability;
 import androidx.camera.extensions.BeautyImageCaptureExtender;
 import androidx.camera.extensions.BeautyPreviewExtender;
 import androidx.camera.extensions.BokehImageCaptureExtender;
@@ -36,7 +38,6 @@ import androidx.camera.extensions.HdrPreviewExtender;
 import androidx.camera.extensions.NightImageCaptureExtender;
 import androidx.camera.extensions.NightPreviewExtender;
 import androidx.camera.lifecycle.ProcessCameraProvider;
-import androidx.camera.view.PreviewView;
 import androidx.core.content.ContextCompat;
 import androidx.lifecycle.Lifecycle;
 import androidx.lifecycle.LifecycleOwner;
@@ -45,6 +46,7 @@ import androidx.lifecycle.LifecycleRegistry;
 import com.google.common.util.concurrent.ListenableFuture;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ImageLoader;
@@ -52,8 +54,13 @@ import org.telegram.messenger.SendMessagesHelper;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.Utilities;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.ByteBuffer;
 import java.util.concurrent.ExecutionException;
 
 @TargetApi(21)
@@ -71,10 +78,11 @@ public class CameraXController {
 
     private DecelerateInterpolator interpolator = new DecelerateInterpolator();
 
-    private VideoCapture vCapture;
     private CameraXView.VideoSavedCallback videoSavedCallback;
     private boolean abandonCurrentVideo = false;
     private ImageCapture iCapture;
+    private Preview previewUseCase;
+    private VideoCapture vCapture;
     private BokehImageCaptureExtender iBokehExt;
     private BeautyImageCaptureExtender iBeautyExt;
     private HdrImageCaptureExtender iHdrExt;
@@ -85,8 +93,9 @@ public class CameraXController {
     private NightPreviewExtender pNightExt;
     private MeteringPointFactory meteringPointFactory;
     private Preview.SurfaceProvider surfaceProvider;
+    private boolean stableFPSPreviewOnly = false;
 
-    private Surface offscreenRenderSurface;
+
 
     public static class CameraLifecycle implements LifecycleOwner {
 
@@ -110,7 +119,6 @@ public class CameraXController {
 
     }
     public interface VideoSavedCallback {
-
         void onFinishVideoRecording(String thumbPath, long duration);
     }
 
@@ -131,7 +139,12 @@ public class CameraXController {
         return isFrontface;
     }
 
-    public void initCamera(Context context, Runnable onPreInit) {
+    public void setStableFPSPreviewOnly(boolean isEnabled){
+        stableFPSPreviewOnly = isEnabled;
+    }
+
+    public void initCamera(Context context, boolean isInitialFrontface, Runnable onPreInit) {
+        this.isFrontface = isInitialFrontface;
         ListenableFuture<ProcessCameraProvider> providerFtr = ProcessCameraProvider.getInstance(context);
         providerFtr.addListener(
                 () -> {
@@ -140,6 +153,7 @@ public class CameraXController {
                         bindUseCases();
                         lifecycle.start();
                         onPreInit.run();
+                        isInited = true;
                     } catch (ExecutionException | InterruptedException e) {
                         e.printStackTrace();
                     }
@@ -150,6 +164,10 @@ public class CameraXController {
     public void switchCamera() {
         isFrontface = !isFrontface;
         bindUseCases();
+    }
+
+    public void closeCamera(){
+        lifecycle.stop();
     }
 
     @SuppressLint("RestrictedApi")
@@ -256,54 +274,90 @@ public class CameraXController {
                 .setMaxResolution(new android.util.Size(1024, 1024))
                 .setDefaultResolution(new android.util.Size(1024, 720));
 
-        iBokehExt = BokehImageCaptureExtender.create(iCaptureBuilder);
-        iBeautyExt = BeautyImageCaptureExtender.create(iCaptureBuilder);
-        iHdrExt = HdrImageCaptureExtender.create(iCaptureBuilder);
-        iNightExt = NightImageCaptureExtender.create(iCaptureBuilder);
-        pBokehExt = BokehPreviewExtender.create(previewBuilder);
-        pBeautyExt = BeautyPreviewExtender.create(previewBuilder);
-        pHdrExt = HdrPreviewExtender.create(previewBuilder);
-        pNightExt = NightPreviewExtender.create(previewBuilder);
 
-        if (iBokehExt.isExtensionAvailable(cameraSelector)) {
-            iBokehExt.enableExtension(cameraSelector);
-            if (pBokehExt.isExtensionAvailable(cameraSelector)) {
-                pBokehExt.enableExtension(cameraSelector);
-            }
-        }
 
-        if (iBeautyExt.isExtensionAvailable(cameraSelector)) {
-            iBeautyExt.enableExtension(cameraSelector);
-            if (pBeautyExt.isExtensionAvailable(cameraSelector)) {
-                pBeautyExt.enableExtension(cameraSelector);
-            }
-        }
 
-        if (iHdrExt.isExtensionAvailable(cameraSelector)) {
-            iHdrExt.enableExtension(cameraSelector);
-            if (pHdrExt.isExtensionAvailable(cameraSelector)) {
-                pHdrExt.enableExtension(cameraSelector);
-            }
-        }
 
-        if (iNightExt.isExtensionAvailable(cameraSelector)) {
-            iNightExt.enableExtension(cameraSelector);
-            if (pNightExt.isExtensionAvailable(cameraSelector)) {
-                pNightExt.enableExtension(cameraSelector);
-            }
-        }
+//        iBokehExt = BokehImageCaptureExtender.create(iCaptureBuilder);
+//        iBeautyExt = BeautyImageCaptureExtender.create(iCaptureBuilder);
+//        iHdrExt = HdrImageCaptureExtender.create(iCaptureBuilder);
+//        iNightExt = NightImageCaptureExtender.create(iCaptureBuilder);
+//        pBokehExt = BokehPreviewExtender.create(previewBuilder);
+//        pBeautyExt = BeautyPreviewExtender.create(previewBuilder);
+//        pHdrExt = HdrPreviewExtender.create(previewBuilder);
+//        pNightExt = NightPreviewExtender.create(previewBuilder);
 
-        iCapture = iCaptureBuilder.build();
+//        if (iBokehExt.isExtensionAvailable(cameraSelector)) {
+//            iBokehExt.enableExtension(cameraSelector);
+//            if (pBokehExt.isExtensionAvailable(cameraSelector)) {
+//                pBokehExt.enableExtension(cameraSelector);
+//            }
+//        }
+//
+//        if (iBeautyExt.isExtensionAvailable(cameraSelector)) {
+//            iBeautyExt.enableExtension(cameraSelector);
+//            if (pBeautyExt.isExtensionAvailable(cameraSelector)) {
+//                pBeautyExt.enableExtension(cameraSelector);
+//            }
+//        }
+//
+//        if (iHdrExt.isExtensionAvailable(cameraSelector)) {
+//            iHdrExt.enableExtension(cameraSelector);
+//            if (pHdrExt.isExtensionAvailable(cameraSelector)) {
+//                pHdrExt.enableExtension(cameraSelector);
+//            }
+//        }
+//
+//        if (iNightExt.isExtensionAvailable(cameraSelector)) {
+//            iNightExt.enableExtension(cameraSelector);
+//            if (pNightExt.isExtensionAvailable(cameraSelector)) {
+//                pNightExt.enableExtension(cameraSelector);
+//            }
+//        }
+
+
+
 
         provider.unbindAll();
-        Preview preview = previewBuilder.build();
-        preview.setSurfaceProvider(surfaceProvider);
-        camera = provider.bindToLifecycle(lifecycle, cameraSelector, preview, vCapture, iCapture);
+        previewUseCase = previewBuilder.build();
+        previewUseCase.setSurfaceProvider(surfaceProvider);
+
+        if(stableFPSPreviewOnly){
+            camera = provider.bindToLifecycle(lifecycle, cameraSelector, previewUseCase, vCapture);
+        } else {
+            iCapture = iCaptureBuilder.build();
+            camera = provider.bindToLifecycle(lifecycle, cameraSelector, previewUseCase, vCapture, iCapture);
+        }
+
+
     }
 
 
     public void setZoom(float value) {
         camera.getCameraControl().setLinearZoom(value);
+    }
+
+    @SuppressLint({"UnsafeExperimentalUsageError", "RestrictedApi"})
+    public void setTargetOrientation(int rotation){
+        if(previewUseCase != null){
+            previewUseCase.setTargetRotation(rotation);
+        }
+        if(iCapture != null){
+            iCapture.setTargetRotation(rotation);
+        }
+        if(vCapture != null){
+            vCapture.setTargetRotation(rotation);
+        }
+    }
+
+    @SuppressLint({"UnsafeExperimentalUsageError", "RestrictedApi"})
+    public void setWorldCaptureOrientation(int rotation){
+        if(iCapture != null){
+            iCapture.setTargetRotation(rotation);
+        }
+        if(vCapture != null){
+            vCapture.setTargetRotation(rotation);
+        }
     }
 
     public void focusToPoint(int x, int y) {
@@ -405,14 +459,50 @@ public class CameraXController {
     }
 
 
-    public void takePicture(Context context, final File file, Runnable onTake) {
-        ImageCapture.OutputFileOptions fileOpt = new ImageCapture.OutputFileOptions
-                .Builder(file)
-                .build();
-
-        iCapture.takePicture(fileOpt, ContextCompat.getMainExecutor(context), new ImageCapture.OnImageSavedCallback() {
+    public void takePicture(Context context, final File file, Runnable onTake){
+        if(stableFPSPreviewOnly) return;
+        iCapture.takePicture(ContextCompat.getMainExecutor(context), new ImageCapture.OnImageCapturedCallback() {
+            @SuppressLint("RestrictedApi")
             @Override
-            public void onImageSaved(@NonNull ImageCapture.OutputFileResults outputFileResults) {
+            public void onCaptureSuccess(@NonNull ImageProxy image) {
+                int orientation = image.getImageInfo().getRotationDegrees();
+                try {
+
+                    FileOutputStream output = new FileOutputStream(file);
+
+                    int flipState = 0;
+                    if(isFrontface && (orientation == 90 || orientation == 270)){
+                        flipState = JpegImageUtils.FLIP_Y;
+                    } else if(isFrontface && (orientation == 0 || orientation == 180)){
+                        flipState = JpegImageUtils.FLIP_X;
+                    }
+
+                    byte[] jpegByteArray = JpegImageUtils.imageToJpegByteArray(image, flipState);
+                    output.write(jpegByteArray);
+                    output.close();
+                    Exif exif = Exif.createFromFile(file);
+                    exif.attachTimestamp();
+
+                    if (new ExifRotationAvailability().shouldUseExifOrientation(image)) {
+                        ByteBuffer buffer = image.getPlanes()[0].getBuffer();
+                        buffer.rewind();
+                        byte[] data = new byte[buffer.capacity()];
+                        buffer.get(data);
+                        InputStream inputStream = new ByteArrayInputStream(data);
+                        Exif originalExif = Exif.createFromInputStream(inputStream);
+                        exif.setOrientation(originalExif.getOrientation());
+                    } else {
+                        exif.rotate(orientation);
+                    }
+                    exif.save();
+                } catch (JpegImageUtils.CodecFailedException | FileNotFoundException e) {
+                    e.printStackTrace();
+                    FileLog.e(e);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    FileLog.e(e);
+                }
+                image.close();
                 onTake.run();
             }
 
@@ -422,8 +512,37 @@ public class CameraXController {
             }
         });
     }
+    @SuppressLint("RestrictedApi")
+    public Size getPreviewSize(){
+        Size size = new Size(0,0);
+        if(previewUseCase != null){
+            android.util.Size s = previewUseCase.getAttachedSurfaceResolution();
+            size = new Size(s.getWidth(), s.getHeight());
 
-    private float mix(Float v1, Float v2, Float a) {
-        return v1 * (1 - a) + v2 * a;
+        }
+        return size;
     }
+
+    public int getDisplayOrientation() {
+        WindowManager mgr = (WindowManager) ApplicationLoader.applicationContext.getSystemService(Context.WINDOW_SERVICE);
+        int rotation = mgr.getDefaultDisplay().getRotation();
+        int degrees = 0;
+
+        switch (rotation) {
+            case Surface.ROTATION_0:
+                degrees = 0;
+                break;
+            case Surface.ROTATION_90:
+                degrees = 90;
+                break;
+            case Surface.ROTATION_180:
+                degrees = 180;
+                break;
+            case Surface.ROTATION_270:
+                degrees = 270;
+                break;
+        }
+        return degrees;
+    }
+
 }

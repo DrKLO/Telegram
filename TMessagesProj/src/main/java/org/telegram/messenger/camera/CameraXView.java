@@ -3,8 +3,12 @@ package org.telegram.messenger.camera;
 import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.content.Context;
+import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Paint;
+import android.hardware.display.DisplayManager;
+import android.view.OrientationEventListener;
+import android.view.Surface;
 import android.view.TextureView;
 import android.view.View;
 import android.view.animation.DecelerateInterpolator;
@@ -17,7 +21,6 @@ import java.io.File;
 
 @TargetApi(21)
 public class CameraXView extends CameraView {
-    private boolean initialFrontface;
     private boolean isFrontface;
     private boolean isInited = false;
     private final PreviewView previewView;
@@ -25,7 +28,6 @@ public class CameraXView extends CameraView {
     private final Paint outerPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint innerPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private CameraXController.CameraLifecycle lifecycle;
-
     private Camera1View.CameraViewDelegate delegate;
     private int clipTop;
     private int clipBottom;
@@ -38,6 +40,52 @@ public class CameraXView extends CameraView {
     private int cy;
     private final CameraXController controller;
 
+    private int displayOrientation = 0;
+    private int worldOrientation = 0;
+    private final DisplayManager.DisplayListener displayOrientationListener = new DisplayManager.DisplayListener() {
+        @Override
+        public void onDisplayAdded(int displayId) {
+        }
+
+        @Override
+        public void onDisplayRemoved(int displayId) {
+        }
+
+        @Override
+        public void onDisplayChanged(int displayId) {
+            if (getRootView().getDisplay().getDisplayId() == displayId) {
+                displayOrientation = getRootView().getDisplay().getRotation();
+                if (controller != null) {
+                    controller.setTargetOrientation(displayOrientation);
+                }
+            }
+        }
+    };
+
+    private final OrientationEventListener worldOrientationListener = new OrientationEventListener(getContext()) {
+        @Override
+        public void onOrientationChanged(int orientation) {
+            if (orientation == OrientationEventListener.ORIENTATION_UNKNOWN) {
+                return;
+            }
+            int rotation = 0;
+            if (orientation >= 45 && orientation < 135) {
+                rotation = Surface.ROTATION_270;
+            } else if (orientation >= 135 && orientation < 225) {
+                rotation = Surface.ROTATION_180;
+            } else if (orientation >= 225 && orientation < 315) {
+                rotation = Surface.ROTATION_90;
+            } else {
+                rotation = Surface.ROTATION_0;
+            }
+            worldOrientation = rotation;
+
+            if (controller != null) {
+                controller.setWorldCaptureOrientation(rotation);
+            }
+        }
+    };
+
     public interface VideoSavedCallback {
         void onFinishVideoRecording(String thumbPath, long duration);
     }
@@ -45,7 +93,7 @@ public class CameraXView extends CameraView {
 
     public CameraXView(Context context, boolean frontface) {
         super(context, null);
-        initialFrontface = isFrontface = frontface;
+        isFrontface = frontface;
         previewView = new PreviewView(context);
         previewView.setImplementationMode(PreviewView.ImplementationMode.COMPATIBLE);
         addView(previewView);
@@ -56,6 +104,9 @@ public class CameraXView extends CameraView {
         innerPaint.setColor(0x7fffffff);
         lifecycle = new CameraXController.CameraLifecycle();
         controller = new CameraXController(lifecycle, previewView.getMeteringPointFactory(), previewView.getSurfaceProvider());
+
+        ((DisplayManager) getContext().getSystemService(Context.DISPLAY_SERVICE)).registerDisplayListener(displayOrientationListener, null);
+        worldOrientationListener.enable();
     }
 
     @Override
@@ -81,7 +132,11 @@ public class CameraXView extends CameraView {
 
     @Override
     public void initCamera() {
-        controller.initCamera(getContext(), this::observeStream);
+        controller.initCamera(getContext(), isFrontface, this::observeStream);
+    }
+
+    public void closeCamera() {
+        controller.closeCamera();
     }
 
     private void observeStream() {
@@ -112,6 +167,10 @@ public class CameraXView extends CameraView {
     @Override
     public TextureView getTextureView() {
         return (TextureView) (previewView.getChildAt(0));
+    }
+
+    public Bitmap getBitmap() {
+        return previewView.getBitmap();
     }
 
 
@@ -146,6 +205,8 @@ public class CameraXView extends CameraView {
     protected void onDetachedFromWindow() {
         super.onDetachedFromWindow();
         lifecycle.stop();
+        ((DisplayManager) getContext().getSystemService(Context.DISPLAY_SERVICE)).unregisterDisplayListener(displayOrientationListener);
+        worldOrientationListener.disable();
     }
 
     public void setDelegate(Camera1View.CameraViewDelegate cameraViewDelegate) {
@@ -171,7 +232,7 @@ public class CameraXView extends CameraView {
 
     @Override
     public Size getPreviewSize() {
-        return null;    //TODO
+        return controller.getPreviewSize();
     }
 
     @Override
@@ -228,5 +289,9 @@ public class CameraXView extends CameraView {
 
     public void takePicture(final File file, Runnable onTake) {
         controller.takePicture(getContext(), file, onTake);
+    }
+
+    public boolean isSameTakePictureOrientation(){
+        return displayOrientation == worldOrientation;
     }
 }
