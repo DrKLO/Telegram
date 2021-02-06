@@ -1090,7 +1090,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     if (isIndicatorVisible) {
                         final View menuItem = getSecondaryMenuItem();
                         if (menuItem != null) {
-                            menuItem.setVisibility(GONE);
+                            menuItem.setVisibility(INVISIBLE);
                         }
                         if (videoCallItemVisible) {
                             videoCallItem.setVisibility(GONE);
