@@ -2897,7 +2897,7 @@ public class MessageObject {
     }
 
     public boolean checkLayout() {
-        if (type != 0 || messageOwner.peer_id == null || messageText == null || messageText.length() == 0) {
+        if ((type != 0 && type != TYPE_POLL) || messageOwner.peer_id == null || messageText == null || messageText.length() == 0) {
             return false;
         }
         if (layoutCreated) {
