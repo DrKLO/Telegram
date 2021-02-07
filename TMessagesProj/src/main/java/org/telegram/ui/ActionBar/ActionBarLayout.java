@@ -24,7 +24,6 @@ import android.graphics.Rect;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
-import androidx.annotation.Keep;
 import android.view.Gravity;
 import android.view.HapticFeedbackConstants;
 import android.view.KeyEvent;
@@ -37,6 +36,8 @@ import android.view.ViewOutlineProvider;
 import android.view.animation.AccelerateDecelerateInterpolator;
 import android.view.animation.DecelerateInterpolator;
 import android.widget.FrameLayout;
+
+import androidx.annotation.Keep;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.FileLog;
@@ -61,11 +62,11 @@ public class ActionBarLayout extends FrameLayout {
 
     public class LayoutContainer extends FrameLayout {
 
-        private Rect rect = new Rect();
+        private final Rect rect = new Rect();
         private boolean isKeyboardVisible;
 
         private int fragmentPanTranslationOffset;
-        private Paint backgroundPaint = new Paint();
+        private final Paint backgroundPaint = new Paint();
         private int backgroundColor;
 
         public LayoutContainer(Context context) {
@@ -227,8 +228,8 @@ public class ActionBarLayout extends FrameLayout {
     private BaseFragment oldFragment;
 
     private AnimatorSet currentAnimation;
-    private DecelerateInterpolator decelerateInterpolator = new DecelerateInterpolator(1.5f);
-    private AccelerateDecelerateInterpolator accelerateDecelerateInterpolator = new AccelerateDecelerateInterpolator();
+    private final DecelerateInterpolator decelerateInterpolator = new DecelerateInterpolator(1.5f);
+    private final AccelerateDecelerateInterpolator accelerateDecelerateInterpolator = new AccelerateDecelerateInterpolator();
 
     public float innerTranslationX;
 
@@ -242,11 +243,11 @@ public class ActionBarLayout extends FrameLayout {
     private boolean beginTrackingSent;
     private boolean transitionAnimationInProgress;
     private boolean transitionAnimationPreviewMode;
-    private ArrayList<int[]> animateStartColors = new ArrayList<>();
-    private ArrayList<int[]> animateEndColors = new ArrayList<>();
-    private ArrayList<ArrayList<ThemeDescription>> themeAnimatorDescriptions = new ArrayList<>();
+    private final ArrayList<int[]> animateStartColors = new ArrayList<>();
+    private final ArrayList<int[]> animateEndColors = new ArrayList<>();
+    private final ArrayList<ArrayList<ThemeDescription>> themeAnimatorDescriptions = new ArrayList<>();
     private ArrayList<ThemeDescription> presentingFragmentDescriptions;
-    private ArrayList<ThemeDescription.ThemeDescriptionDelegate> themeAnimatorDelegate = new ArrayList<>();
+    private final ArrayList<ThemeDescription.ThemeDescriptionDelegate> themeAnimatorDelegate = new ArrayList<>();
     private AnimatorSet themeAnimatorSet;
     private float themeAnimationValue;
     private boolean animateThemeAfterAnimation;
