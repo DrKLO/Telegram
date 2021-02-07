@@ -1184,15 +1184,16 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 }
             }
 
-            int pos = parentPage.layoutManager.findFirstVisibleItemPosition();
-            if (pos != RecyclerView.NO_POSITION) {
-                RecyclerView.ViewHolder holder = parentPage.listView.findViewHolderForAdapterPosition(pos);
-                if (holder != null) {
-                    int top = holder.itemView.getTop();
-
-                    ignoreLayout = true;
-                    parentPage.layoutManager.scrollToPositionWithOffset(pos, (int) (top - lastListPadding + scrollAdditionalOffset));
-                    ignoreLayout = false;
+            if (!isDialogOperationActive()) {
+                int pos = parentPage.layoutManager.findFirstVisibleItemPosition();
+                if (pos != RecyclerView.NO_POSITION) {
+                    RecyclerView.ViewHolder holder = parentPage.listView.findViewHolderForAdapterPosition(pos);
+                    if (holder != null) {
+                        int top = holder.itemView.getTop();
+                        ignoreLayout = true;
+                        parentPage.layoutManager.scrollToPositionWithOffset(pos, (int) (top - lastListPadding + scrollAdditionalOffset));
+                        ignoreLayout = false;
+                    }
                 }
             }
             if (!onlySelect) {
@@ -1233,7 +1234,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             lastTop = t;
             scrollAdditionalOffset = 0;
 
-            if ((dialogRemoveFinished != 0 || dialogInsertFinished != 0 || dialogChangeFinished != 0) && !parentPage.dialogsItemAnimator.isRunning()) {
+            if (isDialogOperationActive() && !parentPage.dialogsItemAnimator.isRunning()) {
                 onDialogAnimationFinished();
             }
         }
@@ -1279,7 +1280,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
 
         @Override
         public boolean onTouchEvent(MotionEvent e) {
-            if (fastScrollAnimationRunning || waitingForScrollFinished || dialogRemoveFinished != 0 || dialogInsertFinished != 0 || dialogChangeFinished != 0) {
+            if (fastScrollAnimationRunning || waitingForScrollFinished || isDialogOperationActive()) {
                 return false;
             }
             int action = e.getAction();
@@ -1351,7 +1352,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
 
         @Override
         public boolean onInterceptTouchEvent(MotionEvent e) {
-            if (fastScrollAnimationRunning || waitingForScrollFinished || dialogRemoveFinished != 0 || dialogInsertFinished != 0 || dialogChangeFinished != 0) {
+            if (fastScrollAnimationRunning || waitingForScrollFinished || isDialogOperationActive()) {
                 return false;
             }
             if (e.getAction() == MotionEvent.ACTION_DOWN) {
@@ -4637,7 +4638,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
     }
 
     private boolean waitingForDialogsAnimationEnd(ViewPage viewPage) {
-        return viewPage.dialogsItemAnimator.isRunning() || dialogRemoveFinished != 0 || dialogInsertFinished != 0 || dialogChangeFinished != 0;
+        return viewPage.dialogsItemAnimator.isRunning() || isDialogOperationActive();
     }
 
     private void onDialogAnimationFinished() {
@@ -4655,6 +4656,10 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             setDialogsListFrozen(false);
             updateDialogIndices();
         });
+    }
+
+    private boolean isDialogOperationActive() {
+        return dialogRemoveFinished != 0 || dialogInsertFinished != 0 || dialogChangeFinished != 0;
     }
 
     private void setScrollY(float value) {
