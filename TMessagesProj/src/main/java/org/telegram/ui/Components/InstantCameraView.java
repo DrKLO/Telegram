@@ -333,7 +333,7 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
         switchCameraButton.setContentDescription(LocaleController.getString("AccDescrSwitchCamera", R.string.AccDescrSwitchCamera));
         addView(switchCameraButton, LayoutHelper.createFrame(62, 62, Gravity.LEFT | Gravity.BOTTOM, 8, 0, 0, 0));
         switchCameraButton.setOnClickListener(v -> {
-            if (Build.VERSION.SDK_INT < 21) {
+            if (Build.VERSION.SDK_INT < 21 || !BuildVars.USE_CAMERAX_API) {
                 if (!cameraReady || camera1Session == null || !camera1Session.isInitied() || cameraThread == null) {
                     return;
                 }
@@ -416,7 +416,7 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
     }
 
     public void destroy(boolean async, final Runnable beforeDestroyRunnable) {
-        if (Build.VERSION.SDK_INT < 21) {
+        if (Build.VERSION.SDK_INT < 21 || !BuildVars.USE_CAMERAX_API) {
             if (camera1Session != null) {
                 camera1Session.destroy();
                 Camera1Controller.getInstance().close(camera1Session, !async ? new CountDownLatch(1) : null, beforeDestroyRunnable);
@@ -562,7 +562,7 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
                     cameraThread.shutdown(0);
                     cameraThread = null;
                 }
-                if (Build.VERSION.SDK_INT < 21) {
+                if (Build.VERSION.SDK_INT < 21 || !BuildVars.USE_CAMERAX_API) {
                     if (camera1Session != null) {
                         Camera1Controller.getInstance().close(camera1Session, null, null);
                     }
@@ -936,7 +936,7 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
             }
             surfaceTexture.setDefaultBufferSize(previewSize.getWidth(), previewSize.getHeight());
 
-            if (Build.VERSION.SDK_INT < 21) {
+            if (Build.VERSION.SDK_INT < 21 || !BuildVars.USE_CAMERAX_API) {
                 camera1Session = new Camera1Session(selectedCamera, previewSize, pictureSize, ImageFormat.JPEG);
                 cameraThread.setCurrentSession(camera1Session);
                 Camera1Controller.getInstance().openRound(camera1Session, surfaceTexture, () -> {
@@ -950,11 +950,9 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
             } else {
                 MeteringPointFactory factory = new SurfaceOrientedMeteringPointFactory(previewSize.getWidth(), previewSize.getHeight());
                 Preview.SurfaceProvider surfaceProvider = request -> {
-                    //android.util.Size resolution = request.getResolution();
-                    //surfaceTexture.setDefaultBufferSize(resolution.getWidth(), resolution.getHeight());
                     Surface surface = new Surface(surfaceTexture);
                     request.provideSurface(surface, ContextCompat.getMainExecutor(getContext()), result -> {
-
+                        //no-op
                     });
                 };
                 cameraXController = new CameraXController(camLifecycle, factory, surfaceProvider);
@@ -1319,7 +1317,7 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
                 videoEncoder.startRecording(cameraFile, EGL14.eglGetCurrentContext());
                 recording = true;
                 int orientation = 0;
-                if (Build.VERSION.SDK_INT < 21) {
+                if (Build.VERSION.SDK_INT < 21 || !BuildVars.USE_CAMERAX_API) {
                     orientation = currentSession.getCurrentOrientation();
                 } else {
                     //orientation = cameraXController.getDisplayOrientation();
@@ -1703,9 +1701,11 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
                 resolution = 320;
                 bitrate = 600000;
             } else {
-                resolution = 240;
-                bitrate = 400000;
+                resolution = 480;
+                bitrate = 800000;
             }
+
+
 
             videoFile = outputFile;
             videoWidth = resolution;

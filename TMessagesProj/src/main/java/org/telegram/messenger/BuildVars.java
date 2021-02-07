@@ -18,6 +18,7 @@ public class BuildVars {
     public static boolean LOGS_ENABLED = false;
     public static boolean USE_CLOUD_STRINGS = true;
     public static boolean CHECK_UPDATES = true;
+    public static boolean USE_CAMERAX_API = true;
     public static int BUILD_VERSION = 2227;
     public static String BUILD_VERSION_STRING = "7.4.0";
     public static int APP_ID = 2079163;
