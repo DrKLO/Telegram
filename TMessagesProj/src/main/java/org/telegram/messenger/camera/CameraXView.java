@@ -218,6 +218,13 @@ public class CameraXView extends CameraView {
         controller.setZoom(value);
     }
 
+    public boolean isExposureCompensationSupported(){
+        return controller.isExposureCompensationSupported();
+    }
+    public void setExposureCompensation(float value) {
+        controller.setExposureCompensation(value);
+    }
+
     @Override
     public void focusToPoint(int x, int y) {
         controller.focusToPoint(x, y);

@@ -21,18 +21,15 @@ public abstract class CameraView extends FrameLayout {
         super(context, attrs, defStyleAttr);
     }
 
-    public abstract boolean isInitied();
-
-    public abstract boolean isFrontface();
-
-    public abstract void setClipTop(int cameraViewOffsetY);
-
-    public abstract void setClipBottom(int cameraViewOffsetBottomY);
-
     public interface CameraViewDelegate {
         void onCameraCreated();
         void onCameraInit();
     }
+
+    public abstract boolean isInitied();
+    public abstract boolean isFrontface();
+    public abstract void setClipTop(int cameraViewOffsetY);
+    public abstract void setClipBottom(int cameraViewOffsetBottomY);
     public abstract TextureView getTextureView();
     public abstract void initCamera();
     public abstract void switchCamera();
@@ -44,5 +41,4 @@ public abstract class CameraView extends FrameLayout {
     public abstract void setZoom(float value);
     public abstract void focusToPoint(int x, int y);
     public abstract Size getPreviewSize();
-
 }

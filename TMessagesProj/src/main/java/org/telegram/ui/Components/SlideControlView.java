@@ -15,7 +15,12 @@ import android.view.View;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.R;
 
-public class ZoomControlView extends View {
+public class SlideControlView extends View {
+
+    static int SLIDER_MODE_ZOOM = 0;
+    static int SLIDER_MODE_EV = 1;
+
+    private int mode;
 
     private Drawable minusDrawable;
     private Drawable plusDrawable;
@@ -34,7 +39,7 @@ public class ZoomControlView extends View {
     private int progressEndX;
     private int progressEndY;
 
-    private float zoom;
+    private float sliderValue;
 
     private boolean pressed;
     private boolean knobPressed;
@@ -44,48 +49,59 @@ public class ZoomControlView extends View {
     private float animatingToZoom;
     private AnimatorSet animatorSet;
 
-    private ZoomControlViewDelegate delegate;
+    private SliderControlViewDelegate delegate;
 
-    public interface ZoomControlViewDelegate {
-        void didSetZoom(float zoom);
+    public interface SliderControlViewDelegate {
+        void didSlide(float sliderValue);
     }
 
-    public final Property<ZoomControlView, Float> ZOOM_PROPERTY = new AnimationProperties.FloatProperty<ZoomControlView>("clipProgress") {
+    public final Property<SlideControlView, Float> ZOOM_PROPERTY = new AnimationProperties.FloatProperty<SlideControlView>("clipProgress") {
         @Override
-        public void setValue(ZoomControlView object, float value) {
-            zoom = value;
+        public void setValue(SlideControlView object, float value) {
+            sliderValue = value;
             if (delegate != null) {
-                delegate.didSetZoom(zoom);
+                delegate.didSlide(sliderValue);
             }
             invalidate();
         }
 
         @Override
-        public Float get(ZoomControlView object) {
-            return zoom;
+        public Float get(SlideControlView object) {
+            return sliderValue;
         }
     };
 
-    public ZoomControlView(Context context) {
+    public SlideControlView(Context context, int mode) {
         super(context);
+        this.mode = mode;
 
-        minusDrawable = context.getResources().getDrawable(R.drawable.zoom_minus);
-        plusDrawable = context.getResources().getDrawable(R.drawable.zoom_plus);
+        if(mode == SLIDER_MODE_ZOOM){
+            minusDrawable = context.getResources().getDrawable(R.drawable.zoom_minus);
+            plusDrawable = context.getResources().getDrawable(R.drawable.zoom_plus);
+        } else if(mode == SLIDER_MODE_EV) {
+            minusDrawable = context.getResources().getDrawable(R.drawable.ev_minus);
+            plusDrawable = context.getResources().getDrawable(R.drawable.ev_plus);
+        }
+
         progressDrawable = context.getResources().getDrawable(R.drawable.zoom_slide);
-        filledProgressDrawable = context.getResources().getDrawable(R.drawable.zoom_slide_a);
+        if(mode == SLIDER_MODE_ZOOM){
+            filledProgressDrawable = context.getResources().getDrawable(R.drawable.zoom_slide_a);
+        } else if(mode == SLIDER_MODE_EV) {
+            filledProgressDrawable = context.getResources().getDrawable(R.drawable.zoom_slide);
+        }
         knobDrawable = context.getResources().getDrawable(R.drawable.zoom_round);
         pressedKnobDrawable = context.getResources().getDrawable(R.drawable.zoom_round_b);
     }
 
-    public float getZoom() {
+    public float getSliderValue() {
         if (animatorSet != null) {
             return animatingToZoom;
         }
-        return zoom;
+        return sliderValue;
     }
 
-    public void setZoom(float value, boolean notify) {
-        if (value == zoom) {
+    public void setSliderValue(float value, boolean notify) {
+        if (value == sliderValue) {
             return;
         }
         if (value < 0) {
@@ -93,15 +109,15 @@ public class ZoomControlView extends View {
         } else if (value > 1.0f) {
             value = 1.0f;
         }
-        zoom = value;
+        sliderValue = value;
         if (notify && delegate != null) {
-            delegate.didSetZoom(zoom);
+            delegate.didSlide(sliderValue);
         }
         invalidate();
     }
 
-    public void setDelegate(ZoomControlViewDelegate zoomControlViewDelegate) {
-        delegate = zoomControlViewDelegate;
+    public void setDelegate(SliderControlViewDelegate sliderControlViewDelegate) {
+        delegate = sliderControlViewDelegate;
     }
 
     @Override
@@ -111,8 +127,8 @@ public class ZoomControlView extends View {
         int action = event.getAction();
         boolean handled = false;
         boolean isPortrait = getMeasuredWidth() > getMeasuredHeight();
-        int knobX = (int) (progressStartX + (progressEndX - progressStartX) * zoom);
-        int knobY = (int) (progressStartY + (progressEndY - progressStartY) * zoom);
+        int knobX = (int) (progressStartX + (progressEndX - progressStartX) * sliderValue);
+        int knobY = (int) (progressStartY + (progressEndY - progressStartY) * sliderValue);
         if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_DOWN) {
             if (x >= knobX - AndroidUtilities.dp(20) && x <= knobX + AndroidUtilities.dp(20) && y >= knobY - AndroidUtilities.dp(25) && y <= knobY + AndroidUtilities.dp(25)) {
                 if (action == MotionEvent.ACTION_DOWN) {
@@ -123,14 +139,14 @@ public class ZoomControlView extends View {
                 }
                 handled = true;
             } else if (x >= minusCx - AndroidUtilities.dp(16) && x <= minusCx + AndroidUtilities.dp(16) && y >= minusCy - AndroidUtilities.dp(16) && y <= minusCy + AndroidUtilities.dp(16)) {
-                if (action == MotionEvent.ACTION_UP && animateToZoom((float) Math.floor(getZoom() / 0.25f) * 0.25f - 0.25f)) {
+                if (action == MotionEvent.ACTION_UP && animateToZoom((float) Math.floor(getSliderValue() / 0.25f) * 0.25f - 0.25f)) {
                     performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
                 } else {
                     pressed = true;
                 }
                 handled = true;
             } else if (x >= plusCx - AndroidUtilities.dp(16) && x <= plusCx + AndroidUtilities.dp(16) && y >= plusCy - AndroidUtilities.dp(16) && y <= plusCy + AndroidUtilities.dp(16)) {
-                if (action == MotionEvent.ACTION_UP && animateToZoom((float) Math.floor(getZoom() / 0.25f) * 0.25f + 0.25f)) {
+                if (action == MotionEvent.ACTION_UP && animateToZoom((float) Math.floor(getSliderValue() / 0.25f) * 0.25f + 0.25f)) {
                     performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
                 } else {
                     pressed = true;
@@ -142,9 +158,9 @@ public class ZoomControlView extends View {
                         knobStartX = x;
                         pressed = true;
                     } else if (Math.abs(knobStartX - x) <= AndroidUtilities.dp(10)) {
-                        zoom = (x - progressStartX) / (progressEndX - progressStartX);
+                        sliderValue = (x - progressStartX) / (progressEndX - progressStartX);
                         if (delegate != null) {
-                            delegate.didSetZoom(zoom);
+                            delegate.didSlide(sliderValue);
                         }
                         invalidate();
                     }
@@ -156,9 +172,9 @@ public class ZoomControlView extends View {
                         knobStartY = y;
                         pressed = true;
                     } else if (Math.abs(knobStartY - y) <= AndroidUtilities.dp(10)) {
-                        zoom = (y - progressStartY) / (progressEndY - progressStartY);
+                        sliderValue = (y - progressStartY) / (progressEndY - progressStartY);
                         if (delegate != null) {
-                            delegate.didSetZoom(zoom);
+                            delegate.didSlide(sliderValue);
                         }
                         invalidate();
                     }
@@ -168,17 +184,17 @@ public class ZoomControlView extends View {
         } else if (action == MotionEvent.ACTION_MOVE) {
             if (knobPressed) {
                 if (isPortrait) {
-                    zoom = ((x + knobStartX) - progressStartX) / (progressEndX - progressStartX);
+                    sliderValue = ((x + knobStartX) - progressStartX) / (progressEndX - progressStartX);
                 } else {
-                    zoom = ((y + knobStartY) - progressStartY) / (progressEndY - progressStartY);
+                    sliderValue = ((y + knobStartY) - progressStartY) / (progressEndY - progressStartY);
                 }
-                if (zoom < 0) {
-                    zoom = 0;
-                } else if (zoom > 1.0f) {
-                    zoom = 1.0f;
+                if (sliderValue < 0) {
+                    sliderValue = 0;
+                } else if (sliderValue > 1.0f) {
+                    sliderValue = 1.0f;
                 }
                 if (delegate != null) {
-                    delegate.didSetZoom(zoom);
+                    delegate.didSlide(sliderValue);
                 }
                 invalidate();
             }
@@ -241,15 +257,28 @@ public class ZoomControlView extends View {
             progressEndX = cx;
             progressEndY = plusCy - AndroidUtilities.dp(18);
         }
-        minusDrawable.setBounds(minusCx - AndroidUtilities.dp(7), minusCy - AndroidUtilities.dp(7), minusCx + AndroidUtilities.dp(7), minusCy + AndroidUtilities.dp(7));
-        minusDrawable.draw(canvas);
-        plusDrawable.setBounds(plusCx - AndroidUtilities.dp(7), plusCy - AndroidUtilities.dp(7), plusCx + AndroidUtilities.dp(7), plusCy + AndroidUtilities.dp(7));
-        plusDrawable.draw(canvas);
+
+        if(mode == SLIDER_MODE_ZOOM){
+            minusDrawable.setBounds(minusCx - AndroidUtilities.dp(7), minusCy - AndroidUtilities.dp(7), minusCx + AndroidUtilities.dp(7), minusCy + AndroidUtilities.dp(7));
+            minusDrawable.draw(canvas);
+            plusDrawable.setBounds(plusCx - AndroidUtilities.dp(7), plusCy - AndroidUtilities.dp(7), plusCx + AndroidUtilities.dp(7), plusCy + AndroidUtilities.dp(7));
+            plusDrawable.draw(canvas);
+        } else if(mode == SLIDER_MODE_EV){
+            //minusDrawable;
+            minusDrawable.setBounds(minusCx - AndroidUtilities.dp(7), minusCy - AndroidUtilities.dp(7), minusCx + AndroidUtilities.dp(7), minusCy + AndroidUtilities.dp(7));
+            minusDrawable.draw(canvas);
+            plusDrawable.setBounds(plusCx - AndroidUtilities.dp(8), plusCy - AndroidUtilities.dp(8), plusCx + AndroidUtilities.dp(8), plusCy + AndroidUtilities.dp(8));
+            plusDrawable.draw(canvas);
+        }
+
+
+
+
 
         int totalX = progressEndX - progressStartX;
         int totalY = progressEndY - progressStartY;
-        int knobX = (int) (progressStartX + totalX * zoom);
-        int knobY = (int) (progressStartY + totalY * zoom);
+        int knobX = (int) (progressStartX + totalX * sliderValue);
+        int knobY = (int) (progressStartY + totalY * sliderValue);
 
         if (isPortrait) {
             progressDrawable.setBounds(progressStartX, progressStartY - AndroidUtilities.dp(3), progressEndX, progressStartY + AndroidUtilities.dp(3));

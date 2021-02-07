@@ -10,15 +10,22 @@ import android.graphics.Paint;
 import android.graphics.drawable.BitmapDrawable;
 import android.media.MediaMetadataRetriever;
 import android.provider.MediaStore;
+import android.util.Range;
+import android.util.Rational;
 import android.view.Surface;
 import android.view.WindowManager;
 import android.view.animation.DecelerateInterpolator;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.camera.camera2.interop.Camera2CameraControl;
+import androidx.camera.camera2.interop.Camera2Interop;
+import androidx.camera.camera2.interop.CaptureRequestOptions;
+import androidx.camera.core.AspectRatio;
 import androidx.camera.core.Camera;
 import androidx.camera.core.CameraSelector;
 import androidx.camera.core.CameraX;
+import androidx.camera.core.ExposureState;
 import androidx.camera.core.FocusMeteringAction;
 import androidx.camera.core.ImageCapture;
 import androidx.camera.core.ImageCaptureException;
@@ -27,6 +34,7 @@ import androidx.camera.core.MeteringPoint;
 import androidx.camera.core.MeteringPointFactory;
 import androidx.camera.core.Preview;
 import androidx.camera.core.VideoCapture;
+import androidx.camera.core.impl.MutableOptionsBundle;
 import androidx.camera.core.impl.utils.Exif;
 import androidx.camera.core.internal.compat.workaround.ExifRotationAvailability;
 import androidx.camera.extensions.BeautyImageCaptureExtender;
@@ -65,6 +73,10 @@ import java.util.concurrent.ExecutionException;
 
 @TargetApi(21)
 public class CameraXController {
+    static int VIDEO_BITRATE_1080 = 5000000;
+    static int VIDEO_BITRATE_720 = 3500000;
+    static int VIDEO_BITRATE_480 = 1800000;
+
     private boolean initialFrontface;
     private boolean isFrontface;
     private boolean isInited = false;
@@ -253,8 +265,12 @@ public class CameraXController {
 
     @SuppressLint({"RestrictedApi", "UnsafeExperimentalUsageError"})
     private void bindUseCases() {
-        Preview.Builder previewBuilder = new Preview.Builder();
+        android.util.Size size1 = new android.util.Size(1920, 1080);
+        android.util.Size size2 = new android.util.Size(1080, 1920);
 
+        Preview.Builder previewBuilder = new Preview.Builder();
+        //previewBuilder.setTargetAspectRatio(AspectRatio.RATIO_16_9);
+        previewBuilder.setTargetResolution(size2);
 
         cameraSelector = new CameraSelector.Builder()
                 .requireLensFacing(isFrontface ? CameraSelector.LENS_FACING_FRONT : CameraSelector.LENS_FACING_BACK)
@@ -263,16 +279,16 @@ public class CameraXController {
         vCapture = new VideoCapture.Builder()
                 .setAudioBitRate(441000)
                 .setVideoFrameRate(30)
-                .setBitRate(3500000)
-                .setMaxResolution(new android.util.Size(1024, 1024))
-                .setDefaultResolution(new android.util.Size(1024, 720))
+                .setBitRate(VIDEO_BITRATE_1080)
+                //.setTargetAspectRatio(AspectRatio.RATIO_16_9)
+                .setTargetResolution(size2)
                 .build();
 
 
         ImageCapture.Builder iCaptureBuilder = new ImageCapture.Builder()
                 .setCaptureMode(ImageCapture.CAPTURE_MODE_MAXIMIZE_QUALITY)
-                .setMaxResolution(new android.util.Size(1024, 1024))
-                .setDefaultResolution(new android.util.Size(1024, 720));
+                .setTargetAspectRatio(AspectRatio.RATIO_16_9);
+                //.setTargetResolution(size2);
 
 
 
@@ -337,6 +353,21 @@ public class CameraXController {
         camera.getCameraControl().setLinearZoom(value);
     }
 
+    @SuppressLint("UnsafeExperimentalUsageError")
+    public boolean isExposureCompensationSupported(){
+       return camera.getCameraInfo().getExposureState().isExposureCompensationSupported();
+    }
+
+    @SuppressLint("UnsafeExperimentalUsageError")
+    public void setExposureCompensation(float value) {
+        if(!camera.getCameraInfo().getExposureState().isExposureCompensationSupported()) return;
+        Range<Integer> evRange = camera.getCameraInfo().getExposureState().getExposureCompensationRange();
+        float evStep = camera.getCameraInfo().getExposureState().getExposureCompensationStep().floatValue();
+        int index = (int)(mix(evRange.getLower().floatValue(), evRange.getUpper().floatValue(), value) + 0.5f);
+
+        camera.getCameraControl().setExposureCompensationIndex(index);
+    }
+
     @SuppressLint({"UnsafeExperimentalUsageError", "RestrictedApi"})
     public void setTargetOrientation(int rotation){
         if(previewUseCase != null){
@@ -360,10 +391,15 @@ public class CameraXController {
         }
     }
 
+    @SuppressLint({"UnsafeExperimentalUsageError", "RestrictedApi"})
     public void focusToPoint(int x, int y) {
         MeteringPointFactory factory = meteringPointFactory;
         MeteringPoint point = factory.createPoint(x, y);
-        FocusMeteringAction action = new FocusMeteringAction.Builder(point).build();
+        FocusMeteringAction action = new FocusMeteringAction
+                .Builder(point, FocusMeteringAction.FLAG_AE | FocusMeteringAction.FLAG_AF | FocusMeteringAction.FLAG_AWB)
+                //.disableAutoCancel()
+                .build();
+
         camera.getCameraControl().startFocusAndMetering(action);
     }
 
@@ -545,4 +581,7 @@ public class CameraXController {
         return degrees;
     }
 
+    private float mix(Float x, Float y, Float f) {
+        return x * (1 - f) + y * f;
+    }
 }
