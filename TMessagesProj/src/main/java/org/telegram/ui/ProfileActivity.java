@@ -6097,7 +6097,6 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     getUserConfig().saveConfig(true);
                 }));
             } else {
-                allowPullingDown = false;
                 avatar = smallSize.location;
                 avatarBig = bigSize.location;
                 avatarImage.setImage(ImageLocation.getForLocal(avatar), "50_50", avatarDrawable, null);
@@ -6106,7 +6105,6 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     if (listAdapter != null) {
                         listAdapter.notifyDataSetChanged();
                     }
-                    needLayout(true);
                 }
                 showAvatarProgress(true, false);
                 final View view = layoutManager.findViewByPosition(0);
