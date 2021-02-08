@@ -109,6 +109,19 @@ public class PipVideoView {
                 }
             });
 
+            ImageView closeButton = new ImageView(context);
+            closeButton.setScaleType(ImageView.ScaleType.CENTER);
+            closeButton.setImageResource(R.drawable.ic_close_white);
+            addView(closeButton, LayoutHelper.createFrame(56, 48, Gravity.LEFT | Gravity.TOP));
+            closeButton.setOnClickListener(v -> {
+                animatorSet = null;
+                if (parentSheet != null) {
+                    parentSheet.destroy();
+                } else if (photoViewer != null) {
+                    photoViewer.destroyPhotoViewer();
+                }
+            });
+
             if (fullControls) {
                 progressPaint = new Paint();
                 progressPaint.setColor(0xff19a7e8);
