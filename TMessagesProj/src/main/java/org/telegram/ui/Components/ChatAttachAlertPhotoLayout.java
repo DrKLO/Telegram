@@ -53,6 +53,8 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.LinearSmoothScroller;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.android.exoplayer2.util.Log;
+
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.BuildVars;
@@ -72,7 +74,6 @@ import org.telegram.messenger.VideoEditedInfo;
 import org.telegram.messenger.camera.Camera1Controller;
 import org.telegram.messenger.camera.Camera1View;
 import org.telegram.messenger.camera.CameraView;
-import org.telegram.messenger.camera.CameraXController;
 import org.telegram.messenger.camera.CameraXView;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
@@ -775,12 +776,11 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
         evControlView.setSliderValue(0.5f, false);
         evControlView.setDelegate(ev -> {
             if (cameraView != null) {
-                if(Build.VERSION.SDK_INT >= 21 && isExposureCompensationSupported && BuildVars.USE_CAMERAX_API){
-                    ((CameraXView)cameraView).setExposureCompensation(ev);
+                if (Build.VERSION.SDK_INT >= 21 && isExposureCompensationSupported && BuildVars.USE_CAMERAX_API) {
+                    ((CameraXView) cameraView).setExposureCompensation(ev);
                 }
             }
         });
-
 
 
         shutterButton = new ShutterButton(context);
@@ -789,6 +789,7 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
 
             private File outputFile;
             private boolean zoomingWas;
+            private float initialEVState = 0.5f;
 
             @Override
             public boolean shutterLongPressed() {
@@ -858,6 +859,7 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
                     AndroidUtilities.runOnUIThread(videoRecordRunnable, 1000);
                 }
                 shutterButton.setState(ShutterButton.State.RECORDING, true);
+                initialEVState = evControlView.getSliderValue();
                 return true;
             }
 
@@ -873,6 +875,7 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
                 } else {
                     ((CameraXView) cameraView).stopVideoRecording(true);
                 }
+                initialEVState = 0.5f;
             }
 
             @Override
@@ -961,29 +964,50 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
                         openPhotoViewer(photoEntry, sameTakePictureOrientation, false);
                     });
                 }
+                initialEVState = 0.5f;
             }
 
             @Override
-            public boolean onTranslationChanged(float x, float y) {
+            public boolean onTranslationChanged(float x, float y, float width, float height) {
                 boolean isPortrait = container.getWidth() < container.getHeight();
-                float val1 = isPortrait ? x : y;
-                float val2 = isPortrait ? y : x;
+                float dx;
+                float dy;
+                if (isPortrait) {
+                    dy = y >= 0 && y <= height ? 0 : y;
+                    dx = zoomingWas ? (x - width / 2) : (x >= 0 && x <= width ? 0 : x);
+                } else {
+                    dx = x >= 0 && x <= width ? 0 : x;
+                    dy = zoomingWas ? (y - height / 2) : (y >= 0 && y <= height ? 0 : y);
+                }
+
+
+                float val1 = isPortrait ? dx : dy;
+                float val2 = isPortrait ? dy : dx;
+
+
                 if (!zoomingWas && Math.abs(val1) > Math.abs(val2)) {
                     return zoomControlView.getTag() == null;
                 }
+
+                if (val2 != 0) {
+                    evControlView.setSliderValue(clamp(initialEVState + val1 / AndroidUtilities.dp(200),0.0f,1.0f), true);
+                }
+
                 if (val2 < 0) {
                     showZoomControls(true, true);
                     zoomControlView.setSliderValue(-val2 / AndroidUtilities.dp(200), true);
                     zoomingWas = true;
                     return false;
                 }
+
+
                 if (zoomingWas) {
                     zoomControlView.setSliderValue(0, true);
                 }
-                if (x == 0 && y == 0) {
+                if (dx == 0 && dy == 0) {
                     zoomingWas = false;
                 }
-                return !zoomingWas && (x != 0 || y != 0);
+                return !zoomingWas && (dx != 0 || dy != 0);
             }
         });
         shutterButton.setFocusable(true);
@@ -1658,8 +1682,8 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
         zoomControlView.setAlpha(0.0f);
 
 
-        if(Build.VERSION.SDK_INT >= 21 && BuildVars.USE_CAMERAX_API){
-            if(((CameraXView)cameraView).isExposureCompensationSupported()){
+        if (Build.VERSION.SDK_INT >= 21 && BuildVars.USE_CAMERAX_API) {
+            if (((CameraXView) cameraView).isExposureCompensationSupported()) {
                 isExposureCompensationSupported = true;
                 evControlView.setVisibility(View.VISIBLE);
                 evControlView.setAlpha(0.0f);

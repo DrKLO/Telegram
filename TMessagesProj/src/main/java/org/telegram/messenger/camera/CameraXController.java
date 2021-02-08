@@ -4,6 +4,7 @@ import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.content.res.Configuration;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Paint;
@@ -11,21 +12,18 @@ import android.graphics.drawable.BitmapDrawable;
 import android.media.MediaMetadataRetriever;
 import android.provider.MediaStore;
 import android.util.Range;
-import android.util.Rational;
 import android.view.Surface;
 import android.view.WindowManager;
 import android.view.animation.DecelerateInterpolator;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.camera.camera2.interop.Camera2CameraControl;
-import androidx.camera.camera2.interop.Camera2Interop;
-import androidx.camera.camera2.interop.CaptureRequestOptions;
+import androidx.camera.camera2.internal.Camera2UseCaseConfigFactory;
+import androidx.camera.camera2.interop.Camera2CameraInfo;
 import androidx.camera.core.AspectRatio;
 import androidx.camera.core.Camera;
 import androidx.camera.core.CameraSelector;
 import androidx.camera.core.CameraX;
-import androidx.camera.core.ExposureState;
 import androidx.camera.core.FocusMeteringAction;
 import androidx.camera.core.ImageCapture;
 import androidx.camera.core.ImageCaptureException;
@@ -34,7 +32,6 @@ import androidx.camera.core.MeteringPoint;
 import androidx.camera.core.MeteringPointFactory;
 import androidx.camera.core.Preview;
 import androidx.camera.core.VideoCapture;
-import androidx.camera.core.impl.MutableOptionsBundle;
 import androidx.camera.core.impl.utils.Exif;
 import androidx.camera.core.internal.compat.workaround.ExifRotationAvailability;
 import androidx.camera.extensions.BeautyImageCaptureExtender;
@@ -108,10 +105,10 @@ public class CameraXController {
     private boolean stableFPSPreviewOnly = false;
 
 
-
     public static class CameraLifecycle implements LifecycleOwner {
 
         private final LifecycleRegistry lifecycleRegistry;
+
         public CameraLifecycle() {
             lifecycleRegistry = new LifecycleRegistry(this);
             lifecycleRegistry.setCurrentState(Lifecycle.State.CREATED);
@@ -130,6 +127,7 @@ public class CameraXController {
         }
 
     }
+
     public interface VideoSavedCallback {
         void onFinishVideoRecording(String thumbPath, long duration);
     }
@@ -151,7 +149,7 @@ public class CameraXController {
         return isFrontface;
     }
 
-    public void setStableFPSPreviewOnly(boolean isEnabled){
+    public void setStableFPSPreviewOnly(boolean isEnabled) {
         stableFPSPreviewOnly = isEnabled;
     }
 
@@ -178,7 +176,7 @@ public class CameraXController {
         bindUseCases();
     }
 
-    public void closeCamera(){
+    public void closeCamera() {
         lifecycle.stop();
     }
 
@@ -252,25 +250,26 @@ public class CameraXController {
     }
 
     public void setUseMaxPreview(boolean value) {
-
     }
 
     public void setMirror(boolean value) {
-
     }
-    public void setOptimizeForBarcode(boolean value) {
 
+    public void setOptimizeForBarcode(boolean value) {
     }
 
 
     @SuppressLint({"RestrictedApi", "UnsafeExperimentalUsageError"})
     private void bindUseCases() {
-        android.util.Size size1 = new android.util.Size(1920, 1080);
-        android.util.Size size2 = new android.util.Size(1080, 1920);
+        android.util.Size targetSize;
+        if(getDeviceDefaultOrientation() == Configuration.ORIENTATION_LANDSCAPE){
+            targetSize = new android.util.Size(1920, 1080);
+        } else {
+            targetSize = new android.util.Size(1080, 1920);
+        }
 
         Preview.Builder previewBuilder = new Preview.Builder();
-        //previewBuilder.setTargetAspectRatio(AspectRatio.RATIO_16_9);
-        previewBuilder.setTargetResolution(size2);
+        previewBuilder.setTargetResolution(targetSize);
 
         cameraSelector = new CameraSelector.Builder()
                 .requireLensFacing(isFrontface ? CameraSelector.LENS_FACING_FRONT : CameraSelector.LENS_FACING_BACK)
@@ -280,18 +279,13 @@ public class CameraXController {
                 .setAudioBitRate(441000)
                 .setVideoFrameRate(30)
                 .setBitRate(VIDEO_BITRATE_1080)
-                //.setTargetAspectRatio(AspectRatio.RATIO_16_9)
-                .setTargetResolution(size2)
+                .setTargetResolution(targetSize)
                 .build();
 
 
         ImageCapture.Builder iCaptureBuilder = new ImageCapture.Builder()
                 .setCaptureMode(ImageCapture.CAPTURE_MODE_MAXIMIZE_QUALITY)
                 .setTargetAspectRatio(AspectRatio.RATIO_16_9);
-                //.setTargetResolution(size2);
-
-
-
 
 
 //        iBokehExt = BokehImageCaptureExtender.create(iCaptureBuilder);
@@ -332,13 +326,11 @@ public class CameraXController {
 //        }
 
 
-
-
         provider.unbindAll();
         previewUseCase = previewBuilder.build();
         previewUseCase.setSurfaceProvider(surfaceProvider);
 
-        if(stableFPSPreviewOnly){
+        if (stableFPSPreviewOnly) {
             camera = provider.bindToLifecycle(lifecycle, cameraSelector, previewUseCase, vCapture);
         } else {
             iCapture = iCaptureBuilder.build();
@@ -354,39 +346,39 @@ public class CameraXController {
     }
 
     @SuppressLint("UnsafeExperimentalUsageError")
-    public boolean isExposureCompensationSupported(){
-       return camera.getCameraInfo().getExposureState().isExposureCompensationSupported();
+    public boolean isExposureCompensationSupported() {
+        return camera.getCameraInfo().getExposureState().isExposureCompensationSupported();
     }
 
     @SuppressLint("UnsafeExperimentalUsageError")
     public void setExposureCompensation(float value) {
-        if(!camera.getCameraInfo().getExposureState().isExposureCompensationSupported()) return;
+        if (!camera.getCameraInfo().getExposureState().isExposureCompensationSupported()) return;
         Range<Integer> evRange = camera.getCameraInfo().getExposureState().getExposureCompensationRange();
         float evStep = camera.getCameraInfo().getExposureState().getExposureCompensationStep().floatValue();
-        int index = (int)(mix(evRange.getLower().floatValue(), evRange.getUpper().floatValue(), value) + 0.5f);
+        int index = (int) (mix(evRange.getLower().floatValue(), evRange.getUpper().floatValue(), value) + 0.5f);
 
         camera.getCameraControl().setExposureCompensationIndex(index);
     }
 
     @SuppressLint({"UnsafeExperimentalUsageError", "RestrictedApi"})
-    public void setTargetOrientation(int rotation){
-        if(previewUseCase != null){
+    public void setTargetOrientation(int rotation) {
+        if (previewUseCase != null) {
             previewUseCase.setTargetRotation(rotation);
         }
-        if(iCapture != null){
+        if (iCapture != null) {
             iCapture.setTargetRotation(rotation);
         }
-        if(vCapture != null){
+        if (vCapture != null) {
             vCapture.setTargetRotation(rotation);
         }
     }
 
     @SuppressLint({"UnsafeExperimentalUsageError", "RestrictedApi"})
-    public void setWorldCaptureOrientation(int rotation){
-        if(iCapture != null){
+    public void setWorldCaptureOrientation(int rotation) {
+        if (iCapture != null) {
             iCapture.setTargetRotation(rotation);
         }
-        if(vCapture != null){
+        if (vCapture != null) {
             vCapture.setTargetRotation(rotation);
         }
     }
@@ -495,8 +487,8 @@ public class CameraXController {
     }
 
 
-    public void takePicture(Context context, final File file, Runnable onTake){
-        if(stableFPSPreviewOnly) return;
+    public void takePicture(Context context, final File file, Runnable onTake) {
+        if (stableFPSPreviewOnly) return;
         iCapture.takePicture(ContextCompat.getMainExecutor(context), new ImageCapture.OnImageCapturedCallback() {
             @SuppressLint("RestrictedApi")
             @Override
@@ -507,9 +499,9 @@ public class CameraXController {
                     FileOutputStream output = new FileOutputStream(file);
 
                     int flipState = 0;
-                    if(isFrontface && (orientation == 90 || orientation == 270)){
+                    if (isFrontface && (orientation == 90 || orientation == 270)) {
                         flipState = JpegImageUtils.FLIP_Y;
-                    } else if(isFrontface && (orientation == 0 || orientation == 180)){
+                    } else if (isFrontface && (orientation == 0 || orientation == 180)) {
                         flipState = JpegImageUtils.FLIP_X;
                     }
 
@@ -548,10 +540,11 @@ public class CameraXController {
             }
         });
     }
+
     @SuppressLint("RestrictedApi")
-    public Size getPreviewSize(){
-        Size size = new Size(0,0);
-        if(previewUseCase != null){
+    public Size getPreviewSize() {
+        Size size = new Size(0, 0);
+        if (previewUseCase != null) {
             android.util.Size s = previewUseCase.getAttachedSurfaceResolution();
             size = new Size(s.getWidth(), s.getHeight());
 
@@ -579,6 +572,19 @@ public class CameraXController {
                 break;
         }
         return degrees;
+    }
+
+    private int getDeviceDefaultOrientation() {
+        WindowManager windowManager = (WindowManager) (ApplicationLoader.applicationContext.getSystemService(Context.WINDOW_SERVICE));
+        Configuration config = ApplicationLoader.applicationContext.getResources().getConfiguration();
+        int rotation = windowManager.getDefaultDisplay().getRotation();
+
+        if (((rotation == Surface.ROTATION_0 || rotation == Surface.ROTATION_180) && config.orientation == Configuration.ORIENTATION_LANDSCAPE) ||
+                ((rotation == Surface.ROTATION_90 || rotation == Surface.ROTATION_270) && config.orientation == Configuration.ORIENTATION_PORTRAIT)) {
+            return Configuration.ORIENTATION_LANDSCAPE;
+        } else {
+            return Configuration.ORIENTATION_PORTRAIT;
+        }
     }
 
     private float mix(Float x, Float y, Float f) {

@@ -26,6 +26,8 @@ import org.telegram.messenger.R;
 
 import androidx.annotation.Keep;
 
+import com.google.android.exoplayer2.util.Log;
+
 public class ShutterButton extends View {
 
     public enum State {
@@ -62,7 +64,7 @@ public class ShutterButton extends View {
         boolean shutterLongPressed();
         void shutterReleased();
         void shutterCancel();
-        boolean onTranslationChanged(float x, float y);
+        boolean onTranslationChanged(float x, float y, float width, float height);
     }
 
     public ShutterButton(Context context) {
@@ -171,9 +173,7 @@ public class ShutterButton extends View {
                 }
                 break;
             case MotionEvent.ACTION_MOVE:
-                float dx = x >= 0 && x <= getMeasuredWidth() ? 0 : x;
-                float dy = y >= 0 && y <= getMeasuredHeight() ? 0 : y;
-                if (delegate.onTranslationChanged(dx, dy)) {
+                if (delegate.onTranslationChanged(x, y, getMeasuredWidth(), getMeasuredHeight())) {
                     AndroidUtilities.cancelRunOnUIThread(longPressed);
                     if (state == State.RECORDING) {
                         processRelease = false;
