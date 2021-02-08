@@ -729,6 +729,9 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter {
                         if (chat == null) {
                             continue;
                         }
+                        if (!chat.megagroup) {
+                            continue;
+                        }
                         if (usernameString.length() == 0) {
                             newResult.add(chat);
                             continue;
