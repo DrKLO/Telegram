@@ -1509,6 +1509,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                                 }
                                 ArrayList<TLRPC.Dialog> dialogs = getDialogsArray(currentAccount, parentPage.dialogsType, folderId, false);
                                 frozenDialogsList.add(0, dialogs.get(0));
+                                parentPage.listView.updatePullState();
                             } else if (added == 1) {
                                 RecyclerView.ViewHolder holder = parentPage.listView.findViewHolderForAdapterPosition(0);
                                 if (holder != null && holder.itemView instanceof DialogCell) {
