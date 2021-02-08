@@ -8247,6 +8247,47 @@ public class MessagesController extends BaseController implements NotificationCe
         });
     }
 
+    public void markDialogsAsRead(DialogFilter dialogFilter) {
+        if (dialogFilter == null) {
+            return;
+        }
+        TLRPC.TL_messages_getDialogFilters req = new TLRPC.TL_messages_getDialogFilters();
+        getConnectionsManager().sendRequest(req, (response, error) -> {
+            if (response instanceof TLRPC.Vector) {
+                TLRPC.Vector vector = (TLRPC.Vector) response;
+                if (vector.objects != null) {
+                    ArrayList<Long> arrayList = new ArrayList<>();
+                    for (int a = 0, N = vector.objects.size(); a < N; a++) {
+                        Object object = vector.objects.get(a);
+                        if (!(object instanceof TLRPC.TL_dialogFilter)) {
+                            continue;
+                        }
+                        TLRPC.TL_dialogFilter filter = (TLRPC.TL_dialogFilter) object;
+                        if (filter.id == dialogFilter.id && filter.include_peers != null) {
+                            for (int b = 0, M = filter.include_peers.size(); b < M; b++) {
+                                TLRPC.InputPeer peer = filter.include_peers.get(b);
+                                if (peer.user_id != 0) {
+                                    arrayList.add((long) peer.user_id);
+                                } else if (peer.chat_id != 0) {
+                                    arrayList.add((long) -peer.chat_id);
+                                } else if (peer.channel_id != 0) {
+                                    arrayList.add((long) -peer.channel_id);
+                                }
+                            }
+                        }
+                    }
+                    if (arrayList.size() > 0) {
+                        long[] dialogIdArray = new long[arrayList.size()];
+                        for (int a = 0; a < dialogIdArray.length; a++) {
+                            dialogIdArray[a] = arrayList.get(a);
+                        }
+                        getMessagesStorage().readDialogs(dialogIdArray);
+                    }
+                }
+            }
+        });
+    }
+
     public void markMentionsAsRead(long dialogId) {
         if ((int) dialogId == 0) {
             return;
