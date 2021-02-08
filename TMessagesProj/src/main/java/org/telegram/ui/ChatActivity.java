@@ -15319,6 +15319,22 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 int prevLoadingUpRow = chatAdapter.loadingUpRow;
                 int prevLoadingDownRow = chatAdapter.loadingDownRow;
                 for (int a = 0, N = removedIndexes.size(); a < N; a++) {
+                    View deletingView = chatListView.getChildAt(removedIndexes.get(a));
+                    if (deletingView instanceof ChatMessageCell) {
+                        MessageObject deletingMessage = ((ChatMessageCell) deletingView).getMessageObject();
+                        for (int i = 0; i < chatListView.getChildCount(); i++) {
+                            View mView = chatListView.getChildAt(i);
+                            if (mView instanceof ChatMessageCell) {
+                                ChatMessageCell cell = (ChatMessageCell) mView;
+                                MessageObject messageObject = cell.getMessageObject();
+                                if (messageObject.isReply() && messageObject.replyMessageObject.getId() == deletingMessage.getId()) {
+                                    messageObject.replyMessageObject = null;
+                                    messageObject.messageOwner.reply_to = null;
+                                    cell.setMessageObject(messageObject, cell.getCurrentMessagesGroup(), true, false);
+                                }
+                            }
+                        }
+                    }
                     chatAdapter.notifyItemRemoved(removedIndexes.get(a));
                 }
                 if (!isThreadChat() || messages.size() <= 3) {
