@@ -42,8 +42,8 @@ public class VoIPPermissionActivity extends Activity {
 	public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
 		if (requestCode == 101 || requestCode == 102) {
 			boolean allGranted = true;
-			for (int a = 0; a < grantResults.length; a++) {
-				if (grantResults[a] != PackageManager.PERMISSION_GRANTED) {
+			for (int grantResult : grantResults) {
+				if (grantResult != PackageManager.PERMISSION_GRANTED) {
 					allGranted = false;
 					break;
 				}

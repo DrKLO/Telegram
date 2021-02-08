@@ -336,9 +336,7 @@ public class WebviewActivity extends BaseFragment {
         String manufacturer = Build.MANUFACTURER;
         String model = Build.MODEL;
         if ("samsung".equals(manufacturer)) {
-            if ("GT-I9500".equals(model)) {
-                return false;
-            }
+            return !"GT-I9500".equals(model);
         }
         return true;
     }
@@ -396,7 +394,7 @@ public class WebviewActivity extends BaseFragment {
             messageObject.messageOwner.serializeToStream(serializedData);
             editor.putString(hash + "_m", Utilities.bytesToHex(serializedData.toByteArray()));
             editor.putString(hash + "_link", "https://" + MessagesController.getInstance(messageObject.currentAccount).linkPrefix + "/" + username + (TextUtils.isEmpty(short_name) ? "" : "?game=" + short_name));
-            editor.commit();
+            editor.apply();
             Browser.openUrl(parentActivity, url, false);
             serializedData.cleanup();
         } catch (Exception e) {

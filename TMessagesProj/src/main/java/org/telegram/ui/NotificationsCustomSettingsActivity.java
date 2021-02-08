@@ -30,6 +30,9 @@ import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.TextView;
 
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.ContactsController;
@@ -66,9 +69,6 @@ import org.telegram.ui.Components.RecyclerListView;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
-
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
 
 public class NotificationsCustomSettingsActivity extends BaseFragment {
 
@@ -975,8 +975,7 @@ public class NotificationsCustomSettingsActivity extends BaseFragment {
                         }
 
                         int found = 0;
-                        for (int b = 0; b < search.length; b++) {
-                            String q = search[b];
+                        for (String q : search) {
                             if (names[0] != null && (names[0].startsWith(q) || names[0].contains(" " + q)) || tName != null && (tName.startsWith(q) || tName.contains(" " + q))) {
                                 found = 1;
                             } else if (names[1] != null && names[1].startsWith(q)) {

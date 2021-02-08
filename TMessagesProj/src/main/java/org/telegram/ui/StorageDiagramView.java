@@ -12,13 +12,11 @@ import android.text.Layout;
 import android.text.StaticLayout;
 import android.text.TextPaint;
 import android.view.View;
-import android.view.animation.LinearInterpolator;
 
 import androidx.interpolator.view.animation.FastOutSlowInInterpolator;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Components.CubicBezierInterpolator;
 
 public class StorageDiagramView extends View {
 
@@ -214,11 +212,11 @@ public class StorageDiagramView extends View {
         if (data == null) {
             return;
         }
-        for (int i = 0; i < data.length; i++) {
-            if (data[i] == null || !data[i].clear) {
+        for (ClearViewData datum : data) {
+            if (datum == null || !datum.clear) {
                 continue;
             }
-            total += data[i].size;
+            total += datum.size;
         }
 
         float k = 0;
@@ -258,13 +256,9 @@ public class StorageDiagramView extends View {
         }
 
         if (!animate) {
-            for (int i = 0; i < data.length; i++) {
-                drawingPercentage[i] = animateToPercentage[i];
-            }
+            System.arraycopy(animateToPercentage, 0, drawingPercentage, 0, data.length);
         } else {
-            for (int i = 0; i < data.length; i++) {
-                startFromPercentage[i] = drawingPercentage[i];
-            }
+            System.arraycopy(drawingPercentage, 0, startFromPercentage, 0, data.length);
 
             if (valueAnimator != null) {
                 valueAnimator.removeAllListeners();
@@ -281,9 +275,9 @@ public class StorageDiagramView extends View {
             valueAnimator.addListener(new AnimatorListenerAdapter() {
                 @Override
                 public void onAnimationEnd(Animator animation) {
-                    for (int i = 0; i < data.length; i++) {
-                        if (data[i] != null) {
-                            data[i].firstDraw = false;
+                    for (ClearViewData datum : data) {
+                        if (datum != null) {
+                            datum.firstDraw = false;
                         }
                     }
                 }
@@ -299,11 +293,11 @@ public class StorageDiagramView extends View {
             return;
         }
         long total = 0;
-        for (int i = 0; i < data.length; i++) {
-            if (data[i] == null || !data[i].clear) {
+        for (ClearViewData datum : data) {
+            if (datum == null || !datum.clear) {
                 continue;
             }
-            total += data[i].size;
+            total += datum.size;
         }
         String[] str = AndroidUtilities.formatFileSize(total).split(" ");
         if (str != null & str.length > 1) {
