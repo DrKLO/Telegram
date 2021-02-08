@@ -1541,9 +1541,16 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                                     if (archivedDialogs.isEmpty()) {
                                         dialogs.remove(0);
                                         if (index == 1) {
-                                            dialogChangeFinished = 2;
+                                            if (parentPage.archivePullViewState == ARCHIVE_ITEM_STATE_PINNED) {
+                                                dialogChangeFinished = 2;
+                                            } else {
+                                                dialogInsertFinished = dialogRemoveFinished = 2;
+                                            }
                                             setDialogsListFrozen(true);
                                             parentPage.dialogsAdapter.notifyItemChanged(0);
+                                            if (parentPage.layoutManager.findFirstCompletelyVisibleItemPosition() == 1) {
+                                                parentPage.layoutManager.scrollToPositionWithOffset(0, (int) actionBar.getTranslationY());
+                                            }
                                         } else {
                                             frozenDialogsList.remove(0);
                                             parentPage.dialogsItemAnimator.prepareForRemove();
