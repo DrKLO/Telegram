@@ -182,6 +182,10 @@ public class ChangeUsernameActivity extends BaseFragment {
 
             @Override
             public void afterTextChanged(Editable editable) {
+                boolean isNameCleaned = cleanUserNameInPlace(editable);
+                if (isNameCleaned) {
+                    return;
+                }
                 if (firstNameField.length() > 0) {
                     String url = "https://" + MessagesController.getInstance(currentAccount).linkPrefix + "/" + firstNameField.getText();
                     String text = LocaleController.formatString("UsernameHelpLink", R.string.UsernameHelpLink, url);
@@ -235,6 +239,29 @@ public class ChangeUsernameActivity extends BaseFragment {
             firstNameField.requestFocus();
             AndroidUtilities.showKeyboard(firstNameField);
         }
+    }
+
+    private boolean cleanUserNameInPlace(final Editable editable) {
+        if (editable == null) {
+            return false;
+        }
+        String name = editable.toString();
+        StringBuilder cleanNameBuilder = new StringBuilder();
+        for (int a = 0, N = name.length(); a < N; a++) {
+            char ch = name.charAt(a);
+            boolean isLetter = ch >= 'a' && ch <= 'z' || ch >= 'A' && ch <= 'Z';
+            boolean isDigitAndNotFirst = ch >= '0' && ch <= '9' && cleanNameBuilder.length() > 0;
+            boolean isUnderscoreAndNotFirst = ch == '_' && cleanNameBuilder.length() > 0;
+            if (isLetter || isDigitAndNotFirst || isUnderscoreAndNotFirst) {
+                cleanNameBuilder.append(ch);
+            }
+        }
+        String cleanName = cleanNameBuilder.toString();
+        if (!cleanName.equals(name)) {
+            editable.replace(0, editable.length(), cleanName, 0, cleanName.length());
+            return true;
+        }
+        return false;
     }
 
     private boolean checkUserName(final String name, boolean alert) {
