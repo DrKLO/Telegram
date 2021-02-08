@@ -817,9 +817,7 @@ public class PollCreateActivity extends BaseFragment {
                             RecyclerView.ViewHolder holder = listView.findContainingViewHolder(this);
                             if (holder != null) {
                                 int position = holder.getAdapterPosition();
-                                if (answersCount == 10 && position == answerStartRow + answersCount - 1) {
-                                    return false;
-                                }
+                                return answersCount != 10 || position != answerStartRow + answersCount - 1;
                             }
                             return true;
                         }
