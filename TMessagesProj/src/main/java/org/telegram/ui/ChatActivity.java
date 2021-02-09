@@ -6029,6 +6029,22 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     updatePinnedMessageView(true);
                     updateBottomOverlay();
                     updateVisibleRows();
+                    updateMessageReplies();
+                }
+            }
+
+            private void updateMessageReplies() {
+                if (editingMessageObject == null || chatListView == null || chatAdapter == null) return;
+                boolean needUpdateReplies = false;
+                for (MessageObject message : messages) {
+                    if (message.getReplyMsgId() == editingMessageObject.getId()) {
+                        message.replyMessageObject = editingMessageObject;
+                        needUpdateReplies = true;
+                    }
+                }
+                if (needUpdateReplies) {
+                    chatListView.setAdapter(chatAdapter);
+                    chatAdapter.notifyDataSetChanged();
                 }
             }
 
