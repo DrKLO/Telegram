@@ -840,7 +840,8 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
                         openPhotoViewer(photoEntry, false, false);
                     }, () -> AndroidUtilities.runOnUIThread(videoRecordRunnable, 1000));
                 } else {
-                    ((CameraXView) cameraView).recordVideo(outputFile, parentAlert.avatarPicker != 0, (thumbPath, duration) -> {
+                    //TODO check ability of detection front camera internal mirroring
+                    ((CameraXView) cameraView).recordVideo(outputFile, ((CameraXView) cameraView).isFrontface()/*parentAlert.avatarPicker != 0*/, (thumbPath, duration) -> {
                         if (outputFile == null || parentAlert.baseFragment == null || cameraView == null) {
                             return;
                         }
@@ -853,6 +854,12 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
                             photoEntry.cropState.mirrored = true;
                             photoEntry.cropState.freeform = false;
                             photoEntry.cropState.lockedAspectRatio = 1.0f;
+                        } else if(((CameraXView) cameraView).isFrontface()) {
+                            //in case if front camera doesn't mirror
+                            photoEntry.cropState = new MediaController.CropState();
+                            photoEntry.cropState.mirrored = true;
+                            photoEntry.cropState.freeform = true;
+                            photoEntry.cropState.initied =  true;
                         }
                         openPhotoViewer(photoEntry, false, false);
                     });
@@ -1821,6 +1828,13 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
                             }
                         }
                     } else {
+                        if (zoomControlView != null) {
+                            zoomControlView.setSliderValue(0.0f, false);
+                            cameraZoom = 0.0f;
+                        }
+                        if (evControlView != null) {
+                            evControlView.setSliderValue(0.5f, false);
+                        }
                         if (((CameraXView) cameraView).isFlashAvailable()) {
                             setCameraFlashModeIcon(flashModeButton[0], ((CameraXView) cameraView).getCurrentFlashMode());
                             for (int a = 0; a < 2; a++) {

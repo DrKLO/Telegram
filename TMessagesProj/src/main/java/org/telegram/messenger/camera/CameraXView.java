@@ -1,29 +1,37 @@
 package org.telegram.messenger.camera;
 
+import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
+import android.animation.ObjectAnimator;
+import android.animation.ValueAnimator;
 import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Paint;
+import android.graphics.drawable.BitmapDrawable;
 import android.hardware.display.DisplayManager;
 import android.view.OrientationEventListener;
 import android.view.Surface;
 import android.view.TextureView;
 import android.view.View;
+import android.view.ViewPropertyAnimator;
 import android.view.animation.DecelerateInterpolator;
+import android.widget.ImageView;
 
 import androidx.camera.view.PreviewView;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.Utilities;
 
 import java.io.File;
 
 @TargetApi(21)
 public class CameraXView extends CameraView {
-    private boolean isFrontface;
-    private boolean isInited = false;
+    private boolean isStreaming = false;
     private final PreviewView previewView;
+    private final ImageView placeholderView;
     private final int focusAreaSize;
     private final Paint outerPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint innerPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -93,10 +101,14 @@ public class CameraXView extends CameraView {
 
     public CameraXView(Context context, boolean frontface) {
         super(context, null);
-        isFrontface = frontface;
         previewView = new PreviewView(context);
+        placeholderView = new ImageView(context);
+        placeholderView.setVisibility(View.GONE);
+        placeholderView.setScaleType(ImageView.ScaleType.CENTER_CROP);
         previewView.setImplementationMode(PreviewView.ImplementationMode.COMPATIBLE);
+        previewView.setFocusableInTouchMode(false);
         addView(previewView);
+        addView(placeholderView);
         focusAreaSize = AndroidUtilities.dp(96);
         outerPaint.setColor(0xffffffff);
         outerPaint.setStyle(Paint.Style.STROKE);
@@ -104,6 +116,8 @@ public class CameraXView extends CameraView {
         innerPaint.setColor(0x7fffffff);
         lifecycle = new CameraXController.CameraLifecycle();
         controller = new CameraXController(lifecycle, previewView.getMeteringPointFactory(), previewView.getSurfaceProvider());
+        controller.setFrontFace(frontface);
+
 
         ((DisplayManager) getContext().getSystemService(Context.DISPLAY_SERVICE)).registerDisplayListener(displayOrientationListener, null);
         worldOrientationListener.enable();
@@ -111,12 +125,12 @@ public class CameraXView extends CameraView {
 
     @Override
     public boolean isInitied() {
-        return isInited;
+        return isStreaming;
     }
 
     @Override
     public boolean isFrontface() {
-        return isFrontface;
+        return controller.isFrontface();
     }
 
     @Override
@@ -132,7 +146,7 @@ public class CameraXView extends CameraView {
 
     @Override
     public void initCamera() {
-        controller.initCamera(getContext(), isFrontface, this::observeStream);
+        controller.initCamera(getContext(), controller.isFrontface(), this::observeStream);
     }
 
     public void closeCamera() {
@@ -143,13 +157,24 @@ public class CameraXView extends CameraView {
         previewView.getPreviewStreamState().observe(lifecycle, streamState -> {
             if (streamState == PreviewView.StreamState.STREAMING /*&& !isInited*/) {
                 delegate.onCameraInit();
-                isInited = true;
+                isStreaming = true;
+                placeholderView.setImageBitmap(null);
+                placeholderView.setVisibility(View.GONE);
             }
         });
     }
 
     @Override
     public void switchCamera() {
+        if(isStreaming){
+            Bitmap previewBitmap = previewView.getBitmap();
+            if(previewBitmap != null){
+                //Bitmap lastBitmap = Bitmap.createScaledBitmap(previewBitmap, (int) (previewBitmap.getWidth() / (previewBitmap.getHeight() / 80.0f)),80, true);
+                //Utilities.blurBitmap(lastBitmap, 7, 1, lastBitmap.getWidth(), lastBitmap.getHeight(), lastBitmap.getRowBytes());
+                placeholderView.setImageBitmap(previewBitmap);
+                placeholderView.setVisibility(View.VISIBLE);
+            }
+        }
         controller.switchCamera();
     }
 
@@ -283,8 +308,8 @@ public class CameraXView extends CameraView {
     }
 
     @SuppressLint("RestrictedApi")
-    public void recordVideo(final File path, boolean mirror, VideoSavedCallback onStop) {
-        controller.recordVideo(getContext(), path, mirror, onStop);
+    public void recordVideo(final File path, boolean mirrorThumb, VideoSavedCallback onStop) {
+        controller.recordVideo(getContext(), path, mirrorThumb, onStop);
     }
 
 
@@ -295,7 +320,7 @@ public class CameraXView extends CameraView {
 
 
     public void takePicture(final File file, Runnable onTake) {
-        controller.takePicture(getContext(), file, onTake);
+        controller.takePicture(file, onTake);
     }
 
     public boolean isSameTakePictureOrientation(){

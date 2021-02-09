@@ -7,23 +7,25 @@ import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
-import android.graphics.Paint;
 import android.graphics.drawable.BitmapDrawable;
+import android.hardware.camera2.CameraAccessException;
+import android.hardware.camera2.CameraCharacteristics;
+import android.hardware.camera2.CameraManager;
+import android.hardware.camera2.params.StreamConfigurationMap;
 import android.media.MediaMetadataRetriever;
+import android.media.MediaRecorder;
+import android.os.AsyncTask;
 import android.provider.MediaStore;
 import android.util.Range;
 import android.view.Surface;
 import android.view.WindowManager;
-import android.view.animation.DecelerateInterpolator;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.camera.camera2.internal.Camera2UseCaseConfigFactory;
-import androidx.camera.camera2.interop.Camera2CameraInfo;
 import androidx.camera.core.AspectRatio;
 import androidx.camera.core.Camera;
+import androidx.camera.core.CameraInfoUnavailableException;
 import androidx.camera.core.CameraSelector;
-import androidx.camera.core.CameraX;
 import androidx.camera.core.FocusMeteringAction;
 import androidx.camera.core.ImageCapture;
 import androidx.camera.core.ImageCaptureException;
@@ -67,43 +69,30 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 
 @TargetApi(21)
 public class CameraXController {
-    static int VIDEO_BITRATE_1080 = 5000000;
-    static int VIDEO_BITRATE_720 = 3500000;
-    static int VIDEO_BITRATE_480 = 1800000;
+    static int VIDEO_BITRATE_1080 = 10000000;
+    static int VIDEO_BITRATE_720 = 6500000;
+    static int VIDEO_BITRATE_480 = 3000000;
 
-    private boolean initialFrontface;
     private boolean isFrontface;
     private boolean isInited = false;
-    private int focusAreaSize;
-    private Paint outerPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-    private Paint innerPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-    private CameraLifecycle lifecycle;
-    ProcessCameraProvider provider;
-    Camera camera;
-    CameraSelector cameraSelector;
-
-    private DecelerateInterpolator interpolator = new DecelerateInterpolator();
-
+    private final CameraLifecycle lifecycle;
+    private ProcessCameraProvider provider;
+    private Camera camera;
+    private CameraSelector cameraSelector;
     private CameraXView.VideoSavedCallback videoSavedCallback;
     private boolean abandonCurrentVideo = false;
     private ImageCapture iCapture;
     private Preview previewUseCase;
     private VideoCapture vCapture;
-    private BokehImageCaptureExtender iBokehExt;
-    private BeautyImageCaptureExtender iBeautyExt;
-    private HdrImageCaptureExtender iHdrExt;
-    private NightImageCaptureExtender iNightExt;
-    private BokehPreviewExtender pBokehExt;
-    private BeautyPreviewExtender pBeautyExt;
-    private HdrPreviewExtender pHdrExt;
-    private NightPreviewExtender pNightExt;
-    private MeteringPointFactory meteringPointFactory;
-    private Preview.SurfaceProvider surfaceProvider;
+    private final MeteringPointFactory meteringPointFactory;
+    private final Preview.SurfaceProvider surfaceProvider;
     private boolean stableFPSPreviewOnly = false;
-
+    private boolean noSupportedSurfaceCombinationWorkaround = false;
 
     public static class CameraLifecycle implements LifecycleOwner {
 
@@ -128,12 +117,7 @@ public class CameraXController {
 
     }
 
-    public interface VideoSavedCallback {
-        void onFinishVideoRecording(String thumbPath, long duration);
-    }
-
     public CameraXController(CameraLifecycle lifecycle, MeteringPointFactory factory, Preview.SurfaceProvider surfaceProvider) {
-        focusAreaSize = AndroidUtilities.dp(96);
         this.lifecycle = lifecycle;
         this.meteringPointFactory = factory;
         this.surfaceProvider = surfaceProvider;
@@ -144,6 +128,9 @@ public class CameraXController {
         return isInited;
     }
 
+    public boolean setFrontFace(boolean isFrontFace) {
+        return this.isFrontface = isFrontFace;
+    }
 
     public boolean isFrontface() {
         return isFrontface;
@@ -182,17 +169,21 @@ public class CameraXController {
 
     @SuppressLint("RestrictedApi")
     public boolean hasFrontFaceCamera() {
-        Camera frontCam = CameraX.getCameraWithCameraSelector(new CameraSelector.Builder()
-                .requireLensFacing(CameraSelector.LENS_FACING_FRONT)
-                .build());
-        return frontCam != null;
+        if (provider == null) {
+            return false;
+        }
+        try {
+            return provider.hasCamera(
+                    new CameraSelector.Builder().requireLensFacing(CameraSelector.LENS_FACING_FRONT).build());
+        } catch (CameraInfoUnavailableException e) {
+            return false;
+        }
     }
 
     @SuppressLint("RestrictedApi")
     public static boolean hasGoodCamera(Context context) {
         return context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_CAMERA);
     }
-
 
     private String getNextFlashMode(String legacyMode) {
         String next = null;
@@ -262,7 +253,7 @@ public class CameraXController {
     @SuppressLint({"RestrictedApi", "UnsafeExperimentalUsageError"})
     private void bindUseCases() {
         android.util.Size targetSize;
-        if(getDeviceDefaultOrientation() == Configuration.ORIENTATION_LANDSCAPE){
+        if (getDeviceDefaultOrientation() == Configuration.ORIENTATION_LANDSCAPE) {
             targetSize = new android.util.Size(1920, 1080);
         } else {
             targetSize = new android.util.Size(1080, 1920);
@@ -275,10 +266,12 @@ public class CameraXController {
                 .requireLensFacing(isFrontface ? CameraSelector.LENS_FACING_FRONT : CameraSelector.LENS_FACING_BACK)
                 .build();
 
+        int bitrate = chooseVideoBitrate();
+
         vCapture = new VideoCapture.Builder()
                 .setAudioBitRate(441000)
                 .setVideoFrameRate(30)
-                .setBitRate(VIDEO_BITRATE_1080)
+                .setBitRate(bitrate)
                 .setTargetResolution(targetSize)
                 .build();
 
@@ -286,45 +279,6 @@ public class CameraXController {
         ImageCapture.Builder iCaptureBuilder = new ImageCapture.Builder()
                 .setCaptureMode(ImageCapture.CAPTURE_MODE_MAXIMIZE_QUALITY)
                 .setTargetAspectRatio(AspectRatio.RATIO_16_9);
-
-
-//        iBokehExt = BokehImageCaptureExtender.create(iCaptureBuilder);
-//        iBeautyExt = BeautyImageCaptureExtender.create(iCaptureBuilder);
-//        iHdrExt = HdrImageCaptureExtender.create(iCaptureBuilder);
-//        iNightExt = NightImageCaptureExtender.create(iCaptureBuilder);
-//        pBokehExt = BokehPreviewExtender.create(previewBuilder);
-//        pBeautyExt = BeautyPreviewExtender.create(previewBuilder);
-//        pHdrExt = HdrPreviewExtender.create(previewBuilder);
-//        pNightExt = NightPreviewExtender.create(previewBuilder);
-
-//        if (iBokehExt.isExtensionAvailable(cameraSelector)) {
-//            iBokehExt.enableExtension(cameraSelector);
-//            if (pBokehExt.isExtensionAvailable(cameraSelector)) {
-//                pBokehExt.enableExtension(cameraSelector);
-//            }
-//        }
-//
-//        if (iBeautyExt.isExtensionAvailable(cameraSelector)) {
-//            iBeautyExt.enableExtension(cameraSelector);
-//            if (pBeautyExt.isExtensionAvailable(cameraSelector)) {
-//                pBeautyExt.enableExtension(cameraSelector);
-//            }
-//        }
-//
-//        if (iHdrExt.isExtensionAvailable(cameraSelector)) {
-//            iHdrExt.enableExtension(cameraSelector);
-//            if (pHdrExt.isExtensionAvailable(cameraSelector)) {
-//                pHdrExt.enableExtension(cameraSelector);
-//            }
-//        }
-//
-//        if (iNightExt.isExtensionAvailable(cameraSelector)) {
-//            iNightExt.enableExtension(cameraSelector);
-//            if (pNightExt.isExtensionAvailable(cameraSelector)) {
-//                pNightExt.enableExtension(cameraSelector);
-//            }
-//        }
-
 
         provider.unbindAll();
         previewUseCase = previewBuilder.build();
@@ -334,10 +288,14 @@ public class CameraXController {
             camera = provider.bindToLifecycle(lifecycle, cameraSelector, previewUseCase, vCapture);
         } else {
             iCapture = iCaptureBuilder.build();
-            camera = provider.bindToLifecycle(lifecycle, cameraSelector, previewUseCase, vCapture, iCapture);
+
+            try {
+                camera = provider.bindToLifecycle(lifecycle, cameraSelector, previewUseCase, vCapture, iCapture);
+            } catch (java.lang.IllegalArgumentException e) {
+                noSupportedSurfaceCombinationWorkaround = true;
+                camera = provider.bindToLifecycle(lifecycle, cameraSelector, previewUseCase, iCapture);
+            }
         }
-
-
     }
 
 
@@ -354,9 +312,7 @@ public class CameraXController {
     public void setExposureCompensation(float value) {
         if (!camera.getCameraInfo().getExposureState().isExposureCompensationSupported()) return;
         Range<Integer> evRange = camera.getCameraInfo().getExposureState().getExposureCompensationRange();
-        float evStep = camera.getCameraInfo().getExposureState().getExposureCompensationStep().floatValue();
         int index = (int) (mix(evRange.getLower().floatValue(), evRange.getUpper().floatValue(), value) + 0.5f);
-
         camera.getCameraControl().setExposureCompensationIndex(index);
     }
 
@@ -387,6 +343,7 @@ public class CameraXController {
     public void focusToPoint(int x, int y) {
         MeteringPointFactory factory = meteringPointFactory;
         MeteringPoint point = factory.createPoint(x, y);
+
         FocusMeteringAction action = new FocusMeteringAction
                 .Builder(point, FocusMeteringAction.FLAG_AE | FocusMeteringAction.FLAG_AF | FocusMeteringAction.FLAG_AWB)
                 //.disableAutoCancel()
@@ -398,6 +355,10 @@ public class CameraXController {
 
     @SuppressLint("RestrictedApi")
     public void recordVideo(Context context, final File path, boolean mirror, CameraXView.VideoSavedCallback onStop) {
+        if (noSupportedSurfaceCombinationWorkaround) {
+            provider.unbindAll();
+            provider.bindToLifecycle(lifecycle, cameraSelector, previewUseCase, vCapture);
+        }
         videoSavedCallback = onStop;
         VideoCapture.OutputFileOptions fileOpt = new VideoCapture.OutputFileOptions
                 .Builder(path)
@@ -406,9 +367,14 @@ public class CameraXController {
         if (iCapture.getFlashMode() == ImageCapture.FLASH_MODE_ON) {
             camera.getCameraControl().enableTorch(true);
         }
-        vCapture.startRecording(fileOpt, ContextCompat.getMainExecutor(context), new VideoCapture.OnVideoSavedCallback() {
+        vCapture.startRecording(fileOpt, AsyncTask.THREAD_POOL_EXECUTOR /*ContextCompat.getMainExecutor(context)*/, new VideoCapture.OnVideoSavedCallback() {
             @Override
             public void onVideoSaved(@NonNull VideoCapture.OutputFileResults outputFileResults) {
+                if (noSupportedSurfaceCombinationWorkaround) {
+                    provider.unbindAll();
+                    provider.bindToLifecycle(lifecycle, cameraSelector, previewUseCase, iCapture);
+                }
+
                 if (abandonCurrentVideo) {
                     abandonCurrentVideo = false;
                 } else {
@@ -421,6 +387,10 @@ public class CameraXController {
 
             @Override
             public void onError(int videoCaptureError, @NonNull String message, @Nullable Throwable cause) {
+                if (noSupportedSurfaceCombinationWorkaround) {
+                    provider.unbindAll();
+                    provider.bindToLifecycle(lifecycle, cameraSelector, previewUseCase, iCapture);
+                }
                 FileLog.e(cause);
             }
         });
@@ -487,9 +457,9 @@ public class CameraXController {
     }
 
 
-    public void takePicture(Context context, final File file, Runnable onTake) {
+    public void takePicture(final File file, Runnable onTake) {
         if (stableFPSPreviewOnly) return;
-        iCapture.takePicture(ContextCompat.getMainExecutor(context), new ImageCapture.OnImageCapturedCallback() {
+        iCapture.takePicture(AsyncTask.THREAD_POOL_EXECUTOR  /*ContextCompat.getMainExecutor(context)*/, new ImageCapture.OnImageCapturedCallback() {
             @SuppressLint("RestrictedApi")
             @Override
             public void onCaptureSuccess(@NonNull ImageProxy image) {
@@ -531,7 +501,7 @@ public class CameraXController {
                     FileLog.e(e);
                 }
                 image.close();
-                onTake.run();
+                AndroidUtilities.runOnUIThread(onTake);
             }
 
             @Override
@@ -585,6 +555,58 @@ public class CameraXController {
         } else {
             return Configuration.ORIENTATION_PORTRAIT;
         }
+    }
+
+    private int chooseVideoBitrate() {
+        android.util.Size maxSize = null;
+        try {
+            maxSize = getDeviceMaxVideoResolution(isFrontface ? CameraSelector.LENS_FACING_FRONT : CameraSelector.LENS_FACING_BACK);
+            if (maxSize == null) return VIDEO_BITRATE_1080;
+            int maxSide = Math.min(maxSize.getWidth(), maxSize.getHeight());
+            if (maxSide >= 1080) return VIDEO_BITRATE_1080;
+            else if (maxSide >= 720) return VIDEO_BITRATE_720;
+            else return VIDEO_BITRATE_480;
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+        return VIDEO_BITRATE_1080;
+    }
+
+
+    private android.util.Size getDeviceMaxVideoResolution(int facing) throws CameraAccessException {
+        int targetFacing;
+        if (facing == CameraSelector.LENS_FACING_FRONT) {
+            targetFacing = CameraCharacteristics.LENS_FACING_FRONT;
+        } else {
+            targetFacing = CameraCharacteristics.LENS_FACING_BACK;
+        }
+
+        CameraManager mgr = (CameraManager) ApplicationLoader.applicationContext.getSystemService(Context.CAMERA_SERVICE);
+        String[] cameras = mgr.getCameraIdList();
+        for (String cameraId : cameras) {
+            CameraCharacteristics info = mgr.getCameraCharacteristics(cameraId);
+            int cameraFacing = info.get(CameraCharacteristics.LENS_FACING);
+            if (cameraFacing == targetFacing) {
+                StreamConfigurationMap streamConfigurationMap = info.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
+                int sensorOrientation = info.get(CameraCharacteristics.SENSOR_ORIENTATION);
+                android.util.Size[] sizes = streamConfigurationMap.getOutputSizes(MediaRecorder.class);
+                android.util.Size maxSize = sizes[0];
+
+                for (android.util.Size currentSize : sizes) {
+                    if (sensorOrientation == 0 || sensorOrientation == 180) {
+                        if (currentSize.getWidth() > maxSize.getWidth()) {
+                            maxSize = currentSize;
+                        }
+                    } else {
+                        if (currentSize.getHeight() > maxSize.getHeight()) {
+                            maxSize = currentSize;
+                        }
+                    }
+                }
+                return maxSize;
+            }
+        }
+        return null;
     }
 
     private float mix(Float x, Float y, Float f) {
