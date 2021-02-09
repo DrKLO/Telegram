@@ -12259,8 +12259,13 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         if (lastTitle != null) {
             closeCaptionEnter(true);
         }
-        if (videoPlayer != null && playerLooping) {
-            videoPlayer.setLooping(false);
+        if (videoPlayer != null) {
+            if (playerLooping) {
+                videoPlayer.setLooping(false);
+            }
+            if (SharedConfig.autoPauseVideo) {
+                videoPlayer.pause();
+            }
         }
     }
 

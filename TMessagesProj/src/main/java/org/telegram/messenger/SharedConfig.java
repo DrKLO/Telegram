@@ -78,6 +78,7 @@ public class SharedConfig {
     private static final Object localIdSync = new Object();
 
     public static boolean saveToGallery;
+    public static boolean autoPauseVideo;
     public static int mapPreviewType = 2;
     public static boolean chatBubbles = Build.VERSION.SDK_INT >= 30;
     public static boolean autoplayGifs = true;
@@ -245,6 +246,7 @@ public class SharedConfig {
 
             preferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
             saveToGallery = preferences.getBoolean("save_gallery", false);
+            autoPauseVideo = preferences.getBoolean("autoPauseVideo", true);
             autoplayGifs = preferences.getBoolean("autoplay_gif", true);
             autoplayVideo = preferences.getBoolean("autoplay_video", true);
             mapPreviewType = preferences.getInt("mapPreviewType", 2);
@@ -604,6 +606,14 @@ public class SharedConfig {
         editor.putBoolean("save_gallery", saveToGallery);
         editor.commit();
         checkSaveToGalleryFiles();
+    }
+
+    public static void toggleAutoPauseVideo() {
+        autoPauseVideo = !autoPauseVideo;
+        SharedPreferences preferences = MessagesController.getGlobalMainSettings();
+        SharedPreferences.Editor editor = preferences.edit();
+        editor.putBoolean("autoPauseVideo", autoPauseVideo);
+        editor.commit();
     }
 
     public static void toggleAutoplayGifs() {
