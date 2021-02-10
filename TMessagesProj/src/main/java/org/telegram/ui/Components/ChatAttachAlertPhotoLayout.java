@@ -998,7 +998,11 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
 
 
                 if (val2 < 0) {
-                    evControlView.setSliderValue(clamp(initialEVState + (val1 / AndroidUtilities.dp(200)), 0.0f, 1.0f), true);
+                    if(isPortrait){
+                        evControlView.setSliderValue(clamp(initialEVState + (val1 / AndroidUtilities.dp(200)), 0.0f, 1.0f), true);
+                    } else {
+                        evControlView.setSliderValue(clamp(initialEVState - (val1 / AndroidUtilities.dp(200)), 0.0f, 1.0f), true);
+                    }
 
                     showZoomControls(true, true);
                     zoomControlView.setSliderValue(-val2 / AndroidUtilities.dp(200), true);
@@ -2921,8 +2925,10 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
         } else if (view == evControlView) {
             if (isPortrait) {
                 evControlView.measure(View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.EXACTLY), View.MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(50), View.MeasureSpec.EXACTLY));
+                evControlView.setScaleY(1.0f);
             } else {
                 evControlView.measure(View.MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(50), View.MeasureSpec.EXACTLY), View.MeasureSpec.makeMeasureSpec(height, View.MeasureSpec.EXACTLY));
+                evControlView.setScaleY(-1.0f);
             }
             return true;
         } else if (view == zoomControlView) {
