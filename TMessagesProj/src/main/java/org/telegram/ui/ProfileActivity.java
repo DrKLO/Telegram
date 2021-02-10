@@ -218,6 +218,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
 
     private int lastMeasuredContentWidth;
     private int lastMeasuredContentHeight;
+    private boolean lastContainsMediaLayout;
     private int listContentHeight;
     private boolean openingAvatar;
 
@@ -1965,12 +1966,20 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(height, MeasureSpec.EXACTLY));
 
                 boolean changed = false;
-                if (lastMeasuredContentWidth != getMeasuredWidth() || lastMeasuredContentHeight != getMeasuredHeight()) {
+                boolean containsMediaLayout = false;
+                int count = listAdapter.getItemCount();
+                for (int i = 0; i < count; i++) {
+                    if (listAdapter.getItemViewType(i) == 13) {
+                        containsMediaLayout = true;
+                        break;
+                    }
+                }
+                if (lastMeasuredContentWidth != getMeasuredWidth() || lastMeasuredContentHeight != getMeasuredHeight() || containsMediaLayout != lastContainsMediaLayout) {
                     changed = lastMeasuredContentWidth != 0 && lastMeasuredContentWidth != getMeasuredWidth();
                     listContentHeight = 0;
-                    int count = listAdapter.getItemCount();
                     lastMeasuredContentWidth = getMeasuredWidth();
                     lastMeasuredContentHeight = getMeasuredHeight();
+                    lastContainsMediaLayout = containsMediaLayout;
                     int ws = MeasureSpec.makeMeasureSpec(getMeasuredWidth(), MeasureSpec.EXACTLY);
                     int hs = MeasureSpec.makeMeasureSpec(listView.getMeasuredHeight(), MeasureSpec.UNSPECIFIED);
                     positionToOffset.clear();
