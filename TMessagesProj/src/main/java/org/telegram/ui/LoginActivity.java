@@ -48,6 +48,7 @@ import android.text.TextWatcher;
 import android.text.method.PasswordTransformationMethod;
 import android.text.style.ClickableSpan;
 import android.util.Base64;
+import android.util.Log;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.KeyEvent;
@@ -78,6 +79,7 @@ import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
+import org.telegram.messenger.ReceiveAutomaticSMS;
 import org.telegram.messenger.SRPHelper;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.RequestDelegate;
@@ -99,6 +101,8 @@ import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.CombinedDrawable;
 import org.telegram.ui.Components.ContextProgressView;
 import org.telegram.ui.Components.EditTextBoldCursor;
+import org.telegram.ui.Components.RLottieDrawable;
+import org.telegram.ui.Components.RLottieImageView;
 import org.telegram.ui.Components.VerticalPositionAutoAnimator;
 import org.telegram.ui.Components.HintEditText;
 import org.telegram.ui.Components.ImageUpdater;
@@ -2107,6 +2111,8 @@ public class LoginActivity extends BaseFragment {
                     } else {
                         codeField[a].setInputType(InputType.TYPE_CLASS_PHONE);
                     }
+                    ReceiveAutomaticSMS receiveAutomaticSMS = new ReceiveAutomaticSMS();
+                    receiveAutomaticSMS.setCode(codeField);
                     codeFieldContainer.addView(codeField[a], LayoutHelper.createLinear(34, 36, Gravity.CENTER_HORIZONTAL, 0, 0, a != length - 1 ? 7 : 0, 0));
                     codeField[a].addTextChangedListener(new TextWatcher() {
 
