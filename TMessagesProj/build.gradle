@@ -321,7 +321,7 @@ android {
         }
 
         buildConfigField "int", "APP_ID", APP_ID
-        buildConfigField "String", "APP_HASH", APP_HASH
+        buildConfigField "String", "APP_HASH", "$APP_HASH"
     }
 }
 
