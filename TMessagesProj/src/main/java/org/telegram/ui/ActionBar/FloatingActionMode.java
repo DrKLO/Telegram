@@ -28,11 +28,13 @@ import android.view.ViewConfiguration;
 import android.view.ViewGroup;
 import android.view.ViewParent;
 import android.view.WindowManager;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.PopupMenu;
 import android.widget.PopupWindow;
 
 import org.telegram.messenger.AndroidUtilities;
 
+import java.lang.reflect.Method;
 import java.util.Arrays;
 
 @TargetApi(23)
@@ -165,7 +167,19 @@ public final class FloatingActionMode extends ActionMode {
         } else {
             mContentRectOnScreen.offset(mViewPositionOnScreen[0], mViewPositionOnScreen[1]);
         }
-        if (isContentRectWithinBounds()) {
+        boolean isKeyboardShown = false;
+        if (android.os.Build.VERSION.SDK_INT > android.os.Build.VERSION_CODES.LOLLIPOP) {
+            try {
+                InputMethodManager imm = (InputMethodManager) mContext.getSystemService(Context.INPUT_METHOD_SERVICE);
+                Method windowHeightMethod = imm.getClass().getMethod("getInputMethodWindowVisibleHeight");
+                windowHeightMethod.setAccessible(true);
+                int height = (Integer) windowHeightMethod.invoke(imm, null);
+                isKeyboardShown = height > 0;
+            } catch (Exception e) {
+                isKeyboardShown = false;
+            }
+        }
+        if (isContentRectWithinBounds() || isKeyboardShown) {
             mFloatingToolbarVisibilityHelper.setOutOfBounds(false);
             mContentRectOnScreen.set(Math.max(mContentRectOnScreen.left, mViewRectOnScreen.left), Math.max(mContentRectOnScreen.top, mViewRectOnScreen.top), Math.min(mContentRectOnScreen.right, mViewRectOnScreen.right), Math.min(mContentRectOnScreen.bottom, mViewRectOnScreen.bottom + mBottomAllowance));
             if (!mContentRectOnScreen.equals(mPreviousContentRectOnScreen)) {
