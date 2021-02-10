@@ -251,7 +251,8 @@ public class CameraXController {
 
 
     @SuppressLint({"RestrictedApi", "UnsafeExperimentalUsageError"})
-    private void bindUseCases() {
+    public void bindUseCases() {
+        if(provider == null) return;
         android.util.Size targetSize;
         if (getDeviceDefaultOrientation() == Configuration.ORIENTATION_LANDSCAPE) {
             targetSize = new android.util.Size(1920, 1080);
@@ -354,7 +355,7 @@ public class CameraXController {
 
 
     @SuppressLint("RestrictedApi")
-    public void recordVideo(Context context, final File path, boolean mirror, CameraXView.VideoSavedCallback onStop) {
+    public void recordVideo(final File path, boolean mirror, CameraXView.VideoSavedCallback onStop) {
         if (noSupportedSurfaceCombinationWorkaround) {
             provider.unbindAll();
             provider.bindToLifecycle(lifecycle, cameraSelector, previewUseCase, vCapture);
@@ -371,8 +372,10 @@ public class CameraXController {
             @Override
             public void onVideoSaved(@NonNull VideoCapture.OutputFileResults outputFileResults) {
                 if (noSupportedSurfaceCombinationWorkaround) {
-                    provider.unbindAll();
-                    provider.bindToLifecycle(lifecycle, cameraSelector, previewUseCase, iCapture);
+                    AndroidUtilities.runOnUIThread(()->{
+                        provider.unbindAll();
+                        provider.bindToLifecycle(lifecycle, cameraSelector, previewUseCase, iCapture);
+                    });
                 }
 
                 if (abandonCurrentVideo) {
@@ -388,8 +391,10 @@ public class CameraXController {
             @Override
             public void onError(int videoCaptureError, @NonNull String message, @Nullable Throwable cause) {
                 if (noSupportedSurfaceCombinationWorkaround) {
-                    provider.unbindAll();
-                    provider.bindToLifecycle(lifecycle, cameraSelector, previewUseCase, iCapture);
+                    AndroidUtilities.runOnUIThread(()-> {
+                        provider.unbindAll();
+                        provider.bindToLifecycle(lifecycle, cameraSelector, previewUseCase, iCapture);
+                    });
                 }
                 FileLog.e(cause);
             }

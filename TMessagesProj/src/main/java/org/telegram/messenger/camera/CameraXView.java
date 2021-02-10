@@ -149,6 +149,18 @@ public class CameraXView extends CameraView {
         controller.initCamera(getContext(), controller.isFrontface(), this::observeStream);
     }
 
+    //ugly behaviour after permission check
+    public void rebind(){
+        if(isStreaming){
+            Bitmap previewBitmap = previewView.getBitmap();
+            if(previewBitmap != null){
+                placeholderView.setImageBitmap(previewBitmap);
+                placeholderView.setVisibility(View.VISIBLE);
+            }
+        }
+        controller.bindUseCases();
+    }
+
     public void closeCamera() {
         controller.closeCamera();
     }
@@ -309,7 +321,7 @@ public class CameraXView extends CameraView {
 
     @SuppressLint("RestrictedApi")
     public void recordVideo(final File path, boolean mirrorThumb, VideoSavedCallback onStop) {
-        controller.recordVideo(getContext(), path, mirrorThumb, onStop);
+        controller.recordVideo(path, mirrorThumb, onStop);
     }
 
 

@@ -99,7 +99,6 @@ public final class JpegImageUtils {
         return nv21;
     }
 
-    /** Crops byte array with given {@link android.graphics.Rect}. */
     @NonNull
     public static byte[] flipByteArray(@NonNull byte[] data, int flipState)
             throws CodecFailedException {
