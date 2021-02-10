@@ -1871,6 +1871,8 @@
     <string name="DebugClearLogs">مسح السجلات</string>
     <string name="DebugMenuEnableLogs">تفعيل السجلات</string>
     <string name="DebugMenuDisableLogs">تعطيل السجلات</string>
+    <string name="DebugMenuUseCameraX">استخدام واجهة برمجة تطبيقات الكاميرا الجديدة</string>
+    <string name="DebugMenuUseCameraLegacy">استخدام واجهة برمجة تطبيقات الكاميرا القديمة</string>
     <string name="DebugMenuImportContacts">استيراد جهات الاتصال</string>
     <string name="DebugMenuReloadContacts">إعادة تنزيل جهات الاتصال</string>
     <string name="DebugMenuResetDialogs">إعادة تعيين المحادثات</string>

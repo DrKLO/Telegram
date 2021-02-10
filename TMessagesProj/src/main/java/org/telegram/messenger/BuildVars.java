@@ -33,6 +33,7 @@ public class BuildVars {
         if (ApplicationLoader.applicationContext != null) {
             SharedPreferences sharedPreferences = ApplicationLoader.applicationContext.getSharedPreferences("systemConfig", Context.MODE_PRIVATE);
             LOGS_ENABLED = sharedPreferences.getBoolean("logsEnabled", DEBUG_VERSION);
+            USE_CAMERAX_API = sharedPreferences.getBoolean("useCameraX", USE_CAMERAX_API);
         }
     }
 }

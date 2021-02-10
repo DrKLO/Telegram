@@ -1871,6 +1871,8 @@
     <string name="DebugClearLogs">Logboek opschonen</string>
     <string name="DebugMenuEnableLogs">Logboek inschakelen</string>
     <string name="DebugMenuDisableLogs">Logboek uitschakelen</string>
+    <string name="DebugMenuUseCameraX">Gebruik CameraX API</string>
+    <string name="DebugMenuUseCameraLegacy">Gebruik legacy camera-API</string>
     <string name="DebugMenuImportContacts">Contacten importeren</string>
     <string name="DebugMenuReloadContacts">Contacten verversen</string>
     <string name="DebugMenuResetDialogs">Chats herstellen</string>

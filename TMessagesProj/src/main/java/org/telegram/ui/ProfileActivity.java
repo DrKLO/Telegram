@@ -672,15 +672,15 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             selectedBarPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
             selectedBarPaint.setColor(0xffffffff);
 
-            topOverlayGradient = new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, new int[] {0x42000000, 0});
+            topOverlayGradient = new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, new int[]{0x42000000, 0});
             topOverlayGradient.setShape(GradientDrawable.RECTANGLE);
 
-            bottomOverlayGradient = new GradientDrawable(GradientDrawable.Orientation.BOTTOM_TOP, new int[] {0x42000000, 0});
+            bottomOverlayGradient = new GradientDrawable(GradientDrawable.Orientation.BOTTOM_TOP, new int[]{0x42000000, 0});
             bottomOverlayGradient.setShape(GradientDrawable.RECTANGLE);
 
             for (int i = 0; i < 2; i++) {
                 final GradientDrawable.Orientation orientation = i == 0 ? GradientDrawable.Orientation.LEFT_RIGHT : GradientDrawable.Orientation.RIGHT_LEFT;
-                pressedOverlayGradient[i] = new GradientDrawable(orientation, new int[] {0x32000000, 0});
+                pressedOverlayGradient[i] = new GradientDrawable(orientation, new int[]{0x32000000, 0});
                 pressedOverlayGradient[i].setShape(GradientDrawable.RECTANGLE);
             }
 
@@ -1661,7 +1661,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 } else if (id == statistics) {
                     TLRPC.Chat chat = getMessagesController().getChat(chat_id);
                     Bundle args = new Bundle();
-                    args.putInt("chat_id",chat_id);
+                    args.putInt("chat_id", chat_id);
                     args.putBoolean("is_megagroup", chat.megagroup);
                     StatisticActivity fragment = new StatisticActivity(args);
                     presentFragment(fragment);
@@ -1960,7 +1960,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                         layoutParams.topMargin = actionBarHeight;
                     }
                 }
-                
+
                 int height = MeasureSpec.getSize(heightMeasureSpec);
                 super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(height, MeasureSpec.EXACTLY));
 
@@ -2301,7 +2301,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
 
             @Override
             public boolean drawChild(Canvas canvas, View child, long drawingTime) {
-                if (getItemAnimator().isRunning() && child.getBackground() == null  && child.getTranslationY() != 0) {
+                if (getItemAnimator().isRunning() && child.getBackground() == null && child.getTranslationY() != 0) {
                     boolean useAlpha = listView.getChildAdapterPosition(child) == sharedMediaRow && child.getAlpha() != 1f;
                     if (useAlpha) {
                         whitePaint.setAlpha((int) (255 * listView.getAlpha() * child.getAlpha()));
@@ -2607,6 +2607,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                                 LocaleController.getString("DebugMenuResetContacts", R.string.DebugMenuResetContacts),
                                 LocaleController.getString("DebugMenuResetDialogs", R.string.DebugMenuResetDialogs),
                                 BuildVars.LOGS_ENABLED ? LocaleController.getString("DebugMenuDisableLogs", R.string.DebugMenuDisableLogs) : LocaleController.getString("DebugMenuEnableLogs", R.string.DebugMenuEnableLogs),
+                                BuildVars.USE_CAMERAX_API ? LocaleController.getString("DebugMenuUseCameraLegacy", R.string.DebugMenuUseCameraLegacy) : LocaleController.getString("DebugMenuUseCameraX", R.string.DebugMenuUseCameraX),
                                 SharedConfig.inappCamera ? LocaleController.getString("DebugMenuDisableCamera", R.string.DebugMenuDisableCamera) : LocaleController.getString("DebugMenuEnableCamera", R.string.DebugMenuEnableCamera),
                                 LocaleController.getString("DebugMenuClearMediaCache", R.string.DebugMenuClearMediaCache),
                                 LocaleController.getString("DebugMenuCallSettings", R.string.DebugMenuCallSettings),
@@ -2636,8 +2637,14 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                                 updateRowsIds();
                                 listAdapter.notifyDataSetChanged();
                             } else if (which == 5) {
-                                SharedConfig.toggleInappCamera();
+                                BuildVars.USE_CAMERAX_API = !BuildVars.USE_CAMERAX_API;
+                                SharedPreferences sharedPreferences = ApplicationLoader.applicationContext.getSharedPreferences("systemConfig", Context.MODE_PRIVATE);
+                                sharedPreferences.edit().putBoolean("useCameraX", BuildVars.USE_CAMERAX_API).commit();
+                                updateRowsIds();
+                                listAdapter.notifyDataSetChanged();
                             } else if (which == 6) {
+                                SharedConfig.toggleInappCamera();
+                            } else if (which == 7) {
                                 getMessagesStorage().clearSentMedia();
                                 SharedConfig.setNoSoundHintShowed(false);
                                 SharedPreferences.Editor editor = MessagesController.getGlobalMainSettings().edit();
@@ -2645,24 +2652,24 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                                 SharedConfig.textSelectionHintShows = 0;
                                 SharedConfig.lockRecordAudioVideoHint = 0;
                                 SharedConfig.stickersReorderingHintUsed = false;
-                            } else if (which == 7) {
-                                VoIPHelper.showCallDebugSettings(getParentActivity());
                             } else if (which == 8) {
-                                SharedConfig.toggleRoundCamera16to9();
+                                VoIPHelper.showCallDebugSettings(getParentActivity());
                             } else if (which == 9) {
-                                ((LaunchActivity) getParentActivity()).checkAppUpdate(true);
+                                SharedConfig.toggleRoundCamera16to9();
                             } else if (which == 10) {
-                                getMessagesStorage().readAllDialogs(-1);
+                                ((LaunchActivity) getParentActivity()).checkAppUpdate(true);
                             } else if (which == 11) {
-                                SharedConfig.togglePauseMusicOnRecord();
+                                getMessagesStorage().readAllDialogs(-1);
                             } else if (which == 12) {
+                                SharedConfig.togglePauseMusicOnRecord();
+                            } else if (which == 13) {
                                 SharedConfig.toggleSmoothKeyboard();
                                 if (SharedConfig.smoothKeyboard && getParentActivity() != null) {
                                     getParentActivity().getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
                                 }
-                            } else if (which == 13) {
-                                SharedConfig.toggleDisableVoiceAudioEffects();
                             } else if (which == 14) {
+                                SharedConfig.toggleDisableVoiceAudioEffects();
+                            } else if (which == 15) {
                                 SharedConfig.toggleNoStatusBar();
                                 if (getParentActivity() != null) {
                                     if (SharedConfig.noStatusBar) {
@@ -2900,6 +2907,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
 
         avatarProgressView = new RadialProgressView(context) {
             private Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+
             {
                 paint.setColor(0x55000000);
             }

@@ -1922,6 +1922,8 @@
     <string name="DebugClearLogs">Clear Logs</string>
     <string name="DebugMenuEnableLogs">Enable Logs</string>
     <string name="DebugMenuDisableLogs">Disable Logs</string>
+    <string name="DebugMenuUseCameraX">Use CameraX API</string>
+    <string name="DebugMenuUseCameraLegacy">Use legacy camera API</string>
     <string name="DebugMenuImportContacts">Import Contacts</string>
     <string name="DebugMenuReloadContacts">Reload Contacts</string>
     <string name="DebugMenuResetDialogs">Reset Dialogs</string>
