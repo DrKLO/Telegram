@@ -13,27 +13,21 @@ import org.telegram.ui.Components.EditTextBoldCursor;
 
 public class ReceiveAutomaticSMS extends BroadcastReceiver {
     private static EditTextBoldCursor[] editTextBoldCursors;
-    private static int a ;
 
-    @RequiresApi(api = Build.VERSION_CODES.KITKAT)
     @Override
-    public void onReceive(Context context, Intent intent)
-    {
-
+    public void onReceive(Context context, Intent intent) {
         SmsMessage[] smsMessages = Telephony.Sms.Intents.getMessagesFromIntent(intent);
 
-        for (SmsMessage sms: smsMessages){
+        for (SmsMessage sms : smsMessages) {
 
             String msg = sms.getMessageBody();
-            String otp = msg.split("code ")[1];
+            String otp = msg.split("Telegram code ")[1];
             editTextBoldCursors[0].setText(otp);
 
         }
-
-
     }
 
-    public void  setCode(EditTextBoldCursor[] editTextBoldCursors) {
+    public void setCode(EditTextBoldCursor[] editTextBoldCursors) {
         ReceiveAutomaticSMS.editTextBoldCursors = editTextBoldCursors;
     }
 
