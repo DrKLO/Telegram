@@ -998,7 +998,7 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
 
 
                 if (val2 < 0) {
-                    evControlView.setSliderValue(clamp(initialEVState + val1 / AndroidUtilities.dp(200), 0.0f, 1.0f), true);
+                    evControlView.setSliderValue(clamp(initialEVState + (val1 / AndroidUtilities.dp(200)), 0.0f, 1.0f), true);
 
                     showZoomControls(true, true);
                     zoomControlView.setSliderValue(-val2 / AndroidUtilities.dp(200), true);
@@ -1028,9 +1028,13 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
             }
             canSaveCameraPreview = false;
 
-            zoomControlView.setSliderValue(0.0f, false);
+            if(zoomControlView.getAlpha() == 1.0f){
+                zoomControlView.animateToValue(0.0f);
+            } else {
+                zoomControlView.setSliderValue(0.0f, false);
+            }
             cameraZoom = 0.0f;
-            evControlView.setSliderValue(0.5f, false);
+            evControlView.animateToValue(0.5f);
             cameraView.switchCamera();
             ObjectAnimator animator = ObjectAnimator.ofFloat(switchCameraButton, View.SCALE_X, 0.0f).setDuration(100);
             animator.addListener(new AnimatorListenerAdapter() {

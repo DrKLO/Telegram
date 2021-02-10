@@ -342,8 +342,7 @@ public class CameraXController {
 
     @SuppressLint({"UnsafeExperimentalUsageError", "RestrictedApi"})
     public void focusToPoint(int x, int y) {
-        MeteringPointFactory factory = meteringPointFactory;
-        MeteringPoint point = factory.createPoint(x, y);
+        MeteringPoint point = meteringPointFactory.createPoint(x, y);
 
         FocusMeteringAction action = new FocusMeteringAction
                 .Builder(point, FocusMeteringAction.FLAG_AE | FocusMeteringAction.FLAG_AF | FocusMeteringAction.FLAG_AWB)

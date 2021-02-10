@@ -149,7 +149,7 @@ public class CameraXView extends CameraView {
         controller.initCamera(getContext(), controller.isFrontface(), this::observeStream);
     }
 
-    //ugly behaviour after permission check
+    //ugly api behaviour after permission check
     public void rebind(){
         if(isStreaming){
             Bitmap previewBitmap = previewView.getBitmap();

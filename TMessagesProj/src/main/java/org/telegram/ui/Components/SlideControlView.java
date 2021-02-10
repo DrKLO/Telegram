@@ -55,7 +55,7 @@ public class SlideControlView extends View {
         void didSlide(float sliderValue);
     }
 
-    public final Property<SlideControlView, Float> ZOOM_PROPERTY = new AnimationProperties.FloatProperty<SlideControlView>("clipProgress") {
+    public final Property<SlideControlView, Float> SLIDER_PROPERTY = new AnimationProperties.FloatProperty<SlideControlView>("clipProgress") {
         @Override
         public void setValue(SlideControlView object, float value) {
             sliderValue = value;
@@ -139,14 +139,14 @@ public class SlideControlView extends View {
                 }
                 handled = true;
             } else if (x >= minusCx - AndroidUtilities.dp(16) && x <= minusCx + AndroidUtilities.dp(16) && y >= minusCy - AndroidUtilities.dp(16) && y <= minusCy + AndroidUtilities.dp(16)) {
-                if (action == MotionEvent.ACTION_UP && animateToZoom((float) Math.floor(getSliderValue() / 0.25f) * 0.25f - 0.25f)) {
+                if (action == MotionEvent.ACTION_UP && animateToValue((float) Math.floor(getSliderValue() / 0.25f) * 0.25f - 0.25f)) {
                     performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
                 } else {
                     pressed = true;
                 }
                 handled = true;
             } else if (x >= plusCx - AndroidUtilities.dp(16) && x <= plusCx + AndroidUtilities.dp(16) && y >= plusCy - AndroidUtilities.dp(16) && y <= plusCy + AndroidUtilities.dp(16)) {
-                if (action == MotionEvent.ACTION_UP && animateToZoom((float) Math.floor(getSliderValue() / 0.25f) * 0.25f + 0.25f)) {
+                if (action == MotionEvent.ACTION_UP && animateToValue((float) Math.floor(getSliderValue() / 0.25f) * 0.25f + 0.25f)) {
                     performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
                 } else {
                     pressed = true;
@@ -207,7 +207,7 @@ public class SlideControlView extends View {
         return handled || pressed || knobPressed || super.onTouchEvent(event);
     }
 
-    private boolean animateToZoom(float zoom) {
+    public boolean animateToValue(float zoom) {
         if (zoom < 0 || zoom > 1.0f) {
             return false;
         }
@@ -216,7 +216,7 @@ public class SlideControlView extends View {
         }
         animatingToZoom = zoom;
         animatorSet = new AnimatorSet();
-        animatorSet.playTogether(ObjectAnimator.ofFloat(this, ZOOM_PROPERTY, zoom));
+        animatorSet.playTogether(ObjectAnimator.ofFloat(this, SLIDER_PROPERTY, zoom));
         animatorSet.setDuration(180);
         animatorSet.addListener(new AnimatorListenerAdapter() {
             @Override
