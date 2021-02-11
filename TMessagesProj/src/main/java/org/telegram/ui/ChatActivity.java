@@ -453,6 +453,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
     private AnimatorSet pagedownButtonAnimation;
     private ObjectAnimator mentiondownButtonAnimation;
     private AnimatorSet replyButtonAnimation;
+    private int replyButtonVisibility;
     private AnimatorSet editButtonAnimation;
     private AnimatorSet forwardButtonAnimation;
 
@@ -11195,7 +11196,8 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                         }
                     }
 
-                    if (replyButton.getVisibility() != newVisibility) {
+                    if (replyButtonVisibility != newVisibility) {
+                        replyButtonVisibility = newVisibility;
                         if (replyButtonAnimation != null) {
                             replyButtonAnimation.cancel();
                         }
