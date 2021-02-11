@@ -839,7 +839,6 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
                         openPhotoViewer(photoEntry, false, false);
                     }, () -> AndroidUtilities.runOnUIThread(videoRecordRunnable, 1000));
                 } else {
-                    //TODO check ability of detection front camera internal mirroring
                     ((CameraXView) cameraView).recordVideo(outputFile, ((CameraXView) cameraView).isFrontface()/*parentAlert.avatarPicker != 0*/, (thumbPath, duration) -> {
                         if (outputFile == null || parentAlert.baseFragment == null || cameraView == null) {
                             return;

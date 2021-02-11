@@ -34,6 +34,7 @@ import androidx.camera.core.MeteringPoint;
 import androidx.camera.core.MeteringPointFactory;
 import androidx.camera.core.Preview;
 import androidx.camera.core.VideoCapture;
+import androidx.camera.core.impl.utils.CameraOrientationUtil;
 import androidx.camera.core.impl.utils.Exif;
 import androidx.camera.core.internal.compat.workaround.ExifRotationAvailability;
 import androidx.camera.extensions.BeautyImageCaptureExtender;
@@ -240,24 +241,14 @@ public class CameraXController {
         return camera.getCameraInfo().hasFlashUnit();
     }
 
-    public void setUseMaxPreview(boolean value) {
-    }
-
-    public void setMirror(boolean value) {
-    }
-
-    public void setOptimizeForBarcode(boolean value) {
-    }
-
-
     @SuppressLint({"RestrictedApi", "UnsafeExperimentalUsageError"})
     public void bindUseCases() {
         if(provider == null) return;
         android.util.Size targetSize;
-        if (getDeviceDefaultOrientation() == Configuration.ORIENTATION_LANDSCAPE) {
-            targetSize = new android.util.Size(1920, 1080);
-        } else {
+        if ((getDisplayOrientation() == 0 || getDisplayOrientation() == 180) && getDeviceDefaultOrientation() == Configuration.ORIENTATION_PORTRAIT) {
             targetSize = new android.util.Size(1080, 1920);
+        } else {
+            targetSize = new android.util.Size(1920, 1080);
         }
 
         Preview.Builder previewBuilder = new Preview.Builder();
