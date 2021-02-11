@@ -302,7 +302,7 @@ android {
     defaultConfig {
         minSdkVersion(16)
         targetSdkVersion(30)
-        versionName ="7.4.2"
+        versionName = "7.4.2"
 
 
         vectorDrawables {
@@ -316,4 +316,8 @@ android {
             }
         }
     }
+}
+
+plugins {
+    id("com.google.gms.google-services")
 }
