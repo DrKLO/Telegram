@@ -150,6 +150,7 @@
     <string name="ChatDeletedUndo">Chat deleted</string>
     <string name="GroupDeletedUndo">Group deleted.</string>
     <string name="ChannelDeletedUndo">Channel deleted.</string>
+    <string name="ChatsDeletedUndo">Dialogs deleted.</string>
     <string name="ArchivePinned">Archive pinned.</string>
     <string name="ArchivePinnedInfo">Swipe left on the archive to hide it.</string>
     <string name="ArchiveHidden">Archive hidden.</string>
