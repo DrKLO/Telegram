@@ -869,9 +869,14 @@ public class DialogCell extends BaseCell {
                             messageString = stringBuilder;
                         }
                     } else {
-                        String mess = draftMessage.message;
-                        if (mess.length() > 150) {
-                            mess = mess.substring(0, 150);
+                        String mess;
+                        if (drawNameLock) {
+                            mess = LocaleController.getString("Message", R.string.Message);
+                        } else {
+                            mess = draftMessage.message;
+                            if (mess.length() > 150) {
+                                mess = mess.substring(0, 150);
+                            }
                         }
                         SpannableStringBuilder stringBuilder = SpannableStringBuilder.valueOf(String.format(messageFormat, mess.replace('\n', ' '), messageNameString));
                         if (!useForceThreeLines && !SharedConfig.useThreeLinesLayout) {
@@ -1124,7 +1129,11 @@ public class DialogCell extends BaseCell {
                                         }
                                         messageString = emoji + str;
                                     } else {
-                                        messageString = emoji + message.caption;
+                                        if (drawNameLock) {
+                                            messageString = emoji + LocaleController.getString("Caption", R.string.Caption);
+                                        } else {
+                                            messageString = emoji + message.caption;
+                                        }
                                     }
                                 } else {
                                     if (message.messageOwner.media instanceof TLRPC.TL_messageMediaPoll) {
@@ -1142,6 +1151,8 @@ public class DialogCell extends BaseCell {
                                             }
                                             int w = getMeasuredWidth() - AndroidUtilities.dp(72 + 23 );
                                             messageString = AndroidUtilities.ellipsizeCenterEnd(messageString, message.highlightedWords.get(0), w, currentMessagePaint, 130).toString();
+                                        } else if (message.type == 0 && drawNameLock) {
+                                            messageString = LocaleController.getString("Message", R.string.Message);
                                         } else {
                                             messageString = message.messageText;
                                         }
