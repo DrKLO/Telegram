@@ -16,7 +16,9 @@ import android.animation.ObjectAnimator;
 import android.animation.ValueAnimator;
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.content.ClipData;
 import android.content.ClipDescription;
+import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
@@ -1779,8 +1781,27 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
             public boolean onTextContextMenuItem(int id) {
                 if (id == android.R.id.paste) {
                     isPaste = true;
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                        id = android.R.id.pasteAsPlainText;
+                    } else {
+                        fixPaste();
+                    }
                 }
                 return super.onTextContextMenuItem(id);
+            }
+
+            private void fixPaste() {
+                ClipboardManager clipboard = (ClipboardManager) getContext().getSystemService(Context.CLIPBOARD_SERVICE);
+                ClipData clip = clipboard.getPrimaryClip();
+                if (clip != null) {
+                    for (int i = 0; i < clip.getItemCount(); i++) {
+                        CharSequence text = clip.getItemAt(i).coerceToText(getContext());
+                        CharSequence fixedText = (text instanceof Spanned) ? text.toString() : text;
+                        if (fixedText != null) {
+                            AndroidUtilities.addToClipboard(fixedText);
+                        }
+                    }
+                }
             }
         };
         messageEditText.setDelegate(() -> {
