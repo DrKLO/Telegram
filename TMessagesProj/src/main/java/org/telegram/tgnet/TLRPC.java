@@ -20054,6 +20054,9 @@ public class TLRPC {
                 if (object == null) {
                     return;
                 }
+                if (object instanceof TL_documentAttributeFilename) {
+                    file_name = object.file_name;
+                }
                 attributes.add(object);
             }
         }
