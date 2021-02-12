@@ -2817,7 +2817,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     final LayoutParams lp = (LayoutParams) child.getLayoutParams();
 
                     final int width = child.getMeasuredWidth();
-                    final int height = child.getMeasuredHeight();
+                    int height = child.getMeasuredHeight();
 
                     int childLeft;
                     int childTop;
@@ -2916,6 +2916,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                         if (keyboardSize > AndroidUtilities.dp(20) && getLayoutParams().height < 0) {
                             childTop -= keyboardSize;
                         }
+                        height = Math.max(height, getBottom() - childTop);
                     }
                     child.layout(childLeft, childTop, childLeft + width, childTop + height);
                 }
