@@ -116,8 +116,8 @@ public class AdminLogFilterAlert extends BottomSheet {
         } else {
             pinnedRow = -1;
         }
-        leavingRow = rowCount++;
-        callsRow = rowCount;
+        leavingRow = rowCount;
+        // callsRow = rowCount;
         rowCount += 2;
         allAdminsRow = rowCount;
 
@@ -285,8 +285,8 @@ public class AdminLogFilterAlert extends BottomSheet {
                         currentFilter.pinned = !currentFilter.pinned;
                     } else if (position == leavingRow) {
                         currentFilter.leave = !currentFilter.leave;
-                    } else if (position == callsRow) {
-                        currentFilter.group_call = !currentFilter.group_call;
+//                    } else if (position == callsRow) {
+//                        currentFilter.group_call = !currentFilter.group_call;
                     }
                 }
                 if (currentFilter != null && !currentFilter.join && !currentFilter.leave &&
@@ -450,8 +450,8 @@ public class AdminLogFilterAlert extends BottomSheet {
                         cell.setChecked(currentFilter == null || currentFilter.pinned, false);
                     } else if (position == leavingRow) {
                         cell.setChecked(currentFilter == null || currentFilter.leave, false);
-                    } else if (position == callsRow) {
-                        cell.setChecked(currentFilter == null || currentFilter.group_call, false);
+//                    } else if (position == callsRow) {
+//                        cell.setChecked(currentFilter == null || currentFilter.group_call, false);
                     } else if (position == allAdminsRow) {
                         cell.setChecked(selectedAdmins == null, false);
                     }
@@ -493,8 +493,8 @@ public class AdminLogFilterAlert extends BottomSheet {
                         cell.setText(LocaleController.getString("EventLogFilterPinnedMessages", R.string.EventLogFilterPinnedMessages), "", currentFilter == null || currentFilter.pinned, true);
                     } else if (position == leavingRow) {
                         cell.setText(LocaleController.getString("EventLogFilterLeavingMembers", R.string.EventLogFilterLeavingMembers), "", currentFilter == null || currentFilter.leave, true);
-                    } else if (position == callsRow) {
-                        cell.setText(LocaleController.getString("EventLogFilterCalls", R.string.EventLogFilterCalls), "", currentFilter == null || currentFilter.group_call, false);
+//                    } else if (position == callsRow) {
+//                        cell.setText(LocaleController.getString("EventLogFilterCalls", R.string.EventLogFilterCalls), "", currentFilter == null || currentFilter.group_call, false);
                     } else if (position == allAdminsRow) {
                         cell.setText(LocaleController.getString("EventLogAllAdmins", R.string.EventLogAllAdmins), "", selectedAdmins == null, true);
                     }

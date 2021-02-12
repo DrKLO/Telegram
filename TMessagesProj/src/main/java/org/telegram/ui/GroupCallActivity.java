@@ -2831,7 +2831,7 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
             items.add(LocaleController.getString("VoipGroupOpenProfile", R.string.VoipGroupOpenProfile));
             icons.add(R.drawable.msg_openprofile);
             options.add(6);
-            if (!isAdmin) {
+            if (!isAdmin && ChatObject.canBlockUsers(currentChat)) {
                 items.add(LocaleController.getString("VoipGroupUserRemove", R.string.VoipGroupUserRemove));
                 icons.add(R.drawable.msg_block2);
                 options.add(2);
