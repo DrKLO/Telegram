@@ -18513,6 +18513,9 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
 
         if (chatActivityEnterView != null) {
             chatActivityEnterView.preventInput = true;
+            EditTextBoldCursor editText = chatActivityEnterView.getEditField();
+            editText.hideActionMode();
+            editText.clearFocus();
         }
 
         selectedMessagesCountTextView.setNumber(selectedMessagesIds[0].size() + selectedMessagesIds[1].size(), false);
