@@ -32,6 +32,7 @@ import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
 import android.text.TextUtils;
+import android.util.Log;
 import android.util.Size;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -81,8 +82,8 @@ public final class FloatingToolbar {
     private MenuItem.OnMenuItemClickListener mMenuItemClickListener = NO_OP_MENUITEM_CLICK_LISTENER;
     private int mSuggestedWidth;
     private boolean mWidthChanged = true;
-
-    private int currentStyle;
+    private final int mCurrentStyle;
+    private int mViewPortTopOffset;
 
     public static final int STYLE_DIALOG = 0;
     public static final int STYLE_THEME = 1;
@@ -107,7 +108,7 @@ public final class FloatingToolbar {
 
     public FloatingToolbar(Context context, View windowView, int style) {
         mWindowView = windowView;
-        currentStyle = style;
+        mCurrentStyle = style;
         mPopup = new FloatingToolbarPopup(context, windowView);
     }
 
@@ -171,6 +172,13 @@ public final class FloatingToolbar {
         if (mPopup.setOutsideTouchable(outsideTouchable, onDismiss) && isShowing()) {
             dismiss();
             doShow();
+        }
+    }
+
+    public void setViewPortTopOffset(int offset) {
+        if (mViewPortTopOffset != offset) {
+            mViewPortTopOffset = offset;
+            updateLayout();
         }
     }
 
@@ -438,7 +446,8 @@ public final class FloatingToolbar {
             refreshViewPort();
             final int x = Math.min(contentRectOnScreen.centerX() - mPopupWindow.getWidth() / 2, mViewPortOnScreen.right - mPopupWindow.getWidth());
             final int y;
-            final int availableHeightAboveContent = contentRectOnScreen.top - mViewPortOnScreen.top;
+            final int viewPortTop = Math.max(mViewPortOnScreen.top, mViewPortTopOffset);
+            final int availableHeightAboveContent = contentRectOnScreen.top - viewPortTop;
             final int availableHeightBelowContent = mViewPortOnScreen.bottom - contentRectOnScreen.bottom;
             final int margin = 2 * mMarginVertical;
             final int toolbarHeightWithVerticalMargin = mLineHeight + margin;
@@ -446,16 +455,16 @@ public final class FloatingToolbar {
                 if (availableHeightAboveContent >= toolbarHeightWithVerticalMargin) {
                     y = contentRectOnScreen.top - toolbarHeightWithVerticalMargin;
                 } else if (availableHeightBelowContent >= toolbarHeightWithVerticalMargin) {
-                    y = contentRectOnScreen.bottom;
+                    y = viewPortTop;
                 } else if (availableHeightBelowContent >= mLineHeight) {
                     y = contentRectOnScreen.bottom - mMarginVertical;
                 } else {
-                    y = Math.max(mViewPortOnScreen.top, contentRectOnScreen.top - toolbarHeightWithVerticalMargin);
+                    y = Math.max(viewPortTop, contentRectOnScreen.top - toolbarHeightWithVerticalMargin);
                 }
             } else {
                 final int minimumOverflowHeightWithMargin = calculateOverflowHeight(MIN_OVERFLOW_SIZE) + margin;
                 final int availableHeightThroughContentDown = mViewPortOnScreen.bottom - contentRectOnScreen.top + toolbarHeightWithVerticalMargin;
-                final int availableHeightThroughContentUp = contentRectOnScreen.bottom - mViewPortOnScreen.top + toolbarHeightWithVerticalMargin;
+                final int availableHeightThroughContentUp = contentRectOnScreen.bottom - viewPortTop + toolbarHeightWithVerticalMargin;
                 if (availableHeightAboveContent >= minimumOverflowHeightWithMargin) {
                     updateOverflowHeight(availableHeightAboveContent - margin);
                     y = contentRectOnScreen.top - mPopupWindow.getHeight();
@@ -474,7 +483,7 @@ public final class FloatingToolbar {
                     mOpenOverflowUpwards = true;
                 } else {
                     updateOverflowHeight(mViewPortOnScreen.height() - margin);
-                    y = mViewPortOnScreen.top;
+                    y = viewPortTop;
                     mOpenOverflowUpwards = false;
                 }
             }
@@ -985,10 +994,10 @@ public final class FloatingToolbar {
             overflowButton.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
             overflowButton.setImageDrawable(mOverflow);
             int color;
-            if (currentStyle == STYLE_DIALOG) {
+            if (mCurrentStyle == STYLE_DIALOG) {
                 color = Theme.getColor(Theme.key_dialogTextBlack);
                 overflowButton.setBackgroundDrawable(Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector), 1));
-            } else if (currentStyle == STYLE_BLACK) {
+            } else if (mCurrentStyle == STYLE_BLACK) {
                 color = 0xfffafafa;
                 overflowButton.setBackgroundDrawable(Theme.createSelectorDrawable(0x40ffffff, 1));
             } else {
@@ -1197,13 +1206,13 @@ public final class FloatingToolbar {
         textView.setFocusable(false);
         textView.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
         textView.setFocusableInTouchMode(false);
-        if (currentStyle == STYLE_DIALOG) {
+        if (mCurrentStyle == STYLE_DIALOG) {
             textView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
             menuItemButton.setBackgroundDrawable(Theme.getSelectorDrawable(false));
-        } else if (currentStyle == STYLE_BLACK) {
+        } else if (mCurrentStyle == STYLE_BLACK) {
             textView.setTextColor(0xfffafafa);
             menuItemButton.setBackgroundDrawable(Theme.getSelectorDrawable(0x40ffffff, false));
-        } else if (currentStyle == STYLE_THEME) {
+        } else if (mCurrentStyle == STYLE_THEME) {
             textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
             menuItemButton.setBackgroundDrawable(Theme.getSelectorDrawable(false));
         }
@@ -1246,11 +1255,11 @@ public final class FloatingToolbar {
         shape.setShape(GradientDrawable.RECTANGLE);
         int r = AndroidUtilities.dp(6);
         shape.setCornerRadii(new float[] { r, r, r, r, r, r, r, r });
-        if (currentStyle == STYLE_DIALOG) {
+        if (mCurrentStyle == STYLE_DIALOG) {
             shape.setColor(Theme.getColor(Theme.key_dialogBackground));
-        } else if (currentStyle == STYLE_BLACK) {
+        } else if (mCurrentStyle == STYLE_BLACK) {
             shape.setColor(0xf9222222);
-        } else if (currentStyle == STYLE_THEME) {
+        } else if (mCurrentStyle == STYLE_THEME) {
             shape.setColor(Theme.getColor(Theme.key_windowBackgroundWhite));
         }
         contentContainer.setBackgroundDrawable(shape);

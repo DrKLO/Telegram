@@ -2917,6 +2917,9 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                             childTop -= keyboardSize;
                         }
                         height = Math.max(height, getBottom() - childTop);
+                        int actionBarHeight = actionBar.getVisibility() == View.VISIBLE ? actionBar.getMeasuredHeight() : 0;
+                        textSelectionHelper.setTopOffset(actionBarHeight - childTop);
+                        textSelectionHelper.setActionBarOffset(actionBarHeight);
                     }
                     child.layout(childLeft, childTop, childLeft + width, childTop + height);
                 }
