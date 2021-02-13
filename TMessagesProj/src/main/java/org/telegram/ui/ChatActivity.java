@@ -5297,7 +5297,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 } else {
                     mentionListView.setLayoutManager(mentionLayoutManager);
                 }
-                if (show && bottomOverlay.getVisibility() == View.VISIBLE) {
+                if (show && (bottomOverlay.getVisibility() == View.VISIBLE || inPreviewMode)) {
                     show = false;
                 }
                 if (show) {
