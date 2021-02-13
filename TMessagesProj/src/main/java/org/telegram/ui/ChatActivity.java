@@ -15237,6 +15237,12 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     updated = true;
                 }
             }
+
+            boolean hideFieldPanel = replyingMessageObject != null && replyingMessageObject.getId() == mid;
+            hideFieldPanel |= editingMessageObject != null && editingMessageObject.getId() == mid;
+            if (hideFieldPanel) {
+                hideFieldPanel(true);
+            }
         }
         if (updatedReplies) {
             updateReplyMessageHeader(true);
