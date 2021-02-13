@@ -1316,6 +1316,7 @@ public class Theme {
         public TLRPC.InputFile uploadedThumb;
         public TLRPC.InputFile uploadedFile;
 
+        private int previewWindowBackgroundWhiteColor;
         private int previewBackgroundColor;
         public int previewBackgroundGradientColor;
         public int previewWallpaperOffset;
@@ -1477,6 +1478,17 @@ public class Theme {
             previewBackgroundColor = color;
         }
 
+        public void setPreviewWindowBackgroundWhiteColor(int color) {
+            previewWindowBackgroundWhiteColor = color;
+        }
+
+        public int getPreviewWindowBackgroundWhiteColor() {
+            if (firstAccentIsDefault && currentAccentId == DEFALT_THEME_ACCENT_ID) {
+                return 0xffffffff;
+            }
+            return previewWindowBackgroundWhiteColor;
+        }
+
         public int getPreviewInColor() {
             if (firstAccentIsDefault && currentAccentId == DEFALT_THEME_ACCENT_ID) {
                 return 0xffffffff;
@@ -1530,7 +1542,14 @@ public class Theme {
         }
 
         public boolean isDark() {
-            return "Dark Blue".equals(name) || "Night".equals(name);
+            if (name.contains("Day")) {
+                return false;
+            }
+            return name.contains("Night") || isDarkBackground();
+        }
+
+        private boolean isDarkBackground() {
+            return AndroidUtilities.computePerceivedBrightness(getPreviewWindowBackgroundWhiteColor()) < 0.5;
         }
 
         public boolean isLight() {
@@ -4054,6 +4073,7 @@ public class Theme {
         ThemeInfo themeInfo = new ThemeInfo();
         themeInfo.name = "Blue";
         themeInfo.assetName = "bluebubbles.attheme";
+        themeInfo.previewWindowBackgroundWhiteColor = 0xffffffff;
         themeInfo.previewBackgroundColor = 0xff95beec;
         themeInfo.previewInColor = 0xffffffff;
         themeInfo.previewOutColor = 0xffd0e6ff;
@@ -4078,6 +4098,7 @@ public class Theme {
         themeInfo.name = "Dark Blue";
         themeInfo.assetName = "darkblue.attheme";
         themeInfo.previewBackgroundColor = 0xff5f6e82;
+        themeInfo.previewWindowBackgroundWhiteColor = 0xff1d2733;
         themeInfo.previewInColor = 0xff76869c;
         themeInfo.previewOutColor = 0xff82a8e3;
         themeInfo.sortIndex = 3;
@@ -4099,6 +4120,7 @@ public class Theme {
         themeInfo.name = "Arctic Blue";
         themeInfo.assetName = "arctic.attheme";
         themeInfo.previewBackgroundColor = 0xffe1e9f0;
+        themeInfo.previewWindowBackgroundWhiteColor = 0xffffffff;
         themeInfo.previewInColor = 0xffffffff;
         themeInfo.previewOutColor = 0xff6ca1eb;
         themeInfo.sortIndex = 5;
@@ -4120,6 +4142,7 @@ public class Theme {
         themeInfo.name = "Day";
         themeInfo.assetName = "day.attheme";
         themeInfo.previewBackgroundColor = 0xffffffff;
+        themeInfo.previewWindowBackgroundWhiteColor = 0xffffffff;
         themeInfo.previewInColor = 0xffebeef4;
         themeInfo.previewOutColor = 0xff7cb2fe;
         themeInfo.sortIndex = 2;
@@ -4141,6 +4164,7 @@ public class Theme {
         themeInfo.name = "Night";
         themeInfo.assetName = "night.attheme";
         themeInfo.previewBackgroundColor = 0xff535659;
+        themeInfo.previewWindowBackgroundWhiteColor = 0xff181819;
         themeInfo.previewInColor = 0xff747A84;
         themeInfo.previewOutColor = 0xff75A2E6;
         themeInfo.sortIndex = 4;
@@ -5094,6 +5118,97 @@ public class Theme {
         }
     }
 
+    public static HashMap<String, Integer> fillThemeValues(ThemeInfo themeInfo) {
+        String[] wallpaperLink = new String[1];
+        HashMap<String, Integer> themeValues;
+        if (themeInfo.assetName != null) {
+            themeValues = getThemeFileValues(null, themeInfo.assetName, null);
+        } else {
+            themeValues = getThemeFileValues(new File(themeInfo.pathToFile), null, wallpaperLink);
+        }
+
+        Integer color = themeValues.get(Theme.key_chat_inBubble);
+        if (color != null) {
+            themeInfo.setPreviewInColor(color);
+        }
+        color = themeValues.get(Theme.key_chat_outBubble);
+        if (color != null) {
+            themeInfo.setPreviewOutColor(color);
+        }
+        color = themeValues.get(Theme.key_chat_wallpaper);
+        if (color != null) {
+            themeInfo.setPreviewBackgroundColor(color);
+        }
+        color = themeValues.get(Theme.key_chat_wallpaper_gradient_to);
+        if (color != null) {
+            themeInfo.previewBackgroundGradientColor = color;
+        }
+        color = themeValues.get(Theme.key_windowBackgroundWhite);
+        if (color != null) {
+            themeInfo.setPreviewWindowBackgroundWhiteColor(color);
+        } else {
+            themeInfo.setPreviewWindowBackgroundWhiteColor(0xffffffff);
+        }
+
+        if (!TextUtils.isEmpty(wallpaperLink[0])) {
+            String ling = wallpaperLink[0];
+            themeInfo.pathToWallpaper = new File(ApplicationLoader.getFilesDirFixed(), Utilities.MD5(ling) + ".wp").getAbsolutePath();
+            try {
+                Uri data = Uri.parse(ling);
+                themeInfo.slug = data.getQueryParameter("slug");
+                String mode = data.getQueryParameter("mode");
+                if (mode != null) {
+                    mode = mode.toLowerCase();
+                    String[] modes = mode.split(" ");
+                    if (modes != null && modes.length > 0) {
+                        for (int a = 0; a < modes.length; a++) {
+                            if ("blur".equals(modes[a])) {
+                                themeInfo.isBlured = true;
+                            } else if ("motion".equals(modes[a])) {
+                                themeInfo.isMotion = true;
+                            }
+                        }
+                    }
+                }
+                String pattern = data.getQueryParameter("pattern");
+                if (!TextUtils.isEmpty(pattern)) {
+                    try {
+                        String bgColor = data.getQueryParameter("bg_color");
+                        if (!TextUtils.isEmpty(bgColor)) {
+                            themeInfo.patternBgColor = Integer.parseInt(bgColor, 16) | 0xff000000;
+                            if (bgColor.length() > 6) {
+                                themeInfo.patternBgGradientColor = Integer.parseInt(bgColor.substring(7), 16) | 0xff000000;
+                            }
+                        }
+                    } catch (Exception ignore) {
+
+                    }
+                    try {
+                        String rotation = data.getQueryParameter("rotation");
+                        if (!TextUtils.isEmpty(rotation)) {
+                            themeInfo.patternBgGradientRotation = Utilities.parseInt(rotation);
+                        }
+                    } catch (Exception ignore) {
+
+                    }
+
+                    String intensity = data.getQueryParameter("intensity");
+                    if (!TextUtils.isEmpty(intensity)) {
+                        themeInfo.patternIntensity = Utilities.parseInt(intensity);
+                    }
+                    if (themeInfo.patternIntensity == 0) {
+                        themeInfo.patternIntensity = 50;
+                    }
+                }
+            } catch (Throwable e) {
+                FileLog.e(e);
+            }
+        } else {
+            themedWallpaperLink = null;
+        }
+        return themeValues;
+    }
+
     public static ThemeInfo fillThemeValues(File file, String themeName, TLRPC.TL_theme theme) {
         try {
             ThemeInfo themeInfo = new ThemeInfo();
@@ -5102,64 +5217,7 @@ public class Theme {
             themeInfo.pathToFile = file.getAbsolutePath();
             themeInfo.account = UserConfig.selectedAccount;
 
-            String[] wallpaperLink = new String[1];
-            getThemeFileValues(new File(themeInfo.pathToFile), null, wallpaperLink);
-
-            if (!TextUtils.isEmpty(wallpaperLink[0])) {
-                String ling = wallpaperLink[0];
-                themeInfo.pathToWallpaper = new File(ApplicationLoader.getFilesDirFixed(), Utilities.MD5(ling) + ".wp").getAbsolutePath();
-                try {
-                    Uri data = Uri.parse(ling);
-                    themeInfo.slug = data.getQueryParameter("slug");
-                    String mode = data.getQueryParameter("mode");
-                    if (mode != null) {
-                        mode = mode.toLowerCase();
-                        String[] modes = mode.split(" ");
-                        if (modes != null && modes.length > 0) {
-                            for (int a = 0; a < modes.length; a++) {
-                                if ("blur".equals(modes[a])) {
-                                    themeInfo.isBlured = true;
-                                } else if ("motion".equals(modes[a])) {
-                                    themeInfo.isMotion = true;
-                                }
-                            }
-                        }
-                    }
-                    String intensity = data.getQueryParameter("intensity");
-                    if (!TextUtils.isEmpty(intensity)) {
-                        try {
-                            String bgColor = data.getQueryParameter("bg_color");
-                            if (!TextUtils.isEmpty(bgColor)) {
-                                themeInfo.patternBgColor = Integer.parseInt(bgColor, 16) | 0xff000000;
-                                if (bgColor.length() > 6) {
-                                    themeInfo.patternBgGradientColor = Integer.parseInt(bgColor.substring(7), 16) | 0xff000000;
-                                }
-                            }
-                        } catch (Exception ignore) {
-
-                        }
-                        try {
-                            String rotation = data.getQueryParameter("rotation");
-                            if (!TextUtils.isEmpty(rotation)) {
-                                themeInfo.patternBgGradientRotation = Utilities.parseInt(rotation);
-                            }
-                        } catch (Exception ignore) {
-
-                        }
-
-                        if (!TextUtils.isEmpty(intensity)) {
-                            themeInfo.patternIntensity = Utilities.parseInt(intensity);
-                        }
-                        if (themeInfo.patternIntensity == 0) {
-                            themeInfo.patternIntensity = 50;
-                        }
-                    }
-                } catch (Throwable e) {
-                    FileLog.e(e);
-                }
-            } else {
-                themedWallpaperLink = null;
-            }
+            fillThemeValues(themeInfo);
 
             return themeInfo;
         } catch (Exception e) {
@@ -5254,78 +5312,7 @@ public class Theme {
                     editor.putString("theme", themeInfo.getKey());
                     editor.commit();
                 }
-                String[] wallpaperLink = new String[1];
-                if (themeInfo.assetName != null) {
-                    currentColorsNoAccent = getThemeFileValues(null, themeInfo.assetName, null);
-                } else {
-                    currentColorsNoAccent = getThemeFileValues(new File(themeInfo.pathToFile), null, wallpaperLink);
-                }
-                Integer offset = currentColorsNoAccent.get("wallpaperFileOffset");
-                themedWallpaperFileOffset = offset != null ? offset : -1;
-                if (!TextUtils.isEmpty(wallpaperLink[0])) {
-                    themedWallpaperLink = wallpaperLink[0];
-                    String newPathToFile = new File(ApplicationLoader.getFilesDirFixed(), Utilities.MD5(themedWallpaperLink) + ".wp").getAbsolutePath();
-                    try {
-                        if (themeInfo.pathToWallpaper != null && !themeInfo.pathToWallpaper.equals(newPathToFile)) {
-                            new File(themeInfo.pathToWallpaper).delete();
-                        }
-                    } catch (Exception ignore) {
-
-                    }
-                    themeInfo.pathToWallpaper = newPathToFile;
-                    try {
-                        Uri data = Uri.parse(themedWallpaperLink);
-                        themeInfo.slug = data.getQueryParameter("slug");
-
-                        String mode = data.getQueryParameter("mode");
-                        if (mode != null) {
-                            mode = mode.toLowerCase();
-                            String[] modes = mode.split(" ");
-                            if (modes != null && modes.length > 0) {
-                                for (int a = 0; a < modes.length; a++) {
-                                    if ("blur".equals(modes[a])) {
-                                        themeInfo.isBlured = true;
-                                    } else if ("motion".equals(modes[a])) {
-                                        themeInfo.isMotion = true;
-                                    }
-                                }
-                            }
-                        }
-                        int intensity = Utilities.parseInt(data.getQueryParameter("intensity"));
-                        themeInfo.patternBgGradientRotation = 45;
-                        try {
-                            String bgColor = data.getQueryParameter("bg_color");
-                            if (!TextUtils.isEmpty(bgColor)) {
-                                themeInfo.patternBgColor = Integer.parseInt(bgColor.substring(0, 6), 16) | 0xff000000;
-                                if (bgColor.length() > 6) {
-                                    themeInfo.patternBgGradientColor = Integer.parseInt(bgColor.substring(7), 16) | 0xff000000;
-                                }
-                            }
-                        } catch (Exception ignore) {
-
-                        }
-                        try {
-                            String rotation = data.getQueryParameter("rotation");
-                            if (!TextUtils.isEmpty(rotation)) {
-                                themeInfo.patternBgGradientRotation = Utilities.parseInt(rotation);
-                            }
-                        } catch (Exception ignore) {
-
-                        }
-                    } catch (Throwable e) {
-                        FileLog.e(e);
-                    }
-                } else {
-                    try {
-                        if (themeInfo.pathToWallpaper != null) {
-                            new File(themeInfo.pathToWallpaper).delete();
-                        }
-                    } catch (Exception ignore) {
-
-                    }
-                    themeInfo.pathToWallpaper = null;
-                    themedWallpaperLink = null;
-                }
+                currentColorsNoAccent = fillThemeValues(themeInfo);
             } else {
                 if (!nightTheme && save) {
                     SharedPreferences preferences = MessagesController.getGlobalMainSettings();
@@ -7747,6 +7734,14 @@ public class Theme {
             return;
         }
         animatingColors.put(key, value);
+    }
+
+    private int getColorNoAccent(String key, int defaultColor) {
+        Integer color = currentColorsNoAccent.get(key);
+        if (color != null) {
+            return color;
+        }
+        return defaultColor;
     }
 
     public static int getDefaultAccentColor(String key) {
