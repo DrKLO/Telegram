@@ -448,6 +448,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
     private int otherX;
     private int otherY;
     private int lastHeight;
+    private int lastWidth;
     private int hasMiniProgress;
     private int miniButtonState;
     private boolean imagePressed;
@@ -2861,6 +2862,8 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         if (messageObject.checkLayout() || currentPosition != null && lastHeight != AndroidUtilities.displaySize.y) {
             currentMessageObject = null;
         }
+        boolean widthChanged = lastWidth != AndroidUtilities.displaySize.x;
+        lastWidth = AndroidUtilities.displaySize.x;
         lastHeight = AndroidUtilities.displaySize.y;
         boolean messageIdChanged = currentMessageObject == null || currentMessageObject.getId() != messageObject.getId();
         boolean messageChanged = currentMessageObject != messageObject || messageObject.forceUpdate;
@@ -2917,7 +2920,10 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             }
             groupChanged = newPosition != currentPosition;
         }
-        if (messageChanged || dataChanged || groupChanged || pollChanged || isPhotoDataChanged(messageObject) || pinnedBottom != bottomNear || pinnedTop != topNear) {
+        if (messageChanged || dataChanged || groupChanged
+                || pollChanged || (messageObject.isPoll() && widthChanged)
+                || isPhotoDataChanged(messageObject)
+                || pinnedBottom != bottomNear || pinnedTop != topNear) {
             wasPinned = isPinned;
             pinnedBottom = bottomNear;
             pinnedTop = topNear;
