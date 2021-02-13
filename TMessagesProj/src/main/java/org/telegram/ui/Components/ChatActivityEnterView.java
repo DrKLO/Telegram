@@ -104,6 +104,7 @@ import org.telegram.messenger.SendMessagesHelper;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
+import org.telegram.messenger.Utilities;
 import org.telegram.messenger.VideoEditedInfo;
 import org.telegram.messenger.camera.CameraController;
 import org.telegram.tgnet.ConnectionsManager;
@@ -7605,197 +7606,40 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
     }
 
     public class TimerView extends View {
-        boolean isRunning;
-        boolean stoppedInternal;
-        String oldString;
-        long startTime;
-        long stopTime;
-        long lastSendTypingTime;
 
-        SpannableStringBuilder replaceIn = new SpannableStringBuilder();
-        SpannableStringBuilder replaceOut = new SpannableStringBuilder();
-        SpannableStringBuilder replaceStable = new SpannableStringBuilder();
-
-        StaticLayout inLayout;
-        StaticLayout outLayout;
-
-        float replaceTransition;
-
-        final TextPaint textPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
-        final float replaceDistance = AndroidUtilities.dp(15);
-        float left;
-
+        private final State state = new State();
+        private final TextPaint textPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
+        private final float replaceDistance = AndroidUtilities.dp(15);
+        private final float textLineHeight;
 
         public TimerView(Context context) {
             super(context);
             textPaint.setTextSize(AndroidUtilities.dp(15));
             textPaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+
+            Paint.FontMetrics fontMetrics = textPaint.getFontMetrics();
+            textLineHeight = -fontMetrics.ascent - fontMetrics.descent;
+
+            state.textPaint.set(textPaint);
             updateColors();
         }
 
         public void start() {
-            isRunning = true;
-            startTime = System.currentTimeMillis();
-            lastSendTypingTime = startTime;
-            invalidate();
+            state.isRunning = true;
+            state.startTime = System.currentTimeMillis();
+            state.lastSendTypingTime = state.startTime;
+            scheduleCalculation();
         }
 
         public void stop() {
-            if (isRunning) {
-                isRunning = false;
-                if (startTime > 0) {
-                    stopTime = System.currentTimeMillis();
+            if (state.isRunning) {
+                state.isRunning = false;
+                if (state.startTime > 0) {
+                    state.stopTime = System.currentTimeMillis();
                 }
-                invalidate();
+                scheduleCalculation();
             }
-            lastSendTypingTime = 0;
-        }
-
-        @SuppressLint("DrawAllocation")
-        @Override
-        protected void onDraw(Canvas canvas) {
-            long currentTimeMillis = System.currentTimeMillis();
-            long t = isRunning ? (currentTimeMillis - startTime) : stopTime - startTime;
-            long time = t / 1000;
-            int ms = (int) (t % 1000L) / 10;
-
-            if (videoSendButton != null && videoSendButton.getTag() != null) {
-                if (t >= 59500 && !stoppedInternal) {
-                    startedDraggingX = -1;
-                    delegate.needStartRecordVideo(3, true, 0);
-                    stoppedInternal = true;
-                }
-            }
-
-            if (isRunning && currentTimeMillis > lastSendTypingTime + 5000) {
-                lastSendTypingTime = currentTimeMillis;
-                MessagesController.getInstance(currentAccount).sendTyping(dialog_id, getThreadMessageId(), videoSendButton != null && videoSendButton.getTag() != null ? 7 : 1, 0);
-            }
-
-            String newString;
-            if (time / 60 >= 60) {
-                newString = String.format(Locale.US, "%01d:%02d:%02d,%d", (time / 60) / 60, (time / 60) % 60, time % 60, ms / 10);
-            } else {
-                newString = String.format(Locale.US, "%01d:%02d,%d", time / 60, time % 60, ms / 10);
-            }
-            if (newString.length() >= 3 && oldString != null && oldString.length() >= 3 && newString.length() == oldString.length() && newString.charAt(newString.length() - 3) != oldString.charAt(newString.length() - 3)) {
-                int n = newString.length();
-
-                replaceIn.clear();
-                replaceOut.clear();
-                replaceStable.clear();
-                replaceIn.append(newString);
-                replaceOut.append(oldString);
-                replaceStable.append(newString);
-
-                int inLast = -1;
-                int inCount = 0;
-                int outLast = -1;
-                int outCount = 0;
-
-
-                for (int i = 0; i < n - 1; i++) {
-                    if (oldString.charAt(i) != newString.charAt(i)) {
-                        if (outCount == 0) {
-                            outLast = i;
-                        }
-                        outCount++;
-
-                        if (inCount != 0) {
-                            EmptyStubSpan span = new EmptyStubSpan();
-                            if (i == n - 2) {
-                                inCount++;
-                            }
-                            replaceIn.setSpan(span, inLast, inLast + inCount, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
-                            replaceOut.setSpan(span, inLast, inLast + inCount, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
-                            inCount = 0;
-                        }
-                    } else {
-                        if (inCount == 0) {
-                            inLast = i;
-                        }
-                        inCount++;
-                        if (outCount != 0) {
-                            replaceStable.setSpan(new EmptyStubSpan(), outLast, outLast + outCount, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
-                            outCount = 0;
-                        }
-                    }
-                }
-
-                if (inCount != 0) {
-                    EmptyStubSpan span = new EmptyStubSpan();
-                    replaceIn.setSpan(span, inLast, inLast + inCount + 1, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
-                    replaceOut.setSpan(span, inLast, inLast + inCount + 1, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
-                }
-                if (outCount != 0) {
-                    replaceStable.setSpan(new EmptyStubSpan(), outLast, outLast + outCount, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
-                }
-
-                inLayout = new StaticLayout(replaceIn, textPaint, getMeasuredWidth(), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
-                outLayout = new StaticLayout(replaceOut, textPaint, getMeasuredWidth(), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
-
-                replaceTransition = 1f;
-            } else {
-                if (replaceStable == null) {
-                    replaceStable = new SpannableStringBuilder(newString);
-                }
-                if (replaceStable.length() == 0 || replaceStable.length() != newString.length()) {
-                    replaceStable.clear();
-                    replaceStable.append(newString);
-                } else {
-                    replaceStable.replace(replaceStable.length() - 1, replaceStable.length(), newString, newString.length() - 1 - (newString.length() - replaceStable.length()), newString.length());
-                }
-            }
-
-            if (replaceTransition != 0) {
-                replaceTransition -= 0.15f;
-                if (replaceTransition < 0f) {
-                    replaceTransition = 0f;
-                }
-            }
-
-            float y = getMeasuredHeight() / 2;
-            float x = 0;
-
-            if (replaceTransition == 0) {
-                replaceStable.clearSpans();
-                StaticLayout staticLayout = new StaticLayout(replaceStable, textPaint, getMeasuredWidth(), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
-                canvas.save();
-                canvas.translate(x, y - staticLayout.getHeight() / 2f);
-                staticLayout.draw(canvas);
-                canvas.restore();
-                left = x + staticLayout.getLineWidth(0);
-            } else {
-                if (inLayout != null) {
-                    canvas.save();
-                    textPaint.setAlpha((int) (255 * (1f - replaceTransition)));
-                    canvas.translate(x, y - inLayout.getHeight() / 2f - (replaceDistance * replaceTransition));
-                    inLayout.draw(canvas);
-                    canvas.restore();
-                }
-
-                if (outLayout != null) {
-                    canvas.save();
-                    textPaint.setAlpha((int) (255 * replaceTransition));
-                    canvas.translate(x, y - outLayout.getHeight() / 2f + (replaceDistance * (1f - replaceTransition)));
-                    outLayout.draw(canvas);
-                    canvas.restore();
-                }
-
-                canvas.save();
-                textPaint.setAlpha(255);
-                StaticLayout staticLayout = new StaticLayout(replaceStable, textPaint, getMeasuredWidth(), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
-                canvas.translate(x, y - staticLayout.getHeight() / 2f);
-                staticLayout.draw(canvas);
-                canvas.restore();
-                left = x + staticLayout.getLineWidth(0);
-            }
-
-            oldString = newString;
-
-            if (isRunning || replaceTransition != 0) {
-                invalidate();
-            }
+            state.lastSendTypingTime = 0;
         }
 
         public void updateColors() {
@@ -7803,13 +7647,274 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
         }
 
         public float getLeftProperty() {
-            return left;
+            return state.left;
         }
 
         public void reset() {
-            isRunning = false;
-            stopTime = startTime = 0;
-            stoppedInternal = false;
+            state.isRunning = false;
+            state.stopTime = state.startTime = 0;
+            state.stoppedInternal = false;
+        }
+
+        @Override
+        protected void onDraw(Canvas canvas) {
+            long currentTimeMillis = System.currentTimeMillis();
+            long t = state.isRunning ? (currentTimeMillis - state.startTime) : state.stopTime - state.startTime;
+
+            if (videoSendButton != null && videoSendButton.getTag() != null) {
+                if (t >= 59500 && !state.stoppedInternal) {
+                    startedDraggingX = -1;
+                    delegate.needStartRecordVideo(3, true, 0);
+                    state.stoppedInternal = true;
+                }
+            }
+
+            if (state.isRunning && currentTimeMillis > state.lastSendTypingTime + 5000) {
+                state.lastSendTypingTime = currentTimeMillis;
+                MessagesController.getInstance(currentAccount).sendTyping(dialog_id, getThreadMessageId(), videoSendButton != null && videoSendButton.getTag() != null ? 7 : 1, 0);
+            }
+
+            float y = getMeasuredHeight() / 2f;
+            float x = 0;
+
+            float textY = textLineHeight / 2f;
+            float replaceTransition = state.replaceTransition;
+
+            SpannableStringBuilder replaceIn = state.replaceIn;
+            SpannableStringBuilder replaceOut = state.replaceOut;
+            SpannableStringBuilder replaceStable = state.replaceStable;
+
+            if (replaceTransition != 0) {
+                if (replaceIn != null) {
+                    canvas.save();
+                    textPaint.setAlpha((int) (255 * (1f - replaceTransition)));
+                    canvas.translate(x, y + textY - (replaceDistance * replaceTransition));
+                    drawSpannableText(canvas, replaceIn, textPaint);
+                    canvas.restore();
+                }
+
+                if (replaceOut != null) {
+                    canvas.save();
+                    textPaint.setAlpha((int) (255 * replaceTransition));
+                    canvas.translate(x, y + textY + (replaceDistance * (1f - replaceTransition)));
+                    drawSpannableText(canvas, replaceOut, textPaint);
+                    canvas.restore();
+                }
+            }
+            canvas.save();
+            canvas.translate(x, y + textY);
+            textPaint.setAlpha(255);
+            drawSpannableText(canvas, replaceStable, textPaint);
+            canvas.restore();
+
+            if (state.isRunning || replaceTransition != 0) {
+                scheduleCalculation();
+            }
+        }
+
+        private void drawSpannableText(Canvas canvas, Spannable text, TextPaint paint) {
+            EmptyStubSpan[] spans = text.getSpans(0, text.length(), EmptyStubSpan.class);
+            int start = 0;
+            for (EmptyStubSpan span : spans) {
+                int end = text.getSpanStart(span);
+                canvas.drawText(text, start, end, paint.measureText(text, 0, start), 0f, paint);
+                start = text.getSpanEnd(span);
+            }
+            canvas.drawText(text, start, text.length(), paint.measureText(text, 0, start), 0f, paint);
+        }
+
+        private void scheduleCalculation() {
+            long currentTimeMillis = System.currentTimeMillis();
+            long frameTime = (long) (1_000 / AndroidUtilities.screenRefreshRate);
+            //predict next frame time
+            state.currentTimeMillis = currentTimeMillis + frameTime;
+            Utilities.globalQueue.postRunnable(state);
+        }
+
+        private class State implements Runnable {
+
+            //initial state, should be managed only through view's main thread
+            long currentTimeMillis;
+            boolean isRunning;
+            boolean stoppedInternal;
+            long startTime;
+            long stopTime;
+            long lastSendTypingTime;
+
+            //draw state, should be modify by Runnable work
+            String oldString;
+
+            SpannableStringBuilder replaceIn = new SpannableStringBuilder();
+            SpannableStringBuilder replaceOut = new SpannableStringBuilder();
+            SpannableStringBuilder replaceStable = new SpannableStringBuilder();
+
+            float replaceTransition;
+
+            final TextPaint textPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
+            float left;
+
+            private final List<SpannableStringBuilder> pool = new ArrayList<>();
+
+            private SpannableStringBuilder newSpannable() {
+                if (pool.isEmpty()) {
+                    return new SpannableStringBuilder();
+                } else {
+                    SpannableStringBuilder spannable = pool.remove(0);
+                    spannable.clear();
+                    return spannable;
+                }
+            }
+
+            private void releaseSpannable(SpannableStringBuilder spannable) {
+                if (spannable != null) {
+                    pool.add(spannable);
+                }
+            }
+
+            @Override
+            public void run() {
+                long startCalcTime = System.currentTimeMillis();
+                long t = isRunning ? (currentTimeMillis - startTime) : stopTime - startTime;
+                long time = t / 1000;
+                int ms = (int) (t % 1000L) / 10;
+
+                String newString;
+                if (time / 60 >= 60) {
+                    newString = String.format(Locale.US, "%01d:%02d:%02d,%d", (time / 60) / 60, (time / 60) % 60, time % 60, ms / 10);
+                } else {
+                    newString = String.format(Locale.US, "%01d:%02d,%d", time / 60, time % 60, ms / 10);
+                }
+
+                SpannableStringBuilder tmpReplaceIn = null;
+                SpannableStringBuilder tmpReplaceOut = null;
+                SpannableStringBuilder tmpReplaceStable = newSpannable();
+                if (replaceStable != null) {
+                    tmpReplaceStable.append(replaceStable);
+                }
+
+                if (newString.length() >= 3 && oldString != null && oldString.length() >= 3 && newString.length() == oldString.length() && newString.charAt(newString.length() - 3) != oldString.charAt(newString.length() - 3)) {
+                    int n = newString.length();
+
+                    tmpReplaceIn = newSpannable();
+                    tmpReplaceOut = newSpannable();
+                    if (tmpReplaceStable != null) {
+                        releaseSpannable(tmpReplaceStable);
+                    }
+                    tmpReplaceStable = newSpannable();
+                    tmpReplaceIn.append(newString);
+                    tmpReplaceOut.append(oldString);
+                    tmpReplaceStable.append(newString);
+
+                    int inLast = -1;
+                    int inCount = 0;
+                    int outLast = -1;
+                    int outCount = 0;
+
+                    for (int i = 0; i < n - 1; i++) {
+                        if (oldString.charAt(i) != newString.charAt(i)) {
+                            if (outCount == 0) {
+                                outLast = i;
+                            }
+                            outCount++;
+
+                            if (inCount != 0) {
+                                EmptyStubSpan span = new EmptyStubSpan();
+                                if (i == n - 2) {
+                                    inCount++;
+                                }
+                                tmpReplaceIn.setSpan(new EmptyStubSpan(), inLast, inLast + inCount, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+                                tmpReplaceOut.setSpan(new EmptyStubSpan(), inLast, inLast + inCount, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+                                inCount = 0;
+                            }
+                        } else {
+                            if (inCount == 0) {
+                                inLast = i;
+                            }
+                            inCount++;
+                            if (outCount != 0) {
+                                tmpReplaceStable.setSpan(new EmptyStubSpan(), outLast, outLast + outCount, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+                                outCount = 0;
+                            }
+                        }
+                    }
+
+                    if (inCount != 0) {
+                        EmptyStubSpan span = new EmptyStubSpan();
+                        tmpReplaceIn.setSpan(span, inLast, inLast + inCount + 1, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+                        tmpReplaceOut.setSpan(span, inLast, inLast + inCount + 1, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+                    }
+                    if (outCount != 0) {
+                        tmpReplaceStable.setSpan(new EmptyStubSpan(), outLast, outLast + outCount, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+                    }
+                    replaceTransition = 1f;
+                } else {
+                    if (tmpReplaceStable == null || tmpReplaceStable.length() == 0 || tmpReplaceStable.length() != newString.length()) {
+                        if (tmpReplaceStable != null) {
+                            releaseSpannable(tmpReplaceStable);
+                        }
+                        tmpReplaceStable = newSpannable();
+                        tmpReplaceStable.append(newString);
+                    } else {
+                        SpannableStringBuilder recycled = tmpReplaceStable;
+                        tmpReplaceStable = newSpannable();
+                        tmpReplaceStable.append(recycled);
+                        releaseSpannable(recycled);
+                        tmpReplaceStable.replace(tmpReplaceStable.length() - 1, tmpReplaceStable.length(), newString, newString.length() - 1 - (newString.length() - tmpReplaceStable.length()), newString.length());
+                    }
+                }
+
+                //same speed for different refresh rates
+                float transitionSpeed = 9 / AndroidUtilities.screenRefreshRate;
+                if (replaceTransition != 0) {
+                    replaceTransition -= transitionSpeed;
+                    if (replaceTransition < 0f) {
+                        replaceTransition = 0f;
+                    }
+                }
+
+                float x = 0;
+
+                SpannableStringBuilder recycledReplaceIn = null;
+                SpannableStringBuilder recycledReplaceOut = null;
+                SpannableStringBuilder recycledReplaceStable;
+
+                if (replaceTransition == 0) {
+                    tmpReplaceStable.clearSpans();
+                    tmpReplaceIn = null;
+                    tmpReplaceOut = null;
+                    recycledReplaceIn = replaceIn;
+                    recycledReplaceOut = replaceOut;
+
+                } else {
+                    if(tmpReplaceIn == null) {
+                        tmpReplaceIn = replaceIn;
+                    } else {
+                        recycledReplaceIn = replaceIn;
+                    }
+                    if(tmpReplaceOut == null) {
+                        tmpReplaceOut = replaceOut;
+                    } else {
+                        recycledReplaceOut = replaceOut;
+                    }
+                }
+
+                left = x + textPaint.measureText(tmpReplaceStable, 0, tmpReplaceStable.length());
+
+                oldString = newString;
+
+                recycledReplaceStable = replaceStable;
+
+                replaceIn = tmpReplaceIn;
+                replaceOut = tmpReplaceOut;
+                replaceStable = tmpReplaceStable;
+
+                releaseSpannable(recycledReplaceIn);
+                releaseSpannable(recycledReplaceOut);
+                releaseSpannable(recycledReplaceStable);
+                if (isRunning || replaceTransition != 0) {
+                    postInvalidate();
+                }
+            }
         }
     }
 
