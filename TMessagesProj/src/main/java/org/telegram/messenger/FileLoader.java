@@ -1043,7 +1043,7 @@ public class FileLoader extends BaseController {
         TLRPC.PhotoSize closestObject = null;
         for (int a = 0; a < sizes.size(); a++) {
             TLRPC.PhotoSize obj = sizes.get(a);
-            if (obj == null || obj == toIgnore || obj instanceof TLRPC.TL_photoSizeEmpty || obj instanceof TLRPC.TL_photoPathSize) {
+            if (obj == null || obj == toIgnore || obj instanceof TLRPC.TL_photoStrippedSize ||  obj instanceof TLRPC.TL_photoSizeEmpty || obj instanceof TLRPC.TL_photoPathSize) {
                 continue;
             }
             if (byMinSide) {
