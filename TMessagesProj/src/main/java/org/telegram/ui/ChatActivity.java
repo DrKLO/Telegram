@@ -15157,6 +15157,18 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 }
                 repliesMessagesDict.remove(mid);
             }
+            for (int i = 0; i < messages.size(); i++) {
+                MessageObject checkReplyMessage = messages.get(i);
+
+                if (checkReplyMessage.replyMessageObject != null && mid.equals(checkReplyMessage.replyMessageObject.getId())) {
+                    checkReplyMessage.replyMessageObject = null;
+                    checkReplyMessage.messageOwner.reply_to = null;
+                    checkReplyMessage.forceUpdate = true;
+                    if (chatAdapter != null) {
+                        chatAdapter.notifyItemChanged(chatAdapter.messagesStartRow + i);
+                    }
+                }
+            }
             if (obj != null) {
                 if (obj.messageOwner.reply_to != null && !(obj.messageOwner.action instanceof TLRPC.TL_messageActionPinMessage)) {
                     int replyId = obj.getReplyAnyMsgId();
