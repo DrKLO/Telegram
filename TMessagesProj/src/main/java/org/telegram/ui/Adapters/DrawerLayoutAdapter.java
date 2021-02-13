@@ -84,7 +84,7 @@ public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter {
         }
         MessagesController.getGlobalMainSettings().edit().putBoolean("accountsShown", accountsShown).commit();
         if (animated) {
-            itemAnimator.setShouldClipChildren(false);
+            itemAnimator.setShouldClipChildren(true);
             if (accountsShown) {
                 notifyItemRangeInserted(2, getAccountRowsCount());
             } else {
