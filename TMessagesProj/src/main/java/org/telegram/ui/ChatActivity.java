@@ -14072,7 +14072,12 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                         MessageObject messageObject = messagesDict[0].get(messageId);
                         if (messageObject != null && messageObject != threadMessageObject) {
                             TLRPC.TL_messageReplies newValue = array.get(messageId);
-                            if (newValue == null || !addingReplies && messageObject.messageOwner.replies != null && newValue.replies_pts <= messageObject.messageOwner.replies.replies_pts && newValue.read_max_id <= messageObject.messageOwner.replies.read_max_id && newValue.max_id <= messageObject.messageOwner.replies.max_id) {
+                            if (newValue == null || !addingReplies && messageObject.messageOwner.replies != null
+                                    && (newValue.replies_pts <= messageObject.messageOwner.replies.replies_pts
+                                        && newValue.read_max_id <= messageObject.messageOwner.replies.read_max_id
+                                        && newValue.max_id <= messageObject.messageOwner.replies.max_id
+                                    || messageObject.messageOwner.replies.replies_pts == 0
+                                        && newValue.replies == 0)) {
                                 continue;
                             }
                             if (addingReplies) {
@@ -15376,6 +15381,13 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     } else if (messageObject.messageOwner.action instanceof TLRPC.TL_messageActionPaymentSent) {
                         messageObject.generatePaymentSentMessageText(null);
                     }
+                }
+                if (old.hasReplies() && !messageObject.hasReplies()
+                        && (old.messageOwner.replies.replies_pts == 0
+                        || messageObject.messageOwner.replies.replies_pts <= old.messageOwner.replies.replies_pts
+                        || messageObject.messageOwner.replies.read_max_id <= old.messageOwner.replies.read_max_id
+                        || messageObject.messageOwner.replies.max_id <= old.messageOwner.replies.max_id)) {
+                    messageObject.messageOwner.replies = old.messageOwner.replies;
                 }
                 if (!old.isEditing()) {
                     if (old.getFileName().equals(messageObject.getFileName())) {
