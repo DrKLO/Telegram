@@ -362,6 +362,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
     private ImageView searchDownButton;
     private SimpleTextView searchCountText;
     private ChatActionCell floatingDateView;
+    private FrameLayout infoTopContainer;
     private ChatActionCell infoTopView;
     private int hideDateDelay = 500;
     private InstantCameraView instantCameraView;
@@ -1644,6 +1645,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             selectedMessagesCanStarIds[a].clear();
         }
         scheduledOrNoSoundHint = null;
+        infoTopContainer = null;
         infoTopView = null;
         aspectRatioFrameLayout = null;
         videoTextureView = null;
@@ -2886,7 +2888,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                         }
                     } else if (child == gifHintTextView || child == voiceHintTextView || child == mediaBanTooltip) {
                         childTop -= inputFieldHeight;
-                    } else if (child == chatListView || child == floatingDateView || child == infoTopView) {
+                    } else if (child == chatListView || child == floatingDateView || child == infoTopContainer) {
                         if (!inPreviewMode) {
                             childTop -= (inputFieldHeight - AndroidUtilities.dp(51));
                         }
@@ -4971,6 +4973,9 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             }
         });
 
+        infoTopContainer = new FrameLayout(context);
+        contentView.addView(infoTopContainer, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.CENTER_HORIZONTAL));
+
         mentiondownButton = new FrameLayout(context);
         mentiondownButton.setVisibility(View.INVISIBLE);
         contentView.addView(mentiondownButton, LayoutHelper.createFrame(46, 61, Gravity.RIGHT | Gravity.BOTTOM, 0, 0, 7, 5));
@@ -6947,7 +6952,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 infoTopView = new ChatActionCell(contentView.getContext());
                 infoTopView.setCustomText(text);
                 infoTopView.setOnClickListener(onClickListener);
-                contentView.addView(infoTopView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.CENTER_HORIZONTAL, 0, 0, 0, 0));
+                infoTopContainer.addView(infoTopView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.CENTER_HORIZONTAL, 0, 0, 0, 0));
             }
             if (animated) {
                 if (infoTopView.getTag() == null) {
@@ -7213,8 +7218,8 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             }
         }
 
-        if (infoTopView != null) {
-            infoTopView.setTranslationY(chatListViewPaddingTop - AndroidUtilities.dp(30) + topViewOffset);
+        if (infoTopContainer != null) {
+            infoTopContainer.setTranslationY(chatListViewPaddingTop - AndroidUtilities.dp(30) + topViewOffset);
             chatListViewPaddingTop += topViewOffset;
             chatListViewPaddingVisibleOffset += topViewOffset;
         }
