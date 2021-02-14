@@ -17952,7 +17952,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                             options.add(3);
                             icons.add(R.drawable.msg_copy);
                         }
-                        if (!isThreadChat() && chatMode != MODE_SCHEDULED && currentChat != null && (currentChat.has_link || message.hasReplies()) && currentChat.megagroup && message.canViewThread()) {
+                        if (!isThreadChat() && chatMode != MODE_SCHEDULED && currentChat != null && currentChat.megagroup && message.canViewThread()) {
                             if (message.hasReplies()) {
                                 items.add(LocaleController.formatPluralString("ViewReplies", message.getRepliesCount()));
                             } else {
@@ -18174,7 +18174,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                             options.add(3);
                             icons.add(R.drawable.msg_copy);
                         }
-                        if (!isThreadChat() && chatMode != MODE_SCHEDULED && currentChat != null && (currentChat.has_link || message.hasReplies()) && currentChat.megagroup && message.canViewThread()) {
+                        if (!isThreadChat() && chatMode != MODE_SCHEDULED && currentChat != null && currentChat.megagroup && message.canViewThread()) {
                             if (message.hasReplies()) {
                                 items.add(LocaleController.formatPluralString("ViewReplies", message.getRepliesCount()));
                             } else {
