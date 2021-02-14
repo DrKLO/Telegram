@@ -6030,16 +6030,20 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                 inputContent.releasePermission();
             }
             if (error) {
-                AndroidUtilities.runOnUIThread(() -> {
-                    try {
-                        Toast toast = Toast.makeText(ApplicationLoader.applicationContext, LocaleController.getString("UnsupportedAttachment", R.string.UnsupportedAttachment), Toast.LENGTH_SHORT);
-                        toast.show();
-                    } catch (Exception e) {
-                        FileLog.e(e);
-                    }
-                });
+                showUnsupportedAttachmentError();
             }
         }).start();
+    }
+
+    private static void showUnsupportedAttachmentError() {
+        AndroidUtilities.runOnUIThread(() -> {
+            try {
+                Toast toast = Toast.makeText(ApplicationLoader.applicationContext, LocaleController.getString("UnsupportedAttachment", R.string.UnsupportedAttachment), Toast.LENGTH_SHORT);
+                toast.show();
+            } catch (Exception e) {
+                FileLog.e(e);
+            }
+        });
     }
 
     @UiThread
@@ -7201,7 +7205,10 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                         mediaCount = 0;
                     }
                     mediaCount++;
-                    prepareSendingDocumentInternal(accountInstance, sendAsDocuments.get(a), sendAsDocumentsOriginal.get(a), sendAsDocumentsUri.get(a), extension, dialogId, replyToMsg, replyToTopMsg, sendAsDocumentsCaptions.get(a), sendAsDocumentsEntities.get(a), editingMessageObject, groupId2, mediaCount == 10 || a == documentsCount - 1, forceDocument, notify, scheduleDate, null);
+                    boolean error = !prepareSendingDocumentInternal(accountInstance, sendAsDocuments.get(a), sendAsDocumentsOriginal.get(a), sendAsDocumentsUri.get(a), extension, dialogId, replyToMsg, replyToTopMsg, sendAsDocumentsCaptions.get(a), sendAsDocumentsEntities.get(a), editingMessageObject, groupId2, mediaCount == 10 || a == documentsCount - 1, forceDocument, notify, scheduleDate, null);
+                    if (error) {
+                        showUnsupportedAttachmentError();
+                    }
                 }
             }
             if (BuildVars.LOGS_ENABLED) {
