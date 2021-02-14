@@ -1215,7 +1215,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             }
             overlaysView.invalidate();
             final float textWidth = textPaint.measureText(getCurrentTitle());
-            indicatorRect.right = getMeasuredWidth() - AndroidUtilities.dp(54f);
+            indicatorRect.right = getMeasuredWidth() - (chat_id == 0 ? AndroidUtilities.dp(54f) : AndroidUtilities.dp(102f));
             indicatorRect.left = indicatorRect.right - (textWidth + AndroidUtilities.dpf2(16f));
             indicatorRect.top = (actionBar.getOccupyStatusBar() ? AndroidUtilities.statusBarHeight : 0) + AndroidUtilities.dp(15f);
             indicatorRect.bottom = indicatorRect.top + AndroidUtilities.dp(26);
