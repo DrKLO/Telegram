@@ -449,6 +449,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
     private int otherY;
     private int lastHeight;
     private int lastWidth;
+    private boolean lastIsReplyHidden;
     private int hasMiniProgress;
     private int miniButtonState;
     private boolean imagePressed;
@@ -572,11 +573,13 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
     public boolean isMegagroup;
     public boolean isThreadChat;
     public boolean hasDiscussion;
-    public boolean isPinned;
-    private boolean wasPinned;
     public int linkedChatId;
     public boolean isRepliesChat;
     public boolean isPinnedChat;
+    public boolean isPinned;
+    public boolean isReplyHidden;
+
+    private boolean wasPinned;
     private boolean isPressed;
     private boolean forwardName;
     private boolean isHighlighted;
@@ -2870,7 +2873,9 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         boolean dataChanged = currentMessageObject != null && currentMessageObject.getId() == messageObject.getId() && lastSendState == MessageObject.MESSAGE_SEND_STATE_EDITING && messageObject.isSent()
                 || currentMessageObject == messageObject && (isUserDataChanged() || photoNotSet)
                 || lastPostAuthor != messageObject.messageOwner.post_author
+                || lastIsReplyHidden != isReplyHidden
                 || wasPinned != isPinned;
+        lastIsReplyHidden = isReplyHidden;
         boolean groupChanged = groupedMessages != currentMessagesGroup;
         boolean pollChanged = false;
         if (drawCommentButton || drawSideButton == 3 && !((hasDiscussion && messageObject.isLinkedToChat(linkedChatId) || isRepliesChat) && (currentPosition == null || currentPosition.siblingHeights == null && (currentPosition.flags & MessageObject.POSITION_FLAG_BOTTOM) != 0 || currentPosition.siblingHeights != null && (currentPosition.flags & MessageObject.POSITION_FLAG_TOP) == 0))) {
@@ -9329,7 +9334,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             }
         }
 
-        if ((!isThreadChat || messageObject.getReplyTopMsgId() != 0) && messageObject.hasValidReplyMessageObject() || messageObject.messageOwner.fwd_from != null && messageObject.isDice()) {
+        if ((!isThreadChat || messageObject.getReplyTopMsgId() != 0) && messageObject.hasValidReplyMessageObject() && !isReplyHidden || messageObject.messageOwner.fwd_from != null && messageObject.isDice()) {
             if (currentPosition == null || currentPosition.minY == 0) {
                 if (!messageObject.isAnyKindOfSticker() && messageObject.type != 5) {
                     namesOffset += AndroidUtilities.dp(42);
@@ -9502,7 +9507,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                     FileLog.e(e);
                 }
             }
-        } else if (!isThreadChat && messageObject.getReplyMsgId() != 0) {
+        } else if (!isThreadChat && messageObject.getReplyMsgId() != 0 && !isReplyHidden) {
             if (!(messageObject.replyMessageObject != null && messageObject.replyMessageObject.messageOwner instanceof TLRPC.TL_messageEmpty)) {
                 if (!messageObject.isAnyKindOfSticker() && messageObject.type != 5) {
                     namesOffset += AndroidUtilities.dp(42);
