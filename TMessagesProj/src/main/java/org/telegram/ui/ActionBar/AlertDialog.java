@@ -826,6 +826,8 @@ public class AlertDialog extends Dialog implements Drawable.Callback {
         super.onBackPressed();
         if (onBackButtonListener != null) {
             onBackButtonListener.onClick(AlertDialog.this, AlertDialog.BUTTON_NEGATIVE);
+        } else if (progressViewStyle == 3) {
+            showCancelAlert();
         }
     }
 
