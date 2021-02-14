@@ -1051,12 +1051,13 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 }
                 processRowSelect(view, outside, x, y);
             }
+            swipeBackEnabled = false;
             return true;
         }
 
         @Override
         public void onLongClickRelease() {
-
+            swipeBackEnabled = true;
         }
 
         @Override
@@ -4415,6 +4416,9 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     forceScrollToFirst = false;
                     if (!wasManualScroll && dy != 0) {
                         wasManualScroll = true;
+                    }
+                    if (getParentActivity() != null) {
+                        AndroidUtilities.hideKeyboard(getParentActivity().getCurrentFocus());
                     }
                 }
                 if (dy != 0) {
@@ -15352,6 +15356,18 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             }
             if (loadIndex == 0 && repliesMessagesDict.indexOfKey(messageObject.getId()) >= 0) {
                 repliesMessagesDict.put(messageObject.getId(), messageObject);
+            }
+            for (int k = 0; k < messages.size(); k++) {
+                MessageObject repliedMessage = messages.get(k);
+                if (repliedMessage.isReply() && repliedMessage.replyMessageObject.getId() == messageObject.getId()) {
+                    repliedMessage.replyMessageObject = messageObject;
+                    repliedMessage.forceUpdate = true;
+                    int ind = messages.indexOf(repliedMessage);
+                    messages.set(ind, repliedMessage);
+                    if (chatAdapter != null) {
+                        chatAdapter.updateRowWithMessageObject(repliedMessage, true);
+                    }
+                }
             }
             if (old == null || remove && old.messageOwner.date != messageObject.messageOwner.date) {
                 continue;

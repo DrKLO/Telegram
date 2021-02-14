@@ -672,15 +672,15 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             selectedBarPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
             selectedBarPaint.setColor(0xffffffff);
 
-            topOverlayGradient = new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, new int[] {0x42000000, 0});
+            topOverlayGradient = new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, new int[]{0x42000000, 0});
             topOverlayGradient.setShape(GradientDrawable.RECTANGLE);
 
-            bottomOverlayGradient = new GradientDrawable(GradientDrawable.Orientation.BOTTOM_TOP, new int[] {0x42000000, 0});
+            bottomOverlayGradient = new GradientDrawable(GradientDrawable.Orientation.BOTTOM_TOP, new int[]{0x42000000, 0});
             bottomOverlayGradient.setShape(GradientDrawable.RECTANGLE);
 
             for (int i = 0; i < 2; i++) {
                 final GradientDrawable.Orientation orientation = i == 0 ? GradientDrawable.Orientation.LEFT_RIGHT : GradientDrawable.Orientation.RIGHT_LEFT;
-                pressedOverlayGradient[i] = new GradientDrawable(orientation, new int[] {0x32000000, 0});
+                pressedOverlayGradient[i] = new GradientDrawable(orientation, new int[]{0x32000000, 0});
                 pressedOverlayGradient[i].setShape(GradientDrawable.RECTANGLE);
             }
 
@@ -1661,7 +1661,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 } else if (id == statistics) {
                     TLRPC.Chat chat = getMessagesController().getChat(chat_id);
                     Bundle args = new Bundle();
-                    args.putInt("chat_id",chat_id);
+                    args.putInt("chat_id", chat_id);
                     args.putBoolean("is_megagroup", chat.megagroup);
                     StatisticActivity fragment = new StatisticActivity(args);
                     presentFragment(fragment);
@@ -1960,7 +1960,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                         layoutParams.topMargin = actionBarHeight;
                     }
                 }
-                
+
                 int height = MeasureSpec.getSize(heightMeasureSpec);
                 super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(height, MeasureSpec.EXACTLY));
 
@@ -2301,7 +2301,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
 
             @Override
             public boolean drawChild(Canvas canvas, View child, long drawingTime) {
-                if (getItemAnimator().isRunning() && child.getBackground() == null  && child.getTranslationY() != 0) {
+                if (getItemAnimator().isRunning() && child.getBackground() == null && child.getTranslationY() != 0) {
                     boolean useAlpha = listView.getChildAdapterPosition(child) == sharedMediaRow && child.getAlpha() != 1f;
                     if (useAlpha) {
                         whitePaint.setAlpha((int) (255 * listView.getAlpha() * child.getAlpha()));
@@ -2934,6 +2934,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
 
         frameLayout.addView(actionBar);
 
+        View.OnClickListener listener = (view -> presentFragment(new ChangeNameActivity()));
         for (int a = 0; a < nameTextView.length; a++) {
             if (playProfileAnimation == 0 && a == 0) {
                 continue;
@@ -2955,6 +2956,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 nameTextView[a].setScrollNonFitText(true);
                 nameTextView[a].setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
             }
+            nameTextView[a].setOnClickListener(listener);
             frameLayout.addView(nameTextView[a], LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 118, 0, a == 0 ? 48 : 0, 0));
         }
         for (int a = 0; a < onlineTextView.length; a++) {

@@ -729,7 +729,7 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter {
                         if (chat == null) {
                             continue;
                         }
-                        if (usernameString.length() == 0) {
+                        if (usernameString.length() == 0 && info.id != chat.id) {
                             newResult.add(chat);
                             continue;
                         }
@@ -759,9 +759,14 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter {
                     if (!TextUtils.isEmpty(username) && username.toLowerCase().startsWith(usernameString) ||
                             !TextUtils.isEmpty(firstName) && firstName.toLowerCase().startsWith(usernameString) ||
                             !TextUtils.isEmpty(lastName) && lastName.toLowerCase().startsWith(usernameString) ||
-                            hasSpace && ContactsController.formatName(firstName, lastName).toLowerCase().startsWith(usernameString)) {
-                        newResult.add(object);
-                        newMap.put(id, object);
+                            hasSpace && ContactsController.formatName(firstName, lastName).toLowerCase().startsWith(usernameString)
+                    ) {
+                        if (object instanceof TLRPC.Chat) {
+                            if (((TLRPC.Chat) object).id != info.id) {
+                                newResult.add(object);
+                                newMap.put(id, object);
+                            }
+                        }
                     }
                 }
             }
