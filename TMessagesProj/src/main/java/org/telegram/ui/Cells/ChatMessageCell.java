@@ -10290,19 +10290,15 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         }
 
         if (currentBackgroundDrawable != null) {
+            Theme.MessageDrawable backgroundDrawable = currentBackgroundDrawable;
             if (currentBackgroundSelectedDrawable != null && isDrawSelectionBackground()) {
-                currentBackgroundSelectedDrawable.setTop(0, h, pinnedTop, pinnedBottom);
-                currentBackgroundSelectedDrawable.setAlpha((int) (getAlpha() * 255));
-                currentBackgroundSelectedDrawable.setBounds(left, top, right, bottom);
-                currentBackgroundSelectedDrawable.draw(canvas);
-                currentBackgroundSelectedDrawable.setAlpha(255);
-            } else {
-                currentBackgroundDrawable.setTop(0, h, pinnedTop, pinnedBottom);
-                currentBackgroundDrawable.setAlpha((int) (getAlpha() * 255));
-                currentBackgroundDrawable.setBounds(left, top, right, bottom);
-                currentBackgroundDrawable.draw(canvas);
-                currentBackgroundDrawable.setAlpha(255);
+                backgroundDrawable = currentBackgroundSelectedDrawable;
             }
+            backgroundDrawable.setTop(0, h, pinnedTop, pinnedBottom);
+            backgroundDrawable.setAlpha((int) (getAlpha() * 255));
+            backgroundDrawable.setBounds(left, top, right, bottom);
+            backgroundDrawable.draw(canvas);
+            backgroundDrawable.setAlpha(255);
 
             Drawable currentBackgroundShadowDrawable = currentBackgroundDrawable.getShadowDrawable();
             if (currentBackgroundShadowDrawable != null) {
