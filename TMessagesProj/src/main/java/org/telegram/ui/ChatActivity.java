@@ -21093,23 +21093,26 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
 
                     @Override
                     public void didPressCommentButton(ChatMessageCell cell) {
-                        MessageObject.GroupedMessages group = cell.getCurrentMessagesGroup();
-                        MessageObject message;
-                        if (group != null && !group.messages.isEmpty()) {
-                            message = group.messages.get(0);
+                        if (getMessagesController().isJoiningChannel(currentChat.id)) {
+                            openDiscussion(cell);
                         } else {
-                            message = cell.getMessageObject();
+                            AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+                            if (ChatObject.isChannel(currentChat) && !currentChat.megagroup) {
+                                builder.setMessage(LocaleController.getString("JoinByPeekChannelText", R.string.JoinByPeekChannelText));
+                                builder.setTitle(LocaleController.getString("JoinByPeekChannelTitle", R.string.JoinByPeekChannelTitle));
+                            } else {
+                                builder.setMessage(LocaleController.getString("JoinByPeekGroupText", R.string.JoinByPeekGroupText));
+                                builder.setTitle(LocaleController.getString("JoinByPeekGroupTitle", R.string.JoinByPeekGroupTitle));
+                            }
+                            builder.setPositiveButton(LocaleController.getString("JoinByPeekJoin", R.string.JoinByPeekJoin), (dialogInterface, i) -> {
+                                if (bottomOverlayChatText != null) {
+                                    bottomOverlayChatText.callOnClick();
+                                    openDiscussion(cell);
+                                }
+                            });
+                            builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+                            showDialog(builder.create());
                         }
-                        int maxReadId;
-                        int linkedChatId;
-                        if (message.messageOwner.replies != null) {
-                            maxReadId = message.messageOwner.replies.read_max_id;
-                            linkedChatId = message.messageOwner.replies.channel_id;
-                        } else {
-                            maxReadId = -1;
-                            linkedChatId = 0;
-                        }
-                        openDiscussionMessageChat(currentChat.id, message, message.getId(), linkedChatId, maxReadId, 0, null);
                     }
 
                     @Override
@@ -21147,6 +21150,26 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                         }
                         fireworksOverlay.start();
                         fireworksOverlay.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
+                    }
+
+                    private void openDiscussion(ChatMessageCell cell) {
+                        MessageObject.GroupedMessages group = cell.getCurrentMessagesGroup();
+                        MessageObject message;
+                        if (group != null && !group.messages.isEmpty()) {
+                            message = group.messages.get(0);
+                        } else {
+                            message = cell.getMessageObject();
+                        }
+                        int maxReadId;
+                        int linkedChatId;
+                        if (message.messageOwner.replies != null) {
+                            maxReadId = message.messageOwner.replies.read_max_id;
+                            linkedChatId = message.messageOwner.replies.channel_id;
+                        } else {
+                            maxReadId = -1;
+                            linkedChatId = 0;
+                        }
+                        openDiscussionMessageChat(currentChat.id, message, message.getId(), linkedChatId, maxReadId, 0, null);
                     }
                 });
                 if (currentEncryptedChat == null) {
