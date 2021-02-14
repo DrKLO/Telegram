@@ -2897,7 +2897,7 @@ public class MessageObject {
     }
 
     public boolean checkLayout() {
-        if (type != 0 || messageOwner.peer_id == null || messageText == null || messageText.length() == 0) {
+        if ((type != 0 && type != TYPE_POLL) || messageOwner.peer_id == null || messageText == null || messageText.length() == 0) {
             return false;
         }
         if (layoutCreated) {
@@ -4581,7 +4581,7 @@ public class MessageObject {
             for (int a = 0; a < document.attributes.size(); a++) {
                 TLRPC.DocumentAttribute attribute = document.attributes.get(a);
                 if (attribute instanceof TLRPC.TL_documentAttributeSticker) {
-                    return "image/webp".equals(document.mime_type);
+                    return "image/webp".equals(document.mime_type) && document.file_name.equals("sticker.webp");
                 }
             }
         }

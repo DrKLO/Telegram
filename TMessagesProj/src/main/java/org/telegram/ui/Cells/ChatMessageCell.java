@@ -10264,14 +10264,19 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         if (currentMessageObject.isOutOwner()) {
             if (!mediaBackground && !pinnedBottom) {
                 currentBackgroundDrawable = Theme.chat_msgOutDrawable;
+                currentBackgroundSelectedDrawable = Theme.chat_msgOutSelectedDrawable;
             } else {
                 currentBackgroundDrawable = Theme.chat_msgOutMediaDrawable;
+                currentBackgroundSelectedDrawable = Theme.chat_msgOutMediaSelectedDrawable;
             }
         } else {
             if (!mediaBackground && !pinnedBottom) {
                 currentBackgroundDrawable = Theme.chat_msgInDrawable;
+                currentBackgroundSelectedDrawable = Theme.chat_msgInSelectedDrawable;
+
             } else {
                 currentBackgroundDrawable = Theme.chat_msgInMediaDrawable;
+                currentBackgroundSelectedDrawable = Theme.chat_msgInMediaSelectedDrawable;
             }
         }
 
@@ -10285,7 +10290,16 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         }
 
         if (currentBackgroundDrawable != null) {
-            currentBackgroundDrawable.setTop(0, h, pinnedTop, pinnedBottom);
+            Theme.MessageDrawable backgroundDrawable = currentBackgroundDrawable;
+            if (currentBackgroundSelectedDrawable != null && isDrawSelectionBackground()) {
+                backgroundDrawable = currentBackgroundSelectedDrawable;
+            }
+            backgroundDrawable.setTop(0, h, pinnedTop, pinnedBottom);
+            backgroundDrawable.setAlpha((int) (getAlpha() * 255));
+            backgroundDrawable.setBounds(left, top, right, bottom);
+            backgroundDrawable.draw(canvas);
+            backgroundDrawable.setAlpha(255);
+
             Drawable currentBackgroundShadowDrawable = currentBackgroundDrawable.getShadowDrawable();
             if (currentBackgroundShadowDrawable != null) {
                 currentBackgroundShadowDrawable.setAlpha((int) (getAlpha() * 255));
@@ -10293,10 +10307,6 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 currentBackgroundShadowDrawable.draw(canvas);
                 currentBackgroundShadowDrawable.setAlpha(255);
             }
-            currentBackgroundDrawable.setAlpha((int) (getAlpha() * 255));
-            currentBackgroundDrawable.setBounds(left, top, right, bottom);
-            currentBackgroundDrawable.draw(canvas);
-            currentBackgroundDrawable.setAlpha(255);
         }
     }
 
