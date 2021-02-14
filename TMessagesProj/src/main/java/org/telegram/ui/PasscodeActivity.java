@@ -15,6 +15,7 @@ import android.graphics.PorterDuffColorFilter;
 import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
+import android.os.SystemClock;
 import android.os.Vibrator;
 import android.text.Editable;
 import android.text.InputFilter;
@@ -98,6 +99,14 @@ public class PasscodeActivity extends BaseFragment implements NotificationCenter
     private final static int done_button = 1;
     private final static int pin_item = 2;
     private final static int password_item = 3;
+
+    private Runnable checkRunnable = new Runnable() {
+        @Override
+        public void run() {
+            checkRetry();
+            AndroidUtilities.runOnUIThread(checkRunnable, 1000);
+        }
+    };
 
     public PasscodeActivity(int type) {
         super();
@@ -391,6 +400,8 @@ public class PasscodeActivity extends BaseFragment implements NotificationCenter
     @Override
     public void onResume() {
         super.onResume();
+        checkRetry();
+        AndroidUtilities.runOnUIThread(checkRunnable, 1000);
         if (listAdapter != null) {
             listAdapter.notifyDataSetChanged();
         }
@@ -403,6 +414,12 @@ public class PasscodeActivity extends BaseFragment implements NotificationCenter
             }, 200);
         }
         fixLayoutInternal();
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        AndroidUtilities.cancelRunOnUIThread(checkRunnable);
     }
 
     @Override
@@ -556,6 +573,9 @@ public class PasscodeActivity extends BaseFragment implements NotificationCenter
             }
             if (!SharedConfig.checkPasscode(passwordEditText.getText().toString())) {
                 SharedConfig.increaseBadPasscodeTries();
+                if (SharedConfig.passcodeRetryInMs > 0) {
+                    checkRetry();
+                }
                 passwordEditText.setText("");
                 onPasscodeError();
                 return;
@@ -590,6 +610,17 @@ public class PasscodeActivity extends BaseFragment implements NotificationCenter
                 dropDown.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
             } else {
                 dropDown.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
+            }
+        }
+    }
+
+    private void checkRetry() {
+        long currentTime = SystemClock.elapsedRealtime();
+        if (currentTime > SharedConfig.lastUptimeMillis) {
+            SharedConfig.passcodeRetryInMs -= (currentTime - SharedConfig.lastUptimeMillis);
+            SharedConfig.lastUptimeMillis = currentTime;
+            if (SharedConfig.passcodeRetryInMs < 0) {
+                SharedConfig.passcodeRetryInMs = 0;
             }
         }
     }
