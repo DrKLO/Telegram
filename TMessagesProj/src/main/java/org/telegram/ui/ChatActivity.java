@@ -535,6 +535,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
 
     private SparseArray<MessageObject>[] messagesDict = new SparseArray[]{new SparseArray<>(), new SparseArray<>()};
     private SparseArray<MessageObject> repliesMessagesDict = new SparseArray<>();
+    private SparseArray<ArrayList<MessageObject>> repliesToMessageDict = new SparseArray<>();
     private HashMap<String, ArrayList<MessageObject>> messagesByDays = new HashMap<>();
     protected ArrayList<MessageObject> messages = new ArrayList<>();
     private SparseArray<MessageObject> waitingForReplies = new SparseArray<>();
@@ -12106,6 +12107,13 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     MessageObject obj = messArr.get(a);
                     if (obj.replyMessageObject != null) {
                         repliesMessagesDict.put(obj.replyMessageObject.getId(), obj.replyMessageObject);
+
+                        ArrayList<MessageObject> messages = repliesToMessageDict.get(obj.replyMessageObject.getId());
+                        if (messages == null) {
+                            messages = new ArrayList<>();
+                        }
+                        messages.add(obj);
+                        repliesToMessageDict.put(obj.replyMessageObject.getId(), messages);
                     }
                     int messageId = obj.getId();
                     if (threadMessageId != 0) {
@@ -13719,9 +13727,20 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             long did = (Long) args[0];
             if (did == dialog_id) {
                 ArrayList<MessageObject> loadedMessages = (ArrayList<MessageObject>) args[1];
+                ArrayList<MessageObject> toReplayMessages = (ArrayList<MessageObject>) args[2];
                 for (int a = 0, N = loadedMessages.size(); a < N; a++) {
                     MessageObject obj = loadedMessages.get(a);
                     repliesMessagesDict.put(obj.getId(), obj);
+
+                    if (toReplayMessages != null && toReplayMessages.size() > 0) {
+                        ArrayList<MessageObject> messages = repliesToMessageDict.get(obj.getId());
+                        if (messages == null) {
+                            messages = toReplayMessages;
+                        } else {
+                            messages.addAll(toReplayMessages);
+                        }
+                        repliesToMessageDict.put(obj.getId(), messages);
+                    }
                 }
                 updateVisibleRows();
             } else if (waitingForReplies.size() != 0 && ChatObject.isChannel(currentChat) && !currentChat.megagroup && chatInfo != null && did == -chatInfo.linked_chat_id) {
@@ -15154,6 +15173,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     }
                 }
                 repliesMessagesDict.remove(mid);
+                repliesToMessageDict.remove(mid);
             }
             if (obj != null) {
                 if (obj.messageOwner.reply_to != null && !(obj.messageOwner.action instanceof TLRPC.TL_messageActionPinMessage)) {
@@ -15356,6 +15376,9 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             if (old == null || remove && old.messageOwner.date != messageObject.messageOwner.date) {
                 continue;
             }
+
+            ArrayList<MessageObject> replyToMessages = repliesToMessageDict.get(old.getId());
+
             if (remove) {
                 messageObjects.remove(a);
                 a--;
@@ -15436,6 +15459,20 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     if (chatAdapter != null) {
                         chatAdapter.updateRowAtPosition(chatAdapter.messagesStartRow + index);
                     }
+
+                    if (replyToMessages != null) {
+                        for (int i = 0; i < replyToMessages.size(); i++) {
+                            MessageObject mustUpdateMessage = replyToMessages.get(i);
+                            mustUpdateMessage.replyMessageObject = messageObject;
+                            mustUpdateMessage.forceUpdate = true;
+                            int replyIndex = messages.indexOf(mustUpdateMessage);
+                            messages.set(replyIndex, mustUpdateMessage);
+                            if (chatAdapter != null) {
+                                chatAdapter.updateRowAtPosition(chatAdapter.messagesStartRow + replyIndex);
+                            }
+                        }
+                    }
+
                     if (index2 >= 0) {
                         dayArr.set(index2, messageObject);
                     }

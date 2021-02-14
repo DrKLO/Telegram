@@ -4193,6 +4193,7 @@ public class MediaDataController extends BaseController {
         for (int a = 0, N = result.size(); a < N; a++) {
             messageObjects.add(new MessageObject(currentAccount, result.get(a), usersDict, chatsDict, false, false));
         }
+        final ArrayList<MessageObject> replyMessageOwnersCopy = new ArrayList<>();
         AndroidUtilities.runOnUIThread(() -> {
             getMessagesController().putUsers(users, isCache);
             getMessagesController().putChats(chats, isCache);
@@ -4212,11 +4213,12 @@ public class MediaDataController extends BaseController {
                             m.generatePaymentSentMessageText(null);
                         }
                     }
+                    replyMessageOwnersCopy.addAll(arrayList);
                     changed = true;
                 }
             }
             if (changed) {
-                getNotificationCenter().postNotificationName(NotificationCenter.replyMessagesDidLoad, dialog_id, messageObjects);
+                getNotificationCenter().postNotificationName(NotificationCenter.replyMessagesDidLoad, dialog_id, messageObjects, replyMessageOwnersCopy);
             }
         });
     }
