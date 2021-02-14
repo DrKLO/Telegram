@@ -21368,6 +21368,15 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                         }
                     }
 
+                    if (message.replyMessageObject != null && !messages.contains(message.replyMessageObject)) {
+                        MessageObject replyMessageObject = repliesMessagesDict.get(message.replyMessageObject.getId());
+                        if (replyMessageObject == null) {
+                            message.replyMessageObject = null;
+                            message.messageOwner.reply_to = null;
+                            message.forceUpdate = true;
+                        }
+                    }
+
                     messageCell.setMessageObject(message, groupedMessages, pinnedBottom, pinnedTop);
                     messageCell.setHighlighted(highlightMessageId != Integer.MAX_VALUE && message.getId() == highlightMessageId);
                     if (highlightMessageId != Integer.MAX_VALUE) {
