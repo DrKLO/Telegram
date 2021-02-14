@@ -15356,6 +15356,18 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             if (loadIndex == 0 && repliesMessagesDict.indexOfKey(messageObject.getId()) >= 0) {
                 repliesMessagesDict.put(messageObject.getId(), messageObject);
             }
+            for (int k = 0; k < messages.size(); k++) {
+                MessageObject repliedMessage = messages.get(k);
+                if (repliedMessage.isReply() && repliedMessage.replyMessageObject.getId() == messageObject.getId()) {
+                    repliedMessage.replyMessageObject = messageObject;
+                    repliedMessage.forceUpdate = true;
+                    int ind = messages.indexOf(repliedMessage);
+                    messages.set(ind, repliedMessage);
+                    if (chatAdapter != null) {
+                        chatAdapter.updateRowWithMessageObject(repliedMessage, true);
+                    }
+                }
+            }
             if (old == null || remove && old.messageOwner.date != messageObject.messageOwner.date) {
                 continue;
             }
