@@ -3983,6 +3983,7 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
         searchShadow.setTranslationY(currentHeaderHeight - maxHeight);
         menuButton.setAdditionalYOffset(-(currentHeaderHeight - maxHeight) / 2 + (Build.VERSION.SDK_INT < 21 ? AndroidUtilities.statusBarHeight : 0));
         textSelectionHelper.setTopOffset(currentHeaderHeight);
+        textSelectionHelper.setActionBarOffset(currentHeaderHeight);
         for (int i = 0; i < listView.length; i++) {
             listView[i].setTopGlowOffset(currentHeaderHeight);
         }

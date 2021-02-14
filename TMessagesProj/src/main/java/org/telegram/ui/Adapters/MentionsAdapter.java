@@ -66,8 +66,8 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter {
     private long dialog_id;
     private TLRPC.ChatFull info;
     private SearchAdapterHelper searchAdapterHelper;
-    private ArrayList<TLObject> searchResultUsernames;
-    private SparseArray<TLObject> searchResultUsernamesMap;
+    private ArrayList<TLObject> searchResultObjects;
+    private SparseArray<TLObject> searchResultObjectsMap;
     private Runnable searchGlobalRunnable;
     private ArrayList<String> searchResultHashtags;
     private ArrayList<String> searchResultCommands;
@@ -188,7 +188,7 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter {
             if (chat != null) {
                 inlineMediaEnabled = ChatObject.canSendStickers(chat);
                 if (inlineMediaEnabled) {
-                    searchResultUsernames = null;
+                    searchResultObjects = null;
                     notifyDataSetChanged();
                     delegate.needChangePanelVisibility(false);
                     processFoundUser(foundContextBot);
@@ -509,8 +509,8 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter {
                     cancelDelayRunnable = null;
                 }
                 searchResultHashtags = null;
-                searchResultUsernames = null;
-                searchResultUsernamesMap = null;
+                searchResultObjects = null;
+                searchResultObjectsMap = null;
                 searchResultCommands = null;
                 searchResultSuggestions = null;
                 searchResultCommandsHelp = null;
@@ -726,7 +726,7 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter {
                     TLObject object;
                     int id;
                     if (a == -1) {
-                        if (chat == null) {
+                        if (chat == null || chat.username == null) {
                             continue;
                         }
                         if (usernameString.length() == 0) {
@@ -833,29 +833,29 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter {
                         req.filter = channelParticipantsMentions;
                         final int currentReqId = ++channelLastReqId;
                         channelReqId = ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
-                            if (channelReqId != 0 && currentReqId == channelLastReqId && searchResultUsernamesMap != null && searchResultUsernames != null) {
+                            if (channelReqId != 0 && currentReqId == channelLastReqId && searchResultObjectsMap != null && searchResultObjects != null) {
                                 showUsersResult(newResult, newMap, false);
                                 if (error == null) {
                                     TLRPC.TL_channels_channelParticipants res = (TLRPC.TL_channels_channelParticipants) response;
                                     messagesController.putUsers(res.users, false);
-                                    boolean hasResults = !searchResultUsernames.isEmpty();
+                                    boolean hasResults = !searchResultObjects.isEmpty();
                                     if (!res.participants.isEmpty()) {
                                         int currentUserId = UserConfig.getInstance(currentAccount).getClientUserId();
                                         for (int a = 0; a < res.participants.size(); a++) {
                                             TLRPC.ChannelParticipant participant = res.participants.get(a);
-                                            if (searchResultUsernamesMap.indexOfKey(participant.user_id) >= 0 || !isSearchingMentions && participant.user_id == currentUserId) {
+                                            if (searchResultObjectsMap.indexOfKey(participant.user_id) >= 0 || !isSearchingMentions && participant.user_id == currentUserId) {
                                                 continue;
                                             }
                                             TLRPC.User user = messagesController.getUser(participant.user_id);
                                             if (user == null) {
                                                 return;
                                             }
-                                            searchResultUsernames.add(user);
+                                            searchResultObjects.add(user);
                                         }
                                     }
                                 }
                                 notifyDataSetChanged();
-                                delegate.needChangePanelVisibility(!searchResultUsernames.isEmpty());
+                                delegate.needChangePanelVisibility(!searchResultObjects.isEmpty());
                             }
                             channelReqId = 0;
                         }));
@@ -875,8 +875,8 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter {
                 }
             }
             searchResultHashtags = newResult;
-            searchResultUsernames = null;
-            searchResultUsernamesMap = null;
+            searchResultObjects = null;
+            searchResultObjectsMap = null;
             searchResultCommands = null;
             searchResultCommandsHelp = null;
             searchResultCommandsUsers = null;
@@ -900,8 +900,8 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter {
                 }
             }
             searchResultHashtags = null;
-            searchResultUsernames = null;
-            searchResultUsernamesMap = null;
+            searchResultObjects = null;
+            searchResultObjectsMap = null;
             searchResultSuggestions = null;
             searchResultCommands = newResult;
             searchResultCommandsHelp = newResultHelp;
@@ -917,8 +917,8 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter {
             MediaDataController.getInstance(currentAccount).getEmojiSuggestions(lastSearchKeyboardLanguage, result.toString(), false, (param, alias) -> {
                 searchResultSuggestions = param;
                 searchResultHashtags = null;
-                searchResultUsernames = null;
-                searchResultUsernamesMap = null;
+                searchResultObjects = null;
+                searchResultObjectsMap = null;
                 searchResultCommands = null;
                 searchResultCommandsHelp = null;
                 searchResultCommandsUsers = null;
@@ -929,15 +929,15 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter {
     }
 
     private void showUsersResult(ArrayList<TLObject> newResult, SparseArray<TLObject> newMap, boolean notify) {
-        searchResultUsernames = newResult;
-        searchResultUsernamesMap = newMap;
+        searchResultObjects = newResult;
+        searchResultObjectsMap = newMap;
         if (cancelDelayRunnable != null) {
             AndroidUtilities.cancelRunOnUIThread(cancelDelayRunnable);
             cancelDelayRunnable = null;
         }
         if (notify) {
             notifyDataSetChanged();
-            delegate.needChangePanelVisibility(!searchResultUsernames.isEmpty());
+            delegate.needChangePanelVisibility(!searchResultObjects.isEmpty());
         }
     }
 
@@ -960,8 +960,8 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter {
         }
         if (searchResultBotContext != null) {
             return searchResultBotContext.size() + (searchResultBotContextSwitch != null ? 1 : 0);
-        } else if (searchResultUsernames != null) {
-            return searchResultUsernames.size();
+        } else if (searchResultObjects != null) {
+            return searchResultObjects.size();
         } else if (searchResultHashtags != null) {
             return searchResultHashtags.size();
         } else if (searchResultCommands != null) {
@@ -1010,11 +1010,11 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter {
                 return null;
             }
             return searchResultBotContext.get(i);
-        } else if (searchResultUsernames != null) {
-            if (i < 0 || i >= searchResultUsernames.size()) {
+        } else if (searchResultObjects != null) {
+            if (i < 0 || i >= searchResultObjects.size()) {
                 return null;
             }
-            return searchResultUsernames.get(i);
+            return searchResultObjects.get(i);
         } else if (searchResultHashtags != null) {
             if (i < 0 || i >= searchResultHashtags.size()) {
                 return null;
@@ -1120,8 +1120,8 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter {
                 ((ContextLinkCell) holder.itemView).setLink(searchResultBotContext.get(position), foundContextBot, contextMedia, position != searchResultBotContext.size() - 1, hasTop && position == 0, "gif".equals(searchingContextUsername));
             }
         } else {
-            if (searchResultUsernames != null) {
-                TLObject object = searchResultUsernames.get(position);
+            if (searchResultObjects != null) {
+                TLObject object = searchResultObjects.get(position);
                 if (object instanceof TLRPC.User) {
                     ((MentionCell) holder.itemView).setUser((TLRPC.User) object);
                 } else if (object instanceof TLRPC.Chat) {

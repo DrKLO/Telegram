@@ -319,6 +319,9 @@ android {
                 arguments '-DANDROID_STL=c++_static', '-DANDROID_PLATFORM=android-16', "-j=16"
             }
         }
+
+        buildConfigField "int", "APP_ID", APP_ID
+        buildConfigField "String", "APP_HASH", "$APP_HASH"
     }
 }
 

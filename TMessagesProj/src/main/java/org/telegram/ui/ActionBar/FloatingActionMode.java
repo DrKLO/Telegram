@@ -101,6 +101,12 @@ public final class FloatingActionMode extends ActionMode {
         setFloatingToolbar(floatingToolbar);
     }
 
+    public void setActionBarOffset(int offset) {
+        if (mFloatingToolbar != null) {
+            mFloatingToolbar.setViewPortTopOffset(offset);
+        }
+    }
+
     private void setFloatingToolbar(FloatingToolbar floatingToolbar) {
         mFloatingToolbar = floatingToolbar.setMenu(mMenu).setOnMenuItemClickListener(item -> mCallback.onActionItemClicked(FloatingActionMode.this, item));
         mFloatingToolbarVisibilityHelper = new FloatingToolbarVisibilityHelper(mFloatingToolbar);

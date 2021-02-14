@@ -9144,7 +9144,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         bottomLayout.setTranslationY(0);
         captionTextViewSwitcher.setTranslationY(0);
         bottomButtonsLayout.setVisibility(View.GONE);
-        paintButton.setVisibility(View.GONE);
+        setItemVisible(paintButton, false, false);
         if (qualityChooseView != null) {
             qualityChooseView.setVisibility(View.INVISIBLE);
             qualityPicker.setVisibility(View.INVISIBLE);
@@ -9602,7 +9602,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                 }
                 allowShare = true;
                 bottomButtonsLayout.setVisibility(View.VISIBLE);
-                paintButton.setVisibility(View.GONE);
+                setItemVisible(paintButton, false, false);
                 actionBar.setTitle(LocaleController.getString("AttachGif", R.string.AttachGif));
             } else {
                 if (totalImagesCount + totalImagesCountMerge != 0 && !needSearchImageInArr) {
@@ -9649,14 +9649,14 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                 } else if (slideshowMessageId == 0 && newMessageObject.messageOwner.media instanceof TLRPC.TL_messageMediaWebPage) {
                     if (newMessageObject.canPreviewDocument()) {
                         actionBar.setTitle(LocaleController.getString("AttachDocument", R.string.AttachDocument));
-                    } else if (newMessageObject.isVideo()) {
+                    } else if (isVideo) {
                         actionBar.setTitle(LocaleController.getString("AttachVideo", R.string.AttachVideo));
                     } else {
                         actionBar.setTitle(LocaleController.getString("AttachPhoto", R.string.AttachPhoto));
                     }
                 } else if (isInvoice) {
                     actionBar.setTitle(newMessageObject.messageOwner.media.title);
-                } else if (newMessageObject.isVideo()) {
+                } else if (isVideo) {
                     actionBar.setTitle(LocaleController.getString("AttachVideo", R.string.AttachVideo));
                 } else if (newMessageObject.getDocument() != null) {
                     actionBar.setTitle(LocaleController.getString("AttachDocument", R.string.AttachDocument));
@@ -9672,7 +9672,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                 } else {
                     allowShare = true;
                     menuItem.showSubItem(gallery_menu_save);
-                    paintButton.setVisibility(!isVideo && canSendMediaToParentChatActivity() ? View.VISIBLE : View.GONE);
+                    setItemVisible(paintButton, newMessageObject.canPreviewDocument() && canSendMediaToParentChatActivity(), true);
                     bottomButtonsLayout.setVisibility(!videoPlayerControlVisible ? View.VISIBLE : View.GONE);
                     if (bottomButtonsLayout.getVisibility() == View.VISIBLE) {
                         menuItem.hideSubItem(gallery_menu_share);
@@ -11149,6 +11149,9 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         MessageObject messageObject = null;
 
         if (currentMessageObject != null) {
+            if (!currentMessageObject.canPreviewDocument()) {
+                return;
+            }
             messageObject = currentMessageObject;
             capReplace = currentMessageObject.canEditMedia() && !currentMessageObject.isDocument();
             isVideo = currentMessageObject.isVideo();

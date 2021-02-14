@@ -218,6 +218,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
 
     private int lastMeasuredContentWidth;
     private int lastMeasuredContentHeight;
+    private boolean lastContainsMediaLayout;
     private int listContentHeight;
     private boolean openingAvatar;
 
@@ -282,7 +283,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     private float expandProgress;
     private float listViewVelocityY;
     private ValueAnimator expandAnimator;
-    private float currentExpanAnimatorFracture;
+    private float currentExpandAnimatorFracture;
     private float[] expandAnimatorValues = new float[]{0f, 1f};
     private boolean isInLandscapeMode;
     private boolean allowPullingDown;
@@ -1069,7 +1070,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             animator.addUpdateListener(a -> {
                 final float value = AndroidUtilities.lerp(animatorValues, a.getAnimatedFraction());
                 final View menuItem = getSecondaryMenuItem();
-                if (menuItem != null) {
+                if (menuItem != null && (menuItem != searchItem || !isPulledDown)) {
                     menuItem.setScaleX(1f - value);
                     menuItem.setScaleY(1f - value);
                     menuItem.setAlpha(1f - value);
@@ -1090,7 +1091,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     if (isIndicatorVisible) {
                         final View menuItem = getSecondaryMenuItem();
                         if (menuItem != null) {
-                            menuItem.setVisibility(GONE);
+                            menuItem.setVisibility(INVISIBLE);
                         }
                         if (videoCallItemVisible) {
                             videoCallItem.setVisibility(GONE);
@@ -1214,7 +1215,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             }
             overlaysView.invalidate();
             final float textWidth = textPaint.measureText(getCurrentTitle());
-            indicatorRect.right = getMeasuredWidth() - AndroidUtilities.dp(54f);
+            indicatorRect.right = getMeasuredWidth() - (chat_id == 0 ? AndroidUtilities.dp(54f) : AndroidUtilities.dp(102f));
             indicatorRect.left = indicatorRect.right - (textWidth + AndroidUtilities.dpf2(16f));
             indicatorRect.top = (actionBar.getOccupyStatusBar() ? AndroidUtilities.statusBarHeight : 0) + AndroidUtilities.dp(15f);
             indicatorRect.bottom = indicatorRect.top + AndroidUtilities.dp(26);
@@ -1965,12 +1966,20 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(height, MeasureSpec.EXACTLY));
 
                 boolean changed = false;
-                if (lastMeasuredContentWidth != getMeasuredWidth() || lastMeasuredContentHeight != getMeasuredHeight()) {
+                boolean containsMediaLayout = false;
+                int count = listAdapter.getItemCount();
+                for (int i = 0; i < count; i++) {
+                    if (listAdapter.getItemViewType(i) == 13) {
+                        containsMediaLayout = true;
+                        break;
+                    }
+                }
+                if (lastMeasuredContentWidth != getMeasuredWidth() || lastMeasuredContentHeight != getMeasuredHeight() || containsMediaLayout != lastContainsMediaLayout) {
                     changed = lastMeasuredContentWidth != 0 && lastMeasuredContentWidth != getMeasuredWidth();
                     listContentHeight = 0;
-                    int count = listAdapter.getItemCount();
                     lastMeasuredContentWidth = getMeasuredWidth();
                     lastMeasuredContentHeight = getMeasuredHeight();
+                    lastContainsMediaLayout = containsMediaLayout;
                     int ws = MeasureSpec.makeMeasureSpec(getMeasuredWidth(), MeasureSpec.EXACTLY);
                     int hs = MeasureSpec.makeMeasureSpec(listView.getMeasuredHeight(), MeasureSpec.UNSPECIFIED);
                     positionToOffset.clear();
@@ -2019,7 +2028,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                             otherItem.hideSubItem(edit_name);
                         }
                     }
-                    currentExpanAnimatorFracture = 1.0f;
+                    currentExpandAnimatorFracture = 1.0f;
 
                     int paddingTop;
                     int paddingBottom;
@@ -3073,7 +3082,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         expandAnimator = ValueAnimator.ofFloat(0f, 1f);
         expandAnimator.addUpdateListener(anim -> {
             final int newTop = ActionBar.getCurrentActionBarHeight() + (actionBar.getOccupyStatusBar() ? AndroidUtilities.statusBarHeight : 0);
-            final float value = AndroidUtilities.lerp(expandAnimatorValues, currentExpanAnimatorFracture = anim.getAnimatedFraction());
+            final float value = AndroidUtilities.lerp(expandAnimatorValues, currentExpandAnimatorFracture = anim.getAnimatedFraction());
 
             avatarContainer.setScaleX(avatarScale);
             avatarContainer.setScaleY(avatarScale);
@@ -4030,7 +4039,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                         overlaysView.setOverlaysVisible(true, durationFactor);
                         avatarsViewPagerIndicatorView.refreshVisibility(durationFactor);
                         expandAnimator.cancel();
-                        float value = AndroidUtilities.lerp(expandAnimatorValues, currentExpanAnimatorFracture);
+                        float value = AndroidUtilities.lerp(expandAnimatorValues, currentExpandAnimatorFracture);
                         expandAnimatorValues[0] = value;
                         expandAnimatorValues[1] = 1f;
                         expandAnimator.setDuration((long) ((1f - value) * 250f / durationFactor));
@@ -4091,7 +4100,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                         avatarImage.getImageReceiver().setAllowStartAnimation(true);
                         avatarImage.getImageReceiver().startAnimation();
 
-                        float value = AndroidUtilities.lerp(expandAnimatorValues, currentExpanAnimatorFracture);
+                        float value = AndroidUtilities.lerp(expandAnimatorValues, currentExpandAnimatorFracture);
                         expandAnimatorValues[0] = value;
                         expandAnimatorValues[1] = 0f;
                         if (!isInLandscapeMode) {
@@ -6097,7 +6106,6 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     getUserConfig().saveConfig(true);
                 }));
             } else {
-                allowPullingDown = false;
                 avatar = smallSize.location;
                 avatarBig = bigSize.location;
                 avatarImage.setImage(ImageLocation.getForLocal(avatar), "50_50", avatarDrawable, null);
@@ -6106,7 +6114,6 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     if (listAdapter != null) {
                         listAdapter.notifyDataSetChanged();
                     }
-                    needLayout(true);
                 }
                 showAvatarProgress(true, false);
                 final View view = layoutManager.findViewByPosition(0);

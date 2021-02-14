@@ -44,6 +44,9 @@ import org.telegram.messenger.UserObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @SuppressWarnings("FieldCanBeLocal")
 public class UndoView extends FrameLayout {
 
@@ -70,7 +73,7 @@ public class UndoView extends FrameLayout {
     private int textWidth;
 
     private int currentAction;
-    private long currentDialogId;
+    private List<Long> currentDids;
     private Runnable currentActionRunnable;
     private Runnable currentCancelRunnable;
 
@@ -108,6 +111,8 @@ public class UndoView extends FrameLayout {
     public final static int ACTION_CHAT_UNARCHIVED = 23;
     public final static int ACTION_PROXIMITY_SET = 24;
     public final static int ACTION_PROXIMITY_REMOVED = 25;
+    public final static int ACTION_CLEAR_FEW = 26;
+    public final static int ACTION_DELETE_FEW = 27;
 
     public final static int ACTION_VOIP_MUTED = 30;
     public final static int ACTION_VOIP_UNMUTED = 31;
@@ -296,8 +301,12 @@ public class UndoView extends FrameLayout {
             }
             currentCancelRunnable = null;
         }
-        if (currentAction == ACTION_CLEAR || currentAction == ACTION_DELETE) {
-            MessagesController.getInstance(currentAccount).removeDialogAction(currentDialogId, currentAction == ACTION_CLEAR, apply);
+        if (currentAction == ACTION_CLEAR || currentAction == ACTION_DELETE
+                || currentAction == ACTION_CLEAR_FEW || currentAction == ACTION_DELETE_FEW) {
+            for (long did : currentDids) {
+                MessagesController.getInstance(currentAccount).removeDialogAction(did,
+                        currentAction == ACTION_CLEAR || currentAction == ACTION_CLEAR_FEW, apply);
+            }
         }
         if (animated != 0) {
             AnimatorSet animatorSet = new AnimatorSet();
@@ -349,13 +358,20 @@ public class UndoView extends FrameLayout {
     }
 
     public void showWithAction(long did, int action, Object infoObject, Object infoObject2, Runnable actionRunnable, Runnable cancelRunnable) {
+        ArrayList<Long> dids = new ArrayList<>();
+        dids.add(did);
+        showWithAction(dids, action, infoObject, infoObject2, actionRunnable, cancelRunnable);
+    }
+
+    public void showWithAction(List<Long> dids, int action, Object infoObject, Object infoObject2, Runnable actionRunnable, Runnable cancelRunnable) {
         if (currentActionRunnable != null) {
             currentActionRunnable.run();
         }
         isShown = true;
         currentActionRunnable = actionRunnable;
         currentCancelRunnable = cancelRunnable;
-        currentDialogId = did;
+        currentDids = new ArrayList<>(dids);
+        long currentDialogId = dids.get(0);
         currentAction = action;
         timeLeft = 5000;
         currentInfoObject = infoObject;
@@ -449,14 +465,14 @@ public class UndoView extends FrameLayout {
                 subInfoText = null;
                 icon = R.raw.contact_check;
             } else if (action == ACTION_PROFILE_PHOTO_CHANGED) {
-                if (did > 0) {
+                if (currentDialogId > 0) {
                     if (infoObject == null) {
                         infoText = LocaleController.getString("MainProfilePhotoSetHint", R.string.MainProfilePhotoSetHint);
                     } else {
                         infoText = LocaleController.getString("MainProfileVideoSetHint", R.string.MainProfileVideoSetHint);
                     }
                 } else {
-                    TLRPC.Chat chat = MessagesController.getInstance(UserConfig.selectedAccount).getChat((int) -did);
+                    TLRPC.Chat chat = MessagesController.getInstance(UserConfig.selectedAccount).getChat((int) -currentDialogId);
                     if (ChatObject.isChannel(chat) && !chat.megagroup) {
                         if (infoObject == null) {
                             infoText = LocaleController.getString("MainChannelProfilePhotoSetHint", R.string.MainChannelProfilePhotoSetHint);
@@ -502,10 +518,10 @@ public class UndoView extends FrameLayout {
                 icon = R.raw.chats_infotip;
             } else if (action == ACTION_ADDED_TO_FOLDER || action == ACTION_REMOVED_FROM_FOLDER) {
                 MessagesController.DialogFilter filter = (MessagesController.DialogFilter) infoObject2;
-                if (did != 0) {
-                    int lowerId = (int) did;
+                if (currentDialogId != 0) {
+                    int lowerId = (int) currentDialogId;
                     if (lowerId == 0) {
-                        TLRPC.EncryptedChat encryptedChat = MessagesController.getInstance(currentAccount).getEncryptedChat((int) (did >> 32));
+                        TLRPC.EncryptedChat encryptedChat = MessagesController.getInstance(currentAccount).getEncryptedChat((int) (currentDialogId >> 32));
                         lowerId = encryptedChat.user_id;
                     }
                     if (lowerId > 0) {
@@ -641,7 +657,7 @@ public class UndoView extends FrameLayout {
             } else if (currentAction == ACTION_FWD_MESSAGES) {
                 Integer count = (Integer) infoObject;
                 if (infoObject2 == null) {
-                    if (did == UserConfig.getInstance(currentAccount).clientUserId) {
+                    if (currentDialogId == UserConfig.getInstance(currentAccount).clientUserId) {
                         if (count == 1) {
                             infoTextView.setText(AndroidUtilities.replaceTags(LocaleController.getString("FwdMessageToSavedMessages", R.string.FwdMessageToSavedMessages)));
                         } else {
@@ -649,7 +665,7 @@ public class UndoView extends FrameLayout {
                         }
                         leftImageView.setAnimation(R.raw.saved_messages, 30, 30);
                     } else {
-                        int lowerId = (int) did;
+                        int lowerId = (int) currentDialogId;
                         if (lowerId < 0) {
                             TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-lowerId);
                             if (count == 1) {
@@ -924,10 +940,12 @@ public class UndoView extends FrameLayout {
             subinfoTextView.setVisibility(GONE);
             leftImageView.setVisibility(GONE);
 
-            if (currentAction == ACTION_CLEAR) {
+            if (currentAction == ACTION_CLEAR || currentAction == ACTION_CLEAR_FEW) {
                 infoTextView.setText(LocaleController.getString("HistoryClearedUndo", R.string.HistoryClearedUndo));
+            } else if (currentAction == ACTION_DELETE_FEW) {
+                infoTextView.setText(LocaleController.getString("ChatsDeletedUndo", R.string.ChatsDeletedUndo));
             } else {
-                int lowerId = (int) did;
+                int lowerId = (int) currentDialogId;
                 if (lowerId < 0) {
                     TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-lowerId);
                     if (ChatObject.isChannel(chat) && !chat.megagroup) {
@@ -939,7 +957,10 @@ public class UndoView extends FrameLayout {
                     infoTextView.setText(LocaleController.getString("ChatDeletedUndo", R.string.ChatDeletedUndo));
                 }
             }
-            MessagesController.getInstance(currentAccount).addDialogAction(did, currentAction == ACTION_CLEAR);
+            for (long did : dids) {
+                MessagesController.getInstance(currentAccount).addDialogAction(did
+                        , currentAction == ACTION_CLEAR || currentAction == ACTION_CLEAR_FEW);
+            }
         }
 
         AndroidUtilities.makeAccessibilityAnnouncement(infoTextView.getText() + (subinfoTextView.getVisibility() == VISIBLE ? ". " + subinfoTextView.getText() : ""));
@@ -995,7 +1016,8 @@ public class UndoView extends FrameLayout {
 
     @Override
     protected void onDraw(Canvas canvas) {
-        if (currentAction == ACTION_DELETE || currentAction == ACTION_CLEAR) {
+        if (currentAction == ACTION_DELETE || currentAction == ACTION_CLEAR
+                || currentAction == ACTION_DELETE_FEW || currentAction == ACTION_CLEAR_FEW) {
             int newSeconds = timeLeft > 0 ? (int) Math.ceil(timeLeft / 1000.0f) : 0;
             if (prevSeconds != newSeconds) {
                 prevSeconds = newSeconds;

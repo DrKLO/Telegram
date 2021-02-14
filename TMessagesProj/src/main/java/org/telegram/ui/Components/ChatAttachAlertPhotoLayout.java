@@ -32,6 +32,7 @@ import android.provider.MediaStore;
 import android.provider.Settings;
 import android.text.TextUtils;
 import android.util.TypedValue;
+import android.view.DisplayCutout;
 import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
@@ -39,6 +40,8 @@ import android.view.TextureView;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewOutlineProvider;
+import android.view.WindowInsets;
+import android.view.WindowManager;
 import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.view.animation.DecelerateInterpolator;
@@ -370,6 +373,17 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
             parentAlert.delegate.didPressedButton(7, true, notify, scheduleDate);
         }
     };
+
+    @Override
+    public WindowInsets onApplyWindowInsets(WindowInsets insets) {
+        if (recordTime != null && Build.VERSION.SDK_INT >= 28) {
+            DisplayCutout cutout = insets.getDisplayCutout();
+            if (cutout != null) {
+                ((MarginLayoutParams) recordTime.getLayoutParams()).topMargin = cutout.getSafeInsetTop();
+            }
+        }
+        return super.onApplyWindowInsets(insets);
+    }
 
     private void updateCheckedPhotoIndices() {
         if (!(parentAlert.baseFragment instanceof ChatActivity)) {

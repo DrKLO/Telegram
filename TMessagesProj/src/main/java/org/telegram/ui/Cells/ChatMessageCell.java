@@ -448,6 +448,8 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
     private int otherX;
     private int otherY;
     private int lastHeight;
+    private int lastWidth;
+    private boolean lastIsReplyHidden;
     private int hasMiniProgress;
     private int miniButtonState;
     private boolean imagePressed;
@@ -571,11 +573,13 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
     public boolean isMegagroup;
     public boolean isThreadChat;
     public boolean hasDiscussion;
-    public boolean isPinned;
-    private boolean wasPinned;
     public int linkedChatId;
     public boolean isRepliesChat;
     public boolean isPinnedChat;
+    public boolean isPinned;
+    public boolean isReplyHidden;
+
+    private boolean wasPinned;
     private boolean isPressed;
     private boolean forwardName;
     private boolean isHighlighted;
@@ -2861,13 +2865,17 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         if (messageObject.checkLayout() || currentPosition != null && lastHeight != AndroidUtilities.displaySize.y) {
             currentMessageObject = null;
         }
+        boolean widthChanged = lastWidth != AndroidUtilities.displaySize.x;
+        lastWidth = AndroidUtilities.displaySize.x;
         lastHeight = AndroidUtilities.displaySize.y;
         boolean messageIdChanged = currentMessageObject == null || currentMessageObject.getId() != messageObject.getId();
         boolean messageChanged = currentMessageObject != messageObject || messageObject.forceUpdate;
         boolean dataChanged = currentMessageObject != null && currentMessageObject.getId() == messageObject.getId() && lastSendState == MessageObject.MESSAGE_SEND_STATE_EDITING && messageObject.isSent()
                 || currentMessageObject == messageObject && (isUserDataChanged() || photoNotSet)
                 || lastPostAuthor != messageObject.messageOwner.post_author
+                || lastIsReplyHidden != isReplyHidden
                 || wasPinned != isPinned;
+        lastIsReplyHidden = isReplyHidden;
         boolean groupChanged = groupedMessages != currentMessagesGroup;
         boolean pollChanged = false;
         if (drawCommentButton || drawSideButton == 3 && !((hasDiscussion && messageObject.isLinkedToChat(linkedChatId) || isRepliesChat) && (currentPosition == null || currentPosition.siblingHeights == null && (currentPosition.flags & MessageObject.POSITION_FLAG_BOTTOM) != 0 || currentPosition.siblingHeights != null && (currentPosition.flags & MessageObject.POSITION_FLAG_TOP) == 0))) {
@@ -2917,7 +2925,10 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             }
             groupChanged = newPosition != currentPosition;
         }
-        if (messageChanged || dataChanged || groupChanged || pollChanged || isPhotoDataChanged(messageObject) || pinnedBottom != bottomNear || pinnedTop != topNear) {
+        if (messageChanged || dataChanged || groupChanged
+                || pollChanged || (messageObject.isPoll() && widthChanged)
+                || isPhotoDataChanged(messageObject)
+                || pinnedBottom != bottomNear || pinnedTop != topNear) {
             wasPinned = isPinned;
             pinnedBottom = bottomNear;
             pinnedTop = topNear;
@@ -9323,7 +9334,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             }
         }
 
-        if ((!isThreadChat || messageObject.getReplyTopMsgId() != 0) && messageObject.hasValidReplyMessageObject() || messageObject.messageOwner.fwd_from != null && messageObject.isDice()) {
+        if ((!isThreadChat || messageObject.getReplyTopMsgId() != 0) && messageObject.hasValidReplyMessageObject() && !isReplyHidden || messageObject.messageOwner.fwd_from != null && messageObject.isDice()) {
             if (currentPosition == null || currentPosition.minY == 0) {
                 if (!messageObject.isAnyKindOfSticker() && messageObject.type != 5) {
                     namesOffset += AndroidUtilities.dp(42);
@@ -9496,7 +9507,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                     FileLog.e(e);
                 }
             }
-        } else if (!isThreadChat && messageObject.getReplyMsgId() != 0) {
+        } else if (!isThreadChat && messageObject.getReplyMsgId() != 0 && !isReplyHidden) {
             if (!(messageObject.replyMessageObject != null && messageObject.replyMessageObject.messageOwner instanceof TLRPC.TL_messageEmpty)) {
                 if (!messageObject.isAnyKindOfSticker() && messageObject.type != 5) {
                     namesOffset += AndroidUtilities.dp(42);
@@ -11381,7 +11392,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                     repliesAlpha *= (1f - transitionParams.animateChangeProgress);
                 }
                 repliesDrawable.setAlpha((int) (255 * repliesAlpha));
-                if (useScale) {
+                if (useScale && replaceAnimation) {
                     canvas.save();
                     float cx = repliesX + (repliesDrawable.getIntrinsicWidth() + AndroidUtilities.dp(3) + repliesTextWidth) / 2f;
                     canvas.scale(scale, scale, cx, repliesDrawable.getBounds().centerY());
@@ -11398,6 +11409,8 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                         canvas.restore();
                     }
                     Theme.chat_timePaint.setAlpha((int) (timeAlpha * repliesAlpha));
+                } else {
+                    Theme.chat_timePaint.setAlpha((int) (255 * repliesAlpha));
                 }
                 canvas.save();
                 canvas.translate(repliesX + repliesDrawable.getIntrinsicWidth() + AndroidUtilities.dp(3), timeY);
@@ -11411,15 +11424,13 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                     offsetX += repliesDrawable.getIntrinsicWidth() + repliesTextWidth + AndroidUtilities.dp(10);
                 }
 
-                if (useScale) {
+                if (useScale && replaceAnimation) {
                     canvas.restore();
                     float cx = (repliesX + repliesDrawable.getIntrinsicWidth() + AndroidUtilities.dp(3) + repliesTextWidth - repliesX) / 2f;
                     canvas.scale(scale, scale, cx, repliesDrawable.getBounds().centerY());
                 }
 
-                if (transitionParams.animateReplies) {
-                    Theme.chat_timePaint.setAlpha(timeAlpha);
-                }
+                Theme.chat_timePaint.setAlpha(timeAlpha);
                 transitionParams.lastTimeXReplies = repliesX;
             }
             if (viewsLayout != null) {

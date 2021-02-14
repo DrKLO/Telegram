@@ -494,7 +494,7 @@ public abstract class TextSelectionHelper<Cell extends TextSelectionHelper.Selec
     }
 
     protected boolean canShowActions() {
-        return selectedView != null;
+        return selectedView != null && selectedView.getBottom() > topOffset;
     }
 
     //fast way hide floating action mode for long time
@@ -613,6 +613,12 @@ public abstract class TextSelectionHelper<Cell extends TextSelectionHelper.Selec
 
     public void setTopOffset(int topOffset) {
         this.topOffset = topOffset;
+    }
+
+    public void setActionBarOffset(int offset) {
+        if (actionMode != null && actionMode instanceof FloatingActionMode) {
+            ((FloatingActionMode) actionMode).setActionBarOffset(offset);
+        }
     }
 
     public class TextSelectionOverlay extends View {
