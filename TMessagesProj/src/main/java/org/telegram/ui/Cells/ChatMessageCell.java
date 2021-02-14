@@ -11392,7 +11392,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                     repliesAlpha *= (1f - transitionParams.animateChangeProgress);
                 }
                 repliesDrawable.setAlpha((int) (255 * repliesAlpha));
-                if (useScale) {
+                if (useScale && replaceAnimation) {
                     canvas.save();
                     float cx = repliesX + (repliesDrawable.getIntrinsicWidth() + AndroidUtilities.dp(3) + repliesTextWidth) / 2f;
                     canvas.scale(scale, scale, cx, repliesDrawable.getBounds().centerY());
@@ -11409,6 +11409,8 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                         canvas.restore();
                     }
                     Theme.chat_timePaint.setAlpha((int) (timeAlpha * repliesAlpha));
+                } else {
+                    Theme.chat_timePaint.setAlpha((int) (255 * repliesAlpha));
                 }
                 canvas.save();
                 canvas.translate(repliesX + repliesDrawable.getIntrinsicWidth() + AndroidUtilities.dp(3), timeY);
@@ -11422,15 +11424,13 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                     offsetX += repliesDrawable.getIntrinsicWidth() + repliesTextWidth + AndroidUtilities.dp(10);
                 }
 
-                if (useScale) {
+                if (useScale && replaceAnimation) {
                     canvas.restore();
                     float cx = (repliesX + repliesDrawable.getIntrinsicWidth() + AndroidUtilities.dp(3) + repliesTextWidth - repliesX) / 2f;
                     canvas.scale(scale, scale, cx, repliesDrawable.getBounds().centerY());
                 }
 
-                if (transitionParams.animateReplies) {
-                    Theme.chat_timePaint.setAlpha(timeAlpha);
-                }
+                Theme.chat_timePaint.setAlpha(timeAlpha);
                 transitionParams.lastTimeXReplies = repliesX;
             }
             if (viewsLayout != null) {
