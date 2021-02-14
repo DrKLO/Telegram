@@ -373,6 +373,17 @@ public class AlertsCreator {
         return builder.show();
     }
 
+    public static AlertDialog showRestartAppForUpdateAlert(final Context context, final String text, Runnable runnable) {
+        if (context == null || text == null) {
+            return null;
+        }
+        AlertDialog.Builder builder = new AlertDialog.Builder(context);
+        builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
+        builder.setMessage(text);
+        builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), (dialog, which) -> runnable.run());
+        return builder.show();
+    }
+
     public static AlertDialog.Builder createLanguageAlert(LaunchActivity activity, final TLRPC.TL_langPackLanguage language) {
         if (language == null) {
             return null;

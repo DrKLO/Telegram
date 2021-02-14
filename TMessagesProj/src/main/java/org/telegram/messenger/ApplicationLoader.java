@@ -28,6 +28,7 @@ import android.os.SystemClock;
 import android.telephony.TelephonyManager;
 import android.text.TextUtils;
 
+import com.google.android.exoplayer2.util.Util;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GooglePlayServicesUtil;
 import com.google.firebase.iid.FirebaseInstanceId;
@@ -195,6 +196,9 @@ public class ApplicationLoader extends Application {
 
         NativeLoader.initNativeLibs(ApplicationLoader.applicationContext);
         ConnectionsManager.native_setJava(false);
+        if (Util.SDK_INT >= 21) {
+            registerActivityLifecycleCallbacks(new InAppUpdateLifecycleCallback(this));
+        }
         new ForegroundDetector(this) {
             @Override
             public void onActivityStarted(Activity activity) {
