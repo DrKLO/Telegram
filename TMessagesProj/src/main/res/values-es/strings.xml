@@ -1871,6 +1871,8 @@
     <string name="DebugClearLogs">Limpiar registros</string>
     <string name="DebugMenuEnableLogs">Activar registros</string>
     <string name="DebugMenuDisableLogs">Desactivar registros</string>
+    <string name="DebugMenuUseCameraX">Usar CameraX API</string>
+    <string name="DebugMenuUseCameraLegacy">Usar API de cámara heredada</string>
     <string name="DebugMenuImportContacts">Importar contactos</string>
     <string name="DebugMenuReloadContacts">Recargar contactos</string>
     <string name="DebugMenuResetDialogs">Restablecer chats</string>

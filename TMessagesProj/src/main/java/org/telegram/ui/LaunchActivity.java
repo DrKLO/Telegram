@@ -93,7 +93,7 @@ import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
 import org.telegram.messenger.Utilities;
 import org.telegram.messenger.browser.Browser;
-import org.telegram.messenger.camera.CameraController;
+import org.telegram.messenger.camera.Camera1Controller;
 import org.telegram.messenger.voip.VoIPPendingCall;
 import org.telegram.messenger.voip.VoIPService;
 import org.telegram.tgnet.ConnectionsManager;
@@ -3733,7 +3733,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                 showPermissionErrorAlert(LocaleController.getString("PermissionNoCamera", R.string.PermissionNoCamera));
             } else {
                 if (SharedConfig.inappCamera) {
-                    CameraController.getInstance().initCamera(null);
+                    Camera1Controller.getInstance().initCamera(null);
                 }
                 return;
             }

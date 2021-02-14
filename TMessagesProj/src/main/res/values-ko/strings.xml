@@ -1871,6 +1871,8 @@
     <string name="DebugClearLogs">로그 초기화</string>
     <string name="DebugMenuEnableLogs">로그 활성화</string>
     <string name="DebugMenuDisableLogs">로그 사용 안 함</string>
+    <string name="DebugMenuUseCameraX">CameraX API 사용</string>
+    <string name="DebugMenuUseCameraLegacy">레거시 카메라 API 사용</string>
     <string name="DebugMenuImportContacts">연락처 가져오기</string>
     <string name="DebugMenuReloadContacts">연락처 재동기화</string>
     <string name="DebugMenuResetDialogs">대화 초기화</string>

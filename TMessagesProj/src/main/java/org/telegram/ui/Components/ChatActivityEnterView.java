@@ -105,7 +105,7 @@ import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
 import org.telegram.messenger.VideoEditedInfo;
-import org.telegram.messenger.camera.CameraController;
+import org.telegram.messenger.camera.Camera1Controller;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
@@ -567,8 +567,8 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                         return;
                     }
                 }
-                if (!CameraController.getInstance().isCameraInitied()) {
-                    CameraController.getInstance().initCamera(onFinishInitCameraRunnable);
+                if (!Camera1Controller.getInstance().isCameraInitied()) {
+                    Camera1Controller.getInstance().initCamera(onFinishInitCameraRunnable);
                 } else {
                     onFinishInitCameraRunnable.run();
                 }
@@ -2126,7 +2126,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                 return;
             }
             if (videoToSendMessageObject != null) {
-                CameraController.getInstance().cancelOnInitRunnable(onFinishInitCameraRunnable);
+                Camera1Controller.getInstance().cancelOnInitRunnable(onFinishInitCameraRunnable);
                 delegate.needStartRecordVideo(2, true, 0);
             } else {
                 MessageObject playing = MediaController.getInstance().getPlayingMessageObject();
@@ -2282,7 +2282,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                 if (motionEvent.getAction() == MotionEvent.ACTION_CANCEL && recordingAudioVideo) {
                     if (recordCircle.slideToCancelProgress < 0.7f) {
                         if (hasRecordVideo && videoSendButton.getTag() != null) {
-                            CameraController.getInstance().cancelOnInitRunnable(onFinishInitCameraRunnable);
+                            Camera1Controller.getInstance().cancelOnInitRunnable(onFinishInitCameraRunnable);
                             delegate.needStartRecordVideo(2, true, 0);
                         } else {
                             delegate.needStartRecordAudio(0);
@@ -2308,7 +2308,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                 float alpha = 1.0f + dist / distCanMove;
                 if (alpha < 0.45) {
                     if (hasRecordVideo && videoSendButton.getTag() != null) {
-                        CameraController.getInstance().cancelOnInitRunnable(onFinishInitCameraRunnable);
+                        Camera1Controller.getInstance().cancelOnInitRunnable(onFinishInitCameraRunnable);
                         delegate.needStartRecordVideo(2, true, 0);
                     } else {
                         delegate.needStartRecordAudio(0);
@@ -2326,7 +2326,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                     } else if (!hasRecordVideo || calledRecordRunnable) {
                         startedDraggingX = -1;
                         if (hasRecordVideo && videoSendButton.getTag() != null) {
-                            CameraController.getInstance().cancelOnInitRunnable(onFinishInitCameraRunnable);
+                            Camera1Controller.getInstance().cancelOnInitRunnable(onFinishInitCameraRunnable);
                             delegate.needStartRecordVideo(1, true, 0);
                         } else {
                             if (recordingAudioVideo && isInScheduleMode()) {
@@ -2375,7 +2375,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
 
                 if (alpha == 0) {
                     if (hasRecordVideo && videoSendButton.getTag() != null) {
-                        CameraController.getInstance().cancelOnInitRunnable(onFinishInitCameraRunnable);
+                        Camera1Controller.getInstance().cancelOnInitRunnable(onFinishInitCameraRunnable);
                         delegate.needStartRecordVideo(2, true, 0);
                     } else {
                         delegate.needStartRecordAudio(0);
@@ -2910,7 +2910,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
 
     public void cancelRecordingAudioVideo() {
         if (hasRecordVideo && videoSendButton != null && videoSendButton.getTag() != null) {
-            CameraController.getInstance().cancelOnInitRunnable(onFinishInitCameraRunnable);
+            Camera1Controller.getInstance().cancelOnInitRunnable(onFinishInitCameraRunnable);
             delegate.needStartRecordVideo(5, true, 0);
         } else {
             delegate.needStartRecordAudio(0);
@@ -3489,7 +3489,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
         }
         if (hasRecordVideo) {
             if (SharedConfig.hasCameraCache) {
-                CameraController.getInstance().initCamera(null);
+                Camera1Controller.getInstance().initCamera(null);
             }
             SharedPreferences preferences = MessagesController.getGlobalMainSettings();
             boolean currentModeVideo = preferences.getBoolean(isChannel ? "currentModeVideoChannel" : "currentModeVideo", isChannel);
@@ -7401,7 +7401,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                 }
                 if (event.getAction() == MotionEvent.ACTION_UP && cancelRect.contains(x, y)) {
                     if (hasRecordVideo && videoSendButton.getTag() != null) {
-                        CameraController.getInstance().cancelOnInitRunnable(onFinishInitCameraRunnable);
+                        Camera1Controller.getInstance().cancelOnInitRunnable(onFinishInitCameraRunnable);
                         delegate.needStartRecordVideo(5, true, 0);
                     } else {
                         delegate.needStartRecordAudio(0);

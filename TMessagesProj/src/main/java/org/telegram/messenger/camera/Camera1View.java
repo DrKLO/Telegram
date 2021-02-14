@@ -1,0 +1,423 @@
+/*
+ * This is the source code of Telegram for Android v. 5.x.x.
+ * It is licensed under GNU GPL v. 2 or later.
+ * You should have received a copy of the license in this archive (see LICENSE).
+ *
+ * Copyright Nikolai Kudashov, 2013-2018.
+ */
+
+package org.telegram.messenger.camera;
+
+import android.annotation.SuppressLint;
+import android.annotation.TargetApi;
+import android.app.Activity;
+import android.content.Context;
+import android.graphics.Canvas;
+import android.graphics.ImageFormat;
+import android.graphics.Matrix;
+import android.graphics.Paint;
+import android.graphics.Rect;
+import android.graphics.RectF;
+import android.graphics.SurfaceTexture;
+import android.view.Surface;
+import android.view.TextureView;
+import android.view.View;
+import android.view.WindowManager;
+import android.view.animation.DecelerateInterpolator;
+
+import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ApplicationLoader;
+
+import java.util.ArrayList;
+import java.util.concurrent.CountDownLatch;
+
+@TargetApi(16)
+public class Camera1View extends CameraView implements TextureView.SurfaceTextureListener {
+
+    private Size previewSize;
+    private boolean mirror;
+    private TextureView textureView;
+    private Camera1Session camera1Session;
+    private boolean initied;
+    private CameraViewDelegate delegate;
+    private int clipTop;
+    private int clipBottom;
+    private boolean isFrontface;
+    private Matrix txform = new Matrix();
+    private Matrix matrix = new Matrix();
+    private int focusAreaSize;
+
+    private boolean useMaxPreview;
+
+    private long lastDrawTime;
+    private float focusProgress = 1.0f;
+    private float innerAlpha;
+    private float outerAlpha;
+    private boolean initialFrontface;
+    private int cx;
+    private int cy;
+    private Paint outerPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private Paint innerPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private boolean optimizeForBarcode;
+
+    private DecelerateInterpolator interpolator = new DecelerateInterpolator();
+
+    public Camera1View(Context context, boolean frontface) {
+        super(context, null);
+        initialFrontface = isFrontface = frontface;
+        textureView = new TextureView(context);
+        textureView.setSurfaceTextureListener(this);
+        addView(textureView);
+        focusAreaSize = AndroidUtilities.dp(96);
+        outerPaint.setColor(0xffffffff);
+        outerPaint.setStyle(Paint.Style.STROKE);
+        outerPaint.setStrokeWidth(AndroidUtilities.dp(2));
+        innerPaint.setColor(0x7fffffff);
+    }
+
+    public void setOptimizeForBarcode(boolean value) {
+        optimizeForBarcode = value;
+        if (camera1Session != null) {
+            camera1Session.setOptimizeForBarcode(true);
+        }
+    }
+
+    @Override
+    protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
+        super.onLayout(changed, left, top, right, bottom);
+        checkPreviewMatrix();
+    }
+    @Override
+    public void setMirror(boolean value) {
+        mirror = value;
+    }
+
+    @Override
+    public boolean isFrontface() {
+        return isFrontface;
+    }
+    @Override
+    public TextureView getTextureView() {
+        return textureView;
+    }
+
+    @Override
+    public void setUseMaxPreview(boolean value) {
+        useMaxPreview = value;
+    }
+
+    @Override
+    public boolean hasFrontFaceCamera() {
+        ArrayList<Camera1Info> camera1Infos = Camera1Controller.getInstance().getCameras();
+        for (int a = 0; a < camera1Infos.size(); a++) {
+            if (camera1Infos.get(a).frontCamera != 0) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    @Override
+    public void switchCamera() {
+        if (camera1Session != null) {
+            Camera1Controller.getInstance().close(camera1Session, null, null);
+            camera1Session = null;
+        }
+        initied = false;
+        isFrontface = !isFrontface;
+        initCamera();
+    }
+
+    @Override
+    public void initCamera() {
+        Camera1Info info = null;
+        ArrayList<Camera1Info> camera1Infos = Camera1Controller.getInstance().getCameras();
+        if (camera1Infos == null) {
+            return;
+        }
+        for (int a = 0; a < camera1Infos.size(); a++) {
+            Camera1Info camera1Info = camera1Infos.get(a);
+            if (isFrontface && camera1Info.frontCamera != 0 || !isFrontface && camera1Info.frontCamera == 0) {
+                info = camera1Info;
+                break;
+            }
+        }
+        if (info == null) {
+            return;
+        }
+        float size4to3 = 4.0f / 3.0f;
+        float size16to9 = 16.0f / 9.0f;
+        float screenSize = (float) Math.max(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y) / Math.min(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y);
+        org.telegram.messenger.camera.Size aspectRatio;
+        int wantedWidth;
+        int wantedHeight;
+        if (initialFrontface) {
+            aspectRatio = new Size(16, 9);
+            wantedWidth = 480;
+            wantedHeight = 270;
+        } else {
+            if (Math.abs(screenSize - size4to3) < 0.1f) {
+                aspectRatio = new Size(4, 3);
+                wantedWidth = 1280;
+                wantedHeight = 960;
+            } else {
+                aspectRatio = new Size(16, 9);
+                wantedWidth = 1280;
+                wantedHeight = 720;
+            }
+        }
+        if (textureView.getWidth() > 0 && textureView.getHeight() > 0) {
+            int width;
+            if (useMaxPreview) {
+                width = Math.max(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y);
+            } else {
+                width = Math.min(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y);
+            }
+            int height = width * aspectRatio.getHeight() / aspectRatio.getWidth();
+            previewSize = Camera1Controller.chooseOptimalSize(info.getPreviewSizes(), width, height, aspectRatio);
+        }
+        org.telegram.messenger.camera.Size pictureSize = Camera1Controller.chooseOptimalSize(info.getPictureSizes(), wantedWidth, wantedHeight, aspectRatio);
+        if (pictureSize.getWidth() >= 1280 && pictureSize.getHeight() >= 1280) {
+            if (Math.abs(screenSize - size4to3) < 0.1f) {
+                aspectRatio = new Size(3, 4);
+            } else {
+                aspectRatio = new Size(9, 16);
+            }
+            org.telegram.messenger.camera.Size pictureSize2 = Camera1Controller.chooseOptimalSize(info.getPictureSizes(), wantedHeight, wantedWidth, aspectRatio);
+            if (pictureSize2.getWidth() < 1280 || pictureSize2.getHeight() < 1280) {
+                pictureSize = pictureSize2;
+            }
+        }
+        SurfaceTexture surfaceTexture = textureView.getSurfaceTexture();
+        if (previewSize != null && surfaceTexture != null) {
+            surfaceTexture.setDefaultBufferSize(previewSize.getWidth(), previewSize.getHeight());
+            camera1Session = new Camera1Session(info, previewSize, pictureSize, ImageFormat.JPEG);
+            if (optimizeForBarcode) {
+                camera1Session.setOptimizeForBarcode(optimizeForBarcode);
+            }
+            Camera1Controller.getInstance().open(camera1Session, surfaceTexture, () -> {
+                if (camera1Session != null) {
+                    camera1Session.setInitied();
+                }
+                checkPreviewMatrix();
+            }, () -> {
+                if (delegate != null) {
+                    delegate.onCameraCreated();
+                }
+            });
+        }
+    }
+
+    @Override
+    public Size getPreviewSize() {
+        return previewSize;
+    }
+
+    @Override
+    public void onSurfaceTextureAvailable(SurfaceTexture surface, int width, int height) {
+        initCamera();
+    }
+
+    @Override
+    public void onSurfaceTextureSizeChanged(SurfaceTexture surfaceTexture, int width, int height) {
+        checkPreviewMatrix();
+    }
+
+    @Override
+    public boolean onSurfaceTextureDestroyed(SurfaceTexture surfaceTexture) {
+        if (camera1Session != null) {
+            Camera1Controller.getInstance().close(camera1Session, null, null);
+        }
+        return false;
+    }
+
+    @Override
+    public void onSurfaceTextureUpdated(SurfaceTexture surface) {
+        if (!initied && camera1Session != null && camera1Session.isInitied()) {
+            if (delegate != null) {
+                delegate.onCameraInit();
+            }
+            initied = true;
+        }
+    }
+    @Override
+    public void setClipTop(int value) {
+        clipTop = value;
+    }
+
+    @Override
+    public void setClipBottom(int value) {
+        clipBottom = value;
+    }
+
+    private void checkPreviewMatrix() {
+        if (previewSize == null) {
+            return;
+        }
+        WindowManager manager = (WindowManager) ApplicationLoader.applicationContext.getSystemService(Activity.WINDOW_SERVICE);
+        adjustAspectRatio(previewSize.getWidth(), previewSize.getHeight(), manager.getDefaultDisplay().getRotation());
+    }
+
+    private void adjustAspectRatio(int previewWidth, int previewHeight, int rotation) {
+        txform.reset();
+
+        int viewWidth = getWidth();
+        int viewHeight = getHeight();
+        float viewCenterX = viewWidth / 2;
+        float viewCenterY = viewHeight / 2;
+
+        float scale;
+        if (rotation == Surface.ROTATION_0 || rotation == Surface.ROTATION_180) {
+            scale = Math.max((float) (viewHeight + clipTop + clipBottom) / previewWidth, (float) (viewWidth) / previewHeight);
+        } else {
+            scale = Math.max((float) (viewHeight + clipTop + clipBottom) / previewHeight, (float) (viewWidth) / previewWidth);
+        }
+
+        float previewWidthScaled = previewWidth * scale;
+        float previewHeightScaled = previewHeight * scale;
+
+        float scaleX = previewHeightScaled / (viewWidth);
+        float scaleY = previewWidthScaled / (viewHeight);
+
+        txform.postScale(scaleX, scaleY, viewCenterX, viewCenterY);
+
+        if (Surface.ROTATION_90 == rotation || Surface.ROTATION_270 == rotation) {
+            txform.postRotate(90 * (rotation - 2), viewCenterX, viewCenterY);
+        } else {
+            if (Surface.ROTATION_180 == rotation) {
+                txform.postRotate(180, viewCenterX, viewCenterY);
+            }
+        }
+
+        if (mirror) {
+            txform.postScale(-1, 1, viewCenterX, viewCenterY);
+        }
+        if (clipTop != 0) {
+            txform.postTranslate(0, -clipTop / 2);
+        } else if (clipBottom != 0) {
+            txform.postTranslate(0, clipBottom / 2);
+        }
+
+        textureView.setTransform(txform);
+
+        Matrix matrix = new Matrix();
+        if (camera1Session != null) {
+            matrix.postRotate(camera1Session.getDisplayOrientation());
+        }
+        matrix.postScale(viewWidth / 2000f, viewHeight / 2000f);
+        matrix.postTranslate(viewWidth / 2f, viewHeight / 2f);
+        matrix.invert(this.matrix);
+    }
+
+    private Rect calculateTapArea(float x, float y, float coefficient) {
+        int areaSize = Float.valueOf(focusAreaSize * coefficient).intValue();
+
+        int left = clamp((int) x - areaSize / 2, 0, getWidth() - areaSize);
+        int top = clamp((int) y - areaSize / 2, 0, getHeight() - areaSize);
+
+        RectF rectF = new RectF(left, top, left + areaSize, top + areaSize);
+        matrix.mapRect(rectF);
+
+        return new Rect(Math.round(rectF.left), Math.round(rectF.top), Math.round(rectF.right), Math.round(rectF.bottom));
+    }
+
+    private int clamp(int x, int min, int max) {
+        if (x > max) {
+            return max;
+        }
+        if (x < min) {
+            return min;
+        }
+        return x;
+    }
+
+    @Override
+    public void focusToPoint(int x, int y) {
+        Rect focusRect = calculateTapArea(x, y, 1f);
+        Rect meteringRect = calculateTapArea(x, y, 1.5f);
+
+        if (camera1Session != null) {
+            camera1Session.focusToRect(focusRect, meteringRect);
+        }
+
+        focusProgress = 0.0f;
+        innerAlpha = 1.0f;
+        outerAlpha = 1.0f;
+        cx = x;
+        cy = y;
+        lastDrawTime = System.currentTimeMillis();
+        invalidate();
+    }
+
+    @Override
+    public void setZoom(float value) {
+        if (camera1Session != null) {
+            camera1Session.setZoom(value);
+        }
+    }
+
+    @Override
+    public void setDelegate(CameraViewDelegate cameraViewDelegate) {
+        delegate = cameraViewDelegate;
+    }
+
+    @Override
+    public boolean isInitied() {
+        return initied;
+    }
+
+    public Camera1Session getCamera1Session() {
+        return camera1Session;
+    }
+
+    public void destroy(boolean async, final Runnable beforeDestroyRunnable) {
+        if (camera1Session != null) {
+            camera1Session.destroy();
+            Camera1Controller.getInstance().close(camera1Session, !async ? new CountDownLatch(1) : null, beforeDestroyRunnable);
+        }
+    }
+
+    public Matrix getMatrix() {
+        return txform;
+    }
+
+    @Override
+    protected boolean drawChild(Canvas canvas, View child, long drawingTime) {
+        boolean result = super.drawChild(canvas, child, drawingTime);
+        if (focusProgress != 1.0f || innerAlpha != 0.0f || outerAlpha != 0.0f) {
+            int baseRad = AndroidUtilities.dp(30);
+            long newTime = System.currentTimeMillis();
+            long dt = newTime - lastDrawTime;
+            if (dt < 0 || dt > 17) {
+                dt = 17;
+            }
+            lastDrawTime = newTime;
+            outerPaint.setAlpha((int) (interpolator.getInterpolation(outerAlpha) * 255));
+            innerPaint.setAlpha((int) (interpolator.getInterpolation(innerAlpha) * 127));
+            float interpolated = interpolator.getInterpolation(focusProgress);
+            canvas.drawCircle(cx, cy, baseRad + baseRad * (1.0f - interpolated), outerPaint);
+            canvas.drawCircle(cx, cy, baseRad * interpolated, innerPaint);
+
+            if (focusProgress < 1) {
+                focusProgress += dt / 200.0f;
+                if (focusProgress > 1) {
+                    focusProgress = 1;
+                }
+                invalidate();
+            } else if (innerAlpha != 0) {
+                innerAlpha -= dt / 150.0f;
+                if (innerAlpha < 0) {
+                    innerAlpha = 0;
+                }
+                invalidate();
+            } else if (outerAlpha != 0) {
+                outerAlpha -= dt / 150.0f;
+                if (outerAlpha < 0) {
+                    outerAlpha = 0;
+                }
+                invalidate();
+            }
+        }
+        return result;
+    }
+}

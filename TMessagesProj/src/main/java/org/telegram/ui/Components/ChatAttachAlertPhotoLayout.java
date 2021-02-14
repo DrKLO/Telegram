@@ -46,6 +46,13 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import androidx.annotation.Keep;
+import androidx.exifinterface.media.ExifInterface;
+import androidx.recyclerview.widget.GridLayoutManager;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.LinearSmoothScroller;
+import androidx.recyclerview.widget.RecyclerView;
+
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.BuildVars;
@@ -62,8 +69,10 @@ import org.telegram.messenger.SendMessagesHelper;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.messenger.VideoEditedInfo;
-import org.telegram.messenger.camera.CameraController;
+import org.telegram.messenger.camera.Camera1Controller;
+import org.telegram.messenger.camera.Camera1View;
 import org.telegram.messenger.camera.CameraView;
+import org.telegram.messenger.camera.CameraXView;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
@@ -81,33 +90,26 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 
-import androidx.annotation.Keep;
-import androidx.exifinterface.media.ExifInterface;
-import androidx.recyclerview.widget.GridLayoutManager;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.LinearSmoothScroller;
-import androidx.recyclerview.widget.RecyclerView;
-
 public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayout implements NotificationCenter.NotificationCenterDelegate {
 
-    private RecyclerListView cameraPhotoRecyclerView;
-    private LinearLayoutManager cameraPhotoLayoutManager;
-    private PhotoAttachAdapter cameraAttachAdapter;
+    private final RecyclerListView cameraPhotoRecyclerView;
+    private final LinearLayoutManager cameraPhotoLayoutManager;
+    private final PhotoAttachAdapter cameraAttachAdapter;
 
-    private ActionBarMenuItem dropDownContainer;
-    private TextView dropDown;
-    private Drawable dropDownDrawable;
+    private final ActionBarMenuItem dropDownContainer;
+    private final TextView dropDown;
+    private final Drawable dropDownDrawable;
 
-    private RecyclerListView gridView;
-    private GridLayoutManager layoutManager;
-    private PhotoAttachAdapter adapter;
-    private EmptyTextProgressView progressView;
+    private final RecyclerListView gridView;
+    private final GridLayoutManager layoutManager;
+    private final PhotoAttachAdapter adapter;
+    private final EmptyTextProgressView progressView;
     private RecyclerViewItemRangeSelector itemRangeSelector;
     private int gridExtraSpace;
     private boolean shouldSelect;
     private int alertOnlyOnce;
 
-    private Drawable cameraDrawable;
+    private final Drawable cameraDrawable;
 
     private int currentSelectedCount;
 
@@ -119,11 +121,11 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
     private AnimatorSet cameraInitAnimation;
     private CameraView cameraView;
     private FrameLayout cameraIcon;
-    private TextView recordTime;
-    private ImageView[] flashModeButton = new ImageView[2];
+    private final TextView recordTime;
+    private final ImageView[] flashModeButton = new ImageView[2];
     private boolean flashAnimationInProgress;
-    private float[] cameraViewLocation = new float[2];
-    private int[] viewPosition = new int[2];
+    private final float[] cameraViewLocation = new float[2];
+    private final int[] viewPosition = new int[2];
     private float cameraViewOffsetX;
     private float cameraViewOffsetY;
     private float cameraViewOffsetBottomY;
@@ -131,23 +133,24 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
     private boolean canSaveCameraPreview;
     private boolean cameraAnimationInProgress;
     private float cameraOpenProgress;
-    private int[] animateCameraValues = new int[5];
+    private final int[] animateCameraValues = new int[5];
     private int videoRecordTime;
     private Runnable videoRecordRunnable;
-    private DecelerateInterpolator interpolator = new DecelerateInterpolator(1.5f);
-    private FrameLayout cameraPanel;
-    private ShutterButton shutterButton;
-    private ZoomControlView zoomControlView;
+    private final DecelerateInterpolator interpolator = new DecelerateInterpolator(1.5f);
+    private final FrameLayout cameraPanel;
+    private final ShutterButton shutterButton;
+    private final SlideControlView zoomControlView;
+    private final SlideControlView evControlView;
     private AnimatorSet zoomControlAnimation;
     private Runnable zoomControlHideRunnable;
-    private TextView counterTextView;
-    private TextView tooltipTextView;
-    private ImageView switchCameraButton;
+    private final TextView counterTextView;
+    private final TextView tooltipTextView;
+    private final ImageView switchCameraButton;
     private boolean takingPhoto;
     private static boolean mediaFromExternalCamera;
-    private static ArrayList<Object> cameraPhotos = new ArrayList<>();
-    private static HashMap<Object, Object> selectedPhotos = new HashMap<>();
-    private static ArrayList<Object> selectedPhotosOrder = new ArrayList<>();
+    private static final ArrayList<Object> cameraPhotos = new ArrayList<>();
+    private static final HashMap<Object, Object> selectedPhotos = new HashMap<>();
+    private static final ArrayList<Object> selectedPhotosOrder = new ArrayList<>();
     private static int lastImageId = -1;
     private boolean cancelTakingPhotos;
     private boolean checkCameraWhenShown;
@@ -158,7 +161,7 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
     private float cameraZoom;
     private boolean zooming;
     private boolean zoomWas;
-    private android.graphics.Rect hitRect = new Rect();
+    private final android.graphics.Rect hitRect = new Rect();
 
     private float lastY;
     private boolean pressed;
@@ -175,6 +178,7 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
     private boolean noCameraPermissions;
     private boolean noGalleryPermissions;
     private boolean requestingPermissions;
+    private boolean needRebindCamera = false;
 
     private boolean ignoreLayout;
     private int lastNotifyWidth;
@@ -189,6 +193,7 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
     private final static int group = 0;
     private final static int compress = 1;
     private final static int open_in = 2;
+    private boolean isExposureCompensationSupported = false;
 
     private class BasePhotoProvider extends PhotoViewer.EmptyPhotoViewerProvider {
         @Override
@@ -275,7 +280,7 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
         }
     }
 
-    private PhotoViewer.PhotoViewerProvider photoViewerProvider = new BasePhotoProvider() {
+    private final PhotoViewer.PhotoViewerProvider photoViewerProvider = new BasePhotoProvider() {
         @Override
         public PhotoViewer.PlaceProviderObject getPlaceForPhoto(MessageObject messageObject, TLRPC.FileLocation fileLocation, int index, boolean needPreview) {
             PhotoAttachPhotoCell cell = getCellForIndex(index);
@@ -745,13 +750,16 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
                 return;
             }
             openPhotoViewer(null, false, false);
-            CameraController.getInstance().stopPreview(cameraView.getCameraSession());
+            if (Build.VERSION.SDK_INT < 21 || !BuildVars.USE_CAMERAX_API) {
+                Camera1Controller.getInstance().stopPreview(((Camera1View) cameraView).getCamera1Session());
+            }
         });
 
-        zoomControlView = new ZoomControlView(context);
+        zoomControlView = new SlideControlView(context, SlideControlView.SLIDER_MODE_ZOOM);
         zoomControlView.setVisibility(View.GONE);
         zoomControlView.setAlpha(0.0f);
-        container.addView(zoomControlView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 50, Gravity.LEFT | Gravity.TOP, 0, 0, 0, 100 + 16));
+        zoomControlView.setRotation(180f);
+        container.addView(zoomControlView, LayoutHelper.createFrame(50, 300, Gravity.RIGHT | Gravity.CENTER_VERTICAL, 0, 0, 0, 0));
         zoomControlView.setDelegate(zoom -> {
             if (cameraView != null) {
                 cameraView.setZoom(cameraZoom = zoom);
@@ -759,12 +767,28 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
             showZoomControls(true, true);
         });
 
+
+        evControlView = new SlideControlView(context, SlideControlView.SLIDER_MODE_EV);
+        evControlView.setVisibility(View.GONE);
+        evControlView.setAlpha(0.0f);
+        container.addView(evControlView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 50, Gravity.LEFT | Gravity.TOP, 0, 0, 0, 100 + 16));
+        evControlView.setSliderValue(0.5f, false);
+        evControlView.setDelegate(ev -> {
+            if (cameraView != null) {
+                if (Build.VERSION.SDK_INT >= 21 && isExposureCompensationSupported && BuildVars.USE_CAMERAX_API) {
+                    ((CameraXView) cameraView).setExposureCompensation(ev);
+                }
+            }
+        });
+
+
         shutterButton = new ShutterButton(context);
         cameraPanel.addView(shutterButton, LayoutHelper.createFrame(84, 84, Gravity.CENTER));
         shutterButton.setDelegate(new ShutterButton.ShutterButtonDelegate() {
 
             private File outputFile;
             private boolean zoomingWas;
+            private float initialEVState = 0.5f;
 
             @Override
             public boolean shutterLongPressed() {
@@ -796,23 +820,51 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
                     AndroidUtilities.runOnUIThread(videoRecordRunnable, 1000);
                 };
                 AndroidUtilities.lockOrientation(parentAlert.baseFragment.getParentActivity());
-                CameraController.getInstance().recordVideo(cameraView.getCameraSession(), outputFile, parentAlert.avatarPicker != 0, (thumbPath, duration) -> {
-                    if (outputFile == null || parentAlert.baseFragment == null || cameraView == null) {
-                        return;
-                    }
-                    mediaFromExternalCamera = false;
-                    MediaController.PhotoEntry photoEntry = new MediaController.PhotoEntry(0, lastImageId--, 0, outputFile.getAbsolutePath(), 0, true, 0, 0, 0);
-                    photoEntry.duration = (int) duration;
-                    photoEntry.thumbPath = thumbPath;
-                    if (parentAlert.avatarPicker != 0 && cameraView.isFrontface()) {
-                        photoEntry.cropState = new MediaController.CropState();
-                        photoEntry.cropState.mirrored = true;
-                        photoEntry.cropState.freeform = false;
-                        photoEntry.cropState.lockedAspectRatio = 1.0f;
-                    }
-                    openPhotoViewer(photoEntry, false, false);
-                }, () -> AndroidUtilities.runOnUIThread(videoRecordRunnable, 1000));
+
+                if (Build.VERSION.SDK_INT < 21 || !BuildVars.USE_CAMERAX_API) {
+                    Camera1Controller.getInstance().recordVideo(((Camera1View) cameraView).getCamera1Session(), outputFile, parentAlert.avatarPicker != 0, (thumbPath, duration) -> {
+                        if (outputFile == null || parentAlert.baseFragment == null || cameraView == null) {
+                            return;
+                        }
+                        mediaFromExternalCamera = false;
+                        MediaController.PhotoEntry photoEntry = new MediaController.PhotoEntry(0, lastImageId--, 0, outputFile.getAbsolutePath(), 0, true, 0, 0, 0);
+                        photoEntry.duration = (int) duration;
+                        photoEntry.thumbPath = thumbPath;
+                        if (parentAlert.avatarPicker != 0 && ((Camera1View) cameraView).isFrontface()) {
+                            photoEntry.cropState = new MediaController.CropState();
+                            photoEntry.cropState.mirrored = true;
+                            photoEntry.cropState.freeform = false;
+                            photoEntry.cropState.lockedAspectRatio = 1.0f;
+                        }
+                        openPhotoViewer(photoEntry, false, false);
+                    }, () -> AndroidUtilities.runOnUIThread(videoRecordRunnable, 1000));
+                } else {
+                    ((CameraXView) cameraView).recordVideo(outputFile, ((CameraXView) cameraView).isFrontface()/*parentAlert.avatarPicker != 0*/, (thumbPath, duration) -> {
+                        if (outputFile == null || parentAlert.baseFragment == null || cameraView == null) {
+                            return;
+                        }
+                        mediaFromExternalCamera = false;
+                        MediaController.PhotoEntry photoEntry = new MediaController.PhotoEntry(0, lastImageId--, 0, outputFile.getAbsolutePath(), 0, true, 0, 0, 0);
+                        photoEntry.duration = (int) duration;
+                        photoEntry.thumbPath = thumbPath;
+                        if (parentAlert.avatarPicker != 0 && ((CameraXView) cameraView).isFrontface()) {
+                            photoEntry.cropState = new MediaController.CropState();
+                            photoEntry.cropState.mirrored = true;
+                            photoEntry.cropState.freeform = false;
+                            photoEntry.cropState.lockedAspectRatio = 1.0f;
+                        } else if (((CameraXView) cameraView).isFrontface()) {
+                            //in case if front camera doesn't mirror
+                            photoEntry.cropState = new MediaController.CropState();
+                            photoEntry.cropState.mirrored = true;
+                            photoEntry.cropState.freeform = true;
+                            photoEntry.cropState.initied = true;
+                        }
+                        openPhotoViewer(photoEntry, false, false);
+                    });
+                    AndroidUtilities.runOnUIThread(videoRecordRunnable, 1000);
+                }
                 shutterButton.setState(ShutterButton.State.RECORDING, true);
+                initialEVState = evControlView.getSliderValue();
                 return true;
             }
 
@@ -823,74 +875,148 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
                     outputFile = null;
                 }
                 resetRecordState();
-                CameraController.getInstance().stopVideoRecording(cameraView.getCameraSession(), true);
+                if (Build.VERSION.SDK_INT < 21 || !BuildVars.USE_CAMERAX_API) {
+                    Camera1Controller.getInstance().stopVideoRecording(((Camera1View) cameraView).getCamera1Session(), true);
+                } else {
+                    ((CameraXView) cameraView).stopVideoRecording(true);
+                }
+                initialEVState = 0.5f;
             }
 
             @Override
             public void shutterReleased() {
-                if (takingPhoto || cameraView == null || cameraView.getCameraSession() == null) {
-                    return;
+                if (Build.VERSION.SDK_INT < 21 || !BuildVars.USE_CAMERAX_API) {
+                    if (takingPhoto || cameraView == null || ((Camera1View) cameraView).getCamera1Session() == null) {
+                        return;
+                    }
+                } else {
+                    if (takingPhoto || cameraView == null) {
+                        return;
+                    }
                 }
+
                 if (shutterButton.getState() == ShutterButton.State.RECORDING) {
                     resetRecordState();
-                    CameraController.getInstance().stopVideoRecording(cameraView.getCameraSession(), false);
+                    if (Build.VERSION.SDK_INT < 21 || !BuildVars.USE_CAMERAX_API) {
+                        Camera1Controller.getInstance().stopVideoRecording(((Camera1View) cameraView).getCamera1Session(), false);
+                    } else {
+                        ((CameraXView) cameraView).stopVideoRecording(false);
+                    }
                     shutterButton.setState(ShutterButton.State.DEFAULT, true);
                     return;
                 }
                 final File cameraFile = AndroidUtilities.generatePicturePath(parentAlert.baseFragment instanceof ChatActivity && ((ChatActivity) parentAlert.baseFragment).isSecretChat(), null);
-                final boolean sameTakePictureOrientation = cameraView.getCameraSession().isSameTakePictureOrientation();
-                cameraView.getCameraSession().setFlipFront(parentAlert.baseFragment instanceof ChatActivity || parentAlert.avatarPicker == 2);
-                takingPhoto = CameraController.getInstance().takePicture(cameraFile, cameraView.getCameraSession(), () -> {
-                    takingPhoto = false;
-                    if (cameraFile == null || parentAlert.baseFragment == null) {
-                        return;
-                    }
-                    int orientation = 0;
-                    try {
-                        ExifInterface ei = new ExifInterface(cameraFile.getAbsolutePath());
-                        int exif = ei.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL);
-                        switch (exif) {
-                            case ExifInterface.ORIENTATION_ROTATE_90:
-                                orientation = 90;
-                                break;
-                            case ExifInterface.ORIENTATION_ROTATE_180:
-                                orientation = 180;
-                                break;
-                            case ExifInterface.ORIENTATION_ROTATE_270:
-                                orientation = 270;
-                                break;
+                if (Build.VERSION.SDK_INT < 21 || !BuildVars.USE_CAMERAX_API) {
+                    final boolean sameTakePictureOrientation = ((Camera1View) cameraView).getCamera1Session().isSameTakePictureOrientation();
+                    ((Camera1View) cameraView).getCamera1Session().setFlipFront(parentAlert.baseFragment instanceof ChatActivity || parentAlert.avatarPicker == 2);
+                    takingPhoto = Camera1Controller.getInstance().takePicture(cameraFile, ((Camera1View) cameraView).getCamera1Session(), () -> {
+                        takingPhoto = false;
+                        if (cameraFile == null || parentAlert.baseFragment == null) {
+                            return;
                         }
-                    } catch (Exception e) {
-                        FileLog.e(e);
-                    }
-                    mediaFromExternalCamera = false;
-                    MediaController.PhotoEntry photoEntry = new MediaController.PhotoEntry(0, lastImageId--, 0, cameraFile.getAbsolutePath(), orientation, false, 0, 0, 0);
-                    photoEntry.canDeleteAfter = true;
-                    openPhotoViewer(photoEntry, sameTakePictureOrientation, false);
-                });
+                        int orientation = 0;
+                        try {
+                            ExifInterface ei = new ExifInterface(cameraFile.getAbsolutePath());
+                            int exif = ei.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL);
+                            switch (exif) {
+                                case ExifInterface.ORIENTATION_ROTATE_90:
+                                    orientation = 90;
+                                    break;
+                                case ExifInterface.ORIENTATION_ROTATE_180:
+                                    orientation = 180;
+                                    break;
+                                case ExifInterface.ORIENTATION_ROTATE_270:
+                                    orientation = 270;
+                                    break;
+                            }
+                        } catch (Exception e) {
+                            FileLog.e(e);
+                        }
+                        mediaFromExternalCamera = false;
+                        MediaController.PhotoEntry photoEntry = new MediaController.PhotoEntry(0, lastImageId--, 0, cameraFile.getAbsolutePath(), orientation, false, 0, 0, 0);
+                        photoEntry.canDeleteAfter = true;
+                        openPhotoViewer(photoEntry, sameTakePictureOrientation, false);
+                    });
+                } else {
+                    final boolean sameTakePictureOrientation = ((CameraXView) cameraView).isSameTakePictureOrientation();
+                    takingPhoto = true;
+                    ((CameraXView) cameraView).takePicture(cameraFile, () -> {
+                        takingPhoto = false;
+                        if (cameraFile == null || parentAlert.baseFragment == null) {
+                            return;
+                        }
+                        int orientation = 0;
+                        try {
+                            ExifInterface ei = new ExifInterface(cameraFile.getAbsolutePath());
+                            int exif = ei.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL);
+                            switch (exif) {
+                                case ExifInterface.ORIENTATION_ROTATE_90:
+                                    orientation = 90;
+                                    break;
+                                case ExifInterface.ORIENTATION_ROTATE_180:
+                                    orientation = 180;
+                                    break;
+                                case ExifInterface.ORIENTATION_ROTATE_270:
+                                    orientation = 270;
+                                    break;
+                            }
+                        } catch (Exception e) {
+                            FileLog.e(e);
+                        }
+                        mediaFromExternalCamera = false;
+                        MediaController.PhotoEntry photoEntry = new MediaController.PhotoEntry(0, lastImageId--, 0, cameraFile.getAbsolutePath(), orientation, false, 0, 0, 0);
+                        photoEntry.canDeleteAfter = true;
+                        openPhotoViewer(photoEntry, sameTakePictureOrientation, false);
+                    });
+                }
+                initialEVState = 0.5f;
             }
 
             @Override
-            public boolean onTranslationChanged(float x, float y) {
+            public boolean onTranslationChanged(float x, float y, float width, float height) {
                 boolean isPortrait = container.getWidth() < container.getHeight();
-                float val1 = isPortrait ? x : y;
-                float val2 = isPortrait ? y : x;
+                float dx;
+                float dy;
+                if (isPortrait) {
+                    dy = y >= 0 && y <= height ? 0 : y;
+                    dx = zoomingWas ? (x - width / 2) : (x >= 0 && x <= width ? 0 : x);
+                } else {
+                    dx = x >= 0 && x <= width ? 0 : x;
+                    dy = zoomingWas ? (y - height / 2) : (y >= 0 && y <= height ? 0 : y);
+                }
+
+
+                float val1 = isPortrait ? dx : dy;
+                float val2 = isPortrait ? dy : dx;
+
+
                 if (!zoomingWas && Math.abs(val1) > Math.abs(val2)) {
                     return zoomControlView.getTag() == null;
                 }
+
+
+
                 if (val2 < 0) {
+                    if(isPortrait){
+                        evControlView.setSliderValue(clamp(initialEVState + (val1 / AndroidUtilities.dp(200)), 0.0f, 1.0f), true);
+                    } else {
+                        evControlView.setSliderValue(clamp(initialEVState - (val1 / AndroidUtilities.dp(200)), 0.0f, 1.0f), true);
+                    }
+
                     showZoomControls(true, true);
-                    zoomControlView.setZoom(-val2 / AndroidUtilities.dp(200), true);
+                    zoomControlView.setSliderValue(-val2 / AndroidUtilities.dp(200), true);
                     zoomingWas = true;
                     return false;
                 }
+
+
                 if (zoomingWas) {
-                    zoomControlView.setZoom(0, true);
+                    zoomControlView.setSliderValue(0, true);
                 }
-                if (x == 0 && y == 0) {
+                if (dx == 0 && dy == 0) {
                     zoomingWas = false;
                 }
-                return !zoomingWas && (x != 0 || y != 0);
+                return !zoomingWas && (dx != 0 || dy != 0);
             }
         });
         shutterButton.setFocusable(true);
@@ -904,6 +1030,14 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
                 return;
             }
             canSaveCameraPreview = false;
+
+            if(zoomControlView.getAlpha() == 1.0f){
+                zoomControlView.animateToValue(0.0f);
+            } else {
+                zoomControlView.setSliderValue(0.0f, false);
+            }
+            cameraZoom = 0.0f;
+            evControlView.animateToValue(0.5f);
             cameraView.switchCamera();
             ObjectAnimator animator = ObjectAnimator.ofFloat(switchCameraButton, View.SCALE_X, 0.0f).setDuration(100);
             animator.addListener(new AnimatorListenerAdapter() {
@@ -926,12 +1060,19 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
                 if (flashAnimationInProgress || cameraView == null || !cameraView.isInitied() || !cameraOpened) {
                     return;
                 }
-                String current = cameraView.getCameraSession().getCurrentFlashMode();
-                String next = cameraView.getCameraSession().getNextFlashMode();
-                if (current.equals(next)) {
-                    return;
+                String next = null;
+                if (Build.VERSION.SDK_INT < 21 || !BuildVars.USE_CAMERAX_API) {
+                    String current = ((Camera1View) cameraView).getCamera1Session().getCurrentFlashMode();
+                    next = ((Camera1View) cameraView).getCamera1Session().getNextFlashMode();
+                    if (current.equals(next)) {
+                        return;
+                    }
+                    ((Camera1View) cameraView).getCamera1Session().setCurrentFlashMode(next);
+                } else {
+                    next = ((CameraXView) cameraView).setNextFlashMode();
                 }
-                cameraView.getCameraSession().setCurrentFlashMode(next);
+
+
                 flashAnimationInProgress = true;
                 ImageView nextImage = flashModeButton[0] == currentImage ? flashModeButton[1] : flashModeButton[0];
                 nextImage.setVisibility(View.VISIBLE);
@@ -1127,7 +1268,7 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
                             } else if (cameraZoom > 1.0f) {
                                 cameraZoom = 1.0f;
                             }
-                            zoomControlView.setZoom(cameraZoom, false);
+                            zoomControlView.setSliderValue(cameraZoom, false);
                             parentAlert.getSheetContainer().invalidate();
                             cameraView.setZoom(cameraZoom);
                             showZoomControls(true, true);
@@ -1156,6 +1297,7 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
                                 animatorSet.playTogether(
                                         ObjectAnimator.ofFloat(cameraPanel, View.ALPHA, 0.0f),
                                         ObjectAnimator.ofFloat(zoomControlView, View.ALPHA, 0.0f),
+                                        ObjectAnimator.ofFloat(evControlView, View.ALPHA, 0.0f),
                                         ObjectAnimator.ofFloat(counterTextView, View.ALPHA, 0.0f),
                                         ObjectAnimator.ofFloat(flashModeButton[0], View.ALPHA, 0.0f),
                                         ObjectAnimator.ofFloat(flashModeButton[1], View.ALPHA, 0.0f),
@@ -1182,6 +1324,7 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
                                     ObjectAnimator.ofFloat(cameraView, View.TRANSLATION_Y, 0.0f),
                                     ObjectAnimator.ofFloat(cameraPanel, View.ALPHA, 1.0f),
                                     ObjectAnimator.ofFloat(counterTextView, View.ALPHA, 1.0f),
+                                    ObjectAnimator.ofFloat(evControlView, View.ALPHA, 1.0f),
                                     ObjectAnimator.ofFloat(flashModeButton[0], View.ALPHA, 1.0f),
                                     ObjectAnimator.ofFloat(flashModeButton[1], View.ALPHA, 1.0f),
                                     ObjectAnimator.ofFloat(cameraPhotoRecyclerView, View.ALPHA, 1.0f));
@@ -1229,10 +1372,13 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
         if (entry != null && !external && cameraPhotos.size() > 1) {
             updatePhotosCounter(false);
             if (cameraView != null) {
-                zoomControlView.setZoom(0.0f, false);
+                evControlView.setSliderValue(0.5f, true);
+                zoomControlView.setSliderValue(0.0f, false);
                 cameraZoom = 0.0f;
                 cameraView.setZoom(0.0f);
-                CameraController.getInstance().startPreview(cameraView.getCameraSession());
+                if (Build.VERSION.SDK_INT < 21 || !BuildVars.USE_CAMERAX_API) {
+                    Camera1Controller.getInstance().startPreview(((Camera1View) cameraView).getCamera1Session());
+                }
             }
             return;
         }
@@ -1282,10 +1428,13 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
                             cameraView.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN | View.SYSTEM_UI_FLAG_FULLSCREEN);
                         }
                     }, 1000);
-                    zoomControlView.setZoom(0.0f, false);
+                    evControlView.setSliderValue(0.5f, true);
+                    zoomControlView.setSliderValue(0.0f, false);
                     cameraZoom = 0.0f;
                     cameraView.setZoom(0.0f);
-                    CameraController.getInstance().startPreview(cameraView.getCameraSession());
+                    if (Build.VERSION.SDK_INT < 21 || !BuildVars.USE_CAMERAX_API) {
+                        Camera1Controller.getInstance().startPreview(((Camera1View) cameraView).getCamera1Session());
+                    }
                 }
                 if (cancelTakingPhotos && cameraPhotos.size() == 1) {
                     for (int a = 0, size = cameraPhotos.size(); a < size; a++) {
@@ -1497,7 +1646,7 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
         if (!SharedConfig.inappCamera) {
             deviceHasGoodCamera = false;
         } else {
-            if (Build.VERSION.SDK_INT >= 23) {
+            if (Build.VERSION.SDK_INT >= 23 && BuildVars.USE_CAMERAX_API) {
                 if (noCameraPermissions = (parentAlert.baseFragment.getParentActivity().checkSelfPermission(Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED)) {
                     if (request) {
                         try {
@@ -1508,16 +1657,15 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
                     }
                     deviceHasGoodCamera = false;
                 } else {
-                    if (request || SharedConfig.hasCameraCache) {
-                        CameraController.getInstance().initCamera(null);
-                    }
-                    deviceHasGoodCamera = CameraController.getInstance().isCameraInitied();
+                    deviceHasGoodCamera = CameraXView.hasGoodCamera(getContext());
                 }
+            } else if (Build.VERSION.SDK_INT >= 21 && BuildVars.USE_CAMERAX_API) {
+                deviceHasGoodCamera = CameraXView.hasGoodCamera(getContext());
             } else {
                 if (request || SharedConfig.hasCameraCache) {
-                    CameraController.getInstance().initCamera(null);
+                    Camera1Controller.getInstance().initCamera(null);
                 }
-                deviceHasGoodCamera = CameraController.getInstance().isCameraInitied();
+                deviceHasGoodCamera = Camera1Controller.getInstance().isCameraInitied();
             }
         }
         if ((old != deviceHasGoodCamera || old2 != noCameraPermissions) && adapter != null) {
@@ -1525,6 +1673,9 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
         }
         if (parentAlert.isShowing() && deviceHasGoodCamera && parentAlert.baseFragment != null && parentAlert.getBackDrawable().getAlpha() != 0 && !cameraOpened) {
             showCamera();
+        }
+        if (Build.VERSION.SDK_INT >= 21 && BuildVars.USE_CAMERAX_API && cameraOpened && needRebindCamera) {
+            ((CameraXView) cameraView).rebind();
         }
     }
 
@@ -1549,6 +1700,16 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
         }
         zoomControlView.setVisibility(View.VISIBLE);
         zoomControlView.setAlpha(0.0f);
+
+
+        if (Build.VERSION.SDK_INT >= 21 && BuildVars.USE_CAMERAX_API) {
+            if (((CameraXView) cameraView).isExposureCompensationSupported()) {
+                isExposureCompensationSupported = true;
+                evControlView.setVisibility(View.VISIBLE);
+                evControlView.setAlpha(0.0f);
+            }
+        }
+
         cameraPanel.setVisibility(View.VISIBLE);
         cameraPanel.setTag(null);
         animateCameraValues[0] = 0;
@@ -1560,6 +1721,7 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
             animators.add(ObjectAnimator.ofFloat(this, "cameraOpenProgress", 0.0f, 1.0f));
             animators.add(ObjectAnimator.ofFloat(cameraPanel, View.ALPHA, 1.0f));
             animators.add(ObjectAnimator.ofFloat(counterTextView, View.ALPHA, 1.0f));
+            animators.add(ObjectAnimator.ofFloat(evControlView, View.ALPHA, 1.0f));
             animators.add(ObjectAnimator.ofFloat(cameraPhotoRecyclerView, View.ALPHA, 1.0f));
             for (int a = 0; a < 2; a++) {
                 if (flashModeButton[a].getVisibility() == View.VISIBLE) {
@@ -1623,7 +1785,12 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
             return;
         }
         if (cameraView == null) {
-            cameraView = new CameraView(parentAlert.baseFragment.getParentActivity(), parentAlert.openWithFrontFaceCamera);
+            if (Build.VERSION.SDK_INT < 21 || !BuildVars.USE_CAMERAX_API) {
+                cameraView = new Camera1View(parentAlert.baseFragment.getParentActivity(), parentAlert.openWithFrontFaceCamera);
+            } else {
+                cameraView = new CameraXView(parentAlert.baseFragment.getParentActivity(), parentAlert.openWithFrontFaceCamera);
+                cameraView.initCamera();
+            }
             cameraView.setFocusable(true);
             if (Build.VERSION.SDK_INT >= 21) {
                 cameraView.setOutlineProvider(new ViewOutlineProvider() {
@@ -1646,28 +1813,49 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
             parentAlert.getContainer().addView(cameraView, 1, new FrameLayout.LayoutParams(itemSize, itemSize));
             cameraView.setDelegate(new CameraView.CameraViewDelegate() {
                 @Override
-                public void onCameraCreated(Camera camera) {
+                public void onCameraCreated() {
 
                 }
 
                 @Override
                 public void onCameraInit() {
-                    String current = cameraView.getCameraSession().getCurrentFlashMode();
-                    String next = cameraView.getCameraSession().getNextFlashMode();
-                    if (current.equals(next)) {
-                        for (int a = 0; a < 2; a++) {
-                            flashModeButton[a].setVisibility(View.INVISIBLE);
-                            flashModeButton[a].setAlpha(0.0f);
-                            flashModeButton[a].setTranslationY(0.0f);
+                    String current = null;
+                    String next = null;
+                    if (Build.VERSION.SDK_INT < 21 || !BuildVars.USE_CAMERAX_API) {
+                        current = ((Camera1View) cameraView).getCamera1Session().getCurrentFlashMode();
+                        next = ((Camera1View) cameraView).getCamera1Session().getNextFlashMode();
+                        if (current.equals(next)) {
+                            for (int a = 0; a < 2; a++) {
+                                flashModeButton[a].setVisibility(View.INVISIBLE);
+                                flashModeButton[a].setAlpha(0.0f);
+                                flashModeButton[a].setTranslationY(0.0f);
+                            }
+                        } else {
+                            setCameraFlashModeIcon(flashModeButton[0], ((Camera1View) cameraView).getCamera1Session().getCurrentFlashMode());
+                            for (int a = 0; a < 2; a++) {
+                                flashModeButton[a].setVisibility(a == 0 ? View.VISIBLE : View.INVISIBLE);
+                                flashModeButton[a].setAlpha(a == 0 && cameraOpened ? 1.0f : 0.0f);
+                                flashModeButton[a].setTranslationY(0.0f);
+                            }
                         }
                     } else {
-                        setCameraFlashModeIcon(flashModeButton[0], cameraView.getCameraSession().getCurrentFlashMode());
-                        for (int a = 0; a < 2; a++) {
-                            flashModeButton[a].setVisibility(a == 0 ? View.VISIBLE : View.INVISIBLE);
-                            flashModeButton[a].setAlpha(a == 0 && cameraOpened ? 1.0f : 0.0f);
-                            flashModeButton[a].setTranslationY(0.0f);
+
+                        if (((CameraXView) cameraView).isFlashAvailable()) {
+                            setCameraFlashModeIcon(flashModeButton[0], ((CameraXView) cameraView).getCurrentFlashMode());
+                            for (int a = 0; a < 2; a++) {
+                                flashModeButton[a].setVisibility(a == 0 ? View.VISIBLE : View.INVISIBLE);
+                                flashModeButton[a].setAlpha(a == 0 && cameraOpened ? 1.0f : 0.0f);
+                                flashModeButton[a].setTranslationY(0.0f);
+                            }
+                        } else {
+                            for (int a = 0; a < 2; a++) {
+                                flashModeButton[a].setVisibility(View.INVISIBLE);
+                                flashModeButton[a].setAlpha(0.0f);
+                                flashModeButton[a].setTranslationY(0.0f);
+                            }
                         }
                     }
+
                     switchCameraButton.setImageResource(cameraView.isFrontface() ? R.drawable.camera_revert1 : R.drawable.camera_revert2);
                     switchCameraButton.setVisibility(cameraView.hasFrontFaceCamera() ? View.VISIBLE : View.INVISIBLE);
                     if (!cameraOpened) {
@@ -1725,9 +1913,9 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
             }
             parentAlert.getContainer().addView(cameraIcon, 2, new FrameLayout.LayoutParams(itemSize, itemSize));
 
-            cameraView.setAlpha(mediaEnabled ? 1.0f : 0.2f);
+            cameraView.setAlpha(mediaEnabled ? 0.0f : 0.2f);
             cameraView.setEnabled(mediaEnabled);
-            cameraIcon.setAlpha(mediaEnabled ? 1.0f : 0.2f);
+            cameraIcon.setAlpha(mediaEnabled ? 0.0f : 0.2f);
             cameraIcon.setEnabled(mediaEnabled);
             if (isHidden) {
                 cameraView.setVisibility(GONE);
@@ -1736,9 +1924,14 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
             checkCameraViewPosition();
             invalidate();
         }
+
+
         if (zoomControlView != null) {
-            zoomControlView.setZoom(0.0f, false);
+            zoomControlView.setSliderValue(0.0f, false);
             cameraZoom = 0.0f;
+        }
+        if (evControlView != null) {
+            evControlView.setSliderValue(0.5f, false);
         }
         cameraView.setTranslationX(cameraViewLocation[0]);
         cameraView.setTranslationY(cameraViewLocation[1]);
@@ -1760,7 +1953,11 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
                 break;
             }
         }
-        cameraView.destroy(async, null);
+        if (Build.VERSION.SDK_INT < 21 || !BuildVars.USE_CAMERAX_API) {
+            ((Camera1View) cameraView).destroy(async, null);
+        } else {
+            ((CameraXView) cameraView).closeCamera();
+        }
         if (cameraInitAnimation != null) {
             cameraInitAnimation.cancel();
             cameraInitAnimation = null;
@@ -1778,9 +1975,15 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
         if (!canSaveCameraPreview) {
             return;
         }
+
         try {
-            TextureView textureView = cameraView.getTextureView();
-            Bitmap bitmap = textureView.getBitmap();
+            Bitmap bitmap = null;
+            if (Build.VERSION.SDK_INT < 21 || !BuildVars.USE_CAMERAX_API) {
+                TextureView textureView = cameraView.getTextureView();
+                bitmap = textureView.getBitmap();
+            } else {
+                bitmap = ((CameraXView) cameraView).getBitmap();
+            }
             if (bitmap != null) {
                 Bitmap newBitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), cameraView.getMatrix(), true);
                 bitmap.recycle();
@@ -1796,6 +1999,9 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
                     lastBitmap.compress(Bitmap.CompressFormat.JPEG, 87, stream);
                     lastBitmap.recycle();
                 }
+
+            } else {
+
             }
         } catch (Throwable ignore) {
 
@@ -1929,6 +2135,7 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
             animators.add(ObjectAnimator.ofFloat(this, "cameraOpenProgress", 0.0f));
             animators.add(ObjectAnimator.ofFloat(cameraPanel, View.ALPHA, 0.0f));
             animators.add(ObjectAnimator.ofFloat(zoomControlView, View.ALPHA, 0.0f));
+            animators.add(ObjectAnimator.ofFloat(evControlView, View.ALPHA, 0.0f));
             animators.add(ObjectAnimator.ofFloat(counterTextView, View.ALPHA, 0.0f));
             animators.add(ObjectAnimator.ofFloat(cameraPhotoRecyclerView, View.ALPHA, 0.0f));
             for (int a = 0; a < 2; a++) {
@@ -1955,6 +2162,10 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
                         zoomControlView.setVisibility(View.GONE);
                         zoomControlView.setTag(null);
                     }
+                    if (evControlView != null) {
+                        evControlView.setVisibility(View.GONE);
+                        evControlView.setTag(null);
+                    }
                     if (cameraPhotoRecyclerView != null) {
                         cameraPhotoRecyclerView.setVisibility(View.GONE);
                     }
@@ -1972,6 +2183,9 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
             zoomControlView.setAlpha(0);
             zoomControlView.setTag(null);
             zoomControlView.setVisibility(View.GONE);
+            evControlView.setAlpha(0);
+            evControlView.setTag(null);
+            evControlView.setVisibility(View.GONE);
             cameraPhotoRecyclerView.setAlpha(0);
             counterTextView.setAlpha(0);
             cameraPhotoRecyclerView.setVisibility(View.GONE);
@@ -2004,6 +2218,7 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
         float endWidth = parentAlert.getContainer().getWidth() - parentAlert.getLeftInset() - parentAlert.getRightInset();
         float endHeight = parentAlert.getContainer().getHeight() - parentAlert.getBottomInset();
         if (value == 0) {
+
             cameraView.setClipTop((int) cameraViewOffsetY);
             cameraView.setClipBottom((int) cameraViewOffsetBottomY);
             cameraView.setTranslationX(cameraViewLocation[0]);
@@ -2116,7 +2331,8 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
             cameraIcon.setTranslationX(cameraViewLocation[0]);
             cameraIcon.setTranslationY(cameraViewLocation[1] + currentPanTranslationY);
             int finalWidth = (int) (itemSize - cameraViewOffsetX);
-            int finalHeight = (int) (itemSize - cameraViewOffsetY - cameraViewOffsetBottomY);
+            int finalHeight = (int) clamp(itemSize - cameraViewOffsetY - cameraViewOffsetBottomY, 0.0f, itemSize);
+
 
             FrameLayout.LayoutParams layoutParams;
             if (!cameraOpened) {
@@ -2306,7 +2522,11 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
         if (!requestingPermissions) {
             if (cameraView != null && shutterButton.getState() == ShutterButton.State.RECORDING) {
                 resetRecordState();
-                CameraController.getInstance().stopVideoRecording(cameraView.getCameraSession(), false);
+                if (Build.VERSION.SDK_INT < 21 || !BuildVars.USE_CAMERAX_API) {
+                    Camera1Controller.getInstance().stopVideoRecording(((Camera1View) cameraView).getCamera1Session(), false);
+                } else {
+                    ((CameraXView) cameraView).stopVideoRecording(false);
+                }
                 shutterButton.setState(ShutterButton.State.DEFAULT, true);
             }
             if (cameraOpened) {
@@ -2318,6 +2538,7 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
                 shutterButton.setState(ShutterButton.State.DEFAULT, true);
             }
             requestingPermissions = false;
+            needRebindCamera = true;
         }
     }
 
@@ -2327,6 +2548,7 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
             checkCamera(false);
         }
     }
+
 
     @Override
     int getListTopPadding() {
@@ -2454,10 +2676,7 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
                 }
             }
         }
-        if (hasTtl) {
-            return false;
-        }
-        return true;
+        return !hasTtl;
     }
 
     @Override
@@ -2702,11 +2921,20 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
                 cameraPanel.measure(View.MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(126), View.MeasureSpec.EXACTLY), View.MeasureSpec.makeMeasureSpec(height, View.MeasureSpec.EXACTLY));
             }
             return true;
+        } else if (view == evControlView) {
+            if (isPortrait) {
+                evControlView.measure(View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.EXACTLY), View.MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(50), View.MeasureSpec.EXACTLY));
+                evControlView.setScaleY(1.0f);
+            } else {
+                evControlView.measure(View.MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(50), View.MeasureSpec.EXACTLY), View.MeasureSpec.makeMeasureSpec(height, View.MeasureSpec.EXACTLY));
+                evControlView.setScaleY(-1.0f);
+            }
+            return true;
         } else if (view == zoomControlView) {
             if (isPortrait) {
-                zoomControlView.measure(View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.EXACTLY), View.MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(50), View.MeasureSpec.EXACTLY));
+                zoomControlView.measure(View.MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(50), View.MeasureSpec.EXACTLY), View.MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(300), View.MeasureSpec.EXACTLY));
             } else {
-                zoomControlView.measure(View.MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(50), View.MeasureSpec.EXACTLY), View.MeasureSpec.makeMeasureSpec(height, View.MeasureSpec.EXACTLY));
+                zoomControlView.measure(View.MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(300), View.MeasureSpec.EXACTLY), View.MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(50), View.MeasureSpec.EXACTLY));
             }
             return true;
         } else if (view == cameraPhotoRecyclerView) {
@@ -2752,19 +2980,26 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
                 }
             }
             return true;
-        } else if (view == zoomControlView) {
+        } else if (view == evControlView) {
             if (isPortrait) {
                 if (cameraPhotoRecyclerView.getVisibility() == View.VISIBLE) {
-                    zoomControlView.layout(0, bottom - AndroidUtilities.dp(126 + 96 + 38 + 50), width, bottom - AndroidUtilities.dp(126 + 96 + 38));
+                    evControlView.layout(0, bottom - AndroidUtilities.dp(126 + 96 + 38 + 50), width, bottom - AndroidUtilities.dp(126 + 96 + 38));
                 } else {
-                    zoomControlView.layout(0, bottom - AndroidUtilities.dp(126 + 50), width, bottom - AndroidUtilities.dp(126));
+                    evControlView.layout(0, bottom - AndroidUtilities.dp(126 + 50), width, bottom - AndroidUtilities.dp(126));
                 }
             } else {
                 if (cameraPhotoRecyclerView.getVisibility() == View.VISIBLE) {
-                    zoomControlView.layout(right - AndroidUtilities.dp(126 + 96 + 38 + 50), 0, right - AndroidUtilities.dp(126 + 96 + 38), height);
+                    evControlView.layout(right - AndroidUtilities.dp(126 + 96 + 38 + 50), 0, right - AndroidUtilities.dp(126 + 96 + 38), height);
                 } else {
-                    zoomControlView.layout(right - AndroidUtilities.dp(126 + 50), 0, right - AndroidUtilities.dp(126), height);
+                    evControlView.layout(right - AndroidUtilities.dp(126 + 50), 0, right - AndroidUtilities.dp(126), height);
                 }
+            }
+            return true;
+        } else if (view == zoomControlView) {
+            if (isPortrait) {
+                zoomControlView.layout(width - AndroidUtilities.dp(50), (bottom / 2) - AndroidUtilities.dp(150), width, (bottom / 2) + AndroidUtilities.dp(150));
+            } else {
+                zoomControlView.layout((width / 2) - AndroidUtilities.dp(150), 0, (width / 2) + AndroidUtilities.dp(150), AndroidUtilities.dp(50));
             }
             return true;
         } else if (view == counterTextView) {
@@ -2847,9 +3082,9 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
 
     private class PhotoAttachAdapter extends RecyclerListView.SelectionAdapter {
 
-        private Context mContext;
-        private boolean needCamera;
-        private ArrayList<RecyclerListView.Holder> viewsCache = new ArrayList<>(8);
+        private final Context mContext;
+        private final boolean needCamera;
+        private final ArrayList<RecyclerListView.Holder> viewsCache = new ArrayList<>(8);
         private int itemsCount;
 
         public PhotoAttachAdapter(Context context, boolean camera) {
@@ -3089,5 +3324,9 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
                 progressView.setVisibility(getItemCount() == 1 && selectedAlbumEntry == null || !mediaEnabled ? View.VISIBLE : View.INVISIBLE);
             }
         }
+    }
+
+    public static float clamp(float x, float min, float max) {
+        return Math.max(min, Math.min(max, x));
     }
 }

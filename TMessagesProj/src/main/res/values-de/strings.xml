@@ -1871,6 +1871,8 @@
     <string name="DebugClearLogs">Protokolldateien leeren</string>
     <string name="DebugMenuEnableLogs">Protokollierung aktivieren</string>
     <string name="DebugMenuDisableLogs">Protokollierung deaktivieren</string>
+    <string name="DebugMenuUseCameraX">Brug CameraX API</string>
+    <string name="DebugMenuUseCameraLegacy">Brug ældre kamera API</string>
     <string name="DebugMenuImportContacts">Kontakte importieren</string>
     <string name="DebugMenuReloadContacts">Kontakte neu laden</string>
     <string name="DebugMenuResetDialogs">Chats zurücksetzen</string>
