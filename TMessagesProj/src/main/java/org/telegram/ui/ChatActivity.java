@@ -5292,9 +5292,6 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 } else {
                     mentionListView.setLayoutManager(mentionLayoutManager);
                 }
-                if (show && bottomOverlay.getVisibility() == View.VISIBLE) {
-                    show = false;
-                }
                 if (show) {
                     if (mentionListAnimation != null) {
                         mentionListAnimation.cancel();
@@ -13710,6 +13707,19 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             int loadIndex = did == dialog_id ? 0 : 1;
             ArrayList<MessageObject> messageObjects = (ArrayList<MessageObject>) args[1];
             replaceMessageObjects(messageObjects, loadIndex, false);
+
+            for (MessageObject newMessage : messageObjects) {
+                for (int i = 0; i < messages.size(); i++) {
+                    MessageObject currentMessage = messages.get(i);
+                    MessageObject replyMessageObject = currentMessage.replyMessageObject;
+
+                    if (replyMessageObject != null && replyMessageObject.getId() == newMessage.getId()) {
+                        currentMessage.replyMessageObject = newMessage;
+                        chatAdapter.notifyItemChanged(i);
+                    }
+                }
+            }
+
         } else if (id == NotificationCenter.notificationsSettingsUpdated) {
             updateTitleIcons();
             if (ChatObject.isChannel(currentChat) || UserObject.isReplyUser(currentUser)) {

@@ -2867,7 +2867,10 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         boolean dataChanged = currentMessageObject != null && currentMessageObject.getId() == messageObject.getId() && lastSendState == MessageObject.MESSAGE_SEND_STATE_EDITING && messageObject.isSent()
                 || currentMessageObject == messageObject && (isUserDataChanged() || photoNotSet)
                 || lastPostAuthor != messageObject.messageOwner.post_author
-                || wasPinned != isPinned;
+                || wasPinned != isPinned
+                || (messageObject.replyMessageObject != null && repliesLayout == null)
+                || (messageObject.replyMessageObject != null && repliesLayout != null && repliesLayout.getText() != null && !messageObject.replyMessageObject.messageText.equals(repliesLayout.getText()));
+
         boolean groupChanged = groupedMessages != currentMessagesGroup;
         boolean pollChanged = false;
         if (drawCommentButton || drawSideButton == 3 && !((hasDiscussion && messageObject.isLinkedToChat(linkedChatId) || isRepliesChat) && (currentPosition == null || currentPosition.siblingHeights == null && (currentPosition.flags & MessageObject.POSITION_FLAG_BOTTOM) != 0 || currentPosition.siblingHeights != null && (currentPosition.flags & MessageObject.POSITION_FLAG_TOP) == 0))) {

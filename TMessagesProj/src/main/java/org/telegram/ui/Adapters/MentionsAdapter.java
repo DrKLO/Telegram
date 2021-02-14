@@ -729,10 +729,7 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter {
                         if (chat == null) {
                             continue;
                         }
-                        if (usernameString.length() == 0) {
-                            newResult.add(chat);
-                            continue;
-                        }
+                        if (usernameString.length() == 0) continue;
                         firstName = chat.title;
                         lastName = null;
                         username = chat.username;
@@ -756,10 +753,10 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter {
                         object = user;
                         id = user.id;
                     }
-                    if (!TextUtils.isEmpty(username) && username.toLowerCase().startsWith(usernameString) ||
+                    if (object != chat && (!TextUtils.isEmpty(username) && username.toLowerCase().startsWith(usernameString) ||
                             !TextUtils.isEmpty(firstName) && firstName.toLowerCase().startsWith(usernameString) ||
                             !TextUtils.isEmpty(lastName) && lastName.toLowerCase().startsWith(usernameString) ||
-                            hasSpace && ContactsController.formatName(firstName, lastName).toLowerCase().startsWith(usernameString)) {
+                            hasSpace && ContactsController.formatName(firstName, lastName).toLowerCase().startsWith(usernameString))) {
                         newResult.add(object);
                         newMap.put(id, object);
                     }
