@@ -1424,6 +1424,37 @@ public class MessagesStorage extends BaseController {
         public int unreadCount;
     }
 
+    public void readDialogs(long[] dialogIdArray) {
+        if (dialogIdArray == null || dialogIdArray.length == 0) {
+            return;
+        }
+        storageQueue.postRunnable(() -> {
+            try {
+                StringBuilder sqlQueryBuilder = new StringBuilder();
+                sqlQueryBuilder.append("SELECT did, last_mid, unread_count, date FROM dialogs WHERE unread_count > 0 AND did IN (");
+                for (int a = 0; a < dialogIdArray.length; a++) {
+                    sqlQueryBuilder.append(dialogIdArray[a]);
+                    if (a != dialogIdArray.length - 1) {
+                        sqlQueryBuilder.append(", ");
+                    }
+                }
+                sqlQueryBuilder.append(")");
+
+                SQLiteCursor cursor = database.queryFinalized(sqlQueryBuilder.toString());
+                while (cursor.next()) {
+                    long did = cursor.longValue(0);
+                    int last_mid = cursor.intValue(1);
+                    int unread_count = cursor.intValue(2);
+                    int date = cursor.intValue(3);
+                    AndroidUtilities.runOnUIThread(() -> getMessagesController().markDialogAsRead(did, last_mid, last_mid, date, false, 0, unread_count, true, 0));
+                }
+                cursor.dispose();
+            } catch (Exception e) {
+                FileLog.e(e);
+            }
+        });
+    }
+
     public void readAllDialogs(int folderId) {
         storageQueue.postRunnable(() -> {
             try {

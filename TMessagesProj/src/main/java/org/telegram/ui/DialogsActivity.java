@@ -2161,8 +2161,8 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
 
                     linearLayout.setMinimumWidth(AndroidUtilities.dp(200));
                     linearLayout.setOrientation(LinearLayout.VERTICAL);
-                    scrimPopupWindowItems = new ActionBarMenuSubItem[3];
-                    for (int a = 0, N = (tabView.getId() == Integer.MAX_VALUE ? 2 : 3); a < N; a++) {
+                    scrimPopupWindowItems = new ActionBarMenuSubItem[4];
+                    for (int a = 0, N = (tabView.getId() == Integer.MAX_VALUE ? 3 : 4); a < N; a++) {
                         ActionBarMenuSubItem cell = new ActionBarMenuSubItem(getParentActivity(), a == 0, a == N - 1);
                         if (a == 0) {
                             if (getMessagesController().dialogFilters.size() <= 1) {
@@ -2175,7 +2175,9 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                             } else {
                                 cell.setTextAndIcon(LocaleController.getString("FilterEdit", R.string.FilterEdit), R.drawable.msg_edit);
                             }
-                        } else {
+                        } else if (a == 2) {
+                            cell.setTextAndIcon(LocaleController.getString("MarkAsRead", R.string.MarkAsRead), R.drawable.msg_markread);
+                        } else if (a == 3) {
                             cell.setTextAndIcon(LocaleController.getString("FilterDeleteItem", R.string.FilterDeleteItem), R.drawable.msg_delete);
                         }
                         scrimPopupWindowItems[a] = cell;
@@ -2193,6 +2195,12 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                                     presentFragment(new FilterCreateActivity(dialogFilter));
                                 }
                             } else if (i == 2) {
+                                if (tabView.getId() == Integer.MAX_VALUE) {
+                                    getMessagesStorage().readAllDialogs(0);
+                                } else {
+                                    getMessagesController().markDialogsAsRead(dialogFilter);
+                                }
+                            } else if (i == 3) {
                                 showDeleteAlert(dialogFilter);
                             }
                             if (scrimPopupWindow != null) {
