@@ -127,6 +127,7 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
     private int raiseToSpeakRow;
     private int sendByEnterRow;
     private int saveToGalleryRow;
+    private int autoPauseVideoRow;
     private int distanceRow;
     private int enableAnimationsRow;
     private int settings2Row;
@@ -482,6 +483,7 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
         raiseToSpeakRow = -1;
         sendByEnterRow = -1;
         saveToGalleryRow = -1;
+        autoPauseVideoRow = -1;
         distanceRow = -1;
         settings2Row = -1;
         stickersRow = -1;
@@ -537,6 +539,7 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
             raiseToSpeakRow = rowCount++;
             sendByEnterRow = rowCount++;
             saveToGalleryRow = rowCount++;
+            autoPauseVideoRow = rowCount++;
             distanceRow = rowCount++;
             settings2Row = rowCount++;
             stickersRow = rowCount++;
@@ -868,6 +871,11 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
                 SharedConfig.toggleSaveToGallery();
                 if (view instanceof TextCheckCell) {
                     ((TextCheckCell) view).setChecked(SharedConfig.saveToGallery);
+                }
+            } else if (position == autoPauseVideoRow) {
+                SharedConfig.toggleAutoPauseVideo();
+                if (view instanceof TextCheckCell) {
+                    ((TextCheckCell) view).setChecked(SharedConfig.autoPauseVideo);
                 }
             } else if (position == distanceRow) {
                 if (getParentActivity() == null) {
@@ -1956,6 +1964,8 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
                         textCheckCell.setTextAndCheck(LocaleController.getString("SendByEnter", R.string.SendByEnter), preferences.getBoolean("send_by_enter", false), true);
                     } else if (position == saveToGalleryRow) {
                         textCheckCell.setTextAndCheck(LocaleController.getString("SaveToGallerySettings", R.string.SaveToGallerySettings), SharedConfig.saveToGallery, true);
+                    } else if (position == autoPauseVideoRow) {
+                        textCheckCell.setTextAndCheck(LocaleController.getString("AutoPauseVideoSettings", R.string.AutoPauseVideo), SharedConfig.autoPauseVideo, true);
                     } else if (position == raiseToSpeakRow) {
                         textCheckCell.setTextAndCheck(LocaleController.getString("RaiseToSpeak", R.string.RaiseToSpeak), SharedConfig.raiseToSpeak, true);
                     } else if (position == customTabsRow) {
@@ -2050,7 +2060,7 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
             } else if (position == automaticBrightnessRow) {
                 return 6;
             } else if (position == scheduleLocationRow || position == enableAnimationsRow || position == sendByEnterRow ||
-                    position == saveToGalleryRow || position == raiseToSpeakRow || position == customTabsRow ||
+                    position == saveToGalleryRow || position == autoPauseVideoRow || position == raiseToSpeakRow || position == customTabsRow ||
                     position == directShareRow || position == emojiRow) {
                 return 7;
             } else if (position == textSizeRow) {
