@@ -34,4 +34,5 @@ public class BuildVars {
             LOGS_ENABLED = sharedPreferences.getBoolean("logsEnabled", DEBUG_VERSION);
         }
     }
+
 }

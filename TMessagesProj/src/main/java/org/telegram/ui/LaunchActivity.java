@@ -132,6 +132,7 @@ import org.telegram.ui.Components.TermsOfServiceView;
 import org.telegram.ui.Components.ThemeEditorView;
 import org.telegram.ui.Components.UpdateAppAlertDialog;
 import org.telegram.ui.Components.voip.VoIPHelper;
+import org.telegram.ui.products.MyProducts;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -578,6 +579,9 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                         presentFragment(new ActionIntroActivity(ActionIntroActivity.ACTION_TYPE_NEARBY_LOCATION_ENABLED));
                     }
                     drawerLayoutContainer.closeDrawer(false);
+                }else if(id == 13){
+                    Intent myProductsIntent = new Intent(this, MyProducts.class);
+                    startActivity(myProductsIntent);
                 }
             }
         });

@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <TextView
+        android:id="@+id/tv_spinner_choose"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_margin="20dp"
+        android:layout_marginEnd="26dp"
+        android:fontFamily="sans-serif"
+        android:text="@string/chooseTitle"
+        android:textColor="#000A37"
+        android:textSize="15sp"
+        tools:targetApi="jelly_bean"
+        android:layout_marginRight="26dp" />
+
+
+    <Spinner
+        android:id="@+id/spinnerTitleType"
+        style="@style/SpinnerTheme"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/tv_spinner_choose"
+        android:layout_marginStart="10dp"
+        android:layout_marginLeft="20dp"
+        android:layout_marginTop="-8dp"
+        android:layout_marginEnd="26dp"
+        android:layout_marginRight="26dp"
+        android:layout_marginBottom="26dp"
+        android:background="#2E4392"
+        android:elevation="8dp"
+        android:entries="@array/title"
+        android:gravity="left"
+        android:popupBackground="#2E4392"
+        android:spinnerMode="dropdown"
+        android:visibility="visible"
+        tools:visibility="visible" />
+
+    <TextView
+        android:id="@+id/tv_desc_product"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/spinnerTitleType"
+        android:layout_marginStart="20dp"
+        android:layout_marginLeft="20dp"
+        android:layout_marginTop="5dp"
+        android:layout_marginEnd="20dp"
+        android:layout_marginRight="20dp"
+        android:layout_marginBottom="20dp"
+        android:fontFamily="sans-serif"
+        android:text="@string/adsDesc"
+        android:textColor="#000A37"
+        android:textSize="15sp"
+        tools:targetApi="jelly_bean" />
+
+    <EditText
+        android:id="@+id/edt_desc"
+        android:layout_width="361dp"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/tv_desc_product"
+        android:layout_marginStart="20dp"
+        android:layout_marginLeft="20dp"
+        android:layout_marginEnd="20dp"
+        android:layout_marginRight="20dp"
+        android:background="@drawable/edt_shape"
+        android:gravity="top"
+        android:hint="@string/fill_with_product_description"
+        android:importantForAutofill="no"
+        android:inputType="text|textMultiLine"
+        android:lines="8"
+        android:padding="10dp"
+        android:textColor="#000A37"
+        android:textColorHint="#347791"
+        android:textSize="12sp" />
+
+    <Button
+        android:id="@+id/btn_save_product"
+        style="@style/Widget.AppCompat.Button.Colored"
+        android:layout_width="320dp"
+        android:layout_height="40dp"
+        android:layout_alignParentBottom="true"
+        android:layout_centerInParent="true"
+        android:layout_marginStart="20dp"
+        android:layout_marginEnd="20dp"
+        android:layout_marginBottom="60dp"
+        android:background="@drawable/button_shape_corner"
+        android:fontFamily="sans-serif"
+        android:text="@string/save_product"
+        android:textColor="@android:color/white"
+        android:textSize="14sp" />
+
+
+</RelativeLayout>

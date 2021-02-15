@@ -2736,6 +2736,8 @@
     <string name="NetworkUsage">Data Usage</string>
     <string name="StoragePath">Storage Path</string>
     <string name="NetworkUsageMobileTab">Mobile</string>
+
+
     <string name="NetworkUsageWiFiTab">Wi-Fi</string>
     <string name="NetworkUsageRoamingTab">Roaming</string>
     <string name="MessagesDataUsage">Messages and other data</string>
@@ -4130,4 +4132,27 @@
     <string name="RemindTodayAt">\'Remind today at\' HH:mm</string>
     <string name="RemindDayAt">\'Remind on\' MMM d \'at\' HH:mm</string>
     <string name="RemindDayYearAt">\'Remind on\' MMM d yyyy \'at\' HH:mm</string>
+    <string name="classified_advertising">Classified Advertising (Free) </string>
+    <string name="add_a_product">Add a Product</string>
+    <string name="product_name">Product Name</string>
+    <string name="fill_with_product_name">Fill with product name</string>
+    <string name="price">Price</string>
+    <string name="fill_with_product_price">Fill with product price</string>
+    <string name="adsDesc">Ads Description : </string>
+    <string name="fill_with_product_description">FIll with product description</string>
+    <string name="save_product">Save Product</string>
+    <string name="choose_product_image">Choose Product Image</string>
+    <string name="example_title">Sabun Kopi Hanasui</string>
+    <string name="example_price">7500</string>
+    <string name="example_desc">Sabun Kopinya sist</string>
+    <string name="image_item_product">Image Item Product</string>
+    <string name="chooseTitle">Choose A Title : </string>
+
+    <string-array name="title">
+        <item>On Sale</item>
+        <item>Looking For</item>
+        <item>Job Vacancy</item>
+        <item>Invitation</item>
+    </string-array>
+
 </resources>
