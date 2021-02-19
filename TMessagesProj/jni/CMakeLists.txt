@@ -204,21 +204,22 @@ add_library(rlottie STATIC
         rlottie/src/lottie/lottieloader.cpp
         rlottie/src/lottie/lottiemodel.cpp
         rlottie/src/lottie/lottieparser.cpp
-        rlottie/src/lottie/lottieproxymodel.cpp
+        rlottie/src/lottie/lottieitem_capi.cpp
         rlottie/src/vector/freetype/v_ft_math.cpp
         rlottie/src/vector/freetype/v_ft_raster.cpp
         rlottie/src/vector/freetype/v_ft_stroker.cpp
-        rlottie/src/vector/pixman/vregion.cpp
         rlottie/src/vector/stb/stb_image.cpp
         rlottie/src/vector/vbezier.cpp
         rlottie/src/vector/vbitmap.cpp
         rlottie/src/vector/vbrush.cpp
-        rlottie/src/vector/vcompositionfunctions.cpp
+        rlottie/src/vector/varenaalloc.cpp
         rlottie/src/vector/vdasher.cpp
         rlottie/src/vector/vdebug.cpp
         rlottie/src/vector/vdrawable.cpp
         rlottie/src/vector/vdrawhelper.cpp
         rlottie/src/vector/vdrawhelper_neon.cpp
+        rlottie/src/vector/vdrawhelper_sse2.cpp
+        rlottie/src/vector/vdrawhelper_common.cpp
         rlottie/src/vector/velapsedtimer.cpp
         rlottie/src/vector/vimageloader.cpp
         rlottie/src/vector/vinterpolator.cpp
