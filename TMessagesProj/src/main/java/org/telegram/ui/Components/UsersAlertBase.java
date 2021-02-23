@@ -23,7 +23,6 @@ import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
-import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
 import android.view.inputmethod.EditorInfo;
 import android.widget.FrameLayout;
@@ -32,8 +31,6 @@ import android.widget.ImageView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
-
-import com.google.android.exoplayer2.util.Log;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
@@ -56,7 +53,7 @@ public class UsersAlertBase extends BottomSheet {
     protected AnimatorSet shadowAnimation;
     protected StickerEmptyView emptyView;
     protected FlickerLoadingView flickerLoadingView;
-    private SearchField searchView;
+    protected SearchField searchView;
 
     private RectF rect = new RectF();
 
@@ -195,13 +192,13 @@ public class UsersAlertBase extends BottomSheet {
     }
 
     @SuppressWarnings("FieldCanBeLocal")
-    private class SearchField extends FrameLayout {
+    protected class SearchField extends FrameLayout {
 
         private final View searchBackground;
         private final ImageView searchIconImageView;
         private final ImageView clearSearchImageView;
         private final CloseProgressDrawable2 progressDrawable;
-        private EditTextBoldCursor searchEditText;
+        protected EditTextBoldCursor searchEditText;
 
         public SearchField(Context context) {
             super(context);
@@ -310,6 +307,11 @@ public class UsersAlertBase extends BottomSheet {
         public boolean onInterceptTouchEvent(MotionEvent ev) {
             onSearchViewTouched(ev, searchEditText);
             return super.onInterceptTouchEvent(ev);
+        }
+
+        public void closeSearch() {
+            clearSearchImageView.callOnClick();
+            AndroidUtilities.hideKeyboard(searchEditText);
         }
     }
 

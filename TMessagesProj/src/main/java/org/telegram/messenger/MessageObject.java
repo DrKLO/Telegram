@@ -1136,11 +1136,6 @@ public class MessageObject {
                 int offset = str.indexOf("%1$s");
                 rights = new StringBuilder(String.format(str, getUserName(whoUser, messageOwner.entities, offset)));
             } else {
-                String str = LocaleController.getString("EventLogPromoted", R.string.EventLogPromoted);
-                int offset = str.indexOf("%1$s");
-                rights = new StringBuilder(String.format(str, getUserName(whoUser, messageOwner.entities, offset)));
-                rights.append("\n");
-
                 TLRPC.TL_chatAdminRights o = prev_participant.admin_rights;
                 TLRPC.TL_chatAdminRights n = new_participant.admin_rights;
                 if (o == null) {
@@ -1149,6 +1144,15 @@ public class MessageObject {
                 if (n == null) {
                     n = new TLRPC.TL_chatAdminRights();
                 }
+                String str;
+                if (n.other) {
+                    str = LocaleController.getString("EventLogPromotedNoRights", R.string.EventLogPromotedNoRights);
+                } else {
+                    str = LocaleController.getString("EventLogPromoted", R.string.EventLogPromoted);
+                }
+                int offset = str.indexOf("%1$s");
+                rights = new StringBuilder(String.format(str, getUserName(whoUser, messageOwner.entities, offset)));
+                rights.append("\n");
                 if (!TextUtils.equals(prev_participant.rank, new_participant.rank)) {
                     if (TextUtils.isEmpty(new_participant.rank)) {
                         rights.append('\n').append('-').append(' ');
@@ -1190,7 +1194,7 @@ public class MessageObject {
                         rights.append(LocaleController.getString("EventLogPromotedBanUsers", R.string.EventLogPromotedBanUsers));
                     }
                     if (o.manage_call != n.manage_call) {
-                        rights.append('\n').append(n.ban_users ? '+' : '-').append(' ');
+                        rights.append('\n').append(n.manage_call ? '+' : '-').append(' ');
                         rights.append(LocaleController.getString("EventLogPromotedManageCall", R.string.EventLogPromotedManageCall));
                     }
                 }
@@ -1667,6 +1671,51 @@ public class MessageObject {
                 messageText = replaceWithLink(LocaleController.getString("EventLogVoiceChatNotAllowedToSpeak", R.string.EventLogVoiceChatNotAllowedToSpeak), "un1", fromUser);
             } else {
                 messageText = replaceWithLink(LocaleController.getString("EventLogVoiceChatAllowedToSpeak", R.string.EventLogVoiceChatAllowedToSpeak), "un1", fromUser);
+            }
+        } else if (event.action instanceof TLRPC.TL_channelAdminLogEventActionParticipantJoinByInvite) {
+            TLRPC.TL_channelAdminLogEventActionParticipantJoinByInvite action = (TLRPC.TL_channelAdminLogEventActionParticipantJoinByInvite) event.action;
+            messageText = replaceWithLink(LocaleController.getString("ActionInviteUser", R.string.ActionInviteUser), "un1", fromUser);
+        } else if (event.action instanceof TLRPC.TL_channelAdminLogEventActionExportedInviteDelete) {
+            TLRPC.TL_channelAdminLogEventActionExportedInviteDelete action = (TLRPC.TL_channelAdminLogEventActionExportedInviteDelete) event.action;
+            messageText = replaceWithLink(LocaleController.formatString("ActionDeletedInviteLink", R.string.ActionDeletedInviteLink, action.invite.link), "un1", fromUser);
+        } else if (event.action instanceof TLRPC.TL_channelAdminLogEventActionExportedInviteRevoke) {
+            TLRPC.TL_channelAdminLogEventActionExportedInviteRevoke action = (TLRPC.TL_channelAdminLogEventActionExportedInviteRevoke) event.action;
+            messageText = replaceWithLink(LocaleController.formatString("ActionRevokedInviteLink", R.string.ActionRevokedInviteLink, action.invite.link), "un1", fromUser);
+        } else if (event.action instanceof TLRPC.TL_channelAdminLogEventActionExportedInviteEdit) {
+            TLRPC.TL_channelAdminLogEventActionExportedInviteEdit action = (TLRPC.TL_channelAdminLogEventActionExportedInviteEdit) event.action;
+            if (action.prev_invite.link != null &&  action.prev_invite.link.equals(action.new_invite.link)){
+                messageText = replaceWithLink(LocaleController.formatString("ActionEditedInviteLinkToSame", R.string.ActionEditedInviteLinkToSame, action.prev_invite.link), "un1", fromUser);
+            } else {
+                messageText = replaceWithLink(LocaleController.formatString("ActionEditedInviteLink", R.string.ActionEditedInviteLink, action.prev_invite.link, action.new_invite.link), "un1", fromUser);
+            }
+        } else if (event.action instanceof TLRPC.TL_channelAdminLogEventActionParticipantVolume) {
+            TLRPC.TL_channelAdminLogEventActionParticipantVolume action = (TLRPC.TL_channelAdminLogEventActionParticipantVolume) event.action;
+            double vol = ChatObject.getParticipantVolume(action.participant) / 100.0;
+            TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(action.participant.user_id);
+            messageText = replaceWithLink(LocaleController.formatString("ActionVolumeChanged", R.string.ActionVolumeChanged,  (int) (vol > 0 ? Math.max(vol, 1) : 0)), "un1", fromUser);
+            messageText = replaceWithLink(messageText, "un2", user);
+        } else if (event.action instanceof TLRPC.TL_channelAdminLogEventActionChangeHistoryTTL) {
+            TLRPC.TL_channelAdminLogEventActionChangeHistoryTTL action = (TLRPC.TL_channelAdminLogEventActionChangeHistoryTTL) event.action;
+            if (!chat.megagroup) {
+                if (action.new_value != 0) {
+                    messageText = LocaleController.formatString("ActionTTLChannelChanged", R.string.ActionTTLChannelChanged, LocaleController.formatTTLString(action.new_value));
+                } else {
+                    messageText = LocaleController.getString("ActionTTLChannelDisabled", R.string.ActionTTLChannelDisabled);
+                }
+            } else if (action.new_value == 0) {
+                messageText = replaceWithLink(LocaleController.getString("ActionTTLDisabled", R.string.ActionTTLDisabled), "un1", fromUser);
+            } else {
+                String time;
+                if (action.new_value > 24 * 60 * 60) {
+                    time = LocaleController.formatPluralString("Days", action.new_value / (24 * 60 * 60));
+                } else if (action.new_value >= 60 * 60) {
+                    time = LocaleController.formatPluralString("Hours", action.new_value / (60 * 60));
+                } else if (action.new_value >= 60) {
+                    time = LocaleController.formatPluralString("Minutes", action.new_value / 60);
+                } else {
+                    time = LocaleController.formatPluralString("Seconds", action.new_value);
+                }
+                messageText = replaceWithLink(LocaleController.formatString("ActionTTLChanged", R.string.ActionTTLChanged, time), "un1", fromUser);
             }
         } else {
             messageText = "unsupported " + event.action;
@@ -2531,6 +2580,28 @@ public class MessageObject {
                             messageText = LocaleController.getString("MessageLifetimeYouRemoved", R.string.MessageLifetimeYouRemoved);
                         } else {
                             messageText = LocaleController.formatString("MessageLifetimeRemoved", R.string.MessageLifetimeRemoved, UserObject.getFirstName(fromUser));
+                        }
+                    }
+                } else if (messageOwner.action instanceof TLRPC.TL_messageActionSetMessagesTTL) {
+                    TLRPC.TL_messageActionSetMessagesTTL action = (TLRPC.TL_messageActionSetMessagesTTL) messageOwner.action;
+                    TLRPC.Chat chat = messageOwner.peer_id != null && messageOwner.peer_id.channel_id != 0 ? getChat(chats, sChats, messageOwner.peer_id.channel_id) : null;
+                    if (chat != null && !chat.megagroup) {
+                        if (action.period != 0) {
+                            messageText = LocaleController.formatString("ActionTTLChannelChanged", R.string.ActionTTLChannelChanged, LocaleController.formatTTLString(action.period));
+                        } else {
+                            messageText = LocaleController.getString("ActionTTLChannelDisabled", R.string.ActionTTLChannelDisabled);
+                        }
+                    } else if (action.period != 0) {
+                        if (isOut()) {
+                            messageText = LocaleController.formatString("ActionTTLYouChanged", R.string.ActionTTLYouChanged, LocaleController.formatTTLString(action.period));
+                        } else {
+                            messageText = replaceWithLink(LocaleController.formatString("ActionTTLChanged", R.string.ActionTTLChanged, LocaleController.formatTTLString(action.period)), "un1", fromObject);
+                        }
+                    } else {
+                        if (isOut()) {
+                            messageText = LocaleController.getString("ActionTTLYouDisabled", R.string.ActionTTLYouDisabled);
+                        } else {
+                            messageText = replaceWithLink(LocaleController.getString("ActionTTLDisabled", R.string.ActionTTLDisabled), "un1", fromObject);
                         }
                     }
                 } else if (messageOwner.action instanceof TLRPC.TL_messageActionLoginUnknownLocation) {
@@ -5498,6 +5569,9 @@ public class MessageObject {
         if (ChatObject.isChannel(chat)) {
             if (inScheduleMode && !chat.megagroup) {
                 return chat.creator || chat.admin_rights != null && (chat.admin_rights.delete_messages || message.out);
+            }
+            if (message.out && message instanceof TLRPC.TL_messageService) {
+                return message.id != 1 && ChatObject.canUserDoAdminAction(chat, ChatObject.ACTION_DELETE_MESSAGES);
             }
             return inScheduleMode || message.id != 1 && (chat.creator || chat.admin_rights != null && (chat.admin_rights.delete_messages || message.out && (chat.megagroup || chat.admin_rights.post_messages)) || chat.megagroup && message.out && message.from_id instanceof TLRPC.TL_peerUser);
         }

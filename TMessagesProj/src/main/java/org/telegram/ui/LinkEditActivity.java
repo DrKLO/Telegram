@@ -2,13 +2,18 @@ package org.telegram.ui;
 
 import android.content.Context;
 import android.graphics.Canvas;
+import android.graphics.Color;
+import android.os.Vibrator;
 import android.text.Editable;
 import android.text.InputType;
 import android.text.TextWatcher;
 import android.text.method.DigitsKeyListener;
+import android.util.Log;
 import android.util.TypedValue;
 import android.view.Gravity;
+import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
@@ -20,8 +25,10 @@ import org.telegram.messenger.R;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
+import org.telegram.ui.ActionBar.AdjustPanLayoutHelper;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
+import org.telegram.ui.ActionBar.DrawerLayoutContainer;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ActionBar.ThemeDescription;
 import org.telegram.ui.Cells.HeaderCell;
@@ -54,6 +61,8 @@ public class LinkEditActivity extends BaseFragment {
     private TextView buttonTextView;
     private TextSettingsCell revokeLink;
     private boolean ignoreSet;
+    private ScrollView scrollView;
+    private boolean finished;
 
     public LinkEditActivity(int type, int chatId) {
         this.type = type;
@@ -65,7 +74,6 @@ public class LinkEditActivity extends BaseFragment {
     private ArrayList<Integer> dispalyedUses = new ArrayList<>();
     private final int[] defaultUses = new int[]{1, 10, 100};
 
-    private int selectedDate;
     private Callback callback;
 
     AlertDialog progressDialog;
@@ -86,14 +94,60 @@ public class LinkEditActivity extends BaseFragment {
             public void onItemClick(int id) {
                 if (id == -1) {
                     finishFragment();
+                    AndroidUtilities.hideKeyboard(usesEditText);
                 }
             }
         });
 
-        ScrollView scrollView = new ScrollView(context);
+        scrollView = new ScrollView(context);
         SizeNotifierFrameLayout contentView = new SizeNotifierFrameLayout(context) {
 
             int oldKeyboardHeight;
+
+
+            @Override
+            protected AdjustPanLayoutHelper createAdjustPanLayoutHelper() {
+                AdjustPanLayoutHelper panLayoutHelper = new AdjustPanLayoutHelper(this) {
+
+                    @Override
+                    protected void onTransitionStart(boolean keyboardVisible, int contentHeight) {
+                        super.onTransitionStart(keyboardVisible, contentHeight);
+                        scrollView.getLayoutParams().height = contentHeight;
+                    }
+
+                    @Override
+                    protected void onTransitionEnd() {
+                        super.onTransitionEnd();
+                        scrollView.getLayoutParams().height = LinearLayout.LayoutParams.MATCH_PARENT;
+                        scrollView.requestLayout();
+                    }
+
+                    @Override
+                    protected void onPanTranslationUpdate(float y, float progress, boolean keyboardVisible) {
+                        super.onPanTranslationUpdate(y, progress, keyboardVisible);
+                        setTranslationY(0);
+                    }
+
+                    @Override
+                    protected boolean heightAnimationEnabled() {
+                        return !finished;
+                    }
+                };
+                panLayoutHelper.setCheckHierarchyHeight(true);
+                return panLayoutHelper;
+            }
+
+            @Override
+            protected void onAttachedToWindow() {
+                super.onAttachedToWindow();
+                adjustPanLayoutHelper.onAttach();
+            }
+
+            @Override
+            protected void onDetachedFromWindow() {
+                super.onDetachedFromWindow();
+                adjustPanLayoutHelper.onDetach();
+            }
 
             @Override
             protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
@@ -103,7 +157,24 @@ public class LinkEditActivity extends BaseFragment {
                     scrollToEnd = true;
                     invalidate();
                 }
+
+                if (keyboardHeight < AndroidUtilities.dp(20)) {
+                    usesEditText.clearFocus();
+                }
+
                 oldKeyboardHeight = keyboardHeight;
+            }
+
+            @Override
+            protected void onLayout(boolean changed, int l, int t, int r, int b) {
+                int scrollY = scrollView.getScrollY();
+                super.onLayout(changed, l, t, r, b);
+
+                if (scrollY != scrollView.getScrollY() && !scrollToEnd) {
+                    scrollView.setTranslationY(scrollView.getScrollY() - scrollY);
+                    scrollView.animate().cancel();
+                    scrollView.animate().translationY(0).setDuration(AdjustPanLayoutHelper.keyboardDuration).setInterpolator(AdjustPanLayoutHelper.keyboardInterpolator).start();
+                }
             }
 
             @Override
@@ -111,16 +182,54 @@ public class LinkEditActivity extends BaseFragment {
                 super.dispatchDraw(canvas);
                 if (scrollToEnd) {
                     scrollToEnd = false;
-                    scrollView.scrollTo(0, Math.max(0, scrollView.getChildAt(0).getMeasuredHeight() - scrollView.getMeasuredHeight() - AndroidUtilities.dp(16)));
+                    scrollView.smoothScrollTo(0, Math.max(0, scrollView.getChildAt(0).getMeasuredHeight() - scrollView.getMeasuredHeight()));
                 }
             }
         };
-        contentView.setDelegate((keyboardHeight, isWidthGreater) -> {
 
-        });
         fragmentView = contentView;
 
-        LinearLayout linearLayout = new LinearLayout(context);
+        LinearLayout linearLayout = new LinearLayout(context) {
+
+            boolean firstLayout = true;
+
+            @Override
+            protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+                super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+                int elementsHeight = 0;
+                int h = MeasureSpec.getSize(heightMeasureSpec);
+                for (int i = 0; i < getChildCount(); i++) {
+                    View child = getChildAt(i);
+                    if (child != buttonTextView) {
+                        elementsHeight += child.getMeasuredHeight();
+                    }
+                }
+
+                int topMargin;
+                int buttonH = AndroidUtilities.dp(48) + AndroidUtilities.dp(24) + AndroidUtilities.dp(16);
+                if (elementsHeight >= h - buttonH) {
+                    topMargin = AndroidUtilities.dp(24);
+                } else {
+                    topMargin = AndroidUtilities.dp(24) + (h - buttonH) - elementsHeight;
+                }
+
+                if (((LayoutParams) buttonTextView.getLayoutParams()).topMargin != topMargin) {
+                    int oldMargin = ((LayoutParams) buttonTextView.getLayoutParams()).topMargin;
+                    ((LayoutParams) buttonTextView.getLayoutParams()).topMargin = topMargin;
+                    if (!firstLayout) {
+                        buttonTextView.setTranslationY(oldMargin - topMargin);
+                        buttonTextView.animate().translationY(0).setDuration(AdjustPanLayoutHelper.keyboardDuration).setInterpolator(AdjustPanLayoutHelper.keyboardInterpolator).start();
+                    }
+                    super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+                }
+            }
+
+            @Override
+            protected void dispatchDraw(Canvas canvas) {
+                super.dispatchDraw(canvas);
+                firstLayout = false;
+            }
+        };
         linearLayout.setOrientation(LinearLayout.VERTICAL);
         scrollView.addView(linearLayout);
 
@@ -185,7 +294,15 @@ public class LinkEditActivity extends BaseFragment {
         resetUses();
         linearLayout.addView(usesChooseView);
 
-        usesEditText = new EditText(context);
+        usesEditText = new EditText(context) {
+            @Override
+            public boolean onTouchEvent(MotionEvent event) {
+                if (event.getAction() == MotionEvent.ACTION_UP) {
+                    setCursorVisible(true);
+                }
+                return super.onTouchEvent(event);
+            }
+        };
         usesEditText.setPadding(AndroidUtilities.dp(22), 0, AndroidUtilities.dp(22), 0);
         usesEditText.setGravity(Gravity.CENTER_VERTICAL);
         usesEditText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
@@ -219,7 +336,11 @@ public class LinkEditActivity extends BaseFragment {
                     resetUses();
                     return;
                 }
-                chooseUses(customUses);
+                if (customUses > 100000) {
+                    resetUses();
+                } else {
+                    chooseUses(customUses);
+                }
             }
         });
         linearLayout.addView(usesEditText, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 50));
@@ -249,8 +370,8 @@ public class LinkEditActivity extends BaseFragment {
             linearLayout.addView(revokeLink);
         }
 
-        contentView.addView(scrollView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, 0, 0, 0, 0, 80));
-        contentView.addView(buttonTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.BOTTOM, 16, 15, 16, 16));
+        contentView.addView(scrollView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+        linearLayout.addView(buttonTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.BOTTOM, 16, 15, 16, 16));
 
         timeHeaderCell.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
         timeChooseView.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
@@ -264,6 +385,17 @@ public class LinkEditActivity extends BaseFragment {
             if (loading) {
                 return;
             }
+
+            int timeIndex = timeChooseView.getSelectedIndex();
+            if (timeIndex < dispalyedDates.size() && dispalyedDates.get(timeIndex) < 0) {
+                AndroidUtilities.shakeView(timeEditText, 2, 0);
+                Vibrator vibrator = (Vibrator) timeEditText.getContext().getSystemService(Context.VIBRATOR_SERVICE);
+                if (vibrator != null) {
+                    vibrator.vibrate(200);
+                }
+                return;
+            }
+
             if (type == CREATE_TYPE) {
                 if (progressDialog != null) {
                     progressDialog.dismiss();
@@ -273,7 +405,7 @@ public class LinkEditActivity extends BaseFragment {
                 progressDialog.showDelayed(500);
                 TLRPC.TL_messages_exportChatInvite req = new TLRPC.TL_messages_exportChatInvite();
                 req.peer = getMessagesController().getInputPeer(-chatId);
-                /*req.legacy_revoke_permanent = false; TODO layer 124
+                req.legacy_revoke_permanent = false;
 
                 int i = timeChooseView.getSelectedIndex();
                 req.flags |= 1;
@@ -289,7 +421,7 @@ public class LinkEditActivity extends BaseFragment {
                     req.usage_limit = dispalyedUses.get(i);
                 } else {
                     req.usage_limit = 0;
-                }*/
+                }
 
                 getConnectionsManager().sendRequest(req, (response, error) -> {
                     AndroidUtilities.runOnUIThread(() -> {
@@ -321,19 +453,31 @@ public class LinkEditActivity extends BaseFragment {
                 req.peer = getMessagesController().getInputPeer(-chatId);
 
                 int i = timeChooseView.getSelectedIndex();
-                req.flags |= 1;
                 if (i < dispalyedDates.size()) {
-                    req.expire_date = dispalyedDates.get(i) + getConnectionsManager().getCurrentTime();
+                    if (currentInviteDate != dispalyedDates.get(i)) {
+                        req.flags |= 1;
+                        req.expire_date = dispalyedDates.get(i) + getConnectionsManager().getCurrentTime();
+                    }
                 } else {
-                    req.expire_date = 0;
+                    if (currentInviteDate != 0) {
+                        req.flags |= 1;
+                        req.expire_date = 0;
+                    }
                 }
 
                 i = usesChooseView.getSelectedIndex();
-                req.flags |= 2;
+
                 if (i < dispalyedUses.size()) {
-                    req.usage_limit = dispalyedUses.get(i);
+                    int newLimit = dispalyedUses.get(i);
+                    if (inviteToEdit.usage_limit != newLimit) {
+                        req.flags |= 2;
+                        req.usage_limit = newLimit;
+                    }
                 } else {
-                    req.usage_limit = 0;
+                    if (inviteToEdit.usage_limit != 0) {
+                        req.flags |= 2;
+                        req.usage_limit = 0;
+                    }
                 }
 
                 getConnectionsManager().sendRequest(req, (response, error) -> {
@@ -366,7 +510,13 @@ public class LinkEditActivity extends BaseFragment {
         timeEditText.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
         timeEditText.setHintTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
 
+        usesEditText.setCursorVisible(false);
         setInviteToEdit(inviteToEdit);
+
+        contentView.setClipChildren(false);
+        scrollView.setClipChildren(false);
+        linearLayout.setClipChildren(false);
+
         return contentView;
     }
 
@@ -401,7 +551,6 @@ public class LinkEditActivity extends BaseFragment {
     }
 
     private void chooseDate(int selectedDate) {
-        this.selectedDate = selectedDate;
         timeEditText.setText(LocaleController.formatDateAudio(selectedDate, false));
 
         int originDate = selectedDate;
@@ -436,7 +585,7 @@ public class LinkEditActivity extends BaseFragment {
                 } else {
                     if (selectedDate < 86400L) {
                         options[i] = LocaleController.getString("MessageScheduleToday", R.string.MessageScheduleToday);
-                    } else if (selectedDate < 364 * 86400L){
+                    } else if (selectedDate < 364 * 86400L) {
                         options[i] = LocaleController.getInstance().formatterScheduleDay.format(originDate * 1000L);
                     } else {
                         options[i] = LocaleController.getInstance().formatterYear.format(originDate * 1000L);
@@ -467,23 +616,40 @@ public class LinkEditActivity extends BaseFragment {
         usesChooseView.setOptions(4, "1", "10", "100", LocaleController.getString("NoLimit", R.string.NoLimit));
     }
 
+    int currentInviteDate;
+
     public void setInviteToEdit(TLRPC.TL_chatInviteExported invite) {
         inviteToEdit = invite;
         if (fragmentView != null && invite != null) {
             if (invite.expire_date > 0) {
                 chooseDate(invite.expire_date);
+                currentInviteDate = dispalyedDates.get(timeChooseView.getSelectedIndex());
+            } else {
+                currentInviteDate = 0;
             }
             if (invite.usage_limit > 0) {
                 chooseUses(invite.usage_limit);
+                usesEditText.setText(Integer.toString(invite.usage_limit));
             }
         }
     }
 
     public interface Callback {
         void onLinkCreated(TLObject response);
+
         void onLinkEdited(TLRPC.TL_chatInviteExported inviteToEdit, TLObject response);
+
         void onLinkRemoved(TLRPC.TL_chatInviteExported inviteFinal);
+
         void revokeLink(TLRPC.TL_chatInviteExported inviteFinal);
+    }
+
+    @Override
+    public void finishFragment() {
+        scrollView.getLayoutParams().height = scrollView.getHeight();
+        finished = true;
+        super.finishFragment();
+
     }
 
     @Override

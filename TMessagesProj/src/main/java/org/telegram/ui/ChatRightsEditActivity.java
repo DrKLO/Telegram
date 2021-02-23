@@ -912,12 +912,20 @@ public class ChatRightsEditActivity extends BaseFragment {
             } else {
                 adminRights.post_messages = adminRights.edit_messages = false;
             }
+            if (!adminRights.change_info && !adminRights.post_messages && !adminRights.edit_messages &&
+                    !adminRights.delete_messages && !adminRights.ban_users && !adminRights.invite_users &&
+                    !adminRights.pin_messages && !adminRights.add_admins && !adminRights.anonymous && !adminRights.manage_call) {
+                adminRights.other = true;
+            } else {
+                adminRights.other = false;
+            }
             MessagesController.getInstance(currentAccount).setUserAdminRole(chatId, currentUser, adminRights, currentRank, isChannel, getFragmentForAlert(1), isAddingNew);
             if (delegate != null) {
                 delegate.didSetRights(
                         adminRights.change_info || adminRights.post_messages || adminRights.edit_messages ||
                         adminRights.delete_messages || adminRights.ban_users || adminRights.invite_users ||
-                        adminRights.pin_messages || adminRights.add_admins || adminRights.anonymous || adminRights.manage_call ? 1 : 0, adminRights, bannedRights, currentRank);
+                        adminRights.pin_messages || adminRights.add_admins || adminRights.anonymous || adminRights.manage_call ||
+                        adminRights.other ? 1 : 0, adminRights, bannedRights, currentRank);
             }
         } else if (currentType == TYPE_BANNED) {
             MessagesController.getInstance(currentAccount).setUserBannedRole(chatId, currentUser, bannedRights, isChannel, getFragmentForAlert(1));

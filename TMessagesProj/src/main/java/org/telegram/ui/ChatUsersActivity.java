@@ -37,7 +37,6 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.recyclerview.widget.DefaultItemAnimator;
 import androidx.recyclerview.widget.DiffUtil;
@@ -74,6 +73,7 @@ import org.telegram.ui.Cells.TextInfoPrivacyCell;
 import org.telegram.ui.Cells.TextSettingsCell;
 import org.telegram.ui.Components.BulletinFactory;
 import org.telegram.ui.Components.FlickerLoadingView;
+import org.telegram.ui.Components.GigagroupConvertAlert;
 import org.telegram.ui.Components.IntSeekBarAccessibilityDelegate;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RadialProgressView;
@@ -126,6 +126,10 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
     private int changeInfoRow;
     private int addUsersRow;
     private int pinMessagesRow;
+
+    private int gigaHeaderRow;
+    private int gigaConvertRow;
+    private int gigaInfoRow;
 
     private int recentActionsRow;
     private int addNewRow;
@@ -440,6 +444,9 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
         participantsStartRow = -1;
         participantsDividerRow = -1;
         participantsDivider2Row = -1;
+        gigaInfoRow = -1;
+        gigaConvertRow = -1;
+        gigaHeaderRow = -1;
         participantsEndRow = -1;
         participantsInfoRow = -1;
         blockedEmptyRow = -1;
@@ -478,8 +485,21 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
             addUsersRow = rowCount++;
             pinMessagesRow = rowCount++;
             changeInfoRow = rowCount++;
-            if (!ChatObject.isChannel(currentChat) && currentChat.creator || currentChat.megagroup && ChatObject.canBlockUsers(currentChat)) {
-                participantsDivider2Row = rowCount++;
+
+            if (ChatObject.isChannel(currentChat) && currentChat.creator && currentChat.megagroup && !currentChat.gigagroup) {
+                int count = Math.max(currentChat.participants_count, info != null ? info.participants_count : 0);
+                if (count >= getMessagesController().maxMegagroupCount - 1000) {
+                    participantsDivider2Row = rowCount++;
+                    gigaHeaderRow = rowCount++;
+                    gigaConvertRow = rowCount++;
+                    gigaInfoRow = rowCount++;
+                }
+            }
+
+            if (!ChatObject.isChannel(currentChat) && currentChat.creator || currentChat.megagroup && !currentChat.gigagroup && ChatObject.canBlockUsers(currentChat)) {
+                if (participantsDivider2Row == -1) {
+                    participantsDivider2Row = rowCount++;
+                }
                 slowmodeRow = rowCount++;
                 slowmodeSelectRow = rowCount++;
                 slowmodeInfoRow = rowCount++;
@@ -490,14 +510,20 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
                 }
                 removedUsersRow = rowCount++;
             }
-            if (slowmodeInfoRow == -1 || removedUsersRow != -1) {
+            if (slowmodeInfoRow == -1 && gigaHeaderRow == -1 || removedUsersRow != -1) {
                 participantsDividerRow = rowCount++;
             }
             if (ChatObject.canBlockUsers(currentChat)) {
                 addNewRow = rowCount++;
             }
 
-            if (!(loadingUsers && !firstLoaded)) {
+            if (loadingUsers && !firstLoaded) {
+                if (!firstLoaded) {
+                    if (info != null && info.banned_count > 0) {
+                        loadingUserCellRow = rowCount++;
+                    }
+                }
+            } else {
                 if (!participants.isEmpty()) {
                     participantsStartRow = rowCount;
                     rowCount += participants.size();
@@ -505,10 +531,6 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
                 }
                 if (addNewRow != -1 || participantsStartRow != -1) {
                     addNewSectionRow = rowCount++;
-                }
-            } else if (!firstLoaded) {
-                if (info != null && info.banned_count > 0) {
-                    loadingUserCellRow = rowCount++;
                 }
             }
         } else if (type == TYPE_BANNED) {
@@ -532,7 +554,7 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
                         addNewSectionRow = rowCount++;
                     }
                 } else {
-                    restricted1SectionRow = rowCount++;
+                    //restricted1SectionRow = rowCount++;
                     blockedEmptyRow = rowCount++;
                 }
             } else if (!firstLoaded) {
@@ -540,7 +562,7 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
                 loadingUserCellRow = rowCount++;
             }
         } else if (type == TYPE_ADMIN) {
-            if (ChatObject.isChannel(currentChat) && currentChat.megagroup && (info == null || info.participants_count <= 200)) {
+            if (ChatObject.isChannel(currentChat) && currentChat.megagroup && !currentChat.gigagroup && (info == null || info.participants_count <= 200)) {
                 recentActionsRow = rowCount++;
                 addNewSectionRow = rowCount++;
             }
@@ -753,7 +775,7 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
         listView.setLayoutManager(layoutManager = new LinearLayoutManager(context, LinearLayoutManager.VERTICAL, false) {
             @Override
             public int scrollVerticallyBy(int dy, RecyclerView.Recycler recycler, RecyclerView.State state) {
-                if (!firstLoaded && type != TYPE_KICKED) {
+                if (!firstLoaded && type == TYPE_BANNED && participants.size() == 0) {
                     return 0;
                 }
                 return super.scrollVerticallyBy(dy, recycler, state);
@@ -784,6 +806,26 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
             @Override
             public long getAddDuration() {
                 return 220;
+            }
+
+            int animationIndex = -1;
+
+            @Override
+            protected void onAllAnimationsDone() {
+                super.onAllAnimationsDone();
+                getNotificationCenter().onAnimationFinish(animationIndex);
+            }
+
+            @Override
+            public void runPendingAnimations() {
+                boolean removalsPending = !mPendingRemovals.isEmpty();
+                boolean movesPending = !mPendingMoves.isEmpty();
+                boolean changesPending = !mPendingChanges.isEmpty();
+                boolean additionsPending = !mPendingAdditions.isEmpty();
+                if (removalsPending || movesPending || additionsPending || changesPending) {
+                    animationIndex = getNotificationCenter().setAnimationInProgress(animationIndex, null);
+                }
+                super.runPendingAnimations();
             }
         };
         listView.setItemAnimator(itemAnimator);
@@ -949,6 +991,35 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
                     fragment.setInfo(info);
                     presentFragment(fragment);
                     return;
+                } else if (position == gigaConvertRow) {
+                    showDialog(new GigagroupConvertAlert(getParentActivity(), ChatUsersActivity.this) {
+                        @Override
+                        protected void onCovert() {
+                            getMessagesController().convertToGigaGroup(getParentActivity(), currentChat, ChatUsersActivity.this, (result) -> {
+                                if (result && parentLayout != null) {
+                                    BaseFragment editActivity = parentLayout.fragmentsStack.get(parentLayout.fragmentsStack.size() - 2);
+                                    if (editActivity instanceof ChatEditActivity) {
+                                        editActivity.removeSelfFromStack();
+
+                                        Bundle args = new Bundle();
+                                        args.putInt("chat_id", chatId);
+                                        ChatEditActivity fragment = new ChatEditActivity(args);
+                                        fragment.setInfo(info);
+                                        parentLayout.addFragmentToStack(fragment, parentLayout.fragmentsStack.size() - 1);
+                                        finishFragment();
+                                        fragment.showConvertTooltip();
+                                    } else {
+                                        finishFragment();
+                                    }
+                                }
+                            });
+                        }
+
+                        @Override
+                        protected void onCancel() {
+
+                        }
+                    });
                 } else if (position == addNew2Row) {
                     presentFragment(new GroupInviteActivity(chatId));
                     return;
@@ -959,9 +1030,9 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
                     }
                     if (checkCell.hasIcon()) {
                         if (!TextUtils.isEmpty(currentChat.username) && (position == pinMessagesRow || position == changeInfoRow)) {
-                            Toast.makeText(getParentActivity(), LocaleController.getString("EditCantEditPermissionsPublic", R.string.EditCantEditPermissionsPublic), Toast.LENGTH_SHORT).show();
+                            BulletinFactory.of(this).createErrorBulletin(LocaleController.getString("EditCantEditPermissionsPublic", R.string.EditCantEditPermissionsPublic)).show();
                         } else {
-                            Toast.makeText(getParentActivity(), LocaleController.getString("EditCantEditPermissions", R.string.EditCantEditPermissions), Toast.LENGTH_SHORT).show();
+                            BulletinFactory.of(this).createErrorBulletin(LocaleController.getString("EditCantEditPermissions", R.string.EditCantEditPermissions)).show();
                         }
                         return;
                     }
@@ -1682,7 +1753,7 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
                     getMessagesController().deleteUserFromChat(chatId, user, null);
                     removeParticipants(userId);
                     if (currentChat != null && user != null && BulletinFactory.canShowBulletin(this)) {
-                        BulletinFactory.createRemoveFromChatBulletin(this, user.first_name, currentChat.title).show();
+                        BulletinFactory.createRemoveFromChatBulletin(this, user, currentChat.title).show();
                     }
                 } else {
                     if (actions.get(i) == 1 && canEditAdmin && (participant instanceof TLRPC.TL_channelParticipantAdmin || participant instanceof TLRPC.TL_chatParticipantAdmin)) {
@@ -3072,6 +3143,8 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
                         } else {
                             privacyCell.setText(LocaleController.formatString("SlowmodeInfoSelected", R.string.SlowmodeInfoSelected, formatSeconds(seconds)));
                         }
+                    } else if (position == gigaInfoRow) {
+                        privacyCell.setText(LocaleController.getString("BroadcastGroupConvertInfo", R.string.BroadcastGroupConvertInfo));
                     }
                     break;
                 case 2:
@@ -3100,6 +3173,9 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
                         actionCell.setText(LocaleController.getString("EventLog", R.string.EventLog), null, R.drawable.group_log, false);
                     } else if (position == addNew2Row) {
                         actionCell.setText(LocaleController.getString("ChannelInviteViaLink", R.string.ChannelInviteViaLink), null, R.drawable.profile_link, true);
+                    } else if (position == gigaConvertRow) {
+                        actionCell.setColors(Theme.key_windowBackgroundWhiteBlueIcon, Theme.key_windowBackgroundWhiteBlueButton);
+                        actionCell.setText(LocaleController.getString("BroadcastGroupConvert", R.string.BroadcastGroupConvert), null, R.drawable.msg_channel, false);
                     }
                     break;
                 case 3:
@@ -3126,6 +3202,8 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
                         headerCell.setText(LocaleController.getString("ChannelPermissionsHeader", R.string.ChannelPermissionsHeader));
                     } else if (position == slowmodeRow) {
                         headerCell.setText(LocaleController.getString("Slowmode", R.string.Slowmode));
+                    } else if (position == gigaHeaderRow) {
+                        headerCell.setText(LocaleController.getString("BroadcastGroup", R.string.BroadcastGroup));
                     }
                     break;
                 case 6:
@@ -3210,7 +3288,7 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
 
         @Override
         public int getItemViewType(int position) {
-            if (position == addNewRow || position == addNew2Row || position == recentActionsRow) {
+            if (position == addNewRow || position == addNew2Row || position == recentActionsRow || position == gigaConvertRow) {
                 return 2;
             } else if (position >= participantsStartRow && position < participantsEndRow ||
                     position >= botStartRow && position < botEndRow ||
@@ -3218,9 +3296,9 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
                 return 0;
             } else if (position == addNewSectionRow || position == participantsDividerRow || position == participantsDivider2Row) {
                 return 3;
-            } else if (position == restricted1SectionRow || position == permissionsSectionRow || position == slowmodeRow) {
+            } else if (position == restricted1SectionRow || position == permissionsSectionRow || position == slowmodeRow || position == gigaHeaderRow) {
                 return 5;
-            } else if (position == participantsInfoRow || position == slowmodeInfoRow) {
+            } else if (position == participantsInfoRow || position == slowmodeInfoRow || position == gigaInfoRow) {
                 return 1;
             } else if (position == blockedEmptyRow) {
                 return 4;
@@ -3360,6 +3438,9 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
             put(++pointer, restricted1SectionRow, sparseIntArray);
             put(++pointer, participantsDividerRow, sparseIntArray);
             put(++pointer, participantsDivider2Row, sparseIntArray);
+            put(++pointer, gigaHeaderRow, sparseIntArray);
+            put(++pointer, gigaConvertRow, sparseIntArray);
+            put(++pointer, gigaInfoRow, sparseIntArray);
             put(++pointer, participantsInfoRow, sparseIntArray);
             put(++pointer, blockedEmptyRow, sparseIntArray);
             put(++pointer, permissionsSectionRow, sparseIntArray);

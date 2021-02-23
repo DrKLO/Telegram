@@ -6,6 +6,7 @@ import android.graphics.ColorFilter;
 import android.graphics.Paint;
 import android.graphics.PixelFormat;
 import android.graphics.PorterDuff;
+import android.graphics.PorterDuffColorFilter;
 import android.graphics.PorterDuffXfermode;
 import android.graphics.Rect;
 import android.graphics.RectF;
@@ -67,14 +68,15 @@ public class CrossOutDrawable extends Drawable {
                 progress = 0;
             }
         }
-        if (progress == 0) {
-            iconDrawable.draw(canvas);
-            return;
-        }
         int newColor = Theme.getColor(colorKey);
         if (color != newColor) {
             color = newColor;
             paint.setColor(newColor);
+            iconDrawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(colorKey),  PorterDuff.Mode.MULTIPLY));
+        }
+        if (progress == 0) {
+            iconDrawable.draw(canvas);
+            return;
         }
         rectF.set(iconDrawable.getBounds());
         canvas.saveLayerAlpha(rectF, 255, Canvas.ALL_SAVE_FLAG);
@@ -101,14 +103,14 @@ public class CrossOutDrawable extends Drawable {
     }
 
     @Override
-    public void setBounds(int left, int top, int right, int bottom) {
-        super.setBounds(left, top, right, bottom);
-        iconDrawable.setBounds(left, top, right, bottom);
+    public void setColorFilter(@Nullable ColorFilter colorFilter) {
+        
     }
 
     @Override
-    public void setColorFilter(@Nullable ColorFilter colorFilter) {
-        iconDrawable.setColorFilter(colorFilter);
+    public void setBounds(int left, int top, int right, int bottom) {
+        super.setBounds(left, top, right, bottom);
+        iconDrawable.setBounds(left, top, right, bottom);
     }
 
     @Override
@@ -123,10 +125,11 @@ public class CrossOutDrawable extends Drawable {
 
     @Override
     public int getOpacity() {
-        return PixelFormat.TRANSLUCENT;
+        return PixelFormat.TRANSPARENT;
     }
 
     public void setColorKey(String colorKey) {
         this.colorKey = colorKey;
     }
+
 }

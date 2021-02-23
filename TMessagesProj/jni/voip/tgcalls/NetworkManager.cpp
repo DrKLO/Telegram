@@ -136,6 +136,9 @@ void NetworkManager::start() {
     if (!_enableP2P) {
         flags |= cricket::PORTALLOCATOR_DISABLE_UDP;
         flags |= cricket::PORTALLOCATOR_DISABLE_STUN;
+        uint32_t candidateFilter = _portAllocator->candidate_filter();
+        candidateFilter &= ~(cricket::CF_REFLEXIVE);
+        _portAllocator->SetCandidateFilter(candidateFilter);
     }
     
     if (_proxy) {

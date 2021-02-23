@@ -57,6 +57,8 @@ import org.telegram.ui.Cells.ChatMessageCell;
 import org.telegram.ui.ChatActivity;
 import org.telegram.ui.Components.AlertsCreator;
 import org.telegram.ui.Components.AnimatedFileDrawable;
+import org.telegram.ui.Components.Bulletin;
+import org.telegram.ui.Components.BulletinFactory;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.Point;
 import org.telegram.ui.PaymentFormActivity;
@@ -1827,6 +1829,10 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                                         final ArrayList<TLRPC.Message> sentMessages = new ArrayList<>();
                                         sentMessages.add(message);
                                         msgObj1.messageOwner.post_author = message.post_author;
+                                        if ((message.flags & 33554432) != 0) {
+                                            msgObj1.messageOwner.ttl_period = message.ttl_period;
+                                            msgObj1.messageOwner.flags |= 33554432;
+                                        }
                                         updateMediaPaths(msgObj1, message, message.id, null, true);
                                         int existFlags = msgObj1.getMediaExistanceFlags();
                                         newMsgObj1.id = message.id;
@@ -4796,6 +4802,10 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                             if (message != null) {
                                 MessageObject.getDialogId(message);
                                 sentMessages.add(message);
+                                if ((message.flags & 33554432) != 0) {
+                                    msgObj.messageOwner.ttl_period = message.ttl_period;
+                                    msgObj.messageOwner.flags |= 33554432;
+                                }
                                 updateMediaPaths(msgObj, message, message.id, originalPath, false);
                                 existFlags = msgObj.getMediaExistanceFlags();
                                 newMsgObj.id = message.id;
@@ -4994,6 +5004,10 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                             newMsgObj.date = res.date;
                             newMsgObj.entities = res.entities;
                             newMsgObj.out = res.out;
+                            if ((res.flags & 33554432) != 0) {
+                                newMsgObj.ttl_period = res.ttl_period;
+                                newMsgObj.flags |= 33554432;
+                            }
                             if (res.media != null) {
                                 newMsgObj.media = res.media;
                                 newMsgObj.flags |= TLRPC.MESSAGE_FLAG_HAS_MEDIA;
@@ -5085,6 +5099,10 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                                     message.unread = value < message.id;
                                 }
                                 msgObj.messageOwner.post_author = message.post_author;
+                                if ((message.flags & 33554432) != 0) {
+                                    msgObj.messageOwner.ttl_period = message.ttl_period;
+                                    msgObj.messageOwner.flags |= 33554432;
+                                }
                                 updateMediaPaths(msgObj, message, message.id, originalPath, false);
                                 existFlags = msgObj.getMediaExistanceFlags();
                                 newMsgObj.id = message.id;
@@ -6032,8 +6050,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
             if (error) {
                 AndroidUtilities.runOnUIThread(() -> {
                     try {
-                        Toast toast = Toast.makeText(ApplicationLoader.applicationContext, LocaleController.getString("UnsupportedAttachment", R.string.UnsupportedAttachment), Toast.LENGTH_SHORT);
-                        toast.show();
+                        NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.showBulletin, Bulletin.TYPE_ERROR, LocaleController.getString("UnsupportedAttachment", R.string.UnsupportedAttachment));
                     } catch (Exception e) {
                         FileLog.e(e);
                     }

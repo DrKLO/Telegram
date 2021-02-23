@@ -299,6 +299,7 @@ public class MusicPlayerService extends Service implements NotificationCenter.No
             MediaMetadata.Builder meta = new MediaMetadata.Builder()
                     .putBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART, fullAlbumArt)
                     .putString(MediaMetadata.METADATA_KEY_ALBUM_ARTIST, authorName)
+                    .putString(MediaMetadata.METADATA_KEY_ARTIST, authorName)
                     .putLong(MediaMetadata.METADATA_KEY_DURATION, duration)
                     .putString(MediaMetadata.METADATA_KEY_TITLE, songName)
                     .putString(MediaMetadata.METADATA_KEY_ALBUM, audioInfo != null ? audioInfo.getAlbum() : null);

@@ -1394,7 +1394,7 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
                 }
                 TypefaceSpan span = new TypefaceSpan(AndroidUtilities.getTypeface("fonts/rmedium.ttf"), 0, Theme.getColor(Theme.key_inappPlayerPerformer));
                 stringBuilder.setSpan(span, 0, messageObject.getMusicAuthor().length(), Spanned.SPAN_INCLUSIVE_INCLUSIVE);
-                titleTextView.setText(stringBuilder, !create && wasVisible);
+                titleTextView.setText(stringBuilder, !create && wasVisible && isMusic);
             }
         }
     }

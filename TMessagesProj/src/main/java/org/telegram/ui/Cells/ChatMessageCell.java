@@ -3068,7 +3068,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 createSelectorDrawable(0);
             }
             photoImage.setAlpha(1.0f);
-            if (messageChanged || dataChanged) {
+            if ((messageChanged || dataChanged) && !pollUnvoteInProgress) {
                 pollButtons.clear();
             }
             int captionNewLine = 0;
@@ -8335,7 +8335,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                             } else {
                                 buttonState = 2;
                             }
-                        } else if (documentAttachType == DOCUMENT_ATTACH_TYPE_VIDEO) {
+                        } else if (documentAttachType == DOCUMENT_ATTACH_TYPE_VIDEO && !hasEmbed) {
                             buttonState = 3;
                         } else {
                             buttonState = -1;
@@ -13550,9 +13550,24 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
 
             animateMessageText = false;
             if (currentMessageObject.textLayoutBlocks != lastDrawingTextBlocks) {
-                animateMessageText = true;
-                animateOutTextBlocks = lastDrawingTextBlocks;
-                changed = true;
+                boolean sameText = true;
+                if (currentMessageObject.textLayoutBlocks != null && lastDrawingTextBlocks != null && currentMessageObject.textLayoutBlocks.size() == lastDrawingTextBlocks.size()) {
+                    for (int i = 0; i < lastDrawingTextBlocks.size(); i++) {
+                        String newText = currentMessageObject.textLayoutBlocks.get(i).textLayout == null ? null : currentMessageObject.textLayoutBlocks.get(i).textLayout.getText().toString();
+                        String oldText = lastDrawingTextBlocks.get(i).textLayout == null ? null : lastDrawingTextBlocks.get(i).textLayout.getText().toString();
+                        if ((newText == null && oldText != null) || (newText != null && oldText == null) || !newText.equals(oldText)) {
+                            sameText = false;
+                            break;
+                        }
+                    }
+                } else {
+                    sameText = false;
+                }
+                if (!sameText) {
+                    animateMessageText = true;
+                    animateOutTextBlocks = lastDrawingTextBlocks;
+                    changed = true;
+                }
             }
             if (edited && !lastDrawingEdited && timeLayout != null) {
                 String editedStr = LocaleController.getString("EditedMessage", R.string.EditedMessage);

@@ -54,6 +54,7 @@ import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.ui.Components.AnimationProperties;
+import org.telegram.ui.Components.Bulletin;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LayoutHelper;
 
@@ -1190,6 +1191,7 @@ public class BottomSheet extends Dialog {
             onHideListener.onDismiss(this);
         }
         cancelSheetAnimation();
+        long duration = 0;
         if (!allowCustomAnimation || !onCustomCloseAnimation()) {
             currentSheetAnimationType = 2;
             currentSheetAnimation = new AnimatorSet();
@@ -1199,10 +1201,11 @@ public class BottomSheet extends Dialog {
             );
             if (useFastDismiss) {
                 int height = containerView.getMeasuredHeight();
-                currentSheetAnimation.setDuration(Math.max(60, (int) (250 * (height - containerView.getTranslationY()) / (float) height)));
+                duration = Math.max(60, (int) (250 * (height - containerView.getTranslationY()) / (float) height));
+                currentSheetAnimation.setDuration(duration);
                 useFastDismiss = false;
             } else {
-                currentSheetAnimation.setDuration(250);
+                currentSheetAnimation.setDuration(duration = 250);
             }
             currentSheetAnimation.setInterpolator(CubicBezierInterpolator.DEFAULT);
             currentSheetAnimation.addListener(new AnimatorListenerAdapter() {
@@ -1232,6 +1235,15 @@ public class BottomSheet extends Dialog {
             });
             NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.stopAllHeavyOperations, 512);
             currentSheetAnimation.start();
+        }
+
+        Bulletin bulletin = Bulletin.getVisibleBulletin();
+        if (bulletin != null && bulletin.isShowing()) {
+            if (duration > 0) {
+                bulletin.hide((long) (duration * 0.6f));
+            } else {
+                bulletin.hide();
+            }
         }
     }
 

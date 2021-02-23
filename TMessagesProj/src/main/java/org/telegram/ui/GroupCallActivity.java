@@ -792,7 +792,9 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
             if (num == 6) {
                 String text = (String) args[1];
                 String error;
-                if ("ANONYMOUS_CALLS_DISABLED".equals(text) || "GROUPCALL_ANONYMOUS_FORBIDDEN".equals(text)) {
+                if ("GROUPCALL_PARTICIPANTS_TOO_MUCH".equals(text)) {
+                    error = LocaleController.getString("VoipGroupTooMuch", R.string.VoipGroupTooMuch);
+                } else if ("ANONYMOUS_CALLS_DISABLED".equals(text) || "GROUPCALL_ANONYMOUS_FORBIDDEN".equals(text)) {
                     error = LocaleController.getString("VoipGroupJoinAnonymousAdmin", R.string.VoipGroupJoinAnonymousAdmin);
                 } else {
                     error = LocaleController.getString("ErrorOccurred", R.string.ErrorOccurred) + "\n" + text;
@@ -2831,7 +2833,7 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
             items.add(LocaleController.getString("VoipGroupOpenProfile", R.string.VoipGroupOpenProfile));
             icons.add(R.drawable.msg_openprofile);
             options.add(6);
-            if (!isAdmin) {
+            if (!isAdmin && ChatObject.canBlockUsers(currentChat)) {
                 items.add(LocaleController.getString("VoipGroupUserRemove", R.string.VoipGroupUserRemove));
                 icons.add(R.drawable.msg_block2);
                 options.add(2);

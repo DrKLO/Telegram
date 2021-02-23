@@ -63,8 +63,6 @@ import java.util.HashMap;
 
 import androidx.viewpager.widget.ViewPager;
 
-import com.google.android.exoplayer2.util.Log;
-
 public class ThemeDescription {
 
     public static int FLAG_BACKGROUND                   = 0x00000001;

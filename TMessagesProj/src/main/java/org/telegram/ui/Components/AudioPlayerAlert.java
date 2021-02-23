@@ -583,10 +583,10 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
 
                 textView.setOnClickListener(view -> {
                     int dialogsCount = MessagesController.getInstance(currentAccount).getTotalDialogsCount();
-                    if (dialogsCount <= 10) {
+                    if (dialogsCount <= 10 || TextUtils.isEmpty(textView.getText().toString())) {
                         return;
                     }
-                    String query = (String) textView.getText();
+                    String query = textView.getText().toString();
                     if (parentActivity.getActionBarLayout().getLastFragment() instanceof DialogsActivity) {
                         DialogsActivity dialogsActivity = (DialogsActivity) parentActivity.getActionBarLayout().getLastFragment();
                         if (!dialogsActivity.onlyDialogsAdapter()) {

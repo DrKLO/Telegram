@@ -153,9 +153,11 @@ public class FragmentContextViewWavesDrawable {
             lineBlobDrawable2.minRadius = AndroidUtilities.dp(0);
             lineBlobDrawable2.maxRadius = AndroidUtilities.dp(3) + AndroidUtilities.dp(9) * amplitude;
 
-            lineBlobDrawable.update(amplitude, 0.3f);
-            lineBlobDrawable1.update(amplitude, 0.7f);
-            lineBlobDrawable2.update(amplitude, 0.7f);
+            if (i == 1) {
+                lineBlobDrawable.update(amplitude, 0.3f);
+                lineBlobDrawable1.update(amplitude, 0.7f);
+                lineBlobDrawable2.update(amplitude, 0.7f);
+            }
 
 //            if (rippleTransition) {
 //                paint.setAlpha(76);

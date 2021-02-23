@@ -1875,7 +1875,7 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
             ((SharedAudioCell) view).setChecked(true, true);
         }
         if (!actionBar.isActionModeShowed()) {
-            actionBar.showActionMode(null, actionModeBackground, null, null, null, 0);
+            actionBar.showActionMode(true, null, actionModeBackground, null, null, null, 0);
             resetScroll();
         }
         return true;

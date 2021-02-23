@@ -5,6 +5,7 @@ import android.animation.AnimatorListenerAdapter;
 import android.animation.ValueAnimator;
 import android.content.Context;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.Rect;
@@ -32,6 +33,7 @@ import android.view.animation.OvershootInterpolator;
 import android.widget.Magnifier;
 import android.widget.TextView;
 
+import androidx.core.graphics.ColorUtils;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
 import org.telegram.messenger.AndroidUtilities;
@@ -121,6 +123,8 @@ public abstract class TextSelectionHelper<Cell extends TextSelectionHelper.Selec
     private Interpolator interpolator = new OvershootInterpolator();
 
     protected boolean showActionsAsPopupAlways = false;
+
+    int keyboardSize;
 
     private Runnable scrollRunnable = new Runnable() {
         @Override
@@ -1022,7 +1026,7 @@ public abstract class TextSelectionHelper<Cell extends TextSelectionHelper.Selec
                         y += layoutBlock.yOffset;
                         x += layoutBlock.xOffset;
 
-                        if (y + yOffset > top && y + yOffset < parentView.getMeasuredHeight()) {
+                        if (y + yOffset > top + keyboardSize && y + yOffset < parentView.getMeasuredHeight()) {
                             if (!layout.isRtlCharAt(selectionEnd)) {
                                 canvas.save();
                                 canvas.translate(x, y);
@@ -1082,7 +1086,7 @@ public abstract class TextSelectionHelper<Cell extends TextSelectionHelper.Selec
                         y += layoutBlock.yOffset;
                         x += layoutBlock.xOffset;
 
-                        if (y + yOffset > top && y + yOffset < parentView.getMeasuredHeight()) {
+                        if (y + yOffset > top + keyboardSize && y + yOffset < parentView.getMeasuredHeight()) {
                             if (!layout.isRtlCharAt(selectionStart)) {
                                 canvas.save();
                                 canvas.translate(x - handleViewSize, y);
@@ -2606,5 +2610,10 @@ public abstract class TextSelectionHelper<Cell extends TextSelectionHelper.Selec
                 lastBottom = bottom;
             }
         }
+    }
+
+    public void setKeyboardSize(int keyboardSize) {
+        this.keyboardSize = keyboardSize;
+        invalidate();
     }
 }

@@ -3257,7 +3257,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                 case 2:
                     FlickerLoadingView flickerLoadingView = new FlickerLoadingView(mContext);
                     view = flickerLoadingView;
-                    if (currentType == MediaDataController.MEDIA_MUSIC) {
+                    if (currentType == 2) {
                         flickerLoadingView.setViewType(FlickerLoadingView.AUDIO_TYPE);
                     } else {
                         flickerLoadingView.setViewType(FlickerLoadingView.FILES_TYPE);

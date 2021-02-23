@@ -59,6 +59,9 @@ public final class Bulletin {
     public static final int DURATION_SHORT = 1500;
     public static final int DURATION_LONG = 2750;
 
+    public static final int TYPE_STICKER = 0;
+    public static final int TYPE_ERROR = 1;
+
     public static Bulletin make(@NonNull FrameLayout containerLayout, @NonNull Layout contentLayout, int duration) {
         return new Bulletin(containerLayout, contentLayout, duration);
     }
@@ -90,7 +93,7 @@ public final class Bulletin {
     public static void hide(@NonNull FrameLayout containerLayout, boolean animated) {
         final Bulletin bulletin = find(containerLayout);
         if (bulletin != null) {
-            bulletin.hide(animated && isTransitionsEnabled());
+            bulletin.hide(animated && isTransitionsEnabled(), 0);
         }
     }
 
@@ -194,7 +197,7 @@ public final class Bulletin {
                 @Override
                 public void onViewDetachedFromWindow(View v) {
                     layout.removeOnAttachStateChangeListener(this);
-                    hide(false);
+                    hide(false, 0);
                 }
             });
 
@@ -221,10 +224,14 @@ public final class Bulletin {
     }
 
     public void hide() {
-        hide(isTransitionsEnabled());
+        hide(isTransitionsEnabled(), 0);
     }
 
-    public void hide(boolean animated) {
+    public void hide(long duration) {
+        hide(isTransitionsEnabled(), duration);
+    }
+
+    public void hide(boolean animated, long duration) {
         if (showing) {
             showing = false;
 
@@ -241,7 +248,13 @@ public final class Bulletin {
                     layout.transitionRunning = true;
                     layout.delegate = currentDelegate;
                     layout.invalidate();
-                    ensureLayoutTransitionCreated();
+                    if (duration >= 0) {
+                        Layout.DefaultTransition transition = new Layout.DefaultTransition();
+                        transition.duration = duration;
+                        layoutTransition = transition;
+                    } else {
+                        ensureLayoutTransitionCreated();
+                    }
                     layoutTransition.animateExit(layout, layout::onExitTransitionStart, () -> {
                         if (currentDelegate != null) {
                             currentDelegate.onOffsetChange(0);
@@ -682,6 +695,8 @@ public final class Bulletin {
 
         public static class DefaultTransition implements Transition {
 
+            long duration = 255;
+
             @Override
             public void animateEnter(@NonNull Layout layout, @Nullable Runnable startAction, @Nullable Runnable endAction, @Nullable Consumer<Float> onUpdate, int bottomOffset) {
                 layout.setInOutOffset(layout.getMeasuredHeight());
@@ -689,7 +704,7 @@ public final class Bulletin {
                     onUpdate.accept(layout.getTranslationY());
                 }
                 final ObjectAnimator animator = ObjectAnimator.ofFloat(layout, IN_OUT_OFFSET_Y2, 0);
-                animator.setDuration(225);
+                animator.setDuration(duration);
                 animator.setInterpolator(Easings.easeOutQuad);
                 if (startAction != null || endAction != null) {
                     animator.addListener(new AnimatorListenerAdapter() {

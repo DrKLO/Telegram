@@ -50,7 +50,6 @@ import android.view.inputmethod.EditorInfo;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
-import android.widget.Toast;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ChatObject;
@@ -75,6 +74,7 @@ import org.telegram.ui.Cells.CheckBoxCell;
 import org.telegram.ui.Cells.GroupCreateSectionCell;
 import org.telegram.ui.Cells.GroupCreateUserCell;
 import org.telegram.ui.Cells.TextCell;
+import org.telegram.ui.Components.BulletinFactory;
 import org.telegram.ui.Components.CombinedDrawable;
 import org.telegram.ui.Components.EditTextBoldCursor;
 import org.telegram.ui.Components.FlickerLoadingView;
@@ -524,6 +524,8 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
             }
         };
         ViewGroup frameLayout = (ViewGroup) fragmentView;
+        frameLayout.setFocusableInTouchMode(true);
+        frameLayout.setDescendantFocusability(ViewGroup.FOCUS_BEFORE_DESCENDANTS);
 
         scrollView = new ScrollView(context) {
             @Override
@@ -675,19 +677,8 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
         frameLayout.addView(listView);
         listView.setOnItemClickListener((view, position) -> {
             if (position == 0 && adapter.inviteViaLink != 0 && !adapter.searching) {
-                sharedLinkBottomSheet = new PermanentLinkBottomSheet(context, false, this, info, chatId);
+                sharedLinkBottomSheet = new PermanentLinkBottomSheet(context, false, this, info, chatId, channelId != 0);
                 showDialog(sharedLinkBottomSheet);
-//                int id = chatId != 0 ? chatId : channelId;
-//                TLRPC.Chat chat = getMessagesController().getChat(id);
-//                if (chat != null && chat.has_geo && !TextUtils.isEmpty(chat.username)) {
-//                    ChatEditTypeActivity activity = new ChatEditTypeActivity(id, true);
-//                    activity.setInfo(info);
-//                    presentFragment(activity);
-//                    return;
-//                }
-//                presentFragment(new GroupInviteActivity(id));
-
-
             } else if (view instanceof GroupCreateUserCell) {
                 GroupCreateUserCell cell = (GroupCreateUserCell) view;
                 Object object = cell.getObject();
@@ -723,7 +714,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
                         if (addToGroup && user.bot) {
                             if (channelId == 0 && user.bot_nochats) {
                                 try {
-                                    Toast.makeText(getParentActivity(), LocaleController.getString("BotCantJoinGroups", R.string.BotCantJoinGroups), Toast.LENGTH_SHORT).show();
+                                    BulletinFactory.of(this).createErrorBulletin(LocaleController.getString("BotCantJoinGroups", R.string.BotCantJoinGroups)).show();
                                 } catch (Exception e) {
                                     FileLog.e(e);
                                 }
@@ -877,9 +868,6 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
     @Override
     public void onResume() {
         super.onResume();
-        if (editText != null) {
-            editText.requestFocus();
-        }
         AndroidUtilities.requestAdjustResize(getParentActivity(), classGuid);
     }
 

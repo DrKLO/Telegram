@@ -813,7 +813,7 @@ public class ChatObject {
     }
 
     public static boolean canWriteToChat(TLRPC.Chat chat) {
-        return !isChannel(chat) || chat.creator || chat.admin_rights != null && chat.admin_rights.post_messages || !chat.broadcast;
+        return !isChannel(chat) || chat.creator || chat.admin_rights != null && chat.admin_rights.post_messages || !chat.broadcast && !chat.gigagroup || chat.gigagroup && ChatObject.hasAdminRights(chat);
     }
 
     public static String getBannedRightsString(TLRPC.TL_chatBannedRights bannedRights) {

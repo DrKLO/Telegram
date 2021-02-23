@@ -41,7 +41,6 @@ import android.os.Bundle;
 import android.os.Vibrator;
 import android.text.TextUtils;
 import android.util.Property;
-import android.util.SparseArray;
 import android.util.StateSet;
 import android.view.Gravity;
 import android.view.HapticFeedbackConstants;
@@ -163,6 +162,7 @@ import org.telegram.ui.Components.SizeNotifierFrameLayout;
 import org.telegram.ui.Components.StickersAlert;
 import org.telegram.ui.Components.UndoView;
 import org.telegram.ui.Components.ViewPagerFixed;
+import org.webrtc.RecyclerItemsEnterAnimator;
 
 import java.util.ArrayList;
 
@@ -200,6 +200,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         private FlickerLoadingView progressView;
         private int lastItemsCount;
         private DialogsItemAnimator dialogsItemAnimator;
+        private RecyclerItemsEnterAnimator recyclerItemsEnterAnimator;
 
         public ViewPage(Context context) {
             super(context);
@@ -242,6 +243,8 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
     private ActionBarMenuSubItem[] scrimPopupWindowItems;
 
     private int initialDialogsType;
+
+    private boolean checkingImportDialog;
 
     private int messagesCount;
     private int hasPoll;
@@ -399,7 +402,6 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
     private float filterTabsMoveFrom;
     private float tabsYOffset;
     private float scrollAdditionalOffset;
-    private SparseArray<Float> listAlphaItems = new SparseArray<>();
 
     public final Property<DialogsActivity, Float> SCROLL_Y = new AnimationProperties.FloatProperty<DialogsActivity>("animationValue") {
         @Override
@@ -1142,16 +1144,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
 
         @Override
         protected void dispatchDraw(Canvas canvas) {
-            for (int i = 0; i < getChildCount(); i++) {
-                View child = getChildAt(i);
-                int position = getChildAdapterPosition(child);
-                Float alpha = listAlphaItems.get(position, null);
-                if (alpha == null) {
-                    child.setAlpha(1f);
-                } else {
-                    child.setAlpha(alpha);
-                }
-            }
+            parentPage.recyclerItemsEnterAnimator.dispatchDraw();
             super.dispatchDraw(canvas);
             if (slidingView != null && pacmanAnimation != null) {
                 pacmanAnimation.draw(canvas, slidingView.getTop() + slidingView.getMeasuredHeight() / 2);
@@ -1675,22 +1668,27 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
 
         getNotificationCenter().addObserver(this, NotificationCenter.didClearDatabase);
 
+        loadDialogs(getAccountInstance());
+        getMessagesController().loadPinnedDialogs(folderId, 0, null);
+        return true;
+    }
+
+    public static void loadDialogs(AccountInstance accountInstance) {
+        int currentAccount = accountInstance.getCurrentAccount();
         if (!dialogsLoaded[currentAccount]) {
-            MessagesController messagesController = getMessagesController();
+            MessagesController messagesController = accountInstance.getMessagesController();
             messagesController.loadGlobalNotificationsSettings();
-            messagesController.loadDialogs(folderId, 0, 100, true);
+            messagesController.loadDialogs(0, 0, 100, true);
             messagesController.loadHintDialogs();
-            messagesController.loadUserInfo(getUserConfig().getCurrentUser(), false, classGuid);
-            getContactsController().checkInviteText();
-            getMediaDataController().loadRecents(MediaDataController.TYPE_FAVE, false, true, false);
-            getMediaDataController().checkFeaturedStickers();
+            messagesController.loadUserInfo(accountInstance.getUserConfig().getCurrentUser(), false, 0);
+            accountInstance.getContactsController().checkInviteText();
+            accountInstance.getMediaDataController().loadRecents(MediaDataController.TYPE_FAVE, false, true, false);
+            accountInstance.getMediaDataController().checkFeaturedStickers();
             for (String emoji : messagesController.diceEmojies) {
-                getMediaDataController().loadStickersByEmojiOrName(emoji, true, true);
+                accountInstance.getMediaDataController().loadStickersByEmojiOrName(emoji, true, true);
             }
             dialogsLoaded[currentAccount] = true;
         }
-        getMessagesController().loadPinnedDialogs(folderId, 0, null);
-        return true;
     }
 
     @Override
@@ -1744,8 +1742,10 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
 
             @Override
             public void setTranslationY(float translationY) {
+                if (translationY != getTranslationY()) {
+                    fragmentView.invalidate();
+                }
                 super.setTranslationY(translationY);
-                fragmentView.invalidate();
             }
 
             @Override
@@ -1963,10 +1963,12 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
 
                 @Override
                 public void setTranslationY(float translationY) {
-                    super.setTranslationY(translationY);
-                    updateContextViewPosition();
-                    if (fragmentView != null) {
-                        fragmentView.invalidate();
+                    if (getTranslationY() != translationY) {
+                        super.setTranslationY(translationY);
+                        updateContextViewPosition();
+                        if (fragmentView != null) {
+                            fragmentView.invalidate();
+                        }
                     }
                 }
 
@@ -2613,6 +2615,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 }
             });
             viewPage.swipeController = new SwipeController(viewPage);
+            viewPage.recyclerItemsEnterAnimator = new RecyclerItemsEnterAnimator(viewPage.listView);
 
             viewPage.itemTouchhelper = new ItemTouchHelper(viewPage.swipeController);
             viewPage.itemTouchhelper.attachToRecyclerView(viewPage.listView);
@@ -3674,7 +3677,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         if (!afterSignup) {
             tosAccepted = getUserConfig().unacceptedTermsOfService == null;
         } else {
-            tosAccepted = false;
+            tosAccepted = true;
             afterSignup = false;
         }
         if (tosAccepted && checkPermission && !onlySelect && Build.VERSION.SDK_INT >= 23) {
@@ -4070,6 +4073,8 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                     if (fragmentView != null) {
                         fragmentView.requestLayout();
                     }
+
+                    setSearchAnimationProgress(show ? 1f : 0);
 
                     viewPages[0].listView.setVerticalScrollBarEnabled(true);
                     searchViewPager.setBackground(null);
@@ -5762,13 +5767,13 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                     viewPages[a].dialogsAdapter.notifyDataSetChanged();
                     int newItemCount = viewPages[a].dialogsAdapter.getItemCount();
                     if (newItemCount > oldItemCount && initialDialogsType != 11 && initialDialogsType != 12 && initialDialogsType != 13) {
-                        showItemsAnimated(viewPages[a].listView, oldItemCount);
+                        viewPages[a].recyclerItemsEnterAnimator.showItemsAnimated(oldItemCount);
                     }
                 } else {
                     updateVisibleRows(MessagesController.UPDATE_MASK_NEW_MESSAGE);
                     int newItemCount = viewPages[a].dialogsAdapter.getItemCount();
                     if (newItemCount > oldItemCount && initialDialogsType != 11 && initialDialogsType != 12 && initialDialogsType != 13) {
-                        showItemsAnimated(viewPages[a].listView, oldItemCount);
+                        viewPages[a].recyclerItemsEnterAnimator.showItemsAnimated(oldItemCount);
                     }
                 }
                 try {
@@ -5915,81 +5920,12 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 searchViewPager.messagesDeleted(channelId, markAsDeletedMessages);
             }
         } else if (id == NotificationCenter.didClearDatabase) {
-            for (int a = 0; a < viewPages.length; a++) {
-                viewPages[a].dialogsAdapter.didDatabaseCleared();
-            }
-        }
-    }
-
-    private void showItemsAnimated(RecyclerListView listView, int from) {
-        int n = listView.getChildCount();
-        View progressView = null;
-        for (int i = 0; i < n; i++) {
-            View child = listView.getChildAt(i);
-            if (child instanceof FlickerLoadingView) {
-                progressView = child;
-            }
-        }
-        final View finalProgressView = progressView;
-        if (progressView != null) {
-            listView.removeView(progressView);
-            from--;
-        }
-        int finalFrom = from;
-        listView.getViewTreeObserver().addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
-            @Override
-            public boolean onPreDraw() {
-                listView.getViewTreeObserver().removeOnPreDrawListener(this);
-                int n = listView.getChildCount();
-                AnimatorSet animatorSet = new AnimatorSet();
-                for (int i = 0; i < n; i++) {
-                    View child = listView.getChildAt(i);
-                    int position = listView.getChildAdapterPosition(child);
-                    if (child != finalProgressView && position >= finalFrom - 1 && listAlphaItems.get(position, null) == null) {
-                        listAlphaItems.put(position, 0f);
-                        child.setAlpha(0);
-                        int s = Math.min(listView.getMeasuredHeight(), Math.max(0, child.getTop()));
-                        int delay = (int) ((s / (float) listView.getMeasuredHeight()) * 100);
-                        ValueAnimator a = ValueAnimator.ofFloat(0, 1f);
-                        a.addUpdateListener(valueAnimator -> {
-                            Float alpha = (Float) valueAnimator.getAnimatedValue();
-                            listAlphaItems.put(position, alpha);
-                            listView.invalidate();
-                        });
-                        a.addListener(new AnimatorListenerAdapter() {
-                            @Override
-                            public void onAnimationEnd(Animator animation) {
-                                listAlphaItems.remove(position);
-                                listView.invalidate();
-                            }
-                        });
-                        a.setStartDelay(delay);
-                        a.setDuration(200);
-                        animatorSet.playTogether(a);
-                    }
+            if (viewPages != null) {
+                for (int a = 0; a < viewPages.length; a++) {
+                    viewPages[a].dialogsAdapter.didDatabaseCleared();
                 }
-
-                if (finalProgressView != null && finalProgressView.getParent() == null) {
-                    listView.addView(finalProgressView);
-                    RecyclerView.LayoutManager layoutManager = listView.getLayoutManager();
-                    if (layoutManager != null) {
-                        layoutManager.ignoreView(finalProgressView);
-                        Animator animator = ObjectAnimator.ofFloat(finalProgressView, View.ALPHA, finalProgressView.getAlpha(), 0);
-                        animator.addListener(new AnimatorListenerAdapter() {
-                            @Override
-                            public void onAnimationEnd(Animator animation) {
-                                finalProgressView.setAlpha(1f);
-                                layoutManager.stopIgnoringView(finalProgressView);
-                                listView.removeView(finalProgressView);
-                            }
-                        });
-                        animator.start();
-                    }
-                }
-                animatorSet.start();
-                return true;
             }
-        });
+        }
     }
 
     private String showingSuggestion;
@@ -6009,7 +5945,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         if (showingSuggestion == null) {
             return;
         }
-        getMessagesController().removeSuggestion(showingSuggestion);
+        getMessagesController().removeSuggestion(0, showingSuggestion);
         showingSuggestion = null;
         showNextSupportedSuggestion();
     }
@@ -6294,28 +6230,55 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             }
         }
         if (initialDialogsType == 11 || initialDialogsType == 12 || initialDialogsType == 13) {
-            int lower_part = (int) dialog_id;
-            TLRPC.User user = null;
-            TLRPC.Chat chat = null;
-            if (lower_part > 0) {
-                user = getMessagesController().getUser(lower_part);
+            if (checkingImportDialog) {
+                return;
+            }
+            int lowerId = (int) dialog_id;
+            TLRPC.User user;
+            TLRPC.Chat chat;
+            if (lowerId > 0) {
+                user = getMessagesController().getUser(lowerId);
+                chat = null;
                 if (!user.mutual_contact) {
                     getUndoView().showWithAction(dialog_id, UndoView.ACTION_IMPORT_NOT_MUTUAL, null);
                     return;
                 }
             } else {
-                chat = getMessagesController().getChat(-lower_part);
+                user = null;
+                chat = getMessagesController().getChat(-lowerId);
                 if (!ChatObject.hasAdminRights(chat) || !ChatObject.canChangeChatInfo(chat)) {
                     getUndoView().showWithAction(dialog_id, UndoView.ACTION_IMPORT_GROUP_NOT_ADMIN, null);
                     return;
                 }
             }
-            AlertsCreator.createImportDialogAlert(this, arguments.getString("importTitle"), user, chat, () -> {
-                setDialogsListFrozen(true);
-                ArrayList<Long> dids = new ArrayList<>();
-                dids.add(dialog_id);
-                delegate.didSelectDialogs(DialogsActivity.this, dids, null, param);
-            });
+            final AlertDialog progressDialog = new AlertDialog(getParentActivity(), 3);
+            TLRPC.TL_messages_checkHistoryImportPeer req = new TLRPC.TL_messages_checkHistoryImportPeer();
+            req.peer = getMessagesController().getInputPeer(lowerId);
+            getConnectionsManager().sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
+                try {
+                    progressDialog.dismiss();
+                } catch (Exception e) {
+                    FileLog.e(e);
+                }
+                checkingImportDialog = false;
+                if (response != null) {
+                    TLRPC.TL_messages_checkedHistoryImportPeer res = (TLRPC.TL_messages_checkedHistoryImportPeer) response;
+                    AlertsCreator.createImportDialogAlert(this, arguments.getString("importTitle"), res.confirm_text, user, chat, () -> {
+                        setDialogsListFrozen(true);
+                        ArrayList<Long> dids = new ArrayList<>();
+                        dids.add(dialog_id);
+                        delegate.didSelectDialogs(DialogsActivity.this, dids, null, param);
+                    });
+                } else {
+                    AlertsCreator.processError(currentAccount, error, this, req);
+                    getNotificationCenter().postNotificationName(NotificationCenter.historyImportProgressChanged, dialog_id, req, error);
+                }
+            }));
+            try {
+                progressDialog.showDelayed(300);
+            } catch (Exception ignore) {
+
+            }
         } else if (useAlert && (selectAlertString != null && selectAlertStringGroup != null || addToGroupAlertString != null)) {
             if (getParentActivity() == null) {
                 return;

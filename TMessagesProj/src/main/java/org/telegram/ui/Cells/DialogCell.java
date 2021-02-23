@@ -2706,7 +2706,7 @@ public class DialogCell extends BaseCell {
             } else if (chat != null) {
                 hasCall = chat.call_active && chat.call_not_empty;
                 if (hasCall || chatCallProgress != 0) {
-                    float checkProgress = checkBox.isChecked() ? 1.0f - checkBox.getProgress() : 1.0f;
+                    float checkProgress = checkBox != null && checkBox.isChecked() ? 1.0f - checkBox.getProgress() : 1.0f;
                     int top = (int) (avatarImage.getImageY2() - AndroidUtilities.dp(useForceThreeLines || SharedConfig.useThreeLinesLayout ? 6 : 8));
                     int left;
                     if (LocaleController.isRTL) {

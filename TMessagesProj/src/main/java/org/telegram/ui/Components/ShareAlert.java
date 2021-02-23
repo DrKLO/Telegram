@@ -49,10 +49,10 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import org.telegram.SQLite.SQLiteCursor;
+import org.telegram.messenger.AccountInstance;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.ChatObject;
-import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessageObject;
@@ -349,8 +349,8 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
             AdjustPanLayoutHelper adjustPanLayoutHelper = new AdjustPanLayoutHelper(this) {
 
                 @Override
-                protected void onTransitionStart(boolean keyboardVisible) {
-                    super.onTransitionStart(keyboardVisible);
+                protected void onTransitionStart(boolean keyboardVisible, int contentHeight) {
+                    super.onTransitionStart(keyboardVisible, contentHeight);
                     if (previousScrollOffsetY > 0 && previousScrollOffsetY != scrollOffsetY && keyboardVisible) {
                         fromScrollY = previousScrollOffsetY;
                         toScrollY = scrollOffsetY;
@@ -1115,11 +1115,7 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
 
         updateSelectedCount(0);
 
-        if (!DialogsActivity.dialogsLoaded[currentAccount]) {
-            MessagesController.getInstance(currentAccount).loadDialogs(0, 0, 100, true);
-            ContactsController.getInstance(currentAccount).checkInviteText();
-            DialogsActivity.dialogsLoaded[currentAccount] = true;
-        }
+        DialogsActivity.loadDialogs(AccountInstance.getInstance(currentAccount));
         if (listAdapter.dialogs.isEmpty()) {
             NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.dialogsNeedReload);
         }
@@ -1388,7 +1384,7 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
                         dialogsMap.put(dialog.id, dialog);
                     } else {
                         TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-lower_id);
-                        if (!(chat == null || ChatObject.isNotInChat(chat) || ChatObject.isChannel(chat) && !chat.creator && (chat.admin_rights == null || !chat.admin_rights.post_messages) && !chat.megagroup)) {
+                        if (!(chat == null || ChatObject.isNotInChat(chat) || chat.gigagroup && !ChatObject.hasAdminRights(chat) || ChatObject.isChannel(chat) && !chat.creator && (chat.admin_rights == null || !chat.admin_rights.post_messages) && !chat.megagroup)) {
                             if (dialog.folder_id == 1) {
                                 archivedDialogs.add(dialog);
                             } else {

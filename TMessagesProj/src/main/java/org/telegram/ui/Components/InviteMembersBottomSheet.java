@@ -28,7 +28,6 @@ import android.view.ViewConfiguration;
 import android.view.ViewGroup;
 import android.view.ViewOutlineProvider;
 import android.widget.ImageView;
-import android.widget.LinearLayout;
 import android.widget.ScrollView;
 
 import androidx.annotation.NonNull;
@@ -38,12 +37,11 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
-import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
+import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
-import org.telegram.messenger.UserObject;
 import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLObject;
@@ -52,7 +50,6 @@ import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Adapters.SearchAdapterHelper;
-import org.telegram.ui.Cells.CheckBoxCell;
 import org.telegram.ui.Cells.GroupCreateSectionCell;
 import org.telegram.ui.Cells.GroupCreateUserCell;
 import org.telegram.ui.Cells.ManageChatTextCell;
@@ -62,12 +59,12 @@ import org.telegram.ui.LaunchActivity;
 
 import java.util.ArrayList;
 
-public class InviteMembersBottomSheet extends UsersAlertBase {
+public class InviteMembersBottomSheet extends UsersAlertBase implements NotificationCenter.NotificationCenterDelegate {
 
     private SparseArray<TLObject> ignoreUsers;
     private final SpansContainer spansContainer;
     private final ScrollView spansScrollView;
-    SearchAdapter searchAdapter;
+    private SearchAdapter searchAdapter;
 
     private int emptyRow;
     private int copyLinkRow;
@@ -82,21 +79,22 @@ public class InviteMembersBottomSheet extends UsersAlertBase {
 
     private ArrayList<TLObject> contacts = new ArrayList<>();
     private SparseArray<GroupCreateSpan> selectedContacts = new SparseArray<>();
-    private ArrayList<GroupCreateSpan> allSpans = new ArrayList<>();
 
-    boolean spanEnter;
-    float spansEnterProgress = 0;
+    private boolean spanEnter;
+    private float spansEnterProgress = 0;
     private ValueAnimator spansEnterAnimator;
     private GroupCreateSpan currentDeletingSpan;
-    int scrollViewH;
+    private int scrollViewH;
     private GroupCreateActivity.ContactsAddActivityDelegate delegate;
+    private InviteMembersBottomSheetDelegate dialogsDelegate;
+    private ArrayList<TLRPC.Dialog> dialogsServerOnly;
 
-    int additionalHeight;
+    private int additionalHeight;
 
-    float touchSlop;
-    BaseFragment parentFragment;
+    private float touchSlop;
+    private BaseFragment parentFragment;
 
-    View.OnClickListener spanClickListener = new View.OnClickListener() {
+    private View.OnClickListener spanClickListener = new View.OnClickListener() {
         @Override
         public void onClick(View v) {
             GroupCreateSpan span = (GroupCreateSpan) v;
@@ -104,7 +102,7 @@ public class InviteMembersBottomSheet extends UsersAlertBase {
                 currentDeletingSpan = null;
                 selectedContacts.remove(span.getUid());
                 spansContainer.removeSpan(span);
-                spansCountChanged();
+                spansCountChanged(true);
                 AndroidUtilities.updateVisibleRows(listView);
             } else {
                 if (currentDeletingSpan != null) {
@@ -121,12 +119,18 @@ public class InviteMembersBottomSheet extends UsersAlertBase {
     private int searchAdditionalHeight;
     private int chatId;
 
+    public interface InviteMembersBottomSheetDelegate {
+        void didSelectDialogs(ArrayList<Long> dids);
+    }
+
     public InviteMembersBottomSheet(Context context, int account, SparseArray<TLObject> ignoreUsers, int chatId, BaseFragment parentFragment) {
         super(context, false, account);
         this.ignoreUsers = ignoreUsers;
         needSnapToTop = false;
         this.parentFragment = parentFragment;
         this.chatId = chatId;
+
+        searchView.searchEditText.setHint(LocaleController.getString("SearchForChats", R.string.SearchForChats));
 
         final ViewConfiguration configuration = ViewConfiguration.get(context);
         touchSlop = configuration.getScaledTouchSlop();
@@ -160,6 +164,9 @@ public class InviteMembersBottomSheet extends UsersAlertBase {
                 } else if (position > localCount + localServerCount && position <= globalCount + localCount + localServerCount) {
                     object = searchAdapter.searchAdapterHelper.getGlobalSearch().get(position - localCount - localServerCount - 1);
                 }
+                if (dialogsDelegate != null) {
+                    searchView.closeSearch();
+                }
             } else {
                 if (position == copyLinkRow) {
                     TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(chatId);
@@ -179,11 +186,11 @@ public class InviteMembersBottomSheet extends UsersAlertBase {
                     android.content.ClipboardManager clipboard = (android.content.ClipboardManager) ApplicationLoader.applicationContext.getSystemService(Context.CLIPBOARD_SERVICE);
                     android.content.ClipData clip = android.content.ClipData.newPlainText("label", link);
                     clipboard.setPrimaryClip(clip);
-                    BulletinFactory.createCopyLinkBulletin(parentFragment).show();
                     dismiss();
+                    BulletinFactory.createCopyLinkBulletin(parentFragment).show();
 
                 } else if (position >= contactsStartRow && position < contactsEndRow) {
-                    object = contacts.get(position - contactsStartRow);
+                    object = ((ListAdapter) listViewAdapter).getObject(position);
                 }
             }
 
@@ -208,10 +215,10 @@ public class InviteMembersBottomSheet extends UsersAlertBase {
                         GroupCreateSpan groupCreateSpan = new GroupCreateSpan(context, object);
                         groupCreateSpan.setOnClickListener(spanClickListener);
                         selectedContacts.put(id, groupCreateSpan);
-                        spansContainer.addSpan(groupCreateSpan);
+                        spansContainer.addSpan(groupCreateSpan, true);
                     }
                 }
-                spansCountChanged();
+                spansCountChanged(true);
                 AndroidUtilities.updateVisibleRows(listView);
             }
         });
@@ -232,9 +239,7 @@ public class InviteMembersBottomSheet extends UsersAlertBase {
                 } else {
                     maxSize = AndroidUtilities.dp(56);
                 }
-                int lastH = getMeasuredHeight();
                 super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(maxSize, MeasureSpec.AT_MOST));
-
             }
         };
         spansScrollView.setVisibility(View.GONE);
@@ -272,67 +277,57 @@ public class InviteMembersBottomSheet extends UsersAlertBase {
         }
 
         floatingButton.setOnClickListener(v -> {
-            if (selectedContacts.size() == 0) {
+            if (dialogsDelegate == null && selectedContacts.size() == 0) {
                 return;
             }
             Activity activity = AndroidUtilities.findActivity(context);
             if (activity == null) {
                 return;
             }
-            AlertDialog.Builder builder = new AlertDialog.Builder(activity);
-            if (selectedContacts.size() == 1) {
-                builder.setTitle(LocaleController.getString("AddOneMemberAlertTitle", R.string.AddOneMemberAlertTitle));
+            if (dialogsDelegate != null) {
+                ArrayList<Long> dialogs = new ArrayList<>();
+                for (int a = 0; a < selectedContacts.size(); a++) {
+                    int uid = selectedContacts.keyAt(a);
+                    dialogs.add((long) uid);
+                }
+                dialogsDelegate.didSelectDialogs(dialogs);
+                dismiss();
             } else {
-                builder.setTitle(LocaleController.formatString("AddMembersAlertTitle", R.string.AddMembersAlertTitle, LocaleController.formatPluralString("Members", selectedContacts.size())));
-            }
-            StringBuilder stringBuilder = new StringBuilder();
-            for (int a = 0; a < selectedContacts.size(); a++) {
-                int uid = selectedContacts.keyAt(a);
-                TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(uid);
-                if (user == null) {
-                    continue;
+                AlertDialog.Builder builder = new AlertDialog.Builder(activity);
+                if (selectedContacts.size() == 1) {
+                    builder.setTitle(LocaleController.getString("AddOneMemberAlertTitle", R.string.AddOneMemberAlertTitle));
+                } else {
+                    builder.setTitle(LocaleController.formatString("AddMembersAlertTitle", R.string.AddMembersAlertTitle, LocaleController.formatPluralString("Members", selectedContacts.size())));
                 }
-                if (stringBuilder.length() > 0) {
-                    stringBuilder.append(", ");
+                StringBuilder stringBuilder = new StringBuilder();
+                for (int a = 0; a < selectedContacts.size(); a++) {
+                    int uid = selectedContacts.keyAt(a);
+                    TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(uid);
+                    if (user == null) {
+                        continue;
+                    }
+                    if (stringBuilder.length() > 0) {
+                        stringBuilder.append(", ");
+                    }
+                    stringBuilder.append("**").append(ContactsController.formatName(user.first_name, user.last_name)).append("**");
                 }
-                stringBuilder.append("**").append(ContactsController.formatName(user.first_name, user.last_name)).append("**");
-            }
-            TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(chatId);
-            if (selectedContacts.size() > 5) {
-                SpannableStringBuilder spannableStringBuilder = new SpannableStringBuilder(AndroidUtilities.replaceTags(LocaleController.formatString("AddMembersAlertNamesText", R.string.AddMembersAlertNamesText, LocaleController.formatPluralString("Members", selectedContacts.size()), chat.title)));
-                String countString = String.format("%d", selectedContacts.size());
-                int index = TextUtils.indexOf(spannableStringBuilder, countString);
-                if (index >= 0) {
-                    spannableStringBuilder.setSpan(new TypefaceSpan(AndroidUtilities.getTypeface("fonts/rmedium.ttf")), index, index + countString.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(chatId);
+                if (selectedContacts.size() > 5) {
+                    SpannableStringBuilder spannableStringBuilder = new SpannableStringBuilder(AndroidUtilities.replaceTags(LocaleController.formatString("AddMembersAlertNamesText", R.string.AddMembersAlertNamesText, LocaleController.formatPluralString("Members", selectedContacts.size()), chat.title)));
+                    String countString = String.format("%d", selectedContacts.size());
+                    int index = TextUtils.indexOf(spannableStringBuilder, countString);
+                    if (index >= 0) {
+                        spannableStringBuilder.setSpan(new TypefaceSpan(AndroidUtilities.getTypeface("fonts/rmedium.ttf")), index, index + countString.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                    }
+                    builder.setMessage(spannableStringBuilder);
+                } else {
+                    builder.setMessage(AndroidUtilities.replaceTags(LocaleController.formatString("AddMembersAlertNamesText", R.string.AddMembersAlertNamesText, stringBuilder, chat.title)));
                 }
-                builder.setMessage(spannableStringBuilder);
-            } else {
-                builder.setMessage(AndroidUtilities.replaceTags(LocaleController.formatString("AddMembersAlertNamesText", R.string.AddMembersAlertNamesText, stringBuilder, chat.title)));
+                builder.setPositiveButton(LocaleController.getString("Add", R.string.Add), (dialogInterface, i) -> onAddToGroupDone(0));
+                builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
+                builder.create();
+                builder.show();
             }
-//            CheckBoxCell[] cells = new CheckBoxCell[1];
-//            if (!ChatObject.isChannel(chat)) {
-//                LinearLayout linearLayout = new LinearLayout(activity);
-//                linearLayout.setOrientation(LinearLayout.VERTICAL);
-//                cells[0] = new CheckBoxCell(activity, 1);
-//                cells[0].setBackgroundDrawable(Theme.getSelectorDrawable(false));
-//                cells[0].setMultiline(true);
-//                if (selectedContacts.size() == 1) {
-//                    TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(selectedContacts.keyAt(0));
-//                    cells[0].setText(AndroidUtilities.replaceTags(LocaleController.formatString("AddOneMemberForwardMessages", R.string.AddOneMemberForwardMessages, UserObject.getFirstName(user))), "", true, false);
-//                } else {
-//                    cells[0].setText(LocaleController.getString("AddMembersForwardMessages", R.string.AddMembersForwardMessages), "", true, false);
-//                }
-//                cells[0].setPadding(LocaleController.isRTL ? AndroidUtilities.dp(16) : AndroidUtilities.dp(8), 0, LocaleController.isRTL ? AndroidUtilities.dp(8) : AndroidUtilities.dp(16), 0);
-//                linearLayout.addView(cells[0], LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
-//                cells[0].setOnClickListener(v1 -> cells[0].setChecked(!cells[0].isChecked(), true));
-//
-//                builder.setCustomViewOffset(12);
-//                builder.setView(linearLayout);
-//            }
-            builder.setPositiveButton(LocaleController.getString("Add", R.string.Add), (dialogInterface, i) -> onAddToGroupDone(0));
-            builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
-            builder.create();
-            builder.show();
         });
         floatingButton.setVisibility(View.INVISIBLE);
         floatingButton.setScaleX(0.0f);
@@ -359,7 +354,75 @@ public class InviteMembersBottomSheet extends UsersAlertBase {
         dismiss();
     }
 
-    private void spansCountChanged() {
+    @Override
+    public void dismiss() {
+        super.dismiss();
+        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.dialogsNeedReload);
+    }
+
+    public void setSelectedContacts(ArrayList<Long> dialogs) {
+        for (int a = 0, N = dialogs.size(); a < N; a++) {
+            int lowerId = (int) (long) dialogs.get(a);
+            TLObject object;
+            if (lowerId < 0) {
+                object = MessagesController.getInstance(currentAccount).getChat(-lowerId);
+            } else {
+                object = MessagesController.getInstance(currentAccount).getUser(lowerId);
+            }
+            GroupCreateSpan span = new GroupCreateSpan(spansContainer.getContext(), object);
+            spansContainer.addSpan(span, false);
+            span.setOnClickListener(spanClickListener);
+        }
+        spansCountChanged(false);
+
+        int count = spansContainer.getChildCount();
+
+        boolean isPortrait = AndroidUtilities.displaySize.x < AndroidUtilities.displaySize.y;
+
+        if (AndroidUtilities.isTablet() || isPortrait) {
+            maxSize = AndroidUtilities.dp(144);
+        } else {
+            maxSize = AndroidUtilities.dp(56);
+        }
+
+        int width;
+        if (AndroidUtilities.isTablet()) {
+            width = (int) (Math.min(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y) * 0.8f);
+        } else {
+            width = isPortrait ? AndroidUtilities.displaySize.x : (int) Math.max(AndroidUtilities.displaySize.x * 0.8f, Math.min(AndroidUtilities.dp(480), AndroidUtilities.displaySize.x));
+        }
+        int maxWidth = width - AndroidUtilities.dp(26);
+        int currentLineWidth = 0;
+        int y = AndroidUtilities.dp(10);
+        for (int a = 0; a < count; a++) {
+            View child = spansContainer.getChildAt(a);
+            if (!(child instanceof GroupCreateSpan)) {
+                continue;
+            }
+            child.measure(View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.AT_MOST), View.MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(32), View.MeasureSpec.EXACTLY));
+            if (currentLineWidth + child.getMeasuredWidth() > maxWidth) {
+                y += child.getMeasuredHeight() + AndroidUtilities.dp(8);
+                currentLineWidth = 0;
+            }
+            currentLineWidth += child.getMeasuredWidth() + AndroidUtilities.dp(9);
+        }
+
+        int animateToH = y + AndroidUtilities.dp(32 + 10);
+
+        int newAdditionalH;
+        if (dialogsDelegate != null) {
+            newAdditionalH = spanEnter ? Math.min(maxSize, animateToH) : 0;
+        } else {
+            newAdditionalH = Math.max(0, Math.min(maxSize, animateToH) - AndroidUtilities.dp(52));
+        }
+        int oldSearchAdditionalH = searchAdditionalHeight;
+        searchAdditionalHeight = (selectedContacts.size() > 0 ? AndroidUtilities.dp(56) : 0);
+        if (newAdditionalH != additionalHeight || oldSearchAdditionalH != searchAdditionalHeight) {
+            additionalHeight = newAdditionalH;
+        }
+    }
+
+    private void spansCountChanged(boolean animated) {
         boolean enter = selectedContacts.size() > 0;
         if (spanEnter != enter) {
             if (spansEnterAnimator != null) {
@@ -370,51 +433,73 @@ public class InviteMembersBottomSheet extends UsersAlertBase {
             if (spanEnter) {
                 spansScrollView.setVisibility(View.VISIBLE);
             }
-            spansEnterAnimator = ValueAnimator.ofFloat(spansEnterProgress, enter ? 1f : 0f);
-            spansEnterAnimator.addUpdateListener(valueAnimator1 -> {
-                spansEnterProgress = (float) valueAnimator1.getAnimatedValue();
-                containerView.invalidate();
-            });
-            spansEnterAnimator.addListener(new AnimatorListenerAdapter() {
-                @Override
-                public void onAnimationEnd(Animator animation) {
-                    spansEnterProgress = enter ? 1f : 0f;
+            if (animated) {
+                spansEnterAnimator = ValueAnimator.ofFloat(spansEnterProgress, enter ? 1f : 0f);
+                spansEnterAnimator.addUpdateListener(valueAnimator1 -> {
+                    spansEnterProgress = (float) valueAnimator1.getAnimatedValue();
                     containerView.invalidate();
-                    if (!enter) {
-                        spansScrollView.setVisibility(View.GONE);
-                    }
-                }
-            });
-            spansEnterAnimator.setDuration(150);
-            spansEnterAnimator.start();
-
-            if (!spanEnter) {
-                if (currentDoneButtonAnimation != null) {
-                    currentDoneButtonAnimation.cancel();
-                }
-                currentDoneButtonAnimation = new AnimatorSet();
-                currentDoneButtonAnimation.playTogether(ObjectAnimator.ofFloat(floatingButton, View.SCALE_X, 0.0f),
-                        ObjectAnimator.ofFloat(floatingButton, View.SCALE_Y, 0.0f),
-                        ObjectAnimator.ofFloat(floatingButton, View.ALPHA, 0.0f));
-                currentDoneButtonAnimation.addListener(new AnimatorListenerAdapter() {
+                });
+                spansEnterAnimator.addListener(new AnimatorListenerAdapter() {
                     @Override
                     public void onAnimationEnd(Animator animation) {
-                        floatingButton.setVisibility(View.INVISIBLE);
+                        spansEnterProgress = enter ? 1f : 0f;
+                        containerView.invalidate();
+                        if (!enter) {
+                            spansScrollView.setVisibility(View.GONE);
+                        }
                     }
                 });
-                currentDoneButtonAnimation.setDuration(180);
-                currentDoneButtonAnimation.start();
+                spansEnterAnimator.setDuration(150);
+                spansEnterAnimator.start();
+
+                if (!spanEnter && dialogsDelegate == null) {
+                    if (currentDoneButtonAnimation != null) {
+                        currentDoneButtonAnimation.cancel();
+                    }
+                    currentDoneButtonAnimation = new AnimatorSet();
+                    currentDoneButtonAnimation.playTogether(ObjectAnimator.ofFloat(floatingButton, View.SCALE_X, 0.0f),
+                            ObjectAnimator.ofFloat(floatingButton, View.SCALE_Y, 0.0f),
+                            ObjectAnimator.ofFloat(floatingButton, View.ALPHA, 0.0f));
+                    currentDoneButtonAnimation.addListener(new AnimatorListenerAdapter() {
+                        @Override
+                        public void onAnimationEnd(Animator animation) {
+                            floatingButton.setVisibility(View.INVISIBLE);
+                        }
+                    });
+                    currentDoneButtonAnimation.setDuration(180);
+                    currentDoneButtonAnimation.start();
+                } else {
+                    if (currentDoneButtonAnimation != null) {
+                        currentDoneButtonAnimation.cancel();
+                    }
+                    currentDoneButtonAnimation = new AnimatorSet();
+                    floatingButton.setVisibility(View.VISIBLE);
+                    currentDoneButtonAnimation.playTogether(ObjectAnimator.ofFloat(floatingButton, View.SCALE_X, 1.0f),
+                            ObjectAnimator.ofFloat(floatingButton, View.SCALE_Y, 1.0f),
+                            ObjectAnimator.ofFloat(floatingButton, View.ALPHA, 1.0f));
+                    currentDoneButtonAnimation.setDuration(180);
+                    currentDoneButtonAnimation.start();
+                }
             } else {
+                spansEnterProgress = enter ? 1.0f : 0.0f;
+                containerView.invalidate();
+                if (!enter) {
+                    spansScrollView.setVisibility(View.GONE);
+                }
                 if (currentDoneButtonAnimation != null) {
                     currentDoneButtonAnimation.cancel();
                 }
-                currentDoneButtonAnimation = new AnimatorSet();
-                floatingButton.setVisibility(View.VISIBLE);
-                currentDoneButtonAnimation.playTogether(ObjectAnimator.ofFloat(floatingButton, View.SCALE_X, 1.0f),
-                        ObjectAnimator.ofFloat(floatingButton, View.SCALE_Y, 1.0f),
-                        ObjectAnimator.ofFloat(floatingButton, View.ALPHA, 1.0f));
-                currentDoneButtonAnimation.setDuration(180);
-                currentDoneButtonAnimation.start();
+                if (!spanEnter && dialogsDelegate == null) {
+                    floatingButton.setScaleY(0.0f);
+                    floatingButton.setScaleX(0.0f);
+                    floatingButton.setAlpha(0.0f);
+                    floatingButton.setVisibility(View.INVISIBLE);
+                } else {
+                    floatingButton.setScaleY(1.0f);
+                    floatingButton.setScaleX(1.0f);
+                    floatingButton.setAlpha(1.0f);
+                    floatingButton.setVisibility(View.VISIBLE);
+                }
             }
         }
     }
@@ -426,17 +511,37 @@ public class InviteMembersBottomSheet extends UsersAlertBase {
 
         rowCount = 0;
         emptyRow = rowCount++;
-        copyLinkRow = rowCount++;
-
-        if (contacts.size() != 0) {
-            contactsStartRow = rowCount;
-            rowCount += contacts.size();
-            contactsEndRow = rowCount;
+        if (dialogsDelegate == null) {
+            copyLinkRow = rowCount++;
+            if (contacts.size() != 0) {
+                contactsStartRow = rowCount;
+                rowCount += contacts.size();
+                contactsEndRow = rowCount;
+            } else {
+                noContactsStubRow = rowCount++;
+            }
         } else {
-            noContactsStubRow = rowCount++;
+            copyLinkRow = -1;
+            if (dialogsServerOnly.size() != 0) {
+                contactsStartRow = rowCount;
+                rowCount += dialogsServerOnly.size();
+                contactsEndRow = rowCount;
+            } else {
+                noContactsStubRow = rowCount++;
+            }
         }
 
         lastRow = rowCount++;
+    }
+
+    @Override
+    public void didReceivedNotification(int id, int account, Object... args) {
+        if (id == NotificationCenter.dialogsNeedReload) {
+            if (dialogsDelegate != null && dialogsServerOnly.isEmpty()) {
+                dialogsServerOnly = new ArrayList<>(MessagesController.getInstance(currentAccount).dialogsServerOnly);
+                listViewAdapter.notifyDataSetChanged();
+            }
+        }
     }
 
     private class ListAdapter extends RecyclerListView.SelectionAdapter {
@@ -463,7 +568,7 @@ public class InviteMembersBottomSheet extends UsersAlertBase {
                     };
                     break;
                 case 3:
-                    view = new GroupCreateUserCell(context, true, 0, false);
+                    view = new GroupCreateUserCell(context, true, 0, dialogsDelegate != null);
                     break;
                 case 4:
                     view = new View(context);
@@ -478,12 +583,30 @@ public class InviteMembersBottomSheet extends UsersAlertBase {
                     };
                     stickerEmptyView.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
                     stickerEmptyView.subtitle.setVisibility(View.GONE);
-                    stickerEmptyView.title.setText(LocaleController.getString("NoContacts", R.string.NoContacts));
+                    if (dialogsDelegate != null) {
+                        stickerEmptyView.title.setText(LocaleController.getString("FilterNoChats", R.string.FilterNoChats));
+                    } else {
+                        stickerEmptyView.title.setText(LocaleController.getString("NoContacts", R.string.NoContacts));
+                    }
                     stickerEmptyView.setAnimateLayoutChange(true);
                     view = stickerEmptyView;
                     break;
             }
             return new RecyclerListView.Holder(view);
+        }
+
+        public TLObject getObject(int position) {
+            if (dialogsDelegate != null) {
+                TLRPC.Dialog dialog = dialogsServerOnly.get(position - contactsStartRow);
+                int lowerId = (int) dialog.id;
+                if (lowerId > 0) {
+                    return MessagesController.getInstance(currentAccount).getUser(lowerId);
+                } else {
+                    return MessagesController.getInstance(currentAccount).getChat(-lowerId);
+                }
+            } else {
+                return contacts.get(position - contactsStartRow);
+            }
         }
 
         @Override
@@ -494,10 +617,7 @@ public class InviteMembersBottomSheet extends UsersAlertBase {
                     break;
                 case 3:
                     GroupCreateUserCell cell = (GroupCreateUserCell) holder.itemView;
-                    TLObject object;
-                    CharSequence username = null;
-                    CharSequence name = null;
-                    object = contacts.get(position - contactsStartRow);
+                    TLObject object = getObject(position);
 
                     Object oldObject = cell.getObject();
                     int oldId;
@@ -509,7 +629,7 @@ public class InviteMembersBottomSheet extends UsersAlertBase {
                         oldId = 0;
                     }
 
-                    cell.setObject(object, name, username, position != contactsEndRow);
+                    cell.setObject(object, null, null, position != contactsEndRow);
                     int id;
                     if (object instanceof TLRPC.User) {
                         id = ((TLRPC.User) object).id;
@@ -785,7 +905,7 @@ public class InviteMembersBottomSheet extends UsersAlertBase {
                 }
                 emptyView.showProgress(true, false);
                 Utilities.searchQueue.postRunnable(searchRunnable = () -> AndroidUtilities.runOnUIThread(() -> {
-                    searchAdapterHelper.queryServerSearch(query, true, false, true, false, false, 0, false, 0, 0);
+                    searchAdapterHelper.queryServerSearch(query, true, dialogsDelegate != null, true, dialogsDelegate != null, false, 0, false, 0, 0);
                     Utilities.searchQueue.postRunnable(searchRunnable = () -> {
                         String search1 = query.trim().toLowerCase();
                         if (search1.length() == 0) {
@@ -897,7 +1017,6 @@ public class InviteMembersBottomSheet extends UsersAlertBase {
 
         private boolean animationStarted;
         private ArrayList<Animator> animators = new ArrayList<>();
-        private View addingSpan;
         private View removingSpan;
         private int animationIndex = -1;
         boolean addAnimation;
@@ -937,10 +1056,10 @@ public class InviteMembersBottomSheet extends UsersAlertBase {
                         child.setTranslationY(allY);
                     } else if (removingSpan != null) {
                         if (child.getTranslationX() != x) {
-                            animators.add(ObjectAnimator.ofFloat(child, "translationX", x));
+                            animators.add(ObjectAnimator.ofFloat(child, View.TRANSLATION_X, x));
                         }
                         if (child.getTranslationY() != y) {
-                            animators.add(ObjectAnimator.ofFloat(child, "translationY", y));
+                            animators.add(ObjectAnimator.ofFloat(child, View.TRANSLATION_Y, y));
                         }
                     } else {
                         child.setTranslationX(x);
@@ -956,9 +1075,14 @@ public class InviteMembersBottomSheet extends UsersAlertBase {
             int h = allY + AndroidUtilities.dp(32 + 10);
             int animateToH = y + AndroidUtilities.dp(32 + 10);
 
-            int newAdditionalH = Math.max(0, Math.min(maxSize, animateToH) - AndroidUtilities.dp(52));
+            int newAdditionalH;
+            if (dialogsDelegate != null) {
+                newAdditionalH = spanEnter ? Math.min(maxSize, animateToH) : 0;
+            } else {
+                newAdditionalH = Math.max(0, Math.min(maxSize, animateToH) - AndroidUtilities.dp(52));
+            }
             int oldSearchAdditionalH = searchAdditionalHeight;
-            searchAdditionalHeight = (selectedContacts.size() > 0 ? AndroidUtilities.dp(56) : 0);
+            searchAdditionalHeight = (dialogsDelegate == null && selectedContacts.size() > 0 ? AndroidUtilities.dp(56) : 0);
             if (newAdditionalH != additionalHeight || oldSearchAdditionalH != searchAdditionalHeight) {
                 additionalHeight = newAdditionalH;
                 if (listView.getAdapter() != null && listView.getAdapter().getItemCount() > 0) {
@@ -1021,9 +1145,8 @@ public class InviteMembersBottomSheet extends UsersAlertBase {
             }
         }
 
-        public void addSpan(final GroupCreateSpan span) {
+        public void addSpan(final GroupCreateSpan span, boolean animated) {
             addAnimation = true;
-            allSpans.add(span);
             selectedContacts.put(span.getUid(), span);
 
             if (currentAnimation != null) {
@@ -1031,22 +1154,22 @@ public class InviteMembersBottomSheet extends UsersAlertBase {
                 currentAnimation.cancel();
             }
             animationStarted = false;
-            currentAnimation = new AnimatorSet();
-            currentAnimation.addListener(new AnimatorListenerAdapter() {
-                @Override
-                public void onAnimationEnd(Animator animator) {
-                    addingSpan = null;
-                    currentAnimation = null;
-                    animationStarted = false;
-                }
-            });
-            currentAnimation.setDuration(150);
-            currentAnimation.setInterpolator(CubicBezierInterpolator.DEFAULT);
-            addingSpan = span;
-            animators.clear();
-            animators.add(ObjectAnimator.ofFloat(addingSpan, View.SCALE_X, 0.01f, 1.0f));
-            animators.add(ObjectAnimator.ofFloat(addingSpan, View.SCALE_Y, 0.01f, 1.0f));
-            animators.add(ObjectAnimator.ofFloat(addingSpan, View.ALPHA, 0.0f, 1.0f));
+            if (animated) {
+                currentAnimation = new AnimatorSet();
+                currentAnimation.addListener(new AnimatorListenerAdapter() {
+                    @Override
+                    public void onAnimationEnd(Animator animator) {
+                        currentAnimation = null;
+                        animationStarted = false;
+                    }
+                });
+                currentAnimation.setDuration(150);
+                currentAnimation.setInterpolator(CubicBezierInterpolator.DEFAULT);
+                animators.clear();
+                animators.add(ObjectAnimator.ofFloat(span, View.SCALE_X, 0.01f, 1.0f));
+                animators.add(ObjectAnimator.ofFloat(span, View.SCALE_Y, 0.01f, 1.0f));
+                animators.add(ObjectAnimator.ofFloat(span, View.ALPHA, 0.0f, 1.0f));
+            }
             addView(span);
         }
 
@@ -1054,7 +1177,6 @@ public class InviteMembersBottomSheet extends UsersAlertBase {
             addAnimation = false;
             boolean ignoreScrollEvent = true;
             selectedContacts.remove(span.getUid());
-            allSpans.remove(span);
             span.setOnClickListener(null);
 
             if (currentAnimation != null) {
@@ -1164,8 +1286,15 @@ public class InviteMembersBottomSheet extends UsersAlertBase {
         searchAdapter.searchDialogs(text);
     }
 
-    public void setDelegate(GroupCreateActivity.ContactsAddActivityDelegate delegate) {
-        this.delegate = delegate;
+    public void setDelegate(GroupCreateActivity.ContactsAddActivityDelegate contactsAddActivityDelegate) {
+        delegate = contactsAddActivityDelegate;
+    }
+
+    public void setDelegate(InviteMembersBottomSheetDelegate inviteMembersBottomSheetDelegate, ArrayList<Long> selectedDialogs) {
+        dialogsDelegate = inviteMembersBottomSheetDelegate;
+        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.dialogsNeedReload);
+        dialogsServerOnly = new ArrayList<>(MessagesController.getInstance(currentAccount).dialogsServerOnly);
+        updateRows();
     }
 
     private class ItemAnimator extends DefaultItemAnimator {
@@ -1202,7 +1331,7 @@ public class InviteMembersBottomSheet extends UsersAlertBase {
         }
         linkGenerating = true;
         TLRPC.TL_messages_exportChatInvite req = new TLRPC.TL_messages_exportChatInvite();
-        //req.legacy_revoke_permanent = true; TODO layer 124
+        req.legacy_revoke_permanent = true;
         req.peer = MessagesController.getInstance(currentAccount).getInputPeer(-chatId);
         ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
             if (error == null) {

@@ -8,6 +8,7 @@ import android.content.Context;
 import android.view.ContextThemeWrapper;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewParent;
 import android.view.ViewTreeObserver;
 import android.view.Window;
 import android.view.animation.Interpolator;
@@ -44,6 +45,8 @@ public class AdjustPanLayoutHelper {
 
     ArrayList<View> viewsToHeightSet = new ArrayList<>();
     protected float keyboardSize;
+
+    boolean checkHierarchyHeight;
 
     ViewTreeObserver.OnPreDrawListener onPreDrawListener = new ViewTreeObserver.OnPreDrawListener() {
         @Override
@@ -92,10 +95,17 @@ public class AdjustPanLayoutHelper {
 
         int startOffset = startOffset();
         getViewsToSetHeight(parent);
-        setViewHeight(Math.max(previousHeight, contentHeight));
+        int additionalContentHeight = 0;
+        if (checkHierarchyHeight) {
+            ViewParent viewParent = parent.getParent();
+            if (viewParent instanceof View) {
+                additionalContentHeight = ((View) viewParent).getHeight() - contentHeight;
+            }
+        }
+        setViewHeight(Math.max(previousHeight, contentHeight + additionalContentHeight));
         resizableView.requestLayout();
 
-        onTransitionStart(isKeyboardVisible);
+        onTransitionStart(isKeyboardVisible, contentHeight);
 
         float dy = contentHeight - previousHeight;
         float from;
@@ -240,7 +250,7 @@ public class AdjustPanLayoutHelper {
 
     }
 
-    protected void onTransitionStart(boolean keyboardVisible) {
+    protected void onTransitionStart(boolean keyboardVisible, int contentHeight) {
 
     }
 
@@ -254,5 +264,9 @@ public class AdjustPanLayoutHelper {
 
     public boolean animationInProgress() {
         return animationInProgress;
+    }
+
+    public void setCheckHierarchyHeight(boolean checkHierarchyHeight) {
+        this.checkHierarchyHeight = checkHierarchyHeight;
     }
 }

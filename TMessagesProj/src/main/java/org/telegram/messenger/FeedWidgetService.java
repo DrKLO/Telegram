@@ -44,7 +44,7 @@ class FeedRemoteViewsFactory implements RemoteViewsService.RemoteViewsFactory, N
     public FeedRemoteViewsFactory(Context context, Intent intent) {
         mContext = context;
         appWidgetId = intent.getIntExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, AppWidgetManager.INVALID_APPWIDGET_ID);
-        SharedPreferences preferences = context.getSharedPreferences("feed_widget", Activity.MODE_PRIVATE);
+        SharedPreferences preferences = context.getSharedPreferences("shortcut_widget", Activity.MODE_PRIVATE);
         int accountId = preferences.getInt("account" + appWidgetId, -1);
         if (accountId >= 0) {
             dialogId = preferences.getLong("dialogId" + appWidgetId, 0);

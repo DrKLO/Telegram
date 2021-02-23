@@ -148,7 +148,7 @@ public abstract class VoIPBaseService extends Service implements SensorEventList
 	protected PowerManager.WakeLock cpuWakelock;
 	protected boolean isProximityNear;
 	protected boolean isHeadsetPlugged;
-	protected int previousAudioOutput;
+	protected int previousAudioOutput = -1;
 	protected ArrayList<StateListener> stateListeners = new ArrayList<>();
 	protected MediaPlayer ringtonePlayer;
 	protected Vibrator vibrator;

@@ -2,6 +2,8 @@ package org.telegram.ui.Components;
 
 import android.graphics.Canvas;
 import android.graphics.Paint;
+import android.text.Layout;
+import android.text.style.AlignmentSpan;
 import android.text.style.ReplacementSpan;
 
 import androidx.annotation.NonNull;

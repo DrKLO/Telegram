@@ -117,6 +117,11 @@ public class GroupCreateUserCell extends FrameLayout {
         return currentObject;
     }
 
+    public void setDrawDivider(boolean value) {
+        drawDivider = value;
+        invalidate();
+    }
+
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         super.onMeasure(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(currentObject instanceof String ? 50 : 58), MeasureSpec.EXACTLY));
