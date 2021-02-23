@@ -8923,7 +8923,11 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         } else if (messageObject.messageOwner.fwd_from != null && messageObject.messageOwner.fwd_from.post_author != null) {
             signString = messageObject.messageOwner.fwd_from.post_author.replace("\n", "");
         } else if (messageObject.messageOwner.fwd_from != null && messageObject.messageOwner.fwd_from.imported) {
-            signString = LocaleController.formatImportedDate(messageObject.messageOwner.fwd_from.date) + " " + LocaleController.getString("ImportedMessage", R.string.ImportedMessage);
+            if (messageObject.messageOwner.fwd_from.date == messageObject.messageOwner.date) {
+                signString = LocaleController.getString("ImportedMessage", R.string.ImportedMessage);
+            } else {
+                signString = LocaleController.formatImportedDate(messageObject.messageOwner.fwd_from.date) + " " + LocaleController.getString("ImportedMessage", R.string.ImportedMessage);
+            }
         } else if (!messageObject.isOutOwner() && fromId > 0 && messageObject.messageOwner.post) {
             TLRPC.User signUser = MessagesController.getInstance(currentAccount).getUser(fromId);
             if (signUser != null) {

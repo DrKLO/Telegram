@@ -16,6 +16,7 @@ import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewTreeObserver;
 import android.view.WindowManager;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
@@ -259,12 +260,25 @@ public class LinkActionView extends LinearLayout {
                         canvas.drawColor(0x33000000);
                         getPointOnScreen(frameLayout, finalContainer, point);
                         canvas.save();
+                        float clipTop = ((View) frameLayout.getParent()).getY() + frameLayout.getY();
+                        if (clipTop < 1) {
+                            canvas.clipRect(0, point[1] - clipTop + 1, getMeasuredWidth(), getMeasuredHeight());
+                        }
                         canvas.translate(point[0], point[1]);
+
                         frameLayout.draw(canvas);
                         canvas.restore();
                     }
-
                 };
+
+                ViewTreeObserver.OnPreDrawListener preDrawListener = new ViewTreeObserver.OnPreDrawListener() {
+                    @Override
+                    public boolean onPreDraw() {
+                        dimView.invalidate();
+                        return true;
+                    }
+                };
+                finalContainer.getViewTreeObserver().addOnPreDrawListener(preDrawListener);
                 container.addView(dimView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
                 dimView.setAlpha(0);
                 dimView.animate().alpha(1f).setDuration(150);
@@ -283,6 +297,7 @@ public class LinkActionView extends LinearLayout {
                                 if (dimView.getParent() != null) {
                                     finalContainer.removeView(dimView);
                                 }
+                                finalContainer.getViewTreeObserver().removeOnPreDrawListener(preDrawListener);
                             }
                         });
                     }

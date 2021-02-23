@@ -139,7 +139,6 @@ public class ManageLinksActivity extends BaseFragment implements NotificationCen
 
     private ArrayList<TLRPC.TL_chatAdminWithInvites> admins = new ArrayList<>();
 
-
     long timeDif;
 
     private boolean isPublic;
@@ -407,6 +406,9 @@ public class ManageLinksActivity extends BaseFragment implements NotificationCen
                             resumeDelayedFragmentAnimation();
                         }
 
+                        if (loadNext) {
+                            loadLinks();
+                        }
                         if (updateByDiffUtils && isOpened && listViewAdapter != null && listView.getChildCount() > 0) {
                             updateRows(false);
                             callback.fillPositions(callback.newPositionToItem);
@@ -414,9 +416,6 @@ public class ManageLinksActivity extends BaseFragment implements NotificationCen
                             AndroidUtilities.updateVisibleRows(listView);
                         } else {
                             updateRows(true);
-                        }
-                        if (loadNext) {
-                            loadLinks();
                         }
                     });
                 });
@@ -453,7 +452,6 @@ public class ManageLinksActivity extends BaseFragment implements NotificationCen
         linksHeaderRow = -1;
         dividerRow = -1;
 
-
         rowCount = 0;
 
         boolean otherAdmin = adminId != getAccountInstance().getUserConfig().clientUserId;
@@ -466,7 +464,6 @@ public class ManageLinksActivity extends BaseFragment implements NotificationCen
 
         permanentLinkHeaderRow = rowCount++;
         permanentLinkRow = rowCount++;
-
 
         if (!otherAdmin) {
             dividerRow = rowCount++;
@@ -495,8 +492,6 @@ public class ManageLinksActivity extends BaseFragment implements NotificationCen
             rowCount += admins.size();
             adminsEndRow = rowCount;
         }
-
-
 
         if (!revokedInvites.isEmpty()) {
             if (adminsStartRow >= 0) {
@@ -962,7 +957,6 @@ public class ManageLinksActivity extends BaseFragment implements NotificationCen
             TLRPC.TL_chatInviteExported oldInvite = invite;
             invite = null;
             info.exported_invite = null;
-            listViewAdapter.notifyItemChanged(permanentLinkRow);
             final int reqId = getConnectionsManager().sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
                 if (error == null) {
                     invite = (TLRPC.TL_chatInviteExported) response;
@@ -974,7 +968,6 @@ public class ManageLinksActivity extends BaseFragment implements NotificationCen
                         return;
                     }
 
-                    listViewAdapter.notifyItemChanged(permanentLinkRow);
                     oldInvite.revoked = true;
                     DiffCallback callback = saveListState();
                     revokedInvites.add(0, oldInvite);
@@ -986,6 +979,7 @@ public class ManageLinksActivity extends BaseFragment implements NotificationCen
                 }
 
             }));
+            AndroidUtilities.updateVisibleRows(listView);
             getConnectionsManager().bindRequestToGuid(reqId, classGuid);
         } else {
             revokeLink(invite);
@@ -1255,9 +1249,7 @@ public class ManageLinksActivity extends BaseFragment implements NotificationCen
                 if (progress <= 0) {
                     invite.expired = true;
                     drawState = LINK_STATE_RED;
-                    if (listViewAdapter != null) {
-                        listViewAdapter.notifyItemChanged(position);
-                    }
+                    AndroidUtilities.updateVisibleRows(listView);
                 } else {
                     drawState = LINK_STATE_GREEN;
                 }
@@ -1485,7 +1477,6 @@ public class ManageLinksActivity extends BaseFragment implements NotificationCen
                     TLRPC.TL_messages_exportedChatInviteReplaced replaced = (TLRPC.TL_messages_exportedChatInviteReplaced) response;
                     if (!isPublic) {
                         ManageLinksActivity.this.invite = (TLRPC.TL_chatInviteExported) replaced.new_invite;
-                        listViewAdapter.notifyItemChanged(permanentLinkRow);
                     }
 
                     invite.revoked = true;
@@ -1498,6 +1489,7 @@ public class ManageLinksActivity extends BaseFragment implements NotificationCen
                     updateRows(false);
 
                     if (getParentActivity() == null) {
+                        listViewAdapter.notifyDataSetChanged();
                         return;
                     }
                     callback.fillPositions(callback.newPositionToItem);

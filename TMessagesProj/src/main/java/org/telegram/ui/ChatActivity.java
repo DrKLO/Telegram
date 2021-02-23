@@ -20214,7 +20214,14 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                             }
                         } else {
                             if ("CHANNEL_PRIVATE".equals(error.text)) {
-                                getNotificationCenter().postNotificationName(NotificationCenter.chatInfoCantLoad, currentChat.id, 3);
+                                if (getParentActivity() != null) {
+                                    AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+                                    builder.setTitle(LocaleController.getString("AppName", R.string.AppName));
+                                    builder.setMessage(LocaleController.getString("JoinByPeekChannelText", R.string.JoinByPeekChannelText));
+                                    builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), null);
+                                    AlertDialog alertDialog = builder.create();
+                                    showDialog(builder.create());
+                                }
                                 return;
                             }
                             savedNoHistory = true;

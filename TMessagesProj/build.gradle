@@ -35,8 +35,6 @@ dependencies {
     implementation 'com.google.android.gms:play-services-wearable:17.0.0'
     implementation 'com.google.android.gms:play-services-location:17.1.0'
     implementation 'com.google.android.gms:play-services-wallet:18.1.2'
-    implementation "com.microsoft.appcenter:appcenter-distribute:3.3.1"
-    implementation "com.microsoft.appcenter:appcenter-crashes:3.3.1"
     implementation 'com.googlecode.mp4parser:isoparser:1.0.6'
     implementation 'com.stripe:stripe-android:2.0.2'
     implementation files('libs/libgsaverification-client.aar')
@@ -290,7 +288,7 @@ android {
         }
     }
 
-    defaultConfig.versionCode = 2243
+    defaultConfig.versionCode = 2244
 
     applicationVariants.all { variant ->
         variant.outputs.all { output ->

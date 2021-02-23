@@ -417,9 +417,6 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                 AndroidUtilities.cancelRunOnUIThread(locationQueryCancelRunnable);
             }
             locationQueryCancelRunnable = () -> {
-                if (locationQueryCancelRunnable != this) {
-                    return;
-                }
                 if (delegate != null) {
                     if (lastKnownLocation != null) {
                         delegate.onLocationAcquired(lastKnownLocation);
@@ -5604,7 +5601,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
         MimeTypeMap myMime = MimeTypeMap.getSingleton();
         TLRPC.TL_documentAttributeAudio attributeAudio = null;
         String extension = null;
-        if (uri != null) {
+        if (uri != null && path == null) {
             boolean hasExt = false;
             if (mime != null) {
                 extension = myMime.getExtensionFromMimeType(mime);
