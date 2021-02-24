@@ -120,9 +120,13 @@ class ContactsRemoteViewsFactory implements RemoteViewsService.RemoteViewsFactor
                     }
                 } else {
                     chat = accountInstance.getMessagesController().getChat(-(int) (long) id);
-                    name = chat.title;
-                    if (chat.photo != null && chat.photo.photo_small != null && chat.photo.photo_small.volume_id != 0 && chat.photo.photo_small.local_id != 0) {
-                        photoPath = chat.photo.photo_small;
+                    if (chat != null) {
+                        name = chat.title;
+                        if (chat.photo != null && chat.photo.photo_small != null && chat.photo.photo_small.volume_id != 0 && chat.photo.photo_small.local_id != 0) {
+                            photoPath = chat.photo.photo_small;
+                        }
+                    } else {
+                        name = "";
                     }
                 }
                 rv.setTextViewText(a == 0 ? R.id.contacts_widget_item_text1 : R.id.contacts_widget_item_text2, name);
@@ -175,7 +179,13 @@ class ContactsRemoteViewsFactory implements RemoteViewsService.RemoteViewsFactor
                 TLRPC.Dialog dialog = dialogs.get(id);
 
                 if (dialog != null && dialog.unread_count > 0) {
-                    rv.setTextViewText(a == 0 ? R.id.contacts_widget_item_badge1 : R.id.contacts_widget_item_badge2, String.format("%d", dialog.unread_count));
+                    String count;
+                    if (dialog.unread_count > 99) {
+                        count = String.format("%d+", 99);
+                    } else {
+                        count = String.format("%d", dialog.unread_count);
+                    }
+                    rv.setTextViewText(a == 0 ? R.id.contacts_widget_item_badge1 : R.id.contacts_widget_item_badge2, count);
                     rv.setViewVisibility(a == 0 ? R.id.contacts_widget_item_badge_bg1 : R.id.contacts_widget_item_badge_bg2, View.VISIBLE);
                 } else {
                     rv.setViewVisibility(a == 0 ? R.id.contacts_widget_item_badge_bg1 : R.id.contacts_widget_item_badge_bg2, View.GONE);

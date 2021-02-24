@@ -6,6 +6,7 @@ import android.content.Context;
 import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
 
+import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.LocaleController;
@@ -26,7 +27,7 @@ public class StickerSetBulletinLayout extends Bulletin.TwoLineLayout {
     public static final int TYPE_REMOVED_FROM_FAVORITES = 4;
     public static final int TYPE_ADDED_TO_FAVORITES = 5;
 
-    @IntDef(value = {TYPE_REMOVED, TYPE_ARCHIVED, TYPE_ADDED})
+    @IntDef(value = {TYPE_REMOVED, TYPE_ARCHIVED, TYPE_ADDED, TYPE_REMOVED_FROM_RECENT, TYPE_REMOVED_FROM_FAVORITES, TYPE_ADDED_TO_FAVORITES})
     public @interface Type {}
 
     public StickerSetBulletinLayout(@NonNull Context context, TLObject setObject, @Type int type) {
@@ -61,7 +62,7 @@ public class StickerSetBulletinLayout extends Bulletin.TwoLineLayout {
             stickerSet = null;
         }
 
-        if (sticker == null) {
+        if (sticker == null && BuildVars.DEBUG_VERSION) {
             throw new IllegalArgumentException("Invalid type of the given setObject: " + setObject.getClass());
         }
 

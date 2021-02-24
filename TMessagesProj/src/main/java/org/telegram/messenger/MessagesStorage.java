@@ -8267,6 +8267,9 @@ public class MessagesStorage extends BaseController {
 
                 for (int a = 0; a < messages.size(); a++) {
                     TLRPC.Message message = messages.get(a);
+                    if (message instanceof TLRPC.TL_messageEmpty) {
+                        continue;
+                    }
                     fixUnsupportedMedia(message);
 
                     state_messages.requery();
@@ -10166,6 +10169,9 @@ public class MessagesStorage extends BaseController {
                     int count = messages.messages.size();
                     for (int a = 0; a < count; a++) {
                         TLRPC.Message message = messages.messages.get(a);
+                        if (message instanceof TLRPC.TL_messageEmpty) {
+                            continue;
+                        }
 
                         long messageId = message.id;
                         if (channelId == 0) {

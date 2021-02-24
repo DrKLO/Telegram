@@ -459,6 +459,9 @@ public class LinkActionView extends LinearLayout {
     }
 
     private void revokeLink() {
+        if (fragment.getParentActivity() == null) {
+            return;
+        }
         AlertDialog.Builder builder = new AlertDialog.Builder(fragment.getParentActivity());
         builder.setMessage(LocaleController.getString("RevokeAlert", R.string.RevokeAlert));
         builder.setTitle(LocaleController.getString("RevokeLink", R.string.RevokeLink));

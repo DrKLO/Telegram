@@ -848,7 +848,7 @@ public class ManageLinksActivity extends BaseFragment implements NotificationCen
                         if (isPublic && adminId == getAccountInstance().getUserConfig().clientUserId) {
                             headerCell.setText(LocaleController.getString("PublicLink", R.string.PublicLink));
                         } else if (adminId == getAccountInstance().getUserConfig().clientUserId) {
-                            headerCell.setText(LocaleController.getString("ChannelLinkTitle", R.string.ChannelLinkTitle));
+                            headerCell.setText(LocaleController.getString("ChannelInviteLinkTitle", R.string.ChannelInviteLinkTitle));
                         } else {
                             headerCell.setText(LocaleController.getString("PermanentLinkForThisAdmin", R.string.PermanentLinkForThisAdmin));
                         }
@@ -1123,7 +1123,7 @@ public class ManageLinksActivity extends BaseFragment implements NotificationCen
                     icons.add(R.drawable.msg_copy);
                     actions.add(0);
 
-                    items.add(LocaleController.getString("Share", R.string.ShareLink));
+                    items.add(LocaleController.getString("ShareLink", R.string.ShareLink));
                     icons.add(R.drawable.msg_share);
                     actions.add(1);
 
@@ -1765,11 +1765,19 @@ public class ManageLinksActivity extends BaseFragment implements NotificationCen
         return true;
     }
 
+    int animationIndex = -1;
     @Override
     protected void onTransitionAnimationEnd(boolean isOpen, boolean backward) {
         super.onTransitionAnimationEnd(isOpen, backward);
         if (isOpen) {
             isOpened = true;
         }
+        NotificationCenter.getInstance(currentAccount).onAnimationFinish(animationIndex);
+    }
+
+    @Override
+    protected void onTransitionAnimationStart(boolean isOpen, boolean backward) {
+        super.onTransitionAnimationStart(isOpen, backward);
+        animationIndex = NotificationCenter.getInstance(currentAccount).setAnimationInProgress(animationIndex, null);
     }
 }

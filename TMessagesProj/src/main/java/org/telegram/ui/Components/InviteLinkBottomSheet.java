@@ -293,7 +293,14 @@ public class InviteLinkBottomSheet extends BottomSheet {
         titleTextView.setGravity(Gravity.CENTER_VERTICAL);
         titleTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
         if (!permanent) {
-            titleTextView.setText(invite.revoked ? LocaleController.getString("RevokedLink", R.string.RevokedLink) : LocaleController.getString("InviteLink", R.string.InviteLink));
+            if (invite.expired) {
+                titleTextView.setText(LocaleController.getString("ExpiredLink", R.string.ExpiredLink));
+            } else if (invite.revoked) {
+                titleTextView.setText(LocaleController.getString("RevokedLink", R.string.RevokedLink));
+            } else {
+                titleTextView.setText(LocaleController.getString("InviteLink", R.string.InviteLink));
+            }
+
             titleVisible = true;
         } else {
             titleTextView.setText(LocaleController.getString("InviteLink", R.string.InviteLink));

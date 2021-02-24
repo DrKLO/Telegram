@@ -20222,6 +20222,9 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                                     AlertDialog alertDialog = builder.create();
                                     showDialog(builder.create());
                                 }
+                                AndroidUtilities.cancelRunOnUIThread(progressRunnable);
+                                commentLoadingMessageId = 0;
+                                chatListView.invalidateViews();
                                 return;
                             }
                             savedNoHistory = true;
@@ -20829,7 +20832,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                             showPollSolution(cell.getMessageObject(), media.results);
                         } else if (type == 1) {
                             MessageObject messageObject = cell.getMessageObject();
-                            if (TextUtils.isEmpty(messageObject.messageOwner.fwd_from.psa_type)) {
+                            if (messageObject.messageOwner.fwd_from == null || TextUtils.isEmpty(messageObject.messageOwner.fwd_from.psa_type)) {
                                 return;
                             }
                             CharSequence text = LocaleController.getString("PsaMessageInfo_" + messageObject.messageOwner.fwd_from.psa_type);

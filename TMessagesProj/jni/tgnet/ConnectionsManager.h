@@ -62,7 +62,7 @@ public:
     void resumeNetwork(bool partial);
     void pauseNetwork();
     void setNetworkAvailable(bool value, int32_t type, bool slow);
-    void setUseIpv6(bool value);
+    void setIpStrategy(uint8_t value);
     void init(uint32_t version, int32_t layer, int32_t apiId, std::string deviceModel, std::string systemVersion, std::string appVersion, std::string langCode, std::string systemLangCode, std::string configPath, std::string logPath, std::string regId, std::string cFingerprint, std::string installerId, int32_t timezoneOffset, int32_t userId, bool isPaused, bool enablePushConnection, bool hasNetwork, int32_t networkType);
     void setProxySettings(std::string address, uint16_t port, std::string username, std::string password, std::string secret);
     void setLangCode(std::string langCode);
@@ -123,7 +123,7 @@ private:
     void onDatacenterHandshakeComplete(Datacenter *datacenter, HandshakeType type, int32_t timeDiff);
     void onDatacenterExportAuthorizationComplete(Datacenter *datacenter);
     int64_t generateMessageId();
-    bool isIpv6Enabled();
+    uint8_t getIpStratagy();
     bool isNetworkAvailable();
 
     void scheduleCheckProxyInternal(ProxyCheckInfo *proxyCheckInfo);
@@ -192,7 +192,7 @@ private:
     int64_t lastOutgoingMessageId = 0;
     bool networkAvailable = true;
     bool networkSlow = false;
-    bool ipv6Enabled = false;
+    uint8_t ipStrategy = USE_IPV4_ONLY;
     std::vector<ConnectionSocket *> activeConnections;
     std::vector<ConnectionSocket *> activeConnectionsCopy;
     int epolFd;

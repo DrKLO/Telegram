@@ -3486,7 +3486,7 @@ public class MessagesController extends BaseController implements NotificationCe
                 editor.remove("dialog_bar_distance" + dialogId);
             }
         }
-        editor.commit();
+        editor.apply();
         getNotificationCenter().postNotificationName(NotificationCenter.peerSettingsDidLoad, dialogId);
     }
 
@@ -9713,6 +9713,9 @@ public class MessagesController extends BaseController implements NotificationCe
 
                                 for (int a = 0; a < res.new_messages.size(); a++) {
                                     TLRPC.Message message = res.new_messages.get(a);
+                                    if (message instanceof TLRPC.TL_messageEmpty) {
+                                        continue;
+                                    }
                                     message.unread = !(channelFinal != null && channelFinal.left || (message.out ? outboxValue : inboxValue) >= message.id || message.action instanceof TLRPC.TL_messageActionChannelCreate);
 
                                     boolean isDialogCreated = createdDialogIds.contains(dialog_id);
@@ -9949,6 +9952,9 @@ public class MessagesController extends BaseController implements NotificationCe
                                 int clientUserId = getUserConfig().getClientUserId();
                                 for (int a = 0; a < res.new_messages.size(); a++) {
                                     TLRPC.Message message = res.new_messages.get(a);
+                                    if (message instanceof TLRPC.TL_messageEmpty) {
+                                        continue;
+                                    }
                                     MessageObject.getDialogId(message);
 
                                     if ((int) message.dialog_id != 0) {
@@ -11354,6 +11360,9 @@ public class MessagesController extends BaseController implements NotificationCe
                     if (!message.out && message.from_id instanceof TLRPC.TL_peerUser && message.from_id.user_id == getUserConfig().getClientUserId()) {
                         message.out = true;
                     }
+                }
+                if (message instanceof TLRPC.TL_messageEmpty) {
+                    continue;
                 }
                 TLRPC.Chat chat = null;
                 int chat_id = 0;

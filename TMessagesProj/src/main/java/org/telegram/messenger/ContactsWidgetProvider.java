@@ -35,6 +35,7 @@ public class ContactsWidgetProvider extends AppWidgetProvider {
     @Override
     public void onDeleted(Context context, int[] appWidgetIds) {
         super.onDeleted(context, appWidgetIds);
+        ApplicationLoader.postInitApplication();
         SharedPreferences preferences = context.getSharedPreferences("shortcut_widget", Activity.MODE_PRIVATE);
         SharedPreferences.Editor editor = preferences.edit();
         for (int a = 0; a < appWidgetIds.length; a++) {
@@ -58,16 +59,17 @@ public class ContactsWidgetProvider extends AppWidgetProvider {
 
     private static int getCellsForSize(int size) {
         int n = 2;
-        while (86 * n - 30 < size) {
+        while (86 * n < size) {
             ++n;
         }
         return n - 1;
     }
 
     public static void updateWidget(Context context, AppWidgetManager appWidgetManager, int appWidgetId, boolean edit) {
+        ApplicationLoader.postInitApplication();
         Bundle options = appWidgetManager.getAppWidgetOptions(appWidgetId);
-        int minHeight = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT);
-        int rows = getCellsForSize(minHeight);
+        int maxHeight = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT);
+        int rows = getCellsForSize(maxHeight);
 
         Intent intent2 = new Intent(context, ContactsWidgetService.class);
         intent2.putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId);

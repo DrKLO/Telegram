@@ -82,6 +82,10 @@ public class ConnectionsManager extends BaseController {
     public final static int ConnectionStateConnectingToProxy = 4;
     public final static int ConnectionStateUpdating = 5;
 
+    public final static byte USE_IPV4_ONLY = 0;
+    public final static byte USE_IPV6_ONLY = 1;
+    public final static byte USE_IPV4_IPV6_RANDOM = 2;
+
     private static long lastDnsRequestTime;
 
     public final static int DEFAULT_DATACENTER_ID = Integer.MAX_VALUE;
@@ -333,7 +337,7 @@ public class ConnectionsManager extends BaseController {
     }
 
     public void checkConnection() {
-        native_setUseIpv6(currentAccount, useIpv6Address());
+        native_setIpStrategy(currentAccount, getIpStrategy());
         native_setNetworkAvailable(currentAccount, ApplicationLoader.isNetworkOnline(), ApplicationLoader.getCurrentNetworkType(), ApplicationLoader.isConnectionSlow());
     }
 
@@ -656,7 +660,7 @@ public class ConnectionsManager extends BaseController {
     public static native void native_switchBackend(int currentAccount);
     public static native int native_isTestBackend(int currentAccount);
     public static native void native_pauseNetwork(int currentAccount);
-    public static native void native_setUseIpv6(int currentAccount, boolean value);
+    public static native void native_setIpStrategy(int currentAccount, byte value);
     public static native void native_updateDcSettings(int currentAccount);
     public static native void native_setNetworkAvailable(int currentAccount, boolean value, int networkType, boolean slow);
     public static native void native_resumeNetwork(int currentAccount, boolean partial);
@@ -701,9 +705,9 @@ public class ConnectionsManager extends BaseController {
     }
 
     @SuppressLint("NewApi")
-    protected static boolean useIpv6Address() {
+    protected static byte getIpStrategy() {
         if (Build.VERSION.SDK_INT < 19) {
-            return false;
+            return USE_IPV4_ONLY;
         }
         if (BuildVars.LOGS_ENABLED) {
             try {
@@ -741,6 +745,7 @@ public class ConnectionsManager extends BaseController {
             Enumeration<NetworkInterface> networkInterfaces = NetworkInterface.getNetworkInterfaces();
             boolean hasIpv4 = false;
             boolean hasIpv6 = false;
+            boolean hasStrangeIpv4 = false;
             while (networkInterfaces.hasMoreElements()) {
                 networkInterface = networkInterfaces.nextElement();
                 if (!networkInterface.isUp() || networkInterface.isLoopback()) {
@@ -759,18 +764,25 @@ public class ConnectionsManager extends BaseController {
                         String addrr = inetAddress.getHostAddress();
                         if (!addrr.startsWith("192.0.0.")) {
                             hasIpv4 = true;
+                        } else {
+                            hasStrangeIpv4 = true;
                         }
                     }
                 }
             }
-            if (!hasIpv4 && hasIpv6) {
-                return true;
+            if (hasIpv6) {
+                if (hasStrangeIpv4) {
+                    return USE_IPV4_IPV6_RANDOM;
+                }
+                if (!hasIpv4) {
+                    return USE_IPV6_ONLY;
+                }
             }
         } catch (Throwable e) {
             FileLog.e(e);
         }
 
-        return false;
+        return USE_IPV4_ONLY;
     }
 
     private static class ResolveHostByNameTask extends AsyncTask<Void, Void, ResolvedDomain> {

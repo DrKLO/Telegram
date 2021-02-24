@@ -1998,7 +1998,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                     if (isAvatarVisible && avatarImage.isInsideImage(x, y + getTop())) {
                         avatarPressed = true;
                         result = true;
-                    } else if (psaButtonVisible && psaHelpX != -1 && x >= psaHelpX && x <= psaHelpX + AndroidUtilities.dp(40) && y >= psaHelpY && y <= psaHelpY + AndroidUtilities.dp(40)) {
+                    } else if (psaButtonVisible && hasPsaHint && x >= psaHelpX && x <= psaHelpX + AndroidUtilities.dp(40) && y >= psaHelpY && y <= psaHelpY + AndroidUtilities.dp(40)) {
                         psaHintPressed = true;
                         createSelectorDrawable(0);
                         selectorDrawableMaskType[0] = 3;

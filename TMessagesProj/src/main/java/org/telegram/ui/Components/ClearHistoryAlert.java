@@ -164,7 +164,7 @@ public class ClearHistoryAlert extends BottomSheet {
                 if (autoDeleteOnly || contentHeight - visiblePart < AndroidUtilities.dp(90) || contentHeight < height / 2 + AndroidUtilities.dp(90)) {
                     padding = height - contentHeight;
                 } else {
-                    int minHeight = contentHeight / 2 + AndroidUtilities.dp(40);
+                    int minHeight = contentHeight / 2 + AndroidUtilities.dp(108);
                     if (visiblePart < minHeight) {
                         padding = height - minHeight;
                     }

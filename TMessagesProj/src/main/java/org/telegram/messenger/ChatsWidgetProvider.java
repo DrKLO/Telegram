@@ -41,6 +41,7 @@ public class ChatsWidgetProvider extends AppWidgetProvider {
     @Override
     public void onDeleted(Context context, int[] appWidgetIds) {
         super.onDeleted(context, appWidgetIds);
+        ApplicationLoader.postInitApplication();
         SharedPreferences preferences = context.getSharedPreferences("shortcut_widget", Activity.MODE_PRIVATE);
         SharedPreferences.Editor editor = preferences.edit();
         for (int a = 0; a < appWidgetIds.length; a++) {
@@ -58,15 +59,16 @@ public class ChatsWidgetProvider extends AppWidgetProvider {
 
     private static int getCellsForSize(int size) {
         int n = 2;
-        while (70 * n - 30 < size) {
+        while (72 * n < size) {
             ++n;
         }
         return n - 1;
     }
 
     public static void updateWidget(Context context, AppWidgetManager appWidgetManager, int appWidgetId, boolean edit) {
+        ApplicationLoader.postInitApplication();
         Bundle options = appWidgetManager.getAppWidgetOptions(appWidgetId);
-        int minHeight = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT);
+        int minHeight = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT);
         int rows = getCellsForSize(minHeight);
 
         Intent intent2 = new Intent(context, ChatsWidgetService.class);

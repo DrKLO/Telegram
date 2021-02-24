@@ -75,7 +75,6 @@ public class ReportAlert extends BottomSheet {
         setCustomView(frameLayout);
 
         RLottieImageView imageView = new RLottieImageView(context);
-        imageView.setAutoRepeat(true);
         imageView.setAnimation(R.raw.report_police, 120, 120);
         imageView.playAnimation();
         frameLayout.addView(imageView, LayoutHelper.createFrame(160, 160, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 17, 14, 17, 0));

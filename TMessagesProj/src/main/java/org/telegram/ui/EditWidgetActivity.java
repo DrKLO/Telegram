@@ -606,7 +606,13 @@ public class EditWidgetActivity extends BaseFragment {
                         }
 
                         if (dialog != null && dialog.unread_count > 0) {
-                            ((TextView) cells[position].findViewById(a == 0 ? R.id.contacts_widget_item_badge1 : R.id.contacts_widget_item_badge2)).setText(String.format("%d", dialog.unread_count));
+                            String count;
+                            if (dialog.unread_count > 99) {
+                                count = String.format("%d+", 99);
+                            } else {
+                                count = String.format("%d", dialog.unread_count);
+                            }
+                            ((TextView) cells[position].findViewById(a == 0 ? R.id.contacts_widget_item_badge1 : R.id.contacts_widget_item_badge2)).setText(count);
                             cells[position].findViewById(a == 0 ? R.id.contacts_widget_item_badge_bg1 : R.id.contacts_widget_item_badge_bg2).setVisibility(VISIBLE);
                         } else {
                             cells[position].findViewById(a == 0 ? R.id.contacts_widget_item_badge_bg1 : R.id.contacts_widget_item_badge_bg2).setVisibility(GONE);
