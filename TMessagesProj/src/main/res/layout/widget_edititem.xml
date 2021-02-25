@@ -13,6 +13,8 @@
         android:paddingRight="10dp"
         android:textColor="@color/widget_edit_text"
         android:layout_gravity="center"
+        android:singleLine="true"
+        android:ellipsize="end"
         android:background="@drawable/widget_edit"
         android:gravity="center"/>
 

@@ -43,7 +43,7 @@
             android:layout_gravity="center"
             android:layout_marginBottom="27dp"
             android:layout_marginLeft="20dp"
-            android:layout_marginRight="2dp"
+            android:layout_marginRight="4dp"
             android:id="@+id/contacts_widget_item_badge_bg1">
 
             <TextView android:id="@+id/contacts_widget_item_badge1"
@@ -99,7 +99,7 @@
             android:layout_gravity="center"
             android:layout_marginBottom="27dp"
             android:layout_marginLeft="20dp"
-            android:layout_marginRight="2dp"
+            android:layout_marginRight="4dp"
             android:id="@+id/contacts_widget_item_badge_bg2">
 
             <TextView android:id="@+id/contacts_widget_item_badge2"

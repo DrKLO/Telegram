@@ -720,7 +720,7 @@ public class ChannelCreateActivity extends BaseFragment implements NotificationC
 
             permanentLinkView = new LinkActionView(context, this, null, chatId, true, ChatObject.isChannel(getMessagesController().getChat(chatId)));
             //permanentLinkView.showOptions(false);
-            permanentLinkView.showRevokeOption(true);
+            permanentLinkView.hideRevokeOption(true);
             permanentLinkView.setUsers(0, null);
             privateContainer.addView(permanentLinkView);
 

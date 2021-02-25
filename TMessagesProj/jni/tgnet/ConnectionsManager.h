@@ -193,6 +193,8 @@ private:
     bool networkAvailable = true;
     bool networkSlow = false;
     uint8_t ipStrategy = USE_IPV4_ONLY;
+    bool lastProtocolIsIpv6 = false;
+    bool lastProtocolUsefullData = false;
     std::vector<ConnectionSocket *> activeConnections;
     std::vector<ConnectionSocket *> activeConnectionsCopy;
     int epolFd;

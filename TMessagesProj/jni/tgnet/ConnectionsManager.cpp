@@ -887,6 +887,7 @@ void ConnectionsManager::onConnectionDataReceived(Connection *connection, Native
                 processServerResponse(object, messageId, 0, 0, connection, 0, 0);
                 connection->addProcessedMessageId(messageId);
             }
+            lastProtocolUsefullData = true;
             connection->setHasUsefullData();
             delete object;
         }
@@ -940,6 +941,7 @@ void ConnectionsManager::onConnectionDataReceived(Connection *connection, Native
         }
         if (!processedStatus) {
             if (object != nullptr) {
+                lastProtocolUsefullData = true;
                 connection->setHasUsefullData();
                 if (LOGS_ENABLED) DEBUG_D("connection(%p, account%u, dc%u, type %d) received object %s", connection, instanceNum, datacenter->getDatacenterId(), connection->getConnectionType(), typeid(*object).name());
                 processServerResponse(object, messageId, messageSeqNo, messageServerSalt, connection, 0, 0);

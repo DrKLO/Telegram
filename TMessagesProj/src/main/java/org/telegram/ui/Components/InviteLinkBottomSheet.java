@@ -91,6 +91,8 @@ public class InviteLinkBottomSheet extends BottomSheet {
     private boolean isChannel;
     private final long timeDif;
 
+    private boolean canEdit = true;
+
     public InviteLinkBottomSheet(Context context, TLRPC.TL_chatInviteExported invite, TLRPC.ChatFull info, HashMap<Integer, TLRPC.User> users, BaseFragment fragment, int chatId, boolean permanent, boolean isChannel) {
         super(context, false);
         this.invite = invite;
@@ -677,6 +679,8 @@ public class InviteLinkBottomSheet extends BottomSheet {
                     actionView.setLink(invite.link);
                     actionView.setRevoke(invite.revoked);
                     actionView.setPermanent(invite.permanent);
+                    actionView.setCanEdit(canEdit);
+                    actionView.hideRevokeOption(!canEdit);
                     break;
                 case 4:
                     TimerPrivacyCell privacyCell = (TimerPrivacyCell) holder.itemView;
@@ -914,5 +918,9 @@ public class InviteLinkBottomSheet extends BottomSheet {
         protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
             super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(84), MeasureSpec.EXACTLY));
         }
+    }
+
+    public void setCanEdit(boolean canEdit) {
+        this.canEdit = canEdit;
     }
 }

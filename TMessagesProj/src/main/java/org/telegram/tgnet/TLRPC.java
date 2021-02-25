@@ -43223,6 +43223,23 @@ public class TLRPC {
         }
     }
 
+    public static class TL_messages_getExportedChatInvite extends TLObject {
+        public static int constructor = 0x73746f5c;
+
+        public InputPeer peer;
+        public String link;
+
+        public TLObject deserializeResponse(AbstractSerializedData stream, int constructor, boolean exception) {
+            return messages_ExportedChatInvite.TLdeserialize(stream, constructor, exception);
+        }
+
+        public void serializeToStream(AbstractSerializedData stream) {
+            stream.writeInt32(constructor);
+            peer.serializeToStream(stream);
+            stream.writeString(link);
+        }
+    }
+
     public static class TL_messages_editExportedChatInvite extends TLObject {
         public static int constructor = 0x2e4ffbe;
 

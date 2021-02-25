@@ -297,9 +297,17 @@ void Connection::connect() {
     if (strategy == USE_IPV6_ONLY) {
         ipv6 = TcpAddressFlagIpv6;
     } else if (strategy == USE_IPV4_IPV6_RANDOM) {
-        uint8_t value;
-        RAND_bytes(&value, 1);
-        ipv6 = value % 2 == 0 ? TcpAddressFlagIpv6 : 0;
+        if (ConnectionsManager::getInstance(currentDatacenter->instanceNum).lastProtocolUsefullData) {
+            ipv6 = ConnectionsManager::getInstance(currentDatacenter->instanceNum).lastProtocolIsIpv6 ? TcpAddressFlagIpv6 : 0;
+        } else {
+            uint8_t value;
+            RAND_bytes(&value, 1);
+            ipv6 = value % 3 == 0 ? TcpAddressFlagIpv6 : 0;
+            ConnectionsManager::getInstance(currentDatacenter->instanceNum).lastProtocolIsIpv6 = ipv6 != 0;
+        }
+        if (connectionType == ConnectionTypeGeneric) {
+            ConnectionsManager::getInstance(currentDatacenter->instanceNum).lastProtocolUsefullData = false;
+        }
     } else {
         ipv6 = 0;
     }
