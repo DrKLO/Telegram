@@ -695,6 +695,7 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
     private boolean allowGifs;
 
     private boolean skipDotAtEnd = false;
+    private String voiceCaption = null;
 
     private int lastSizeChangeValue1;
     private boolean lastSizeChangeValue2;
@@ -3629,6 +3630,20 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
         recordedAudioTimeTextView.setTextColor(getThemedColor(Theme.key_chat_messagePanelVoiceDuration));
         recordedAudioTimeTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
         waveFormTimerLayout.addView(recordedAudioTimeTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 0f, Gravity.CENTER_VERTICAL));
+        recordedAudioTimeTextView.setOnClickListener(v -> {
+            if ((recordedAudioTimeTextView.getAlpha() < 1f)
+                || (recordedAudioTimeTextView.getVisibility() == GONE)) {
+                return;
+            }
+            org.telegram.messenger.forkgram.ForkDialogs.CreateVoiceCaptionAlert(
+                getContext(),
+                recordTimerView.timestamps,
+                (String caption) -> {
+                    voiceCaption = caption;
+                    sendMessage();
+                    return null;
+                });
+        });
     }
 
     private void resetRecordedState() {
@@ -6374,11 +6389,12 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
                 MediaController.getInstance().cleanupPlayer(true, true);
             }
             MediaDataController.getInstance(currentAccount).pushDraftVoiceMessage(dialog_id, parentFragment != null && parentFragment.isTopic ? parentFragment.getTopicId() : 0, null);
-            SendMessagesHelper.SendMessageParams params = SendMessagesHelper.SendMessageParams.of(audioToSend, null, audioToSendPath, dialog_id, replyingMessageObject, getThreadMessage(), null, null, null, null, notify, scheduleDate, voiceOnce ? 0x7FFFFFFF : 0, null, null, false);
+            SendMessagesHelper.SendMessageParams params = SendMessagesHelper.SendMessageParams.of(audioToSend, null, audioToSendPath, dialog_id, replyingMessageObject, getThreadMessage(), voiceCaption, null, null, null, notify, scheduleDate, voiceOnce ? 0x7FFFFFFF : 0, null, null, false);
             params.quick_reply_shortcut = parentFragment != null ? parentFragment.quickReplyShortcut : null;
             params.quick_reply_shortcut_id = parentFragment != null ? parentFragment.getQuickReplyId() : 0;
             applyStoryToSendMessageParams(params);
             SendMessagesHelper.getInstance(currentAccount).sendMessage(params);
+            voiceCaption = null;
             if (delegate != null) {
                 delegate.onMessageSend(null, notify, scheduleDate);
             }
@@ -8476,6 +8492,7 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
         recordTimeContainer.addView(recordTimerView = new TimerView(getContext()), LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.CENTER_VERTICAL, 6, 0, 0, 0));
 
         recordPanel.addView(recordTimeContainer, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.CENTER_VERTICAL));
+        slideText.bringToFront();
     }
 
     @Override
@@ -11729,8 +11746,19 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
         final float replaceDistance = dp(15);
         float left;
 
+        public ArrayList<String> timestamps = new ArrayList<String>();
+
         public TimerView(Context context) {
             super(context);
+
+            setOnClickListener((v) -> {
+                final String current = oldString.substring(0, oldString.indexOf(','));
+                timestamps.add(current);
+                android.widget.Toast.makeText(
+                        parentActivity,
+                        "Saved timestamp at " + current + ".",
+                        android.widget.Toast.LENGTH_SHORT).show();
+            });
         }
 
         public void start(long milliseconds) {
@@ -11738,6 +11766,8 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
             startTime = System.currentTimeMillis() - milliseconds;
             lastSendTypingTime = startTime;
             invalidate();
+            timestamps.clear();
+            timestamps.add("0:00");
         }
 
         public void stop() {
