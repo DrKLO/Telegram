@@ -33,6 +33,7 @@ import android.location.LocationManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.SystemClock;
 import android.provider.Settings;
 import android.text.Editable;
 import android.text.InputType;
@@ -88,6 +89,7 @@ import org.telegram.ui.Cells.ProfileSearchCell;
 import org.telegram.ui.Cells.TextCell;
 import org.telegram.ui.Cells.UserCell;
 import org.telegram.ui.Components.AlertsCreator;
+import org.telegram.ui.Components.BulletinFactory;
 import org.telegram.ui.Components.CombinedDrawable;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.EditTextBoldCursor;
@@ -146,6 +148,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
     private boolean disableSections;
 
     private boolean checkPermission = true;
+    private long permissionRequestTime;
 
     private AnimatorSet bounceIconAnimator;
     private int animationIndex = -1;
@@ -413,9 +416,6 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                 Object object = searchListViewAdapter.getItem(position);
                 if (object instanceof TLRPC.User) {
                     TLRPC.User user = (TLRPC.User) object;
-                    if (user == null) {
-                        return;
-                    }
                     if (searchListViewAdapter.isGlobalSearch(position)) {
                         ArrayList<TLRPC.User> users = new ArrayList<>();
                         users.add(user);
@@ -603,7 +603,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                     } else {
                         goingDown = firstVisibleItem > prevPosition;
                     }
-                    if (changed && scrollUpdated && (goingDown || !goingDown && scrollingManually)) {
+                    if (changed && scrollUpdated && (goingDown || scrollingManually)) {
                         hideFloatingButton(goingDown);
                     }
                     prevPosition = firstVisibleItem;
@@ -666,7 +666,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
             if (user.bot) {
                 if (user.bot_nochats) {
                     try {
-                        Toast.makeText(getParentActivity(), LocaleController.getString("BotCantJoinGroups", R.string.BotCantJoinGroups), Toast.LENGTH_SHORT).show();
+                        BulletinFactory.of(this).createErrorBulletin(LocaleController.getString("BotCantJoinGroups", R.string.BotCantJoinGroups)).show();
                     } catch (Exception e) {
                         FileLog.e(e);
                     }
@@ -849,6 +849,7 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
             showDialog(builder.create());
             return;
         }
+        permissionRequestTime = SystemClock.elapsedRealtime();
         ArrayList<String> permissons = new ArrayList<>();
         permissons.add(Manifest.permission.READ_CONTACTS);
         permissons.add(Manifest.permission.WRITE_CONTACTS);
@@ -873,7 +874,18 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
                         ContactsController.getInstance(currentAccount).forceImportContacts();
                     } else {
                         MessagesController.getGlobalNotificationsSettings().edit().putBoolean("askAboutContacts", askAboutContacts = false).commit();
+                        if (SystemClock.elapsedRealtime() - permissionRequestTime < 200) {
+                            try {
+                                Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+                                Uri uri = Uri.fromParts("package", ApplicationLoader.applicationContext.getPackageName(), null);
+                                intent.setData(uri);
+                                getParentActivity().startActivity(intent);
+                            } catch (Exception e) {
+                                FileLog.e(e);
+                            }
+                        }
                     }
+                    break;
                 }
             }
         }
@@ -997,7 +1009,11 @@ public class ContactsActivity extends BaseFragment implements NotificationCenter
             return null;
         }
         RLottieImageView previousFab = dialogsActivity.getFloatingButton();
-        if (previousFab == null || floatingButtonContainer == null || previousFab.getVisibility() != View.VISIBLE || Math.abs(previousFab.getTranslationY()) > AndroidUtilities.dp(4) || Math.abs(floatingButtonContainer.getTranslationY()) > AndroidUtilities.dp(4)) {
+        View previousFabContainer = null;
+        if (previousFab.getParent() != null) {
+            previousFabContainer = (View) previousFab.getParent();
+        }
+        if (previousFab == null || floatingButtonContainer == null || previousFabContainer == null || previousFab.getVisibility() != View.VISIBLE || Math.abs(previousFabContainer.getTranslationY()) > AndroidUtilities.dp(4) || Math.abs(floatingButtonContainer.getTranslationY()) > AndroidUtilities.dp(4)) {
             return null;
         }
         previousFab.setVisibility(View.GONE);

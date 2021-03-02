@@ -1477,7 +1477,8 @@ bool Datacenter::isExportingAuthorization() {
 
 bool Datacenter::hasMediaAddress() {
     std::vector<TcpAddress> *addresses;
-    if (ConnectionsManager::getInstance(instanceNum).isIpv6Enabled()) {
+    int strategy = ConnectionsManager::getInstance(instanceNum).getIpStratagy();
+    if (strategy == USE_IPV6_ONLY) {
         addresses = &addressesIpv6Download;
     } else {
         addresses = &addressesIpv4Download;

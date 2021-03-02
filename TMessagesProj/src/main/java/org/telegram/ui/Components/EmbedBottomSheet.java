@@ -830,9 +830,10 @@ public class EmbedBottomSheet extends BottomSheet {
             dismiss();
         });
 
-        boolean canHandleUrl = videoView.canHandleUrl(embedUrl);
-        if (!canHandleUrl) {
-            videoView.setVisibility(View.INVISIBLE);
+        boolean canHandleUrl = videoView.canHandleUrl(embedUrl) || videoView.canHandleUrl(originalUrl);
+        videoView.setVisibility(canHandleUrl ? View.VISIBLE : View.INVISIBLE);
+        if (canHandleUrl) {
+            videoView.willHandle();
         }
 
         setDelegate(new BottomSheet.BottomSheetDelegate() {
@@ -1025,6 +1026,15 @@ public class EmbedBottomSheet extends BottomSheet {
         }
         instance = null;
         dismissInternal();
+    }
+
+    @Override
+    public void dismissInternal() {
+        super.dismissInternal();
+        if (orientationEventListener != null) {
+            orientationEventListener.disable();
+            orientationEventListener = null;
+        }
     }
 
     public void exitFromPip() {

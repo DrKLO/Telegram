@@ -2254,7 +2254,7 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
 
         private void didWriteData(File file, long availableSize, boolean last) {
             if (videoConvertFirstWrite) {
-                FileLoader.getInstance(currentAccount).uploadFile(file.toString(), isSecretChat, false, 1, ConnectionsManager.FileTypeVideo);
+                FileLoader.getInstance(currentAccount).uploadFile(file.toString(), isSecretChat, false, 1, ConnectionsManager.FileTypeVideo, false);
                 videoConvertFirstWrite = false;
                 if (last) {
                     FileLoader.getInstance(currentAccount).checkUploadNewDataAvailable(file.toString(), isSecretChat, availableSize, last ? file.length() : 0);

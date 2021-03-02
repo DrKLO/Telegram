@@ -1694,6 +1694,17 @@ public class LocaleController {
         return "LOC_ERR";
     }
 
+    public static String formatImportedDate(long date) {
+        try {
+            date *= 1000;
+            Date dt = new Date(date);
+            return String.format("%1$s, %2$s", getInstance().formatterYear.format(dt), getInstance().formatterDay.format(dt));
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+        return "LOC_ERR";
+    }
+
     public static String formatUserStatus(int currentAccount, TLRPC.User user, boolean[] isOnline) {
         if (user != null && user.status != null && user.status.expires == 0) {
             if (user.status instanceof TLRPC.TL_userStatusRecently) {

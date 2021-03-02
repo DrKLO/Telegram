@@ -210,8 +210,8 @@ void updateDcSettings(JNIEnv *env, jclass c, jint instanceNum) {
     ConnectionsManager::getInstance(instanceNum).updateDcSettings(0, false);
 }
 
-void setUseIpv6(JNIEnv *env, jclass c, jint instanceNum, jboolean value) {
-    ConnectionsManager::getInstance(instanceNum).setUseIpv6(value);
+void setIpStrategy(JNIEnv *env, jclass c, jint instanceNum, jbyte value) {
+    ConnectionsManager::getInstance(instanceNum).setIpStrategy((uint8_t) value);
 }
 
 void setNetworkAvailable(JNIEnv *env, jclass c, jint instanceNum, jboolean value, jint networkType, jboolean slow) {
@@ -448,7 +448,7 @@ static JNINativeMethod ConnectionsManagerMethods[] = {
         {"native_pauseNetwork", "(I)V", (void *) pauseNetwork},
         {"native_resumeNetwork", "(IZ)V", (void *) resumeNetwork},
         {"native_updateDcSettings", "(I)V", (void *) updateDcSettings},
-        {"native_setUseIpv6", "(IZ)V", (void *) setUseIpv6},
+        {"native_setIpStrategy", "(IB)V", (void *) setIpStrategy},
         {"native_setNetworkAvailable", "(IZIZ)V", (void *) setNetworkAvailable},
         {"native_setPushConnectionEnabled", "(IZ)V", (void *) setPushConnectionEnabled},
         {"native_setJava", "(Z)V", (void *) setJava},

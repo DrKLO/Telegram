@@ -244,6 +244,9 @@ public class SecretChatHelper extends BaseController {
                 getNotificationCenter().postNotificationName(NotificationCenter.encryptedChatUpdated, newChat);
             });
         }
+        if (newChat instanceof TLRPC.TL_encryptedChatDiscarded && newChat.history_deleted) {
+            AndroidUtilities.runOnUIThread(() -> getMessagesController().deleteDialog(dialog_id, 0));
+        }
     }
 
     public void sendMessagesDeleteMessage(TLRPC.EncryptedChat encryptedChat, ArrayList<Long> random_ids, TLRPC.Message resendMessage) {
@@ -1659,7 +1662,7 @@ public class SecretChatHelper extends BaseController {
                                 getMessagesStorage().updateEncryptedChat(newChat);
                                 getNotificationCenter().postNotificationName(NotificationCenter.encryptedChatUpdated, newChat);
                             });
-                            declineSecretChat(chat.id);
+                            declineSecretChat(chat.id, false);
                             return null;
                         }
 
@@ -1733,7 +1736,7 @@ public class SecretChatHelper extends BaseController {
         BigInteger i_authKey = new BigInteger(1, encryptedChat.g_a_or_b);
 
         if (!Utilities.isGoodGaAndGb(i_authKey, p)) {
-            declineSecretChat(encryptedChat.id);
+            declineSecretChat(encryptedChat.id, false);
             return;
         }
 
@@ -1789,13 +1792,14 @@ public class SecretChatHelper extends BaseController {
                 getMessagesController().putEncryptedChat(newChat, false);
                 getNotificationCenter().postNotificationName(NotificationCenter.encryptedChatUpdated, newChat);
             });
-            declineSecretChat(encryptedChat.id);
+            declineSecretChat(encryptedChat.id, false);
         }
     }
 
-    public void declineSecretChat(int chat_id) {
+    public void declineSecretChat(int chat_id, boolean revoke) {
         TLRPC.TL_messages_discardEncryption req = new TLRPC.TL_messages_discardEncryption();
         req.chat_id = chat_id;
+        req.delete_history = revoke;
         getConnectionsManager().sendRequest(req, (response, error) -> {
 
         });
@@ -1815,7 +1819,7 @@ public class SecretChatHelper extends BaseController {
                 if (response instanceof TLRPC.TL_messages_dhConfig) {
                     if (!Utilities.isGoodPrime(res.p, res.g)) {
                         acceptingChats.remove(encryptedChat.id);
-                        declineSecretChat(encryptedChat.id);
+                        declineSecretChat(encryptedChat.id, false);
                         return;
                     }
 
@@ -1838,7 +1842,7 @@ public class SecretChatHelper extends BaseController {
 
                 if (!Utilities.isGoodGaAndGb(g_a, p)) {
                     acceptingChats.remove(encryptedChat.id);
-                    declineSecretChat(encryptedChat.id);
+                    declineSecretChat(encryptedChat.id, false);
                     return;
                 }
 

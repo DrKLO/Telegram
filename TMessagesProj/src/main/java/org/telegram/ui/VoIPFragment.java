@@ -41,6 +41,7 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.ToggleButton;
 
 import androidx.annotation.RequiresApi;
 import androidx.core.content.ContextCompat;
@@ -272,7 +273,11 @@ public class VoIPFragment implements VoIPBaseService.StateListener, Notification
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                     fragment.setInsets(windowInsets);
                 }
-                return windowInsets.consumeSystemWindowInsets();
+                if (Build.VERSION.SDK_INT >= 30) {
+                    return WindowInsets.CONSUMED;
+                } else {
+                    return windowInsets.consumeSystemWindowInsets();
+                }
             });
         }
 
@@ -777,11 +782,26 @@ public class VoIPFragment implements VoIPBaseService.StateListener, Notification
         backIcon.setContentDescription(LocaleController.getString("Back", R.string.Back));
         frameLayout.addView(backIcon, LayoutHelper.createFrame(56, 56, Gravity.TOP | Gravity.LEFT));
 
-        speakerPhoneIcon = new ImageView(context);
+        speakerPhoneIcon = new ImageView(context) {
+            @Override
+            public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
+                super.onInitializeAccessibilityNodeInfo(info);
+                info.setClassName(ToggleButton.class.getName());
+                info.setCheckable(true);
+                VoIPService service = VoIPService.getSharedInstance();
+                if (service != null) {
+                    info.setChecked(service.isSpeakerphoneOn());
+                }
+            }
+        };
+        speakerPhoneIcon.setContentDescription(LocaleController.getString("VoipSpeaker", R.string.VoipSpeaker));
         speakerPhoneIcon.setBackground(Theme.createSelectorDrawable(ColorUtils.setAlphaComponent(Color.WHITE, (int) (255 * 0.3f))));
         speakerPhoneIcon.setPadding(AndroidUtilities.dp(12), AndroidUtilities.dp(12), AndroidUtilities.dp(12), AndroidUtilities.dp(12));
         frameLayout.addView(speakerPhoneIcon, LayoutHelper.createFrame(56, 56, Gravity.TOP | Gravity.RIGHT));
         speakerPhoneIcon.setOnClickListener(view -> {
+            if (speakerPhoneIcon.getTag() == null) {
+                return;
+            }
             if (VoIPService.getSharedInstance() != null) {
                 VoIPService.getSharedInstance().toggleSpeakerphoneOrShowRouteSheet(activity, false);
             }
@@ -1786,10 +1806,12 @@ public class VoIPFragment implements VoIPBaseService.StateListener, Notification
             if (currentUserIsVideo || callingUserIsVideo) {
                 setFrontalCameraAction(bottomButtons[0], service, animated);
                 if (uiVisible) {
+                    speakerPhoneIcon.setTag(1);
                     speakerPhoneIcon.animate().alpha(1f).start();
                 }
             } else {
                 setSpeakerPhoneAction(bottomButtons[0], service, animated);
+                speakerPhoneIcon.setTag(null);
                 speakerPhoneIcon.animate().alpha(0f).start();
             }
             setVideoAction(bottomButtons[1], service, animated);
@@ -1909,6 +1931,8 @@ public class VoIPFragment implements VoIPBaseService.StateListener, Notification
             bottomButton.setData(R.drawable.calls_speaker, Color.WHITE, ColorUtils.setAlphaComponent(Color.WHITE, (int) (255 * 0.12f)), LocaleController.getString("VoipSpeaker", R.string.VoipSpeaker), false, animated);
             bottomButton.setChecked(false, animated);
         }
+        bottomButton.setCheckableForAccessibility(true);
+        bottomButton.setEnabled(true);
         bottomButton.setOnClickListener(view -> {
             if (VoIPService.getSharedInstance() != null) {
                 VoIPService.getSharedInstance().toggleSpeakerphoneOrShowRouteSheet(activity, false);

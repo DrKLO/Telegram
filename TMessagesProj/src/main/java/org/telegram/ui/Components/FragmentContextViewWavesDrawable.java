@@ -1,7 +1,6 @@
 package org.telegram.ui.Components;
 
 import android.graphics.Canvas;
-import android.graphics.Color;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Path;
@@ -10,11 +9,8 @@ import android.graphics.PorterDuffXfermode;
 import android.graphics.RadialGradient;
 import android.graphics.RectF;
 import android.graphics.Shader;
-import android.os.Build;
 import android.os.SystemClock;
 import android.view.View;
-
-import androidx.core.graphics.ColorUtils;
 
 import org.telegram.messenger.AccountInstance;
 import org.telegram.messenger.AndroidUtilities;
@@ -157,9 +153,11 @@ public class FragmentContextViewWavesDrawable {
             lineBlobDrawable2.minRadius = AndroidUtilities.dp(0);
             lineBlobDrawable2.maxRadius = AndroidUtilities.dp(3) + AndroidUtilities.dp(9) * amplitude;
 
-            lineBlobDrawable.update(amplitude, 0.3f);
-            lineBlobDrawable1.update(amplitude, 0.7f);
-            lineBlobDrawable2.update(amplitude, 0.7f);
+            if (i == 1) {
+                lineBlobDrawable.update(amplitude, 0.3f);
+                lineBlobDrawable1.update(amplitude, 0.7f);
+                lineBlobDrawable2.update(amplitude, 0.7f);
+            }
 
 //            if (rippleTransition) {
 //                paint.setAlpha(76);
@@ -300,10 +298,15 @@ public class FragmentContextViewWavesDrawable {
             if (currentCallState == VoIPService.STATE_WAIT_INIT || currentCallState == VoIPService.STATE_WAIT_INIT_ACK || currentCallState == VoIPService.STATE_CREATING || currentCallState == VoIPService.STATE_RECONNECTING) {
                 setState(FragmentContextViewWavesDrawable.MUTE_BUTTON_STATE_CONNECTING, animated);
             } else {
-                TLRPC.TL_groupCallParticipant participant = VoIPService.getSharedInstance().groupCall.participants.get(AccountInstance.getInstance(VoIPService.getSharedInstance().getAccount()).getUserConfig().getClientUserId());
-                if (participant != null && !participant.can_self_unmute && participant.muted && !ChatObject.canManageCalls(VoIPService.getSharedInstance().getChat())) {
-                    VoIPService.getSharedInstance().setMicMute(true, false, false);
-                    setState(FragmentContextViewWavesDrawable.MUTE_BUTTON_STATE_MUTED_BY_ADMIN, animated);
+                if (VoIPService.getSharedInstance().groupCall != null) {
+                    TLRPC.TL_groupCallParticipant participant = VoIPService.getSharedInstance().groupCall.participants.get(AccountInstance.getInstance(VoIPService.getSharedInstance().getAccount()).getUserConfig().getClientUserId());
+                    if (participant != null && !participant.can_self_unmute && participant.muted && !ChatObject.canManageCalls(VoIPService.getSharedInstance().getChat())) {
+                        VoIPService.getSharedInstance().setMicMute(true, false, false);
+                        setState(FragmentContextViewWavesDrawable.MUTE_BUTTON_STATE_MUTED_BY_ADMIN, animated);
+                    } else {
+                        boolean isMuted = VoIPService.getSharedInstance().isMicMute();
+                        setState(isMuted ? FragmentContextViewWavesDrawable.MUTE_BUTTON_STATE_MUTE : FragmentContextViewWavesDrawable.MUTE_BUTTON_STATE_UNMUTE, animated);
+                    }
                 } else {
                     boolean isMuted = VoIPService.getSharedInstance().isMicMute();
                     setState(isMuted ? FragmentContextViewWavesDrawable.MUTE_BUTTON_STATE_MUTE : FragmentContextViewWavesDrawable.MUTE_BUTTON_STATE_UNMUTE, animated);

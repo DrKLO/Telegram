@@ -67,6 +67,8 @@ public class FeaturedStickerSetInfoCell extends FrameLayout {
     private CharSequence url;
     private int urlSearchLength;
 
+    float unreadProgress;
+
     public FeaturedStickerSetInfoCell(Context context, int left) {
         this(context, left, false);
     }
@@ -184,6 +186,11 @@ public class FeaturedStickerSetInfoCell extends FrameLayout {
             animatorSet.cancel();
             animatorSet = null;
         }
+        if (set != stickerSet) {
+            unreadProgress = unread ? 1f : 0;
+            invalidate();
+        }
+
         set = stickerSet;
         stickerSetNameSearchIndex = index;
         stickerSetNameSearchLength = searchLength;
@@ -299,9 +306,24 @@ public class FeaturedStickerSetInfoCell extends FrameLayout {
 
     @Override
     protected void onDraw(Canvas canvas) {
-        if (isUnread) {
+        if (isUnread || unreadProgress != 0f) {
+            if (isUnread && unreadProgress != 1f) {
+                unreadProgress += 16f / 100f;
+                if (unreadProgress > 1f) {
+                    unreadProgress = 1f;
+                } else {
+                    invalidate();
+                }
+            } else if (!isUnread && unreadProgress != 0) {
+                unreadProgress -= 16f / 100f;
+                if (unreadProgress < 0) {
+                    unreadProgress = 0;
+                } else {
+                    invalidate();
+                }
+            }
             paint.setColor(Theme.getColor(Theme.key_featuredStickers_unread));
-            canvas.drawCircle(nameTextView.getRight() + AndroidUtilities.dp(12), AndroidUtilities.dp(20), AndroidUtilities.dp(4), paint);
+            canvas.drawCircle(nameTextView.getRight() + AndroidUtilities.dp(12), AndroidUtilities.dp(20), AndroidUtilities.dp(4) * unreadProgress, paint);
         }
         if (needDivider) {
             canvas.drawLine(0, 0, getWidth(), 0, Theme.dividerPaint);

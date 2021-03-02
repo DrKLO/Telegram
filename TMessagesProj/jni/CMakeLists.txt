@@ -395,7 +395,7 @@ target_compile_definitions(sqlite PUBLIC
 #voip
 include(${CMAKE_HOME_DIRECTORY}/voip/CMakeLists.txt)
 
-set(NATIVE_LIB "tmessages.35")
+set(NATIVE_LIB "tmessages.36")
 
 #tmessages
 add_library(${NATIVE_LIB} SHARED

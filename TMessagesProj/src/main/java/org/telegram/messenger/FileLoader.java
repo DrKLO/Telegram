@@ -28,12 +28,12 @@ import java.util.concurrent.CountDownLatch;
 public class FileLoader extends BaseController {
 
     public interface FileLoaderDelegate {
-        void fileUploadProgressChanged(String location, long uploadedSize, long totalSize, boolean isEncrypted);
+        void fileUploadProgressChanged(FileUploadOperation operation, String location, long uploadedSize, long totalSize, boolean isEncrypted);
         void fileDidUploaded(String location, TLRPC.InputFile inputFile, TLRPC.InputEncryptedFile inputEncryptedFile, byte[] key, byte[] iv, long totalFileSize);
         void fileDidFailedUpload(String location, boolean isEncrypted);
         void fileDidLoaded(String location, File finalFile, int type);
         void fileDidFailedLoad(String location, int state);
-        void fileLoadProgressChanged(String location, long uploadedSize, long totalSize);
+        void fileLoadProgressChanged(FileLoadOperation operation, String location, long uploadedSize, long totalSize);
     }
 
     public static final int MEDIA_DIR_IMAGE = 0;
@@ -237,10 +237,10 @@ public class FileLoader extends BaseController {
     }
 
     public void uploadFile(final String location, final boolean encrypted, final boolean small, final int type) {
-        uploadFile(location, encrypted, small, 0, type);
+        uploadFile(location, encrypted, small, 0, type, false);
     }
 
-    public void uploadFile(final String location, final boolean encrypted, final boolean small, final int estimatedSize, final int type) {
+    public void uploadFile(final String location, final boolean encrypted, final boolean small, final int estimatedSize, final int type, boolean forceSmallFile) {
         if (location == null) {
             return;
         }
@@ -262,14 +262,17 @@ public class FileLoader extends BaseController {
                     uploadSizes.remove(location);
                 }
             }
-            if (delegate != null && estimatedSize != 0) {
-                delegate.fileUploadProgressChanged(location, 0, estimatedSize, encrypted);
-            }
             FileUploadOperation operation = new FileUploadOperation(currentAccount, location, encrypted, esimated, type);
+            if (delegate != null && estimatedSize != 0) {
+                delegate.fileUploadProgressChanged(operation, location, 0, estimatedSize, encrypted);
+            }
             if (encrypted) {
                 uploadOperationPathsEnc.put(location, operation);
             } else {
                 uploadOperationPaths.put(location, operation);
+            }
+            if (forceSmallFile) {
+                operation.setForceSmallFile();
             }
             operation.setDelegate(new FileUploadOperation.FileUploadOperationDelegate() {
                 @Override
@@ -341,7 +344,7 @@ public class FileLoader extends BaseController {
                 @Override
                 public void didChangedUploadProgress(FileUploadOperation operation, long uploadedSize, long totalSize) {
                     if (delegate != null) {
-                        delegate.fileUploadProgressChanged(location, uploadedSize, totalSize, encrypted);
+                        delegate.fileUploadProgressChanged(operation, location, uploadedSize, totalSize, encrypted);
                     }
                 }
             });
@@ -715,7 +718,7 @@ public class FileLoader extends BaseController {
             @Override
             public void didChangedLoadProgress(FileLoadOperation operation, long uploadedSize, long totalSize) {
                 if (delegate != null) {
-                    delegate.fileLoadProgressChanged(fileName, uploadedSize, totalSize);
+                    delegate.fileLoadProgressChanged(operation, fileName, uploadedSize, totalSize);
                 }
             }
         };
@@ -880,7 +883,7 @@ public class FileLoader extends BaseController {
             } else if (message.media instanceof TLRPC.TL_messageMediaPhoto) {
                 ArrayList<TLRPC.PhotoSize> sizes = message.media.photo.sizes;
                 if (sizes.size() > 0) {
-                    TLRPC.PhotoSize sizeFull = getClosestPhotoSizeWithSize(sizes, AndroidUtilities.getPhotoSize());
+                    TLRPC.PhotoSize sizeFull = getClosestPhotoSizeWithSize(sizes, AndroidUtilities.getPhotoSize(), false, null, true);
                     if (sizeFull != null) {
                         return getAttachFileName(sizeFull);
                     }
@@ -927,7 +930,7 @@ public class FileLoader extends BaseController {
             } else if (message.media instanceof TLRPC.TL_messageMediaPhoto) {
                 ArrayList<TLRPC.PhotoSize> sizes = message.media.photo.sizes;
                 if (sizes.size() > 0) {
-                    TLRPC.PhotoSize sizeFull = getClosestPhotoSizeWithSize(sizes, AndroidUtilities.getPhotoSize());
+                    TLRPC.PhotoSize sizeFull = getClosestPhotoSizeWithSize(sizes, AndroidUtilities.getPhotoSize(), false, null, true);
                     if (sizeFull != null) {
                         return getPathToAttach(sizeFull, message.media.ttl_seconds != 0);
                     }
@@ -1029,10 +1032,10 @@ public class FileLoader extends BaseController {
     }
 
     public static TLRPC.PhotoSize getClosestPhotoSizeWithSize(ArrayList<TLRPC.PhotoSize> sizes, int side, boolean byMinSide) {
-        return getClosestPhotoSizeWithSize(sizes, side, byMinSide, null);
+        return getClosestPhotoSizeWithSize(sizes, side, byMinSide, null, false);
     }
 
-    public static TLRPC.PhotoSize getClosestPhotoSizeWithSize(ArrayList<TLRPC.PhotoSize> sizes, int side, boolean byMinSide, TLRPC.PhotoSize toIgnore) {
+    public static TLRPC.PhotoSize getClosestPhotoSizeWithSize(ArrayList<TLRPC.PhotoSize> sizes, int side, boolean byMinSide, TLRPC.PhotoSize toIgnore, boolean ignoreStripped) {
         if (sizes == null || sizes.isEmpty()) {
             return null;
         }
@@ -1040,7 +1043,7 @@ public class FileLoader extends BaseController {
         TLRPC.PhotoSize closestObject = null;
         for (int a = 0; a < sizes.size(); a++) {
             TLRPC.PhotoSize obj = sizes.get(a);
-            if (obj == null || obj == toIgnore || obj instanceof TLRPC.TL_photoSizeEmpty || obj instanceof TLRPC.TL_photoPathSize) {
+            if (obj == null || obj == toIgnore || obj instanceof TLRPC.TL_photoSizeEmpty || obj instanceof TLRPC.TL_photoPathSize || ignoreStripped && obj instanceof TLRPC.TL_photoStrippedSize) {
                 continue;
             }
             if (byMinSide) {

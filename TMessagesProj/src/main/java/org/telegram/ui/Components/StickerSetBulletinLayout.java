@@ -6,6 +6,7 @@ import android.content.Context;
 import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
 
+import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.LocaleController;
@@ -22,14 +23,20 @@ public class StickerSetBulletinLayout extends Bulletin.TwoLineLayout {
     public static final int TYPE_REMOVED = 0;
     public static final int TYPE_ARCHIVED = 1;
     public static final int TYPE_ADDED = 2;
+    public static final int TYPE_REMOVED_FROM_RECENT = 3;
+    public static final int TYPE_REMOVED_FROM_FAVORITES = 4;
+    public static final int TYPE_ADDED_TO_FAVORITES = 5;
 
-    @IntDef(value = {TYPE_REMOVED, TYPE_ARCHIVED, TYPE_ADDED})
+    @IntDef(value = {TYPE_REMOVED, TYPE_ARCHIVED, TYPE_ADDED, TYPE_REMOVED_FROM_RECENT, TYPE_REMOVED_FROM_FAVORITES, TYPE_ADDED_TO_FAVORITES})
     public @interface Type {}
 
     public StickerSetBulletinLayout(@NonNull Context context, TLObject setObject, @Type int type) {
+        this(context, setObject, type, null);
+    }
+
+    public StickerSetBulletinLayout(@NonNull Context context, TLObject setObject, @Type int type, TLRPC.Document sticker) {
         super(context);
 
-        final TLRPC.Document sticker;
         final TLRPC.StickerSet stickerSet;
 
         if (setObject instanceof TLRPC.TL_messages_stickerSet) {
@@ -52,11 +59,15 @@ public class StickerSetBulletinLayout extends Bulletin.TwoLineLayout {
                 sticker = null;
             }
         } else {
+            stickerSet = null;
+        }
+
+        if (sticker == null && BuildVars.DEBUG_VERSION) {
             throw new IllegalArgumentException("Invalid type of the given setObject: " + setObject.getClass());
         }
 
         if (sticker != null) {
-            TLObject object = FileLoader.getClosestPhotoSizeWithSize(stickerSet.thumbs, 90);
+            TLObject object = stickerSet == null ? null : FileLoader.getClosestPhotoSizeWithSize(stickerSet.thumbs, 90);
             if (object == null) {
                 object = sticker;
             }
@@ -108,6 +119,18 @@ public class StickerSetBulletinLayout extends Bulletin.TwoLineLayout {
                     titleTextView.setText(LocaleController.getString("StickersArchived", R.string.StickersArchived));
                     subtitleTextView.setText(LocaleController.formatString("StickersArchivedInfo", R.string.StickersArchivedInfo, stickerSet.title));
                 }
+                break;
+            case TYPE_REMOVED_FROM_FAVORITES:
+                titleTextView.setText(LocaleController.getString("RemovedFromFavorites", R.string.RemovedFromFavorites));
+                subtitleTextView.setVisibility(ViewPagerFixed.GONE);
+                break;
+            case TYPE_ADDED_TO_FAVORITES:
+                titleTextView.setText(LocaleController.getString("AddedToFavorites", R.string.AddedToFavorites));
+                subtitleTextView.setVisibility(ViewPagerFixed.GONE);
+                break;
+            case TYPE_REMOVED_FROM_RECENT:
+                titleTextView.setText(LocaleController.getString("RemovedFromRecent", R.string.RemovedFromRecent));
+                subtitleTextView.setVisibility(ViewPagerFixed.GONE);
                 break;
         }
     }

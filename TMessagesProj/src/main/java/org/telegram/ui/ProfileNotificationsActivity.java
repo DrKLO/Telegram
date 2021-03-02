@@ -384,7 +384,7 @@ public class ProfileNotificationsActivity extends BaseFragment implements Notifi
                         preferences.edit().putBoolean("content_preview_" + dialog_id, !checkCell.isChecked()).commit();
                         checkCell.setChecked(!checkCell.isChecked());
                     } else if (position == callsVibrateRow) {
-                        showDialog(AlertsCreator.createVibrationSelectDialog(getParentActivity(), dialog_id, "calls_vibrate_", () -> {
+                        showDialog(AlertsCreator.createVibrationSelectDialog(getParentActivity(), dialog_id, "calls_vibrate_" + dialog_id, () -> {
                             if (adapter != null) {
                                 adapter.notifyItemChanged(callsVibrateRow);
                             }

@@ -56,9 +56,9 @@ public class ExternalActionActivity extends Activity implements ActionBarLayout.
     private static ArrayList<BaseFragment> layerFragmentsStack = new ArrayList<>();
 
     private PasscodeView passcodeView;
-    private ActionBarLayout actionBarLayout;
-    private ActionBarLayout layersActionBarLayout;
-    private View backgroundTablet;
+    protected ActionBarLayout actionBarLayout;
+    protected ActionBarLayout layersActionBarLayout;
+    protected View backgroundTablet;
     protected DrawerLayoutContainer drawerLayoutContainer;
 
     private Intent passcodeSaveIntent;
@@ -233,7 +233,7 @@ public class ExternalActionActivity extends Activity implements ActionBarLayout.
         }
     }
 
-    private boolean handleIntent(final Intent intent, final boolean isNew, final boolean restore, final boolean fromPassword, final int intentAccount, int state) {
+    protected boolean checkPasscode(final Intent intent, final boolean isNew, final boolean restore, final boolean fromPassword, final int intentAccount, int state) {
         if (!fromPassword && (AndroidUtilities.needShowPasscode(true) || SharedConfig.isWaitingForPasscodeEnter)) {
             showPasscodeActivity();
             passcodeSaveIntent = intent;
@@ -242,6 +242,13 @@ public class ExternalActionActivity extends Activity implements ActionBarLayout.
             passcodeSaveIntentAccount = intentAccount;
             passcodeSaveIntentState = state;
             UserConfig.getInstance(intentAccount).saveConfig(false);
+            return false;
+        }
+        return true;
+    }
+
+    protected boolean handleIntent(final Intent intent, final boolean isNew, final boolean restore, final boolean fromPassword, final int intentAccount, int state) {
+        if (!checkPasscode(intent, isNew, restore, fromPassword, intentAccount, state)) {
             return false;
         }
         if ("org.telegram.passport.AUTHORIZE".equals(intent.getAction())) {

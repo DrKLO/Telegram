@@ -20,6 +20,7 @@ import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.TextView;
+import android.widget.ToggleButton;
 
 import androidx.annotation.NonNull;
 import androidx.core.content.ContextCompat;
@@ -63,6 +64,7 @@ public class VoIPToggleButton extends FrameLayout {
 
     private Paint bitmapPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
+    private boolean checkableForAccessibility;
     private boolean checkable;
     private boolean checked;
     private float checkedProgress;
@@ -361,6 +363,10 @@ public class VoIPToggleButton extends FrameLayout {
         }
     }
 
+    public void setCheckableForAccessibility(boolean checkableForAccessibility) {
+        this.checkableForAccessibility = checkableForAccessibility;
+    }
+
     //animate background if true
     public void setCheckable(boolean checkable) {
         this.checkable = checkable;
@@ -403,10 +409,12 @@ public class VoIPToggleButton extends FrameLayout {
     public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
         super.onInitializeAccessibilityNodeInfo(info);
         info.setText(currentText);
-        info.setClassName(Button.class.getName());
-        if (checkable) {
+        if (checkable || checkableForAccessibility) {
+            info.setClassName(ToggleButton.class.getName());
             info.setCheckable(true);
             info.setChecked(checked);
+        } else {
+            info.setClassName(Button.class.getName());
         }
     }
 

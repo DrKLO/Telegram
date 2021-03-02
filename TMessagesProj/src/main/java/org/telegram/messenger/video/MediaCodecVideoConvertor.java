@@ -405,6 +405,7 @@ public class MediaCodecVideoConvertor {
                                 encoderOutputBuffers = encoder.getOutputBuffers();
                             }
 
+                            int maxBufferSize = 0;
                             if (audioIndex >= 0) {
                                 MediaFormat audioFormat = extractor.getTrackFormat(audioIndex);
                                 copyAudioBuffer = audioFormat.getString(MediaFormat.KEY_MIME).equals(MediaController.AUIDO_MIME_TYPE) || audioFormat.getString(MediaFormat.KEY_MIME).equals("audio/mpeg");
@@ -417,7 +418,14 @@ public class MediaCodecVideoConvertor {
                                     if (copyAudioBuffer) {
                                         audioTrackIndex = mediaMuxer.addTrack(audioFormat, true);
                                         extractor.selectTrack(audioIndex);
-                                        int maxBufferSize = audioFormat.getInteger(MediaFormat.KEY_MAX_INPUT_SIZE);
+                                        try {
+                                            maxBufferSize = audioFormat.getInteger(MediaFormat.KEY_MAX_INPUT_SIZE);
+                                        } catch (Exception e) {
+                                            FileLog.e(e); //s20 ultra exception
+                                        }
+                                        if (maxBufferSize <= 0) {
+                                            maxBufferSize = 64 * 1024;
+                                        }
                                         audioBuffer = ByteBuffer.allocateDirect(maxBufferSize);
 
                                         if (startTime > 0) {
@@ -479,6 +487,13 @@ public class MediaCodecVideoConvertor {
                                             }
                                         }
                                     } else if (copyAudioBuffer && audioIndex != -1 && index == audioIndex) {
+                                        if (Build.VERSION.SDK_INT >= 28) {
+                                            long size = extractor.getSampleSize();
+                                            if (size > maxBufferSize) {
+                                                maxBufferSize = (int) (size + 1024);
+                                                audioBuffer = ByteBuffer.allocateDirect(maxBufferSize);
+                                            }
+                                        }
                                         info.size = extractor.readSampleData(audioBuffer, 0);
                                         if (Build.VERSION.SDK_INT < 21) {
                                             audioBuffer.position(0);
@@ -788,7 +803,12 @@ public class MediaCodecVideoConvertor {
             extractor.selectTrack(videoTrackIndex);
             MediaFormat trackFormat = extractor.getTrackFormat(videoTrackIndex);
             muxerVideoTrackIndex = mediaMuxer.addTrack(trackFormat, false);
-            maxBufferSize = trackFormat.getInteger(MediaFormat.KEY_MAX_INPUT_SIZE);
+            try {
+                maxBufferSize = trackFormat.getInteger(MediaFormat.KEY_MAX_INPUT_SIZE);
+            } catch (Exception e) {
+                FileLog.e(e); //s20 ultra exception
+            }
+
             if (start > 0) {
                 extractor.seekTo(start, MediaExtractor.SEEK_TO_PREVIOUS_SYNC);
             } else {
@@ -803,13 +823,20 @@ public class MediaCodecVideoConvertor {
                 audioTrackIndex = -1;
             } else {
                 muxerAudioTrackIndex = mediaMuxer.addTrack(trackFormat, true);
-                maxBufferSize = Math.max(trackFormat.getInteger(MediaFormat.KEY_MAX_INPUT_SIZE), maxBufferSize);
+                try {
+                    maxBufferSize = Math.max(trackFormat.getInteger(MediaFormat.KEY_MAX_INPUT_SIZE), maxBufferSize);
+                } catch (Exception e) {
+                    FileLog.e(e); //s20 ultra exception
+                }
                 if (start > 0) {
                     extractor.seekTo(start, MediaExtractor.SEEK_TO_PREVIOUS_SYNC);
                 } else {
                     extractor.seekTo(0, MediaExtractor.SEEK_TO_PREVIOUS_SYNC);
                 }
             }
+        }
+        if (maxBufferSize <= 0) {
+            maxBufferSize = 64 * 1024;
         }
         ByteBuffer buffer = ByteBuffer.allocateDirect(maxBufferSize);
         if (audioTrackIndex >= 0 || videoTrackIndex >= 0) {
@@ -819,6 +846,13 @@ public class MediaCodecVideoConvertor {
                 checkConversionCanceled();
                 boolean eof = false;
                 int muxerTrackIndex;
+                if (Build.VERSION.SDK_INT >= 28) {
+                    long size = extractor.getSampleSize();
+                    if (size > maxBufferSize) {
+                        maxBufferSize = (int) (size + 1024);
+                        buffer = ByteBuffer.allocateDirect(maxBufferSize);
+                    }
+                }
                 info.size = extractor.readSampleData(buffer, 0);
                 int index = extractor.getSampleTrackIndex();
                 if (index == videoTrackIndex) {

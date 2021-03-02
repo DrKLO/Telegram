@@ -30,6 +30,7 @@ import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.messenger.support.SparseLongArray;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.ui.Components.Bulletin;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -1081,7 +1082,7 @@ public class ContactsController extends BaseController {
                             }
 
                             if (!toDelete.isEmpty()) {
-                                deleteContact(toDelete);
+                                deleteContact(toDelete, false);
                             }
                         });
                     }
@@ -2206,7 +2207,7 @@ public class ContactsController extends BaseController {
         }, ConnectionsManager.RequestFlagFailOnServerErrors | ConnectionsManager.RequestFlagCanCompress);
     }
 
-    public void deleteContact(final ArrayList<TLRPC.User> users) {
+    public void deleteContact(final ArrayList<TLRPC.User> users, boolean showBulletin) {
         if (users == null || users.isEmpty()) {
             return;
         }
@@ -2221,6 +2222,7 @@ public class ContactsController extends BaseController {
             uids.add(user.id);
             req.id.add(inputUser);
         }
+        String userName = users.get(0).first_name;
         getConnectionsManager().sendRequest(req, (response, error) -> {
             if (error != null) {
                 return;
@@ -2263,6 +2265,9 @@ public class ContactsController extends BaseController {
                 }
                 getNotificationCenter().postNotificationName(NotificationCenter.updateInterfaces, MessagesController.UPDATE_MASK_NAME);
                 getNotificationCenter().postNotificationName(NotificationCenter.contactsDidLoad);
+                if (showBulletin) {
+                    NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.showBulletin, Bulletin.TYPE_ERROR, LocaleController.formatString("DeletedFromYourContacts", R.string.DeletedFromYourContacts, userName));
+                }
             });
         });
     }

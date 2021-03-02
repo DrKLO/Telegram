@@ -96,10 +96,14 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
         dialogsSearchAdapter = new DialogsSearchAdapter(context, type, initialDialogsType, folderId) {
             @Override
             public void notifyDataSetChanged() {
+                int itemCount = getCurrentItemCount();
                 super.notifyDataSetChanged();
                 if (!lastSearchScrolledToTop && searchListView != null) {
                     searchListView.scrollToPosition(0);
                     lastSearchScrolledToTop = true;
+                }
+                if (getItemCount() == 0 && itemCount != 0 && !isSearching()) {
+                    emptyView.showProgress(false, false);
                 }
             }
         };
@@ -613,6 +617,15 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
         viewsByType.clear();
     }
 
+    public void setPosition(int position) {
+        super.setPosition(position);
+        viewsByType.clear();
+        if (tabsView != null) {
+            tabsView.selectTabWithId(position, 1f);
+        }
+        invalidate();
+    }
+
     public void setKeyboardHeight(int keyboardSize) {
         this.keyboardSize = keyboardSize;
         boolean animated = getVisibility() == View.VISIBLE && getAlpha() > 0;
@@ -740,6 +753,10 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
             currentAnimators.remove(animator);
             i--;
         }
+    }
+
+    public TabsView getTabsView() {
+        return tabsView;
     }
 
 

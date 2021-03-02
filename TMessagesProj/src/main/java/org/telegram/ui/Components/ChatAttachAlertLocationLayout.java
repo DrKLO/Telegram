@@ -1578,15 +1578,19 @@ public class ChatAttachAlertLocationLayout extends ChatAttachAlert.AttachAlertLa
             }
         }
         fixLayoutInternal(true);
-        if (checkPermission && Build.VERSION.SDK_INT >= 23) {
-            Activity activity = getParentActivity();
-            if (activity != null) {
-                checkPermission = false;
-                if (activity.checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                    activity.requestPermissions(new String[]{Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION}, 2);
+        boolean keyboardVisible = parentAlert.delegate.needEnterComment();
+        AndroidUtilities.runOnUIThread(() -> {
+            if (checkPermission && Build.VERSION.SDK_INT >= 23) {
+                Activity activity = getParentActivity();
+                if (activity != null) {
+                    checkPermission = false;
+                    if (activity.checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                        activity.requestPermissions(new String[]{Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION}, 2);
+                    }
                 }
             }
-        }
+        }, keyboardVisible ? 200 : 0);
+
         layoutManager.scrollToPositionWithOffset(0, 0);
 
         updateClipView();

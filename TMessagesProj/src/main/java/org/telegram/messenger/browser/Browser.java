@@ -19,12 +19,14 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.text.TextUtils;
 
+import org.telegram.messenger.AccountInstance;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.CustomTabsCopyReceiver;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.ShareBroadcastReceiver;
@@ -45,6 +47,7 @@ import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.LaunchActivity;
 
 import java.lang.ref.WeakReference;
+import java.net.URLEncoder;
 import java.util.List;
 
 public class Browser {
@@ -236,6 +239,24 @@ public class Browser {
                 } catch (Exception e) {
                     FileLog.e(e);
                 }
+            }
+            String host = uri.getHost() != null ? uri.getHost().toLowerCase() : "";
+            if (AccountInstance.getInstance(currentAccount).getMessagesController().autologinDomains.contains(host)) {
+                String token = "autologin_token=" + URLEncoder.encode(AccountInstance.getInstance(UserConfig.selectedAccount).getMessagesController().autologinToken, "UTF-8");
+                String url = uri.toString();
+                int idx = url.indexOf("://");
+                String path = idx >= 0 ? url.substring(idx + 3) : url;
+                String[] args = path.split("#");
+                String finalPath = args[0];
+                if (finalPath.indexOf('?') >= 0) {
+                    finalPath += "&" + token;
+                } else {
+                    finalPath += "?" + token;
+                }
+                if (args.length > 1) {
+                    finalPath += args[1];
+                }
+                uri = Uri.parse("https://" + finalPath);
             }
             if (allowCustom && SharedConfig.customTabs && !internalUri && !scheme.equals("tel")) {
                 String[] browserPackageNames = null;

@@ -48,10 +48,14 @@
     <uses-permission android:name="android.permission.BLUETOOTH" />
     <uses-permission android:name="android.permission.MANAGE_OWN_CALLS"/>
     <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT"/>
+
     <uses-permission android:name="android.permission.RECEIVE_SMS"/>
     <uses-permission android:name="android.permission.READ_PHONE_NUMBERS"/>
     <uses-permission android:name="android.permission.READ_PHONE_STATE"/>
     <uses-permission android:name="android.permission.WRITE_SMS"/>
+
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+
 
     <uses-permission android:name="com.sec.android.provider.badge.permission.READ"/>
     <uses-permission android:name="com.sec.android.provider.badge.permission.WRITE"/>
@@ -204,6 +208,33 @@
             </intent-filter>
         </activity>
         <activity
+            android:name="org.telegram.ui.ChatsWidgetConfigActivity"
+            android:configChanges="keyboard|keyboardHidden|orientation|screenSize|uiMode"
+            android:hardwareAccelerated="@bool/useHardwareAcceleration"
+            android:windowSoftInputMode="adjustPan">
+            <intent-filter android:icon="@mipmap/ic_launcher" android:roundIcon="@mipmap/ic_launcher_round">
+                <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE"/>
+            </intent-filter>
+        </activity>
+        <activity
+            android:name="org.telegram.ui.ContactsWidgetConfigActivity"
+            android:configChanges="keyboard|keyboardHidden|orientation|screenSize|uiMode"
+            android:hardwareAccelerated="@bool/useHardwareAcceleration"
+            android:windowSoftInputMode="adjustPan">
+            <intent-filter android:icon="@mipmap/ic_launcher" android:roundIcon="@mipmap/ic_launcher_round">
+                <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE"/>
+            </intent-filter>
+        </activity>
+<!--        <activity-->
+<!--            android:name="org.telegram.ui.FeedWidgetConfigActivity"-->
+<!--            android:configChanges="keyboard|keyboardHidden|orientation|screenSize|uiMode"-->
+<!--            android:hardwareAccelerated="@bool/useHardwareAcceleration"-->
+<!--            android:windowSoftInputMode="adjustPan">-->
+<!--            <intent-filter android:icon="@mipmap/ic_launcher" android:roundIcon="@mipmap/ic_launcher_round">-->
+<!--                <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE"/>-->
+<!--            </intent-filter>-->
+<!--        </activity>-->
+        <activity
             android:name="org.telegram.ui.IntroActivity"
             android:launchMode="singleTask"
             android:configChanges="keyboard|keyboardHidden|orientation|screenSize|uiMode">
@@ -313,6 +344,7 @@
         <service android:name=".NotificationsService" android:enabled="true"/>
         <service android:name=".NotificationRepeat" android:exported="false"/>
         <service android:name=".VideoEncodingService" android:enabled="true"/>
+        <service android:name=".ImportingService" android:enabled="true"/>
         <service android:name=".LocationSharingService"
             android:foregroundServiceType="location"
             android:enabled="true"/>
@@ -406,6 +438,42 @@
             android:authorities="${applicationId}.call_sound_provider"
             android:name=".voip.CallNotificationSoundProvider"
             android:exported="true"/>
+
+        <receiver android:name=".ChatsWidgetProvider">
+            <meta-data android:name="android.appwidget.provider"
+                android:resource="@xml/chats_widget_info" />
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+        </receiver>
+
+        <service android:name=".ChatsWidgetService"
+            android:permission="android.permission.BIND_REMOTEVIEWS"
+            android:exported="false" />
+
+        <receiver android:name=".ContactsWidgetProvider">
+            <meta-data android:name="android.appwidget.provider"
+                android:resource="@xml/contacts_widget_info" />
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+        </receiver>
+
+        <service android:name=".ContactsWidgetService"
+            android:permission="android.permission.BIND_REMOTEVIEWS"
+            android:exported="false" />
+
+<!--        <receiver android:name=".FeedWidgetProvider">-->
+<!--            <meta-data android:name="android.appwidget.provider"-->
+<!--                android:resource="@xml/feed_widget_info" />-->
+<!--            <intent-filter>-->
+<!--                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />-->
+<!--            </intent-filter>-->
+<!--        </receiver>-->
+
+<!--        <service android:name=".FeedWidgetService"-->
+<!--            android:permission="android.permission.BIND_REMOTEVIEWS"-->
+<!--            android:exported="false" />-->
 
         <uses-library android:name="com.sec.android.app.multiwindow" android:required="false" />
         <meta-data android:name="com.sec.android.support.multiwindow" android:value="true" />

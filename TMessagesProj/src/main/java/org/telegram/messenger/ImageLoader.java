@@ -24,6 +24,7 @@ import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Environment;
+import android.os.SystemClock;
 import android.provider.MediaStore;
 import android.text.TextUtils;
 import android.util.SparseArray;
@@ -104,7 +105,6 @@ public class ImageLoader {
 
     private volatile long lastCacheOutTime = 0;
     private int lastImageNum = 0;
-    private long lastProgressUpdateTime = 0;
 
     private File telegramPath = null;
 
@@ -143,7 +143,7 @@ public class ImageLoader {
         }
 
         private void reportProgress(long uploadedSize, long totalSize) {
-            long currentTime = System.currentTimeMillis();
+            long currentTime = SystemClock.elapsedRealtime();
             if (uploadedSize == totalSize || lastProgressTime == 0 || lastProgressTime < currentTime - 100) {
                 lastProgressTime = currentTime;
                 Utilities.stageQueue.postRunnable(() -> {
@@ -441,7 +441,7 @@ public class ImageLoader {
         }
 
         private void reportProgress(long uploadedSize, long totalSize) {
-            long currentTime = System.currentTimeMillis();
+            long currentTime = SystemClock.elapsedRealtime();
             if (uploadedSize == totalSize || lastProgressTime == 0 || lastProgressTime < currentTime - 100) {
                 lastProgressTime = currentTime;
                 Utilities.stageQueue.postRunnable(() -> {
@@ -816,15 +816,15 @@ public class ImageLoader {
                     }
                     if (args.length >= 5) {
                         if ("c1".equals(args[4])) {
-                            colors = new int[]{0xf77e41, 0xca907a, 0xffb139, 0xedc5a5, 0xffd140, 0xf7e3c3, 0xffdf79, 0xfbefd6};
+                            colors = new int[]{0xf77e41, 0xcb7b55, 0xffb139, 0xf6b689, 0xffd140, 0xffcda7, 0xffdf79, 0xffdfc5};
                         } else if ("c2".equals(args[4])) {
-                            colors = new int[]{0xf77e41, 0xaa7c60, 0xffb139, 0xc8a987, 0xffd140, 0xddc89f, 0xffdf79, 0xe6d6b2};
+                            colors = new int[]{0xf77e41, 0xa45a38, 0xffb139, 0xdf986b, 0xffd140, 0xedb183, 0xffdf79, 0xf4c3a0};
                         } else if ("c3".equals(args[4])) {
-                            colors = new int[]{0xf77e41, 0x8c6148, 0xffb139, 0xad8562, 0xffd140, 0xc49e76, 0xffdf79, 0xd4b188};
+                            colors = new int[]{0xf77e41, 0x703a17, 0xffb139, 0xab673d, 0xffd140, 0xc37f4e, 0xffdf79, 0xd89667};
                         } else if ("c4".equals(args[4])) {
-                            colors = new int[]{0xf77e41, 0x6e3c2c, 0xffb139, 0x925a34, 0xffd140, 0xa16e46, 0xffdf79, 0xac7a52};
+                            colors = new int[]{0xf77e41, 0x4a2409, 0xffb139, 0x7d3e0e, 0xffd140, 0x965529, 0xffdf79, 0xa96337};
                         } else if ("c5".equals(args[4])) {
-                            colors = new int[]{0xf77e41, 0x291c12, 0xffb139, 0x472a22, 0xffd140, 0x573b30, 0xffdf79, 0x68493c};
+                            colors = new int[]{0xf77e41, 0x200f0a, 0xffb139, 0x412924, 0xffd140, 0x593d37, 0xffdf79, 0x63453f};
                         }
                     }
                 }
@@ -1074,7 +1074,7 @@ public class ImageLoader {
 
                 if (cacheImage.type == ImageReceiver.TYPE_THUMB) {
                     try {
-                        lastCacheOutTime = System.currentTimeMillis();
+                        lastCacheOutTime = SystemClock.elapsedRealtime();
                         synchronized (sync) {
                             if (isCancelled) {
                                 return;
@@ -1179,10 +1179,10 @@ public class ImageLoader {
                         if (mediaId != null) {
                             delay = 0;
                         }
-                        if (delay != 0 && lastCacheOutTime != 0 && lastCacheOutTime > System.currentTimeMillis() - delay && Build.VERSION.SDK_INT < 21) {
+                        if (delay != 0 && lastCacheOutTime != 0 && lastCacheOutTime > SystemClock.elapsedRealtime() - delay && Build.VERSION.SDK_INT < 21) {
                             Thread.sleep(delay);
                         }
-                        lastCacheOutTime = System.currentTimeMillis();
+                        lastCacheOutTime = SystemClock.elapsedRealtime();
                         synchronized (sync) {
                             if (isCancelled) {
                                 return;
@@ -1674,11 +1674,11 @@ public class ImageLoader {
             final int currentAccount = a;
             FileLoader.getInstance(a).setDelegate(new FileLoader.FileLoaderDelegate() {
                 @Override
-                public void fileUploadProgressChanged(final String location, long uploadedSize, long totalSize, final boolean isEncrypted) {
+                public void fileUploadProgressChanged(FileUploadOperation operation, final String location, long uploadedSize, long totalSize, final boolean isEncrypted) {
                     fileProgresses.put(location, new long[]{uploadedSize, totalSize});
-                    long currentTime = System.currentTimeMillis();
-                    if (lastProgressUpdateTime == 0 || lastProgressUpdateTime < currentTime - 500) {
-                        lastProgressUpdateTime = currentTime;
+                    long currentTime = SystemClock.elapsedRealtime();
+                    if (operation.lastProgressUpdateTime == 0 || operation.lastProgressUpdateTime < currentTime - 100 || uploadedSize == totalSize) {
+                        operation.lastProgressUpdateTime = currentTime;
 
                         AndroidUtilities.runOnUIThread(() -> NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.FileUploadProgressChanged, location, uploadedSize, totalSize, isEncrypted));
                     }
@@ -1724,11 +1724,11 @@ public class ImageLoader {
                 }
 
                 @Override
-                public void fileLoadProgressChanged(final String location, long uploadedSize, long totalSize) {
+                public void fileLoadProgressChanged(FileLoadOperation operation, final String location, long uploadedSize, long totalSize) {
                     fileProgresses.put(location, new long[]{uploadedSize, totalSize});
-                    long currentTime = System.currentTimeMillis();
-                    if (lastProgressUpdateTime == 0 || lastProgressUpdateTime < currentTime - 500 || uploadedSize == 0) {
-                        lastProgressUpdateTime = currentTime;
+                    long currentTime = SystemClock.elapsedRealtime();
+                    if (operation.lastProgressUpdateTime == 0 || operation.lastProgressUpdateTime < currentTime - 500 || uploadedSize == 0) {
+                        operation.lastProgressUpdateTime = currentTime;
                         AndroidUtilities.runOnUIThread(() -> NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.FileLoadProgressChanged, location, uploadedSize, totalSize));
                     }
                 }

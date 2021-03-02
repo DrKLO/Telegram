@@ -67,7 +67,7 @@ public class MessagesSearchAdapter extends RecyclerListView.SelectionAdapter {
         View view = null;
         switch (viewType) {
             case 0:
-                view = new DialogCell(mContext, false, true);
+                view = new DialogCell(null, mContext, false, true);
                 break;
             case 1:
                 view = new LoadingCell(mContext);

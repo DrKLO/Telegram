@@ -240,6 +240,9 @@ public class BackgroundGradientDrawable extends GradientDrawable {
 
         for (int i = 0; i < sizesArr.length; i++) {
             final IntSize size = sizesArr[i];
+            if (size.width == 0 || size.height == 0) {
+                continue;
+            }
             final int index = i;
             Utilities.globalQueue.postRunnable(runnables[i] = () -> {
                 Bitmap gradientBitmap = null;

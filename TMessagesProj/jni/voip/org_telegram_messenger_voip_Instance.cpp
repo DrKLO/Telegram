@@ -426,6 +426,21 @@ JNIEXPORT jlong JNICALL Java_org_telegram_messenger_voip_NativeInstance_makeNati
                     env->CallVoidMethod(globalRef, env->GetMethodID(NativeInstanceClass, "onSignalBarsUpdated", "(I)V"), count);
                 });
             },
+            .audioLevelUpdated = [platformContext](float level) {
+                tgvoip::jni::DoWithJNI([platformContext, level](JNIEnv *env) {
+                    jintArray intArray = nullptr;
+                    jfloatArray floatArray = env->NewFloatArray(1);
+                    jbooleanArray boolArray = nullptr;
+
+                    jfloat floatFill[1];
+                    floatFill[0] = level;
+                    env->SetFloatArrayRegion(floatArray, 0, 1, floatFill);
+
+                    jobject globalRef = ((AndroidContext *) platformContext.get())->getJavaInstance();
+                    env->CallVoidMethod(globalRef, env->GetMethodID(NativeInstanceClass, "onAudioLevelsUpdated", "([I[F[Z)V"), intArray, floatArray, boolArray);
+                    env->DeleteLocalRef(floatArray);
+                });
+            },
             .remoteMediaStateUpdated = [platformContext](AudioState audioState, VideoState videoState) {
                 jobject globalRef = ((AndroidContext *) platformContext.get())->getJavaInstance();
                 tgvoip::jni::DoWithJNI([globalRef, audioState, videoState](JNIEnv *env) {
@@ -518,6 +533,13 @@ JNIEXPORT void JNICALL Java_org_telegram_messenger_voip_NativeInstance_setMuteMi
         instance->nativeInstance->setMuteMicrophone(muteMicrophone);
     } else if (instance->groupNativeInstance != nullptr) {
         instance->groupNativeInstance->setIsMuted(muteMicrophone);
+    }
+}
+
+JNIEXPORT void JNICALL Java_org_telegram_messenger_voip_NativeInstance_setVolume(JNIEnv *env, jobject obj, jint ssrc, jdouble volume) {
+    InstanceHolder *instance = getInstanceHolder(env, obj);
+    if (instance->groupNativeInstance != nullptr) {
+        instance->groupNativeInstance->setVolume(ssrc, volume);
     }
 }
 

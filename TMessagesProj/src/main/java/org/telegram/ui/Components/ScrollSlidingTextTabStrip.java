@@ -24,6 +24,7 @@ import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.HorizontalScrollView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -217,13 +218,19 @@ public class ScrollSlidingTextTabStrip extends HorizontalScrollView {
     }
 
     public SparseArray<View> removeTabs() {
+        SparseArray<View> views = new SparseArray<>();
+        for (int i = 0; i < getChildCount(); i++) {
+            View child = getChildAt(i);
+            views.get(positionToId.get(i), child);
+        }
         positionToId.clear();
         idToPosition.clear();
         positionToWidth.clear();
         tabsContainer.removeAllViews();
         allTextWidth = 0;
         tabCount = 0;
-        return null;
+
+        return views;
     }
 
     public int getTabsCount() {
@@ -254,7 +261,13 @@ public class ScrollSlidingTextTabStrip extends HorizontalScrollView {
             viewsCache.delete(id);
         }
         if (tab == null) {
-            tab = new TextView(getContext());
+            tab = new TextView(getContext()) {
+                @Override
+                public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
+                    super.onInitializeAccessibilityNodeInfo(info);
+                    info.setSelected(selectedTabId == id);
+                }
+        };
             tab.setWillNotDraw(false);
             tab.setGravity(Gravity.CENTER);
             tab.setBackgroundDrawable(Theme.createSelectorDrawable(Theme.getColor(selectorColorKey), 3));

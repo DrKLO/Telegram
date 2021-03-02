@@ -62,7 +62,13 @@ public class HintView extends FrameLayout {
         textView.setTextColor(Theme.getColor(Theme.key_chat_gifSaveHintText));
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         textView.setMaxLines(2);
-        textView.setMaxWidth(AndroidUtilities.dp(type == 4 ? 280 : 250));
+        if (type == 7) {
+            textView.setMaxWidth(AndroidUtilities.dp(310));
+        } else if (type == 4) {
+            textView.setMaxWidth(AndroidUtilities.dp(280));
+        } else {
+            textView.setMaxWidth(AndroidUtilities.dp(250));
+        }
         if (currentType == TYPE_SEARCH_AS_LIST) {
             textView.setGravity(Gravity.LEFT | Gravity.CENTER_VERTICAL);
             textView.setBackground(Theme.createRoundRectDrawable(AndroidUtilities.dp(5), Theme.getColor(Theme.key_chat_gifSaveHintBackground)));
@@ -70,11 +76,13 @@ public class HintView extends FrameLayout {
             addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 30, Gravity.LEFT | Gravity.TOP, 0, topArrow ? 6 : 0, 0, topArrow ? 0 : 6));
         } else {
             textView.setGravity(Gravity.LEFT | Gravity.TOP);
-            textView.setBackground(Theme.createRoundRectDrawable(AndroidUtilities.dp(3), Theme.getColor(Theme.key_chat_gifSaveHintBackground)));
+            textView.setBackground(Theme.createRoundRectDrawable(AndroidUtilities.dp(currentType == 7 ? 6 : 3), Theme.getColor(Theme.key_chat_gifSaveHintBackground)));
             if (currentType == TYPE_POLL_VOTE || currentType == 4) {
                 textView.setPadding(AndroidUtilities.dp(9), AndroidUtilities.dp(6), AndroidUtilities.dp(9), AndroidUtilities.dp(7));
             } else if (currentType == 2) {
                 textView.setPadding(AndroidUtilities.dp(7), AndroidUtilities.dp(6), AndroidUtilities.dp(7), AndroidUtilities.dp(7));
+            } else if (currentType == 7) {
+                textView.setPadding(AndroidUtilities.dp(8), AndroidUtilities.dp(7), AndroidUtilities.dp(8), AndroidUtilities.dp(8));
             } else {
                 textView.setPadding(AndroidUtilities.dp(currentType == 0 ? 54 : 5), AndroidUtilities.dp(6), AndroidUtilities.dp(5), AndroidUtilities.dp(7));
             }
@@ -281,15 +289,18 @@ public class HintView extends FrameLayout {
             top += AndroidUtilities.dp(4);
         } else if (currentType == 6) {
             top += view.getMeasuredHeight() + getMeasuredHeight() + AndroidUtilities.dp(10);
+        } else if (currentType == 7) {
+            top += view.getMeasuredHeight() + getMeasuredHeight() + AndroidUtilities.dp(8);
         }
 
         int centerX;
         if (currentType == TYPE_SEARCH_AS_LIST) {
-            if (view instanceof SimpleTextView) {
-                centerX = position[0] + ((SimpleTextView) view).getTextWidth() / 2;
-            } else {
-                throw new IllegalArgumentException();
-            }
+//            if (view instanceof SimpleTextView) {
+//                centerX = position[0] + ((SimpleTextView) view).getTextWidth() / 2;
+//            } else {
+//                throw new IllegalArgumentException();
+//            }
+            centerX = position[0];
         } else {
             centerX = position[0] + view.getMeasuredWidth() / 2;
         }
@@ -302,7 +313,7 @@ public class HintView extends FrameLayout {
         top -= bottomOffset;
 
         int parentWidth = parentView.getMeasuredWidth();
-        if (isTopArrow && currentType != 6) {
+        if (isTopArrow && currentType != 6 && currentType != 7) {
             setTranslationY(extraTranslationY + (translationY = AndroidUtilities.dp(44)));
         } else {
             setTranslationY(extraTranslationY + (translationY = top - getMeasuredHeight()));
@@ -330,6 +341,9 @@ public class HintView extends FrameLayout {
         }
         setTranslationX(offset);
         float arrowX = centerX - (leftMargin + offset) - arrowImageView.getMeasuredWidth() / 2;
+        if (currentType == 7) {
+            arrowX += AndroidUtilities.dp(2);
+        }
         arrowImageView.setTranslationX(arrowX);
         if (centerX > parentView.getMeasuredWidth() / 2) {
             if (arrowX < AndroidUtilities.dp(10)) {

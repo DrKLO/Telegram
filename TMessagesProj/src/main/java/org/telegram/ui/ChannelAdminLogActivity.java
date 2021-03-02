@@ -95,7 +95,9 @@ import org.telegram.ui.Cells.ChatUnreadCell;
 import org.telegram.ui.Components.AdminLogFilterAlert;
 import org.telegram.ui.Components.AlertsCreator;
 import org.telegram.ui.Components.ChatAvatarContainer;
+import org.telegram.ui.Components.ClearHistoryAlert;
 import org.telegram.ui.Components.EmbedBottomSheet;
+import org.telegram.ui.Components.InviteLinkBottomSheet;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.PhonebookShareAlert;
 import org.telegram.ui.Components.PipRoundVideoView;
@@ -108,6 +110,7 @@ import org.telegram.ui.Components.URLSpanMono;
 import org.telegram.ui.Components.URLSpanNoUnderline;
 import org.telegram.ui.Components.URLSpanReplacement;
 import org.telegram.ui.Components.URLSpanUserMention;
+import org.telegram.ui.Components.UndoView;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -125,6 +128,7 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
     private View progressView2;
     private RadialProgressView progressBar;
     private RecyclerListView chatListView;
+    private UndoView undoView;
     private LinearLayoutManager chatLayoutManager;
     private ChatActivityAdapter chatAdapter;
     private TextView bottomOverlayChatText;
@@ -987,6 +991,10 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
             chatListView.setEmptyView(emptyViewContainer);
         }
 
+        undoView = new UndoView(context);
+        undoView.setAdditionalTranslationY(AndroidUtilities.dp(51));
+        contentView.addView(undoView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.BOTTOM | Gravity.LEFT, 8, 0, 8, 8));
+
         updateEmptyPlaceholder();
 
         return fragmentView;
@@ -1026,6 +1034,21 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
                 if (stickerSet != null) {
                     showDialog(new StickersAlert(getParentActivity(), ChannelAdminLogActivity.this, stickerSet, null, null));
                     return;
+                }
+            } else if (selectedObject.currentEvent != null && selectedObject.currentEvent.action instanceof TLRPC.TL_channelAdminLogEventActionChangeHistoryTTL) {
+                if (ChatObject.canUserDoAdminAction(currentChat, ChatObject.ACTION_DELETE_MESSAGES)) {
+                    ClearHistoryAlert alert = new ClearHistoryAlert(getParentActivity(), null, currentChat, false);
+                    alert.setDelegate(new ClearHistoryAlert.ClearHistoryAlertDelegate() {
+                        @Override
+                        public void onAutoDeleteHistory(int ttl, int action) {
+                            getMessagesController().setDialogHistoryTTL(-currentChat.id, ttl);
+                            TLRPC.ChatFull chatInfo = getMessagesController().getChatFull(currentChat.id);
+                            if (chatInfo != null) {
+                                undoView.showWithAction(-currentChat.id, action, null, chatInfo.ttl_period, null, null);
+                            }
+                        }
+                    });
+                    showDialog(alert);
                 }
             }
         } else if (type == 3) {
@@ -1755,10 +1778,20 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
         if (contentView != null) {
             contentView.onPause();
         }
+        if (undoView != null) {
+            undoView.hide(true, 0);
+        }
         paused = true;
         wasPaused = true;
         if (AvatarPreviewer.hasVisibleInstance()) {
             AvatarPreviewer.getInstance().close();
+        }
+    }
+
+    @Override
+    protected void onBecomeFullyHidden() {
+        if (undoView != null) {
+            undoView.hide(true, 0);
         }
     }
 
@@ -2225,6 +2258,12 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
                         }
                     }
 
+                    public void needOpenInviteLink(TLRPC.TL_chatInviteExported invite) {
+                        TLRPC.ChatFull chatInfo = getMessagesController().getChatFull(currentChat.id);
+                        InviteLinkBottomSheet inviteLinkBottomSheet = new InviteLinkBottomSheet(contentView.getContext(), invite, chatInfo, null, ChannelAdminLogActivity.this, chatInfo.id, false, ChatObject.isChannel(currentChat));
+                        inviteLinkBottomSheet.show();
+                    }
+
                     @Override
                     public void didPressReplyMessage(ChatActionCell cell, int id) {
 
@@ -2644,6 +2683,14 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
 
         themeDescriptions.add(new ThemeDescription(avatarContainer != null ? avatarContainer.getTimeItem() : null, 0, null, null, null, null, Theme.key_chat_secretTimerBackground));
         themeDescriptions.add(new ThemeDescription(avatarContainer != null ? avatarContainer.getTimeItem() : null, 0, null, null, null, null, Theme.key_chat_secretTimerText));
+
+        themeDescriptions.add(new ThemeDescription(undoView, ThemeDescription.FLAG_BACKGROUNDFILTER, null, null, null, null, Theme.key_undo_background));
+        themeDescriptions.add(new ThemeDescription(undoView, 0, new Class[]{UndoView.class}, new String[]{"undoImageView"}, null, null, null, Theme.key_undo_cancelColor));
+        themeDescriptions.add(new ThemeDescription(undoView, 0, new Class[]{UndoView.class}, new String[]{"undoTextView"}, null, null, null, Theme.key_undo_cancelColor));
+        themeDescriptions.add(new ThemeDescription(undoView, 0, new Class[]{UndoView.class}, new String[]{"infoTextView"}, null, null, null, Theme.key_undo_infoColor));
+        themeDescriptions.add(new ThemeDescription(undoView, 0, new Class[]{UndoView.class}, new String[]{"textPaint"}, null, null, null, Theme.key_undo_infoColor));
+        themeDescriptions.add(new ThemeDescription(undoView, 0, new Class[]{UndoView.class}, new String[]{"progressPaint"}, null, null, null, Theme.key_undo_infoColor));
+        themeDescriptions.add(new ThemeDescription(undoView, ThemeDescription.FLAG_IMAGECOLOR, new Class[]{UndoView.class}, new String[]{"leftImageView"}, null, null, null, Theme.key_undo_infoColor));
         
         return themeDescriptions;
     }

@@ -121,7 +121,7 @@ public class DrawerProfileCell extends FrameLayout {
             @Override
             public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
                 super.onInitializeAccessibilityNodeInfo(info);
-                if (sunDrawable.getCustomEndFrame() == 0) {
+                if (sunDrawable.getCustomEndFrame() != 0) {
                     info.setText(LocaleController.getString("AccDescrSwitchToNightTheme", R.string.AccDescrSwitchToNightTheme));
                 } else {
                     info.setText(LocaleController.getString("AccDescrSwitchToDayTheme", R.string.AccDescrSwitchToDayTheme));

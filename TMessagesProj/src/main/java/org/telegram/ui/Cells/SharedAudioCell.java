@@ -35,6 +35,7 @@ import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.CheckBox2;
+import org.telegram.ui.Components.DotDividerSpan;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.MediaActionDrawable;
 import org.telegram.ui.Components.RadialProgress2;
@@ -109,25 +110,7 @@ public class SharedAudioCell extends FrameLayout implements DownloadController.F
             description2TextPaint.setTextSize(AndroidUtilities.dp(13));
 
             dotSpan = new SpannableStringBuilder(".");
-            dotSpan.setSpan(new ReplacementSpan() {
-
-                Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
-                int color;
-
-                @Override
-                public int getSize(@NonNull Paint paint, CharSequence charSequence, int i, int i1, @Nullable Paint.FontMetricsInt fontMetricsInt) {
-                    return AndroidUtilities.dp(3);
-                }
-
-                @Override
-                public void draw(@NonNull Canvas canvas, CharSequence text, int start, int end, float x, int top, int y, int bottom, @NonNull Paint paint) {
-                    if (color != paint.getColor()) {
-                        p.setColor(paint.getColor());
-                    }
-                    float radius = AndroidUtilities.dpf2(3) / 2f;
-                    canvas.drawCircle(x + radius, (bottom - top) / 2, radius, p);
-                }
-            }, 0, 1, 0);
+            dotSpan.setSpan(new DotDividerSpan(), 0, 1, 0);
         }
 
         captionTextPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);

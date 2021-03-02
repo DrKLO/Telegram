@@ -8,8 +8,11 @@
 
 package org.telegram.ui.Components;
 
+import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
 import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
+import android.animation.ValueAnimator;
 import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.content.Context;
@@ -28,6 +31,7 @@ import androidx.annotation.Nullable;
 import androidx.core.view.accessibility.AccessibilityNodeInfoCompat;
 
 import android.text.Layout;
+import android.text.SpannableStringBuilder;
 import android.text.StaticLayout;
 import android.text.TextPaint;
 import android.text.TextUtils;
@@ -42,6 +46,7 @@ import android.widget.EditText;
 import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.Emoji;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
@@ -65,6 +70,7 @@ public class EditTextBoldCursor extends EditText {
     private Object editor;
 
     private GradientDrawable gradientDrawable;
+    private SubstringLayoutAnimator hintAnimator;
 
     private Runnable invalidateRunnable = new Runnable() {
         @Override
@@ -391,8 +397,25 @@ public class EditTextBoldCursor extends EditText {
     }
 
     public void setHintText(CharSequence text) {
+        setHintText(text, false);
+    }
+
+    public void setHintText(CharSequence text, boolean animated) {
         if (text == null) {
             text = "";
+        }
+        if (getMeasuredWidth() == 0) {
+            animated = false;
+        }
+        if (animated) {
+            if (hintAnimator == null) {
+                hintAnimator = new SubstringLayoutAnimator(this);
+            }
+            hintAnimator.create(hintLayout, hint, text, getPaint());
+        } else {
+            if (hintAnimator != null) {
+                hintAnimator.cancel();
+            }
         }
         hint = text;
         if (getMeasuredWidth() != 0) {
@@ -561,7 +584,14 @@ public class EditTextBoldCursor extends EditText {
                 getPaint().setColor(hintColor);
                 getPaint().setAlpha((int) (255 * hintAlpha * (Color.alpha(hintColor) / 255.0f)));
             }
-            hintLayout.draw(canvas);
+            if (hintAnimator != null && hintAnimator.animateTextChange) {
+                canvas.save();
+                canvas.clipRect(0, 0, getMeasuredWidth(), getMeasuredHeight());
+                hintAnimator.draw(canvas, getPaint());
+                canvas.restore();
+            } else {
+                hintLayout.draw(canvas);
+            }
             getPaint().setColor(oldColor);
             canvas.restore();
         }

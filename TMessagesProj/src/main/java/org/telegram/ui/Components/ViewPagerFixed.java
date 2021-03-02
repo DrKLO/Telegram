@@ -26,6 +26,7 @@ import android.view.VelocityTracker;
 import android.view.View;
 import android.view.ViewConfiguration;
 import android.view.ViewGroup;
+import android.view.accessibility.AccessibilityNodeInfo;
 import android.view.animation.Interpolator;
 import android.widget.FrameLayout;
 import android.widget.TextView;
@@ -759,6 +760,12 @@ public class ViewPagerFixed extends FrameLayout {
                     canvas.restore();
                 }
             }
+
+            @Override
+            public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
+                super.onInitializeAccessibilityNodeInfo(info);
+                info.setSelected(currentTab != null && selectedTabId != -1 && currentTab.id == selectedTabId);
+            }
         }
 
         private TextPaint textPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
@@ -981,7 +988,7 @@ public class ViewPagerFixed extends FrameLayout {
             return animatingIndicator;
         }
 
-        private void scrollToTab(int id, int position) {
+        public void scrollToTab(int id, int position) {
             boolean scrollingForward = currentPosition < position;
             scrollingToChild = -1;
             previousPosition = currentPosition;
@@ -993,7 +1000,6 @@ public class ViewPagerFixed extends FrameLayout {
                 tabsAnimator.cancel();
             }
             if (animatingIndicator) {
-
                 animatingIndicator = false;
             }
 

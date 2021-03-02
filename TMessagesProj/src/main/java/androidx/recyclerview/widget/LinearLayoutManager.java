@@ -1397,9 +1397,6 @@ public class LinearLayoutManager extends RecyclerView.LayoutManager implements
         }
         final int scrolled = absDelta > consumed ? layoutDirection * consumed : delta;
         mOrientationHelper.offsetChildren(-scrolled);
-        if (DEBUG) {
-            Log.d(TAG, "scroll req: " + delta + " scrolled: " + scrolled);
-        }
         mLayoutState.mLastScrollDelta = scrolled;
         return scrolled;
     }

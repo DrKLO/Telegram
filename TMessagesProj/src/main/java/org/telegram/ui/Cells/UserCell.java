@@ -499,6 +499,11 @@ public class UserCell extends FrameLayout {
         } else {
             avatarImageView.setImageDrawable(avatarDrawable);
         }
+
+        nameTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+        if (adminTextView != null) {
+            adminTextView.setTextColor(Theme.getColor(Theme.key_profile_creatorIcon));
+        }
     }
 
     public void setSelfAsSavedMessages(boolean value) {

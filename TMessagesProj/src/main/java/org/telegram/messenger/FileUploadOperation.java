@@ -67,6 +67,7 @@ public class FileUploadOperation {
     private boolean isEncrypted;
     private int fingerprint;
     private boolean isBigFile;
+    private boolean forceSmallFile;
     private String fileKey;
     private int estimatedSize;
     private int uploadStartTime;
@@ -79,6 +80,7 @@ public class FileUploadOperation {
     private long availableSize;
     private boolean uploadFirstPartLater;
     private SparseArray<UploadCachedResult> cachedResults = new SparseArray<>();
+    protected long lastProgressUpdateTime;
 
     public interface FileUploadOperationDelegate {
         void didFinishUploadingFile(FileUploadOperation operation, TLRPC.InputFile inputFile, TLRPC.InputEncryptedFile inputEncryptedFile, byte[] key, byte[] iv);
@@ -236,6 +238,10 @@ public class FileUploadOperation {
         }
     }
 
+    public void setForceSmallFile() {
+        forceSmallFile = true;
+    }
+
     private void startUploadRequest() {
         if (state != 1) {
             return;
@@ -272,7 +278,7 @@ public class FileUploadOperation {
                 } else {
                     totalFileSize = cacheFile.length();
                 }
-                if (totalFileSize > 10 * 1024 * 1024) {
+                if (!forceSmallFile && totalFileSize > 10 * 1024 * 1024) {
                     isBigFile = true;
                 }
 
@@ -628,7 +634,7 @@ public class FileUploadOperation {
             if (currentUploadRequetsCount < maxRequestsCount) {
                 startUploadRequest();
             }
-        }), 0, ConnectionsManager.DEFAULT_DATACENTER_ID, connectionType, true);
+        }), forceSmallFile ? ConnectionsManager.RequestFlagCanCompress : 0, ConnectionsManager.DEFAULT_DATACENTER_ID, connectionType, true);
         requestTokens.put(requestNumFinal, requestToken);
     }
 }

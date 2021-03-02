@@ -887,6 +887,7 @@ void ConnectionsManager::onConnectionDataReceived(Connection *connection, Native
                 processServerResponse(object, messageId, 0, 0, connection, 0, 0);
                 connection->addProcessedMessageId(messageId);
             }
+            lastProtocolUsefullData = true;
             connection->setHasUsefullData();
             delete object;
         }
@@ -940,6 +941,7 @@ void ConnectionsManager::onConnectionDataReceived(Connection *connection, Native
         }
         if (!processedStatus) {
             if (object != nullptr) {
+                lastProtocolUsefullData = true;
                 connection->setHasUsefullData();
                 if (LOGS_ENABLED) DEBUG_D("connection(%p, account%u, dc%u, type %d) received object %s", connection, instanceNum, datacenter->getDatacenterId(), connection->getConnectionType(), typeid(*object).name());
                 processServerResponse(object, messageId, messageSeqNo, messageServerSalt, connection, 0, 0);
@@ -1660,8 +1662,8 @@ void ConnectionsManager::sendPing(Datacenter *datacenter, bool usePushConnection
     connection->sendData(transportData, false, true);
 }
 
-bool ConnectionsManager::isIpv6Enabled() {
-    return ipv6Enabled;
+uint8_t ConnectionsManager::getIpStratagy() {
+    return ipStrategy;
 }
 
 void ConnectionsManager::initDatacenters() {
@@ -3419,9 +3421,9 @@ void ConnectionsManager::setNetworkAvailable(bool value, int32_t type, bool slow
     });
 }
 
-void ConnectionsManager::setUseIpv6(bool value) {
+void ConnectionsManager::setIpStrategy(uint8_t value) {
     scheduleTask([&, value] {
-        ipv6Enabled = value;
+        ipStrategy = value;
     });
 }
 

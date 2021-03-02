@@ -242,6 +242,7 @@ public class AvatarsImageView extends FrameLayout {
     protected void onDraw(Canvas canvas) {
         wasDraw = true;
 
+        int size = AndroidUtilities.dp(currentStyle == 4 ? 32 : 24);
         int toAdd = AndroidUtilities.dp(currentStyle == 4 ? 24 : 20);
         int drawCount = 0;
         for (int i = 0; i < 3; i++) {
@@ -249,7 +250,7 @@ public class AvatarsImageView extends FrameLayout {
                 drawCount++;
             }
         }
-        int ax = centered ? (getMeasuredWidth() - drawCount * toAdd - AndroidUtilities.dp(currentStyle == 4 ? 8 : 4)) / 2 : AndroidUtilities.dp(10);
+        int ax = centered ? (getMeasuredWidth() - drawCount * toAdd - AndroidUtilities.dp(currentStyle == 4 ? 8 : 4)) / 2 : (currentStyle == 0 ? 0 : AndroidUtilities.dp(10));
         boolean isMuted = VoIPService.getSharedInstance() != null && VoIPService.getSharedInstance().isMicMute();
         if (currentStyle == 4) {
             paint.setColor(Theme.getColor(Theme.key_inappPlayerBackground));
@@ -263,7 +264,7 @@ public class AvatarsImageView extends FrameLayout {
                 animateToDrawCount++;
             }
         }
-        boolean useAlphaLayer = currentStyle == 3 || currentStyle == 4 || currentStyle == 5;
+        boolean useAlphaLayer = currentStyle == 0 || currentStyle == 1 || currentStyle == 3 || currentStyle == 4 || currentStyle == 5;
         if (useAlphaLayer) {
             canvas.saveLayerAlpha(0, 0, getMeasuredWidth(), getMeasuredHeight(), 255, Canvas.ALL_SAVE_FLAG);
         }
@@ -289,7 +290,11 @@ public class AvatarsImageView extends FrameLayout {
                     imageReceiver.setImageX(ax + toAdd * a);
                 }
 
-                imageReceiver.setImageY(AndroidUtilities.dp(currentStyle == 4 ? 8 : 6));
+                if (currentStyle == 0) {
+                    imageReceiver.setImageY((getMeasuredHeight() - size) / 2f);
+                } else {
+                    imageReceiver.setImageY(AndroidUtilities.dp(currentStyle == 4 ? 8 : 6));
+                }
 
                 boolean needRestore = false;
                 float alpha = 1f;
@@ -319,7 +324,7 @@ public class AvatarsImageView extends FrameLayout {
 
                 float avatarScale = 1f;
                 if (a != states.length - 1) {
-                    if (currentStyle == 3 || currentStyle == 5) {
+                    if (currentStyle == 1 || currentStyle == 3 || currentStyle == 5) {
                         canvas.drawCircle(imageReceiver.getCenterX(), imageReceiver.getCenterY(), AndroidUtilities.dp(13), xRefP);
                         if (states[a].wavesDrawable == null) {
                             if (currentStyle == 5) {
@@ -331,7 +336,7 @@ public class AvatarsImageView extends FrameLayout {
                         if (currentStyle == 5) {
                             states[a].wavesDrawable.setColor(ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_voipgroup_speakingText), (int) (255 * 0.3f * alpha)));
                         }
-                        if (states[a].participant.amplitude > 0) {
+                        if (states[a].participant != null && states[a].participant.amplitude > 0) {
                             states[a].wavesDrawable.setShowWaves(true, this);
                             float amplitude = states[a].participant.amplitude * 15f;
                             states[a].wavesDrawable.setAmplitude(amplitude);
@@ -368,13 +373,17 @@ public class AvatarsImageView extends FrameLayout {
                         states[a].wavesDrawable.draw(canvas, imageReceiver.getCenterX(), imageReceiver.getCenterY(), this);
                         avatarScale = states[a].wavesDrawable.getAvatarScale();
                     } else {
-                        int paintAlpha = paint.getAlpha();
-                        if (alpha != 1f) {
-                            paint.setAlpha((int) (paintAlpha * alpha));
-                        }
-                        canvas.drawCircle(imageReceiver.getCenterX(), imageReceiver.getCenterY(), AndroidUtilities.dp(currentStyle == 4 ? 17 : 13), paint);
-                        if (alpha != 1f) {
-                            paint.setAlpha(paintAlpha);
+                        if (useAlphaLayer) {
+                            canvas.drawCircle(imageReceiver.getCenterX(), imageReceiver.getCenterY(), AndroidUtilities.dp(currentStyle == 4 ? 17 : 13), xRefP);
+                        } else {
+                            int paintAlpha = paint.getAlpha();
+                            if (alpha != 1f) {
+                                paint.setAlpha((int) (paintAlpha * alpha));
+                            }
+                            canvas.drawCircle(imageReceiver.getCenterX(), imageReceiver.getCenterY(), AndroidUtilities.dp(currentStyle == 4 ? 17 : 13), paint);
+                            if (alpha != 1f) {
+                                paint.setAlpha(paintAlpha);
+                            }
                         }
                     }
                 }

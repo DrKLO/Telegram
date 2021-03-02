@@ -215,14 +215,16 @@ public class StickerEmojiCell extends FrameLayout {
     public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
         super.onInitializeAccessibilityNodeInfo(info);
         String descr = LocaleController.getString("AttachSticker", R.string.AttachSticker);
-        for (int a = 0; a < sticker.attributes.size(); a++) {
-            TLRPC.DocumentAttribute attribute = sticker.attributes.get(a);
-            if (attribute instanceof TLRPC.TL_documentAttributeSticker) {
-                if (attribute.alt != null && attribute.alt.length() > 0) {
-                    emojiTextView.setText(Emoji.replaceEmoji(attribute.alt, emojiTextView.getPaint().getFontMetricsInt(), AndroidUtilities.dp(16), false));
-                    descr = attribute.alt + " " + descr;
+        if (sticker != null) {
+            for (int a = 0; a < sticker.attributes.size(); a++) {
+                TLRPC.DocumentAttribute attribute = sticker.attributes.get(a);
+                if (attribute instanceof TLRPC.TL_documentAttributeSticker) {
+                    if (attribute.alt != null && attribute.alt.length() > 0) {
+                        emojiTextView.setText(Emoji.replaceEmoji(attribute.alt, emojiTextView.getPaint().getFontMetricsInt(), AndroidUtilities.dp(16), false));
+                        descr = attribute.alt + " " + descr;
+                    }
+                    break;
                 }
-                break;
             }
         }
         info.setContentDescription(descr);

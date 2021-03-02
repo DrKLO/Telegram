@@ -143,17 +143,27 @@ public class ChatObject {
                         call.version = groupParticipants.version;
                         call.participants_count = groupParticipants.count;
                     }
+                    long time = SystemClock.elapsedRealtime();
+                    currentAccount.getNotificationCenter().postNotificationName(NotificationCenter.applyGroupCallVisibleParticipants, time);
                     for (int a = 0, N = groupParticipants.participants.size(); a < N; a++) {
                         TLRPC.TL_groupCallParticipant participant = groupParticipants.participants.get(a);
                         TLRPC.TL_groupCallParticipant oldParticipant = participants.get(participant.user_id);
                         if (oldParticipant != null) {
                             sortedParticipants.remove(oldParticipant);
                             participantsBySources.remove(oldParticipant.source);
-                            participant.active_date = Math.max(participant.active_date, oldParticipant.active_date);
+                            participant.lastTypingDate = Math.max(participant.active_date, oldParticipant.active_date);
+                            if (time != participant.lastVisibleDate) {
+                                participant.active_date = participant.lastTypingDate;
+                            }
                         } else if (old != null) {
                             oldParticipant = old.get(participant.user_id);
                             if (oldParticipant != null) {
-                                participant.active_date = Math.max(participant.active_date, oldParticipant.active_date);
+                                participant.lastTypingDate = Math.max(participant.active_date, oldParticipant.active_date);
+                                if (time != participant.lastVisibleDate) {
+                                    participant.active_date = participant.lastTypingDate;
+                                } else {
+                                    participant.active_date = oldParticipant.active_date;
+                                }
                             }
                         }
                         participants.put(participant.user_id, participant);
@@ -180,12 +190,19 @@ public class ChatObject {
         public void processTypingsUpdate(AccountInstance accountInstance, ArrayList<Integer> uids, int date) {
             boolean updated = false;
             ArrayList<Integer> participantsToLoad = null;
+            long time = SystemClock.elapsedRealtime();
+            currentAccount.getNotificationCenter().postNotificationName(NotificationCenter.applyGroupCallVisibleParticipants, time);
             for (int a = 0, N = uids.size(); a < N; a++) {
                 Integer id = uids.get(a);
                 TLRPC.TL_groupCallParticipant participant = participants.get(id);
                 if (participant != null) {
-                    participant.active_date = date;
-                    updated = true;
+                    if (date - participant.lastTypingDate > 10) {
+                        if (participant.lastVisibleDate != date) {
+                            participant.active_date = date;
+                        }
+                        participant.lastTypingDate = date;
+                        updated = true;
+                    }
                 } else {
                     if (participantsToLoad == null) {
                         participantsToLoad = new ArrayList<>();
@@ -252,6 +269,8 @@ public class ChatObject {
             boolean updated = false;
             int currentTime = currentAccount.getConnectionsManager().getCurrentTime();
             ArrayList<Integer> participantsToLoad = null;
+            long time = SystemClock.elapsedRealtime();
+            currentAccount.getNotificationCenter().postNotificationName(NotificationCenter.applyGroupCallVisibleParticipants, time);
             for (int a = 0; a < ssrc.length; a++) {
                 TLRPC.TL_groupCallParticipant participant;
                 if (ssrc[a] == 0) {
@@ -262,8 +281,11 @@ public class ChatObject {
                 if (participant != null) {
                     participant.hasVoice = voice[a];
                     if (levels[a] > 0.1f) {
-                        if (voice[a] && participant.active_date + 1 < currentTime) {
-                            participant.active_date = currentTime;
+                        if (voice[a] && participant.lastTypingDate + 1 < currentTime) {
+                            if (time != participant.lastVisibleDate) {
+                                participant.active_date = currentTime;
+                            }
+                            participant.lastTypingDate = currentTime;
                             updated = true;
                         }
                         participant.lastSpeakTime = SystemClock.uptimeMillis();
@@ -388,6 +410,8 @@ public class ChatObject {
             boolean updated = false;
             boolean selfUpdated = false;
             int selfId = currentAccount.getUserConfig().getClientUserId();
+            long time = SystemClock.elapsedRealtime();
+            currentAccount.getNotificationCenter().postNotificationName(NotificationCenter.applyGroupCallVisibleParticipants, time);
             for (int a = 0, N = update.participants.size(); a < N; a++) {
                 TLRPC.TL_groupCallParticipant participant = update.participants.get(a);
                 TLRPC.TL_groupCallParticipant oldParticipant = participants.get(participant.user_id);
@@ -412,11 +436,22 @@ public class ChatObject {
                         invitedUsers.remove(id);
                     }
                     if (oldParticipant != null) {
-                        oldParticipant.flags = participant.flags;
                         oldParticipant.muted = participant.muted;
+                        oldParticipant.muted_by_you = participant.muted_by_you;
+                        if (!participant.min) {
+                            oldParticipant.volume = participant.volume;
+                        } else {
+                            if ((participant.flags & 128) != 0 && (oldParticipant.flags & 128) == 0) {
+                                participant.flags &=~ 128;
+                            }
+                        }
+                        oldParticipant.flags = participant.flags;
                         oldParticipant.can_self_unmute = participant.can_self_unmute;
                         oldParticipant.date = participant.date;
-                        oldParticipant.active_date = Math.max(oldParticipant.active_date, participant.active_date);
+                        oldParticipant.lastTypingDate = Math.max(oldParticipant.active_date, participant.active_date);
+                        if (time != oldParticipant.lastVisibleDate) {
+                            oldParticipant.active_date = oldParticipant.lastTypingDate;
+                        }
                         if (oldParticipant.source != participant.source) {
                             participantsBySources.remove(oldParticipant.source);
                             oldParticipant.source = participant.source;
@@ -484,6 +519,13 @@ public class ChatObject {
             checkOnlineParticipants();
         }
 
+        public void saveActiveDates() {
+            for (int a = 0, N = sortedParticipants.size(); a < N; a++) {
+                TLRPC.TL_groupCallParticipant p = sortedParticipants.get(a);
+                p.lastActiveDate = p.active_date;
+            }
+        }
+
         private void checkOnlineParticipants() {
             if (typingUpdateRunnableScheduled) {
                 AndroidUtilities.cancelRunOnUIThread(typingUpdateRunnable);
@@ -508,6 +550,10 @@ public class ChatObject {
                 typingUpdateRunnableScheduled = true;
             }
         }
+    }
+
+    public static int getParticipantVolume(TLRPC.TL_groupCallParticipant participant) {
+        return ((participant.flags & 128) != 0 ? participant.volume : 10000);
     }
 
     private static boolean isBannableAction(int action) {
@@ -767,7 +813,7 @@ public class ChatObject {
     }
 
     public static boolean canWriteToChat(TLRPC.Chat chat) {
-        return !isChannel(chat) || chat.creator || chat.admin_rights != null && chat.admin_rights.post_messages || !chat.broadcast;
+        return !isChannel(chat) || chat.creator || chat.admin_rights != null && chat.admin_rights.post_messages || !chat.broadcast && !chat.gigagroup || chat.gigagroup && ChatObject.hasAdminRights(chat);
     }
 
     public static String getBannedRightsString(TLRPC.TL_chatBannedRights bannedRights) {

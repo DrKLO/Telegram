@@ -711,6 +711,7 @@ public class TrendingStickersLayout extends FrameLayout implements NotificationC
             }
         }
 
+        @SuppressWarnings("unchecked")
         @Override
         public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position, @NonNull List payloads) {
             if (payloads.contains(PAYLOAD_ANIMATED)) {
