@@ -1,0 +1,20 @@
+[
+  {
+    "level": "INFO",
+    "message": "Start JSON generation. Platform version: 16 min SDK version: armeabi-v7a",
+    "file": "D:\\Projects\\Git@Hub\\Telegram\\TMessagesProj\\jni\\Android.mk",
+    "tag": "armv7Release|armeabi-v7a"
+  },
+  {
+    "level": "INFO",
+    "message": "JSON \u0027D:\\Projects\\Git@Hub\\Telegram\\TMessagesProj\\.cxx\\ndkBuild\\armv7Release\\armeabi-v7a\\android_gradle_build.json\u0027 was up-to-date",
+    "file": "D:\\Projects\\Git@Hub\\Telegram\\TMessagesProj\\jni\\Android.mk",
+    "tag": "armv7Release|armeabi-v7a"
+  },
+  {
+    "level": "INFO",
+    "message": "JSON generation completed without problems",
+    "file": "D:\\Projects\\Git@Hub\\Telegram\\TMessagesProj\\jni\\Android.mk",
+    "tag": "armv7Release|armeabi-v7a"
+  }
+]

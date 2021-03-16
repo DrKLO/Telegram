@@ -1,0 +1,131 @@
+{
+  "abi": "X86_64",
+  "abiPlatformVersion": 23,
+  "buildSettings": {
+    "environmentVariables": []
+  },
+  "cxxBuildFolder": "D:\\Projects\\Git@Hub\\Telegram\\TMessagesProj\\.cxx\\ndkBuild\\x64_SDK23Release\\x86_64",
+  "info": {
+    "abi": "X86_64",
+    "bitness": 64,
+    "deprecated": false,
+    "default": true
+  },
+  "originalCxxBuildFolder": "D:\\Projects\\Git@Hub\\Telegram\\TMessagesProj\\.cxx\\ndkBuild\\x64_SDK23Release\\x86_64",
+  "variant": {
+    "buildSystemArgumentList": [
+      "NDK_APPLICATION_MK:\u003djni/Application.mk",
+      "APP_PLATFORM:\u003dandroid-16",
+      "--jobs\u003d8"
+    ],
+    "buildTargetSet": [],
+    "implicitBuildTargetSet": [],
+    "cFlagsList": [],
+    "cmakeSettingsConfiguration": "android-gradle-plugin-predetermined-name",
+    "cppFlagsList": [],
+    "isDebuggableEnabled": false,
+    "module": {
+      "buildSystem": "NDK_BUILD",
+      "cmakeToolchainFile": "D:\\Librarys\\Android_SDK\\ndk\\21.3.6528147\\build\\cmake\\android.toolchain.cmake",
+      "cxxFolder": "D:\\Projects\\Git@Hub\\Telegram\\TMessagesProj\\.cxx",
+      "gradleModulePathName": ":TMessagesProj",
+      "intermediatesFolder": "D:\\Projects\\Git@Hub\\Telegram\\TMessagesProj\\build\\intermediates",
+      "makeFile": "D:\\Projects\\Git@Hub\\Telegram\\TMessagesProj\\jni\\Android.mk",
+      "moduleBuildFile": "D:\\Projects\\Git@Hub\\Telegram\\TMessagesProj\\build.gradle",
+      "moduleRootFolder": "D:\\Projects\\Git@Hub\\Telegram\\TMessagesProj",
+      "ndkDefaultAbiList": [
+        "ARMEABI_V7A",
+        "ARM64_V8A",
+        "X86",
+        "X86_64"
+      ],
+      "ndkFolder": "D:\\Librarys\\Android_SDK\\ndk\\21.3.6528147",
+      "ndkMetaAbiList": [
+        {
+          "abi": "ARMEABI_V7A",
+          "bitness": 32,
+          "deprecated": false,
+          "default": true
+        },
+        {
+          "abi": "ARM64_V8A",
+          "bitness": 64,
+          "deprecated": false,
+          "default": true
+        },
+        {
+          "abi": "X86",
+          "bitness": 32,
+          "deprecated": false,
+          "default": true
+        },
+        {
+          "abi": "X86_64",
+          "bitness": 64,
+          "deprecated": false,
+          "default": true
+        }
+      ],
+      "ndkMetaPlatforms": {
+        "min": 16,
+        "max": 30,
+        "aliases": {
+          "20": 19,
+          "25": 24,
+          "J": 16,
+          "J-MR1": 17,
+          "J-MR2": 18,
+          "K": 19,
+          "L": 21,
+          "L-MR1": 22,
+          "M": 23,
+          "N": 24,
+          "N-MR1": 24,
+          "O": 26,
+          "O-MR1": 27,
+          "P": 28,
+          "Q": 29,
+          "R": 30
+        }
+      },
+      "ndkSupportedAbiList": [
+        "ARMEABI_V7A",
+        "ARM64_V8A",
+        "X86",
+        "X86_64"
+      ],
+      "ndkDefaultStl": "SYSTEM",
+      "ndkVersion": "21.3.6528147",
+      "project": {
+        "compilerSettingsCacheFolder": "D:\\Projects\\Git@Hub\\Telegram\\.cxx",
+        "cxxFolder": "D:\\Projects\\Git@Hub\\Telegram\\.cxx",
+        "isBuildOnlyTargetAbiEnabled": true,
+        "isCmakeBuildCohabitationEnabled": false,
+        "isNativeCompilerSettingsCacheEnabled": false,
+        "rootBuildGradleFolder": "D:\\Projects\\Git@Hub\\Telegram",
+        "sdkFolder": "D:\\Librarys\\Android_SDK",
+        "isPrefabEnabled": false
+      },
+      "splitsAbiFilterSet": [],
+      "stlSharedObjectMap": {
+        "LIBCXX_SHARED": {
+          "ARMEABI_V7A": "D:\\Librarys\\Android_SDK\\ndk\\21.3.6528147\\toolchains\\llvm\\prebuilt\\windows-x86_64\\sysroot\\usr\\lib\\arm-linux-androideabi\\libc++_shared.so",
+          "ARM64_V8A": "D:\\Librarys\\Android_SDK\\ndk\\21.3.6528147\\toolchains\\llvm\\prebuilt\\windows-x86_64\\sysroot\\usr\\lib\\aarch64-linux-android\\libc++_shared.so",
+          "X86": "D:\\Librarys\\Android_SDK\\ndk\\21.3.6528147\\toolchains\\llvm\\prebuilt\\windows-x86_64\\sysroot\\usr\\lib\\i686-linux-android\\libc++_shared.so",
+          "X86_64": "D:\\Librarys\\Android_SDK\\ndk\\21.3.6528147\\toolchains\\llvm\\prebuilt\\windows-x86_64\\sysroot\\usr\\lib\\x86_64-linux-android\\libc++_shared.so"
+        },
+        "LIBCXX_STATIC": {},
+        "NONE": {},
+        "SYSTEM": {}
+      }
+    },
+    "objFolder": "D:\\Projects\\Git@Hub\\Telegram\\TMessagesProj\\build\\intermediates\\ndkBuild\\x64_SDK23Release\\obj\\local",
+    "variantName": "x64_SDK23Release",
+    "validAbiList": [
+      "X86_64"
+    ],
+    "prefabDirectory": "D:\\Projects\\Git@Hub\\Telegram\\TMessagesProj\\.cxx\\ndkBuild\\x64_SDK23Release\\prefab",
+    "prefabPackageDirectoryList": []
+  },
+  "prefabFolder": "D:\\Projects\\Git@Hub\\Telegram\\TMessagesProj\\.cxx\\ndkBuild\\x64_SDK23Release\\prefab\\x86_64"
+}

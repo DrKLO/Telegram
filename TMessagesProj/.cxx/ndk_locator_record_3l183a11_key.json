@@ -1,0 +1,12 @@
+{
+  "ndkVersionFromDsl": "20.0.5594570",
+  "ndkDirProperty": "D:\\Android_SDK\\ndk\\20.0.5594570",
+  "sdkFolder": "C:\\Android_SDK",
+  "sideBySideNdkFolderNames": [
+    ".installer",
+    "19.2.5345600",
+    "20.0.5594570",
+    "20.1.5948944",
+    "21.3.6528147"
+  ]
+}

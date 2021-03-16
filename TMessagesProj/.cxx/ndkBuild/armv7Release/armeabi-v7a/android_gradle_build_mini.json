@@ -1,0 +1,75 @@
+{
+  "buildFiles": [
+    "D:\\Projects\\Git@Hub\\Telegram\\TMessagesProj\\jni\\Android.mk",
+    "D:\\Projects\\Git@Hub\\Telegram\\TMessagesProj\\jni\\Application.mk"
+  ],
+  "cleanCommands": [
+    "D:\\Librarys\\Android_SDK\\ndk\\21.3.6528147\\ndk-build.cmd NDK_PROJECT_PATH\u003dnull APP_BUILD_SCRIPT\u003dD:\\Projects\\Git@Hub\\Telegram\\TMessagesProj\\jni\\Android.mk NDK_APPLICATION_MK\u003dD:\\Projects\\Git@Hub\\Telegram\\TMessagesProj\\jni\\Application.mk APP_ABI\u003darmeabi-v7a NDK_ALL_ABIS\u003darmeabi-v7a NDK_DEBUG\u003d0 APP_PLATFORM\u003dandroid-16 NDK_OUT\u003dD:/Projects/Git@Hub/Telegram/TMessagesProj/build/intermediates/ndkBuild/armv7Release/obj NDK_LIBS_OUT\u003dD:\\Projects\\Git@Hub\\Telegram\\TMessagesProj\\build\\intermediates\\ndkBuild\\armv7Release\\lib NDK_APPLICATION_MK:\u003djni/Application.mk APP_PLATFORM:\u003dandroid-16 clean"
+  ],
+  "buildTargetsCommand": "D:\\Librarys\\Android_SDK\\ndk\\21.3.6528147\\ndk-build.cmd NDK_PROJECT_PATH\u003dnull APP_BUILD_SCRIPT\u003dD:\\Projects\\Git@Hub\\Telegram\\TMessagesProj\\jni\\Android.mk NDK_APPLICATION_MK\u003dD:\\Projects\\Git@Hub\\Telegram\\TMessagesProj\\jni\\Application.mk APP_ABI\u003darmeabi-v7a NDK_ALL_ABIS\u003darmeabi-v7a NDK_DEBUG\u003d0 APP_PLATFORM\u003dandroid-16 NDK_OUT\u003dD:/Projects/Git@Hub/Telegram/TMessagesProj/build/intermediates/ndkBuild/armv7Release/obj NDK_LIBS_OUT\u003dD:\\Projects\\Git@Hub\\Telegram\\TMessagesProj\\build\\intermediates\\ndkBuild\\armv7Release\\lib NDK_APPLICATION_MK:\u003djni/Application.mk APP_PLATFORM:\u003dandroid-16 --jobs\u003d8 {LIST_OF_TARGETS_TO_BUILD}",
+  "libraries": {
+    "crypto_armeabi-v7a-armv7Release-armeabi-v7a": {
+      "artifactName": "crypto_armeabi-v7a",
+      "buildCommand": "D:\\Librarys\\Android_SDK\\ndk\\21.3.6528147\\ndk-build.cmd NDK_PROJECT_PATH\u003dnull APP_BUILD_SCRIPT\u003dD:\\Projects\\Git@Hub\\Telegram\\TMessagesProj\\jni\\Android.mk NDK_APPLICATION_MK\u003dD:\\Projects\\Git@Hub\\Telegram\\TMessagesProj\\jni\\Application.mk APP_ABI\u003darmeabi-v7a NDK_ALL_ABIS\u003darmeabi-v7a NDK_DEBUG\u003d0 APP_PLATFORM\u003dandroid-16 NDK_OUT\u003dD:/Projects/Git@Hub/Telegram/TMessagesProj/build/intermediates/ndkBuild/armv7Release/obj NDK_LIBS_OUT\u003dD:\\Projects\\Git@Hub\\Telegram\\TMessagesProj\\build\\intermediates\\ndkBuild\\armv7Release\\lib NDK_APPLICATION_MK:\u003djni/Application.mk APP_PLATFORM:\u003dandroid-16 --jobs\u003d8 D:/Projects/Git@Hub/Telegram/TMessagesProj/build/intermediates/ndkBuild/armv7Release/obj/local/armeabi-v7a/libcrypto_armeabi-v7a.a",
+      "abi": "armeabi-v7a",
+      "output": "D:\\Projects\\Git@Hub\\Telegram\\TMessagesProj\\build\\intermediates\\ndkBuild\\armv7Release\\obj\\local\\armeabi-v7a\\libcrypto_armeabi-v7a.a",
+      "runtimeFiles": []
+    },
+    "cpufeatures-armv7Release-armeabi-v7a": {
+      "artifactName": "cpufeatures",
+      "buildCommand": "D:\\Librarys\\Android_SDK\\ndk\\21.3.6528147\\ndk-build.cmd NDK_PROJECT_PATH\u003dnull APP_BUILD_SCRIPT\u003dD:\\Projects\\Git@Hub\\Telegram\\TMessagesProj\\jni\\Android.mk NDK_APPLICATION_MK\u003dD:\\Projects\\Git@Hub\\Telegram\\TMessagesProj\\jni\\Application.mk APP_ABI\u003darmeabi-v7a NDK_ALL_ABIS\u003darmeabi-v7a NDK_DEBUG\u003d0 APP_PLATFORM\u003dandroid-16 NDK_OUT\u003dD:/Projects/Git@Hub/Telegram/TMessagesProj/build/intermediates/ndkBuild/armv7Release/obj NDK_LIBS_OUT\u003dD:\\Projects\\Git@Hub\\Telegram\\TMessagesProj\\build\\intermediates\\ndkBuild\\armv7Release\\lib NDK_APPLICATION_MK:\u003djni/Application.mk APP_PLATFORM:\u003dandroid-16 --jobs\u003d8 D:/Projects/Git@Hub/Telegram/TMessagesProj/build/intermediates/ndkBuild/armv7Release/obj/local/armeabi-v7a/libcpufeatures.a",
+      "abi": "armeabi-v7a",
+      "output": "D:\\Projects\\Git@Hub\\Telegram\\TMessagesProj\\build\\intermediates\\ndkBuild\\armv7Release\\obj\\local\\armeabi-v7a\\libcpufeatures.a",
+      "runtimeFiles": []
+    },
+    "tmessages.30-armv7Release-armeabi-v7a": {
+      "artifactName": "tmessages.30",
+      "buildCommand": "D:\\Librarys\\Android_SDK\\ndk\\21.3.6528147\\ndk-build.cmd NDK_PROJECT_PATH\u003dnull APP_BUILD_SCRIPT\u003dD:\\Projects\\Git@Hub\\Telegram\\TMessagesProj\\jni\\Android.mk NDK_APPLICATION_MK\u003dD:\\Projects\\Git@Hub\\Telegram\\TMessagesProj\\jni\\Application.mk APP_ABI\u003darmeabi-v7a NDK_ALL_ABIS\u003darmeabi-v7a NDK_DEBUG\u003d0 APP_PLATFORM\u003dandroid-16 NDK_OUT\u003dD:/Projects/Git@Hub/Telegram/TMessagesProj/build/intermediates/ndkBuild/armv7Release/obj NDK_LIBS_OUT\u003dD:\\Projects\\Git@Hub\\Telegram\\TMessagesProj\\build\\intermediates\\ndkBuild\\armv7Release\\lib NDK_APPLICATION_MK:\u003djni/Application.mk APP_PLATFORM:\u003dandroid-16 --jobs\u003d8 D:/Projects/Git@Hub/Telegram/TMessagesProj/build/intermediates/ndkBuild/armv7Release/obj/local/armeabi-v7a/libtmessages.30.so",
+      "abi": "armeabi-v7a",
+      "output": "D:\\Projects\\Git@Hub\\Telegram\\TMessagesProj\\build\\intermediates\\ndkBuild\\armv7Release\\obj\\local\\armeabi-v7a\\libtmessages.30.so",
+      "runtimeFiles": []
+    },
+    "rlottie-armv7Release-armeabi-v7a": {
+      "artifactName": "rlottie",
+      "buildCommand": "D:\\Librarys\\Android_SDK\\ndk\\21.3.6528147\\ndk-build.cmd NDK_PROJECT_PATH\u003dnull APP_BUILD_SCRIPT\u003dD:\\Projects\\Git@Hub\\Telegram\\TMessagesProj\\jni\\Android.mk NDK_APPLICATION_MK\u003dD:\\Projects\\Git@Hub\\Telegram\\TMessagesProj\\jni\\Application.mk APP_ABI\u003darmeabi-v7a NDK_ALL_ABIS\u003darmeabi-v7a NDK_DEBUG\u003d0 APP_PLATFORM\u003dandroid-16 NDK_OUT\u003dD:/Projects/Git@Hub/Telegram/TMessagesProj/build/intermediates/ndkBuild/armv7Release/obj NDK_LIBS_OUT\u003dD:\\Projects\\Git@Hub\\Telegram\\TMessagesProj\\build\\intermediates\\ndkBuild\\armv7Release\\lib NDK_APPLICATION_MK:\u003djni/Application.mk APP_PLATFORM:\u003dandroid-16 --jobs\u003d8 D:/Projects/Git@Hub/Telegram/TMessagesProj/build/intermediates/ndkBuild/armv7Release/obj/local/armeabi-v7a/librlottie.a",
+      "abi": "armeabi-v7a",
+      "output": "D:\\Projects\\Git@Hub\\Telegram\\TMessagesProj\\build\\intermediates\\ndkBuild\\armv7Release\\obj\\local\\armeabi-v7a\\librlottie.a",
+      "runtimeFiles": []
+    },
+    "sqlite-armv7Release-armeabi-v7a": {
+      "artifactName": "sqlite",
+      "buildCommand": "D:\\Librarys\\Android_SDK\\ndk\\21.3.6528147\\ndk-build.cmd NDK_PROJECT_PATH\u003dnull APP_BUILD_SCRIPT\u003dD:\\Projects\\Git@Hub\\Telegram\\TMessagesProj\\jni\\Android.mk NDK_APPLICATION_MK\u003dD:\\Projects\\Git@Hub\\Telegram\\TMessagesProj\\jni\\Application.mk APP_ABI\u003darmeabi-v7a NDK_ALL_ABIS\u003darmeabi-v7a NDK_DEBUG\u003d0 APP_PLATFORM\u003dandroid-16 NDK_OUT\u003dD:/Projects/Git@Hub/Telegram/TMessagesProj/build/intermediates/ndkBuild/armv7Release/obj NDK_LIBS_OUT\u003dD:\\Projects\\Git@Hub\\Telegram\\TMessagesProj\\build\\intermediates\\ndkBuild\\armv7Release\\lib NDK_APPLICATION_MK:\u003djni/Application.mk APP_PLATFORM:\u003dandroid-16 --jobs\u003d8 D:/Projects/Git@Hub/Telegram/TMessagesProj/build/intermediates/ndkBuild/armv7Release/obj/local/armeabi-v7a/libsqlite.a",
+      "abi": "armeabi-v7a",
+      "output": "D:\\Projects\\Git@Hub\\Telegram\\TMessagesProj\\build\\intermediates\\ndkBuild\\armv7Release\\obj\\local\\armeabi-v7a\\libsqlite.a",
+      "runtimeFiles": []
+    },
+    "tgnet-armv7Release-armeabi-v7a": {
+      "artifactName": "tgnet",
+      "buildCommand": "D:\\Librarys\\Android_SDK\\ndk\\21.3.6528147\\ndk-build.cmd NDK_PROJECT_PATH\u003dnull APP_BUILD_SCRIPT\u003dD:\\Projects\\Git@Hub\\Telegram\\TMessagesProj\\jni\\Android.mk NDK_APPLICATION_MK\u003dD:\\Projects\\Git@Hub\\Telegram\\TMessagesProj\\jni\\Application.mk APP_ABI\u003darmeabi-v7a NDK_ALL_ABIS\u003darmeabi-v7a NDK_DEBUG\u003d0 APP_PLATFORM\u003dandroid-16 NDK_OUT\u003dD:/Projects/Git@Hub/Telegram/TMessagesProj/build/intermediates/ndkBuild/armv7Release/obj NDK_LIBS_OUT\u003dD:\\Projects\\Git@Hub\\Telegram\\TMessagesProj\\build\\intermediates\\ndkBuild\\armv7Release\\lib NDK_APPLICATION_MK:\u003djni/Application.mk APP_PLATFORM:\u003dandroid-16 --jobs\u003d8 D:/Projects/Git@Hub/Telegram/TMessagesProj/build/intermediates/ndkBuild/armv7Release/obj/local/armeabi-v7a/libtgnet.a",
+      "abi": "armeabi-v7a",
+      "output": "D:\\Projects\\Git@Hub\\Telegram\\TMessagesProj\\build\\intermediates\\ndkBuild\\armv7Release\\obj\\local\\armeabi-v7a\\libtgnet.a",
+      "runtimeFiles": []
+    },
+    "webp-armv7Release-armeabi-v7a": {
+      "artifactName": "webp",
+      "buildCommand": "D:\\Librarys\\Android_SDK\\ndk\\21.3.6528147\\ndk-build.cmd NDK_PROJECT_PATH\u003dnull APP_BUILD_SCRIPT\u003dD:\\Projects\\Git@Hub\\Telegram\\TMessagesProj\\jni\\Android.mk NDK_APPLICATION_MK\u003dD:\\Projects\\Git@Hub\\Telegram\\TMessagesProj\\jni\\Application.mk APP_ABI\u003darmeabi-v7a NDK_ALL_ABIS\u003darmeabi-v7a NDK_DEBUG\u003d0 APP_PLATFORM\u003dandroid-16 NDK_OUT\u003dD:/Projects/Git@Hub/Telegram/TMessagesProj/build/intermediates/ndkBuild/armv7Release/obj NDK_LIBS_OUT\u003dD:\\Projects\\Git@Hub\\Telegram\\TMessagesProj\\build\\intermediates\\ndkBuild\\armv7Release\\lib NDK_APPLICATION_MK:\u003djni/Application.mk APP_PLATFORM:\u003dandroid-16 --jobs\u003d8 D:/Projects/Git@Hub/Telegram/TMessagesProj/build/intermediates/ndkBuild/armv7Release/obj/local/armeabi-v7a/libwebp.a",
+      "abi": "armeabi-v7a",
+      "output": "D:\\Projects\\Git@Hub\\Telegram\\TMessagesProj\\build\\intermediates\\ndkBuild\\armv7Release\\obj\\local\\armeabi-v7a\\libwebp.a",
+      "runtimeFiles": []
+    },
+    "lz4-armv7Release-armeabi-v7a": {
+      "artifactName": "lz4",
+      "buildCommand": "D:\\Librarys\\Android_SDK\\ndk\\21.3.6528147\\ndk-build.cmd NDK_PROJECT_PATH\u003dnull APP_BUILD_SCRIPT\u003dD:\\Projects\\Git@Hub\\Telegram\\TMessagesProj\\jni\\Android.mk NDK_APPLICATION_MK\u003dD:\\Projects\\Git@Hub\\Telegram\\TMessagesProj\\jni\\Application.mk APP_ABI\u003darmeabi-v7a NDK_ALL_ABIS\u003darmeabi-v7a NDK_DEBUG\u003d0 APP_PLATFORM\u003dandroid-16 NDK_OUT\u003dD:/Projects/Git@Hub/Telegram/TMessagesProj/build/intermediates/ndkBuild/armv7Release/obj NDK_LIBS_OUT\u003dD:\\Projects\\Git@Hub\\Telegram\\TMessagesProj\\build\\intermediates\\ndkBuild\\armv7Release\\lib NDK_APPLICATION_MK:\u003djni/Application.mk APP_PLATFORM:\u003dandroid-16 --jobs\u003d8 D:/Projects/Git@Hub/Telegram/TMessagesProj/build/intermediates/ndkBuild/armv7Release/obj/local/armeabi-v7a/liblz4.a",
+      "abi": "armeabi-v7a",
+      "output": "D:\\Projects\\Git@Hub\\Telegram\\TMessagesProj\\build\\intermediates\\ndkBuild\\armv7Release\\obj\\local\\armeabi-v7a\\liblz4.a",
+      "runtimeFiles": []
+    },
+    "flac-armv7Release-armeabi-v7a": {
+      "artifactName": "flac",
+      "buildCommand": "D:\\Librarys\\Android_SDK\\ndk\\21.3.6528147\\ndk-build.cmd NDK_PROJECT_PATH\u003dnull APP_BUILD_SCRIPT\u003dD:\\Projects\\Git@Hub\\Telegram\\TMessagesProj\\jni\\Android.mk NDK_APPLICATION_MK\u003dD:\\Projects\\Git@Hub\\Telegram\\TMessagesProj\\jni\\Application.mk APP_ABI\u003darmeabi-v7a NDK_ALL_ABIS\u003darmeabi-v7a NDK_DEBUG\u003d0 APP_PLATFORM\u003dandroid-16 NDK_OUT\u003dD:/Projects/Git@Hub/Telegram/TMessagesProj/build/intermediates/ndkBuild/armv7Release/obj NDK_LIBS_OUT\u003dD:\\Projects\\Git@Hub\\Telegram\\TMessagesProj\\build\\intermediates\\ndkBuild\\armv7Release\\lib NDK_APPLICATION_MK:\u003djni/Application.mk APP_PLATFORM:\u003dandroid-16 --jobs\u003d8 D:/Projects/Git@Hub/Telegram/TMessagesProj/build/intermediates/ndkBuild/armv7Release/obj/local/armeabi-v7a/libflac.a",
+      "abi": "armeabi-v7a",
+      "output": "D:\\Projects\\Git@Hub\\Telegram\\TMessagesProj\\build\\intermediates\\ndkBuild\\armv7Release\\obj\\local\\armeabi-v7a\\libflac.a",
+      "runtimeFiles": []
+    }
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "ndkVersionFromDsl": "21.3.6528147",
+  "ndkDirProperty": "D:\\Librarys\\Android_SDK\\ndk\\21.3.6528147",
+  "sdkFolder": "D:\\Librarys\\Android_SDK",
+  "sideBySideNdkFolderNames": [
+    ".installer",
+    "20.1.5948944",
+    "21.3.6528147"
+  ]
+}

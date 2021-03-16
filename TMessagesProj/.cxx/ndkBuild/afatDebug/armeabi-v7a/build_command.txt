@@ -1,0 +1,21 @@
+                Executable : D:\Librarys\Android_SDK\ndk\21.3.6528147\ndk-build.cmd
+arguments : 
+NDK_PROJECT_PATH=null
+APP_BUILD_SCRIPT=D:\Projects\Git@Hub\Telegram\TMessagesProj\jni\Android.mk
+NDK_APPLICATION_MK=D:\Projects\Git@Hub\Telegram\TMessagesProj\jni\Application.mk
+APP_ABI=armeabi-v7a
+NDK_ALL_ABIS=armeabi-v7a
+NDK_DEBUG=1
+APP_PLATFORM=android-16
+NDK_OUT=D:/Projects/Git@Hub/Telegram/TMessagesProj/build/intermediates/ndkBuild/afatDebug/obj
+NDK_LIBS_OUT=D:\Projects\Git@Hub\Telegram\TMessagesProj\build\intermediates\ndkBuild\afatDebug\lib
+NDK_APPLICATION_MK:=jni/Application.mk
+APP_PLATFORM:=android-16
+--jobs=8
+APP_SHORT_COMMANDS=false
+LOCAL_SHORT_COMMANDS=false
+-B
+-n
+jvmArgs : 
+
+Build command args:

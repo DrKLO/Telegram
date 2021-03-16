@@ -1,0 +1,60 @@
+[
+  {
+    "level": "INFO",
+    "message": "android.ndkVersion from module build.gradle is [21.3.6528147]"
+  },
+  {
+    "level": "INFO",
+    "message": "android.ndkPath from module build.gradle is not set"
+  },
+  {
+    "level": "INFO",
+    "message": "ndk.dir in local.properties is D:\\Librarys\\Android_SDK\\ndk\\21.3.6528147"
+  },
+  {
+    "level": "INFO",
+    "message": "Not considering ANDROID_NDK_HOME because support was removed after deprecation period."
+  },
+  {
+    "level": "INFO",
+    "message": "sdkFolder is D:\\Librarys\\Android_SDK"
+  },
+  {
+    "level": "INFO",
+    "message": "Checking whether deleting ndk.dir and setting android.ndkVersion to [21.3.6528147] would result in the same NDK"
+  },
+  {
+    "level": "INFO",
+    "message": "android.ndkVersion from module build.gradle is [21.3.6528147]",
+    "tag": "ndk.dir delete check"
+  },
+  {
+    "level": "INFO",
+    "message": "android.ndkPath from module build.gradle is not set",
+    "tag": "ndk.dir delete check"
+  },
+  {
+    "level": "INFO",
+    "message": "ndk.dir in local.properties is not set",
+    "tag": "ndk.dir delete check"
+  },
+  {
+    "level": "INFO",
+    "message": "Not considering ANDROID_NDK_HOME because support was removed after deprecation period.",
+    "tag": "ndk.dir delete check"
+  },
+  {
+    "level": "INFO",
+    "message": "sdkFolder is D:\\Librarys\\Android_SDK",
+    "tag": "ndk.dir delete check"
+  },
+  {
+    "level": "INFO",
+    "message": "Deleting ndk.dir and setting android.ndkVersion to [21.3.6528147] would result in the same NDK.",
+    "tag": "ndk.dir delete check"
+  },
+  {
+    "level": "WARN",
+    "message": "NDK was located by using ndk.dir property. This method is deprecated and will be removed in a future release. Please delete ndk.dir from local.properties and set android.ndkVersion to [21.3.6528147] in all native modules in the project. https://developer.android.com/r/studio-ui/ndk-dir"
+  }
+]
