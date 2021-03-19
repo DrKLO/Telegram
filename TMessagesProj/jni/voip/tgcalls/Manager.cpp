@@ -1,30 +1,12 @@
 #include "Manager.h"
 
 #include "rtc_base/byte_buffer.h"
+#include "StaticThreads.h"
 
 #include <fstream>
 
 namespace tgcalls {
 namespace {
-
-rtc::Thread *makeNetworkThread() {
-	static std::unique_ptr<rtc::Thread> value = rtc::Thread::CreateWithSocketServer();
-	value->SetName("WebRTC-Network", nullptr);
-	value->Start();
-	return value.get();
-}
-
-rtc::Thread *getNetworkThread() {
-	static rtc::Thread *value = makeNetworkThread();
-	return value;
-}
-
-rtc::Thread *makeMediaThread() {
-	static std::unique_ptr<rtc::Thread> value = rtc::Thread::Create();
-	value->SetName("WebRTC-Media", nullptr);
-	value->Start();
-	return value.get();
-}
 
 void dumpStatsLog(const FilePath &path, const CallStats &stats) {
 	if (path.data.empty()) {
@@ -94,11 +76,6 @@ bool Manager::ResolvedNetworkStatus::operator!=(const ResolvedNetworkStatus &rhs
     return !(*this == rhs);
 }
 
-rtc::Thread *Manager::getMediaThread() {
-	static rtc::Thread *value = makeMediaThread();
-	return value;
-}
-
 Manager::Manager(rtc::Thread *thread, Descriptor &&descriptor) :
 _thread(thread),
 _encryptionKey(descriptor.encryptionKey),
@@ -122,6 +99,7 @@ _remotePrefferedAspectRatioUpdated(std::move(descriptor.remotePrefferedAspectRat
 _signalingDataEmitted(std::move(descriptor.signalingDataEmitted)),
 _signalBarsUpdated(std::move(descriptor.signalBarsUpdated)),
 _audioLevelUpdated(std::move(descriptor.audioLevelUpdated)),
+_createAudioDeviceModule(std::move(descriptor.createAudioDeviceModule)),
 _enableHighBitrateVideo(descriptor.config.enableHighBitrateVideo),
 _dataSaving(descriptor.config.dataSaving),
 _platformContext(descriptor.platformContext) {
@@ -179,9 +157,9 @@ void Manager::start() {
 			strong->_sendSignalingMessage(std::move(message));
 		});
 	};
-	_networkManager.reset(new ThreadLocalObject<NetworkManager>(getNetworkThread(), [weak, thread, sendSignalingMessage, encryptionKey = _encryptionKey, enableP2P = _enableP2P, enableTCP = _enableTCP, enableStunMarking = _enableStunMarking, rtcServers = _rtcServers, proxy = std::move(_proxy)] () mutable {
+	_networkManager.reset(new ThreadLocalObject<NetworkManager>(StaticThreads::getNetworkThread(), [weak, thread, sendSignalingMessage, encryptionKey = _encryptionKey, enableP2P = _enableP2P, enableTCP = _enableTCP, enableStunMarking = _enableStunMarking, rtcServers = _rtcServers, proxy = std::move(_proxy)] () mutable {
 		return new NetworkManager(
-			getNetworkThread(),
+            StaticThreads::getNetworkThread(),
 			encryptionKey,
 			enableP2P,
             enableTCP,
@@ -245,9 +223,9 @@ void Manager::start() {
 			});
 	}));
 	bool isOutgoing = _encryptionKey.isOutgoing;
-	_mediaManager.reset(new ThreadLocalObject<MediaManager>(getMediaThread(), [weak, isOutgoing, protocolVersion = _protocolVersion, thread, sendSignalingMessage, videoCapture = _videoCapture, mediaDevicesConfig = _mediaDevicesConfig, enableHighBitrateVideo = _enableHighBitrateVideo, signalBarsUpdated = _signalBarsUpdated, audioLevelUpdated = _audioLevelUpdated, preferredCodecs = _preferredCodecs, platformContext = _platformContext]() {
+	_mediaManager.reset(new ThreadLocalObject<MediaManager>(StaticThreads::getMediaThread(), [weak, isOutgoing, protocolVersion = _protocolVersion, thread, sendSignalingMessage, videoCapture = _videoCapture, mediaDevicesConfig = _mediaDevicesConfig, enableHighBitrateVideo = _enableHighBitrateVideo, signalBarsUpdated = _signalBarsUpdated, audioLevelUpdated = _audioLevelUpdated, preferredCodecs = _preferredCodecs, createAudioDeviceModule = _createAudioDeviceModule, platformContext = _platformContext]() {
 		return new MediaManager(
-			getMediaThread(),
+            StaticThreads::getMediaThread(),
 			isOutgoing,
             protocolVersion,
 			mediaDevicesConfig,
@@ -264,9 +242,10 @@ void Manager::start() {
 			},
             signalBarsUpdated,
             audioLevelUpdated,
-            enableHighBitrateVideo,
+			createAudioDeviceModule,
+			enableHighBitrateVideo,
             preferredCodecs,
-			platformContext);
+            platformContext);
 	}));
     _networkManager->perform(RTC_FROM_HERE, [](NetworkManager *networkManager) {
         networkManager->start();

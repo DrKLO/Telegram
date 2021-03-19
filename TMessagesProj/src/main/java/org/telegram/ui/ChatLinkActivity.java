@@ -407,7 +407,7 @@ public class ChatLinkActivity extends BaseFragment implements NotificationCenter
                                 }
                                 progressDialog[0] = null;
                                 info.linked_chat_id = 0;
-                                NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.chatInfoDidLoad, info, 0, false);
+                                NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.chatInfoDidLoad, info, 0, false, false);
                                 AndroidUtilities.runOnUIThread(() -> getMessagesController().loadFullChat(currentChatId, 0, true), 1000);
                                 if (!isChannel) {
                                     finishFragment();
@@ -537,7 +537,7 @@ public class ChatLinkActivity extends BaseFragment implements NotificationCenter
                 progressDialog[0] = null;
             }
             info.linked_chat_id = chat.id;
-            NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.chatInfoDidLoad, info, 0, false);
+            NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.chatInfoDidLoad, info, 0, false, false);
             AndroidUtilities.runOnUIThread(() -> getMessagesController().loadFullChat(currentChatId, 0, true), 1000);
             if (createFragment != null) {
                 removeSelfFromStack();

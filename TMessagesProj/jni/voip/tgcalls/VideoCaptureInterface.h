@@ -16,6 +16,7 @@ class VideoFrame;
 namespace tgcalls {
 
 class PlatformContext;
+class Threads;
 
 enum class VideoState {
 	Inactive,
@@ -29,7 +30,8 @@ protected:
 
 public:
 	static std::unique_ptr<VideoCaptureInterface> Create(
-		std::string deviceId = std::string(),
+                std::shared_ptr<Threads> threads,
+                std::string deviceId = std::string(),
 		std::shared_ptr<PlatformContext> platformContext = nullptr);
 
 	virtual ~VideoCaptureInterface();

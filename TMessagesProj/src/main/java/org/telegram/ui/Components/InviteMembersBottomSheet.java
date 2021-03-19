@@ -568,7 +568,7 @@ public class InviteMembersBottomSheet extends UsersAlertBase implements Notifica
                     };
                     break;
                 case 3:
-                    view = new GroupCreateUserCell(context, true, 0, dialogsDelegate != null);
+                    view = new GroupCreateUserCell(context, 1, 0, dialogsDelegate != null);
                     break;
                 case 4:
                     view = new View(context);
@@ -720,7 +720,7 @@ public class InviteMembersBottomSheet extends UsersAlertBase implements Notifica
                     view = new GroupCreateSectionCell(context);
                     break;
                 case 1:
-                    view = new GroupCreateUserCell(context, true, 0, false);
+                    view = new GroupCreateUserCell(context, 1, 0, false);
                     break;
                 case 2:
                     view = new View(context) {

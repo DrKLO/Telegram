@@ -247,7 +247,6 @@ public class ClearHistoryAlert extends BottomSheet {
             TextView messageTextView = new TextView(getContext());
             messageTextView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
             messageTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
-            messageTextView.setText(LocaleController.getString(""));
             messageTextView.setMovementMethod(new AndroidUtilities.LinkMovementMethodMy());
             messageTextView.setLinkTextColor(Theme.getColor(Theme.key_dialogTextLink));
             messageTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP);

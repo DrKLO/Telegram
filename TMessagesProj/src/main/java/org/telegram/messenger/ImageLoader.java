@@ -3032,7 +3032,7 @@ public class ImageLoader {
             String imageFilePath = null;
             if (uri.getScheme().contains("file")) {
                 path = uri.getPath();
-            } else {
+            } else if (Build.VERSION.SDK_INT < 30 || !"content".equals(uri.getScheme())) {
                 try {
                     path = AndroidUtilities.getPath(uri);
                 } catch (Throwable e) {
@@ -3072,34 +3072,36 @@ public class ImageLoader {
         }
         bmOptions.inPurgeable = Build.VERSION.SDK_INT < 21;
 
-        String exifPath = null;
-        if (path != null) {
-            exifPath = path;
-        } else if (uri != null) {
-            exifPath = AndroidUtilities.getPath(uri);
-        }
-
         Matrix matrix = null;
+        try {
+            int orientation = 0;
+            if (path != null) {
+                ExifInterface exif = new ExifInterface(path);
+                orientation = exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL);
+            } else if (uri != null) {
+                try (InputStream stream = ApplicationLoader.applicationContext.getContentResolver().openInputStream(uri)) {
+                    ExifInterface exif = new ExifInterface(stream);
+                    orientation = exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL);
+                } catch (Throwable ignore) {
 
-        if (exifPath != null) {
-            try {
-                ExifInterface exif = new ExifInterface(exifPath);
-                int orientation = exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, 1);
-                matrix = new Matrix();
-                switch (orientation) {
-                    case ExifInterface.ORIENTATION_ROTATE_90:
-                        matrix.postRotate(90);
-                        break;
-                    case ExifInterface.ORIENTATION_ROTATE_180:
-                        matrix.postRotate(180);
-                        break;
-                    case ExifInterface.ORIENTATION_ROTATE_270:
-                        matrix.postRotate(270);
-                        break;
                 }
-            } catch (Throwable ignore) {
-
             }
+            switch (orientation) {
+                case ExifInterface.ORIENTATION_ROTATE_90:
+                    matrix = new Matrix();
+                    matrix.postRotate(90);
+                    break;
+                case ExifInterface.ORIENTATION_ROTATE_180:
+                    matrix = new Matrix();
+                    matrix.postRotate(180);
+                    break;
+                case ExifInterface.ORIENTATION_ROTATE_270:
+                    matrix = new Matrix();
+                    matrix.postRotate(270);
+                    break;
+            }
+        } catch (Throwable ignore) {
+
         }
 
         scaleFactor /= bmOptions.inSampleSize;

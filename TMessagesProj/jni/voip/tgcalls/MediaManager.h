@@ -48,6 +48,7 @@ public:
 		std::function<void(Message &&)> sendTransportMessage,
         std::function<void(int)> signalBarsUpdated,
         std::function<void(float)> audioLevelUpdated,
+		std::function<rtc::scoped_refptr<webrtc::AudioDeviceModule>(webrtc::TaskQueueFactory*)> createAudioDeviceModule,
         bool enableHighBitrateVideo,
         std::vector<std::string> preferredCodecs,
 		std::shared_ptr<PlatformContext> platformContext);
@@ -101,7 +102,7 @@ private:
     void configureSendingVideoIfNeeded();
 	void checkIsSendingVideoChanged(bool wasSending);
 	bool videoCodecsNegotiated() const;
-    
+
     int getMaxVideoBitrate() const;
     int getMaxAudioBitrate() const;
     void adjustBitratePreferences(bool resetStartBitrate);
@@ -127,11 +128,12 @@ private:
 	std::function<void(Message &&)> _sendTransportMessage;
     std::function<void(int)> _signalBarsUpdated;
     std::function<void(float)> _audioLevelUpdated;
+	std::function<rtc::scoped_refptr<webrtc::AudioDeviceModule>(webrtc::TaskQueueFactory*)> _createAudioDeviceModule;
 
 	SSRC _ssrcAudio;
 	SSRC _ssrcVideo;
 	bool _enableFlexfec = true;
-    
+
     ProtocolVersion _protocolVersion;
 
 	bool _isConnected = false;
@@ -161,7 +163,7 @@ private:
     bool _enableHighBitrateVideo = false;
     bool _isLowCostNetwork = false;
     bool _isDataSavingActive = false;
-    
+
     float _currentAudioLevel = 0.0f;
     float _currentMyAudioLevel = 0.0f;
     int _myAudioLevelPeakCount = 0;
@@ -169,7 +171,7 @@ private:
 
 	std::unique_ptr<MediaManager::NetworkInterfaceImpl> _audioNetworkInterface;
 	std::unique_ptr<MediaManager::NetworkInterfaceImpl> _videoNetworkInterface;
-    
+
     std::vector<CallStatsBitrateRecord> _bitrateRecords;
 
 	std::shared_ptr<PlatformContext> _platformContext;

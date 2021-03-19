@@ -2372,7 +2372,7 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
                 final int width = child.getWidth();
                 final int height = child.getHeight();
                 final int saveCount = canvas.saveLayer(0, 0, width, height, null, Canvas.ALL_SAVE_FLAG);
-                result = super.drawChild(canvas, child, drawingTime);
+                result = super. drawChild(canvas, child, drawingTime);
                 final float gradientStart = width * (1f - clipProgress[index]);
                 final float gradientEnd = gradientStart + gradientSize;
                 gradientMatrix.setTranslate(gradientStart, 0);

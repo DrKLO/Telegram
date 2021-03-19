@@ -452,16 +452,20 @@ public class LinkEditActivity extends BaseFragment {
                 req.revoked = false;
                 req.peer = getMessagesController().getInputPeer(-chatId);
 
+                boolean edited = false;
+
                 int i = timeChooseView.getSelectedIndex();
                 if (i < dispalyedDates.size()) {
                     if (currentInviteDate != dispalyedDates.get(i)) {
                         req.flags |= 1;
                         req.expire_date = dispalyedDates.get(i) + getConnectionsManager().getCurrentTime();
+                        edited = true;
                     }
                 } else {
                     if (currentInviteDate != 0) {
                         req.flags |= 1;
                         req.expire_date = 0;
+                        edited = true;
                     }
                 }
 
@@ -472,30 +476,34 @@ public class LinkEditActivity extends BaseFragment {
                     if (inviteToEdit.usage_limit != newLimit) {
                         req.flags |= 2;
                         req.usage_limit = newLimit;
+                        edited = true;
                     }
                 } else {
                     if (inviteToEdit.usage_limit != 0) {
                         req.flags |= 2;
                         req.usage_limit = 0;
+                        edited = true;
                     }
                 }
 
-                getConnectionsManager().sendRequest(req, (response, error) -> {
-                    AndroidUtilities.runOnUIThread(() -> {
-                        loading = false;
-                        if (progressDialog != null) {
-                            progressDialog.dismiss();
-                        }
-                        if (error == null) {
-                            if (callback != null) {
-                                callback.onLinkEdited(inviteToEdit, response);
+                if (edited) {
+                    getConnectionsManager().sendRequest(req, (response, error) -> {
+                        AndroidUtilities.runOnUIThread(() -> {
+                            loading = false;
+                            if (progressDialog != null) {
+                                progressDialog.dismiss();
                             }
-                            finishFragment();
-                        } else {
-                            AlertsCreator.showSimpleAlert(LinkEditActivity.this, error.text);
-                        }
+                            if (error == null) {
+                                if (callback != null) {
+                                    callback.onLinkEdited(inviteToEdit, response);
+                                }
+                                finishFragment();
+                            } else {
+                                AlertsCreator.showSimpleAlert(LinkEditActivity.this, error.text);
+                            }
+                        });
                     });
-                });
+                }
             }
         });
         buttonTextView.setTextColor(Theme.getColor(Theme.key_featuredStickers_buttonText));

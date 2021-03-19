@@ -30,8 +30,6 @@ import org.telegram.ui.ActionBar.Theme;
 
 public class GigagroupConvertAlert extends BottomSheet {
 
-    private boolean compteled;
-
     public static class BottomSheetCell extends FrameLayout {
 
         private View background;

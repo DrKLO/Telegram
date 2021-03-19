@@ -13,7 +13,6 @@ import android.graphics.Paint;
 import android.graphics.PixelFormat;
 import android.os.Build;
 import android.os.SystemClock;
-import android.provider.Settings;
 import android.view.Gravity;
 import android.view.HapticFeedbackConstants;
 import android.view.MotionEvent;
@@ -31,9 +30,9 @@ import androidx.core.graphics.ColorUtils;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.ChatObject;
+import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
-import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.voip.VoIPService;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.GroupCallActivity;
@@ -122,10 +121,11 @@ public class GroupCallPip implements NotificationCenter.NotificationCenterDelega
             Runnable pressedRunnable = new Runnable() {
                 @Override
                 public void run() {
-                    if (VoIPService.getSharedInstance() != null && VoIPService.getSharedInstance().isMicMute()) {
-                        ChatObject.Call call = VoIPService.getSharedInstance().groupCall;
-                        TLRPC.TL_groupCallParticipant participant = call.participants.get(UserConfig.getInstance(currentAccount).getClientUserId());
-                        if (participant != null && !participant.can_self_unmute && participant.muted && !ChatObject.canManageCalls(VoIPService.getSharedInstance().getChat())) {
+                    VoIPService voIPService = VoIPService.getSharedInstance();
+                    if (voIPService != null && voIPService.isMicMute()) {
+                        ChatObject.Call call = voIPService.groupCall;
+                        TLRPC.TL_groupCallParticipant participant = call.participants.get(voIPService.getSelfId());
+                        if (participant != null && !participant.can_self_unmute && participant.muted && !ChatObject.canManageCalls(voIPService.getChat())) {
                             return;
                         }
                         AndroidUtilities.runOnUIThread(micRunnable, 90);
@@ -673,16 +673,18 @@ public class GroupCallPip implements NotificationCenter.NotificationCenterDelega
         if (avatarsImageView.transitionProgressAnimator == null) {
             ChatObject.Call call;
 
-            if (VoIPService.getSharedInstance() != null) {
-                call = VoIPService.getSharedInstance().groupCall;
+            VoIPService voIPService = VoIPService.getSharedInstance();
+            if (voIPService != null) {
+                call = voIPService.groupCall;
             } else {
                 call = null;
             }
             if (call != null) {
+                int selfId = voIPService.getSelfId();
                 for (int a = 0, N = call.sortedParticipants.size(), k = 0; k < 2; a++) {
                     if (a < N) {
                         TLRPC.TL_groupCallParticipant participant = call.sortedParticipants.get(a);
-                        if (participant.user_id == UserConfig.getInstance(currentAccount).clientUserId || (SystemClock.uptimeMillis() - participant.lastSpeakTime > 500)) {
+                        if (MessageObject.getPeerId(participant.peer) == selfId || (SystemClock.uptimeMillis() - participant.lastSpeakTime > 500)) {
                             continue;
                         }
                         avatarsImageView.setObject(k, currentAccount, participant);

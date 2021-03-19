@@ -11,6 +11,7 @@
     <item name="object_tag" type="id"/>
     <item name="index_tag" type="id"/>
     <item name="svg_tag" type="id"/>
+    <item name="width_tag" type="id"/>
     <item name="current_animation" type="id"/>
     <item name="acc_action_small_button" type="id"/>
     <item name="acc_action_msg_options" type="id"/>

@@ -768,13 +768,21 @@ public class MediaActionDrawable extends Drawable {
         if (nextPath != null) {
             int w = (int) (AndroidUtilities.dp(24) * drawableScale);
             int h = (int) (AndroidUtilities.dp(24) * drawableScale);
+            int alpha = currentIcon == nextIcon ? 255 : (int) (transitionProgress * 255);
             paint2.setStyle(Paint.Style.FILL_AND_STROKE);
-            paint2.setAlpha(currentIcon == nextIcon ? 255 : (int) (transitionProgress * 255));
+            paint2.setAlpha(alpha);
             canvas.save();
             canvas.translate(cx - w / 2, cy - h / 2);
             canvas.drawPath(nextPath[0], paint2);
             if (nextPath[1] != null) {
-                canvas.drawPath(nextPath[1], backPaint);
+                if (alpha != 255) {
+                    int backgroundAlpha = backPaint.getAlpha();
+                    backPaint.setAlpha((int) (backgroundAlpha * (alpha / 255f)));
+                    canvas.drawPath(nextPath[1], backPaint);
+                    backPaint.setAlpha(backgroundAlpha);
+                } else {
+                    canvas.drawPath(nextPath[1], backPaint);
+                }
             }
             canvas.restore();
         }

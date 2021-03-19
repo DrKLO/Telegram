@@ -104,7 +104,7 @@ void sendRequest(JNIEnv *env, jclass c, jint instanceNum, jlong object, jobject 
     if (onWriteToSocket != nullptr) {
         onWriteToSocket = env->NewGlobalRef(onWriteToSocket);
     }
-    ConnectionsManager::getInstance(instanceNum).sendRequest(request, ([onComplete, instanceNum](TLObject *response, TL_error *error, int32_t networkType) {
+    ConnectionsManager::getInstance(instanceNum).sendRequest(request, ([onComplete, instanceNum](TLObject *response, TL_error *error, int32_t networkType, int64_t responseTime) {
         TL_api_response *resp = (TL_api_response *) response;
         jlong ptr = 0;
         jint errorCode = 0;
@@ -122,7 +122,7 @@ void sendRequest(JNIEnv *env, jclass c, jint instanceNum, jlong object, jobject 
             }
         }
         if (onComplete != nullptr) {
-            jniEnv[instanceNum]->CallVoidMethod(onComplete, jclass_RequestDelegateInternal_run, ptr, errorCode, errorText, networkType);
+            jniEnv[instanceNum]->CallVoidMethod(onComplete, jclass_RequestDelegateInternal_run, ptr, errorCode, errorText, networkType, responseTime);
         }
         if (errorText != nullptr) {
             jniEnv[instanceNum]->DeleteLocalRef(errorText);
@@ -484,7 +484,7 @@ extern "C" int registerNativeTgNetFunctions(JavaVM *vm, JNIEnv *env) {
     if (jclass_RequestDelegateInternal == 0) {
         return JNI_FALSE;
     }
-    jclass_RequestDelegateInternal_run = env->GetMethodID(jclass_RequestDelegateInternal, "run", "(JILjava/lang/String;I)V");
+    jclass_RequestDelegateInternal_run = env->GetMethodID(jclass_RequestDelegateInternal, "run", "(JILjava/lang/String;IJ)V");
     if (jclass_RequestDelegateInternal_run == 0) {
         return JNI_FALSE;
     }

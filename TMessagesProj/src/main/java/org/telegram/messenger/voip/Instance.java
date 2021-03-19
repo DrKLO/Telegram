@@ -127,7 +127,7 @@ public final class Instance {
     }
 
     public interface OnStateUpdatedListener {
-        void onStateUpdated(int state);
+        void onStateUpdated(int state, boolean inTransition);
     }
 
     public interface OnSignalBarsUpdatedListener {

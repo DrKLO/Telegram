@@ -1335,7 +1335,7 @@ public class FilterTabsView extends FrameLayout {
         boolean changed = false;
         for (int a = 0, N = tabs.size(); a < N; a++) {
             Tab tab = tabs.get(a);
-            if (tab.counter == delegate.getTabCounter(tab.id)) {
+            if (tab.counter == delegate.getTabCounter(tab.id) || delegate.getTabCounter(tab.id) < 0) {
                 continue;
             }
             changed = true;
@@ -1364,7 +1364,7 @@ public class FilterTabsView extends FrameLayout {
             return;
         }
         Tab tab = tabs.get(position);
-        if (tab.counter == delegate.getTabCounter(tab.id)) {
+        if (tab.counter == delegate.getTabCounter(tab.id) || delegate.getTabCounter(tab.id) < 0) {
             return;
         }
         listView.invalidateViews();

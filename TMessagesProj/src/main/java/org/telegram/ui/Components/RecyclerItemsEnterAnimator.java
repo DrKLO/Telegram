@@ -1,4 +1,4 @@
-package org.webrtc;
+package org.telegram.ui.Components;
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
@@ -11,9 +11,7 @@ import android.view.ViewTreeObserver;
 
 import androidx.recyclerview.widget.RecyclerView;
 
-import org.telegram.ui.Components.FlickerLoadingView;
-import org.telegram.ui.Components.RecyclerListView;
-
+import java.util.ArrayList;
 import java.util.HashSet;
 
 public class RecyclerItemsEnterAnimator {
@@ -23,12 +21,15 @@ public class RecyclerItemsEnterAnimator {
     HashSet<View> ignoreView = new HashSet<>();
     boolean invalidateAlpha;
 
+    ArrayList<AnimatorSet> currentAnimations = new ArrayList<>();
+    ArrayList<ViewTreeObserver.OnPreDrawListener> preDrawListeners = new ArrayList<>();
+
     public RecyclerItemsEnterAnimator(RecyclerListView listView) {
         this.listView = listView;
     }
 
     public void dispatchDraw() {
-        if (invalidateAlpha || listAlphaItems.size() > 0) {
+        if (invalidateAlpha) {
             for (int i = 0; i < listView.getChildCount(); i++) {
                 View child = listView.getChildAt(i);
                 int position = listView.getChildAdapterPosition(child);
@@ -75,10 +76,11 @@ public class RecyclerItemsEnterAnimator {
             from--;
         }
         int finalFrom = from;
-        listView.getViewTreeObserver().addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
+        ViewTreeObserver.OnPreDrawListener preDrawListener = new ViewTreeObserver.OnPreDrawListener() {
             @Override
             public boolean onPreDraw() {
                 listView.getViewTreeObserver().removeOnPreDrawListener(this);
+                preDrawListeners.remove(this);
                 int n = listView.getChildCount();
                 AnimatorSet animatorSet = new AnimatorSet();
                 for (int i = 0; i < n; i++) {
@@ -86,7 +88,8 @@ public class RecyclerItemsEnterAnimator {
                     int position = listView.getChildAdapterPosition(child);
                     if (child != finalProgressView && position >= finalFrom - 1 && listAlphaItems.get(position, null) == null) {
                         listAlphaItems.put(position, 0f);
-                        child.setAlpha(0);
+                        invalidateAlpha = true;
+                        listView.invalidate();
                         int s = Math.min(listView.getMeasuredHeight(), Math.max(0, child.getTop()));
                         int delay = (int) ((s / (float) listView.getMeasuredHeight()) * 100);
                         ValueAnimator a = ValueAnimator.ofFloat(0, 1f);
@@ -109,9 +112,38 @@ public class RecyclerItemsEnterAnimator {
                         animatorSet.playTogether(a);
                     }
                 }
+                currentAnimations.add(animatorSet);
                 animatorSet.start();
+                animatorSet.addListener(new AnimatorListenerAdapter() {
+                    @Override
+                    public void onAnimationEnd(Animator animation) {
+                        super.onAnimationEnd(animation);
+                        currentAnimations.remove(animatorSet);
+                        if (currentAnimations.isEmpty()) {
+                            listAlphaItems.clear();
+                            invalidateAlpha = true;
+                            listView.invalidate();
+                        }
+                    }
+                });
                 return false;
             }
-        });
+        };
+        preDrawListeners.add(preDrawListener);
+        listView.getViewTreeObserver().addOnPreDrawListener(preDrawListener);
+    }
+
+    public void onDetached() {
+        for (int i = 0; i < currentAnimations.size(); i++) {
+            currentAnimations.get(i).cancel();
+        }
+        currentAnimations.clear();
+        for (int i = 0; i < preDrawListeners.size(); i++) {
+            listView.getViewTreeObserver().removeOnPreDrawListener(preDrawListeners.get(i));
+        }
+        preDrawListeners.clear();
+
+        listAlphaItems.clear();
+        invalidateAlpha = true;
     }
 }

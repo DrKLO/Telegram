@@ -763,14 +763,56 @@ public class ActionBar extends FrameLayout {
         return actionMode != null && actionModeVisible;
     }
 
+    AnimatorSet searchVisibleAnimator;
+
     public void onSearchFieldVisibilityChanged(boolean visible) {
         isSearchFieldVisible = visible;
-        if (titleTextView[0] != null) {
-            titleTextView[0].setVisibility(visible ? INVISIBLE : VISIBLE);
+        if (searchVisibleAnimator != null) {
+            searchVisibleAnimator.cancel();
         }
+        searchVisibleAnimator = new AnimatorSet();
+        final ArrayList<View> viewsToHide = new ArrayList<>();
+
+        if (titleTextView[0] != null) {
+            viewsToHide.add(titleTextView[0]);
+        }
+
         if (subtitleTextView != null && !TextUtils.isEmpty(subtitleTextView.getText())) {
+            viewsToHide.add(subtitleTextView);
             subtitleTextView.setVisibility(visible ? INVISIBLE : VISIBLE);
         }
+
+        for (int i = 0; i < viewsToHide.size(); i++) {
+            View view = viewsToHide.get(i);
+            if (!visible) {
+                view.setVisibility(View.VISIBLE);
+                view.setAlpha(0);
+                view.setScaleX(0.95f);
+                view.setScaleY(0.95f);
+            }
+            searchVisibleAnimator.playTogether(ObjectAnimator.ofFloat(view, View.ALPHA, visible ? 0f : 1f));
+            searchVisibleAnimator.playTogether(ObjectAnimator.ofFloat(view, View.SCALE_Y, visible ? 0.95f : 1f));
+            searchVisibleAnimator.playTogether(ObjectAnimator.ofFloat(view, View.SCALE_X, visible ? 0.95f : 1f));
+        }
+
+        searchVisibleAnimator.addListener(new AnimatorListenerAdapter() {
+            @Override
+            public void onAnimationEnd(Animator animation) {
+                for (int i = 0; i < viewsToHide.size(); i++) {
+                    View view = viewsToHide.get(i);
+                    if (visible) {
+                        view.setVisibility(View.INVISIBLE);
+                        view.setAlpha(0);
+                    } else {
+                        view.setAlpha(1f);
+                    }
+                }
+
+            }
+        });
+
+        searchVisibleAnimator.setDuration(150).start();
+
         Drawable drawable = backButtonImageView.getDrawable();
         if (drawable instanceof MenuDrawable) {
             MenuDrawable menuDrawable = (MenuDrawable) drawable;
@@ -875,12 +917,22 @@ public class ActionBar extends FrameLayout {
 
         if (menu != null && menu.getVisibility() != GONE) {
             int menuWidth;
-            if (isSearchFieldVisible) {
+            boolean searchFieldIsVisible = menu.searchFieldVisible();
+            if (searchFieldIsVisible && !this.isSearchFieldVisible) {
+                menuWidth = MeasureSpec.makeMeasureSpec(width, MeasureSpec.AT_MOST);
+                menu.measure(menuWidth, actionBarHeightSpec);
+                int itemsWidth = menu.getItemsMeasuredWidth();
+                menuWidth = MeasureSpec.makeMeasureSpec(width - AndroidUtilities.dp(AndroidUtilities.isTablet() ? 74 : 66) + menu.getItemsMeasuredWidth(), MeasureSpec.EXACTLY);
+                menu.translateXItems(-itemsWidth);
+            } else if (isSearchFieldVisible) {
                 menuWidth = MeasureSpec.makeMeasureSpec(width - AndroidUtilities.dp(AndroidUtilities.isTablet() ? 74 : 66), MeasureSpec.EXACTLY);
+                menu.translateXItems(0);
             } else {
                 menuWidth = MeasureSpec.makeMeasureSpec(width, MeasureSpec.AT_MOST);
+                menu.translateXItems(0);
             }
             menu.measure(menuWidth, actionBarHeightSpec);
+
         }
 
         for (int i = 0; i < 2; i++) {
@@ -940,7 +992,7 @@ public class ActionBar extends FrameLayout {
         }
 
         if (menu != null && menu.getVisibility() != GONE) {
-            int menuLeft = isSearchFieldVisible ? AndroidUtilities.dp(AndroidUtilities.isTablet() ? 74 : 66) : (right - left) - menu.getMeasuredWidth();
+            int menuLeft = menu.searchFieldVisible() ? AndroidUtilities.dp(AndroidUtilities.isTablet() ? 74 : 66) : (right - left) - menu.getMeasuredWidth();
             menu.layout(menuLeft, additionalTop, menuLeft + menu.getMeasuredWidth(), additionalTop + menu.getMeasuredHeight());
         }
 
@@ -1055,7 +1107,6 @@ public class ActionBar extends FrameLayout {
         CharSequence textToSet = title != null ? LocaleController.getString(title, titleId) : lastTitle;
         boolean ellipsize = false;
         if (title != null) {
-
             int index = TextUtils.indexOf(textToSet, "...");
             if (index >= 0) {
                 SpannableString spannableString = SpannableString.valueOf(textToSet);

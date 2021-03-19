@@ -1698,9 +1698,8 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                 args.putInt("enc_id", high_id);
             }
             args.putInt("message_id", messageObject.getId());
-            profileActivity.getNotificationCenter().removeObserver(profileActivity, NotificationCenter.closeChats);
-            profileActivity.getNotificationCenter().postNotificationName(NotificationCenter.closeChats);
-            profileActivity.presentFragment(new ChatActivity(args), true);
+            args.putBoolean("need_remove_previous_same_chat_activity", false);
+            profileActivity.presentFragment(new ChatActivity(args), false);
         }
     }
 

@@ -220,6 +220,8 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
     private int codePointCount;
     CrossOutDrawable notifySilentDrawable;
 
+    private Runnable moveToSendStateRunnable;
+    boolean messageTransitionIsRunning;
 
     private class SeekBarWaveformView extends View {
 
@@ -270,7 +272,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
         protected void onDraw(Canvas canvas) {
             super.onDraw(canvas);
             seekBarWaveform.setColors(Theme.getColor(Theme.key_chat_recordedVoiceProgress), Theme.getColor(Theme.key_chat_recordedVoiceProgressInner), Theme.getColor(Theme.key_chat_recordedVoiceProgress));
-            seekBarWaveform.draw(canvas);
+            seekBarWaveform.draw(canvas, this);
         }
     }
 
@@ -725,7 +727,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
 
     private Drawable lockShadowDrawable;
 
-    private class RecordCircle extends View {
+    public class RecordCircle extends View {
 
         private float scale;
         private float amplitude;
@@ -744,8 +746,8 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
 
         public float iconScale;
 
-        public WaveDrawable bigWaveDrawable;
-        public WaveDrawable tinyWaveDrawable;
+        BlobDrawable tinyWaveDrawable = new BlobDrawable(11);
+        BlobDrawable bigWaveDrawable = new BlobDrawable(12);
 
         private Drawable tooltipBackground;
         private Drawable tooltipBackgroundArrow;
@@ -786,6 +788,11 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
 
         private Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
 
+        public float drawingCx, drawingCy, drawingCircleRadius;
+
+        public boolean voiceEnterTransitionInProgress;
+        public boolean skipDraw;
+
         public RecordCircle(Context context) {
             super(context);
             micDrawable = getResources().getDrawable(R.drawable.input_mic_pressed).mutate();
@@ -806,18 +813,14 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
             virtualViewHelper = new VirtualViewHelper(this);
             ViewCompat.setAccessibilityDelegate(this, virtualViewHelper);
 
-            tinyWaveDrawable = new WaveDrawable(this, 12, 0.03f, AndroidUtilities.dp(35), null);
-            bigWaveDrawable = new WaveDrawable(this, 12, 0.03f, AndroidUtilities.dp(40), tinyWaveDrawable);
-            tinyWaveDrawable.setCircleRadius(circleRadius);
-            bigWaveDrawable.setCircleRadius(circleRadius);
-            bigWaveDrawable.rotation = 30f;
 
-            bigWaveDrawable.amplitudeWaveDif = 0.02f * WaveDrawable.SINE_WAVE_SPEED;
-            tinyWaveDrawable.amplitudeWaveDif = 0.026f * WaveDrawable.SINE_WAVE_SPEED;
-            tinyWaveDrawable.amplitudeRadius = AndroidUtilities.dp(20) + AndroidUtilities.dp(20) * WaveDrawable.SMALL_WAVE_RADIUS;
-            tinyWaveDrawable.maxScale = 0.3f * WaveDrawable.SMALL_WAVE_SCALE;
-            tinyWaveDrawable.scaleSpeed = 0.001f * WaveDrawable.SMALL_WAVE_SCALE_SPEED;
-            tinyWaveDrawable.fling = WaveDrawable.FLING_DISTANCE;
+            tinyWaveDrawable.minRadius = AndroidUtilities.dp(47);
+            tinyWaveDrawable.maxRadius = AndroidUtilities.dp(55);
+            tinyWaveDrawable.generateBlob();
+
+            bigWaveDrawable.minRadius = AndroidUtilities.dp(47);
+            bigWaveDrawable.maxRadius = AndroidUtilities.dp(55);
+            bigWaveDrawable.generateBlob();
 
             lockOutlinePaint.setStyle(Paint.Style.STROKE);
             lockOutlinePaint.setStrokeCap(Paint.Cap.ROUND);
@@ -840,8 +843,9 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
         }
 
         public void setAmplitude(double value) {
-            bigWaveDrawable.setValue((float) (Math.min(WaveDrawable.MAX_AMPLITUDE, value) / WaveDrawable.MAX_AMPLITUDE));
-            tinyWaveDrawable.setValue((float) (Math.min(WaveDrawable.MAX_AMPLITUDE, value) / WaveDrawable.MAX_AMPLITUDE));
+            bigWaveDrawable.setValue((float) (Math.min(WaveDrawable.MAX_AMPLITUDE, value) / WaveDrawable.MAX_AMPLITUDE), true);
+            tinyWaveDrawable.setValue((float) (Math.min(WaveDrawable.MAX_AMPLITUDE, value) / WaveDrawable.MAX_AMPLITUDE), false);
+
             animateToAmplitude = (float) (Math.min(WaveDrawable.MAX_AMPLITUDE, value) / WaveDrawable.MAX_AMPLITUDE);
             animateAmplitudeDiff = (animateToAmplitude - amplitude) / (100 + 500.0f * WaveDrawable.animationSpeedCircle);
 
@@ -974,6 +978,9 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
 
         @Override
         protected void onDraw(Canvas canvas) {
+            if (skipDraw) {
+                return;
+            }
             float multilinTooltipOffset = 0;
             if (tooltipLayout != null && tooltipLayout.getLineCount() > 1) {
                 multilinTooltipOffset = tooltipLayout.getHeight() - tooltipLayout.getLineBottom(0);
@@ -981,6 +988,9 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
             int cx = getMeasuredWidth() - AndroidUtilities.dp2(26);
             int cy = (int) (AndroidUtilities.dp(170) + multilinTooltipOffset);
             float yAdd = 0;
+
+            drawingCx = cx + slideDelta;
+            drawingCy = cy;
 
             if (lockAnimatedTranslation != 10000) {
                 yAdd = Math.max(0, (int) (startTranslation - lockAnimatedTranslation));
@@ -1048,7 +1058,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                 float step2Time = 0.4f;
 
                 progressToSeekbarStep1 = exitTransition > step1Time ? 1f : exitTransition / step1Time;
-                exitProgress2 = Math.max(0, (exitTransition - step1Time) / step2Time);
+                exitProgress2 = messageTransitionIsRunning ? exitTransition : Math.max(0, (exitTransition - step1Time) / step2Time);
 
                 progressToSeekbarStep1 = CubicBezierInterpolator.EASE_BOTH.getInterpolation(progressToSeekbarStep1);
                 exitProgress2 = CubicBezierInterpolator.EASE_BOTH.getInterpolation(exitProgress2);
@@ -1116,11 +1126,23 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
             }
 
             if (configAnimationsEnabled) {
-                bigWaveDrawable.tick(radius);
-                tinyWaveDrawable.tick(radius);
+                tinyWaveDrawable.minRadius = AndroidUtilities.dp(47);
+                tinyWaveDrawable.maxRadius = AndroidUtilities.dp(47) + AndroidUtilities.dp(15) * BlobDrawable.FORM_SMALL_MAX;
+
+                bigWaveDrawable.minRadius = AndroidUtilities.dp(50);
+                bigWaveDrawable.maxRadius = AndroidUtilities.dp(50) + AndroidUtilities.dp(12) * BlobDrawable.FORM_BIG_MAX;
+
+                bigWaveDrawable.updateAmplitude(dt);
+                bigWaveDrawable.update(bigWaveDrawable.amplitude, 1.01f);
+                tinyWaveDrawable.updateAmplitude(dt);
+                tinyWaveDrawable.update(tinyWaveDrawable.amplitude, 1.02f);
+
+//                bigWaveDrawable.tick(radius);
+//                tinyWaveDrawable.tick(radius);
             }
             lastUpdateTime = System.currentTimeMillis();
             float slideToCancelProgress1 = slideToCancelProgress > 0.7f ? 1f : slideToCancelProgress / 0.7f;
+
             if (configAnimationsEnabled && progressToSeekbarStep2 != 1 && exitProgress2 < 0.4f && slideToCancelProgress1 > 0 && !canceledByGesture) {
                 if (showWaves && wavesEnterAnimation != 1f) {
                     wavesEnterAnimation += 0.04f;
@@ -1128,59 +1150,69 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                         wavesEnterAnimation = 1f;
                     }
                 }
-                float enter = CubicBezierInterpolator.EASE_OUT.getInterpolation(wavesEnterAnimation);
-                bigWaveDrawable.draw(cx + slideDelta, cy, scale * (1f - progressToSeekbarStep1) * slideToCancelProgress1 * enter, canvas);
-                tinyWaveDrawable.draw(cx + slideDelta, cy, scale * (1f - progressToSeekbarStep1) * slideToCancelProgress1 * enter, canvas);
+                if (!voiceEnterTransitionInProgress) {
+                    float enter = CubicBezierInterpolator.EASE_OUT.getInterpolation(wavesEnterAnimation);
+                    canvas.save();
+                    float s = scale * (1f - progressToSeekbarStep1) * slideToCancelProgress1 * enter * (BlobDrawable.SCALE_BIG_MIN + 1.4f * bigWaveDrawable.amplitude);
+                    canvas.scale(s, s, cx + slideDelta, cy);
+                    bigWaveDrawable.draw(cx + slideDelta, cy, canvas, bigWaveDrawable.paint);
+                    canvas.restore();
+                    s = scale * (1f - progressToSeekbarStep1) * slideToCancelProgress1 * enter * (BlobDrawable.SCALE_SMALL_MIN + 1.4f * tinyWaveDrawable.amplitude);
+                    canvas.save();
+                    canvas.scale(s, s, cx + slideDelta, cy);
+                    tinyWaveDrawable.draw(cx + slideDelta, cy, canvas, tinyWaveDrawable.paint);
+                    canvas.restore();
+                }
             }
 
 
-            paint.setAlpha((int) (paintAlpha * circleAlpha));
-            if (this.scale == 1f) {
-                if (transformToSeekbar != 0) {
-                    if (progressToSeekbarStep3 > 0) {
-                        float circleB = cy + radius;
-                        float circleT = cy - radius;
-                        float circleR = cx + slideDelta + radius;
-                        float circleL = cx + slideDelta - radius;
+            if (!voiceEnterTransitionInProgress) {
+                paint.setAlpha((int) (paintAlpha * circleAlpha));
+                if (this.scale == 1f) {
+                    if (transformToSeekbar != 0) {
+                        if (progressToSeekbarStep3 > 0) {
+                            float circleB = cy + radius;
+                            float circleT = cy - radius;
+                            float circleR = cx + slideDelta + radius;
+                            float circleL = cx + slideDelta - radius;
 
-                        int topOffset = 0;
-                        int leftOffset = 0;
+                            int topOffset = 0;
+                            int leftOffset = 0;
 
-                        View transformToView = recordedAudioBackground;
-                        View v = (View) transformToView.getParent();
-                        while (v != getParent()) {
-                            topOffset += v.getTop();
-                            leftOffset += v.getLeft();
-                            v = (View) v.getParent();
+                            View transformToView = recordedAudioBackground;
+                            View v = (View) transformToView.getParent();
+                            while (v != getParent()) {
+                                topOffset += v.getTop();
+                                leftOffset += v.getLeft();
+                                v = (View) v.getParent();
+                            }
+
+                            int seekbarT = transformToView.getTop() + topOffset - getTop();
+                            int seekbarB = transformToView.getBottom() + topOffset - getTop();
+                            int seekbarR = transformToView.getRight() + leftOffset - getLeft();
+                            int seekbarL = transformToView.getLeft() + leftOffset - getLeft();
+                            float toRadius = isInVideoMode() ? 0 : transformToView.getMeasuredHeight() / 2f;
+
+                            float top = seekbarT + (circleT - seekbarT) * (1f - progressToSeekbarStep3);
+                            float bottom = seekbarB + (circleB - seekbarB) * (1f - progressToSeekbarStep3);
+                            float left = seekbarL + (circleL - seekbarL) * (1f - progressToSeekbarStep3);
+                            float right = seekbarR + (circleR - seekbarR) * (1f - progressToSeekbarStep3);
+                            float transformRadius = toRadius + (radius - toRadius) * (1f - progressToSeekbarStep3);
+
+                            rectF.set(left, top, right, bottom);
+                            canvas.drawRoundRect(rectF, transformRadius, transformRadius, paint);
+                        } else {
+                            canvas.drawCircle(cx + slideDelta, cy, radius, paint);
                         }
-
-                        int seekbarT = transformToView.getTop() + topOffset - getTop();
-                        int seekbarB = transformToView.getBottom() + topOffset - getTop();
-                        int seekbarR = transformToView.getRight() + leftOffset - getLeft();
-                        int seekbarL = transformToView.getLeft() + leftOffset - getLeft();
-                        float toRadius = isInVideoMode() ? 0 : transformToView.getMeasuredHeight() / 2f;
-
-                        float top = seekbarT + (circleT - seekbarT) * (1f - progressToSeekbarStep3);
-                        float bottom = seekbarB + (circleB - seekbarB) * (1f - progressToSeekbarStep3);
-                        float left = seekbarL + (circleL - seekbarL) * (1f - progressToSeekbarStep3);
-                        float right = seekbarR + (circleR - seekbarR) * (1f - progressToSeekbarStep3);
-                        float transformRadius = toRadius + (radius - toRadius) * (1f - progressToSeekbarStep3);
-
-                        rectF.set(left, top, right, bottom);
-                        canvas.drawRoundRect(rectF, transformRadius, transformRadius, paint);
                     } else {
                         canvas.drawCircle(cx + slideDelta, cy, radius, paint);
                     }
-                } else {
-                    canvas.drawCircle(cx + slideDelta, cy, radius, paint);
+                    canvas.save();
+                    float a = (1f - exitProgress2);
+                    canvas.translate(slideDelta, 0);
+                    drawIconInternal(canvas, drawable, replaceDrawable, progressToSendButton, (int) ((1f - progressToSeekbarStep2) * a * 255));
+                    canvas.restore();
                 }
-                canvas.save();
-                float s = (1f - progressToSeekbarStep2) * (1f - exitProgress2);
-                //canvas.scale(s, s, sendRect.centerX(), sendRect.centerY());
-                //canvas.clipPath(new Path());
-                float a = /*(canceledByGesture ? (1f - slideToCancelProgress) : 1) */ (1f - exitProgress2);
-                drawIcon(canvas, drawable, replaceDrawable, progressToSendButton, (int) ((1f - progressToSeekbarStep2) * a * 255));
-                canvas.restore();
             }
 
             if (isSendButtonVisible()) {
@@ -1354,13 +1386,35 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
             if (scale != 1f) {
                 canvas.drawCircle(cx + slideDelta, cy, radius, paint);
                 float a = (canceledByGesture ? (1f - slideToCancelProgress) : 1);
-                drawIcon(canvas, drawable, replaceDrawable, progressToSendButton, (int) (255 * a));
+                canvas.save();
+                canvas.translate(slideDelta, 0);
+                drawIconInternal(canvas, drawable, replaceDrawable, progressToSendButton, (int) (255 * a));
+                canvas.restore();
             }
+            drawingCircleRadius = radius;
+        }
+        
+        public void drawIcon(Canvas canvas, int cx, int cy, float alpha) {
+            Drawable drawable;
+            Drawable replaceDrawable = null;
+            if (isSendButtonVisible()) {
+                if (progressToSendButton != 1f) {
+                    replaceDrawable = videoSendButton != null && videoSendButton.getTag() != null ? cameraDrawable : micDrawable;
+                }
+                drawable = sendDrawable;
+            } else {
+                drawable = videoSendButton != null && videoSendButton.getTag() != null ? cameraDrawable : micDrawable;
+            }
+            sendRect.set(cx - drawable.getIntrinsicWidth() / 2, cy - drawable.getIntrinsicHeight() / 2, cx + drawable.getIntrinsicWidth() / 2, cy + drawable.getIntrinsicHeight() / 2);
+            drawable.setBounds(sendRect);
+            if (replaceDrawable != null) {
+                replaceDrawable.setBounds(cx - replaceDrawable.getIntrinsicWidth() / 2, cy - replaceDrawable.getIntrinsicHeight() / 2, cx + replaceDrawable.getIntrinsicWidth() / 2, cy + replaceDrawable.getIntrinsicHeight() / 2);
+            }
+
+            drawIconInternal(canvas, drawable, replaceDrawable, progressToSendButton, (int) (255 * alpha));
         }
 
-        private void drawIcon(Canvas canvas, Drawable drawable, Drawable replaceDrawable, float progressToSendButton, int alpha) {
-            canvas.save();
-            canvas.translate(slideDelta, 0);
+        private void drawIconInternal(Canvas canvas, Drawable drawable, Drawable replaceDrawable, float progressToSendButton, int alpha) {
             if (progressToSendButton == 0 || progressToSendButton == 1 || replaceDrawable == null) {
                 if (canceledByGesture && slideToCancelProgress == 1f) {
                     View v = isInVideoMode() ? videoSendButton : audioSendButton;
@@ -1395,7 +1449,6 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                 replaceDrawable.draw(canvas);
                 canvas.restore();
             }
-            canvas.restore();
         }
 
         @Override
@@ -1425,8 +1478,8 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
 
         public void updateColors() {
             paint.setColor(Theme.getColor(Theme.key_chat_messagePanelVoiceBackground));
-            tinyWaveDrawable.setColor(Theme.getColor(Theme.key_chat_messagePanelVoiceBackground), (int) (255 * WaveDrawable.CIRCLE_ALPHA_2));
-            bigWaveDrawable.setColor(Theme.getColor(Theme.key_chat_messagePanelVoiceBackground), (int) (255 * WaveDrawable.CIRCLE_ALPHA_1));
+            tinyWaveDrawable.paint.setColor(ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_chat_messagePanelVoiceBackground), (int) (255 * WaveDrawable.CIRCLE_ALPHA_2)));
+            bigWaveDrawable.paint.setColor(ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_chat_messagePanelVoiceBackground), (int) (255 * WaveDrawable.CIRCLE_ALPHA_1)));
             tooltipPaint.setColor(Theme.getColor(Theme.key_chat_gifSaveHintText));
             tooltipBackground = Theme.createRoundRectDrawable(AndroidUtilities.dp(5), Theme.getColor(Theme.key_chat_gifSaveHintBackground));
             tooltipBackgroundArrow.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_chat_gifSaveHintBackground), PorterDuff.Mode.MULTIPLY));
@@ -1481,11 +1534,27 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
             showWaves = b;
         }
 
+        public void drawWaves(Canvas canvas, float cx, float cy, float additionalScale) {
+            float enter = CubicBezierInterpolator.EASE_OUT.getInterpolation(wavesEnterAnimation);
+            float slideToCancelProgress1 = slideToCancelProgress > 0.7f ? 1f : slideToCancelProgress / 0.7f;
+            canvas.save();
+            float s = scale * slideToCancelProgress1 * enter * (BlobDrawable.SCALE_BIG_MIN + 1.4f * bigWaveDrawable.amplitude) * additionalScale;
+            canvas.scale(s, s, cx, cy);
+            bigWaveDrawable.draw(cx, cy, canvas, bigWaveDrawable.paint);
+            canvas.restore();
+            s = scale * slideToCancelProgress1 * enter * (BlobDrawable.SCALE_SMALL_MIN + 1.4f * tinyWaveDrawable.amplitude) * additionalScale;
+            canvas.save();
+            canvas.scale(s, s, cx, cy);
+            tinyWaveDrawable.draw(cx, cy, canvas, tinyWaveDrawable.paint);
+            canvas.restore();
+        }
+
         private class VirtualViewHelper extends ExploreByTouchHelper {
 
             public VirtualViewHelper(@NonNull View host) {
                 super(host);
             }
+
 
             @Override
             protected int getVirtualViewAt(float x, float y) {
@@ -2260,7 +2329,11 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                             delegate.needStartRecordAudio(0);
                         }
                         recordingAudioVideo = false;
-                        updateRecordIntefrace(RECORD_STATE_SENDING);
+                        AndroidUtilities.runOnUIThread(moveToSendStateRunnable = () -> {
+                            moveToSendStateRunnable = null;
+                            messageTransitionIsRunning = false;
+                            updateRecordIntefrace(RECORD_STATE_SENDING);
+                        }, 200);
                     }
                     return false;
                 }
@@ -2336,7 +2409,11 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                             MediaController.getInstance().stopRecording(isInScheduleMode() ? 3 : 1, true, 0);
                         }
                         recordingAudioVideo = false;
-                        updateRecordIntefrace(RECORD_STATE_SENDING);
+                        AndroidUtilities.runOnUIThread(moveToSendStateRunnable = () -> {
+                            moveToSendStateRunnable = null;
+                            messageTransitionIsRunning = false;
+                            updateRecordIntefrace(RECORD_STATE_SENDING);
+                        }, 500);
                     }
                 }
             } else if (motionEvent.getAction() == MotionEvent.ACTION_MOVE && recordingAudioVideo) {
@@ -2778,7 +2855,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                     sendPopupWindow.dismiss();
                 }
             });
-            sendPopupLayout.setShowedFromBotton(false);
+            sendPopupLayout.setShownFromBotton(false);
 
             for (int a = 0; a < 2; a++) {
                 if (a == 0 && !parentFragment.canScheduleMessage() || a == 1 && (UserObject.isUserSelf(user) || slowModeTimer > 0 && !isInScheduleMode())) {
@@ -4610,7 +4687,25 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
         }
     }
 
+    public void startMessageTransition() {
+        if (moveToSendStateRunnable != null) {
+            AndroidUtilities.cancelRunOnUIThread(moveToSendStateRunnable);
+            moveToSendStateRunnable = null;
+        }
+        messageTransitionIsRunning = true;
+        updateRecordIntefrace(RECORD_STATE_SENDING);
+    }
+
+    public boolean canShowVoiceMessageTransition() {
+        return moveToSendStateRunnable != null;
+    }
+
     private void updateRecordIntefrace(int recordState) {
+        if (moveToSendStateRunnable != null) {
+            AndroidUtilities.cancelRunOnUIThread(moveToSendStateRunnable);
+            moveToSendStateRunnable = null;
+        }
+        recordCircle.voiceEnterTransitionInProgress = false;
         if (recordingAudioVideo) {
             if (recordInterfaceState == 1) {
                 return;
@@ -5170,14 +5265,14 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                     iconsAnimator.playTogether(ObjectAnimator.ofFloat(videoSendButton, View.ALPHA, isInVideoMode() ? 1 : 0));
                 }
                 if (attachLayout != null) {
+                    attachLayout.setTranslationX(0);
                     iconsAnimator.playTogether(
-                            ObjectAnimator.ofFloat(attachLayout, View.TRANSLATION_X, 0),
                             ObjectAnimator.ofFloat(attachLayout, View.ALPHA, 1f)
                     );
                 }
                 if (scheduledButton != null) {
+                    scheduledButton.setTranslationX(0);
                     iconsAnimator.playTogether(
-                            ObjectAnimator.ofFloat(scheduledButton, View.TRANSLATION_X, 0),
                             ObjectAnimator.ofFloat(scheduledButton, View.ALPHA, 1f)
                     );
                 }
@@ -5196,7 +5291,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                 recordTimer.setDuration(150);
 
                 Animator recordCircleAnimator = ObjectAnimator.ofFloat(recordCircle, "exitTransition", 1.0f);
-                recordCircleAnimator.setDuration(360);
+                recordCircleAnimator.setDuration(messageTransitionIsRunning ? 220 : 360);
 
                 messageEditText.setTranslationX(0f);
                 ObjectAnimator messageEditTextAniamtor = ObjectAnimator.ofFloat(messageEditText, View.ALPHA, 1);
@@ -5384,6 +5479,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                 }
                 setFieldText(textToSetWithKeyboard);
             }
+            messageEditText.requestFocus();
             openKeyboard();
             FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) messageEditText.getLayoutParams();
             layoutParams.rightMargin = AndroidUtilities.dp(4);
@@ -5475,6 +5571,10 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
 
     public View getSendButton() {
         return sendButton.getVisibility() == VISIBLE ? sendButton : audioVideoButtonContainer;
+    }
+
+    public View getAudioVideoButtonContainer() {
+        return audioVideoButtonContainer;
     }
 
     public EmojiView getEmojiView() {
@@ -6701,7 +6801,10 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
     }
 
     public void openKeyboard() {
-        AndroidUtilities.showKeyboard(messageEditText);
+        if (!AndroidUtilities.showKeyboard(messageEditText)) {
+            messageEditText.clearFocus();
+            messageEditText.requestFocus();
+        }
     }
 
     public void closeKeyboard() {
@@ -7815,5 +7918,9 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
 
     protected boolean pannelAnimationEnabled() {
         return true;
+    }
+
+    public RecordCircle getRecordCicle() {
+        return recordCircle;
     }
 }

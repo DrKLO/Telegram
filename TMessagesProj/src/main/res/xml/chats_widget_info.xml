@@ -4,7 +4,7 @@
     android:minWidth="320dp"
     android:minHeight="78dp"
     android:updatePeriodMillis="3600000"
-    android:initialLayout="@layout/shortcut_widget_layout_2"
+    android:initialLayout="@layout/shortcut_widget_layout_1"
     android:autoAdvanceViewId="@id/list_view"
     android:resizeMode="horizontal|vertical"
     android:widgetCategory="home_screen"

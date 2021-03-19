@@ -1493,7 +1493,7 @@ public class AlertsCreator {
         AlertDialog dialog = new AlertDialog.Builder(context).setView(frameLayout)
                 .setPositiveButton(LocaleController.getString("Call", R.string.Call), (dialogInterface, i) -> {
                     final TLRPC.UserFull userFull = fragment.getMessagesController().getUserFull(user.id);
-                    VoIPHelper.startCall(user, videoCall, userFull != null && userFull.video_calls_available, fragment.getParentActivity(), userFull);
+                    VoIPHelper.startCall(user, videoCall, userFull != null && userFull.video_calls_available, fragment.getParentActivity(), userFull, fragment.getAccountInstance());
                 })
                 .setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null)
                 .create();
@@ -2479,7 +2479,19 @@ public class AlertsCreator {
                 ((ChatActivity) parentFragment).openReportChat(i);
                 return;
             } else if (messageId == 0 && (i == 5 || i == 1) || messageId != 0 && i == 4) {
+                if (parentFragment instanceof ChatActivity) {
+                    AndroidUtilities.requestAdjustNothing(parentFragment.getParentActivity(), parentFragment.getClassGuid());
+                }
                 parentFragment.showDialog(new ReportAlert(context, i == 4 ? 5 : i) {
+
+                    @Override
+                    public void dismissInternal() {
+                        super.dismissInternal();
+                        if (parentFragment instanceof ChatActivity) {
+                            ((ChatActivity) parentFragment).checkAdjustResize();
+                        }
+                    }
+
                     @Override
                     protected void onSend(int type, String message) {
                         ArrayList<Integer> ids = new ArrayList<>();
@@ -3003,6 +3015,8 @@ public class AlertsCreator {
         frameLayout.addView(imageView, LayoutHelper.createFrame(52, 52, Gravity.CENTER, 0, 0, 0, 11));
 
         builder.setTopView(frameLayout);
+        float aspectRatio = 354f / 936f;
+        builder.setTopViewAspectRatio(aspectRatio);
         builder.setMessage(AndroidUtilities.replaceTags(LocaleController.getString("PermissionBackgroundLocation", R.string.PermissionBackgroundLocation)));
         builder.setPositiveButton(LocaleController.getString("OK", R.string.OK), (dialog, which) -> {
             if (activity.checkSelfPermission(Manifest.permission.ACCESS_BACKGROUND_LOCATION) != PackageManager.PERMISSION_GRANTED) {
@@ -3485,7 +3499,7 @@ public class AlertsCreator {
         for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
             TLRPC.User u = UserConfig.getInstance(a).getCurrentUser();
             if (u != null) {
-                AccountSelectCell cell = new AccountSelectCell(parentActivity);
+                AccountSelectCell cell = new AccountSelectCell(parentActivity, false);
                 cell.setAccount(a, false);
                 cell.setPadding(AndroidUtilities.dp(14), 0, AndroidUtilities.dp(14), 0);
                 cell.setBackgroundDrawable(Theme.getSelectorDrawable(false));

@@ -3830,15 +3830,15 @@ public class MediaDataController extends BaseController {
                 }
             }
             if (!results.isEmpty()) {
+                if (!usersToLoad.isEmpty()) {
+                    getMessagesStorage().getUsersInternal(TextUtils.join(",", usersToLoad), users);
+                }
+                if (!chatsToLoad.isEmpty()) {
+                    getMessagesStorage().getChatsInternal(TextUtils.join(",", chatsToLoad), chats);
+                }
                 if (returnValue) {
                     return broadcastPinnedMessage(results, users, chats, true, true);
                 } else {
-                    if (!usersToLoad.isEmpty()) {
-                        getMessagesStorage().getUsersInternal(TextUtils.join(",", usersToLoad), users);
-                    }
-                    if (!chatsToLoad.isEmpty()) {
-                        getMessagesStorage().getChatsInternal(TextUtils.join(",", chatsToLoad), chats);
-                    }
                     broadcastPinnedMessage(results, users, chats, true, false);
                 }
             }

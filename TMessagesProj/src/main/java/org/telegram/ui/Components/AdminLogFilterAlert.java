@@ -120,11 +120,7 @@ public class AdminLogFilterAlert extends BottomSheet {
             pinnedRow = -1;
         }
         leavingRow = rowCount++;
-        if (isMegagroup) {
-            callsRow = rowCount++;
-        } else {
-            callsRow = -1;
-        }
+        callsRow = rowCount++;
         rowCount += 1;
         allAdminsRow = rowCount;
 
@@ -154,7 +150,7 @@ public class AdminLogFilterAlert extends BottomSheet {
                     height -= AndroidUtilities.statusBarHeight;
                 }
                 int measuredWidth = getMeasuredWidth();
-                int contentSize = AndroidUtilities.dp(48) + (isMegagroup ? 11 : 7) * AndroidUtilities.dp(48) + backgroundPaddingTop + AndroidUtilities.dp(17);
+                int contentSize = AndroidUtilities.dp(48) + (isMegagroup ? 11 : 8) * AndroidUtilities.dp(48) + backgroundPaddingTop + AndroidUtilities.dp(17);
                 if (currentAdmins != null) {
                     contentSize += (currentAdmins.size() + 1) * AndroidUtilities.dp(48) + AndroidUtilities.dp(20);
                 }
@@ -394,7 +390,7 @@ public class AdminLogFilterAlert extends BottomSheet {
 
         @Override
         public int getItemCount() {
-            return (isMegagroup ? 11 : 7) + (currentAdmins != null ? 2 + currentAdmins.size() : 0);
+            return (isMegagroup ? 11 : 8) + (currentAdmins != null ? 2 + currentAdmins.size() : 0);
         }
 
         @Override

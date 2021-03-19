@@ -47,7 +47,7 @@ set_target_properties(tgvoip PROPERTIES
 target_compile_definitions(tgvoip PUBLIC
         HAVE_PTHREAD __STDC_LIMIT_MACROS BSD=1 USE_KISS_FFT TGVOIP_NO_VIDEO NULL=0 SOCKLEN_T=socklen_t LOCALE_NOT_USED _LARGEFILE_SOURCE=1 _FILE_OFFSET_BITS=64 restrict= __EMX__ OPUS_BUILD FIXED_POINT USE_ALLOCA HAVE_LRINT HAVE_LRINTF)
 target_compile_definitions(tgvoip PUBLIC
-        RTC_ENABLE_VP9 WEBRTC_POSIX WEBRTC_LINUX WEBRTC_ANDROID WEBRTC_APM_DEBUG_DUMP=0 WEBRTC_USE_BUILTIN_ISAC_FLOAT WEBRTC_OPUS_VARIABLE_COMPLEXITY=0 HAVE_NETINET_IN_H WEBRTC_INCLUDE_INTERNAL_AUDIO_DEVICE __Userspace__ SCTP_SIMPLE_ALLOCATOR SCTP_PROCESS_LEVEL_LOCKS __Userspace_os_Linux)
+        RTC_ENABLE_VP9 WEBRTC_POSIX WEBRTC_LINUX WEBRTC_ANDROID HAVE_SCTP WEBRTC_APM_DEBUG_DUMP=0 WEBRTC_USE_BUILTIN_ISAC_FLOAT WEBRTC_OPUS_VARIABLE_COMPLEXITY=0 HAVE_NETINET_IN_H WEBRTC_INCLUDE_INTERNAL_AUDIO_DEVICE __Userspace__ SCTP_SIMPLE_ALLOCATOR SCTP_PROCESS_LEVEL_LOCKS __Userspace_os_Linux)
 target_include_directories(tgvoip PUBLIC
         ./
         voip
@@ -427,7 +427,7 @@ target_compile_options(tgcalls_tp PUBLIC
 set_target_properties(tgcalls_tp PROPERTIES
         ANDROID_ARM_MODE arm)
 target_compile_definitions(tgcalls_tp PUBLIC
-        HAVE_PTHREAD RTC_ENABLE_VP9 WEBRTC_POSIX WEBRTC_LINUX WEBRTC_ANDROID WEBRTC_APM_DEBUG_DUMP=0 WEBRTC_USE_BUILTIN_ISAC_FLOAT WEBRTC_OPUS_VARIABLE_COMPLEXITY=0 HAVE_NETINET_IN_H WEBRTC_INCLUDE_INTERNAL_AUDIO_DEVICE __Userspace__ SCTP_SIMPLE_ALLOCATOR SCTP_PROCESS_LEVEL_LOCKS __Userspace_os_Linux HAVE_WEBRTC_VIDEO __ANDROID__)
+        HAVE_PTHREAD RTC_ENABLE_VP9 WEBRTC_POSIX WEBRTC_LINUX WEBRTC_ANDROID HAVE_SCTP WEBRTC_APM_DEBUG_DUMP=0 WEBRTC_USE_BUILTIN_ISAC_FLOAT WEBRTC_OPUS_VARIABLE_COMPLEXITY=0 HAVE_NETINET_IN_H WEBRTC_INCLUDE_INTERNAL_AUDIO_DEVICE __Userspace__ SCTP_SIMPLE_ALLOCATOR SCTP_PROCESS_LEVEL_LOCKS __Userspace_os_Linux HAVE_WEBRTC_VIDEO __ANDROID__)
 target_include_directories(tgcalls_tp PUBLIC
         ./
         voip
@@ -734,13 +734,17 @@ add_library(tgcalls STATIC
         voip/tgcalls/MediaManager.cpp
         voip/tgcalls/Message.cpp
         voip/tgcalls/NetworkManager.cpp
+        voip/tgcalls/StaticThreads.cpp
         voip/tgcalls/ThreadLocalObject.cpp
         voip/tgcalls/VideoCaptureInterface.cpp
         voip/tgcalls/VideoCaptureInterfaceImpl.cpp
         voip/tgcalls/JsonConfig.cpp
+        voip/tgcalls/AudioDeviceHelper.cpp
         voip/tgcalls/reference/InstanceImplReference.cpp
         voip/tgcalls/legacy/InstanceImplLegacy.cpp
-        voip/tgcalls/group/GroupInstanceImpl.cpp
+        voip/tgcalls/group/GroupNetworkManager.cpp
+        voip/tgcalls/group/GroupInstanceCustomImpl.cpp
+        voip/tgcalls/group/StreamingPart.cpp
 
         voip/webrtc/rtc_base/async_invoker.cc
         voip/webrtc/rtc_base/async_packet_socket.cc
@@ -1935,7 +1939,7 @@ target_compile_options(tgcalls PUBLIC
 set_target_properties(tgcalls PROPERTIES
         ANDROID_ARM_MODE arm)
 target_compile_definitions(tgcalls PUBLIC
-        WEBRTC_APM_DEBUG_DUMP=0 WEBRTC_NS_FLOAT HAVE_PTHREAD RTC_ENABLE_VP9 WEBRTC_POSIX WEBRTC_LINUX WEBRTC_ANDROID WEBRTC_APM_DEBUG_DUMP=0 WEBRTC_USE_BUILTIN_ISAC_FLOAT WEBRTC_OPUS_VARIABLE_COMPLEXITY=0 HAVE_NETINET_IN_H WEBRTC_INCLUDE_INTERNAL_AUDIO_DEVICE HAVE_WEBRTC_VIDEO)
+        WEBRTC_APM_DEBUG_DUMP=0 WEBRTC_NS_FLOAT HAVE_PTHREAD RTC_ENABLE_VP9 WEBRTC_POSIX WEBRTC_LINUX WEBRTC_ANDROID HAVE_SCTP WEBRTC_APM_DEBUG_DUMP=0 WEBRTC_USE_BUILTIN_ISAC_FLOAT WEBRTC_OPUS_VARIABLE_COMPLEXITY=0 HAVE_NETINET_IN_H WEBRTC_INCLUDE_INTERNAL_AUDIO_DEVICE HAVE_WEBRTC_VIDEO)
 target_include_directories(tgcalls PUBLIC
         ./
         voip
@@ -1956,7 +1960,8 @@ target_include_directories(tgcalls PUBLIC
         third_party/libvpx/source/config
         third_party/usrsctplib
         third_party
-        voip/libtgvoip)
+        voip/libtgvoip
+        ffmpeg/include)
 
 if (${ANDROID_ABI} STREQUAL "armeabi-v7a")
     target_sources(tgcalls PRIVATE
@@ -2111,10 +2116,11 @@ target_compile_options(voipandroid PUBLIC
 set_target_properties(voipandroid PROPERTIES
         ANDROID_ARM_MODE arm)
 target_compile_definitions(voipandroid PUBLIC
-        WEBRTC_APM_DEBUG_DUMP=0 WEBRTC_NS_FLOAT HAVE_PTHREAD RTC_ENABLE_VP9 WEBRTC_POSIX WEBRTC_LINUX WEBRTC_ANDROID WEBRTC_APM_DEBUG_DUMP=0 WEBRTC_USE_BUILTIN_ISAC_FLOAT WEBRTC_OPUS_VARIABLE_COMPLEXITY=0 HAVE_NETINET_IN_H WEBRTC_INCLUDE_INTERNAL_AUDIO_DEVICE HAVE_WEBRTC_VIDEO)
+        WEBRTC_APM_DEBUG_DUMP=0 WEBRTC_NS_FLOAT HAVE_PTHREAD RTC_ENABLE_VP9 WEBRTC_POSIX WEBRTC_LINUX WEBRTC_ANDROID HAVE_SCTP WEBRTC_APM_DEBUG_DUMP=0 WEBRTC_USE_BUILTIN_ISAC_FLOAT WEBRTC_OPUS_VARIABLE_COMPLEXITY=0 HAVE_NETINET_IN_H WEBRTC_INCLUDE_INTERNAL_AUDIO_DEVICE HAVE_WEBRTC_VIDEO)
 target_include_directories(voipandroid PUBLIC
         ./
         voip
+        rlottie/src/lottie
         boringssl/include
         voip/tgcalls
         voip/webrtc

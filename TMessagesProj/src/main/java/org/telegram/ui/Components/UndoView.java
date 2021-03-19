@@ -35,6 +35,7 @@ import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ChatObject;
+import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.Emoji;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ImageLocation;
@@ -118,10 +119,15 @@ public class UndoView extends FrameLayout {
     public final static int ACTION_VOIP_INVITED = 34;
     public final static int ACTION_VOIP_MUTED_FOR_YOU = 35;
     public final static int ACTION_VOIP_UNMUTED_FOR_YOU = 36;
+    public final static int ACTION_VOIP_USER_CHANGED = 37;
+    public final static int ACTION_VOIP_CAN_NOW_SPEAK = 38;
+    public final static int ACTION_VOIP_RECORDING_STARTED = 39;
+    public final static int ACTION_VOIP_RECORDING_FINISHED = 40;
+    public final static int ACTION_VOIP_INVITE_LINK_SENT = 41;
 
-    public final static int ACTION_IMPORT_NOT_MUTUAL = 40;
-    public final static int ACTION_IMPORT_GROUP_NOT_ADMIN = 41;
-    public final static int ACTION_IMPORT_INFO = 42;
+    public final static int ACTION_IMPORT_NOT_MUTUAL = 45;
+    public final static int ACTION_IMPORT_GROUP_NOT_ADMIN = 46;
+    public final static int ACTION_IMPORT_INFO = 47;
 
     public final static int ACTION_PLAYBACK_SPEED_ENABLED = 50;
     public final static int ACTION_PLAYBACK_SPEED_DISABLED = 51;
@@ -271,7 +277,8 @@ public class UndoView extends FrameLayout {
                 currentAction == ACTION_ADDED_TO_FOLDER || currentAction == ACTION_REMOVED_FROM_FOLDER || currentAction == ACTION_PROFILE_PHOTO_CHANGED ||
                 currentAction == ACTION_CHAT_UNARCHIVED || currentAction == ACTION_VOIP_MUTED || currentAction == ACTION_VOIP_UNMUTED || currentAction == ACTION_VOIP_REMOVED ||
                 currentAction == ACTION_VOIP_LINK_COPIED || currentAction == ACTION_VOIP_INVITED || currentAction == ACTION_VOIP_MUTED_FOR_YOU || currentAction == ACTION_VOIP_UNMUTED_FOR_YOU ||
-                currentAction == ACTION_REPORT_SENT;
+                currentAction == ACTION_REPORT_SENT || currentAction == ACTION_VOIP_USER_CHANGED || currentAction == ACTION_VOIP_CAN_NOW_SPEAK || currentAction == ACTION_VOIP_RECORDING_STARTED ||
+                currentAction == ACTION_VOIP_RECORDING_FINISHED;
     }
 
     private boolean hasSubInfo() {
@@ -312,6 +319,7 @@ public class UndoView extends FrameLayout {
         }
         if (currentAction == ACTION_CLEAR || currentAction == ACTION_DELETE) {
             MessagesController.getInstance(currentAccount).removeDialogAction(currentDialogId, currentAction == ACTION_CLEAR, apply);
+            onRemoveDialogAction(currentDialogId, currentAction);
         }
         if (animated != 0) {
             AnimatorSet animatorSet = new AnimatorSet();
@@ -340,6 +348,10 @@ public class UndoView extends FrameLayout {
             setTranslationY((fromTop ? -1.0f : 1.0f) * (AndroidUtilities.dp(8) + undoViewHeight));
             setVisibility(INVISIBLE);
         }
+    }
+
+    protected void onRemoveDialogAction(long currentDialogId, int action) {
+
     }
 
     public void didPressUrl(CharacterStyle span) {
@@ -396,6 +408,8 @@ public class UndoView extends FrameLayout {
 
         infoTextView.setMinHeight(0);
         boolean infoOnly = false;
+        boolean reversedPlay = false;
+        int reversedPlayEndFrame = 0;
 
         if (isTooltipAction()) {
             CharSequence infoText;
@@ -421,38 +435,125 @@ public class UndoView extends FrameLayout {
                 avatarImageView.setImage(ImageLocation.getForUser(user, false), "50_50", avatarDrawable, user);
                 avatarImageView.setVisibility(VISIBLE);
                 timeLeft = 3000;
+            } else if (action == ACTION_VOIP_USER_CHANGED) {
+                AvatarDrawable avatarDrawable = new AvatarDrawable();
+                avatarDrawable.setTextSize(AndroidUtilities.dp(12));
+                String name;
+                if (infoObject instanceof TLRPC.User) {
+                    TLRPC.User user = (TLRPC.User) infoObject;
+                    avatarDrawable.setInfo(user);
+                    avatarImageView.setImage(ImageLocation.getForUser(user, false), "50_50", avatarDrawable, user);
+                    name = ContactsController.formatName(user.first_name, user.last_name);
+                } else {
+                    TLRPC.Chat chat = (TLRPC.Chat) infoObject;
+                    avatarDrawable.setInfo(chat);
+                    avatarImageView.setImage(ImageLocation.getForChat(chat, false), "50_50", avatarDrawable, chat);
+                    name = chat.title;
+                }
+                infoText = AndroidUtilities.replaceTags(LocaleController.formatString("VoipGroupUserChanged", R.string.VoipGroupUserChanged, name));
+                subInfoText = null;
+                icon = 0;
+                avatarImageView.setVisibility(VISIBLE);
+                timeLeft = 3000;
             } else if (action == ACTION_VOIP_LINK_COPIED) {
                 infoText = LocaleController.getString("VoipGroupCopyInviteLinkCopied", R.string.VoipGroupCopyInviteLinkCopied);
                 subInfoText = null;
                 icon = R.raw.voip_invite;
                 timeLeft = 3000;
             } else if (action == ACTION_VOIP_MUTED) {
-                TLRPC.User user = (TLRPC.User) infoObject;
-                infoText = AndroidUtilities.replaceTags(LocaleController.formatString("VoipGroupUserCantNowSpeak", R.string.VoipGroupUserCantNowSpeak, UserObject.getFirstName(user)));
+                String name;
+                if (infoObject instanceof TLRPC.User) {
+                    TLRPC.User user = (TLRPC.User) infoObject;
+                    name = UserObject.getFirstName(user);
+                } else {
+                    TLRPC.Chat chat = (TLRPC.Chat) infoObject;
+                    name = chat.title;
+                }
+                infoText = AndroidUtilities.replaceTags(LocaleController.formatString("VoipGroupUserCantNowSpeak", R.string.VoipGroupUserCantNowSpeak, name));
                 subInfoText = null;
                 icon = R.raw.voip_muted;
                 timeLeft = 3000;
             } else if (action == ACTION_VOIP_MUTED_FOR_YOU) {
-                TLRPC.User user = (TLRPC.User) infoObject;
-                infoText = AndroidUtilities.replaceTags(LocaleController.formatString("VoipGroupUserCantNowSpeakForYou", R.string.VoipGroupUserCantNowSpeakForYou, UserObject.getFirstName(user)));
+                String name;
+                if (infoObject instanceof TLRPC.User) {
+                    TLRPC.User user = (TLRPC.User) infoObject;
+                    name = UserObject.getFirstName(user);
+                } else if (infoObject instanceof TLRPC.Chat) {
+                    TLRPC.Chat chat = (TLRPC.Chat) infoObject;
+                    name = chat.title;
+                } else {
+                    name = "";
+                }
+                infoText = AndroidUtilities.replaceTags(LocaleController.formatString("VoipGroupUserCantNowSpeakForYou", R.string.VoipGroupUserCantNowSpeakForYou, name));
                 subInfoText = null;
                 icon = R.raw.voip_muted;
                 timeLeft = 3000;
             } else if (action == ACTION_VOIP_UNMUTED) {
-                TLRPC.User user = (TLRPC.User) infoObject;
-                infoText = AndroidUtilities.replaceTags(LocaleController.formatString("VoipGroupUserCanNowSpeak", R.string.VoipGroupUserCanNowSpeak, UserObject.getFirstName(user)));
+                String name;
+                if (infoObject instanceof TLRPC.User) {
+                    TLRPC.User user = (TLRPC.User) infoObject;
+                    name = UserObject.getFirstName(user);
+                } else {
+                    TLRPC.Chat chat = (TLRPC.Chat) infoObject;
+                    name = chat.title;
+                }
+                infoText = AndroidUtilities.replaceTags(LocaleController.formatString("VoipGroupUserCanNowSpeak", R.string.VoipGroupUserCanNowSpeak, name));
                 subInfoText = null;
                 icon = R.raw.voip_unmuted;
                 timeLeft = 3000;
+            } else if (action == ACTION_VOIP_CAN_NOW_SPEAK) {
+                if (infoObject instanceof TLRPC.Chat) {
+                    TLRPC.Chat chat = (TLRPC.Chat) infoObject;
+                    infoText = AndroidUtilities.replaceTags(LocaleController.formatString("VoipGroupYouCanNowSpeakIn", R.string.VoipGroupYouCanNowSpeakIn, chat.title));
+                } else {
+                    infoText = AndroidUtilities.replaceTags(LocaleController.getString("VoipGroupYouCanNowSpeak", R.string.VoipGroupYouCanNowSpeak));
+                }
+                subInfoText = null;
+                icon = R.raw.voip_allow_talk;
+                timeLeft = 3000;
+            } else if (currentAction == ACTION_VOIP_RECORDING_STARTED) {
+                infoText = AndroidUtilities.replaceTags(LocaleController.getString("VoipGroupAudioRecordStarted", R.string.VoipGroupAudioRecordStarted));
+                subInfoText = null;
+                icon = R.raw.voip_record_start;
+                timeLeft = 3000;
+            } else if (currentAction == ACTION_VOIP_RECORDING_FINISHED) {
+                String text = LocaleController.getString("VoipGroupAudioRecordSaved", R.string.VoipGroupAudioRecordSaved);
+                subInfoText = null;
+                icon = R.raw.voip_record_saved;
+                timeLeft = 4000;
+                infoTextView.setMovementMethod(new AndroidUtilities.LinkMovementMethodMy());
+                SpannableStringBuilder builder = new SpannableStringBuilder(text);
+                int index1 = text.indexOf("**");
+                int index2 = text.lastIndexOf("**");
+                if (index1 >= 0 && index2 >= 0 && index1 != index2) {
+                    builder.replace(index2, index2 + 2, "");
+                    builder.replace(index1, index1 + 2, "");
+                    builder.setSpan(new URLSpanNoUnderline("tg://openmessage?user_id=" + UserConfig.getInstance(currentAccount).getClientUserId()), index1, index2 - 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                }
+                infoText = builder;
             } else if (action == ACTION_VOIP_UNMUTED_FOR_YOU) {
-                TLRPC.User user = (TLRPC.User) infoObject;
-                infoText = AndroidUtilities.replaceTags(LocaleController.formatString("VoipGroupUserCanNowSpeakForYou", R.string.VoipGroupUserCanNowSpeakForYou, UserObject.getFirstName(user)));
+                String name;
+                if (infoObject instanceof TLRPC.User) {
+                    TLRPC.User user = (TLRPC.User) infoObject;
+                    name = UserObject.getFirstName(user);
+                } else {
+                    TLRPC.Chat chat = (TLRPC.Chat) infoObject;
+                    name = chat.title;
+                }
+                infoText = AndroidUtilities.replaceTags(LocaleController.formatString("VoipGroupUserCanNowSpeakForYou", R.string.VoipGroupUserCanNowSpeakForYou, name));
                 subInfoText = null;
                 icon = R.raw.voip_unmuted;
                 timeLeft = 3000;
             } else if (action == ACTION_VOIP_REMOVED) {
-                TLRPC.User user = (TLRPC.User) infoObject;
-                infoText = AndroidUtilities.replaceTags(LocaleController.formatString("VoipGroupRemovedFromGroup", R.string.VoipGroupRemovedFromGroup, UserObject.getFirstName(user)));
+                String name;
+                if (infoObject instanceof TLRPC.User) {
+                    TLRPC.User user = (TLRPC.User) infoObject;
+                    name = UserObject.getFirstName(user);
+                } else {
+                    TLRPC.Chat chat = (TLRPC.Chat) infoObject;
+                    name = chat.title;
+                }
+                infoText = AndroidUtilities.replaceTags(LocaleController.formatString("VoipGroupRemovedFromGroup", R.string.VoipGroupRemovedFromGroup, name));
                 subInfoText = null;
                 icon = R.raw.voip_group_removed;
                 timeLeft = 3000;
@@ -578,10 +679,13 @@ public class UndoView extends FrameLayout {
                     leftImageView.setImageResource(icon);
                 } else {
                     leftImageView.setAnimation(icon, size, size);
+                    RLottieDrawable drawable = leftImageView.getAnimatedDrawable();
+                    drawable.setPlayInDirectionOfCustomEndFrame(reversedPlay);
+                    drawable.setCustomEndFrame(reversedPlay ? reversedPlayEndFrame : drawable.getFramesCount());
                 }
                 leftImageView.setVisibility(VISIBLE);
                 if (!iconIsDrawable) {
-                    leftImageView.setProgress(0);
+                    leftImageView.setProgress(reversedPlay ? 1 : 0);
                     leftImageView.playAnimation();
                 }
             } else {
@@ -612,7 +716,8 @@ public class UndoView extends FrameLayout {
                 currentAction == ACTION_PLAYBACK_SPEED_DISABLED || currentAction == ACTION_PLAYBACK_SPEED_ENABLED || currentAction == ACTION_MESSAGE_COPIED ||
                 currentAction == ACTION_FWD_MESSAGES || currentAction == ACTION_NOTIFY_ON || currentAction == ACTION_NOTIFY_OFF ||  currentAction == ACTION_USERNAME_COPIED ||
                 currentAction == ACTION_HASHTAG_COPIED || currentAction == ACTION_TEXT_COPIED || currentAction == ACTION_LINK_COPIED || currentAction == ACTION_PHONE_COPIED ||
-                currentAction == ACTION_AUTO_DELETE_OFF || currentAction == ACTION_AUTO_DELETE_ON || currentAction == ACTION_GIGAGROUP_CANCEL || currentAction == ACTION_GIGAGROUP_SUCCESS) {
+                currentAction == ACTION_AUTO_DELETE_OFF || currentAction == ACTION_AUTO_DELETE_ON || currentAction == ACTION_GIGAGROUP_CANCEL || currentAction == ACTION_GIGAGROUP_SUCCESS ||
+                currentAction == ACTION_VOIP_INVITE_LINK_SENT) {
             undoImageView.setVisibility(GONE);
             leftImageView.setVisibility(VISIBLE);
 
@@ -714,6 +819,26 @@ public class UndoView extends FrameLayout {
                 leftImageView.setAnimation(R.raw.silent_mute, 30, 30);
                 timeLeft = 3000;
                 infoTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
+            } else if (currentAction == ACTION_VOIP_INVITE_LINK_SENT) {
+                if (infoObject2 == null) {
+                    if (did == UserConfig.getInstance(currentAccount).clientUserId) {
+                        infoTextView.setText(AndroidUtilities.replaceTags(LocaleController.getString("InvLinkToSavedMessages", R.string.InvLinkToSavedMessages)));
+                    } else {
+                        int lowerId = (int) did;
+                        if (lowerId < 0) {
+                            TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-lowerId);
+                            infoTextView.setText(AndroidUtilities.replaceTags(LocaleController.formatString("InvLinkToGroup", R.string.InvLinkToGroup, chat.title)));
+                        } else {
+                            TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(lowerId);
+                            infoTextView.setText(AndroidUtilities.replaceTags(LocaleController.formatString("InvLinkToUser", R.string.InvLinkToUser, UserObject.getFirstName(user))));
+                        }
+                    }
+                } else {
+                    int amount = (Integer) infoObject2;
+                    infoTextView.setText(AndroidUtilities.replaceTags(LocaleController.formatString("InvLinkToChats", R.string.InvLinkToChats, LocaleController.formatPluralString("Chats", amount))));
+                }
+                leftImageView.setAnimation(R.raw.contact_check, 36, 36);
+                timeLeft = 3000;
             } else if (currentAction == ACTION_FWD_MESSAGES) {
                 Integer count = (Integer) infoObject;
                 if (infoObject2 == null) {

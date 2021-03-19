@@ -56,6 +56,7 @@ echo "Configuring..."
 --enable-decoder=alac \
 --enable-demuxer=mov \
 --enable-demuxer=gif \
+--enable-demuxer=ogg \
 --enable-hwaccels \
 --enable-runtime-cpudetect \
 $ADDITIONAL_CONFIGURE_FLAG

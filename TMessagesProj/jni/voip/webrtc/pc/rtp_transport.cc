@@ -183,7 +183,7 @@ bool RtpTransport::UnregisterRtpDemuxerSink(RtpPacketSinkInterface* sink) {
 void RtpTransport::DemuxPacket(rtc::CopyOnWriteBuffer packet,
                                int64_t packet_time_us) {
   webrtc::RtpPacketReceived parsed_packet(&header_extension_map_);
-  if (!parsed_packet.Parse(std::move(packet))) {
+  if (!parsed_packet.Parse(packet)) {
     RTC_LOG(LS_ERROR)
         << "Failed to parse the incoming RTP packet before demuxing. Drop it.";
     return;
@@ -193,10 +193,13 @@ void RtpTransport::DemuxPacket(rtc::CopyOnWriteBuffer packet,
     parsed_packet.set_arrival_time_ms((packet_time_us + 500) / 1000);
   }
   if (!rtp_demuxer_.OnRtpPacket(parsed_packet)) {
+    SignalRtpPacketReceived.emit(&packet, packet_time_us, true);
     RTC_LOG(LS_WARNING) << "Failed to demux RTP packet: "
                         << RtpDemuxer::DescribePacket(parsed_packet);
     uint32_t ssrc = parsed_packet.Ssrc();
     OnErrorDemuxingPacket(ssrc);
+  } else {
+    SignalRtpPacketReceived.emit(&packet, packet_time_us, false);
   }
 }
 

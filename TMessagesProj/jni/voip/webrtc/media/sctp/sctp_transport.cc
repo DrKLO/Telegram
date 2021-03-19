@@ -322,7 +322,6 @@ class SctpTransport::UsrSctpWrapper {
   }
 
   static void UninitializeUsrSctp() {
-    delete g_transport_map_;
     RTC_LOG(LS_INFO) << __FUNCTION__;
     // usrsctp_finish() may fail if it's called too soon after the transports
     // are

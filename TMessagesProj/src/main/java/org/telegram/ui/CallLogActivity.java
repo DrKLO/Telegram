@@ -219,7 +219,7 @@ public class CallLogActivity extends BaseFragment implements NotificationCenter.
 		public void onClick(View v) {
 			CallLogRow row = (CallLogRow) v.getTag();
 			TLRPC.UserFull userFull = getMessagesController().getUserFull(row.user.id);
-			VoIPHelper.startCall(lastCallUser = row.user, row.video, row.video || userFull != null && userFull.video_calls_available, getParentActivity(), null);
+			VoIPHelper.startCall(lastCallUser = row.user, row.video, row.video || userFull != null && userFull.video_calls_available, getParentActivity(), null, getAccountInstance());
 		}
 	};
 
@@ -405,7 +405,7 @@ public class CallLogActivity extends BaseFragment implements NotificationCenter.
 			ContactsActivity contactsFragment = new ContactsActivity(args);
 			contactsFragment.setDelegate((user, param, activity) -> {
 				TLRPC.UserFull userFull = getMessagesController().getUserFull(user.id);
-				VoIPHelper.startCall(lastCallUser = user, false, userFull != null && userFull.video_calls_available, getParentActivity(), null);
+				VoIPHelper.startCall(lastCallUser = user, false, userFull != null && userFull.video_calls_available, getParentActivity(), null, getAccountInstance());
 			});
 			presentFragment(contactsFragment);
 		});
@@ -670,7 +670,7 @@ public class CallLogActivity extends BaseFragment implements NotificationCenter.
 			}
 			if (grantResults.length > 0 && allGranted) {
 				TLRPC.UserFull userFull = lastCallUser != null ? getMessagesController().getUserFull(lastCallUser.id) : null;
-				VoIPHelper.startCall(lastCallUser, requestCode == 102, requestCode == 102 || userFull != null && userFull.video_calls_available, getParentActivity(), null);
+				VoIPHelper.startCall(lastCallUser, requestCode == 102, requestCode == 102 || userFull != null && userFull.video_calls_available, getParentActivity(), null, getAccountInstance());
 			} else {
 				VoIPHelper.permissionDenied(getParentActivity(), null, requestCode);
 			}

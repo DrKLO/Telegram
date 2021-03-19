@@ -20,6 +20,7 @@ import android.view.ViewGroup;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ChatObject;
+import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
@@ -64,6 +65,8 @@ public class GroupVoipInviteAlert extends UsersAlertBase {
     private HashSet<Integer> invitedUsers;
 
     private GroupVoipInviteAlertDelegate delegate;
+
+    private boolean showContacts;
 
     private int emptyRow;
     private int addNewRow;
@@ -186,6 +189,63 @@ public class GroupVoipInviteAlert extends UsersAlertBase {
         loadChatParticipants(offset, count, true);
     }
 
+    private void fillContacts() {
+        if (!showContacts) {
+            return;
+        }
+        contacts.addAll(ContactsController.getInstance(currentAccount).contacts);
+        int selfId = UserConfig.getInstance(currentAccount).clientUserId;
+        for (int a = 0, N = contacts.size(); a < N; a++) {
+            int userId = ((TLRPC.TL_contact) contacts.get(a)).user_id;
+            if (userId == selfId || ignoredUsers.indexOfKey(userId) >= 0 || invitedUsers.contains(userId)) {
+                contacts.remove(a);
+                a--;
+                N--;
+            }
+        }
+        int currentTime = ConnectionsManager.getInstance(currentAccount).getCurrentTime();
+        MessagesController messagesController = MessagesController.getInstance(currentAccount);
+        Collections.sort(contacts, (o1, o2) -> {
+            TLRPC.User user1 = messagesController.getUser(((TLRPC.TL_contact) o2).user_id);
+            TLRPC.User user2 = messagesController.getUser(((TLRPC.TL_contact) o1).user_id);
+            int status1 = 0;
+            int status2 = 0;
+            if (user1 != null) {
+                if (user1.self) {
+                    status1 = currentTime + 50000;
+                } else if (user1.status != null) {
+                    status1 = user1.status.expires;
+                }
+            }
+            if (user2 != null) {
+                if (user2.self) {
+                    status2 = currentTime + 50000;
+                } else if (user2.status != null) {
+                    status2 = user2.status.expires;
+                }
+            }
+            if (status1 > 0 && status2 > 0) {
+                if (status1 > status2) {
+                    return 1;
+                } else if (status1 < status2) {
+                    return -1;
+                }
+                return 0;
+            } else if (status1 < 0 && status2 < 0) {
+                if (status1 > status2) {
+                    return 1;
+                } else if (status1 < status2) {
+                    return -1;
+                }
+                return 0;
+            } else if (status1 < 0 && status2 > 0 || status1 == 0 && status2 != 0) {
+                return -1;
+            } else if (status2 < 0 || status1 != 0) {
+                return 1;
+            }
+            return 0;
+        });
+    }
 
     protected void loadChatParticipants(int offset, int count, boolean reset) {
         if (!ChatObject.isChannel(currentChat)) {
@@ -209,6 +269,10 @@ public class GroupVoipInviteAlert extends UsersAlertBase {
                         participants.add(participant);
                         participantsMap.put(participant.user_id, participant);
                     }
+                }
+                if (participants.isEmpty()) {
+                    showContacts = true;
+                    fillContacts();
                 }
             }
             updateRows();
@@ -346,6 +410,10 @@ public class GroupVoipInviteAlert extends UsersAlertBase {
                         num = listViewAdapter != null ? listViewAdapter.getItemCount() - 1 : 0;
                     }
                     showItemsAnimated(num);
+                    if (participants.isEmpty()) {
+                        showContacts = true;
+                        fillContacts();
+                    }
                 }
                 updateRows();
                 if (listViewAdapter != null) {
@@ -800,7 +868,13 @@ public class GroupVoipInviteAlert extends UsersAlertBase {
                     }
 
                     int userId;
-                    if (item instanceof TLRPC.ChannelParticipant) {
+                    if (item instanceof TLRPC.TL_contact) {
+                        TLRPC.TL_contact contact = (TLRPC.TL_contact) item;
+                        userId = contact.user_id;
+                    } else if (item instanceof TLRPC.User) {
+                        TLRPC.User user = (TLRPC.User) item;
+                        userId = user.id;
+                    } else if (item instanceof TLRPC.ChannelParticipant) {
                         TLRPC.ChannelParticipant participant = (TLRPC.ChannelParticipant) item;
                         userId = participant.user_id;
                     } else {
@@ -825,7 +899,11 @@ public class GroupVoipInviteAlert extends UsersAlertBase {
                     if (position == membersHeaderRow) {
                         sectionCell.setText(LocaleController.getString("ChannelOtherMembers", R.string.ChannelOtherMembers));
                     } else if (position == contactsHeaderRow) {
-                        sectionCell.setText(LocaleController.getString("GroupContacts", R.string.GroupContacts));
+                        if (showContacts) {
+                            sectionCell.setText(LocaleController.getString("YourContactsToInvite", R.string.YourContactsToInvite));
+                        } else {
+                            sectionCell.setText(LocaleController.getString("GroupContacts", R.string.GroupContacts));
+                        }
                     }
                     break;
             }

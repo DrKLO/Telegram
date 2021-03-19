@@ -41,23 +41,25 @@ public class ShareDialogCell extends FrameLayout {
     private CheckBox2 checkBox;
     private AvatarDrawable avatarDrawable = new AvatarDrawable();
     private TLRPC.User user;
+    private boolean darkTheme;
 
     private float onlineProgress;
     private long lastUpdateTime;
 
     private int currentAccount = UserConfig.selectedAccount;
 
-    public ShareDialogCell(Context context) {
+    public ShareDialogCell(Context context, boolean forCall) {
         super(context);
 
         setWillNotDraw(false);
+        darkTheme = forCall;
 
         imageView = new BackupImageView(context);
         imageView.setRoundRadius(AndroidUtilities.dp(28));
         addView(imageView, LayoutHelper.createFrame(56, 56, Gravity.TOP | Gravity.CENTER_HORIZONTAL, 0, 7, 0, 0));
 
         nameTextView = new TextView(context);
-        nameTextView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
+        nameTextView.setTextColor(Theme.getColor(forCall ? Theme.key_voipgroup_nameText : Theme.key_dialogTextBlack));
         nameTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
         nameTextView.setMaxLines(2);
         nameTextView.setGravity(Gravity.TOP | Gravity.CENTER_HORIZONTAL);
@@ -66,7 +68,7 @@ public class ShareDialogCell extends FrameLayout {
         addView(nameTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 6, 66, 6, 0));
 
         checkBox = new CheckBox2(context, 21);
-        checkBox.setColor(Theme.key_dialogRoundCheckBox, Theme.key_dialogBackground, Theme.key_dialogRoundCheckBoxCheck);
+        checkBox.setColor(Theme.key_dialogRoundCheckBox, forCall ? Theme.key_voipgroup_inviteMembersBackground : Theme.key_dialogBackground, Theme.key_dialogRoundCheckBoxCheck);
         checkBox.setDrawUnchecked(false);
         checkBox.setDrawBackgroundAsArc(4);
         checkBox.setProgressDelegate(progress -> {
@@ -140,7 +142,7 @@ public class ShareDialogCell extends FrameLayout {
                 if (isOnline || onlineProgress != 0) {
                     int top = imageView.getBottom() - AndroidUtilities.dp(6);
                     int left = imageView.getRight() - AndroidUtilities.dp(10);
-                    Theme.dialogs_onlineCirclePaint.setColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+                    Theme.dialogs_onlineCirclePaint.setColor(Theme.getColor(darkTheme ? Theme.key_voipgroup_inviteMembersBackground : Theme.key_windowBackgroundWhite));
                     canvas.drawCircle(left, top, AndroidUtilities.dp(7) * onlineProgress, Theme.dialogs_onlineCirclePaint);
                     Theme.dialogs_onlineCirclePaint.setColor(Theme.getColor(Theme.key_chats_onlineCircle));
                     canvas.drawCircle(left, top, AndroidUtilities.dp(5) * onlineProgress, Theme.dialogs_onlineCirclePaint);

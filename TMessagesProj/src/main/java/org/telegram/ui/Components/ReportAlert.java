@@ -29,7 +29,6 @@ public class ReportAlert extends BottomSheet {
 
     private BottomSheetCell clearButton;
     private EditTextBoldCursor editText;
-    private boolean compteled;
 
     public static class BottomSheetCell extends FrameLayout {
 
@@ -139,6 +138,7 @@ public class ReportAlert extends BottomSheet {
             dismiss();
         });
         frameLayout.addView(clearButton, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 50, Gravity.LEFT | Gravity.TOP, 0, 357, 0, 0));
+        smoothKeyboardAnimationEnabled = true;
     }
 
     protected void onSend(int type, String message) {

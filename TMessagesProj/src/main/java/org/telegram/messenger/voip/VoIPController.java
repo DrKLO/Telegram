@@ -17,7 +17,6 @@ import android.os.SystemClock;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.MessagesController;
-import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.Components.voip.VoIPHelper;
 
 import java.io.File;
@@ -119,7 +118,7 @@ public class VoIPController {
 			callStartTime = SystemClock.elapsedRealtime();
 		}
 		if (listener != null) {
-			listener.onConnectionStateChanged(state);
+			listener.onConnectionStateChanged(state, false);
 		}
 	}
 
@@ -278,7 +277,7 @@ public class VoIPController {
 	public static native int getConnectionMaxLayer();
 
 	public interface ConnectionStateListener {
-		void onConnectionStateChanged(int newState);
+		void onConnectionStateChanged(int newState, boolean inTransition);
 		void onSignalBarCountChanged(int newCount);
 	}
 

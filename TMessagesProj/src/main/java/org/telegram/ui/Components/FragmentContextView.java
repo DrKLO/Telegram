@@ -131,7 +131,7 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
         if (isMuted != newMuted) {
             isMuted = newMuted;
             muteDrawable.setCustomEndFrame(isMuted ? 15 : 29);
-            muteDrawable.setCurrentFrame(muteDrawable.getCustomEndFrame(), false, true);
+            muteDrawable.setCurrentFrame(muteDrawable.getCustomEndFrame() - 1, false, true);
             muteButton.invalidate();
             Theme.getFragmentContextViewWavesDrawable().updateState(visible);
         }
@@ -402,7 +402,7 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
                 AccountInstance accountInstance = AccountInstance.getInstance(voIPService.getAccount());
                 ChatObject.Call call = voIPService.groupCall;
                 TLRPC.Chat chat = voIPService.getChat();
-                TLRPC.TL_groupCallParticipant participant = call.participants.get(accountInstance.getUserConfig().getClientUserId());
+                TLRPC.TL_groupCallParticipant participant = call.participants.get(voIPService.getSelfId());
                 if (participant != null && !participant.can_self_unmute && participant.muted && !ChatObject.canManageCalls(chat)) {
                     return;
                 }
@@ -539,7 +539,7 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
                 if (call == null) {
                     return;
                 }
-                VoIPHelper.startCall(chatActivity.getMessagesController().getChat(call.chatId), false, fragment.getParentActivity());
+                VoIPHelper.startCall(chatActivity.getMessagesController().getChat(call.chatId), null, null, false, fragment.getParentActivity(), fragment, fragment.getAccountInstance());
             } else if (currentStyle == 5) {
                 SendMessagesHelper.ImportingHistory importingHistory = parentFragment.getSendMessagesHelper().getImportingHistory(((ChatActivity) parentFragment).getDialogId());
                 if (importingHistory == null) {
@@ -949,7 +949,7 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
                     if (currentCallState == VoIPService.STATE_WAIT_INIT || currentCallState == VoIPService.STATE_WAIT_INIT_ACK || currentCallState == VoIPService.STATE_CREATING || currentCallState == VoIPService.STATE_RECONNECTING) {
 
                     } else {
-                        TLRPC.TL_groupCallParticipant participant = sharedInstance.groupCall.participants.get(AccountInstance.getInstance(sharedInstance.getAccount()).getUserConfig().getClientUserId());
+                        TLRPC.TL_groupCallParticipant participant = sharedInstance.groupCall.participants.get(sharedInstance.getSelfId());
                         if (participant != null && !participant.can_self_unmute && participant.muted && !ChatObject.canManageCalls(sharedInstance.getChat())) {
                             sharedInstance.setMicMute(true, false, false);
                             final long now = SystemClock.uptimeMillis();
@@ -1535,7 +1535,8 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
     }
 
     public void checkCall(boolean create) {
-        if (visible && currentStyle == 5 && (VoIPService.getSharedInstance() == null || VoIPService.getSharedInstance().isHangingUp())) {
+        VoIPService voIPService = VoIPService.getSharedInstance();
+        if (visible && currentStyle == 5 && (voIPService == null || voIPService.isHangingUp())) {
             return;
         }
         View fragmentView = fragment.getFragmentView();
@@ -1550,8 +1551,8 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
             callAvailable = false;
             groupActive = false;
         } else {
-            callAvailable = !GroupCallActivity.groupCallUiVisible && supportsCalls && VoIPService.getSharedInstance() != null && !VoIPService.getSharedInstance().isHangingUp();
-            if (VoIPService.getSharedInstance() != null && VoIPService.getSharedInstance().groupCall != null && VoIPService.getSharedInstance().groupCall.call instanceof TLRPC.TL_groupCallDiscarded) {
+            callAvailable = !GroupCallActivity.groupCallUiVisible && supportsCalls && voIPService != null && !voIPService.isHangingUp();
+            if (voIPService != null && voIPService.groupCall != null && voIPService.groupCall.call instanceof TLRPC.TL_groupCallDiscarded) {
                 callAvailable = false;
             }
             groupActive = false;
@@ -1613,7 +1614,7 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
             int newStyle;
             if (groupActive) {
                 newStyle = 4;
-            } else if (VoIPService.getSharedInstance() != null && VoIPService.getSharedInstance().groupCall != null) {
+            } else if (voIPService != null && voIPService.groupCall != null) {
                 newStyle = 3;
             } else {
                 newStyle = 1;
@@ -1661,7 +1662,7 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
 
                 updateAvatars(avatars.wasDraw && updateAnimated);
             } else {
-                if (VoIPService.getSharedInstance() != null && VoIPService.getSharedInstance().groupCall != null) {
+                if (voIPService != null && voIPService.groupCall != null) {
                     updateAvatars(currentStyle == 3);
                     updateStyle(3);
                 } else {
@@ -1813,7 +1814,9 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
         }
         boolean clipped = false;
         if ((currentStyle == 3 || currentStyle == 1) && drawOverlay) {
+            boolean mutedByAdmin = GroupCallActivity.groupCallInstance == null && Theme.getFragmentContextViewWavesDrawable().getState() == FragmentContextViewWavesDrawable.MUTE_BUTTON_STATE_MUTED_BY_ADMIN;
             Theme.getFragmentContextViewWavesDrawable().updateState(wasDraw);
+
             float progress = topPadding / AndroidUtilities.dp((getStyleHeight()));
 
             if (collapseTransition) {
@@ -1893,13 +1896,17 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
         VoIPService service = VoIPService.getSharedInstance();
         if (service != null && (currentStyle == 1 || currentStyle == 3)) {
             int currentCallState = service.getCallState();
-            if (currentCallState == VoIPService.STATE_WAIT_INIT || currentCallState == VoIPService.STATE_WAIT_INIT_ACK || currentCallState == VoIPService.STATE_CREATING || currentCallState == VoIPService.STATE_RECONNECTING) {
+            if (!service.isSwitchingStream() && (currentCallState == VoIPService.STATE_WAIT_INIT || currentCallState == VoIPService.STATE_WAIT_INIT_ACK || currentCallState == VoIPService.STATE_CREATING || currentCallState == VoIPService.STATE_RECONNECTING)) {
                 titleTextView.setText(LocaleController.getString("VoipGroupConnecting", R.string. VoipGroupConnecting), false);
             } else if (service.getChat() != null) {
-                if (fragment instanceof ChatActivity && ((ChatActivity) fragment).getCurrentChat() != null && ((ChatActivity) fragment).getCurrentChat().id == service.getChat().id) {
-                    titleTextView.setText(LocaleController.getString("VoipGroupViewVoiceChat", R.string.VoipGroupViewVoiceChat), false);
+                if (!TextUtils.isEmpty(service.groupCall.call.title)) {
+                    titleTextView.setText(service.groupCall.call.title, false);
                 } else {
-                    titleTextView.setText(service.getChat().title, false);
+                    if (fragment instanceof ChatActivity && ((ChatActivity) fragment).getCurrentChat() != null && ((ChatActivity) fragment).getCurrentChat().id == service.getChat().id) {
+                        titleTextView.setText(LocaleController.getString("VoipGroupViewVoiceChat", R.string.VoipGroupViewVoiceChat), false);
+                    } else {
+                        titleTextView.setText(service.getChat().title, false);
+                    }
                 }
             } else if (service.getUser() != null) {
                 TLRPC.User user = service.getUser();

@@ -50,9 +50,9 @@ public class CheckBoxCell extends FrameLayout {
         currentType = type;
 
         textView = new TextView(context);
-        textView.setTextColor(Theme.getColor(type == 1 ? Theme.key_dialogTextBlack : Theme.key_windowBackgroundWhiteBlackText));
-        textView.setLinkTextColor(Theme.getColor(type == 1 ? Theme.key_dialogTextLink : Theme.key_windowBackgroundWhiteLinkText));
-        textView.setTag(Theme.getColor(type == 1 ? Theme.key_dialogTextBlack : Theme.key_windowBackgroundWhiteBlackText));
+        textView.setTextColor(Theme.getColor(type == 1 || type == 5 ? Theme.key_dialogTextBlack : Theme.key_windowBackgroundWhiteBlackText));
+        textView.setLinkTextColor(Theme.getColor(type == 1 || type == 5 ? Theme.key_dialogTextLink : Theme.key_windowBackgroundWhiteLinkText));
+        textView.setTag(Theme.getColor(type == 1 || type == 5 ? Theme.key_dialogTextBlack : Theme.key_windowBackgroundWhiteBlackText));
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
         textView.setLines(1);
         textView.setMaxLines(1);
@@ -73,8 +73,8 @@ public class CheckBoxCell extends FrameLayout {
         }
 
         valueTextView = new TextView(context);
-        valueTextView.setTextColor(Theme.getColor(type == 1 ? Theme.key_dialogTextBlue : Theme.key_windowBackgroundWhiteValueText));
-        valueTextView.setTag(type == 1 ? Theme.key_dialogTextBlue : Theme.key_windowBackgroundWhiteValueText);
+        valueTextView.setTextColor(Theme.getColor(type == 1 || type == 5 ? Theme.key_dialogTextBlue : Theme.key_windowBackgroundWhiteValueText));
+        valueTextView.setTag(type == 1 || type == 5 ? Theme.key_dialogTextBlue : Theme.key_windowBackgroundWhiteValueText);
         valueTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
         valueTextView.setLines(1);
         valueTextView.setMaxLines(1);
@@ -91,9 +91,11 @@ public class CheckBoxCell extends FrameLayout {
             checkBoxSize = 21;
             addView(checkBox, LayoutHelper.createFrame(checkBoxSize, checkBoxSize, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, (LocaleController.isRTL ? 0 : padding), 16, (LocaleController.isRTL ? padding : 0), 0));
         } else {
-            checkBox = checkBoxSquare = new CheckBoxSquare(context, type == 1);
+            checkBox = checkBoxSquare = new CheckBoxSquare(context, type == 1 || type == 5);
             checkBoxSize = 18;
-            if (type == 3) {
+            if (type == 5) {
+                addView(checkBox, LayoutHelper.createFrame(checkBoxSize, checkBoxSize, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL, (LocaleController.isRTL ? 0 : padding), 0, (LocaleController.isRTL ? padding : 0), 0));
+            } else if (type == 3) {
                 addView(checkBox, LayoutHelper.createFrame(checkBoxSize, checkBoxSize, Gravity.LEFT | Gravity.TOP, 0, 15, 0, 0));
             } else if (type == 2) {
                 addView(checkBox, LayoutHelper.createFrame(checkBoxSize, checkBoxSize, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, 0, 15, 0, 0));
@@ -155,11 +157,12 @@ public class CheckBoxCell extends FrameLayout {
             textView.setMaxLines(0);
             textView.setSingleLine(false);
             textView.setEllipsize(null);
-            textView.setPadding(0, 0, 0, AndroidUtilities.dp(5));
-
-            layoutParams.height = LayoutParams.WRAP_CONTENT;
-            layoutParams.topMargin = AndroidUtilities.dp(10);
-            layoutParams1.topMargin = AndroidUtilities.dp(12);
+            if (currentType != 5) {
+                textView.setPadding(0, 0, 0, AndroidUtilities.dp(5));
+                layoutParams.height = LayoutParams.WRAP_CONTENT;
+                layoutParams.topMargin = AndroidUtilities.dp(10);
+                layoutParams1.topMargin = AndroidUtilities.dp(12);
+            }
         } else {
             textView.setLines(1);
             textView.setMaxLines(1);

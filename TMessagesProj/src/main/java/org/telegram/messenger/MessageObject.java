@@ -977,7 +977,7 @@ public class MessageObject {
         pathThumb = DocumentObject.getSvgThumb(document, Theme.key_chat_serviceBackground, 1.0f);
     }
 
-    private void createDateArray(int accountNum, TLRPC.TL_channelAdminLogEvent event, ArrayList<MessageObject> messageObjects, HashMap<String, ArrayList<MessageObject>> messagesByDays) {
+    private void createDateArray(int accountNum, TLRPC.TL_channelAdminLogEvent event, ArrayList<MessageObject> messageObjects, HashMap<String, ArrayList<MessageObject>> messagesByDays, boolean addToEnd) {
         ArrayList<MessageObject> dayArray = messagesByDays.get(dateKey);
         if (dayArray == null) {
             dayArray = new ArrayList<>();
@@ -990,7 +990,11 @@ public class MessageObject {
             dateObj.type = 10;
             dateObj.contentType = 1;
             dateObj.isDateObject = true;
-            messageObjects.add(dateObj);
+            if (addToEnd) {
+                messageObjects.add(0, dateObj);
+            } else {
+                messageObjects.add(dateObj);
+            }
         }
     }
 
@@ -1029,7 +1033,7 @@ public class MessageObject {
         }
     }
 
-    public MessageObject(int accountNum, TLRPC.TL_channelAdminLogEvent event, ArrayList<MessageObject> messageObjects, HashMap<String, ArrayList<MessageObject>> messagesByDays, TLRPC.Chat chat, int[] mid) {
+    public MessageObject(int accountNum, TLRPC.TL_channelAdminLogEvent event, ArrayList<MessageObject> messageObjects, HashMap<String, ArrayList<MessageObject>> messagesByDays, TLRPC.Chat chat, int[] mid, boolean addToEnd) {
         currentEvent = event;
         currentAccount = accountNum;
 
@@ -1657,14 +1661,26 @@ public class MessageObject {
             messageText = replaceWithLink(LocaleController.getString("EventLogEndedVoiceChat", R.string.EventLogEndedVoiceChat), "un1", fromUser);
         } else if (event.action instanceof TLRPC.TL_channelAdminLogEventActionParticipantMute) {
             TLRPC.TL_channelAdminLogEventActionParticipantMute action = (TLRPC.TL_channelAdminLogEventActionParticipantMute) event.action;
-            TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(action.participant.user_id);
+            int id = getPeerId(action.participant.peer);
+            TLObject object;
+            if (id > 0) {
+                object = MessagesController.getInstance(currentAccount).getUser(id);
+            } else {
+                object = MessagesController.getInstance(currentAccount).getChat(-id);
+            }
             messageText = replaceWithLink(LocaleController.getString("EventLogVoiceChatMuted", R.string.EventLogVoiceChatMuted), "un1", fromUser);
-            messageText = replaceWithLink(messageText, "un2", user);
+            messageText = replaceWithLink(messageText, "un2", object);
         } else if (event.action instanceof TLRPC.TL_channelAdminLogEventActionParticipantUnmute) {
             TLRPC.TL_channelAdminLogEventActionParticipantUnmute action = (TLRPC.TL_channelAdminLogEventActionParticipantUnmute) event.action;
-            TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(action.participant.user_id);
+            int id = getPeerId(action.participant.peer);
+            TLObject object;
+            if (id > 0) {
+                object = MessagesController.getInstance(currentAccount).getUser(id);
+            } else {
+                object = MessagesController.getInstance(currentAccount).getChat(-id);
+            }
             messageText = replaceWithLink(LocaleController.getString("EventLogVoiceChatUnmuted", R.string.EventLogVoiceChatUnmuted), "un1", fromUser);
-            messageText = replaceWithLink(messageText, "un2", user);
+            messageText = replaceWithLink(messageText, "un2", object);
         } else if (event.action instanceof TLRPC.TL_channelAdminLogEventActionToggleGroupCallSetting) {
             TLRPC.TL_channelAdminLogEventActionToggleGroupCallSetting action = (TLRPC.TL_channelAdminLogEventActionToggleGroupCallSetting) event.action;
             if (action.join_muted) {
@@ -1677,23 +1693,33 @@ public class MessageObject {
             messageText = replaceWithLink(LocaleController.getString("ActionInviteUser", R.string.ActionInviteUser), "un1", fromUser);
         } else if (event.action instanceof TLRPC.TL_channelAdminLogEventActionExportedInviteDelete) {
             TLRPC.TL_channelAdminLogEventActionExportedInviteDelete action = (TLRPC.TL_channelAdminLogEventActionExportedInviteDelete) event.action;
-            messageText = replaceWithLink(LocaleController.formatString("ActionDeletedInviteLink", R.string.ActionDeletedInviteLink, action.invite.link), "un1", fromUser);
+            messageText = replaceWithLink(LocaleController.formatString("ActionDeletedInviteLinkClickable", R.string.ActionDeletedInviteLinkClickable), "un1", fromUser);
+            messageText = replaceWithLink(messageText, "un2", action.invite);
         } else if (event.action instanceof TLRPC.TL_channelAdminLogEventActionExportedInviteRevoke) {
             TLRPC.TL_channelAdminLogEventActionExportedInviteRevoke action = (TLRPC.TL_channelAdminLogEventActionExportedInviteRevoke) event.action;
-            messageText = replaceWithLink(LocaleController.formatString("ActionRevokedInviteLink", R.string.ActionRevokedInviteLink, action.invite.link), "un1", fromUser);
+            messageText = replaceWithLink(LocaleController.formatString("ActionRevokedInviteLinkClickable", R.string.ActionRevokedInviteLinkClickable, action.invite.link), "un1", fromUser);
+            messageText = replaceWithLink(messageText, "un2", action.invite);
         } else if (event.action instanceof TLRPC.TL_channelAdminLogEventActionExportedInviteEdit) {
             TLRPC.TL_channelAdminLogEventActionExportedInviteEdit action = (TLRPC.TL_channelAdminLogEventActionExportedInviteEdit) event.action;
             if (action.prev_invite.link != null &&  action.prev_invite.link.equals(action.new_invite.link)){
-                messageText = replaceWithLink(LocaleController.formatString("ActionEditedInviteLinkToSame", R.string.ActionEditedInviteLinkToSame, action.prev_invite.link), "un1", fromUser);
+                messageText = replaceWithLink(LocaleController.formatString("ActionEditedInviteLinkToSameClickable", R.string.ActionEditedInviteLinkToSameClickable), "un1", fromUser);
             } else {
-                messageText = replaceWithLink(LocaleController.formatString("ActionEditedInviteLink", R.string.ActionEditedInviteLink, action.prev_invite.link, action.new_invite.link), "un1", fromUser);
+                messageText = replaceWithLink(LocaleController.formatString("ActionEditedInviteLinkClickable", R.string.ActionEditedInviteLinkClickable), "un1", fromUser);
             }
+            messageText = replaceWithLink(messageText, "un2", action.prev_invite);
+            messageText = replaceWithLink(messageText, "un3", action.new_invite);
         } else if (event.action instanceof TLRPC.TL_channelAdminLogEventActionParticipantVolume) {
             TLRPC.TL_channelAdminLogEventActionParticipantVolume action = (TLRPC.TL_channelAdminLogEventActionParticipantVolume) event.action;
+            int id = getPeerId(action.participant.peer);
+            TLObject object;
+            if (id > 0) {
+                object = MessagesController.getInstance(currentAccount).getUser(id);
+            } else {
+                object = MessagesController.getInstance(currentAccount).getChat(-id);
+            }
             double vol = ChatObject.getParticipantVolume(action.participant) / 100.0;
-            TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(action.participant.user_id);
             messageText = replaceWithLink(LocaleController.formatString("ActionVolumeChanged", R.string.ActionVolumeChanged,  (int) (vol > 0 ? Math.max(vol, 1) : 0)), "un1", fromUser);
-            messageText = replaceWithLink(messageText, "un2", user);
+            messageText = replaceWithLink(messageText, "un2", object);
         } else if (event.action instanceof TLRPC.TL_channelAdminLogEventActionChangeHistoryTTL) {
             TLRPC.TL_channelAdminLogEventActionChangeHistoryTTL action = (TLRPC.TL_channelAdminLogEventActionChangeHistoryTTL) event.action;
             if (!chat.megagroup) {
@@ -1753,15 +1779,23 @@ public class MessageObject {
                     messageObject.audioProgress = player.audioProgress;
                     messageObject.audioProgressSec = player.audioProgressSec;
                 }
-                createDateArray(currentAccount, event, messageObjects, messagesByDays);
-                messageObjects.add(messageObjects.size() - 1, messageObject);
+                createDateArray(currentAccount, event, messageObjects, messagesByDays, addToEnd);
+                if (addToEnd) {
+                    messageObjects.add(0, messageObject);
+                } else {
+                    messageObjects.add(messageObjects.size() - 1, messageObject);
+                }
             } else {
                 contentType = -1;
             }
         }
         if (contentType >= 0) {
-            createDateArray(currentAccount, event, messageObjects, messagesByDays);
-            messageObjects.add(messageObjects.size() - 1, this);
+            createDateArray(currentAccount, event, messageObjects, messagesByDays, addToEnd);
+            if (addToEnd) {
+                messageObjects.add(0, this);
+            } else {
+                messageObjects.add(messageObjects.size() - 1, this);
+            }
         } else {
             return;
         }
@@ -1850,7 +1884,7 @@ public class MessageObject {
             return true;
         }
         TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(messageOwner.peer_id.channel_id != 0 ? messageOwner.peer_id.channel_id : messageOwner.peer_id.chat_id);
-        return !ChatObject.isActionBanned(chat, ChatObject.ACTION_SEND_STICKERS);
+        return chat != null && chat.gigagroup || !ChatObject.isActionBanned(chat, ChatObject.ACTION_SEND_STICKERS);
     }
 
     public void generateGameMessageText(TLRPC.User fromUser) {
@@ -2381,11 +2415,12 @@ public class MessageObject {
                         }
                         messageText = LocaleController.formatString("ActionGroupCallEnded", R.string.ActionGroupCallEnded, time);
                     } else {
-                        if (isOut()) {
+                        messageText = LocaleController.getString("ActionGroupCallJustStarted", R.string.ActionGroupCallJustStarted);
+                        /*if (isOut()) {
                             messageText = LocaleController.getString("ActionGroupCallStartedByYou", R.string.ActionGroupCallStartedByYou);
                         } else {
                             messageText = replaceWithLink(LocaleController.getString("ActionGroupCallStarted", R.string.ActionGroupCallStarted), "un1", fromObject);
-                        }
+                        }*/
                     }
                 } else if (messageOwner.action instanceof TLRPC.TL_messageActionInviteToGroupCall) {
                     int singleUserId = messageOwner.action.user_id;
@@ -3135,6 +3170,10 @@ public class MessageObject {
         return false;
     }
 
+    public static boolean isSystemSignUp(MessageObject message) {
+        return message != null && message.messageOwner instanceof TLRPC.TL_messageService && ((TLRPC.TL_messageService)message.messageOwner).action instanceof TLRPC.TL_messageActionContactSignUp;
+    }
+
     public void generateThumbs(boolean update) {
         if (messageOwner instanceof TLRPC.TL_messageService) {
             if (messageOwner.action instanceof TLRPC.TL_messageActionChatEditPhoto) {
@@ -3319,6 +3358,7 @@ public class MessageObject {
         if (start >= 0) {
             String name;
             String id;
+            TLObject spanObject = null;
             if (object instanceof TLRPC.User) {
                 name = UserObject.getUserName((TLRPC.User) object);
                 id = "" + ((TLRPC.User) object).id;
@@ -3329,13 +3369,20 @@ public class MessageObject {
                 TLRPC.TL_game game = (TLRPC.TL_game) object;
                 name = game.title;
                 id = "game";
+            } else if (object instanceof TLRPC.TL_chatInviteExported) {
+                TLRPC.TL_chatInviteExported invite  = (TLRPC.TL_chatInviteExported) object;
+                name = invite.link;
+                id = "invite";
+                spanObject = invite;
             } else {
                 name = "";
                 id = "0";
             }
             name = name.replace('\n', ' ');
             SpannableStringBuilder builder = new SpannableStringBuilder(TextUtils.replace(source, new String[]{param}, new String[]{name}));
-            builder.setSpan(new URLSpanNoUnderlineBold("" + id), start, start + name.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            URLSpanNoUnderlineBold span = new URLSpanNoUnderlineBold("" + id);
+            span.setObject(spanObject);
+            builder.setSpan(span, start, start + name.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
             return builder;
         }
         return source;
@@ -5287,6 +5334,9 @@ public class MessageObject {
     public String getArtworkUrl(boolean small) {
         TLRPC.Document document = getDocument();
         if (document != null) {
+            if ("audio/ogg".equals(document.mime_type)) {
+                return null;
+            }
             for (int i = 0, N = document.attributes.size(); i < N; i++) {
                 TLRPC.DocumentAttribute attribute = document.attributes.get(i);
                 if (attribute instanceof TLRPC.TL_documentAttributeAudio) {

@@ -557,7 +557,11 @@ public class MessageStatisticActivity extends BaseFragment implements Notificati
                             e.printStackTrace();
                         }
                     } else if (response1 instanceof TLRPC.TL_statsGraphError) {
-                        Toast.makeText(getParentActivity(), ((TLRPC.TL_statsGraphError) response1).error, Toast.LENGTH_LONG).show();
+                        AndroidUtilities.runOnUIThread(() -> {
+                            if (getParentActivity() != null) {
+                                Toast.makeText(getParentActivity(), ((TLRPC.TL_statsGraphError) response1).error, Toast.LENGTH_LONG).show();
+                            }
+                        });
                     }
 
                     ChartData finalChildData = childData;

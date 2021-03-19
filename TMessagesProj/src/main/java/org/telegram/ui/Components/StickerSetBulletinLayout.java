@@ -59,12 +59,12 @@ public class StickerSetBulletinLayout extends Bulletin.TwoLineLayout {
                 sticker = null;
             }
         } else {
+            if (sticker == null && setObject != null && BuildVars.DEBUG_VERSION) {
+                throw new IllegalArgumentException("Invalid type of the given setObject: " + setObject.getClass());
+            }
             stickerSet = null;
         }
 
-        if (sticker == null && BuildVars.DEBUG_VERSION) {
-            throw new IllegalArgumentException("Invalid type of the given setObject: " + setObject.getClass());
-        }
 
         if (sticker != null) {
             TLObject object = stickerSet == null ? null : FileLoader.getClosestPhotoSizeWithSize(stickerSet.thumbs, 90);

@@ -32,6 +32,7 @@ import org.telegram.messenger.MessagesStorage;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.ConnectionsManager;
+import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.BottomSheet;
@@ -90,6 +91,8 @@ public class InviteLinkBottomSheet extends BottomSheet {
     private int chatId;
     private boolean isChannel;
     private final long timeDif;
+
+    InviteDelegate inviteDelegate;
 
     private boolean canEdit = true;
 
@@ -518,6 +521,9 @@ public class InviteLinkBottomSheet extends BottomSheet {
                                             if (info != null) {
                                                 info.exported_invite = (TLRPC.TL_chatInviteExported) replaced.new_invite;
                                             }
+                                            if (inviteDelegate != null) {
+                                                inviteDelegate.permanentLinkReplaced(invite, info.exported_invite);
+                                            }
                                         } else {
                                             if (info != null) {
                                                 info.invitesCount--;
@@ -525,6 +531,9 @@ public class InviteLinkBottomSheet extends BottomSheet {
                                                     info.invitesCount = 0;
                                                 }
                                                 MessagesStorage.getInstance(currentAccount).saveChatLinksCount(chatId, info.invitesCount);
+                                            }
+                                            if (inviteDelegate != null) {
+                                                inviteDelegate.linkRevoked(invite);
                                             }
                                         }
                                     }
@@ -540,6 +549,29 @@ public class InviteLinkBottomSheet extends BottomSheet {
                             } else {
                                 LinkEditActivity activity = new LinkEditActivity(LinkEditActivity.EDIT_TYPE, chatId);
                                 activity.setInviteToEdit(invite);
+                                activity.setCallback(new LinkEditActivity.Callback() {
+                                    @Override
+                                    public void onLinkCreated(TLObject response) {
+
+                                    }
+
+                                    @Override
+                                    public void onLinkEdited(TLRPC.TL_chatInviteExported inviteToEdit, TLObject response) {
+                                        if (inviteDelegate != null) {
+                                            inviteDelegate.onLinkEdited(inviteToEdit);
+                                        }
+                                    }
+
+                                    @Override
+                                    public void onLinkRemoved(TLRPC.TL_chatInviteExported inviteFinal) {
+
+                                    }
+
+                                    @Override
+                                    public void revokeLink(TLRPC.TL_chatInviteExported inviteFinal) {
+
+                                    }
+                                });
                                 fragment.presentFragment(activity);
                             }
                             dismiss();
@@ -555,7 +587,9 @@ public class InviteLinkBottomSheet extends BottomSheet {
                                 req.peer = MessagesController.getInstance(currentAccount).getInputPeer(-chatId);
                                 ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
                                     if (error == null) {
-
+                                        if (inviteDelegate != null) {
+                                            inviteDelegate.onLinkDeleted(invite);
+                                        }
                                     }
                                 }));
                             }
@@ -727,7 +761,7 @@ public class InviteLinkBottomSheet extends BottomSheet {
                 case 8:
                     EmptyHintRow emptyHintRow = (EmptyHintRow) holder.itemView;
                     if (invite.usage_limit > 0) {
-                        emptyHintRow.textView.setText(LocaleController.formatPluralString("PeopleCanJoinViaLink", invite.usage_limit));
+                        emptyHintRow.textView.setText(LocaleController.formatPluralString("PeopleCanJoinViaLinkCount", invite.usage_limit));
                         emptyHintRow.textView.setVisibility(View.VISIBLE);
                     } else {
                         emptyHintRow.textView.setVisibility(View.GONE);
@@ -857,6 +891,10 @@ public class InviteLinkBottomSheet extends BottomSheet {
         });
     }
 
+    public void setInviteDelegate(InviteDelegate inviteDelegate) {
+        this.inviteDelegate = inviteDelegate;
+    }
+
     private class TimerPrivacyCell extends TextInfoPrivacyCell {
 
         Runnable timerRunnable = new Runnable() {
@@ -922,5 +960,12 @@ public class InviteLinkBottomSheet extends BottomSheet {
 
     public void setCanEdit(boolean canEdit) {
         this.canEdit = canEdit;
+    }
+
+    public interface InviteDelegate {
+        void permanentLinkReplaced(TLRPC.TL_chatInviteExported oldLink, TLRPC.TL_chatInviteExported newLink);
+        void linkRevoked(TLRPC.TL_chatInviteExported invite);
+        void onLinkDeleted(TLRPC.TL_chatInviteExported invite);
+        void onLinkEdited(TLRPC.TL_chatInviteExported invite);
     }
 }

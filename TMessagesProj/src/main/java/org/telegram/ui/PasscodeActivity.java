@@ -688,7 +688,7 @@ public class PasscodeActivity extends BaseFragment implements NotificationCenter
                             hasWidgets = !preferences.getAll().isEmpty();
                         }
                         if (hasWidgets) {
-                            stringBuilder.append(AndroidUtilities.replaceTags(LocaleController.getString("WidgetPasscodeEnable", R.string.WidgetPasscodeEnable)));
+                            stringBuilder.append("\n\n").append(AndroidUtilities.replaceTags(LocaleController.getString("WidgetPasscodeEnable2", R.string.WidgetPasscodeEnable2)));
                         }
                         cell.setText(stringBuilder);
                         if (autoLockDetailRow != -1) {

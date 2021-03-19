@@ -42,6 +42,8 @@ public class StickerEmptyView extends FrameLayout implements NotificationCenter.
 
     int currentAccount = UserConfig.selectedAccount;
 
+    boolean preventMoving;
+
     Runnable showProgressRunnable = new Runnable() {
         @Override
         public void run() {
@@ -125,13 +127,17 @@ public class StickerEmptyView extends FrameLayout implements NotificationCenter.
     @Override
     protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
         super.onLayout(changed, left, top, right, bottom);
-        if (animateLayoutChange && lastH > 0 && lastH != getMeasuredHeight()) {
+        if ((animateLayoutChange || preventMoving) && lastH > 0 && lastH != getMeasuredHeight()) {
             float y = (lastH - getMeasuredHeight()) / 2f;
             linearLayout.setTranslationY(linearLayout.getTranslationY() + y);
-            linearLayout.animate().translationY(0).setInterpolator(CubicBezierInterpolator.DEFAULT).setDuration(250);
+            if (!preventMoving) {
+                linearLayout.animate().translationY(0).setInterpolator(CubicBezierInterpolator.DEFAULT).setDuration(250);
+            }
             if (progressBar != null) {
                 progressBar.setTranslationY(progressBar.getTranslationY() + y);
-                progressBar.animate().translationY(0).setInterpolator(CubicBezierInterpolator.DEFAULT).setDuration(250);
+                if (!preventMoving) {
+                    progressBar.animate().translationY(0).setInterpolator(CubicBezierInterpolator.DEFAULT).setDuration(250);
+                }
             }
         }
         lastH = getMeasuredHeight();
@@ -327,5 +333,15 @@ public class StickerEmptyView extends FrameLayout implements NotificationCenter.
 
     public void setAnimateLayoutChange(boolean animate) {
         this.animateLayoutChange = animate;
+    }
+
+    public void setPreventMoving(boolean preventMoving) {
+        this.preventMoving = preventMoving;
+        if (!preventMoving) {
+            linearLayout.setTranslationY(0);
+            if (progressBar != null) {
+                progressBar.setTranslationY(0);
+            }
+        }
     }
 }

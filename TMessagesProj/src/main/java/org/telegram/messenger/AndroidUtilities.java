@@ -67,6 +67,7 @@ import android.text.method.LinkMovementMethod;
 import android.text.style.URLSpan;
 import android.text.util.Linkify;
 import android.util.DisplayMetrics;
+import android.util.Log;
 import android.util.StateSet;
 import android.util.TypedValue;
 import android.view.ContextThemeWrapper;
@@ -382,6 +383,9 @@ public class AndroidUtilities {
     }
 
     private static void gatherLinks(ArrayList<LinkSpec> links, Spannable s, Pattern pattern, String[] schemes, Linkify.MatchFilter matchFilter, boolean internalOnly) {
+        if (TextUtils.indexOf(s, '─') >= 0) {
+            s = new SpannableStringBuilder(s.toString().replace('─', ' '));
+        }
         Matcher m = pattern.matcher(s);
         while (m.find()) {
             int start = m.start();
@@ -1445,6 +1449,7 @@ public class AndroidUtilities {
                 return;
             }
             imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
+
         } catch (Exception e) {
             FileLog.e(e);
         }
@@ -3632,6 +3637,49 @@ public class AndroidUtilities {
                 }
                 adapter.onBindViewHolder(holder, p);
             }
+        }
+    }
+
+    public static void updateViewVisibilityAnimated(View view, boolean show) {
+        updateViewVisibilityAnimated(view, show, 1f, true);
+    }
+
+    public static void updateViewVisibilityAnimated(View view, boolean show, float scaleFactor, boolean animated) {
+        if (view.getParent() == null) {
+            animated = false;
+        }
+
+        if (show && view.getTag() == null) {
+            view.animate().setListener(null).cancel();
+            if (animated) {
+                if (view.getVisibility() != View.VISIBLE) {
+                    view.setVisibility(View.VISIBLE);
+                    view.setAlpha(0f);
+                    view.setScaleX(scaleFactor);
+                    view.setScaleY(scaleFactor);
+                }
+                view.animate().alpha(1f).scaleY(1f).scaleX(1f).setDuration(150).start();
+            } else {
+                view.setVisibility(View.VISIBLE);
+                view.setAlpha(1f);
+                view.setScaleX(1f);
+                view.setScaleY(1f);
+            }
+            view.setTag(1);
+        } else {
+            view.animate().setListener(null).cancel();
+            if (animated) {
+                view.animate().alpha(1f).scaleY(1f).scaleX(1f).setDuration(150).start();
+                view.animate().alpha(0).scaleY(scaleFactor).scaleX(scaleFactor).setListener(new AnimatorListenerAdapter() {
+                    @Override
+                    public void onAnimationEnd(Animator animation) {
+                        view.setVisibility(View.GONE);
+                    }
+                }).setDuration(150).start();
+            } else {
+                view.setVisibility(View.GONE);
+            }
+            view.setTag(null);
         }
     }
 }

@@ -5,6 +5,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.provider.Settings;
 
+import org.telegram.messenger.AccountInstance;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.UserConfig;
@@ -14,20 +15,17 @@ import org.telegram.ui.Components.voip.VoIPHelper;
 
 public final class VoIPPendingCall {
 
-    public static VoIPPendingCall startOrSchedule(Activity activity, int userId, boolean video) {
-        return new VoIPPendingCall(activity, userId, video, 1000);
+    public static VoIPPendingCall startOrSchedule(Activity activity, int userId, boolean video, AccountInstance accountInstance) {
+        return new VoIPPendingCall(activity, userId, video, 1000, accountInstance);
     }
 
-    private final NotificationCenter.NotificationCenterDelegate observer = new NotificationCenter.NotificationCenterDelegate() {
-        @Override
-        public void didReceivedNotification(int id, int account, Object... args) {
-            if (id == NotificationCenter.didUpdateConnectionState) {
-                onConnectionStateUpdated(account, false);
-            }
+    private final NotificationCenter.NotificationCenterDelegate observer = (id, account, args) -> {
+        if (id == NotificationCenter.didUpdateConnectionState) {
+            onConnectionStateUpdated(false);
         }
     };
 
-    private final Runnable releaseRunnable = () -> onConnectionStateUpdated(UserConfig.selectedAccount, true);
+    private final Runnable releaseRunnable = () -> onConnectionStateUpdated(true);
 
     private final int userId;
     private final boolean video;
@@ -36,12 +34,14 @@ public final class VoIPPendingCall {
     private Handler handler;
     private NotificationCenter notificationCenter;
     private boolean released;
+    private AccountInstance accountInstance;
 
-    private VoIPPendingCall(Activity activity, int userId, boolean video, long expirationTime) {
+    private VoIPPendingCall(Activity activity, int userId, boolean video, long expirationTime, AccountInstance accountInstance) {
         this.activity = activity;
         this.userId = userId;
         this.video = video;
-        if (!onConnectionStateUpdated(UserConfig.selectedAccount, false)) {
+        this.accountInstance = accountInstance;
+        if (!onConnectionStateUpdated(false)) {
             notificationCenter = NotificationCenter.getInstance(UserConfig.selectedAccount);
             notificationCenter.addObserver(observer, NotificationCenter.didUpdateConnectionState);
             handler = new Handler(Looper.myLooper());
@@ -49,15 +49,15 @@ public final class VoIPPendingCall {
         }
     }
 
-    private boolean onConnectionStateUpdated(int account, boolean force) {
-        if (!released && (force || isConnected(account) || isAirplaneMode())) {
-            final MessagesController messagesController = MessagesController.getInstance(account);
+    private boolean onConnectionStateUpdated(boolean force) {
+        if (!released && (force || isConnected(accountInstance) || isAirplaneMode())) {
+            final MessagesController messagesController = accountInstance.getMessagesController();
             final TLRPC.User user = messagesController.getUser(userId);
             if (user != null) {
                 final TLRPC.UserFull userFull = messagesController.getUserFull(user.id);
-                VoIPHelper.startCall(user, video, userFull != null && userFull.video_calls_available, activity, userFull);
+                VoIPHelper.startCall(user, video, userFull != null && userFull.video_calls_available, activity, userFull, accountInstance);
             } else if (isAirplaneMode()) {
-                VoIPHelper.startCall(null, video, false, activity, null);
+                VoIPHelper.startCall(null, video, false, activity, null, accountInstance);
             }
             release();
             return true;
@@ -65,8 +65,8 @@ public final class VoIPPendingCall {
         return false;
     }
 
-    private boolean isConnected(int account) {
-        return ConnectionsManager.getInstance(account).getConnectionState() == ConnectionsManager.ConnectionStateConnected;
+    private boolean isConnected(AccountInstance accountInstance) {
+        return accountInstance.getConnectionsManager().getConnectionState() == ConnectionsManager.ConnectionStateConnected;
     }
 
     private boolean isAirplaneMode() {

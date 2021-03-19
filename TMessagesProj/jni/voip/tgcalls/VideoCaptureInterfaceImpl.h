@@ -10,10 +10,11 @@
 namespace tgcalls {
 
 class VideoCapturerInterface;
+class Threads;
 
 class VideoCaptureInterfaceObject {
 public:
-	VideoCaptureInterfaceObject(std::string deviceId, std::shared_ptr<PlatformContext> platformContext);
+	VideoCaptureInterfaceObject(std::string deviceId, std::shared_ptr<PlatformContext> platformContext, Threads &threads);
 	~VideoCaptureInterfaceObject();
 
 	void switchToDevice(std::string deviceId);
@@ -39,7 +40,7 @@ private:
 
 class VideoCaptureInterfaceImpl : public VideoCaptureInterface {
 public:
-	VideoCaptureInterfaceImpl(std::string deviceId, std::shared_ptr<PlatformContext> platformContext);
+	VideoCaptureInterfaceImpl(std::string deviceId, std::shared_ptr<PlatformContext> platformContext, std::shared_ptr<Threads> threads);
 	virtual ~VideoCaptureInterfaceImpl();
 
 	void switchToDevice(std::string deviceId) override;
