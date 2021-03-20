@@ -563,6 +563,10 @@ public class RLottieDrawable extends BitmapDrawable implements Animatable {
         return true;
     }
 
+    public int getFramesCount() {
+        return metaData[0];
+    }
+
     public void addParentView(View view) {
         if (view == null) {
             return;

@@ -25,8 +25,7 @@ public class WaveDrawable {
     public final static float FLING_DISTANCE = 0.50f;
     private final static float WAVE_ANGLE = 0.03f;
     private final static float RANDOM_RADIUS_SIZE = 0.3f;
-    private final static float ANIMATION_SPEED_WAVE_HUGE = 0.65f;
-    private final static float ANIMATION_SPEED_WAVE_SMALL = 0.45f;
+
     private final static float ANIMATION_SPEED_CIRCLE = 0.45f;
     public final static float CIRCLE_ALPHA_1 = 0.30f;
     public final static float CIRCLE_ALPHA_2 = 0.15f;
@@ -37,6 +36,8 @@ public class WaveDrawable {
     private final static float IDLE_RADIUS = 0.56f;
     private final static float IDLE_ROTATE_DIF = 0.1f * IDLE_ROTATION_SPEED;
 
+    private final static float ANIMATION_SPEED_WAVE_HUGE = 0.65f;
+    private final static float ANIMATION_SPEED_WAVE_SMALL = 0.45f;
     private final static float animationSpeed = 1f - ANIMATION_SPEED_WAVE_HUGE;
     private final static float animationSpeedTiny = 1f - ANIMATION_SPEED_WAVE_SMALL;
     public final static float animationSpeedCircle = 1f - ANIMATION_SPEED_CIRCLE;

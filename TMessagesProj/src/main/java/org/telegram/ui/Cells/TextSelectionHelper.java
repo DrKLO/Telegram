@@ -122,6 +122,8 @@ public abstract class TextSelectionHelper<Cell extends TextSelectionHelper.Selec
 
     protected boolean showActionsAsPopupAlways = false;
 
+    int keyboardSize;
+
     private Runnable scrollRunnable = new Runnable() {
         @Override
         public void run() {
@@ -453,7 +455,7 @@ public abstract class TextSelectionHelper<Cell extends TextSelectionHelper.Selec
                             }
                             return false;
                         });
-                        popupLayout.setShowedFromBotton(false);
+                        popupLayout.setShownFromBotton(false);
 
                         deleteView = new TextView(textSelectionOverlay.getContext());
                         deleteView.setBackgroundDrawable(Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector), 2));
@@ -1022,7 +1024,7 @@ public abstract class TextSelectionHelper<Cell extends TextSelectionHelper.Selec
                         y += layoutBlock.yOffset;
                         x += layoutBlock.xOffset;
 
-                        if (y + yOffset > top && y + yOffset < parentView.getMeasuredHeight()) {
+                        if (y + yOffset > top + keyboardSize && y + yOffset < parentView.getMeasuredHeight()) {
                             if (!layout.isRtlCharAt(selectionEnd)) {
                                 canvas.save();
                                 canvas.translate(x, y);
@@ -1082,7 +1084,7 @@ public abstract class TextSelectionHelper<Cell extends TextSelectionHelper.Selec
                         y += layoutBlock.yOffset;
                         x += layoutBlock.xOffset;
 
-                        if (y + yOffset > top && y + yOffset < parentView.getMeasuredHeight()) {
+                        if (y + yOffset > top + keyboardSize && y + yOffset < parentView.getMeasuredHeight()) {
                             if (!layout.isRtlCharAt(selectionStart)) {
                                 canvas.save();
                                 canvas.translate(x - handleViewSize, y);
@@ -2606,5 +2608,10 @@ public abstract class TextSelectionHelper<Cell extends TextSelectionHelper.Selec
                 lastBottom = bottom;
             }
         }
+    }
+
+    public void setKeyboardSize(int keyboardSize) {
+        this.keyboardSize = keyboardSize;
+        invalidate();
     }
 }

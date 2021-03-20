@@ -1448,14 +1448,14 @@ void Datacenter::exportAuthorization() {
     TL_auth_exportAuthorization *request = new TL_auth_exportAuthorization();
     request->dc_id = datacenterId;
     if (LOGS_ENABLED) DEBUG_D("dc%u begin export authorization", datacenterId);
-    ConnectionsManager::getInstance(instanceNum).sendRequest(request, [&](TLObject *response, TL_error *error, int32_t networkType) {
+    ConnectionsManager::getInstance(instanceNum).sendRequest(request, [&](TLObject *response, TL_error *error, int32_t networkType, int64_t responseTime) {
         if (error == nullptr) {
             TL_auth_exportedAuthorization *res = (TL_auth_exportedAuthorization *) response;
             TL_auth_importAuthorization *request2 = new TL_auth_importAuthorization();
             request2->bytes = std::move(res->bytes);
             request2->id = res->id;
             if (LOGS_ENABLED) DEBUG_D("dc%u begin import authorization", datacenterId);
-            ConnectionsManager::getInstance(instanceNum).sendRequest(request2, [&](TLObject *response2, TL_error *error2, int32_t networkType) {
+            ConnectionsManager::getInstance(instanceNum).sendRequest(request2, [&](TLObject *response2, TL_error *error2, int32_t networkType, int64_t responseTime) {
                 if (error2 == nullptr) {
                     authorized = true;
                     ConnectionsManager::getInstance(instanceNum).onDatacenterExportAuthorizationComplete(this);
@@ -1477,7 +1477,8 @@ bool Datacenter::isExportingAuthorization() {
 
 bool Datacenter::hasMediaAddress() {
     std::vector<TcpAddress> *addresses;
-    if (ConnectionsManager::getInstance(instanceNum).isIpv6Enabled()) {
+    int strategy = ConnectionsManager::getInstance(instanceNum).getIpStratagy();
+    if (strategy == USE_IPV6_ONLY) {
         addresses = &addressesIpv6Download;
     } else {
         addresses = &addressesIpv4Download;

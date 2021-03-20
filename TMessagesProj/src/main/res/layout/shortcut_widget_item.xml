@@ -1,10 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:orientation="horizontal"
     android:layout_width="match_parent"
     android:minHeight="72dp"
     android:id="@+id/shortcut_widget_item"
-    android:layout_height="wrap_content">
+    android:layout_height="72dp">
 
     <ImageView android:id="@+id/shortcut_widget_item_avatar"
         android:layout_width="54dp"
@@ -12,7 +11,7 @@
         android:layout_marginStart="10dp"
         android:layout_marginLeft="10dp"
         android:layout_marginRight="10dp"
-        android:layout_gravity="center_vertical"
+        android:layout_gravity="start|center_vertical"
         android:gravity="start" />
 
     <RelativeLayout
@@ -31,17 +30,18 @@
             android:gravity="start"
             android:textSize="17dp"
             android:fontFamily="sans-serif-medium"
-            android:textColor="#212121"
-            android:layout_alignParentLeft="true"
-            android:layout_toLeftOf="@+id/shortcut_widget_item_time"/>
-
+            android:textColor="@color/widget_name"
+            android:layout_alignParentStart="true"
+            android:layout_marginEnd="4dp"
+            android:layout_toStartOf="@+id/shortcut_widget_item_time"/>
+        
         <TextView android:id="@+id/shortcut_widget_item_time"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_alignParentRight="true"
+            android:layout_alignParentEnd="true"
             android:layout_marginTop="3dp"
             android:textSize="13dp"
-            android:textColor="#96999C" />
+            android:textColor="@color/widget_time" />
 
     </RelativeLayout>
 
@@ -61,21 +61,26 @@
             android:ellipsize="end"
             android:gravity="start"
             android:textSize="16dp"
-            android:textColor="#8B8D8F"
-            android:layout_alignParentLeft="true"
-            android:layout_toLeftOf="@+id/shortcut_widget_item_badge"/>
+            android:textColor="@color/widget_text"
+            android:autoLink="none"
+            android:textColorLink="@color/widget_text"
+            android:layout_alignParentStart="true"
+            android:layout_toStartOf="@+id/shortcut_widget_item_badge"/>
 
         <TextView android:id="@+id/shortcut_widget_item_badge"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:paddingTop="3dp"
-            android:paddingBottom="3dp"
+            android:layout_height="23dp"
             android:paddingLeft="7dp"
             android:paddingRight="7dp"
+            android:paddingBottom="1dp"
+            android:fontFamily="sans-serif-medium"
+            android:gravity="center"
+            android:minWidth="23dp"
             android:textSize="13dp"
-            android:layout_alignParentRight="true"
-            android:background="#73C96B"
-            android:textColor="#ffffff" />
+            android:layout_marginStart="4dp"
+            android:layout_alignParentEnd="true"
+            android:background="@drawable/widget_counter"
+            android:textColor="@color/widget_badge" />
 
     </RelativeLayout>
 
@@ -83,6 +88,8 @@
         android:layout_marginStart="76dp"
         android:layout_width="match_parent"
         android:layout_height="1px"
-        android:background="#d9d9d9"/>
+        android:layout_marginEnd="8dp"
+        android:layout_gravity="bottom|start"
+        android:background="@color/widget_divider"/>
 
 </FrameLayout>

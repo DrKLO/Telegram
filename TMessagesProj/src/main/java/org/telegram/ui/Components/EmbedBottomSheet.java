@@ -830,9 +830,10 @@ public class EmbedBottomSheet extends BottomSheet {
             dismiss();
         });
 
-        boolean canHandleUrl = videoView.canHandleUrl(embedUrl);
-        if (!canHandleUrl) {
-            videoView.setVisibility(View.INVISIBLE);
+        boolean canHandleUrl = videoView.canHandleUrl(embedUrl) || videoView.canHandleUrl(originalUrl);
+        videoView.setVisibility(canHandleUrl ? View.VISIBLE : View.INVISIBLE);
+        if (canHandleUrl) {
+            videoView.willHandle();
         }
 
         setDelegate(new BottomSheet.BottomSheetDelegate() {
@@ -923,7 +924,7 @@ public class EmbedBottomSheet extends BottomSheet {
                 if (parentActivity != null && videoView.isInFullscreen() && fullscreenedByButton) {
                     if (orientation >= 270 - 30 && orientation <= 270 + 30) {
                         wasInLandscape = true;
-                    } else if (wasInLandscape && (orientation >= 330 || orientation <= 30)) {
+                    } else if (wasInLandscape && orientation > 0 && (orientation >= 330 || orientation <= 30)) {
                         parentActivity.setRequestedOrientation(prevOrientation);
                         fullscreenedByButton = false;
                         wasInLandscape = false;

@@ -4,7 +4,8 @@
     android:orientation="vertical"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/popup_fixed_alert">
+    android:background="@drawable/widget_bg"
+    android:padding="2dp">
 
     <ListView android:id="@+id/list_view"
         android:layout_width="match_parent"
@@ -20,6 +21,5 @@
         android:gravity="center"
         android:textColor="#212121"
         android:textStyle="bold"
-        android:text="No messages"
         android:textSize="20sp" />
 </LinearLayout>

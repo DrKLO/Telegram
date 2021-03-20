@@ -2,6 +2,7 @@ package org.telegram.ui.Components;
 
 import android.content.Context;
 import android.graphics.Canvas;
+import android.graphics.DashPathEffect;
 import android.graphics.Paint;
 import android.os.Bundle;
 import android.text.TextPaint;
@@ -17,12 +18,16 @@ public class SlideChooseView extends View {
     private final SeekBarAccessibilityDelegate accessibilityDelegate;
 
     private Paint paint;
+    private Paint linePaint;
     private TextPaint textPaint;
+    private int lastDash;
 
     private int circleSize;
     private int gapSize;
     private int sideSide;
     private int lineSize;
+
+    private int dashedFrom = -1;
 
     private boolean moving;
     private boolean startMoving;
@@ -33,7 +38,7 @@ public class SlideChooseView extends View {
     private String[] optionsStr;
     private int[] optionsSizes;
 
-    int selectedIndex;
+    private int selectedIndex;
 
     private Callback callback;
 
@@ -42,6 +47,9 @@ public class SlideChooseView extends View {
 
         paint = new Paint(Paint.ANTI_ALIAS_FLAG);
         textPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
+        linePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        linePaint.setStrokeWidth(AndroidUtilities.dp(2));
+        linePaint.setStrokeCap(Paint.Cap.ROUND);
         textPaint.setTextSize(AndroidUtilities.dp(13));
 
         accessibilityDelegate = new IntSeekBarAccessibilityDelegate() {
@@ -81,6 +89,9 @@ public class SlideChooseView extends View {
         requestLayout();
     }
 
+    public void setDashedFrom(int from) {
+        dashedFrom = from;
+    }
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
@@ -130,6 +141,9 @@ public class SlideChooseView extends View {
                     setOption(selectedIndex);
                 }
             }
+            if (callback != null) {
+                callback.onTouchEnd();
+            }
             startMoving = false;
             moving = false;
         }
@@ -162,21 +176,37 @@ public class SlideChooseView extends View {
         for (int a = 0; a < optionsStr.length; a++) {
             int cx = sideSide + (lineSize + gapSize * 2 + circleSize) * a + circleSize / 2;
             if (a <= selectedIndex) {
-                paint.setColor(Theme.getColor(Theme.key_switchTrackChecked));
+                int color = Theme.getColor(Theme.key_switchTrackChecked);
+                paint.setColor(color);
+                linePaint.setColor(color);
             } else {
-                paint.setColor(Theme.getColor(Theme.key_switchTrack));
+                int color = Theme.getColor(Theme.key_switchTrack);
+                paint.setColor(color);
+                linePaint.setColor(color);
             }
             canvas.drawCircle(cx, cy, a == selectedIndex ? AndroidUtilities.dp(6) : circleSize / 2, paint);
             if (a != 0) {
                 int x = cx - circleSize / 2 - gapSize - lineSize;
                 int width = lineSize;
-                if (a == selectedIndex || a == selectedIndex + 1) {
-                    width -= AndroidUtilities.dp(3);
-                }
-                if (a == selectedIndex + 1) {
+                if (dashedFrom != -1 && a - 1 >= dashedFrom) {
                     x += AndroidUtilities.dp(3);
+                    width -= AndroidUtilities.dp(3);
+                    int dash = width / AndroidUtilities.dp(13);
+                    if (lastDash != dash) {
+                        float gap = (width - dash * AndroidUtilities.dp(8)) / (float) (dash - 1);
+                        linePaint.setPathEffect(new DashPathEffect(new float[]{AndroidUtilities.dp(6), gap}, 0));
+                        lastDash = dash;
+                    }
+                    canvas.drawLine(x + AndroidUtilities.dp(1), cy, x + width - AndroidUtilities.dp(1), cy, linePaint);
+                } else {
+                    if (a == selectedIndex || a == selectedIndex + 1) {
+                        width -= AndroidUtilities.dp(3);
+                    }
+                    if (a == selectedIndex + 1) {
+                        x += AndroidUtilities.dp(3);
+                    }
+                    canvas.drawRect(x, cy - AndroidUtilities.dp(1), x + width, cy + AndroidUtilities.dp(1), paint);
                 }
-                canvas.drawRect(x, cy - AndroidUtilities.dp(1), x + width, cy + AndroidUtilities.dp(1), paint);
             }
             int size = optionsSizes[a];
             String text = optionsStr[a];
@@ -208,5 +238,9 @@ public class SlideChooseView extends View {
 
     public interface Callback {
         void onOptionSelected(int index);
+
+        default void onTouchEnd() {
+
+        }
     }
 }

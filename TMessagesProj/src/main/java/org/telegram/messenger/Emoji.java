@@ -187,9 +187,6 @@ public class Emoji {
     public static EmojiDrawable getEmojiDrawable(CharSequence code) {
         DrawableInfo info = getDrawableInfo(code);
         if (info == null) {
-            if (BuildVars.LOGS_ENABLED) {
-                FileLog.d("No drawable for emoji " + code);
-            }
             return null;
         }
         EmojiDrawable ed = new EmojiDrawable(info);

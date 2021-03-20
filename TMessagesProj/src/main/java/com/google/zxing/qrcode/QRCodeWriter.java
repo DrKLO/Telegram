@@ -53,6 +53,8 @@ public final class QRCodeWriter {
   private int imageBlockX;
   private int sideQuadSize;
 
+  private int imageSize;
+
   public Bitmap encode(String contents, BarcodeFormat format, int width, int height, Map<EncodeHintType, ?> hints, Bitmap bitmap, Context context) throws WriterException {
 
     if (contents.isEmpty()) {
@@ -118,7 +120,7 @@ public final class QRCodeWriter {
       imageBloks++;
     }
     imageBlockX = (inputWidth - imageBloks) / 2;
-    int imageSize = imageBloks * multiple - 24;
+    imageSize = imageBloks * multiple - 24;
     int imageX = (size - imageSize) / 2;
 
     for (int a = 0; a < 3; a++) {
@@ -234,5 +236,9 @@ public final class QRCodeWriter {
       return false;
     }
     return x >= 0 && y >= 0 && x < input.getWidth() && y < input.getHeight() && input.get(x, y) == 1;
+  }
+
+  public int getImageSize() {
+    return imageSize;
   }
 }

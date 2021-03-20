@@ -24,7 +24,6 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
@@ -41,7 +40,7 @@ public class ImportingAlert extends BottomSheet implements NotificationCenter.No
     private ChatActivity parentFragment;
     private RLottieImageView imageView;
     private BottomSheetCell cell;
-    private boolean compteled;
+    private boolean completed;
     private RLottieDrawable completedDrawable;
     private TextView[] infoTextView = new TextView[2];
 
@@ -104,7 +103,7 @@ public class ImportingAlert extends BottomSheet implements NotificationCenter.No
 
     @SuppressWarnings("FieldCanBeLocal")
     private final Runnable onFinishCallback = () -> {
-        if (compteled) {
+        if (completed) {
             imageView.getAnimatedDrawable().setAutoRepeat(0);
             imageView.setAnimation(completedDrawable);
             imageView.playAnimation();
@@ -193,8 +192,8 @@ public class ImportingAlert extends BottomSheet implements NotificationCenter.No
         parentFragment.getNotificationCenter().addObserver(this, NotificationCenter.historyImportProgressChanged);
     }
 
-    public void setCompteled() {
-        compteled = true;
+    public void setCompleted() {
+        completed = true;
         imageView.setAutoRepeat(false);
         cell.setVisibility(View.VISIBLE);
         AnimatorSet animatorSet = new AnimatorSet();
@@ -230,14 +229,14 @@ public class ImportingAlert extends BottomSheet implements NotificationCenter.No
             long dialogId = parentFragment.getDialogId();
             SendMessagesHelper.ImportingHistory importingHistory = parentFragment.getSendMessagesHelper().getImportingHistory(dialogId);
             if (importingHistory == null) {
-                setCompteled();
+                setCompleted();
                 return;
             }
-            if (!compteled) {
+            if (!completed) {
                 double timeToEndAnimation = (180 - imageView.getAnimatedDrawable().getCurrentFrame()) * 16.6 + 3000;
                 if (timeToEndAnimation >= importingHistory.timeUntilFinish) {
                     imageView.setAutoRepeat(false);
-                    compteled = true;
+                    completed = true;
                 }
             }
 

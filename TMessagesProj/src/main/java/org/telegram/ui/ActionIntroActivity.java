@@ -556,11 +556,12 @@ public class ActionIntroActivity extends BaseFragment implements LocationControl
 
         switch (currentType) {
             case ACTION_TYPE_CHANNEL_CREATE: {
-                imageView.setImageResource(R.drawable.channelintro);
                 imageView.setScaleType(ImageView.ScaleType.FIT_CENTER);
+                imageView.setAnimation(R.raw.channel_create, 200, 200);
                 titleTextView.setText(LocaleController.getString("ChannelAlertTitle", R.string.ChannelAlertTitle));
                 descriptionText.setText(LocaleController.getString("ChannelAlertText", R.string.ChannelAlertText));
                 buttonTextView.setText(LocaleController.getString("ChannelAlertCreate2", R.string.ChannelAlertCreate2));
+                imageView.playAnimation();
                 break;
             }
             case ACTION_TYPE_NEARBY_LOCATION_ACCESS: {

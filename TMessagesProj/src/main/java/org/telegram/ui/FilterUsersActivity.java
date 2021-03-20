@@ -1044,7 +1044,7 @@ public class FilterUsersActivity extends BaseFragment implements NotificationCen
             View view;
             switch (viewType) {
                 case 1:
-                    view = new GroupCreateUserCell(context, true, 0, true);
+                    view = new GroupCreateUserCell(context, 1, 0, true);
                     break;
                 case 2:
                 default:

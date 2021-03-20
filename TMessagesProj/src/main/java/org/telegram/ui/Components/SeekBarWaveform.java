@@ -38,6 +38,10 @@ public class SeekBarWaveform {
     private int outerColor;
     private int selectedColor;
 
+    private float clearProgress = 1f;
+    private int clearFromX;
+    private boolean isUnread;
+
     private float waveScaling = 1f;
 
     public SeekBarWaveform(Context context) {
@@ -129,6 +133,17 @@ public class SeekBarWaveform {
     }
 
     public void setProgress(float progress) {
+        setProgress(progress, false);
+    }
+
+    public void setProgress(float progress, boolean animated) {
+        int currentThumbX = isUnread ? width : thumbX;
+        if (animated && currentThumbX != 0 && progress == 0) {
+            clearFromX = currentThumbX;
+            clearProgress = 0f;
+        } else if (!animated) {
+            clearProgress = 1f;
+        }
         thumbX = (int) Math.ceil(width * progress);
         if (thumbX < 0) {
             thumbX = 0;
@@ -146,7 +161,7 @@ public class SeekBarWaveform {
         height = h;
     }
 
-    public void draw(Canvas canvas) {
+    public void draw(Canvas canvas, View parentView) {
         if (waveformBytes == null || width == 0) {
             return;
         }
@@ -160,13 +175,23 @@ public class SeekBarWaveform {
         float barCounter = 0;
         int nextBarNum = 0;
 
-        paintInner.setColor(messageObject != null && !messageObject.isOutOwner() && messageObject.isContentUnread() && thumbX == 0 ? outerColor : (selected ? selectedColor : innerColor));
+        isUnread = messageObject != null && !messageObject.isOutOwner() && messageObject.isContentUnread() && thumbX == 0;
+        paintInner.setColor(isUnread ? outerColor : (selected ? selectedColor : innerColor));
         paintOuter.setColor(outerColor);
 
         int y = (height - AndroidUtilities.dp(14)) / 2;
         int barNum = 0;
         int lastBarNum;
         int drawBarCount;
+
+        if (clearProgress != 1f) {
+            clearProgress += 16 / 150f;
+            if (clearProgress > 1f) {
+                clearProgress = 1f;
+            } else {
+                parentView.invalidate();
+            }
+        }
 
         for (int a = 0; a < samplesCount; a++) {
             if (a != nextBarNum) {
@@ -205,6 +230,19 @@ public class SeekBarWaveform {
                         drawLine(canvas,x, y, h, paintOuter);
                         canvas.restore();
                     }
+                }
+                if (clearProgress != 1f) {
+                    int alpha = paintOuter.getAlpha();
+                    paintOuter.setAlpha((int) (alpha * (1f - clearProgress)));
+                    if (x < clearFromX && x + AndroidUtilities.dp(2) < clearFromX) {
+                        drawLine(canvas, x, y, h, paintOuter);
+                    } else if (x < clearFromX) {
+                        canvas.save();
+                        canvas.clipRect(x - AndroidUtilities.dpf2(1), y, clearFromX, y + AndroidUtilities.dp(14));
+                        drawLine(canvas, x, y, h, paintOuter);
+                        canvas.restore();
+                    }
+                    paintOuter.setAlpha(alpha);
                 }
                 barNum++;
             }

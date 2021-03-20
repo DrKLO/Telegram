@@ -799,6 +799,9 @@ public class VoIPFragment implements VoIPBaseService.StateListener, Notification
         speakerPhoneIcon.setPadding(AndroidUtilities.dp(12), AndroidUtilities.dp(12), AndroidUtilities.dp(12), AndroidUtilities.dp(12));
         frameLayout.addView(speakerPhoneIcon, LayoutHelper.createFrame(56, 56, Gravity.TOP | Gravity.RIGHT));
         speakerPhoneIcon.setOnClickListener(view -> {
+            if (speakerPhoneIcon.getTag() == null) {
+                return;
+            }
             if (VoIPService.getSharedInstance() != null) {
                 VoIPService.getSharedInstance().toggleSpeakerphoneOrShowRouteSheet(activity, false);
             }
@@ -1803,10 +1806,12 @@ public class VoIPFragment implements VoIPBaseService.StateListener, Notification
             if (currentUserIsVideo || callingUserIsVideo) {
                 setFrontalCameraAction(bottomButtons[0], service, animated);
                 if (uiVisible) {
+                    speakerPhoneIcon.setTag(1);
                     speakerPhoneIcon.animate().alpha(1f).start();
                 }
             } else {
                 setSpeakerPhoneAction(bottomButtons[0], service, animated);
+                speakerPhoneIcon.setTag(null);
                 speakerPhoneIcon.animate().alpha(0f).start();
             }
             setVideoAction(bottomButtons[1], service, animated);
@@ -1927,6 +1932,7 @@ public class VoIPFragment implements VoIPBaseService.StateListener, Notification
             bottomButton.setChecked(false, animated);
         }
         bottomButton.setCheckableForAccessibility(true);
+        bottomButton.setEnabled(true);
         bottomButton.setOnClickListener(view -> {
             if (VoIPService.getSharedInstance() != null) {
                 VoIPService.getSharedInstance().toggleSpeakerphoneOrShowRouteSheet(activity, false);

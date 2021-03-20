@@ -9,6 +9,7 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.NotificationsController;
 import org.telegram.messenger.R;
+import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.BaseFragment;
 
 public final class BulletinFactory {
@@ -24,6 +25,9 @@ public final class BulletinFactory {
     public static boolean canShowBulletin(BaseFragment fragment) {
         return fragment != null && fragment.getParentActivity() != null && fragment.getLayoutContainer() != null;
     }
+
+    public static final int ICON_TYPE_NOT_FOUND = 0;
+    public static final int ICON_TYPE_WARNING = 1;
 
     public enum FileType {
 
@@ -108,6 +112,13 @@ public final class BulletinFactory {
         this.fragment = null;
     }
 
+    public Bulletin createSimpleBulletin(int iconRawId, String text) {
+        final Bulletin.LottieLayout layout = new Bulletin.LottieLayout(getContext());
+        layout.setAnimation(iconRawId, 36, 36);
+        layout.textView.setText(text);
+        return create(layout, Bulletin.DURATION_SHORT);
+    }
+
     @CheckResult
     public Bulletin createDownloadBulletin(FileType fileType) {
         return createDownloadBulletin(fileType, 1);
@@ -116,6 +127,13 @@ public final class BulletinFactory {
     @CheckResult
     public Bulletin createDownloadBulletin(FileType fileType, int filesAmount) {
         return createDownloadBulletin(fileType, filesAmount, 0, 0);
+    }
+
+    public Bulletin createReportSent() {
+        final Bulletin.LottieLayout layout = new Bulletin.LottieLayout(getContext());
+        layout.setAnimation(R.raw.chats_infotip);
+        layout.textView.setText(LocaleController.getString("ReportChatSent", R.string.ReportChatSent));
+        return create(layout, Bulletin.DURATION_SHORT);
     }
 
     @CheckResult
@@ -134,9 +152,27 @@ public final class BulletinFactory {
         return create(layout, Bulletin.DURATION_SHORT);
     }
 
+
+    public Bulletin createErrorBulletin(String errorMessage) {
+        Bulletin.LottieLayout layout = new Bulletin.LottieLayout(getContext());
+        layout.setAnimation(R.raw.chats_infotip);
+        layout.textView.setText(errorMessage);
+        layout.textView.setSingleLine(false);
+        layout.textView.setMaxLines(2);
+        return create(layout, Bulletin.DURATION_SHORT);
+    }
+
     @CheckResult
     public Bulletin createCopyLinkBulletin() {
         return createCopyLinkBulletin(false);
+    }
+
+    @CheckResult
+    public Bulletin createCopyBulletin(String message) {
+        final Bulletin.LottieLayout layout = new Bulletin.LottieLayout(getContext());
+        layout.setAnimation(R.raw.copy, 36, 36, "NULL ROTATION", "Back", "Front");
+        layout.textView.setText(message);
+        return create(layout, Bulletin.DURATION_SHORT);
     }
 
     @CheckResult
@@ -268,10 +304,16 @@ public final class BulletinFactory {
     }
 
     @CheckResult
-    public static Bulletin createRemoveFromChatBulletin(BaseFragment fragment, String userFirstName, String chatName) {
+    public static Bulletin createRemoveFromChatBulletin(BaseFragment fragment, TLRPC.User user, String chatName) {
         final Bulletin.LottieLayout layout = new Bulletin.LottieLayout(fragment.getParentActivity());
         layout.setAnimation(R.raw.ic_ban, "Hand");
-        layout.textView.setText(AndroidUtilities.replaceTags(LocaleController.formatString("UserRemovedFromChatHint", R.string.UserRemovedFromChatHint, userFirstName, chatName)));
+        String name;
+        if (user.deleted) {
+            name = LocaleController.formatString("HiddenName", R.string.HiddenName);
+        } else {
+            name = user.first_name;
+        }
+        layout.textView.setText(AndroidUtilities.replaceTags(LocaleController.formatString("UserRemovedFromChatHint", R.string.UserRemovedFromChatHint, name, chatName)));
         return Bulletin.make(fragment, layout, Bulletin.DURATION_SHORT);
     }
 

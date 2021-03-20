@@ -4,15 +4,12 @@ import android.graphics.Canvas;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Path;
-import android.graphics.PorterDuff;
-import android.graphics.PorterDuffXfermode;
 import android.graphics.RadialGradient;
 import android.graphics.RectF;
 import android.graphics.Shader;
 import android.os.SystemClock;
 import android.view.View;
 
-import org.telegram.messenger.AccountInstance;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.Utilities;
@@ -52,14 +49,9 @@ public class FragmentContextViewWavesDrawable {
 
     RectF rect = new RectF();
     Path path = new Path();
-    private final Paint xRefP = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint selectedPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
     public FragmentContextViewWavesDrawable() {
-        xRefP.setColor(0);
-        xRefP.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.CLEAR));
-
-
         for (int i = 0; i < 4; i++) {
             states[i] = new WeavingState(i);
         }
@@ -153,9 +145,11 @@ public class FragmentContextViewWavesDrawable {
             lineBlobDrawable2.minRadius = AndroidUtilities.dp(0);
             lineBlobDrawable2.maxRadius = AndroidUtilities.dp(3) + AndroidUtilities.dp(9) * amplitude;
 
-            lineBlobDrawable.update(amplitude, 0.3f);
-            lineBlobDrawable1.update(amplitude, 0.7f);
-            lineBlobDrawable2.update(amplitude, 0.7f);
+            if (i == 1) {
+                lineBlobDrawable.update(amplitude, 0.3f);
+                lineBlobDrawable1.update(amplitude, 0.7f);
+                lineBlobDrawable2.update(amplitude, 0.7f);
+            }
 
 //            if (rippleTransition) {
 //                paint.setAlpha(76);
@@ -291,26 +285,31 @@ public class FragmentContextViewWavesDrawable {
     }
 
     public void updateState(boolean animated) {
-        if (VoIPService.getSharedInstance() != null) {
-            int currentCallState = VoIPService.getSharedInstance().getCallState();
-            if (currentCallState == VoIPService.STATE_WAIT_INIT || currentCallState == VoIPService.STATE_WAIT_INIT_ACK || currentCallState == VoIPService.STATE_CREATING || currentCallState == VoIPService.STATE_RECONNECTING) {
+        VoIPService voIPService = VoIPService.getSharedInstance();
+        if (voIPService != null) {
+            int currentCallState = voIPService.getCallState();
+            if (!voIPService.isSwitchingStream() && (currentCallState == VoIPService.STATE_WAIT_INIT || currentCallState == VoIPService.STATE_WAIT_INIT_ACK || currentCallState == VoIPService.STATE_CREATING || currentCallState == VoIPService.STATE_RECONNECTING)) {
                 setState(FragmentContextViewWavesDrawable.MUTE_BUTTON_STATE_CONNECTING, animated);
             } else {
-                if (VoIPService.getSharedInstance().groupCall != null) {
-                    TLRPC.TL_groupCallParticipant participant = VoIPService.getSharedInstance().groupCall.participants.get(AccountInstance.getInstance(VoIPService.getSharedInstance().getAccount()).getUserConfig().getClientUserId());
-                    if (participant != null && !participant.can_self_unmute && participant.muted && !ChatObject.canManageCalls(VoIPService.getSharedInstance().getChat())) {
-                        VoIPService.getSharedInstance().setMicMute(true, false, false);
+                if (voIPService.groupCall != null) {
+                    TLRPC.TL_groupCallParticipant participant = voIPService.groupCall.participants.get(voIPService.getSelfId());
+                    if (participant != null && !participant.can_self_unmute && participant.muted && !ChatObject.canManageCalls(voIPService.getChat())) {
+                        voIPService.setMicMute(true, false, false);
                         setState(FragmentContextViewWavesDrawable.MUTE_BUTTON_STATE_MUTED_BY_ADMIN, animated);
                     } else {
-                        boolean isMuted = VoIPService.getSharedInstance().isMicMute();
+                        boolean isMuted = voIPService.isMicMute();
                         setState(isMuted ? FragmentContextViewWavesDrawable.MUTE_BUTTON_STATE_MUTE : FragmentContextViewWavesDrawable.MUTE_BUTTON_STATE_UNMUTE, animated);
                     }
                 } else {
-                    boolean isMuted = VoIPService.getSharedInstance().isMicMute();
+                    boolean isMuted = voIPService.isMicMute();
                     setState(isMuted ? FragmentContextViewWavesDrawable.MUTE_BUTTON_STATE_MUTE : FragmentContextViewWavesDrawable.MUTE_BUTTON_STATE_UNMUTE, animated);
                 }
             }
         }
+    }
+
+    public int getState() {
+        return currentState != null ? currentState.currentState : FragmentContextViewWavesDrawable.MUTE_BUTTON_STATE_UNMUTE;
     }
 
     public long getRippleFinishedDelay() {

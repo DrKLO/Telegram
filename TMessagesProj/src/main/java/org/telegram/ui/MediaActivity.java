@@ -505,8 +505,8 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
                         args.putInt("enc_id", high_id);
                     }
                     args.putInt("message_id", selectedFiles[0].keyAt(0));
-                    NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.closeChats);
-                    presentFragment(new ChatActivity(args), true);
+                    args.putBoolean("need_remove_previous_same_chat_activity", false);
+                    presentFragment(new ChatActivity(args), false);
                 }
             }
         });
@@ -1875,7 +1875,7 @@ public class MediaActivity extends BaseFragment implements NotificationCenter.No
             ((SharedAudioCell) view).setChecked(true, true);
         }
         if (!actionBar.isActionModeShowed()) {
-            actionBar.showActionMode(null, actionModeBackground, null, null, null, 0);
+            actionBar.showActionMode(true, null, actionModeBackground, null, null, null, 0);
             resetScroll();
         }
         return true;

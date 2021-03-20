@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="horizontal"
+    android:layout_width="match_parent"
+    android:id="@+id/widget_edititem"
+    android:layout_height="44dp">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:id="@+id/widget_deleted_text"
+        android:layout_height="wrap_content"
+        android:paddingLeft="10dp"
+        android:paddingRight="10dp"
+        android:textColor="@color/widget_name"
+        android:layout_gravity="center"
+        android:gravity="center"/>
+
+</FrameLayout>

@@ -38,6 +38,7 @@ import android.view.animation.DecelerateInterpolator;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import org.telegram.messenger.AndroidUtilities;
 import org.telegram.ui.ActionBar.Theme;
 
 import java.util.Locale;
@@ -106,6 +107,8 @@ public class NumberPicker extends LinearLayout {
     private int mLastHandledDownDpadKeyCode = -1;
     private SeekBarAccessibilityDelegate accessibilityDelegate;
 
+    private boolean drawDividers = true;
+
     public interface OnValueChangeListener {
         void onValueChange(NumberPicker picker, int oldVal, int newVal);
     }
@@ -165,7 +168,7 @@ public class NumberPicker extends LinearLayout {
         mInputText.setSingleLine(true);
         mInputText.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
         mInputText.setBackgroundResource(0);
-        mInputText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
+        mInputText.setTextSize(TypedValue.COMPLEX_UNIT_PX, mTextSize);
         mInputText.setVisibility(INVISIBLE);
         addView(mInputText, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
@@ -173,7 +176,6 @@ public class NumberPicker extends LinearLayout {
         mTouchSlop = configuration.getScaledTouchSlop();
         mMinimumFlingVelocity = configuration.getScaledMinimumFlingVelocity();
         mMaximumFlingVelocity = configuration.getScaledMaximumFlingVelocity() / SELECTOR_MAX_FLING_VELOCITY_ADJUSTMENT;
-        mTextSize = (int) mInputText.getTextSize();
 
         Paint paint = new Paint();
         paint.setAntiAlias(true);
@@ -228,7 +230,11 @@ public class NumberPicker extends LinearLayout {
     }
 
     public NumberPicker(Context context) {
+        this(context, 18);
+    }
+    public NumberPicker(Context context, int textSize) {
         super(context);
+        mTextSize = AndroidUtilities.dp(textSize);
         init();
     }
 
@@ -716,13 +722,15 @@ public class NumberPicker extends LinearLayout {
             y += mSelectorElementHeight;
         }
 
-        int topOfTopDivider = mTopSelectionDividerTop;
-        int bottomOfTopDivider = topOfTopDivider + mSelectionDividerHeight;
-        canvas.drawRect(0, topOfTopDivider, getRight(), bottomOfTopDivider, mSelectionDivider);
+        if (drawDividers) {
+            int topOfTopDivider = mTopSelectionDividerTop;
+            int bottomOfTopDivider = topOfTopDivider + mSelectionDividerHeight;
+            canvas.drawRect(0, topOfTopDivider, getRight(), bottomOfTopDivider, mSelectionDivider);
 
-        int bottomOfBottomDivider = mBottomSelectionDividerBottom;
-        int topOfBottomDivider = bottomOfBottomDivider - mSelectionDividerHeight;
-        canvas.drawRect(0, topOfBottomDivider, getRight(), bottomOfBottomDivider, mSelectionDivider);
+            int bottomOfBottomDivider = mBottomSelectionDividerBottom;
+            int topOfBottomDivider = bottomOfBottomDivider - mSelectionDividerHeight;
+            canvas.drawRect(0, topOfBottomDivider, getRight(), bottomOfBottomDivider, mSelectionDivider);
+        }
     }
 
     private int makeMeasureSpec(int measureSpec, int maxSize) {
@@ -1118,5 +1126,10 @@ public class NumberPicker extends LinearLayout {
 
     static private String formatNumberWithLocale(int value) {
         return String.format(Locale.getDefault(), "%d", value);
+    }
+
+    public void setDrawDividers(boolean drawDividers) {
+        this.drawDividers = drawDividers;
+        invalidate();
     }
 }

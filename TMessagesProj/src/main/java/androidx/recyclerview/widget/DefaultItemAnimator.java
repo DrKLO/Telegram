@@ -53,6 +53,8 @@ public class DefaultItemAnimator extends SimpleItemAnimator {
     ArrayList<ArrayList<RecyclerView.ViewHolder>> mAdditionsList = new ArrayList<>();
     ArrayList<ArrayList<MoveInfo>> mMovesList = new ArrayList<>();
     ArrayList<ArrayList<ChangeInfo>> mChangesList = new ArrayList<>();
+    ArrayList<MoveInfo> currentMoves = new ArrayList<>();
+    ArrayList<ChangeInfo> currentChanges = new ArrayList<>();
 
     protected ArrayList<RecyclerView.ViewHolder> mAddAnimations = new ArrayList<>();
     protected ArrayList<RecyclerView.ViewHolder> mMoveAnimations = new ArrayList<>();
@@ -130,6 +132,7 @@ public class DefaultItemAnimator extends SimpleItemAnimator {
                 public void run() {
                     for (MoveInfo moveInfo : moves) {
                         animateMoveImpl(moveInfo.holder, moveInfo);
+                        currentMoves.add(moveInfo);
                     }
                     moves.clear();
                     mMovesList.remove(moves);
@@ -153,6 +156,7 @@ public class DefaultItemAnimator extends SimpleItemAnimator {
                 public void run() {
                     for (ChangeInfo change : changes) {
                         animateChangeImpl(change);
+                        currentChanges.add(change);
                     }
                     changes.clear();
                     mChangesList.remove(changes);
@@ -565,6 +569,22 @@ public class DefaultItemAnimator extends SimpleItemAnimator {
         endAnimation(holder);
     }
 
+    public float getTargetY(View view) {
+        for (int i = currentMoves.size() - 1; i >= 0; i--) {
+            MoveInfo moveInfo = currentMoves.get(i);
+            if (moveInfo.holder.itemView == view) {
+                return Math.min(Math.min(moveInfo.toY, moveInfo.fromY), view.getY());
+            }
+        }
+        for (int i = currentChanges.size() - 1; i >= 0; i--) {
+            ChangeInfo changeInfo = currentChanges.get(i);
+            if (changeInfo.oldHolder.itemView == view || changeInfo.newHolder.itemView == view) {
+                return Math.min(Math.min(changeInfo.toY, changeInfo.fromY), view.getY());
+            }
+        }
+        return view.getY();
+    }
+
     @Override
     public boolean isRunning() {
         return (!mPendingAdditions.isEmpty()
@@ -589,6 +609,8 @@ public class DefaultItemAnimator extends SimpleItemAnimator {
         if (!isRunning()) {
             dispatchAnimationsFinished();
             onAllAnimationsDone();
+            currentMoves.clear();
+            currentChanges.clear();
         }
     }
 

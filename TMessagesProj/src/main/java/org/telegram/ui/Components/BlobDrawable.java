@@ -1,9 +1,12 @@
 package org.telegram.ui.Components;
 
+import android.animation.ValueAnimator;
 import android.graphics.Canvas;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Path;
+
+import org.telegram.messenger.AndroidUtilities;
 
 import java.util.Random;
 
@@ -148,6 +151,48 @@ public class BlobDrawable {
             generateBlob(radius, angle, i);
             generateBlob(radiusNext, angleNext, i);
             progress[i] = 0;
+        }
+    }
+
+
+    private float animateToAmplitude;
+    public float amplitude;
+    private float animateAmplitudeDiff;
+
+    private final static float ANIMATION_SPEED_WAVE_HUGE = 0.65f;
+    private final static float ANIMATION_SPEED_WAVE_SMALL = 0.45f;
+    private final static float animationSpeed = 1f - ANIMATION_SPEED_WAVE_HUGE;
+    private final static float animationSpeedTiny = 1f - ANIMATION_SPEED_WAVE_SMALL;
+
+    public void setValue(float value, boolean isBig) {
+        animateToAmplitude = value;
+        if (isBig) {
+            if (animateToAmplitude > amplitude) {
+                animateAmplitudeDiff = (animateToAmplitude - amplitude) / (100f + 300f * animationSpeed);
+            } else {
+                animateAmplitudeDiff = (animateToAmplitude - amplitude) / (100 + 500f * animationSpeed);
+            }
+        } else {
+            if (animateToAmplitude > amplitude) {
+                animateAmplitudeDiff = (animateToAmplitude - amplitude) / (100f + 400f * animationSpeedTiny);
+            } else {
+                animateAmplitudeDiff = (animateToAmplitude - amplitude) / (100f + 500f * animationSpeedTiny);
+            }
+        }
+    }
+
+    public void updateAmplitude(long dt) {
+        if (animateToAmplitude != amplitude) {
+            amplitude += animateAmplitudeDiff * dt;
+            if (animateAmplitudeDiff > 0) {
+                if (amplitude > animateToAmplitude) {
+                    amplitude = animateToAmplitude;
+                }
+            } else {
+                if (amplitude < animateToAmplitude) {
+                    amplitude = animateToAmplitude;
+                }
+            }
         }
     }
 }

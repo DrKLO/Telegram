@@ -8,41 +8,19 @@
 
 package org.telegram.ui.Components;
 
-import android.animation.Animator;
-import android.animation.AnimatorListenerAdapter;
-import android.animation.AnimatorSet;
-import android.animation.ObjectAnimator;
-import android.annotation.SuppressLint;
 import android.content.Context;
-import android.graphics.Canvas;
-import android.graphics.Color;
-import android.graphics.Paint;
-import android.graphics.PorterDuff;
-import android.graphics.PorterDuffColorFilter;
-import android.graphics.RectF;
-import android.graphics.drawable.Drawable;
-import android.os.Build;
-import android.text.Editable;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.TextUtils;
-import android.text.TextWatcher;
 import android.text.style.ForegroundColorSpan;
-import android.util.Property;
 import android.util.SparseArray;
-import android.util.TypedValue;
-import android.view.Gravity;
-import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.ViewTreeObserver;
-import android.view.inputmethod.EditorInfo;
-import android.widget.FrameLayout;
-import android.widget.ImageView;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ChatObject;
+import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
@@ -53,12 +31,9 @@ import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
-import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Adapters.SearchAdapterHelper;
 import org.telegram.ui.Cells.GraySectionCell;
-import org.telegram.ui.Cells.GroupCallTextCell;
-import org.telegram.ui.Cells.GroupCallUserCell;
 import org.telegram.ui.Cells.ManageChatTextCell;
 import org.telegram.ui.Cells.ManageChatUserCell;
 import org.telegram.ui.ChatUsersActivity;
@@ -67,7 +42,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 
-import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 public class GroupVoipInviteAlert extends UsersAlertBase {
@@ -91,6 +65,8 @@ public class GroupVoipInviteAlert extends UsersAlertBase {
     private HashSet<Integer> invitedUsers;
 
     private GroupVoipInviteAlertDelegate delegate;
+
+    private boolean showContacts;
 
     private int emptyRow;
     private int addNewRow;
@@ -213,6 +189,63 @@ public class GroupVoipInviteAlert extends UsersAlertBase {
         loadChatParticipants(offset, count, true);
     }
 
+    private void fillContacts() {
+        if (!showContacts) {
+            return;
+        }
+        contacts.addAll(ContactsController.getInstance(currentAccount).contacts);
+        int selfId = UserConfig.getInstance(currentAccount).clientUserId;
+        for (int a = 0, N = contacts.size(); a < N; a++) {
+            int userId = ((TLRPC.TL_contact) contacts.get(a)).user_id;
+            if (userId == selfId || ignoredUsers.indexOfKey(userId) >= 0 || invitedUsers.contains(userId)) {
+                contacts.remove(a);
+                a--;
+                N--;
+            }
+        }
+        int currentTime = ConnectionsManager.getInstance(currentAccount).getCurrentTime();
+        MessagesController messagesController = MessagesController.getInstance(currentAccount);
+        Collections.sort(contacts, (o1, o2) -> {
+            TLRPC.User user1 = messagesController.getUser(((TLRPC.TL_contact) o2).user_id);
+            TLRPC.User user2 = messagesController.getUser(((TLRPC.TL_contact) o1).user_id);
+            int status1 = 0;
+            int status2 = 0;
+            if (user1 != null) {
+                if (user1.self) {
+                    status1 = currentTime + 50000;
+                } else if (user1.status != null) {
+                    status1 = user1.status.expires;
+                }
+            }
+            if (user2 != null) {
+                if (user2.self) {
+                    status2 = currentTime + 50000;
+                } else if (user2.status != null) {
+                    status2 = user2.status.expires;
+                }
+            }
+            if (status1 > 0 && status2 > 0) {
+                if (status1 > status2) {
+                    return 1;
+                } else if (status1 < status2) {
+                    return -1;
+                }
+                return 0;
+            } else if (status1 < 0 && status2 < 0) {
+                if (status1 > status2) {
+                    return 1;
+                } else if (status1 < status2) {
+                    return -1;
+                }
+                return 0;
+            } else if (status1 < 0 && status2 > 0 || status1 == 0 && status2 != 0) {
+                return -1;
+            } else if (status2 < 0 || status1 != 0) {
+                return 1;
+            }
+            return 0;
+        });
+    }
 
     protected void loadChatParticipants(int offset, int count, boolean reset) {
         if (!ChatObject.isChannel(currentChat)) {
@@ -236,6 +269,10 @@ public class GroupVoipInviteAlert extends UsersAlertBase {
                         participants.add(participant);
                         participantsMap.put(participant.user_id, participant);
                     }
+                }
+                if (participants.isEmpty()) {
+                    showContacts = true;
+                    fillContacts();
                 }
             }
             updateRows();
@@ -366,7 +403,17 @@ public class GroupVoipInviteAlert extends UsersAlertBase {
                 if (delayResults <= 0) {
                     loadingUsers = false;
                     firstLoaded = true;
-                    showItemsAnimated(listViewAdapter != null ? listViewAdapter.getItemCount() - 1 : 0);
+                    int num;
+                    if (flickerProgressRow == 1) {
+                        num = 1;
+                    } else {
+                        num = listViewAdapter != null ? listViewAdapter.getItemCount() - 1 : 0;
+                    }
+                    showItemsAnimated(num);
+                    if (participants.isEmpty()) {
+                        showContacts = true;
+                        fillContacts();
+                    }
                 }
                 updateRows();
                 if (listViewAdapter != null) {
@@ -821,7 +868,13 @@ public class GroupVoipInviteAlert extends UsersAlertBase {
                     }
 
                     int userId;
-                    if (item instanceof TLRPC.ChannelParticipant) {
+                    if (item instanceof TLRPC.TL_contact) {
+                        TLRPC.TL_contact contact = (TLRPC.TL_contact) item;
+                        userId = contact.user_id;
+                    } else if (item instanceof TLRPC.User) {
+                        TLRPC.User user = (TLRPC.User) item;
+                        userId = user.id;
+                    } else if (item instanceof TLRPC.ChannelParticipant) {
                         TLRPC.ChannelParticipant participant = (TLRPC.ChannelParticipant) item;
                         userId = participant.user_id;
                     } else {
@@ -846,7 +899,11 @@ public class GroupVoipInviteAlert extends UsersAlertBase {
                     if (position == membersHeaderRow) {
                         sectionCell.setText(LocaleController.getString("ChannelOtherMembers", R.string.ChannelOtherMembers));
                     } else if (position == contactsHeaderRow) {
-                        sectionCell.setText(LocaleController.getString("GroupContacts", R.string.GroupContacts));
+                        if (showContacts) {
+                            sectionCell.setText(LocaleController.getString("YourContactsToInvite", R.string.YourContactsToInvite));
+                        } else {
+                            sectionCell.setText(LocaleController.getString("GroupContacts", R.string.GroupContacts));
+                        }
                     }
                     break;
             }

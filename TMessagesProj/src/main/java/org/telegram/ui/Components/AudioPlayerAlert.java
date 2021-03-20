@@ -583,10 +583,10 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
 
                 textView.setOnClickListener(view -> {
                     int dialogsCount = MessagesController.getInstance(currentAccount).getTotalDialogsCount();
-                    if (dialogsCount <= 10) {
+                    if (dialogsCount <= 10 || TextUtils.isEmpty(textView.getText().toString())) {
                         return;
                     }
-                    String query = (String) textView.getText();
+                    String query = textView.getText().toString();
                     if (parentActivity.getActionBarLayout().getLastFragment() instanceof DialogsActivity) {
                         DialogsActivity dialogsActivity = (DialogsActivity) parentActivity.getActionBarLayout().getLastFragment();
                         if (!dialogsActivity.onlyDialogsAdapter()) {
@@ -2372,7 +2372,7 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
                 final int width = child.getWidth();
                 final int height = child.getHeight();
                 final int saveCount = canvas.saveLayer(0, 0, width, height, null, Canvas.ALL_SAVE_FLAG);
-                result = super.drawChild(canvas, child, drawingTime);
+                result = super. drawChild(canvas, child, drawingTime);
                 final float gradientStart = width * (1f - clipProgress[index]);
                 final float gradientEnd = gradientStart + gradientSize;
                 gradientMatrix.setTranslate(gradientStart, 0);

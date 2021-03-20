@@ -887,7 +887,6 @@ public class DataAutoDownloadActivity extends BaseFragment {
             } else {
                 presetsStr[i] = LocaleController.getString("AutoDownloadCustom", R.string.AutoDownloadCustom);
             }
-
         }
         slideChooseView.setOptions(selectedPreset, presetsStr);
     }

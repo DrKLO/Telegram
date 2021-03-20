@@ -1107,7 +1107,7 @@ public class WebPlayerView extends ViewGroup implements VideoPlayer.VideoPlayerD
             }
             try {
                 JSONObject json = new JSONObject(playerCode).getJSONObject("file_versions").getJSONObject("mobile");
-                String video = decodeUrl(json.getString("gifv"));
+                String video = json.getString("video");
                 String audio = json.getJSONArray("audio").getString(0);
                 if (video != null && audio != null) {
                     results[0] = video;
@@ -2162,16 +2162,25 @@ public class WebPlayerView extends ViewGroup implements VideoPlayer.VideoPlayerD
         return false;
     }
 
+    public void willHandle() {
+        controlsView.setVisibility(INVISIBLE);
+        controlsView.show(false, false);
+        showProgress(true, false);
+    }
+
     public boolean loadVideo(String url, TLRPC.Photo thumb, Object parentObject, String originalUrl, boolean autoplay) {
         String youtubeId = null;
         String vimeoId = null;
-        String coubId = null;
+        String coubId = getCoubId(url);
+        if (coubId == null) {
+            coubId = getCoubId(originalUrl);
+        }
         String twitchClipId = null;
         String twitchStreamId = null;
         String mp4File = null;
         String aparatId = null;
         seekToTime = -1;
-        if (url != null) {
+        if (coubId == null && url != null) {
             if (url.endsWith(".mp4")) {
                 mp4File = url;
             } else {
@@ -2362,6 +2371,25 @@ public class WebPlayerView extends ViewGroup implements VideoPlayer.VideoPlayerD
         }
         controlsView.setVisibility(GONE);
         return false;
+    }
+
+    public String getCoubId(String url) {
+        if (TextUtils.isEmpty(url)) {
+            return null;
+        }
+        try {
+            Matcher matcher = coubIdRegex.matcher(url);
+            String id = null;
+            if (matcher.find()) {
+                id = matcher.group(1);
+            }
+            if (id != null) {
+                return id;
+            }
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+        return null;
     }
 
     public View getAspectRatioView() {

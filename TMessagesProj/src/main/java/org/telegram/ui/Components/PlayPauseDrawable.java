@@ -7,6 +7,7 @@ import android.graphics.Paint;
 import android.graphics.PixelFormat;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
+import android.view.View;
 import android.view.animation.AnimationUtils;
 
 import androidx.annotation.NonNull;
@@ -24,6 +25,12 @@ public class PlayPauseDrawable extends Drawable {
     private float progress;
     private long lastUpdateTime;
 
+    private View parent;
+
+    private int alpha = 255;
+
+    float duration = 300f;
+
     public PlayPauseDrawable(int size) {
         this.size = AndroidUtilities.dp(size);
         paint = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -39,22 +46,32 @@ public class PlayPauseDrawable extends Drawable {
             dt = 16;
         }
         if (pause && progress < 1f) {
-            progress += dt / 300f;
+            progress += dt / duration;
             if (progress >= 1f) {
                 progress = 1f;
             } else {
+                if (parent != null) {
+                    parent.invalidate();
+                }
                 invalidateSelf();
             }
         } else if (!pause && progress > 0f) {
-            progress -= dt / 300f;
+            progress -= dt / duration;
             if (progress <= 0f) {
                 progress = 0f;
             } else {
+                if (parent != null) {
+                    parent.invalidate();
+                }
                 invalidateSelf();
             }
         }
         final Rect bounds = getBounds();
-        canvas.save();
+        if (alpha == 255) {
+            canvas.save();
+        } else {
+            canvas.saveLayerAlpha(bounds.left, bounds.top, bounds.right, bounds.bottom, alpha, Canvas.ALL_SAVE_FLAG);
+        }
         canvas.translate(bounds.centerX() + AndroidUtilities.dp(1) * (1.0f - progress), bounds.centerY());
         final float ms = 500.0f * progress;
         final float rotation;
@@ -90,7 +107,7 @@ public class PlayPauseDrawable extends Drawable {
 
     @Override
     public void setAlpha(int i) {
-        paint.setAlpha(i);
+        alpha = i;
     }
 
     @Override
@@ -111,5 +128,13 @@ public class PlayPauseDrawable extends Drawable {
     @Override
     public int getIntrinsicHeight() {
         return size;
+    }
+
+    public void setParent(View parent) {
+        this.parent = parent;
+    }
+
+    public void setDuration(int duration) {
+        this.duration = duration;
     }
 }

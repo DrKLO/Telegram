@@ -34,7 +34,7 @@ public class FeedWidgetConfigActivity extends ExternalActionActivity {
             fragment.setDelegate((fragment1, dids, message, param) -> {
                 AccountInstance.getInstance(fragment1.getCurrentAccount()).getMessagesStorage().putWidgetDialogs(creatingAppWidgetId, dids);
 
-                SharedPreferences preferences = FeedWidgetConfigActivity.this.getSharedPreferences("feed_widget", Activity.MODE_PRIVATE);
+                SharedPreferences preferences = FeedWidgetConfigActivity.this.getSharedPreferences("shortcut_widget", Activity.MODE_PRIVATE);
                 preferences.edit().putInt("account" + creatingAppWidgetId, fragment1.getCurrentAccount()).commit();
                 preferences.edit().putLong("dialogId" + creatingAppWidgetId, dids.get(0)).commit();
 

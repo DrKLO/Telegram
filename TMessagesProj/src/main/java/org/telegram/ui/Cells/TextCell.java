@@ -79,6 +79,10 @@ public class TextCell extends FrameLayout {
         return textView;
     }
 
+    public ImageView getImageView() {
+        return imageView;
+    }
+
     public SimpleTextView getValueTextView() {
         return valueTextView;
     }

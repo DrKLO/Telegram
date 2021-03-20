@@ -25,21 +25,23 @@ import android.view.accessibility.AccessibilityNodeInfo;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.DownloadController;
+import org.telegram.messenger.FileLoader;
+import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ImageLoader;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessageObject;
-import org.telegram.messenger.FileLoader;
-import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
-import org.telegram.messenger.browser.Browser;
-import org.telegram.tgnet.TLRPC;
 import org.telegram.messenger.UserConfig;
+import org.telegram.messenger.browser.Browser;
+import org.telegram.tgnet.TLObject;
+import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.PhotoViewer;
 import org.telegram.ui.Components.AvatarDrawable;
+import org.telegram.ui.Components.URLSpanNoUnderline;
+import org.telegram.ui.PhotoViewer;
 
 public class ChatActionCell extends BaseCell implements DownloadController.FileDownloadProgressListener {
 
@@ -57,6 +59,10 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
         }
 
         default void didPressReplyMessage(ChatActionCell cell, int id) {
+        }
+
+        default void needOpenInviteLink(TLRPC.TL_chatInviteExported invite) {
+
         }
     }
 
@@ -302,7 +308,14 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
                                 if (link[0] == pressedLink) {
                                     if (delegate != null) {
                                         String url = link[0].getURL();
-                                        if (url.startsWith("game")) {
+                                        if (url.startsWith("invite") && pressedLink instanceof URLSpanNoUnderline) {
+                                            URLSpanNoUnderline spanNoUnderline = (URLSpanNoUnderline) pressedLink;
+                                            TLObject object = spanNoUnderline.getObject();
+                                            if (object instanceof TLRPC.TL_chatInviteExported) {
+                                                TLRPC.TL_chatInviteExported invite = (TLRPC.TL_chatInviteExported) object;
+                                                delegate.needOpenInviteLink(invite);
+                                            }
+                                        } else if (url.startsWith("game")) {
                                             delegate.didPressReplyMessage(this, currentMessageObject.getReplyMsgId());
                                             /*TLRPC.KeyboardButton gameButton = null;
                                             MessageObject messageObject = currentMessageObject.replyMessageObject;
@@ -489,8 +502,29 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
         int dx;
         int dx2;
         int dy;
+        int previousLineWidth = 0;
         for (int a = 0; a < count; a++) {
             int width = findMaxWidthAroundLine(a);
+            int nextWidth = a < count - 1 ? findMaxWidthAroundLine(a + 1) : 0;
+            int w1 = 0;
+            int w2 = 0;
+            if (previousLineWidth != 0) {
+                int dw = width - previousLineWidth;
+                if (dw > 0 &&  dw < AndroidUtilities.dp(15) * 2) {
+                    width = w1 = previousLineWidth + AndroidUtilities.dp(15) * 2;
+                }
+
+            }
+            if (nextWidth != 0) {
+                int dw = width - nextWidth;
+                if (dw > 0  && dw < AndroidUtilities.dp(15) * 2) {
+                    width = w2 = nextWidth + AndroidUtilities.dp(15) * 2;
+                }
+            }
+            if (w1 != 0 && w2 != 0) {
+                width = Math.max(w1, w2);
+            }
+            previousLineWidth = width;
             int x = (getMeasuredWidth() - width - cornerRest) / 2;
             width += cornerRest;
             int lineBottom = textLayout.getLineBottom(a);

@@ -58,7 +58,7 @@ public:
     void addRespondMessageId(int64_t id);
     bool respondsToMessageId(int64_t id);
     void clear(bool time);
-    void onComplete(TLObject *result, TL_error *error, int32_t networkType);
+    void onComplete(TLObject *result, TL_error *error, int32_t networkType, int64_t responseTime);
     void onQuickAck();
     void onWriteToSocket();
     bool isMediaRequest();

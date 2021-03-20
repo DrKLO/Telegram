@@ -662,7 +662,7 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
         centerImage.setForceCrossfade(true);
     }
 
-    public void openMedia(MessageObject messageObject, PhotoViewer.PhotoViewerProvider provider) {
+    public void openMedia(MessageObject messageObject, PhotoViewer.PhotoViewerProvider provider, Runnable onOpen) {
         if (parentActivity == null || messageObject == null || !messageObject.needDrawBluredPreview() || provider == null) {
             return;
         }
@@ -819,6 +819,9 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
         photoAnimationEndRunnable = () -> {
             photoAnimationInProgress = 0;
             imageMoveAnimation = null;
+            if (onOpen != null) {
+                onOpen.run();
+            }
             if (containerView == null) {
                 return;
             }

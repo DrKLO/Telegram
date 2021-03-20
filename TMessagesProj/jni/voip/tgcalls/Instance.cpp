@@ -37,6 +37,14 @@ std::unique_ptr<Instance> Meta::Create(
 		const std::string &version,
 		Descriptor &&descriptor) {
 	const auto i = MetaMap().find(version);
+
+	// Enforce correct protocol version.
+	if (version == "2.7.7") {
+		descriptor.config.protocolVersion = ProtocolVersion::V0;
+	} else if (version == "3.0.0") {
+		descriptor.config.protocolVersion = ProtocolVersion::V1;
+	}
+
 	return (i != MetaMap().end())
 		? i->second->construct(std::move(descriptor))
 		: nullptr;

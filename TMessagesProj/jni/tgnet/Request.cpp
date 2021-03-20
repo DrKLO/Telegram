@@ -61,9 +61,9 @@ void Request::clear(bool time) {
     }
 }
 
-void Request::onComplete(TLObject *result, TL_error *error, int32_t networkType) {
+void Request::onComplete(TLObject *result, TL_error *error, int32_t networkType, int64_t responseTime) {
     if (onCompleteRequestCallback != nullptr && (result != nullptr || error != nullptr)) {
-        onCompleteRequestCallback(result, error, networkType);
+        onCompleteRequestCallback(result, error, networkType, responseTime);
     }
 }
 

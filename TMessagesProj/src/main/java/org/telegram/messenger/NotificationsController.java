@@ -104,6 +104,8 @@ public class NotificationsController extends BaseController {
     private int lastBadgeCount = -1;
     private String launcherClassName;
 
+    public long lastNotificationChannelCreateTime;
+
     private Boolean groupsCreated;
 
     public static long globalSecretChatId = -(1L << 32);
@@ -683,7 +685,9 @@ public class NotificationsController extends BaseController {
 
             for (int a = 0; a < messageObjects.size(); a++) {
                 MessageObject messageObject = messageObjects.get(a);
-                if (messageObject.messageOwner != null && (messageObject.isImportedForward() || messageObject.messageOwner.silent && (messageObject.messageOwner.action instanceof TLRPC.TL_messageActionContactSignUp || messageObject.messageOwner.action instanceof TLRPC.TL_messageActionUserJoined))) {
+                if (messageObject.messageOwner != null && (messageObject.isImportedForward() ||
+                        messageObject.messageOwner.action instanceof TLRPC.TL_messageActionSetMessagesTTL ||
+                        messageObject.messageOwner.silent && (messageObject.messageOwner.action instanceof TLRPC.TL_messageActionContactSignUp || messageObject.messageOwner.action instanceof TLRPC.TL_messageActionUserJoined))) {
                     continue;
                 }
                 long mid = messageObject.getId();
@@ -998,7 +1002,9 @@ public class NotificationsController extends BaseController {
             if (messages != null) {
                 for (int a = 0; a < messages.size(); a++) {
                     TLRPC.Message message = messages.get(a);
-                    if (message != null && (message.fwd_from != null && message.fwd_from.imported || message.silent && (message.action instanceof TLRPC.TL_messageActionContactSignUp || message.action instanceof TLRPC.TL_messageActionUserJoined))) {
+                    if (message != null && (message.fwd_from != null && message.fwd_from.imported ||
+                            message.action instanceof TLRPC.TL_messageActionSetMessagesTTL ||
+                            message.silent && (message.action instanceof TLRPC.TL_messageActionContactSignUp || message.action instanceof TLRPC.TL_messageActionUserJoined))) {
                         continue;
                     }
                     long mid = message.id;
@@ -3169,6 +3175,7 @@ public class NotificationsController extends BaseController {
             if (BuildVars.LOGS_ENABLED) {
                 FileLog.d("create new channel " + channelId);
             }
+            lastNotificationChannelCreateTime = SystemClock.elapsedRealtime();
             systemNotificationManager.createNotificationChannel(notificationChannel);
             preferences.edit().putString(key, channelId).putString(key + "_s", newSettingsHash).commit();
         }
@@ -3471,7 +3478,8 @@ public class NotificationsController extends BaseController {
 
             Intent intent = new Intent(ApplicationLoader.applicationContext, LaunchActivity.class);
             intent.setAction("com.tmessages.openchat" + Math.random() + Integer.MAX_VALUE);
-            intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK);
+            intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+            //intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK);
             if ((int) dialog_id != 0) {
                 if (pushDialogs.size() == 1) {
                     if (chat_id != 0) {
@@ -3939,6 +3947,14 @@ public class NotificationsController extends BaseController {
                 }
             }
 
+            if (chat != null) {
+                Person.Builder personBuilder = new Person.Builder().setName(name);
+                if (avatalFile != null && avatalFile.exists() && Build.VERSION.SDK_INT >= 28) {
+                    loadRoundAvatar(avatalFile, personBuilder);
+                }
+                personCache.put(-chat.id, personBuilder.build());
+            }
+
             NotificationCompat.Action wearReplyAction = null;
 
             if ((!isChannel || isSupergroup) && canReply && !SharedConfig.isWaitingForPasscodeEnter && selfUserId != lowerId && !UserObject.isReplyUser(lowerId)) {
@@ -4188,7 +4204,7 @@ public class NotificationsController extends BaseController {
 
             Intent intent = new Intent(ApplicationLoader.applicationContext, LaunchActivity.class);
             intent.setAction("com.tmessages.openchat" + Math.random() + Integer.MAX_VALUE);
-            intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK);
+            intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
             intent.addCategory(Intent.CATEGORY_LAUNCHER);
             if (lowerId != 0) {
                 if (lowerId > 0) {

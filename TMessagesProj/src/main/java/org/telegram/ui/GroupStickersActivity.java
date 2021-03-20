@@ -502,7 +502,7 @@ public class GroupStickersActivity extends BaseFragment implements NotificationC
                     info.flags = info.flags &~ 256;
                 }
                 MessagesStorage.getInstance(currentAccount).updateChatInfo(info, false);
-                NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.chatInfoDidLoad, info, 0, true);
+                NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.chatInfoDidLoad, info, 0, true, false);
                 finishFragment();
             } else {
                 Toast.makeText(getParentActivity(), LocaleController.getString("ErrorOccurred", R.string.ErrorOccurred) + "\n" + error.text, Toast.LENGTH_SHORT).show();

@@ -14,6 +14,8 @@ import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessageObject;
+import org.telegram.messenger.MessagesController;
+import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SvgHelper;
 import org.telegram.messenger.UserConfig;
@@ -25,17 +27,22 @@ import java.util.ArrayList;
 import java.util.Locale;
 import java.util.Random;
 
-public class ChatGreetingsView extends LinearLayout {
+public class ChatGreetingsView extends LinearLayout implements NotificationCenter.NotificationCenterDelegate {
 
+    private TLRPC.Document preloadedGreetingsSticker;
     private TextView titleView;
     private TextView descriptionView;
     private Listener listener;
 
+    private final int currentAccount;
+
     public BackupImageView stickerToSendView;
 
-    public ChatGreetingsView(Context context, TLRPC.User user, int distance, TLRPC.Document preloadedGreetingsSticker) {
+
+    public ChatGreetingsView(Context context, TLRPC.User user, int distance, int currentAccount, TLRPC.Document preloadedGreetingsSticker) {
         super(context);
         setOrientation(VERTICAL);
+        this.currentAccount = currentAccount;
 
         titleView = new TextView(context);
         titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
@@ -63,18 +70,10 @@ public class ChatGreetingsView extends LinearLayout {
             descriptionView.setText(LocaleController.getString("NearbyPeopleGreetingsDescription", R.string.NearbyPeopleGreetingsDescription));
         }
 
+        this.preloadedGreetingsSticker = preloadedGreetingsSticker;
+
         if (preloadedGreetingsSticker == null) {
-            TLRPC.TL_messages_getStickers req = new TLRPC.TL_messages_getStickers();
-            req.emoticon = "\uD83D\uDC4B" + Emoji.fixEmoji("⭐");
-            ConnectionsManager.getInstance(UserConfig.selectedAccount).sendRequest(req, (response, error) -> {
-                if (response instanceof TLRPC.TL_messages_stickers) {
-                    ArrayList<TLRPC.Document> list = ((TLRPC.TL_messages_stickers) response).stickers;
-                    if (!list.isEmpty()) {
-                        TLRPC.Document sticker = list.get(Math.abs(new Random().nextInt() % list.size()));
-                        AndroidUtilities.runOnUIThread(() -> setSticker(sticker));
-                    }
-                }
-            });
+            MessagesController.getInstance(currentAccount).preloadGreetingsSticker();
         } else {
             setSticker(preloadedGreetingsSticker);
         }
@@ -172,5 +171,32 @@ public class ChatGreetingsView extends LinearLayout {
             return;
         }
         super.requestLayout();
+    }
+
+    @Override
+    protected void onAttachedToWindow() {
+        super.onAttachedToWindow();
+        fetchSticker();
+        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.greetingsStickerLoaded);
+    }
+
+    @Override
+    protected void onDetachedFromWindow() {
+        super.onDetachedFromWindow();
+        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.greetingsStickerLoaded);
+    }
+
+    private void fetchSticker() {
+        if (preloadedGreetingsSticker == null) {
+            preloadedGreetingsSticker = MessagesController.getInstance(currentAccount).getPreloadedSticker();
+            if (preloadedGreetingsSticker != null) {
+                setSticker(preloadedGreetingsSticker);
+            }
+        }
+    }
+
+    @Override
+    public void didReceivedNotification(int id, int account, Object... args) {
+        fetchSticker();
     }
 }

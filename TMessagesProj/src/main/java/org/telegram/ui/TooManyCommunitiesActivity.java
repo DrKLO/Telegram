@@ -481,7 +481,7 @@ public class TooManyCommunitiesActivity extends BaseFragment {
                     break;
                 case 4:
                 default:
-                    view = new GroupCreateUserCell(parent.getContext(), true, 0, false);
+                    view = new GroupCreateUserCell(parent.getContext(), 1, 0, false);
                     break;
 
             }
@@ -547,7 +547,7 @@ public class TooManyCommunitiesActivity extends BaseFragment {
         @NonNull
         @Override
         public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-            return new RecyclerListView.Holder(new GroupCreateUserCell(parent.getContext(), true, 0, false));
+            return new RecyclerListView.Holder(new GroupCreateUserCell(parent.getContext(), 1, 0, false));
         }
 
         @Override

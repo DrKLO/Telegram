@@ -4,6 +4,7 @@
 #include "PlatformContext.h"
 
 #include <jni.h>
+#include <voip/tgcalls/group/GroupInstanceImpl.h>
 
 namespace tgcalls {
 
@@ -17,6 +18,8 @@ public:
     jclass getJavaCapturerClass();
 
     void setJavaInstance(JNIEnv *env, jobject instance);
+
+    std::shared_ptr<BroadcastPartTask> streamTask;
 
 private:
     jclass VideoCameraCapturerClass = nullptr;

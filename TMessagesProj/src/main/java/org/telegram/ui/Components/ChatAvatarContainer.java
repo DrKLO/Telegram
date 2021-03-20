@@ -64,6 +64,8 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
 
     private boolean[] isOnline = new boolean[1];
 
+    private boolean secretChatTimer;
+
     private int onlineCount = -1;
     private int currentConnectionState;
     private CharSequence lastSubtitle;
@@ -118,14 +120,30 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
         subtitleTextView.setGravity(Gravity.LEFT);
         addView(subtitleTextView);
 
-        if (needTime) {
+        if (parentFragment != null) {
             timeItem = new ImageView(context);
             timeItem.setPadding(AndroidUtilities.dp(10), AndroidUtilities.dp(10), AndroidUtilities.dp(5), AndroidUtilities.dp(5));
             timeItem.setScaleType(ImageView.ScaleType.CENTER);
+            timeItem.setAlpha(0.0f);
+            timeItem.setScaleY(0.0f);
+            timeItem.setScaleX(0.0f);
+            timeItem.setVisibility(GONE);
             timeItem.setImageDrawable(timerDrawable = new TimerDrawable(context));
             addView(timeItem);
-            timeItem.setOnClickListener(v -> parentFragment.showDialog(AlertsCreator.createTTLAlert(getContext(), parentFragment.getCurrentEncryptedChat()).create()));
-            timeItem.setContentDescription(LocaleController.getString("SetTimer", R.string.SetTimer));
+            secretChatTimer = needTime;
+
+            timeItem.setOnClickListener(v -> {
+                if (secretChatTimer) {
+                    parentFragment.showDialog(AlertsCreator.createTTLAlert(getContext(), parentFragment.getCurrentEncryptedChat()).create());
+                } else {
+                    openSetTimer();
+                }
+            });
+            if (secretChatTimer) {
+                timeItem.setContentDescription(LocaleController.getString("SetTimer", R.string.SetTimer));
+            } else {
+                timeItem.setContentDescription(LocaleController.getString("AccAutoDeleteTimer", R.string.AccAutoDeleteTimer));
+            }
         }
 
         if (parentFragment != null && parentFragment.getChatMode() == 0) {
@@ -143,6 +161,33 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
                 statusDrawables[a].setIsChat(chat != null);
             }
         }
+    }
+
+    public boolean openSetTimer() {
+        if (parentFragment.getParentActivity() == null) {
+            return false;
+        }
+        TLRPC.Chat chat = parentFragment.getCurrentChat();
+        if (chat != null && !ChatObject.canUserDoAdminAction(chat, ChatObject.ACTION_DELETE_MESSAGES)) {
+            if (timeItem.getTag() != null) {
+                parentFragment.showTimerHint();
+            }
+            return false;
+        }
+        ClearHistoryAlert alert = new ClearHistoryAlert(parentFragment.getParentActivity(), parentFragment.getCurrentUser(), parentFragment.getCurrentChat(), false);
+        alert.setDelegate(new ClearHistoryAlert.ClearHistoryAlertDelegate() {
+            @Override
+            public void onAutoDeleteHistory(int ttl, int action) {
+                parentFragment.getMessagesController().setDialogHistoryTTL(parentFragment.getDialogId(), ttl);
+                TLRPC.ChatFull chatInfo = parentFragment.getCurrentChatInfo();
+                TLRPC.UserFull userInfo = parentFragment.getCurrentUserInfo();
+                if (userInfo != null || chatInfo != null) {
+                    parentFragment.getUndoView().showWithAction(parentFragment.getDialogId(), action, parentFragment.getCurrentUser(), userInfo != null ? userInfo.ttl_period : chatInfo.ttl_period, null, null);
+                }
+            }
+        });
+        parentFragment.showDialog(alert);
+        return true;
     }
 
     private void openProfile(boolean byAvatar) {
@@ -235,22 +280,49 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
         leftPadding = value;
     }
 
-    public void showTimeItem() {
-        if (timeItem == null) {
+    public void showTimeItem(boolean animated) {
+        if (timeItem == null || timeItem.getTag() != null) {
             return;
         }
+        timeItem.clearAnimation();
         timeItem.setVisibility(VISIBLE);
+        timeItem.setTag(1);
+        if (animated) {
+            timeItem.animate().setDuration(180).alpha(1.0f).scaleX(1.0f).scaleY(1.0f).setListener(null).start();
+        } else {
+            timeItem.setAlpha(1.0f);
+            timeItem.setScaleY(1.0f);
+            timeItem.setScaleX(1.0f);
+        }
     }
 
-    public void hideTimeItem() {
-        if (timeItem == null) {
+    public void hideTimeItem(boolean animated) {
+        if (timeItem == null || timeItem.getTag() == null) {
             return;
         }
-        timeItem.setVisibility(GONE);
+        timeItem.clearAnimation();
+        timeItem.setTag(null);
+        if (animated) {
+            timeItem.animate().setDuration(180).alpha(0.0f).scaleX(0.0f).scaleY(0.0f).setListener(new AnimatorListenerAdapter() {
+                @Override
+                public void onAnimationEnd(Animator animation) {
+                    timeItem.setVisibility(GONE);
+                    super.onAnimationEnd(animation);
+                }
+            }).start();
+        } else {
+            timeItem.setVisibility(GONE);
+            timeItem.setAlpha(0.0f);
+            timeItem.setScaleY(0.0f);
+            timeItem.setScaleX(0.0f);
+        }
     }
 
     public void setTime(int value) {
         if (timerDrawable == null) {
+            return;
+        }
+        if (value == 0 && !secretChatTimer) {
             return;
         }
         timerDrawable.setTime(value);

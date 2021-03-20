@@ -19,6 +19,7 @@ import org.telegram.messenger.AccountInstance;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.ImageReceiver;
+import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.voip.VoIPService;
@@ -205,10 +206,16 @@ public class AvatarsImageView extends FrameLayout {
         if (object instanceof TLRPC.TL_groupCallParticipant) {
             TLRPC.TL_groupCallParticipant participant = (TLRPC.TL_groupCallParticipant) object;
             animatingStates[index].participant = participant;
-            currentUser = MessagesController.getInstance(account).getUser(participant.user_id);
-            animatingStates[index].avatarDrawable.setInfo(currentUser);
+            int id = MessageObject.getPeerId(participant.peer);
+            if (id > 0) {
+                currentUser = MessagesController.getInstance(account).getUser(id);
+                animatingStates[index].avatarDrawable.setInfo(currentUser);
+            } else {
+                currentChat = MessagesController.getInstance(account).getChat(-id);
+                animatingStates[index].avatarDrawable.setInfo(currentChat);
+            }
             if (currentStyle == 4) {
-                if (participant.user_id == AccountInstance.getInstance(account).getUserConfig().getClientUserId()) {
+                if (id == AccountInstance.getInstance(account).getUserConfig().getClientUserId()) {
                     animatingStates[index].lastSpeakTime = 0;
                 } else {
                     animatingStates[index].lastSpeakTime = participant.active_date;
@@ -216,7 +223,7 @@ public class AvatarsImageView extends FrameLayout {
             } else {
                 animatingStates[index].lastSpeakTime = participant.active_date;
             }
-            animatingStates[index].id = participant.user_id;
+            animatingStates[index].id = id;
         } else if (object instanceof TLRPC.User) {
             currentUser = (TLRPC.User) object;
             animatingStates[index].avatarDrawable.setInfo(currentUser);
@@ -224,7 +231,7 @@ public class AvatarsImageView extends FrameLayout {
         } else {
             currentChat = (TLRPC.Chat) object;
             animatingStates[index].avatarDrawable.setInfo(currentChat);
-            animatingStates[index].id = currentChat.id;
+            animatingStates[index].id = -currentChat.id;
         }
         if (currentUser != null) {
             animatingStates[index].imageReceiver.setImage(ImageLocation.getForUser(currentUser, false), "50_50", animatingStates[index].avatarDrawable, null, currentUser, 0);

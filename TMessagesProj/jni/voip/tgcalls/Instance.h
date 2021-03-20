@@ -12,10 +12,14 @@
 namespace rtc {
 template <typename VideoFrameT>
 class VideoSinkInterface;
+template <class T>
+class scoped_refptr;
 } // namespace rtc
 
 namespace webrtc {
 class VideoFrame;
+class AudioDeviceModule;
+class TaskQueueFactory;
 } // namespace webrtc
 
 namespace tgcalls {
@@ -224,7 +228,9 @@ struct Descriptor {
 	std::function<void(AudioState, VideoState)> remoteMediaStateUpdated;
     std::function<void(float)> remotePrefferedAspectRatioUpdated;
 	std::function<void(const std::vector<uint8_t> &)> signalingDataEmitted;
-    std::shared_ptr<PlatformContext> platformContext;
+	std::function<rtc::scoped_refptr<webrtc::AudioDeviceModule>(webrtc::TaskQueueFactory*)> createAudioDeviceModule;
+
+	std::shared_ptr<PlatformContext> platformContext;
 };
 
 class Meta {

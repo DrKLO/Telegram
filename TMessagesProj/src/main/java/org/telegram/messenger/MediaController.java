@@ -90,7 +90,6 @@ import java.nio.ByteOrder;
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Timer;
@@ -659,6 +658,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
 
     private float audioVolume;
     private ValueAnimator audioVolumeAnimator;
+
     private final ValueAnimator.AnimatorUpdateListener audioVolumeUpdateListener = new ValueAnimator.AnimatorUpdateListener() {
         @Override
         public void onAnimationUpdate(ValueAnimator valueAnimator) {
@@ -1070,11 +1070,11 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                                     currentPlayingMessageObject.audioProgressSec = (int) (lastProgress / 1000);
                                     currentPlayingMessageObject.bufferedProgress = bufferedValue;
                                     if (value >= 0 && shouldSavePositionForCurrentAudio != null && SystemClock.elapsedRealtime() - lastSaveTime >= 1000) {
-                                        String saveFor = shouldSavePositionForCurrentAudio;
+                                        final String saveFor = shouldSavePositionForCurrentAudio;
                                         lastSaveTime = SystemClock.elapsedRealtime();
                                         Utilities.globalQueue.postRunnable(() -> {
                                             SharedPreferences.Editor editor = ApplicationLoader.applicationContext.getSharedPreferences("media_saved_pos", Activity.MODE_PRIVATE).edit();
-                                            editor.putFloat(shouldSavePositionForCurrentAudio, value).commit();
+                                            editor.putFloat(saveFor, value).commit();
                                         });
                                     }
                                     NotificationCenter.getInstance(currentPlayingMessageObject.currentAccount).postNotificationName(NotificationCenter.messagePlayingProgressDidChanged, currentPlayingMessageObject.getId(), value);
@@ -2807,6 +2807,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
             notify = false;
             if (!playMusicAgain) {
                 playingMessageObject.resetPlayingProgress();
+                NotificationCenter.getInstance(playingMessageObject.currentAccount).postNotificationName(NotificationCenter.messagePlayingProgressDidChanged, playingMessageObject.getId(), 0);
             }
         }
         cleanupPlayer(notify, false);
@@ -3098,6 +3099,15 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                     isStreamingCurrentAudio = true;
                 }
                 if (messageObject.isVoice()) {
+                    String name = messageObject.getFileName();
+                    if (name != null && messageObject.getDuration() >= 5 * 60) {
+                        SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("media_saved_pos", Activity.MODE_PRIVATE);
+                        float pos = preferences.getFloat(name, -1);
+                        if (pos > 0 && pos < 0.99f) {
+                            messageObject.audioProgress = seekToProgressPending = pos;
+                        }
+                        shouldSavePositionForCurrentAudio = name;
+                    }
                     if (currentPlaybackSpeed > 1.0f) {
                         audioPlayer.setPlaybackSpeed(currentPlaybackSpeed);
                     }
@@ -3264,7 +3274,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
         stopProgressTimer();
         try {
             if (audioPlayer != null) {
-                if (!playingMessageObject.isVoice()) {
+                if (!playingMessageObject.isVoice() && (playingMessageObject.getDuration() * (1f - playingMessageObject.audioProgress) > 1000)) {
                     if (audioVolumeAnimator != null) {
                         audioVolumeAnimator.removeAllUpdateListeners();
                         audioVolumeAnimator.cancel();

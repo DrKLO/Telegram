@@ -487,4 +487,8 @@ public class RadialProgress2 {
             }
         }
     }
+
+    public String getCircleColorKey() {
+        return circleColorKey;
+    }
 }

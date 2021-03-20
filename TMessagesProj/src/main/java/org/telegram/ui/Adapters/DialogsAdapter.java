@@ -30,16 +30,13 @@ import androidx.viewpager.widget.ViewPager;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.DialogObject;
-import org.telegram.messenger.Emoji;
-import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
-import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.UserConfig;
-import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
@@ -88,9 +85,6 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter {
     private PullForegroundDrawable pullForegroundDrawable;
 
     private Drawable arrowDrawable;
-
-    private ArrayList<TLRPC.Document> preloadedStickers = new ArrayList<>();
-    private boolean preloadingSticker;
 
     private DialogsPreloader preloader;
     private boolean forceShowEmptyCell;
@@ -149,31 +143,6 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter {
     public void setDialogsType(int type) {
         dialogsType = type;
         notifyDataSetChanged();
-    }
-
-    private void preloadGreetingsSticker() {
-        if (preloadingSticker) {
-            return;
-        }
-        preloadingSticker = true;
-        TLRPC.TL_messages_getStickers req = new TLRPC.TL_messages_getStickers();
-        req.emoticon = "\uD83D\uDC4B" + Emoji.fixEmoji("⭐");
-        ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> {
-            if (response instanceof TLRPC.TL_messages_stickers) {
-                ArrayList<TLRPC.Document> list = ((TLRPC.TL_messages_stickers) response).stickers;
-                if (!list.isEmpty()) {
-                    for (int a = 0; a < 5; a++) {
-                        TLRPC.Document sticker = list.get(Math.abs(Utilities.random.nextInt() % list.size()));
-                        AndroidUtilities.runOnUIThread(() -> FileLoader.getInstance(currentAccount).loadFile(ImageLocation.getForDocument(sticker), sticker, null, 0, 1));
-                        preloadedStickers.add(sticker);
-                    }
-                }
-            }
-        });
-    }
-
-    public TLRPC.Document getPreloadedSticker() {
-        return onlineContacts != null && !preloadedStickers.isEmpty() ? preloadedStickers.get(Utilities.random.nextInt(preloadedStickers.size())) : null;
     }
 
     @Override
@@ -236,7 +205,7 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter {
             if (!hasContacts) {
                 onlineContacts = null;
             } else {
-                preloadGreetingsSticker();
+                MessagesController.getInstance(currentAccount).preloadGreetingsSticker();
             }
         }
         if (folderId == 1 && showArchiveHint) {
@@ -457,53 +426,7 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter {
                 }
                 break;
             case 10: {
-                view = new View(mContext) {
-                    @Override
-                    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-                        int size = parentFragment.getDialogsArray(currentAccount, dialogsType, folderId, dialogsListFrozen).size();
-                        boolean hasArchive = dialogsType == 0 && MessagesController.getInstance(currentAccount).dialogs_dict.get(DialogObject.makeFolderDialogId(1)) != null;
-                        View parent = (View) getParent();
-                        int height;
-                        int paddingTop = parent.getPaddingTop();
-                        if (size == 0 || paddingTop == 0 && !hasArchive) {
-                            height = 0;
-                        } else {
-                            height = MeasureSpec.getSize(heightMeasureSpec);
-                            if (height == 0) {
-                                height = parent.getMeasuredHeight();
-                            }
-                            if (height == 0) {
-                                height = AndroidUtilities.displaySize.y - ActionBar.getCurrentActionBarHeight() - (Build.VERSION.SDK_INT >= 21 ? AndroidUtilities.statusBarHeight : 0);
-                            }
-                            int cellHeight = AndroidUtilities.dp(SharedConfig.useThreeLinesLayout ? 78 : 72);
-                            int dialogsHeight = size * cellHeight + (size - 1);
-                            if (onlineContacts != null) {
-                                dialogsHeight += onlineContacts.size() * AndroidUtilities.dp(58) + (onlineContacts.size() - 1) + AndroidUtilities.dp(52);
-                            }
-                            int archiveHeight = (hasArchive ? cellHeight + 1 : 0);
-                            if (dialogsHeight < height) {
-                                height = height - dialogsHeight + archiveHeight;
-                                if (paddingTop != 0) {
-                                    height -= AndroidUtilities.statusBarHeight;
-                                    if (height < 0) {
-                                        height = 0;
-                                    }
-                                }
-                            } else if (dialogsHeight - height < archiveHeight) {
-                                height = archiveHeight - (dialogsHeight - height);
-                                if (paddingTop != 0) {
-                                    height -= AndroidUtilities.statusBarHeight;
-                                }
-                                if (height < 0) {
-                                    height = 0;
-                                }
-                            } else {
-                                height = 0;
-                            }
-                        }
-                        setMeasuredDimension(MeasureSpec.getSize(widthMeasureSpec), height);
-                    }
-                };
+                view = new LastEmptyView(mContext);
                 break;
             }
             case 11: {
@@ -585,6 +508,12 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter {
                 }
                 cell.setChecked(selectedDialogs.contains(dialog.id), false);
                 cell.setDialog(dialog, dialogsType, folderId);
+                if ((int) dialog.id > 0) {
+                    MessageObject message = MessagesController.getInstance(currentAccount).dialogMessage.get(dialog.id);
+                    if (MessageObject.isSystemSignUp(message)) {
+                        MessagesController.getInstance(currentAccount).preloadGreetingsSticker();
+                    }
+                }
                 if (preloader != null && i < 10) {
                     preloader.add(dialog.id);
                 }
@@ -893,5 +822,60 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter {
 
     public void setForceShowEmptyCell(boolean forceShowEmptyCell) {
         this.forceShowEmptyCell = forceShowEmptyCell;
+    }
+
+    public class LastEmptyView extends View {
+
+        public boolean moving;
+
+        public LastEmptyView(Context context) {
+            super(context);
+        }
+
+        protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+            int size = parentFragment.getDialogsArray(currentAccount, dialogsType, folderId, dialogsListFrozen).size();
+            boolean hasArchive = dialogsType == 0 && MessagesController.getInstance(currentAccount).dialogs_dict.get(DialogObject.makeFolderDialogId(1)) != null;
+            View parent = (View) getParent();
+            int height;
+            int paddingTop = parent.getPaddingTop();
+            if (size == 0 || paddingTop == 0 && !hasArchive) {
+                height = 0;
+            } else {
+                height = MeasureSpec.getSize(heightMeasureSpec);
+                if (height == 0) {
+                    height = parent.getMeasuredHeight();
+                }
+                if (height == 0) {
+                    height = AndroidUtilities.displaySize.y - ActionBar.getCurrentActionBarHeight() - (Build.VERSION.SDK_INT >= 21 ? AndroidUtilities.statusBarHeight : 0);
+                }
+                int cellHeight = AndroidUtilities.dp(SharedConfig.useThreeLinesLayout ? 78 : 72);
+                int dialogsHeight = size * cellHeight + (size - 1);
+                if (onlineContacts != null) {
+                    dialogsHeight += onlineContacts.size() * AndroidUtilities.dp(58) + (onlineContacts.size() - 1) + AndroidUtilities.dp(52);
+                }
+                int archiveHeight = (hasArchive ? cellHeight + 1 : 0);
+                if (dialogsHeight < height) {
+                    height = height - dialogsHeight + archiveHeight;
+                    if (paddingTop != 0) {
+                        height -= AndroidUtilities.statusBarHeight;
+                        if (height < 0) {
+                            height = 0;
+                        }
+                    }
+                } else if (dialogsHeight - height < archiveHeight) {
+                    height = archiveHeight - (dialogsHeight - height);
+                    if (paddingTop != 0) {
+                        height -= AndroidUtilities.statusBarHeight;
+                    }
+                    if (height < 0) {
+                        height = 0;
+                    }
+                } else {
+                    height = 0;
+                }
+            }
+            setMeasuredDimension(MeasureSpec.getSize(widthMeasureSpec), height);
+        }
+
     }
 }
