@@ -385,6 +385,9 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
     private int pinBullerinTag;
     private boolean openKeyboardOnAttachMenuClose;
 
+    private boolean useGradientBackground = true;
+    private GradientTextureView gradientBackgroundView;
+
     private MessageObject hintMessageObject;
     private int hintMessageType;
 
@@ -3032,7 +3035,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             contentView.setOccupyStatusBar(false);
         }
 
-        contentView.setBackgroundImage(Theme.getCachedWallpaper(), Theme.isWallpaperMotion());
+        setupBackground();
 
         emptyViewContainer = new FrameLayout(context);
         emptyViewContainer.setVisibility(View.INVISIBLE);
@@ -14381,7 +14384,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             }
         } else if (id == NotificationCenter.didSetNewWallpapper) {
             if (fragmentView != null) {
-                contentView.setBackgroundImage(Theme.getCachedWallpaper(), Theme.isWallpaperMotion());
+                setupBackground();
                 progressView2.getBackground().setColorFilter(Theme.colorFilter);
                 if (emptyView != null) {
                     emptyView.getBackground().setColorFilter(Theme.colorFilter);
@@ -23005,5 +23008,16 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         themeDescriptions.add(new ThemeDescription(null, 0, null, null, null, null, Theme.key_voipgroup_overlayAlertMutedByAdmin2));
 
         return themeDescriptions;
+    }
+
+    private void setupBackground() {
+        if (useGradientBackground) {
+            if (gradientBackgroundView == null) {
+                gradientBackgroundView = new GradientTextureView(parentLayout.getContext());
+                contentView.addView(gradientBackgroundView, 0, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+            }
+        } else {
+            contentView.setBackgroundImage(Theme.getCachedWallpaper(), Theme.isWallpaperMotion());
+        }
     }
 }

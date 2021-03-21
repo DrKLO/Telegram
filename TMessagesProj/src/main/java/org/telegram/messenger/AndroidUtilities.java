@@ -25,6 +25,7 @@ import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.Signature;
 import android.content.res.AssetFileDescriptor;
+import android.content.res.AssetManager;
 import android.content.res.Configuration;
 import android.database.Cursor;
 import android.graphics.Bitmap;
@@ -3681,5 +3682,30 @@ public class AndroidUtilities {
             }
             view.setTag(null);
         }
+    }
+
+    public static String readTextFromAsset(Context context, String fileName) {
+        AssetManager assets = context.getAssets();
+        try {
+            InputStream is = assets.open(fileName);
+            return readTextFromInputStream(is);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private static String readTextFromInputStream(InputStream inputStream) {
+        StringBuilder stringBuilder = new StringBuilder();
+        try {
+            try (BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream))) {
+                String line;
+                while ((line = bufferedReader.readLine()) != null) {
+                    stringBuilder.append(line);
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return stringBuilder.toString();
     }
 }

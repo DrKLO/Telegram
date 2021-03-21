@@ -12,8 +12,6 @@ import java.util.Map;
 public class Shader {
 
     protected int program;
-    private int vertexShader;
-    private int fragmentShader;
 
     protected Map<String, Integer> uniformsMap = new HashMap<>();
 
@@ -65,9 +63,13 @@ public class Shader {
 
     public void cleanResources() {
         if (program != 0) {
-            GLES20.glDeleteProgram(vertexShader);
+            GLES20.glDeleteProgram(program);
             program = 0;
         }
+    }
+
+    public int getProgram() {
+        return program;
     }
 
     private static class CompilationResult {
