@@ -1711,30 +1711,15 @@ public class LoginActivity extends BaseFragment {
                     }
                     if (!newAccount && allowCall) {
                         String number = PhoneFormat.stripExceptNumbers(tm.getLine1Number());
-                        String textToSet = null;
-                        boolean ok = false;
+                        String countryCode = tm.getSimCountryIso();
                         if (!TextUtils.isEmpty(number)) {
-                            if (number.length() > 4) {
-                                for (int a = 4; a >= 1; a--) {
-                                    String sub = number.substring(0, a);
-                                    String country = codesMap.get(sub);
-                                    if (country != null) {
-                                        ok = true;
-                                        textToSet = number.substring(a);
-                                        codeField.setText(sub);
-                                        break;
-                                    }
-                                }
-                                if (!ok) {
-                                    textToSet = number.substring(1);
-                                    codeField.setText(number.substring(0, 1));
-                                }
-                            }
-                            if (textToSet != null) {
                                 phoneField.requestFocus();
-                                phoneField.setText(textToSet);
+                                phoneField.setText(number);
                                 phoneField.setSelection(phoneField.length());
-                            }
+                        }
+                        if(!TextUtils.isEmpty(countryCode))
+                        {
+                            codeField.setText(codesMap.get(countryCode));
                         }
                     }
                 }
