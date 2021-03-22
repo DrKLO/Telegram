@@ -23014,7 +23014,8 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         if (useGradientBackground) {
             if (gradientBackgroundView == null) {
                 gradientBackgroundView = new GradientTextureView(parentLayout.getContext());
-                contentView.addView(gradientBackgroundView, 0, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+                FrameLayout.LayoutParams layoutParams = LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT);
+                contentView.addView(gradientBackgroundView, 0, layoutParams);
             }
         } else {
             contentView.setBackgroundImage(Theme.getCachedWallpaper(), Theme.isWallpaperMotion());

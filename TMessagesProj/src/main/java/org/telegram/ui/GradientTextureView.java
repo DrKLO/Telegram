@@ -4,6 +4,12 @@ import android.content.Context;
 import android.graphics.Color;
 import android.graphics.SurfaceTexture;
 import android.opengl.GLES20;
+import android.os.Handler;
+import android.os.HandlerThread;
+import android.os.Looper;
+import android.os.Message;
+import android.util.Log;
+import android.view.Choreographer;
 import android.view.TextureView;
 
 import androidx.annotation.ColorInt;
@@ -14,12 +20,16 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.ui.Components.Paint.FragmentShader;
 import org.webrtc.EglBase;
 
-import java.util.concurrent.Semaphore;
+// TODO agolokoz: not working on screen rotation
+public class GradientTextureView extends TextureView implements
+        TextureView.SurfaceTextureListener,
+        Choreographer.FrameCallback {
 
-public class GradientTextureView extends TextureView implements TextureView.SurfaceTextureListener {
-
+    private final boolean isAlwaysInvalidate = true;
     private final GradientDrawer drawer = new GradientDrawer(getContext());
-    private final RenderThread renderThread = new RenderThread(drawer, false);
+
+    @Nullable
+    private RenderThread renderThread;
 
     public GradientTextureView(@NonNull Context context) {
         super(context);
@@ -34,12 +44,23 @@ public class GradientTextureView extends TextureView implements TextureView.Surf
         drawer.setPosition(3, 0.2f, 0.8f);
 
         setSurfaceTextureListener(this);
+    }
+
+    @Override
+    protected void onAttachedToWindow() {
+        super.onAttachedToWindow();
+        renderThread = new RenderThread(drawer);
         renderThread.start();
     }
 
     @Override
     public void onSurfaceTextureAvailable(@NonNull SurfaceTexture surface, int width, int height) {
-        renderThread.setSurfaceTexture(surface);
+        if (isAlwaysInvalidate) {
+            Choreographer.getInstance().postFrameCallback(this);
+        }
+        if (renderThread != null) {
+            renderThread.dispatchSetSurfaceTexture(surface);
+        }
     }
 
     @Override
@@ -50,21 +71,24 @@ public class GradientTextureView extends TextureView implements TextureView.Surf
 
     @Override
     public boolean onSurfaceTextureDestroyed(@NonNull SurfaceTexture surface) {
-        renderThread.setSurfaceTexture(null);
+        Choreographer.getInstance().removeFrameCallback(this);
+        if (renderThread != null) {
+            renderThread.dispatchRelease();
+            renderThread.interrupt();
+            renderThread = null;
+        }
         return true;
     }
 
     @Override
-    protected void onAttachedToWindow() {
-        super.onAttachedToWindow();
+    public void doFrame(long frameTimeNanos) {
+        if (renderThread != null) {
+            renderThread.dispatchInvalidate();
+        }
+        if (isAlwaysInvalidate) {
+            Choreographer.getInstance().postFrameCallback(this);
+        }
     }
-
-    @Override
-    protected void onDetachedFromWindow() {
-        setSurfaceTextureListener(null);
-        super.onDetachedFromWindow();
-    }
-
 
     private static class GradientDrawer implements RenderThread.Drawer {
 
@@ -74,10 +98,10 @@ public class GradientTextureView extends TextureView implements TextureView.Surf
         private final String fragmentShaderSource;
         private FragmentShader shader;
 
+        private final float[] colors = new float[COLOR_SIZE * 4];
+        private final float[] points = new float[POINT_SIZE * 4];
         private float width;
         private float height;
-        private float[] colors = new float[COLOR_SIZE * 4];
-        private float[] points = new float[POINT_SIZE * 4];
 
         private int locResolution = -1;
         private int locColor1 = -1;
@@ -139,6 +163,7 @@ public class GradientTextureView extends TextureView implements TextureView.Surf
         public void release() {
             if (shader != null) {
                 shader.cleanResources();
+                shader = null;
             }
         }
 
@@ -154,94 +179,84 @@ public class GradientTextureView extends TextureView implements TextureView.Surf
         }
     }
 
-    // TODO agolokoz: use HandlerThread
-    private static class RenderThread extends Thread {
+    private static class RenderThread extends HandlerThread implements Handler.Callback {
 
-        private final Object surfaceTextureLock = new Object();
-        private final Semaphore redrawSemaphore = new Semaphore(1);
+        private static final int MSG_WHAT_SET_SURFACE = 1;
+        private static final int MSG_WHAT_INVALIDATE = 2;
+        private static final int MSG_WHAT_RELEASE = 3;
 
         @NonNull
+        private final Handler handler = new Handler(Looper.myLooper(), this);
+        @NonNull
         private final Drawer drawer;
-        private final boolean isAlwaysInvalidate;
 
-        @Nullable
-        private SurfaceTexture surfaceTexture;
+        private EglBase eglBase;
+        private WindowEglSurface windowSurface;
 
-        public RenderThread(@NonNull Drawer drawer, boolean isAlwaysInvalidate) {
+        public RenderThread(@NonNull Drawer drawer) {
             super("GradientTextureView.RenderThread");
             this.drawer = drawer;
-            this.isAlwaysInvalidate = isAlwaysInvalidate;
         }
 
         @Override
-        public void run() {
-            while (true) {
-                SurfaceTexture texture;
-
-                // wait for texture
-                synchronized (surfaceTextureLock) {
-                    texture = surfaceTexture;
-                    while (!isInterrupted() && texture == null) {
-                        try {
-                            surfaceTextureLock.wait();
-                        } catch (InterruptedException e) {
-                            throw new RuntimeException(e);
-                        }
-                        texture = surfaceTexture;
+        public boolean handleMessage(@NonNull Message msg) {
+            switch (msg.what) {
+                case MSG_WHAT_SET_SURFACE:
+                    if (msg.obj instanceof SurfaceTexture) {
+                        prepare((SurfaceTexture) msg.obj);
                     }
-                    if (isInterrupted()) {
-                        break;
-                    }
-                }
-
-                // prepare
-                EglBase eglBase = EglBase.create();
-                WindowEglSurface windowSurface = new WindowEglSurface(eglBase, surfaceTexture);
-                windowSurface.makeCurrent();
-
-                // draw
-                drawer.init(eglBase.surfaceWidth(), eglBase.surfaceHeight());
-                drawLoop(windowSurface);
-
-                // release
-                windowSurface.releaseEglSurface();
-                eglBase.release();
+                    break;
+                case MSG_WHAT_INVALIDATE:
+                    draw();
+                    break;
+                case MSG_WHAT_RELEASE:
+                    release();
+                    break;
+                default:
+                    return false;
             }
+            return true;
         }
 
-        void setSurfaceTexture(@Nullable SurfaceTexture surfaceTexture) {
-            synchronized (surfaceTextureLock) {
-                this.surfaceTexture = surfaceTexture;
-                surfaceTextureLock.notify();
+        void dispatchSetSurfaceTexture(@Nullable SurfaceTexture surfaceTexture) {
+            Message msg = handler.obtainMessage(MSG_WHAT_SET_SURFACE, surfaceTexture);
+            handler.dispatchMessage(msg);
+        }
+
+        void dispatchInvalidate() {
+            Message msg = handler.obtainMessage(MSG_WHAT_INVALIDATE);
+            handler.dispatchMessage(msg);
+        }
+
+        void dispatchRelease() {
+            Message msg = handler.obtainMessage(MSG_WHAT_RELEASE);
+            handler.dispatchMessage(msg);
+        }
+
+        private void prepare(@Nullable SurfaceTexture surfaceTexture) {
+            Log.d("RenderThread", "prepare");
+            eglBase = EglBase.create();
+            windowSurface = new WindowEglSurface(eglBase, surfaceTexture);
+            windowSurface.makeCurrent();
+            drawer.init(eglBase.surfaceWidth(), eglBase.surfaceHeight());
+        }
+
+        private void draw() {
+            if (windowSurface == null) {
+                return;
             }
+            drawer.draw();
+            windowSurface.swapBuffers();
         }
 
-        void invalidate() {
-            redrawSemaphore.release();
+        private void release() {
+            drawer.release();
+            windowSurface.releaseEglSurface();
+            windowSurface = null;
+            eglBase.release();
+            eglBase = null;
         }
 
-        private void drawLoop(WindowEglSurface surface) {
-            while (true) {
-                synchronized (surfaceTextureLock) {
-                    SurfaceTexture texture = surfaceTexture;
-                    if (texture == null) {
-                        return;
-                    }
-                }
-
-                if (!isAlwaysInvalidate) {
-                    try {
-                        redrawSemaphore.acquire();
-                    } catch (InterruptedException e) {
-                        throw new RuntimeException(e);
-                    }
-                }
-
-                drawer.draw();
-
-                surface.swapBuffers();
-            }
-        }
 
         interface Drawer {
 
