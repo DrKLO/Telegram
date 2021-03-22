@@ -3684,23 +3684,26 @@ public class AndroidUtilities {
         }
     }
 
-    public static String readTextFromAsset(Context context, String fileName) {
+    public static String readTextFromAsset(Context context, String fileName, boolean addNewLine) {
         AssetManager assets = context.getAssets();
         try {
             InputStream is = assets.open(fileName);
-            return readTextFromInputStream(is);
+            return readTextFromInputStream(is, addNewLine);
         } catch (Exception e) {
             return null;
         }
     }
 
-    private static String readTextFromInputStream(InputStream inputStream) {
+    private static String readTextFromInputStream(InputStream inputStream, boolean addNewLine) {
         StringBuilder stringBuilder = new StringBuilder();
         try {
             try (BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream))) {
                 String line;
                 while ((line = bufferedReader.readLine()) != null) {
                     stringBuilder.append(line);
+                    if (addNewLine) {
+                        stringBuilder.append('\n');
+                    }
                 }
             }
         } catch (Exception e) {

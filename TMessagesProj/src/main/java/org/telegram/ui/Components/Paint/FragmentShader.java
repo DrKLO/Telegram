@@ -41,7 +41,6 @@ public class FragmentShader extends Shader {
     }
 
     public void draw() {
-        GLES20.glUseProgram(program);
         GLES20.glVertexAttribPointer(locAttrPosition, 2, GLES20.GL_FLOAT, false, 2 * 4, verticesBuffer);
         GLES20.glEnableVertexAttribArray(locAttrPosition);
         GLES20.glDrawElements(GLES20.GL_TRIANGLES, 6, GLES20.GL_UNSIGNED_SHORT, orderBuffer);
