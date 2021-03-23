@@ -3000,6 +3000,10 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     child.layout(childLeft, childTop, childLeft + width, childTop + height);
                 }
 
+                if (gradientBackgroundView != null && gradientBackgroundView.getVisibility() != View.GONE) {
+                    gradientBackgroundView.layout(chatListView.getLeft(), chatListView.getTop(), chatListView.getRight(), chatListView.getBottom());
+                }
+
                 invalidateChatListViewTopPadding();
                 invalidateMessagesVisiblePart();
                 updateTextureViewPosition(false);
@@ -17392,6 +17396,11 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             }
             chatListView.setItemAnimator(null);
         }
+
+        if (gradientBackgroundView != null && gradientBackgroundView.getVisibility() != View.GONE) {
+            gradientBackgroundView.invalidate();
+        }
+
         updateBottomOverlay();
         updateSecretStatus();
     }

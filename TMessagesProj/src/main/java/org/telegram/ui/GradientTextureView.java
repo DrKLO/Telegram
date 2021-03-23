@@ -8,7 +8,6 @@ import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Looper;
 import android.os.Message;
-import android.util.Log;
 import android.view.Choreographer;
 import android.view.TextureView;
 
@@ -20,7 +19,6 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.ui.Components.Paint.FragmentShader;
 import org.webrtc.EglBase;
 
-// TODO agolokoz: not working on screen rotation
 public class GradientTextureView extends TextureView implements
         TextureView.SurfaceTextureListener,
         Choreographer.FrameCallback {
@@ -39,9 +37,9 @@ public class GradientTextureView extends TextureView implements
         drawer.setColor(3, Color.YELLOW);
 
         drawer.setPosition(0, 0.0f, 0.0f);
-        drawer.setPosition(1, 0.8f, 0.3f);
-        drawer.setPosition(2, 0.8f, 0.8f);
-        drawer.setPosition(3, 0.2f, 0.8f);
+        drawer.setPosition(1, 1.0f, 0.0f);
+        drawer.setPosition(2, 1.0f, 1.0f);
+        drawer.setPosition(3, 0.0f, 1.0f);
 
         setSurfaceTextureListener(this);
     }
@@ -58,13 +56,20 @@ public class GradientTextureView extends TextureView implements
         if (isAlwaysInvalidate) {
             Choreographer.getInstance().postFrameCallback(this);
         }
-        if (renderThread != null) {
-            renderThread.dispatchSetSurfaceTexture(surface);
+        RenderThread thread = renderThread;
+        if (thread != null) {
+            thread.dispatchSetSurfaceTexture(surface);
         }
     }
 
     @Override
-    public void onSurfaceTextureSizeChanged(@NonNull SurfaceTexture surface, int width, int height) { }
+    public void onSurfaceTextureSizeChanged(@NonNull SurfaceTexture surface, int width, int height) {
+        RenderThread thread = renderThread;
+        if (thread != null) {
+            thread.dispatchRelease();
+            thread.dispatchSetSurfaceTexture(surface);
+        }
+    }
 
     @Override
     public void onSurfaceTextureUpdated(@NonNull SurfaceTexture surface) { }
@@ -234,7 +239,6 @@ public class GradientTextureView extends TextureView implements
         }
 
         private void prepare(@Nullable SurfaceTexture surfaceTexture) {
-            Log.d("RenderThread", "prepare");
             eglBase = EglBase.create();
             windowSurface = new WindowEglSurface(eglBase, surfaceTexture);
             windowSurface.makeCurrent();
