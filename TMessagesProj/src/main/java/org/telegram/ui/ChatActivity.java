@@ -186,6 +186,8 @@ import org.telegram.ui.Components.ExtendedGridLayoutManager;
 import org.telegram.ui.Components.FireworksOverlay;
 import org.telegram.ui.Components.FragmentContextView;
 import org.telegram.ui.Components.GigagroupConvertAlert;
+import org.telegram.ui.Components.GLTextureView;
+import org.telegram.ui.Components.GradientGLDrawer;
 import org.telegram.ui.Components.HintView;
 import org.telegram.ui.Components.ImportingAlert;
 import org.telegram.ui.Components.InstantCameraView;
@@ -386,7 +388,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
     private boolean openKeyboardOnAttachMenuClose;
 
     private boolean useGradientBackground = true;
-    private GradientTextureView gradientBackgroundView;
+    private GLTextureView gradientBackgroundView;
 
     private MessageObject hintMessageObject;
     private int hintMessageType;
@@ -23022,7 +23024,8 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
     private void setupBackground() {
         if (useGradientBackground) {
             if (gradientBackgroundView == null) {
-                gradientBackgroundView = new GradientTextureView(parentLayout.getContext());
+                GradientGLDrawer drawer = new GradientGLDrawer(parentLayout.getContext());
+                gradientBackgroundView = new GLTextureView(parentLayout.getContext(), drawer);
                 FrameLayout.LayoutParams layoutParams = LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT);
                 contentView.addView(gradientBackgroundView, 0, layoutParams);
             }

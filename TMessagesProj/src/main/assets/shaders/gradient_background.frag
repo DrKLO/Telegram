@@ -12,14 +12,13 @@ uniform vec2 u_point2;
 uniform vec2 u_point3;
 uniform vec2 u_point4;
 
-const float BLUR = 2.0;
-
 float getWeight(vec2 uv, vec2 point) {
     float distance = length(uv - point);
     distance = max(distance, 0.01);
-    return 1.0 / pow(distance, BLUR);
+    return 1.0 / pow(distance, 2.0);
 }
 
+// TODO agolokoz: add turbulent displacement
 void main() {
     vec2 uv = gl_FragCoord.xy / u_resolution;
 
@@ -31,7 +30,7 @@ void main() {
 
     vec3 wColors = w1 * u_color1 + w2 * u_color2 + w3 * u_color3 + w4 * u_color4;
     wColors /= wSum;
-    wColors = sqrt(wColors);
+    wColors = pow(wColors, vec3(0.85));
 
-    gl_FragColor = vec4(wColors.xyz, 1.0);
+    gl_FragColor = vec4(wColors.rgb, 1.0);
 }
