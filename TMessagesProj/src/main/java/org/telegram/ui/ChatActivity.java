@@ -161,6 +161,7 @@ import org.telegram.ui.Cells.TextSelectionHelper;
 import org.telegram.ui.Components.AlertsCreator;
 import org.telegram.ui.Components.AnimatedFileDrawable;
 import org.telegram.ui.Components.AnimationProperties;
+import org.telegram.ui.Components.AnimationsController;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.BlurBehindDrawable;
 import org.telegram.ui.Components.Bulletin;
@@ -387,7 +388,6 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
     private int pinBullerinTag;
     private boolean openKeyboardOnAttachMenuClose;
 
-    private boolean useGradientBackground = true;
     private GLTextureView gradientBackgroundView;
 
     private MessageObject hintMessageObject;
@@ -23022,7 +23022,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
     }
 
     private void setupBackground() {
-        if (useGradientBackground) {
+        if (AnimationsController.isAnimationsEnabled()) {
             if (gradientBackgroundView == null) {
                 GradientGLDrawer drawer = new GradientGLDrawer(parentLayout.getContext());
                 gradientBackgroundView = new GLTextureView(parentLayout.getContext(), drawer);

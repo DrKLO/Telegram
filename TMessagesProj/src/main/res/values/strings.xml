@@ -4320,4 +4320,15 @@
     <string name="SwipeUnpin">Unpin</string>
     <string name="SwipePin">Pin</string>
     <string name="CancelForwarding">Cancel Forwarding</string>
+    <string name="AnimationSettings">Animation Settings</string>
+    <string name="AnimationSettingsBackground">Background</string>
+    <string name="AnimationSettingsShortText">Short Text</string>
+    <string name="AnimationSettingsLongText">Long Text</string>
+    <string name="AnimationSettingsLink">Link</string>
+    <string name="AnimationSettingsEmoji">Emoji</string>
+    <string name="AnimationSettingsPhoto">Photo</string>
+    <string name="AnimationSettingsSticker">Sticker</string>
+    <string name="AnimationSettingsVoice">Voice</string>
+    <string name="AnimationSettingsVideoMessage">Video Message</string>
+    <string name="AnimationSettingsMultiple">Multiple Messages</string>
 </resources>
