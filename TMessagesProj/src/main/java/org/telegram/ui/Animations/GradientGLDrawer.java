@@ -1,23 +1,16 @@
-package org.telegram.ui.Components;
+package org.telegram.ui.Animations;
 
 import android.content.Context;
 import android.graphics.Color;
 import android.opengl.GLES20;
 
 import androidx.annotation.ColorInt;
-import androidx.annotation.FloatRange;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.ui.Components.GLTextureView;
 import org.telegram.ui.Components.Paint.FragmentShader;
 
 public class GradientGLDrawer implements GLTextureView.Drawer {
-
-    private static final float[] POINT_COORDS = new float[] {
-            0.35f, 0.25f,  0.82f, 0.08f,  0.65f, 0.75f,  0.18f, 0.92f
-    };
-    private static final int[] DEFAULT_COLORS = new int[] {
-            0xFFF6BF, 0x76A076, 0xF6E477, 0x316B4D
-    };
 
     private static final int COLOR_SIZE = 3;
     private static final int POINT_SIZE = 2;
@@ -25,8 +18,8 @@ public class GradientGLDrawer implements GLTextureView.Drawer {
     private final String fragmentShaderSource;
     private FragmentShader shader;
 
-    private final float[] colors = new float[COLOR_SIZE * 4];
-    private final float[] points = new float[POINT_SIZE * 4];
+    private final float[] colors = new float[COLOR_SIZE * AnimationsController.pointsCount];
+    private final float[] points = new float[POINT_SIZE * AnimationsController.pointsCount];
     private float width;
     private float height;
 
@@ -43,7 +36,7 @@ public class GradientGLDrawer implements GLTextureView.Drawer {
     public GradientGLDrawer(Context context) {
         fragmentShaderSource = AndroidUtilities.readTextFromAsset(context, "shaders/gradient_background.frag", true);
         for (int i = 0; i != 4; ++i) {
-            setColorPoint(i, DEFAULT_COLORS[i], POINT_COORDS[i * 2], POINT_COORDS[i * 2 + 1]);
+            setColorPoint(i, AnimationsController.defaultColors[i], AnimationsController.pointCoords[i * 2], AnimationsController.pointCoords[i * 2 + 1]);
         }
     }
 

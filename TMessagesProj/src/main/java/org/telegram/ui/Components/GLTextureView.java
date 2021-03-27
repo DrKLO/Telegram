@@ -20,7 +20,8 @@ public class GLTextureView extends TextureView implements
         TextureView.SurfaceTextureListener,
         Choreographer.FrameCallback {
 
-    private final Drawer drawer;
+    @Nullable
+    private Drawer drawer;
 
     @Nullable
     private RenderThread renderThread;
@@ -30,17 +31,18 @@ public class GLTextureView extends TextureView implements
     private int width;
     private int height;
 
-    public GLTextureView(@NonNull Context context, @NonNull GLTextureView.Drawer drawer) {
+    public GLTextureView(@NonNull Context context) {
         super(context);
-        this.drawer = drawer;
         setSurfaceTextureListener(this);
     }
 
     @Override
     protected void onAttachedToWindow() {
         super.onAttachedToWindow();
-        renderThread = new RenderThread(drawer);
-        renderThread.start();
+        if (drawer != null) {
+            renderThread = new RenderThread(drawer);
+            renderThread.start();
+        }
     }
 
     @Override
@@ -93,6 +95,10 @@ public class GLTextureView extends TextureView implements
         if (isAlwaysInvalidate) {
             Choreographer.getInstance().postFrameCallback(this);
         }
+    }
+
+    public void setDrawer(@Nullable Drawer drawer) {
+        this.drawer = drawer;
     }
 
     public void setAlwaysInvalidate(boolean alwaysInvalidate) {
@@ -182,7 +188,7 @@ public class GLTextureView extends TextureView implements
         }
     }
 
-    interface Drawer {
+    public interface Drawer {
 
         void init(int width, int height);
         void draw();

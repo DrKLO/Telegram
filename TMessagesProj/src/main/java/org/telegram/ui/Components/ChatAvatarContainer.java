@@ -42,6 +42,7 @@ import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Animations.AnimationsController;
 import org.telegram.ui.AnimationsSettingsActivity;
 import org.telegram.ui.ChatActivity;
 import org.telegram.ui.MediaActivity;

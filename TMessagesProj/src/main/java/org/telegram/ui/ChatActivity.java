@@ -146,6 +146,7 @@ import org.telegram.ui.ActionBar.ThemeDescription;
 import org.telegram.ui.Adapters.MentionsAdapter;
 import org.telegram.ui.Adapters.MessagesSearchAdapter;
 import org.telegram.ui.Adapters.StickersAdapter;
+import org.telegram.ui.Animations.GradientBackgroundView;
 import org.telegram.ui.Cells.BotHelpCell;
 import org.telegram.ui.Cells.BotSwitchCell;
 import org.telegram.ui.Cells.ChatActionCell;
@@ -161,7 +162,7 @@ import org.telegram.ui.Cells.TextSelectionHelper;
 import org.telegram.ui.Components.AlertsCreator;
 import org.telegram.ui.Components.AnimatedFileDrawable;
 import org.telegram.ui.Components.AnimationProperties;
-import org.telegram.ui.Components.AnimationsController;
+import org.telegram.ui.Animations.AnimationsController;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.BlurBehindDrawable;
 import org.telegram.ui.Components.Bulletin;
@@ -188,7 +189,7 @@ import org.telegram.ui.Components.FireworksOverlay;
 import org.telegram.ui.Components.FragmentContextView;
 import org.telegram.ui.Components.GigagroupConvertAlert;
 import org.telegram.ui.Components.GLTextureView;
-import org.telegram.ui.Components.GradientGLDrawer;
+import org.telegram.ui.Animations.GradientGLDrawer;
 import org.telegram.ui.Components.HintView;
 import org.telegram.ui.Components.ImportingAlert;
 import org.telegram.ui.Components.InstantCameraView;
@@ -23024,10 +23025,8 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
     private void setupBackground() {
         if (AnimationsController.isAnimationsEnabled()) {
             if (gradientBackgroundView == null) {
-                GradientGLDrawer drawer = new GradientGLDrawer(parentLayout.getContext());
-                gradientBackgroundView = new GLTextureView(parentLayout.getContext(), drawer);
-                FrameLayout.LayoutParams layoutParams = LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT);
-                contentView.addView(gradientBackgroundView, 0, layoutParams);
+                gradientBackgroundView = new GradientBackgroundView(parentLayout.getContext());
+                contentView.addView(gradientBackgroundView, 0, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
             }
         } else {
             contentView.setBackgroundImage(Theme.getCachedWallpaper(), Theme.isWallpaperMotion());
