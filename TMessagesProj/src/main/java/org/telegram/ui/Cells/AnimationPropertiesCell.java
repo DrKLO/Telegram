@@ -24,8 +24,6 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.math.MathUtils;
 
-import com.google.android.exoplayer2.util.Log;
-
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
@@ -33,6 +31,7 @@ import org.telegram.ui.ActionBar.Theme;
 
 public class AnimationPropertiesCell extends View {
 
+    private static final float topSpace = AndroidUtilities.dp(10);
     private static final float lineSize = AndroidUtilities.dp(2);
     private static final float linesSpace = AndroidUtilities.dp(150);
     private static final float lineLeftRightSpace = AndroidUtilities.dp(27);
@@ -72,6 +71,8 @@ public class AnimationPropertiesCell extends View {
     private final StringBuilder rightBoundText = new StringBuilder("8888ms");
     @Nullable
     private ProgressSelectorDrawable draggingDrawable;
+    @Nullable
+    private OnAnimationPropertiesChangeListener propertiesChangeListener;
     private boolean isDataChanged = false;
 
     public AnimationPropertiesCell(Context context) {
@@ -169,7 +170,12 @@ public class AnimationPropertiesCell extends View {
             }
             case MotionEvent.ACTION_CANCEL:
             case MotionEvent.ACTION_UP: {
-                draggingDrawable = null;
+                if (draggingDrawable != null) {
+                    if (propertiesChangeListener != null) {
+                        propertiesChangeListener.onPropertiesChanged(this, getTag());
+                    }
+                    draggingDrawable = null;
+                }
                 isHandled = true;
                 break;
             }
@@ -200,12 +206,13 @@ public class AnimationPropertiesCell extends View {
         float topBottomProgressRight = getWidth() - lineLeftRightSpace - lineMaxWidth * (1f - rightProgress);
         float topBottomProgressWidth = topBottomProgressRight - topBottomProgressLeft;
 
-        float topLineTop = topProgressTextLayout.getHeight() + topProgressDrawable.getBounds().height() * 0.5f;
+        float topTextTop = topSpace;
+        float topLineTop = topTextTop + topProgressTextLayout.getHeight() + topProgressDrawable.getBounds().height() * 0.5f;
         float topLineVerticalCenter = topLineTop + lineSize * 0.5f;
         float bottomLineTop = topLineTop + linesSpace;
         float bottomLineVerticalCenter = bottomLineTop + lineSize * 0.5f;
         float bottomTextTop = bottomLineVerticalCenter + bottomProgressDrawable.getBounds().height() * 0.5f;
-        float topBottomLineCenter = topLineVerticalCenter + (bottomLineVerticalCenter - topLineVerticalCenter) * 0.5f;
+//        float topBottomLineCenter = topLineVerticalCenter + (bottomLineVerticalCenter - topLineVerticalCenter) * 0.5f;
 
         // chart line
         if (isDataChanged) {
@@ -215,17 +222,17 @@ public class AnimationPropertiesCell extends View {
             float xTop = topBottomProgressLeft + topBottomProgressWidth * (1f - topProgress);
             chartLinePath.cubicTo(xBottom, bottomLineVerticalCenter, xTop, topLineVerticalCenter, topBottomProgressRight, topLineVerticalCenter);
 
-            for (float x = topBottomProgressLeft; x <= topBottomProgressRight; ++x) {
+//            for (float x = topBottomProgressLeft; x <= topBottomProgressRight; ++x) {
 //                float input = (x - topBottomProgressLeft) / topBottomProgressWidth;
 //                float y = bottomLineVerticalCenter - linesSpace * func(input);
 //                canvas.drawPoint(x, y, chartDebugPaint);
-                float input = (x - topBottomProgressLeft) / topBottomProgressWidth * 2 - 1f;
-                float output = func(input, bottomProgress);
-                Log.d("AnimationPropertiesCell", "f(" + input + ") = " + output);
-
-                float y = topBottomLineCenter - output * linesSpace * 0.75f;
-                canvas.drawPoint(x, y, chartDebugPaint);
-            }
+//                float input = (x - topBottomProgressLeft) / topBottomProgressWidth * 2 - 1f;
+//                float output = func(input, bottomProgress);
+//                Log.d("AnimationPropertiesCell", "f(" + input + ") = " + output);
+//
+//                float y = topBottomLineCenter - output * linesSpace * 0.75f;
+//                canvas.drawPoint(x, y, chartDebugPaint);
+//            }
         }
         canvas.drawPath(chartLinePath, chartLinePaint);
 
@@ -237,7 +244,7 @@ public class AnimationPropertiesCell extends View {
                 textLeftRightSpace,
                 getWidth() - textLeftRightSpace - topProgressTextLayout.getWidth()
         );
-        canvas.translate(xTranslate, 0f);
+        canvas.translate(xTranslate, topTextTop);
         topProgressTextLayout.draw(canvas);
         canvas.restore();
 
@@ -300,6 +307,10 @@ public class AnimationPropertiesCell extends View {
         canvas.restore();
     }
 
+    public void setPropertiesChangeListener(@Nullable OnAnimationPropertiesChangeListener propertiesChangeListener) {
+        this.propertiesChangeListener = propertiesChangeListener;
+    }
+
     public void setTopProgress(float progress) {
         topProgress = progress;
         int value = Math.round(100 * progress);
@@ -336,6 +347,26 @@ public class AnimationPropertiesCell extends View {
         setRightProgress(rightProgress);
         isDataChanged = true;
         invalidate();
+    }
+
+    public float getLeftProgress() {
+        return leftProgress;
+    }
+
+    public float getRightProgress() {
+        return rightProgress;
+    }
+
+    public float getTopProgress() {
+        return topProgress;
+    }
+
+    public float getBottomProgress() {
+        return bottomProgress;
+    }
+
+    public int getMaxValue() {
+        return maxValue;
     }
 
     private Layout createDynamicLayout(CharSequence source, TextPaint paint, int width, Layout.Alignment alignment) {
@@ -393,6 +424,10 @@ public class AnimationPropertiesCell extends View {
         return bitmap;
     }
 
+    public interface OnAnimationPropertiesChangeListener {
+
+        void onPropertiesChanged(AnimationPropertiesCell cell, @Nullable Object tag);
+    }
 
     private static class ProgressSelectorDrawable extends Drawable {
 

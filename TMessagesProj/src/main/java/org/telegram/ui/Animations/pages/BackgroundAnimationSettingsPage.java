@@ -7,16 +7,22 @@ import androidx.annotation.Nullable;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.ui.Animations.AnimationsController;
-import org.telegram.ui.Animations.AnimationsSettingsAdapter;
 import org.telegram.ui.Animations.AnimationsSettingsAdapter.*;
+import org.telegram.ui.Cells.AnimationPropertiesCell;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class BackgroundAnimationSettingsPage extends AnimationsSettingsPage implements Callback {
 
+    private static int ITEMS = 0;
+    private static final int SEND_MESSAGE_ITEM_ID = ITEMS++;
+    private static final int OPEN_CHAT_ITEM_ID = ITEMS++;
+    private static final int JUMP_MESSAGE_ITEM_ID = ITEMS++;
+
     public final int fullScreenPosition;
 
+    private final int[] animPropsPosition = new int[ITEMS];
     private final int[] colorPosition = new int[AnimationsController.pointsCount];
     private final int backgroundPreviewPosition;
 
@@ -41,13 +47,23 @@ public class BackgroundAnimationSettingsPage extends AnimationsSettingsPage impl
                 items.add(pos++, dividerItem);
             }
         }
+
+        int animationPropertyItemIdx = 0;
         items.add(pos++, sectionItem);
         items.add(pos++, new HeaderItem(LocaleController.getString("", R.string.AnimationSettingsSendMessage)));
-        items.add(pos++, new AnimationPropertiesItem(0, 100, 600, 1000, 0.2f, 0.65f));
+        items.add(pos++, new DurationItem(SEND_MESSAGE_ITEM_ID, 1000));
+        items.add(pos++, dividerItem);
+        items.add(animPropsPosition[animationPropertyItemIdx++] = pos++, new AnimationPropertiesItem(SEND_MESSAGE_ITEM_ID, 100, 600, 1000, 0.2f, 0.65f));
         items.add(pos++, sectionItem);
         items.add(pos++, new HeaderItem(LocaleController.getString("", R.string.AnimationSettingsOpenChat)));
+        items.add(pos++, new DurationItem(OPEN_CHAT_ITEM_ID, 1000));
+        items.add(pos++, dividerItem);
+        items.add(animPropsPosition[animationPropertyItemIdx++] = pos++, new AnimationPropertiesItem(OPEN_CHAT_ITEM_ID, 100, 600, 1000, 0.2f, 0.65f));
         items.add(pos++, sectionItem);
         items.add(pos++, new HeaderItem(LocaleController.getString("", R.string.AnimationSettingsJumpToMessage)));
+        items.add(pos++, new DurationItem(JUMP_MESSAGE_ITEM_ID, 1000));
+        items.add(pos++, dividerItem);
+        items.add(animPropsPosition[animationPropertyItemIdx] = pos++, new AnimationPropertiesItem(JUMP_MESSAGE_ITEM_ID, 100, 600, 1000, 0.2f, 0.65f));
         items.add(pos++, sectionItem);
 
         adapter.setItems(items);
@@ -67,7 +83,39 @@ public class BackgroundAnimationSettingsPage extends AnimationsSettingsPage impl
     public void onColorCancelled(@Nullable Object tag) {
         if (tag instanceof SelectColorItem) {
             SelectColorItem item = (SelectColorItem) tag;
+            // TODO agolokoz: maybe animate?
             setColor(AnimationsController.getCurrentColor(item.id), tag, true);
+        }
+    }
+
+    @Override
+    public void onPropertiesChanged(AnimationPropertiesCell cell, @Nullable Object tag) {
+        if (tag instanceof AnimationPropertiesItem) {
+            AnimationPropertiesItem item = (AnimationPropertiesItem) tag;
+            item.leftDuration = (int)(cell.getLeftProgress() * cell.getMaxValue());
+            item.rightDuration = (int)(cell.getRightProgress() * cell.getMaxValue());
+            item.topProgress = cell.getTopProgress();
+            item.botProgress = cell.getBottomProgress();
+        }
+    }
+
+    @Override
+    public void onDurationSelected(@Nullable Object tag, int duration) {
+        if (tag instanceof DurationItem) {
+            DurationItem item = (DurationItem) tag;
+            int prevDuration = item.duration;
+            item.duration = duration;
+
+            int position = animPropsPosition[item.id];
+            Item adapterItem = adapter.getItemAt(position);
+            if (adapterItem instanceof AnimationPropertiesItem) {
+                AnimationPropertiesItem propertiesItem = (AnimationPropertiesItem) adapterItem;
+                float factor = duration * 1f / prevDuration;
+                propertiesItem.leftDuration = Math.round(propertiesItem.leftDuration * factor);
+                propertiesItem.rightDuration = Math.round(propertiesItem.rightDuration * factor);
+                propertiesItem.maxDuration = duration;
+                adapter.updateItem(position, adapterItem);
+            }
         }
     }
 

@@ -4,7 +4,6 @@ import android.view.View;
 import android.view.ViewGroup;
 
 import androidx.annotation.ColorInt;
-import androidx.annotation.FloatRange;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.RecyclerView;
@@ -14,6 +13,7 @@ import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.AnimationPropertiesCell;
 import org.telegram.ui.Cells.DividerCell;
+import org.telegram.ui.Cells.DurationCell;
 import org.telegram.ui.Cells.HeaderCell;
 import org.telegram.ui.Cells.SelectColorCell;
 import org.telegram.ui.Cells.ShadowSectionCell;
@@ -32,6 +32,7 @@ public class AnimationsSettingsAdapter extends RecyclerView.Adapter<RecyclerList
     private static final int VIEW_TYPE_PREVIEW = 4;
     private static final int VIEW_TYPE_SELECT_COLOR = 5;
     private static final int VIEW_TYPE_ANIMATION_PROPERTIES = 6;
+    private static final int VIEW_TYPE_DURATION = 7;
 
     private final List<Item> items = new ArrayList<>();
 
@@ -83,6 +84,13 @@ public class AnimationsSettingsAdapter extends RecyclerView.Adapter<RecyclerList
             }
             case VIEW_TYPE_ANIMATION_PROPERTIES: {
                 AnimationPropertiesCell cell = new AnimationPropertiesCell(parent.getContext());
+                cell.setPropertiesChangeListener(callback);
+                view = cell;
+                break;
+            }
+            case VIEW_TYPE_DURATION: {
+                DurationCell cell = new DurationCell(parent.getContext());
+                cell.setDurationListener(callback);
                 view = cell;
                 break;
             }
@@ -120,20 +128,26 @@ public class AnimationsSettingsAdapter extends RecyclerView.Adapter<RecyclerList
                 break;
             }
             case VIEW_TYPE_SELECT_COLOR: {
-                SelectColorCell view = (SelectColorCell) holder.itemView;
+                SelectColorCell cell = (SelectColorCell) holder.itemView;
                 SelectColorItem colorItem = (SelectColorItem) item;
-                view.setTitle(colorItem.text);
-                view.setColor(colorItem.color);
+                cell.setTitle(colorItem.text);
+                cell.setColor(colorItem.color);
                 break;
             }
             case VIEW_TYPE_ANIMATION_PROPERTIES: {
-                AnimationPropertiesCell view = (AnimationPropertiesCell) holder.itemView;
+                AnimationPropertiesCell cell = (AnimationPropertiesCell) holder.itemView;
                 AnimationPropertiesItem propertiesItem = (AnimationPropertiesItem) item;
-                view.setMaxValue(propertiesItem.maxDuration);
-                view.setLeftProgress(propertiesItem.getLeftProgress());
-                view.setRightProgress(propertiesItem.getRightProgress());
-                view.setTopProgress(propertiesItem.topProgress);
-                view.setBottomProgress(propertiesItem.botProgress);
+                cell.setMaxValue(propertiesItem.maxDuration);
+                cell.setLeftProgress(propertiesItem.getLeftProgress());
+                cell.setRightProgress(propertiesItem.getRightProgress());
+                cell.setTopProgress(propertiesItem.topProgress);
+                cell.setBottomProgress(propertiesItem.botProgress);
+                break;
+            }
+            case VIEW_TYPE_DURATION: {
+                DurationCell cell = (DurationCell) holder.itemView;
+                DurationItem durationItem = (DurationItem) item;
+                cell.setDuration(durationItem.duration);
                 break;
             }
         }
@@ -167,7 +181,9 @@ public class AnimationsSettingsAdapter extends RecyclerView.Adapter<RecyclerList
     }
 
 
-    public interface Callback extends SelectColorBottomSheet.ColorListener {}
+    public interface Callback extends SelectColorBottomSheet.ColorListener,
+            AnimationPropertiesCell.OnAnimationPropertiesChangeListener,
+            DurationCell.OnDurationSelectedListener {}
 
 
     public abstract static class Item {
@@ -252,11 +268,11 @@ public class AnimationsSettingsAdapter extends RecyclerView.Adapter<RecyclerList
     public static final class AnimationPropertiesItem extends Item {
 
         public final int id;
-        public final int leftDuration;
-        public final int rightDuration;
-        public final int maxDuration;
-        public final float topProgress;
-        public final float botProgress;
+        public int leftDuration;
+        public int rightDuration;
+        public float topProgress;
+        public float botProgress;
+        public int maxDuration;
 
         public AnimationPropertiesItem(int id, int leftDuration, int rightDuration, int maxDuration, float topProgress, float botProgress) {
             this.id = id;
@@ -278,6 +294,22 @@ public class AnimationsSettingsAdapter extends RecyclerView.Adapter<RecyclerList
         @Override
         public int getType() {
             return VIEW_TYPE_ANIMATION_PROPERTIES;
+        }
+    }
+
+    public static class DurationItem extends Item {
+
+        public final int id;
+        public int duration;
+
+        public DurationItem(int id, int duration) {
+            this.id = id;
+            this.duration = duration;
+        }
+
+        @Override
+        public int getType() {
+            return VIEW_TYPE_DURATION;
         }
     }
 }
