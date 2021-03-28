@@ -126,6 +126,16 @@ public class AnimationsSettingsAdapter extends RecyclerView.Adapter<RecyclerList
                 view.setColor(colorItem.color);
                 break;
             }
+            case VIEW_TYPE_ANIMATION_PROPERTIES: {
+                AnimationPropertiesCell view = (AnimationPropertiesCell) holder.itemView;
+                AnimationPropertiesItem propertiesItem = (AnimationPropertiesItem) item;
+                view.setMaxValue(propertiesItem.maxDuration);
+                view.setLeftProgress(propertiesItem.getLeftProgress());
+                view.setRightProgress(propertiesItem.getRightProgress());
+                view.setTopProgress(propertiesItem.topProgress);
+                view.setBottomProgress(propertiesItem.botProgress);
+                break;
+            }
         }
         holder.itemView.setTag(item);
     }
@@ -242,17 +252,27 @@ public class AnimationsSettingsAdapter extends RecyclerView.Adapter<RecyclerList
     public static final class AnimationPropertiesItem extends Item {
 
         public final int id;
-        public final int durationMs;
-        @FloatRange(from = 0.0, to = 1.0)
-        public final float fraction1;
-        @FloatRange(from = 0.0, to = 1.0)
-        public final float fraction2;
+        public final int leftDuration;
+        public final int rightDuration;
+        public final int maxDuration;
+        public final float topProgress;
+        public final float botProgress;
 
-        public AnimationPropertiesItem(int id, int durationMs, @FloatRange(from = 0.0, to = 1.0) float fraction1, @FloatRange(from = 0.0, to = 1.0) float fraction2) {
+        public AnimationPropertiesItem(int id, int leftDuration, int rightDuration, int maxDuration, float topProgress, float botProgress) {
             this.id = id;
-            this.durationMs = durationMs;
-            this.fraction1 = fraction1;
-            this.fraction2 = fraction2;
+            this.leftDuration = leftDuration;
+            this.rightDuration = rightDuration;
+            this.maxDuration = maxDuration;
+            this.topProgress = topProgress;
+            this.botProgress = botProgress;
+        }
+
+        public float getLeftProgress() {
+            return leftDuration * 1f / maxDuration;
+        }
+
+        public float getRightProgress() {
+            return rightDuration * 1f / maxDuration;
         }
 
         @Override

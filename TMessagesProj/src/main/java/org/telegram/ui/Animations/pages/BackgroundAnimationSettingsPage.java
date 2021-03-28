@@ -43,7 +43,7 @@ public class BackgroundAnimationSettingsPage extends AnimationsSettingsPage impl
         }
         items.add(pos++, sectionItem);
         items.add(pos++, new HeaderItem(LocaleController.getString("", R.string.AnimationSettingsSendMessage)));
-        items.add(pos++, new AnimationPropertiesItem(0, 1000, 0f, 1f));
+        items.add(pos++, new AnimationPropertiesItem(0, 100, 600, 1000, 0.2f, 0.65f));
         items.add(pos++, sectionItem);
         items.add(pos++, new HeaderItem(LocaleController.getString("", R.string.AnimationSettingsOpenChat)));
         items.add(pos++, sectionItem);

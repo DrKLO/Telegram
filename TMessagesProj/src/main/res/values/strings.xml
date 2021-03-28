@@ -4340,4 +4340,5 @@
     <string name="AnimationSettingsColorN">Color %1$d</string>
     <string name="AnimationSettingsCancel">Cancel</string>
     <string name="AnimationSettingsApply">Apply</string>
+    <string name="AnimationSettingsDurationMs">%1$dms</string>
 </resources>

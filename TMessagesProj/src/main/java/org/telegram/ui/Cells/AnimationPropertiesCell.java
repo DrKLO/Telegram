@@ -6,10 +6,13 @@ import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.ColorFilter;
+import android.graphics.Matrix;
 import android.graphics.Paint;
+import android.graphics.Path;
 import android.graphics.PixelFormat;
 import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
+import android.os.Build;
 import android.text.DynamicLayout;
 import android.text.Layout;
 import android.text.TextPaint;
@@ -21,31 +24,40 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.math.MathUtils;
 
+import com.google.android.exoplayer2.util.Log;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.Theme;
 
 public class AnimationPropertiesCell extends View {
 
-    private static final float lineHeight = AndroidUtilities.dp(2);
+    private static final float lineSize = AndroidUtilities.dp(2);
+    private static final float linesSpace = AndroidUtilities.dp(150);
     private static final float lineLeftRightSpace = AndroidUtilities.dp(27);
     private static final float textLeftRightSpace = AndroidUtilities.dp(21);
-    private static final float textTopBottomSpace = AndroidUtilities.dp(2);
     private static final float boundRectRadius = AndroidUtilities.dp(3);
     private static final float boundRectBackRadius = AndroidUtilities.dp(5);
-    private static final float topBottomLinesSpace = AndroidUtilities.dp(150);
+    private static final float boundTextSpace = AndroidUtilities.dp(3);
+    private static final float leftRightProgressMinDiff = 0.3f;
 
     private final Paint lineProgressPaint = new Paint();
     private final Paint lineBackgroundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint bitmapPaint = new Paint(Paint.FILTER_BITMAP_FLAG);
+    private final Paint chartLinePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint chartDebugPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
+    private final ProgressSelectorDrawable topProgressDrawable = new ProgressSelectorDrawable(getContext(), Build.VERSION.SDK_INT < 28);
+    private final ProgressSelectorDrawable bottomProgressDrawable = new ProgressSelectorDrawable(getContext(), Build.VERSION.SDK_INT < 28);
+    private final ProgressSelectorDrawable leftProgressDrawable = new ProgressSelectorDrawable(getContext(), Build.VERSION.SDK_INT < 28);
+    private final ProgressSelectorDrawable rightProgressDrawable = new ProgressSelectorDrawable(getContext(), Build.VERSION.SDK_INT < 28);
     private final Bitmap boundBitmap = createBoundBitmap();
-    private final ProgressSelectorDrawable topProgressDrawable = new ProgressSelectorDrawable(getContext());
-    private final ProgressSelectorDrawable bottomProgressDrawable = new ProgressSelectorDrawable(getContext());
-    private final ProgressSelectorDrawable leftProgressDrawable = new ProgressSelectorDrawable(getContext());
-    private final ProgressSelectorDrawable rightProgressDrawable = new ProgressSelectorDrawable(getContext());
+    private final Path chartLinePath = new Path();
     private final Layout topProgressTextLayout;
     private final Layout bottomProgressTextLayout;
+    private final Layout leftBoundTextLayout;
+    private final Layout rightBoundTextLayout;
 
     // source fields
     private float leftProgress = 0f;
@@ -56,13 +68,24 @@ public class AnimationPropertiesCell extends View {
 
     private final StringBuilder topProgressText = new StringBuilder("100%");
     private final StringBuilder bottomProgressText = new StringBuilder("100%");
+    private final StringBuilder leftBoundText = new StringBuilder("8888ms");
+    private final StringBuilder rightBoundText = new StringBuilder("8888ms");
     @Nullable
     private ProgressSelectorDrawable draggingDrawable;
+    private boolean isDataChanged = false;
 
     public AnimationPropertiesCell(Context context) {
         super(context);
         lineProgressPaint.setColor(Theme.getColor(Theme.key_player_progress));
         lineBackgroundPaint.setColor(Theme.getColor(Theme.key_player_progressBackground));
+
+        chartLinePaint.setColor(Theme.getColor(Theme.key_player_progressBackground));
+        chartLinePaint.setStrokeWidth(lineSize);
+        chartLinePaint.setStyle(Paint.Style.STROKE);
+
+        chartDebugPaint.setColor(Color.BLUE);
+        chartDebugPaint.setStyle(Paint.Style.STROKE);
+        chartDebugPaint.setStrokeWidth(lineSize);
 
         leftProgressDrawable.setBounds(0, 0, AndroidUtilities.dp(19), AndroidUtilities.dp(33));
         rightProgressDrawable.setBounds(leftProgressDrawable.getBounds());
@@ -71,8 +94,15 @@ public class AnimationPropertiesCell extends View {
         topBottomProgressTextPaint.setColor(Theme.getColor(Theme.key_player_progress));
         topBottomProgressTextPaint.setTextSize(AndroidUtilities.dp(13));
         int progressTextWidth = (int) topBottomProgressTextPaint.measureText("100%");
-        topProgressTextLayout = createDynamicLayout(topProgressText, topBottomProgressTextPaint, progressTextWidth);
-        bottomProgressTextLayout = createDynamicLayout(bottomProgressText, topBottomProgressTextPaint, progressTextWidth);
+        topProgressTextLayout = createDynamicLayout(topProgressText, topBottomProgressTextPaint, progressTextWidth, Layout.Alignment.ALIGN_CENTER);
+        bottomProgressTextLayout = createDynamicLayout(bottomProgressText, topBottomProgressTextPaint, progressTextWidth, Layout.Alignment.ALIGN_CENTER);
+
+        TextPaint boundTextPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
+        boundTextPaint.setColor(0xFFFFCD00);
+        boundTextPaint.setTextSize(AndroidUtilities.dp(12));
+        int boundTextWidth = (int) boundTextPaint.measureText("8888ms");
+        leftBoundTextLayout = createDynamicLayout(leftBoundText, boundTextPaint, boundTextWidth, Layout.Alignment.ALIGN_NORMAL);
+        rightBoundTextLayout = createDynamicLayout(rightBoundText, boundTextPaint, boundTextWidth, Layout.Alignment.ALIGN_OPPOSITE);
 
         setMaxValue(2000);
         setLeftProgress(0.15f);
@@ -127,9 +157,11 @@ public class AnimationPropertiesCell extends View {
                     } else if (draggingDrawable == bottomProgressDrawable) {
                         setBottomProgress(topBottomProgress);
                     } else if (draggingDrawable == leftProgressDrawable) {
-                        setLeftProgress(lineProgress);
+                        float progress = Math.min(lineProgress, rightProgress - leftRightProgressMinDiff);
+                        setLeftProgress(progress);
                     } else if (draggingDrawable == rightProgressDrawable) {
-                        setRightProgress(lineProgress);
+                        float progress = Math.max(lineProgress, leftProgress + leftRightProgressMinDiff);
+                        setRightProgress(progress);
                     }
                     isHandled = true;
                 }
@@ -150,6 +182,14 @@ public class AnimationPropertiesCell extends View {
         return isHandled;
     }
 
+    private float func(float x, float alpha) {
+        return x / (alpha + Math.abs(x));
+    }
+
+    private float sigm(float x) {
+        return (float)(1f / (1f + Math.exp(-x)));
+    }
+
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
@@ -158,9 +198,36 @@ public class AnimationPropertiesCell extends View {
         float topBottomProgressMaxWidth = lineMaxWidth * (rightProgress - leftProgress);
         float topBottomProgressLeft = lineLeftRightSpace + lineMaxWidth * leftProgress;
         float topBottomProgressRight = getWidth() - lineLeftRightSpace - lineMaxWidth * (1f - rightProgress);
+        float topBottomProgressWidth = topBottomProgressRight - topBottomProgressLeft;
 
-        float top = 0f;
+        float topLineTop = topProgressTextLayout.getHeight() + topProgressDrawable.getBounds().height() * 0.5f;
+        float topLineVerticalCenter = topLineTop + lineSize * 0.5f;
+        float bottomLineTop = topLineTop + linesSpace;
+        float bottomLineVerticalCenter = bottomLineTop + lineSize * 0.5f;
+        float bottomTextTop = bottomLineVerticalCenter + bottomProgressDrawable.getBounds().height() * 0.5f;
+        float topBottomLineCenter = topLineVerticalCenter + (bottomLineVerticalCenter - topLineVerticalCenter) * 0.5f;
 
+        // chart line
+        if (isDataChanged) {
+            chartLinePath.reset();
+            chartLinePath.moveTo(topBottomProgressLeft, bottomLineVerticalCenter);
+            float xBottom = topBottomProgressLeft + topBottomProgressWidth * bottomProgress;
+            float xTop = topBottomProgressLeft + topBottomProgressWidth * (1f - topProgress);
+            chartLinePath.cubicTo(xBottom, bottomLineVerticalCenter, xTop, topLineVerticalCenter, topBottomProgressRight, topLineVerticalCenter);
+
+            for (float x = topBottomProgressLeft; x <= topBottomProgressRight; ++x) {
+//                float input = (x - topBottomProgressLeft) / topBottomProgressWidth;
+//                float y = bottomLineVerticalCenter - linesSpace * func(input);
+//                canvas.drawPoint(x, y, chartDebugPaint);
+                float input = (x - topBottomProgressLeft) / topBottomProgressWidth * 2 - 1f;
+                float output = func(input, bottomProgress);
+                Log.d("AnimationPropertiesCell", "f(" + input + ") = " + output);
+
+                float y = topBottomLineCenter - output * linesSpace * 0.75f;
+                canvas.drawPoint(x, y, chartDebugPaint);
+            }
+        }
+        canvas.drawPath(chartLinePath, chartLinePaint);
 
         // top progress text
         float xTopProgress = topBottomProgressLeft + topBottomProgressMaxWidth * (1f - topProgress);
@@ -175,27 +242,22 @@ public class AnimationPropertiesCell extends View {
         canvas.restore();
 
         // top progress line
-        top += topProgressTextLayout.getHeight() + topProgressDrawable.getBounds().height() * 0.5f;
-        float topLineVerticalCenter = top + lineHeight * 0.5f;
-        canvas.drawRect(lineLeftRightSpace, top, lineLeftRightSpace + lineMaxWidth, top + lineHeight, lineBackgroundPaint);
-        canvas.drawRect(xTopProgress, top, topBottomProgressLeft + topBottomProgressMaxWidth, top + lineHeight, lineProgressPaint);
+        canvas.drawRect(lineLeftRightSpace, topLineTop, lineLeftRightSpace + lineMaxWidth, topLineTop + lineSize, lineBackgroundPaint);
+        canvas.drawRect(xTopProgress, topLineTop, topBottomProgressLeft + topBottomProgressMaxWidth, topLineTop + lineSize, lineProgressPaint);
 
         // bottom progress line
-        top += topBottomLinesSpace;
-        float bottomLineVerticalCenter = top + lineHeight * 0.5f;
         float xBottomProgress = topBottomProgressLeft + topBottomProgressMaxWidth * bottomProgress;
-        canvas.drawRect(lineLeftRightSpace, top, lineLeftRightSpace + lineMaxWidth, top + lineHeight, lineBackgroundPaint);
-        canvas.drawRect(topBottomProgressLeft, top, xBottomProgress, top + lineHeight, lineProgressPaint);
+        canvas.drawRect(lineLeftRightSpace, bottomLineTop, lineLeftRightSpace + lineMaxWidth, bottomLineTop + lineSize, lineBackgroundPaint);
+        canvas.drawRect(topBottomProgressLeft, bottomLineTop, xBottomProgress, bottomLineTop + lineSize, lineProgressPaint);
 
         // bottom progress text
-        top += bottomProgressDrawable.getBounds().height() * 0.5f;
         canvas.save();
         xTranslate = MathUtils.clamp(
                 xBottomProgress - bottomProgressTextLayout.getWidth() * 0.5f,
                 textLeftRightSpace,
                 getWidth() - textLeftRightSpace - bottomProgressTextLayout.getWidth()
         );
-        canvas.translate(xTranslate, top);
+        canvas.translate(xTranslate, bottomTextTop);
         bottomProgressTextLayout.draw(canvas);
         canvas.restore();
 
@@ -211,6 +273,18 @@ public class AnimationPropertiesCell extends View {
         leftProgressDrawable.draw(canvas);
         canvas.translate(topBottomProgressMaxWidth, 0f);
         rightProgressDrawable.draw(canvas);
+        canvas.restore();
+
+        // bound text
+        // TODO agolokoz: move one of label to another side
+        canvas.save();
+        canvas.translate(
+                leftProgressDrawable.left + leftProgressDrawable.getBounds().width() + boundTextSpace,
+                topLineVerticalCenter + (bottomLineVerticalCenter - topLineVerticalCenter) * 0.5f - leftBoundTextLayout.getHeight() * 0.5f
+        );
+        leftBoundTextLayout.draw(canvas);
+        canvas.translate(topBottomProgressMaxWidth - rightProgressDrawable.getBounds().width() - boundTextSpace * 2 - rightBoundTextLayout.getWidth(), 0f);
+        rightBoundTextLayout.draw(canvas);
         canvas.restore();
 
         // top bottom progress buttons
@@ -230,6 +304,7 @@ public class AnimationPropertiesCell extends View {
         topProgress = progress;
         int value = Math.round(100 * progress);
         setPercentValue(topProgressText, value);
+        isDataChanged = true;
         invalidate();
     }
 
@@ -237,26 +312,34 @@ public class AnimationPropertiesCell extends View {
         bottomProgress = progress;
         int value = Math.round(100 * progress);
         setPercentValue(bottomProgressText, value);
+        isDataChanged = true;
         invalidate();
     }
 
     public void setLeftProgress(float progress) {
         leftProgress = progress;
+        setDurationValue(leftBoundText, (int)(progress * maxValue));
+        isDataChanged = true;
         invalidate();
     }
 
     public void setRightProgress(float progress) {
         rightProgress = progress;
+        setDurationValue(rightBoundText, (int)(progress * maxValue));
+        isDataChanged = true;
         invalidate();
     }
 
     public void setMaxValue(int duration) {
         maxValue = duration;
+        setLeftProgress(leftProgress);
+        setRightProgress(rightProgress);
+        isDataChanged = true;
         invalidate();
     }
 
-    private Layout createDynamicLayout(CharSequence source, TextPaint paint, int width) {
-        return new DynamicLayout(source, paint, width, Layout.Alignment.ALIGN_CENTER, 1.0f, 0.0f, false);
+    private Layout createDynamicLayout(CharSequence source, TextPaint paint, int width, Layout.Alignment alignment) {
+        return new DynamicLayout(source, paint, width, alignment, 1.0f, 0.0f, false);
     }
 
     private void setPercentValue(StringBuilder builder, int value) {
@@ -265,6 +348,16 @@ public class AnimationPropertiesCell extends View {
             final int srcLength = builder.length();
             for (int i = 0; i < 4 - srcLength; ++i) {
                 builder.insert(0, ' ');
+            }
+        }
+    }
+
+    private void setDurationValue(StringBuilder builder, int value) {
+        builder.replace(0, builder.length(), LocaleController.formatString("", R.string.AnimationSettingsDurationMs, value));
+        if (builder.length() < 6) {
+            final int srcLength = builder.length();
+            for (int i = 0; i < 6 - srcLength; ++i) {
+                builder.insert(srcLength, ' ');
             }
         }
     }
@@ -285,14 +378,14 @@ public class AnimationPropertiesCell extends View {
                 boundRectBackRadius + dotHeight * 0.5f
         );
 
-        Bitmap bitmap = Bitmap.createBitmap(AndroidUtilities.dp(10), (int)(topBottomLinesSpace + boundRectBackRadius * 2), Bitmap.Config.ARGB_8888);
+        Bitmap bitmap = Bitmap.createBitmap(AndroidUtilities.dp(10), (int)(linesSpace + boundRectBackRadius * 2), Bitmap.Config.ARGB_8888);
         Canvas canvas = new Canvas(bitmap);
         canvas.drawCircle(boundRectBackRadius, boundRectBackRadius, boundRectBackRadius, boundCircleBackPaint);
         canvas.drawCircle(boundRectBackRadius, boundRectBackRadius, boundRectRadius, boundCirclePaint);
         canvas.drawCircle(boundRectBackRadius, bitmap.getHeight() - boundRectBackRadius, boundRectBackRadius, boundCircleBackPaint);
         canvas.drawCircle(boundRectBackRadius, bitmap.getHeight() - boundRectBackRadius, boundRectRadius, boundCirclePaint);
-        float yOffset = topBottomLinesSpace / 19f;
-        while (dotRect.top < topBottomLinesSpace) {
+        float yOffset = linesSpace / 19f;
+        while (dotRect.top < linesSpace) {
             canvas.drawRoundRect(dotRect, dotRadius, dotRadius, boundCirclePaint);
             dotRect.offset(0f, yOffset);
         }
@@ -304,10 +397,14 @@ public class AnimationPropertiesCell extends View {
     private static class ProgressSelectorDrawable extends Drawable {
 
         private static final float shadowSize = AndroidUtilities.dp(3);
+        private static final float bitmapScale = 2;
 
+        private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final Matrix bitmapMatrix = new Matrix();
         private final Paint bitmapPaint = new Paint(Paint.FILTER_BITMAP_FLAG);
         private final RectF rect = new RectF();
         private final int touchSlop;
+        private final boolean isCacheToBitmap;
 
         @Nullable
         private Bitmap bitmap;
@@ -315,17 +412,25 @@ public class AnimationPropertiesCell extends View {
         public float left;
         public float top;
 
-        public ProgressSelectorDrawable(Context context) {
-            touchSlop = ViewConfiguration.get(context).getScaledTouchSlop();
+        public ProgressSelectorDrawable(Context context, boolean isCacheToBitmap) {
+            this.touchSlop = ViewConfiguration.get(context).getScaledTouchSlop();
+            this.isCacheToBitmap = isCacheToBitmap;
+            paint.setColor(Color.WHITE);
+            paint.setShadowLayer(shadowSize, 0f, 0f, Theme.getColor(Theme.key_player_progressBackground2));
+            bitmapMatrix.setScale(1f / bitmapScale, 1f / bitmapScale);
             setBounds(0, 0, getIntrinsicWidth(), getIntrinsicHeight());
         }
 
         @Override
         public void draw(@NonNull Canvas canvas) {
-            if (bitmap == null) {
-                bitmap = createBitmap();
+            if (isCacheToBitmap) {
+                if (bitmap == null) {
+                    bitmap = createBitmap();
+                }
+                canvas.drawBitmap(bitmap, bitmapMatrix, bitmapPaint);
+            } else {
+                drawInternal(canvas);
             }
-            canvas.drawBitmap(bitmap, 0f, 0f, null);
         }
 
         @Override
@@ -336,7 +441,6 @@ public class AnimationPropertiesCell extends View {
                 bitmap.recycle();
                 bitmap = null;
             }
-            bitmap = createBitmap();
         }
 
         @Override
@@ -370,13 +474,16 @@ public class AnimationPropertiesCell extends View {
         }
 
         private Bitmap createBitmap() {
-            Bitmap bitmap = Bitmap.createBitmap(getBounds().width(), getBounds().height(), Bitmap.Config.ARGB_8888);
+            Bitmap bitmap = Bitmap.createBitmap(getBounds().width() * 2, getBounds().height() * 2, Bitmap.Config.ARGB_8888);
             Canvas canvas = new Canvas(bitmap);
+            canvas.save();
+            canvas.scale(bitmapScale, bitmapScale);
+            drawInternal(canvas);
+            canvas.restore();
+            return bitmap;
+        }
 
-            Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
-            paint.setColor(Color.WHITE);
-            paint.setShadowLayer(shadowSize, 0f, 0f, Theme.getColor(Theme.key_player_progressBackground2));
-
+        private void drawInternal(Canvas canvas) {
             if (getBounds().width() == getBounds().height()) {
                 float center = getBounds().width() * 0.5f;
                 canvas.drawCircle(center, center, center - shadowSize, paint);
@@ -384,7 +491,6 @@ public class AnimationPropertiesCell extends View {
                 float radius = Math.min(getBounds().width(), getBounds().height()) * 0.5f;
                 canvas.drawRoundRect(rect, radius, radius, paint);
             }
-            return bitmap;
         }
     }
 }
