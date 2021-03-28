@@ -25,6 +25,7 @@ import org.telegram.ui.Animations.AnimationsSettingsAdapter.SelectColorItem;
 import org.telegram.ui.Animations.AnimationsController;
 import org.telegram.ui.Animations.pages.AnimationsSettingsPage;
 import org.telegram.ui.Animations.pages.BackgroundAnimationSettingsPage;
+import org.telegram.ui.Cells.SelectColorCell;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.ViewPagerFixed;
 
@@ -32,8 +33,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class AnimationsSettingsActivity extends BaseFragment {
-
-    private ViewPagerFixed viewPager;
 
     @Override
     public View createView(Context context) {
@@ -60,6 +59,8 @@ public class AnimationsSettingsActivity extends BaseFragment {
             if (position == backgroundPage.fullScreenPosition) {
                 AnimationsPreviewActivity fragment = new AnimationsPreviewActivity();
                 presentFragment(fragment);
+            } else if (view instanceof SelectColorCell) {
+                ((SelectColorCell) view).onClick();
             }
         });
 
@@ -67,7 +68,7 @@ public class AnimationsSettingsActivity extends BaseFragment {
         pages.add(backgroundPage);
 
         SettingsAdapter adapter = new SettingsAdapter(context, pages);
-        viewPager = new ViewPagerFixed(context);
+        ViewPagerFixed viewPager = new ViewPagerFixed(context);
         viewPager.setAdapter(adapter);
         rootLayout.addView(viewPager, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.LEFT | Gravity.TOP, 0, 48, 0, 0));
 
@@ -82,7 +83,7 @@ public class AnimationsSettingsActivity extends BaseFragment {
 
     @Override
     public boolean isSwipeBackEnabled(MotionEvent event) {
-        return viewPager.getCurrentPosition() == 0;
+        return false;
     }
 
     private static class SettingsAdapter extends ViewPagerFixed.Adapter {

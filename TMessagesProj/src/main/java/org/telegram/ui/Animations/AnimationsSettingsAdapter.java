@@ -4,6 +4,7 @@ import android.view.View;
 import android.view.ViewGroup;
 
 import androidx.annotation.ColorInt;
+import androidx.annotation.FloatRange;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.RecyclerView;
@@ -11,6 +12,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Cells.AnimationPropertiesCell;
 import org.telegram.ui.Cells.DividerCell;
 import org.telegram.ui.Cells.HeaderCell;
 import org.telegram.ui.Cells.SelectColorCell;
@@ -29,6 +31,7 @@ public class AnimationsSettingsAdapter extends RecyclerView.Adapter<RecyclerList
     private static final int VIEW_TYPE_TEXT = 3;
     private static final int VIEW_TYPE_PREVIEW = 4;
     private static final int VIEW_TYPE_SELECT_COLOR = 5;
+    private static final int VIEW_TYPE_ANIMATION_PROPERTIES = 6;
 
     private final List<Item> items = new ArrayList<>();
 
@@ -78,6 +81,14 @@ public class AnimationsSettingsAdapter extends RecyclerView.Adapter<RecyclerList
                 view = cell;
                 break;
             }
+            case VIEW_TYPE_ANIMATION_PROPERTIES: {
+                AnimationPropertiesCell cell = new AnimationPropertiesCell(parent.getContext());
+                view = cell;
+                break;
+            }
+        }
+        if (view != null && viewType != VIEW_TYPE_SECTION && viewType != VIEW_TYPE_PREVIEW) {
+            view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
         }
         return new RecyclerListView.Holder(view);
     }
@@ -87,19 +98,19 @@ public class AnimationsSettingsAdapter extends RecyclerView.Adapter<RecyclerList
         Item item = items.get(position);
         switch (holder.getItemViewType()) {
             case VIEW_TYPE_SECTION: {
-                ShadowSectionCell shadowCell = (ShadowSectionCell) holder.itemView;
-                int res = position == items.size() - 1 ? R.drawable.greydivider_bottom : R.drawable.greydivider;
-                shadowCell.setBackground(Theme.getThemedDrawable(shadowCell.getContext(), res, Theme.key_windowBackgroundGrayShadow));
+                ShadowSectionCell cell = (ShadowSectionCell) holder.itemView;
+                int resId = position == items.size() - 1 ? R.drawable.greydivider_bottom : R.drawable.greydivider;
+                cell.setBackground(Theme.getThemedDrawable(cell.getContext(), resId, Theme.key_windowBackgroundGrayShadow));
                 break;
             }
             case VIEW_TYPE_HEADER: {
-                HeaderCell headerCell = (HeaderCell) holder.itemView;
-                headerCell.setText(((HeaderItem) item).text);
+                HeaderCell cell = (HeaderCell) holder.itemView;
+                cell.setText(((HeaderItem) item).text);
                 break;
             }
             case VIEW_TYPE_TEXT: {
-                TextSettingsCell textCell = (TextSettingsCell) holder.itemView;
-                textCell.setText(((TextItem) item).text, false);
+                TextSettingsCell cell = (TextSettingsCell) holder.itemView;
+                cell.setText(((TextItem) item).text, false);
                 break;
             }
             case VIEW_TYPE_PREVIEW: {
@@ -113,7 +124,6 @@ public class AnimationsSettingsAdapter extends RecyclerView.Adapter<RecyclerList
                 SelectColorItem colorItem = (SelectColorItem) item;
                 view.setTitle(colorItem.text);
                 view.setColor(colorItem.color);
-                view.setTag(colorItem);
                 break;
             }
         }
@@ -226,6 +236,28 @@ public class AnimationsSettingsAdapter extends RecyclerView.Adapter<RecyclerList
         @Override
         public int getType() {
             return VIEW_TYPE_SELECT_COLOR;
+        }
+    }
+
+    public static final class AnimationPropertiesItem extends Item {
+
+        public final int id;
+        public final int durationMs;
+        @FloatRange(from = 0.0, to = 1.0)
+        public final float fraction1;
+        @FloatRange(from = 0.0, to = 1.0)
+        public final float fraction2;
+
+        public AnimationPropertiesItem(int id, int durationMs, @FloatRange(from = 0.0, to = 1.0) float fraction1, @FloatRange(from = 0.0, to = 1.0) float fraction2) {
+            this.id = id;
+            this.durationMs = durationMs;
+            this.fraction1 = fraction1;
+            this.fraction2 = fraction2;
+        }
+
+        @Override
+        public int getType() {
+            return VIEW_TYPE_ANIMATION_PROPERTIES;
         }
     }
 }

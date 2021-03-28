@@ -1,11 +1,13 @@
 package org.telegram.ui.Animations.pages;
 
 import android.content.Context;
+import android.view.MotionEvent;
 import android.view.View;
 
 import androidx.recyclerview.widget.LinearLayoutManager;
 
 import org.telegram.ui.Animations.AnimationsSettingsAdapter;
+import org.telegram.ui.Cells.AnimationPropertiesCell;
 import org.telegram.ui.Components.RecyclerListView;
 
 public abstract class AnimationsSettingsPage {
@@ -27,6 +29,7 @@ public abstract class AnimationsSettingsPage {
         recyclerView.setHasFixedSize(true);
         recyclerView.setLayoutManager(new LinearLayoutManager(context));
         recyclerView.setItemAnimator(null);
+        recyclerView.setDisallowInterceptTouchEvents(true);
     }
 
     public View getView() {

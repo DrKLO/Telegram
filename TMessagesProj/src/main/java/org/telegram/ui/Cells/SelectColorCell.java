@@ -1,6 +1,5 @@
 package org.telegram.ui.Cells;
 
-import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -11,8 +10,6 @@ import android.text.Layout;
 import android.text.StaticLayout;
 import android.text.TextPaint;
 import android.text.TextUtils;
-import android.view.GestureDetector;
-import android.view.MotionEvent;
 import android.view.View;
 
 import androidx.annotation.ColorInt;
@@ -22,10 +19,9 @@ import androidx.annotation.Nullable;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Animations.SelectColorBottomSheet;
-import org.telegram.ui.Components.GestureListenerAdapter;
 
 // TODO agolokoz: add ripple
-public class SelectColorCell extends View implements GestureListenerAdapter {
+public class SelectColorCell extends View {
 
     private static final int leftRightSpace = AndroidUtilities.dp(21);
     private static final int leftRightPadding = AndroidUtilities.dp(6);
@@ -36,7 +32,6 @@ public class SelectColorCell extends View implements GestureListenerAdapter {
     private static final char[] chars = new char[1];
     private static final char[] maxWidthChars = new char[] { '#', 'A', 'A', 'A', 'A', 'A', 'A' };
 
-    private final GestureDetector gestureDetector = new GestureDetector(getContext(), this);
     private final TextPaint titleTextPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
     private final TextPaint valueTextPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
     private final Paint valueBackgroundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -78,13 +73,6 @@ public class SelectColorCell extends View implements GestureListenerAdapter {
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         setMeasuredDimension(MeasureSpec.getSize(widthMeasureSpec), AndroidUtilities.dp(45));
-    }
-
-    @SuppressLint("ClickableViewAccessibility")
-    @Override
-    public boolean onTouchEvent(MotionEvent event) {
-        gestureDetector.onTouchEvent(event);
-        return true;
     }
 
     @Override
@@ -132,8 +120,7 @@ public class SelectColorCell extends View implements GestureListenerAdapter {
         canvas.restore();
     }
 
-    @Override
-    public boolean onSingleTapUp(MotionEvent e) {
+    public void onClick() {
         setValueSelected(true);
         if (colorBottomSheet == null) {
             colorBottomSheet = new SelectColorBottomSheet(getContext(), true);
@@ -162,7 +149,6 @@ public class SelectColorCell extends View implements GestureListenerAdapter {
         });
         colorBottomSheet.setOnDismissListener(dialog -> setValueSelected(false));
         colorBottomSheet.show();
-        return true;
     }
 
     public void setTitle(String title) {

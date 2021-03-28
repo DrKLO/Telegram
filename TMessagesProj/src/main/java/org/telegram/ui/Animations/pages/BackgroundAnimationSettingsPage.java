@@ -8,11 +8,12 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.ui.Animations.AnimationsController;
 import org.telegram.ui.Animations.AnimationsSettingsAdapter;
+import org.telegram.ui.Animations.AnimationsSettingsAdapter.*;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class BackgroundAnimationSettingsPage extends AnimationsSettingsPage implements AnimationsSettingsAdapter.Callback {
+public class BackgroundAnimationSettingsPage extends AnimationsSettingsPage implements Callback {
 
     public final int fullScreenPosition;
 
@@ -25,27 +26,28 @@ public class BackgroundAnimationSettingsPage extends AnimationsSettingsPage impl
 
         int pos = 0;
 
-        AnimationsSettingsAdapter.SectionItem sectionItem = new AnimationsSettingsAdapter.SectionItem();
-        AnimationsSettingsAdapter.DividerItem dividerItem = new AnimationsSettingsAdapter.DividerItem();
+        SectionItem sectionItem = new SectionItem();
+        DividerItem dividerItem = new DividerItem();
 
-        List<AnimationsSettingsAdapter.Item> items = new ArrayList<>();
-        items.add(pos++, new AnimationsSettingsAdapter.HeaderItem(LocaleController.getString("", R.string.AnimationSettingsBackgroundPreview)));
-        items.add(backgroundPreviewPosition = pos++, new AnimationsSettingsAdapter.PreviewItem(AnimationsController.getColorsCopy()));
-        items.add(fullScreenPosition = pos++, new AnimationsSettingsAdapter.TextItem(LocaleController.getString("", R.string.AnimationSettingsOpenFullScreen)));
+        List<Item> items = new ArrayList<>();
+        items.add(pos++, new HeaderItem(LocaleController.getString("", R.string.AnimationSettingsBackgroundPreview)));
+        items.add(backgroundPreviewPosition = pos++, new PreviewItem(AnimationsController.getColorsCopy()));
+        items.add(fullScreenPosition = pos++, new TextItem(LocaleController.getString("", R.string.AnimationSettingsOpenFullScreen)));
         items.add(pos++, sectionItem);
-        items.add(pos++, new AnimationsSettingsAdapter.HeaderItem(LocaleController.getString("", R.string.AnimationSettingsColors)));
+        items.add(pos++, new HeaderItem(LocaleController.getString("", R.string.AnimationSettingsColors)));
         for (int i = 0; i != AnimationsController.pointsCount; ++i) {
-            items.add(colorPosition[i] = pos++, new AnimationsSettingsAdapter.SelectColorItem(LocaleController.formatString("", R.string.AnimationSettingsColorN, i + 1), i, AnimationsController.getCurrentColor(i)));
+            items.add(colorPosition[i] = pos++, new SelectColorItem(LocaleController.formatString("", R.string.AnimationSettingsColorN, i + 1), i, AnimationsController.getCurrentColor(i)));
             if (i < AnimationsController.pointsCount - 1) {
                 items.add(pos++, dividerItem);
             }
         }
         items.add(pos++, sectionItem);
-        items.add(pos++, new AnimationsSettingsAdapter.HeaderItem(LocaleController.getString("", R.string.AnimationSettingsSendMessage)));
+        items.add(pos++, new HeaderItem(LocaleController.getString("", R.string.AnimationSettingsSendMessage)));
+        items.add(pos++, new AnimationPropertiesItem(0, 1000, 0f, 1f));
         items.add(pos++, sectionItem);
-        items.add(pos++, new AnimationsSettingsAdapter.HeaderItem(LocaleController.getString("", R.string.AnimationSettingsOpenChat)));
+        items.add(pos++, new HeaderItem(LocaleController.getString("", R.string.AnimationSettingsOpenChat)));
         items.add(pos++, sectionItem);
-        items.add(pos++, new AnimationsSettingsAdapter.HeaderItem(LocaleController.getString("", R.string.AnimationSettingsJumpToMessage)));
+        items.add(pos++, new HeaderItem(LocaleController.getString("", R.string.AnimationSettingsJumpToMessage)));
         items.add(pos++, sectionItem);
 
         adapter.setItems(items);
@@ -63,28 +65,28 @@ public class BackgroundAnimationSettingsPage extends AnimationsSettingsPage impl
 
     @Override
     public void onColorCancelled(@Nullable Object tag) {
-        if (tag instanceof AnimationsSettingsAdapter.SelectColorItem) {
-            AnimationsSettingsAdapter.SelectColorItem item = (AnimationsSettingsAdapter.SelectColorItem) tag;
+        if (tag instanceof SelectColorItem) {
+            SelectColorItem item = (SelectColorItem) tag;
             setColor(AnimationsController.getCurrentColor(item.id), tag, true);
         }
     }
 
     private void setColor(int color, @Nullable Object tag, boolean apply) {
-        if (tag instanceof AnimationsSettingsAdapter.SelectColorItem) {
-            AnimationsSettingsAdapter.SelectColorItem item = (AnimationsSettingsAdapter.SelectColorItem) tag;
+        if (tag instanceof SelectColorItem) {
+            SelectColorItem item = (SelectColorItem) tag;
             int colorIdx = item.id;
 
-            AnimationsSettingsAdapter.Item i = adapter.getItemAt(backgroundPreviewPosition);
-            if (i instanceof AnimationsSettingsAdapter.PreviewItem) {
-                AnimationsSettingsAdapter.PreviewItem previewItem = (AnimationsSettingsAdapter.PreviewItem) i;
+            Item i = adapter.getItemAt(backgroundPreviewPosition);
+            if (i instanceof PreviewItem) {
+                PreviewItem previewItem = (PreviewItem) i;
                 previewItem.colors[colorIdx] = color;
                 adapter.updateItem(backgroundPreviewPosition, previewItem);
             }
 
             if (apply) {
                 i = adapter.getItemAt(colorPosition[colorIdx]);
-                if (i instanceof AnimationsSettingsAdapter.SelectColorItem) {
-                    AnimationsSettingsAdapter.SelectColorItem colorItem = (AnimationsSettingsAdapter.SelectColorItem) i;
+                if (i instanceof SelectColorItem) {
+                    SelectColorItem colorItem = (SelectColorItem) i;
                     colorItem.color = color;
                     adapter.updateItem(colorPosition[colorIdx], colorItem);
                 }

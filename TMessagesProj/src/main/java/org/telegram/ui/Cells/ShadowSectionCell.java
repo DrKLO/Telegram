@@ -34,16 +34,20 @@ public class ShadowSectionCell extends View {
 
     public ShadowSectionCell(Context context, int s, int backgroundColor) {
         super(context);
-        Drawable shadowDrawable = Theme.getThemedDrawable(context, R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow);
-        Drawable background = new ColorDrawable(backgroundColor);
-        CombinedDrawable combinedDrawable = new CombinedDrawable(background, shadowDrawable, 0, 0);
-        combinedDrawable.setFullsize(true);
-        setBackgroundDrawable(combinedDrawable);
+        setCombinedDrawable(backgroundColor, R.drawable.greydivider);
         size = s;
     }
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         super.onMeasure(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(size), MeasureSpec.EXACTLY));
+    }
+
+    public void setCombinedDrawable(int color, int resId) {
+        Drawable shadowDrawable = Theme.getThemedDrawable(getContext(), resId, Theme.key_windowBackgroundGrayShadow);
+        Drawable background = new ColorDrawable(color);
+        CombinedDrawable combinedDrawable = new CombinedDrawable(background, shadowDrawable, 0, 0);
+        combinedDrawable.setFullsize(true);
+        setBackgroundDrawable(combinedDrawable);
     }
 }
