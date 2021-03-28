@@ -16,8 +16,7 @@ import androidx.annotation.Nullable;
 import org.webrtc.EglBase;
 
 @SuppressLint("ViewConstructor")
-public class GLTextureView extends TextureView implements
-        TextureView.SurfaceTextureListener,
+public class GLTextureView extends TextureView implements TextureView.SurfaceTextureListener,
         Choreographer.FrameCallback {
 
     @Nullable
@@ -28,6 +27,7 @@ public class GLTextureView extends TextureView implements
 
     // TODO agolokoz: optimize to use false
     private boolean isAlwaysInvalidate = true;
+    private boolean isDestroyThreadOnSurfaceDestroyed = false;
     private int width;
     private int height;
 
@@ -67,7 +67,6 @@ public class GLTextureView extends TextureView implements
         this.height = height;
         RenderThread thread = renderThread;
         if (thread != null) {
-            thread.dispatchRelease();
             thread.dispatchSetSurfaceTexture(surface);
         }
     }
@@ -78,10 +77,8 @@ public class GLTextureView extends TextureView implements
     @Override
     public boolean onSurfaceTextureDestroyed(@NonNull SurfaceTexture surface) {
         Choreographer.getInstance().removeFrameCallback(this);
-        if (renderThread != null) {
-            renderThread.dispatchRelease();
-            renderThread.interrupt();
-            renderThread = null;
+        if (isDestroyThreadOnSurfaceDestroyed) {
+            destroyThread();
         }
         return true;
     }
@@ -97,6 +94,10 @@ public class GLTextureView extends TextureView implements
         }
     }
 
+    public void onDestroy() {
+        destroyThread();
+    }
+
     public void setDrawer(@Nullable Drawer drawer) {
         this.drawer = drawer;
     }
@@ -110,6 +111,14 @@ public class GLTextureView extends TextureView implements
         }
     }
 
+    private void destroyThread() {
+        if (renderThread != null) {
+            renderThread.dispatchRelease();
+            renderThread.interrupt();
+            renderThread = null;
+        }
+    }
+
     private static class RenderThread extends HandlerThread implements Handler.Callback {
 
         private static final int MSG_WHAT_SET_SURFACE = 1;
@@ -118,8 +127,8 @@ public class GLTextureView extends TextureView implements
 
         @NonNull
         private final Handler handler = new Handler(Looper.myLooper(), this);
-        @NonNull
-        private final Drawer drawer;
+        @Nullable
+        private Drawer drawer;
 
         private EglBase eglBase;
         private WindowEglSurface windowSurface;
@@ -165,14 +174,20 @@ public class GLTextureView extends TextureView implements
         }
 
         private void prepare(@Nullable SurfaceTexture surfaceTexture) {
+            boolean isRecreate = eglBase != null || windowSurface != null;
+            if (isRecreate) {
+                release();
+            }
             eglBase = EglBase.create();
             windowSurface = new WindowEglSurface(eglBase, surfaceTexture);
             windowSurface.makeCurrent();
-            drawer.init(eglBase.surfaceWidth(), eglBase.surfaceHeight());
+            if (drawer != null) {
+                drawer.init(eglBase.surfaceWidth(), eglBase.surfaceHeight());
+            }
         }
 
         private void draw() {
-            if (windowSurface == null) {
+            if (windowSurface == null || drawer == null) {
                 return;
             }
             drawer.draw();
@@ -180,17 +195,25 @@ public class GLTextureView extends TextureView implements
         }
 
         private void release() {
-            drawer.release();
-            windowSurface.releaseEglSurface();
-            windowSurface = null;
-            eglBase.release();
-            eglBase = null;
+            if (drawer != null) {
+                drawer.release();
+                drawer = null;
+            }
+            if (windowSurface != null) {
+                windowSurface.releaseEglSurface();
+                windowSurface = null;
+            }
+            if (eglBase != null) {
+                eglBase.release();
+                eglBase = null;
+            }
         }
     }
 
     public interface Drawer {
 
         void init(int width, int height);
+        void setSize(int width, int height);
         void draw();
         void release();
     }

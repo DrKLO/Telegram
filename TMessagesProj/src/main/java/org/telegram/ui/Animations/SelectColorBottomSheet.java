@@ -44,22 +44,24 @@ public class SelectColorBottomSheet extends BottomSheet {
 
     private final ColorSelectView colorSelectView = new ColorSelectView(getContext(), new ColorListener() {
         @Override
-        public void onColorChanged(int color) {
+        public void onColorChanged(int color, @Nullable Object tag) {
             colorSliderView.setColors(color, Color.BLACK);
         }
     });
 
     private final ColorSliderView colorSliderView = new ColorSliderView(getContext(), new ColorListener() {
         @Override
-        public void onColorChanged(int color) {
+        public void onColorChanged(int color, @Nullable Object tag) {
+            selectedColor = color;
             if (colorListener != null) {
-                colorListener.onColorChanged(color);
+                colorListener.onColorChanged(color, null);
             }
         }
     });
 
     @Nullable
     private ColorListener colorListener;
+    @ColorInt
     private int selectedColor;
 
     public SelectColorBottomSheet(Context context, boolean needFocus) {
@@ -97,10 +99,21 @@ public class SelectColorBottomSheet extends BottomSheet {
             buttonsLayout.addView(shadowView2, LayoutHelper.createFrame(MATCH_PARENT, shadowHeightDp, Gravity.START | Gravity.TOP, 0, 0, 0, shadowHeightDp));
 
             TextView cancelBtn = createButton(LocaleController.getString("", R.string.AnimationSettingsCancel));
-            cancelBtn.setOnClickListener(v -> dismiss());
+            cancelBtn.setOnClickListener(v -> {
+                if (colorListener != null) {
+                    colorListener.onColorCancelled(null);
+                }
+                dismiss();
+            });
             buttonsLayout.addView(cancelBtn, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.START | Gravity.CENTER_VERTICAL, 0, 0, 0, 0));
 
             TextView applyBtn = createButton(LocaleController.getString("", R.string.AnimationSettingsApply));
+            applyBtn.setOnClickListener(v -> {
+                if (colorListener != null) {
+                    colorListener.onColorApplied(selectedColor, null);
+                }
+                dismiss();
+            });
             buttonsLayout.addView(applyBtn, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.END | Gravity.CENTER_VERTICAL, 0, 0, 0, 0));
         }
 
@@ -126,6 +139,18 @@ public class SelectColorBottomSheet extends BottomSheet {
 
     public void setColorListener(@Nullable ColorListener colorListener) {
         this.colorListener = colorListener;
+    }
+
+    public int getSelectedColor() {
+        return selectedColor;
+    }
+
+    @Override
+    public void dismiss() {
+        if (colorListener != null) {
+            colorListener.onColorCancelled(null);
+        }
+        super.dismiss();
     }
 
     private TextView createButton(String text) {
@@ -197,7 +222,7 @@ public class SelectColorBottomSheet extends BottomSheet {
                     if (prevColor != color) {
                         cursorDrawable.setColor(color);
                         if (colorListener != null) {
-                            colorListener.onColorChanged(color);
+                            colorListener.onColorChanged(color, null);
                         }
                         prevColor = color;
                         invalidate();
@@ -365,7 +390,7 @@ public class SelectColorBottomSheet extends BottomSheet {
             if (prevColor != color) {
                 cursorDrawable.setColor(color);
                 if (colorListener != null) {
-                    colorListener.onColorChanged(color);
+                    colorListener.onColorChanged(color, null);
                 }
                 prevColor = color;
                 invalidate();
@@ -453,6 +478,10 @@ public class SelectColorBottomSheet extends BottomSheet {
 
     public interface ColorListener {
 
-        void onColorChanged(@ColorInt int color);
+        default void onColorChanged(@ColorInt int color, @Nullable Object tag) {}
+
+        default void onColorApplied(@ColorInt int color, @Nullable Object tag) {}
+
+        default void onColorCancelled(@Nullable Object tag) {}
     }
 }

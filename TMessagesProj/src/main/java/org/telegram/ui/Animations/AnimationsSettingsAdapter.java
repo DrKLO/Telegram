@@ -5,6 +5,7 @@ import android.view.ViewGroup;
 
 import androidx.annotation.ColorInt;
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.telegram.messenger.AndroidUtilities;
@@ -30,6 +31,13 @@ public class AnimationsSettingsAdapter extends RecyclerView.Adapter<RecyclerList
     private static final int VIEW_TYPE_SELECT_COLOR = 5;
 
     private final List<Item> items = new ArrayList<>();
+
+    @Nullable
+    private Callback callback;
+
+    public void setCallback(@Nullable Callback callback) {
+        this.callback = callback;
+    }
 
     @NonNull
     @Override
@@ -65,7 +73,9 @@ public class AnimationsSettingsAdapter extends RecyclerView.Adapter<RecyclerList
                 break;
             }
             case VIEW_TYPE_SELECT_COLOR: {
-                view = new SelectColorCell(parent.getContext());
+                SelectColorCell cell = new SelectColorCell(parent.getContext());
+                cell.setColorListener(callback);
+                view = cell;
                 break;
             }
         }
@@ -103,6 +113,7 @@ public class AnimationsSettingsAdapter extends RecyclerView.Adapter<RecyclerList
                 SelectColorItem colorItem = (SelectColorItem) item;
                 view.setTitle(colorItem.text);
                 view.setColor(colorItem.color);
+                view.setTag(colorItem);
                 break;
             }
         }
@@ -125,6 +136,18 @@ public class AnimationsSettingsAdapter extends RecyclerView.Adapter<RecyclerList
         items.addAll(newItems);
         notifyDataSetChanged();
     }
+
+    public void updateItem(int position, Item item) {
+        items.set(position, item);
+        notifyItemChanged(position);
+    }
+
+    public Item getItemAt(int position) {
+        return items.get(position);
+    }
+
+
+    public interface Callback extends SelectColorBottomSheet.ColorListener {}
 
 
     public abstract static class Item {
@@ -190,11 +213,13 @@ public class AnimationsSettingsAdapter extends RecyclerView.Adapter<RecyclerList
 
     public static final class SelectColorItem extends TextItem {
 
+        public final int id;
         @ColorInt
         public int color;
 
-        public SelectColorItem(String text, int color) {
+        public SelectColorItem(String text, int id, int color) {
             super(text);
+            this.id = id;
             this.color = color;
         }
 

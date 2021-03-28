@@ -189,7 +189,6 @@ import org.telegram.ui.Components.FireworksOverlay;
 import org.telegram.ui.Components.FragmentContextView;
 import org.telegram.ui.Components.GigagroupConvertAlert;
 import org.telegram.ui.Components.GLTextureView;
-import org.telegram.ui.Animations.GradientGLDrawer;
 import org.telegram.ui.Components.HintView;
 import org.telegram.ui.Components.ImportingAlert;
 import org.telegram.ui.Components.InstantCameraView;
@@ -1670,6 +1669,9 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         }
         if (chatListItemAnimator != null) {
             chatListItemAnimator.onDestroy();
+        }
+        if (gradientBackgroundView != null) {
+            gradientBackgroundView.onDestroy();
         }
     }
 

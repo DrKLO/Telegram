@@ -6,7 +6,7 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.widget.FrameLayout;
 
-import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.annotation.Nullable;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
@@ -23,8 +23,9 @@ import org.telegram.ui.Animations.AnimationsSettingsAdapter.TextItem;
 import org.telegram.ui.Animations.AnimationsSettingsAdapter.PreviewItem;
 import org.telegram.ui.Animations.AnimationsSettingsAdapter.SelectColorItem;
 import org.telegram.ui.Animations.AnimationsController;
+import org.telegram.ui.Animations.pages.AnimationsSettingsPage;
+import org.telegram.ui.Animations.pages.BackgroundAnimationSettingsPage;
 import org.telegram.ui.Components.LayoutHelper;
-import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.ViewPagerFixed;
 
 import java.util.ArrayList;
@@ -54,47 +55,20 @@ public class AnimationsSettingsActivity extends BaseFragment {
         FrameLayout rootLayout = new FrameLayout(context);
         rootLayout.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundGray));
 
-        List<SettingsPage> pages = new ArrayList<>(1 + AnimationsController.animationTypes.length);
-
-        int pos = 0;
-        final int fullScreenPosition;
-
-        SectionItem sectionItem = new SectionItem();
-        DividerItem dividerItem = new DividerItem();
-
-        List<Item> backgroundPageItems = new ArrayList<>();
-        backgroundPageItems.add(pos++, new HeaderItem(LocaleController.getString("", R.string.AnimationSettingsBackgroundPreview)));
-        backgroundPageItems.add(pos++, new PreviewItem(AnimationsController.currentColors));
-        backgroundPageItems.add(fullScreenPosition = pos++, new TextItem(LocaleController.getString("", R.string.AnimationSettingsOpenFullScreen)));
-        backgroundPageItems.add(pos++, sectionItem);
-        backgroundPageItems.add(pos++, new HeaderItem(LocaleController.getString("", R.string.AnimationSettingsColors)));
-        for (int i = 0; i != AnimationsController.pointsCount; ++i) {
-            backgroundPageItems.add(pos++, new SelectColorItem(LocaleController.formatString("", R.string.AnimationSettingsColorN, i + 1), AnimationsController.currentColors[i]));
-            if (i < AnimationsController.pointsCount - 1) {
-                backgroundPageItems.add(pos++, dividerItem);
-            }
-        }
-        backgroundPageItems.add(pos++, sectionItem);
-        backgroundPageItems.add(pos++, new HeaderItem(LocaleController.getString("", R.string.AnimationSettingsSendMessage)));
-        backgroundPageItems.add(pos++, sectionItem);
-        backgroundPageItems.add(pos++, new HeaderItem(LocaleController.getString("", R.string.AnimationSettingsOpenChat)));
-        backgroundPageItems.add(pos++, sectionItem);
-        backgroundPageItems.add(pos++, new HeaderItem(LocaleController.getString("", R.string.AnimationSettingsJumpToMessage)));
-        backgroundPageItems.add(pos++, sectionItem);
-
-        SettingsPage backgroundPage = new SettingsPage(context, -1, LocaleController.getString("", R.string.AnimationSettingsBackground));
-        backgroundPage.setItems(backgroundPageItems);
+        BackgroundAnimationSettingsPage backgroundPage = new BackgroundAnimationSettingsPage(context);
         backgroundPage.setOnItemClickListener((view, position) -> {
-            if (position == fullScreenPosition) {
+            if (position == backgroundPage.fullScreenPosition) {
                 AnimationsPreviewActivity fragment = new AnimationsPreviewActivity();
                 presentFragment(fragment);
             }
         });
+
+        List<AnimationsSettingsPage> pages = new ArrayList<>(1 + AnimationsController.animationTypes.length);
         pages.add(backgroundPage);
 
-        SettingsAdapter viewPagerAdapter = new SettingsAdapter(context, pages);
+        SettingsAdapter adapter = new SettingsAdapter(context, pages);
         viewPager = new ViewPagerFixed(context);
-        viewPager.setAdapter(viewPagerAdapter);
+        viewPager.setAdapter(adapter);
         rootLayout.addView(viewPager, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.LEFT | Gravity.TOP, 0, 48, 0, 0));
 
         ViewPagerFixed.TabsView tabsView = viewPager.createTabsView();
@@ -111,13 +85,12 @@ public class AnimationsSettingsActivity extends BaseFragment {
         return viewPager.getCurrentPosition() == 0;
     }
 
-
     private static class SettingsAdapter extends ViewPagerFixed.Adapter {
 
         private final Context context;
-        private final List<SettingsPage> pages;
+        private final List<AnimationsSettingsPage> pages;
 
-        public SettingsAdapter(Context context, List<SettingsPage> pages) {
+        public SettingsAdapter(Context context, List<AnimationsSettingsPage> pages) {
             this.context = context;
             this.pages = pages;
         }
@@ -147,37 +120,6 @@ public class AnimationsSettingsActivity extends BaseFragment {
 
         public String getItemTitle(int position) {
             return pages.get(position).title;
-        }
-    }
-
-    private static class SettingsPage {
-
-        public final int type;
-        public final String title;
-
-        private final AnimationsSettingsAdapter adapter = new AnimationsSettingsAdapter();
-        private final RecyclerListView recyclerView;
-
-        public SettingsPage(Context context, int type, String title) {
-            this.type = type;
-            this.title = title;
-
-            recyclerView = new RecyclerListView(context);
-            recyclerView.setAdapter(adapter);
-            recyclerView.setHasFixedSize(true);
-            recyclerView.setLayoutManager(new LinearLayoutManager(context));
-        }
-
-        public View getView() {
-            return recyclerView;
-        }
-
-        public void setItems(List<AnimationsSettingsAdapter.Item> items) {
-            adapter.setItems(items);
-        }
-
-        public void setOnItemClickListener(RecyclerListView.OnItemClickListener clickListener) {
-            recyclerView.setOnItemClickListener(clickListener);
         }
     }
 }
