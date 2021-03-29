@@ -28,6 +28,7 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Animations.AnimationSettings;
 
 public class AnimationPropertiesCell extends View {
 
@@ -347,6 +348,14 @@ public class AnimationPropertiesCell extends View {
         setRightProgress(rightProgress);
         isDataChanged = true;
         invalidate();
+    }
+
+    public void setSettings(@NonNull AnimationSettings settings) {
+        setMaxValue(settings.maxDuration);
+        setLeftProgress(settings.getLeftProgress());
+        setRightProgress(settings.getRightProgress());
+        setTopProgress(settings.topProgress);
+        setBottomProgress(settings.botProgress);
     }
 
     public float getLeftProgress() {

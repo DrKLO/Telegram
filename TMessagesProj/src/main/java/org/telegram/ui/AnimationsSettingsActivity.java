@@ -6,23 +6,13 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.widget.FrameLayout;
 
-import androidx.annotation.Nullable;
-
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Animations.AnimationsSettingsAdapter;
-import org.telegram.ui.Animations.AnimationsSettingsAdapter.DividerItem;
-import org.telegram.ui.Animations.AnimationsSettingsAdapter.Item;
-import org.telegram.ui.Animations.AnimationsSettingsAdapter.SectionItem;
-import org.telegram.ui.Animations.AnimationsSettingsAdapter.HeaderItem;
-import org.telegram.ui.Animations.AnimationsSettingsAdapter.TextItem;
-import org.telegram.ui.Animations.AnimationsSettingsAdapter.PreviewItem;
-import org.telegram.ui.Animations.AnimationsSettingsAdapter.SelectColorItem;
-import org.telegram.ui.Animations.AnimationsController;
+import org.telegram.ui.Animations.BackgroundAnimationController;
 import org.telegram.ui.Animations.pages.AnimationsSettingsPage;
 import org.telegram.ui.Animations.pages.BackgroundAnimationSettingsPage;
 import org.telegram.ui.Cells.SelectColorCell;
@@ -64,7 +54,7 @@ public class AnimationsSettingsActivity extends BaseFragment {
             }
         });
 
-        List<AnimationsSettingsPage> pages = new ArrayList<>(1 + AnimationsController.animationTypes.length);
+        List<AnimationsSettingsPage> pages = new ArrayList<>(1);
         pages.add(backgroundPage);
 
         SettingsAdapter adapter = new SettingsAdapter(context, pages);

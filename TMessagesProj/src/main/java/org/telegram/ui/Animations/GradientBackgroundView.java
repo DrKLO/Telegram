@@ -19,7 +19,7 @@ public class GradientBackgroundView extends GLTextureView {
     @Override
     public void onSurfaceTextureAvailable(@NonNull SurfaceTexture surface, int width, int height) {
         super.onSurfaceTextureAvailable(surface, width, height);
-        setColors(AnimationsController.getColorsCopy());
+        setColors(BackgroundAnimationController.getColorsCopy());
     }
 
     public void setColors(int[] colors) {

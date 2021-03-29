@@ -1,13 +1,9 @@
 package org.telegram.ui.Animations;
 
-import androidx.annotation.ColorInt;
-
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 
-import java.util.Arrays;
-
-public class AnimationsController {
+public class ViewAnimationsController {
 
     public static final AnimationType[] animationTypes = new AnimationType[] {
             new AnimationType(0, LocaleController.getString("", R.string.AnimationSettingsShortText)),
@@ -20,34 +16,6 @@ public class AnimationsController {
             new AnimationType(7, LocaleController.getString("", R.string.AnimationSettingsVideoMessage)),
             new AnimationType(8, LocaleController.getString("", R.string.AnimationSettingsMultiple)),
     };
-
-    public static final int pointsCount = 4;
-
-    public static final int[] defaultColors = new int[] {
-            0xFFFFF6BF, 0xFF76A076, 0xFFF6E477, 0xFF316B4D
-    };
-
-    public static final float[] pointCoords = new float[] {
-            0.35f, 0.25f,  0.82f, 0.08f,  0.65f, 0.75f,  0.18f, 0.92f
-    };
-
-    private static final int[] currentColors = defaultColors;
-
-    public static boolean isAnimationsEnabled() {
-        return true;
-    }
-
-    public static int[] getColorsCopy() {
-        return Arrays.copyOf(currentColors, currentColors.length);
-    }
-
-    public static int getCurrentColor(int colorIdx) {
-        return currentColors[colorIdx];
-    }
-
-    public static void setCurrentColor(int colorIdx, @ColorInt int color) {
-        currentColors[colorIdx] = color;
-    }
 
     public static class AnimationType {
 

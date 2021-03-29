@@ -162,7 +162,7 @@ import org.telegram.ui.Cells.TextSelectionHelper;
 import org.telegram.ui.Components.AlertsCreator;
 import org.telegram.ui.Components.AnimatedFileDrawable;
 import org.telegram.ui.Components.AnimationProperties;
-import org.telegram.ui.Animations.AnimationsController;
+import org.telegram.ui.Animations.BackgroundAnimationController;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.BlurBehindDrawable;
 import org.telegram.ui.Components.Bulletin;
@@ -23025,7 +23025,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
     }
 
     private void setupBackground() {
-        if (AnimationsController.isAnimationsEnabled()) {
+        if (BackgroundAnimationController.isAnimatedBackgroundEnabled()) {
             if (gradientBackgroundView == null) {
                 gradientBackgroundView = new GradientBackgroundView(parentLayout.getContext());
                 contentView.addView(gradientBackgroundView, 0, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));

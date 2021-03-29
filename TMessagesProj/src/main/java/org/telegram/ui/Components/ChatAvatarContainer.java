@@ -42,7 +42,7 @@ import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Animations.AnimationsController;
+import org.telegram.ui.Animations.BackgroundAnimationController;
 import org.telegram.ui.AnimationsSettingsActivity;
 import org.telegram.ui.ChatActivity;
 import org.telegram.ui.MediaActivity;
@@ -151,7 +151,7 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
         if (parentFragment != null && parentFragment.getChatMode() == 0) {
             if (!parentFragment.isThreadChat() && !UserObject.isReplyUser(parentFragment.getCurrentUser())) {
                 setOnClickListener(v -> {
-                    if (AnimationsController.isAnimationsEnabled()) {
+                    if (BackgroundAnimationController.isAnimatedBackgroundEnabled()) {
                         openAnimationsSettings();
                     } else {
                         openProfile(false);

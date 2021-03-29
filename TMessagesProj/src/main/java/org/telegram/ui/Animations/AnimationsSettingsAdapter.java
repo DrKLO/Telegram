@@ -137,11 +137,7 @@ public class AnimationsSettingsAdapter extends RecyclerView.Adapter<RecyclerList
             case VIEW_TYPE_ANIMATION_PROPERTIES: {
                 AnimationPropertiesCell cell = (AnimationPropertiesCell) holder.itemView;
                 AnimationPropertiesItem propertiesItem = (AnimationPropertiesItem) item;
-                cell.setMaxValue(propertiesItem.maxDuration);
-                cell.setLeftProgress(propertiesItem.getLeftProgress());
-                cell.setRightProgress(propertiesItem.getRightProgress());
-                cell.setTopProgress(propertiesItem.topProgress);
-                cell.setBottomProgress(propertiesItem.botProgress);
+                cell.setSettings(propertiesItem.settings);
                 break;
             }
             case VIEW_TYPE_DURATION: {
@@ -267,28 +263,10 @@ public class AnimationsSettingsAdapter extends RecyclerView.Adapter<RecyclerList
 
     public static final class AnimationPropertiesItem extends Item {
 
-        public final int id;
-        public int leftDuration;
-        public int rightDuration;
-        public float topProgress;
-        public float botProgress;
-        public int maxDuration;
+        public final AnimationSettings settings;
 
-        public AnimationPropertiesItem(int id, int leftDuration, int rightDuration, int maxDuration, float topProgress, float botProgress) {
-            this.id = id;
-            this.leftDuration = leftDuration;
-            this.rightDuration = rightDuration;
-            this.maxDuration = maxDuration;
-            this.topProgress = topProgress;
-            this.botProgress = botProgress;
-        }
-
-        public float getLeftProgress() {
-            return leftDuration * 1f / maxDuration;
-        }
-
-        public float getRightProgress() {
-            return rightDuration * 1f / maxDuration;
+        public AnimationPropertiesItem(AnimationSettings settings) {
+            this.settings = settings;
         }
 
         @Override
