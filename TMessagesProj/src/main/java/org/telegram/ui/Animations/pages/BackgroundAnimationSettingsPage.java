@@ -1,13 +1,11 @@
 package org.telegram.ui.Animations.pages;
 
-import android.content.Context;
-
 import androidx.annotation.Nullable;
 
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.ui.Animations.AnimationSettings;
-import org.telegram.ui.Animations.BackgroundAnimationController;
+import org.telegram.ui.Animations.AnimationsController;
 import org.telegram.ui.Animations.AnimationsSettingsAdapter.*;
 import org.telegram.ui.Cells.AnimationPropertiesCell;
 
@@ -18,12 +16,12 @@ public class BackgroundAnimationSettingsPage extends AnimationsSettingsPage impl
 
     public final int fullScreenPosition;
 
-    private final int[] animPropsPosition = new int[BackgroundAnimationController.getAllSettings().length];
-    private final int[] colorPosition = new int[BackgroundAnimationController.pointsCount];
+    private final int[] animPropsPosition = new int[AnimationsController.getBackgroundAnimationSettings().length];
+    private final int[] colorPosition = new int[AnimationsController.backgroundPointsCount];
     private final int backgroundPreviewPosition;
 
-    public BackgroundAnimationSettingsPage(Context context) {
-        super(context, -1, LocaleController.getString("", R.string.AnimationSettingsBackground));
+    public BackgroundAnimationSettingsPage() {
+        super(-1, LocaleController.getString("", R.string.AnimationSettingsBackground));
         adapter.setCallback(this);
 
         int pos = 0;
@@ -33,13 +31,13 @@ public class BackgroundAnimationSettingsPage extends AnimationsSettingsPage impl
 
         List<Item> items = new ArrayList<>();
         items.add(pos++, new HeaderItem(LocaleController.getString("", R.string.AnimationSettingsBackgroundPreview)));
-        items.add(backgroundPreviewPosition = pos++, new PreviewItem(BackgroundAnimationController.getColorsCopy()));
+        items.add(backgroundPreviewPosition = pos++, new PreviewItem(AnimationsController.getBackgroundColorsCopy()));
         items.add(fullScreenPosition = pos++, new TextItem(LocaleController.getString("", R.string.AnimationSettingsOpenFullScreen)));
         items.add(pos++, sectionItem);
         items.add(pos++, new HeaderItem(LocaleController.getString("", R.string.AnimationSettingsColors)));
-        for (int i = 0; i != BackgroundAnimationController.pointsCount; ++i) {
-            items.add(colorPosition[i] = pos++, new SelectColorItem(LocaleController.formatString("", R.string.AnimationSettingsColorN, i + 1), i, BackgroundAnimationController.getCurrentColor(i)));
-            if (i < BackgroundAnimationController.pointsCount - 1) {
+        for (int i = 0; i != AnimationsController.backgroundPointsCount; ++i) {
+            items.add(colorPosition[i] = pos++, new SelectColorItem(LocaleController.formatString("", R.string.AnimationSettingsColorN, i + 1), i, AnimationsController.getBackgroundCurrentColor(i)));
+            if (i < AnimationsController.backgroundPointsCount - 1) {
                 items.add(pos++, dividerItem);
             }
         }
@@ -47,7 +45,7 @@ public class BackgroundAnimationSettingsPage extends AnimationsSettingsPage impl
         items.add(pos++, sectionItem);
 
         int animPropsIdx = 0;
-        AnimationSettings[] settings = BackgroundAnimationController.getAllSettings();
+        AnimationSettings[] settings = AnimationsController.getBackgroundAnimationSettings();
         for (AnimationSettings s : settings) {
             items.add(pos++, new HeaderItem(s.title));
             items.add(pos++, new DurationItem(s.id, s.maxDuration));
@@ -74,7 +72,7 @@ public class BackgroundAnimationSettingsPage extends AnimationsSettingsPage impl
         if (tag instanceof SelectColorItem) {
             SelectColorItem item = (SelectColorItem) tag;
             // TODO agolokoz: maybe animate?
-            setColor(BackgroundAnimationController.getCurrentColor(item.id), tag, true);
+            setColor(AnimationsController.getBackgroundCurrentColor(item.id), tag, true);
         }
     }
 
@@ -86,7 +84,7 @@ public class BackgroundAnimationSettingsPage extends AnimationsSettingsPage impl
             settings.rightDuration = (int)(cell.getRightProgress() * cell.getMaxValue());
             settings.topProgress = cell.getTopProgress();
             settings.botProgress = cell.getBottomProgress();
-            BackgroundAnimationController.updateSettings(settings);
+            AnimationsController.updateBackgroundSettings(settings);
         }
     }
 
@@ -102,7 +100,7 @@ public class BackgroundAnimationSettingsPage extends AnimationsSettingsPage impl
                 AnimationSettings settings = ((AnimationPropertiesItem) adapterItem).settings;
                 settings.setMaxDuration(duration);
                 adapter.updateItem(position, adapterItem);
-                BackgroundAnimationController.updateSettings(settings);
+                AnimationsController.updateBackgroundSettings(settings);
             }
         }
     }
@@ -127,7 +125,7 @@ public class BackgroundAnimationSettingsPage extends AnimationsSettingsPage impl
                     adapter.updateItem(colorPosition[colorIdx], colorItem);
                 }
 
-                BackgroundAnimationController.setCurrentColor(colorIdx, color);
+                AnimationsController.setBackgroundCurrentColor(colorIdx, color);
             }
         }
     }

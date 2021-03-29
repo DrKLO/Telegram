@@ -12,7 +12,6 @@ import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Animations.BackgroundAnimationController;
 import org.telegram.ui.Animations.pages.AnimationsSettingsPage;
 import org.telegram.ui.Animations.pages.BackgroundAnimationSettingsPage;
 import org.telegram.ui.Cells.SelectColorCell;
@@ -23,6 +22,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class AnimationsSettingsActivity extends BaseFragment {
+
+    private ViewPagerFixed viewPager;
 
     @Override
     public View createView(Context context) {
@@ -44,10 +45,10 @@ public class AnimationsSettingsActivity extends BaseFragment {
         FrameLayout rootLayout = new FrameLayout(context);
         rootLayout.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundGray));
 
-        BackgroundAnimationSettingsPage backgroundPage = new BackgroundAnimationSettingsPage(context);
+        BackgroundAnimationSettingsPage backgroundPage = new BackgroundAnimationSettingsPage();
         backgroundPage.setOnItemClickListener((view, position) -> {
             if (position == backgroundPage.fullScreenPosition) {
-                AnimationsPreviewActivity fragment = new AnimationsPreviewActivity();
+                BackgroundAnimationsPreviewActivity fragment = new BackgroundAnimationsPreviewActivity();
                 presentFragment(fragment);
             } else if (view instanceof SelectColorCell) {
                 ((SelectColorCell) view).onClick();
@@ -58,9 +59,13 @@ public class AnimationsSettingsActivity extends BaseFragment {
         pages.add(backgroundPage);
 
         SettingsAdapter adapter = new SettingsAdapter(context, pages);
-        ViewPagerFixed viewPager = new ViewPagerFixed(context);
+        viewPager = new ViewPagerFixed(context);
         viewPager.setAdapter(adapter);
         rootLayout.addView(viewPager, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.LEFT | Gravity.TOP, 0, 48, 0, 0));
+
+        View shadowView = new View(context);
+        shadowView.setBackgroundResource(R.drawable.header_shadow);
+        rootLayout.addView(shadowView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 3, Gravity.TOP, 0, 48, 0, 0));
 
         ViewPagerFixed.TabsView tabsView = viewPager.createTabsView();
         tabsView.setBackgroundColor(Theme.getColor(Theme.key_actionBarDefault));
@@ -73,7 +78,7 @@ public class AnimationsSettingsActivity extends BaseFragment {
 
     @Override
     public boolean isSwipeBackEnabled(MotionEvent event) {
-        return false;
+        return viewPager.getCurrentPosition() == 0;
     }
 
     private static class SettingsAdapter extends ViewPagerFixed.Adapter {
@@ -90,7 +95,7 @@ public class AnimationsSettingsActivity extends BaseFragment {
         public View createView(int viewType) {
             for (int i = 0; i != pages.size(); ++i) {
                 if (pages.get(i).type == viewType) {
-                    return pages.get(i).getView();
+                    return pages.get(i).createView(context);
                 }
             }
             return new View(context);

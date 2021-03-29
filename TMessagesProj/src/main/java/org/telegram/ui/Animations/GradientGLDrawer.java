@@ -18,8 +18,8 @@ public class GradientGLDrawer implements GLTextureView.Drawer {
     private final String fragmentShaderSource;
     private FragmentShader shader;
 
-    private final float[] colors = new float[COLOR_SIZE * BackgroundAnimationController.pointsCount];
-    private final float[] points = new float[POINT_SIZE * BackgroundAnimationController.pointsCount];
+    private final float[] colors = new float[COLOR_SIZE * AnimationsController.backgroundPointsCount];
+    private final float[] points = new float[POINT_SIZE * AnimationsController.backgroundPointsCount];
     private float width;
     private float height;
 
@@ -36,7 +36,7 @@ public class GradientGLDrawer implements GLTextureView.Drawer {
     public GradientGLDrawer(Context context) {
         fragmentShaderSource = AndroidUtilities.readTextFromAsset(context, "shaders/gradient_background.frag", true);
         for (int i = 0; i != 4; ++i) {
-            setColorPoint(i, BackgroundAnimationController.getCurrentColor(i), BackgroundAnimationController.pointCoordinates[i * 2], BackgroundAnimationController.pointCoordinates[i * 2 + 1]);
+            setColorPoint(i, AnimationsController.getBackgroundCurrentColor(i), AnimationsController.backgroundCoordinates[i * 2], AnimationsController.backgroundCoordinates[i * 2 + 1]);
         }
     }
 

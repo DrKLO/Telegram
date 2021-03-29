@@ -15,28 +15,28 @@ public abstract class AnimationsSettingsPage {
     public final int type;
     public final String title;
 
-    protected final AnimationsSettingsAdapter adapter;
-    private final RecyclerListView recyclerView;
+    protected final AnimationsSettingsAdapter adapter = new AnimationsSettingsAdapter();
+    private RecyclerListView.OnItemClickListener clickListener;
 
-    public AnimationsSettingsPage(Context context, int type, String title) {
+    public AnimationsSettingsPage(int type, String title) {
         this.type = type;
         this.title = title;
+    }
 
-        adapter = new AnimationsSettingsAdapter();
-
-        recyclerView = new RecyclerListView(context);
+    public View createView(Context context) {
+        RecyclerListView recyclerView = new RecyclerListView(context);
         recyclerView.setAdapter(adapter);
         recyclerView.setHasFixedSize(true);
         recyclerView.setLayoutManager(new LinearLayoutManager(context));
         recyclerView.setItemAnimator(null);
         recyclerView.setDisallowInterceptTouchEvents(true);
-    }
-
-    public View getView() {
+        if (clickListener != null) {
+            recyclerView.setOnItemClickListener(clickListener);
+        }
         return recyclerView;
     }
 
     public void setOnItemClickListener(RecyclerListView.OnItemClickListener clickListener) {
-        recyclerView.setOnItemClickListener(clickListener);
+        this.clickListener = clickListener;
     }
 }
