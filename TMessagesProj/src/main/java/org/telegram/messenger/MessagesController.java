@@ -11670,16 +11670,22 @@ public class MessagesController extends BaseController implements NotificationCe
             } else if (baseUpdate instanceof TLRPC.TL_updateReadHistoryInbox) {
                 TLRPC.TL_updateReadHistoryInbox update = (TLRPC.TL_updateReadHistoryInbox) baseUpdate;
                 long dialog_id;
+                long message_id = update.max_id;
+
                 if (markAsReadMessagesInbox == null) {
                     markAsReadMessagesInbox = new SparseLongArray();
                 }
                 if (update.peer.chat_id != 0) {
-                    markAsReadMessagesInbox.put(-update.peer.chat_id, update.max_id);
+                    message_id |= ((long) update.peer.chat_id) << 32;
+                    message_id = -message_id;
                     dialog_id = -update.peer.chat_id;
                 } else {
-                    markAsReadMessagesInbox.put(update.peer.user_id, update.max_id);
+                    message_id |= ((long) update.peer.user_id) << 32;
                     dialog_id = update.peer.user_id;
                 }
+
+                markAsReadMessagesInbox.put(update.still_unread_count, message_id);
+
                 Integer value = dialogs_read_inbox_max.get(dialog_id);
                 if (value == null) {
                     value = getMessagesStorage().getDialogReadMax(false, dialog_id);
@@ -12138,13 +12144,17 @@ public class MessagesController extends BaseController implements NotificationCe
                 }
             } else if (baseUpdate instanceof TLRPC.TL_updateReadChannelInbox) {
                 TLRPC.TL_updateReadChannelInbox update = (TLRPC.TL_updateReadChannelInbox) baseUpdate;
+                long dialog_id = -update.channel_id;
                 long message_id = update.max_id;
                 message_id |= ((long) update.channel_id) << 32;
-                long dialog_id = -update.channel_id;
+                message_id = -message_id;
+
                 if (markAsReadMessagesInbox == null) {
                     markAsReadMessagesInbox = new SparseLongArray();
                 }
-                markAsReadMessagesInbox.put(-update.channel_id, message_id);
+
+                markAsReadMessagesInbox.put(update.still_unread_count, message_id);
+
                 Integer value = dialogs_read_inbox_max.get(dialog_id);
                 if (value == null) {
                     value = getMessagesStorage().getDialogReadMax(false, dialog_id);

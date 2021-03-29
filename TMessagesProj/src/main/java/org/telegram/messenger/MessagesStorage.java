@@ -4493,19 +4493,26 @@ public class MessagesStorage extends BaseController {
             } else {
                 if (!isEmpty(inbox)) {
                     for (int b = 0; b < inbox.size(); b++) {
-                        int key = inbox.keyAt(b);
+                        int key = inbox.keyAt(b); // unread_count
                         long messageId = inbox.get(key);
-                        SQLiteCursor cursor = database.queryFinalized(String.format(Locale.US, "SELECT COUNT(mid) FROM messages WHERE uid = %d AND mid > %d AND read_state IN(0,2) AND out = 0", key, messageId));
-                        if (cursor.next()) {
-                            dialogsToUpdate.put(key, cursor.intValue(0));
+                        int dialogId;
+
+                        if (messageId < 0) {
+                            messageId = -messageId;
+                            dialogId = (int) (messageId >> 32);
+                            dialogId = -dialogId;
                         }
-                        cursor.dispose();
+                        else {
+                            dialogId = (int) (messageId >> 32);
+                        }
+
+                        dialogsToUpdate.put(dialogId, key);
 
                         SQLitePreparedStatement state = database.executeFast("UPDATE dialogs SET inbox_max = max((SELECT inbox_max FROM dialogs WHERE did = ?), ?) WHERE did = ?");
                         state.requery();
-                        state.bindLong(1, key);
+                        state.bindLong(1, dialogId);
                         state.bindInteger(2, (int) messageId);
-                        state.bindLong(3, key);
+                        state.bindLong(3, dialogId);
                         state.step();
                         state.dispose();
                     }
