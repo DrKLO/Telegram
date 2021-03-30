@@ -4,6 +4,12 @@ import org.telegram.ui.Components.AnimationsInterpolator;
 
 public class AnimationSettings {
 
+    public static final int DEFAULT_LEFT_DURATION = 0;
+    public static final int DEFAULT_RIGHT_DURATION = 500;
+    public static final int DEFAULT_MAX_DURATION = 500;
+    public static final float DEFAULT_TOP_PROGRESS = 1.0f;
+    public static final float DEFAULT_BOT_PROGRESS = 0.5f;
+
     public final int id;
     public final String title;
     public int leftDuration;
@@ -62,7 +68,4 @@ public class AnimationSettings {
         return interpolator;
     }
 
-    public static AnimationSettings createWithDefaultParams(int id, String title) {
-        return new AnimationSettings(id, title, 0, 500, 1.0f, 0.5f, 500);
-    }
 }

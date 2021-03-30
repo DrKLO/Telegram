@@ -16,7 +16,7 @@ public class BackgroundAnimationSettingsPage extends AnimationsSettingsPage impl
 
     public final int fullScreenPosition;
 
-    private final int[] animPropsPosition = new int[AnimationsController.getBackgroundAnimationSettings().length];
+    private final int[] animPropsPosition = new int[AnimationsController.backgroundSettingsCount];
     private final int[] colorPosition = new int[AnimationsController.backgroundPointsCount];
     private final int backgroundPreviewPosition;
 
@@ -31,12 +31,14 @@ public class BackgroundAnimationSettingsPage extends AnimationsSettingsPage impl
 
         List<Item> items = new ArrayList<>();
         items.add(pos++, new HeaderItem(LocaleController.getString("", R.string.AnimationSettingsBackgroundPreview)));
-        items.add(backgroundPreviewPosition = pos++, new PreviewItem(AnimationsController.getBackgroundColorsCopy()));
+        items.add(backgroundPreviewPosition = pos++, new PreviewItem(AnimationsController.getForCurrentUser().getBackgroundColorsCopy()));
         items.add(fullScreenPosition = pos++, new TextItem(LocaleController.getString("", R.string.AnimationSettingsOpenFullScreen)));
         items.add(pos++, sectionItem);
         items.add(pos++, new HeaderItem(LocaleController.getString("", R.string.AnimationSettingsColors)));
         for (int i = 0; i != AnimationsController.backgroundPointsCount; ++i) {
-            items.add(colorPosition[i] = pos++, new SelectColorItem(LocaleController.formatString("", R.string.AnimationSettingsColorN, i + 1), i, AnimationsController.getBackgroundCurrentColor(i)));
+            String title = LocaleController.formatString("", R.string.AnimationSettingsColorN, i + 1);
+            int color = AnimationsController.getForCurrentUser().getBackgroundCurrentColor(i);
+            items.add(colorPosition[i] = pos++, new SelectColorItem(title, i, color));
             if (i < AnimationsController.backgroundPointsCount - 1) {
                 items.add(pos++, dividerItem);
             }
@@ -45,7 +47,7 @@ public class BackgroundAnimationSettingsPage extends AnimationsSettingsPage impl
         items.add(pos++, sectionItem);
 
         int animPropsIdx = 0;
-        AnimationSettings[] settings = AnimationsController.getBackgroundAnimationSettings();
+        AnimationSettings[] settings = AnimationsController.getForCurrentUser().getBackgroundAnimationSettings();
         for (AnimationSettings s : settings) {
             items.add(pos++, new HeaderItem(s.title));
             items.add(pos++, new DurationItem(s.id, s.maxDuration));
@@ -72,7 +74,7 @@ public class BackgroundAnimationSettingsPage extends AnimationsSettingsPage impl
         if (tag instanceof SelectColorItem) {
             SelectColorItem item = (SelectColorItem) tag;
             // TODO agolokoz: maybe animate?
-            setColor(AnimationsController.getBackgroundCurrentColor(item.id), tag, true);
+            setColor(AnimationsController.getForCurrentUser().getBackgroundCurrentColor(item.id), tag, true);
         }
     }
 
@@ -84,7 +86,7 @@ public class BackgroundAnimationSettingsPage extends AnimationsSettingsPage impl
             settings.rightDuration = (int)(cell.getRightProgress() * cell.getMaxValue());
             settings.setTopProgress(cell.getTopProgress());
             settings.setBotProgress(cell.getBottomProgress());
-            AnimationsController.updateBackgroundSettings(settings);
+            AnimationsController.getForCurrentUser().updateBackgroundSettings(settings);
         }
     }
 
@@ -100,7 +102,7 @@ public class BackgroundAnimationSettingsPage extends AnimationsSettingsPage impl
                 AnimationSettings settings = ((AnimationPropertiesItem) adapterItem).settings;
                 settings.setMaxDuration(duration);
                 adapter.updateItem(position, adapterItem);
-                AnimationsController.updateBackgroundSettings(settings);
+                AnimationsController.getForCurrentUser().updateBackgroundSettings(settings);
             }
         }
     }
@@ -125,7 +127,7 @@ public class BackgroundAnimationSettingsPage extends AnimationsSettingsPage impl
                     adapter.updateItem(colorPosition[colorIdx], colorItem);
                 }
 
-                AnimationsController.setBackgroundCurrentColor(colorIdx, color);
+                AnimationsController.getForCurrentUser().setBackgroundCurrentColor(colorIdx, color);
             }
         }
     }
