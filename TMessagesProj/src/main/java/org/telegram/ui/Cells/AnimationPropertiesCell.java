@@ -16,6 +16,7 @@ import android.os.Build;
 import android.text.DynamicLayout;
 import android.text.Layout;
 import android.text.TextPaint;
+import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewConfiguration;
@@ -29,6 +30,7 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Animations.AnimationSettings;
+import org.telegram.ui.Components.AnimationsInterpolator;
 
 public class AnimationPropertiesCell extends View {
 
@@ -74,6 +76,7 @@ public class AnimationPropertiesCell extends View {
     private ProgressSelectorDrawable draggingDrawable;
     @Nullable
     private OnAnimationPropertiesChangeListener propertiesChangeListener;
+    private AnimationsInterpolator interpolator = new AnimationsInterpolator();
     private boolean isDataChanged = false;
 
     public AnimationPropertiesCell(Context context) {
@@ -189,14 +192,6 @@ public class AnimationPropertiesCell extends View {
         return isHandled;
     }
 
-    private float func(float x, float alpha) {
-        return x / (alpha + Math.abs(x));
-    }
-
-    private float sigm(float x) {
-        return (float)(1f / (1f + Math.exp(-x)));
-    }
-
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
@@ -213,25 +208,20 @@ public class AnimationPropertiesCell extends View {
         float bottomLineTop = topLineTop + linesSpace;
         float bottomLineVerticalCenter = bottomLineTop + lineSize * 0.5f;
         float bottomTextTop = bottomLineVerticalCenter + bottomProgressDrawable.getBounds().height() * 0.5f;
-//        float topBottomLineCenter = topLineVerticalCenter + (bottomLineVerticalCenter - topLineVerticalCenter) * 0.5f;
+        float topBottomLineCenter = topLineVerticalCenter + (bottomLineVerticalCenter - topLineVerticalCenter) * 0.5f;
 
         // chart line
         if (isDataChanged) {
             chartLinePath.reset();
             chartLinePath.moveTo(topBottomProgressLeft, bottomLineVerticalCenter);
-            float xBottom = topBottomProgressLeft + topBottomProgressWidth * bottomProgress;
-            float xTop = topBottomProgressLeft + topBottomProgressWidth * (1f - topProgress);
+            float xBottom = topBottomProgressLeft + topBottomProgressWidth * interpolator.getStartX();
+            float xTop = topBottomProgressLeft + topBottomProgressWidth * interpolator.getEndX();
             chartLinePath.cubicTo(xBottom, bottomLineVerticalCenter, xTop, topLineVerticalCenter, topBottomProgressRight, topLineVerticalCenter);
-
+//          TODO agolokoz: remove
 //            for (float x = topBottomProgressLeft; x <= topBottomProgressRight; ++x) {
 //                float input = (x - topBottomProgressLeft) / topBottomProgressWidth;
-//                float y = bottomLineVerticalCenter - linesSpace * func(input);
-//                canvas.drawPoint(x, y, chartDebugPaint);
-//                float input = (x - topBottomProgressLeft) / topBottomProgressWidth * 2 - 1f;
-//                float output = func(input, bottomProgress);
-//                Log.d("AnimationPropertiesCell", "f(" + input + ") = " + output);
-//
-//                float y = topBottomLineCenter - output * linesSpace * 0.75f;
+//                float output = interpolator.getInterpolation(input);
+//                float y = bottomLineVerticalCenter - output * linesSpace;
 //                canvas.drawPoint(x, y, chartDebugPaint);
 //            }
         }
@@ -317,6 +307,9 @@ public class AnimationPropertiesCell extends View {
         int value = Math.round(100 * progress);
         setPercentValue(topProgressText, value);
         isDataChanged = true;
+        if (interpolator != null) {
+            interpolator.setEndX(1f - progress);
+        }
         invalidate();
     }
 
@@ -325,6 +318,9 @@ public class AnimationPropertiesCell extends View {
         int value = Math.round(100 * progress);
         setPercentValue(bottomProgressText, value);
         isDataChanged = true;
+        if (interpolator != null) {
+            interpolator.setStartX(progress);
+        }
         invalidate();
     }
 
@@ -351,11 +347,12 @@ public class AnimationPropertiesCell extends View {
     }
 
     public void setSettings(@NonNull AnimationSettings settings) {
+        this.interpolator = settings.getInterpolator();
         setMaxValue(settings.maxDuration);
         setLeftProgress(settings.getLeftProgress());
         setRightProgress(settings.getRightProgress());
-        setTopProgress(settings.topProgress);
-        setBottomProgress(settings.botProgress);
+        setTopProgress(settings.getTopProgress());
+        setBottomProgress(settings.getBotProgress());
     }
 
     public float getLeftProgress() {

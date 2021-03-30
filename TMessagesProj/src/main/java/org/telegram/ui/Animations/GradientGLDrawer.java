@@ -33,6 +33,7 @@ public class GradientGLDrawer implements GLTextureView.Drawer {
     private int locPoint3 = -1;
     private int locPoint4 = -1;
 
+    // TODO agolokoz: move shader to source code
     public GradientGLDrawer(Context context) {
         fragmentShaderSource = AndroidUtilities.readTextFromAsset(context, "shaders/gradient_background.frag", true);
         for (int i = 0; i != 4; ++i) {

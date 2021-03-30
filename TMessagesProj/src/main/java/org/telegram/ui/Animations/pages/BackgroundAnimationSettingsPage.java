@@ -82,8 +82,8 @@ public class BackgroundAnimationSettingsPage extends AnimationsSettingsPage impl
             AnimationSettings settings = ((AnimationPropertiesItem) tag).settings;
             settings.leftDuration = (int)(cell.getLeftProgress() * cell.getMaxValue());
             settings.rightDuration = (int)(cell.getRightProgress() * cell.getMaxValue());
-            settings.topProgress = cell.getTopProgress();
-            settings.botProgress = cell.getBottomProgress();
+            settings.setTopProgress(cell.getTopProgress());
+            settings.setBotProgress(cell.getBottomProgress());
             AnimationsController.updateBackgroundSettings(settings);
         }
     }

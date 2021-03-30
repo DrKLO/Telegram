@@ -78,7 +78,7 @@ public class BackgroundAnimationsPreviewActivity extends BaseFragment {
             this.settings = settings;
             this.pages = new BackgroundPreviewPage[settings.length];
             for (int i = 0; i < pages.length; ++i) {
-                pages[i] = new BackgroundPreviewPage();
+                pages[i] = new BackgroundPreviewPage(settings[i].title);
             }
         }
 
@@ -98,6 +98,11 @@ public class BackgroundAnimationsPreviewActivity extends BaseFragment {
         }
 
         @Override
+        public int getItemViewType(int position) {
+            return settings[position].id;
+        }
+
+        @Override
         public String getItemTitle(int position) {
             return settings[position].title;
         }
@@ -108,12 +113,18 @@ public class BackgroundAnimationsPreviewActivity extends BaseFragment {
 
         private static final int animateBtnHeight = 47;
 
+        private final String name;
+
         private GradientBackgroundView backgroundView;
+
+        public BackgroundPreviewPage(String name) {
+            this.name = name;
+        }
 
         public View createView(Context context) {
             FrameLayout rootLayout = new FrameLayout(context);
 
-            backgroundView = new GradientBackgroundView(context);
+            backgroundView = new GradientBackgroundView(context, name);
             rootLayout.addView(backgroundView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.TOP, 0, 0, 0, animateBtnHeight));
 
             View shadowView = new View(context);

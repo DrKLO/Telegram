@@ -20,19 +20,24 @@ public class GLTextureView extends TextureView implements TextureView.SurfaceTex
         Choreographer.FrameCallback {
 
     @Nullable
+    private final String name;
+    @Nullable
     private Drawer drawer;
-
     @Nullable
     private RenderThread renderThread;
 
-    // TODO agolokoz: optimize to use false
     private boolean isAlwaysInvalidate = true;
     private boolean isDestroyThreadOnSurfaceDestroyed = false;
     private int width;
     private int height;
 
     public GLTextureView(@NonNull Context context) {
+        this(context, null);
+    }
+
+    public GLTextureView(@NonNull Context context, @Nullable String name) {
         super(context);
+        this.name = name;
         setSurfaceTextureListener(this);
     }
 
@@ -40,7 +45,7 @@ public class GLTextureView extends TextureView implements TextureView.SurfaceTex
     protected void onAttachedToWindow() {
         super.onAttachedToWindow();
         if (drawer != null) {
-            renderThread = new RenderThread(drawer);
+            renderThread = new RenderThread(drawer, name);
             renderThread.start();
         }
     }
@@ -85,10 +90,7 @@ public class GLTextureView extends TextureView implements TextureView.SurfaceTex
 
     @Override
     public void doFrame(long frameTimeNanos) {
-        RenderThread thread = renderThread;
-        if (thread != null) {
-            thread.dispatchInvalidate();
-        }
+        redraw();
         if (isAlwaysInvalidate) {
             Choreographer.getInstance().postFrameCallback(this);
         }
@@ -108,6 +110,13 @@ public class GLTextureView extends TextureView implements TextureView.SurfaceTex
             Choreographer.getInstance().postFrameCallback(this);
         } else {
             Choreographer.getInstance().removeFrameCallback(this);
+        }
+    }
+
+    public void redraw() {
+        RenderThread thread = renderThread;
+        if (thread != null) {
+            thread.dispatchInvalidate();
         }
     }
 
@@ -133,8 +142,8 @@ public class GLTextureView extends TextureView implements TextureView.SurfaceTex
         private EglBase eglBase;
         private WindowEglSurface windowSurface;
 
-        public RenderThread(@NonNull Drawer drawer) {
-            super("GradientTextureView.RenderThread");
+        public RenderThread(@NonNull Drawer drawer, String name) {
+            super("GradientTextureView.RenderThread (" + name + ")");
             this.drawer = drawer;
         }
 

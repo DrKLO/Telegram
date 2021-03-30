@@ -4334,7 +4334,7 @@
     <string name="AnimationSettingsBackgroundPreview">Background Preview</string>
     <string name="AnimationSettingsOpenFullScreen">Open Full Screen</string>
     <string name="AnimationSettingsColors">Colors</string>
-    <string name="AnimationSettingsSendMessage">SendMessage</string>
+    <string name="AnimationSettingsSendMessage">Send Message</string>
     <string name="AnimationSettingsOpenChat">OpenChat</string>
     <string name="AnimationSettingsJumpToMessage">Jump to Message</string>
     <string name="AnimationSettingsColorN">Color %1$d</string>

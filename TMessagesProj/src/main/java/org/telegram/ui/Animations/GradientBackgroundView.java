@@ -2,17 +2,16 @@ package org.telegram.ui.Animations;
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
-import android.animation.TimeInterpolator;
 import android.animation.ValueAnimator;
 import android.content.Context;
 import android.graphics.SurfaceTexture;
+import android.view.animation.Interpolator;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import org.telegram.ui.Components.GLTextureView;
 
-// TODO agolokoz: fix bug with animations in viewpager
 public class GradientBackgroundView extends GLTextureView {
 
     private final GradientGLDrawer drawer = new GradientGLDrawer(getContext());
@@ -23,12 +22,14 @@ public class GradientBackgroundView extends GLTextureView {
     private ValueAnimator animator;
     @Nullable
     private AnimationSettings settings;
-    @Nullable
-    private TimeInterpolator interpolator;
     private int currentPointsPosition;
 
     public GradientBackgroundView(@NonNull Context context) {
-        super(context);
+        this(context, null);
+    }
+
+    public GradientBackgroundView(@NonNull Context context, @Nullable String name) {
+        super(context, name);
         setDrawer(drawer);
         setPointsState(currentPointsPosition);
     }
@@ -43,11 +44,11 @@ public class GradientBackgroundView extends GLTextureView {
         for (int i = 0; i != colors.length; ++i) {
             drawer.setColor(i, colors[i]);
         }
+        invalidate();
     }
 
     public void setSettings(@Nullable AnimationSettings settings) {
         this.settings = settings;
-        interpolator = null;
     }
 
     public void animateBackground() {
@@ -98,8 +99,11 @@ public class GradientBackgroundView extends GLTextureView {
             }
         });
         animator.setDuration(settings == null ? 500 : settings.maxDuration);
-        if (interpolator != null) {
-            animator.setInterpolator(interpolator);
+        if (settings != null) {
+            Interpolator interpolator = settings.getInterpolator();
+            if (interpolator != null) {
+                animator.setInterpolator(interpolator);
+            }
         }
         animator.start();
     }
@@ -111,12 +115,14 @@ public class GradientBackgroundView extends GLTextureView {
             setPointPosition(i, x, y);
             setAnimationStartPoint(i, x, y);
         }
+        invalidate();
     }
 
     private void setPointPosition(int pointIdx, float x, float y) {
         drawer.setPosition(pointIdx, x, y);
         currentPoints[pointIdx * 2] = x;
         currentPoints[pointIdx * 2 + 1] = y;
+        invalidate();
     }
 
     private void setAnimationStartPoint(int pointIdx, float x, float y) {
