@@ -37,7 +37,7 @@ public class GradientBackgroundView extends GLTextureView {
     @Override
     public void onSurfaceTextureAvailable(@NonNull SurfaceTexture surface, int width, int height) {
         super.onSurfaceTextureAvailable(surface, width, height);
-        setColors(AnimationsController.getForCurrentUser().getBackgroundColorsCopy());
+        setColors(AnimationsController.getInstance().getBackgroundColorsCopy());
     }
 
     public void setColors(int[] colors) {
@@ -51,7 +51,7 @@ public class GradientBackgroundView extends GLTextureView {
         this.settings = settings;
     }
 
-    public void animateBackground() {
+    public void startAnimation() {
         int nextPosition = (currentPointsPosition + 1) % AnimationsController.backgroundPositionsCount;
         startAnimation(nextPosition);
         currentPointsPosition = nextPosition;
@@ -73,6 +73,7 @@ public class GradientBackgroundView extends GLTextureView {
                 float yCurr = yPrev + (yNext - yPrev) * progress;
                 setPointPosition(i, xCurr, yCurr);
             }
+            invalidate();
         });
         animator.addListener(new AnimatorListenerAdapter() {
             private boolean isCancelled = false;
@@ -96,6 +97,7 @@ public class GradientBackgroundView extends GLTextureView {
                     setPointPosition(i, xNext, yNext);
                     setAnimationStartPoint(i, xNext, yNext);
                 }
+                invalidate();
             }
         });
         animator.setDuration(settings == null ? 500 : settings.maxDuration);
@@ -122,7 +124,6 @@ public class GradientBackgroundView extends GLTextureView {
         drawer.setPosition(pointIdx, x, y);
         currentPoints[pointIdx * 2] = x;
         currentPoints[pointIdx * 2 + 1] = y;
-        invalidate();
     }
 
     private void setAnimationStartPoint(int pointIdx, float x, float y) {

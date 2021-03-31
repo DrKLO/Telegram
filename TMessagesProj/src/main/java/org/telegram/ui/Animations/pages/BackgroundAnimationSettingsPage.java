@@ -31,13 +31,13 @@ public class BackgroundAnimationSettingsPage extends AnimationsSettingsPage impl
 
         List<Item> items = new ArrayList<>();
         items.add(pos++, new HeaderItem(LocaleController.getString("", R.string.AnimationSettingsBackgroundPreview)));
-        items.add(backgroundPreviewPosition = pos++, new PreviewItem(AnimationsController.getForCurrentUser().getBackgroundColorsCopy()));
+        items.add(backgroundPreviewPosition = pos++, new PreviewItem(AnimationsController.getInstance().getBackgroundColorsCopy()));
         items.add(fullScreenPosition = pos++, new TextItem(LocaleController.getString("", R.string.AnimationSettingsOpenFullScreen)));
         items.add(pos++, sectionItem);
         items.add(pos++, new HeaderItem(LocaleController.getString("", R.string.AnimationSettingsColors)));
         for (int i = 0; i != AnimationsController.backgroundPointsCount; ++i) {
             String title = LocaleController.formatString("", R.string.AnimationSettingsColorN, i + 1);
-            int color = AnimationsController.getForCurrentUser().getBackgroundCurrentColor(i);
+            int color = AnimationsController.getInstance().getBackgroundCurrentColor(i);
             items.add(colorPosition[i] = pos++, new SelectColorItem(title, i, color));
             if (i < AnimationsController.backgroundPointsCount - 1) {
                 items.add(pos++, dividerItem);
@@ -47,8 +47,8 @@ public class BackgroundAnimationSettingsPage extends AnimationsSettingsPage impl
         items.add(pos++, sectionItem);
 
         int animPropsIdx = 0;
-        AnimationSettings[] settings = AnimationsController.getForCurrentUser().getBackgroundAnimationSettings();
-        for (AnimationSettings s : settings) {
+        for (int i = 0; i < AnimationsController.backgroundAnimationsCount; ++i) {
+            AnimationSettings s = AnimationsController.getInstance().getBackgroundAnimationSettings(i);
             items.add(pos++, new HeaderItem(s.title));
             items.add(pos++, new DurationItem(s.id, s.maxDuration));
             items.add(pos++, dividerItem);
@@ -74,7 +74,7 @@ public class BackgroundAnimationSettingsPage extends AnimationsSettingsPage impl
         if (tag instanceof SelectColorItem) {
             SelectColorItem item = (SelectColorItem) tag;
             // TODO agolokoz: maybe animate?
-            setColor(AnimationsController.getForCurrentUser().getBackgroundCurrentColor(item.id), tag, true);
+            setColor(AnimationsController.getInstance().getBackgroundCurrentColor(item.id), tag, true);
         }
     }
 
@@ -86,7 +86,7 @@ public class BackgroundAnimationSettingsPage extends AnimationsSettingsPage impl
             settings.rightDuration = (int)(cell.getRightProgress() * cell.getMaxValue());
             settings.setTopProgress(cell.getTopProgress());
             settings.setBotProgress(cell.getBottomProgress());
-            AnimationsController.getForCurrentUser().updateBackgroundSettings(settings);
+            AnimationsController.getInstance().updateBackgroundSettings(settings);
         }
     }
 
@@ -102,7 +102,7 @@ public class BackgroundAnimationSettingsPage extends AnimationsSettingsPage impl
                 AnimationSettings settings = ((AnimationPropertiesItem) adapterItem).settings;
                 settings.setMaxDuration(duration);
                 adapter.updateItem(position, adapterItem);
-                AnimationsController.getForCurrentUser().updateBackgroundSettings(settings);
+                AnimationsController.getInstance().updateBackgroundSettings(settings);
             }
         }
     }
@@ -127,7 +127,7 @@ public class BackgroundAnimationSettingsPage extends AnimationsSettingsPage impl
                     adapter.updateItem(colorPosition[colorIdx], colorItem);
                 }
 
-                AnimationsController.getForCurrentUser().setBackgroundCurrentColor(colorIdx, color);
+                AnimationsController.getInstance().setBackgroundCurrentColor(colorIdx, color);
             }
         }
     }

@@ -146,6 +146,7 @@ import org.telegram.ui.ActionBar.ThemeDescription;
 import org.telegram.ui.Adapters.MentionsAdapter;
 import org.telegram.ui.Adapters.MessagesSearchAdapter;
 import org.telegram.ui.Adapters.StickersAdapter;
+import org.telegram.ui.Animations.AnimationSettings;
 import org.telegram.ui.Animations.GradientBackgroundView;
 import org.telegram.ui.Cells.BotHelpCell;
 import org.telegram.ui.Cells.BotSwitchCell;
@@ -388,7 +389,8 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
     private int pinBullerinTag;
     private boolean openKeyboardOnAttachMenuClose;
 
-    private GLTextureView gradientBackgroundView;
+    private GradientBackgroundView gradientBackgroundView;
+    private boolean isOpenChatAnimationPlayed;
 
     private MessageObject hintMessageObject;
     private int hintMessageType;
@@ -15352,6 +15354,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         }
         checkWaitingForReplies();
         updateReplyMessageHeader(true);
+        playBackgroundAnimation(AnimationsController.backgroundAnimationIdSendMessage);
     }
 
     private void processDeletedMessages(ArrayList<Integer> markAsDeletedMessages, int channelId) {
@@ -15932,6 +15935,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             openAnimationEnded = false;
             if (!backward) {
                 openAnimationStartTime = SystemClock.elapsedRealtime();
+                playBackgroundAnimation(AnimationsController.backgroundAnimationIdOpenChat);
             }
         } else {
             if (UserObject.isUserSelf(currentUser)) {
@@ -23033,5 +23037,14 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         } else {
             contentView.setBackgroundImage(Theme.getCachedWallpaper(), Theme.isWallpaperMotion());
         }
+    }
+
+    private void playBackgroundAnimation(int animationType) {
+        if (!AnimationsController.isAnimatedBackgroundEnabled() || gradientBackgroundView == null) {
+            return;
+        }
+        AnimationSettings s = AnimationsController.getInstance().getBackgroundAnimationSettings(animationType);
+        gradientBackgroundView.setSettings(s);
+        gradientBackgroundView.startAnimation();
     }
 }

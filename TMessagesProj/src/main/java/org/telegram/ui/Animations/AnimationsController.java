@@ -71,7 +71,7 @@ public class AnimationsController extends BaseController {
         return instance;
     }
 
-    public static AnimationsController getForCurrentUser() {
+    public static AnimationsController getInstance() {
         return getInstance(UserConfig.selectedAccount);
     }
 
@@ -114,6 +114,10 @@ public class AnimationsController extends BaseController {
 
     public AnimationSettings[] getBackgroundAnimationSettings() {
         return backgroundAnimationSettings;
+    }
+
+    public AnimationSettings getBackgroundAnimationSettings(int settingsId) {
+        return backgroundAnimationSettings[settingsId];
     }
 
     public void updateBackgroundSettings(@NonNull AnimationSettings settings) {

@@ -26,8 +26,7 @@ public class GLTextureView extends TextureView implements TextureView.SurfaceTex
     @Nullable
     private RenderThread renderThread;
 
-    private boolean isAlwaysInvalidate = true;
-    private boolean isDestroyThreadOnSurfaceDestroyed = false;
+    private boolean isAlwaysInvalidate = false;
     private int width;
     private int height;
 
@@ -44,23 +43,13 @@ public class GLTextureView extends TextureView implements TextureView.SurfaceTex
     @Override
     protected void onAttachedToWindow() {
         super.onAttachedToWindow();
-        if (drawer != null) {
-            renderThread = new RenderThread(drawer, name);
-            renderThread.start();
-        }
+        renderThread = new RenderThread(drawer, name);
+        renderThread.start();
     }
 
     @Override
     public void onSurfaceTextureAvailable(@NonNull SurfaceTexture surface, int width, int height) {
-        this.width = width;
-        this.height = height;
-        RenderThread thread = renderThread;
-        if (thread != null) {
-            thread.dispatchSetSurfaceTexture(surface);
-        }
-        if (isAlwaysInvalidate) {
-            Choreographer.getInstance().postFrameCallback(this);
-        }
+        setSurfaceTexture(surface, width, height);
     }
 
     @Override
@@ -68,12 +57,7 @@ public class GLTextureView extends TextureView implements TextureView.SurfaceTex
         if (this.width == width && this.height == height) {
             return;
         }
-        this.width = width;
-        this.height = height;
-        RenderThread thread = renderThread;
-        if (thread != null) {
-            thread.dispatchSetSurfaceTexture(surface);
-        }
+        setSurfaceTexture(surface, width, height);
     }
 
     @Override
@@ -82,17 +66,23 @@ public class GLTextureView extends TextureView implements TextureView.SurfaceTex
     @Override
     public boolean onSurfaceTextureDestroyed(@NonNull SurfaceTexture surface) {
         Choreographer.getInstance().removeFrameCallback(this);
-        if (isDestroyThreadOnSurfaceDestroyed) {
-            destroyThread();
-        }
         return true;
     }
 
     @Override
     public void doFrame(long frameTimeNanos) {
-        redraw();
+        invalidate();
         if (isAlwaysInvalidate) {
             Choreographer.getInstance().postFrameCallback(this);
+        }
+    }
+
+    @Override
+    public void invalidate() {
+        super.invalidate();
+        RenderThread thread = renderThread;
+        if (thread != null) {
+            thread.dispatchInvalidate();
         }
     }
 
@@ -102,6 +92,9 @@ public class GLTextureView extends TextureView implements TextureView.SurfaceTex
 
     public void setDrawer(@Nullable Drawer drawer) {
         this.drawer = drawer;
+        if (renderThread != null) {
+            renderThread.setDrawer(drawer);
+        }
     }
 
     public void setAlwaysInvalidate(boolean alwaysInvalidate) {
@@ -113,19 +106,22 @@ public class GLTextureView extends TextureView implements TextureView.SurfaceTex
         }
     }
 
-    public void redraw() {
-        RenderThread thread = renderThread;
-        if (thread != null) {
-            thread.dispatchInvalidate();
-        }
-    }
-
     private void destroyThread() {
         if (renderThread != null) {
             renderThread.dispatchRelease();
             renderThread.interrupt();
             renderThread = null;
         }
+    }
+
+    private void setSurfaceTexture(@NonNull SurfaceTexture surface, int width, int height) {
+        this.width = width;
+        this.height = height;
+        RenderThread thread = renderThread;
+        if (thread != null) {
+            thread.dispatchSetSurfaceTexture(surface);
+        }
+        Choreographer.getInstance().postFrameCallback(this);
     }
 
     private static class RenderThread extends HandlerThread implements Handler.Callback {
@@ -137,13 +133,17 @@ public class GLTextureView extends TextureView implements TextureView.SurfaceTex
         @NonNull
         private final Handler handler = new Handler(Looper.myLooper(), this);
         @Nullable
-        private Drawer drawer;
+        private volatile Drawer drawer;
 
         private EglBase eglBase;
         private WindowEglSurface windowSurface;
 
-        public RenderThread(@NonNull Drawer drawer, String name) {
+        public RenderThread(@Nullable Drawer drawer, String name) {
             super("GradientTextureView.RenderThread (" + name + ")");
+            this.drawer = drawer;
+        }
+
+        public void setDrawer(@Nullable Drawer drawer) {
             this.drawer = drawer;
         }
 
@@ -190,12 +190,14 @@ public class GLTextureView extends TextureView implements TextureView.SurfaceTex
             eglBase = EglBase.create();
             windowSurface = new WindowEglSurface(eglBase, surfaceTexture);
             windowSurface.makeCurrent();
+            Drawer drawer = this.drawer;
             if (drawer != null) {
                 drawer.init(eglBase.surfaceWidth(), eglBase.surfaceHeight());
             }
         }
 
         private void draw() {
+            Drawer drawer = this.drawer;
             if (windowSurface == null || drawer == null) {
                 return;
             }
@@ -204,10 +206,6 @@ public class GLTextureView extends TextureView implements TextureView.SurfaceTex
         }
 
         private void release() {
-            if (drawer != null) {
-                drawer.release();
-                drawer = null;
-            }
             if (windowSurface != null) {
                 windowSurface.releaseEglSurface();
                 windowSurface = null;

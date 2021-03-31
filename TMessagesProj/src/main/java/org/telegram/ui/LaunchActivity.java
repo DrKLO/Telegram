@@ -934,7 +934,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
         }
         updateCurrentConnectionState(currentAccount);
         // just load data
-        AnimationsController.getForCurrentUser();
+        AnimationsController.getInstance();
     }
 
     private void switchToAvailableAccountOrLogout() {
