@@ -82,8 +82,8 @@ public class BackgroundAnimationSettingsPage extends AnimationsSettingsPage impl
     public void onPropertiesChanged(AnimationPropertiesCell cell, @Nullable Object tag) {
         if (tag instanceof AnimationPropertiesItem) {
             AnimationSettings settings = ((AnimationPropertiesItem) tag).settings;
-            settings.leftDuration = (int)(cell.getLeftProgress() * cell.getMaxValue());
-            settings.rightDuration = (int)(cell.getRightProgress() * cell.getMaxValue());
+            settings.setLeftDuration((int)(cell.getLeftProgress() * cell.getMaxValue()));
+            settings.setRightDuration((int)(cell.getRightProgress() * cell.getMaxValue()));
             settings.setTopProgress(cell.getTopProgress());
             settings.setBotProgress(cell.getBottomProgress());
             AnimationsController.getInstance().updateBackgroundSettings(settings);

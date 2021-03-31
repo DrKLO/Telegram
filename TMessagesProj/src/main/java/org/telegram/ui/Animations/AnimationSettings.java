@@ -13,11 +13,11 @@ public class AnimationSettings {
 
     public final int id;
     public final String title;
-    public int leftDuration;
-    public int rightDuration;
     public int maxDuration;
     private float topProgress;
     private float botProgress;
+    private int leftDuration;
+    private int rightDuration;
 
     private final AnimationsInterpolator interpolator;
 
@@ -29,15 +29,7 @@ public class AnimationSettings {
         this.topProgress = topProgress;
         this.botProgress = botProgress;
         this.maxDuration = maxDuration;
-        interpolator = new AnimationsInterpolator(botProgress, 1f - topProgress);
-    }
-
-    public float getLeftProgress() {
-        return leftDuration * 1f / maxDuration;
-    }
-
-    public float getRightProgress() {
-        return rightDuration * 1f / maxDuration;
+        interpolator = new AnimationsInterpolator(botProgress, 1f - topProgress, getLeftProgress(), getRightProgress());
     }
 
     public void setMaxDuration(int newMaxDuration) {
@@ -57,12 +49,30 @@ public class AnimationSettings {
         interpolator.setStartX(botProgress);
     }
 
+    public void setLeftDuration(int leftDuration) {
+        this.leftDuration = leftDuration;
+        interpolator.setLeftBoundProgress(getLeftProgress());
+    }
+
+    public void setRightDuration(int rightDuration) {
+        this.rightDuration = rightDuration;
+        interpolator.setRightBoundProgress(getRightProgress());
+    }
+
     public float getTopProgress() {
         return topProgress;
     }
 
     public float getBotProgress() {
         return botProgress;
+    }
+
+    public float getLeftProgress() {
+        return leftDuration * 1f / maxDuration;
+    }
+
+    public float getRightProgress() {
+        return rightDuration * 1f / maxDuration;
     }
 
     public AnimationsInterpolator getInterpolator() {

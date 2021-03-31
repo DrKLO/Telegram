@@ -217,13 +217,6 @@ public class AnimationPropertiesCell extends View {
             float xBottom = topBottomProgressLeft + topBottomProgressWidth * interpolator.getStartX();
             float xTop = topBottomProgressLeft + topBottomProgressWidth * interpolator.getEndX();
             chartLinePath.cubicTo(xBottom, bottomLineVerticalCenter, xTop, topLineVerticalCenter, topBottomProgressRight, topLineVerticalCenter);
-//          TODO agolokoz: remove
-//            for (float x = topBottomProgressLeft; x <= topBottomProgressRight; ++x) {
-//                float input = (x - topBottomProgressLeft) / topBottomProgressWidth;
-//                float output = interpolator.getInterpolation(input);
-//                float y = bottomLineVerticalCenter - output * linesSpace;
-//                canvas.drawPoint(x, y, chartDebugPaint);
-//            }
         }
         canvas.drawPath(chartLinePath, chartLinePaint);
 
@@ -258,6 +251,14 @@ public class AnimationPropertiesCell extends View {
         canvas.translate(xTranslate, bottomTextTop);
         bottomProgressTextLayout.draw(canvas);
         canvas.restore();
+
+        // debug interpolator line
+//        for (float x = lineLeftRightSpace; x <= lineLeftRightSpace + lineMaxWidth; ++x) {
+//            float input = (x - lineLeftRightSpace) / lineMaxWidth;
+//            float output = interpolator.getInterpolation(input);
+//            float y = bottomLineVerticalCenter - output * linesSpace;
+//            canvas.drawPoint(x, y, chartDebugPaint);
+//        }
 
         // bound lines
         canvas.drawBitmap(boundBitmap, topBottomProgressLeft - boundRectBackRadius, topLineVerticalCenter - boundRectBackRadius, bitmapPaint);
@@ -328,6 +329,9 @@ public class AnimationPropertiesCell extends View {
         leftProgress = progress;
         setDurationValue(leftBoundText, (int)(progress * maxValue));
         isDataChanged = true;
+        if (interpolator != null) {
+            interpolator.setLeftBoundProgress(progress);
+        }
         invalidate();
     }
 
@@ -335,6 +339,9 @@ public class AnimationPropertiesCell extends View {
         rightProgress = progress;
         setDurationValue(rightBoundText, (int)(progress * maxValue));
         isDataChanged = true;
+        if (interpolator != null) {
+            interpolator.setRightBoundProgress(progress);
+        }
         invalidate();
     }
 
