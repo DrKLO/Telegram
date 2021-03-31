@@ -9928,6 +9928,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             waitingForLoad.add(lastLoadIndex);
             getMessagesController().loadMessages(dialog_id, mergeDialogId, false, 30, 0, 0, true, 0, classGuid, 0, 0, ChatObject.isChannel(currentChat), chatMode, threadMessageId, replyMaxReadId, lastLoadIndex++);
         }
+        playBackgroundAnimation(AnimationsController.backgroundAnimationIdJump);
     }
 
     public void updateTextureViewPosition(boolean needScroll) {
@@ -10629,6 +10630,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                             scrollByTouch = false;
                             chatListView.smoothScrollBy(0, scrollY);
                             chatListView.setOverScrollMode(RecyclerListView.OVER_SCROLL_NEVER);
+                            playBackgroundAnimation(AnimationsController.backgroundAnimationIdJump);
                         }
                         break;
                     }
@@ -10643,6 +10645,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     chatScrollHelper.scrollToPosition(position, yOffset, false, true);
                     canShowPagedownButton = true;
                     updatePagedownButtonVisibility(true);
+                    playBackgroundAnimation(AnimationsController.backgroundAnimationIdJump);
                 }
             } else {
                 query = true;
@@ -10681,6 +10684,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             postponedScrollMinMessageId = minMessageId[0];
             postponedScrollMessageId = id;
             getMessagesController().loadMessages(loadIndex == 0 ? dialog_id : mergeDialogId, 0, false, isThreadChat() || AndroidUtilities.isTablet() ? 30 : 20, startLoadFromMessageId, 0, true, 0, classGuid, 3, 0, ChatObject.isChannel(currentChat), chatMode, threadMessageId, replyMaxReadId, lastLoadIndex++);
+            playBackgroundAnimation(AnimationsController.backgroundAnimationIdJump);
         } else {
             View child = chatListView.getChildAt(0);
             if (child != null && child.getTop() <= 0) {

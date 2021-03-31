@@ -29,7 +29,7 @@ public class AnimationSettings {
         this.topProgress = topProgress;
         this.botProgress = botProgress;
         this.maxDuration = maxDuration;
-        interpolator = new AnimationsInterpolator();
+        interpolator = new AnimationsInterpolator(botProgress, 1f - topProgress);
     }
 
     public float getLeftProgress() {

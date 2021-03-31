@@ -6,7 +6,11 @@ public class AnimationsInterpolator extends CubicBezierInterpolator {
     private static final float FACTOR = 0.95f;
 
     public AnimationsInterpolator() {
-        super(FACTOR, 0f, 0f, FACTOR);
+        this(FACTOR, 0f);
+    }
+
+    public AnimationsInterpolator(float xStart, float xEnd) {
+        super(xStart * FACTOR, 0f, xEnd * FACTOR, 1f);
     }
 
     public void setStartX(float x) {
