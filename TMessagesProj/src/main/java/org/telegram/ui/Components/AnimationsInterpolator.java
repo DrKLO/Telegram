@@ -1,5 +1,6 @@
 package org.telegram.ui.Components;
 
+// TODO agolokoz: add left and right bounds
 public class AnimationsInterpolator extends CubicBezierInterpolator {
 
     private static final float FACTOR = 0.95f;

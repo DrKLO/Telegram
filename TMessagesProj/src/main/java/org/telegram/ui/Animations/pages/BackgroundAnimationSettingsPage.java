@@ -16,7 +16,7 @@ public class BackgroundAnimationSettingsPage extends AnimationsSettingsPage impl
 
     public final int fullScreenPosition;
 
-    private final int[] animPropsPosition = new int[AnimationsController.backgroundSettingsCount];
+    private final int[] animPropsPosition = new int[AnimationsController.backgroundAnimationsCount];
     private final int[] colorPosition = new int[AnimationsController.backgroundPointsCount];
     private final int backgroundPreviewPosition;
 

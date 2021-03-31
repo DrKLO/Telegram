@@ -105,6 +105,7 @@ import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.DrawerLayoutContainer;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Adapters.DrawerLayoutAdapter;
+import org.telegram.ui.Animations.AnimationsController;
 import org.telegram.ui.Cells.DrawerAddCell;
 import org.telegram.ui.Cells.DrawerProfileCell;
 import org.telegram.ui.Cells.DrawerUserCell;
@@ -932,6 +933,8 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
             showTosActivity(account, UserConfig.getInstance(account).unacceptedTermsOfService);
         }
         updateCurrentConnectionState(currentAccount);
+        // just load data
+        AnimationsController.getForCurrentUser();
     }
 
     private void switchToAvailableAccountOrLogout() {

@@ -1,14 +1,15 @@
 package org.telegram.ui.Animations;
 
+import org.telegram.tgnet.SerializedData;
 import org.telegram.ui.Components.AnimationsInterpolator;
 
 public class AnimationSettings {
 
-    public static final int DEFAULT_LEFT_DURATION = 0;
-    public static final int DEFAULT_RIGHT_DURATION = 500;
-    public static final int DEFAULT_MAX_DURATION = 500;
-    public static final float DEFAULT_TOP_PROGRESS = 1.0f;
-    public static final float DEFAULT_BOT_PROGRESS = 0.5f;
+    private static final int DEFAULT_LEFT_DURATION = 0;
+    private static final int DEFAULT_RIGHT_DURATION = 500;
+    private static final int DEFAULT_MAX_DURATION = 500;
+    private static final float DEFAULT_TOP_PROGRESS = 1.0f;
+    private static final float DEFAULT_BOT_PROGRESS = 0.5f;
 
     public final int id;
     public final String title;
@@ -68,4 +69,26 @@ public class AnimationSettings {
         return interpolator;
     }
 
+    public SerializedData toSerializedData() {
+        SerializedData data = new SerializedData();
+        data.writeInt32(leftDuration);
+        data.writeInt32(rightDuration);
+        data.writeInt32(maxDuration);
+        data.writeFloat(topProgress);
+        data.writeFloat(botProgress);
+        return data;
+    }
+
+    public static AnimationSettings fromSerializedData(SerializedData data, int id, String title) {
+        int leftDuration = data.readInt32(DEFAULT_LEFT_DURATION);
+        int rightDuration = data.readInt32(DEFAULT_RIGHT_DURATION);
+        int maxDuration = data.readInt32(DEFAULT_MAX_DURATION);
+        float topProgress = data.readFloat(DEFAULT_TOP_PROGRESS);
+        float botProgress = data.readFloat(DEFAULT_BOT_PROGRESS);
+        return new AnimationSettings(id, title, leftDuration, rightDuration, topProgress, botProgress, maxDuration);
+    }
+
+    public static AnimationSettings createDefault(int id, String title) {
+        return new AnimationSettings(id, title, DEFAULT_LEFT_DURATION, DEFAULT_RIGHT_DURATION, DEFAULT_TOP_PROGRESS, DEFAULT_BOT_PROGRESS, DEFAULT_MAX_DURATION);
+    }
 }

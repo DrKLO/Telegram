@@ -8,6 +8,8 @@
 
 package org.telegram.tgnet;
 
+import android.util.Base64;
+
 import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.FileLog;
 
@@ -326,6 +328,20 @@ public class SerializedData extends AbstractSerializedData {
         }
     }
 
+    public void writeInt32Array(int[] values) {
+        try {
+            writeInt32(values.length);
+            for (int i = 0; i < values.length; ++i) {
+                writeInt32(values[i]);
+            }
+        } catch (Exception e) {
+            if (BuildVars.LOGS_ENABLED) {
+                FileLog.e("write int32 array error");
+                FileLog.e(e);
+            }
+        }
+    }
+
     public int length() {
         if (!justCalc) {
             return isOut ? outbuf.size() : inbuf.available();
@@ -341,6 +357,10 @@ public class SerializedData extends AbstractSerializedData {
 
     public byte[] toByteArray() {
         return outbuf.toByteArray();
+    }
+
+    public String toBase64String() {
+        return Base64.encodeToString(toByteArray(), Base64.NO_WRAP);
     }
 
     public void skip(int count) {
@@ -519,6 +539,14 @@ public class SerializedData extends AbstractSerializedData {
         return 0;
     }
 
+    public float readFloat(float defaultValue) {
+        try {
+            return readFloat(true);
+        } catch (Exception e) {
+            return defaultValue;
+        }
+    }
+
     public int readInt32(boolean exception) {
         try {
             int i = 0;
@@ -538,6 +566,14 @@ public class SerializedData extends AbstractSerializedData {
             }
         }
         return 0;
+    }
+
+    public int readInt32(int defaultValue) {
+        try {
+            return readInt32(true);
+        } catch (Exception e) {
+            return defaultValue;
+        }
     }
 
     public long readInt64(boolean exception) {
@@ -561,6 +597,27 @@ public class SerializedData extends AbstractSerializedData {
         return 0;
     }
 
+    public int[] readInt32Array(boolean exception) {
+        try {
+            int size = readInt32(exception);
+            int[] array = new int[size];
+            for (int i = 0; i < size; ++i) {
+                array[i] = readInt32(exception);
+            }
+            return array;
+        } catch (Exception e) {
+            if (exception) {
+                throw new RuntimeException("read int32 array error", e);
+            } else {
+                if (BuildVars.LOGS_ENABLED) {
+                    FileLog.e("read int32 array error");
+                    FileLog.e(e);
+                }
+            }
+        }
+        return null;
+    }
+
     @Override
     public void writeByteBuffer(NativeByteBuffer buffer) {
 
@@ -578,5 +635,9 @@ public class SerializedData extends AbstractSerializedData {
         } catch (Exception e) {
             return Integer.MAX_VALUE;
         }
+    }
+
+    public static SerializedData fromBase64String(String string) {
+        return new SerializedData(Base64.decode(string, Base64.DEFAULT));
     }
 }

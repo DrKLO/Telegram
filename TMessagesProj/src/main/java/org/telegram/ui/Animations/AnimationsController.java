@@ -1,6 +1,7 @@
 package org.telegram.ui.Animations;
 
 import android.content.SharedPreferences;
+import android.text.TextUtils;
 
 import androidx.annotation.ColorInt;
 import androidx.annotation.NonNull;
@@ -10,13 +11,18 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
+import org.telegram.tgnet.SerializedData;
 
 import java.util.Arrays;
 
 public class AnimationsController extends BaseController {
 
+    public static final int backgroundAnimationIdSendMessage = 0;
+    public static final int backgroundAnimationIdOpenChat = 1;
+    public static final int backgroundAnimationIdJump = 2;
+    public static final int backgroundAnimationsCount = 3;
+
     public static final int backgroundPointsCount = 4;
-    public static final int backgroundSettingsCount = 3;
     public static final int[] backgroundDefaultColors = new int[] {
             0xFFFFF6BF, 0xFF76A076, 0xFFF6E477, 0xFF316B4D
     };
@@ -46,6 +52,10 @@ public class AnimationsController extends BaseController {
         return backgroundCoordinates[animationPosition * backgroundPointsCount * 2 + pointIdx * 2 + 1];
     }
 
+
+    private static final String KEY_BACK_SETTINGS = "back";
+    private static final String KEY_BACK_COLOR = "backColor";
+
     private static final AnimationsController[] instances = new AnimationsController[UserConfig.MAX_ACCOUNT_COUNT];
 
     private static AnimationsController getInstance(int accountNum) {
@@ -67,18 +77,21 @@ public class AnimationsController extends BaseController {
 
 
     private final int[] backgroundCurrentColors = new int[backgroundPointsCount];
-
-    private final AnimationSettings[] backgroundAnimationSettings = new AnimationSettings[backgroundSettingsCount];
+    private final AnimationSettings[] backgroundAnimationSettings = new AnimationSettings[backgroundAnimationsCount];
 
     private AnimationsController(int account) {
         super(account);
-        SharedPreferences prefs = MessagesController.getAnimationsSettings(currentAccount);
-        for (int i = 0; i < backgroundCurrentColors.length; ++i) {
-            backgroundCurrentColors[i] = prefs.getInt("backColor" + i, backgroundDefaultColors[i]);
+        SharedPreferences prefs = getPrefs();
+        try {
+            String data = prefs.getString(KEY_BACK_COLOR, "");
+            SerializedData serializedData = SerializedData.fromBase64String(data);
+            int[] colors = serializedData.readInt32Array(true);
+            System.arraycopy(colors, 0, backgroundCurrentColors, 0, backgroundPointsCount);
+        } catch (Exception e) {
+            System.arraycopy(backgroundDefaultColors, 0, backgroundCurrentColors, 0, backgroundPointsCount);
         }
-        for (int i = 0; i < backgroundSettingsCount; ++i) {
-            String title = getTitleForBackgroundSettings(i);
-            backgroundAnimationSettings[i] = getSettingsFromPreferences(prefs, i, title, "back");
+        for (int i = 0; i < backgroundAnimationsCount; ++i) {
+            backgroundAnimationSettings[i] = getSettingsFromPreferences(prefs, KEY_BACK_SETTINGS + i, i);
         }
     }
 
@@ -92,8 +105,10 @@ public class AnimationsController extends BaseController {
 
     public void setBackgroundCurrentColor(int colorIdx, @ColorInt int color) {
         backgroundCurrentColors[colorIdx] = color;
-        MessagesController.getAnimationsSettings(currentAccount).edit()
-                .putInt("backColor" + colorIdx, color)
+        SerializedData data = new SerializedData();
+        data.writeInt32Array(backgroundCurrentColors);
+        getPrefs().edit()
+                .putString(KEY_BACK_COLOR, data.toBase64String())
                 .apply();
     }
 
@@ -105,41 +120,46 @@ public class AnimationsController extends BaseController {
         for (int i = 0; i != backgroundAnimationSettings.length; ++i) {
             if (settings.id == backgroundAnimationSettings[i].id) {
                 backgroundAnimationSettings[i] = settings;
-                updateSettingsInPreferences(MessagesController.getAnimationsSettings(currentAccount), "back", settings);
+                updateSettingsInPreferences(getPrefs(), KEY_BACK_SETTINGS + i, settings);
                 break;
             }
         }
     }
 
-    private static void updateSettingsInPreferences(SharedPreferences prefs, String prefix, AnimationSettings settings) {
+    private SharedPreferences getPrefs() {
+        return MessagesController.getAnimationsSettings(currentAccount);
+    }
+
+    private static void updateSettingsInPreferences(SharedPreferences prefs, String key, AnimationSettings settings) {
         prefs.edit()
-                .putInt(prefix + "Left" + settings.id, settings.leftDuration)
-                .putInt(prefix + "Right" + settings.id, settings.rightDuration)
-                .putInt(prefix + "Max" + settings.id, settings.maxDuration)
-                .putFloat(prefix + "Top" + settings.id, settings.getTopProgress())
-                .putFloat(prefix + "Bot" + settings.id, settings.getBotProgress())
+                .putString(key, settings.toSerializedData().toBase64String())
                 .apply();
     }
 
-    private static AnimationSettings getSettingsFromPreferences(SharedPreferences prefs, int id, String title, String prefix) {
-        int leftDuration = prefs.getInt(prefix + "Left" + id, AnimationSettings.DEFAULT_LEFT_DURATION);
-        int rightDuration = prefs.getInt(prefix + "Right" + id, AnimationSettings.DEFAULT_RIGHT_DURATION);
-        int maxDuration = prefs.getInt(prefix + "Max" + id, AnimationSettings.DEFAULT_MAX_DURATION);
-        float topProgress = prefs.getFloat(prefix + "Top" + id, AnimationSettings.DEFAULT_TOP_PROGRESS);
-        float botProgress = prefs.getFloat(prefix + "Bot" + id, AnimationSettings.DEFAULT_BOT_PROGRESS);
-        return new AnimationSettings(id, title, leftDuration, rightDuration, topProgress, botProgress, maxDuration);
+    private static AnimationSettings getSettingsFromPreferences(SharedPreferences prefs, String key, int id) {
+        String title = getTitleForBackgroundSettings(id);
+        try {
+            String data = prefs.getString(key, "");
+            if (TextUtils.isEmpty(data)) {
+                return AnimationSettings.createDefault(id, title);
+            }
+            SerializedData serializedData = SerializedData.fromBase64String(data);
+            return AnimationSettings.fromSerializedData(serializedData, id, title);
+        } catch (Exception e) {
+            return AnimationSettings.createDefault(id, title);
+        }
     }
 
     private static String getTitleForBackgroundSettings(int settingsId) {
         int resId = -1;
         switch (settingsId) {
-            case 0:
+            case backgroundAnimationIdSendMessage:
                 resId = R.string.AnimationSettingsSendMessage;
                 break;
-            case 1:
+            case backgroundAnimationIdOpenChat:
                 resId = R.string.AnimationSettingsOpenChat;
                 break;
-            case 2:
+            case backgroundAnimationIdJump:
                 resId = R.string.AnimationSettingsJumpToMessage;
                 break;
         }
