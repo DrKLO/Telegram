@@ -44,7 +44,7 @@ public class BackgroundAnimationsPreviewActivity extends BaseFragment {
         FrameLayout rootLayout = new FrameLayout(context);
         rootLayout.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundGray));
 
-        Adapter adapter = new Adapter(context, AnimationsController.getInstance().getBackgroundAnimationSettings());
+        Adapter adapter = new Adapter(context, AnimationsController.getInstance().getBackAnimSettings());
         viewPager = new ViewPagerFixed(context);
         viewPager.setAdapter(adapter);
         rootLayout.addView(viewPager, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.LEFT | Gravity.TOP, 0, 48, 0, 0));

@@ -4343,4 +4343,6 @@
     <string name="AnimationSettingsDuration">Duration</string>
     <string name="AnimationSettingsDurationMs">%1$dms</string>
     <string name="AnimationSettingsAnimate">Animate</string>
+    <string name="AnimationSettingsXPosition">X Position</string>
+    <string name="AnimationSettingsYPosition">Y Position</string>
 </resources>

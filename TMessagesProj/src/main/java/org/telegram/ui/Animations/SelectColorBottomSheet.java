@@ -106,7 +106,7 @@ public class SelectColorBottomSheet extends BottomSheet {
                 }
                 dismiss();
             });
-            buttonsLayout.addView(cancelBtn, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.START | Gravity.CENTER_VERTICAL, 0, 0, 0, 0));
+            buttonsLayout.addView(cancelBtn, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.START | Gravity.CENTER_VERTICAL, 0, shadowHeightDp, 0, 0));
 
             TextView applyBtn = createButton(LocaleController.getString("", R.string.AnimationSettingsApply));
             applyBtn.setOnClickListener(v -> {
@@ -115,7 +115,7 @@ public class SelectColorBottomSheet extends BottomSheet {
                 }
                 dismiss();
             });
-            buttonsLayout.addView(applyBtn, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.END | Gravity.CENTER_VERTICAL, 0, 0, 0, 0));
+            buttonsLayout.addView(applyBtn, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.END | Gravity.CENTER_VERTICAL, 0, shadowHeightDp, 0, 0));
         }
 
         linearLayout.addView(buttonsLayout, MATCH_PARENT, WRAP_CONTENT);
@@ -155,9 +155,11 @@ public class SelectColorBottomSheet extends BottomSheet {
     }
 
     private TextView createButton(String text) {
-        // TODO agolokoz: add ripple
         TextView button = new TextView(getContext());
         button.setAllCaps(true);
+        int color = Theme.getColor(Theme.key_listSelector);
+        Drawable backgroundDrawable = Theme.createSimpleSelectorRoundRectDrawable(0, 0, color, 0xff000000);
+        button.setBackground(backgroundDrawable);
         int lrPadding = AndroidUtilities.dp(21);
         int tbPadding = AndroidUtilities.dp(18);
         button.setPadding(lrPadding, tbPadding, lrPadding, tbPadding);

@@ -15,8 +15,8 @@ import org.telegram.ui.Components.GLTextureView;
 public class GradientBackgroundView extends GLTextureView {
 
     private final GradientGLDrawer drawer = new GradientGLDrawer(getContext());
-    private final float[] animationStartPoints = new float[AnimationsController.backgroundPointsCount * 2];
-    private final float[] currentPoints = new float[AnimationsController.backgroundPointsCount * 2];
+    private final float[] animationStartPoints = new float[AnimationsController.backPointsCount * 2];
+    private final float[] currentPoints = new float[AnimationsController.backPointsCount * 2];
 
     @Nullable
     private ValueAnimator animator;
@@ -52,7 +52,7 @@ public class GradientBackgroundView extends GLTextureView {
     }
 
     public void startAnimation() {
-        int nextPosition = (currentPointsPosition + 1) % AnimationsController.backgroundPositionsCount;
+        int nextPosition = (currentPointsPosition + 1) % AnimationsController.backPositionsCount;
         startAnimation(nextPosition);
         currentPointsPosition = nextPosition;
     }
@@ -64,7 +64,7 @@ public class GradientBackgroundView extends GLTextureView {
         animator = ValueAnimator.ofFloat(0f, 1f);
         animator.addUpdateListener(animation -> {
             float progress = (float) animation.getAnimatedValue();
-            for (int i = 0; i < AnimationsController.backgroundPointsCount; ++i) {
+            for (int i = 0; i < AnimationsController.backPointsCount; ++i) {
                 float xPrev = animationStartPoints[i * 2];
                 float yPrev = animationStartPoints[i * 2 + 1];
                 float xNext = AnimationsController.getBackgroundPointX(nextPointsPosition, i);
@@ -91,7 +91,7 @@ public class GradientBackgroundView extends GLTextureView {
                 if (isCancelled) {
                     return;
                 }
-                for (int i = 0; i < AnimationsController.backgroundPointsCount; ++i) {
+                for (int i = 0; i < AnimationsController.backPointsCount; ++i) {
                     float xNext = AnimationsController.getBackgroundPointX(nextPointsPosition, i);
                     float yNext = AnimationsController.getBackgroundPointY(nextPointsPosition, i);
                     setPointPosition(i, xNext, yNext);
@@ -111,7 +111,7 @@ public class GradientBackgroundView extends GLTextureView {
     }
 
     private void setPointsState(int position) {
-        for (int i = 0; i < AnimationsController.backgroundPointsCount; ++i) {
+        for (int i = 0; i < AnimationsController.backPointsCount; ++i) {
             float x = AnimationsController.getBackgroundPointX(position, i);
             float y = AnimationsController.getBackgroundPointY(position, i);
             setPointPosition(i, x, y);

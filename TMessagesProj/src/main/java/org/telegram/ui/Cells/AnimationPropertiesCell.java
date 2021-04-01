@@ -439,7 +439,7 @@ public class AnimationPropertiesCell extends View {
 
     public interface OnAnimationPropertiesChangeListener {
 
-        void onPropertiesChanged(AnimationPropertiesCell cell, @Nullable Object tag);
+        default void onPropertiesChanged(AnimationPropertiesCell cell, @Nullable Object tag) {}
     }
 
     private static class ProgressSelectorDrawable extends Drawable {

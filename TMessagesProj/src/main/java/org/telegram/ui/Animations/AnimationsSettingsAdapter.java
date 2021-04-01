@@ -1,5 +1,6 @@
 package org.telegram.ui.Animations;
 
+import android.graphics.drawable.Drawable;
 import android.view.View;
 import android.view.ViewGroup;
 
@@ -17,6 +18,7 @@ import org.telegram.ui.Cells.DurationCell;
 import org.telegram.ui.Cells.HeaderCell;
 import org.telegram.ui.Cells.SelectColorCell;
 import org.telegram.ui.Cells.ShadowSectionCell;
+import org.telegram.ui.Cells.TextCell;
 import org.telegram.ui.Cells.TextSettingsCell;
 import org.telegram.ui.Components.RecyclerListView;
 
@@ -58,10 +60,7 @@ public class AnimationsSettingsAdapter extends RecyclerView.Adapter<RecyclerList
                 break;
             }
             case VIEW_TYPE_HEADER: {
-                HeaderCell headerCell = new HeaderCell(parent.getContext());
-                ViewGroup.MarginLayoutParams lp = (ViewGroup.MarginLayoutParams) headerCell.getTextView().getLayoutParams();
-                lp.bottomMargin = lp.topMargin;
-                view = headerCell;
+                view = new HeaderCell(parent.getContext());
                 break;
             }
             case VIEW_TYPE_TEXT: {
@@ -90,7 +89,6 @@ public class AnimationsSettingsAdapter extends RecyclerView.Adapter<RecyclerList
             }
             case VIEW_TYPE_DURATION: {
                 DurationCell cell = new DurationCell(parent.getContext());
-                cell.setDurationListener(callback);
                 view = cell;
                 break;
             }
@@ -114,6 +112,8 @@ public class AnimationsSettingsAdapter extends RecyclerView.Adapter<RecyclerList
             case VIEW_TYPE_HEADER: {
                 HeaderCell cell = (HeaderCell) holder.itemView;
                 cell.setText(((HeaderItem) item).text);
+                ViewGroup.MarginLayoutParams lp = (ViewGroup.MarginLayoutParams) cell.getTextView().getLayoutParams();
+                lp.bottomMargin = position == 0 ? lp.topMargin : AndroidUtilities.dp(2);
                 break;
             }
             case VIEW_TYPE_TEXT: {

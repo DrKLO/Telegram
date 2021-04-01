@@ -12,8 +12,11 @@ import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Animations.AnimationsController;
+import org.telegram.ui.Animations.MsgAnimationSettings;
 import org.telegram.ui.Animations.pages.AnimationsSettingsPage;
 import org.telegram.ui.Animations.pages.BackgroundAnimationSettingsPage;
+import org.telegram.ui.Animations.pages.MessageAnimationSettingsPage;
 import org.telegram.ui.Cells.SelectColorCell;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.ViewPagerFixed;
@@ -57,6 +60,11 @@ public class AnimationsSettingsActivity extends BaseFragment {
 
         List<AnimationsSettingsPage> pages = new ArrayList<>(1);
         pages.add(backgroundPage);
+        for (int i = 0; i < AnimationsController.msgAnimCount; ++i) {
+            MsgAnimationSettings settings = AnimationsController.getInstance().getMsgAnimSettings(i);
+            MessageAnimationSettingsPage page = new MessageAnimationSettingsPage(settings.id, settings.title);
+            pages.add(page);
+        }
 
         SettingsAdapter adapter = new SettingsAdapter(context, pages);
         viewPager = new ViewPagerFixed(context);

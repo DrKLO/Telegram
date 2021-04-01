@@ -18,8 +18,8 @@ public class GradientGLDrawer implements GLTextureView.Drawer {
     private final String fragmentShaderSource;
     private FragmentShader shader;
 
-    private final float[] colors = new float[COLOR_SIZE * AnimationsController.backgroundPointsCount];
-    private final float[] points = new float[POINT_SIZE * AnimationsController.backgroundPointsCount];
+    private final float[] colors = new float[COLOR_SIZE * AnimationsController.backPointsCount];
+    private final float[] points = new float[POINT_SIZE * AnimationsController.backPointsCount];
     private float width;
     private float height;
 
