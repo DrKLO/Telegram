@@ -4328,7 +4328,7 @@
     <string name="AnimationSettingsEmoji">Emoji</string>
     <string name="AnimationSettingsPhoto">Photo</string>
     <string name="AnimationSettingsSticker">Sticker</string>
-    <string name="AnimationSettingsVoice">Voice</string>
+    <string name="AnimationSettingsVoice">Voice Message</string>
     <string name="AnimationSettingsVideoMessage">Video Message</string>
     <string name="AnimationSettingsMultiple">Multiple Messages</string>
     <string name="AnimationSettingsBackgroundPreview">Background Preview</string>
@@ -4345,4 +4345,11 @@
     <string name="AnimationSettingsAnimate">Animate</string>
     <string name="AnimationSettingsXPosition">X Position</string>
     <string name="AnimationSettingsYPosition">Y Position</string>
+    <string name="AnimationSettingsBubbleShape">Bubble shape</string>
+    <string name="AnimationSettingsTextScale">Text scale</string>
+    <string name="AnimationSettingsEmojiScale">Emoji scale</string>
+    <string name="AnimationSettingsVoiceScale">Voice scale</string>
+    <string name="AnimationSettingsVideoScale">Video scale</string>
+    <string name="AnimationSettingsColorChange">Color change</string>
+    <string name="AnimationSettingsTimeAppears">Time appears</string>
 </resources>

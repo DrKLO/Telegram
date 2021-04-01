@@ -17,6 +17,9 @@ public class MsgAnimationSettings {
 
     public void setDuration(int duration) {
         this.duration = duration;
+        for (AnimationSettings s : settings) {
+            s.setMaxDuration(duration);
+        }
     }
 
     public int getDuration() {

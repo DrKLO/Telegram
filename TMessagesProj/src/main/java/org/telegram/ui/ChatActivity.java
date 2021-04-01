@@ -389,7 +389,6 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
     private boolean openKeyboardOnAttachMenuClose;
 
     private GradientBackgroundView gradientBackgroundView;
-    private boolean isOpenChatAnimationPlayed;
 
     private MessageObject hintMessageObject;
     private int hintMessageType;
@@ -23044,6 +23043,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
 
     // TODO agolokoz: if scroll top, rotate backwards
     // TODO agolokoz: save point coords for all chats
+    // TODO agolokoz: if receive message, rotate backwards
     private void playBackgroundAnimation(int animationType) {
         if (!AnimationsController.isAnimatedBackgroundEnabled() || gradientBackgroundView == null) {
             return;

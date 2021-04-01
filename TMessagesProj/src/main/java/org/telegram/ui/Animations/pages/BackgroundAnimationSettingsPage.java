@@ -7,7 +7,6 @@ import org.telegram.messenger.R;
 import org.telegram.ui.Animations.AnimationSettings;
 import org.telegram.ui.Animations.AnimationsController;
 import org.telegram.ui.Animations.AnimationsSettingsAdapter.*;
-import org.telegram.ui.Cells.AnimationPropertiesCell;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -79,31 +78,21 @@ public class BackgroundAnimationSettingsPage extends AnimationsSettingsPage {
     }
 
     @Override
-    public void onPropertiesChanged(AnimationPropertiesCell cell, @Nullable Object tag) {
-        if (tag instanceof AnimationPropertiesItem) {
-            AnimationSettings settings = ((AnimationPropertiesItem) tag).settings;
-            settings.setLeftDuration((int)(cell.getLeftProgress() * cell.getMaxValue()));
-            settings.setRightDuration((int)(cell.getRightProgress() * cell.getMaxValue()));
-            settings.setTopProgress(cell.getTopProgress());
-            settings.setBotProgress(cell.getBottomProgress());
-            AnimationsController.getInstance().updateBackgroundSettings(settings);
-        }
+    protected void onPropertiesItemChanged(AnimationPropertiesItem item) {
+        super.onPropertiesItemChanged(item);
+        AnimationsController.getInstance().updateBackgroundSettings(item.settings);
     }
 
     @Override
-    public void onDurationSelected(@Nullable Object tag, int duration) {
-        if (tag instanceof DurationItem) {
-            DurationItem item = (DurationItem) tag;
-            item.duration = duration;
-
-            int position = animPropsPosition[item.id];
-            Item adapterItem = adapter.getItemAt(position);
-            if (adapterItem instanceof AnimationPropertiesItem) {
-                AnimationSettings settings = ((AnimationPropertiesItem) adapterItem).settings;
-                settings.setMaxDuration(duration);
-                adapter.updateItem(position, adapterItem);
-                AnimationsController.getInstance().updateBackgroundSettings(settings);
-            }
+    protected void onDurationItemChanged(DurationItem item) {
+        super.onDurationItemChanged(item);
+        int position = animPropsPosition[item.id];
+        Item adapterItem = adapter.getItemAt(position);
+        if (adapterItem instanceof AnimationPropertiesItem) {
+            AnimationSettings settings = ((AnimationPropertiesItem) adapterItem).settings;
+            settings.setMaxDuration(item.duration);
+            adapter.updateItem(position, adapterItem);
+            AnimationsController.getInstance().updateBackgroundSettings(settings);
         }
     }
 

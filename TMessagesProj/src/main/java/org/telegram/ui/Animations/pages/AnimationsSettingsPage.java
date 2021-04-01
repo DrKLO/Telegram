@@ -11,6 +11,7 @@ import android.widget.BaseAdapter;
 import android.widget.ListPopupWindow;
 import android.widget.TextView;
 
+import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
@@ -18,7 +19,9 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Animations.AnimationSettings;
 import org.telegram.ui.Animations.AnimationsSettingsAdapter;
+import org.telegram.ui.Cells.AnimationPropertiesCell;
 import org.telegram.ui.Cells.DurationCell;
 import org.telegram.ui.Components.RecyclerListView;
 
@@ -44,6 +47,7 @@ public abstract class AnimationsSettingsPage implements AnimationsSettingsAdapte
         recyclerView.setHasFixedSize(true);
         recyclerView.setLayoutManager(new LinearLayoutManager(context));
         recyclerView.setItemAnimator(null);
+        // TODO agolokoz: try to fix
         recyclerView.setDisallowInterceptTouchEvents(true);
         recyclerView.setOnItemClickListener(this);
         return recyclerView;
@@ -60,10 +64,35 @@ public abstract class AnimationsSettingsPage implements AnimationsSettingsAdapte
         }
     }
 
+    @Override
+    public void onPropertiesChanged(AnimationPropertiesCell cell, @Nullable Object tag) {
+        if (tag instanceof AnimationsSettingsAdapter.AnimationPropertiesItem) {
+            AnimationsSettingsAdapter.AnimationPropertiesItem item = (AnimationsSettingsAdapter.AnimationPropertiesItem) tag;
+            AnimationSettings settings = item.settings;
+            settings.setLeftDuration((int) (cell.getLeftProgress() * cell.getMaxValue()));
+            settings.setRightDuration((int) (cell.getRightProgress() * cell.getMaxValue()));
+            settings.setTopProgress(cell.getTopProgress());
+            settings.setBotProgress(cell.getBottomProgress());
+            onPropertiesItemChanged(item);
+        }
+    }
+
+    @Override
+    public void onDurationSelected(@Nullable Object tag, int duration) {
+        if (tag instanceof AnimationsSettingsAdapter.DurationItem) {
+            AnimationsSettingsAdapter.DurationItem item = (AnimationsSettingsAdapter.DurationItem) tag;
+            item.duration = duration;
+            onDurationItemChanged(item);
+        }
+    }
+
     public void setOnItemClickListener(RecyclerListView.OnItemClickListener clickListener) {
         this.clickListener = clickListener;
     }
 
+    protected void onPropertiesItemChanged(AnimationsSettingsAdapter.AnimationPropertiesItem item) {}
+
+    protected void onDurationItemChanged(AnimationsSettingsAdapter.DurationItem item) {}
 
     private void showDurationPopup(DurationCell cell) {
         DurationItemAdapter adapter = new DurationItemAdapter(durations);
