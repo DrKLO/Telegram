@@ -3006,7 +3006,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 }
 
                 if (gradientBackgroundView != null && gradientBackgroundView.getVisibility() != View.GONE) {
-                    gradientBackgroundView.layout(chatListView.getLeft(), chatListView.getTop(), chatListView.getRight(), chatListView.getBottom());
+                    gradientBackgroundView.layout(chatListView.getLeft(), chatListView.getTop(), chatListView.getRight(), contentView.getBottom());
                 }
 
                 invalidateChatListViewTopPadding();
