@@ -12,7 +12,7 @@ public class AnimationSettings {
     private static final float DEFAULT_BOT_PROGRESS = 0.5f;
 
     public final int id;
-    public final String title;
+    public String title;
     public int maxDuration;
     private float topProgress;
     private float botProgress;
@@ -81,6 +81,7 @@ public class AnimationSettings {
 
     public SerializedData toSerializedData() {
         SerializedData data = new SerializedData();
+        data.writeInt32(id);
         data.writeInt32(leftDuration);
         data.writeInt32(rightDuration);
         data.writeInt32(maxDuration);
@@ -90,6 +91,7 @@ public class AnimationSettings {
     }
 
     public static AnimationSettings fromSerializedData(SerializedData data, int id, String title) {
+        int serializedId = data.readInt32(-1);
         int leftDuration = data.readInt32(DEFAULT_LEFT_DURATION);
         int rightDuration = data.readInt32(DEFAULT_RIGHT_DURATION);
         int maxDuration = data.readInt32(DEFAULT_MAX_DURATION);

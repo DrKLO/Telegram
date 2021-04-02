@@ -33,16 +33,6 @@ public class AnimationsController extends BaseController {
     public static final int msgAnimIdMultiple = 8;
     public static final int msgAnimCount = 9;
 
-    private static final int msgAnimParamX = 0;
-    private static final int msgAnimParamY = 1;
-    private static final int msgAnimParamBubbleShape = 2;
-    private static final int msgAnimParamColorChange = 3;
-    private static final int msgAnimParamTimeAppears = 4;
-    private static final int msgAnimParamTextScale = 5;
-    private static final int msgAnimParamEmojiScale = 6;
-    private static final int msgAnimParamVoiceScale = 7;
-    private static final int msgAnimParamVideoScale = 8;
-
     public static final int backPointsCount = 4;
     public static final int[] backDefaultColors = new int[] {
             0xFFFFF6BF, 0xFF76A076, 0xFFF6E477, 0xFF316B4D
@@ -76,7 +66,7 @@ public class AnimationsController extends BaseController {
 
     private static final String keyBackColor = "backColor";
     private static final String keyBackSettings = "back";
-    private static final String keyAnimSettings = "anim";
+    private static final String keyMsgSettings = "msg";
 
     private static final AnimationsController[] instances = new AnimationsController[UserConfig.MAX_ACCOUNT_COUNT];
 
@@ -105,10 +95,9 @@ public class AnimationsController extends BaseController {
     private AnimationsController(int account) {
         super(account);
         SharedPreferences prefs = getPrefs();
-
         try {
             String data = prefs.getString(keyBackColor, "");
-            SerializedData serializedData = SerializedData.fromBase64String(data);
+            SerializedData serializedData = new SerializedData(data);
             int[] colors = serializedData.readInt32Array(true);
             System.arraycopy(colors, 0, backCurrentColors, 0, backPointsCount);
         } catch (Exception e) {
@@ -117,9 +106,8 @@ public class AnimationsController extends BaseController {
         for (int i = 0; i < backAnimCount; ++i) {
             backAnimSettings[i] = getSettingsFromPreferences(prefs, keyBackSettings + i, i);
         }
-
         for (int i = 0; i < msgAnimCount; ++i) {
-            msgAnimSettings[i] = getMsgSettingsFromPreferences(prefs, keyAnimSettings + i, i);
+            msgAnimSettings[i] = getMsgSettingsFromPreferences(prefs, keyMsgSettings + i, i);
         }
     }
 
@@ -149,9 +137,8 @@ public class AnimationsController extends BaseController {
     }
 
     public void updateBackgroundSettings(@NonNull AnimationSettings settings) {
-        for (int i = 0; i != backAnimSettings.length; ++i) {
+        for (int i = 0; i < backAnimSettings.length; ++i) {
             if (settings.id == backAnimSettings[i].id) {
-                backAnimSettings[i] = settings;
                 updateSettingsInPreferences(getPrefs(), keyBackSettings + i, settings);
                 break;
             }
@@ -164,7 +151,12 @@ public class AnimationsController extends BaseController {
     }
 
     public void updateMsgAnimSettings(MsgAnimationSettings settings) {
-
+        for (int i = 0; i < msgAnimSettings.length; ++i) {
+            if (settings.id == msgAnimSettings[i].id) {
+                updateMsgSettingsInPreferences(getPrefs(), keyMsgSettings + i, settings);
+                break;
+            }
+        }
     }
 
 
@@ -178,14 +170,20 @@ public class AnimationsController extends BaseController {
                 .apply();
     }
 
+    private static void updateMsgSettingsInPreferences(SharedPreferences prefs, String key, MsgAnimationSettings settings) {
+        prefs.edit()
+                .putString(key, settings.toSerializedData().toBase64String())
+                .apply();
+    }
+
     private static AnimationSettings getSettingsFromPreferences(SharedPreferences prefs, String key, int id) {
         String title = getTitleForBackgroundSettings(id);
         try {
             String data = prefs.getString(key, "");
             if (TextUtils.isEmpty(data)) {
-                return AnimationSettings.createDefault(id, title);
+                throw new IllegalArgumentException();
             }
-            SerializedData serializedData = SerializedData.fromBase64String(data);
+            SerializedData serializedData = new SerializedData(data);
             return AnimationSettings.fromSerializedData(serializedData, id, title);
         } catch (Exception e) {
             return AnimationSettings.createDefault(id, title);
@@ -194,31 +192,40 @@ public class AnimationsController extends BaseController {
 
     private static MsgAnimationSettings getMsgSettingsFromPreferences(SharedPreferences prefs, String key, int id) {
         String title = getTitleForMsgAnimationSettings(id);
-        return new MsgAnimationSettings(id, title, 500, getAnimationSettingsForMsg(id));
+        try {
+            String data = prefs.getString(key, "");
+            if (TextUtils.isEmpty(data)) {
+                throw new IllegalArgumentException();
+            }
+            SerializedData serializedData = new SerializedData(data);
+            return MsgAnimationSettings.fromSerializedData(serializedData, id, title);
+        } catch (Exception e) {
+            return new MsgAnimationSettings(id, title, 500, getAnimationSettingsForMsg(id));
+        }
     }
 
     private static AnimationSettings[] getAnimationSettingsForMsg(int id) {
         if (id == msgAnimIdShortText || id == msgAnimIdLongText || id == msgAnimIdLink) {
             return new AnimationSettings[]{
-                    AnimationSettings.createDefault(id, getTitleForMsgAnimationParam(msgAnimParamX)),
-                    AnimationSettings.createDefault(id, getTitleForMsgAnimationParam(msgAnimParamY)),
-                    AnimationSettings.createDefault(id, getTitleForMsgAnimationParam(msgAnimParamBubbleShape)),
-                    AnimationSettings.createDefault(id, getTitleForMsgAnimationParam(msgAnimParamTextScale)),
-                    AnimationSettings.createDefault(id, getTitleForMsgAnimationParam(msgAnimParamColorChange)),
-                    AnimationSettings.createDefault(id, getTitleForMsgAnimationParam(msgAnimParamTimeAppears))
+                    AnimationSettings.createDefault(id, MsgAnimationSettings.getTitleForParam(MsgAnimationSettings.msgAnimParamX)),
+                    AnimationSettings.createDefault(id, MsgAnimationSettings.getTitleForParam(MsgAnimationSettings.msgAnimParamY)),
+                    AnimationSettings.createDefault(id, MsgAnimationSettings.getTitleForParam(MsgAnimationSettings.msgAnimParamBubbleShape)),
+                    AnimationSettings.createDefault(id, MsgAnimationSettings.getTitleForParam(MsgAnimationSettings.msgAnimParamTextScale)),
+                    AnimationSettings.createDefault(id, MsgAnimationSettings.getTitleForParam(MsgAnimationSettings.msgAnimParamColorChange)),
+                    AnimationSettings.createDefault(id, MsgAnimationSettings.getTitleForParam(MsgAnimationSettings.msgAnimParamTimeAppears))
             };
         } else if (id == msgAnimIdEmoji) {
             return new AnimationSettings[] {
-                    AnimationSettings.createDefault(id, getTitleForMsgAnimationParam(msgAnimParamX)),
-                    AnimationSettings.createDefault(id, getTitleForMsgAnimationParam(msgAnimParamY)),
-                    AnimationSettings.createDefault(id, getTitleForMsgAnimationParam(msgAnimParamEmojiScale)),
-                    AnimationSettings.createDefault(id, getTitleForMsgAnimationParam(msgAnimParamTimeAppears))
+                    AnimationSettings.createDefault(id, MsgAnimationSettings.getTitleForParam(MsgAnimationSettings.msgAnimParamX)),
+                    AnimationSettings.createDefault(id, MsgAnimationSettings.getTitleForParam(MsgAnimationSettings.msgAnimParamY)),
+                    AnimationSettings.createDefault(id, MsgAnimationSettings.getTitleForParam(MsgAnimationSettings.msgAnimParamEmojiScale)),
+                    AnimationSettings.createDefault(id, MsgAnimationSettings.getTitleForParam(MsgAnimationSettings.msgAnimParamTimeAppears))
             };
         } else {
             return new AnimationSettings[] {
-                    AnimationSettings.createDefault(id, getTitleForMsgAnimationParam(msgAnimParamX)),
-                    AnimationSettings.createDefault(id, getTitleForMsgAnimationParam(msgAnimParamY)),
-                    AnimationSettings.createDefault(id, getTitleForMsgAnimationParam(msgAnimParamTimeAppears))
+                    AnimationSettings.createDefault(id, MsgAnimationSettings.getTitleForParam(MsgAnimationSettings.msgAnimParamX)),
+                    AnimationSettings.createDefault(id, MsgAnimationSettings.getTitleForParam(MsgAnimationSettings.msgAnimParamY)),
+                    AnimationSettings.createDefault(id, MsgAnimationSettings.getTitleForParam(MsgAnimationSettings.msgAnimParamTimeAppears))
             };
         }
     }
@@ -245,22 +252,6 @@ public class AnimationsController extends BaseController {
             case msgAnimIdVoiceMessage: resId = R.string.AnimationSettingsVoice; break;
             case msgAnimIdVideoMessage: resId = R.string.AnimationSettingsVideoMessage; break;
             case msgAnimIdMultiple:     resId = R.string.AnimationSettingsMultiple;break;
-        }
-        return resId == -1 ? "" : LocaleController.getString("", resId);
-    }
-
-    private static String getTitleForMsgAnimationParam(int paramId) {
-        int resId = -1;
-        switch (paramId) {
-            case msgAnimParamX: resId = R.string.AnimationSettingsXPosition; break;
-            case msgAnimParamY: resId = R.string.AnimationSettingsYPosition; break;
-            case msgAnimParamBubbleShape: resId = R.string.AnimationSettingsBubbleShape; break;
-            case msgAnimParamColorChange: resId = R.string.AnimationSettingsColorChange; break;
-            case msgAnimParamTimeAppears: resId = R.string.AnimationSettingsTimeAppears; break;
-            case msgAnimParamTextScale: resId = R.string.AnimationSettingsTextScale; break;
-            case msgAnimParamEmojiScale: resId = R.string.AnimationSettingsEmojiScale; break;
-            case msgAnimParamVoiceScale: resId = R.string.AnimationSettingsVoiceScale; break;
-            case msgAnimParamVideoScale: resId = R.string.AnimationSettingsVideoScale; break;
         }
         return resId == -1 ? "" : LocaleController.getString("", resId);
     }

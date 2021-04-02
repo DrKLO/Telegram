@@ -1,13 +1,10 @@
 package org.telegram.ui.Animations.pages;
 
-import androidx.annotation.Nullable;
-
 import org.telegram.ui.Animations.AnimationSettings;
 import org.telegram.ui.Animations.AnimationsController;
 import org.telegram.ui.Animations.AnimationsSettingsAdapter;
 import org.telegram.ui.Animations.AnimationsSettingsAdapter.*;
 import org.telegram.ui.Animations.MsgAnimationSettings;
-import org.telegram.ui.Components.AnimationProperties;
 
 import java.util.ArrayList;
 import java.util.List;

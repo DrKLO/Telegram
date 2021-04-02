@@ -55,6 +55,10 @@ public class SerializedData extends AbstractSerializedData {
         len = 0;
     }
 
+    public SerializedData(String base64) {
+        this(Base64.decode(base64, Base64.DEFAULT));
+    }
+
     public void cleanup() {
         try {
             if (inbuf != null) {
@@ -342,6 +346,32 @@ public class SerializedData extends AbstractSerializedData {
         }
     }
 
+    public void writeSerializedData(SerializedData data) {
+        try {
+            byte[] bytes = data.toByteArray();
+            writeByteArray(bytes);
+        } catch (Exception e) {
+            if (BuildVars.LOGS_ENABLED) {
+                FileLog.e("write serialized data error");
+                FileLog.e(e);
+            }
+        }
+    }
+
+    public void writeSerializedDataArray(SerializedData[] values) {
+        try {
+            writeInt32(values.length);
+            for (int i = 0; i < values.length; ++i) {
+                writeSerializedData(values[i]);
+            }
+        } catch (Exception e) {
+            if (BuildVars.LOGS_ENABLED) {
+                FileLog.e("write serialized data array error");
+                FileLog.e(e);
+            }
+        }
+    }
+
     public int length() {
         if (!justCalc) {
             return isOut ? outbuf.size() : inbuf.available();
@@ -618,6 +648,44 @@ public class SerializedData extends AbstractSerializedData {
         return null;
     }
 
+    public SerializedData readSerializedData(boolean exception) {
+        try {
+            byte[] bytes = readByteArray(exception);
+            return new SerializedData(bytes);
+        } catch (Exception e) {
+            if (exception) {
+                throw new RuntimeException("read SerializedData error", e);
+            } else {
+                if (BuildVars.LOGS_ENABLED) {
+                    FileLog.e("read SerializedData error");
+                    FileLog.e(e);
+                }
+            }
+        }
+        return null;
+    }
+
+    public SerializedData[] readSerializedDataArray(boolean exception) {
+        try {
+            int size = readInt32(exception);
+            SerializedData[] array = new SerializedData[size];
+            for (int i = 0; i < size; ++i) {
+                array[i] = readSerializedData(exception);
+            }
+            return array;
+        } catch (Exception e) {
+            if (exception) {
+                throw new RuntimeException("read SerializedData array error", e);
+            } else {
+                if (BuildVars.LOGS_ENABLED) {
+                    FileLog.e("read SerializedData array error");
+                    FileLog.e(e);
+                }
+            }
+        }
+        return null;
+    }
+
     @Override
     public void writeByteBuffer(NativeByteBuffer buffer) {
 
@@ -635,9 +703,5 @@ public class SerializedData extends AbstractSerializedData {
         } catch (Exception e) {
             return Integer.MAX_VALUE;
         }
-    }
-
-    public static SerializedData fromBase64String(String string) {
-        return new SerializedData(Base64.decode(string, Base64.DEFAULT));
     }
 }
