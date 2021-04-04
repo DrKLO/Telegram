@@ -64,10 +64,13 @@ public class SizeNotifierFrameLayout extends FrameLayout {
         if (motion) {
             if (parallaxEffect == null) {
                 parallaxEffect = new WallpaperParallaxEffect(getContext());
-                parallaxEffect.setCallback((offsetX, offsetY) -> {
-                    translationX = offsetX;
-                    translationY = offsetY;
-                    invalidate();
+                parallaxEffect.setCallback(new WallpaperParallaxEffect.Callback() {
+                    @Override
+                    public void onOffsetsChanged(int offsetX, int offsetY) {
+                        translationX = offsetX;
+                        translationY = offsetY;
+                        invalidate();
+                    }
                 });
                 if (getMeasuredWidth() != 0 && getMeasuredHeight() != 0) {
                     parallaxScale = parallaxEffect.getScale(getMeasuredWidth(), getMeasuredHeight());

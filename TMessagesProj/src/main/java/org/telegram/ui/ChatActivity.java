@@ -39,6 +39,7 @@ import android.graphics.RectF;
 import android.graphics.Typeface;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
+import android.hardware.SensorManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -55,6 +56,7 @@ import android.text.TextUtils;
 import android.text.style.CharacterStyle;
 import android.text.style.ForegroundColorSpan;
 import android.text.style.URLSpan;
+import android.util.Log;
 import android.util.LongSparseArray;
 import android.util.Property;
 import android.util.SparseArray;
@@ -220,6 +222,7 @@ import org.telegram.ui.Components.URLSpanReplacement;
 import org.telegram.ui.Components.URLSpanUserMention;
 import org.telegram.ui.Components.UndoView;
 import org.telegram.ui.Components.ViewHelper;
+import org.telegram.ui.Components.WallpaperParallaxEffect;
 import org.telegram.ui.Components.voip.VoIPHelper;
 
 import java.io.BufferedWriter;
@@ -388,7 +391,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
     private int pinBullerinTag;
     private boolean openKeyboardOnAttachMenuClose;
 
-    private GradientBackgroundView gradientBackgroundView;
+    private ChatBackgroundController backgroundController;
 
     private MessageObject hintMessageObject;
     private int hintMessageType;
@@ -1498,6 +1501,9 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 showDialog(builder.create());
             }, timeout * 1000);
         }
+
+        backgroundController = new ChatBackgroundController(dialog_id);
+
         return true;
     }
 
@@ -1670,10 +1676,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         if (chatListItemAnimator != null) {
             chatListItemAnimator.onDestroy();
         }
-        if (gradientBackgroundView != null) {
-            AnimationsController.getInstance().setChatBackPosition(dialog_id, gradientBackgroundView.getPointsPosition());
-            gradientBackgroundView.onDestroy();
-        }
+        backgroundController.onDestroy();
     }
 
     @Override
@@ -3006,9 +3009,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     child.layout(childLeft, childTop, childLeft + width, childTop + height);
                 }
 
-                if (gradientBackgroundView != null && gradientBackgroundView.getVisibility() != View.GONE) {
-                    gradientBackgroundView.layout(chatListView.getLeft(), chatListView.getTop(), chatListView.getRight(), contentView.getBottom());
-                }
+                backgroundController.layout(chatListView.getLeft(), chatListView.getTop(), chatListView.getRight(), contentView.getBottom());
 
                 invalidateChatListViewTopPadding();
                 invalidateMessagesVisiblePart();
@@ -3045,7 +3046,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             contentView.setOccupyStatusBar(false);
         }
 
-        setupBackground();
+        backgroundController.setupBackground(contentView);
 
         emptyViewContainer = new FrameLayout(context);
         emptyViewContainer.setVisibility(View.INVISIBLE);
@@ -9927,7 +9928,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             waitingForLoad.add(lastLoadIndex);
             getMessagesController().loadMessages(dialog_id, mergeDialogId, false, 30, 0, 0, true, 0, classGuid, 0, 0, ChatObject.isChannel(currentChat), chatMode, threadMessageId, replyMaxReadId, lastLoadIndex++);
         }
-        playBackgroundAnimation(AnimationsController.backAnimIdJump, true);
+        backgroundController.onScrollToLastMessage();
     }
 
     public void updateTextureViewPosition(boolean needScroll) {
@@ -10629,7 +10630,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                             scrollByTouch = false;
                             chatListView.smoothScrollBy(0, scrollY);
                             chatListView.setOverScrollMode(RecyclerListView.OVER_SCROLL_NEVER);
-                            playBackgroundAnimation(AnimationsController.backAnimIdJump, scrollY > 0);
+                            backgroundController.onScroll(scrollY > 0);
                         }
                         break;
                     }
@@ -10644,7 +10645,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     chatScrollHelper.scrollToPosition(position, yOffset, false, true);
                     canShowPagedownButton = true;
                     updatePagedownButtonVisibility(true);
-                    playBackgroundAnimation(AnimationsController.backAnimIdJump, yOffset > 0);
+                    backgroundController.onScroll(scrollDirection != RecyclerAnimationScrollHelper.SCROLL_DIRECTION_UP);
                 }
             } else {
                 query = true;
@@ -10683,7 +10684,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             postponedScrollMinMessageId = minMessageId[0];
             postponedScrollMessageId = id;
             getMessagesController().loadMessages(loadIndex == 0 ? dialog_id : mergeDialogId, 0, false, isThreadChat() || AndroidUtilities.isTablet() ? 30 : 20, startLoadFromMessageId, 0, true, 0, classGuid, 3, 0, ChatObject.isChannel(currentChat), chatMode, threadMessageId, replyMaxReadId, lastLoadIndex++);
-            playBackgroundAnimation(AnimationsController.backAnimIdJump, false);
+            backgroundController.onScroll(false);
         } else {
             View child = chatListView.getChildAt(0);
             if (child != null && child.getTop() <= 0) {
@@ -14398,7 +14399,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             }
         } else if (id == NotificationCenter.didSetNewWallpapper) {
             if (fragmentView != null) {
-                setupBackground();
+                backgroundController.setupBackground(contentView);
                 progressView2.getBackground().setColorFilter(Theme.colorFilter);
                 if (emptyView != null) {
                     emptyView.getBackground().setColorFilter(Theme.colorFilter);
@@ -14794,7 +14795,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         }
 
         boolean notifiedSearch = false;
-        boolean animateForward = false;
+        boolean hasOutMessage = false;
         LongSparseArray<Long> scheduledGroupReplacement = null;
         for (int a = 0, N = arr.size(); a < N; a++) {
             MessageObject messageObject = arr.get(a);
@@ -14889,7 +14890,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 }
             }
             if (messageObject.isOut()) {
-                animateForward = true;
+                hasOutMessage = true;
             }
         }
 
@@ -15361,7 +15362,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         }
         checkWaitingForReplies();
         updateReplyMessageHeader(true);
-        playBackgroundAnimation(AnimationsController.backAnimIdSendMessage, animateForward);
+        backgroundController.onMessageSent(hasOutMessage);
     }
 
     private void processDeletedMessages(ArrayList<Integer> markAsDeletedMessages, int channelId) {
@@ -15942,7 +15943,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             openAnimationEnded = false;
             if (!backward) {
                 openAnimationStartTime = SystemClock.elapsedRealtime();
-                playBackgroundAnimation(AnimationsController.backAnimIdOpenChat, true);
+                backgroundController.onChatOpened();
             }
         } else {
             if (UserObject.isUserSelf(currentUser)) {
@@ -17413,10 +17414,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             chatListView.setItemAnimator(null);
         }
 
-        if (gradientBackgroundView != null && gradientBackgroundView.getVisibility() != View.GONE) {
-            gradientBackgroundView.invalidate();
-        }
-
+        backgroundController.onPreviewModeChanged();
         updateBottomOverlay();
         updateSecretStatus();
     }
@@ -23035,25 +23033,122 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         return themeDescriptions;
     }
 
-    private void setupBackground() {
-        if (AnimationsController.isAnimatedBackgroundEnabled()) {
-            if (gradientBackgroundView == null) {
-                gradientBackgroundView = new GradientBackgroundView(parentLayout.getContext());
-                int pointsPosition = AnimationsController.getInstance().getChatBackPosition(dialog_id);
-                gradientBackgroundView.setPointsPosition(pointsPosition);
-                contentView.addView(gradientBackgroundView, 0, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
-            }
-        } else {
-            contentView.setBackgroundImage(Theme.getCachedWallpaper(), Theme.isWallpaperMotion());
-        }
-    }
 
-    private void playBackgroundAnimation(int animationType, boolean animateForward) {
-        if (!AnimationsController.isAnimatedBackgroundEnabled() || gradientBackgroundView == null) {
-            return;
+    private static class ChatBackgroundController implements WallpaperParallaxEffect.Callback,
+            GradientBackgroundView.GradientBackgroundListener {
+
+        private static final float EPS_DIFF = 0.02f;
+
+        private final long dialogId;
+        private GradientBackgroundView gradientBackgroundView;
+        private WallpaperParallaxEffect parallaxEffect;
+        private float xPrev;
+        private float yPrev;
+        private float xCurr;
+        private float yCurr;
+        private float xStart;
+        private float yStart;
+
+        public ChatBackgroundController(long dialogId) {
+            this.dialogId = dialogId;
         }
-        AnimationSettings s = AnimationsController.getInstance().getBackgroundAnimationSettings(animationType);
-        gradientBackgroundView.setSettings(s);
-        gradientBackgroundView.startAnimation(animateForward);
+
+        @Override
+        public void onOffset(float xOffset, float yOffset) {
+            xCurr = xOffset;
+            yCurr = yOffset;
+            if (Float.compare(xStart, 0f) == 0 && Float.compare(yStart, 0f) == 0) {
+                xStart = xOffset;
+                yStart = yOffset;
+            }
+            if (Math.abs(xOffset - xPrev) < EPS_DIFF && Math.abs(yOffset - yPrev) < EPS_DIFF) {
+                return;
+            }
+            if (gradientBackgroundView != null) {
+                float xDiff = xOffset - xStart;
+                float yDiff = yOffset - yStart;
+                float deviation = (xDiff * 0.25f + yDiff * 0.75f) * 0.5f;
+                gradientBackgroundView.setPointsDeviation(deviation);
+            }
+            xPrev = xOffset;
+            yPrev = yOffset;
+        }
+
+        @Override
+        public void onAnimationEnd() {
+            resetStart();
+        }
+
+        public void setupBackground(SizeNotifierFrameLayout contentView) {
+            if (AnimationsController.isAnimatedBackgroundEnabled()) {
+                if (gradientBackgroundView == null) {
+                    gradientBackgroundView = new GradientBackgroundView(contentView.getContext());
+                    gradientBackgroundView.setListener(this);
+                    int pointsPosition = AnimationsController.getInstance().getChatBackPosition(dialogId);
+                    gradientBackgroundView.setPointsPosition(pointsPosition);
+                    contentView.addView(gradientBackgroundView, 0, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+                }
+                if (parallaxEffect == null) {
+                    parallaxEffect = new WallpaperParallaxEffect(contentView.getContext());
+                    parallaxEffect.setCallback(this);
+                }
+                parallaxEffect.setEnabled(true, SensorManager.SENSOR_DELAY_NORMAL);
+            } else {
+                contentView.setBackgroundImage(Theme.getCachedWallpaper(), Theme.isWallpaperMotion());
+            }
+        }
+
+        public void layout(int l, int t, int r, int b) {
+            if (gradientBackgroundView != null && gradientBackgroundView.getVisibility() != View.GONE) {
+                gradientBackgroundView.layout(l, t, r, b);
+            }
+        }
+
+        public void onScrollToLastMessage() {
+            playBackgroundAnimation(AnimationsController.backAnimIdJump, true);
+        }
+
+        public void onScroll(boolean isDown) {
+            playBackgroundAnimation(AnimationsController.backAnimIdJump, isDown);
+        }
+
+        public void onMessageSent(boolean isOut) {
+            playBackgroundAnimation(AnimationsController.backAnimIdSendMessage, isOut);
+        }
+
+        public void onChatOpened() {
+            playBackgroundAnimation(AnimationsController.backAnimIdOpenChat, true);
+        }
+
+        public void onPreviewModeChanged() {
+            if (gradientBackgroundView != null && gradientBackgroundView.getVisibility() != View.GONE) {
+                gradientBackgroundView.invalidate();
+            }
+        }
+
+        public void onDestroy() {
+            if (gradientBackgroundView != null) {
+                AnimationsController.getInstance().setChatBackPosition(dialogId, gradientBackgroundView.getPointsPosition());
+                gradientBackgroundView.onDestroy();
+            }
+            if (parallaxEffect != null) {
+                parallaxEffect.setEnabled(false);
+            }
+        }
+
+        private void playBackgroundAnimation(int animationType, boolean animateForward) {
+            if (!AnimationsController.isAnimatedBackgroundEnabled() || gradientBackgroundView == null) {
+                return;
+            }
+            AnimationSettings s = AnimationsController.getInstance().getBackgroundAnimationSettings(animationType);
+            gradientBackgroundView.setSettings(s);
+            gradientBackgroundView.startAnimation(animateForward);
+            resetStart();
+        }
+
+        private void resetStart() {
+            xStart = xCurr;
+            yStart = yCurr;
+        }
     }
 }
