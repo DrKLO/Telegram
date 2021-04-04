@@ -263,7 +263,8 @@ public class EntityView extends FrameLayout {
             layoutParams.topMargin = (int) bounds.y;
             layoutParams.width = (int) bounds.width;
             layoutParams.height = (int) bounds.height;
-            setLayoutParams(layoutParams);
+            measure(MeasureSpec.makeMeasureSpec((int)bounds.width, MeasureSpec.EXACTLY),MeasureSpec.makeMeasureSpec((int)bounds.height, MeasureSpec.EXACTLY));
+            layout((int) bounds.x, (int) bounds.y, (int) (bounds.x + bounds.width), (int) (bounds.y + bounds.height));
             setRotation(EntityView.this.getRotation());
         }
 

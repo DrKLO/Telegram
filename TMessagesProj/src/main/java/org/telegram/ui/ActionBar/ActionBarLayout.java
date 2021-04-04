@@ -367,6 +367,13 @@ public class ActionBarLayout extends FrameLayout {
         }
     }
 
+    public void onStart() {
+        if (!fragmentsStack.isEmpty()) {
+            BaseFragment lastFragment = fragmentsStack.get(fragmentsStack.size() - 1);
+            lastFragment.onStart();
+        }
+    }
+
     public void onResume() {
         if (transitionAnimationInProgress) {
             if (currentAnimation != null) {
@@ -397,6 +404,13 @@ public class ActionBarLayout extends FrameLayout {
         if (!fragmentsStack.isEmpty()) {
             BaseFragment lastFragment = fragmentsStack.get(fragmentsStack.size() - 1);
             lastFragment.onPause();
+        }
+    }
+
+    public void onStop() {
+        if (!fragmentsStack.isEmpty()) {
+            BaseFragment lastFragment = fragmentsStack.get(fragmentsStack.size() - 1);
+            lastFragment.onStop();
         }
     }
 
@@ -529,6 +543,7 @@ public class ActionBarLayout extends FrameLayout {
             }
             BaseFragment lastFragment = fragmentsStack.get(fragmentsStack.size() - 1);
             lastFragment.onPause();
+            lastFragment.onStop();
             lastFragment.onFragmentDestroy();
             lastFragment.setParentLayout(null);
             fragmentsStack.remove(fragmentsStack.size() - 1);
@@ -540,6 +555,7 @@ public class ActionBarLayout extends FrameLayout {
 
             lastFragment = fragmentsStack.get(fragmentsStack.size() - 1);
             currentActionBar = lastFragment.actionBar;
+            lastFragment.onStart();
             lastFragment.onResume();
             lastFragment.onBecomeFullyVisible();
 
@@ -548,6 +564,7 @@ public class ActionBarLayout extends FrameLayout {
             if (fragmentsStack.size() >= 2) {
                 BaseFragment lastFragment = fragmentsStack.get(fragmentsStack.size() - 2);
                 lastFragment.onPause();
+                lastFragment.onStop();
                 if (lastFragment.fragmentView != null) {
                     ViewGroup parent = (ViewGroup) lastFragment.fragmentView.getParent();
                     if (parent != null) {
@@ -610,6 +627,7 @@ public class ActionBarLayout extends FrameLayout {
         if (!lastFragment.hasOwnBackground && fragmentView.getBackground() == null) {
             fragmentView.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
         }
+        lastFragment.onStart();
         lastFragment.onResume();
         if (themeAnimatorSet != null) {
             presentingFragmentDescriptions = lastFragment.getThemeDescriptions();
@@ -813,6 +831,7 @@ public class ActionBarLayout extends FrameLayout {
         }
         fragment.onBecomeFullyHidden();
         fragment.onPause();
+        fragment.onStop();
         if (removeLast) {
             fragment.onFragmentDestroy();
             fragment.setParentLayout(null);
@@ -990,6 +1009,7 @@ public class ActionBarLayout extends FrameLayout {
             fragment.actionBar.setTitleOverlayText(titleOverlayText, titleOverlayTextId, overlayAction);
         }
         fragmentsStack.add(fragment);
+        fragment.onStart();
         fragment.onResume();
         currentActionBar = fragment.actionBar;
         if (!fragment.hasOwnBackground && fragmentView.getBackground() == null) {
@@ -1212,6 +1232,7 @@ public class ActionBarLayout extends FrameLayout {
             if (!fragmentsStack.isEmpty()) {
                 BaseFragment previousFragment = fragmentsStack.get(fragmentsStack.size() - 1);
                 previousFragment.onPause();
+                previousFragment.onStop();
                 if (previousFragment.actionBar != null && previousFragment.actionBar.shouldAddToContainer()) {
                     ViewGroup parent = (ViewGroup) previousFragment.actionBar.getParent();
                     if (parent != null) {
@@ -1235,6 +1256,7 @@ public class ActionBarLayout extends FrameLayout {
 
     private void closeLastFragmentInternalRemoveOld(BaseFragment fragment) {
         fragment.onPause();
+        fragment.onStop();
         fragment.onFragmentDestroy();
         fragment.setParentLayout(null);
         fragmentsStack.remove(fragment);
@@ -1365,6 +1387,7 @@ public class ActionBarLayout extends FrameLayout {
             oldFragment = currentFragment;
             previousFragment.onTransitionAnimationStart(true, true);
             currentFragment.onTransitionAnimationStart(false, true);
+            previousFragment.onStart();
             previousFragment.onResume();
             if (themeAnimatorSet != null) {
                 presentingFragmentDescriptions = previousFragment.getThemeDescriptions();
@@ -1493,6 +1516,7 @@ public class ActionBarLayout extends FrameLayout {
                 ViewGroup parent = (ViewGroup) previousFragment.fragmentView.getParent();
                 if (parent != null) {
                     previousFragment.onPause();
+                    previousFragment.onStop();
                     previousFragment.onRemoveFromParent();
                     parent.removeView(previousFragment.fragmentView);
                 }
@@ -1522,6 +1546,7 @@ public class ActionBarLayout extends FrameLayout {
             containerView.addView(previousFragment.actionBar);
             previousFragment.actionBar.setTitleOverlayText(titleOverlayText, titleOverlayTextId, overlayAction);
         }
+        previousFragment.onStart();
         previousFragment.onResume();
         currentActionBar = previousFragment.actionBar;
         if (!previousFragment.hasOwnBackground && fragmentView.getBackground() == null) {
@@ -1531,6 +1556,7 @@ public class ActionBarLayout extends FrameLayout {
 
     private void removeFragmentFromStackInternal(BaseFragment fragment) {
         fragment.onPause();
+        fragment.onStop();
         fragment.onFragmentDestroy();
         fragment.setParentLayout(null);
         fragmentsStack.remove(fragment);

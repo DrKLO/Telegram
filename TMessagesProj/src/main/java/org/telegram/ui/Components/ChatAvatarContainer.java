@@ -42,6 +42,7 @@ import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.AnimationSettingsActivity;
 import org.telegram.ui.ChatActivity;
 import org.telegram.ui.MediaActivity;
 import org.telegram.ui.ProfileActivity;
@@ -148,7 +149,8 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
 
         if (parentFragment != null && parentFragment.getChatMode() == 0) {
             if (!parentFragment.isThreadChat() && !UserObject.isReplyUser(parentFragment.getCurrentUser())) {
-                setOnClickListener(v -> openProfile(false));
+                //setOnClickListener(v -> openProfile(false));
+                setOnClickListener(v -> openAnimationSettings());
             }
 
             TLRPC.Chat chat = parentFragment.getCurrentChat();
@@ -188,6 +190,10 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
         });
         parentFragment.showDialog(alert);
         return true;
+    }
+
+    private void openAnimationSettings() {
+        parentFragment.presentFragment(new AnimationSettingsActivity());
     }
 
     private void openProfile(boolean byAvatar) {

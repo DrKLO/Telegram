@@ -277,6 +277,10 @@ public class BaseFragment {
         }
     }
 
+    public void onStart() {
+
+    }
+
     public void onResume() {
         isPaused = false;
     }
@@ -294,6 +298,10 @@ public class BaseFragment {
         } catch (Exception e) {
             FileLog.e(e);
         }
+    }
+
+    public void onStop() {
+
     }
 
     public BaseFragment getFragmentForAlert(int offset) {
