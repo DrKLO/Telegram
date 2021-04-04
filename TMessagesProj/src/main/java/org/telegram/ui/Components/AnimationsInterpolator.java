@@ -2,17 +2,17 @@ package org.telegram.ui.Components;
 
 public class AnimationsInterpolator extends CubicBezierInterpolator {
 
-    private static final float xFactor = 0.95f;
+    private static final float boundFactor = 0.95f;
 
     private float leftBoundProgress;
     private float rightBoundProgress;
 
     public AnimationsInterpolator() {
-        this(xFactor, 0f, 0f, 1f);
+        this(boundFactor, 0f, 0f, 1f);
     }
 
     public AnimationsInterpolator(float xStart, float xEnd, float leftBoundProgress, float rightBoundProgress) {
-        super(xStart * xFactor, 0f, xEnd * xFactor, 1f);
+        super(xStart * boundFactor, 0f, xEnd * boundFactor, 1f);
         this.leftBoundProgress = leftBoundProgress;
         this.rightBoundProgress = rightBoundProgress;
     }
@@ -30,11 +30,11 @@ public class AnimationsInterpolator extends CubicBezierInterpolator {
     }
 
     public void setStartX(float x) {
-        start.x = x * xFactor;
+        start.x = x * boundFactor;
     }
 
     public void setEndX(float x) {
-        end.x = x * xFactor;
+        end.x = x * boundFactor;
     }
 
     public void setLeftBoundProgress(float leftBoundProgress) {

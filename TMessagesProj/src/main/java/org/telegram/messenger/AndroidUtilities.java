@@ -25,7 +25,6 @@ import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.Signature;
 import android.content.res.AssetFileDescriptor;
-import android.content.res.AssetManager;
 import android.content.res.Configuration;
 import android.database.Cursor;
 import android.graphics.Bitmap;
@@ -3710,16 +3709,6 @@ public class AndroidUtilities {
 
     public static boolean isLightColor(@ColorInt int color) {
         return luma(color) > 0.75f;
-    }
-
-    public static String readTextFromAsset(Context context, String fileName, boolean addNewLine) {
-        AssetManager assets = context.getAssets();
-        try {
-            InputStream is = assets.open(fileName);
-            return readTextFromInputStream(is, addNewLine);
-        } catch (Exception e) {
-            return null;
-        }
     }
 
     public static String readTextFromInputStream(InputStream inputStream, boolean addNewLine) {

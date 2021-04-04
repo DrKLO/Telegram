@@ -9,11 +9,7 @@ import java.nio.ShortBuffer;
 
 public class FragmentShader extends Shader {
 
-    private static final String VERTEX_SHADER = "" +
-            "attribute vec4 a_position;\n" +
-            "void main() {\n" +
-            "    gl_Position = a_position;\n" +
-            "}";
+    private static final String vertexShader = "attribute vec4 a_position; void main() { gl_Position = a_position; }";
 
     private static final float[] VERTICES = new float[]{ -1.0f, 1.0f,  -1.0f, -1.0f,  1.0f, -1.0f,  1.0f, 1.0f };
     private static final short[] ORDER = new short[]{ 0, 1, 2, 0, 2, 3 };
@@ -29,7 +25,7 @@ public class FragmentShader extends Shader {
     private final int locAttrPosition;
 
     public FragmentShader(String fragmentShader) {
-        super(VERTEX_SHADER, fragmentShader, new String[]{}, new String[]{});
+        super(vertexShader, fragmentShader, new String[]{}, new String[]{});
 
         verticesBuffer.put(VERTICES);
         verticesBuffer.position(0);

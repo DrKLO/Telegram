@@ -123,6 +123,7 @@ public class BackgroundAnimationSettingsPage extends AnimationsSettingsPage {
                 @Override public void onAnimationCancel(Animator animation) { }
                 @Override public void onAnimationRepeat(Animator animation) { }
             });
+            animator.setDuration(300);
             animator.start();
         }
     }

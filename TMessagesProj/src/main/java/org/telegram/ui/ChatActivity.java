@@ -3010,7 +3010,6 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 }
 
                 backgroundController.layout(chatListView.getLeft(), chatListView.getTop(), chatListView.getRight(), contentView.getBottom());
-
                 invalidateChatListViewTopPadding();
                 invalidateMessagesVisiblePart();
                 updateTextureViewPosition(false);
