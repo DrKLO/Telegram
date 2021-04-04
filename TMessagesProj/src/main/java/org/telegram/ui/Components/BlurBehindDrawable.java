@@ -133,6 +133,9 @@ public class BlurBehindDrawable {
                 blurCanvas[i].scale(1f / DOWN_SCALE, 1f / DOWN_SCALE, 0, 0);
                 Drawable backDrawable = behindView.getBackground();
                 if (backDrawable == null) {
+                    backDrawable = Theme.cachedBlurBackgroundDrawable;
+                }
+                if (backDrawable == null) {
                     backDrawable = Theme.getCachedWallpaperNonBlocking();
                 }
                 behindView.setTag(TAG_DRAWING_AS_BACKGROUND, i);

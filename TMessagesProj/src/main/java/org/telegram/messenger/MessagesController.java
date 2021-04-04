@@ -13,7 +13,9 @@ import android.appwidget.AppWidgetManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.Color;
 import android.location.Location;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.SystemClock;
@@ -27,6 +29,7 @@ import android.util.SparseIntArray;
 
 import androidx.core.app.NotificationManagerCompat;
 
+import org.json.JSONObject;
 import org.telegram.SQLite.SQLiteCursor;
 import org.telegram.messenger.support.SparseLongArray;
 import org.telegram.messenger.voip.VoIPService;
@@ -50,6 +53,8 @@ import org.telegram.ui.ProfileActivity;
 import org.telegram.ui.SwipeGestureSettingsView;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -58,6 +63,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Scanner;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
@@ -307,9 +313,19 @@ public class MessagesController extends BaseController implements NotificationCe
     public HashMap<String, DiceFrameSuccess> diceSuccess = new HashMap<>();
     public HashMap<String, EmojiSound> emojiSounds = new HashMap<>();
 
+    public int bgColor1;
+    public int bgColor2;
+    public int bgColor3;
+    public int bgColor4;
+
+    public AnimationConfig bgSendMessageAnimationConfig = new AnimationConfig();
+    public AnimationConfig bgOpenChatAnimationConfig = new AnimationConfig();
+    public AnimationConfig bgJumpToMessageAnimationConfig = new AnimationConfig();
+
     private SharedPreferences notificationsPreferences;
     private SharedPreferences mainPreferences;
     private SharedPreferences emojiPreferences;
+    private SharedPreferences animationsPreferences;
 
     public volatile boolean ignoreSetOnline;
 
@@ -679,6 +695,10 @@ public class MessagesController extends BaseController implements NotificationCe
         return getInstance(0).emojiPreferences;
     }
 
+    public static SharedPreferences getGlobalAnimationsSettings() {
+        return getInstance(0).animationsPreferences;
+    }
+
     public MessagesController(int num) {
         super(num);
         currentAccount = num;
@@ -699,10 +719,12 @@ public class MessagesController extends BaseController implements NotificationCe
             notificationsPreferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
             mainPreferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
             emojiPreferences = ApplicationLoader.applicationContext.getSharedPreferences("emoji", Activity.MODE_PRIVATE);
+            animationsPreferences = ApplicationLoader.applicationContext.getSharedPreferences("animations", Activity.MODE_PRIVATE);
         } else {
             notificationsPreferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications" + currentAccount, Activity.MODE_PRIVATE);
             mainPreferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig" + currentAccount, Activity.MODE_PRIVATE);
             emojiPreferences = ApplicationLoader.applicationContext.getSharedPreferences("emoji" + currentAccount, Activity.MODE_PRIVATE);
+            animationsPreferences = ApplicationLoader.applicationContext.getSharedPreferences("animations" + currentAccount, Activity.MODE_PRIVATE);
         }
 
         enableJoined = notificationsPreferences.getBoolean("EnableContactJoined", true);
@@ -877,6 +899,187 @@ public class MessagesController extends BaseController implements NotificationCe
                 FileLog.e(e);
             }
         }
+
+        loadBgConfig();
+    }
+
+    private void loadBgConfig() {
+        loadBgColors();
+        bgSendMessageAnimationConfig = loadAnimationConfig("send_msg", 1000, 0, 1000, 33, 100);
+        bgOpenChatAnimationConfig = loadAnimationConfig("open_chat", 2000, 0, 2000, 33, 100);
+        bgJumpToMessageAnimationConfig = loadAnimationConfig("jump_to_msg", 1000, 0, 1000, 33, 100);
+    }
+
+    private AnimationConfig loadAnimationConfig(
+            String name,
+            long defaultDuration,
+            long defaultStartTime,
+            long defaultEndTime,
+            int defaultStartProgress,
+            int defaultEndProgress
+    ) {
+        AnimationConfig animationConfig = new AnimationConfig();
+        animationConfig.duration = animationsPreferences.getLong("bg_" + name + "_duration", defaultDuration);
+        animationConfig.startTime = animationsPreferences.getLong("bg_" + name + "_start_time", defaultStartTime);
+        animationConfig.endTime = animationsPreferences.getLong("bg_" + name + "_end_time", defaultEndTime);
+        animationConfig.startProgress = animationsPreferences.getInt("bg_" + name + "_start_progress", defaultStartProgress);
+        animationConfig.endProgress = animationsPreferences.getInt("bg_" + name + "_end_progress", defaultEndProgress);
+        return animationConfig;
+    }
+
+    public void saveBgSendMsgAnimationConfig() {
+        saveAnimationConfig(bgSendMessageAnimationConfig, "send_msg");
+    }
+
+    public void saveBgOpenChatAnimationConfig() {
+        saveAnimationConfig(bgOpenChatAnimationConfig, "open_chat");
+    }
+
+    public void saveBgJumpToMsgAnimationConfig() {
+        saveAnimationConfig(bgJumpToMessageAnimationConfig, "jump_to_msg");
+    }
+
+    private void saveAnimationConfig(AnimationConfig config, String name) {
+        animationsPreferences.edit()
+                .putLong("bg_" + name + "_duration", config.duration)
+                .putLong("bg_" + name + "_start_time", config.startTime)
+                .putLong("bg_" + name + "_end_time", config.endTime)
+                .putInt("bg_" + name + "_start_progress", config.startProgress)
+                .putInt("bg_" + name + "_end_progress", config.endProgress)
+                .apply();
+    }
+
+    private void loadBgColors() {
+        bgColor1 = animationsPreferences.getInt("bg_color_1", Color.rgb(128, 163, 130));
+        bgColor2 = animationsPreferences.getInt("bg_color_2", Color.rgb(251, 228, 126));
+        bgColor3 = animationsPreferences.getInt("bg_color_3", Color.rgb(51, 111, 85));
+        bgColor4 = animationsPreferences.getInt("bg_color_4", Color.rgb(253, 245, 196));
+    }
+
+    public void saveBgColors() {
+        saveBgColors(bgColor1, bgColor2, bgColor3, bgColor4);
+    }
+
+    private void saveBgColors(int bgColor1, int bgColor2, int bgColor3, int bgColor4) {
+        this.bgColor1 = bgColor1;
+        this.bgColor2 = bgColor2;
+        this.bgColor3 = bgColor3;
+        this.bgColor4 = bgColor4;
+        animationsPreferences.edit()
+                .putInt("bg_color_1", bgColor1)
+                .putInt("bg_color_2", bgColor2)
+                .putInt("bg_color_3", bgColor3)
+                .putInt("bg_color_4", bgColor4)
+                .apply();
+    }
+
+    public void resetBgSettings() {
+        animationsPreferences.edit()
+                .remove("bg_color_1")
+                .remove("bg_color_2")
+                .remove("bg_color_3")
+                .remove("bg_color_4")
+                .apply();
+        resetBgAnimationSettings("send_msg");
+        resetBgAnimationSettings("open_chat");
+        resetBgAnimationSettings("jump_to_msg");
+        loadBgConfig();
+    }
+
+    private void resetBgAnimationSettings(String name) {
+        animationsPreferences.edit()
+                .remove("bg_" + name + "_duration")
+                .remove("bg_" + name + "_start_time")
+                .remove("bg_" + name + "_end_time")
+                .remove("bg_" + name + "_start_progress")
+                .remove("bg_" + name + "_end_progress")
+                .apply();
+    }
+
+    public boolean applyAnimationBgSettings(Context context, Uri uri) {
+        try {
+            return applyAnimationBgSettings(context.getContentResolver().openInputStream(uri));
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    public boolean applyAnimationBgSettings(File file) {
+        try {
+            return applyAnimationBgSettings(new FileInputStream(file));
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    public boolean applyAnimationBgSettings(InputStream is) {
+        try {
+            Scanner sc = new Scanner(is);
+            StringBuilder sb = new StringBuilder();
+            while (sc.hasNextLine()) {
+                sb.append(sc.nextLine());
+                if(sb.length() > 10000) {
+                    return false;
+                }
+            }
+            sc.close();
+            JSONObject obj = new JSONObject(sb.toString());
+            int bg1 = Color.parseColor(obj.getString("bg1"));
+            int bg2 = Color.parseColor(obj.getString("bg2"));
+            int bg3 = Color.parseColor(obj.getString("bg3"));
+            int bg4 = Color.parseColor(obj.getString("bg4"));
+            AnimationConfig open = loadBgAnimation(obj, "oc");
+            AnimationConfig send = loadBgAnimation(obj, "sm");
+            AnimationConfig jump = loadBgAnimation(obj, "jm");
+            bgOpenChatAnimationConfig = open;
+            bgSendMessageAnimationConfig = send;
+            bgJumpToMessageAnimationConfig = jump;
+            saveBgOpenChatAnimationConfig();
+            saveBgSendMsgAnimationConfig();
+            saveBgJumpToMsgAnimationConfig();
+            saveBgColors(bg1, bg2, bg3, bg4);
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    public String exportAnimationBgSettings() {
+        try {
+            JSONObject obj = new JSONObject();
+            obj.put("bg1", String.format("#%06X", (0xFFFFFF & bgColor1)));
+            obj.put("bg2", String.format("#%06X", (0xFFFFFF & bgColor2)));
+            obj.put("bg3", String.format("#%06X", (0xFFFFFF & bgColor3)));
+            obj.put("bg4", String.format("#%06X", (0xFFFFFF & bgColor4)));
+            exportBgAnimation(obj, bgOpenChatAnimationConfig, "oc");
+            exportBgAnimation(obj, bgSendMessageAnimationConfig, "sm");
+            exportBgAnimation(obj, bgJumpToMessageAnimationConfig, "jm");
+            return obj.toString();
+        } catch (Exception e) {
+            return "{}";
+        }
+    }
+
+    private void exportBgAnimation(JSONObject obj, AnimationConfig config, String name) throws Exception {
+        obj.put("a_d_" + name, config.duration);
+        obj.put("a_st_" + name, config.startTime);
+        obj.put("a_et_" + name, config.endTime);
+        obj.put("a_sp_" + name, config.startProgress);
+        obj.put("a_ep_" + name, config.endProgress);
+    }
+
+    private AnimationConfig loadBgAnimation(JSONObject obj, String name) throws Exception {
+        AnimationConfig config = new AnimationConfig();
+        config.duration = obj.getLong("a_d_" + name);
+        config.startTime = obj.getLong("a_st_" + name);
+        config.endTime = obj.getLong("a_et_" + name);
+        config.startProgress = obj.getInt("a_sp_" + name);
+        config.endProgress = obj.getInt("a_ep_" + name);
+        if(config.duration < 200 || config.duration > 5000 || config.endTime <= config.startTime ||
+            config.startProgress < 0 || config.startProgress > 100 || config.endProgress < 0 || config.endProgress > 100) {
+            throw new IllegalArgumentException();
+        }
+        return config;
     }
 
     private void sendLoadPeersRequest(TLObject req, ArrayList<TLObject> requests, TLRPC.messages_Dialogs pinnedDialogs, TLRPC.messages_Dialogs pinnedRemoteDialogs, ArrayList<TLRPC.User> users, ArrayList<TLRPC.Chat> chats, ArrayList<DialogFilter> filtersToSave, SparseArray<DialogFilter> filtersToDelete, ArrayList<Integer> filtersOrder, HashMap<Integer, HashSet<Integer>> filterDialogRemovals, HashMap<Integer, HashSet<Integer>> filterUserRemovals, HashSet<Integer> filtersUnreadCounterReset) {
@@ -14281,5 +14484,30 @@ public class MessagesController extends BaseController implements NotificationCe
     public interface MessagesLoadedCallback {
         void onMessagesLoaded(boolean fromCache);
         void onError();
+    }
+
+    public static class AnimationConfig {
+
+        public long duration;
+        public long startTime;
+        public long endTime;
+        public int startProgress;
+        public int endProgress;
+
+        public void updateDuration(long newDuration) {
+            float startTimePosition = (float) startTime / duration;
+            float endTimePosition = (float) endTime / duration;
+            startTime = Math.round(newDuration * startTimePosition);
+            endTime = Math.round(newDuration * endTimePosition);
+            duration = newDuration;
+        }
+
+        public void fill(AnimationConfig source) {
+            duration = source.duration;
+            startTime = source.startTime;
+            endTime = source.endTime;
+            startProgress = source.startProgress;
+            endProgress = source.endProgress;
+        }
     }
 }

@@ -12,11 +12,16 @@ import android.animation.Animator;
 import android.animation.ObjectAnimator;
 import android.content.Context;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
+import android.graphics.drawable.Drawable;
+import android.graphics.drawable.ShapeDrawable;
+import android.graphics.drawable.shapes.RoundRectShape;
 import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
+import android.view.ViewGroup;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
@@ -36,6 +41,7 @@ public class TextSettingsCell extends FrameLayout {
     private ImageView valueImageView;
     private boolean needDivider;
     private boolean canDisable;
+    private boolean colorCell;
 
     public TextSettingsCell(Context context) {
         this(context, 21);
@@ -81,7 +87,17 @@ public class TextSettingsCell extends FrameLayout {
             valueImageView.measure(MeasureSpec.makeMeasureSpec(width, MeasureSpec.AT_MOST), MeasureSpec.makeMeasureSpec(getMeasuredHeight(), MeasureSpec.EXACTLY));
         }
         if (valueTextView.getVisibility() == VISIBLE) {
-            valueTextView.measure(MeasureSpec.makeMeasureSpec(width, MeasureSpec.AT_MOST), MeasureSpec.makeMeasureSpec(getMeasuredHeight(), MeasureSpec.EXACTLY));
+            if(colorCell) {
+                valueTextView.measure(
+                        MeasureSpec.makeMeasureSpec(width, MeasureSpec.AT_MOST),
+                        MeasureSpec.makeMeasureSpec(getMeasuredHeight(), MeasureSpec.AT_MOST)
+                );
+            } else {
+                valueTextView.measure(
+                        MeasureSpec.makeMeasureSpec(width, MeasureSpec.AT_MOST),
+                        MeasureSpec.makeMeasureSpec(getMeasuredHeight(), MeasureSpec.EXACTLY)
+                );
+            }
             width = availableWidth - valueTextView.getMeasuredWidth() - AndroidUtilities.dp(8);
         } else {
             width = availableWidth;
@@ -115,6 +131,7 @@ public class TextSettingsCell extends FrameLayout {
         valueImageView.setVisibility(INVISIBLE);
         needDivider = divider;
         setWillNotDraw(!divider);
+        colorCell = false;
     }
 
     public void setTextAndValue(String text, String value, boolean divider) {
@@ -127,8 +144,39 @@ public class TextSettingsCell extends FrameLayout {
             valueTextView.setVisibility(INVISIBLE);
         }
         needDivider = divider;
+        colorCell = false;
         setWillNotDraw(!divider);
         requestLayout();
+    }
+
+    public void setTextAndColorValue(String text, int color, boolean divider) {
+        textView.setText(text);
+        valueImageView.setVisibility(INVISIBLE);
+        if (Color.luminance(color) < 0.5f) {
+            valueTextView.setTextColor(Color.WHITE);
+        } else {
+            valueTextView.setTextColor(Color.BLACK);
+        }
+        valueTextView.setText(String.format("#%06X", (0xFFFFFF & color)));
+        valueTextView.setVisibility(VISIBLE);
+        Drawable bgDrawable = valueTextView.getBackground();
+        if(bgDrawable == null || bgDrawable.getClass() != ShapeDrawable.class) {
+            float r = AndroidUtilities.dpf2(8);
+            RoundRectShape roundShape =
+                    new RoundRectShape(new float[]{r, r, r, r, r, r, r, r}, null, null);
+            bgDrawable = new ShapeDrawable(roundShape);
+        }
+        bgDrawable.setTint(color);
+        valueTextView.setBackground(bgDrawable);
+        needDivider = divider;
+        setWillNotDraw(!divider);
+        int paddingH = AndroidUtilities.dp(8);
+        int paddingV = AndroidUtilities.dp(4);
+        if(!colorCell) {
+            valueTextView.setLayoutParams(LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.CENTER_VERTICAL, 21, 0, 21, 0));
+        }
+        valueTextView.setPadding(paddingH, paddingV, paddingH, paddingV);
+        colorCell = true;
     }
 
     public void setTextAndIcon(String text, int resId, boolean divider) {
@@ -142,6 +190,7 @@ public class TextSettingsCell extends FrameLayout {
         }
         needDivider = divider;
         setWillNotDraw(!divider);
+        colorCell = false;
     }
 
     public void setEnabled(boolean value, ArrayList<Animator> animators) {

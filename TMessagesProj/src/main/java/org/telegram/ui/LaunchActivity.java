@@ -1024,6 +1024,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                         ((ChatActivity) chatFragment).setIgnoreAttachOnPause(true);
                     }
                     chatFragment.onPause();
+                    chatFragment.onStop();
                     actionBarLayout.fragmentsStack.remove(a);
                     rightActionBarLayout.fragmentsStack.add(chatFragment);
                     a--;
@@ -1045,6 +1046,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                         ((ChatActivity) chatFragment).setIgnoreAttachOnPause(true);
                     }
                     chatFragment.onPause();
+                    chatFragment.onStop();
                     rightActionBarLayout.fragmentsStack.remove(a);
                     actionBarLayout.fragmentsStack.add(chatFragment);
                     a--;
@@ -1088,6 +1090,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                     UserConfig.getInstance(account).saveConfig(false);
                     drawerLayoutContainer.setAllowOpenDrawer(true, false);
                     if (mainFragmentsStack.size() > 0) {
+                        mainFragmentsStack.get(mainFragmentsStack.size() - 1).onStart();
                         mainFragmentsStack.get(mainFragmentsStack.size() - 1).onResume();
                     }
                     termsOfServiceView.animate()
@@ -3886,6 +3889,11 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
         Browser.bindCustomTabsService(this);
         ApplicationLoader.mainInterfaceStopped = false;
         GroupCallPip.updateVisibility(this);
+        actionBarLayout.onStart();
+        if (AndroidUtilities.isTablet()) {
+            rightActionBarLayout.onStart();
+            layersActionBarLayout.onStart();
+        }
     }
 
     @Override
@@ -3894,6 +3902,11 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
         Browser.unbindCustomTabsService(this);
         ApplicationLoader.mainInterfaceStopped = true;
         GroupCallPip.updateVisibility(this);
+        actionBarLayout.onStop();
+        if (AndroidUtilities.isTablet()) {
+            rightActionBarLayout.onStop();
+            layersActionBarLayout.onStop();
+        }
     }
 
     @Override
