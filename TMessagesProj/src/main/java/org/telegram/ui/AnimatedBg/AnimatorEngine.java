@@ -175,6 +175,13 @@ public class AnimatorEngine {
         currentAnimator.start();
     }
 
+    public void cancelAnimation() {
+        if (currentAnimator != null) {
+            currentAnimator.cancel();
+            currentAnimator = null;
+        }
+    }
+
     public static class PointInfo {
 
         public final PointF position = new PointF();

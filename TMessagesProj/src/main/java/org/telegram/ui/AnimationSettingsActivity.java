@@ -862,7 +862,7 @@ public class AnimationSettingsActivity extends BaseFragment {
     protected void onTransitionAnimationEnd(boolean isOpen, boolean backward) {
         super.onTransitionAnimationEnd(isOpen, backward);
         inTransitionAnimation = false;
-        if (isOpen && !backward) {
+        if (isOpen) {
             BackgroundListAdapter adapter = (BackgroundListAdapter) viewPages[0].listView.getAdapter();
             if(adapter != null) {
                 adapter.notifyItemChanged(adapter.items.indexOf(adapter.backgroundRow));
@@ -1410,10 +1410,16 @@ public class AnimationSettingsActivity extends BaseFragment {
                     if (started) {
                         bgCell.bgContainer.onStart();
                     }
-                    bgCell.bgContainer.animatedBgGLSurfaceView.updateColors();
+                    bgCell.bgContainer.updateColors();
                     if (inTransitionAnimation) {
-                        if((openTransitionAnimation && !backTransitionAnimation) || (!openTransitionAnimation && backTransitionAnimation)) {
+                        if(openTransitionAnimation && !backTransitionAnimation) {
                             bgCell.bgContainer.displayPreview();
+                        } else if(!openTransitionAnimation && backTransitionAnimation) {
+                            bgCell.bgContainer.displayPreview(true, true);
+                        } else if(!openTransitionAnimation) {
+                            bgCell.bgContainer.displayPreview(true, false);
+                        } else {
+                            bgCell.bgContainer.displayPreview(true, true);
                         }
                     } else {
                         bgCell.bgContainer.displayBg(true);

@@ -97,6 +97,10 @@ public class AnimatedBgGLSurfaceView extends GLSurfaceView {
         animatorEngine.animateToNext(animationConfig, listener);
     }
 
+    public void cancelAnimation() {
+        animatorEngine.cancelAnimation();
+    }
+
     public void requestSnapshot(SnapshotListener snapshotListener) {
         this.snapshotListener = snapshotListener;
         requestRender();

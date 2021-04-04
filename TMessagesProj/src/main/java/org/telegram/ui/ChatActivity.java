@@ -6302,7 +6302,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
 
             @Override
             public boolean awaitBackgroundSnapshot(AnimatedBgGLSurfaceView.SnapshotListener snapshotListener) {
-                animatedBgContainer.animatedBgGLSurfaceView.requestSnapshot(bitmap -> {
+                animatedBgContainer.requestSnapshot(bitmap -> {
                     Theme.cachedBlurBackgroundDrawable = new BitmapDrawable(context.getResources(),bitmap);
                     snapshotListener.onSnapshotReady(bitmap);
                 });
@@ -8067,17 +8067,17 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
     }
 
     private void onAnyMessageSent() {
-        animatedBgContainer.animatedBgGLSurfaceView.animateToNext(MessagesController.getInstance(0).bgSendMessageAnimationConfig);
+        animatedBgContainer.animateToNext(MessagesController.getInstance(0).bgSendMessageAnimationConfig);
     }
 
     private void onJumpedToMessage() {
-        animatedBgContainer.animatedBgGLSurfaceView.animateToNext(MessagesController.getInstance(0).bgJumpToMessageAnimationConfig);
+        animatedBgContainer.animateToNext(MessagesController.getInstance(0).bgJumpToMessageAnimationConfig);
     }
 
     private void onChatOpened() {
-        animatedBgContainer.animatedBgGLSurfaceView.animateToNext(
+        animatedBgContainer.animateToNext(
                 MessagesController.getInstance(0).bgOpenChatAnimationConfig,
-                () -> animatedBgContainer.animatedBgGLSurfaceView.setEnabledGravityProcessing(true)
+                () -> animatedBgContainer.setEnabledGravityProcessing(true)
         );
     }
 
@@ -15989,7 +15989,11 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         if(isOpen && !backward) {
             animatedBgContainer.displayPreview();
         } else if(!isOpen && backward) {
-            animatedBgContainer.displayPreview(false);
+            animatedBgContainer.displayPreview();
+        } else if(!isOpen) {
+            animatedBgContainer.displayPreview(false, false);
+        } else {
+            animatedBgContainer.displayPreview(false, true);
         }
         transitionAnimationIndex = getNotificationCenter().setAnimationInProgress(transitionAnimationIndex, alowedNotifications);
     }
@@ -16018,8 +16022,8 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     showPinBulletin = false;
                 }
             }
+            animatedBgContainer.displayBg();
             if(!backward) {
-                animatedBgContainer.displayBg();
                 onChatOpened();
             }
         }
@@ -19716,7 +19720,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                         MessagesController controller = MessagesController.getInstance(0);
                         if(controller.applyAnimationBgSettings(locFile)) {
                             Toast.makeText(getParentActivity(), "Success", Toast.LENGTH_SHORT).show();
-                            animatedBgContainer.animatedBgGLSurfaceView.updateColors();
+                            animatedBgContainer.updateColors();
                         } else {
                             AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
                             builder.setTitle(LocaleController.getString("AppName", R.string.AppName));

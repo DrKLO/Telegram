@@ -95,7 +95,7 @@ public class BackgroundPreviewActivity extends BaseFragment {
                         finishFragment();
                         break;
                     case 1:
-                        bgContainer.animatedBgGLSurfaceView.setEnabledGravityProcessing(!bgContainer.animatedBgGLSurfaceView.isEnabledGravityProcessing());
+                        bgContainer.setEnabledGravityProcessing(!bgContainer.isEnabledGravityProcessing());
                         break;
                 }
             }
@@ -523,13 +523,13 @@ public class BackgroundPreviewActivity extends BaseFragment {
             MessagesController msg = MessagesController.getInstance(0);
             switch (scrollSlidingTextTabStrip.getCurrentPosition()) {
                 case 0:
-                    bgContainer.animatedBgGLSurfaceView.animateToNext(msg.bgSendMessageAnimationConfig);
+                    bgContainer.animateToNext(msg.bgSendMessageAnimationConfig);
                     break;
                 case 1:
-                    bgContainer.animatedBgGLSurfaceView.animateToNext(msg.bgOpenChatAnimationConfig);
+                    bgContainer.animateToNext(msg.bgOpenChatAnimationConfig);
                     break;
                 case 2:
-                    bgContainer.animatedBgGLSurfaceView.animateToNext(msg.bgJumpToMessageAnimationConfig);
+                    bgContainer.animateToNext(msg.bgJumpToMessageAnimationConfig);
                     break;
             }
         });
@@ -570,14 +570,18 @@ public class BackgroundPreviewActivity extends BaseFragment {
         if(isOpen && !backward) {
             bgContainer.displayPreview();
         } else if(!isOpen && backward) {
-            bgContainer.displayPreview(false);
+            bgContainer.displayPreview();
+        } else if(!isOpen) {
+            bgContainer.displayPreview(false, false);
+        } else {
+            bgContainer.displayPreview(false, true);
         }
     }
 
     @Override
     protected void onTransitionAnimationEnd(boolean isOpen, boolean backward) {
         super.onTransitionAnimationEnd(isOpen, backward);
-        if (isOpen && !backward) {
+        if (isOpen) {
             bgContainer.displayBg();
         }
     }

@@ -8,17 +8,24 @@ import android.widget.ImageView;
 
 import androidx.annotation.NonNull;
 
+import org.telegram.messenger.MessagesController;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.LayoutHelper;
 
 public class AnimatedBgContainer extends FrameLayout {
 
-    public AnimatedBgGLSurfaceView animatedBgGLSurfaceView;
+    private AnimatedBgGLSurfaceView animatedBgGLSurfaceView;
     public ImageView stubImageView;
 
     private boolean firstDisplayPreview = true;
     private boolean previewMode = false;
     private boolean started = false;
+    private boolean snapshotReady;
+    private boolean gravityEnabled;
+
+    private boolean displayPreviewAfterStart;
+    private boolean pendingDisplayFromCacheIfExists;
+    private boolean pendingDoNotUpdateSnapshotIfColorNotChange;
 
     public AnimatedBgContainer(@NonNull Context context) {
         super(context);
@@ -31,6 +38,34 @@ public class AnimatedBgContainer extends FrameLayout {
         );
     }
 
+    public void updateColors() {
+        animatedBgGLSurfaceView.updateColors();
+    }
+
+    public boolean isEnabledGravityProcessing() {
+        return animatedBgGLSurfaceView.isEnabledGravityProcessing();
+    }
+
+    public void setEnabledGravityProcessing(boolean enabledGravityProcessing) {
+        if (previewMode) {
+            gravityEnabled = enabledGravityProcessing;
+            return;
+        }
+        animatedBgGLSurfaceView.setEnabledGravityProcessing(enabledGravityProcessing);
+    }
+
+    public void animateToNext(MessagesController.AnimationConfig animationConfig) {
+        animateToNext(animationConfig, null);
+    }
+
+    public void animateToNext(MessagesController.AnimationConfig animationConfig, AnimatorEngine.FinishMoveAnimationListener listener) {
+        animatedBgGLSurfaceView.animateToNext(animationConfig, listener);
+    }
+
+    public void requestSnapshot(AnimatedBgGLSurfaceView.SnapshotListener snapshotListener) {
+        animatedBgGLSurfaceView.requestSnapshot(snapshotListener);
+    }
+
     public void onStart() {
         if (started) {
             return;
@@ -40,6 +75,12 @@ public class AnimatedBgContainer extends FrameLayout {
                 LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT)
         );
         started = true;
+        if(displayPreviewAfterStart) {
+            displayPreviewAfterStart = false;
+            displayPreview(
+                    pendingDisplayFromCacheIfExists, pendingDoNotUpdateSnapshotIfColorNotChange
+            );
+        }
     }
 
     public void onStop() {
@@ -52,32 +93,53 @@ public class AnimatedBgContainer extends FrameLayout {
 
     public void onDestroy() {
         started = false;
-        removeAllViews();
+        post(this::removeAllViews);
     }
 
     public void displayPreview() {
-        displayPreview(true);
+        displayPreview(true, false);
     }
-    
-    public void displayPreview(boolean checkSnapshotCache) {
+
+    public void displayPreview(boolean displayFromCacheIfExists, boolean doNotUpdateSnapshotIfColorNotChange) {
         if (!started) {
+            displayPreviewAfterStart = true;
+            pendingDisplayFromCacheIfExists = displayFromCacheIfExists;
+            pendingDoNotUpdateSnapshotIfColorNotChange = doNotUpdateSnapshotIfColorNotChange;
             return;
         }
+
+        gravityEnabled = animatedBgGLSurfaceView.isEnabledGravityProcessing();
+        animatedBgGLSurfaceView.cancelAnimation();
+
         previewMode = true;
+        snapshotReady = false;
         updatePreviewState();
         Bitmap cachedBitmap = Theme.blurBgBitmap;
         String colorHash = Theme.blurBgBitmapColorHash;
         String currentColorHash = animatedBgGLSurfaceView.animatorEngine.getColorsHash();
-        boolean haveCached = cachedBitmap != null && currentColorHash.equals(colorHash);
-        if (firstDisplayPreview && haveCached && checkSnapshotCache) {
+        String lastColorHash = (String) stubImageView.getTag();
+        if(currentColorHash.equals(lastColorHash) && doNotUpdateSnapshotIfColorNotChange) {
+            snapshotReady = true;
+            updatePreviewState();
+            return;
+        }
+        stubImageView.setImageDrawable(null);
+        boolean wasCached = cachedBitmap != null && currentColorHash.equals(colorHash);
+        if (firstDisplayPreview && wasCached && displayFromCacheIfExists) {
             stubImageView.setImageBitmap(cachedBitmap);
+            stubImageView.setTag(currentColorHash);
+            snapshotReady = true;
+            updatePreviewState();
         } else {
             animatedBgGLSurfaceView.requestSnapshot(bitmap -> {
-                if (!haveCached) {
+                if (!wasCached) {
                     Theme.blurBgBitmap = bitmap;
                     Theme.blurBgBitmapColorHash = currentColorHash;
                 }
                 stubImageView.setImageBitmap(bitmap);
+                stubImageView.setTag(currentColorHash);
+                snapshotReady = true;
+                updatePreviewState();
             });
         }
         firstDisplayPreview = false;
@@ -93,19 +155,24 @@ public class AnimatedBgContainer extends FrameLayout {
             return;
         }
         previewMode = false;
+        setEnabledGravityProcessing(gravityEnabled);
         updateBgState();
         if (cacheSnapshot) {
             String currentColorHash = animatedBgGLSurfaceView.animatorEngine.getColorsHash();
             animatedBgGLSurfaceView.requestSnapshot(bitmap -> {
                 Theme.blurBgBitmap = bitmap;
                 Theme.blurBgBitmapColorHash = currentColorHash;
+                stubImageView.setImageBitmap(bitmap);
+                stubImageView.setTag(currentColorHash);
             });
         }
     }
 
     private void updatePreviewState() {
-        animatedBgGLSurfaceView.setTranslationX(animatedBgGLSurfaceView.getMeasuredWidth());
-        stubImageView.setVisibility(View.VISIBLE);
+        if (snapshotReady) {
+            animatedBgGLSurfaceView.setTranslationX(10_000);
+            stubImageView.setVisibility(View.VISIBLE);
+        }
         setBackgroundColor(animatedBgGLSurfaceView.animatorEngine.points[0].color);
     }
 
