@@ -23080,9 +23080,11 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         }
 
         public void setupBackground(SizeNotifierFrameLayout contentView) {
+            contentView.setBackgroundImage(Theme.getCachedWallpaper(), Theme.isWallpaperMotion());
             if (AnimationsController.isAnimatedBackgroundEnabled()) {
                 if (gradientBackgroundView == null) {
                     gradientBackgroundView = new GradientBackgroundView(contentView.getContext());
+                    gradientBackgroundView.setOpaque(false);
                     gradientBackgroundView.setListener(this);
                     int pointsPosition = AnimationsController.getInstance().getChatBackPosition(dialogId);
                     gradientBackgroundView.setPointsPosition(pointsPosition);
@@ -23092,9 +23094,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     parallaxEffect = new WallpaperParallaxEffect(contentView.getContext());
                     parallaxEffect.setCallback(this);
                 }
-                parallaxEffect.setEnabled(true, SensorManager.SENSOR_DELAY_NORMAL);
-            } else {
-                contentView.setBackgroundImage(Theme.getCachedWallpaper(), Theme.isWallpaperMotion());
+                parallaxEffect.setEnabled(true, SensorManager.SENSOR_DELAY_UI);
             }
         }
 
