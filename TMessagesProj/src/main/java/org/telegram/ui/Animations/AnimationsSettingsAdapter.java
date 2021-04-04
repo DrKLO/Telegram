@@ -1,6 +1,5 @@
 package org.telegram.ui.Animations;
 
-import android.graphics.drawable.Drawable;
 import android.view.View;
 import android.view.ViewGroup;
 
@@ -13,12 +12,10 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.AnimationPropertiesCell;
-import org.telegram.ui.Cells.DividerCell;
 import org.telegram.ui.Cells.DurationCell;
 import org.telegram.ui.Cells.HeaderCell;
 import org.telegram.ui.Cells.SelectColorCell;
 import org.telegram.ui.Cells.ShadowSectionCell;
-import org.telegram.ui.Cells.TextCell;
 import org.telegram.ui.Cells.TextSettingsCell;
 import org.telegram.ui.Components.RecyclerListView;
 
@@ -28,13 +25,12 @@ import java.util.List;
 public class AnimationsSettingsAdapter extends RecyclerView.Adapter<RecyclerListView.Holder> {
 
     private static final int VIEW_TYPE_SECTION = 0;
-    private static final int VIEW_TYPE_DIVIDER = 1;
-    private static final int VIEW_TYPE_HEADER = 2;
-    private static final int VIEW_TYPE_TEXT = 3;
-    private static final int VIEW_TYPE_PREVIEW = 4;
-    private static final int VIEW_TYPE_SELECT_COLOR = 5;
-    private static final int VIEW_TYPE_ANIMATION_PROPERTIES = 6;
-    private static final int VIEW_TYPE_DURATION = 7;
+    private static final int VIEW_TYPE_HEADER = 1;
+    private static final int VIEW_TYPE_TEXT = 2;
+    private static final int VIEW_TYPE_PREVIEW = 3;
+    private static final int VIEW_TYPE_SELECT_COLOR = 4;
+    private static final int VIEW_TYPE_ANIMATION_PROPERTIES = 5;
+    private static final int VIEW_TYPE_DURATION = 6;
 
     private final List<Item> items = new ArrayList<>();
 
@@ -52,11 +48,6 @@ public class AnimationsSettingsAdapter extends RecyclerView.Adapter<RecyclerList
         switch (viewType) {
             case VIEW_TYPE_SECTION: {
                 view = new ShadowSectionCell(parent.getContext());
-                break;
-            }
-            case VIEW_TYPE_DIVIDER: {
-                view = new DividerCell(parent.getContext());
-                view.setPadding(AndroidUtilities.dp(21), 0, 0, 0);
                 break;
             }
             case VIEW_TYPE_HEADER: {
@@ -94,7 +85,11 @@ public class AnimationsSettingsAdapter extends RecyclerView.Adapter<RecyclerList
             }
         }
         if (view != null && viewType != VIEW_TYPE_SECTION && viewType != VIEW_TYPE_PREVIEW) {
-            view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+            if (viewType == VIEW_TYPE_DURATION || viewType == VIEW_TYPE_TEXT || viewType == VIEW_TYPE_SELECT_COLOR) {
+                view.setBackground(Theme.getSelectorDrawable(true));
+            } else {
+                view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+            }
         }
         return new RecyclerListView.Holder(view);
     }
@@ -132,6 +127,8 @@ public class AnimationsSettingsAdapter extends RecyclerView.Adapter<RecyclerList
                 SelectColorItem colorItem = (SelectColorItem) item;
                 cell.setTitle(colorItem.text);
                 cell.setColor(colorItem.color);
+                boolean isNeedDivider = (position + 1 < getItemCount()) && (items.get(position + 1) instanceof SelectColorItem);
+                cell.setNeedDivider(isNeedDivider);
                 break;
             }
             case VIEW_TYPE_ANIMATION_PROPERTIES: {
@@ -144,6 +141,7 @@ public class AnimationsSettingsAdapter extends RecyclerView.Adapter<RecyclerList
                 DurationCell cell = (DurationCell) holder.itemView;
                 DurationItem durationItem = (DurationItem) item;
                 cell.setDuration(durationItem.duration);
+                cell.setNeedDivider(true);
                 break;
             }
         }
@@ -192,14 +190,6 @@ public class AnimationsSettingsAdapter extends RecyclerView.Adapter<RecyclerList
         @Override
         public int getType() {
             return VIEW_TYPE_SECTION;
-        }
-    }
-
-    public static final class DividerItem extends Item {
-
-        @Override
-        public int getType() {
-            return VIEW_TYPE_DIVIDER;
         }
     }
 

@@ -17,13 +17,13 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.LocaleController;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Animations.SelectColorBottomSheet;
 
-// TODO agolokoz: add ripple
 public class SelectColorCell extends View {
 
-    private static final int leftRightSpace = AndroidUtilities.dp(21);
+    private static final int leftRightSpace = AndroidUtilities.dp(20);
     private static final int leftRightPadding = AndroidUtilities.dp(6);
     private static final int topBottomPadding = AndroidUtilities.dp(6);
     private static final int backgroundRadius = AndroidUtilities.dp(7);
@@ -52,6 +52,7 @@ public class SelectColorCell extends View {
     private String title;
     private int color;
     private boolean isValueSelected;
+    private boolean isNeedDivider;
 
     public SelectColorCell(@NonNull Context context) {
         super(context);
@@ -118,6 +119,9 @@ public class SelectColorCell extends View {
         canvas.translate(xTextTrans, yTextTrans);
         valueLayout.draw(canvas);
         canvas.restore();
+        if (isNeedDivider) {
+            canvas.drawLine(LocaleController.isRTL ? 0 : AndroidUtilities.dp(20), getMeasuredHeight() - 1, getMeasuredWidth() - (LocaleController.isRTL ? AndroidUtilities.dp(20) : 0), getMeasuredHeight() - 1, Theme.dividerPaint);
+        }
     }
 
     public void onClick() {
@@ -182,6 +186,11 @@ public class SelectColorCell extends View {
 
     public void setValueSelected(boolean valueSelected) {
         isValueSelected = valueSelected;
+        invalidate();
+    }
+
+    public void setNeedDivider(boolean needDivider) {
+        isNeedDivider = needDivider;
         invalidate();
     }
 

@@ -1,6 +1,10 @@
 package org.telegram.ui.Animations.pages;
 
+import android.animation.Animator;
+import android.animation.ValueAnimator;
+
 import androidx.annotation.Nullable;
+import androidx.core.graphics.ColorUtils;
 
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
@@ -18,7 +22,7 @@ public class BackgroundAnimationSettingsPage extends AnimationsSettingsPage {
     private final int[] animPropsPosition = new int[AnimationsController.backAnimCount];
     private final int[] durationsPosition = new int[AnimationsController.backAnimCount];
     private final int[] colorPosition = new int[AnimationsController.backPointsCount];
-    private final int backgroundPreviewPosition;
+    private final int previewPosition;
 
     public BackgroundAnimationSettingsPage() {
         super(-1, LocaleController.getString("", R.string.AnimationSettingsBackground));
@@ -27,11 +31,10 @@ public class BackgroundAnimationSettingsPage extends AnimationsSettingsPage {
         int pos = 0;
 
         SectionItem sectionItem = new SectionItem();
-        DividerItem dividerItem = new DividerItem();
 
         List<Item> items = new ArrayList<>();
         items.add(pos++, new HeaderItem(LocaleController.getString("", R.string.AnimationSettingsBackgroundPreview)));
-        items.add(backgroundPreviewPosition = pos++, new PreviewItem(AnimationsController.getInstance().getBackgroundColorsCopy()));
+        items.add(previewPosition = pos++, new PreviewItem(AnimationsController.getInstance().getBackgroundColorsCopy()));
         items.add(fullScreenPosition = pos++, new TextItem(LocaleController.getString("", R.string.AnimationSettingsOpenFullScreen)));
         items.add(pos++, sectionItem);
         items.add(pos++, new HeaderItem(LocaleController.getString("", R.string.AnimationSettingsColors)));
@@ -39,9 +42,6 @@ public class BackgroundAnimationSettingsPage extends AnimationsSettingsPage {
             String title = LocaleController.formatString("", R.string.AnimationSettingsColorN, i + 1);
             int color = AnimationsController.getInstance().getBackgroundCurrentColor(i);
             items.add(colorPosition[i] = pos++, new SelectColorItem(title, i, color));
-            if (i < AnimationsController.backPointsCount - 1) {
-                items.add(pos++, dividerItem);
-            }
         }
 
         items.add(pos++, sectionItem);
@@ -52,7 +52,6 @@ public class BackgroundAnimationSettingsPage extends AnimationsSettingsPage {
             AnimationSettings s = AnimationsController.getInstance().getBackgroundAnimationSettings(i);
             items.add(pos++, new HeaderItem(s.title));
             items.add(durationsPosition[durationIdx++] = pos++, new DurationItem(s.id, s.maxDuration));
-            items.add(pos++, dividerItem);
             items.add(animPropsPosition[animPropsIdx++] = pos++, new AnimationPropertiesItem(s));
             items.add(pos++, sectionItem);
         }
@@ -63,7 +62,7 @@ public class BackgroundAnimationSettingsPage extends AnimationsSettingsPage {
     @Override
     public void refresh() {
         super.refresh();
-        PreviewItem previewItem = (PreviewItem) adapter.getItemAt(backgroundPreviewPosition);
+        PreviewItem previewItem = (PreviewItem) adapter.getItemAt(previewPosition);
         for (int i = 0; i < AnimationsController.backPointsCount; ++i) {
             int color = AnimationsController.getInstance().getBackgroundCurrentColor(i);
             previewItem.colors[i] = color;
@@ -71,7 +70,7 @@ public class BackgroundAnimationSettingsPage extends AnimationsSettingsPage {
             colorItem.color = color;
             adapter.notifyItemChanged(colorPosition[i]);
         }
-        adapter.notifyItemChanged(backgroundPreviewPosition);
+        adapter.notifyItemChanged(previewPosition);
 
         for (int i = 0; i < AnimationsController.backAnimCount; ++i) {
             AnimationSettings settings = AnimationsController.getInstance().getBackgroundAnimationSettings(i);
@@ -98,8 +97,26 @@ public class BackgroundAnimationSettingsPage extends AnimationsSettingsPage {
     public void onColorCancelled(@Nullable Object tag) {
         if (tag instanceof SelectColorItem) {
             SelectColorItem item = (SelectColorItem) tag;
-            // TODO agolokoz: maybe animate?
-            setColor(AnimationsController.getInstance().getBackgroundCurrentColor(item.id), tag, true);
+            PreviewItem previewItem = (PreviewItem) adapter.getItemAt(previewPosition);
+            int startColor = previewItem.colors[item.id];
+            int endColor = AnimationsController.getInstance().getBackgroundCurrentColor(item.id);
+
+            ValueAnimator animator = ValueAnimator.ofFloat(0f, 1f);
+            animator.addUpdateListener(animation -> {
+                float fraction = animation.getAnimatedFraction();
+                int color = ColorUtils.blendARGB(startColor, endColor, fraction);
+                setColor(color, tag, false);
+            });
+            animator.addListener(new Animator.AnimatorListener() {
+                @Override
+                public void onAnimationEnd(Animator animation) {
+                    setColor(AnimationsController.getInstance().getBackgroundCurrentColor(item.id), tag, true);
+                }
+                @Override public void onAnimationStart(Animator animation) { }
+                @Override public void onAnimationCancel(Animator animation) { }
+                @Override public void onAnimationRepeat(Animator animation) { }
+            });
+            animator.start();
         }
     }
 
@@ -127,21 +144,15 @@ public class BackgroundAnimationSettingsPage extends AnimationsSettingsPage {
             SelectColorItem item = (SelectColorItem) tag;
             int colorIdx = item.id;
 
-            Item i = adapter.getItemAt(backgroundPreviewPosition);
-            if (i instanceof PreviewItem) {
-                PreviewItem previewItem = (PreviewItem) i;
-                previewItem.colors[colorIdx] = color;
-                adapter.updateItem(backgroundPreviewPosition, previewItem);
-            }
+            PreviewItem previewItem = (PreviewItem) adapter.getItemAt(previewPosition);
+            previewItem.colors[colorIdx] = color;
+            adapter.updateItem(previewPosition, previewItem);
+
+            SelectColorItem colorItem = (SelectColorItem) adapter.getItemAt(colorPosition[colorIdx]);
+            colorItem.color = color;
+            adapter.updateItem(colorPosition[colorIdx], colorItem);
 
             if (apply) {
-                i = adapter.getItemAt(colorPosition[colorIdx]);
-                if (i instanceof SelectColorItem) {
-                    SelectColorItem colorItem = (SelectColorItem) i;
-                    colorItem.color = color;
-                    adapter.updateItem(colorPosition[colorIdx], colorItem);
-                }
-
                 AnimationsController.getInstance().setBackgroundCurrentColor(colorIdx, color);
             }
         }

@@ -192,8 +192,8 @@ public class SelectColorBottomSheet extends BottomSheet {
 
         @Override
         protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-            // TODO agolokoz: landscape orientation
-            setMeasuredDimension(MeasureSpec.getSize(widthMeasureSpec), AndroidUtilities.dp(163));
+            int height = Math.min(AndroidUtilities.dp(163), AndroidUtilities.displaySize.y / 2);
+            setMeasuredDimension(MeasureSpec.getSize(widthMeasureSpec), height);
         }
 
         @Override

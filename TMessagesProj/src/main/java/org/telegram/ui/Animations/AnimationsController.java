@@ -2,9 +2,11 @@ package org.telegram.ui.Animations;
 
 import android.content.SharedPreferences;
 import android.text.TextUtils;
+import android.util.SparseIntArray;
 
 import androidx.annotation.ColorInt;
 import androidx.annotation.NonNull;
+import androidx.collection.LongSparseArray;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -94,6 +96,7 @@ public class AnimationsController extends BaseController {
     private final int[] backCurrentColors = new int[backPointsCount];
     private final AnimationSettings[] backAnimSettings = new AnimationSettings[backAnimCount];
     private final MsgAnimationSettings[] msgAnimSettings = new MsgAnimationSettings[msgAnimCount];
+    private final LongSparseArray<Integer> chatBackAnimPositionMap = new LongSparseArray<>();
 
     private AnimationsController(int account) {
         super(account);
@@ -142,6 +145,14 @@ public class AnimationsController extends BaseController {
                 break;
             }
         }
+    }
+
+    public void setChatBackPosition(long chatId, int position) {
+        chatBackAnimPositionMap.put(chatId, position);
+    }
+
+    public int getChatBackPosition(long chatId) {
+        return chatBackAnimPositionMap.get(chatId, 0);
     }
 
 

@@ -51,8 +51,21 @@ public class GradientBackgroundView extends GLTextureView {
         this.settings = settings;
     }
 
-    public void startAnimation() {
-        int nextPosition = (currentPointsPosition + 1) % AnimationsController.backPositionsCount;
+    public void setPointsPosition(int position) {
+        currentPointsPosition = position;
+        setPointsState(currentPointsPosition);
+    }
+
+    public int getPointsPosition() {
+        return currentPointsPosition;
+    }
+
+    public void startAnimation(boolean animateForward) {
+        int nextPosition = currentPointsPosition + (animateForward ? 1 : -1);
+        if (nextPosition < 0) {
+            nextPosition = AnimationsController.backPositionsCount - 1;
+        }
+        nextPosition %= AnimationsController.backPositionsCount;
         startAnimation(nextPosition);
         currentPointsPosition = nextPosition;
     }

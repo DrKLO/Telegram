@@ -44,10 +44,10 @@ public abstract class AnimationsSettingsPage implements AnimationsSettingsAdapte
     public View createView(Context context) {
         RecyclerListView recyclerView = new RecyclerListView(context);
         recyclerView.setAdapter(adapter);
-        recyclerView.setHasFixedSize(true);
-        recyclerView.setLayoutManager(new LinearLayoutManager(context));
-        recyclerView.setItemAnimator(null);
         recyclerView.setDisallowInterceptTouchEvents(true);
+        recyclerView.setHasFixedSize(true);
+        recyclerView.setItemAnimator(null);
+        recyclerView.setLayoutManager(new LinearLayoutManager(context));
         recyclerView.setOnItemClickListener(this);
         return recyclerView;
     }

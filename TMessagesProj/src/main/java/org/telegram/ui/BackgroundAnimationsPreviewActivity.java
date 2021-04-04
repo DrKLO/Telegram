@@ -132,10 +132,9 @@ public class BackgroundAnimationsPreviewActivity extends BaseFragment {
             shadowView.setRotation(180f);
             rootLayout.addView(shadowView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 2, Gravity.BOTTOM, 0, 0, 0, animateBtnHeight));
 
-            // TODO agolokoz: add ripple
             TextView animateBtn = new TextView(context);
             animateBtn.setAllCaps(true);
-            animateBtn.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+            animateBtn.setBackground(Theme.getSelectorDrawable(true));
             animateBtn.setGravity(Gravity.CENTER);
             animateBtn.setOnClickListener(this);
             animateBtn.setText(LocaleController.getString("", R.string.AnimationSettingsAnimate));
@@ -156,7 +155,7 @@ public class BackgroundAnimationsPreviewActivity extends BaseFragment {
         @Override
         public void onClick(View v) {
             if (backgroundView != null) {
-                backgroundView.startAnimation();
+                backgroundView.startAnimation(true);
             }
         }
     }

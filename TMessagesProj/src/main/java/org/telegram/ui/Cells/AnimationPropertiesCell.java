@@ -16,7 +16,6 @@ import android.os.Build;
 import android.text.DynamicLayout;
 import android.text.Layout;
 import android.text.TextPaint;
-import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewConfiguration;
@@ -38,7 +37,8 @@ public class AnimationPropertiesCell extends View {
     private static final float lineSize = AndroidUtilities.dp(2);
     private static final float linesSpace = AndroidUtilities.dp(150);
     private static final float lineLeftRightSpace = AndroidUtilities.dp(27);
-    private static final float textLeftRightSpace = AndroidUtilities.dp(21);
+    private static final float textLeftRightSpace = AndroidUtilities.dp(20);
+    private static final float textMinSpace = AndroidUtilities.dp(6);
     private static final float boundRectRadius = AndroidUtilities.dp(3);
     private static final float boundRectBackRadius = AndroidUtilities.dp(5);
     private static final float boundTextSpace = AndroidUtilities.dp(3);
@@ -78,6 +78,7 @@ public class AnimationPropertiesCell extends View {
     private OnAnimationPropertiesChangeListener propertiesChangeListener;
     private AnimationsInterpolator interpolator = new AnimationsInterpolator();
     private boolean isDataChanged = false;
+    private boolean isLastDraggedBoundRight = false;
 
     public AnimationPropertiesCell(Context context) {
         super(context);
@@ -140,9 +141,11 @@ public class AnimationPropertiesCell extends View {
                     isHandled = true;
                 } else if (leftProgressDrawable.contains(x, y)) {
                     draggingDrawable = leftProgressDrawable;
+                    isLastDraggedBoundRight = false;
                     isHandled = true;
                 } else if (rightProgressDrawable.contains(x, y)) {
                     draggingDrawable = rightProgressDrawable;
+                    isLastDraggedBoundRight = false;
                     isHandled = true;
                 }
                 break;
@@ -178,6 +181,7 @@ public class AnimationPropertiesCell extends View {
                     if (propertiesChangeListener != null) {
                         propertiesChangeListener.onPropertiesChanged(this, getTag());
                     }
+                    isLastDraggedBoundRight = isRightBoundDragging();
                     draggingDrawable = null;
                 }
                 isHandled = true;
@@ -270,19 +274,45 @@ public class AnimationPropertiesCell extends View {
         canvas.save();
         canvas.translate(leftProgressDrawable.left, leftProgressDrawable.top);
         leftProgressDrawable.draw(canvas);
-        canvas.translate(topBottomProgressMaxWidth, 0f);
+        canvas.restore();
+        canvas.save();
+        canvas.translate(rightProgressDrawable.left, rightProgressDrawable.top);
         rightProgressDrawable.draw(canvas);
         canvas.restore();
 
         // bound text
-        // TODO agolokoz: move one of label to another side
+        float leftTextLeft = leftProgressDrawable.left + leftProgressDrawable.getBounds().width() + boundTextSpace;
+        float leftTextRight = leftTextLeft + leftBoundTextLayout.getWidth();
+        float rightTextLeft = rightProgressDrawable.left - boundTextSpace - rightBoundTextLayout.getWidth();
+        if (leftTextRight + textMinSpace > rightTextLeft) {
+            float desiredLeftTextLeft = leftProgressDrawable.left - boundTextSpace - leftBoundTextLayout.getWidth();
+            float desiredRightTextLeft = rightProgressDrawable.left + rightProgressDrawable.getBounds().width() + boundTextSpace;
+            float desiredRightTextRight = desiredRightTextLeft + rightBoundTextLayout.getWidth();
+            boolean isDesiredLeftFit = desiredLeftTextLeft >= textLeftRightSpace;
+            boolean isDesiredRightFit = desiredRightTextRight < getWidth() - textLeftRightSpace;
+
+            if (isRightBoundDragging() || isLastDraggedBoundRight) {
+                if (isDesiredRightFit) {
+                    rightTextLeft = desiredRightTextLeft;
+                } else if (isDesiredLeftFit) {
+                    leftTextLeft = desiredLeftTextLeft;
+                }
+            } else {
+                if (isDesiredLeftFit) {
+                    leftTextLeft = desiredLeftTextLeft;
+                } else if (isDesiredRightFit) {
+                    rightTextLeft = desiredRightTextLeft;
+                }
+            }
+        }
+
+        float textTop = topLineVerticalCenter + (bottomLineVerticalCenter - topLineVerticalCenter) * 0.5f - leftBoundTextLayout.getHeight() * 0.5f;
         canvas.save();
-        canvas.translate(
-                leftProgressDrawable.left + leftProgressDrawable.getBounds().width() + boundTextSpace,
-                topLineVerticalCenter + (bottomLineVerticalCenter - topLineVerticalCenter) * 0.5f - leftBoundTextLayout.getHeight() * 0.5f
-        );
+        canvas.translate(leftTextLeft, textTop);
         leftBoundTextLayout.draw(canvas);
-        canvas.translate(topBottomProgressMaxWidth - rightProgressDrawable.getBounds().width() - boundTextSpace * 2 - rightBoundTextLayout.getWidth(), 0f);
+        canvas.restore();
+        canvas.save();
+        canvas.translate(rightTextLeft, textTop);
         rightBoundTextLayout.draw(canvas);
         canvas.restore();
 
@@ -435,6 +465,14 @@ public class AnimationPropertiesCell extends View {
         }
 
         return bitmap;
+    }
+
+    private boolean isLeftBoundDragging() {
+        return draggingDrawable == leftProgressDrawable;
+    }
+
+    private boolean isRightBoundDragging() {
+        return draggingDrawable == rightProgressDrawable;
     }
 
     public interface OnAnimationPropertiesChangeListener {

@@ -1,6 +1,8 @@
 package org.telegram.ui.Cells;
 
 import android.content.Context;
+import android.graphics.Canvas;
+import android.graphics.drawable.Drawable;
 import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -20,12 +22,11 @@ import org.telegram.ui.ActionBar.Theme;
 
 public class DurationCell extends ViewGroup {
 
-    private static final int leftRightSpace = AndroidUtilities.dp(21);
+    private static final int leftRightSpace = AndroidUtilities.dp(20);
 
     private final TextView titleText = new TextView(getContext());
     private final TextView durationText = new TextView(getContext());
-
-    private int duration;
+    private boolean isNeedDivider;
 
     public DurationCell(@NonNull Context context) {
         super(context);
@@ -44,6 +45,11 @@ public class DurationCell extends ViewGroup {
         durationText.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlueHeader));
         durationText.setTextSize(TypedValue.COMPLEX_UNIT_SP, 15);
         addView(durationText);
+    }
+
+    @Override
+    public void setBackground(Drawable background) {
+        super.setBackground(background);
     }
 
     @Override
@@ -68,9 +74,21 @@ public class DurationCell extends ViewGroup {
         titleText.layout(leftRightSpace, 0, durationLeft, getMeasuredHeight());
     }
 
+    @Override
+    protected void onDraw(Canvas canvas) {
+        super.onDraw(canvas);
+        if (isNeedDivider) {
+            canvas.drawLine(LocaleController.isRTL ? 0 : AndroidUtilities.dp(20), getMeasuredHeight() - 1, getMeasuredWidth() - (LocaleController.isRTL ? AndroidUtilities.dp(20) : 0), getMeasuredHeight() - 1, Theme.dividerPaint);
+        }
+    }
+
     public void setDuration(int duration) {
-        this.duration = duration;
         durationText.setText(LocaleController.formatString("", R.string.AnimationSettingsDurationMs, duration));
+    }
+
+    public void setNeedDivider(boolean needDivider) {
+        isNeedDivider = needDivider;
+        invalidate();
     }
 
     public View getAnchorView() {
