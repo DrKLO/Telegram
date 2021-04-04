@@ -21,7 +21,6 @@ public class AnimatedBgContainer extends FrameLayout {
     private boolean previewMode = false;
     private boolean started = false;
     private boolean snapshotReady;
-    private boolean gravityEnabled;
 
     private boolean displayPreviewAfterStart;
     private boolean pendingDisplayFromCacheIfExists;
@@ -47,10 +46,6 @@ public class AnimatedBgContainer extends FrameLayout {
     }
 
     public void setEnabledGravityProcessing(boolean enabledGravityProcessing) {
-        if (previewMode) {
-            gravityEnabled = enabledGravityProcessing;
-            return;
-        }
         animatedBgGLSurfaceView.setEnabledGravityProcessing(enabledGravityProcessing);
     }
 
@@ -108,7 +103,7 @@ public class AnimatedBgContainer extends FrameLayout {
             return;
         }
 
-        gravityEnabled = animatedBgGLSurfaceView.isEnabledGravityProcessing();
+        animatedBgGLSurfaceView.updateColors();
         animatedBgGLSurfaceView.cancelAnimation();
 
         previewMode = true;
@@ -155,7 +150,6 @@ public class AnimatedBgContainer extends FrameLayout {
             return;
         }
         previewMode = false;
-        setEnabledGravityProcessing(gravityEnabled);
         updateBgState();
         if (cacheSnapshot) {
             String currentColorHash = animatedBgGLSurfaceView.animatorEngine.getColorsHash();

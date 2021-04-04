@@ -850,11 +850,9 @@ public class AnimationSettingsActivity extends BaseFragment {
         inTransitionAnimation = true;
         openTransitionAnimation = isOpen;
         backTransitionAnimation = backward;
-        if ((isOpen && !backward) || (!isOpen && backward)) {
-            BackgroundListAdapter adapter = (BackgroundListAdapter) viewPages[0].listView.getAdapter();
-            if(adapter != null) {
-                adapter.notifyItemChanged(adapter.items.indexOf(adapter.backgroundRow));
-            }
+        BackgroundListAdapter adapter = (BackgroundListAdapter) viewPages[0].listView.getAdapter();
+        if(adapter != null) {
+            adapter.notifyItemChanged(adapter.items.indexOf(adapter.backgroundRow));
         }
     }
 

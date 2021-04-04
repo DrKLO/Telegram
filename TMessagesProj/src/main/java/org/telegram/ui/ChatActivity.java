@@ -15986,6 +15986,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 chatActivityEnterView.onBeginHide();
             }
         }
+        animatedBgContainer.setEnabledGravityProcessing(false);
         if(isOpen && !backward) {
             animatedBgContainer.displayPreview();
         } else if(!isOpen && backward) {
@@ -16025,6 +16026,8 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             animatedBgContainer.displayBg();
             if(!backward) {
                 onChatOpened();
+            } else {
+                animatedBgContainer.setEnabledGravityProcessing(true);
             }
         }
         if (cancelFixedPositionRunnable != null) {
