@@ -39,7 +39,6 @@ import org.telegram.ui.Components.LayoutHelper;
 import static android.view.ViewGroup.LayoutParams.MATCH_PARENT;
 import static android.view.ViewGroup.LayoutParams.WRAP_CONTENT;
 
-// TODO agolokoz: s10 left right sides
 public class SelectColorBottomSheet extends BottomSheet {
 
     private final ColorSelectView colorSelectView = new ColorSelectView(getContext(), new ColorListener() {

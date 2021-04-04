@@ -2,7 +2,6 @@ package org.telegram.ui.Animations;
 
 import android.content.SharedPreferences;
 import android.text.TextUtils;
-import android.util.SparseIntArray;
 
 import androidx.annotation.ColorInt;
 import androidx.annotation.NonNull;

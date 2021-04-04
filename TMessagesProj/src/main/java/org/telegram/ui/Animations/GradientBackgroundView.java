@@ -12,7 +12,6 @@ import androidx.annotation.FloatRange;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-import org.telegram.messenger.AndroidUtilities;
 import org.telegram.ui.Components.GLTextureView;
 
 public class GradientBackgroundView extends GLTextureView {

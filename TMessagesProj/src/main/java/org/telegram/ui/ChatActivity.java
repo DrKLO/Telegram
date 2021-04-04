@@ -23084,11 +23084,13 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             if (AnimationsController.isAnimatedBackgroundEnabled()) {
                 if (gradientBackgroundView == null) {
                     gradientBackgroundView = new GradientBackgroundView(contentView.getContext());
-                    gradientBackgroundView.setOpaque(false);
                     gradientBackgroundView.setListener(this);
                     int pointsPosition = AnimationsController.getInstance().getChatBackPosition(dialogId);
                     gradientBackgroundView.setPointsPosition(pointsPosition);
                     contentView.addView(gradientBackgroundView, 0, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+                }
+                if (AndroidUtilities.isTablet()) {
+                    gradientBackgroundView.setOpaque(false);
                 }
                 if (parallaxEffect == null) {
                     parallaxEffect = new WallpaperParallaxEffect(contentView.getContext());

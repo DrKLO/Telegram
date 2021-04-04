@@ -6,20 +6,19 @@ import android.opengl.GLES20;
 
 import androidx.annotation.ColorInt;
 
-import org.telegram.messenger.AndroidUtilities;
 import org.telegram.ui.Components.GLTextureView;
 import org.telegram.ui.Components.Paint.FragmentShader;
 
 public class GradientGLDrawer implements GLTextureView.Drawer {
 
-    private static final int COLOR_SIZE = 3;
-    private static final int POINT_SIZE = 2;
+    private static final int colorSize = 3;
+    private static final int pointSize = 2;
 
-    private final String fragmentShaderSource;
+    private final String fragmentShaderSource = "precision mediump float;uniform vec2 u_resolution;uniform vec3 u_color1;uniform vec3 u_color2;uniform vec3 u_color3;uniform vec3 u_color4;uniform vec2 u_point1;uniform vec2 u_point2;uniform vec2 u_point3;uniform vec2 u_point4;vec4 ones = vec4(1.0);float getWeight(vec2 uv, vec2 point) { float distance = max(length(uv - point), 0.01); return 1.0 / (distance * distance);}void main() { vec2 uv = gl_FragCoord.xy / u_resolution; vec4 weights = vec4(getWeight(uv, u_point1), getWeight(uv, u_point2), getWeight(uv, u_point3), getWeight(uv, u_point4)); float wSum = dot(weights, ones); vec3 wColors = (weights.x * u_color1 + weights.y * u_color2 + weights.z * u_color3 + weights.w * u_color4) / wSum; wColors = pow(wColors, vec3(0.85)); gl_FragColor = vec4(wColors.rgb, 1.0);}";;
     private FragmentShader shader;
 
-    private final float[] colors = new float[COLOR_SIZE * AnimationsController.backPointsCount];
-    private final float[] points = new float[POINT_SIZE * AnimationsController.backPointsCount];
+    private final float[] colors = new float[colorSize * AnimationsController.backPointsCount];
+    private final float[] points = new float[pointSize * AnimationsController.backPointsCount];
     private float width;
     private float height;
 
@@ -33,9 +32,7 @@ public class GradientGLDrawer implements GLTextureView.Drawer {
     private int locPoint3 = -1;
     private int locPoint4 = -1;
 
-    // TODO agolokoz: move shader to source code
     public GradientGLDrawer(Context context) {
-        fragmentShaderSource = AndroidUtilities.readTextFromAsset(context, "shaders/gradient_background.frag", true);
         for (int i = 0; i != 4; ++i) {
             int color = AnimationsController.getInstance().getBackgroundCurrentColor(i);
             float x = AnimationsController.getBackgroundPointX(0, i);
@@ -79,14 +76,14 @@ public class GradientGLDrawer implements GLTextureView.Drawer {
         GLES20.glUniform2f(locResolution, width, height);
 
         GLES20.glUniform3fv(locColor1, 1, colors, 0);
-        GLES20.glUniform3fv(locColor2, 1, colors, COLOR_SIZE);
-        GLES20.glUniform3fv(locColor3, 1, colors, COLOR_SIZE * 2);
-        GLES20.glUniform3fv(locColor4, 1, colors, COLOR_SIZE * 3);
+        GLES20.glUniform3fv(locColor2, 1, colors, colorSize);
+        GLES20.glUniform3fv(locColor3, 1, colors, colorSize * 2);
+        GLES20.glUniform3fv(locColor4, 1, colors, colorSize * 3);
 
         GLES20.glUniform2fv(locPoint1, 1, points, 0);
-        GLES20.glUniform2fv(locPoint2, 1, points, POINT_SIZE);
-        GLES20.glUniform2fv(locPoint3, 1, points, POINT_SIZE * 2);
-        GLES20.glUniform2fv(locPoint4, 1, points, POINT_SIZE * 3);
+        GLES20.glUniform2fv(locPoint2, 1, points, pointSize);
+        GLES20.glUniform2fv(locPoint3, 1, points, pointSize * 2);
+        GLES20.glUniform2fv(locPoint4, 1, points, pointSize * 3);
 
         shader.draw();
     }

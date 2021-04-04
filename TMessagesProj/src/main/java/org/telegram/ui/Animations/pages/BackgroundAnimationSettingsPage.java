@@ -10,7 +10,14 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.ui.Animations.AnimationSettings;
 import org.telegram.ui.Animations.AnimationsController;
-import org.telegram.ui.Animations.AnimationsSettingsAdapter.*;
+import org.telegram.ui.Animations.AnimationsSettingsAdapter.AnimationPropertiesItem;
+import org.telegram.ui.Animations.AnimationsSettingsAdapter.DurationItem;
+import org.telegram.ui.Animations.AnimationsSettingsAdapter.HeaderItem;
+import org.telegram.ui.Animations.AnimationsSettingsAdapter.Item;
+import org.telegram.ui.Animations.AnimationsSettingsAdapter.PreviewItem;
+import org.telegram.ui.Animations.AnimationsSettingsAdapter.SectionItem;
+import org.telegram.ui.Animations.AnimationsSettingsAdapter.SelectColorItem;
+import org.telegram.ui.Animations.AnimationsSettingsAdapter.TextItem;
 
 import java.util.ArrayList;
 import java.util.List;

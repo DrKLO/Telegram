@@ -3,7 +3,10 @@ package org.telegram.ui.Animations.pages;
 import org.telegram.ui.Animations.AnimationSettings;
 import org.telegram.ui.Animations.AnimationsController;
 import org.telegram.ui.Animations.AnimationsSettingsAdapter;
-import org.telegram.ui.Animations.AnimationsSettingsAdapter.*;
+import org.telegram.ui.Animations.AnimationsSettingsAdapter.AnimationPropertiesItem;
+import org.telegram.ui.Animations.AnimationsSettingsAdapter.DurationItem;
+import org.telegram.ui.Animations.AnimationsSettingsAdapter.HeaderItem;
+import org.telegram.ui.Animations.AnimationsSettingsAdapter.Item;
 import org.telegram.ui.Animations.MsgAnimationSettings;
 
 import java.util.ArrayList;
