@@ -4352,4 +4352,7 @@
     <string name="AnimationSettingsVideoScale">Video scale</string>
     <string name="AnimationSettingsColorChange">Color change</string>
     <string name="AnimationSettingsTimeAppears">Time appears</string>
+    <string name="AnimationSettingsShare">Share Parameters</string>
+    <string name="AnimationSettingsImport">Import Parameters</string>
+    <string name="AnimationSettingsRestore">Restore to Default</string>
 </resources>

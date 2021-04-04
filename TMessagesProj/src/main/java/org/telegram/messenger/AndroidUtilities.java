@@ -3722,7 +3722,7 @@ public class AndroidUtilities {
         }
     }
 
-    private static String readTextFromInputStream(InputStream inputStream, boolean addNewLine) {
+    public static String readTextFromInputStream(InputStream inputStream, boolean addNewLine) {
         StringBuilder stringBuilder = new StringBuilder();
         try {
             try (BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream))) {

@@ -1,15 +1,17 @@
 package org.telegram.ui.Animations;
 
+import org.json.JSONException;
+import org.json.JSONObject;
 import org.telegram.tgnet.SerializedData;
 import org.telegram.ui.Components.AnimationsInterpolator;
 
 public class AnimationSettings {
 
-    private static final int DEFAULT_LEFT_DURATION = 0;
-    private static final int DEFAULT_RIGHT_DURATION = 500;
-    private static final int DEFAULT_MAX_DURATION = 500;
-    private static final float DEFAULT_TOP_PROGRESS = 1.0f;
-    private static final float DEFAULT_BOT_PROGRESS = 0.5f;
+    private static final int defaultLeftDuration = 0;
+    private static final int defaultRightDuration = 500;
+    private static final int defaultMaxDuration = 500;
+    private static final float defaultTopProgress = 1.0f;
+    private static final float defaultBotProgress = 0.5f;
 
     public final int id;
     public String title;
@@ -90,17 +92,38 @@ public class AnimationSettings {
         return data;
     }
 
+    public JSONObject toJson() throws JSONException {
+        JSONObject json = new JSONObject();
+        json.put("id", id);
+        json.put("left", leftDuration);
+        json.put("right", rightDuration);
+        json.put("max", maxDuration);
+        json.put("top", topProgress);
+        json.put("bot", botProgress);
+        return json;
+    }
+
     public static AnimationSettings fromSerializedData(SerializedData data, int id, String title) {
         int serializedId = data.readInt32(-1);
-        int leftDuration = data.readInt32(DEFAULT_LEFT_DURATION);
-        int rightDuration = data.readInt32(DEFAULT_RIGHT_DURATION);
-        int maxDuration = data.readInt32(DEFAULT_MAX_DURATION);
-        float topProgress = data.readFloat(DEFAULT_TOP_PROGRESS);
-        float botProgress = data.readFloat(DEFAULT_BOT_PROGRESS);
+        int leftDuration = data.readInt32(defaultLeftDuration);
+        int rightDuration = data.readInt32(defaultRightDuration);
+        int maxDuration = data.readInt32(defaultMaxDuration);
+        float topProgress = data.readFloat(defaultTopProgress);
+        float botProgress = data.readFloat(defaultBotProgress);
+        return new AnimationSettings(id, title, leftDuration, rightDuration, topProgress, botProgress, maxDuration);
+    }
+
+    public static AnimationSettings fromJson(JSONObject json, int id, String title) {
+        int serializedId = json.optInt("id", -1);
+        int leftDuration = json.optInt("left", defaultLeftDuration);
+        int rightDuration = json.optInt("right", defaultRightDuration);
+        int maxDuration = json.optInt("max", defaultMaxDuration);
+        float topProgress = (float) json.optDouble("top", defaultTopProgress);
+        float botProgress = (float) json.optDouble("bot", defaultBotProgress);
         return new AnimationSettings(id, title, leftDuration, rightDuration, topProgress, botProgress, maxDuration);
     }
 
     public static AnimationSettings createDefault(int id, String title) {
-        return new AnimationSettings(id, title, DEFAULT_LEFT_DURATION, DEFAULT_RIGHT_DURATION, DEFAULT_TOP_PROGRESS, DEFAULT_BOT_PROGRESS, DEFAULT_MAX_DURATION);
+        return new AnimationSettings(id, title, defaultLeftDuration, defaultRightDuration, defaultTopProgress, defaultBotProgress, defaultMaxDuration);
     }
 }

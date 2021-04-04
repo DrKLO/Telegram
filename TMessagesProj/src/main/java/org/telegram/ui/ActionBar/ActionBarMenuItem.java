@@ -14,6 +14,8 @@ import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
 import android.animation.ValueAnimator;
 import android.content.Context;
+import android.content.res.Resources;
+import android.graphics.Color;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.Rect;
@@ -1602,6 +1604,21 @@ public class ActionBarMenuItem extends FrameLayout {
     public void setTransitionOffset(int offset) {
         this.transitionOffset = offset;
         setTranslationX(0);
+    }
+
+    public void updateItemsBackgrounds() {
+        int itemCount = popupLayout.getItemsCount();
+        int radius = AndroidUtilities.dp(5);
+        int pressedColor = Theme.getColor(Theme.key_listSelector);
+        if (itemCount == 1) {
+            View view = popupLayout.getItemAt(0);
+            view.setBackgroundDrawable(Theme.getRoundRectSelectorDrawable(radius, radius, pressedColor, true));
+        } else {
+            View topView = popupLayout.getItemAt(0);
+            topView.setBackgroundDrawable(Theme.getRoundRectSelectorDrawable(radius, 0, pressedColor, true));
+            View bottomView = popupLayout.getItemAt(itemCount - 1);
+            bottomView.setBackgroundDrawable(Theme.getRoundRectSelectorDrawable(0, radius, pressedColor, true));
+        }
     }
 
     private static class SearchFilterView extends FrameLayout {

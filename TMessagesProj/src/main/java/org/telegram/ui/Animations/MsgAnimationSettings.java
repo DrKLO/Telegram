@@ -1,5 +1,8 @@
 package org.telegram.ui.Animations;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.tgnet.SerializedData;
@@ -54,6 +57,18 @@ public class MsgAnimationSettings {
         return data;
     }
 
+    public JSONObject toJson() throws JSONException {
+        JSONObject jsonObject = new JSONObject();
+        jsonObject.put("id", id);
+        jsonObject.put("duration", duration);
+        JSONArray settingsArray = new JSONArray();
+        for (AnimationSettings s : settings) {
+            settingsArray.put(s.toJson());
+        }
+        jsonObject.put("settings", settingsArray);
+        return jsonObject;
+    }
+
     public static MsgAnimationSettings fromSerializedData(SerializedData data, int id, String title) {
         int serializedId = data.readInt32(-1);
         int duration = data.readInt32(defaultDuration);
@@ -62,6 +77,19 @@ public class MsgAnimationSettings {
         for (int i = 0; i < settings.length; ++i) {
             String settingTitle = getTitleForParam(i);
             settings[i] = AnimationSettings.fromSerializedData(serializedDataArray[i], i, settingTitle);
+        }
+        return new MsgAnimationSettings(id, title, duration, settings);
+    }
+
+    public static MsgAnimationSettings fromJson(JSONObject json, int id, String title) throws JSONException {
+        int serializedId = json.optInt("id", -1);
+        int duration = json.optInt("duration", defaultDuration);
+        JSONArray settingsArray = json.optJSONArray("settings");
+        int settingsCount = settingsArray == null ? 0 : settingsArray.length();
+        AnimationSettings[] settings = new AnimationSettings[settingsCount];
+        for (int i = 0; i < settingsCount; ++i) {
+            String settingTitle = getTitleForParam(i);
+            settings[i] = AnimationSettings.fromJson(settingsArray.getJSONObject(i), id, settingTitle);
         }
         return new MsgAnimationSettings(id, title, duration, settings);
     }

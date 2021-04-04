@@ -6,6 +6,9 @@ import android.text.TextUtils;
 import androidx.annotation.ColorInt;
 import androidx.annotation.NonNull;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 import org.telegram.messenger.BaseController;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
@@ -121,11 +124,7 @@ public class AnimationsController extends BaseController {
 
     public void setBackgroundCurrentColor(int colorIdx, @ColorInt int color) {
         backCurrentColors[colorIdx] = color;
-        SerializedData data = new SerializedData();
-        data.writeInt32Array(backCurrentColors);
-        getPrefs().edit()
-                .putString(keyBackColor, data.toBase64String())
-                .apply();
+        saveColors();
     }
 
     public AnimationSettings[] getBackAnimSettings() {
@@ -160,8 +159,98 @@ public class AnimationsController extends BaseController {
     }
 
 
+    public JSONObject serializeAllSettings() {
+        try {
+            JSONArray colorsJsonArray = new JSONArray();
+            for (int i = 0; i < backCurrentColors.length; ++i) {
+                colorsJsonArray.put(backCurrentColors[i]);
+            }
+
+            JSONArray backSettingsArray = new JSONArray();
+            for (AnimationSettings s : backAnimSettings) {
+                backSettingsArray.put(s.toJson());
+            }
+
+            JSONObject backJsonObject = new JSONObject();
+            backJsonObject.put("colors", colorsJsonArray);
+            backJsonObject.put("settings", backSettingsArray);
+
+            JSONArray msgJsonArray = new JSONArray();
+            for (int i = 0; i < msgAnimCount; ++i) {
+                MsgAnimationSettings msgSettings = msgAnimSettings[i];
+                msgJsonArray.put(msgSettings.toJson());
+            }
+            JSONObject msgJsonObject = new JSONObject();
+            msgJsonObject.put("items", msgJsonArray);
+
+            JSONObject rootJsonObject = new JSONObject();
+            rootJsonObject.put("back", backJsonObject);
+            rootJsonObject.put("msg", msgJsonObject);
+            return rootJsonObject;
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    public void loadAllSettings(JSONObject rootJsonObject) throws JSONException {
+        JSONObject backJsonObject = rootJsonObject.getJSONObject("back");
+
+        JSONArray colorsJsonArray = backJsonObject.getJSONArray("colors");
+        int[] colors = new int[colorsJsonArray.length()];
+        for (int i = 0; i < colorsJsonArray.length(); ++i) {
+            colors[i] = colorsJsonArray.getInt(i);
+        }
+        System.arraycopy(colors, 0, backCurrentColors, 0, Math.min(colors.length, backPointsCount));
+        saveColors();
+
+        JSONArray settingsJsonArray = backJsonObject.getJSONArray("settings");
+        AnimationSettings[] backSettings = new AnimationSettings[settingsJsonArray.length()];
+        for (int i = 0; i < settingsJsonArray.length(); ++i) {
+            String title = getTitleForBackgroundSettings(i);
+            backSettings[i] = AnimationSettings.fromJson(settingsJsonArray.getJSONObject(i), i, title);
+            updateBackgroundSettings(backSettings[i]);
+        }
+        System.arraycopy(backSettings, 0, backAnimSettings, 0, Math.min(backSettings.length, backAnimCount));
+
+        JSONObject msgJsonObject = rootJsonObject.getJSONObject("msg");
+        JSONArray itemsJsonArray = msgJsonObject.getJSONArray("items");
+        int itemsCount = itemsJsonArray.length();
+        MsgAnimationSettings[] msgSettings = new MsgAnimationSettings[itemsCount];
+        for (int i = 0; i < itemsJsonArray.length(); ++i) {
+            String title = getTitleForMsgAnimationSettings(i);
+            JSONObject jsonObject = itemsJsonArray.getJSONObject(i);
+            msgSettings[i] = MsgAnimationSettings.fromJson(jsonObject, i, title);
+            updateMsgAnimSettings(msgSettings[i]);
+        }
+        System.arraycopy(msgSettings, 0, msgAnimSettings, 0, Math.min(msgSettings.length, msgAnimCount));
+    }
+
+    public void resetSettings() {
+        System.arraycopy(backDefaultColors, 0, backCurrentColors, 0, backPointsCount);
+        saveColors();
+        for (int i = 0; i < backAnimCount; ++i) {
+            String title = getTitleForBackgroundSettings(i);
+            backAnimSettings[i] = AnimationSettings.createDefault(i, title);
+            updateBackgroundSettings(backAnimSettings[i]);
+        }
+        for (int i = 0; i < msgAnimCount; ++i) {
+            String title = getTitleForMsgAnimationSettings(i);
+            msgAnimSettings[i] = new MsgAnimationSettings(i, title, 500, getAnimationSettingsForMsg(i));
+            updateMsgAnimSettings(msgAnimSettings[i]);
+        }
+    }
+
+
     private SharedPreferences getPrefs() {
         return MessagesController.getAnimationsSettings(currentAccount);
+    }
+
+    private void saveColors() {
+        SerializedData data = new SerializedData();
+        data.writeInt32Array(backCurrentColors);
+        getPrefs().edit()
+                .putString(keyBackColor, data.toBase64String())
+                .apply();
     }
 
     private static void updateSettingsInPreferences(SharedPreferences prefs, String key, AnimationSettings settings) {

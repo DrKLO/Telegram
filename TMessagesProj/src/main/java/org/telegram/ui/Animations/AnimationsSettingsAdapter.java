@@ -263,7 +263,7 @@ public class AnimationsSettingsAdapter extends RecyclerView.Adapter<RecyclerList
 
     public static final class AnimationPropertiesItem extends Item {
 
-        public final AnimationSettings settings;
+        public AnimationSettings settings;
 
         public AnimationPropertiesItem(AnimationSettings settings) {
             this.settings = settings;

@@ -11,6 +11,7 @@ import java.util.List;
 
 public class MessageAnimationSettingsPage extends AnimationsSettingsPage {
 
+    private final int durationItemPosition;
     private final int[] animPropsPosition;
     private final MsgAnimationSettings settings;
 
@@ -25,7 +26,7 @@ public class MessageAnimationSettingsPage extends AnimationsSettingsPage {
 
         int pos = 0;
         List<Item> items = new ArrayList<>();
-        items.add(pos++, new DurationItem(type, settings.getDuration()));
+        items.add(durationItemPosition = pos++, new DurationItem(type, settings.getDuration()));
         items.add(pos++, sectionItem);
 
         int animPropsIdx = 0;
@@ -36,6 +37,22 @@ public class MessageAnimationSettingsPage extends AnimationsSettingsPage {
         }
 
         adapter.setItems(items);
+    }
+
+    @Override
+    public void refresh() {
+        super.refresh();
+        MsgAnimationSettings settings = AnimationsController.getInstance().getMsgAnimSettings(type);
+
+        DurationItem durationItem = (DurationItem) adapter.getItemAt(durationItemPosition);
+        durationItem.duration = settings.getDuration();
+        adapter.notifyItemChanged(durationItemPosition);
+
+        for (int i = 0; i < animPropsPosition.length; ++i) {
+            AnimationPropertiesItem item = (AnimationPropertiesItem) adapter.getItemAt(animPropsPosition[i]);
+            item.settings = settings.settings[i];
+            adapter.notifyItemChanged(animPropsPosition[i]);
+        }
     }
 
     @Override

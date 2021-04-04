@@ -47,11 +47,12 @@ public abstract class AnimationsSettingsPage implements AnimationsSettingsAdapte
         recyclerView.setHasFixedSize(true);
         recyclerView.setLayoutManager(new LinearLayoutManager(context));
         recyclerView.setItemAnimator(null);
-        // TODO agolokoz: try to fix
         recyclerView.setDisallowInterceptTouchEvents(true);
         recyclerView.setOnItemClickListener(this);
         return recyclerView;
     }
+
+    public void refresh() {}
 
     @Override
     public void onItemClick(View view, int position) {

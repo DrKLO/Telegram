@@ -16,6 +16,7 @@ public class BackgroundAnimationSettingsPage extends AnimationsSettingsPage {
     public final int fullScreenPosition;
 
     private final int[] animPropsPosition = new int[AnimationsController.backAnimCount];
+    private final int[] durationsPosition = new int[AnimationsController.backAnimCount];
     private final int[] colorPosition = new int[AnimationsController.backPointsCount];
     private final int backgroundPreviewPosition;
 
@@ -34,7 +35,7 @@ public class BackgroundAnimationSettingsPage extends AnimationsSettingsPage {
         items.add(fullScreenPosition = pos++, new TextItem(LocaleController.getString("", R.string.AnimationSettingsOpenFullScreen)));
         items.add(pos++, sectionItem);
         items.add(pos++, new HeaderItem(LocaleController.getString("", R.string.AnimationSettingsColors)));
-        for (int i = 0; i != AnimationsController.backPointsCount; ++i) {
+        for (int i = 0; i < AnimationsController.backPointsCount; ++i) {
             String title = LocaleController.formatString("", R.string.AnimationSettingsColorN, i + 1);
             int color = AnimationsController.getInstance().getBackgroundCurrentColor(i);
             items.add(colorPosition[i] = pos++, new SelectColorItem(title, i, color));
@@ -46,16 +47,41 @@ public class BackgroundAnimationSettingsPage extends AnimationsSettingsPage {
         items.add(pos++, sectionItem);
 
         int animPropsIdx = 0;
+        int durationIdx = 0;
         for (int i = 0; i < AnimationsController.backAnimCount; ++i) {
             AnimationSettings s = AnimationsController.getInstance().getBackgroundAnimationSettings(i);
             items.add(pos++, new HeaderItem(s.title));
-            items.add(pos++, new DurationItem(s.id, s.maxDuration));
+            items.add(durationsPosition[durationIdx++] = pos++, new DurationItem(s.id, s.maxDuration));
             items.add(pos++, dividerItem);
             items.add(animPropsPosition[animPropsIdx++] = pos++, new AnimationPropertiesItem(s));
             items.add(pos++, sectionItem);
         }
 
         adapter.setItems(items);
+    }
+
+    @Override
+    public void refresh() {
+        super.refresh();
+        PreviewItem previewItem = (PreviewItem) adapter.getItemAt(backgroundPreviewPosition);
+        for (int i = 0; i < AnimationsController.backPointsCount; ++i) {
+            int color = AnimationsController.getInstance().getBackgroundCurrentColor(i);
+            previewItem.colors[i] = color;
+            SelectColorItem colorItem = (SelectColorItem) adapter.getItemAt(colorPosition[i]);
+            colorItem.color = color;
+            adapter.notifyItemChanged(colorPosition[i]);
+        }
+        adapter.notifyItemChanged(backgroundPreviewPosition);
+
+        for (int i = 0; i < AnimationsController.backAnimCount; ++i) {
+            AnimationSettings settings = AnimationsController.getInstance().getBackgroundAnimationSettings(i);
+            DurationItem durationItem = (DurationItem) adapter.getItemAt(durationsPosition[i]);
+            durationItem.duration = settings.maxDuration;
+            adapter.notifyItemChanged(durationsPosition[i]);
+            AnimationPropertiesItem propertiesItem = (AnimationPropertiesItem) adapter.getItemAt(animPropsPosition[i]);
+            propertiesItem.settings = settings;
+            adapter.notifyItemChanged(animPropsPosition[i]);
+        }
     }
 
     @Override
