@@ -4747,7 +4747,11 @@ public class Theme {
     }
 
     public static Drawable createRoundRectDrawable(int rad, int defaultColor) {
-        ShapeDrawable defaultDrawable = new ShapeDrawable(new RoundRectShape(new float[]{rad, rad, rad, rad, rad, rad, rad, rad}, null, null));
+        return createRoundRectDrawable(rad, rad, defaultColor);
+    }
+
+    public static Drawable createRoundRectDrawable(int topRad, int botRad, int defaultColor) {
+        ShapeDrawable defaultDrawable = new ShapeDrawable(new RoundRectShape(new float[]{topRad, topRad, topRad, topRad, botRad, botRad, botRad, botRad}, null, null));
         defaultDrawable.getPaint().setColor(defaultColor);
         return defaultDrawable;
     }
@@ -4785,11 +4789,16 @@ public class Theme {
     }
 
     public static Drawable getRoundRectSelectorDrawable(int color) {
+        int radius = AndroidUtilities.dp(3);
+        return getRoundRectSelectorDrawable(radius, radius, color, false);
+    }
+
+    public static Drawable getRoundRectSelectorDrawable(int topRad, int botRad, int color, boolean isSimpleColor) {
         if (Build.VERSION.SDK_INT >= 21) {
-            Drawable maskDrawable = createRoundRectDrawable(AndroidUtilities.dp(3), 0xffffffff);
+            Drawable maskDrawable = createRoundRectDrawable(topRad, botRad, 0xffffffff);
             ColorStateList colorStateList = new ColorStateList(
                     new int[][]{StateSet.WILD_CARD},
-                    new int[]{(color & 0x00ffffff) | 0x19000000}
+                    isSimpleColor ? new int[]{color} : new int[]{(color & 0x00ffffff) | 0x19000000}
             );
             return new RippleDrawable(colorStateList, null, maskDrawable);
         } else {

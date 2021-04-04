@@ -837,18 +837,21 @@ public class ThemePreviewActivity extends BaseFragment implements DownloadContro
 
         page2.addView(actionBar2, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
         parallaxEffect = new WallpaperParallaxEffect(context);
-        parallaxEffect.setCallback((offsetX, offsetY) -> {
-            if (!isMotion) {
-                return;
+        parallaxEffect.setCallback(new WallpaperParallaxEffect.Callback() {
+            @Override
+            public void onOffsetsChanged(int offsetX, int offsetY) {
+                if (!isMotion) {
+                    return;
+                }
+                float progress;
+                if (motionAnimation != null) {
+                    progress = (backgroundImage.getScaleX() - 1.0f) / (parallaxScale - 1.0f);
+                } else {
+                    progress = 1.0f;
+                }
+                backgroundImage.setTranslationX(offsetX * progress);
+                backgroundImage.setTranslationY(offsetY * progress);
             }
-            float progress;
-            if (motionAnimation != null) {
-                progress = (backgroundImage.getScaleX() - 1.0f) / (parallaxScale - 1.0f);
-            } else {
-                progress = 1.0f;
-            }
-            backgroundImage.setTranslationX(offsetX * progress);
-            backgroundImage.setTranslationY(offsetY * progress);
         });
 
         if (screenType == SCREEN_TYPE_ACCENT_COLOR || screenType == SCREEN_TYPE_CHANGE_BACKGROUND) {

@@ -35,12 +35,16 @@ public class WallpaperParallaxEffect implements SensorEventListener {
 	}
 
 	public void setEnabled(boolean enabled) {
+		setEnabled(enabled, SensorManager.SENSOR_DELAY_GAME);
+	}
+
+	public void setEnabled(boolean enabled, int sensorDelay) {
 		if (this.enabled != enabled) {
 			this.enabled = enabled;
 			if (accelerometer == null)
 				return;
 			if (enabled) {
-				sensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_GAME);
+				sensorManager.registerListener(this, accelerometer, sensorDelay);
 			} else {
 				sensorManager.unregisterListener(this);
 			}
@@ -105,8 +109,10 @@ public class WallpaperParallaxEffect implements SensorEventListener {
 		}
 		int offsetX = Math.round(pitch * AndroidUtilities.dpf2(16));
 		int offsetY = Math.round(roll * AndroidUtilities.dpf2(16));
-		if (callback != null)
+		if (callback != null) {
+			callback.onOffset(pitch, roll);
 			callback.onOffsetsChanged(offsetX, offsetY);
+		}
 	}
 
 	@Override
@@ -115,6 +121,7 @@ public class WallpaperParallaxEffect implements SensorEventListener {
 	}
 
 	public interface Callback {
-		void onOffsetsChanged(int offsetX, int offsetY);
+		default void onOffsetsChanged(int offsetX, int offsetY) {}
+		default void onOffset(float xOffset, float yOffset) {}
 	}
 }

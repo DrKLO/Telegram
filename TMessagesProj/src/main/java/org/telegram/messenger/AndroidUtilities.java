@@ -48,6 +48,8 @@ import android.provider.DocumentsContract;
 import android.provider.MediaStore;
 import android.provider.Settings;
 
+import androidx.annotation.ColorInt;
+import androidx.annotation.IntRange;
 import androidx.core.content.FileProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -3681,5 +3683,49 @@ public class AndroidUtilities {
             }
             view.setTag(null);
         }
+    }
+
+    public static String getRGBColorString(@ColorInt int color) {
+        StringBuilder builder = new StringBuilder("#");
+        appendA2Color(builder, Color.red(color));
+        appendA2Color(builder, Color.green(color));
+        appendA2Color(builder, Color.blue(color));
+        return builder.toString();
+    }
+
+    private static void appendA2Color(StringBuilder builder, @IntRange(from = 0, to = 255) int color) {
+        if (color < 16) {
+            builder.append("0");
+        }
+        builder.append(Integer.toHexString(color));
+    }
+
+    public static float luma(@ColorInt int color) {
+        final float r = ((float) Color.red(color)) / 255f;
+        final float g = ((float) Color.green(color)) / 255f;
+        final float b = ((float) Color.blue(color)) / 255f;
+        return 0.2126f * r + 0.7152f * g + 0.0722f * b;
+    }
+
+    public static boolean isLightColor(@ColorInt int color) {
+        return luma(color) > 0.75f;
+    }
+
+    public static String readTextFromInputStream(InputStream inputStream, boolean addNewLine) {
+        StringBuilder stringBuilder = new StringBuilder();
+        try {
+            try (BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream))) {
+                String line;
+                while ((line = bufferedReader.readLine()) != null) {
+                    stringBuilder.append(line);
+                    if (addNewLine) {
+                        stringBuilder.append('\n');
+                    }
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return stringBuilder.toString();
     }
 }

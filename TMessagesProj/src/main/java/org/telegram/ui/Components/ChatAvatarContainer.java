@@ -42,6 +42,8 @@ import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Animations.AnimationsController;
+import org.telegram.ui.AnimationsSettingsActivity;
 import org.telegram.ui.ChatActivity;
 import org.telegram.ui.MediaActivity;
 import org.telegram.ui.ProfileActivity;
@@ -148,7 +150,13 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
 
         if (parentFragment != null && parentFragment.getChatMode() == 0) {
             if (!parentFragment.isThreadChat() && !UserObject.isReplyUser(parentFragment.getCurrentUser())) {
-                setOnClickListener(v -> openProfile(false));
+                setOnClickListener(v -> {
+                    if (AnimationsController.isAnimatedBackgroundEnabled()) {
+                        openAnimationsSettings();
+                    } else {
+                        openProfile(false);
+                    }
+                });
             }
 
             TLRPC.Chat chat = parentFragment.getCurrentChat();
@@ -234,6 +242,11 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
             fragment.setPlayProfileAnimation(byAvatar ? 2 : 1);
             parentFragment.presentFragment(fragment);
         }
+    }
+
+    private void openAnimationsSettings() {
+        AnimationsSettingsActivity fragment = new AnimationsSettingsActivity();
+        parentFragment.presentFragment(fragment);
     }
 
     public void setOccupyStatusBar(boolean value) {

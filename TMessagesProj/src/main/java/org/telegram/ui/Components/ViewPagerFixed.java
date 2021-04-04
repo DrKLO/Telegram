@@ -1097,6 +1097,15 @@ public class ViewPagerFixed extends FrameLayout {
             return positionToId.get(0, 0);
         }
 
+        public void setColorKeys(String tabLine, String activeText, String unactiveText, String selector, String background) {
+            tabLineColorKey = tabLine;
+            activeTextColorKey = activeText;
+            unactiveTextColorKey = unactiveText;
+            selectorColorKey = selector;
+            backgroundColorKey = background;
+            updateColors();
+        }
+
         private void updateTabsWidths() {
             positionToX.clear();
             positionToWidth.clear();

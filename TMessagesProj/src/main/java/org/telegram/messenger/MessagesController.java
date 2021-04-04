@@ -310,6 +310,7 @@ public class MessagesController extends BaseController implements NotificationCe
     private SharedPreferences notificationsPreferences;
     private SharedPreferences mainPreferences;
     private SharedPreferences emojiPreferences;
+    private SharedPreferences animationsPreferences;
 
     public volatile boolean ignoreSetOnline;
 
@@ -675,6 +676,10 @@ public class MessagesController extends BaseController implements NotificationCe
         return getInstance(account).emojiPreferences;
     }
 
+    public static SharedPreferences getAnimationsSettings(int account) {
+        return getInstance(account).animationsPreferences;
+    }
+
     public static SharedPreferences getGlobalEmojiSettings() {
         return getInstance(0).emojiPreferences;
     }
@@ -699,10 +704,12 @@ public class MessagesController extends BaseController implements NotificationCe
             notificationsPreferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
             mainPreferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
             emojiPreferences = ApplicationLoader.applicationContext.getSharedPreferences("emoji", Activity.MODE_PRIVATE);
+            animationsPreferences = ApplicationLoader.applicationContext.getSharedPreferences("animations", Activity.MODE_PRIVATE);
         } else {
             notificationsPreferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications" + currentAccount, Activity.MODE_PRIVATE);
             mainPreferences = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig" + currentAccount, Activity.MODE_PRIVATE);
             emojiPreferences = ApplicationLoader.applicationContext.getSharedPreferences("emoji" + currentAccount, Activity.MODE_PRIVATE);
+            animationsPreferences = ApplicationLoader.applicationContext.getSharedPreferences("animations" + currentAccount, Activity.MODE_PRIVATE);
         }
 
         enableJoined = notificationsPreferences.getBoolean("EnableContactJoined", true);
