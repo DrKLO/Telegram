@@ -2210,6 +2210,9 @@ public class Theme {
     public static Drawable chat_flameIcon;
     public static Drawable chat_gifIcon;
 
+    public static Bitmap blurBgBitmap;
+    public static String blurBgBitmapColorHash;
+
     private static AudioVisualizerDrawable chat_msgAudioVisualizeDrawable;
     private static HashMap<MessageObject, AudioVisualizerDrawable> animatedOutVisualizerDrawables;
 
@@ -8378,6 +8381,8 @@ public class Theme {
             return wallpaper;
         }
     }
+
+    public static Drawable cachedBlurBackgroundDrawable;
 
     public static boolean isWallpaperMotion() {
         return isWallpaperMotion;

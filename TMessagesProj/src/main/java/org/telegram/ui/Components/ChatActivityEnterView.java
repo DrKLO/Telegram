@@ -116,6 +116,7 @@ import org.telegram.ui.ActionBar.AdjustPanLayoutHelper;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.AnimatedBg.AnimatedBgGLSurfaceView;
 import org.telegram.ui.ChatActivity;
 import org.telegram.ui.DialogsActivity;
 import org.telegram.ui.GroupStickersActivity;
@@ -195,6 +196,10 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
 
         default void onTrendingStickersShowed(boolean show) {
 
+        }
+
+        default boolean awaitBackgroundSnapshot(AnimatedBgGLSurfaceView.SnapshotListener snapshotListener) {
+            return false;
         }
     }
 
@@ -539,6 +544,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
         }
     };
 
+    private boolean recordAudioVideoRunnableScheduled;
     private boolean recordAudioVideoRunnableStarted;
     private boolean calledRecordRunnable;
     private Runnable recordAudioVideoRunnable = new Runnable() {
@@ -2348,7 +2354,16 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                 if (hasRecordVideo) {
                     calledRecordRunnable = false;
                     recordAudioVideoRunnableStarted = true;
-                    AndroidUtilities.runOnUIThread(recordAudioVideoRunnable, 150);
+                    recordAudioVideoRunnableScheduled = true;
+                    if(!delegate.awaitBackgroundSnapshot(bitmap -> {
+                        if(recordAudioVideoRunnableScheduled) {
+                            AndroidUtilities.runOnUIThread(recordAudioVideoRunnable, 150);
+                        }
+                        recordAudioVideoRunnableScheduled = false;
+                    })) {
+                        recordAudioVideoRunnableScheduled = false;
+                        AndroidUtilities.runOnUIThread(recordAudioVideoRunnable, 150);
+                    }
                 } else {
                     recordAudioVideoRunnable.run();
                 }
@@ -2372,6 +2387,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                 }
                 if (recordCircle.isSendButtonVisible() || recordedAudioPanel.getVisibility() == VISIBLE) {
                     if (recordAudioVideoRunnableStarted) {
+                        recordAudioVideoRunnableScheduled = false;
                         AndroidUtilities.cancelRunOnUIThread(recordAudioVideoRunnable);
                     }
                     return false;
@@ -2392,6 +2408,7 @@ public class ChatActivityEnterView extends FrameLayout implements NotificationCe
                     updateRecordIntefrace(RECORD_STATE_CANCEL_BY_GESTURE);
                 } else {
                     if (recordAudioVideoRunnableStarted) {
+                        recordAudioVideoRunnableScheduled = false;
                         AndroidUtilities.cancelRunOnUIThread(recordAudioVideoRunnable);
                         delegate.onSwitchRecordMode(videoSendButton.getTag() == null);
                         setRecordVideoButtonVisible(videoSendButton.getTag() == null, true);

@@ -95,6 +95,7 @@ android {
             debuggable true
             jniDebuggable true
             signingConfig signingConfigs.debug
+            defaultConfig.applicationId = "org.telegram.messenger.ylcontest"
             applicationIdSuffix ".beta"
             minifyEnabled false
             shrinkResources false
@@ -132,12 +133,24 @@ android {
             }
         }*/
 
+        YL {
+            debuggable false
+            jniDebuggable false
+            signingConfig signingConfigs.release
+            defaultConfig.applicationId = "org.telegram.messenger.ylcontest"
+            minifyEnabled true
+            shrinkResources false
+            multiDexEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            ndk.debugSymbolLevel = 'FULL'
+        }
+
         HA {
             debuggable false
             jniDebuggable false
             signingConfig signingConfigs.debug
-            applicationIdSuffix ".beta"
             minifyEnabled true
+            shrinkResources false
             multiDexEnabled true
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
             ndk.debugSymbolLevel = 'FULL'
@@ -165,6 +178,10 @@ android {
 
     sourceSets.HA {
         manifest.srcFile 'config/debug/AndroidManifest.xml'
+    }
+
+    sourceSets.YL {
+        manifest.srcFile 'config/release/AndroidManifest.xml'
     }
 
     sourceSets.release {
