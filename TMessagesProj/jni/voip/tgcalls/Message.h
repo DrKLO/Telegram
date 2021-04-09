@@ -19,18 +19,14 @@ struct PeerIceParameters {
     std::string ufrag;
     std::string pwd;
     
-    PeerIceParameters() {
-    }
-    
+    PeerIceParameters() = default;
+    PeerIceParameters(const PeerIceParameters &other) = default;
+
     PeerIceParameters(std::string ufrag_, std::string pwd_) :
     ufrag(ufrag_),
     pwd(pwd_) {
     }
-    
-    PeerIceParameters(const PeerIceParameters &other) :
-    ufrag(other.ufrag),
-    pwd(other.pwd) {
-    }
+
 };
 
 struct CandidatesListMessage {

@@ -267,7 +267,7 @@ public class TooManyCommunitiesActivity extends BaseFragment {
             for (int i = 0; i < chats.size(); i++) {
                 TLRPC.Chat chat = chats.get(i);
                 getMessagesController().putChat(chat, false);
-                getMessagesController().deleteUserFromChat(chat.id, currentUser, null);
+                getMessagesController().deleteParticipantFromChat(chat.id, currentUser, null);
             }
             finishFragment();
         });

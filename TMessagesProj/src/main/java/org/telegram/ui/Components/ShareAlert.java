@@ -28,6 +28,8 @@ import android.graphics.Shader;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.text.Editable;
+import android.text.SpannableStringBuilder;
+import android.text.Spanned;
 import android.text.TextPaint;
 import android.text.TextUtils;
 import android.text.TextWatcher;
@@ -59,6 +61,7 @@ import org.telegram.messenger.AccountInstance;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.ChatObject;
+import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessageObject;
@@ -79,6 +82,7 @@ import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Adapters.SearchAdapterHelper;
 import org.telegram.ui.Cells.ShareDialogCell;
 import org.telegram.ui.ChatActivity;
 import org.telegram.ui.DialogsActivity;
@@ -1629,25 +1633,48 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
         }
     }
 
+    public static class DialogSearchResult {
+        public TLRPC.Dialog dialog = new TLRPC.TL_dialog();
+        public TLObject object;
+        public int date;
+        public CharSequence name;
+    }
+
     public class ShareSearchAdapter extends RecyclerListView.SelectionAdapter {
 
         private Context context;
-        private ArrayList<DialogSearchResult> searchResult = new ArrayList<>();
+        private ArrayList<Object> searchResult = new ArrayList<>();
+        private SearchAdapterHelper searchAdapterHelper;
         private Runnable searchRunnable;
+        private Runnable searchRunnable2;
         private String lastSearchText;
         private int reqId;
         private int lastReqId;
         private int lastSearchId;
 
-        private class DialogSearchResult {
-            public TLRPC.Dialog dialog = new TLRPC.TL_dialog();
-            public TLObject object;
-            public int date;
-            public CharSequence name;
-        }
+        private int waitingResponseCount;
+        private int lastGlobalSearchId;
+        private int lastLocalSearchId;
 
         public ShareSearchAdapter(Context context) {
             this.context = context;
+            searchAdapterHelper = new SearchAdapterHelper(false);
+            searchAdapterHelper.setDelegate(new SearchAdapterHelper.SearchAdapterHelperDelegate() {
+                @Override
+                public void onDataSetChanged(int searchId) {
+                    waitingResponseCount--;
+                    lastGlobalSearchId = searchId;
+                    if (lastLocalSearchId != searchId) {
+                        searchResult.clear();
+                    }
+                    notifyDataSetChanged();
+                }
+
+                @Override
+                public boolean canApplySearchResults(int searchId) {
+                    return searchId == lastSearchId;
+                }
+            });
         }
 
         private void searchDialogsInternal(final String query, final int searchId) {
@@ -1772,7 +1799,7 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
                         cursor.dispose();
                     }
 
-                    ArrayList<DialogSearchResult> searchResults = new ArrayList<>(resultCount);
+                    ArrayList<Object> searchResults = new ArrayList<>(resultCount);
                     for (int a = 0; a < dialogsResult.size(); a++) {
                         DialogSearchResult dialogSearchResult = dialogsResult.valueAt(a);
                         if (dialogSearchResult.object != null && dialogSearchResult.name != null) {
@@ -1828,9 +1855,11 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
                     cursor.dispose();
 
                     Collections.sort(searchResults, (lhs, rhs) -> {
-                        if (lhs.date < rhs.date) {
+                        DialogSearchResult res1 = (DialogSearchResult) lhs;
+                        DialogSearchResult res2 = (DialogSearchResult) rhs;
+                        if (res1.date < res2.date) {
                             return 1;
-                        } else if (lhs.date > rhs.date) {
+                        } else if (res1.date > res2.date) {
                             return -1;
                         }
                         return 0;
@@ -1843,10 +1872,14 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
             });
         }
 
-        private void updateSearchResults(final ArrayList<DialogSearchResult> result, final int searchId) {
+        private void updateSearchResults(final ArrayList<Object> result, final int searchId) {
             AndroidUtilities.runOnUIThread(() -> {
                 if (searchId != lastSearchId) {
                     return;
+                }
+                lastLocalSearchId = searchId;
+                if (lastGlobalSearchId != searchId) {
+                    searchAdapterHelper.clear();
                 }
                 if (gridView.getAdapter() != searchAdapter) {
                     topBeforeSwitch = getCurrentTop();
@@ -1854,7 +1887,7 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
                     searchAdapter.notifyDataSetChanged();
                 }
                 for (int a = 0; a < result.size(); a++) {
-                    DialogSearchResult obj = result.get(a);
+                    DialogSearchResult obj = (DialogSearchResult) result.get(a);
                     if (obj.object instanceof TLRPC.User) {
                         TLRPC.User user = (TLRPC.User) obj.object;
                         MessagesController.getInstance(currentAccount).putUser(user, true);
@@ -1868,6 +1901,7 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
                 if (becomeEmpty) {
                     topBeforeSwitch = getCurrentTop();
                 }
+                searchAdapterHelper.mergeResults(searchResult);
                 searchResult = result;
                 notifyDataSetChanged();
                 if (!isEmpty && !becomeEmpty && topBeforeSwitch > 0) {
@@ -1887,21 +1921,37 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
                 Utilities.searchQueue.cancelRunnable(searchRunnable);
                 searchRunnable = null;
             }
+            if (searchRunnable2 != null) {
+                AndroidUtilities.cancelRunOnUIThread(searchRunnable2);
+                searchRunnable2 = null;
+            }
             if (TextUtils.isEmpty(query)) {
                 searchResult.clear();
+                searchAdapterHelper.mergeResults(null);
+                searchAdapterHelper.queryServerSearch(null, true, true, true, true, false, 0, false, 0, 0);
                 topBeforeSwitch = getCurrentTop();
                 lastSearchId = -1;
                 notifyDataSetChanged();
             } else {
                 final int searchId = ++lastSearchId;
-                searchRunnable = () -> searchDialogsInternal(query, searchId);
-                Utilities.searchQueue.postRunnable(searchRunnable, 300);
+                Utilities.searchQueue.postRunnable(searchRunnable = () -> {
+                    searchRunnable = null;
+                    searchDialogsInternal(query, searchId);
+                    AndroidUtilities.runOnUIThread(searchRunnable2 = () -> {
+                        searchRunnable2 = null;
+                        if (searchId != lastSearchId) {
+                            return;
+                        }
+                        searchAdapterHelper.queryServerSearch(query, true, true, true, true, false, 0, false, 0, searchId);
+                    });
+                }, 300);
             }
         }
 
         @Override
         public int getItemCount() {
             int count = searchResult.size();
+            count += searchAdapterHelper.getLocalServerSearch().size();
             if (count != 0) {
                 count++;
             }
@@ -1910,10 +1960,26 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
 
         public TLRPC.Dialog getItem(int position) {
             position--;
-            if (position < 0 || position >= searchResult.size()) {
+            if (position < 0) {
                 return null;
             }
-            return searchResult.get(position).dialog;
+            if (position < searchResult.size()) {
+                return ((DialogSearchResult) searchResult.get(position)).dialog;
+            } else {
+                position -= searchResult.size();
+            }
+            ArrayList<TLObject> arrayList = searchAdapterHelper.getLocalServerSearch();
+            if (position < arrayList.size()) {
+                TLObject object = arrayList.get(position);
+                TLRPC.Dialog dialog = new TLRPC.TL_dialog();
+                if (object instanceof TLRPC.User) {
+                    dialog.id = ((TLRPC.User) object).id;
+                } else {
+                    dialog.id = -((TLRPC.Chat) object).id;
+                }
+                return dialog;
+            }
+            return null;
         }
 
         @Override
@@ -1936,7 +2002,7 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
                 case 1:
                 default: {
                     view = new View(context);
-                    view.setLayoutParams(new RecyclerView.LayoutParams(RecyclerView.LayoutParams.MATCH_PARENT, AndroidUtilities.dp(darkTheme ? 109 : 56)));
+                    view.setLayoutParams(new RecyclerView.LayoutParams(RecyclerView.LayoutParams.MATCH_PARENT, AndroidUtilities.dp(darkTheme && linkToCopy[1] != null ? 109 : 56)));
                     break;
                 }
             }
@@ -1946,9 +2012,38 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
         @Override
         public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
             if (holder.getItemViewType() == 0) {
+                position--;
                 ShareDialogCell cell = (ShareDialogCell) holder.itemView;
-                DialogSearchResult result = searchResult.get(position - 1);
-                cell.setDialog((int) result.dialog.id, selectedDialogs.indexOfKey(result.dialog.id) >= 0, result.name);
+                CharSequence name;
+                long id;
+                if (position < searchResult.size()) {
+                    DialogSearchResult result = (DialogSearchResult) searchResult.get(position);
+                    id = result.dialog.id;
+                    name = result.name;
+                } else {
+                    position -= searchResult.size();
+                    ArrayList<TLObject> arrayList = searchAdapterHelper.getLocalServerSearch();
+                    TLObject object = arrayList.get(position);
+                    if (object instanceof TLRPC.User) {
+                        TLRPC.User user = (TLRPC.User) object;
+                        id = user.id;
+                        name = ContactsController.formatName(user.first_name, user.last_name);
+                    } else {
+                        TLRPC.Chat chat = (TLRPC.Chat) object;
+                        id = -chat.id;
+                        name = chat.title;
+                    }
+                    String foundUserName = searchAdapterHelper.getLastFoundUsername();
+                    if (!TextUtils.isEmpty(foundUserName)) {
+                        int index;
+                        if (name != null && (index = AndroidUtilities.indexOfIgnoreCase(name.toString(), foundUserName)) != -1) {
+                            SpannableStringBuilder spannableStringBuilder = new SpannableStringBuilder(name);
+                            spannableStringBuilder.setSpan(new ForegroundColorSpanThemable(Theme.key_windowBackgroundWhiteBlueText4), index, index + foundUserName.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                            name = spannableStringBuilder;
+                        }
+                    }
+                }
+                cell.setDialog((int) id, selectedDialogs.indexOfKey(id) >= 0, name);
             }
         }
 

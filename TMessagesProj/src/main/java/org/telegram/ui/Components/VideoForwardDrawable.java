@@ -6,12 +6,15 @@ import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.PixelFormat;
 import android.graphics.drawable.Drawable;
+import android.text.TextPaint;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.LocaleController;
 
 public class VideoForwardDrawable extends Drawable {
 
     private Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private TextPaint textPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
     private Path path1 = new Path();
     private boolean leftSide;
 
@@ -23,6 +26,9 @@ public class VideoForwardDrawable extends Drawable {
     private long lastAnimationTime;
     private VideoForwardDrawableDelegate delegate;
 
+    long time;
+    String timeStr;
+
     public interface VideoForwardDrawableDelegate {
         void onAnimationEnd();
         void invalidate();
@@ -30,6 +36,9 @@ public class VideoForwardDrawable extends Drawable {
 
     public VideoForwardDrawable() {
         paint.setColor(0xffffffff);
+        textPaint.setColor(0xffffffff);
+        textPaint.setTextSize(AndroidUtilities.dp(12));
+        textPaint.setTextAlign(Paint.Align.CENTER);
 
         path1.reset();
         for (int a = 0; a < playPath.length / 2; a++) {
@@ -56,6 +65,10 @@ public class VideoForwardDrawable extends Drawable {
         if (leftSide == value && animationProgress >= 1.0f) {
             return;
         }
+        if (leftSide != value) {
+            time = 0;
+            timeStr = null;
+        }
         leftSide = value;
         startAnimation();
     }
@@ -67,6 +80,7 @@ public class VideoForwardDrawable extends Drawable {
     @Override
     public void setAlpha(int alpha) {
         paint.setAlpha(alpha);
+        textPaint.setAlpha(alpha);
     }
 
     @Override
@@ -99,11 +113,17 @@ public class VideoForwardDrawable extends Drawable {
         canvas.clipRect(rect.left, rect.top, rect.right, rect.bottom);
         if (animationProgress <= 0.7f) {
             paint.setAlpha((int) (80 * Math.min(1.0f, animationProgress / 0.3f)));
+            textPaint.setAlpha((int) (255 * Math.min(1.0f, animationProgress / 0.3f)));
         } else {
             paint.setAlpha((int) (80 * (1.0f - (animationProgress - 0.7f) / 0.3f)));
+            textPaint.setAlpha((int) (255 * (1.0f - (animationProgress - 0.7f) / 0.3f)));
         }
         canvas.drawCircle(x + Math.max(rect.width(), rect.height()) / 4 * (leftSide ? -1 : 1), y + AndroidUtilities.dp(16), Math.max(rect.width(), rect.height()) / 2, paint);
         canvas.restore();
+
+        if (timeStr != null) {
+            canvas.drawText(timeStr, x + getIntrinsicWidth() * (leftSide ? -1 : 1), y + getIntrinsicHeight() + AndroidUtilities.dp(15), textPaint);
+        }
 
         canvas.save();
         if (leftSide) {
@@ -152,6 +172,8 @@ public class VideoForwardDrawable extends Drawable {
                 if (animationProgress >= 1.0f) {
                     animationProgress = 0.0f;
                     animating = false;
+                    time = 0;
+                    timeStr = null;
                     if (delegate != null) {
                         delegate.onAnimationEnd();
                     }
@@ -183,5 +205,10 @@ public class VideoForwardDrawable extends Drawable {
     @Override
     public int getMinimumHeight() {
         return AndroidUtilities.dp(32);
+    }
+
+    public void addTime(long time) {
+        this.time += time;
+        timeStr = LocaleController.formatPluralString("Seconds", (int) (this.time / 1000));
     }
 }

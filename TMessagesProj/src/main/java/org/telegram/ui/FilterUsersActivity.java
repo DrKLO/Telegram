@@ -957,7 +957,7 @@ public class FilterUsersActivity extends BaseFragment implements NotificationCen
     public class GroupCreateAdapter extends RecyclerListView.FastScrollAdapter {
 
         private Context context;
-        private ArrayList<TLObject> searchResult = new ArrayList<>();
+        private ArrayList<Object> searchResult = new ArrayList<>();
         private ArrayList<CharSequence> searchResultNames = new ArrayList<>();
         private SearchAdapterHelper searchAdapterHelper;
         private Runnable searchRunnable;
@@ -1269,7 +1269,7 @@ public class FilterUsersActivity extends BaseFragment implements NotificationCen
                             search[1] = search2;
                         }
 
-                        ArrayList<TLObject> resultArray = new ArrayList<>();
+                        ArrayList<Object> resultArray = new ArrayList<>();
                         ArrayList<CharSequence> resultArrayNames = new ArrayList<>();
 
                         for (int a = 0; a < contacts.size(); a++) {
@@ -1333,7 +1333,7 @@ public class FilterUsersActivity extends BaseFragment implements NotificationCen
             }
         }
 
-        private void updateSearchResults(final ArrayList<TLObject> users, final ArrayList<CharSequence> names) {
+        private void updateSearchResults(final ArrayList<Object> users, final ArrayList<CharSequence> names) {
             AndroidUtilities.runOnUIThread(() -> {
                 if (!searching) {
                     return;

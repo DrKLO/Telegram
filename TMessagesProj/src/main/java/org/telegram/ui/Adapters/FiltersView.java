@@ -218,13 +218,13 @@ public class FiltersView extends RecyclerListView {
         return usersFilters.get(i);
     }
 
-    public void setUsersAndDates(ArrayList<TLObject> localUsers, ArrayList<DateData> dates) {
+    public void setUsersAndDates(ArrayList<Object> localUsers, ArrayList<DateData> dates) {
         oldItems.clear();
         oldItems.addAll(usersFilters);
         usersFilters.clear();
         if (localUsers != null) {
             for (int i = 0; i < localUsers.size(); i++) {
-                TLObject object = localUsers.get(i);
+                Object object = localUsers.get(i);
                 if (object instanceof TLRPC.User) {
                     TLRPC.User user = (TLRPC.User) object;
                     String title;

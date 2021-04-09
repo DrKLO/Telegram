@@ -156,7 +156,6 @@ import org.telegram.messenger.MediaController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
-import org.telegram.messenger.browser.Browser;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
@@ -616,6 +615,8 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                             seekToProgressPending = seconds / (float) currentMessageObject.getDuration();
                         } else {
                             videoPlayer.seekTo(seconds * 1000L);
+                            videoPlayerSeekbar.setProgress(seconds * 1000L / (float) videoPlayer.getDuration(), true);
+                            videoPlayerSeekbarView.invalidate();
                         }
                     }
                 } else if (url.startsWith("#")) {
@@ -4158,7 +4159,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
 
             @Override
             public boolean canOpenMenu() {
-                if (currentMessageObject != null) {
+                if (currentMessageObject != null || currentSecureDocument != null) {
                     return true;
                 } else if (currentFileLocationVideo != null) {
                     File f = FileLoader.getPathToAttach(getFileLocation(currentFileLocationVideo), getFileLocationExt(currentFileLocationVideo), avatarsDialogId != 0 || isEvent);
@@ -6169,7 +6170,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         videoPlayerSeekbarView = new View(containerView.getContext()) {
             @Override
             protected void onDraw(Canvas canvas) {
-                videoPlayerSeekbar.draw(canvas);
+                videoPlayerSeekbar.draw(canvas, this);
             }
         };
         videoPlayerSeekbarView.setAccessibilityDelegate(accessibilityDelegate);
@@ -7477,6 +7478,10 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
 
     private void applyCurrentEditMode() {
         if (currentIndex < 0 || currentIndex >= imagesArrLocals.size()) {
+            return;
+        }
+        Object object = imagesArrLocals.get(currentIndex);
+        if (!(object instanceof MediaController.MediaEditState)) {
             return;
         }
         Bitmap bitmap = null;
@@ -9877,6 +9882,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             groupedPhotosListView.fillList();
         } else if (!secureDocuments.isEmpty()) {
             allowShare = false;
+            menuItem.showSubItem(gallery_menu_delete);
             menuItem.hideSubItem(gallery_menu_save);
             nameTextView.setText("");
             dateTextView.setText("");
@@ -13897,16 +13903,23 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                     current -= 10000;
                 }
                 if (old != current) {
+                    boolean apply = true;
                     if (current > total) {
                         current = total;
                     } else if (current < 0) {
+                        if (current < -9000) {
+                            apply = false;
+                        }
                         current = 0;
                     }
-                    videoForwardDrawable.setLeftSide(x < width / 3);
-                    videoPlayer.seekTo(current);
-                    containerView.invalidate();
-                    videoPlayerSeekbar.setProgress(current / (float) total);
-                    videoPlayerSeekbarView.invalidate();
+                    if (apply) {
+                        videoForwardDrawable.setLeftSide(x < width / 3);
+                        videoForwardDrawable.addTime(10000);
+                        videoPlayer.seekTo(current);
+                        containerView.invalidate();
+                        videoPlayerSeekbar.setProgress(current / (float) total, true);
+                        videoPlayerSeekbarView.invalidate();
+                    }
                     return true;
                 }
             }

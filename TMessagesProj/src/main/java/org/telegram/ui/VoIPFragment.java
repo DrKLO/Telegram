@@ -333,21 +333,20 @@ public class VoIPFragment implements VoIPBaseService.StateListener, Notification
     }
 
     public static void clearInstance() {
-        if (VoIPService.getSharedInstance() != null) {
-            int h = instance.windowView.getMeasuredHeight();
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT_WATCH && instance.lastInsets != null) {
-                h -= instance.lastInsets.getSystemWindowInsetBottom();
-            }
-            if (instance.canSwitchToPip) {
-                VoIPPiPView.show(instance.activity, instance.currentAccount, instance.windowView.getMeasuredWidth(), h, VoIPPiPView.ANIMATION_ENTER_TYPE_SCALE);
+        if (instance != null) {
+            if (VoIPService.getSharedInstance() != null) {
+                int h = instance.windowView.getMeasuredHeight();
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT_WATCH && instance.lastInsets != null) {
-                    VoIPPiPView.topInset = instance.lastInsets.getSystemWindowInsetTop();
-                    VoIPPiPView.bottomInset = instance.lastInsets.getSystemWindowInsetBottom();
+                    h -= instance.lastInsets.getSystemWindowInsetBottom();
+                }
+                if (instance.canSwitchToPip) {
+                    VoIPPiPView.show(instance.activity, instance.currentAccount, instance.windowView.getMeasuredWidth(), h, VoIPPiPView.ANIMATION_ENTER_TYPE_SCALE);
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT_WATCH && instance.lastInsets != null) {
+                        VoIPPiPView.topInset = instance.lastInsets.getSystemWindowInsetTop();
+                        VoIPPiPView.bottomInset = instance.lastInsets.getSystemWindowInsetBottom();
+                    }
                 }
             }
-        }
-
-        if (instance != null) {
             instance.callingUserTextureView.renderer.release();
             instance.currentUserTextureView.renderer.release();
             instance.callingUserMiniTextureRenderer.release();

@@ -81,8 +81,12 @@ public class JoinCallAlert extends BottomSheet {
     private static long lastCacheDid;
     private static int lastCachedAccount;
 
-    public static void processDeletedChat(long did) {
-        if (cachedChats == null || did > 0) {
+    public static void resetCache() {
+        cachedChats = null;
+    }
+
+    public static void processDeletedChat(int account, long did) {
+        if (lastCachedAccount != account || cachedChats == null || did > 0) {
             return;
         }
         for (int a = 0, N = cachedChats.size(); a < N; a++) {
@@ -441,8 +445,10 @@ public class JoinCallAlert extends BottomSheet {
         doneButton.setBackground(null);
         doneButton.background.setOnClickListener(v -> {
             TLRPC.InputPeer peer = MessagesController.getInstance(currentAccount).getInputPeer(MessageObject.getPeerId(selectedPeer));
-            if (selectedPeer != currentPeer && currentType == TYPE_DISPLAY) {
-                delegate.didSelectChat(peer, chats.size() > 1);
+            if (currentType == TYPE_DISPLAY) {
+                if (selectedPeer != currentPeer) {
+                    delegate.didSelectChat(peer, chats.size() > 1);
+                }
             } else {
                 selectAfterDismiss = peer;
             }
@@ -459,7 +465,7 @@ public class JoinCallAlert extends BottomSheet {
             doneButton.setText(LocaleController.formatString("VoipGroupContinueAs", R.string.VoipGroupContinueAs, UserObject.getFirstName(user)), animated);
         } else {
             TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-did);
-            doneButton.setText(LocaleController.formatString("VoipGroupContinueAs", R.string.VoipGroupContinueAs, chat.title), animated);
+            doneButton.setText(LocaleController.formatString("VoipGroupContinueAs", R.string.VoipGroupContinueAs, chat != null ? chat.title : ""), animated);
         }
     }
 

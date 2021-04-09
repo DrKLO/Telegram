@@ -4745,7 +4745,7 @@ public class MessagesStorage extends BaseController {
                     TLRPC.ChannelParticipant participant = participants.get(a);
                     state.requery();
                     state.bindLong(1, did);
-                    state.bindInteger(2, participant.user_id);
+                    state.bindInteger(2, MessageObject.getPeerId(participant.peer));
                     state.bindInteger(3, date);
                     data = new NativeByteBuffer(participant.getObjectSize());
                     participant.serializeToStream(data);
@@ -5372,7 +5372,7 @@ public class MessagesStorage extends BaseController {
                             loadedUsers.add(user);
                             participant.date = cursor.intValue(3);
                             TLRPC.TL_chatChannelParticipant chatChannelParticipant = new TLRPC.TL_chatChannelParticipant();
-                            chatChannelParticipant.user_id = participant.user_id;
+                            chatChannelParticipant.user_id = MessageObject.getPeerId(participant.peer);
                             chatChannelParticipant.date = participant.date;
                             chatChannelParticipant.inviter_id = participant.inviter_id;
                             chatChannelParticipant.channelParticipant = participant;
@@ -11542,7 +11542,7 @@ public class MessagesStorage extends BaseController {
     }
 
 
-    public void localSearch(int dialogsType, String query, ArrayList<TLObject> resultArray, ArrayList<CharSequence> resultArrayNames, ArrayList<TLRPC.User> encUsers, int folderId) {
+    public void localSearch(int dialogsType, String query, ArrayList<Object> resultArray, ArrayList<CharSequence> resultArrayNames, ArrayList<TLRPC.User> encUsers, int folderId) {
         int selfUserId = UserConfig.getInstance(currentAccount).getClientUserId();
         try {
             String search1 = query.trim().toLowerCase();

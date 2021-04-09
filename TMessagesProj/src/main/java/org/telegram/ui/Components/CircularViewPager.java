@@ -69,7 +69,9 @@ public class CircularViewPager extends ViewPager {
     public void setAdapter(Adapter adapter) {
         this.adapter = adapter;
         super.setAdapter(adapter);
-        setCurrentItem(adapter.getExtraCount(), false);
+        if (adapter != null) {
+            setCurrentItem(adapter.getExtraCount(), false);
+        }
     }
 
     public static abstract class Adapter extends PagerAdapter {

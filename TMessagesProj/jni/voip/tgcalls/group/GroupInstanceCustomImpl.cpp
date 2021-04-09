@@ -255,35 +255,46 @@ private:
     std::function<void(rtc::CopyOnWriteBuffer const *, rtc::SentPacket)> _sendPacket;
 };
 
-static const int kVadResultHistoryLength = 8;
+static const int kVadResultHistoryLength = 6;
 
 class CombinedVad {
 private:
     webrtc::VadLevelAnalyzer _vadWithLevel;
     float _vadResultHistory[kVadResultHistoryLength];
+    std::atomic<int32_t> _waitingFramesToProcess{0};
+    bool _countFrames;
 
 public:
-    CombinedVad() {
+    CombinedVad(bool count = false) {
         for (float & i : _vadResultHistory) {
             i = 0.0f;
         }
+        _countFrames = count;
     }
 
     ~CombinedVad() = default;
 
+    bool incWaitingFrames() {
+        if (_waitingFramesToProcess > 5) {
+            return false;
+        }
+        _waitingFramesToProcess++;
+        return true;
+    }
+
     bool update(webrtc::AudioBuffer *buffer) {
-        float speech_probability;
         if (buffer) {
             webrtc::AudioFrameView<float> frameView(buffer->channels(), buffer->num_channels(), buffer->num_frames());
             auto result = _vadWithLevel.AnalyzeFrame(frameView);
-            speech_probability = result.speech_probability;
-        } else {
-            speech_probability = std::min(1.0f, _vadResultHistory[kVadResultHistoryLength - 1] * 1.2f);
+            float speech_probability = result.speech_probability;
+            for (int i = 1; i < kVadResultHistoryLength; i++) {
+                _vadResultHistory[i - 1] = _vadResultHistory[i];
+            }
+            _vadResultHistory[kVadResultHistoryLength - 1] = speech_probability;
+            if (_countFrames) {
+                _waitingFramesToProcess--;
+            }
         }
-        for (int i = 1; i < kVadResultHistoryLength; i++) {
-            _vadResultHistory[i - 1] = _vadResultHistory[i];
-        }
-        _vadResultHistory[kVadResultHistoryLength - 1] = speech_probability;
 
         float movingAverage = 0.0f;
         for (float i : _vadResultHistory) {
@@ -291,12 +302,7 @@ public:
         }
         movingAverage /= (float)kVadResultHistoryLength;
 
-        bool vadResult = false;
-        if (movingAverage > 0.8f) {
-            vadResult = true;
-        }
-
-        return vadResult;
+        return movingAverage > 0.6f;
     }
 };
 
@@ -316,7 +322,7 @@ public:
     AudioSinkImpl(std::function<void(Update)> update,
         ChannelId channel_id, std::function<void(uint32_t, const AudioFrame &)> onAudioFrame) :
     _update(update), _channel_id(channel_id), _onAudioFrame(std::move(onAudioFrame)) {
-        _vad = std::make_shared<CombinedVad>();
+        _vad = std::make_shared<CombinedVad>(true);
     }
 
     virtual ~AudioSinkImpl() {
@@ -334,8 +340,8 @@ public:
         frame.ntp_time_ms = 0;
         _onAudioFrame(_channel_id.actualSsrc, frame);
       }
-      if (audio.channels == 1) {
-            const auto samples = (const int16_t *) audio.data;
+      if (_update && audio.channels == 1) {
+            const int16_t *samples = (const int16_t *)audio.data;
             int numberOfSamplesInFrame = (int)audio.samples_per_channel;
 
             for (int i = 0; i < numberOfSamplesInFrame; i++) {
@@ -355,7 +361,7 @@ public:
                 _peakCount = 0;
 
                 webrtc::AudioBuffer *buffer;
-                if (!_skipNextSampleProcess) {
+                if (_vad->incWaitingFrames()) {
                     buffer = new webrtc::AudioBuffer(audio.sample_rate, 1, 48000, 1, 48000, 1);
                     webrtc::StreamConfig config(audio.sample_rate, 1);
                     buffer->CopyFrom(samples, config);
@@ -364,7 +370,6 @@ public:
                 }
 
                 _update(Update(level, buffer, _vad));
-                _skipNextSampleProcess = !_skipNextSampleProcess;
             }
         }
     }
@@ -377,7 +382,6 @@ private:
 
     int _peakCount = 0;
     uint16_t _peak = 0;
-    bool _skipNextSampleProcess = false;
 };
 
 class VideoSinkImpl : public rtc::VideoSinkInterface<webrtc::VideoFrame> {
@@ -563,9 +567,7 @@ public:
         outgoingAudioDescription.reset();
         incomingAudioDescription.reset();
 
-        std::unique_ptr<AudioSinkImpl> audioLevelSink(new AudioSinkImpl([onAudioLevelUpdated = std::move(onAudioLevelUpdated)](AudioSinkImpl::Update update) {
-            onAudioLevelUpdated(update);
-        }, _ssrc, std::move(onAudioFrame)));
+        std::unique_ptr<AudioSinkImpl> audioLevelSink(new AudioSinkImpl(onAudioLevelUpdated, _ssrc, std::move(onAudioFrame)));
         _audioChannel->media_channel()->SetRawAudioSink(ssrc.networkSsrc, std::move(audioLevelSink));
 
         _audioChannel->SignalSentPacket().connect(this, &IncomingAudioChannel::OnSentPacket_w);
@@ -801,6 +803,8 @@ public:
     _participantDescriptionsRequired(descriptor.participantDescriptionsRequired),
     _requestBroadcastPart(descriptor.requestBroadcastPart),
     _videoCapture(descriptor.videoCapture),
+    _disableIncomingChannels(descriptor.disableIncomingChannels),
+    _useDummyChannel(descriptor.useDummyChannel),
     _eventLog(std::make_unique<webrtc::RtcEventLogNull>()),
     _taskQueueFactory(webrtc::CreateDefaultTaskQueueFactory()),
 	_createAudioDeviceModule(descriptor.createAudioDeviceModule),
@@ -850,6 +854,7 @@ public:
         webrtc::field_trial::InitFieldTrialsFromString(
             "WebRTC-Audio-Allocation/min:32kbps,max:32kbps/"
             "WebRTC-Audio-OpusMinPacketLossRate/Enabled-1/"
+//            "WebRTC-TaskQueuePacer/Enabled/"
         );
 
         _networkManager.reset(new ThreadLocalObject<GroupNetworkManager>(_threads->getNetworkThread(), [weak, threads = _threads] () mutable {
@@ -902,20 +907,23 @@ public:
         mediaDeps.video_encoder_factory = PlatformInterface::SharedInstance()->makeVideoEncoderFactory(_platformContext);
         mediaDeps.video_decoder_factory = PlatformInterface::SharedInstance()->makeVideoDecoderFactory(_platformContext);
 
-        auto analyzer = new AudioCaptureAnalyzer([weak, threads = _threads](GroupLevelValue const &level) {
-            threads->getProcessThread()->PostTask(RTC_FROM_HERE, [weak, level](){
-                auto strong = weak.lock();
-                if (!strong) {
-                    return;
-                }
-                strong->_myAudioLevel = level;
+        if (_audioLevelsUpdated) {
+            auto analyzer = new AudioCaptureAnalyzer([weak, threads = _threads](GroupLevelValue const &level) {
+                threads->getMediaThread()->PostTask(RTC_FROM_HERE, [weak, level, threads]() {
+                    auto strong = weak.lock();
+                    if (!strong) {
+                        return;
+                    }
+                    strong->_myAudioLevel = level;
+                    threads->getMediaThread()->Invoke<void>(RTC_FROM_HERE, [strong] {});
+                });
             });
-        });
 
-        webrtc::AudioProcessingBuilder builder;
-        builder.SetCaptureAnalyzer(std::unique_ptr<AudioCaptureAnalyzer>(analyzer));
+            webrtc::AudioProcessingBuilder builder;
+            builder.SetCaptureAnalyzer(std::unique_ptr<AudioCaptureAnalyzer>(analyzer));
 
-        mediaDeps.audio_processing = builder.Create();
+            mediaDeps.audio_processing = builder.Create();
+        }
 
         _audioDeviceModule = createAudioDeviceModule();
         if (!_audioDeviceModule) {
@@ -937,6 +945,7 @@ public:
         callConfig.task_queue_factory = _taskQueueFactory.get();
         callConfig.trials = &_fieldTrials;
         callConfig.audio_state = _channelManager->media_engine()->voice().GetAudioState();
+        //_call.reset(webrtc::Call::Create(callConfig, _threads->getSharedModuleThread()));
         _call.reset(webrtc::Call::Create(callConfig));
 
         _uniqueRandomIdGenerator.reset(new rtc::UniqueRandomIdGenerator());
@@ -956,7 +965,9 @@ public:
             //_outgoingVideoChannel->UpdateRtpTransport(nullptr);
         }
 
-        beginLevelsTimer(50);
+        if (_audioLevelsUpdated) {
+            beginLevelsTimer(50);
+        }
 
         if (_videoCapture) {
             setVideoCapture(_videoCapture, [](GroupJoinPayload) {}, true);
@@ -964,7 +975,9 @@ public:
 
         adjustBitratePreferences(true);
 
-        addIncomingAudioChannel("_dummy", ChannelId(1), true);
+        if (_useDummyChannel) {
+            addIncomingAudioChannel("_dummy", ChannelId(1), true);
+        }
 
         beginNetworkStatusTimer(0);
     }
@@ -1043,7 +1056,7 @@ public:
 
     void beginLevelsTimer(int timeoutMs) {
         const auto weak = std::weak_ptr<GroupInstanceCustomInternal>(shared_from_this());
-        _threads->getProcessThread()->PostDelayedTask(RTC_FROM_HERE, [weak]() {
+        _threads->getMediaThread()->PostDelayedTask(RTC_FROM_HERE, [weak]() {
             auto strong = weak.lock();
             if (!strong) {
                 return;
@@ -2029,25 +2042,33 @@ public:
 
         const auto weak = std::weak_ptr<GroupInstanceCustomInternal>(shared_from_this());
 
-        std::unique_ptr<IncomingAudioChannel> channel(new IncomingAudioChannel(
-            _channelManager.get(),
-            _call.get(),
-            _rtpTransport,
-            _uniqueRandomIdGenerator.get(),
-            isRawPcm,
-            ssrc,
-            [weak, ssrc = ssrc, threads = _threads](AudioSinkImpl::Update update) {
-                threads->getProcessThread()->PostTask(RTC_FROM_HERE, [weak, ssrc, update]() {
+        std::function<void(AudioSinkImpl::Update)> onAudioSinkUpdate;
+        if (_audioLevelsUpdated) {
+          onAudioSinkUpdate = [weak, ssrc = ssrc, threads = _threads](AudioSinkImpl::Update update) {
+            threads->getProcessThread()->PostTask(RTC_FROM_HERE, [weak, ssrc, update, threads]() {
+                bool voice = update.vad->update(update.buffer.get());
+                threads->getMediaThread()->PostTask(RTC_FROM_HERE, [weak, ssrc, update, voice]() {
                     auto strong = weak.lock();
                     if (!strong) {
                         return;
                     }
                     GroupLevelValue mappedUpdate;
                     mappedUpdate.level = update.level;
-                    mappedUpdate.voice = update.vad->update(update.buffer.get());
+                    mappedUpdate.voice = voice;
                     strong->_audioLevels[ssrc] = mappedUpdate;
                 });
-            },
+            });
+          };
+        }
+
+        std::unique_ptr<IncomingAudioChannel> channel(new IncomingAudioChannel(
+          _channelManager.get(),
+            _call.get(),
+            _rtpTransport,
+            _uniqueRandomIdGenerator.get(),
+            isRawPcm,
+            ssrc,
+            std::move(onAudioSinkUpdate),
             _onAudioFrame,
             *_threads
         ));
@@ -2179,6 +2200,7 @@ private:
     std::function<std::shared_ptr<BroadcastPartTask>(std::shared_ptr<PlatformContext>, int64_t, int64_t, std::function<void(BroadcastPart &&)>)> _requestBroadcastPart;
     std::shared_ptr<VideoCaptureInterface> _videoCapture;
     bool _disableIncomingChannels = false;
+    bool _useDummyChannel{true};
 
     int64_t _lastUnknownSsrcsReport = 0;
     std::set<uint32_t> _pendingUnknownSsrcs;
@@ -2352,6 +2374,36 @@ void GroupInstanceCustomImpl::setFullSizeVideoSsrc(uint32_t ssrc) {
     _internal->perform(RTC_FROM_HERE, [ssrc](GroupInstanceCustomInternal *internal) {
         internal->setFullSizeVideoSsrc(ssrc);
     });
+}
+std::vector<GroupInstanceInterface::AudioDevice> GroupInstanceInterface::getAudioDevices(AudioDevice::Type type) {
+  auto result = std::vector<AudioDevice>();
+#ifdef WEBRTC_LINUX //Not needed for ios, and some crl::sync stuff is needed for windows
+  const auto resolve = [&] {
+    const auto queueFactory = webrtc::CreateDefaultTaskQueueFactory();
+    const auto info = webrtc::AudioDeviceModule::Create(
+        webrtc::AudioDeviceModule::kPlatformDefaultAudio,
+        queueFactory.get());
+    if (!info || info->Init() < 0) {
+      return;
+    }
+    const auto count = type == AudioDevice::Type::Input ? info->RecordingDevices() : info->PlayoutDevices();
+    if (count <= 0) {
+      return;
+    }
+    for (auto i = int16_t(); i != count; ++i) {
+      char name[webrtc::kAdmMaxDeviceNameSize + 1] = { 0 };
+      char id[webrtc::kAdmMaxGuidSize + 1] = { 0 };
+      if (type == AudioDevice::Type::Input) {
+        info->RecordingDeviceName(i, name, id);
+      } else {
+        info->PlayoutDeviceName(i, name, id);
+      }
+      result.push_back({ id, name });
+    }
+  };
+  resolve();
+#endif
+  return result;
 }
 
 } // namespace tgcalls

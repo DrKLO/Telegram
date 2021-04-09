@@ -1683,7 +1683,7 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
                         ((LayoutParams) getLayoutParams()).topMargin = -AndroidUtilities.dp(getStyleHeight());
                     }
                     final int currentAccount = account;
-                    animationIndex = NotificationCenter.getInstance(currentAccount).setAnimationInProgress(animationIndex, null);
+                    animationIndex = NotificationCenter.getInstance(currentAccount).setAnimationInProgress(animationIndex, new int[]{NotificationCenter.messagesDidLoad});
                     animatorSet.playTogether(ObjectAnimator.ofFloat(this, "topPadding", AndroidUtilities.dp2(getStyleHeight())));
                     animatorSet.setDuration(220);
                     animatorSet.setInterpolator(CubicBezierInterpolator.DEFAULT);

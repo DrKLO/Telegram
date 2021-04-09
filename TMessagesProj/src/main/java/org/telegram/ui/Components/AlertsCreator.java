@@ -673,7 +673,7 @@ public class AlertsCreator {
                     if (ChatObject.isNotInChat(currentChat)) {
                         accountInstance.getMessagesController().deleteDialog(dialog_id, 0);
                     } else {
-                        accountInstance.getMessagesController().deleteUserFromChat((int) -dialog_id, accountInstance.getMessagesController().getUser(accountInstance.getUserConfig().getClientUserId()), null);
+                        accountInstance.getMessagesController().deleteParticipantFromChat((int) -dialog_id, accountInstance.getMessagesController().getUser(accountInstance.getUserConfig().getClientUserId()), null);
                     }
                 } else {
                     accountInstance.getMessagesController().deleteDialog(dialog_id, 0);
@@ -3673,7 +3673,7 @@ public class AlertsCreator {
 
                     TLRPC.TL_channels_getParticipant req = new TLRPC.TL_channels_getParticipant();
                     req.channel = MessagesController.getInputChannel(chat);
-                    req.user_id = MessagesController.getInstance(currentAccount).getInputUser(actionUser);
+                    req.participant = MessagesController.getInputPeer(actionUser);
                     int requestId = ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
                         try {
                             progressDialog[0].dismiss();
@@ -3866,7 +3866,7 @@ public class AlertsCreator {
             }
             if (userFinal != null) {
                 if (checks[0]) {
-                    MessagesController.getInstance(currentAccount).deleteUserFromChat(chat.id, userFinal, chatInfo);
+                    MessagesController.getInstance(currentAccount).deleteParticipantFromChat(chat.id, userFinal, chatInfo);
                 }
                 if (checks[1]) {
                     TLRPC.TL_channels_reportSpam req = new TLRPC.TL_channels_reportSpam();

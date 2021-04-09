@@ -922,7 +922,7 @@ public class NotificationsCustomSettingsActivity extends BaseFragment {
                         search[1] = search2;
                     }
 
-                    ArrayList<TLObject> resultArray = new ArrayList<>();
+                    ArrayList<Object> resultArray = new ArrayList<>();
                     ArrayList<NotificationsSettingsActivity.NotificationException> exceptionsArray = new ArrayList<>();
                     ArrayList<CharSequence> resultArrayNames = new ArrayList<>();
 
@@ -1002,7 +1002,7 @@ public class NotificationsCustomSettingsActivity extends BaseFragment {
             });
         }
 
-        private void updateSearchResults(final ArrayList<TLObject> result, final ArrayList<NotificationsSettingsActivity.NotificationException> exceptions, final ArrayList<CharSequence> names) {
+        private void updateSearchResults(final ArrayList<Object> result, final ArrayList<NotificationsSettingsActivity.NotificationException> exceptions, final ArrayList<CharSequence> names) {
             AndroidUtilities.runOnUIThread(() -> {
                 if (!searching) {
                     return;

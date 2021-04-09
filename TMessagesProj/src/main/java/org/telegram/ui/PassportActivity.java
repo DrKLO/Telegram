@@ -4873,7 +4873,19 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
             }
             SecureDocument document1 = (SecureDocument) v.getTag();
             PhotoViewer.getInstance().setParentActivity(getParentActivity());
-            if (type == UPLOADING_TYPE_DOCUMENTS) {
+            if (type == UPLOADING_TYPE_SELFIE) {
+                ArrayList<SecureDocument> arrayList = new ArrayList<>();
+                arrayList.add(selfieDocument);
+                PhotoViewer.getInstance().openPhoto(arrayList, 0, provider);
+            } else if (type == UPLOADING_TYPE_FRONT) {
+                ArrayList<SecureDocument> arrayList = new ArrayList<>();
+                arrayList.add(frontDocument);
+                PhotoViewer.getInstance().openPhoto(arrayList, 0, provider);
+            } else if (type == UPLOADING_TYPE_REVERSE) {
+                ArrayList<SecureDocument> arrayList = new ArrayList<>();
+                arrayList.add(reverseDocument);
+                PhotoViewer.getInstance().openPhoto(arrayList, 0, provider);
+            } else if (type == UPLOADING_TYPE_DOCUMENTS) {
                 PhotoViewer.getInstance().openPhoto(documents, documents.indexOf(document1), provider);
             } else {
                 PhotoViewer.getInstance().openPhoto(translationDocuments, translationDocuments.indexOf(document1), provider);

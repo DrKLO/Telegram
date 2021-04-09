@@ -4,12 +4,16 @@ import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.ValueAnimator;
 import android.content.Context;
+import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.Path;
 import android.graphics.PointF;
+import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.text.TextUtils;
+import android.util.Log;
 import android.util.SparseArray;
 import android.view.MotionEvent;
 import android.view.View;
@@ -24,6 +28,7 @@ import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.UserConfig;
+import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ProfileActivity;
@@ -35,21 +40,27 @@ import androidx.recyclerview.widget.RecyclerView;
 
 public class ProfileGalleryView extends CircularViewPager implements NotificationCenter.NotificationCenterDelegate {
 
-    private final Callback callback;
     private final PointF downPoint = new PointF();
     private final int touchSlop;
+    private final ActionBar parentActionBar;
     private boolean isScrollingListView = true;
     private boolean isSwipingViewPager = true;
     private final RecyclerListView parentListView;
-    private final ViewPagerAdapter adapter;
+    private ViewPagerAdapter adapter;
     private final int parentClassGuid;
-    private final long dialogId;
+    private long dialogId;
     private TLRPC.ChatFull chatInfo;
+    private final Callback callback;
 
     private boolean scrolledByUser;
     private boolean isDownReleased;
+    private final boolean isProfileFragment;
 
     private int currentAccount = UserConfig.selectedAccount;
+
+    Path path = new Path();
+    RectF rect = new RectF();
+    float[] radii = new float[8];
 
     private ImageLocation prevImageLocation;
     private ArrayList<String> videoFileNames = new ArrayList<>();
@@ -77,16 +88,93 @@ public class ProfileGalleryView extends CircularViewPager implements Notificatio
         void onVideoSet();
     }
 
+    private int roundTopRadius;
+    private int roundBottomRadius;
+
+    public ProfileGalleryView(Context context, ActionBar parentActionBar, RecyclerListView parentListView, Callback callback) {
+        super(context);
+        setOffscreenPageLimit(2);
+
+        this.isProfileFragment = false;
+        this.parentListView = parentListView;
+        this.parentClassGuid = ConnectionsManager.generateClassGuid();
+        this.parentActionBar = parentActionBar;
+        this.touchSlop = ViewConfiguration.get(context).getScaledTouchSlop();
+        this.callback = callback;
+
+        addOnPageChangeListener(new OnPageChangeListener() {
+            @Override
+            public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
+                if (positionOffsetPixels == 0) {
+                    position = adapter.getRealPosition(position);
+                    BackupImageView currentView = getCurrentItemView();
+                    int count = getChildCount();
+                    for (int a = 0; a < count; a++) {
+                        View child = getChildAt(a);
+                        if (!(child instanceof BackupImageView)) {
+                            continue;
+                        }
+                        int p = adapter.getRealPosition(adapter.imageViews.indexOf(child));
+                        BackupImageView imageView = (BackupImageView) child;
+                        ImageReceiver imageReceiver = imageView.getImageReceiver();
+                        boolean currentAllow = imageReceiver.getAllowStartAnimation();
+                        if (p == position) {
+                            if (!currentAllow) {
+                                imageReceiver.setAllowStartAnimation(true);
+                                imageReceiver.startAnimation();
+                            }
+                            ImageLocation location = videoLocations.get(p);
+                            if (location != null) {
+                                FileLoader.getInstance(currentAccount).setForceStreamLoadingFile(location.location, "mp4");
+                            }
+                        } else {
+                            if (currentAllow) {
+                                AnimatedFileDrawable fileDrawable = imageReceiver.getAnimation();
+                                if (fileDrawable != null) {
+                                    ImageLocation location = videoLocations.get(p);
+                                    if (location != null) {
+                                        fileDrawable.seekTo(location.videoSeekTo, false, true);
+                                    }
+                                }
+                                imageReceiver.setAllowStartAnimation(false);
+                                imageReceiver.stopAnimation();
+                            }
+                        }
+                    }
+                }
+            }
+
+            @Override
+            public void onPageSelected(int position) {
+
+            }
+
+            @Override
+            public void onPageScrollStateChanged(int state) {
+
+            }
+        });
+
+        setAdapter(adapter = new ViewPagerAdapter(getContext(), null, parentActionBar));
+
+        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.dialogPhotosLoaded);
+        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.fileDidLoad);
+        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.FileLoadProgressChanged);
+        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.reloadDialogPhotos);
+    }
+
     public ProfileGalleryView(Context context, long dialogId, ActionBar parentActionBar, RecyclerListView parentListView, ProfileActivity.AvatarImageView parentAvatarImageView, int parentClassGuid, Callback callback) {
         super(context);
         setVisibility(View.GONE);
         setOverScrollMode(View.OVER_SCROLL_NEVER);
         setOffscreenPageLimit(2);
 
+        this.isProfileFragment = true;
         this.dialogId = dialogId;
         this.parentListView = parentListView;
         this.parentClassGuid = parentClassGuid;
-        setAdapter(adapter = new ViewPagerAdapter(context, parentAvatarImageView, parentActionBar));
+        this.parentActionBar = parentActionBar;
+        setAdapter(adapter = new ViewPagerAdapter(getContext(), parentAvatarImageView, parentActionBar));
         this.touchSlop = ViewConfiguration.get(context).getScaledTouchSlop();
         this.callback = callback;
 
@@ -150,6 +238,7 @@ public class ProfileGalleryView extends CircularViewPager implements Notificatio
         MessagesController.getInstance(currentAccount).loadDialogPhotos((int) dialogId, 80, 0, true, parentClassGuid);
     }
 
+
     public void onDestroy() {
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.dialogPhotosLoaded);
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.fileDidLoad);
@@ -172,7 +261,7 @@ public class ProfileGalleryView extends CircularViewPager implements Notificatio
     }
 
     public void setAnimatedFileMaybe(AnimatedFileDrawable drawable) {
-        if (drawable == null) {
+        if (drawable == null || adapter == null) {
             return;
         }
         int count = getChildCount();
@@ -202,6 +291,9 @@ public class ProfileGalleryView extends CircularViewPager implements Notificatio
 
     @Override
     public boolean onTouchEvent(MotionEvent ev) {
+        if (adapter == null) {
+            return false;
+        }
         if (parentListView.getScrollState() != RecyclerView.SCROLL_STATE_IDLE && !isScrollingListView && isSwipingViewPager) {
             isSwipingViewPager = false;
             final MotionEvent cancelEvent = MotionEvent.obtain(ev);
@@ -325,6 +417,7 @@ public class ProfileGalleryView extends CircularViewPager implements Notificatio
         photos.add(null);
         imagesLocationsSizes.add(-1);
         getAdapter().notifyDataSetChanged();
+        resetCurrentItem();
         return true;
     }
 
@@ -537,7 +630,7 @@ public class ProfileGalleryView extends CircularViewPager implements Notificatio
         if (id == NotificationCenter.dialogPhotosLoaded) {
             int guid = (Integer) args[3];
             int did = (Integer) args[0];
-            if (did == dialogId && parentClassGuid == guid) {
+            if (did == dialogId && parentClassGuid == guid && adapter != null) {
                 boolean fromCache = (Boolean) args[2];
                 ArrayList<TLRPC.Photo> arrayList = (ArrayList<TLRPC.Photo>) args[4];
                 thumbsFileNames.clear();
@@ -629,9 +722,16 @@ public class ProfileGalleryView extends CircularViewPager implements Notificatio
                 }
                 loadNeighboringThumbs();
                 getAdapter().notifyDataSetChanged();
-                if (!scrolledByUser) {
+                if (isProfileFragment) {
+                    if (!scrolledByUser) {
+                        resetCurrentItem();
+                    }
+                } else {
                     resetCurrentItem();
+                    getAdapter().notifyDataSetChanged();
                 }
+
+
                 if (fromCache) {
                     MessagesController.getInstance(currentAccount).loadDialogPhotos(did, 80, 0, false, parentClassGuid);
                 }
@@ -685,7 +785,7 @@ public class ProfileGalleryView extends CircularViewPager implements Notificatio
 
         private final Context context;
         private final Paint placeholderPaint;
-        private final ProfileActivity.AvatarImageView parentAvatarImageView;
+        private BackupImageView parentAvatarImageView;
         private final ActionBar parentActionBar;
 
         public ViewPagerAdapter(Context context, ProfileActivity.AvatarImageView parentAvatarImageView, ActionBar parentActionBar) {
@@ -732,7 +832,7 @@ public class ProfileGalleryView extends CircularViewPager implements Notificatio
                         final int realPosition = getRealPosition(position);
                         boolean needProgress = false;
                         if (realPosition == 0) {
-                            Drawable drawable = parentAvatarImageView.getImageReceiver().getDrawable();
+                            Drawable drawable = parentAvatarImageView == null ? null : parentAvatarImageView.getImageReceiver().getDrawable();
                             if (drawable instanceof AnimatedFileDrawable && ((AnimatedFileDrawable) drawable).hasBitmap()) {
                                 AnimatedFileDrawable animatedFileDrawable = (AnimatedFileDrawable) drawable;
                                 setImageDrawable(drawable);
@@ -743,12 +843,13 @@ public class ProfileGalleryView extends CircularViewPager implements Notificatio
                                 isVideo = videoLocation != null;
                                 needProgress = true;
                                 String filter;
-                                if (videoLocation != null && videoLocation.imageType == FileLoader.IMAGE_TYPE_ANIMATION) {
+                                if (isProfileFragment && videoLocation != null && videoLocation.imageType == FileLoader.IMAGE_TYPE_ANIMATION) {
                                     filter = ImageLoader.AUTOPLAY_FILTER;
                                 } else {
                                     filter = null;
                                 }
-                                setImageMedia(videoLocations.get(realPosition), filter, imagesLocations.get(realPosition), null, parentAvatarImageView.getImageReceiver().getBitmap(), imagesLocationsSizes.get(realPosition), 1, "avatar_" + dialogId);
+                                Bitmap thumb = parentAvatarImageView == null ? null : parentAvatarImageView.getImageReceiver().getBitmap();
+                                setImageMedia(videoLocations.get(realPosition), filter, imagesLocations.get(realPosition), null, thumb, imagesLocationsSizes.get(realPosition), 1, "avatar_" + dialogId);
                             }
                         } else {
                             final ImageLocation videoLocation = videoLocations.get(realPosition);
@@ -756,7 +857,7 @@ public class ProfileGalleryView extends CircularViewPager implements Notificatio
                             needProgress = true;
                             ImageLocation location = thumbsLocations.get(realPosition);
                             String filter = location.photoSize instanceof TLRPC.TL_photoStrippedSize ? "b" : null;
-                            setImageMedia(videoLocation, null, imagesLocations.get(realPosition), null, thumbsLocations.get(realPosition), filter, null, imagesLocationsSizes.get(realPosition), 1, "avatar_" + dialogId);
+                            setImageMedia(videoLocation, null, imagesLocations.get(realPosition), null, thumbsLocations.get(realPosition), filter, null, imagesLocationsSizes.get(realPosition), 1, location);
                         }
                         if (needProgress) {
                             radialProgress = radialProgresses.get(realPosition);
@@ -834,9 +935,22 @@ public class ProfileGalleryView extends CircularViewPager implements Notificatio
                                 }
                                 postInvalidateOnAnimation();
                             }
-                            canvas.drawRect(0, 0, getWidth(), getHeight(), placeholderPaint);
+                            if (roundTopRadius == 0 && roundBottomRadius == 0) {
+                                canvas.drawRect(0, 0, getWidth(), getHeight(), placeholderPaint);
+                            } else if (roundTopRadius == roundBottomRadius) {
+                                rect.set(0, 0, getWidth(), getHeight());
+                                canvas.drawRoundRect(rect, roundTopRadius, roundTopRadius, placeholderPaint);
+                            } else {
+                                path.reset();
+                                rect.set(0, 0, getWidth(), getHeight());
+                                for (int i = 0; i < 4; i++) {
+                                    radii[i] = roundTopRadius;
+                                    radii[4 + i] = roundBottomRadius;
+                                }
+                                path.addRoundRect(rect, radii, Path.Direction.CW);
+                                canvas.drawPath(path, placeholderPaint);
+                            }
                         }
-
                         super.onDraw(canvas);
 
                         if (radialProgress != null && radialProgress.getOverrideAlpha() > 0f) {
@@ -851,6 +965,8 @@ public class ProfileGalleryView extends CircularViewPager implements Notificatio
                 container.addView(item.imageView);
             }
 
+            item.imageView.setRoundRadius(roundTopRadius, roundTopRadius, roundBottomRadius, roundBottomRadius);
+
             return item;
         }
 
@@ -863,6 +979,7 @@ public class ProfileGalleryView extends CircularViewPager implements Notificatio
                     ((AnimatedFileDrawable) drawable).removeSecondParentView(imageView);
                 }
             }
+            imageView.setRoundRadius(0);
             container.removeView(imageView);
         }
 
@@ -874,7 +991,13 @@ public class ProfileGalleryView extends CircularViewPager implements Notificatio
 
         @Override
         public void notifyDataSetChanged() {
+            for (int i = 0; i < imageViews.size(); i++) {
+                if (imageViews.get(i) != null) {
+                    imageViews.get(i).getImageReceiver().cancelLoadImage();
+                }
+            }
             objects.clear();
+            imageViews.clear();
             for (int a = 0, N = imagesLocations.size() + getExtraCount() * 2; a < N; a++) {
                 objects.add(new Item());
                 imageViews.add(null);
@@ -890,6 +1013,46 @@ public class ProfileGalleryView extends CircularViewPager implements Notificatio
             } else {
                 return 0;
             }
+        }
+    }
+
+    public void setData(long dialogId) {
+        if (this.dialogId == dialogId) {
+            resetCurrentItem();
+            return;
+        }
+        reset();
+        this.dialogId = dialogId;
+        MessagesController.getInstance(currentAccount).loadDialogPhotos((int) dialogId, 80, 0, true, parentClassGuid);
+    }
+
+    private void reset() {
+        videoFileNames.clear();
+        thumbsFileNames.clear();
+        photos.clear();
+        videoLocations.clear();
+        imagesLocations.clear();
+        thumbsLocations.clear();
+        imagesLocationsSizes.clear();
+        adapter.notifyDataSetChanged();
+        resetCurrentItem();
+    }
+
+    public void setRoundRadius(int topRadius, int bottomRadius) {
+        this.roundTopRadius = topRadius;
+        this.roundBottomRadius = bottomRadius;
+        if (adapter != null) {
+            for (int i = 0; i < adapter.objects.size(); i++) {
+                if (adapter.objects.get(i).imageView != null) {
+                    adapter.objects.get(i).imageView.setRoundRadius(roundTopRadius, roundTopRadius, roundBottomRadius, roundBottomRadius);
+                }
+            }
+        }
+    }
+
+    public void setParentAvatarImage(BackupImageView parentImageView) {
+        if (adapter != null) {
+            adapter.parentAvatarImageView = parentImageView;
         }
     }
 }

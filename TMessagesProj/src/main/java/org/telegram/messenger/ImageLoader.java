@@ -1398,7 +1398,7 @@ public class ImageLoader {
         }
     }
 
-    private static Bitmap getStrippedPhotoBitmap(byte[] photoBytes, String filter) {
+    public static Bitmap getStrippedPhotoBitmap(byte[] photoBytes, String filter) {
         int len = photoBytes.length - 3 + Bitmaps.header.length + Bitmaps.footer.length;
         byte[] bytes = bytesLocal.get();
         byte[] data = bytes != null && bytes.length >= len ? bytes : null;

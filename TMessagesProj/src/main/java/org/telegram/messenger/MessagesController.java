@@ -3165,7 +3165,7 @@ public class MessagesController extends BaseController implements NotificationCe
         final SparseArray<TLRPC.ChannelParticipant> array1 = new SparseArray<>(participants.participants.size());
         for (int a = 0; a < participants.participants.size(); a++) {
             TLRPC.ChannelParticipant participant = participants.participants.get(a);
-            array1.put(participant.user_id, participant);
+            array1.put(MessageObject.getPeerId(participant.peer), participant);
         }
         processLoadedChannelAdmins(array1, chatId, false);
     }
@@ -3867,13 +3867,17 @@ public class MessagesController extends BaseController implements NotificationCe
         });
     }
 
-    public void setUserBannedRole(final int chatId, TLRPC.User user, TLRPC.TL_chatBannedRights rights, final boolean isChannel, final BaseFragment parentFragment) {
-        if (user == null || rights == null) {
+    public void setParticipantBannedRole(final int chatId, TLRPC.User user, TLRPC.Chat chat, TLRPC.TL_chatBannedRights rights, final boolean isChannel, final BaseFragment parentFragment) {
+        if (user == null && chat == null || rights == null) {
             return;
         }
         final TLRPC.TL_channels_editBanned req = new TLRPC.TL_channels_editBanned();
         req.channel = getInputChannel(chatId);
-        req.user_id = getInputUser(user);
+        if (user != null) {
+            req.participant = getInputPeer(user);
+        } else {
+            req.participant = getInputPeer(chat);
+        }
         req.banned_rights = rights;
         getConnectionsManager().sendRequest(req, (response, error) -> {
             if (error == null) {
@@ -4691,7 +4695,7 @@ public class MessagesController extends BaseController implements NotificationCe
             if (onlyHistory == 0 || onlyHistory == 3) {
                 getNotificationCenter().postNotificationName(NotificationCenter.dialogDeleted, did);
                 getNotificationsController().deleteNotificationChannel(did);
-                JoinCallAlert.processDeletedChat(did);
+                JoinCallAlert.processDeletedChat(currentAccount, did);
             }
             if (onlyHistory == 0) {
                 getMediaDataController().cleanDraft(did, 0, false);
@@ -4944,7 +4948,8 @@ public class MessagesController extends BaseController implements NotificationCe
             if (error == null) {
                 TLRPC.TL_channels_channelParticipants res = (TLRPC.TL_channels_channelParticipants) response;
                 putUsers(res.users, false);
-                getMessagesStorage().putUsersAndChats(res.users, null, true, true);
+                putChats(res.chats, false);
+                getMessagesStorage().putUsersAndChats(res.users, res.chats, true, true);
                 getMessagesStorage().updateChannelUsers(chat_id, res.participants);
                 loadedFullParticipants.add(chat_id);
             }
@@ -9028,33 +9033,38 @@ public class MessagesController extends BaseController implements NotificationCe
         });
     }
 
-    public void deleteUserFromChat(final int chat_id, final TLRPC.User user, final TLRPC.ChatFull info) {
-        deleteUserFromChat(chat_id, user, info, false, false);
+    public void deleteParticipantFromChat(int chat_id, TLRPC.User user, TLRPC.ChatFull info) {
+        deleteParticipantFromChat(chat_id, user, null, info, false, false);
     }
 
-    public void deleteUserFromChat(final int chat_id, final TLRPC.User user, final TLRPC.ChatFull info, boolean forceDelete, boolean revoke) {
-        if (user == null) {
+    public void deleteParticipantFromChat(int chat_id, TLRPC.User user, TLRPC.Chat chat, TLRPC.ChatFull info, boolean forceDelete, boolean revoke) {
+        if (user == null && chat == null) {
             return;
         }
-        final TLRPC.InputUser inputUser = getInputUser(user);
+        TLRPC.InputPeer inputPeer;
+        if (user != null) {
+            inputPeer = getInputPeer(user);
+        } else {
+            inputPeer = getInputPeer(chat);
+        }
         TLObject request;
-        TLRPC.Chat chat = getChat(chat_id);
-        final boolean isChannel = ChatObject.isChannel(chat);
+        TLRPC.Chat ownerChat = getChat(chat_id);
+        final boolean isChannel = ChatObject.isChannel(ownerChat);
         if (isChannel) {
-            if (inputUser instanceof TLRPC.TL_inputUserSelf) {
-                if (chat.creator && forceDelete) {
+            if (UserObject.isUserSelf(user)) {
+                if (ownerChat.creator && forceDelete) {
                     TLRPC.TL_channels_deleteChannel req = new TLRPC.TL_channels_deleteChannel();
-                    req.channel = getInputChannel(chat);
+                    req.channel = getInputChannel(ownerChat);
                     request = req;
                 } else {
                     TLRPC.TL_channels_leaveChannel req = new TLRPC.TL_channels_leaveChannel();
-                    req.channel = getInputChannel(chat);
+                    req.channel = getInputChannel(ownerChat);
                     request = req;
                 }
             } else {
                 TLRPC.TL_channels_editBanned req = new TLRPC.TL_channels_editBanned();
-                req.channel = getInputChannel(chat);
-                req.user_id = inputUser;
+                req.channel = getInputChannel(ownerChat);
+                req.participant = inputPeer;
                 req.banned_rights = new TLRPC.TL_chatBannedRights();
                 req.banned_rights.view_messages = true;
                 req.banned_rights.send_media = true;
@@ -9085,7 +9095,7 @@ public class MessagesController extends BaseController implements NotificationCe
             req.revoke_history = true;
             request = req;
         }
-        if (user.id == getUserConfig().getClientUserId()) {
+        if (UserObject.isUserSelf(user)) {
             deleteDialog(-chat_id, 0, revoke);
         }
         getConnectionsManager().sendRequest(request, (response, error) -> {
@@ -9094,7 +9104,7 @@ public class MessagesController extends BaseController implements NotificationCe
             }
             final TLRPC.Updates updates = (TLRPC.Updates) response;
             processUpdates(updates, false);
-            if (isChannel && !(inputUser instanceof TLRPC.TL_inputUserSelf)) {
+            if (isChannel && !UserObject.isUserSelf(user)) {
                 AndroidUtilities.runOnUIThread(() -> loadFullChat(chat_id, 0, true), 1000);
             }
         }, ConnectionsManager.RequestFlagInvokeAfter);
@@ -10647,15 +10657,18 @@ public class MessagesController extends BaseController implements NotificationCe
         gettingChatInviters.put(chatId, true);
         TLRPC.TL_channels_getParticipant req = new TLRPC.TL_channels_getParticipant();
         req.channel = getInputChannel(chatId);
-        req.user_id = new TLRPC.TL_inputUserSelf();
+        req.participant = getInputPeer(getUserConfig().getClientUserId());
         getConnectionsManager().sendRequest(req, (response, error) -> {
             final TLRPC.TL_channels_channelParticipant res = (TLRPC.TL_channels_channelParticipant) response;
             if (res != null && res.participant instanceof TLRPC.TL_channelParticipantSelf && res.participant.inviter_id != getUserConfig().getClientUserId()) {
                 if (chat.megagroup && getMessagesStorage().isMigratedChat(chat.id)) {
                     return;
                 }
-                AndroidUtilities.runOnUIThread(() -> putUsers(res.users, false));
-                getMessagesStorage().putUsersAndChats(res.users, null, true, true);
+                AndroidUtilities.runOnUIThread(() -> {
+                    putUsers(res.users, false);
+                    putChats(res.chats, false);
+                });
+                getMessagesStorage().putUsersAndChats(res.users, res.chats, true, true);
 
                 ArrayList<MessageObject> pushMessages;
                 if (createMessage && !getMessagesStorage().hasInviteMeMessage(chatId)) {

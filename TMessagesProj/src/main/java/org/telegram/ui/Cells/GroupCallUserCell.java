@@ -46,6 +46,7 @@ import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RLottieDrawable;
 import org.telegram.ui.Components.RLottieImageView;
 import org.telegram.ui.Components.WaveDrawable;
+import org.telegram.ui.ProfileActivity;
 
 import java.util.ArrayList;
 
@@ -135,6 +136,36 @@ public class GroupCallUserCell extends FrameLayout {
     private Drawable speakingDrawable;
 
     private AnimatorSet animatorSet;
+
+    private float progressToAvatarPreview;
+
+    public void setProgressToAvatarPreview(float progressToAvatarPreview) {
+        this.progressToAvatarPreview = progressToAvatarPreview;
+        nameTextView.setTranslationX((LocaleController.isRTL ? AndroidUtilities.dp(53) : -AndroidUtilities.dp(53)) * progressToAvatarPreview);
+        for (int i = 0; i < statusTextView.length; i++) {
+            if (!TextUtils.isEmpty(statusTextView[4].getText()) && statusTextView[4].getLineCount() > 1) {
+                statusTextView[i].setFullLayoutAdditionalWidth(AndroidUtilities.dp(92), LocaleController.isRTL ? AndroidUtilities.dp(48) : AndroidUtilities.dp(53));
+                statusTextView[i].setFullAlpha(progressToAvatarPreview);
+                statusTextView[i].setTranslationX(0);
+                statusTextView[i].invalidate();
+            } else {
+                statusTextView[i].setTranslationX((LocaleController.isRTL ? AndroidUtilities.dp(53) : -AndroidUtilities.dp(53)) * progressToAvatarPreview);
+                statusTextView[i].setFullLayoutAdditionalWidth(0, 0);
+            }
+        }
+        avatarImageView.setAlpha(progressToAvatarPreview == 0 ? 1f : 0);
+        avatarWavesDrawable.setShowWaves(isSpeaking && progressToAvatarPreview == 0, this);
+
+
+        muteButton.setAlpha(1f - progressToAvatarPreview);
+        muteButton.setScaleX(0.6f + 0.4f * (1f - progressToAvatarPreview));
+        muteButton.setScaleY(0.6f + 0.4f * (1f - progressToAvatarPreview));
+        invalidate();
+    }
+
+    public AvatarWavesDrawable getAvatarWavesDrawable() {
+        return avatarWavesDrawable;
+    }
 
     private static class VerifiedDrawable extends Drawable {
 
@@ -342,6 +373,10 @@ public class GroupCallUserCell extends FrameLayout {
         return nameTextView.getText();
     }
 
+    public boolean hasAvatarSet() {
+        return avatarImageView.getImageReceiver().hasNotThumb();
+    }
+
     public void setData(AccountInstance account, TLRPC.TL_groupCallParticipant groupCallParticipant, ChatObject.Call call, int self) {
         currentCall = call;
         accountInstance = account;
@@ -441,6 +476,7 @@ public class GroupCallUserCell extends FrameLayout {
             progress = 0;
         }
         statusTextView[4].setFullAlpha(progress);
+        statusTextView[4].setFullLayoutAdditionalWidth(0, 0);
         invalidate();
     }
 
@@ -510,6 +546,7 @@ public class GroupCallUserCell extends FrameLayout {
         int newStatus;
         currentIconGray = false;
         AndroidUtilities.cancelRunOnUIThread(checkRaiseRunnable);
+
         if (participant.muted && !isSpeaking || myted_by_me) {
             if (!participant.can_self_unmute || myted_by_me) {
                 if (newRaisedHand = !participant.can_self_unmute && participant.raise_hand_rating != 0) {
@@ -540,7 +577,16 @@ public class GroupCallUserCell extends FrameLayout {
                 currentIconGray = true;
             }
         }
-        if (hasAbout) {
+
+        if (isSelfUser()) {
+            statusTextView[4].setTextColor(Theme.getColor(Theme.key_voipgroup_listeningText));
+        } else {
+            statusTextView[4].setTextColor(Theme.getColor(grayIconColor));
+        }
+
+        if (isSelfUser()) {
+            statusTextView[4].setText(LocaleController.getString("ThisIsYou", R.string.ThisIsYou));
+        } else if (hasAbout) {
             statusTextView[4].setText(AndroidUtilities.replaceNewLines(participant.about));
         } else {
             statusTextView[4].setText("");
@@ -586,7 +632,9 @@ public class GroupCallUserCell extends FrameLayout {
                 statusTextView[1].setText(LocaleController.getString("Speaking", R.string.Speaking));
             }
         }
-        if (!animated || newStatus != currentStatus || somethingChanged) {
+        if (isSelfUser()) {
+            applyStatus(4);
+        } else if (!animated || newStatus != currentStatus || somethingChanged) {
             if (animated) {
                 if (animators == null) {
                     animators = new ArrayList<>();
@@ -620,7 +668,9 @@ public class GroupCallUserCell extends FrameLayout {
             animatorSet.addListener(new AnimatorListenerAdapter() {
                 @Override
                 public void onAnimationEnd(Animator animation) {
-                    applyStatus(newStatus);
+                    if (!isSelfUser()) {
+                        applyStatus(newStatus);
+                    }
                     animatorSet = null;
                 }
             });
@@ -672,7 +722,7 @@ public class GroupCallUserCell extends FrameLayout {
         if (!isSpeaking) {
             avatarWavesDrawable.setAmplitude(0);
         }
-        avatarWavesDrawable.setShowWaves(isSpeaking, this);
+        avatarWavesDrawable.setShowWaves(isSpeaking && progressToAvatarPreview == 0, this);
     }
 
     private void applyStatus(int newStatus) {
@@ -699,14 +749,20 @@ public class GroupCallUserCell extends FrameLayout {
     @Override
     protected void dispatchDraw(Canvas canvas) {
         if (needDivider) {
-            dividerPaint.setAlpha((int) ((1.0f - statusTextView[4].getFullAlpha()) * 255));
+            if (progressToAvatarPreview != 0) {
+                dividerPaint.setAlpha((int) ((1.0f - progressToAvatarPreview) * 255));
+            } else {
+                dividerPaint.setAlpha((int) ((1.0f - statusTextView[4].getFullAlpha()) * 255));
+            }
             canvas.drawLine(LocaleController.isRTL ? 0 : AndroidUtilities.dp(68), getMeasuredHeight() - 1, getMeasuredWidth() - (LocaleController.isRTL ? AndroidUtilities.dp(68) : 0), getMeasuredHeight() - 1, dividerPaint);
         }
         int cx = avatarImageView.getLeft() + avatarImageView.getMeasuredWidth() / 2;
         int cy = avatarImageView.getTop() + avatarImageView.getMeasuredHeight() / 2;
 
         avatarWavesDrawable.update();
-        avatarWavesDrawable.draw(canvas, cx, cy, this);
+        if (progressToAvatarPreview == 0) {
+            avatarWavesDrawable.draw(canvas, cx, cy, this);
+        }
 
         avatarImageView.setScaleX(avatarWavesDrawable.getAvatarScale());
         avatarImageView.setScaleY(avatarWavesDrawable.getAvatarScale());
@@ -810,7 +866,6 @@ public class GroupCallUserCell extends FrameLayout {
             if (wavesEnter != 0) {
                 parentView.invalidate();
             }
-
         }
 
         public float getAvatarScale() {
@@ -852,6 +907,10 @@ public class GroupCallUserCell extends FrameLayout {
             }
             invalidateColor = true;
         }
+    }
+
+    public BackupImageView getAvatarImageView() {
+        return avatarImageView;
     }
 
     @Override

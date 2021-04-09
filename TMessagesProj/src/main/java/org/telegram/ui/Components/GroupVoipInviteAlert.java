@@ -23,6 +23,7 @@ import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
@@ -308,9 +309,10 @@ public class GroupVoipInviteAlert extends UsersAlertBase {
                 if (error == null) {
                     TLRPC.TL_channels_channelParticipants res = (TLRPC.TL_channels_channelParticipants) response;
                     MessagesController.getInstance(currentAccount).putUsers(res.users, false);
+                    MessagesController.getInstance(currentAccount).putChats(res.chats, false);
                     int selfId = UserConfig.getInstance(currentAccount).getClientUserId();
                     for (int a = 0; a < res.participants.size(); a++) {
-                        if (res.participants.get(a).user_id == selfId) {
+                        if (MessageObject.getPeerId(res.participants.get(a).peer) == selfId) {
                             res.participants.remove(a);
                             break;
                         }
@@ -329,23 +331,24 @@ public class GroupVoipInviteAlert extends UsersAlertBase {
                     objects.addAll(res.participants);
                     for (int a = 0, size = res.participants.size(); a < size; a++) {
                         TLRPC.ChannelParticipant participant = res.participants.get(a);
-                        map.put(participant.user_id, participant);
+                        map.put(MessageObject.getPeerId(participant.peer), participant);
                     }
                     for (int a = 0, N = participants.size(); a < N; a++) {
                         TLRPC.ChannelParticipant participant = (TLRPC.ChannelParticipant) participants.get(a);
+                        int peerId = MessageObject.getPeerId(participant.peer);
                         boolean remove = false;
-                        if (contactsMap.get(participant.user_id) != null) {
+                        if (contactsMap.get(peerId) != null) {
                             remove = true;
-                        } else if (ignoredUsers != null && ignoredUsers.indexOfKey(participant.user_id) >= 0) {
+                        } else if (ignoredUsers != null && ignoredUsers.indexOfKey(peerId) >= 0) {
                             remove = true;
                         }
-                        TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(participant.user_id);
+                        TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(peerId);
                         if (user != null && user.bot) {
                             remove = true;
                         }
                         if (remove) {
                             participants.remove(a);
-                            participantsMap.remove(participant.user_id);
+                            participantsMap.remove(peerId);
                             a--;
                             N--;
                         }
@@ -356,8 +359,8 @@ public class GroupVoipInviteAlert extends UsersAlertBase {
                             Collections.sort(objects, (lhs, rhs) -> {
                                 TLRPC.ChannelParticipant p1 = (TLRPC.ChannelParticipant) lhs;
                                 TLRPC.ChannelParticipant p2 = (TLRPC.ChannelParticipant) rhs;
-                                TLRPC.User user1 = MessagesController.getInstance(currentAccount).getUser(p1.user_id);
-                                TLRPC.User user2 = MessagesController.getInstance(currentAccount).getUser(p2.user_id);
+                                TLRPC.User user1 = MessagesController.getInstance(currentAccount).getUser(MessageObject.getPeerId(p1.peer));
+                                TLRPC.User user2 = MessagesController.getInstance(currentAccount).getUser(MessageObject.getPeerId(p2.peer));
                                 int status1 = 0;
                                 int status2 = 0;
                                 if (user1 != null && user1.status != null) {
@@ -533,7 +536,7 @@ public class GroupVoipInviteAlert extends UsersAlertBase {
                                 if (o instanceof TLRPC.ChatParticipant) {
                                     userId = ((TLRPC.ChatParticipant) o).user_id;
                                 } else if (o instanceof TLRPC.ChannelParticipant) {
-                                    userId = ((TLRPC.ChannelParticipant) o).user_id;
+                                    userId = MessageObject.getPeerId(((TLRPC.ChannelParticipant) o).peer);
                                 } else {
                                     continue;
                                 }
@@ -682,7 +685,7 @@ public class GroupVoipInviteAlert extends UsersAlertBase {
                     if (object instanceof TLRPC.User) {
                         user = (TLRPC.User) object;
                     } else if (object instanceof TLRPC.ChannelParticipant) {
-                        user = MessagesController.getInstance(currentAccount).getUser(((TLRPC.ChannelParticipant) object).user_id);
+                        user = MessagesController.getInstance(currentAccount).getUser(MessageObject.getPeerId(((TLRPC.ChannelParticipant) object).peer));
                     } else if (object instanceof TLRPC.ChatParticipant) {
                         user = MessagesController.getInstance(currentAccount).getUser(((TLRPC.ChatParticipant) object).user_id);
                     } else {
@@ -876,7 +879,7 @@ public class GroupVoipInviteAlert extends UsersAlertBase {
                         userId = user.id;
                     } else if (item instanceof TLRPC.ChannelParticipant) {
                         TLRPC.ChannelParticipant participant = (TLRPC.ChannelParticipant) item;
-                        userId = participant.user_id;
+                        userId = MessageObject.getPeerId(participant.peer);
                     } else {
                         TLRPC.ChatParticipant participant = (TLRPC.ChatParticipant) item;
                         userId = participant.user_id;

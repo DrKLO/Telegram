@@ -659,6 +659,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
     private boolean swipeBackEnabled = true;
 
     public static Pattern publicMsgUrlPattern;
+    public static Pattern voiceChatUrlPattern;
     public static Pattern privateMsgUrlPattern;
     private boolean waitingForSendingMessageLoad;
     private ValueAnimator changeBoundAnimator;
@@ -3040,7 +3041,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         emptyViewContainer.setOnTouchListener((v, event) -> true);
 
         int distance = getArguments().getInt("nearby_distance", -1);
-        if ((distance >= 0 || preloadedGreetingsSticker != null) && currentUser != null) {
+        if ((distance >= 0 || preloadedGreetingsSticker != null) && currentUser != null && !userBlocked) {
             greetingsViewContainer = new ChatGreetingsView(context, currentUser, distance, currentAccount, preloadedGreetingsSticker);
             greetingsViewContainer.setListener((sticker) -> {
                 animatingDocuments.put(sticker, 0);
@@ -3066,7 +3067,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     emptyMessage = LocaleController.getString("NoScheduledMessages", R.string.NoScheduledMessages);
                 } else if (currentUser != null && currentUser.id != 777000 && currentUser.id != 429000 && currentUser.id != 4244000 && MessagesController.isSupportUser(currentUser)) {
                     emptyMessage = LocaleController.getString("GotAQuestion", R.string.GotAQuestion);
-                } else if (currentUser == null || currentUser.self || currentUser.deleted) {
+                } else if (currentUser == null || currentUser.self || currentUser.deleted || userBlocked) {
                     emptyMessage = LocaleController.getString("NoMessages", R.string.NoMessages);
                 }
                 if (emptyMessage == null) {
@@ -5499,7 +5500,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     int[] size = MessageObject.getInlineResultWidthAndHeight(result);
                     EmbedBottomSheet.show(getParentActivity(), result.title != null ? result.title : "", result.description, result.content.url, result.content.url, size[0], size[1], isKeyboardVisible());
                 } else {
-                    processExternalUrl(0, result.content.url);
+                    processExternalUrl(0, result.content.url, false);
                 }
             }
         }));
@@ -12070,7 +12071,20 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                                 }
                             }
                             if (!found) {
-                                BulletinFactory.of(this).createErrorBulletin(LocaleController.getString("MessageNotFound", R.string.MessageNotFound)).show();
+                                if (isThreadChat()) {
+                                    Bundle bundle = new Bundle();
+                                    if (currentEncryptedChat != null) {
+                                        bundle.putInt("enc_id", currentEncryptedChat.id);
+                                    } else if (currentChat != null) {
+                                        bundle.putInt("chat_id", currentChat.id);
+                                    } else {
+                                        bundle.putInt("user_id", currentUser.id);
+                                    }
+                                    bundle.putInt("message_id", postponedScrollMessageId);
+                                    presentFragment(new ChatActivity(bundle), true);
+                                } else {
+                                    BulletinFactory.of(this).createErrorBulletin(LocaleController.getString("MessageNotFound", R.string.MessageNotFound)).show();
+                                }
                                 return;
                             }
                             showScrollToMessageError = false;
@@ -17970,10 +17984,10 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
     }
 
     private void hideActionMode() {
-        if (!actionBar.isActionModeShowed()) {
-            return;
-        }
         if (actionBar != null) {
+            if (!actionBar.isActionModeShowed()) {
+                return;
+            }
             actionBar.hideActionMode();
         }
         cantDeleteMessagesCount = 0;
@@ -20521,22 +20535,22 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 presentFragment(fragment);
             }
         } else {
-            processExternalUrl(0, str);
+            processExternalUrl(0, str, false);
         }
     }
 
-    private void processExternalUrl(int type, String url) {
+    private void processExternalUrl(int type, String url, boolean forceAlert) {
         try {
             Uri uri = Uri.parse(url);
             String host = uri.getHost() != null ? uri.getHost().toLowerCase() : "";
-            if (getMessagesController().authDomains.contains(host)) {
+            if ((currentEncryptedChat == null || getMessagesController().secretWebpagePreview == 1) && getMessagesController().authDomains.contains(host)) {
                 getSendMessagesHelper().requestUrlAuth(url, this, type == 0 || type == 2);
                 return;
             }
         } catch (Exception e) {
             FileLog.e(e);
         }
-        if (AndroidUtilities.shouldShowUrlInAlert(url)) {
+        if (forceAlert || AndroidUtilities.shouldShowUrlInAlert(url)) {
             if (type == 0 || type == 2) {
                 AlertsCreator.showOpenUrlAlert(ChatActivity.this, url, true, true, true);
             } else if (type == 1) {
@@ -20689,7 +20703,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 builder.setTitle(urlFinal);
                 builder.setItems(new CharSequence[]{LocaleController.getString("Open", R.string.Open), LocaleController.getString("Copy", R.string.Copy)}, (dialog, which) -> {
                     if (which == 0) {
-                        processExternalUrl(1, urlFinal);
+                        processExternalUrl(1, urlFinal, false);
                     } else if (which == 1) {
                         String url1 = urlFinal;
                         boolean tel = false;
@@ -20709,10 +20723,12 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 });
                 showDialog(builder.create());
             } else {
+                boolean forceAlert = url instanceof URLSpanReplacement;
                 if (url instanceof URLSpanReplacement && (urlFinal == null || !urlFinal.startsWith("mailto:")) || AndroidUtilities.shouldShowUrlInAlert(urlFinal)) {
                     if (openLinkInternally(urlFinal, messageObject != null ? messageObject.getId() : 0)) {
                         return;
                     }
+                    forceAlert = true;
                 } else {
                     if (messageObject != null && messageObject.messageOwner.media instanceof TLRPC.TL_messageMediaWebPage && messageObject.messageOwner.media.webpage != null && messageObject.messageOwner.media.webpage.cached_page != null) {
                         String lowerUrl = urlFinal.toLowerCase();
@@ -20727,7 +20743,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                         return;
                     }
                 }
-                processExternalUrl(2, urlFinal);
+                processExternalUrl(2, urlFinal, forceAlert);
             }
         }
     }
@@ -21621,7 +21637,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                             hideFieldPanel(false);
                         }
                     } else {
-                        processExternalUrl(0, url);
+                        processExternalUrl(0, url, false);
                     }
                 });
             } else if (viewType == 4) {
@@ -22287,6 +22303,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             String username = currentChat.username.toLowerCase();
             if (publicMsgUrlPattern == null) {
                 publicMsgUrlPattern = Pattern.compile("(https://)?t.me/([0-9a-zA-Z_]+)/([0-9]+)");
+                voiceChatUrlPattern = Pattern.compile("(https://)?t.me/([0-9a-zA-Z_]+)\\?(voicechat+)");
             }
             Matcher matcher = publicMsgUrlPattern.matcher(urlFinal);
             if (matcher.find(2) && matcher.find(3) && username.equals(matcher.group(2).toLowerCase())) {
@@ -22325,6 +22342,21 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                         }
                         return true;
                     }
+                }
+            } else {
+                matcher = voiceChatUrlPattern.matcher(urlFinal);
+                try {
+                    if (matcher.find(2) && matcher.find(3) && username.equals(matcher.group(2).toLowerCase())) {
+                        Uri data = Uri.parse(urlFinal);
+                        String voicechat = data.getQueryParameter("voicechat");
+                        if (!TextUtils.isEmpty(voicechat)) {
+                            voiceChatHash = voicechat;
+                            checkGroupCallJoin(true);
+                            return true;
+                        }
+                    }
+                } catch (Exception e) {
+                    FileLog.e(e);
                 }
             }
         } else {

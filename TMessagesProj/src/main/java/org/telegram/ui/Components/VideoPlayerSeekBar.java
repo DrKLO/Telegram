@@ -57,6 +57,9 @@ public class VideoPlayerSeekBar {
     private int horizontalPadding;
     private int smallLineColor;
 
+    private int fromThumbX = 0;
+    private float animateThumbProgress = 1f;
+
     public VideoPlayerSeekBar(View parent) {
         if (paint == null) {
             paint = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -129,13 +132,21 @@ public class VideoPlayerSeekBar {
         this.smallLineColor = smallLineColor;
     }
 
-    public void setProgress(float progress) {
+    public void setProgress(float progress, boolean animated) {
+        if (animated) {
+            animateThumbProgress = 0;
+            fromThumbX = thumbX;
+        }
         thumbX = (int) Math.ceil((width - thumbWidth) * progress);
         if (thumbX < 0) {
             thumbX = 0;
         } else if (thumbX > width - thumbWidth) {
             thumbX = width - thumbWidth;
         }
+    }
+
+    public void setProgress(float progress) {
+        setProgress(progress, false);
     }
 
     public void setBufferedProgress(float value) {
@@ -187,12 +198,23 @@ public class VideoPlayerSeekBar {
         this.horizontalPadding = horizontalPadding;
     }
 
-    public void draw(Canvas canvas) {
+    public void draw(Canvas canvas, View view) {
         final float radius = AndroidUtilities.lerp(thumbWidth / 2f, smallLineHeight / 2f, transitionProgress);
         rect.left = horizontalPadding + AndroidUtilities.lerp(thumbWidth / 2f, 0, transitionProgress);
         rect.top = AndroidUtilities.lerp((height - lineHeight) / 2f, height - AndroidUtilities.dp(3) - smallLineHeight, transitionProgress);
         rect.bottom = AndroidUtilities.lerp((height + lineHeight) / 2f, height - AndroidUtilities.dp(3), transitionProgress);
 
+        float currentThumbX = thumbX;
+        if (animateThumbProgress != 1f) {
+            animateThumbProgress += 16 / 150f;
+            if (animateThumbProgress >= 1f) {
+                animateThumbProgress = 1f;
+            } else {
+                view.invalidate();
+                float progressInterpolated = CubicBezierInterpolator.DEFAULT.getInterpolation(animateThumbProgress);
+                currentThumbX = fromThumbX * (1f - progressInterpolated) + thumbX * progressInterpolated;
+            }
+        }
         // background
         rect.right = horizontalPadding + AndroidUtilities.lerp(width - thumbWidth / 2f, parentView.getWidth() - horizontalPadding * 2f, transitionProgress);
         setPaintColor(selected ? backgroundSelectedColor : backgroundColor, 1f - transitionProgress);
@@ -206,7 +228,7 @@ public class VideoPlayerSeekBar {
         }
 
         // progress
-        rect.right = horizontalPadding + AndroidUtilities.lerp(thumbWidth / 2f + (pressed ? draggingThumbX : thumbX), (parentView.getWidth() - horizontalPadding * 2f) * getProgress(), transitionProgress);
+        rect.right = horizontalPadding + AndroidUtilities.lerp(thumbWidth / 2f + (pressed ? draggingThumbX : currentThumbX), (parentView.getWidth() - horizontalPadding * 2f) * getProgress(), transitionProgress);
         if (transitionProgress > 0f && rect.width() > 0) {
             // progress stroke
             strokePaint.setAlpha((int) (transitionProgress * 255 * 0.2f));

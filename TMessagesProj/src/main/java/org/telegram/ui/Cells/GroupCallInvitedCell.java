@@ -112,6 +112,10 @@ public class GroupCallInvitedCell extends FrameLayout {
         return currentUser;
     }
 
+    public boolean hasAvatarSet() {
+        return avatarImageView.getImageReceiver().hasNotThumb();
+    }
+
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         super.onMeasure(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(58), MeasureSpec.EXACTLY));

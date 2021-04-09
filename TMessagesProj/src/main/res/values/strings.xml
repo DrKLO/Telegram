@@ -3472,7 +3472,7 @@
     <string name="VoipGroupEnd">End</string>
     <string name="VoipGroupMuteMemberAlertTitle">Mute microphone</string>
     <string name="VoipGroupMuteMemberAlertText">Are you sure you want to mute **%1$s** in this voice chat?</string>
-    <string name="VoipGroupRemoveMemberAlertTitle">Remove member</string>
+    <string name="VoipGroupRemoveMemberAlertTitle2">Remove participant</string>
     <string name="VoipGroupRemoveMemberAlertText2">Do you want to remove %1$s from the voice chat and ban them in %2$s?</string>
     <string name="VoipGroupRemovedFromGroup">**%1$s** removed from the group.</string>
     <string name="VoipGroupUserCanNowSpeak">**%1$s** can now speak.</string>
@@ -3551,6 +3551,8 @@
     <string name="VoipGroupJoinAsLinstener">JOIN AS LISTENER</string>
     <string name="VoipGroupJoinVoiceChatUrl">Join Voice Chat</string>
     <string name="VoipGroupJoinAnonymouseAlert">Are sure you want to appear in this voice chat as your personal account?</string>
+    <string name="VoipGroupSoundMuted">Voice chat sound muted.</string>
+    <string name="VoipGroupSoundUnmuted">Voice chat sound unmuted.</string>
     <!--invite links-->
     <string name="ManageInviteLinks">Manage Invite Links</string>
     <string name="ManageLinksInfoHelp">You can create additional invite links that have a limited time or number of uses</string>
@@ -4320,4 +4322,6 @@
     <string name="SwipeUnpin">Unpin</string>
     <string name="SwipePin">Pin</string>
     <string name="CancelForwarding">Cancel Forwarding</string>
+    <string name="ThisIsYou">this is you</string>
+    <string name="VoipGroupOpenChat">Open Chat</string>
 </resources>

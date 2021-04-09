@@ -12,6 +12,7 @@ extern "C" {
 #include <string>
 #include <set>
 #include <map>
+#include <stdint.h>
 
 namespace tgcalls {
 
@@ -288,6 +289,10 @@ public:
     }
 
 private:
+    static int16_t sampleFloatToInt16(float sample) {
+      return av_clip_int16 (static_cast<int32_t>(lrint(sample*32767)));
+    }
+
     void fillPcmBuffer() {
         _pcmBufferSampleSize = 0;
         _pcmBufferSampleOffset = 0;
@@ -356,7 +361,7 @@ private:
         case AV_SAMPLE_FMT_FLT: {
 			float *floatData = (float *)&_frame->data[0];
 			for (int i = 0; i < _frame->nb_samples * _frame->channels; i++) {
-				_pcmBuffer[i] = (int16_t)(floatData[i] * INT16_MAX);
+				_pcmBuffer[i] = sampleFloatToInt16(floatData[i]);
 			}
         } break;
 
@@ -365,7 +370,7 @@ private:
 			for (int sample = 0; sample < _frame->nb_samples; ++sample) {
 				for (int channel = 0; channel < _frame->channels; ++channel) {
 					float *floatChannel = (float*)_frame->data[channel];
-					*to++ = (int16_t)(floatChannel[sample] * INT16_MAX);
+					*to++ = sampleFloatToInt16(floatChannel[sample]);
 				}
 			}
         } break;

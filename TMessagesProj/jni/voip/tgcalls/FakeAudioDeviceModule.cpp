@@ -6,6 +6,8 @@
 #include "rtc_base/time_utils.h"
 
 #include <thread>
+#include <mutex>
+#include <condition_variable>
 
 namespace tgcalls {
 class FakeAudioDeviceModuleImpl : public webrtc::webrtc_impl::AudioDeviceModuleDefault<webrtc::AudioDeviceModule> {
@@ -19,7 +21,20 @@ class FakeAudioDeviceModuleImpl : public webrtc::webrtc_impl::AudioDeviceModuleD
 
   FakeAudioDeviceModuleImpl(webrtc::TaskQueueFactory*, FakeAudioDeviceModule::Options options,
                             std::shared_ptr<FakeAudioDeviceModule::Renderer> renderer)
-      : num_channels_{options.num_channels}, samples_per_sec_{options.samples_per_sec}, renderer_(std::move(renderer)) {
+      : num_channels_{options.num_channels}, samples_per_sec_{options.samples_per_sec}, scheduler_(options.scheduler_), renderer_(std::move(renderer)) {
+    if (!scheduler_) {
+      scheduler_ = [](auto f)  {
+        std::thread([f = std::move(f)]() {
+          while (true)  {
+            double wait = f();
+            if (wait < 0) {
+              return;
+            }
+            std::this_thread::sleep_for(std::chrono::microseconds (static_cast<int64_t>(wait * 1000000)));
+          }
+        }).detach();
+      };
+    }
     RTC_CHECK(num_channels_ == 1 || num_channels_ == 2);
     auto good_sample_rate = [](size_t sr) {
       return sr == 8000 || sr == 16000 || sr == 32000 || sr == 44100 || sr == 48000;
@@ -65,22 +80,22 @@ class FakeAudioDeviceModuleImpl : public webrtc::webrtc_impl::AudioDeviceModuleD
   }
 
   int32_t RegisterAudioCallback(webrtc::AudioTransport* callback) override {
-    webrtc::MutexLock lock(&lock_);
+    std::unique_lock<std::mutex> lock(mutex_);
     audio_callback_ = callback;
     return 0;
   }
 
   int32_t StartPlayout() override {
-    webrtc::MutexLock lock(&lock_);
+    std::unique_lock<std::mutex> lock(mutex_);
     RTC_CHECK(renderer_);
     if (rendering_) {
       return 0;
     }
+    need_rendering_ = true;
     rendering_ = true;
-    renderThread_ = std::make_unique<rtc::PlatformThread>(
-        RenderThreadFunction, this, "webrtc_fake_audio_module_capture_thread", rtc::kRealtimePriority);
-    renderThread_->Start();
-
+    scheduler_([this]{
+      return Render() / 1000000.0;
+    });
     return 0;
   }
 
@@ -88,15 +103,11 @@ class FakeAudioDeviceModuleImpl : public webrtc::webrtc_impl::AudioDeviceModuleD
     if (!rendering_) {
       return 0;
     }
-    decltype(renderThread_) thread;
 
-    {
-      webrtc::MutexLock lock(&lock_);
-      thread = std::move(renderThread_);
-      rendering_ = false;
-    }
+    need_rendering_ = false;
+    std::unique_lock<std::mutex> lock(mutex_);
+    cond_.wait(lock, [this]{ return !rendering_; });
 
-    thread->Stop();
     return 0;
   }
 
@@ -105,22 +116,15 @@ class FakeAudioDeviceModuleImpl : public webrtc::webrtc_impl::AudioDeviceModuleD
   }
 
  private:
-  static void RenderThreadFunction(void* pThis) {
-    auto* device = static_cast<FakeAudioDeviceModuleImpl*>(pThis);
-    while (true) {
-      int wait_for_us = device->Render();
-      if (wait_for_us < 0) {
-        break;
-      }
-      std::this_thread::sleep_for(std::chrono::microseconds(wait_for_us));
-    }
-  }
 
   int32_t Render() {
-    webrtc::MutexLock lock(&lock_);
-    if (!rendering_) {
+    std::unique_lock<std::mutex> lock(mutex_);
+    if (!need_rendering_) {
+      rendering_ = false;
+      cond_.notify_all();
       return -1;
     }
+
     size_t samples_out = 0;
     int64_t elapsed_time_ms = -1;
     int64_t ntp_time_ms = -1;
@@ -157,13 +161,17 @@ class FakeAudioDeviceModuleImpl : public webrtc::webrtc_impl::AudioDeviceModuleD
   const uint32_t samples_per_sec_;
   size_t samples_per_frame_{0};
 
-  mutable webrtc::Mutex lock_;
+  std::function<void(FakeAudioDeviceModule::Task)> scheduler_;
+
+  mutable std::mutex mutex_;
+  std::atomic<bool> need_rendering_{false};
   std::atomic<bool> rendering_{false};
+  std::condition_variable cond_;
   std::unique_ptr<rtc::PlatformThread> renderThread_;
 
   webrtc::AudioTransport* audio_callback_{nullptr};
-  const std::shared_ptr<FakeAudioDeviceModule::Renderer> renderer_ RTC_GUARDED_BY(lock_);
-  std::vector<int16_t> playout_buffer_ RTC_GUARDED_BY(lock_);
+  const std::shared_ptr<FakeAudioDeviceModule::Renderer> renderer_;
+  std::vector<int16_t> playout_buffer_;
 };
 
 std::function<rtc::scoped_refptr<webrtc::AudioDeviceModule>(webrtc::TaskQueueFactory*)> FakeAudioDeviceModule::Creator(

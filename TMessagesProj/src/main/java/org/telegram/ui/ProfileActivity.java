@@ -479,7 +479,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     };
     private boolean fragmentOpened;
 
-    public class AvatarImageView extends BackupImageView {
+    public static class AvatarImageView extends BackupImageView {
 
         private final RectF rect = new RectF();
         private final Paint placeholderPaint;
@@ -487,6 +487,12 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         private ImageReceiver foregroundImageReceiver;
         private float foregroundAlpha;
         private ImageReceiver.BitmapHolder drawableHolder;
+
+        ProfileGalleryView avatarsViewPager;
+
+        public void setAvatarsViewPager(ProfileGalleryView avatarsViewPager) {
+            this.avatarsViewPager = avatarsViewPager;
+        }
 
         public AvatarImageView(Context context) {
             super(context);
@@ -526,7 +532,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         public void clearForeground() {
             AnimatedFileDrawable drawable = foregroundImageReceiver.getAnimation();
             if (drawable != null) {
-                drawable.removeSecondParentView(avatarImage);
+                drawable.removeSecondParentView(this);
             }
             foregroundImageReceiver.clearImage();
             if (drawableHolder != null) {
@@ -2645,7 +2651,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                                 SharedConfig.pauseMusicOnRecord ? LocaleController.getString("DebugMenuDisablePauseMusic", R.string.DebugMenuDisablePauseMusic) : LocaleController.getString("DebugMenuEnablePauseMusic", R.string.DebugMenuEnablePauseMusic),
                                 BuildVars.DEBUG_VERSION && !AndroidUtilities.isTablet() && Build.VERSION.SDK_INT >= 23 ? (SharedConfig.smoothKeyboard ? LocaleController.getString("DebugMenuDisableSmoothKeyboard", R.string.DebugMenuDisableSmoothKeyboard) : LocaleController.getString("DebugMenuEnableSmoothKeyboard", R.string.DebugMenuEnableSmoothKeyboard)) : null,
                                 BuildVars.DEBUG_PRIVATE_VERSION ? (SharedConfig.disableVoiceAudioEffects ? "Enable voip audio effects" : "Disable voip audio effects") : null,
-                                Build.VERSION.SDK_INT >= 21 ? (SharedConfig.noStatusBar ? "Show status bar background" : "Hide status bar background") : null
+                                Build.VERSION.SDK_INT >= 21 ? (SharedConfig.noStatusBar ? "Show status bar background" : "Hide status bar background") : null,
+                                SharedConfig.useMediaStream ? "Use call stream in voice chats" : "User media stream in voice chats"
                         };
                         builder.setItems(items, (dialog, which) -> {
                             if (which == 0) {
@@ -2700,6 +2707,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                                         getParentActivity().getWindow().setStatusBarColor(0x33000000);
                                     }
                                 }
+                            } else if (which == 15) {
+                                SharedConfig.toggleUseMediaStream();
                             }
                         });
                         builder.setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null);
@@ -2813,7 +2822,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             if (currentChannelParticipant == null) {
                 TLRPC.TL_channels_getParticipant req = new TLRPC.TL_channels_getParticipant();
                 req.channel = MessagesController.getInputChannel(chat);
-                req.user_id = getMessagesController().getInputUser(user_id);
+                req.participant = getMessagesController().getInputPeer(user_id);
                 getConnectionsManager().sendRequest(req, (response, error) -> {
                     if (response != null) {
                         AndroidUtilities.runOnUIThread(() -> currentChannelParticipant = ((TLRPC.TL_channels_channelParticipant) response).participant);
@@ -2963,6 +2972,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         avatarsViewPager.setChatInfo(chatInfo);
         avatarContainer2.addView(avatarsViewPager);
         avatarContainer2.addView(overlaysView);
+        avatarImage.setAvatarsViewPager(avatarsViewPager);
 
         avatarsViewPagerIndicatorView = new PagerIndicatorView(context);
         avatarContainer2.addView(avatarsViewPagerIndicatorView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
@@ -3460,7 +3470,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                             channelParticipant1.channelParticipant = new TLRPC.TL_channelParticipant();
                         }
                         channelParticipant1.channelParticipant.inviter_id = getUserConfig().getClientUserId();
-                        channelParticipant1.channelParticipant.user_id = participant.user_id;
+                        channelParticipant1.channelParticipant.peer = new TLRPC.TL_peerUser();
+                        channelParticipant1.channelParticipant.peer.user_id = participant.user_id;
                         channelParticipant1.channelParticipant.date = participant.date;
                         channelParticipant1.channelParticipant.banned_rights = rightsBanned;
                         channelParticipant1.channelParticipant.admin_rights = rightsAdmin;
@@ -3489,7 +3500,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                             boolean changed = false;
                             for (int a = 0; a < chatInfo.participants.participants.size(); a++) {
                                 TLRPC.ChannelParticipant p = ((TLRPC.TL_chatChannelParticipant) chatInfo.participants.participants.get(a)).channelParticipant;
-                                if (p.user_id == participant.user_id) {
+                                if (MessageObject.getPeerId(p.peer) == participant.user_id) {
                                     chatInfo.participants_count--;
                                     chatInfo.participants.participants.remove(a);
                                     changed = true;
@@ -3665,20 +3676,21 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             if (error == null) {
                 TLRPC.TL_channels_channelParticipants res = (TLRPC.TL_channels_channelParticipants) response;
                 getMessagesController().putUsers(res.users, false);
+                getMessagesController().putChats(res.chats, false);
                 if (res.users.size() < 200) {
                     usersEndReached = true;
                 }
                 if (req.offset == 0) {
                     participantsMap.clear();
                     chatInfo.participants = new TLRPC.TL_chatParticipants();
-                    getMessagesStorage().putUsersAndChats(res.users, null, true, true);
+                    getMessagesStorage().putUsersAndChats(res.users, res.chats, true, true);
                     getMessagesStorage().updateChannelUsers(chat_id, res.participants);
                 }
                 for (int a = 0; a < res.participants.size(); a++) {
                     TLRPC.TL_chatChannelParticipant participant = new TLRPC.TL_chatChannelParticipant();
                     participant.channelParticipant = res.participants.get(a);
                     participant.inviter_id = participant.channelParticipant.inviter_id;
-                    participant.user_id = participant.channelParticipant.user_id;
+                    participant.user_id = MessageObject.getPeerId(participant.channelParticipant.peer);
                     participant.date = participant.channelParticipant.date;
                     if (participantsMap.indexOfKey(participant.user_id) < 0) {
                         if (chatInfo.participants == null) {
@@ -3879,7 +3891,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                         TLRPC.TL_chatChannelParticipant channelParticipant1 = new TLRPC.TL_chatChannelParticipant();
                         channelParticipant1.channelParticipant = new TLRPC.TL_channelParticipant();
                         channelParticipant1.channelParticipant.inviter_id = getUserConfig().getClientUserId();
-                        channelParticipant1.channelParticipant.user_id = user.id;
+                        channelParticipant1.channelParticipant.peer = new TLRPC.TL_peerUser();
+                        channelParticipant1.channelParticipant.peer.user_id = user.id;
                         channelParticipant1.channelParticipant.date = getConnectionsManager().getCurrentTime();
                         channelParticipant1.user_id = user.id;
                         chatInfo.participants.participants.add(channelParticipant1);
@@ -5116,7 +5129,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     private void kickUser(int uid, TLRPC.ChatParticipant participant) {
         if (uid != 0) {
             TLRPC.User user = getMessagesController().getUser(uid);
-            getMessagesController().deleteUserFromChat(chat_id, user, chatInfo);
+            getMessagesController().deleteParticipantFromChat(chat_id, user, chatInfo);
             if (currentChat != null && user != null && BulletinFactory.canShowBulletin(this)) {
                 BulletinFactory.createRemoveFromChatBulletin(this, user, currentChat.title).show();
             }
@@ -5130,7 +5143,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             } else {
                 getNotificationCenter().postNotificationName(NotificationCenter.closeChats);
             }
-            getMessagesController().deleteUserFromChat(chat_id, getMessagesController().getUser(getUserConfig().getClientUserId()), chatInfo);
+            getMessagesController().deleteParticipantFromChat(chat_id, getMessagesController().getUser(getUserConfig().getClientUserId()), chatInfo);
             playProfileAnimation = 0;
             finishFragment();
         }

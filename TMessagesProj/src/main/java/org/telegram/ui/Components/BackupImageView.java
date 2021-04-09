@@ -135,6 +135,11 @@ public class BackupImageView extends View {
         invalidate();
     }
 
+    public void setRoundRadius(int tl, int tr, int bl, int br) {
+        imageReceiver.setRoundRadius(tl, tr, bl ,br);
+        invalidate();
+    }
+
     public int[] getRoundRadius() {
         return imageReceiver.getRoundRadius();
     }

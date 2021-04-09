@@ -9288,7 +9288,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         forwardedNameLayout[1] = null;
         replyPanelIsForward = false;
         forwardedNameWidth = 0;
-        if (drawForwardedName && messageObject.needDrawForwarded() && (currentPosition == null || currentPosition.minY == 0)) {
+        if (messageObject.isForwarded()) {
             if (messageObject.messageOwner.fwd_from.from_id instanceof TLRPC.TL_peerChannel) {
                 currentForwardChannel = MessagesController.getInstance(currentAccount).getChat(messageObject.messageOwner.fwd_from.from_id.channel_id);
             } else if (messageObject.messageOwner.fwd_from.from_id instanceof TLRPC.TL_peerChat) {
@@ -9296,6 +9296,8 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             } else if (messageObject.messageOwner.fwd_from.from_id instanceof TLRPC.TL_peerUser) {
                 currentForwardUser = MessagesController.getInstance(currentAccount).getUser(messageObject.messageOwner.fwd_from.from_id.user_id);
             }
+        }
+        if (drawForwardedName && messageObject.needDrawForwarded() && (currentPosition == null || currentPosition.minY == 0)) {
             if (messageObject.messageOwner.fwd_from.from_name != null) {
                 currentForwardName = messageObject.messageOwner.fwd_from.from_name;
             }

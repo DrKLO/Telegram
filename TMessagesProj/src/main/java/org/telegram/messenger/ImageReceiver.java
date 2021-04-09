@@ -31,6 +31,8 @@ import org.telegram.ui.Components.RecyclableDrawable;
 
 import androidx.annotation.Keep;
 
+import com.google.android.exoplayer2.util.Log;
+
 public class ImageReceiver implements NotificationCenter.NotificationCenterDelegate {
 
     public interface ImageReceiverDelegate {
@@ -409,6 +411,9 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
             strippedLoc = strippedLocation;
         } else {
             strippedLoc = mediaLocation != null ? mediaLocation : imageLocation;
+        }
+        if (strippedLoc == null) {
+            strippedLoc = thumbLocation;
         }
 
         String thumbKey = thumbLocation != null ? thumbLocation.getKey(parentObject, strippedLoc, false) : null;

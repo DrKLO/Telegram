@@ -3966,6 +3966,9 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
         }
 
         float heightDiff = maxHeight - minHeight;
+        if (heightDiff == 0) {
+            heightDiff = 1;
+        }
 
         currentHeaderHeight = newHeight;
         float scale = 0.8f + (currentHeaderHeight - minHeight) / heightDiff * 0.2f;

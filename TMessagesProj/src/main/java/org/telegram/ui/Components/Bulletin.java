@@ -139,7 +139,7 @@ public final class Bulletin {
     }
 
     public Bulletin show() {
-        if (!showing) {
+        if (!showing && containerLayout != null) {
             showing = true;
 
             if (layout.getParent() != parentLayout) {

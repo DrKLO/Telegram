@@ -24,6 +24,7 @@ import android.widget.FrameLayout;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
 import org.telegram.tgnet.TLRPC;
@@ -314,7 +315,7 @@ public class AdminLogFilterAlert extends BottomSheet {
                         ((CheckBoxCell) holder.itemView).setChecked(false, true);
                     }
                     for (int a = 0; a < currentAdmins.size(); a++) {
-                        TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(currentAdmins.get(a).user_id);
+                        TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(MessageObject.getPeerId(currentAdmins.get(a).peer));
                         selectedAdmins.put(user.id, user);
                     }
                 }
@@ -465,7 +466,7 @@ public class AdminLogFilterAlert extends BottomSheet {
                 }
                 case 2: {
                     CheckBoxUserCell userCell = (CheckBoxUserCell) holder.itemView;
-                    int userId = currentAdmins.get(position - allAdminsRow - 1).user_id;
+                    int userId = MessageObject.getPeerId(currentAdmins.get(position - allAdminsRow - 1).peer);
                     userCell.setChecked(selectedAdmins == null || selectedAdmins.indexOfKey(userId) >= 0, false);
                     break;
                 }
@@ -510,7 +511,7 @@ public class AdminLogFilterAlert extends BottomSheet {
                 }
                 case 2: {
                     CheckBoxUserCell userCell = (CheckBoxUserCell) holder.itemView;
-                    int userId = currentAdmins.get(position - allAdminsRow - 1).user_id;
+                    int userId = MessageObject.getPeerId(currentAdmins.get(position - allAdminsRow - 1).peer);
                     userCell.setUser(MessagesController.getInstance(currentAccount).getUser(userId), selectedAdmins == null || selectedAdmins.indexOfKey(userId) >= 0, position != getItemCount() - 1);
                     break;
                 }

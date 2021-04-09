@@ -5,6 +5,11 @@
 
 namespace rtc {
 class Thread;
+template <class T>
+class scoped_refptr;
+}
+namespace webrtc {
+class SharedModuleThread;
 }
 
 namespace tgcalls {
@@ -16,6 +21,7 @@ public:
   virtual rtc::Thread *getMediaThread() = 0;
   virtual rtc::Thread *getWorkerThread() = 0;
   virtual rtc::Thread *getProcessThread() = 0;
+  virtual rtc::scoped_refptr<webrtc::SharedModuleThread> getSharedModuleThread() = 0;
 
   // it is not possible to decrease pool size
   static void setPoolSize(size_t size);
@@ -27,6 +33,7 @@ rtc::Thread *getNetworkThread();
 rtc::Thread *getMediaThread();
 rtc::Thread *getWorkerThread();
 rtc::Thread *getProcessThread();
+rtc::scoped_refptr<webrtc::SharedModuleThread> getSharedMoudleThread();
 std::shared_ptr<Threads> &getThreads();
 }
 

@@ -68,6 +68,7 @@ public class SharedConfig {
     public static boolean searchMessagesAsListUsed;
     public static boolean stickersReorderingHintUsed;
     public static boolean disableVoiceAudioEffects;
+    public static boolean useMediaStream;
     private static int lastLocalId = -210000;
 
     public static String storageCacheDir;
@@ -294,6 +295,7 @@ public class SharedConfig {
             lockRecordAudioVideoHint = preferences.getInt("lockRecordAudioVideoHint", 0);
             disableVoiceAudioEffects = preferences.getBoolean("disableVoiceAudioEffects", false);
             chatSwipeAction = preferences.getInt("ChatSwipeAction", -1);
+            useMediaStream = preferences.getBoolean("useMediaStream", false);
             preferences = ApplicationLoader.applicationContext.getSharedPreferences("Notifications", Activity.MODE_PRIVATE);
             showNotificationsForAllAccounts = preferences.getBoolean("AllAccounts", true);
 
@@ -554,6 +556,14 @@ public class SharedConfig {
         SharedPreferences preferences = MessagesController.getGlobalMainSettings();
         SharedPreferences.Editor editor = preferences.edit();
         editor.putBoolean("noStatusBar", noStatusBar);
+        editor.commit();
+    }
+
+    public static void toggleUseMediaStream() {
+        useMediaStream = !useMediaStream;
+        SharedPreferences preferences = MessagesController.getGlobalMainSettings();
+        SharedPreferences.Editor editor = preferences.edit();
+        editor.putBoolean("useMediaStream", useMediaStream);
         editor.commit();
     }
 

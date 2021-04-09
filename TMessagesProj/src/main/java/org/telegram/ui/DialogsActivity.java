@@ -1867,7 +1867,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
 
             @Override
             public void setTranslationY(float translationY) {
-                if (translationY != getTranslationY()) {
+                if (translationY != getTranslationY() && fragmentView != null) {
                     fragmentView.invalidate();
                 }
                 super.setTranslationY(translationY);
@@ -2676,7 +2676,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
 
                 @Override
                 public void onLayoutChildren(RecyclerView.Recycler recycler, RecyclerView.State state) {
-                    if (BuildVars.DEBUG_VERSION) {
+                    if (BuildVars.DEBUG_PRIVATE_VERSION) {
                         try {
                             super.onLayoutChildren(recycler, state);
                         } catch (IndexOutOfBoundsException e) {
@@ -3357,7 +3357,9 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 @Override
                 public void setAlpha(float alpha) {
                     super.setAlpha(alpha);
-                    fragmentView.invalidate();
+                    if (fragmentView != null) {
+                        fragmentView.invalidate();
+                    }
                 }
             };
             blurredView.setVisibility(View.GONE);
@@ -3437,7 +3439,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         }
     }
 
-    private void updateFiltersView(boolean showMediaFilters, ArrayList<TLObject> users, ArrayList<FiltersView.DateData> dates, boolean animated) {
+    private void updateFiltersView(boolean showMediaFilters, ArrayList<Object> users, ArrayList<FiltersView.DateData> dates, boolean animated) {
         if (!searchIsShowed || onlySelect) {
             return;
         }
@@ -3460,7 +3462,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         boolean hasUsersOrDates = (users != null && !users.isEmpty()) || (dates != null && !dates.isEmpty());
         if (!hasMediaFilter && !hasUsersOrDates && showMediaFilters) {
         } else if (hasUsersOrDates) {
-            ArrayList<TLObject> finalUsers = (users != null && !users.isEmpty() && !hasUserFilter) ? users : null;
+            ArrayList<Object> finalUsers = (users != null && !users.isEmpty() && !hasUserFilter) ? users : null;
             ArrayList<FiltersView.DateData> finalDates = (dates != null && !dates.isEmpty() && !hasDataFilter) ? dates : null;
             if (finalUsers != null || finalDates != null) {
                 visible = true;
@@ -4937,7 +4939,9 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                     actionBar.getChildAt(i).setAlpha(1f - progressToActionMode);
                 }
             }
-            fragmentView.invalidate();
+            if (fragmentView != null) {
+                fragmentView.invalidate();
+            }
         });
         actionBarColorAnimator.setInterpolator(CubicBezierInterpolator.DEFAULT);
         actionBarColorAnimator.setDuration(200);
@@ -5299,7 +5303,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                                                 getMessagesController().deleteDialog(selectedDialog, 0, param);
                                             } else {
                                                 TLRPC.User currentUser = getMessagesController().getUser(getUserConfig().getClientUserId());
-                                                getMessagesController().deleteUserFromChat((int) -selectedDialog, currentUser, null, param, false);
+                                                getMessagesController().deleteParticipantFromChat((int) -selectedDialog, currentUser, null, null, param, false);
                                             }
                                         } else {
                                             getMessagesController().deleteDialog(selectedDialog, 0, param);
@@ -5353,7 +5357,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                                         getMessagesController().deleteDialog(selectedDialog, 0, false);
                                     } else {
                                         TLRPC.User currentUser = getMessagesController().getUser(getUserConfig().getClientUserId());
-                                        getMessagesController().deleteUserFromChat((int) -selectedDialog, currentUser, null);
+                                        getMessagesController().deleteParticipantFromChat((int) -selectedDialog, currentUser, null);
                                     }
                                 } else {
                                     getMessagesController().deleteDialog(selectedDialog, 0, false);
@@ -5488,9 +5492,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                     animate = true;
                 } else if (currentDialogIndex >= 0 && selectedDialogIndex == currentDialogIndex) {
                     animate = true;
-                    AndroidUtilities.runOnUIThread(() -> {
-                        setDialogsListFrozen(false);
-                    }, 200);
+                    AndroidUtilities.runOnUIThread(() -> setDialogsListFrozen(false), 200);
                 }
             }
             if (!animate) {
@@ -5781,7 +5783,9 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                         actionBar.getChildAt(i).setAlpha(1f - progressToActionMode);
                     }
                 }
-                fragmentView.invalidate();
+                if (fragmentView != null) {
+                    fragmentView.invalidate();
+                }
             });
             actionBarColorAnimator.setInterpolator(CubicBezierInterpolator.DEFAULT);
             actionBarColorAnimator.setDuration(200);
@@ -6212,7 +6216,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                     if (ChatObject.isNotInChat(chat)) {
                         getMessagesController().deleteDialog(dialogId, 0, revoke);
                     } else {
-                        getMessagesController().deleteUserFromChat((int) -dialogId, getMessagesController().getUser(getUserConfig().getClientUserId()), null, revoke, revoke);
+                        getMessagesController().deleteParticipantFromChat((int) -dialogId, getMessagesController().getUser(getUserConfig().getClientUserId()), null, null, revoke, revoke);
                     }
                 } else {
                     getMessagesController().deleteDialog(dialogId, 0, revoke);
