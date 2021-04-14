@@ -60,25 +60,27 @@ public class PaymentInfoCell extends FrameLayout {
 
         detailExTextView = new TextView(context);
         detailExTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2));
-        detailExTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
+        detailExTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         detailExTextView.setLines(1);
         detailExTextView.setMaxLines(1);
         detailExTextView.setSingleLine(true);
         detailExTextView.setEllipsize(TextUtils.TruncateAt.END);
         detailExTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP);
-        addView(detailExTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 10 : 123, 90, LocaleController.isRTL ? 123 : 10, 0));
+        addView(detailExTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 10 : 123, 90, LocaleController.isRTL ? 123 : 10, 9));
     }
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        super.onMeasure(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(120), MeasureSpec.EXACTLY));
-    }
-
-    @Override
-    protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
-        super.onLayout(changed, left, top, right, bottom);
-        top = detailTextView.getBottom() + AndroidUtilities.dp(3);
-        detailExTextView.layout(detailExTextView.getLeft(), top, detailExTextView.getRight(), top + detailExTextView.getMeasuredHeight());
+        int h;
+        if (imageView.getVisibility() != GONE) {
+            h = MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(120), MeasureSpec.EXACTLY);
+        } else {
+            h = MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED);
+            measureChildWithMargins(detailTextView, widthMeasureSpec, 0, heightMeasureSpec, 0);
+            FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) detailExTextView.getLayoutParams();
+            layoutParams.topMargin = AndroidUtilities.dp(33) + detailTextView.getMeasuredHeight() + AndroidUtilities.dp(3);
+        }
+        super.onMeasure(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY), h);
     }
 
     public void setInvoice(TLRPC.TL_messageMediaInvoice invoice, String botname) {
@@ -107,7 +109,38 @@ public class PaymentInfoCell extends FrameLayout {
         } else {
             nameTextView.setLayoutParams(LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, 17, 9, 17, 0));
             detailTextView.setLayoutParams(LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, 17, 33, 17, 0));
-            detailExTextView.setLayoutParams(LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, 17, 90, 17, 0));
+            detailExTextView.setLayoutParams(LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, 17, 90, 17, 9));
+            imageView.setVisibility(GONE);
+        }
+    }
+
+    public void setReceipt(TLRPC.TL_payments_paymentReceipt receipt, String botname) {
+        nameTextView.setText(receipt.title);
+        detailTextView.setText(receipt.description);
+        detailExTextView.setText(botname);
+
+        int maxPhotoWidth;
+        if (AndroidUtilities.isTablet()) {
+            maxPhotoWidth = (int) (AndroidUtilities.getMinTabletSide() * 0.7f);
+        } else {
+            maxPhotoWidth = (int) (Math.min(AndroidUtilities.displaySize.x, AndroidUtilities.displaySize.y) * 0.7f);
+        }
+        int width = 640;
+        int height = 360;
+        float scale = width / (float) (maxPhotoWidth - AndroidUtilities.dp(2));
+        width /= scale;
+        height /= scale;
+        if (receipt.photo != null && receipt.photo.mime_type.startsWith("image/")) {
+            nameTextView.setLayoutParams(LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 10 : 123, 9, LocaleController.isRTL ? 123 : 10, 0));
+            detailTextView.setLayoutParams(LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 10 : 123, 33, LocaleController.isRTL ? 123 : 10, 0));
+            detailExTextView.setLayoutParams(LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 10 : 123, 90, LocaleController.isRTL ? 123 : 10, 0));
+            imageView.setVisibility(VISIBLE);
+            String filter = String.format(Locale.US, "%d_%d", width, height);
+            imageView.getImageReceiver().setImage(ImageLocation.getForWebFile(WebFile.createWithWebDocument(receipt.photo)), filter, null, null, -1, null, receipt, 1);
+        } else {
+            nameTextView.setLayoutParams(LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, 17, 9, 17, 0));
+            detailTextView.setLayoutParams(LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, 17, 33, 17, 0));
+            detailExTextView.setLayoutParams(LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, 17, 90, 17, 9));
             imageView.setVisibility(GONE);
         }
     }

@@ -49,6 +49,7 @@ import android.provider.MediaStore;
 import android.provider.Settings;
 
 import androidx.core.content.FileProvider;
+import androidx.core.graphics.ColorUtils;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.viewpager.widget.ViewPager;
@@ -184,6 +185,8 @@ public class AndroidUtilities {
 
     private static Paint roundPaint;
     private static RectF bitmapRect;
+
+    public static final RectF rectTmp = new RectF();
 
     public static Pattern WEB_URL = null;
 
@@ -363,6 +366,22 @@ public class AndroidUtilities {
         String url;
         int start;
         int end;
+    }
+
+    private static Boolean standaloneApp;
+    public static boolean isStandaloneApp() {
+        if (standaloneApp == null) {
+            standaloneApp = "org.telegram.messenger.web".equals(ApplicationLoader.applicationContext.getPackageName());
+        }
+        return standaloneApp;
+    }
+
+    private static Boolean betaApp;
+    public static boolean isBetaApp() {
+        if (betaApp == null) {
+            betaApp = "org.telegram.messenger.beta".equals(ApplicationLoader.applicationContext.getPackageName());
+        }
+        return betaApp;
     }
 
     private static String makeUrl(String url, String[] prefixes, Matcher matcher) {
@@ -2477,6 +2496,17 @@ public class AndroidUtilities {
         }
     }
 
+    public static String formatFullDuration(int duration) {
+        int h = duration / 3600;
+        int m = duration / 60 % 60;
+        int s = duration % 60;
+        if (duration < 0) {
+            return String.format(Locale.US, "-%02d:%02d:%02d", Math.abs(h), Math.abs(m), Math.abs(s));
+        } else {
+            return String.format(Locale.US, "%02d:%02d:%02d", h, m, s);
+        }
+    }
+
     public static String formatDurationNoHours(int duration, boolean isLong) {
         int m = duration / 60;
         int s = duration % 60;
@@ -3666,10 +3696,9 @@ public class AndroidUtilities {
                 view.setScaleY(1f);
             }
             view.setTag(1);
-        } else {
+        } else if (!show && view.getTag() != null){
             view.animate().setListener(null).cancel();
             if (animated) {
-                view.animate().alpha(1f).scaleY(1f).scaleX(1f).setDuration(150).start();
                 view.animate().alpha(0).scaleY(scaleFactor).scaleX(scaleFactor).setListener(new AnimatorListenerAdapter() {
                     @Override
                     public void onAnimationEnd(Animator animation) {
@@ -3680,6 +3709,13 @@ public class AndroidUtilities {
                 view.setVisibility(View.GONE);
             }
             view.setTag(null);
+        } else if (!animated) {
+            view.animate().setListener(null).cancel();
+            view.setVisibility(show ? View.VISIBLE : View.GONE);
+            view.setTag(show ? 1 : null);
+            view.setAlpha(1f);
+            view.setScaleX(1f);
+            view.setScaleY(1f);
         }
     }
 }

@@ -2172,6 +2172,7 @@ public class Theme {
     public static Drawable chat_replyIconDrawable;
     public static Drawable chat_goIconDrawable;
     public static Drawable chat_botLinkDrawalbe;
+    public static Drawable chat_botCardDrawalbe;
     public static Drawable chat_botInlineDrawable;
     public static Drawable chat_systemDrawable;
     public static Drawable chat_commentDrawable;
@@ -7202,6 +7203,7 @@ public class Theme {
 
             chat_botLinkDrawalbe = resources.getDrawable(R.drawable.bot_link);
             chat_botInlineDrawable = resources.getDrawable(R.drawable.bot_lines);
+            chat_botCardDrawalbe = resources.getDrawable(R.drawable.bot_card);
 
             chat_commentDrawable = resources.getDrawable(R.drawable.msg_msgbubble);
             chat_commentStickerDrawable = resources.getDrawable(R.drawable.msg_msgbubble2);

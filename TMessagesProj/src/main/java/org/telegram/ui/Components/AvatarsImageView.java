@@ -234,9 +234,9 @@ public class AvatarsImageView extends FrameLayout {
             animatingStates[index].id = -currentChat.id;
         }
         if (currentUser != null) {
-            animatingStates[index].imageReceiver.setImage(ImageLocation.getForUser(currentUser, false), "50_50", animatingStates[index].avatarDrawable, null, currentUser, 0);
+            animatingStates[index].imageReceiver.setImage(ImageLocation.getForUserOrChat(currentUser, ImageLocation.TYPE_SMALL), "50_50", ImageLocation.getForUserOrChat(currentUser, ImageLocation.TYPE_STRIPPED), "50_50", animatingStates[index].avatarDrawable, currentUser, 0);
         } else {
-            animatingStates[index].imageReceiver.setImage(ImageLocation.getForChat(currentChat, false), "50_50", animatingStates[index].avatarDrawable, null, currentChat, 0);
+            animatingStates[index].imageReceiver.setImage(ImageLocation.getForUserOrChat(currentChat, ImageLocation.TYPE_SMALL), "50_50", ImageLocation.getForUserOrChat(currentChat, ImageLocation.TYPE_STRIPPED), "50_50", animatingStates[index].avatarDrawable, currentChat, 0);
         }
         animatingStates[index].imageReceiver.setRoundRadius(AndroidUtilities.dp(currentStyle == 4 ? 16 : 12));
         int size = AndroidUtilities.dp(currentStyle == 4 ? 32 : 24);

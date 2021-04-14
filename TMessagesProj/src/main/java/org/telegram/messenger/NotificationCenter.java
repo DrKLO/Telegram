@@ -213,7 +213,6 @@ public class NotificationCenter {
     public static final int webRtcMicAmplitudeEvent = totalEvents++;
     public static final int webRtcSpeakerAmplitudeEvent = totalEvents++;
     public static final int showBulletin = totalEvents++;
-    public static final int greetingsStickerLoaded = totalEvents++;
 
     private SparseArray<ArrayList<NotificationCenterDelegate>> observers = new SparseArray<>();
     private SparseArray<ArrayList<NotificationCenterDelegate>> removeAfterBroadcast = new SparseArray<>();

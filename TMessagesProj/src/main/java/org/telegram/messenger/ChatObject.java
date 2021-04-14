@@ -100,7 +100,7 @@ public class ChatObject {
             loadMembers(true);
         }
 
-        public void addSelfDummyParticipant() {
+        public void addSelfDummyParticipant(boolean notify) {
             int selfId = getSelfId();
             if (participants.indexOfKey(selfId) >= 0) {
                 return;
@@ -109,16 +109,29 @@ public class ChatObject {
             selfDummyParticipant.peer = selfPeer;
             selfDummyParticipant.muted = true;
             selfDummyParticipant.self = true;
-            selfDummyParticipant.can_self_unmute = !call.join_muted;
-            selfDummyParticipant.date = currentAccount.getConnectionsManager().getCurrentTime();
             TLRPC.Chat chat = currentAccount.getMessagesController().getChat(chatId);
+            selfDummyParticipant.can_self_unmute = !call.join_muted || ChatObject.canManageCalls(chat);
+            selfDummyParticipant.date = currentAccount.getConnectionsManager().getCurrentTime();
             if (ChatObject.canManageCalls(chat) || !ChatObject.isChannel(chat) || chat.megagroup || selfDummyParticipant.can_self_unmute) {
                 selfDummyParticipant.active_date = currentAccount.getConnectionsManager().getCurrentTime();
+            }
+            if (selfId > 0) {
+                TLRPC.UserFull userFull = MessagesController.getInstance(currentAccount.getCurrentAccount()).getUserFull(selfId);
+                if (userFull != null) {
+                    selfDummyParticipant.about = userFull.about;
+                }
+            } else {
+                TLRPC.ChatFull chatFull = MessagesController.getInstance(currentAccount.getCurrentAccount()).getChatFull(-selfId);
+                if (chatFull != null) {
+                    selfDummyParticipant.about = chatFull.about;
+                }
             }
             participants.put(selfId, selfDummyParticipant);
             sortedParticipants.add(selfDummyParticipant);
             sortParticipants();
-            currentAccount.getNotificationCenter().postNotificationName(NotificationCenter.groupCallUpdated, chatId, call.id, false);
+            if (notify) {
+                currentAccount.getNotificationCenter().postNotificationName(NotificationCenter.groupCallUpdated, chatId, call.id, false);
+            }
         }
 
         public void migrateToChat(TLRPC.Chat chat) {
@@ -127,6 +140,14 @@ public class ChatObject {
             if (voIPService != null && voIPService.getAccount() == currentAccount.getCurrentAccount() && voIPService.getChat() != null && voIPService.getChat().id == -chatId) {
                 voIPService.migrateToChat(chat);
             }
+        }
+
+        public boolean shouldShowPanel() {
+            return call.participants_count > 0 || isScheduled();
+        }
+
+        public boolean isScheduled() {
+            return (call.flags & 128) != 0;
         }
 
         private int getSelfId() {

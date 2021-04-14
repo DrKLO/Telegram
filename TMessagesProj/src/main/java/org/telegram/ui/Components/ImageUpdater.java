@@ -88,6 +88,7 @@ public class ImageUpdater implements NotificationCenter.NotificationCenterDelega
     private double videoTimestamp;
 
     private boolean canSelectVideo;
+    private boolean forceDarkTheme;
 
     private final static int attach_photo = 0;
 
@@ -208,6 +209,11 @@ public class ImageUpdater implements NotificationCenter.NotificationCenterDelega
         useAttachMenu = searchAvailable = value;
     }
 
+    public void setSearchAvailable(boolean value, boolean useAttachMenu) {
+        this.useAttachMenu = useAttachMenu;
+        searchAvailable = value;
+    }
+
     public void setUploadAfterSelect(boolean value) {
         uploadAfterSelect = value;
     }
@@ -319,7 +325,7 @@ public class ImageUpdater implements NotificationCenter.NotificationCenterDelega
             return;
         }
         if (chatAttachAlert == null) {
-            chatAttachAlert = new ChatAttachAlert(parentFragment.getParentActivity(), parentFragment);
+            chatAttachAlert = new ChatAttachAlert(parentFragment.getParentActivity(), parentFragment, forceDarkTheme);
             chatAttachAlert.setAvatarPicker(canSelectVideo ? 2 : 1, searchAvailable);
             chatAttachAlert.setDelegate(new ChatAttachAlert.ChatAttachViewDelegate() {
 
@@ -881,5 +887,9 @@ public class ImageUpdater implements NotificationCenter.NotificationCenterDelega
             uploadingVideo = (String) args[1];
             parentFragment.getFileLoader().uploadFile(uploadingVideo, false, false, (int) convertingVideo.videoEditedInfo.estimatedSize, ConnectionsManager.FileTypeVideo, false);
         }
+    }
+
+    public void setForceDarkTheme(boolean forceDarkTheme) {
+        this.forceDarkTheme = forceDarkTheme;
     }
 }

@@ -24,4 +24,4 @@ RUN $ANDROID_HOME/tools/bin/sdkmanager "build-tools;${ANDROID_BUILD_TOOLS_VERSIO
 ENV PATH ${ANDROID_NDK_HOME}:$PATH
 ENV PATH ${ANDROID_NDK_HOME}/prebuilt/linux-x86_64/bin/:$PATH
 
-CMD mkdir -p /home/source/TMessagesProj/build/outputs/apk && mkdir -p /home/source/TMessagesProj/build/outputs/native-debug-symbols && cp -R /home/source/. /home/gradle && cd /home/gradle && gradle assembleRelease && cp -R /home/gradle/TMessagesProj/build/outputs/apk/. /home/source/TMessagesProj/build/outputs/apk && cp -R /home/gradle/TMessagesProj/build/outputs/native-debug-symbols/. /home/source/TMessagesProj/build/outputs/native-debug-symbols
+CMD mkdir -p /home/source/TMessagesProj/build/outputs/apk && mkdir -p /home/source/TMessagesProj/build/outputs/native-debug-symbols && cp -R /home/source/. /home/gradle && cd /home/gradle && gradle assembleRelease && gradle assembleStandalone && cp -R /home/gradle/TMessagesProj/build/outputs/apk/. /home/source/TMessagesProj/build/outputs/apk && cp -R /home/gradle/TMessagesProj/build/outputs/native-debug-symbols/. /home/source/TMessagesProj/build/outputs/native-debug-symbols

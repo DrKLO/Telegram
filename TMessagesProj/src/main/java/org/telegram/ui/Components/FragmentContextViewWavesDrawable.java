@@ -10,6 +10,8 @@ import android.graphics.Shader;
 import android.os.SystemClock;
 import android.view.View;
 
+import com.google.android.exoplayer2.util.Log;
+
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.Utilities;
@@ -78,7 +80,11 @@ public class FragmentContextViewWavesDrawable {
             if (dt > 20) {
                 dt = 17;
             }
-
+            if (dt < 3) {
+                update = false;
+            }
+        }
+        if (update) {
             if (animateToAmplitude != amplitude) {
                 amplitude += animateAmplitudeDiff * dt;
                 if (animateAmplitudeDiff > 0) {
@@ -145,7 +151,7 @@ public class FragmentContextViewWavesDrawable {
             lineBlobDrawable2.minRadius = AndroidUtilities.dp(0);
             lineBlobDrawable2.maxRadius = AndroidUtilities.dp(3) + AndroidUtilities.dp(9) * amplitude;
 
-            if (i == 1) {
+            if (i == 1 && update) {
                 lineBlobDrawable.update(amplitude, 0.3f);
                 lineBlobDrawable1.update(amplitude, 0.7f);
                 lineBlobDrawable2.update(amplitude, 0.7f);

@@ -232,6 +232,7 @@ public class NumberPicker extends LinearLayout {
     public NumberPicker(Context context) {
         this(context, 18);
     }
+
     public NumberPicker(Context context, int textSize) {
         super(context);
         mTextSize = AndroidUtilities.dp(textSize);

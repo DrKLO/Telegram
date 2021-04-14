@@ -195,6 +195,7 @@ public abstract class VoIPBaseService extends Service implements SensorEventList
 	protected int mySource;
 	protected String myJson;
 	protected boolean createGroupCall;
+	protected int scheduleDate;
 	protected TLRPC.InputPeer groupCallPeer;
 	public boolean hasFewPeers;
 	protected String joinHash;
@@ -1281,38 +1282,42 @@ public abstract class VoIPBaseService extends Service implements SensorEventList
 
 	protected Bitmap getRoundAvatarBitmap(TLObject userOrChat) {
 		Bitmap bitmap = null;
-		if (userOrChat instanceof TLRPC.User) {
-			TLRPC.User user = (TLRPC.User) userOrChat;
-			if (user.photo != null && user.photo.photo_small != null) {
-				BitmapDrawable img = ImageLoader.getInstance().getImageFromMemory(user.photo.photo_small, null, "50_50");
-				if (img != null) {
-					bitmap = img.getBitmap().copy(Bitmap.Config.ARGB_8888, true);
-				} else {
-					try {
-						BitmapFactory.Options opts = new BitmapFactory.Options();
-						opts.inMutable = true;
-						bitmap = BitmapFactory.decodeFile(FileLoader.getPathToAttach(user.photo.photo_small, true).toString(), opts);
-					} catch (Throwable e) {
-						FileLog.e(e);
+		try {
+			if (userOrChat instanceof TLRPC.User) {
+				TLRPC.User user = (TLRPC.User) userOrChat;
+				if (user.photo != null && user.photo.photo_small != null) {
+					BitmapDrawable img = ImageLoader.getInstance().getImageFromMemory(user.photo.photo_small, null, "50_50");
+					if (img != null) {
+						bitmap = img.getBitmap().copy(Bitmap.Config.ARGB_8888, true);
+					} else {
+						try {
+							BitmapFactory.Options opts = new BitmapFactory.Options();
+							opts.inMutable = true;
+							bitmap = BitmapFactory.decodeFile(FileLoader.getPathToAttach(user.photo.photo_small, true).toString(), opts);
+						} catch (Throwable e) {
+							FileLog.e(e);
+						}
+					}
+				}
+			} else {
+				TLRPC.Chat chat = (TLRPC.Chat) userOrChat;
+				if (chat.photo != null && chat.photo.photo_small != null) {
+					BitmapDrawable img = ImageLoader.getInstance().getImageFromMemory(chat.photo.photo_small, null, "50_50");
+					if (img != null) {
+						bitmap = img.getBitmap().copy(Bitmap.Config.ARGB_8888, true);
+					} else {
+						try {
+							BitmapFactory.Options opts = new BitmapFactory.Options();
+							opts.inMutable = true;
+							bitmap = BitmapFactory.decodeFile(FileLoader.getPathToAttach(chat.photo.photo_small, true).toString(), opts);
+						} catch (Throwable e) {
+							FileLog.e(e);
+						}
 					}
 				}
 			}
-		} else {
-			TLRPC.Chat chat = (TLRPC.Chat) userOrChat;
-			if (chat.photo != null && chat.photo.photo_small != null) {
-				BitmapDrawable img = ImageLoader.getInstance().getImageFromMemory(chat.photo.photo_small, null, "50_50");
-				if (img != null) {
-					bitmap = img.getBitmap().copy(Bitmap.Config.ARGB_8888, true);
-				} else {
-					try {
-						BitmapFactory.Options opts = new BitmapFactory.Options();
-						opts.inMutable = true;
-						bitmap = BitmapFactory.decodeFile(FileLoader.getPathToAttach(chat.photo.photo_small, true).toString(), opts);
-					} catch (Throwable e) {
-						FileLog.e(e);
-					}
-				}
-			}
+		} catch (Throwable e) {
+			FileLog.e(e);
 		}
 		if (bitmap == null) {
 			Theme.createDialogsResources(this);

@@ -2424,7 +2424,10 @@ public class MessageObject {
 
         if (messageOwner instanceof TLRPC.TL_messageService) {
             if (messageOwner.action != null) {
-                if (messageOwner.action instanceof TLRPC.TL_messageActionGroupCall) {
+                if (messageOwner.action instanceof TLRPC.TL_messageActionGroupCallScheduled) {
+                    TLRPC.TL_messageActionGroupCallScheduled action = (TLRPC.TL_messageActionGroupCallScheduled) messageOwner.action;
+                    messageText = LocaleController.formatString("ActionGroupCallScheduled", R.string.ActionGroupCallScheduled, LocaleController.formatStartsTime(action.schedule_date, 3, false));
+                } else if (messageOwner.action instanceof TLRPC.TL_messageActionGroupCall) {
                     if (messageOwner.action.duration != 0) {
                         String time;
                         int days = messageOwner.action.duration / (3600 * 24);

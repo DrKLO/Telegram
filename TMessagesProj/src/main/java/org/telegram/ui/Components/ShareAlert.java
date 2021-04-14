@@ -1601,7 +1601,7 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
             View view;
             switch (viewType) {
                 case 0: {
-                    view = new ShareDialogCell(context, darkTheme);
+                    view = new ShareDialogCell(context, darkTheme ? ShareDialogCell.TYPE_CALL : ShareDialogCell.TYPE_SHARE);
                     view.setLayoutParams(new RecyclerView.LayoutParams(RecyclerView.LayoutParams.MATCH_PARENT, AndroidUtilities.dp(100)));
                     break;
                 }
@@ -1901,8 +1901,8 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
                 if (becomeEmpty) {
                     topBeforeSwitch = getCurrentTop();
                 }
-                searchAdapterHelper.mergeResults(searchResult);
                 searchResult = result;
+                searchAdapterHelper.mergeResults(searchResult);
                 notifyDataSetChanged();
                 if (!isEmpty && !becomeEmpty && topBeforeSwitch > 0) {
                     layoutManager.scrollToPositionWithOffset(0, -topBeforeSwitch);
@@ -1995,7 +1995,7 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
             View view;
             switch (viewType) {
                 case 0: {
-                    view = new ShareDialogCell(context, darkTheme);
+                    view = new ShareDialogCell(context, darkTheme ? ShareDialogCell.TYPE_CALL : ShareDialogCell.TYPE_SHARE);
                     view.setLayoutParams(new RecyclerView.LayoutParams(RecyclerView.LayoutParams.MATCH_PARENT, AndroidUtilities.dp(100)));
                     break;
                 }

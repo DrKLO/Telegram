@@ -468,7 +468,7 @@ public class PullForegroundDrawable {
     }
 
     public void startOutAnimation() {
-        if (animateOut) {
+        if (animateOut || listView == null) {
             return;
         }
         if (outAnimator != null) {

@@ -44,8 +44,11 @@ import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
+import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.PaymentFormActivity;
 
 @SuppressWarnings("FieldCanBeLocal")
 public class UndoView extends FrameLayout {
@@ -58,6 +61,8 @@ public class UndoView extends FrameLayout {
     private BackupImageView avatarImageView;
     private LinearLayout undoButton;
     private int undoViewHeight;
+
+    private BaseFragment parentFragment;
 
     private Object currentInfoObject;
 
@@ -149,6 +154,8 @@ public class UndoView extends FrameLayout {
     public final static int ACTION_GIGAGROUP_CANCEL = 75;
     public final static int ACTION_GIGAGROUP_SUCCESS = 76;
 
+    public final static int ACTION_PAYMENT_SUCCESS = 77;
+
     private CharSequence infoText;
 
     public class LinkMovementMethodMy extends LinkMovementMethod {
@@ -175,11 +182,16 @@ public class UndoView extends FrameLayout {
     }
 
     public UndoView(Context context) {
-        this(context, false);
+        this(context, null, false);
     }
 
-    public UndoView(Context context, boolean top) {
+    public UndoView(Context context, BaseFragment parent) {
+        this(context, parent, false);
+    }
+
+    public UndoView(Context context, BaseFragment parent, boolean top) {
         super(context);
+        parentFragment = parent;
         fromTop = top;
 
         infoTextView = new TextView(context);
@@ -280,7 +292,7 @@ public class UndoView extends FrameLayout {
                 currentAction == ACTION_CHAT_UNARCHIVED || currentAction == ACTION_VOIP_MUTED || currentAction == ACTION_VOIP_UNMUTED || currentAction == ACTION_VOIP_REMOVED ||
                 currentAction == ACTION_VOIP_LINK_COPIED || currentAction == ACTION_VOIP_INVITED || currentAction == ACTION_VOIP_MUTED_FOR_YOU || currentAction == ACTION_VOIP_UNMUTED_FOR_YOU ||
                 currentAction == ACTION_REPORT_SENT || currentAction == ACTION_VOIP_USER_CHANGED || currentAction == ACTION_VOIP_CAN_NOW_SPEAK || currentAction == ACTION_VOIP_RECORDING_STARTED ||
-                currentAction == ACTION_VOIP_RECORDING_FINISHED || currentAction == ACTION_VOIP_SOUND_MUTED || currentAction == ACTION_VOIP_SOUND_UNMUTED;
+                currentAction == ACTION_VOIP_RECORDING_FINISHED || currentAction == ACTION_VOIP_SOUND_MUTED || currentAction == ACTION_VOIP_SOUND_UNMUTED || currentAction == ACTION_PAYMENT_SUCCESS;
     }
 
     private boolean hasSubInfo() {
@@ -412,6 +424,9 @@ public class UndoView extends FrameLayout {
         boolean infoOnly = false;
         boolean reversedPlay = false;
         int reversedPlayEndFrame = 0;
+        setOnClickListener(null);
+        setOnTouchListener((v, event) -> true);
+        infoTextView.setMovementMethod(new LinkMovementMethodMy());
 
         if (isTooltipAction()) {
             CharSequence infoText;
@@ -434,7 +449,7 @@ public class UndoView extends FrameLayout {
                 AvatarDrawable avatarDrawable = new AvatarDrawable();
                 avatarDrawable.setTextSize(AndroidUtilities.dp(12));
                 avatarDrawable.setInfo(user);
-                avatarImageView.setImage(ImageLocation.getForUser(user, false), "50_50", avatarDrawable, user);
+                avatarImageView.setImage(ImageLocation.getForUserOrChat(user, ImageLocation.TYPE_SMALL), "50_50", ImageLocation.getForUserOrChat(user, ImageLocation.TYPE_STRIPPED), "50_50", avatarDrawable, user);
                 avatarImageView.setVisibility(VISIBLE);
                 timeLeft = 3000;
             } else if (action == ACTION_VOIP_USER_CHANGED) {
@@ -444,12 +459,12 @@ public class UndoView extends FrameLayout {
                 if (infoObject instanceof TLRPC.User) {
                     TLRPC.User user = (TLRPC.User) infoObject;
                     avatarDrawable.setInfo(user);
-                    avatarImageView.setImage(ImageLocation.getForUser(user, false), "50_50", avatarDrawable, user);
+                    avatarImageView.setImage(ImageLocation.getForUserOrChat(user, ImageLocation.TYPE_SMALL), "50_50", ImageLocation.getForUserOrChat(user, ImageLocation.TYPE_STRIPPED), "50_50", avatarDrawable, user);
                     name = ContactsController.formatName(user.first_name, user.last_name);
                 } else {
                     TLRPC.Chat chat = (TLRPC.Chat) infoObject;
                     avatarDrawable.setInfo(chat);
-                    avatarImageView.setImage(ImageLocation.getForChat(chat, false), "50_50", avatarDrawable, chat);
+                    avatarImageView.setImage(ImageLocation.getForUserOrChat(chat, ImageLocation.TYPE_SMALL), "50_50", ImageLocation.getForUserOrChat(chat, ImageLocation.TYPE_STRIPPED), "50_50", avatarDrawable, chat);
                     name = chat.title;
                 }
                 infoText = AndroidUtilities.replaceTags(LocaleController.formatString("VoipGroupUserChanged", R.string.VoipGroupUserChanged, name));
@@ -462,6 +477,27 @@ public class UndoView extends FrameLayout {
                 subInfoText = null;
                 icon = R.raw.voip_invite;
                 timeLeft = 3000;
+            } else if (action == ACTION_PAYMENT_SUCCESS) {
+                infoText = (CharSequence) infoObject;
+                subInfoText = null;
+                icon = R.raw.payment_success;
+                timeLeft = 5000;
+                if (parentFragment != null && infoObject2 instanceof TLRPC.Message) {
+                    TLRPC.Message message = (TLRPC.Message) infoObject2;
+                    setOnTouchListener(null);
+                    infoTextView.setMovementMethod(null);
+                    setOnClickListener(v -> {
+                        hide(true, 1);
+                        TLRPC.TL_payments_getPaymentReceipt req = new TLRPC.TL_payments_getPaymentReceipt();
+                        req.msg_id = message.id;
+                        req.peer = parentFragment.getMessagesController().getInputPeer(message.peer_id);
+                        parentFragment.getConnectionsManager().sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
+                            if (response instanceof TLRPC.TL_payments_paymentReceipt) {
+                                parentFragment.presentFragment(new PaymentFormActivity((TLRPC.TL_payments_paymentReceipt) response));
+                            }
+                        }), ConnectionsManager.RequestFlagFailOnServerErrors);
+                    });
+                }
             } else if (action == ACTION_VOIP_MUTED) {
                 String name;
                 if (infoObject instanceof TLRPC.User) {
@@ -670,7 +706,7 @@ public class UndoView extends FrameLayout {
                     }
                 }
                 subInfoText = null;
-                icon = R.raw.contact_check;
+                icon = action == ACTION_ADDED_TO_FOLDER ? R.raw.folder_in : R.raw.folder_out;
             } else if (action == ACTION_CACHE_WAS_CLEARED) {
                 infoText = this.infoText;
                 subInfoText = null;

@@ -313,9 +313,6 @@ public class MessagesController extends BaseController implements NotificationCe
 
     public volatile boolean ignoreSetOnline;
 
-    private ArrayList<TLRPC.Document> preloadedStickers = new ArrayList<>();
-    private boolean preloadingSticker;
-
     public static class FaqSearchResult {
 
         public String title;
@@ -2390,7 +2387,7 @@ public class MessagesController extends BaseController implements NotificationCe
         editor = emojiPreferences.edit();
         editor.putLong("lastGifLoadTime", 0).putLong("lastStickersLoadTime", 0).putLong("lastStickersLoadTimeMask", 0).putLong("lastStickersLoadTimeFavs", 0).commit();
         editor = mainPreferences.edit();
-        editor.remove("archivehint").remove("proximityhint").remove("archivehint_l").remove("gifhint").remove("soundHint").remove("dcDomainName2").remove("webFileDatacenterId").remove("themehint").remove("showFiltersTooltip").commit();
+        editor.remove("archivehint").remove("proximityhint").remove("archivehint_l").remove("gifhint").remove("reminderhint").remove("soundHint").remove("dcDomainName2").remove("webFileDatacenterId").remove("themehint").remove("showFiltersTooltip").commit();
 
         SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("shortcut_widget", Activity.MODE_PRIVATE);
         SharedPreferences.Editor widgetEditor = null;
@@ -3005,6 +3002,9 @@ public class MessagesController extends BaseController implements NotificationCe
                     loadingGroupCalls.remove((Integer) chatId);
                 }));
             }
+        }
+        if (result != null && result.call instanceof TLRPC.TL_groupCallDiscarded) {
+            return null;
         }
         return result;
     }
@@ -8885,14 +8885,11 @@ public class MessagesController extends BaseController implements NotificationCe
     }
 
     public void updateChatAbout(int chat_id, final String about, final TLRPC.ChatFull info) {
-        if (info == null) {
-            return;
-        }
         TLRPC.TL_messages_editChatAbout req = new TLRPC.TL_messages_editChatAbout();
         req.peer = getInputPeer(-chat_id);
         req.about = about;
         getConnectionsManager().sendRequest(req, (response, error) -> {
-            if (response instanceof TLRPC.TL_boolTrue) {
+            if (response instanceof TLRPC.TL_boolTrue && info != null) {
                 AndroidUtilities.runOnUIThread(() -> {
                     info.about = about;
                     getMessagesStorage().updateChatInfo(info, false);
@@ -9141,7 +9138,7 @@ public class MessagesController extends BaseController implements NotificationCe
         }
     }
 
-    public void changeChatAvatar(int chat_id, TLRPC.TL_inputChatPhoto oldPhoto, TLRPC.InputFile inputPhoto, final TLRPC.InputFile inputVideo, double videoStartTimestamp, String videoPath, TLRPC.FileLocation smallSize, TLRPC.FileLocation bigSize) {
+    public void changeChatAvatar(int chat_id, TLRPC.TL_inputChatPhoto oldPhoto, TLRPC.InputFile inputPhoto, final TLRPC.InputFile inputVideo, double videoStartTimestamp, String videoPath, TLRPC.FileLocation smallSize, TLRPC.FileLocation bigSize, Runnable callback) {
         TLObject request;
         TLRPC.InputChatPhoto inputChatPhoto;
         if (oldPhoto != null) {
@@ -9221,7 +9218,12 @@ public class MessagesController extends BaseController implements NotificationCe
                 }
             }
             processUpdates(updates, false);
-            AndroidUtilities.runOnUIThread(() -> getNotificationCenter().postNotificationName(NotificationCenter.updateInterfaces, MessagesController.UPDATE_MASK_AVATAR));
+            AndroidUtilities.runOnUIThread(() -> {
+                if (callback != null) {
+                    callback.run();
+                }
+                getNotificationCenter().postNotificationName(NotificationCenter.updateInterfaces, MessagesController.UPDATE_MASK_AVATAR);
+            });
         }, ConnectionsManager.RequestFlagInvokeAfter);
     }
 
@@ -13977,7 +13979,7 @@ public class MessagesController extends BaseController implements NotificationCe
         }
         for (int a = 0, N = reasons.size(); a < N; a++) {
             TLRPC.TL_restrictionReason reason = reasons.get(a);
-            if ("all".equals(reason.platform) || "android".equals(reason.platform)) {
+            if ("all".equals(reason.platform) || !AndroidUtilities.isStandaloneApp() && !AndroidUtilities.isBetaApp() && "android".equals(reason.platform)) {
                 return reason.text;
             }
         }
@@ -14238,9 +14240,6 @@ public class MessagesController extends BaseController implements NotificationCe
                         if (callback != null) {
                             callback.onMessagesLoaded(isCache);
                         }
-                        if (lower_part > 0 && size == 0) {
-                            preloadGreetingsSticker();
-                        }
                     }
                 } else if (id == NotificationCenter.loadingMessagesFailed && (Integer) args[0] == classGuid) {
                     getNotificationCenter().removeObserver(this, NotificationCenter.messagesDidLoadWithoutProcess);
@@ -14261,34 +14260,6 @@ public class MessagesController extends BaseController implements NotificationCe
         } else {
             loadMessagesInternal(dialogId, 0, true, count, finalMessageId, 0, true, 0, classGuid, 2, 0, isChannel, 0, 0, 0, 0, 0, 0, false, 0, true, false);
         }
-    }
-
-    public void preloadGreetingsSticker() {
-        if (preloadingSticker) {
-            return;
-        }
-        preloadingSticker = true;
-        TLRPC.TL_messages_getStickers req = new TLRPC.TL_messages_getStickers();
-        req.emoticon = "\uD83D\uDC4B" + Emoji.fixEmoji("⭐");
-        ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> {
-            if (response instanceof TLRPC.TL_messages_stickers) {
-                ArrayList<TLRPC.Document> list = ((TLRPC.TL_messages_stickers) response).stickers;
-                if (!list.isEmpty()) {
-                    AndroidUtilities.runOnUIThread(() -> {
-                        for (int i = 0; i < list.size(); i++) {
-                            TLRPC.Document sticker = list.get(i);
-                            FileLoader.getInstance(currentAccount).loadFile(ImageLocation.getForDocument(sticker), sticker, null, 0, 1);
-                            preloadedStickers.add(sticker);
-                        }
-                        NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.greetingsStickerLoaded);
-                    });
-                }
-            }
-        });
-    }
-
-    public TLRPC.Document getPreloadedSticker() {
-        return !preloadedStickers.isEmpty() ? preloadedStickers.get(Utilities.random.nextInt(preloadedStickers.size())) : null;
     }
 
     public interface MessagesLoadedCallback {

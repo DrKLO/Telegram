@@ -80,7 +80,7 @@ public class JoinCallByUrlAlert extends BottomSheet {
         linearLayout.addView(avatarImageView, LayoutHelper.createLinear(90, 90, Gravity.TOP | Gravity.CENTER_HORIZONTAL, 0, 29, 0, 0));
 
         AvatarDrawable avatarDrawable = new AvatarDrawable(chat);
-        avatarImageView.setImage(ImageLocation.getForChat(chat, false), "50_50", avatarDrawable, chat);
+        avatarImageView.setImage(ImageLocation.getForUserOrChat(chat, ImageLocation.TYPE_SMALL), "50_50", ImageLocation.getForUserOrChat(chat, ImageLocation.TYPE_STRIPPED), "50_50", avatarDrawable, chat);
 
         TextView percentTextView = new TextView(context);
         percentTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));

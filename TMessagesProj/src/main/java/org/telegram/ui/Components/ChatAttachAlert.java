@@ -391,6 +391,7 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
 
     private Paint attachButtonPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private float bottomPannelTranslation;
+    private boolean forceDarkTheme;
 
     private class AttachButton extends FrameLayout {
 
@@ -552,7 +553,7 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
             currentUser = user;
             nameTextView.setText(ContactsController.formatName(user.first_name, user.last_name));
             avatarDrawable.setInfo(user);
-            imageView.setImage(ImageLocation.getForUser(user, false), "50_50", avatarDrawable, user);
+            imageView.setImage(ImageLocation.getForUserOrChat(user, ImageLocation.TYPE_SMALL), "50_50", ImageLocation.getForUserOrChat(user, ImageLocation.TYPE_STRIPPED), "50_50", avatarDrawable, user);
             requestLayout();
         }
     }
@@ -563,8 +564,9 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
     float currentPanTranslationY;
 
     @SuppressLint("ClickableViewAccessibility")
-    public ChatAttachAlert(Context context, final BaseFragment parentFragment) {
+    public ChatAttachAlert(Context context, final BaseFragment parentFragment, boolean forceDarkTheme) {
         super(context, false);
+        this.forceDarkTheme = forceDarkTheme;
         drawNavigationBar = true;
         inBubbleMode = parentFragment instanceof ChatActivity && parentFragment.isInBubbleMode();
         openInterpolator = new OvershootInterpolator(0.7f);
@@ -896,8 +898,9 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
                     shadowDrawable.setAlpha(viewAlpha);
                     shadowDrawable.setBounds(0, top, getMeasuredWidth(), height);
                     shadowDrawable.draw(canvas);
+                    int backgroundColor = Theme.getColor(forceDarkTheme ? Theme.key_voipgroup_listViewBackground : Theme.key_dialogBackground);
                     if (actionBarType == 2) {
-                        Theme.dialogs_onlineCirclePaint.setColor(Theme.getColor(Theme.key_dialogBackground));
+                        Theme.dialogs_onlineCirclePaint.setColor(backgroundColor);
                         Theme.dialogs_onlineCirclePaint.setAlpha(viewAlpha);
                         rect.set(backgroundPaddingLeft, backgroundPaddingTop + top, getMeasuredWidth() - backgroundPaddingLeft, backgroundPaddingTop + top + AndroidUtilities.dp(24));
                         canvas.save();
@@ -909,7 +912,7 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
                     boolean result = super.drawChild(canvas, child, drawingTime);
 
                     if (rad != 1.0f && actionBarType != 2) {
-                        Theme.dialogs_onlineCirclePaint.setColor(Theme.getColor(Theme.key_dialogBackground));
+                        Theme.dialogs_onlineCirclePaint.setColor(backgroundColor);
                         Theme.dialogs_onlineCirclePaint.setAlpha(viewAlpha);
                         rect.set(backgroundPaddingLeft, backgroundPaddingTop + top, getMeasuredWidth() - backgroundPaddingLeft, backgroundPaddingTop + top + AndroidUtilities.dp(24));
                         canvas.save();
@@ -946,7 +949,7 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
                 if (inBubbleMode) {
                     return;
                 }
-                int color1 = Theme.getColor(Theme.key_dialogBackground);
+                int color1 = Theme.getColor(forceDarkTheme ? Theme.key_voipgroup_listViewBackground : Theme.key_dialogBackground);
                 int finalColor = Color.argb((int) (255 * actionBar.getAlpha()), (int) (Color.red(color1) * 0.8f), (int) (Color.green(color1) * 0.8f), (int) (Color.blue(color1) * 0.8f));
                 Theme.dialogs_onlineCirclePaint.setColor(finalColor);
                 canvas.drawRect(backgroundPaddingLeft, currentPanTranslationY, getMeasuredWidth() - backgroundPaddingLeft, AndroidUtilities.statusBarHeight + currentPanTranslationY, Theme.dialogs_onlineCirclePaint);
@@ -1162,7 +1165,7 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
         selectedTextView.setVisibility(View.INVISIBLE);
         selectedTextView.setAlpha(0.0f);
 
-        layouts[0] = photoLayout = new ChatAttachAlertPhotoLayout(this, context);
+        layouts[0] = photoLayout = new ChatAttachAlertPhotoLayout(this, context, forceDarkTheme);
         currentAttachLayout = photoLayout;
         selectedId = 1;
         containerView.addView(photoLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
@@ -1309,7 +1312,7 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
                 float alphaOffset = (frameLayout2.getMeasuredHeight() - AndroidUtilities.dp(84)) * (1f - getAlpha());
                 shadow.setTranslationY(-(frameLayout2.getMeasuredHeight() - AndroidUtilities.dp(84)) + captionEditTextTopOffset + currentPanTranslationY + bottomPannelTranslation + alphaOffset);
 
-                int newColor = Theme.getColor(Theme.key_dialogBackground);
+                int newColor = Theme.getColor(forceDarkTheme ? Theme.key_voipgroup_listViewBackground : Theme.key_dialogBackground);
                 if (color != newColor) {
                     color = newColor;
                     p.setColor(color);
@@ -1688,6 +1691,11 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
         selectedCountView.setScaleX(0.2f);
         selectedCountView.setScaleY(0.2f);
         containerView.addView(selectedCountView, LayoutHelper.createFrame(42, 24, Gravity.RIGHT | Gravity.BOTTOM, 0, 0, -8, 9));
+
+        if (forceDarkTheme) {
+            checkColors();
+            navBarColorKey = null;
+        }
     }
 
     @Override
@@ -2130,18 +2138,18 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
         for (int a = 0; a < count; a++) {
             applyAttachButtonColors(buttonsRecyclerView.getChildAt(a));
         }
-        selectedTextView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
+        selectedTextView.setTextColor(forceDarkTheme ? Theme.getColor(Theme.key_voipgroup_actionBarItems) : Theme.getColor(Theme.key_dialogTextBlack));
 
         doneItem.getTextView().setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlueHeader));
 
-        selectedMenuItem.setIconColor(Theme.getColor(Theme.key_dialogTextBlack));
-        Theme.setDrawableColor(selectedMenuItem.getBackground(), Theme.getColor(Theme.key_dialogButtonSelector));
+        selectedMenuItem.setIconColor(forceDarkTheme ? Theme.getColor(Theme.key_voipgroup_actionBarItems) : Theme.getColor(Theme.key_dialogTextBlack));
+        Theme.setDrawableColor(selectedMenuItem.getBackground(), forceDarkTheme ? Theme.getColor(Theme.key_voipgroup_actionBarItemsSelector) : Theme.getColor(Theme.key_dialogButtonSelector));
         selectedMenuItem.setPopupItemsColor(Theme.getColor(Theme.key_actionBarDefaultSubmenuItem), false);
         selectedMenuItem.setPopupItemsColor(Theme.getColor(Theme.key_actionBarDefaultSubmenuItem), true);
         selectedMenuItem.redrawPopup(Theme.getColor(Theme.key_actionBarDefaultSubmenuBackground));
 
-        searchItem.setIconColor(Theme.getColor(Theme.key_dialogTextBlack));
-        Theme.setDrawableColor(searchItem.getBackground(), Theme.getColor(Theme.key_dialogButtonSelector));
+        searchItem.setIconColor(forceDarkTheme ? Theme.getColor(Theme.key_voipgroup_actionBarItems) : Theme.getColor(Theme.key_dialogTextBlack));
+        Theme.setDrawableColor(searchItem.getBackground(), forceDarkTheme ? Theme.getColor(Theme.key_voipgroup_actionBarItemsSelector) : Theme.getColor(Theme.key_dialogButtonSelector));
 
         commentTextView.updateColors();
 
@@ -2149,7 +2157,7 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
             for (int a = 0; a < itemCells.length; a++) {
                 if (itemCells[a] != null) {
                     itemCells[a].setColors(Theme.getColor(Theme.key_actionBarDefaultSubmenuItem), Theme.getColor(Theme.key_actionBarDefaultSubmenuItemIcon));
-                    itemCells[a].setSelectorColor(Theme.getColor(Theme.key_dialogButtonSelector));
+                    itemCells[a].setSelectorColor(forceDarkTheme ? Theme.getColor(Theme.key_voipgroup_actionBarItemsSelector) : Theme.getColor(Theme.key_dialogButtonSelector));
                 }
             }
             sendPopupLayout.setBackgroundColor(Theme.getColor(Theme.key_actionBarDefaultSubmenuBackground));
@@ -2165,18 +2173,18 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
         actionBarShadow.setBackgroundColor(Theme.getColor(Theme.key_dialogShadowLine));
 
         buttonsRecyclerView.setGlowColor(Theme.getColor(Theme.key_dialogScrollGlow));
-        buttonsRecyclerView.setBackgroundColor(Theme.getColor(Theme.key_dialogBackground));
+        buttonsRecyclerView.setBackgroundColor(Theme.getColor(forceDarkTheme ? Theme.key_voipgroup_listViewBackground : Theme.key_dialogBackground));
 
-        frameLayout2.setBackgroundColor(Theme.getColor(Theme.key_dialogBackground));
+        frameLayout2.setBackgroundColor(Theme.getColor(forceDarkTheme ? Theme.key_voipgroup_listViewBackground : Theme.key_dialogBackground));
 
         selectedCountView.invalidate();
 
-        actionBar.setBackgroundColor(Theme.getColor(Theme.key_dialogBackground));
-        actionBar.setItemsColor(Theme.getColor(Theme.key_dialogTextBlack), false);
-        actionBar.setItemsBackgroundColor(Theme.getColor(Theme.key_dialogButtonSelector), false);
-        actionBar.setTitleColor(Theme.getColor(Theme.key_dialogTextBlack));
+        actionBar.setBackgroundColor(forceDarkTheme ? Theme.getColor(Theme.key_voipgroup_actionBar) : Theme.getColor(Theme.key_dialogBackground));
+        actionBar.setItemsColor(forceDarkTheme ? Theme.getColor(Theme.key_voipgroup_actionBarItems) : Theme.getColor(Theme.key_dialogTextBlack), false);
+        actionBar.setItemsBackgroundColor(forceDarkTheme ? Theme.getColor(Theme.key_voipgroup_actionBarItemsSelector) : Theme.getColor(Theme.key_dialogButtonSelector), false);
+        actionBar.setTitleColor(forceDarkTheme ? Theme.getColor(Theme.key_voipgroup_actionBarItems) : Theme.getColor(Theme.key_dialogTextBlack));
 
-        Theme.setDrawableColor(shadowDrawable, Theme.getColor(Theme.key_dialogBackground));
+        Theme.setDrawableColor(shadowDrawable, Theme.getColor(forceDarkTheme ? Theme.key_voipgroup_listViewBackground : Theme.key_dialogBackground));
 
         containerView.invalidate();
 
@@ -2489,7 +2497,7 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
         if (baseFragment == null) {
             return;
         }
-        if (baseFragment instanceof ChatActivity) {
+        if (baseFragment instanceof ChatActivity && avatarPicker != 2) {
             TLRPC.Chat chat = ((ChatActivity) baseFragment).getCurrentChat();
             TLRPC.User user = ((ChatActivity) baseFragment).getCurrentUser();
             if (chat != null) {

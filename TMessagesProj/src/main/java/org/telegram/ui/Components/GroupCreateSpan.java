@@ -143,7 +143,7 @@ public class GroupCreateSpan extends View {
             } else {
                 avatarDrawable.setInfo(user);
                 firstName = UserObject.getFirstName(user);
-                imageLocation = ImageLocation.getForUser(user, false);
+                imageLocation = ImageLocation.getForUserOrChat(user, ImageLocation.TYPE_SMALL);
                 imageParent = user;
             }
         } else if (object instanceof TLRPC.Chat) {
@@ -151,7 +151,7 @@ public class GroupCreateSpan extends View {
             avatarDrawable.setInfo(chat);
             uid = -chat.id;
             firstName = chat.title;
-            imageLocation = ImageLocation.getForChat(chat, false);
+            imageLocation = ImageLocation.getForUserOrChat(chat, ImageLocation.TYPE_SMALL);
             imageParent = chat;
         } else {
             avatarDrawable.setInfo(0, contact.first_name, contact.last_name);

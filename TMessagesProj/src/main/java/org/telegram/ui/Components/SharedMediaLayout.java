@@ -485,8 +485,28 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                 return null;
             }
             final RecyclerListView listView = mediaPages[0].listView;
+            int firstVisiblePosition = -1;
+            int lastVisiblePosition = -1;
             for (int a = 0, count = listView.getChildCount(); a < count; a++) {
                 View view = listView.getChildAt(a);
+                int visibleHeight = mediaPages[0].listView.getMeasuredHeight();
+                View parent = (View) getParent();
+                if (parent != null) {
+                    if (getY() + getMeasuredHeight() > parent.getMeasuredHeight()) {
+                        visibleHeight -= getBottom() - parent.getMeasuredHeight();
+                    }
+                }
+
+                if (view.getTop() >= visibleHeight) {
+                    continue;
+                }
+                int adapterPosition = listView.getChildAdapterPosition(view);
+                if (adapterPosition < firstVisiblePosition || firstVisiblePosition == -1) {
+                    firstVisiblePosition = adapterPosition;
+                }
+                if (adapterPosition > lastVisiblePosition || lastVisiblePosition == -1) {
+                    lastVisiblePosition = adapterPosition;
+                }
                 int[] coords = new int[2];
                 ImageReceiver imageReceiver = null;
                 if (view instanceof SharedPhotoVideoCell) {
@@ -564,6 +584,18 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                     return object;
                 }
             }
+            if (mediaPages[0].selectedType == 0 && firstVisiblePosition >= 0 && lastVisiblePosition >= 0) {
+                int position = photoVideoAdapter.getPositionForIndex(index);
+
+                if (position <= firstVisiblePosition) {
+                    mediaPages[0].layoutManager.scrollToPositionWithOffset(position, 0);
+                    profileActivity.scrollToSharedMedia();
+                } else if (position >= lastVisiblePosition && lastVisiblePosition >= 0) {
+                    mediaPages[0].layoutManager.scrollToPositionWithOffset(position, 0, true);
+                    profileActivity.scrollToSharedMedia();
+                }
+            }
+
             return null;
         }
     };
@@ -3485,6 +3517,10 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
 
         public SharedPhotoVideoAdapter(Context context) {
             mContext = context;
+        }
+
+        public int getPositionForIndex(int i) {
+            return i / columnsCount;
         }
 
         @Override

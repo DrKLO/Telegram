@@ -237,6 +237,7 @@ public class VoIPService extends VoIPBaseService {
 			groupCallPeer.user_id = peerUserId;
 			groupCallPeer.access_hash = intent.getLongExtra("peerAccessHash", 0);
 		}
+		scheduleDate = intent.getIntExtra("scheduleDate", 0);
 
 		isOutgoing = intent.getBooleanExtra("is_outgoing", false);
 		videoCall = intent.getBooleanExtra("video_call", false);
@@ -1328,6 +1329,10 @@ public class VoIPService extends VoIPBaseService {
 			TLRPC.TL_phone_createGroupCall req = new TLRPC.TL_phone_createGroupCall();
 			req.peer = MessagesController.getInputPeer(chat);
 			req.random_id = Utilities.random.nextInt();
+			if (scheduleDate != 0) {
+				req.schedule_date = scheduleDate;
+				req.flags |= 2;
+			}
 			ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> {
 				if (response != null) {
 					TLRPC.Updates updates = (TLRPC.Updates) response;
@@ -1673,8 +1678,7 @@ public class VoIPService extends VoIPBaseService {
 					connectingSoundRunnable = null;
 				}
 			} else {
-				Utilities.globalQueue.postRunnable(() -> soundPool.play(spVoiceChatStartId, 1.0f, 1.0f, 0, 0, 1));
-				playedConnectedSound = true;
+				playConnectedSound();
 			}
 			if (!wasConnected) {
 				wasConnected = true;
@@ -1864,6 +1868,11 @@ public class VoIPService extends VoIPBaseService {
 		} else {
 			showNotification(chat.title, getRoundAvatarBitmap(chat));
 		}
+	}
+
+	public void playConnectedSound() {
+		Utilities.globalQueue.postRunnable(() -> soundPool.play(spVoiceChatStartId, 1.0f, 1.0f, 0, 0, 1));
+		playedConnectedSound = true;
 	}
 
 	private void startConnectingSound() {

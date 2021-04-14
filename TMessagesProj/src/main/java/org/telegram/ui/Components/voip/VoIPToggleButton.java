@@ -5,7 +5,6 @@ import android.animation.AnimatorListenerAdapter;
 import android.animation.ValueAnimator;
 import android.annotation.SuppressLint;
 import android.content.Context;
-import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
@@ -27,6 +26,7 @@ import androidx.core.content.ContextCompat;
 import androidx.core.graphics.ColorUtils;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.FileLog;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LayoutHelper;
@@ -35,6 +35,7 @@ public class VoIPToggleButton extends FrameLayout {
 
     Paint circlePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private boolean drawBackground = true;
+    private boolean animateBackground;
     Drawable[] icon = new Drawable[2];
     TextView[] textView = new TextView[2];
 
@@ -116,7 +117,7 @@ public class VoIPToggleButton extends FrameLayout {
     @SuppressLint("DrawAllocation")
     @Override
     protected void onDraw(Canvas canvas) {
-        if (replaceProgress != 0) {
+        if (animateBackground && replaceProgress != 0) {
             circlePaint.setColor(ColorUtils.blendARGB(backgroundColor, animateToBackgroundColor, replaceProgress));
         } else {
             circlePaint.setColor(backgroundColor);
@@ -231,6 +232,16 @@ public class VoIPToggleButton extends FrameLayout {
         setData(iconRes, iconColor, backgroundColor, 1.0f, true, text, cross, animated);
     }
 
+    public void setEnabled(boolean enabled, boolean animated) {
+        super.setEnabled(enabled);
+        if (animated) {
+            animate().alpha(enabled ? 1.0f : 0.5f).setDuration(180).start();
+        } else {
+            clearAnimation();
+            setAlpha(enabled ? 1.0f : 0.5f);
+        }
+    }
+
     public void setData(int iconRes, int iconColor, int backgroundColor, float selectorAlpha, boolean recreateRipple, String text, boolean cross, boolean animated) {
         if (getVisibility() != View.VISIBLE) {
             animated = false;
@@ -254,6 +265,7 @@ public class VoIPToggleButton extends FrameLayout {
         if (replaceAnimator != null) {
             replaceAnimator.cancel();
         }
+        animateBackground = currentBackgroundColor != backgroundColor;
 
         iconChangeColor = currentIconRes == iconRes;
         if (iconChangeColor) {
@@ -372,8 +384,11 @@ public class VoIPToggleButton extends FrameLayout {
         this.checkable = checkable;
     }
 
-    public void setChecked(boolean checked, boolean animated) {
-        this.checked = checked;
+    public void setChecked(boolean value, boolean animated) {
+        if (checked == value) {
+            return;
+        }
+        checked = value;
         if (checkable) {
             if (animated) {
                 if (checkAnimator != null) {

@@ -110,12 +110,12 @@ public class AccountSelectCell extends FrameLayout {
             TLRPC.User user = (TLRPC.User) object;
             avatarDrawable.setInfo(user);
             infoTextView.setText(ContactsController.formatName(user.first_name, user.last_name));
-            imageView.setImage(ImageLocation.getForUser(user, false), "50_50", avatarDrawable, user);
+            imageView.setImage(ImageLocation.getForUserOrChat(user, ImageLocation.TYPE_SMALL), "50_50", ImageLocation.getForUserOrChat(user, ImageLocation.TYPE_STRIPPED), "50_50", avatarDrawable, user);
         } else {
             TLRPC.Chat chat = (TLRPC.Chat) object;
             avatarDrawable.setInfo(chat);
             infoTextView.setText(chat.title);
-            imageView.setImage(ImageLocation.getForChat(chat, false), "50_50", avatarDrawable, chat);
+            imageView.setImage(ImageLocation.getForUserOrChat(chat, ImageLocation.TYPE_SMALL), "50_50", ImageLocation.getForUserOrChat(chat, ImageLocation.TYPE_STRIPPED), "50_50", avatarDrawable, chat);
         }
     }
 
@@ -125,7 +125,7 @@ public class AccountSelectCell extends FrameLayout {
         avatarDrawable.setInfo(user);
         textView.setText(ContactsController.formatName(user.first_name, user.last_name));
         imageView.getImageReceiver().setCurrentAccount(account);
-        imageView.setImage(ImageLocation.getForUser(user,false), "50_50", avatarDrawable, user);
+        imageView.setImage(ImageLocation.getForUserOrChat(user,ImageLocation.TYPE_SMALL), "50_50", ImageLocation.getForUserOrChat(user, ImageLocation.TYPE_STRIPPED), "50_50", avatarDrawable, user);
         checkImageView.setVisibility(check && account == UserConfig.selectedAccount ? VISIBLE : INVISIBLE);
     }
 

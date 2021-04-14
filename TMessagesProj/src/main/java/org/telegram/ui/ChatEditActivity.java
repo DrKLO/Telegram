@@ -584,7 +584,7 @@ public class ChatEditActivity extends BaseFragment implements ImageUpdater.Image
             setAvatarCell.setColors(Theme.key_windowBackgroundWhiteBlueIcon, Theme.key_windowBackgroundWhiteBlueButton);
             setAvatarCell.setOnClickListener(v -> imageUpdater.openMenu(avatar != null, () -> {
                 avatar = null;
-                MessagesController.getInstance(currentAccount).changeChatAvatar(chatId, null, null, null, 0, null, null, null);
+                MessagesController.getInstance(currentAccount).changeChatAvatar(chatId, null, null, null, 0, null, null, null, null);
                 showAvatarProgress(false, true);
                 avatarImage.setImage(null, null, avatarDrawable, currentChat);
             }, null));
@@ -775,7 +775,7 @@ public class ChatEditActivity extends BaseFragment implements ImageUpdater.Image
 
         blockCell = new TextCell(context);
         blockCell.setBackgroundDrawable(Theme.getSelectorDrawable(false));
-        blockCell.setVisibility(ChatObject.isChannel(currentChat) || currentChat.creator ? View.VISIBLE : View.GONE);
+        blockCell.setVisibility(ChatObject.isChannel(currentChat) || currentChat.creator || ChatObject.hasAdminRights(currentChat) && ChatObject.canChangeChatInfo(currentChat) ? View.VISIBLE : View.GONE);
         blockCell.setOnClickListener(v -> {
             Bundle args = new Bundle();
             args.putInt("chat_id", chatId);
@@ -937,8 +937,8 @@ public class ChatEditActivity extends BaseFragment implements ImageUpdater.Image
         boolean hasPhoto;
         if (currentChat.photo != null) {
             avatar = currentChat.photo.photo_small;
-            ImageLocation location = ImageLocation.getForChat(currentChat, false);
-            avatarImage.setImage(location, "50_50", avatarDrawable, currentChat);
+            ImageLocation location = ImageLocation.getForUserOrChat(currentChat, ImageLocation.TYPE_SMALL);
+            avatarImage.setImage(location, "50_50", ImageLocation.getForUserOrChat(currentChat, ImageLocation.TYPE_STRIPPED), "50_50", avatarDrawable, currentChat);
             hasPhoto = location != null;
         } else {
             avatarImage.setImageDrawable(avatarDrawable);
@@ -1001,7 +1001,7 @@ public class ChatEditActivity extends BaseFragment implements ImageUpdater.Image
         AndroidUtilities.runOnUIThread(() -> {
             avatar = smallSize.location;
             if (photo != null || video != null) {
-                MessagesController.getInstance(currentAccount).changeChatAvatar(chatId, null, photo, video, videoStartTimestamp, videoPath, smallSize.location, bigSize.location);
+                MessagesController.getInstance(currentAccount).changeChatAvatar(chatId, null, photo, video, videoStartTimestamp, videoPath, smallSize.location, bigSize.location, null);
                 if (createAfterUpload) {
                     try {
                         if (progressDialog != null && progressDialog.isShowing()) {

@@ -6562,6 +6562,7 @@ public class MessagesStorage extends BaseController {
                 }
                 int minId = Integer.MAX_VALUE;
                 int maxId = Integer.MIN_VALUE;
+                ArrayList<Long> messageIdsToFix = null;
                 if (cursor != null) {
                     while (cursor.next()) {
                         messagesCount++;
@@ -6572,7 +6573,14 @@ public class MessagesStorage extends BaseController {
                         if (data != null) {
                             TLRPC.Message message = TLRPC.Message.TLdeserialize(data, data.readInt32(false), false);
                             message.send_state = cursor.intValue(2);
-                            message.id = cursor.intValue(3);
+                            long fullMid = cursor.longValue(3);
+                            message.id = (int) fullMid;
+                            if ((fullMid & 0xffffffff00000000L) == 0xffffffff00000000L && message.id > 0) {
+                                if (messageIdsToFix == null) {
+                                    messageIdsToFix = new ArrayList<>();
+                                }
+                                messageIdsToFix.add(fullMid);
+                            }
                             if (message.id > 0 && message.send_state != 0 && message.send_state != 3) {
                                 message.send_state = 0;
                             }
@@ -6678,6 +6686,18 @@ public class MessagesStorage extends BaseController {
                     }
                     cursor.dispose();
                 }
+                if (messageIdsToFix != null) { //TODO remove later
+                    SQLitePreparedStatement state = database.executeFast("UPDATE messages SET mid = ? WHERE mid = ?");
+                    for (int a = 0, N = messageIdsToFix.size(); a < N; a++) {
+                        long id = messageIdsToFix.get(a);
+                        state.requery();
+                        state.bindLong(1, (int) id);
+                        state.bindLong(2, id);
+                        state.step();
+                    }
+                    state.dispose();
+                }
+
 
                 Collections.sort(res.messages, (lhs, rhs) -> {
                     if (lhs.id > 0 && rhs.id > 0) {

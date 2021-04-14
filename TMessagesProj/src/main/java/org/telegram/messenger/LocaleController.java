@@ -65,7 +65,7 @@ public class LocaleController {
     public FastDateFormat formatterScheduleDay;
     public FastDateFormat formatterScheduleYear;
     public FastDateFormat formatterMonthYear;
-    public FastDateFormat[] formatterScheduleSend = new FastDateFormat[6];
+    public FastDateFormat[] formatterScheduleSend = new FastDateFormat[15];
 
     private HashMap<String, PluralRules> allRules = new HashMap<>();
 
@@ -1087,7 +1087,53 @@ public class LocaleController {
         }
     }
 
+    private static char[] defaultNumbers = new char[]{'0', '1', '2', '3', '4', '5', '6', '7', '8', '9'};
+    private static char[][] otherNumbers = new char[][]{
+            {'٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'},
+            {'۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹'},
+            {'०', '१', '२', '३', '४', '५', '६', '७', '८', '९'},
+            {'૦', '૧', '૨', '૩', '૪', '૫', '૬', '૭', '૮', '૯'},
+            {'੦', '੧', '੨', '੩', '੪', '੫', '੬', '੭', '੮', '੯'},
+            {'০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯'},
+            {'೦', '೧', '೨', '೩', '೪', '೫', '೬', '೭', '೮', '೯'},
+            {'୦', '୧', '୨', '୩', '୪', '୫', '୬', '୭', '୮', '୯'},
+            {'൦', '൧', '൨', '൩', '൪', '൫', '൬', '൭', '൮', '൯'},
+            {'௦', '௧', '௨', '௩', '௪', '௫', '௬', '௭', '௮', '௯'},
+            {'౦', '౧', '౨', '౩', '౪', '౫', '౬', '౭', '౮', '౯'},
+            {'၀', '၁', '၂', '၃', '၄', '၅', '၆', '၇', '၈', '၉'},
+            {'༠', '༡', '༢', '༣', '༤', '༥', '༦', '༧', '༨', '༩'},
+            {'᠐', '᠑', '᠒', '᠓', '᠔', '᠕', '᠖', '᠗', '᠘', '᠙'},
+            {'០', '១', '២', '៣', '៤', '៥', '៦', '៧', '៨', '៩'},
+            {'๐', '๑', '๒', '๓', '๔', '๕', '๖', '๗', '๘', '๙'},
+            {'໐', '໑', '໒', '໓', '໔', '໕', '໖', '໗', '໘', '໙'},
+            {'꧐', '꧑', '꧒', '꧓', '꧔', '꧕', '꧖', '꧗', '꧘', '꧙'}
+    };
+
+    public static String fixNumbers(CharSequence numbers) {
+        StringBuilder builder = new StringBuilder(numbers);
+        for (int c = 0, N = builder.length(); c < N; c++) {
+            char ch = builder.charAt(c);
+            if (ch >= '0' && ch <= '9' || ch == '.' || ch == ',') {
+                continue;
+            }
+            for (int a = 0; a < otherNumbers.length; a++) {
+                for (int b = 0; b < otherNumbers[a].length; b++) {
+                    if (ch == otherNumbers[a][b]) {
+                        builder.setCharAt(c, defaultNumbers[b]);
+                        a = otherNumbers.length;
+                        break;
+                    }
+                }
+            }
+        }
+        return builder.toString();
+    }
+
     public String formatCurrencyString(long amount, String type) {
+        return formatCurrencyString(amount, true, type);
+    }
+
+    public String formatCurrencyString(long amount, boolean fixAnything, String type) {
         type = type.toUpperCase();
         String customFormat;
         double doubleAmount;
@@ -1102,7 +1148,7 @@ public class LocaleController {
 
             case "IRR":
                 doubleAmount = amount / 100.0f;
-                if (amount % 100 == 0) {
+                if (fixAnything && amount % 100 == 0) {
                     customFormat = " %.0f";
                 } else {
                     customFormat = " %.2f";
@@ -1158,12 +1204,52 @@ public class LocaleController {
         if (currency != null) {
             NumberFormat format = NumberFormat.getCurrencyInstance(currentLocale != null ? currentLocale : systemDefaultLocale);
             format.setCurrency(currency);
-            if (type.equals("IRR")) {
+            if (fixAnything && type.equals("IRR")) {
                 format.setMaximumFractionDigits(0);
             }
             return (discount ? "-" : "") + format.format(doubleAmount);
         }
         return (discount ? "-" : "") + String.format(Locale.US, type + customFormat, doubleAmount);
+    }
+
+    public static int getCurrencyExpDivider(String type) {
+        switch (type) {
+            case "CLF":
+                return 10000;
+            case "BHD":
+            case "IQD":
+            case "JOD":
+            case "KWD":
+            case "LYD":
+            case "OMR":
+            case "TND":
+                return 1000;
+            case "BIF":
+            case "BYR":
+            case "CLP":
+            case "CVE":
+            case "DJF":
+            case "GNF":
+            case "ISK":
+            case "JPY":
+            case "KMF":
+            case "KRW":
+            case "MGA":
+            case "PYG":
+            case "RWF":
+            case "UGX":
+            case "UYI":
+            case "VND":
+            case "VUV":
+            case "XAF":
+            case "XOF":
+            case "XPF":
+                return 1;
+            case "MRO":
+                return 10;
+            default:
+                return 100;
+        }
     }
 
     public String formatCurrencyDecimalString(long amount, String type, boolean inludeType) {
@@ -1559,10 +1645,55 @@ public class LocaleController {
         formatterScheduleSend[3] = createFormatter(locale, getStringInternal("RemindTodayAt", R.string.RemindTodayAt), "'Remind today at' HH:mm");
         formatterScheduleSend[4] = createFormatter(locale, getStringInternal("RemindDayAt", R.string.RemindDayAt), "'Remind on' MMM d 'at' HH:mm");
         formatterScheduleSend[5] = createFormatter(locale, getStringInternal("RemindDayYearAt", R.string.RemindDayYearAt), "'Remind on' MMM d yyyy 'at' HH:mm");
+        formatterScheduleSend[6] = createFormatter(locale, getStringInternal("StartTodayAt", R.string.StartTodayAt), "'Start today at' HH:mm");
+        formatterScheduleSend[7] = createFormatter(locale, getStringInternal("StartDayAt", R.string.StartDayAt), "'Start on' MMM d 'at' HH:mm");
+        formatterScheduleSend[8] = createFormatter(locale, getStringInternal("StartDayYearAt", R.string.StartDayYearAt), "'Start on' MMM d yyyy 'at' HH:mm");
+        formatterScheduleSend[9] = createFormatter(locale, getStringInternal("StartShortTodayAt", R.string.StartShortTodayAt), "'Today,' HH:mm");
+        formatterScheduleSend[10] = createFormatter(locale, getStringInternal("StartShortDayAt", R.string.StartShortDayAt), "MMM d',' HH:mm");
+        formatterScheduleSend[11] = createFormatter(locale, getStringInternal("StartShortDayYearAt", R.string.StartShortDayYearAt), "MMM d yyyy, HH:mm");
+        formatterScheduleSend[12] = createFormatter(locale, getStringInternal("StartsTodayAt", R.string.StartsTodayAt), "'Starts today at' HH:mm");
+        formatterScheduleSend[13] = createFormatter(locale, getStringInternal("StartsDayAt", R.string.StartsDayAt), "'Starts on' MMM d 'at' HH:mm");
+        formatterScheduleSend[14] = createFormatter(locale, getStringInternal("StartsDayYearAt", R.string.StartsDayYearAt), "'Starts on' MMM d yyyy 'at' HH:mm");
     }
 
     public static boolean isRTLCharacter(char ch) {
         return Character.getDirectionality(ch) == Character.DIRECTIONALITY_RIGHT_TO_LEFT || Character.getDirectionality(ch) == Character.DIRECTIONALITY_RIGHT_TO_LEFT_ARABIC || Character.getDirectionality(ch) == Character.DIRECTIONALITY_RIGHT_TO_LEFT_EMBEDDING || Character.getDirectionality(ch) == Character.DIRECTIONALITY_RIGHT_TO_LEFT_OVERRIDE;
+    }
+
+    public static String formatStartsTime(long date, int type) {
+        return formatStartsTime(date, type, true);
+    }
+
+    public static String formatStartsTime(long date, int type, boolean needToday) {
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTimeInMillis(System.currentTimeMillis());
+        int currentYear = calendar.get(Calendar.YEAR);
+        int currentDay = calendar.get(Calendar.DAY_OF_YEAR);
+
+        calendar.setTimeInMillis(date * 1000);
+        int selectedYear = calendar.get(Calendar.YEAR);
+        int selectedDay = calendar.get(Calendar.DAY_OF_YEAR);
+
+        int num;
+        if (currentYear == selectedYear) {
+            if (needToday && selectedDay == currentDay) {
+                num = 0;
+            } else {
+                num = 1;
+            }
+        } else {
+            num = 2;
+        }
+        if (type == 1) {
+            num += 3;
+        } else if (type == 2) {
+            num += 6;
+        } else if (type == 3) {
+            num += 9;
+        } else if (type == 4) {
+            num += 12;
+        }
+        return LocaleController.getInstance().formatterScheduleSend[num].format(calendar.getTimeInMillis());
     }
 
     public static String formatSectionDate(long date) {

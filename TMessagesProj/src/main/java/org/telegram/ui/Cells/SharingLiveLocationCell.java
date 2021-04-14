@@ -124,14 +124,14 @@ public class SharingLiveLocationCell extends FrameLayout {
             if (user != null) {
                 avatarDrawable = new AvatarDrawable(user);
                 name = UserObject.getUserName(user);
-                avatarImageView.setImage(ImageLocation.getForUser(user, false), "50_50", avatarDrawable,  user);
+                avatarImageView.setImage(ImageLocation.getForUserOrChat(user, ImageLocation.TYPE_SMALL), "50_50", ImageLocation.getForUserOrChat(user, ImageLocation.TYPE_STRIPPED), "50_50", avatarDrawable,  user);
             }
         } else {
             TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-lowerId);
             if (chat != null) {
                 avatarDrawable = new AvatarDrawable(chat);
                 name = chat.title;
-                avatarImageView.setImage(ImageLocation.getForChat(chat, false), "50_50", avatarDrawable,  chat);
+                avatarImageView.setImage(ImageLocation.getForUserOrChat(chat, ImageLocation.TYPE_SMALL), "50_50", ImageLocation.getForUserOrChat(chat, ImageLocation.TYPE_STRIPPED), "50_50", avatarDrawable,  chat);
             }
         }
         nameTextView.setText(name);
@@ -177,14 +177,14 @@ public class SharingLiveLocationCell extends FrameLayout {
                 if (user != null) {
                     avatarDrawable = new AvatarDrawable(user);
                     name = UserObject.getUserName(user);
-                    avatarImageView.setImage(ImageLocation.getForUser(user, false), "50_50", avatarDrawable,  user);
+                    avatarImageView.setImage(ImageLocation.getForUserOrChat(user, ImageLocation.TYPE_SMALL), "50_50", ImageLocation.getForUserOrChat(user, ImageLocation.TYPE_STRIPPED), "50_50", avatarDrawable,  user);
                 }
             } else {
                 TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-fromId);
                 if (chat != null) {
                     avatarDrawable = new AvatarDrawable(chat);
                     name = chat.title;
-                    avatarImageView.setImage(ImageLocation.getForChat(chat, false), "50_50", avatarDrawable,  chat);
+                    avatarImageView.setImage(ImageLocation.getForUserOrChat(chat, ImageLocation.TYPE_SMALL), "50_50", ImageLocation.getForUserOrChat(chat, ImageLocation.TYPE_STRIPPED), "50_50", avatarDrawable,  chat);
                 }
             }
         }
@@ -216,14 +216,14 @@ public class SharingLiveLocationCell extends FrameLayout {
             if (user != null) {
                 avatarDrawable.setInfo(user);
                 nameTextView.setText(ContactsController.formatName(user.first_name, user.last_name));
-                avatarImageView.setImage(ImageLocation.getForUser(user, false), "50_50", avatarDrawable,  user);
+                avatarImageView.setImage(ImageLocation.getForUserOrChat(user, ImageLocation.TYPE_SMALL), "50_50", ImageLocation.getForUserOrChat(user, ImageLocation.TYPE_STRIPPED), "50_50", avatarDrawable,  user);
             }
         } else {
             TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-lower_id);
             if (chat != null) {
                 avatarDrawable.setInfo(chat);
                 nameTextView.setText(chat.title);
-                avatarImageView.setImage(ImageLocation.getForChat(chat, false), "50_50", avatarDrawable,  chat);
+                avatarImageView.setImage(ImageLocation.getForUserOrChat(chat, ImageLocation.TYPE_SMALL), "50_50", ImageLocation.getForUserOrChat(chat, ImageLocation.TYPE_STRIPPED), "50_50", avatarDrawable,  chat);
             }
         }
 
@@ -249,14 +249,14 @@ public class SharingLiveLocationCell extends FrameLayout {
             if (user != null) {
                 avatarDrawable.setInfo(user);
                 nameTextView.setText(ContactsController.formatName(user.first_name, user.last_name));
-                avatarImageView.setImage(ImageLocation.getForUser(user, false), "50_50", avatarDrawable,  user);
+                avatarImageView.setImage(ImageLocation.getForUserOrChat(user, ImageLocation.TYPE_SMALL), "50_50", ImageLocation.getForUserOrChat(user, ImageLocation.TYPE_STRIPPED), "50_50", avatarDrawable,  user);
             }
         } else {
             TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-lower_id);
             if (chat != null) {
                 avatarDrawable.setInfo(chat);
                 nameTextView.setText(chat.title);
-                avatarImageView.setImage(ImageLocation.getForChat(chat, false), "50_50", avatarDrawable,  chat);
+                avatarImageView.setImage(ImageLocation.getForUserOrChat(chat, ImageLocation.TYPE_SMALL), "50_50", ImageLocation.getForUserOrChat(chat, ImageLocation.TYPE_STRIPPED), "50_50", avatarDrawable,  chat);
             }
         }
     }

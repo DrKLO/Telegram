@@ -58,6 +58,7 @@ import org.telegram.ui.Components.AnimationProperties;
 import org.telegram.ui.Components.Bulletin;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.LaunchActivity;
 
 import java.util.ArrayList;
 
@@ -106,6 +107,8 @@ public class BottomSheet extends Dialog {
 
     private boolean allowCustomAnimation = true;
     private boolean showWithoutAnimation;
+
+    protected int statusBarHeight = AndroidUtilities.statusBarHeight;
 
     protected boolean calcMandatoryInsets;
 
@@ -766,6 +769,10 @@ public class BottomSheet extends Dialog {
         if (Build.VERSION.SDK_INT >= 21) {
             container.setFitsSystemWindows(true);
             container.setOnApplyWindowInsetsListener((v, insets) -> {
+                int newTopInset = insets.getSystemWindowInsetTop();
+                if ((newTopInset != 0 || AndroidUtilities.isInMultiwindow) && statusBarHeight != 0 && statusBarHeight != newTopInset) {
+                    statusBarHeight = newTopInset;
+                }
                 lastInsets = insets;
                 v.requestLayout();
                 if (Build.VERSION.SDK_INT >= 30) {

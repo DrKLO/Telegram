@@ -1685,12 +1685,12 @@ public class ActionBarMenuItem extends FrameLayout {
                         avatarImageView.setImageDrawable(combinedDrawable);
                     } else {
                         avatarImageView.getImageReceiver().setRoundRadius(AndroidUtilities.dp(16));
-                        avatarImageView.getImageReceiver().setImage(ImageLocation.getForUser(user, false), "50_50", thumbDrawable, null, user, 0);
+                        avatarImageView.getImageReceiver().setImage(ImageLocation.getForUserOrChat(user, ImageLocation.TYPE_SMALL), "50_50", ImageLocation.getForUserOrChat(user, ImageLocation.TYPE_STRIPPED), "50_50", thumbDrawable, user, 0);
                     }
                 } else if (data.chat instanceof TLRPC.Chat) {
                     TLRPC.Chat chat = (TLRPC.Chat) data.chat;
                     avatarImageView.getImageReceiver().setRoundRadius(AndroidUtilities.dp(16));
-                    avatarImageView.getImageReceiver().setImage(ImageLocation.getForChat(chat, false), "50_50",thumbDrawable, null, chat, 0);
+                    avatarImageView.getImageReceiver().setImage(ImageLocation.getForUserOrChat(chat, ImageLocation.TYPE_SMALL), "50_50", ImageLocation.getForUserOrChat(chat, ImageLocation.TYPE_STRIPPED), "50_50", thumbDrawable, chat, 0);
                 }
             } else if (data.filterType == FiltersView.FILTER_TYPE_ARCHIVE) {
                 CombinedDrawable combinedDrawable = Theme.createCircleDrawableWithIcon(AndroidUtilities.dp(32), R.drawable.chats_archive);

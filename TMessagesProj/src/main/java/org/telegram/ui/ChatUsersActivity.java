@@ -514,7 +514,7 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
             if (slowmodeInfoRow == -1 && gigaHeaderRow == -1 || removedUsersRow != -1) {
                 participantsDividerRow = rowCount++;
             }
-            if (ChatObject.canBlockUsers(currentChat)) {
+            if (ChatObject.canBlockUsers(currentChat) && (ChatObject.isChannel(currentChat) || currentChat.creator)) {
                 addNewRow = rowCount++;
             }
 
@@ -725,6 +725,9 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
                 searchItem.setSearchFieldHint(LocaleController.getString("ChannelSearchException", R.string.ChannelSearchException));
             } else {
                 searchItem.setSearchFieldHint(LocaleController.getString("Search", R.string.Search));
+            }
+            if (!(ChatObject.isChannel(currentChat) || currentChat.creator)) {
+                searchItem.setVisibility(View.GONE);
             }
 
             if (type == TYPE_KICKED) {
@@ -2109,7 +2112,7 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
         if (type != TYPE_KICKED) {
             return;
         }
-        if (!ChatObject.isChannel(currentChat) && selectedSlowmode != initialSlowmode && info != null) {
+        if (currentChat.creator && !ChatObject.isChannel(currentChat) && selectedSlowmode != initialSlowmode && info != null) {
             MessagesController.getInstance(currentAccount).convertToMegaGroup(getParentActivity(), chatId, this, param -> {
                 if (param != 0) {
                     chatId = param;

@@ -391,7 +391,7 @@ public class MessageStatisticActivity extends BaseFragment implements Notificati
                         }
                         thumbImage.setImage(ImageLocation.getForObject(bigThumb, messageObject.photoThumbsObject), "20_20", ImageLocation.getForObject(smallThumb, messageObject.photoThumbsObject), "20_20", size, null, messageObject, 0);
                     } else {
-                        thumbImage.setImage(null, null, ImageLocation.getForObject(smallThumb, messageObject.photoThumbsObject), "20_20", null, messageObject, 0);
+                        thumbImage.setImage(null, null, ImageLocation.getForObject(smallThumb, messageObject.photoThumbsObject), "20_20", (Drawable) null, messageObject, 0);
                     }
                 }
             }

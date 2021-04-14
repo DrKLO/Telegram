@@ -183,7 +183,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
     private FrameLayout shadowTabletSide;
     private View backgroundTablet;
     private FrameLayout frameLayout;
-    protected DrawerLayoutContainer drawerLayoutContainer;
+    public DrawerLayoutContainer drawerLayoutContainer;
     private DrawerLayoutAdapter drawerLayoutAdapter;
     private PasscodeView passcodeView;
     private TermsOfServiceView termsOfServiceView;
@@ -583,6 +583,9 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                     } else {
                         presentFragment(new ActionIntroActivity(ActionIntroActivity.ACTION_TYPE_NEARBY_LOCATION_ENABLED));
                     }
+                    drawerLayoutContainer.closeDrawer(false);
+                } else if (id == 13) {
+                    Browser.openUrl(LaunchActivity.this, LocaleController.getString("TelegramFeaturesUrl", R.string.TelegramFeaturesUrl));
                     drawerLayoutContainer.closeDrawer(false);
                 }
             }
@@ -2279,7 +2282,7 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                 }
                 pushOpened = true;
             } else if (showGroupVoip) {
-                GroupCallActivity.create(this, AccountInstance.getInstance(currentAccount));
+                GroupCallActivity.create(this, AccountInstance.getInstance(currentAccount), null, null, false, null);
                 if (GroupCallActivity.groupCallInstance != null) {
                     GroupCallActivity.groupCallUiVisible = true;
                 }
@@ -4230,6 +4233,8 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
                     }
                     Bitmap bitmap = Bitmap.createBitmap(drawerLayoutContainer.getMeasuredWidth(), drawerLayoutContainer.getMeasuredHeight(), Bitmap.Config.ARGB_8888);
                     Canvas canvas = new Canvas(bitmap);
+                    HashMap<View, Integer> viewLayerTypes = new HashMap<>();
+                    invalidateCachedViews(drawerLayoutContainer);
                     drawerLayoutContainer.draw(canvas);
                     frameLayout.removeView(themeSwitchImageView);
                     if (toDark) {
@@ -4390,16 +4395,56 @@ public class LaunchActivity extends Activity implements ActionBarLayout.ActionBa
         } else if (id == NotificationCenter.showBulletin) {
             if (!mainFragmentsStack.isEmpty()) {
                 int type = (int) args[0];
-                BaseFragment fragment = mainFragmentsStack.get(mainFragmentsStack.size() - 1);
-                if (type == Bulletin.TYPE_STICKER) {
+
+                FrameLayout container = null;
+                BaseFragment fragment = null;
+                if (GroupCallActivity.groupCallUiVisible && GroupCallActivity.groupCallInstance != null) {
+                    container = GroupCallActivity.groupCallInstance.getContainer();
+                }
+
+                if (container == null) {
+                    fragment = mainFragmentsStack.get(mainFragmentsStack.size() - 1);
+                }
+
+                if (type == Bulletin.TYPE_NAME_CHANGED) {
+                    int peerId = (int) args[1];
+                    String text = peerId > 0 ? LocaleController.getString("YourNameChanged", R.string.YourNameChanged) : LocaleController.getString("CannelTitleChanged", R.string.ChannelTitleChanged);
+                    (container != null ? BulletinFactory.of(container) : BulletinFactory.of(fragment)).createErrorBulletin(text).show();
+                } else if (type == Bulletin.TYPE_BIO_CHANGED) {
+                    int peerId = (int) args[1];
+                    String text = peerId > 0 ? LocaleController.getString("YourBioChanged", R.string.YourBioChanged) : LocaleController.getString("CannelDescriptionChanged", R.string.ChannelDescriptionChanged);
+                    (container != null ? BulletinFactory.of(container) : BulletinFactory.of(fragment)).createErrorBulletin(text).show();
+                } else if (type == Bulletin.TYPE_STICKER) {
                     TLRPC.Document sticker = (TLRPC.Document) args[1];
-                    Bulletin.make(fragment, new StickerSetBulletinLayout(this, null, (int) args[2], sticker), Bulletin.DURATION_SHORT).show();
+                    StickerSetBulletinLayout layout = new StickerSetBulletinLayout(this, null, (int) args[2], sticker);
+                    if (fragment != null) {
+                        Bulletin.make(fragment, layout, Bulletin.DURATION_SHORT).show();
+                    } else {
+                        Bulletin.make(container, layout, Bulletin.DURATION_SHORT).show();
+                    }
                 } else if (type == Bulletin.TYPE_ERROR) {
-                    BulletinFactory.of(fragment).createErrorBulletin((String)args[1]).show();
+                    if (fragment != null) {
+                        BulletinFactory.of(fragment).createErrorBulletin((String) args[1]).show();
+                    } else {
+                        BulletinFactory.of(container).createErrorBulletin((String) args[1]).show();
+                    }
                 }
             }
         } else if (id == NotificationCenter.groupCallUpdated) {
             checkWasMutedByAdmin(false);
+        }
+    }
+
+    private void invalidateCachedViews(View parent) {
+        int layerType = parent.getLayerType();
+        if (layerType != View.LAYER_TYPE_NONE) {
+            parent.invalidate();
+        }
+        if (parent instanceof ViewGroup) {
+            ViewGroup viewGroup = (ViewGroup) parent;
+            for (int i = 0; i < viewGroup.getChildCount(); i++) {
+                invalidateCachedViews(viewGroup.getChildAt(i));
+            }
         }
     }
 
